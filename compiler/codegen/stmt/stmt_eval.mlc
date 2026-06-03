@@ -90,7 +90,7 @@ fn eval_block_body(expr: Shared<SExpr>, context: CodegenContext, gen_expr_fn: (S
   match expr {
     SExprBlock(statements, result_expr, _, _) => do
       const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
-      const statements_code = statements_with_context.partial_result.joined_code()
+      const statements_code = statements_with_context.statements_parsed.joined_code()
       const final_context   = statements_with_context.codegen_context
       match result_expr {
         SExprIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expr, final_context, gen_expr_fn),
@@ -136,7 +136,7 @@ fn eval_stmt_expr(expression: Shared<SExpr>, context: CodegenContext, gen_expr_f
         eval_stmts_str(stmts, context, gen_expr_fn)),
     SExprBlock(statements, result_expr, _, _) => do
       const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
-      const statements_code = statements_with_context.partial_result.joined_code()
+      const statements_code = statements_with_context.statements_parsed.joined_code()
       const result_code = gen_expr_fn(result_expr, statements_with_context.codegen_context)
       if result_code == gen_unit_literal() then statements_code
       else expression_output.append_trailing_expression_statement(statements_code, result_code)
@@ -153,7 +153,7 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
     SStmtLet(name, _, value, value_type, _) => do
       const try_identifier = `__try_${try_counter.to_string()}`
       const next_counter = try_counter + 1
-      const result = match value {
+      const statement_parsed = match value {
         SExprQuestion(inner_expr, _, _) =>
           GenStmtResult {
             output: eval_try_unwrap(
@@ -216,7 +216,7 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
           next_try: try_counter
         }
       }
-      result
+      statement_parsed
     end,
     SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) =>
       GenStmtResult {
@@ -268,18 +268,18 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
   }
 
 export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> GenStmtsWithContext = do
-  let mut partial_result = GenStmtsResult { parts: [], next_try: try_counter }
+  let mut statements_parsed = GenStmtsResult { parts: [], next_try: try_counter }
   let mut codegen_context = context
   let mut index = 0
   while index < statements.length() do
     const statement = statements[index]
-    const statement_result = eval_stmt_with_try(statement, codegen_context, partial_result.next_try, gen_expr_fn)
-    partial_result = partial_result.append_stmt(statement_result)
+    const statement_parsed = eval_stmt_with_try(statement, codegen_context, statements_parsed.next_try, gen_expr_fn)
+    statements_parsed = statements_parsed.append_stmt(statement_parsed)
     mutate_context_from_statement(statement, codegen_context)
     index = index + 1
   end
-  GenStmtsWithContext { partial_result: partial_result, codegen_context: codegen_context }
+  GenStmtsWithContext { statements_parsed: statements_parsed, codegen_context: codegen_context }
 end
 
 export fn eval_stmts_str(statements: [Shared<SStmt>], context: CodegenContext, gen_expr_fn: (Shared<SExpr>, CodegenContext) -> string) -> string =
-  eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).partial_result.joined_code()
+  eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).statements_parsed.joined_code()

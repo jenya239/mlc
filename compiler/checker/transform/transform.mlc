@@ -694,17 +694,17 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
     end,
 
     ExprBlock(statements, result, source_span) => do
-      const stmts_result = stmts_fn(statements, transform_context)
-      const body_context = transform_context_with_env(transform_context, stmts_result.type_env)
-      const typed_result = transform_expr(result, body_context, stmts_fn)
-      const result_type  = sexpr_type(typed_result)
-      Shared.new(SExprBlock(stmts_result.statements, typed_result, result_type, source_span))
+      const statements_parsed = stmts_fn(statements, transform_context)
+      const body_context = transform_context_with_env(transform_context, statements_parsed.type_env)
+      const result_parsed = transform_expr(result, body_context, stmts_fn)
+      const result_type  = sexpr_type(result_parsed)
+      Shared.new(SExprBlock(statements_parsed.statements, result_parsed, result_type, source_span))
     end,
 
     ExprWhile(condition, statements, source_span) => do
       const typed_condition = transform_expr(condition, transform_context, stmts_fn)
-      const stmts_result    = stmts_fn(statements, transform_context)
-      Shared.new(SExprWhile(typed_condition, stmts_result.statements, Shared.new(TUnit), source_span))
+      const statements_parsed = stmts_fn(statements, transform_context)
+      Shared.new(SExprWhile(typed_condition, statements_parsed.statements, Shared.new(TUnit), source_span))
     end,
 
     ExprFor(variable_name, iterator, statements, source_span) => do
@@ -713,8 +713,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       let inner_env = transform_context.type_env
       inner_env.set(variable_name, element_type)
       const loop_context   = transform_context_with_env(transform_context, inner_env)
-      const stmts_result   = stmts_fn(statements, loop_context)
-      Shared.new(SExprFor(variable_name, typed_iterator, stmts_result.statements, Shared.new(TUnit), source_span))
+      const statements_parsed = stmts_fn(statements, loop_context)
+      Shared.new(SExprFor(variable_name, typed_iterator, statements_parsed.statements, Shared.new(TUnit), source_span))
     end,
 
     ExprMatch(subject, arms, source_span) => do
@@ -818,8 +818,8 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
       let inner_env = transform_context.type_env
       inner_env.set(binder, sexpr_type(typed_resource))
       const inner_context = transform_context_with_env(transform_context, inner_env)
-      const stmts_result = stmts_fn(stmts, inner_context)
-      Shared.new(SExprWith(typed_resource, binder, stmts_result.statements, Shared.new(TUnit), source_span))
+      const statements_parsed = stmts_fn(stmts, inner_context)
+      Shared.new(SExprWith(typed_resource, binder, statements_parsed.statements, Shared.new(TUnit), source_span))
     end,
 
     _ => Shared.new(SExprUnit(Shared.new(TUnit), expr_span(expression_partial_application)))

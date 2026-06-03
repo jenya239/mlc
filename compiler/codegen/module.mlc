@@ -35,14 +35,14 @@ type ModuleGenerationContext = ModuleGenerationContext {
 }
 
 fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
-  let mut result: [NamespaceImportAlias] = []
+  let mut mapped_aliases: [NamespaceImportAlias] = []
   let mut index = 0
   while index < items.length() do
     const entry = items[index]
-    result.push(NamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
+    mapped_aliases.push(NamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
     index = index + 1
   end
-  result
+  mapped_aliases
 end
 
 fn push_struct_using_entry(
@@ -256,6 +256,6 @@ export fn gen_program(program: Program) -> string = do
   const registry  = build_registry(program)
   const single    = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
   const s_items   = transform_load_items([single], registry, build_trait_nominal_maps(program))
-  const result    = gen_module(s_items[0], all_items, program, precomp)
-  result.h + result.c
+  const module_parsed = gen_module(s_items[0], all_items, program, precomp)
+  module_parsed.h + module_parsed.c
 end

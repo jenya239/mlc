@@ -89,8 +89,8 @@ fn check_names_conditional_expression(condition: Shared<Expr>, then_expression: 
     check_names_expr(else_expression, locals, globals))
 
 fn check_names_block_expression(statements: [Shared<Stmt>], result: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const statement_result = check_names_statements(statements, locals, globals)
-  statement_result.append_expression_diagnostics(check_names_expr(result, statement_result.scope, globals))
+  const statements_parsed = check_names_statements(statements, locals, globals)
+  statements_parsed.append_expression_diagnostics(check_names_expr(result, statements_parsed.scope, globals))
 end
 
 fn check_names_while_expression(condition: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do

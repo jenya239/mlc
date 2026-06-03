@@ -529,7 +529,7 @@ export fn codegen_tests() -> [TestResult] = do
     tuple_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let tuple pair native std::get',
     gen_stmts_str([let_tuple_pair], ctx),
-    '{\n  auto __lt = pair;\n  auto left = std::get<0>(__lt);\n  auto right = std::get<1>(__lt);\n}\n'))
+    'auto __lt = pair;\nauto left = std::get<0>(__lt);\nauto right = std::get<1>(__lt);\n'))
   results.push(assert_code_not_contains('gen_stmts_cpp_as_string: let tuple pair no structured binding fragment',
     gen_stmts_str([let_tuple_pair], ctx), 'auto ['))
 
@@ -540,7 +540,7 @@ export fn codegen_tests() -> [TestResult] = do
     tuple_wild_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let tuple pair wild native structured binding',
     gen_stmts_str([let_tuple_wild], ctx),
-    '{\n  auto __lt = pair;\n  auto [left, __1] = __lt;\n}\n'))
+    'auto __lt = pair;\nauto [left, __1] = __lt;\n'))
 
   const record_tuple_pat = Shared.new(PatTuple(
     [Shared.new(PatIdent('first', span_unknown())), Shared.new(PatIdent('second', span_unknown()))],
@@ -549,7 +549,7 @@ export fn codegen_tests() -> [TestResult] = do
     record_tuple_pat, false, sid('point'), Shared.new(TNamed('Point')), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let record tuple fallback native structured binding',
     gen_stmts_str([let_record_tuple_fallback], ctx),
-    '{\n  auto __lt = point;\n  auto [first, second] = __lt;\n}\n'))
+    'auto __lt = point;\nauto [first, second] = __lt;\n'))
 
   const unknown_tuple_pat = Shared.new(PatTuple(
     [Shared.new(PatIdent('alpha', span_unknown())), Shared.new(PatWild(span_unknown()))],
@@ -558,7 +558,7 @@ export fn codegen_tests() -> [TestResult] = do
     unknown_tuple_pat, false, sid('value'), unk_t(), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let unknown type tuple fallback native structured binding',
     gen_stmts_str([let_unknown_tuple_fallback], ctx),
-    '{\n  auto __lt = value;\n  auto [alpha, __1] = __lt;\n}\n'))
+    'auto __lt = value;\nauto [alpha, __1] = __lt;\n'))
 
   const letpat_ctor_pat = Shared.new(PatCtor('Some', [Shared.new(PatIdent("v", span_unknown()))], span_unknown()))
   const letpat_with_else = Shared.new(SStmtLetPat(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))

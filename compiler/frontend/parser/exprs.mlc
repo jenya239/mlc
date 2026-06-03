@@ -27,9 +27,10 @@ export fn parse_stmts_until_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let mut state = parser
   while !state.kind().is_end() && !state.at_eof() do
-    const result = parse_stmt(state)
-    stmts.push(result.stmt)
-    state = result.parser.skip_semi()
+    let parsed = parse_stmt(state)
+    let { stmt } = parsed
+    stmts.push(stmt)
+    state = parsed.parser.skip_semi()
   end
   const closing_parser = if state.kind().is_end() then state.advance()
     else if state.at_eof() then state.record_parse_error('parse: expected end in block')
@@ -42,9 +43,10 @@ fn parse_stmts_until_end_or_eof(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let mut state = parser
   while !state.kind().is_end() && !state.at_eof() do
-    const result = parse_stmt(state)
-    stmts.push(result.stmt)
-    state = result.parser.skip_semi()
+    let parsed = parse_stmt(state)
+    let { stmt } = parsed
+    stmts.push(stmt)
+    state = parsed.parser.skip_semi()
   end
   const closing_parser = if state.kind().is_end() then state.advance() else state end
   StmtsResult { stmts, parser: closing_parser }
@@ -54,9 +56,10 @@ export fn parse_stmts_until_else_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let mut state = parser
   while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
-    const result = parse_stmt(state)
-    stmts.push(result.stmt)
-    state = result.parser
+    let parsed = parse_stmt(state)
+    let { stmt } = parsed
+    stmts.push(stmt)
+    state = parsed.parser
   end
   StmtsResult { stmts, parser: state }
 end
@@ -64,16 +67,18 @@ end
 fn parse_statement_let_const(parser: Parser, statement_span: Span) -> StmtResult = do
   const name_pos = parser.advance()
   const var_name = name_pos.kind().ident()
-  const type_result =
+  const type_parsed =
     if name_pos.advance().kind().is_colon() then
       parse_type(name_pos.advance_by(2))
     else
       TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
     end
-  const value_result = parse_expr(type_result.parser.advance())
+  let { type_expr } = type_parsed
+  const value_parsed = parse_expr(type_parsed.parser.advance())
+  let { expr } = value_parsed
   StmtResult {
-    stmt: Shared.new(StmtLetConst(var_name, type_result.type_expr, value_result.expr, statement_span)),
-    parser: value_result.parser
+    stmt: Shared.new(StmtLetConst(var_name, type_expr, expr, statement_span)),
+    parser: value_parsed.parser
   }
 end
 
@@ -85,11 +90,12 @@ end
 
 fn parse_after_let_pattern(parser: Parser) -> TypeResult = do
   if parser.kind().is_colon() then
-    const tr = parse_type(parser.advance())
-    if tr.parser.kind().is_equal() then
-      TypeResult { type_expr: tr.type_expr, parser: tr.parser.advance() }
+    const type_parsed = parse_type(parser.advance())
+    let { type_expr } = type_parsed
+    if type_parsed.parser.kind().is_equal() then
+      TypeResult { type_expr: type_expr, parser: type_parsed.parser.advance() }
     else
-      TypeResult { type_expr: tr.type_expr, parser: tr.parser }
+      TypeResult { type_expr: type_expr, parser: type_parsed.parser }
     end
   else
     if parser.kind().is_equal() then
@@ -133,6 +139,29 @@ fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatResult = do
   end
 end
 
+fn parse_statement_let_pat_finish(
+  pat: Shared<Pat>,
+  is_mut: bool,
+  after_pattern: Parser,
+  statement_span: Span
+) -> StmtResult = do
+  const type_parsed = parse_after_let_pattern(after_pattern)
+  let { type_expr } = type_parsed
+  const value_parsed = parse_expr(type_parsed.parser)
+  let { expr } = value_parsed
+  const has_else = value_parsed.parser.kind().is_else()
+  const else_parsed =
+    if has_else then parse_stmts_until_end(value_parsed.parser.advance())
+    else StmtsResult { stmts: [], parser: value_parsed.parser }
+  end
+  let { stmts } = else_parsed
+  const else_body = Shared.new(ExprBlock(stmts, Shared.new(ExprUnit(statement_span)), statement_span))
+  StmtResult {
+    stmt: Shared.new(StmtLetPat(pat, is_mut, type_expr, expr, has_else, else_body, statement_span)),
+    parser: else_parsed.parser
+  }
+end
+
 fn parse_statement_let(parser: Parser) -> StmtResult = do
   const statement_span = parser.span_at_cursor()
   const after_let  = parser.advance()
@@ -146,63 +175,33 @@ fn parse_statement_let(parser: Parser) -> StmtResult = do
       const paren_span = name_pos.span_at_cursor()
       const inner = parse_pat_args(name_pos.advance())
       const pat = Shared.new(PatTuple(inner.pats, paren_span))
-      const type_result = parse_after_let_pattern(inner.parser)
-      const value_result = parse_expr(type_result.parser)
-      const has_else = value_result.parser.kind().is_else()
-      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
-      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
-      StmtResult {
-        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
-        parser: else_result.parser
-      }
+      parse_statement_let_pat_finish(pat, is_mut, inner.parser, statement_span)
     else if k0.is_lbracket() then
       const br_span = name_pos.span_at_cursor()
       const ar = parse_array_pattern(name_pos.advance(), br_span)
-      const type_result = parse_after_let_pattern(ar.parser)
-      const value_result = parse_expr(type_result.parser)
-      const has_else = value_result.parser.kind().is_else()
-      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
-      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
-      StmtResult {
-        stmt: Shared.new(StmtLetPat(ar.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
-        parser: else_result.parser
-      }
+      parse_statement_let_pat_finish(ar.pat, is_mut, ar.parser, statement_span)
     else if k0.is_lbrace() then
       const br_span = name_pos.span_at_cursor()
       const fr = parse_record_pat_fields(name_pos.advance())
       const pat = Shared.new(PatRecord('', fr.pats, br_span))
-      const type_result = parse_after_let_pattern(fr.parser)
-      const value_result = parse_expr(type_result.parser)
-      const has_else = value_result.parser.kind().is_else()
-      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
-      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
-      StmtResult {
-        stmt: Shared.new(StmtLetPat(pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
-        parser: else_result.parser
-      }
+      parse_statement_let_pat_finish(pat, is_mut, fr.parser, statement_span)
     else if k0.is_ident() && is_ctor_name(k0.ident()) && parser_next_kind(name_pos).is_lparen() then
       const pr = parse_pattern_identifier_branch(name_pos, k0.ident())
-      const type_result = parse_after_let_pattern(pr.parser)
-      const value_result = parse_expr(type_result.parser)
-      const has_else = value_result.parser.kind().is_else()
-      const else_result = if has_else then parse_stmts_until_end(value_result.parser.advance()) else StmtsResult { stmts: [], parser: value_result.parser } end
-      const else_body = Shared.new(ExprBlock(else_result.stmts, Shared.new(ExprUnit(statement_span)), statement_span))
-      StmtResult {
-        stmt: Shared.new(StmtLetPat(pr.pat, is_mut, type_result.type_expr, value_result.expr, has_else, else_body, statement_span)),
-        parser: else_result.parser
-      }
+      parse_statement_let_pat_finish(pr.pat, is_mut, pr.parser, statement_span)
     else if k0.is_ident() then
       const var_name = k0.ident()
-      const type_result =
+      const type_parsed =
         if name_pos.advance().kind().is_colon() then
           parse_type(name_pos.advance_by(2))
         else
           TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
         end
-      const value_result = parse_expr(type_result.parser.advance())
+      let { type_expr } = type_parsed
+      const value_parsed = parse_expr(type_parsed.parser.advance())
+      let { expr } = value_parsed
       StmtResult {
-        stmt: Shared.new(StmtLet(var_name, is_mut, type_result.type_expr, value_result.expr, statement_span)),
-        parser: value_result.parser
+        stmt: Shared.new(StmtLet(var_name, is_mut, type_expr, expr, statement_span)),
+        parser: value_parsed.parser
       }
     else
       const error_parser = name_pos.record_parse_error('parse: expected pattern or identifier after let')
@@ -215,37 +214,41 @@ fn parse_statement_const(parser: Parser) -> StmtResult = do
   const statement_span = parser.span_at_cursor()
   const name_pos    = parser.advance()
   const var_name    = name_pos.kind().ident()
-  const type_result =
+  const type_parsed =
     if name_pos.advance().kind().is_colon() then
       parse_type(name_pos.advance_by(2))
     else
       TypeResult { type_expr: Shared.new(TyUnit), parser: name_pos.advance() }
     end
-  const value_result = parse_expr(type_result.parser.advance())
+  let { type_expr } = type_parsed
+  const value_parsed = parse_expr(type_parsed.parser.advance())
+  let { expr } = value_parsed
   StmtResult {
-    stmt: Shared.new(StmtLet(var_name, false, type_result.type_expr, value_result.expr, statement_span)),
-    parser: value_result.parser
+    stmt: Shared.new(StmtLet(var_name, false, type_expr, expr, statement_span)),
+    parser: value_parsed.parser
   }
 end
 
 fn parse_statement_return(parser: Parser) -> StmtResult = do
   const statement_span = parser.span_at_cursor()
-  const value_result = parse_expr(parser.advance())
-  StmtResult { stmt: Shared.new(StmtReturn(value_result.expr, statement_span)), parser: value_result.parser }
+  const value_parsed = parse_expr(parser.advance())
+  let { expr } = value_parsed
+  StmtResult { stmt: Shared.new(StmtReturn(expr, statement_span)), parser: value_parsed.parser }
 end
 
 fn parse_statement_expression_or_assign(parser: Parser) -> StmtResult = do
   const statement_span = parser.span_at_cursor()
-  const expr_result = parse_expr(parser)
-  if expr_result.parser.kind().is_equal() then
-    const assign_span = expr_result.parser.span_at_cursor()
-    const right_hand = parse_expr(expr_result.parser.advance())
+  const left_parsed = parse_expr(parser)
+  let { expr } = left_parsed
+  if left_parsed.parser.kind().is_equal() then
+    const assign_span = left_parsed.parser.span_at_cursor()
+    const right_parsed = parse_expr(left_parsed.parser.advance())
     StmtResult {
-      stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr_result.expr, right_hand.expr, assign_span)), statement_span)),
-      parser: right_hand.parser
+      stmt: Shared.new(StmtExpr(Shared.new(ExprBin("=", expr, right_parsed.expr, assign_span)), statement_span)),
+      parser: right_parsed.parser
     }
   else
-    StmtResult { stmt: Shared.new(StmtExpr(expr_result.expr, statement_span)), parser: expr_result.parser }
+    StmtResult { stmt: Shared.new(StmtExpr(expr, statement_span)), parser: left_parsed.parser }
   end
 end
 
@@ -258,20 +261,24 @@ fn parse_stmt(parser: Parser) -> StmtResult = do
   else if kind.is_return() then parse_statement_return(parser)
   else if kind.is_while() then
     const header_span = parser.span_at_cursor()
-    const while_result = parse_while_expr(parser.advance(), header_span)
-    StmtResult { stmt: Shared.new(StmtExpr(while_result.expr, header_span)), parser: while_result.parser }
+    const while_parsed = parse_while_expr(parser.advance(), header_span)
+    let { expr } = while_parsed
+    StmtResult { stmt: Shared.new(StmtExpr(expr, header_span)), parser: while_parsed.parser }
   else if kind.is_for() then
     const header_span = parser.span_at_cursor()
-    const for_result = parse_for_expr(parser.advance(), header_span)
-    StmtResult { stmt: Shared.new(StmtExpr(for_result.expr, header_span)), parser: for_result.parser }
+    const for_parsed = parse_for_expr(parser.advance(), header_span)
+    let { expr } = for_parsed
+    StmtResult { stmt: Shared.new(StmtExpr(expr, header_span)), parser: for_parsed.parser }
   else if kind.is_do() then
     const header_span = parser.span_at_cursor()
-    const block_result = parse_block(parser.advance(), header_span)
-    StmtResult { stmt: Shared.new(StmtExpr(block_result.expr, header_span)), parser: block_result.parser }
+    const block_parsed = parse_block(parser.advance(), header_span)
+    let { expr } = block_parsed
+    StmtResult { stmt: Shared.new(StmtExpr(expr, header_span)), parser: block_parsed.parser }
   else if kind.is_with() then
     const header_span = parser.span_at_cursor()
-    const with_result = parse_with_expr(parser.advance(), header_span)
-    StmtResult { stmt: Shared.new(StmtExpr(with_result.expr, header_span)), parser: with_result.parser }
+    const with_parsed = parse_with_expr(parser.advance(), header_span)
+    let { expr } = with_parsed
+    StmtResult { stmt: Shared.new(StmtExpr(expr, header_span)), parser: with_parsed.parser }
   else parse_statement_expression_or_assign(parser)
   end
 end
@@ -288,8 +295,8 @@ fn parse_pattern_identifier_branch(parser: Parser, name: string) -> PatResult = 
       const sub_patterns = parse_pat_args(after.advance())
       PatResult { pat: Shared.new(PatCtor(name, sub_patterns.pats, pattern_span)), parser: sub_patterns.parser }
     else if after.kind().is_lbrace() then
-      const field_result = parse_record_pat_fields(after.advance())
-      PatResult { pat: Shared.new(PatRecord(name, field_result.pats, pattern_span)), parser: field_result.parser }
+      const fields_parsed = parse_record_pat_fields(after.advance())
+      PatResult { pat: Shared.new(PatRecord(name, fields_parsed.pats, pattern_span)), parser: fields_parsed.parser }
     else
       PatResult { pat: Shared.new(PatCtor(name, [], pattern_span)), parser: after }
     end
@@ -655,13 +662,13 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
       ExprResult { expr: Shared.new(ExprUnit(open_paren_span)), parser: after_close }
     end
   else if !parser.lambda_shorthand_suppression_active() && looks_like_typed_lambda_params(parser.advance()) then
-    const param_result = parse_typed_lambda_params(parser.advance())
-    const body = parse_expr(param_result.parser.advance())
-    ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
+    const params_parsed = parse_typed_lambda_params(parser.advance())
+    const body = parse_expr(params_parsed.parser.advance())
+    ExprResult { expr: Shared.new(ExprLambda(params_parsed.exprs, body.expr, open_paren_span)), parser: body.parser }
   else if !parser.lambda_shorthand_suppression_active() && looks_like_lambda_params(parser.advance()) then
-    const param_result = parse_lambda_params(parser.advance())
-    const body = parse_expr(param_result.parser.advance())
-    ExprResult { expr: Shared.new(ExprLambda(param_result.exprs, body.expr, open_paren_span)), parser: body.parser }
+    const params_parsed = parse_lambda_params(parser.advance())
+    const body = parse_expr(params_parsed.parser.advance())
+    ExprResult { expr: Shared.new(ExprLambda(params_parsed.exprs, body.expr, open_paren_span)), parser: body.parser }
   else
     const e0 = parse_expr(parser.advance())
     if e0.parser.kind().is_comma() then
@@ -851,38 +858,50 @@ fn parse_array_lit(parser: Parser, header_span: Span) -> ExprResult =
 export fn parse_if_expr(parser: Parser) -> ExprResult = do
   const header_span = parser.span_at_cursor()
   const is_negated = parser.kind().is_unless()
-  const cond_result = parse_expr(parser.advance())
+  const cond_parsed = parse_expr(parser.advance())
+  let { expr } = cond_parsed
   const condition = if is_negated
-    then Shared.new(ExprUn("!", cond_result.expr, span_unknown()))
-    else cond_result.expr
+    then Shared.new(ExprUn("!", expr, span_unknown()))
+    else expr
     end
-  const then_result = parse_stmts_until_else_end(cond_result.parser.advance())
-  const then_expr = then_result.to_block_expr(header_span)
-  if then_result.parser.kind().is_else() then
-    const after_else = then_result.parser.advance()
+  const then_parsed = parse_stmts_until_else_end(cond_parsed.parser.advance())
+  let { stmts } = then_parsed
+  const then_expr = StmtsResult { stmts, parser: then_parsed.parser }.to_block_expr(header_span)
+  if then_parsed.parser.kind().is_else() then
+    const after_else = then_parsed.parser.advance()
     if after_else.kind().is_if() || after_else.kind().is_unless() then
-      const else_result = parse_if_expr(after_else)
-      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_result.expr, header_span)), parser: else_result.parser }
+      const else_parsed = parse_if_expr(after_else)
+      let { expr } = else_parsed
+      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, expr, header_span)), parser: else_parsed.parser }
     else if after_else.kind().is_do() then
-      const else_block = parse_block(after_else.advance(), header_span)
-      const after_block = if else_block.parser.kind().is_end() then else_block.parser.advance() else else_block.parser end
-      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_block.expr, header_span)), parser: after_block }
+      const else_block_parsed = parse_block(after_else.advance(), header_span)
+      let { expr } = else_block_parsed
+      const after_block = if else_block_parsed.parser.kind().is_end() then else_block_parsed.parser.advance() else else_block_parsed.parser end
+      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, expr, header_span)), parser: after_block }
     else
       const else_span = after_else.span_at_cursor()
-      const else_stmts = parse_stmts_until_end_or_eof(after_else)
-      ExprResult { expr: Shared.new(ExprIf(condition, then_expr, else_stmts.to_block_expr(else_span), header_span)), parser: else_stmts.parser }
+      const else_stmts_parsed = parse_stmts_until_end_or_eof(after_else)
+      let { stmts } = else_stmts_parsed
+      ExprResult {
+        expr: Shared.new(ExprIf(condition, then_expr, StmtsResult { stmts, parser: else_stmts_parsed.parser }.to_block_expr(else_span), header_span)),
+        parser: else_stmts_parsed.parser
+      }
     end
   else
     ExprResult {
       expr: Shared.new(ExprIf(condition, then_expr, Shared.new(ExprUnit(span_unknown())), header_span)),
-      parser: then_result.parser.advance()
+      parser: then_parsed.parser.advance()
     }
   end
 end
 
 fn parse_block(parser: Parser, header_span: Span) -> ExprResult = do
-  const result = parse_stmts_until_end(parser)
-  ExprResult { expr: result.to_block_expr(header_span), parser: result.parser }
+  const stmts_parsed = parse_stmts_until_end(parser)
+  let { stmts } = stmts_parsed
+  ExprResult {
+    expr: StmtsResult { stmts, parser: stmts_parsed.parser }.to_block_expr(header_span),
+    parser: stmts_parsed.parser
+  }
 end
 
 fn is_unit_expr(expr: Shared<Expr>) -> bool =
@@ -923,63 +942,75 @@ extend StmtsResult {
 }
 
 fn parse_while_expr(parser: Parser, header_span: Span) -> ExprResult = do
-  const cond = parse_expr(parser)
-  const body = parse_stmts_until_end(cond.parser.advance())
-  ExprResult { expr: Shared.new(ExprWhile(cond.expr, body.stmts, header_span)), parser: body.parser }
+  const cond_parsed = parse_expr(parser)
+  let { expr } = cond_parsed
+  const body_parsed = parse_stmts_until_end(cond_parsed.parser.advance())
+  let { stmts } = body_parsed
+  ExprResult { expr: Shared.new(ExprWhile(expr, stmts, header_span)), parser: body_parsed.parser }
 end
 
 fn parse_for_expr(parser: Parser, header_span: Span) -> ExprResult = do
   const var_name = parser.kind().ident()
-  const iter = parse_expr(parser.advance_by(2))
-  const body = parse_stmts_until_end(iter.parser.advance())
-  ExprResult { expr: Shared.new(ExprFor(var_name, iter.expr, body.stmts, header_span)), parser: body.parser }
+  const iter_parsed = parse_expr(parser.advance_by(2))
+  let { expr } = iter_parsed
+  const body_parsed = parse_stmts_until_end(iter_parsed.parser.advance())
+  let { stmts } = body_parsed
+  ExprResult { expr: Shared.new(ExprFor(var_name, expr, stmts, header_span)), parser: body_parsed.parser }
 end
 
 fn parse_with_expr(parser: Parser, header_span: Span) -> ExprResult = do
-  const resource = parse_expr(parser)
-  const after_as = resource.parser.advance()
+  const resource_parsed = parse_expr(parser)
+  let { expr } = resource_parsed
+  const after_as = resource_parsed.parser.advance()
   const binder = after_as.kind().ident()
-  const body = parse_stmts_until_end(after_as.advance().advance())
-  ExprResult { expr: Shared.new(ExprWith(resource.expr, binder, body.stmts, header_span)), parser: body.parser }
+  const body_parsed = parse_stmts_until_end(after_as.advance().advance())
+  let { stmts } = body_parsed
+  ExprResult { expr: Shared.new(ExprWith(expr, binder, stmts, header_span)), parser: body_parsed.parser }
 end
 
 fn parse_match_expr(parser: Parser, header_span: Span) -> ExprResult = do
-  const subject = parse_expr(parser)
-  const next = subject.parser.kind()
+  const subject_parsed = parse_expr(parser)
+  let { expr } = subject_parsed
+  const next = subject_parsed.parser.kind()
   if next.is_lbrace() then
-    const arms = parse_arms_brace(subject.parser.advance())
-    ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
+    const arms_parsed = parse_arms_brace(subject_parsed.parser.advance())
+    let { arms } = arms_parsed
+    ExprResult { expr: Shared.new(ExprMatch(expr, arms, header_span)), parser: arms_parsed.parser }
   else if next.is_do() then
-    const arms = parse_arms_do_delimited(subject.parser.advance())
-    ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
+    const arms_parsed = parse_arms_do_delimited(subject_parsed.parser.advance())
+    let { arms } = arms_parsed
+    ExprResult { expr: Shared.new(ExprMatch(expr, arms, header_span)), parser: arms_parsed.parser }
   else
-    const arms = parse_arms_pipe(subject.parser)
-    ExprResult { expr: Shared.new(ExprMatch(subject.expr, arms.arms, header_span)), parser: arms.parser }
+    const arms_parsed = parse_arms_pipe(subject_parsed.parser)
+    let { arms } = arms_parsed
+    ExprResult { expr: Shared.new(ExprMatch(expr, arms, header_span)), parser: arms_parsed.parser }
   end
 end
 
-type MatchArmParseOutcome = MatchArmParseOutcome { arm: Shared<MatchArm>, parser: Parser }
+type MatchArmParseOutcome = { arm: Shared<MatchArm>, parser: Parser }
 
-fn parse_match_arm(pat_result: PatResult) -> MatchArmParseOutcome = do
-  let mut after_pattern = pat_result.parser
+fn parse_match_arm(pat_parsed: PatResult) -> MatchArmParseOutcome = do
+  let mut after_pattern = pat_parsed.parser
   let mut has_guard = false
   let mut guard_expression = Shared.new(ExprBool(true, span_unknown()))
   if after_pattern.kind().is_if() then
-    const guard_expression_result = parse_expr(after_pattern.advance().with_lambda_shorthand_suppressed(true))
-    guard_expression = guard_expression_result.expr
+    const guard_parsed = parse_expr(after_pattern.advance().with_lambda_shorthand_suppressed(true))
+    let { expr } = guard_parsed
+    guard_expression = expr
     has_guard = true
-    after_pattern = guard_expression_result.parser
+    after_pattern = guard_parsed.parser
   end
   const after_fat_arrow = after_pattern.advance()
-  const body_expression_result = parse_expr(after_fat_arrow)
+  const body_parsed = parse_expr(after_fat_arrow)
+  let { expr } = body_parsed
   MatchArmParseOutcome {
     arm: Shared.new(MatchArm {
-      pat: pat_result.pat,
+      pat: pat_parsed.pat,
       has_guard: has_guard,
       when_condition: guard_expression,
-      body: body_expression_result.expr
+      body: expr
     }),
-    parser: body_expression_result.parser
+    parser: body_parsed.parser
   }
 end
 
@@ -988,10 +1019,11 @@ fn parse_arms_brace(parser: Parser) -> ArmsResult = do
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     if state.kind().is_bar() then state = state.advance() end
-    const pat_result = parse_or_pat(state)
-    const finished_match_arm = parse_match_arm(pat_result)
-    arms.push(finished_match_arm.arm)
-    state = finished_match_arm.parser
+    const pat_parsed = parse_or_pat(state)
+    const arm_parsed = parse_match_arm(pat_parsed)
+    let { arm } = arm_parsed
+    arms.push(arm)
+    state = arm_parsed.parser
     if state.kind().is_comma() then
       state = state.advance()
     end
@@ -1005,10 +1037,11 @@ fn parse_arms_do_delimited(parser: Parser) -> ArmsResult = do
   let mut state = parser.skip_semi()
   while !state.kind().is_end() && !state.at_eof() do
     if state.kind().is_bar() then state = state.advance() end
-    const pat_result = parse_or_pat(state)
-    const finished_match_arm = parse_match_arm(pat_result)
-    arms.push(finished_match_arm.arm)
-    state = finished_match_arm.parser.skip_semi()
+    const pat_parsed = parse_or_pat(state)
+    const arm_parsed = parse_match_arm(pat_parsed)
+    let { arm } = arm_parsed
+    arms.push(arm)
+    state = arm_parsed.parser.skip_semi()
   end
   const after_delimiter = if state.kind().is_end() then state.advance() else state end
   ArmsResult { arms, parser: after_delimiter }
@@ -1018,10 +1051,11 @@ fn parse_arms_pipe(parser: Parser) -> ArmsResult = do
   const arms: [Shared<MatchArm>] = []
   let mut state = parser
   while state.kind().is_bar() do
-    const pat_result = parse_or_pat(state.advance())
-    const finished_match_arm = parse_match_arm(pat_result)
-    arms.push(finished_match_arm.arm)
-    state = finished_match_arm.parser
+    const pat_parsed = parse_or_pat(state.advance())
+    const arm_parsed = parse_match_arm(pat_parsed)
+    let { arm } = arm_parsed
+    arms.push(arm)
+    state = arm_parsed.parser
   end
   if state.kind().is_end() then state = state.advance() end
   ArmsResult { arms, parser: state }
@@ -1039,18 +1073,20 @@ fn parse_record_lit_parts(parser: Parser) -> RecordLitPartsResult = do
         lit_parts.push(RecordLitFields(current_field_vals))
         current_field_vals = do let cleared_segment: [Shared<FieldVal>] = []; cleared_segment end
       end
-      const spread_value_result = parse_expr(state.advance())
-      lit_parts.push(RecordLitSpread(spread_value_result.expr))
-      state = spread_value_result.parser
+      const spread_parsed = parse_expr(state.advance())
+      let { expr } = spread_parsed
+      lit_parts.push(RecordLitSpread(expr))
+      state = spread_parsed.parser
       if state.kind().is_comma() then state = state.advance() end
     else
       const field_span = state.span_at_cursor()
       const field_name = state.kind().ident()
       const after_field_name = state.advance()
       if after_field_name.kind().is_colon() then
-        const field_value_result = parse_expr(after_field_name.advance())
-        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: field_value_result.expr }))
-        state = field_value_result.parser
+        const field_value_parsed = parse_expr(after_field_name.advance())
+        let { expr } = field_value_parsed
+        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: expr }))
+        state = field_value_parsed.parser
       else
         current_field_vals.push(Shared.new(FieldVal { name: field_name, val: Shared.new(ExprIdent(field_name, field_span)) }))
         state = after_field_name

@@ -23,9 +23,9 @@ export fn infer_lambda_with_param_types(
     index = index + 1
   end
   const inner_context = check_context_new(lambda_env, inference_context.registry)
-  const body_result    = infer_expr_fn(body, inner_context)
+  const body_parsed    = infer_expr_fn(body, inner_context)
   InferResult {
-    inferred_type: Shared.new(TFn(built, body_result.inferred_type)),
-    errors:        body_result.errors
+    inferred_type: Shared.new(TFn(built, body_parsed.inferred_type)),
+    errors:        body_parsed.errors
   }
 end

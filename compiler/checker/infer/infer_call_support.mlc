@@ -39,14 +39,14 @@ end
 
 export fn infer_expr_call_non_constructor_arity_only(
   base: InferResult,
-  function_result: InferResult,
+  function_parsed: InferResult,
   call_arguments: [Shared<Expr>],
   call_source_span: Span,
   return_type: Shared<Type>,
   registry: TypeRegistry,
   callee_name: string
 ) -> InferResult = do
-  const parameter_types = semantic_type_structure.function_parameter_list(function_result.inferred_type)
+  const parameter_types = semantic_type_structure.function_parameter_list(function_parsed.inferred_type)
   const max_arity = parameter_types.length()
   const min_arity =
     if callee_name != '' && registry.has_fn(callee_name) then
@@ -69,36 +69,36 @@ end
 
 export fn infer_expr_call_non_constructor_not_callable(
   base: InferResult,
-  function_result: InferResult,
+  function_parsed: InferResult,
   call_source_span: Span
 ) -> InferResult =
-  if semantic_type_structure.type_is_unknown(function_result.inferred_type) then
+  if semantic_type_structure.type_is_unknown(function_parsed.inferred_type) then
     base
   else
     InferResult {
       inferred_type: Shared.new(TUnknown),
       errors: diagnostics_append(base.errors, [
         diagnostic_error_with_code(
-          'called value is not a function (got ' + semantic_type_structure.type_description(function_result.inferred_type) + ")",
+          'called value is not a function (got ' + semantic_type_structure.type_description(function_parsed.inferred_type) + ")",
           call_source_span,
           diagnostic_code_e002())])
     }
   end
 
 export fn infer_expr_call_non_constructor(
-  function_result: InferResult,
+  function_parsed: InferResult,
   with_arguments: InferResult,
   call_arguments: [Shared<Expr>],
   call_source_span: Span,
   registry: TypeRegistry,
   callee_name: string
 ) -> InferResult = do
-  const return_type = match function_result.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
+  const return_type = match function_parsed.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
   const base = InferResult { inferred_type: return_type, errors: with_arguments.errors }
-  if semantic_type_structure.type_is_function(function_result.inferred_type) then
+  if semantic_type_structure.type_is_function(function_parsed.inferred_type) then
     infer_expr_call_non_constructor_arity_only(
-      base, function_result, call_arguments, call_source_span, return_type, registry, callee_name)
+      base, function_parsed, call_arguments, call_source_span, return_type, registry, callee_name)
   else
-    infer_expr_call_non_constructor_not_callable(base, function_result, call_source_span)
+    infer_expr_call_non_constructor_not_callable(base, function_parsed, call_source_span)
   end
 end

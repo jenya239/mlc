@@ -87,15 +87,15 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
                 diagnostic_code_e043()))
               diagnostics_after_field
             else
-              const inferred_default_result =
+              const default_parsed =
                 infer_expr(default_ast_expression, record_default_inference_context)
               diagnostics_after_field =
-                diagnostics_append(diagnostics_after_field, inferred_default_result.errors)
+                diagnostics_append(diagnostics_after_field, default_parsed.errors)
               const annotated_field_type =
                 type_from_annotation(record_field_under_literal_definition.typ)
               if type_is_checkable(annotated_field_type, registry) &&
-                 type_is_checkable(inferred_default_result.inferred_type, registry) &&
-                 !types_structurally_equal(annotated_field_type, inferred_default_result.inferred_type) then
+                 type_is_checkable(default_parsed.inferred_type, registry) &&
+                 !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
                 diagnostics_after_field.push(diagnostic_error_with_code(
                   `record field default type mismatch for field "${record_field_under_literal_definition.name}"`,
                   expr_span(default_ast_expression),
@@ -382,8 +382,8 @@ fn accumulate_diagnostics_for_single_extend_method(
       end
       const extend_context =
         CheckContext { type_env: method_environment, registry: registry, current_extend_type: extend_type_name }
-      const method_inference_result = infer_expr(method_body, extend_context)
-      diagnostics_append(method_related_diagnostics, method_inference_result.errors)
+      const method_parsed = infer_expr(method_body, extend_context)
+      diagnostics_append(method_related_diagnostics, method_parsed.errors)
     end,
     _ =>
       do
@@ -424,9 +424,9 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body_partial_application, locals, globals))
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
         const inference_context = check_context_new(type_environment, registry)
-        const inference_result = infer_expr(body_partial_application, inference_context)
+        const body_parsed = infer_expr(body_partial_application, inference_context)
         const expected_type = type_from_annotation(return_type_annotation)
-        const actual_type = inference_result.inferred_type
+        const actual_type = body_parsed.inferred_type
         const return_type_errors: [Diagnostic] =
           if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
             [diagnostic_error_with_code(
@@ -435,7 +435,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
               diagnostic_code_e004())]
           else [] end
         all_diagnostics = diagnostics_append(
-          diagnostics_append(all_diagnostics, inference_result.errors),
+          diagnostics_append(all_diagnostics, body_parsed.errors),
           return_type_errors); ()
       end,
       DeclType(_, type_parameters, variants, derive_trait_names, _) => do

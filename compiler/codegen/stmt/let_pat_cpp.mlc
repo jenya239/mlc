@@ -10,6 +10,17 @@ import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pat_binding_name_list } from '../expr/match_analysis'
+import { print_statement } from '../../cpp/cpp_printer'
+
+fn print_statements_as_fragment(statements: [Shared<CppStmt>]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < statements.length() do
+    parts.push(print_statement(statements[index]) + "\n")
+    index = index + 1
+  end
+  parts.join("")
+end
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpr> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -136,7 +147,7 @@ fn let_pattern_block(statements: [Shared<CppStmt>], rhs: Shared<CppExpr>) -> Sha
     block_statements.push(statements[index])
     index = index + 1
   end
-  emit_helpers.make_block_cpp_statement(block_statements)
+  emit_helpers.make_fragment_cpp_statement(print_statements_as_fragment(block_statements))
 end
 
 export fn gen_let_pattern_cpp_statement(
@@ -256,7 +267,7 @@ export fn gen_let_pattern_cpp_statement(
           ctor_statements.push(tuple_structured_binding_statement(subpatterns, "__b"))
         end
       end
-      emit_helpers.make_block_cpp_statement(ctor_statements)
+      emit_helpers.make_fragment_cpp_statement(print_statements_as_fragment(ctor_statements))
     end,
     _ => emit_helpers.make_expression_cpp_statement(rhs)
   }

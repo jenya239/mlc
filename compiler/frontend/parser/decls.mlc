@@ -63,9 +63,9 @@ fn parse_where_clause_opt(parser_state: Parser) -> WhereClauseParseResult = do
       const parameter_name = state.kind().ident()
       state = state.advance()
       if state.kind().is_colon() then
-        const trait_result = parse_trait_bound_ident_list(state.advance())
-        state = trait_result.parser
-        collected.push(WhereClauseBound { parameter_name: parameter_name, traits: trait_result.bounds })
+        const trait_parsed = parse_trait_bound_ident_list(state.advance())
+        state = trait_parsed.parser
+        collected.push(WhereClauseBound { parameter_name: parameter_name, traits: trait_parsed.bounds })
       end
       if state.kind().is_comma() then state = state.advance() end
     end
@@ -164,16 +164,16 @@ fn parse_type_params_opt(parser: Parser) -> TypeParamsResult = do
     const bounds_list: [[string]] = []
     if state.kind().is_ident() then
       params.push(state.kind().ident())
-      const res = parse_one_param_bounds(state.advance())
-      bounds_list.push(res.bounds)
-      state = res.parser
+      const bounds_parsed = parse_one_param_bounds(state.advance())
+      bounds_list.push(bounds_parsed.bounds)
+      state = bounds_parsed.parser
       while state.kind().is_comma() do
         state = state.advance()
         if state.kind().is_ident() then
           params.push(state.kind().ident())
-          const res2 = parse_one_param_bounds(state.advance())
-          bounds_list.push(res2.bounds)
-          state = res2.parser
+          const bounds_parsed_loop = parse_one_param_bounds(state.advance())
+          bounds_list.push(bounds_parsed_loop.bounds)
+          state = bounds_parsed_loop.parser
         end
       end
     end
@@ -237,22 +237,22 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
   const methods: [Shared<Decl>] = []
   while !methods_state.kind().is_rbrace() && !methods_state.at_eof() do
     if methods_state.kind().is_fn() then
-      const method_result = parse_extend_method(methods_state, type_name)
-      methods.push(method_result.decl)
-      methods_state = method_result.parser
+      let parsed = parse_extend_method(methods_state, type_name)
+      methods.push(parsed.decl)
+      methods_state = parsed.parser
     else if methods_state.kind().is_extern() && methods_state.advance().kind().is_fn() then
-      const method_result = parse_extend_extern_method(methods_state.advance(), type_name)
-      methods.push(method_result.decl)
-      methods_state = method_result.parser
+      let parsed = parse_extend_extern_method(methods_state.advance(), type_name)
+      methods.push(parsed.decl)
+      methods_state = parsed.parser
     else if methods_state.kind().is_type() then
       const after_type = methods_state.advance()
       const assoc_span = after_type.span_at_cursor()
       const assoc_name = after_type.kind().ident()
       const after_name = after_type.advance()
       if after_name.kind().is_equal() then
-        const type_result = parse_type(after_name.advance())
-        methods.push(Shared.new(DeclAssocBind(assoc_name, type_result.type_expr, assoc_span)))
-        methods_state = type_result.parser
+        const type_parsed = parse_type(after_name.advance())
+        methods.push(Shared.new(DeclAssocBind(assoc_name, type_parsed.type_expr, assoc_span)))
+        methods_state = type_parsed.parser
       else
         methods.push(Shared.new(DeclAssocType(assoc_name, assoc_span)))
         methods_state = after_name
@@ -300,19 +300,19 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const params: [Shared<Param>] = []
   const leading_self = after_lparen.kind().is_ident() && after_lparen.kind().ident() == 'self'
   if leading_self then params.push(self_param) end
-  const rest_params = parse_extend_extern_rest_params(after_lparen, leading_self)
+  const rest_parsed = parse_extend_extern_rest_params(after_lparen, leading_self)
   let mut index = 0
-  while index < rest_params.params.length() do
-    const rp = rest_params.params[index]
+  while index < rest_parsed.params.length() do
+    const rp = rest_parsed.params[index]
     if param_name(rp) != 'self' then params.push(rp) end
     index = index + 1
   end
-  const after_rparen = rest_params.parser.advance()
+  const after_rparen = rest_parsed.parser.advance()
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-  const ret_type_result = parse_type(type_parser)
+  const ret_type_parsed = parse_type(type_parser)
   DeclResult {
-    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, Shared.new(ExprExtern(extern_span)), [])),
-    parser: ret_type_result.parser
+    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_parsed.type_expr, Shared.new(ExprExtern(extern_span)), [])),
+    parser: ret_type_parsed.parser
   }
 end
 
@@ -326,33 +326,33 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const rest_start = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == 'self' then
     advance_past_optional_self_type(after_lparen.advance())
   else after_lparen end
-  const rest_params = if rest_start.kind().is_rparen() then
+  const rest_parsed = if rest_start.kind().is_rparen() then
     ParamsResult { params: [], parser: rest_start.advance() }
   else
     parse_params(if rest_start.kind().is_comma() then rest_start.advance() else rest_start end)
   end
   let mut index = 0
-  while index < rest_params.params.length() do
-    const rp = rest_params.params[index]
+  while index < rest_parsed.params.length() do
+    const rp = rest_parsed.params[index]
     if param_name(rp) != 'self' then params.push(rp) end
     index = index + 1
   end
-  const after_rparen = rest_params.parser.advance()
+  const after_rparen = rest_parsed.parser.advance()
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-  const ret_type_result = parse_type(type_parser)
-  const after_eq = ret_type_result.parser.advance()
-  const body_result = if after_eq.kind().is_extern() then
+  const ret_type_parsed = parse_type(type_parser)
+  const after_eq = ret_type_parsed.parser.advance()
+  const body_parsed = if after_eq.kind().is_extern() then
     ExprResult { expr: Shared.new(ExprExtern(after_eq.span_at_cursor())), parser: after_eq.advance() }
   else
-    const parsed = parse_expr(after_eq)
-    match parsed.expr {
-      ExprIdent(name, _) => if name == 'extern' then ExprResult { expr: Shared.new(ExprExtern(expr_span(parsed.expr))), parser: parsed.parser } else parsed end,
-      _ => parsed
+    const body_expr_parsed = parse_expr(after_eq)
+    match body_expr_parsed.expr {
+      ExprIdent(name, _) => if name == 'extern' then ExprResult { expr: Shared.new(ExprExtern(expr_span(body_expr_parsed.expr))), parser: body_expr_parsed.parser } else body_expr_parsed end,
+      _ => body_expr_parsed
     }
   end
   DeclResult {
-    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_result.type_expr, body_result.expr, [])),
-    parser: body_result.parser
+    decl:   Shared.new(DeclFn(mangled_name, [], [], params, ret_type_parsed.type_expr, body_parsed.expr, [])),
+    parser: body_parsed.parser
   }
 end
 
@@ -368,15 +368,15 @@ fn parse_trait_decl(parser: Parser) -> DeclResult = do
     else body_parser
   end
   const body_start_parser = if body_parser.kind().is_lbrace() then body_parser.advance() else body_parser end
-  const trait_result = parse_trait_body(body_start_parser, trait_name, type_params_res.params)
-  DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_result.methods, trait_name_span)), parser: trait_result.parser }
+  const trait_parsed = parse_trait_body(body_start_parser, trait_name, type_params_res.params)
+  DeclResult { decl: Shared.new(DeclTrait(trait_name, type_params_res.params, trait_parsed.methods, trait_name_span)), parser: trait_parsed.parser }
 end
 
 export fn parse_decl(parser: Parser) -> DeclResult = do
   const kind = parser.kind()
   if kind.is_ident() && kind.ident() == 'export' then
-    const inner = parse_decl(parser.advance())
-    DeclResult { decl: Shared.new(DeclExported(inner.decl)), parser: inner.parser }
+    const inner_parsed = parse_decl(parser.advance())
+    DeclResult { decl: Shared.new(DeclExported(inner_parsed.decl)), parser: inner_parsed.parser }
   else if kind.is_ident() && kind.ident() == 'trait' then
     parse_trait_decl(parser)
   else if kind.is_fn() || (kind.is_extern() && parser.advance().kind().is_fn()) then
@@ -403,23 +403,23 @@ fn parse_fn_decl(parser: Parser) -> DeclResult = do
   const name_parser     = parser_expect_ident(fn_start.advance(), 'function name')
   const fn_name         = name_parser.kind().ident()
   const type_params_res = parse_type_params_opt(name_parser.advance())
-  const params_result   = parse_params(type_params_res.parser.advance())
-  const after_rparen = params_result.parser.advance()
+  const params_parsed   = parse_params(type_params_res.parser.advance())
+  const after_rparen = params_parsed.parser.advance()
   const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-  const ret_type_result = parse_type(type_parser)
+  const ret_type_parsed = parse_type(type_parser)
   const type_bounds = type_params_res.bounds
-  const where_parse = parse_where_clause_opt(ret_type_result.parser)
+  const where_parse = parse_where_clause_opt(ret_type_parsed.parser)
   const merged_trait_bounds = merge_where_clause_trait_bounds(type_params_res.params, type_bounds, where_parse.where_bounds)
   if is_extern then
     DeclResult {
-      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_result.params, ret_type_result.type_expr, Shared.new(ExprExtern(extern_keyword_span)), where_parse.where_bounds)),
+      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_parsed.params, ret_type_parsed.type_expr, Shared.new(ExprExtern(extern_keyword_span)), where_parse.where_bounds)),
       parser: where_parse.parser
     }
   else
-    const body_result = parse_expr(where_parse.parser.advance())
+    const body_parsed = parse_expr(where_parse.parser.advance())
     DeclResult {
-      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_result.params, ret_type_result.type_expr, body_result.expr, where_parse.where_bounds)),
-      parser: body_result.parser
+      decl:   Shared.new(DeclFn(fn_name, type_params_res.params, merged_trait_bounds, params_parsed.params, ret_type_parsed.type_expr, body_parsed.expr, where_parse.where_bounds)),
+      parser: body_parsed.parser
     }
   end
 end
@@ -628,8 +628,8 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
   const type_params_res = parse_type_params_opt(state)
   state = type_params_res.parser
   if state.kind().is_lbrace() then
-    const trait_result = parse_trait_body(state.advance(), type_name, type_params_res.params)
-    DeclResult { decl: Shared.new(DeclTrait(type_name, type_params_res.params, trait_result.methods, type_name_span)), parser: trait_result.parser }
+    const trait_parsed = parse_trait_body(state.advance(), type_name, type_params_res.params)
+    DeclResult { decl: Shared.new(DeclTrait(type_name, type_params_res.params, trait_parsed.methods, type_name_span)), parser: trait_parsed.parser }
   else if state.kind().is_equal() then
     state = state.advance()
     state = if state.at_eof()
@@ -638,24 +638,24 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
     end
     const first_kind = state.kind()
     if first_kind.is_lbrace() then
-      const field_defs_result = parse_field_defs(state.advance())
+      const field_defs_parsed = parse_field_defs(state.advance())
       const variants: [Shared<TypeVariant>] = []
-      variants.push(Shared.new(VarRecord(type_name, field_defs_result.field_defs, false)))
-      const derive_res = parse_derive_clause(field_defs_result.parser)
-      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
+      variants.push(Shared.new(VarRecord(type_name, field_defs_parsed.field_defs, false)))
+      const derive_parsed = parse_derive_clause(field_defs_parsed.parser)
+      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants, derive_parsed.traits, type_name_span)), parser: derive_parsed.parser }
     else
-      const variants_result = parse_variants(state)
-      const derive_res = parse_derive_clause(variants_result.parser)
-      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
+      const variants_parsed = parse_variants(state)
+      const derive_parsed = parse_derive_clause(variants_parsed.parser)
+      DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_parsed.variants, derive_parsed.traits, type_name_span)), parser: derive_parsed.parser }
     end
   else
     const state_after_eof_check = if state.at_eof()
       then state.record_parse_error('parse: expected = after type name')
       else state
     end
-    const variants_result = parse_variants(state_after_eof_check)
-    const derive_res = parse_derive_clause(variants_result.parser)
-    DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_result.variants, derive_res.traits, type_name_span)), parser: derive_res.parser }
+    const variants_parsed = parse_variants(state_after_eof_check)
+    const derive_parsed = parse_derive_clause(variants_parsed.parser)
+    DeclResult { decl: Shared.new(DeclType(type_name, type_params_res.params, variants_parsed.variants, derive_parsed.traits, type_name_span)), parser: derive_parsed.parser }
   end
 end
 
@@ -674,9 +674,9 @@ fn parse_variants(parser: Parser) -> VariantsResult = do
   const variants: [Shared<TypeVariant>] = []
   let mut state = if parser.kind().is_bar() then parser.advance() else parser end
   while parse_variants_continue(state) do
-    const variant_result = parse_variant(state)
-    variants.push(variant_result.variant)
-    state = variant_result.parser
+    let parsed = parse_variant(state)
+    variants.push(parsed.variant)
+    state = parsed.parser
     if state.kind().is_bar() then state = state.advance() end
   end
   VariantsResult { variants, parser: state }
@@ -688,11 +688,11 @@ fn parse_variant(parser: Parser) -> VariantResult = do
   const variant_name = after_private.kind().ident()
   const after_name   = after_private.advance()
   if after_name.kind().is_lparen() then
-    const types_result = parse_tuple_types(after_name.advance())
-    VariantResult { variant: Shared.new(VarTuple(variant_name, types_result.types, is_private)), parser: types_result.parser }
+    const types_parsed = parse_tuple_types(after_name.advance())
+    VariantResult { variant: Shared.new(VarTuple(variant_name, types_parsed.types, is_private)), parser: types_parsed.parser }
   else if after_name.kind().is_lbrace() then
-    const field_defs_result = parse_field_defs(after_name.advance())
-    VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_result.field_defs, is_private)), parser: field_defs_result.parser }
+    const field_defs_parsed = parse_field_defs(after_name.advance())
+    VariantResult { variant: Shared.new(VarRecord(variant_name, field_defs_parsed.field_defs, is_private)), parser: field_defs_parsed.parser }
   else
     VariantResult { variant: Shared.new(VarUnit(variant_name, is_private)), parser: after_name }
   end
@@ -703,9 +703,9 @@ fn comma_separated_type_suffix_from_first(first: TypeResult) -> TypesResult = do
   types.push(first.type_expr)
   let mut state = first.parser
   while state.kind().is_comma() do
-    const next = parse_type(state.advance())
-    types.push(next.type_expr)
-    state = next.parser
+    const next_parsed = parse_type(state.advance())
+    types.push(next_parsed.type_expr)
+    state = next_parsed.parser
   end
   TypesResult { types, parser: state }
 end
@@ -723,38 +723,38 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
       const after_fn = state.advance()
       const fn_name = after_fn.kind().ident()
       const mangled = trait_name + "_" + fn_name
-      const params_result = parse_params(after_fn.advance().advance())
-      const after_rparen = params_result.parser.advance()
+      const params_parsed = parse_params(after_fn.advance().advance())
+      const after_rparen = params_parsed.parser.advance()
       const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-      const ret_result = parse_type(type_parser)
+      const ret_parsed = parse_type(type_parser)
       const initial_trait_bounds: [[string]] = []; let mut bi = 0; while bi < type_params.length() do initial_trait_bounds.push([]); bi = bi + 1 end
-      const where_parse = parse_where_clause_opt(ret_result.parser)
+      const where_parse = parse_where_clause_opt(ret_parsed.parser)
       const merged_trait_bounds = merge_where_clause_trait_bounds(type_params, initial_trait_bounds, where_parse.where_bounds)
       const body = if where_parse.parser.kind().is_equal() then
-        const body_res = parse_expr(where_parse.parser.advance())
-        state = body_res.parser
-        body_res.expr
+        const body_parsed = parse_expr(where_parse.parser.advance())
+        state = body_parsed.parser
+        body_parsed.expr
       else
         const extern_method_span = where_parse.parser.span_at_cursor()
         state = where_parse.parser
         Shared.new(ExprExtern(extern_method_span))
       end
-      methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds, params_result.params, ret_result.type_expr, body, where_parse.where_bounds)))
+      methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds, params_parsed.params, ret_parsed.type_expr, body, where_parse.where_bounds)))
     else if state.kind().is_extern() then
       const parser_after_extern = state.advance()
       if parser_after_extern.kind().is_fn() then
         const parser_after_fn_keyword = parser_after_extern.advance()
         const fn_name = parser_after_fn_keyword.kind().ident()
         const mangled = trait_name + "_" + fn_name
-        const params_result = parse_params(parser_after_fn_keyword.advance().advance())
-        const after_rparen = params_result.parser.advance()
+        const params_parsed = parse_params(parser_after_fn_keyword.advance().advance())
+        const after_rparen = params_parsed.parser.advance()
         const type_parser = if after_rparen.kind().is_arrow() then after_rparen.advance() else after_rparen end
-        const ret_result = parse_type(type_parser)
+        const ret_parsed = parse_type(type_parser)
         const initial_trait_bounds_extern: [[string]] = []; let mut be = 0; while be < type_params.length() do initial_trait_bounds_extern.push([]); be = be + 1 end
-        const where_parse_extern = parse_where_clause_opt(ret_result.parser)
+        const where_parse_extern = parse_where_clause_opt(ret_parsed.parser)
         const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.where_bounds)
         const extern_method_span = where_parse_extern.parser.span_at_cursor()
-        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_result.params, ret_result.type_expr, Shared.new(ExprExtern(extern_method_span)), where_parse_extern.where_bounds)))
+        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_parsed.params, ret_parsed.type_expr, Shared.new(ExprExtern(extern_method_span)), where_parse_extern.where_bounds)))
         state = where_parse_extern.parser
       else
         state = parser_after_extern.record_parse_error('parse: expected fn after extern in trait body')
@@ -778,21 +778,21 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
   let mut state = parser
   while !state.kind().is_rbrace() && !state.at_eof() do
     const field_name  = state.kind().ident()
-    const type_result = parse_type(state.advance_by(2))
-    let remainder_after_field_type = type_result.parser
+    const type_parsed = parse_type(state.advance_by(2))
+    let remainder_after_field_type = type_parsed.parser
     if remainder_after_field_type.kind().is_equal() then
-      const default_parse_result = parse_expr(remainder_after_field_type.advance())
+      const default_parsed = parse_expr(remainder_after_field_type.advance())
       field_defs.push(Shared.new(FieldDef {
         name: field_name,
-        typ: type_result.type_expr,
+        typ: type_parsed.type_expr,
         has_default_expression: true,
-        default_expression: default_parse_result.expr
+        default_expression: default_parsed.expr
       }))
-      state = default_parse_result.parser
+      state = default_parsed.parser
     else
       field_defs.push(Shared.new(FieldDef {
         name: field_name,
-        typ: type_result.type_expr,
+        typ: type_parsed.type_expr,
         has_default_expression: false,
         default_expression: Shared.new(ExprUnit(span_unknown()))
       }))
@@ -810,11 +810,11 @@ export fn parse_program_with_source_path(tokens: [Token], source_path: string) -
   const decls: [Shared<Decl>] = []
   let mut state = parser_new_with_source_path(tokens, source_path)
   while !state.at_eof() do
-    const result = parse_decl(state)
-    if !decl_is_parse_skip(result.decl) then
-      decls.push(result.decl)
+    let parsed = parse_decl(state)
+    if !decl_is_parse_skip(parsed.decl) then
+      decls.push(parsed.decl)
     end
-    state = result.parser
+    state = parsed.parser
   end
   Program { decls }
 end
@@ -823,11 +823,11 @@ export fn parse_program_with_errors(tokens: [Token], source_path: string) -> Par
   const decls: [Shared<Decl>] = []
   let mut state = parser_new_with_source_path(tokens, source_path)
   while !state.at_eof() do
-    const result = parse_decl(state)
-    if !decl_is_parse_skip(result.decl) then
-      decls.push(result.decl)
+    let parsed = parse_decl(state)
+    if !decl_is_parse_skip(parsed.decl) then
+      decls.push(parsed.decl)
     end
-    state = result.parser
+    state = parsed.parser
   end
   ParseProgramResult { program: Program { decls }, errors: state.errors }
 end

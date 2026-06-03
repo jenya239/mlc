@@ -88,9 +88,9 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
     LoadResult { items: [], errors: [`lex ${path}: ${lex.errors[0]}`] }
   else
     profile_maybe_begin(profile_enabled, "parse")
-    const parse_result = parse_program_with_errors(lex.tokens, norm_path)
+    const parse_parsed = parse_program_with_errors(lex.tokens, norm_path)
     profile_maybe_end(profile_enabled, "parse")
-    const prog = parse_result.program
+    const prog = parse_parsed.program
     let items: [LoadItem] = []
     let seen: Map<string, bool> = Map.new()
     let my_decls: [Shared<Decl>] = []
@@ -106,11 +106,11 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
           if symbols.length() >= 2 && symbols[0] == "*" then
             my_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
           end
-          const dep_result = load_module_impl(resolved, loaded, cache, profile_enabled)
-          all_errors = errs_append(all_errors, dep_result.errors)
+          const dependency_parsed = load_module_impl(resolved, loaded, cache, profile_enabled)
+          all_errors = errs_append(all_errors, dependency_parsed.errors)
           let mut dep_item_index = 0
-          while dep_item_index < dep_result.items.length() do
-            const dependency_item = dep_result.items[dep_item_index]
+          while dep_item_index < dependency_parsed.items.length() do
+            const dependency_item = dependency_parsed.items[dep_item_index]
             if !seen.has(dependency_item.path) then
               seen.set(dependency_item.path, true)
               items.push(dependency_item)
@@ -129,9 +129,9 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
       imports: my_imports,
       namespace_import_aliases: my_namespace_import_aliases
     })
-    const result = LoadResult { items: items, errors: all_errors }
-    cache.set(norm_path, result)
-    result
+    const load_parsed = LoadResult { items: items, errors: all_errors }
+    cache.set(norm_path, load_parsed)
+    load_parsed
   end
   end
   end
@@ -162,11 +162,11 @@ fn merge_program(entry_path: string, prog: Program, profile_enabled: bool) -> Me
         if symbols.length() >= 2 && symbols[0] == "*" then
           entry_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
         end
-        const dep_result = load_module(resolved, cache, profile_enabled)
-        all_errors = errs_append(all_errors, dep_result.errors)
+        const dependency_parsed = load_module(resolved, cache, profile_enabled)
+        all_errors = errs_append(all_errors, dependency_parsed.errors)
         let mut dep_item_index = 0
-        while dep_item_index < dep_result.items.length() do
-          const dependency_item = dep_result.items[dep_item_index]
+        while dep_item_index < dependency_parsed.items.length() do
+          const dependency_item = dependency_parsed.items[dep_item_index]
           if !seen_paths.has(dependency_item.path) then
             seen_paths.set(dependency_item.path, true)
             items_ordered.push(dependency_item)
@@ -210,15 +210,15 @@ fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, c
   else
     const source_path = resolve_dotdot(entry_path)
     profile_maybe_begin(profile_enabled, "parse")
-    const parse_result = parse_program_with_errors(lex.tokens, source_path)
+    const parse_parsed = parse_program_with_errors(lex.tokens, source_path)
     profile_maybe_end(profile_enabled, "parse")
-    if check_only && parse_result.errors.length() > 0 then
+    if check_only && parse_parsed.errors.length() > 0 then
       profile_maybe_end(profile_enabled, "total")
       profile_finish(profile_enabled)
-      Err(prefix_parse_errors(source_path, parse_result.errors))
+      Err(prefix_parse_errors(source_path, parse_parsed.errors))
     else
       profile_maybe_begin(profile_enabled, "merge")
-      const merged = merge_program(entry_path, parse_result.program, profile_enabled)
+      const merged = merge_program(entry_path, parse_parsed.program, profile_enabled)
       profile_maybe_end(profile_enabled, "merge")
       if merged.errors.length() > 0 then
         profile_maybe_end(profile_enabled, "total")
@@ -237,7 +237,7 @@ fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, c
           check_only: check_only,
           emit_compile_commands: emit_compile_commands
         }
-        const pipeline_result = run_modular_compiler_pipeline(pipeline_input)?
+        const pipeline_parsed = run_modular_compiler_pipeline(pipeline_input)?
         profile_maybe_end(profile_enabled, "total")
         profile_finish(profile_enabled)
         Ok('')

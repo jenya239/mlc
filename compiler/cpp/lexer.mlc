@@ -18,10 +18,10 @@ type CppTKind =
 type CppToken  = CppToken  { kind: CppTKind, line: i32, col: i32 }
 type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
 
-type CppScanIdR  = CppScanIdR  { st: LexState, tok: CppToken }
-type CppScanIntR = CppScanIntR { st: LexState, tok: CppToken }
-type CppScanStrR = CppScanStrR { st: LexState, tok: CppToken, err: string }
-type CppScanOpR  = CppScanOpR  { st: LexState, tok: CppToken }
+type CppScanIdR  = { st: LexState, tok: CppToken }
+type CppScanIntR = { st: LexState, tok: CppToken }
+type CppScanStrR = { st: LexState, tok: CppToken, err: string }
+type CppScanOpR  = { st: LexState, tok: CppToken }
 
 fn cpp_keyword_kind(word: string) -> CppTKind =
   if      word == 'auto'       then CKAuto
@@ -132,25 +132,51 @@ fn cpp_scan_op(state: LexState) -> CppScanOpR = do
   end
 end
 
+fn push_ident_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+  let { st, tok } = cpp_scan_ident(state)
+  tokens.push(tok)
+  st
+end
+
+fn push_int_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+  let { st, tok } = cpp_scan_int(state)
+  tokens.push(tok)
+  st
+end
+
+fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string]) -> LexState = do
+  let { st, tok, err } = cpp_scan_string(state)
+  tokens.push(tok)
+  if err != '' then errors.push(err) end
+  st
+end
+
+fn push_operator_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+  let { st, tok } = cpp_scan_op(state)
+  tokens.push(tok)
+  st
+end
+
 fn cpp_tokenize(source: string) -> CppLexOut = do
   let state = LexState { src: source, pos: 0, line: 1, col: 1 }
   const tokens: [CppToken] = []
   let errors: [string] = []
-  while !state.eof() do
-    state = skip_whitespace(state)
-    if state.eof() then break end
-    const character = state.current()
+  let mut lexer_state = state
+  while !lexer_state.eof() do
+    let { after } = skip_whitespace(lexer_state)
+    lexer_state = after
+    if lexer_state.eof() then break end
+    const character = lexer_state.current()
     if is_alpha(character) then
-      let result = cpp_scan_ident(state); tokens.push(result.tok); state = result.st
+      lexer_state = push_ident_scan(lexer_state, tokens)
     else if is_digit(character) then
-      let result = cpp_scan_int(state); tokens.push(result.tok); state = result.st
+      lexer_state = push_int_scan(lexer_state, tokens)
     else if character == "\"" then
-      let result = cpp_scan_string(state); tokens.push(result.tok); state = result.st
-      if result.err != '' then errors.push(result.err) end
+      lexer_state = push_string_scan(lexer_state, tokens, errors)
     else
-      let result = cpp_scan_op(state); tokens.push(result.tok); state = result.st
+      lexer_state = push_operator_scan(lexer_state, tokens)
     end
   end
-  tokens.push(CppToken { kind: CEof, line: state.line, col: state.col })
+  tokens.push(CppToken { kind: CEof, line: lexer_state.line, col: lexer_state.col })
   CppLexOut { tokens: tokens, errors: errors }
 end

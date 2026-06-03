@@ -3,9 +3,9 @@
 
 type CppParseResult = CppParseResult { program: CppProgram, errors: [string] }
 
-type CppDeclResult = CppDeclResult { decl: Shared<CppDecl>, position: i32 }
+type CppDeclResult = { decl: Shared<CppDecl>, position: i32 }
 
-type CppTypeResult = CppTypeResult { type_string: string, position: i32 }
+type CppTypeResult = { type_string: string, position: i32 }
 
 fn parse_include_skip(tokens: [CppToken], position: i32) -> i32 = do
   let pos = position
@@ -51,10 +51,9 @@ fn parse_using_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
   const alias = cpp_get_identifier(cpp_token_kind_at(tokens, after_using))
   const after_alias = after_using + 1
   const after_equals = if cpp_is_equals(cpp_token_kind_at(tokens, after_alias)) then after_alias + 1 else after_alias end
-  const type_result = parse_type_tokens(tokens, after_equals)
-  const after_type = type_result.position
+  let { type_string, position: after_type } = parse_type_tokens(tokens, after_equals)
   const after_semicolon = if cpp_is_semicolon(cpp_token_kind_at(tokens, after_type)) then after_type + 1 else after_type end
-  CppDeclResult { decl: Shared.new(CppUsing(alias, type_result.type_string)), position: after_semicolon }
+  CppDeclResult { decl: Shared.new(CppUsing(alias, type_string)), position: after_semicolon }
 end
 
 fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
@@ -66,8 +65,7 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
   if cpp_is_left_brace(cpp_token_kind_at(tokens, pos)) then
     pos = pos + 1
     while !cpp_at_end(tokens, pos) && !cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) do
-      const type_result = parse_type_tokens(tokens, pos)
-      const typ_and_name = type_result.type_string
+      let { type_string: typ_and_name, position: after_type } = parse_type_tokens(tokens, pos)
       let last_space = -1
       let mut index = 0
       while index < typ_and_name.length() do
@@ -76,7 +74,7 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
       end
       const field_name = if last_space >= 0 then typ_and_name.substring(last_space + 1, typ_and_name.length() - last_space - 1) else typ_and_name end
       const field_type = if last_space > 0 then typ_and_name.substring(0, last_space) else 'int' end
-      pos = type_result.position
+      pos = after_type
       if cpp_is_semicolon(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
       fields.push(Shared.new(CppField { typ: field_type, name: field_name }))
     end
@@ -101,14 +99,12 @@ fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
   const decls: [Shared<CppDecl>] = []
   let position = 0
   while !cpp_at_end(tokens, position) do
-    let result = cpp_parse_decl(tokens, position)
-    if cpp_is_skip_decl(result.decl) && result.position == position then
+    let { decl, position: next_position } = cpp_parse_decl(tokens, position)
+    if cpp_is_skip_decl(decl) && next_position == position then
       position = position + 1
     else
-      do
-        if !cpp_is_skip_decl(result.decl) then decls.push(result.decl) end
-        position = result.position
-      end
+      if !cpp_is_skip_decl(decl) then decls.push(decl) end
+      position = next_position
     end
   end
   CppParseResult { program: CppProgram { decls: decls }, errors: [] }

@@ -39,14 +39,14 @@ export type CodegenContext = CodegenContext {
   struct_using_lines: Map<string, [string]>
 }
 export type GenStmtsResult = GenStmtsResult { parts: [string], next_try: i32 }
-export type GenStmtsWithContext = GenStmtsWithContext { partial_result: GenStmtsResult, codegen_context: CodegenContext }
+export type GenStmtsWithContext = GenStmtsWithContext { statements_parsed: GenStmtsResult, codegen_context: CodegenContext }
 export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
 
 extend GenStmtsResult {
-  fn append_stmt(self, statement_result: GenStmtResult) -> GenStmtsResult = do
+  fn append_stmt(self, statement_parsed: GenStmtResult) -> GenStmtsResult = do
     let parts = self.parts
-    parts.push(statement_result.output)
-    GenStmtsResult { parts: parts, next_try: statement_result.next_try }
+    parts.push(statement_parsed.output)
+    GenStmtsResult { parts: parts, next_try: statement_parsed.next_try }
   end
 
   fn joined_code(self) -> string = self.parts.join('')

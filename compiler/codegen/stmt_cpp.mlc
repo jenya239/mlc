@@ -352,10 +352,10 @@ fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: ref mut Codegen
   let mut index = 0
   while index < statements.length() do
     const statement = statements[index]
-    const statement_result = eval_stmt_cpp(statement, context, next_try)
-    output_statements.push(statement_result.statement)
+    const statement_parsed = eval_stmt_cpp(statement, context, next_try)
+    output_statements.push(statement_parsed.statement)
     mutate_context_from_statement(statement, context)
-    next_try = statement_result.next_try
+    next_try = statement_parsed.next_try
     index = index + 1
   end
   StmtsCppAccumState { statements: output_statements, next_try: next_try }

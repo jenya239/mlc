@@ -64,7 +64,7 @@ fn infer_record_field_binding_value_inference_step(
   const registry_has_ordered_fields_for_type =
     record_type_name_for_fields.length() > 0
     && inference_context.registry.has_fields(record_type_name_for_fields)
-  let next_result =
+  let next_parsed =
     if registry_has_ordered_fields_for_type then
       InferResult {
         inferred_type: accumulator.inferred_type,
@@ -107,14 +107,14 @@ fn infer_record_field_binding_value_inference_step(
         []
       end
     InferResult {
-      inferred_type: next_result.inferred_type,
+      inferred_type: next_parsed.inferred_type,
       errors:
         diagnostics_append(
-          diagnostics_append(next_result.errors, value_inference.errors),
+          diagnostics_append(next_parsed.errors, value_inference.errors),
           field_type_mismatch_diagnostics),
     }
   else
-    next_result.absorb(value_inference)
+    next_parsed.absorb(value_inference)
   end
 end
 
@@ -169,18 +169,18 @@ fn infer_explicit_record_literal_field_name_errors(
 // --- Expression rule functions ----------------------------------------------
 
 fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult = do
-  const left_result  = infer_expr(left, inference_context)
-  const right_result = infer_expr(right, inference_context)
+  const left_parsed  = infer_expr(left, inference_context)
+  const right_parsed = infer_expr(right, inference_context)
   const method = operator_method_for(operation)
   if method != '' then
-    const method_type = method_return_type_from_object(left_result.inferred_type, method, inference_context.registry)
+    const method_type = method_return_type_from_object(left_parsed.inferred_type, method, inference_context.registry)
     if !type_is_unknown(method_type) then
-      InferResult { inferred_type: method_type, errors: diagnostics_append(left_result.errors, right_result.errors) }
+      InferResult { inferred_type: method_type, errors: diagnostics_append(left_parsed.errors, right_parsed.errors) }
     else
-      infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
+      infer_operand_combine.infer_binary_from_operand_results(operation, left_parsed, right_parsed, source_span)
     end
   else
-    infer_operand_combine.infer_binary_from_operand_results(operation, left_result, right_result, source_span)
+    infer_operand_combine.infer_binary_from_operand_results(operation, left_parsed, right_parsed, source_span)
   end
 end
 
@@ -195,17 +195,17 @@ fn infer_expr_method(
   inference_context: CheckContext,
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
-  const object_result = infer_expr_fn(object, inference_context)
-  if should_infer_as_result_option_hof(object_result.inferred_type, method_name) then
+  const object_parsed = infer_expr_fn(object, inference_context)
+  if should_infer_as_result_option_hof(object_parsed.inferred_type, method_name) then
     infer_result_option_hof_method_call(
-      object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
-  else if should_infer_as_array_hof(object_result.inferred_type, method_name) then
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if should_infer_as_array_hof(object_parsed.inferred_type, method_name) then
     infer_array_hof_method_call(
-      object_result, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
   else
-    const with_arguments = infer_arguments_errors(object_result, method_arguments, inference_context)
+    const with_arguments = infer_arguments_errors(object_parsed, method_arguments, inference_context)
     infer_operand_combine.infer_method_from_object_and_arguments(
-      object_result,
+      object_parsed,
       with_arguments,
       method_name,
       method_span,
@@ -231,38 +231,38 @@ fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>
     else_expression)
 
 fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
-  const statements_result = infer_statements(statements, inference_context)
-  const result_inference  = infer_expr(result_expression, check_context_new(statements_result.type_env, inference_context.registry))
-  result_inference.absorb_stmt(statements_result)
+  const statements_parsed = infer_statements(statements, inference_context)
+  const result_parsed  = infer_expr(result_expression, check_context_new(statements_parsed.type_env, inference_context.registry))
+  result_parsed.absorb_stmt(statements_parsed)
 end
 
 fn infer_expr_with(resource: Shared<Expr>, binder: string, stmts: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
-  const res = infer_expr(resource, inference_context)
+  const resource_parsed = infer_expr(resource, inference_context)
   const inner_env = inference_context.type_env
-  inner_env.set(binder, res.inferred_type)
-  const stmts_result = infer_statements(stmts, check_context_new(inner_env, inference_context.registry))
-  res.absorb_stmt(stmts_result).with_type(Shared.new(TUnit))
+  inner_env.set(binder, resource_parsed.inferred_type)
+  const statements_parsed = infer_statements(stmts, check_context_new(inner_env, inference_context.registry))
+  resource_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
 
 fn infer_expr_while_loop(condition: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
-  const condition_result  = infer_expr(condition, inference_context)
-  const statements_result = infer_statements(statements, inference_context)
-  condition_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
+  const condition_parsed  = infer_expr(condition, inference_context)
+  const statements_parsed = infer_statements(statements, inference_context)
+  condition_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
 
 fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
-  const iterator_base = infer_expr(iterator, inference_context)
-  const iterator_result = infer_for_iterator_with_range_rules(iterator_base, iterator)
-  const element_type    = element_type_for_for_iterator(iterator_result.inferred_type)
+  const iterator_base_parsed = infer_expr(iterator, inference_context)
+  const iterator_parsed = infer_for_iterator_with_range_rules(iterator_base_parsed, iterator)
+  const element_type    = element_type_for_for_iterator(iterator_parsed.inferred_type)
   const inner_environment = inference_context.type_env; inner_environment.set(variable_name, element_type)
   const loop_context    = check_context_new(inner_environment, inference_context.registry)
-  const statements_result = infer_statements(statements, loop_context)
-  iterator_result.absorb_stmt(statements_result).with_type(Shared.new(TUnit))
+  const statements_parsed = infer_statements(statements, loop_context)
+  iterator_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
 
 fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
-  const base_result = infer_expr(base, inference_context)
-  infer_field_values_errors(base_result.with_type(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
+  const base_parsed = infer_expr(base, inference_context)
+  infer_field_values_errors(base_parsed.with_type(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
 end
 
 type Infer_tuple_literal_fold_state = Infer_tuple_literal_fold_state {
@@ -429,52 +429,52 @@ export fn infer_expr_record(type_name: string, lit_parts: [RecordLitPart], infer
         span,
         diagnostic_code_e065())]
     else [] end
-  let mut result = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
+  let mut record_inference = InferResult { inferred_type: Shared.new(TNamed(type_name)), errors: private_errors }
   const explicit_field_values_flat = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
   if !record_lit_merge.record_literal_contains_spread(lit_parts) then
     if inference_context.registry.has_fields(type_name) then
-      result = infer_explicit_record_literal_field_name_errors(
-        result, type_name, explicit_field_values_flat, inference_context.registry)
+      record_inference = infer_explicit_record_literal_field_name_errors(
+        record_inference, type_name, explicit_field_values_flat, inference_context.registry)
     end
     const merged_with_optional_defaults =
       record_lit_merge.merge_explicit_record_literal_with_type_defaults(type_name, explicit_field_values_flat, inference_context.registry)
-    result = infer_field_values_errors(result, merged_with_optional_defaults, inference_context, type_name)
+    record_inference = infer_field_values_errors(record_inference, merged_with_optional_defaults, inference_context, type_name)
     if inference_context.registry.has_fields(type_name) then
-      result = InferResult {
-        inferred_type: result.inferred_type,
-        errors:           diagnostics_append(result.errors,
+      record_inference = InferResult {
+        inferred_type: record_inference.inferred_type,
+        errors:           diagnostics_append(record_inference.errors,
           record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_with_optional_defaults, span))
       }
     end
-    result
+    record_inference
   else if !inference_context.registry.has_fields(type_name) then
-    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, '')
+    record_inference = infer_field_values_errors(record_inference, explicit_field_values_flat, inference_context, '')
     InferResult {
-      inferred_type: result.inferred_type,
-      errors: diagnostics_append(result.errors,
+      inferred_type: record_inference.inferred_type,
+      errors: diagnostics_append(record_inference.errors,
         [diagnostic_error_with_code(
           'record literal spread requires a named record type with fields',
           span,
           diagnostic_code_e066())])
     }
   else
-    result = infer_field_values_errors(result, explicit_field_values_flat, inference_context, type_name)
+    record_inference = infer_field_values_errors(record_inference, explicit_field_values_flat, inference_context, type_name)
     const spread_inference_after_literal_parts =
-      infer_record_literal_fold_spread_inference_parts(result, lit_parts, inference_context)
-    result = spread_inference_after_literal_parts.inference_result_so_far
+      infer_record_literal_fold_spread_inference_parts(record_inference, lit_parts, inference_context)
+    record_inference = spread_inference_after_literal_parts.inference_result_so_far
     const spread_types_in_order =
       spread_inference_after_literal_parts.spread_inferred_types_in_visit_order
     const merged_field_values =
       record_lit_merge.merge_record_literal_parts_to_field_values(type_name, lit_parts, inference_context.registry, spread_types_in_order)
     const merged_including_decl_defaults =
       record_lit_merge.merge_explicit_record_literal_with_type_defaults(type_name, merged_field_values, inference_context.registry)
-    result = infer_field_values_errors(result, merged_including_decl_defaults, inference_context, type_name)
-    result = InferResult {
-      inferred_type: result.inferred_type,
-      errors:         diagnostics_append(result.errors,
+    record_inference = infer_field_values_errors(record_inference, merged_including_decl_defaults, inference_context, type_name)
+    record_inference = InferResult {
+      inferred_type: record_inference.inferred_type,
+      errors:         diagnostics_append(record_inference.errors,
         record_lit_merge.diagnostics_missing_fields_for_ordered_record(type_name, inference_context.registry, merged_including_decl_defaults, span))
     }
-    result
+    record_inference
   end
 end
 
