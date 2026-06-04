@@ -1,7 +1,7 @@
 // Native C++ decl builders for module translation unit scaffolding (Phase 2).
 
-import { CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd } from './cpp_ast'
-import * as emit_helpers from './emit_helpers'
+import { using_namespace_names } from '../codegen/cpp_naming'
+import { CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppBlankLine, CppUsingNamespace, CppHostEntryMain } from './cpp_ast'
 
 fn push_parsed_include_line(declarations: [Shared<CppDecl>], line: string) -> [Shared<CppDecl>] = do
   if line.length() >= 10
@@ -64,4 +64,24 @@ export fn make_quoted_include_cpp_declaration(header_filename: string) -> Shared
   Shared.new(CppInclude(false, header_filename))
 
 export fn make_blank_line_cpp_declaration() -> Shared<CppDecl> =
-  emit_helpers.make_fragment_cpp_declaration("\n")
+  Shared.new(CppBlankLine)
+
+export fn make_using_namespace_cpp_declaration(namespace_identifier: string) -> Shared<CppDecl> =
+  Shared.new(CppUsingNamespace(namespace_identifier))
+
+export fn append_using_namespace_declarations(
+  declarations: [Shared<CppDecl>],
+  import_paths: [string]
+) -> [Shared<CppDecl>] = do
+  let mut result = declarations
+  const namespace_names = using_namespace_names(import_paths)
+  let mut index = 0
+  while index < namespace_names.length() do
+    result.push(make_using_namespace_cpp_declaration(namespace_names[index]))
+    index = index + 1
+  end
+  result
+end
+
+export fn make_entry_host_main_cpp_declaration(qualified_namespace: string) -> Shared<CppDecl> =
+  Shared.new(CppHostEntryMain(qualified_namespace))

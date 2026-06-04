@@ -70,6 +70,7 @@ export type CppDecl =
   | CppNamespaceBegin(string)
   | CppNamespaceEnd(string)
   | CppUsing(string, string)
+  | CppUsingNamespace(string)
   | CppStruct(string, string, [Shared<CppField>], bool)
   | CppFnProto(string, string, string, [string])
   | CppFnDef(string, string, string, [string], [Shared<CppStmt>], i32)
@@ -80,6 +81,8 @@ export type CppDecl =
   | CppStdHashSpecialization(string, [Shared<CppStmt>])
   | CppDeclSequence([Shared<CppDecl>])
   | CppDeclEmpty
+  | CppBlankLine
+  | CppHostEntryMain(string)
   | CppDeclFragment(string)
 
 export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }

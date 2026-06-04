@@ -14,9 +14,9 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
          struct_using_line_from_entry } from './context'
 import { SDecl } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
-import { cpp_safe, include_lines, using_namespace_lines, path_to_module_base } from './cpp_naming'
+import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
-import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, cpp_decl_from_string_output, print_cpp_declarations } from './decl_cpp'
+import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations } from './decl_cpp'
 import { CppDecl, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
 import * as module_tu_helpers from '../cpp/module_tu_helpers'
@@ -30,8 +30,7 @@ type ModuleGenerationContext = ModuleGenerationContext {
   is_entry: bool,
   decl_parts: DeclPartsBundleCpp,
   implementation_import_includes: string,
-  implementation_using_namespaces: string,
-  cli_wrapper: string
+  implementation_import_paths: [string]
 }
 
 fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
@@ -163,9 +162,6 @@ fn prepare_module_generation(
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
   const decl_parts = collect_all_decl_parts_cpp(s_item.decls, context)
   const guard = base.upper() + '_HPP'
-  const cli_wrapper = if is_entry then
-    expression_output.bootstrap_host_main_calling_namespaced_user_main(module_namespace)
-    else '' end
   ModuleGenerationContext {
     base: base,
     guard: guard,
@@ -174,21 +170,8 @@ fn prepare_module_generation(
     is_entry: is_entry,
     decl_parts: decl_parts,
     implementation_import_includes: include_lines(s_item.imports),
-    implementation_using_namespaces: using_namespace_lines(s_item.imports),
-    cli_wrapper: cli_wrapper
+    implementation_import_paths: s_item.imports
   }
-end
-
-fn cpp_declarations_from_text_parts(text_parts: [string]) -> [Shared<CppDecl>] = do
-  let declarations: [Shared<CppDecl>] = []
-  let mut index = 0
-  while index < text_parts.length() do
-    if text_parts[index].length() > 0 then
-      declarations.push(cpp_decl_from_string_output(text_parts[index]))
-    end
-    index = index + 1
-  end
-  declarations
 end
 
 fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
@@ -212,23 +195,30 @@ fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<C
 end
 
 fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
-  let declarations = cpp_declarations_from_text_parts([
-    expression_output.implementation_define_main_as_user_main_line(),
-    expression_output.implementation_include_quotefile_line(parts.base + '.hpp'),
-    "\n",
-    parts.implementation_import_includes,
-    if parts.implementation_import_includes.length() > 0 then "\n" else '' end,
-    expression_output.namespace_open_line(parts.module_namespace),
-    "\n",
-    parts.implementation_using_namespaces,
-    if parts.implementation_using_namespaces.length() > 0 then "\n" else '' end
-  ])
-  declarations.concat(parts.decl_parts.fn_defs)
-    .concat(cpp_declarations_from_text_parts([
-      "\n",
-      expression_output.namespace_close_comment_line(parts.module_namespace),
-      parts.cli_wrapper
-    ]))
+  let mut declarations = [
+    module_tu_helpers.make_define_main_as_user_main_cpp_declaration(),
+    module_tu_helpers.make_quoted_include_cpp_declaration(parts.base + '.hpp'),
+    module_tu_helpers.make_blank_line_cpp_declaration()]
+  if parts.implementation_import_includes.length() > 0 then
+    declarations = module_tu_helpers.append_cpp_declarations_from_include_text(
+      declarations, parts.implementation_import_includes)
+    declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  end
+  declarations.push(module_tu_helpers.make_namespace_open_cpp_declaration(parts.module_namespace))
+  declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  if using_namespace_names(parts.implementation_import_paths).length() > 0 then
+    declarations = module_tu_helpers.append_using_namespace_declarations(
+      declarations, parts.implementation_import_paths)
+    declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  end
+  let epilogue = [
+    module_tu_helpers.make_blank_line_cpp_declaration(),
+    module_tu_helpers.make_namespace_close_cpp_declaration(parts.module_namespace)]
+  let mut result = declarations.concat(parts.decl_parts.fn_defs).concat(epilogue)
+  if parts.is_entry then
+    result = result.concat([module_tu_helpers.make_entry_host_main_cpp_declaration(parts.module_namespace)])
+  end
+  result
 end
 
 fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =

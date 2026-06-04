@@ -4,7 +4,7 @@ import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
          CppStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStmtFragment,
-         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppDeclFragment,
+         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppBlankLine, CppHostEntryMain, CppDeclFragment,
          CppField, CppVariantArm, CppFile,
          CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit,
@@ -286,6 +286,22 @@ fn namespace_end_directive(name: string) -> string =
 fn using_alias(alias: string, type_code: string) -> string =
   `using ${alias} = ${type_code};`
 
+fn using_namespace_directive(namespace_identifier: string) -> string =
+  `using namespace ${namespace_identifier};\n`
+
+fn host_entry_main_epilogue(qualified_namespace: string) -> string =
+  "\n#undef main\n\n" +
+  "static void mlc_cli_set_args(int argc, char** argv) {\n" +
+  "  std::vector<mlc::String> arguments;\n" +
+  "  arguments.reserve(argc > 0 ? argc - 1 : 0);\n" +
+  "  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n" +
+  "  mlc::io::set_args(std::move(arguments));\n" +
+  "}\n\n" +
+  "int main(int argc, char** argv) {\n" +
+  "  mlc_cli_set_args(argc, argv);\n" +
+  "  return ::" + qualified_namespace + "::mlc_user_main(argc, argv);\n" +
+  "}\n"
+
 fn struct_forward_declaration(template_prefix: string, name: string) -> string =
   `${template_prefix}struct ${name};\n`
 
@@ -493,6 +509,7 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
     CppNamespaceBegin(name) => namespace_begin_directive(name),
     CppNamespaceEnd(name) => namespace_end_directive(name),
     CppUsing(alias, type_code) => using_alias(alias, type_code),
+    CppUsingNamespace(namespace_identifier) => using_namespace_directive(namespace_identifier),
     CppStruct(template_prefix, name, fields, forward_only) =>
       struct_definition(template_prefix, name, print_struct_fields(fields), forward_only),
     CppFnProto(template_prefix, return_type, name, parameters) =>
@@ -516,6 +533,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
       std_hash_specialization_definition(type_name, body_statements),
     CppDeclSequence(declarations) => print_decl_sequence(declarations),
     CppDeclEmpty => '',
+    CppBlankLine => "\n",
+    CppHostEntryMain(qualified_namespace) => host_entry_main_epilogue(qualified_namespace),
     CppDeclFragment(code) => code
   }
 

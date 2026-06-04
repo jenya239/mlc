@@ -3,12 +3,13 @@
 import { TestResult, assert_eq_str } from './test_runner'
 import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
 import * as module_tu_helpers from '../cpp/module_tu_helpers'
+import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
          CppReturn, CppExprStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
-         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty,
+         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppBlankLine,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
 fn print_declarations(declarations: [Shared<CppDecl>]) -> string =
@@ -312,6 +313,17 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_decl CppDeclEmpty',
     print_decl(Shared.new(CppDeclEmpty)), ''))
 
+  results.push(assert_eq_str('print_decl CppBlankLine',
+    print_decl(Shared.new(CppBlankLine)), "\n"))
+
+  results.push(assert_eq_str('print_decl CppUsingNamespace',
+    print_decl(Shared.new(CppUsingNamespace('ast'))),
+    "using namespace ast;\n"))
+
+  results.push(assert_eq_str('print_decl CppHostEntryMain',
+    print_decl(Shared.new(CppHostEntryMain('mlc_main'))),
+    expression_output.bootstrap_host_main_calling_namespaced_user_main('mlc_main')))
+
   results.push(assert_eq_str('print_decl CppStdHashSpecialization',
     print_decl(Shared.new(CppStdHashSpecialization('Item', [Shared.new(CppReturn(Shared.new(CppInt(0))))]))),
     'namespace std {\n' +
@@ -365,6 +377,31 @@ export fn cpp_printer_tests() -> [TestResult] = do
     "#include \"mod.hpp\"\n" +
     "\n" +
     "namespace ast {\n"))
+
+  let mut source_with_imports = [
+    module_tu_helpers.make_define_main_as_user_main_cpp_declaration(),
+    module_tu_helpers.make_quoted_include_cpp_declaration("mod.hpp"),
+    module_tu_helpers.make_blank_line_cpp_declaration()]
+  source_with_imports = module_tu_helpers.append_cpp_declarations_from_include_text(
+    source_with_imports, "#include \"peer.hpp\"\n")
+  source_with_imports.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  source_with_imports.push(module_tu_helpers.make_namespace_open_cpp_declaration("ast"))
+  source_with_imports.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  source_with_imports.push(module_tu_helpers.make_using_namespace_cpp_declaration("ast"))
+  source_with_imports.push(module_tu_helpers.make_blank_line_cpp_declaration())
+  source_with_imports.push(module_tu_helpers.make_namespace_close_cpp_declaration("ast"))
+  results.push(assert_eq_str("module_tu_helpers source imports and using",
+    print_declarations(source_with_imports),
+    "#define main mlc_user_main\n" +
+    "#include \"mod.hpp\"\n" +
+    "\n" +
+    "#include \"peer.hpp\"\n" +
+    "\n" +
+    "namespace ast {\n" +
+    "\n" +
+    "using namespace ast;\n" +
+    "\n" +
+    "} // namespace ast\n"))
 
   results
 end
