@@ -15,7 +15,8 @@ import {
   type_is_string,
   function_return_type
 } from '../semantic_type_structure'
-import { array_hof_call_result_type, is_array_hof_method } from '../check/method_types/array_method_types'
+import { is_array_hof_method } from '../check/method_types/array_method_types'
+import { hof_call_result_type, is_array_hof_method_on_receiver } from '../hof_method_spec'
 import { infer_lambda_with_param_types } from './infer_lambda_context'
 import { infer_builtin_method_receiver_diagnostics } from '../check/diagnostics/method_receiver_diagnostics'
 import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
@@ -219,10 +220,10 @@ export fn infer_array_hof_method_call(
   end
 
   InferResult {
-    inferred_type: array_hof_call_result_type(element_type, method_name, arg_types),
+    inferred_type: hof_call_result_type(merged.inferred_type, method_name, arg_types),
     errors:        diagnostics_append(diagnostics_append(merged.errors, receiver_errors), arity_errors)
   }
 end
 
 export fn should_infer_as_array_hof(receiver_type: Shared<Type>, method_name: string) -> bool =
-  is_array_hof_method(method_name) && type_is_array(receiver_type)
+  is_array_hof_method_on_receiver(receiver_type, method_name)

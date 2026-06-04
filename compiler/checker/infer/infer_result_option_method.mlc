@@ -4,23 +4,9 @@ import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append,
 import { Type, TUnknown, TGeneric } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
-import {
-  type_is_unknown,
-  types_structurally_equal,
-  type_description,
-  function_return_type,
-  type_is_bool
-} from '../semantic_type_structure'
-import {
-  result_option_hof_call_result_type,
-  result_option_hof_expected_argument_count,
-  is_result_generic,
-  is_option_generic,
-  result_ok_type,
-  result_err_type,
-  option_inner_type,
-  should_infer_result_option_combinator
-} from '../check/method_types/result_option_method_types'
+import { type_is_unknown, types_structurally_equal, type_description, function_return_type, type_is_bool } from '../semantic_type_structure'
+import { result_option_hof_expected_argument_count, is_result_generic, is_option_generic, result_ok_type, result_err_type, option_inner_type } from '../check/method_types/result_option_method_types'
+import { hof_call_result_type, is_result_option_hof_method } from '../hof_method_spec'
 import { infer_lambda_with_param_types } from './infer_lambda_context'
 import { infer_builtin_method_receiver_diagnostics } from '../check/diagnostics/method_receiver_diagnostics'
 import {
@@ -59,7 +45,7 @@ fn result_inner_err_from_ret(lambda_return_type: Shared<Type>) -> Shared<Type> =
   }
 
 export fn should_infer_as_result_option_hof(receiver_type: Shared<Type>, method_name: string) -> bool =
-  should_infer_result_option_combinator(receiver_type, method_name)
+  is_result_option_hof_method(receiver_type, method_name)
 
 export fn infer_result_option_hof_method_call(
   object_parsed: InferResult,
@@ -292,7 +278,7 @@ export fn infer_result_option_hof_method_call(
     end
   end
 
-  const out = result_option_hof_call_result_type(receiver_type, method_name, arg_types)
+  const out = hof_call_result_type(receiver_type, method_name, arg_types)
   InferResult {
     inferred_type: out,
     errors:        diagnostics_append(diagnostics_append(merged.errors, receiver_errors), arity_errors)

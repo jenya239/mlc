@@ -14,8 +14,7 @@ import {
   type_is_array,
   operator_method_for
 } from '../semantic_type_structure'
-import { array_hof_call_result_type, is_array_hof_method } from '../check/method_types/array_method_types'
-import { result_option_hof_call_result_type, should_infer_result_option_combinator } from '../check/method_types/result_option_method_types'
+import { is_result_option_hof_method, is_array_hof_method_on_receiver, hof_call_result_type } from '../hof_method_spec'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitute_type } from '../semantic_type_structure'
 import { substitution_from_generic } from '../substitution'
@@ -531,45 +530,35 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprMethod(object, method_name, method_arguments, source_span) => do
       const typed_object = transform_expr(object, transform_context, stmts_fn)
-      if should_infer_result_option_combinator(sexpr_type(typed_object), method_name) then
-        const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
-        const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
-        const result_type = result_option_hof_call_result_type(
-          sexpr_type(typed_object), method_name, arg_types)
+      const receiver_type = sexpr_type(typed_object)
+      if is_result_option_hof_method(receiver_type, method_name) then
+        const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
+        const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+        const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
         const method_parameter_mutability_flags =
           instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry,
-            sexpr_type(typed_object),
-            method_name,
-            typed_args.length())
-        Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
-      else if type_is_array(sexpr_type(typed_object)) && is_array_hof_method(method_name) then
-        const typed_args = transform_array_hof_method_arguments(
+            transform_context.registry, receiver_type, method_name, typed_arguments.length())
+        Shared.new(SExprMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+      else if is_array_hof_method_on_receiver(receiver_type, method_name) then
+        const typed_arguments = transform_array_hof_method_arguments(
           typed_object, method_name, method_arguments, transform_context, stmts_fn)
-        const arg_types = typed_args.map(typed_argument => sexpr_type(typed_argument))
-        const elem        = array_element_type_from_array_type(sexpr_type(typed_object))
-        const result_type = array_hof_call_result_type(elem, method_name, arg_types)
+        const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+        const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
         const method_parameter_mutability_flags =
           instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry,
-            sexpr_type(typed_object),
-            method_name,
-            typed_args.length())
-        Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
+            transform_context.registry, receiver_type, method_name, typed_arguments.length())
+        Shared.new(SExprMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
       else
-        const typed_args   = transform_exprs(method_arguments, transform_context, stmts_fn)
+        const typed_args = transform_exprs(method_arguments, transform_context, stmts_fn)
         const builtin_type = builtin_method_return_type(method_name)
-        const result_type  =
+        const result_type =
           if type_is_unknown(builtin_type) then
-            method_return_type_from_object(sexpr_type(typed_object), method_name, transform_context.registry)
+            method_return_type_from_object(receiver_type, method_name, transform_context.registry)
           else builtin_type
           end
         const method_parameter_mutability_flags =
           instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry,
-            sexpr_type(typed_object),
-            method_name,
-            typed_args.length())
+            transform_context.registry, receiver_type, method_name, typed_args.length())
         Shared.new(SExprMethod(typed_object, method_name, typed_args, method_parameter_mutability_flags, result_type, source_span))
       end
     end,
