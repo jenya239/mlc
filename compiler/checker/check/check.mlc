@@ -329,24 +329,10 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TChar       => true,
     TArray(inner) => type_is_checkable(inner, registry),
     TPair(a, b)   => type_is_checkable(a, registry) && type_is_checkable(b, registry),
-    TTuple(ts)    => do
-      let mut ok = true
-      let mut ti = 0
-      while ti < ts.length() && ok do
-        ok = type_is_checkable(ts[ti], registry)
-        ti = ti + 1
-      end
-      ok
-    end,
-    TGeneric(_, args) => do
-      let mut ok = true
-      let mut i = 0
-      while i < args.length() && ok do
-        ok = type_is_checkable(args[i], registry)
-        i = i + 1
-      end
-      ok
-    end,
+    TTuple(type_parameters) =>
+      type_parameters.all(type_parameter => type_is_checkable(type_parameter, registry)),
+    TGeneric(_, type_arguments) =>
+      type_arguments.all(type_argument => type_is_checkable(type_argument, registry)),
     TFn(_, _)   => true,
     TShared(_)  => true,
     TNamed(name) => registry.has_fields(name),

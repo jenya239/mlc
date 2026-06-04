@@ -30,15 +30,8 @@ fn record_type_parameter_source_for_argument(
     type_parameter_source_argument_index.set(type_name, argument_index)
   end
 
-fn list_contains_string(haystack: [string], needle: string) -> bool = do
-  let mut index = 0
-  let mut found = false
-  while index < haystack.length() && !found do
-    if haystack[index] == needle then found = true end
-    index = index + 1
-  end
-  found
-end
+fn list_contains_string(haystack: [string], needle: string) -> bool =
+  haystack.any(haystack_entry => haystack_entry == needle)
 
 fn unify_expected_and_actual_argument_types(
   expected_type: Shared<Type>,
