@@ -2,24 +2,11 @@
 
 import { Parser, ExprResult, PatResult, PatsResult, ExprsResult, ArmsResult, RecordLitPartsResult, StmtsResult, StmtResult, TypeResult, parser_new } from './predicates'
 import { parse_type } from './types'
+import { comma_separated_pats_suffix_from_first, comma_separated_exprs_suffix_from_first } from './comma_separated'
+import { parser_expect_rbrace, parser_expect_rparen, parser_expect_rbracket } from './expect_close'
 import { span_unknown, Span, TyUnit, StmtLetPat, StmtExpr, PatTuple, PatArray, PatRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
 import { TKind, Eof } from '../ast_tokens'
 import { tokenize } from '../lexer'
-
-fn parser_expect_rbrace(state: Parser, context: string) -> Parser =
-  if state.kind().is_rbrace() then state.advance()
-  else state.record_parse_error('parse: expected } in ' + context)
-  end
-
-fn parser_expect_rparen(state: Parser, context: string) -> Parser =
-  if state.kind().is_rparen() then state.advance()
-  else state.record_parse_error('parse: expected ) in ' + context)
-  end
-
-fn parser_expect_rbracket(state: Parser, context: string) -> Parser =
-  if state.kind().is_rbracket() then state.advance()
-  else state.record_parse_error('parse: expected ] in ' + context)
-  end
 
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
@@ -347,23 +334,11 @@ fn parse_pat(parser: Parser) -> PatResult = do
   end
 end
 
-fn comma_separated_pat_suffix_from_first(first: PatResult) -> PatsResult = do
-  const pats: [Shared<Pat>] = []
-  pats.push(first.pat)
-  let mut state = first.parser
-  while state.kind().is_comma() do
-    const next = parse_pat(state.advance())
-    pats.push(next.pat)
-    state = next.parser
-  end
-  PatsResult { pats, parser: state }
-end
-
 fn parse_pat_args(parser: Parser) -> PatsResult =
   if parser.kind().is_rparen() then
     PatsResult { pats: [], parser: parser.advance() }
   else
-    const suffix = comma_separated_pat_suffix_from_first(parse_pat(parser))
+    const suffix = comma_separated_pats_suffix_from_first(parse_pat(parser), parse_pat)
     PatsResult { pats: suffix.pats, parser: parser_expect_rparen(suffix.parser, 'pattern list') }
   end
 
@@ -406,18 +381,6 @@ fn parse_pipe(parser: Parser) -> ExprResult = do
     state = right.parser
   end
   ExprResult { expr, parser: state }
-end
-
-fn comma_separated_expr_suffix_from_first(first: ExprResult) -> ExprsResult = do
-  const exprs: [Shared<Expr>] = []
-  exprs.push(first.expr)
-  let mut state = first.parser
-  while state.kind().is_comma() do
-    const next = parse_expr(state.advance())
-    exprs.push(next.expr)
-    state = next.parser
-  end
-  ExprsResult { exprs, parser: state }
 end
 
 fn parse_or(parser: Parser) -> ExprResult = do
@@ -672,7 +635,7 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
   else
     const e0 = parse_expr(parser.advance())
     if e0.parser.kind().is_comma() then
-      const suffix = comma_separated_expr_suffix_from_first(e0)
+      const suffix = comma_separated_exprs_suffix_from_first(e0, parse_expr)
       if suffix.parser.kind().is_rparen() then
         ExprResult {
           expr: Shared.new(ExprTuple(suffix.exprs, open_paren_span)),
@@ -850,7 +813,7 @@ fn parse_array_lit(parser: Parser, header_span: Span) -> ExprResult =
   if parser.kind().is_rbracket() then
     ExprResult { expr: Shared.new(ExprArray([], header_span)), parser: parser.advance() }
   else
-    const suffix = comma_separated_expr_suffix_from_first(parse_expr(parser))
+    const suffix = comma_separated_exprs_suffix_from_first(parse_expr(parser), parse_expr)
     const closed_parser = parser_expect_rbracket(suffix.parser, 'array literal')
     ExprResult { expr: Shared.new(ExprArray(suffix.exprs, header_span)), parser: closed_parser }
   end

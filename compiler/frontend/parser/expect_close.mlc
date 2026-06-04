@@ -1,0 +1,18 @@
+// Shared closing-delimiter expectations for parser state.
+
+import { Parser } from './predicates'
+
+export fn parser_expect_rbrace(state: Parser, context: string) -> Parser =
+  if state.kind().is_rbrace() then state.advance()
+  else state.record_parse_error('parse: expected } in ' + context)
+  end
+
+export fn parser_expect_rparen(state: Parser, context: string) -> Parser =
+  if state.kind().is_rparen() then state.advance()
+  else state.record_parse_error('parse: expected ) in ' + context)
+  end
+
+export fn parser_expect_rbracket(state: Parser, context: string) -> Parser =
+  if state.kind().is_rbracket() then state.advance()
+  else state.record_parse_error('parse: expected ] in ' + context)
+  end

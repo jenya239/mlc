@@ -1,0 +1,77 @@
+// Shared comma-separated list parsing (suffix after first element).
+
+import {
+  Parser,
+  TypeResult,
+  TypesResult,
+  ParamResult,
+  ParamsResult,
+  PatResult,
+  PatsResult,
+  ExprResult,
+  ExprsResult
+} from './predicates'
+import { TypeExpr, Param, Pat, Expr } from '../ast'
+
+export fn comma_separated_types_suffix_from_first(
+  first: TypeResult,
+  parse_one: (Parser) -> TypeResult
+) -> TypesResult = do
+  const types: [Shared<TypeExpr>] = []
+  types.push(first.type_expr)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next_parsed = parse_one(state.advance())
+    types.push(next_parsed.type_expr)
+    state = next_parsed.parser
+  end
+  TypesResult { types, parser: state }
+end
+
+export fn comma_separated_params_suffix_from_first(
+  first: ParamResult,
+  parameter_slot_index: i32,
+  parse_one: (Parser, i32) -> ParamResult
+) -> ParamsResult = do
+  const params: [Shared<Param>] = []
+  params.push(first.param)
+  let mut state = first.parser
+  let mut slot_index = parameter_slot_index
+  while state.kind().is_comma() do
+    const next = parse_one(state.advance(), slot_index)
+    params.push(next.param)
+    state = next.parser
+    slot_index = slot_index + 1
+  end
+  ParamsResult { params, parser: state }
+end
+
+export fn comma_separated_pats_suffix_from_first(
+  first: PatResult,
+  parse_one: (Parser) -> PatResult
+) -> PatsResult = do
+  const pats: [Shared<Pat>] = []
+  pats.push(first.pat)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_one(state.advance())
+    pats.push(next.pat)
+    state = next.parser
+  end
+  PatsResult { pats, parser: state }
+end
+
+export fn comma_separated_exprs_suffix_from_first(
+  first: ExprResult,
+  parse_one: (Parser) -> ExprResult
+) -> ExprsResult = do
+  const exprs: [Shared<Expr>] = []
+  exprs.push(first.expr)
+  let mut state = first.parser
+  while state.kind().is_comma() do
+    const next = parse_one(state.advance())
+    exprs.push(next.expr)
+    state = next.parser
+  end
+  ExprsResult { exprs, parser: state }
+end

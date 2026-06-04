@@ -1,6 +1,7 @@
 // --- Type expression parser -----------------------------------------------
 
 import { Parser, TypeResult, TypesResult } from './predicates'
+import { comma_separated_types_suffix_from_first } from './comma_separated'
 
 export fn parse_type(parser: Parser) -> TypeResult = do
   const base_parsed = parse_base_type(parser)
@@ -13,23 +14,11 @@ export fn parse_type(parser: Parser) -> TypeResult = do
   end
 end
 
-fn comma_separated_type_suffix_from_first(first: TypeResult) -> TypesResult = do
-  const types: [Shared<TypeExpr>] = []
-  types.push(first.type_expr)
-  let mut state = first.parser
-  while state.kind().is_comma() do
-    const next_parsed = parse_type(state.advance())
-    types.push(next_parsed.type_expr)
-    state = next_parsed.parser
-  end
-  TypesResult { types, parser: state }
-end
-
 fn parse_paren_types(parser: Parser) -> TypesResult =
   if parser.kind().is_rparen() then
     TypesResult { types: [], parser: parser.advance() }
   else
-    const suffix_parsed = comma_separated_type_suffix_from_first(parse_type(parser))
+    const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
     TypesResult {
       types: suffix_parsed.types,
       parser:
@@ -85,7 +74,7 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
 end
 
 fn parse_type_args(parser: Parser) -> TypesResult = do
-  const suffix_parsed = comma_separated_type_suffix_from_first(parse_type(parser))
+  const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
   const closing_state =
     if suffix_parsed.parser.kind().is_op() && suffix_parsed.parser.kind().op_val() == ">" then suffix_parsed.parser.advance()
     else suffix_parsed.parser

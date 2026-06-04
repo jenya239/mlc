@@ -4,12 +4,9 @@ import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamRes
 import { Token } from '../ast_tokens'
 import { parse_type } from './types'
 import { parse_expr, parse_record_pat_fields } from './exprs'
+import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
+import { parser_expect_rbrace } from './expect_close'
 import { Decl, DeclFn, DeclTrait, DeclType, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pat, PatTuple, PatRecord, PatWild, PatIdent, PatUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
-
-fn parser_expect_rbrace(state: Parser, context: string) -> Parser =
-  if state.kind().is_rbrace() then state.advance()
-  else state.record_parse_error('parse: expected } in ' + context)
-  end
 
 fn parser_expect_generic_close(state: Parser, opened: bool) -> Parser =
   if !opened then state
@@ -577,25 +574,11 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
   end
 end
 
-fn comma_separated_params_suffix_from_first(first: ParamResult) -> ParamsResult = do
-  const params: [Shared<Param>] = []
-  params.push(first.param)
-  let mut state = first.parser
-  let mut parameter_slot_index = 1
-  while state.kind().is_comma() do
-    const next = parse_param(state.advance(), parameter_slot_index)
-    params.push(next.param)
-    state = next.parser
-    parameter_slot_index = parameter_slot_index + 1
-  end
-  ParamsResult { params, parser: state }
-end
-
 fn parse_params(parser: Parser) -> ParamsResult =
   if parser.kind().is_rparen() then
     ParamsResult { params: [], parser: parser.advance() }
   else
-    const suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0))
+    const suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0), 1, parse_param)
     ParamsResult { params: suffix.params, parser: suffix.parser.advance() }
   end
 
@@ -698,20 +681,8 @@ fn parse_variant(parser: Parser) -> VariantResult = do
   end
 end
 
-fn comma_separated_type_suffix_from_first(first: TypeResult) -> TypesResult = do
-  const types: [Shared<TypeExpr>] = []
-  types.push(first.type_expr)
-  let mut state = first.parser
-  while state.kind().is_comma() do
-    const next_parsed = parse_type(state.advance())
-    types.push(next_parsed.type_expr)
-    state = next_parsed.parser
-  end
-  TypesResult { types, parser: state }
-end
-
 fn parse_tuple_types(parser: Parser) -> TypesResult = do
-  const suffix = comma_separated_type_suffix_from_first(parse_type(parser))
+  const suffix = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
   TypesResult { types: suffix.types, parser: suffix.parser.advance() }
 end
 
