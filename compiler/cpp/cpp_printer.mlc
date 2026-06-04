@@ -45,35 +45,14 @@ fn escape_cpp_string_content(input: string) -> string = do
   parts.join('')
 end
 
-fn print_comma_separated_expressions(expressions: [Shared<CppExpr>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < expressions.length() do
-    parts.push(print_expr(expressions[index]))
-    index = index + 1
-  end
-  parts.join(", ")
-end
+fn print_comma_separated_expressions(expressions: [Shared<CppExpr>]) -> string =
+  expressions.map(expression => print_expr(expression)).join(", ")
 
-fn print_comma_separated_types(types: [Shared<CppType>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < types.length() do
-    parts.push(print_type(types[index]))
-    index = index + 1
-  end
-  parts.join(", ")
-end
+fn print_comma_separated_types(types: [Shared<CppType>]) -> string =
+  types.map(type_node => print_type(type_node)).join(", ")
 
-fn print_comma_separated_strings(strings: [string]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < strings.length() do
-    parts.push(strings[index])
-    index = index + 1
-  end
-  parts.join(", ")
-end
+fn print_comma_separated_strings(strings: [string]) -> string =
+  strings.join(", ")
 
 fn type_template(name: string, arguments_code: string) -> string =
   `${name}<${arguments_code}>`
@@ -168,52 +147,28 @@ fn print_cast_kind_prefix(kind: CppCastKind) -> string =
     CppCastConst => "const_cast"
   }
 
-fn print_comma_separated_expressions_multiline(expressions: [Shared<CppExpr>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < expressions.length() do
-    parts.push(print_expr(expressions[index]))
-    index = index + 1
-  end
-  parts.join(",\n")
-end
+fn print_comma_separated_expressions_multiline(expressions: [Shared<CppExpr>]) -> string =
+  expressions.map(expression => print_expr(expression)).join(",\n")
 
-fn print_capture_list(captures: [Shared<CppCapture>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < captures.length() do
-    const capture_entry = captures[index]
-    if cpp_ast.cpp_capture_by_reference(capture_entry) then parts.push("&" + cpp_ast.cpp_capture_name(capture_entry))
-    else parts.push(cpp_ast.cpp_capture_name(capture_entry))
-    end
-    index = index + 1
+fn print_capture_entry(capture_entry: Shared<CppCapture>) -> string =
+  if cpp_ast.cpp_capture_by_reference(capture_entry) then "&" + cpp_ast.cpp_capture_name(capture_entry)
+  else cpp_ast.cpp_capture_name(capture_entry)
   end
-  "[" + parts.join(", ") + "]"
-end
 
-fn print_parameter_list(parameters: [Shared<CppParam>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < parameters.length() do
-    const parameter = parameters[index]
-    parts.push(print_type(cpp_ast.cpp_param_type(parameter)) + " " + cpp_ast.cpp_param_name(parameter))
-    index = index + 1
-  end
-  parts.join(", ")
-end
+fn print_capture_list(captures: [Shared<CppCapture>]) -> string =
+  "[" + captures.map(capture_entry => print_capture_entry(capture_entry)).join(", ") + "]"
+
+fn print_parameter_entry(parameter: Shared<CppParam>) -> string =
+  print_type(cpp_ast.cpp_param_type(parameter)) + " " + cpp_ast.cpp_param_name(parameter)
+
+fn print_parameter_list(parameters: [Shared<CppParam>]) -> string =
+  parameters.map(parameter => print_parameter_entry(parameter)).join(", ")
 
 fn block_braces(body_code: string) -> string =
   `{${body_code}}`
 
-fn print_statements(statements: [Shared<CppStmt>], depth: i32) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < statements.length() do
-    parts.push(print_statement_at_depth(statements[index], depth))
-    index = index + 1
-  end
-  parts.join("\n")
-end
+fn print_statements(statements: [Shared<CppStmt>], depth: i32) -> string =
+  statements.map(statement => print_statement_at_depth(statement, depth)).join("\n")
 
 fn print_statement_at_depth(statement: Shared<CppStmt>, depth: i32) -> string =
   match statement {
@@ -388,15 +343,8 @@ fn concept_requires_definition(
 fn static_assert_declaration(concept_cpp: string, type_arguments: [string], message: string) -> string =
   `static_assert(${concept_cpp}<${print_comma_separated_strings(type_arguments)}>, "${message}");\n`
 
-fn print_hash_specialization_body(statements: [Shared<CppStmt>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < statements.length() do
-    parts.push('    ' + print_statement(statements[index]))
-    index = index + 1
-  end
-  parts.join("\n")
-end
+fn print_hash_specialization_body(statements: [Shared<CppStmt>]) -> string =
+  statements.map(statement => '    ' + print_statement(statement)).join("\n")
 
 fn std_hash_specialization_definition(type_name: string, body_statements: [Shared<CppStmt>]) -> string =
   "namespace std {\n" +
@@ -408,36 +356,22 @@ fn std_hash_specialization_definition(type_name: string, body_statements: [Share
   "};\n" +
   "}\n"
 
-fn print_struct_fields(fields: [Shared<CppField>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < fields.length() do
-    const field_entry = fields[index]
-    parts.push(indent_text(1) + struct_field_line(cpp_ast.cpp_field_type(field_entry), cpp_ast.cpp_field_name(field_entry)))
-    index = index + 1
+fn print_struct_field_line(field_entry: Shared<CppField>) -> string =
+  indent_text(1) + struct_field_line(cpp_ast.cpp_field_type(field_entry), cpp_ast.cpp_field_name(field_entry))
+
+fn print_struct_fields(fields: [Shared<CppField>]) -> string =
+  fields.map(field_entry => print_struct_field_line(field_entry)).join("\n")
+
+fn variant_arm_type_strings(arm: Shared<CppVariantArm>) -> [string] = do
+  const types = cpp_ast.cpp_variant_arm_types(arm)
+  if types.length() == 0 then
+    do const arm_name_parts: [string] = []; arm_name_parts.push(cpp_ast.cpp_variant_arm_name(arm)); arm_name_parts end
+  else types.map(type_node => print_type(type_node))
   end
-  parts.join("\n")
 end
 
-fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string = do
-  let parts: [string] = []
-  let mut arm_index = 0
-  while arm_index < arms.length() do
-    const arm = arms[arm_index]
-    const types = cpp_ast.cpp_variant_arm_types(arm)
-    if types.length() == 0 then
-      parts.push(cpp_ast.cpp_variant_arm_name(arm))
-    else
-      let mut type_index = 0
-      while type_index < types.length() do
-        parts.push(print_type(types[type_index]))
-        type_index = type_index + 1
-      end
-    end
-    arm_index = arm_index + 1
-  end
-  parts.join(", ")
-end
+fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string =
+  arms.flat_map(arm => variant_arm_type_strings(arm)).join(", ")
 
 fn is_empty_cpp_block(statement: Shared<CppStmt>) -> bool =
   match statement {
@@ -488,15 +422,8 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
     CppStmtFragment(fragment) => fragment
   }
 
-fn print_decl_sequence(declarations: [Shared<CppDecl>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < declarations.length() do
-    parts.push(print_decl_node(declarations[index]))
-    index = index + 1
-  end
-  parts.join('')
-end
+fn print_decl_sequence(declarations: [Shared<CppDecl>]) -> string =
+  declarations.map(declaration => print_decl_node(declaration)).join('')
 
 fn print_decl_node(declaration: Shared<CppDecl>) -> string =
   match declaration {
@@ -538,15 +465,8 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
     CppDeclFragment(code) => code
   }
 
-fn print_decls(declarations: [Shared<CppDecl>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < declarations.length() do
-    parts.push(print_decl_node(declarations[index]))
-    index = index + 1
-  end
-  parts.join("\n\n")
-end
+fn print_decls(declarations: [Shared<CppDecl>]) -> string =
+  declarations.map(declaration => print_decl_node(declaration)).join("\n\n")
 
 fn print_file_node(file: Shared<CppFile>) -> string = do
   const header_code = print_decls(cpp_ast.cpp_file_header(file))
