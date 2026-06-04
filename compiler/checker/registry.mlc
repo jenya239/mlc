@@ -16,121 +16,136 @@ export type Type =
   | TAssoc(string, string)
   | TUnknown
 
-// --- Type registry --------------------------------------------------------
+// --- Type registry indices ------------------------------------------------
 
-export type TypeRegistry = TypeRegistry {
-  fn_types:    Map<string, Shared<Type>>,
+export type FunctionIndex = FunctionIndex {
+  fn_types: Map<string, Shared<Type>>,
   function_type_parameter_names: Map<string, [string]>,
   function_parameter_names: Map<string, [string]>,
   function_parameter_mutability_flags: Map<string, [i32]>,
   function_required_arity: Map<string, i32>,
-  function_trait_bounds: Map<string, [[string]]>,
-  ctor_types:  Map<string, Shared<Type>>,
+  function_trait_bounds: Map<string, [[string]]>
+}
+
+export type AdtIndex = AdtIndex {
+  ctor_types: Map<string, Shared<Type>>,
   ctor_params: Map<string, [Shared<Type>]>,
   algebraic_decl_type_parameter_names: Map<string, [string]>,
   algebraic_decl_phantom_type_params: Map<string, [string]>,
-  field_types: Map<string, Map<string, Shared<Type>>>,
-  record_field_names_ordered: Map<string, [string]>,
-  record_literal_field_defaults: Map<string, Map<string, Shared<Expr>>>,
   trait_impls: Map<string, [string]>,
   private_ctors: [string],
   trait_assoc_types: Map<string, [string]>,
   assoc_type_bindings: Map<string, Map<string, Shared<Type>>>
 }
 
+export type RecordIndex = RecordIndex {
+  field_types: Map<string, Map<string, Shared<Type>>>,
+  record_field_names_ordered: Map<string, [string]>,
+  record_literal_field_defaults: Map<string, Map<string, Shared<Expr>>>
+}
+
+export type TypeRegistry = TypeRegistry {
+  function_index: FunctionIndex,
+  adt_index: AdtIndex,
+  record_index: RecordIndex
+}
+
 export extend TypeRegistry {
   fn fn_type(self, name: string) -> Shared<Type> =
-    self.fn_types.get(name)
+    self.function_index.fn_types.get(name)
 
   fn has_fn(self, name: string) -> bool =
-    self.fn_types.has(name)
+    self.function_index.fn_types.has(name)
 
   fn registered_function_type_parameter_names(self, function_name: string) -> [string] =
-    if self.function_type_parameter_names.has(function_name) then
-      self.function_type_parameter_names.get(function_name)
+    if self.function_index.function_type_parameter_names.has(function_name) then
+      self.function_index.function_type_parameter_names.get(function_name)
     else
       do const empty_function_type_names: [string] = []; empty_function_type_names end
     end
 
   fn parameter_names_for(self, fn_name: string) -> [string] =
-    if self.function_parameter_names.has(fn_name) then
-      self.function_parameter_names.get(fn_name)
+    if self.function_index.function_parameter_names.has(fn_name) then
+      self.function_index.function_parameter_names.get(fn_name)
     else
       do const empty_param_names: [string] = []; empty_param_names end
     end
 
   fn parameter_mutability_flags_for(self, fn_name: string) -> [i32] =
-    if self.function_parameter_mutability_flags.has(fn_name) then
-      self.function_parameter_mutability_flags.get(fn_name)
+    if self.function_index.function_parameter_mutability_flags.has(fn_name) then
+      self.function_index.function_parameter_mutability_flags.get(fn_name)
     else
       do const empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
     end
 
   fn algebraic_decl_type_parameter_names_for(self, algebraic_type_name: string) -> [string] =
-    if self.algebraic_decl_type_parameter_names.has(algebraic_type_name) then
-      self.algebraic_decl_type_parameter_names.get(algebraic_type_name)
+    if self.adt_index.algebraic_decl_type_parameter_names.has(algebraic_type_name) then
+      self.adt_index.algebraic_decl_type_parameter_names.get(algebraic_type_name)
     else
       do const empty_algebraic_type_names: [string] = []; empty_algebraic_type_names end
     end
 
   fn phantom_type_params_for(self, type_name: string) -> [string] =
-    if self.algebraic_decl_phantom_type_params.has(type_name) then
-      self.algebraic_decl_phantom_type_params.get(type_name)
+    if self.adt_index.algebraic_decl_phantom_type_params.has(type_name) then
+      self.adt_index.algebraic_decl_phantom_type_params.get(type_name)
     else
       do const empty_phantom: [string] = []; empty_phantom end
     end
 
   fn ctor_type(self, name: string) -> Shared<Type> =
-    self.ctor_types.get(name)
+    self.adt_index.ctor_types.get(name)
 
   fn has_ctor(self, name: string) -> bool =
-    self.ctor_types.has(name)
+    self.adt_index.ctor_types.has(name)
 
   fn ctor_params_for(self, name: string) -> [Shared<Type>] =
-    if self.ctor_params.has(name) then self.ctor_params.get(name) else [] end
+    if self.adt_index.ctor_params.has(name) then self.adt_index.ctor_params.get(name) else [] end
 
   fn fields_for(self, type_name: string) -> Map<string, Shared<Type>> =
-    self.field_types.get(type_name)
+    self.record_index.field_types.get(type_name)
 
   fn record_field_names_ordered_for(self, algebraic_or_variant_name: string) -> [string] =
-    if self.record_field_names_ordered.has(algebraic_or_variant_name) then
-      self.record_field_names_ordered.get(algebraic_or_variant_name)
+    if self.record_index.record_field_names_ordered.has(algebraic_or_variant_name) then
+      self.record_index.record_field_names_ordered.get(algebraic_or_variant_name)
     else
       do const empty_names: [string] = []; empty_names end
     end
 
   fn record_field_has_default_expression(self, nominal_record_key: string, field_label: string) -> bool =
-    self.record_literal_field_defaults.has(nominal_record_key) &&
-    self.record_literal_field_defaults.get(nominal_record_key).has(field_label)
+    self.record_index.record_literal_field_defaults.has(nominal_record_key) &&
+    self.record_index.record_literal_field_defaults.get(nominal_record_key).has(field_label)
 
   fn record_field_default_expression_ast(self, nominal_record_key: string, field_label: string) -> Shared<Expr> =
-    self.record_literal_field_defaults.get(nominal_record_key).get(field_label)
+    self.record_index.record_literal_field_defaults.get(nominal_record_key).get(field_label)
 
   fn has_fields(self, type_name: string) -> bool =
-    self.field_types.has(type_name)
+    self.record_index.field_types.has(type_name)
 
   fn type_implements_trait(self, type_name: string, trait_name: string) -> bool =
-    self.trait_impls.has(type_name) &&
-    self.trait_impls.get(type_name).any(trait_implementation => trait_implementation == trait_name)
+    self.adt_index.trait_impls.has(type_name) &&
+    self.adt_index.trait_impls.get(type_name).any(trait_implementation => trait_implementation == trait_name)
 
   fn fn_trait_bounds(self, fn_name: string) -> [[string]] =
-    if self.function_trait_bounds.has(fn_name) then self.function_trait_bounds.get(fn_name)
+    if self.function_index.function_trait_bounds.has(fn_name) then
+      self.function_index.function_trait_bounds.get(fn_name)
     else do const empty_bounds: [[string]] = []; empty_bounds end end
 
   fn required_arity_for_fn(self, fn_name: string) -> i32 =
-    if self.function_required_arity.has(fn_name) then self.function_required_arity.get(fn_name) else -1 end
+    if self.function_index.function_required_arity.has(fn_name) then
+      self.function_index.function_required_arity.get(fn_name)
+    else -1 end
 
   fn is_private_ctor(self, name: string) -> bool =
-    self.private_ctors.any(constructor_name => constructor_name == name)
+    self.adt_index.private_ctors.any(constructor_name => constructor_name == name)
 
   fn trait_assoc_names(self, trait_name: string) -> [string] =
-    if self.trait_assoc_types.has(trait_name) then self.trait_assoc_types.get(trait_name)
+    if self.adt_index.trait_assoc_types.has(trait_name) then self.adt_index.trait_assoc_types.get(trait_name)
     else do const empty: [string] = []; empty end end
 
   fn resolve_assoc(self, type_name: string, trait_name: string, assoc_name: string) -> Shared<Type> = do
     const key = type_name + '::' + trait_name
-    if self.assoc_type_bindings.has(key) then
-      const bindings = self.assoc_type_bindings.get(key)
+    if self.adt_index.assoc_type_bindings.has(key) then
+      const bindings = self.adt_index.assoc_type_bindings.get(key)
       if bindings.has(assoc_name) then bindings.get(assoc_name)
       else Shared.new(TUnknown) end
     else Shared.new(TUnknown) end
@@ -168,23 +183,29 @@ export fn empty_registry() -> TypeRegistry = do
   fn_req.set('args', 0)
   const empty_private_ctors: [string] = []
   TypeRegistry {
-    fn_types: builtin_function_types,
-    function_type_parameter_names: Map.new(),
-    function_parameter_names: Map.new(),
-    function_parameter_mutability_flags: Map.new(),
-    function_required_arity: fn_req,
-    function_trait_bounds: Map.new(),
-    ctor_types: ctor_types,
-    ctor_params: ctor_params,
-    algebraic_decl_type_parameter_names: Map.new(),
-    algebraic_decl_phantom_type_params: Map.new(),
-    field_types: Map.new(),
-    record_field_names_ordered: Map.new(),
-    record_literal_field_defaults: Map.new(),
-    trait_impls: Map.new(),
-    private_ctors: empty_private_ctors,
-    trait_assoc_types: Map.new(),
-    assoc_type_bindings: Map.new()
+    function_index: FunctionIndex {
+      fn_types: builtin_function_types,
+      function_type_parameter_names: Map.new(),
+      function_parameter_names: Map.new(),
+      function_parameter_mutability_flags: Map.new(),
+      function_required_arity: fn_req,
+      function_trait_bounds: Map.new()
+    },
+    adt_index: AdtIndex {
+      ctor_types: ctor_types,
+      ctor_params: ctor_params,
+      algebraic_decl_type_parameter_names: Map.new(),
+      algebraic_decl_phantom_type_params: Map.new(),
+      trait_impls: Map.new(),
+      private_ctors: empty_private_ctors,
+      trait_assoc_types: Map.new(),
+      assoc_type_bindings: Map.new()
+    },
+    record_index: RecordIndex {
+      field_types: Map.new(),
+      record_field_names_ordered: Map.new(),
+      record_literal_field_defaults: Map.new()
+    }
   }
 end
 
@@ -238,7 +259,8 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
   match decl {
     DeclTrait(trait_name, _, methods, _) => do
       let mut trait_associated_type_names: [string] =
-        if registry.trait_assoc_types.has(trait_name) then registry.trait_assoc_types.get(trait_name)
+        if registry.adt_index.trait_assoc_types.has(trait_name) then
+          registry.adt_index.trait_assoc_types.get(trait_name)
         else do const empty: [string] = []; empty end end
       let mut i = 0
       while i < methods.length() do
@@ -248,19 +270,20 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
         }
         i = i + 1
       end
-      registry.trait_assoc_types.set(trait_name, trait_associated_type_names)
+      registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names)
     end,
     DeclExtend(type_name, trait_name, methods, _) => do
       if trait_name.length() > 0 then
         let mut trait_implementations: [string] =
-          if registry.trait_impls.has(type_name) then registry.trait_impls.get(type_name)
+          if registry.adt_index.trait_impls.has(type_name) then registry.adt_index.trait_impls.get(type_name)
           else do const empty: [string] = []; empty end end
         trait_implementations.push(trait_name)
-        registry.trait_impls.set(type_name, trait_implementations)
+        registry.adt_index.trait_impls.set(type_name, trait_implementations)
       end
       const assoc_binding_key = type_name + '::' + trait_name
       let mut assoc_type_bindings: Map<string, Shared<Type>> =
-        if registry.assoc_type_bindings.has(assoc_binding_key) then registry.assoc_type_bindings.get(assoc_binding_key)
+        if registry.adt_index.assoc_type_bindings.has(assoc_binding_key) then
+          registry.adt_index.assoc_type_bindings.get(assoc_binding_key)
         else do const empty_bindings: Map<string, Shared<Type>> = Map.new(); empty_bindings end end
       let mut assoc_bindings_dirty = false
       let mut i = 0
@@ -274,29 +297,34 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
         }
         i = i + 1
       end
-      if assoc_bindings_dirty then registry.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings) end
+      if assoc_bindings_dirty then
+        registry.adt_index.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings)
+      end
     end,
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
       const param_types = parameters.map(parameter => type_from_annotation(param_typ(parameter)))
       const parameter_names = parameters.map(parameter => param_name(parameter))
       const parameter_mutability_flags =
         parameters.map(parameter => if param_is_mut(parameter) then 1 else 0 end)
-      registry.fn_types.set(name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
-      registry.function_type_parameter_names.set(name, type_parameters)
-      registry.function_parameter_names.set(name, parameter_names)
-      registry.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
-      registry.function_required_arity.set(name, required_arity_from_params(parameters))
-      if trait_bounds.length() > 0 then registry.function_trait_bounds.set(name, trait_bounds) end
+      registry.function_index.fn_types.set(
+        name, Shared.new(TFn(param_types, type_from_annotation(return_type))))
+      registry.function_index.function_type_parameter_names.set(name, type_parameters)
+      registry.function_index.function_parameter_names.set(name, parameter_names)
+      registry.function_index.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
+      registry.function_index.function_required_arity.set(name, required_arity_from_params(parameters))
+      if trait_bounds.length() > 0 then
+        registry.function_index.function_trait_bounds.set(name, trait_bounds)
+      end
     end,
     DeclType(type_name, type_parameters, variants, _, _) => do
-      registry.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
+      registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
       let mut vi = 0
       while vi < variants.length() do
         register_variant_into(registry, type_name, variants[vi])
         vi = vi + 1
       end
       const phantom = compute_phantom_type_params(type_parameters, variants)
-      registry.algebraic_decl_phantom_type_params.set(type_name, phantom)
+      registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)
     end,
     DeclImport(_, _) => (),
     DeclExported(d) => register_decl_into(registry, d),
@@ -338,16 +366,16 @@ fn register_variant_into(registry: ref mut TypeRegistry, type_name: string, vari
   const result_type = Shared.new(TNamed(type_name))
   match variant {
     VarUnit(variant_name, is_private) => do
-      registry.ctor_types.set(variant_name, result_type)
-      registry.ctor_params.set(variant_name, [])
-      if is_private then registry.private_ctors.push(variant_name) end
+      registry.adt_index.ctor_types.set(variant_name, result_type)
+      registry.adt_index.ctor_params.set(variant_name, [])
+      if is_private then registry.adt_index.private_ctors.push(variant_name) end
     end,
     VarTuple(variant_name, field_types, is_private) => do
       const field_type_list =
         field_types.map(field_type_expression => type_from_annotation(field_type_expression))
-      registry.ctor_types.set(variant_name, result_type)
-      registry.ctor_params.set(variant_name, field_type_list)
-      if is_private then registry.private_ctors.push(variant_name) end
+      registry.adt_index.ctor_types.set(variant_name, result_type)
+      registry.adt_index.ctor_params.set(variant_name, field_type_list)
+      if is_private then registry.adt_index.private_ctors.push(variant_name) end
     end,
     VarRecord(variant_name, field_defs, is_private) => do
       const field_map: Map<string, Shared<Type>> = Map.new()
@@ -362,15 +390,15 @@ fn register_variant_into(registry: ref mut TypeRegistry, type_name: string, vari
         end
         index = index + 1
       end
-      registry.ctor_types.set(variant_name, result_type)
-      registry.ctor_params.set(variant_name, [])
-      registry.field_types.set(variant_name, field_map)
-      registry.field_types.set(type_name, field_map)
-      registry.record_field_names_ordered.set(variant_name, ordered_names)
-      registry.record_field_names_ordered.set(type_name, ordered_names)
-      registry.record_literal_field_defaults.set(variant_name, defaults_for_variant)
-      registry.record_literal_field_defaults.set(type_name, defaults_for_variant)
-      if is_private then registry.private_ctors.push(variant_name) end
+      registry.adt_index.ctor_types.set(variant_name, result_type)
+      registry.adt_index.ctor_params.set(variant_name, [])
+      registry.record_index.field_types.set(variant_name, field_map)
+      registry.record_index.field_types.set(type_name, field_map)
+      registry.record_index.record_field_names_ordered.set(variant_name, ordered_names)
+      registry.record_index.record_field_names_ordered.set(type_name, ordered_names)
+      registry.record_index.record_literal_field_defaults.set(variant_name, defaults_for_variant)
+      registry.record_index.record_literal_field_defaults.set(type_name, defaults_for_variant)
+      if is_private then registry.adt_index.private_ctors.push(variant_name) end
     end
   }
 end
