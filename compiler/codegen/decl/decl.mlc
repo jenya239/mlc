@@ -238,62 +238,46 @@ export fn exported_type_names_from_decls(decls: [Shared<SDecl>]) -> [string] = d
   names
 end
 
+fn extend_method_prototypes(methods: [Shared<SDecl>], context: CodegenContext) -> [string] =
+  methods.map(method => gen_proto(method, context)).filter(prototype => prototype.length() > 0)
+
+fn extend_helper_prototypes_for_declaration(
+  exported_types: [string],
+  context: CodegenContext,
+  declaration: Shared<SDecl>
+) -> [string] =
+  match declaration {
+    SDeclExtend(type_name, _, methods, _) =>
+      if list_contains(exported_types, type_name) then extend_method_prototypes(methods, context)
+      else do const empty_prototypes: [string] = []; empty_prototypes end
+      end,
+    _ => do const empty_prototypes: [string] = []; empty_prototypes end
+  }
+
+fn extend_forward_prototypes_for_declaration(
+  context: CodegenContext,
+  declaration: Shared<SDecl>
+) -> [string] =
+  match declaration {
+    SDeclExtend(_, _, methods, _) => extend_method_prototypes(methods, context),
+    _ => do const empty_forward_segments: [string] = []; empty_forward_segments end
+  }
+
 export fn extend_helper_protos_for_exported_types(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
   const exported_types = exported_type_names_from_decls(decls)
-  let mut result: [string] = []
-  let mut index = 0
-  while index < decls.length() do
-    match decls[index] {
-      SDeclExtend(type_name, _, methods, _) => do
-        if list_contains(exported_types, type_name) then
-          let mut method_index = 0
-          while method_index < methods.length() do
-            const prototype = gen_proto(methods[method_index], context)
-            if prototype.length() > 0 then result.push(prototype) end
-            method_index = method_index + 1
-          end
-        end
-        ()
-      end,
-      _ => do () end
-    }
-    index = index + 1
-  end
-  result
+  decls.flat_map(declaration =>
+    extend_helper_prototypes_for_declaration(exported_types, context, declaration))
 end
 
-export fn extend_method_forward_segments(decls: [Shared<SDecl>], context: CodegenContext) -> [string] = do
-  let mut result: [string] = []
-  let mut index = 0
-  while index < decls.length() do
-    match decls[index] {
-      SDeclExtend(_, _, methods, _) => do
-        let mut method_index = 0
-        while method_index < methods.length() do
-          const prototype = gen_proto(methods[method_index], context)
-          if prototype.length() > 0 then result.push(prototype) end
-          method_index = method_index + 1
-        end
-        ()
-      end,
-      _ => do () end
-    }
-    index = index + 1
-  end
-  result
-end
+export fn extend_method_forward_segments(decls: [Shared<SDecl>], context: CodegenContext) -> [string] =
+  decls.flat_map(declaration => extend_forward_prototypes_for_declaration(context, declaration))
 
 export fn collect_all_decl_parts(decls: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundle = do
   let type_fwds: [string] = []
   let type_defs: [string] = []
-  let fn_protos: [string] = []
-  let fn_defs: [string] = []
+  let mut fn_protos: [string] = []
   const extend_forward_segments = extend_method_forward_segments(decls, context)
-  let mut forward_index = 0
-  while forward_index < extend_forward_segments.length() do
-    fn_defs.push(extend_forward_segments[forward_index])
-    forward_index = forward_index + 1
-  end
+  let mut fn_defs = extend_forward_segments
   let mut declaration_index = 0
   while declaration_index < decls.length() do
     const declaration = decls[declaration_index]
@@ -312,11 +296,7 @@ export fn collect_all_decl_parts(decls: [Shared<SDecl>], context: CodegenContext
     declaration_index = declaration_index + 1
   end
   const extend_helper_prototypes = extend_helper_protos_for_exported_types(decls, context)
-  let mut helper_index = 0
-  while helper_index < extend_helper_prototypes.length() do
-    fn_protos.push(extend_helper_prototypes[helper_index])
-    helper_index = helper_index + 1
-  end
+  fn_protos = fn_protos.concat(extend_helper_prototypes)
   DeclPartsBundle { type_fwds: type_fwds, type_defs: type_defs, fn_protos: fn_protos, fn_defs: fn_defs }
 end
 

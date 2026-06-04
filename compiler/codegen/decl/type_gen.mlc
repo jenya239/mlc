@@ -494,26 +494,29 @@ export fn gen_type_decl_body_only(context: CodegenContext, type_name: string, ty
 
 // --- Requires clause ---------------------------------------------------------
 
+fn requires_clause_bound_part(type_params: [string], type_parameter_index: i32, bound_trait_name: string) -> string =
+  if bound_trait_name == 'ExprVisitor' && type_params.length() >= 2 then
+    expression_output.concept_trait_constraint_with_result_and_implementor(
+      cpp_safe(bound_trait_name),
+      type_params[0],
+      type_params[type_parameter_index])
+  else
+    expression_output.concept_trait_constraint_on_type_parameter(
+      cpp_safe(bound_trait_name),
+      type_params[type_parameter_index])
+  end
+
 export fn requires_clause(type_params: [string], type_bounds: [[string]]) -> string = do
   let mut parts: [string] = []
-  let mut i = 0
-  while i < type_params.length() do
-    if i < type_bounds.length() then
-      let mut k = 0
-      while k < type_bounds[i].length() do
-        const bound_trait_name = type_bounds[i][k]
-        if bound_trait_name == 'ExprVisitor' && type_params.length() >= 2 then
-          parts.push(expression_output.concept_trait_constraint_with_result_and_implementor(
-            cpp_safe(bound_trait_name),
-            type_params[0],
-            type_params[i]))
-        else
-          parts.push(expression_output.concept_trait_constraint_on_type_parameter(cpp_safe(bound_trait_name), type_params[i]))
-        end
-        k = k + 1
-      end
+  let mut type_parameter_index = 0
+  while type_parameter_index < type_params.length() do
+    if type_parameter_index < type_bounds.length() then
+      parts = parts.concat(
+        type_bounds[type_parameter_index].map(
+          bound_trait_name =>
+            requires_clause_bound_part(type_params, type_parameter_index, bound_trait_name)))
     end
-    i = i + 1
+    type_parameter_index = type_parameter_index + 1
   end
   if parts.length() > 0 then expression_output.concept_requires_clause_line(parts.join(' && ')) else '' end
 end

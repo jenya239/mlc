@@ -21,21 +21,11 @@ export fn is_shared_map_type(t: Shared<TypeExpr>) -> bool =
 export fn array_elem_name(t: Shared<TypeExpr>) -> string =
   match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => '' }, _ => '' }
 
-export fn collect_shared_params(params: [Shared<Param>]) -> [string] = do
-  let result: [string] = []; let mut i = 0
-  while i < params.length() do
-    if is_shared_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
-  end
-  result
-end
+export fn collect_shared_params(params: [Shared<Param>]) -> [string] =
+  params.filter(parameter => is_shared_type(parameter.typ)).map(parameter => parameter.name)
 
-export fn collect_shared_array_params(params: [Shared<Param>]) -> [string] = do
-  let result: [string] = []; let mut i = 0
-  while i < params.length() do
-    if is_shared_array_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
-  end
-  result
-end
+export fn collect_shared_array_params(params: [Shared<Param>]) -> [string] =
+  params.filter(parameter => is_shared_array_type(parameter.typ)).map(parameter => parameter.name)
 
 export fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, string> = do
   let result: Map<string, string> = Map.new(); let mut i = 0
@@ -46,20 +36,10 @@ export fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, strin
   result
 end
 
-export fn collect_shared_map_params(params: [Shared<Param>]) -> [string] = do
-  let result: [string] = []; let mut i = 0
-  while i < params.length() do
-    if is_shared_map_type(params[i].typ) then result.push(params[i].name) end; i = i + 1
-  end
-  result
-end
+export fn collect_shared_map_params(params: [Shared<Param>]) -> [string] =
+  params.filter(parameter => is_shared_map_type(parameter.typ)).map(parameter => parameter.name)
 
-export fn collect_value_params(params: [Shared<Param>]) -> [string] = do
-  let result: [string] = []; let mut i = 0
-  while i < params.length() do
-    if !is_shared_type(params[i].typ) && !is_shared_array_type(params[i].typ) then
-      result.push(params[i].name)
-    end; i = i + 1
-  end
-  result
-end
+export fn collect_value_params(params: [Shared<Param>]) -> [string] =
+  params.filter(
+    parameter => !is_shared_type(parameter.typ) && !is_shared_array_type(parameter.typ))
+    .map(parameter => parameter.name)

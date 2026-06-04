@@ -5,22 +5,10 @@ import { SDecl, SDeclFn } from '../../ir/semantic_ir'
 import { Type } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { sem_type_to_cpp, type_to_cpp } from './type_gen'
-import { extract_method_name } from './decl_extend'
+import { extract_method_name, non_self_parameter_types_cpp } from './decl_extend'
 import { cpp_safe } from '../cpp_naming'
 import { CppDecl, CppField, CppStruct } from '../../cpp/cpp_ast'
 import * as expression_output from '../expr/expr'
-
-fn trait_method_parameter_types_cpp(context: CodegenContext, params: [Shared<Param>]) -> [string] = do
-  let parameter_types: [string] = []
-  let mut parameter_index = 0
-  while parameter_index < params.length() do
-    if params[parameter_index].name != 'self' then
-      parameter_types.push(type_to_cpp(context, params[parameter_index].typ))
-    end
-    parameter_index = parameter_index + 1
-  end
-  parameter_types
-end
 
 export fn trait_method_field_cpp(
   context: CodegenContext,
@@ -31,7 +19,7 @@ export fn trait_method_field_cpp(
   Shared.new(CppField {
     typ: expression_output.cpp_std_function_type(
       sem_type_to_cpp(context, return_type),
-      trait_method_parameter_types_cpp(context, params).join(', ')),
+      non_self_parameter_types_cpp(context, params).join(', ')),
     name: cpp_safe(method_name)
   })
 
@@ -42,25 +30,27 @@ fn trait_struct_template_prefix(type_params: [string]) -> string =
     ''
   end
 
+fn trait_struct_field_for_method(
+  trait_context: CodegenContext,
+  trait_name: string,
+  method: Shared<SDecl>
+) -> [Shared<CppField>] =
+  match method {
+    SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+      const method_fields: [Shared<CppField>] = []
+      method_fields.push(trait_method_field_cpp(
+        trait_context, extract_method_name(mangled, trait_name), params, return_type))
+      method_fields
+    end,
+    _ => do const empty_method_fields: [Shared<CppField>] = []; empty_method_fields end
+  }
+
 fn trait_struct_fields_cpp(
   trait_context: CodegenContext,
   trait_name: string,
   methods: [Shared<SDecl>]
-) -> [Shared<CppField>] = do
-  let fields: [Shared<CppField>] = []
-  let mut method_index = 0
-  while method_index < methods.length() do
-    match methods[method_index] {
-      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
-        const method_name = extract_method_name(mangled, trait_name)
-        fields.push(trait_method_field_cpp(trait_context, method_name, params, return_type))
-      end,
-      _ => do end
-    }
-    method_index = method_index + 1
-  end
-  fields
-end
+) -> [Shared<CppField>] =
+  methods.flat_map(method => trait_struct_field_for_method(trait_context, trait_name, method))
 
 export fn gen_trait_struct_cpp(
   context: CodegenContext,

@@ -65,15 +65,8 @@ export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStmt>] =
     statements
   end
 
-export fn print_cpp_statements(statements: [Shared<CppStmt>]) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < statements.length() do
-    parts.push(print_cpp_statement_line(statements[index]))
-    index = index + 1
-  end
-  parts.join("")
-end
+export fn print_cpp_statements(statements: [Shared<CppStmt>]) -> string =
+  statements.map(statement => print_cpp_statement_line(statement)).join("")
 
 fn print_cpp_statement_line(statement: Shared<CppStmt>) -> string =
   match statement {
