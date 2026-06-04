@@ -1,0 +1,121 @@
+// Shared named-argument reordering for infer and transform.
+
+import { Expr, ExprNamedArg, Span, Diagnostic, diagnostic_error_with_code, expr_placeholder } from '../frontend/ast'
+import { TypeRegistry } from './registry'
+import { diagnostic_code_e034, diagnostic_code_e035 } from './diagnostic_codes'
+
+export type ResolvedNamedArguments = ResolvedNamedArguments {
+  expressions: [Shared<Expr>],
+  errors: [Diagnostic]
+}
+
+fn expression_is_named_argument(argument: Shared<Expr>) -> bool =
+  match argument {
+    ExprNamedArg(_, _, _) => true,
+    _ => false
+  }
+
+export fn call_arguments_contain_named_labels(arguments: [Shared<Expr>]) -> bool =
+  arguments.any(expression_is_named_argument)
+
+export fn find_parameter_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
+  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
+
+fn inner_expression_without_named_label(argument: Shared<Expr>) -> Shared<Expr> =
+  match argument {
+    ExprNamedArg(_, inner_expression, _) => inner_expression,
+    _ => argument
+  }
+
+export fn strip_named_argument_labels(arguments: [Shared<Expr>]) -> [Shared<Expr>] =
+  arguments.map(inner_expression_without_named_label)
+
+fn reorder_named_arguments_to_positional(
+  arguments: [Shared<Expr>],
+  parameter_names: [string],
+  collect_parameter_errors: bool
+) -> ResolvedNamedArguments = do
+  const parameter_count = parameter_names.length()
+  let mut slot_expressions: [Shared<Expr>] = []
+  let mut slot_filled: [i32] = []
+  let mut index = 0
+  while index < parameter_count do
+    slot_expressions.push(expr_placeholder())
+    slot_filled.push(0)
+    index = index + 1
+  end
+  const errors: [Diagnostic] = []
+  let mut positional_slot = 0
+  let mut argument_index = 0
+  while argument_index < arguments.length() do
+    match arguments[argument_index] {
+      ExprNamedArg(name, inner_expression, argument_span) => do
+        const slot = find_parameter_slot(parameter_names, name)
+        if collect_parameter_errors && slot == -1 then
+          errors.push(
+            diagnostic_error_with_code(
+              'unknown parameter name: ' + name, argument_span, diagnostic_code_e034()))
+        else if collect_parameter_errors && slot >= 0 && slot_filled[slot] == 1 then
+          errors.push(
+            diagnostic_error_with_code(
+              'duplicate named arg: ' + name, argument_span, diagnostic_code_e035()))
+        else if slot >= 0 && slot_filled[slot] == 0 then
+          slot_expressions.set(slot, inner_expression)
+          slot_filled.set(slot, 1)
+        end
+        ()
+      end,
+      _ => do
+        while positional_slot < parameter_count && slot_filled[positional_slot] == 1 do
+          positional_slot = positional_slot + 1
+        end
+        if positional_slot < parameter_count then
+          slot_expressions.set(positional_slot, arguments[argument_index])
+          slot_filled.set(positional_slot, 1)
+          positional_slot = positional_slot + 1
+        end
+        ()
+      end
+    }
+    argument_index = argument_index + 1
+  end
+  const compact_expressions: [Shared<Expr>] = []
+  let mut slot_index = 0
+  while slot_index < parameter_count do
+    if slot_filled[slot_index] == 1 then compact_expressions.push(slot_expressions[slot_index]) end
+    slot_index = slot_index + 1
+  end
+  ResolvedNamedArguments { expressions: compact_expressions, errors: errors }
+end
+
+export fn resolve_named_call_arguments_for_infer(
+  arguments: [Shared<Expr>],
+  callee_name: string,
+  registry: TypeRegistry
+) -> ResolvedNamedArguments =
+  if !call_arguments_contain_named_labels(arguments) then
+    ResolvedNamedArguments { expressions: arguments, errors: [] }
+  else
+    const parameter_names = registry.parameter_names_for(callee_name)
+    if parameter_names.length() == 0 then
+      ResolvedNamedArguments {
+        expressions: strip_named_argument_labels(arguments),
+        errors: []
+      }
+    else
+      reorder_named_arguments_to_positional(arguments, parameter_names, true)
+    end
+  end
+
+export fn resolve_named_call_arguments_for_transform(
+  arguments: [Shared<Expr>],
+  callee_name: string,
+  registry: TypeRegistry
+) -> [Shared<Expr>] =
+  if !call_arguments_contain_named_labels(arguments) then arguments
+  else
+    const parameter_names = registry.parameter_names_for(callee_name)
+    if parameter_names.length() == 0 then strip_named_argument_labels(arguments)
+    else reorder_named_arguments_to_positional(arguments, parameter_names, false).expressions
+    end
+  end

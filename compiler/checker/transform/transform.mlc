@@ -22,6 +22,7 @@ import { infer_expr } from '../infer/infer'
 import { check_context_new } from '../check/check_context'
 import * as record_lit_merge from './record_lit_merge'
 import { partial_application_desugar_expr } from './partial_application_desugar'
+import * as named_args from '../named_args'
 import { SExpr, SStmt, SMatchArm, SFieldVal, sexpr_type, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprArray, SExprIf, SExprBlock, SExprBool } from '../../ir/semantic_ir'
 
 fn receiver_type_key_for_method_dispatch(receiver_semantic_type: Shared<Type>) -> string =
@@ -134,29 +135,6 @@ export fn empty_transform_context() -> TransformContext =
 export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
   TransformContext { type_env, registry: base.registry }
 
-// --- Named arg resolution (for transform, no error reporting) ---------------
-
-fn transform_expression_is_named_argument(argument_expression: Shared<Expr>) -> bool =
-  match argument_expression {
-    ExprNamedArg(_, _, _) => true,
-    _ => false
-  }
-
-fn transform_has_named_args(args: [Shared<Expr>]) -> bool =
-  args.any(transform_expression_is_named_argument)
-
-fn transform_find_param_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
-  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
-
-fn transform_inner_after_stripping_named_label(argument_expression: Shared<Expr>) -> Shared<Expr> =
-  match argument_expression {
-    ExprNamedArg(_, inner_expression, _) => inner_expression,
-    _ => argument_expression
-  }
-
-fn transform_strip_labels(args: [Shared<Expr>]) -> [Shared<Expr>] =
-  args.map(transform_inner_after_stripping_named_label)
-
 // Coerce an SExpr to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SExpr>, target_type: Shared<Type>) -> Shared<SExpr> =
@@ -203,50 +181,6 @@ export type TransformStmtsResult = TransformStmtsResult {
   statements: [Shared<SStmt>],
   type_env:   Map<string, Shared<Type>>
 }
-
-fn transform_reorder_to_positional(args: [Shared<Expr>], param_names: [string]) -> [Shared<Expr>] = do
-  const n = param_names.length()
-  let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
-  let mut k = 0
-  while k < n do result.push(expr_placeholder()); filled.push(0); k = k + 1 end
-  let mut pos_slot = 0; let mut i = 0
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(name, inner, _) => do
-        const slot = transform_find_param_slot(param_names, name)
-        if slot >= 0 && filled[slot] == 0 then
-          result.set(slot, inner)
-          filled.set(slot, 1)
-        end; ()
-      end,
-      _ => do
-        while pos_slot < n && filled[pos_slot] == 1 do
-          pos_slot = pos_slot + 1
-        end
-        if pos_slot < n then
-          result.set(pos_slot, args[i])
-          filled.set(pos_slot, 1)
-          pos_slot = pos_slot + 1
-        end; ()
-      end
-    }
-    i = i + 1
-  end
-  const compact: [Shared<Expr>] = []; let mut j = 0
-  while j < n do if filled[j] == 1 then compact.push(result[j]) end; j = j + 1 end
-  compact
-end
-
-fn reorder_named_args_for_transform(args: [Shared<Expr>], callee_name: string, registry: TypeRegistry) -> [Shared<Expr>] =
-  if !transform_has_named_args(args) then args
-  else
-    const param_names = registry.parameter_names_for(callee_name)
-    if param_names.length() == 0 then
-      transform_strip_labels(args)
-    else
-      transform_reorder_to_positional(args, param_names)
-    end
-  end
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -599,7 +533,9 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprCall(function, call_arguments, source_span) => do
       const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
-      const resolved_call_args = reorder_named_args_for_transform(call_arguments, callee_name, transform_context.registry)
+      const resolved_call_args =
+        named_args.resolve_named_call_arguments_for_transform(
+          call_arguments, callee_name, transform_context.registry)
       const typed_fn   = transform_expr(function, transform_context, stmts_fn)
       const typed_args =
         transform_call_arguments_using_callee_semantic_type(typed_fn, resolved_call_args, transform_context, stmts_fn)

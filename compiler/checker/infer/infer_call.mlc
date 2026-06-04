@@ -1,46 +1,20 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_placeholder } from '../../frontend/ast'
-import { Type, TNamed, TypeRegistry } from '../registry'
+import { Expr, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
+import { Type, TNamed } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
 import { call_argument_unification_diagnostics } from '../check/call_argument_unify'
 import { trait_bound_diagnostics } from './infer_trait_bounds'
 import { type_is_function } from '../semantic_type_structure'
-import { diagnostic_code_e034, diagnostic_code_e035 } from '../diagnostic_codes'
-
-type ResolvedArgs = ResolvedArgs { exprs: [Shared<Expr>], errors: [Diagnostic] }
+import * as named_args from '../named_args'
 
 type Call_arguments_inference_accumulator = Call_arguments_inference_accumulator {
   accumulated_errors:           [Diagnostic],
   inferred_argument_types_list: [Shared<Type>],
 }
-
-fn expression_is_named_argument(argument_expression: Shared<Expr>) -> bool =
-  match argument_expression {
-    ExprNamedArg(_, _, _) => true,
-    _ => false
-  }
-
-fn has_named_args(args: [Shared<Expr>]) -> bool =
-  args.any(expression_is_named_argument)
-
-fn find_param_slot(parameter_names: [string], sought_parameter_name: string) -> i32 =
-  parameter_names.find_index(parameter_name => parameter_name == sought_parameter_name)
-
-fn inner_expression_after_stripping_optional_named_label(argument_expression: Shared<Expr>) -> Shared<Expr> =
-  match argument_expression {
-    ExprNamedArg(_, inner_expression, _) => inner_expression,
-    _ => argument_expression
-  }
-
-fn strip_named_labels(args: [Shared<Expr>]) -> ResolvedArgs =
-  ResolvedArgs {
-    exprs: args.map(inner_expression_after_stripping_optional_named_label),
-    errors: [],
-  }
 
 fn accumulate_inference_for_one_call_argument(
   accumulator: Call_arguments_inference_accumulator,
@@ -58,55 +32,6 @@ fn accumulate_inference_for_one_call_argument(
   }
 end
 
-fn reorder_named_to_positional(args: [Shared<Expr>], param_names: [string]) -> ResolvedArgs = do
-  const n = param_names.length()
-  let mut result: [Shared<Expr>] = []; let mut filled: [i32] = []
-  let mut k = 0
-  while k < n do result.push(expr_placeholder()); filled.push(0); k = k + 1 end
-  const errors: [Diagnostic] = []
-  let mut pos_slot = 0; let mut i = 0
-  while i < args.length() do
-    match args[i] {
-      ExprNamedArg(name, inner, arg_span) => do
-        const slot = find_param_slot(param_names, name)
-        if slot == -1 then
-          errors.push(diagnostic_error_with_code('unknown parameter name: ' + name, arg_span, diagnostic_code_e034()))
-            else if filled[slot] == 1 then
-          errors.push(diagnostic_error_with_code('duplicate named arg: ' + name, arg_span, diagnostic_code_e035()))
-            else
-              result.set(slot, inner)
-              filled.set(slot, 1)
-            end; ()
-      end,
-      _ => do
-            while pos_slot < n && filled[pos_slot] == 1 do
-          pos_slot = pos_slot + 1
-        end
-        if pos_slot < n then
-              result.set(pos_slot, args[i])
-              filled.set(pos_slot, 1)
-              pos_slot = pos_slot + 1
-            end; ()
-      end
-    }
-    i = i + 1
-  end
-  const compact: [Shared<Expr>] = []; let mut j = 0
-  while j < n do if filled[j] == 1 then compact.push(result[j]) end; j = j + 1 end
-  ResolvedArgs { exprs: compact, errors: errors }
-end
-
-fn resolve_named_args(args: [Shared<Expr>], callee_name: string, registry: TypeRegistry) -> ResolvedArgs =
-  if !has_named_args(args) then ResolvedArgs { exprs: args, errors: [] }
-  else
-    const param_names = registry.parameter_names_for(callee_name)
-    if param_names.length() == 0 then
-      strip_named_labels(args)
-    else
-      reorder_named_to_positional(args, param_names)
-    end
-  end
-
 fn take_first_param_types(param_types: [Shared<Type>], positional_argument_count: i32) -> [Shared<Type>] =
   param_types.take(positional_argument_count)
 
@@ -118,8 +43,10 @@ export fn infer_expr_call(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
-  const resolved = resolve_named_args(call_arguments, callee_name, inference_context.registry)
-  const effective_args = resolved.exprs
+  const resolved =
+    named_args.resolve_named_call_arguments_for_infer(
+      call_arguments, callee_name, inference_context.registry)
+  const effective_args = resolved.expressions
   const function_parsed = infer_expr_fn(function, inference_context)
   const fresh_argument_types_for_accumulator: [Shared<Type>] = []
   const inference_accumulator_after_arguments =
