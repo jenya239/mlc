@@ -1,30 +1,9 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
 import { Pat } from '../../frontend/ast'
-import { Type, TypeRegistry, field_type_from_object, TNamed, TGeneric, TTuple, TPair } from '../registry'
+import { Type, TypeRegistry, field_type_from_object, TNamed, TTuple, TPair } from '../registry'
 import { env_for_pattern_substituted } from './pattern_env'
-
-type Let_generic_substitution_fold_state = Let_generic_substitution_fold_state {
-  substitution_map:                       Map<string, Shared<Type>>,
-  next_algebraic_type_parameter_index:   i32,
-}
-
-fn let_generic_substitution_fold_step(
-  state: Let_generic_substitution_fold_state,
-  algebraic_type_parameter_name: string,
-  algebraic_type_arguments: [Shared<Type>]
-) -> Let_generic_substitution_fold_state = do
-  if state.next_algebraic_type_parameter_index < algebraic_type_arguments.length() then
-    state.substitution_map.set(
-      algebraic_type_parameter_name,
-      algebraic_type_arguments[state.next_algebraic_type_parameter_index])
-  end
-  Let_generic_substitution_fold_state {
-    substitution_map:                   state.substitution_map,
-    next_algebraic_type_parameter_index:
-      state.next_algebraic_type_parameter_index + 1,
-  }
-end
+import { substitution_from_generic } from '../substitution'
 
 type Tuple_or_slot_pattern_environment_fold_state = Tuple_or_slot_pattern_environment_fold_state {
   pattern_environment:     Map<string, Shared<Type>>,
@@ -95,40 +74,6 @@ fn ordered_record_tuple_environment_fold_step(
         state.pattern_environment,
         registry),
     next_component_index: state.next_component_index + 1,
-  }
-end
-
-fn register_algebraic_type_arguments_into_substitution_map(
-  registry: TypeRegistry,
-  algebraic_outer_type_name: string,
-  algebraic_type_arguments: [Shared<Type>],
-  substitution_destinations: Map<string, Shared<Type>>
-) -> Map<string, Shared<Type>> = do
-  const algebraic_constructor_type_parameter_names =
-    registry.algebraic_decl_type_parameter_names_for(algebraic_outer_type_name)
-  algebraic_constructor_type_parameter_names.fold(
-    Let_generic_substitution_fold_state {
-      substitution_map:                   substitution_destinations,
-      next_algebraic_type_parameter_index: 0,
-    },
-    (accumulated_substitution_fold_state, type_parameter_binding_name_from_decl) =>
-      let_generic_substitution_fold_step(
-        accumulated_substitution_fold_state,
-        type_parameter_binding_name_from_decl,
-        algebraic_type_arguments))
-  substitution_destinations
-end
-
-fn build_let_substitution(value_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
-  const substitution_map: Map<string, Shared<Type>> = Map.new()
-  match value_type {
-    TGeneric(algebraic_outer_type_name, algebraic_type_arguments) =>
-      register_algebraic_type_arguments_into_substitution_map(
-        registry,
-        algebraic_outer_type_name,
-        algebraic_type_arguments,
-        substitution_map),
-    _ => substitution_map
   }
 end
 
@@ -233,7 +178,7 @@ fn apply_let_pattern_to_env(
         base_env,
         pat,
         registry,
-        build_let_substitution(value_type, registry),
+        substitution_from_generic(value_type, registry),
         value_type),
     _ => base_env
   }

@@ -1,0 +1,19 @@
+// Generic type-parameter substitution from TGeneric scrutinee types.
+
+import { Type, TypeRegistry, TGeneric } from './registry'
+
+export fn substitution_from_generic(type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  const substitution: Map<string, Shared<Type>> = Map.new()
+  match type_value {
+    TGeneric(type_name, type_arguments) => do
+      const parameter_names = registry.algebraic_decl_type_parameter_names_for(type_name)
+      let mut index = 0
+      while index < parameter_names.length() && index < type_arguments.length() do
+        substitution.set(parameter_names[index], type_arguments[index])
+        index = index + 1
+      end
+    end,
+    _ => do end
+  }
+  substitution
+end

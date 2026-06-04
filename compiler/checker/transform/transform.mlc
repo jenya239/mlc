@@ -18,6 +18,7 @@ import { array_hof_call_result_type, is_array_hof_method } from '../check/method
 import { result_option_hof_call_result_type, should_infer_result_option_combinator } from '../check/method_types/result_option_method_types'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitute_type } from '../semantic_type_structure'
+import { substitution_from_generic } from '../substitution'
 import { infer_expr } from '../infer/infer'
 import { check_context_new } from '../check/check_context'
 import * as record_lit_merge from './record_lit_merge'
@@ -268,28 +269,6 @@ fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: Tra
       field_value_under_transform,
       transform_context,
       stmts_fn))
-
-fn build_transform_substitution(subject_type: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
-  const substitution: Map<string, Shared<Type>> = Map.new()
-  match subject_type {
-    TGeneric(type_name, type_arguments) => do
-      const algebraic_parameter_names =
-        registry.algebraic_decl_type_parameter_names_for(type_name)
-      let mut algebraic_argument_slot = 0
-      while
-        algebraic_argument_slot < algebraic_parameter_names.length()
-        && algebraic_argument_slot < type_arguments.length()
-      do
-        substitution.set(
-          algebraic_parameter_names[algebraic_argument_slot],
-          type_arguments[algebraic_argument_slot])
-        algebraic_argument_slot = algebraic_argument_slot + 1
-      end
-    end,
-    _ => do end,
-  }
-  substitution
-end
 
 fn transform_single_match_arm(
   arm: Shared<MatchArm>,
@@ -655,7 +634,7 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
 
     ExprMatch(subject, arms, source_span) => do
       const typed_subject = transform_expr(subject, transform_context, stmts_fn)
-      const substitution  = build_transform_substitution(sexpr_type(typed_subject), transform_context.registry)
+      const substitution  = substitution_from_generic(sexpr_type(typed_subject), transform_context.registry)
       const typed_arms    = transform_match_arms(arms, transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
       const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
       Shared.new(SExprMatch(typed_subject, typed_arms, result_type, source_span))

@@ -7,6 +7,7 @@ import { CheckContext, check_context_new } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { match_arm_type_mismatch_diagnostic } from '../check/diagnostics/type_diagnostics'
 import { env_for_pattern_substituted } from '../transform/pattern_env'
+import { substitution_from_generic } from '../substitution'
 import { type_is_bool, type_is_unknown } from '../semantic_type_structure'
 import { diagnostic_code_e032 } from '../diagnostic_codes'
 
@@ -17,21 +18,6 @@ fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pat>) -> 
     _                    => do let empty_list: [Diagnostic] = []; empty_list end
   }
 
-fn build_match_substitution(subject_type: Shared<Type>, context: CheckContext) -> Map<string, Shared<Type>> = do
-  const substitution: Map<string, Shared<Type>> = Map.new()
-  match subject_type {
-    TGeneric(type_name, type_args) => do
-      const param_names = context.registry.algebraic_decl_type_parameter_names_for(type_name)
-      let mut i = 0
-      while i < param_names.length() && i < type_args.length() do
-        substitution.set(param_names[i], type_args[i]); i = i + 1
-      end
-    end,
-    _ => do end
-  }
-  substitution
-end
-
 export fn infer_expr_match(
   subject: Shared<Expr>,
   arms: [Shared<MatchArm>],
@@ -39,7 +25,7 @@ export fn infer_expr_match(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const subject_parsed = infer_expr_fn(subject, inference_context)
-  const substitution = build_match_substitution(subject_parsed.inferred_type, inference_context)
+  const substitution = substitution_from_generic(subject_parsed.inferred_type, inference_context.registry)
   let mut collected_errors = subject_parsed.errors
   let mut arm_type: Shared<Type> = Shared.new(TUnknown)
   let mut arm_index = 0
