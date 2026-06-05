@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | pending register |
+| agent_token_last | `cr-agent-ad65398b-105d-4627-ac39-e85d56de50f6` |
 | driver_turns_since_plan | 1|
 | step_last | meta-review|
 | active_track | TRACK_TYPE_ALIASES → STEP=2 |
