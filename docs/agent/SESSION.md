@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-714250e0-06a6-4fdf-a604-efe9137fa581`|
-| driver_turns_since_plan | 4|
+| agent_token_last | `cr-agent-545ab24d-17ea-4f36-834b-272d13903c40`|
+| driver_turns_since_plan | 5|
 | step_last | 5|
 | active_track | TRACK_RENAME_ABBREV → STEP=6 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 5 — session DB cache)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_ORCH_DEV |
+| done | `session/parse-turns`, `db/turns`, `session/sync` fs.watch; progress reads DB; commit `fbc130c` |
+| result | session tests 3/3; build ok; npm test 326/340 (14 pre-existing) |
+| next | ROLE=Driver STEP=6 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 5 — exprs.mlc)
 
