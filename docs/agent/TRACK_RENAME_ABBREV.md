@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 14 done — 2026-06-05)
+## Status: **open** (step 15 done — 2026-06-05)
+
+**STEP=15 note (2026-06-05 Driver):** `checker/check/` (5 files): `expression`, `parameter_index`, `default_diagnostics`, `parameters`, `expected_elements`/`actual_elements`, `type_arguments`, `success_type`/`error_type`/`inner_option_type`, `argument_inferred_types`; diagnostics/`check_context`/`derive_validation` clean; quotes ok. Gate: **961**/0; self-host diff empty. Commit TBD.
 
 **STEP=14 note (2026-06-05 Driver):** `checker/transform/` (6 files): `pattern`, `transform_context`, `statements`, `match_arms`/`match_arm`, `inner_expression`, `exported_declaration`, `shared_inner_type`, `accumulator_type`, `loop_body_environment`, etc.; `pattern_env`/`param_destructure_expand`/`transform_stmts` clean; quotes ok (`"` char compares + `` `…` `` only). Gate: **961**/0; self-host diff empty. Commit `e361fbae`.
 

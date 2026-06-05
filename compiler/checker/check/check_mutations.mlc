@@ -191,9 +191,9 @@ fn check_mutation_statements_errors(statements: [Shared<Stmt>], mutable_locals: 
     end)
 end
 
-export fn check_fn_body_mutations(params: [Shared<Param>], body: Shared<Expr>) -> [Diagnostic] = do
+export fn check_fn_body_mutations(parameters: [Shared<Param>], body: Shared<Expr>) -> [Diagnostic] = do
   const mutable_locals =
-    params.fold(
+    parameters.fold(
       do let empty_scope: [string] = []; empty_scope end,
       (parameter_scope, parameter_under_check) => do
         if parameter_under_check.is_mut then parameter_scope.push(parameter_under_check.name) end

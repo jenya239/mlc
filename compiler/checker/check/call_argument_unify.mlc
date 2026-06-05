@@ -94,20 +94,20 @@ fn unify_expected_and_actual_argument_types(
       else
         [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end,
-    TGeneric(expected_name, expected_args) =>
+    TGeneric(expected_name, expected_type_arguments) =>
       match actual_type {
-        TGeneric(actual_name, actual_args) =>
-          if expected_name != actual_name || expected_args.length() != actual_args.length() then
+        TGeneric(actual_name, actual_type_arguments) =>
+          if expected_name != actual_name || expected_type_arguments.length() != actual_type_arguments.length() then
             [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
-            let mut out: [Diagnostic] = empty_diagnostic_list()
+            let mut generic_unification_diagnostics: [Diagnostic] = empty_diagnostic_list()
             let mut generic_index = 0
-            while generic_index < expected_args.length() do
-              out = diagnostics_append(
-                out,
+            while generic_index < expected_type_arguments.length() do
+              generic_unification_diagnostics = diagnostics_append(
+                generic_unification_diagnostics,
                 unify_expected_and_actual_argument_types(
-                  expected_args[generic_index],
-                  actual_args[generic_index],
+                  expected_type_arguments[generic_index],
+                  actual_type_arguments[generic_index],
                   type_parameter_names,
                   substitution,
                   diagnostic_span,
@@ -115,25 +115,25 @@ fn unify_expected_and_actual_argument_types(
                   argument_index))
               generic_index = generic_index + 1
             end
-            out
+            generic_unification_diagnostics
           end,
         _ =>
           [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
-    TTuple(expected_elts) =>
+    TTuple(expected_elements) =>
       match actual_type {
-        TTuple(actual_elts) =>
-          if expected_elts.length() != actual_elts.length() then
+        TTuple(actual_elements) =>
+          if expected_elements.length() != actual_elements.length() then
             [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             let mut tuple_output: [Diagnostic] = empty_diagnostic_list()
             let mut tuple_index = 0
-            while tuple_index < expected_elts.length() do
+            while tuple_index < expected_elements.length() do
               tuple_output = diagnostics_append(
                 tuple_output,
                 unify_expected_and_actual_argument_types(
-                  expected_elts[tuple_index],
-                  actual_elts[tuple_index],
+                  expected_elements[tuple_index],
+                  actual_elements[tuple_index],
                   type_parameter_names,
                   substitution,
                   diagnostic_span,
@@ -143,16 +143,16 @@ fn unify_expected_and_actual_argument_types(
             end
             tuple_output
           end,
-        TPair(a2, b2) =>
-          if expected_elts.length() != 2 then
+        TPair(actual_pair_a, actual_pair_b) =>
+          if expected_elements.length() != 2 then
             [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             diagnostics_append(
               unify_expected_and_actual_argument_types(
-                expected_elts[0], a2, type_parameter_names, substitution, diagnostic_span,
+                expected_elements[0], actual_pair_a, type_parameter_names, substitution, diagnostic_span,
                 type_parameter_source_argument_index, argument_index),
               unify_expected_and_actual_argument_types(
-                expected_elts[1], b2, type_parameter_names, substitution, diagnostic_span,
+                expected_elements[1], actual_pair_b, type_parameter_names, substitution, diagnostic_span,
                 type_parameter_source_argument_index, argument_index))
           end,
         _ =>
@@ -168,16 +168,16 @@ fn unify_expected_and_actual_argument_types(
             unify_expected_and_actual_argument_types(
               expected_b, actual_b, type_parameter_names, substitution, diagnostic_span,
               type_parameter_source_argument_index, argument_index)),
-        TTuple(actual_elts) =>
-          if actual_elts.length() != 2 then
+        TTuple(actual_elements) =>
+          if actual_elements.length() != 2 then
             [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           else
             diagnostics_append(
               unify_expected_and_actual_argument_types(
-                expected_a, actual_elts[0], type_parameter_names, substitution, diagnostic_span,
+                expected_a, actual_elements[0], type_parameter_names, substitution, diagnostic_span,
                 type_parameter_source_argument_index, argument_index),
               unify_expected_and_actual_argument_types(
-                expected_b, actual_elts[1], type_parameter_names, substitution, diagnostic_span,
+                expected_b, actual_elements[1], type_parameter_names, substitution, diagnostic_span,
                 type_parameter_source_argument_index, argument_index))
           end,
         _ =>

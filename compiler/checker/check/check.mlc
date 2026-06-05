@@ -20,17 +20,17 @@ import { partial_application_desugar_expr } from '../transform/partial_applicati
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
-  let mut i = 0
-  while i < parameters.length() do
-    const has_default_now = parameters[i].has_default
+  let mut parameter_index = 0
+  while parameter_index < parameters.length() do
+    const has_default_now = parameters[parameter_index].has_default
     if (!has_default_now) && optional_began then return false end
     if has_default_now then optional_began = true end
-    i = i + 1
+    parameter_index = parameter_index + 1
   end
   true
 end
 
-fn default_expr_mvp_ok(e: Shared<Expr>) -> bool = match e {
+fn default_expr_mvp_ok(expression: Shared<Expr>) -> bool = match expression {
   ExprInt(_, _)   => true,
   ExprStr(_, _)   => true,
   ExprBool(_, _)  => true,
@@ -144,7 +144,7 @@ fn record_field_default_value_diagnostics(
   diagnostics_accumulator
 end
 
-fn is_extern_body(e: Shared<Expr>) -> bool = match e {
+fn is_extern_body(expression: Shared<Expr>) -> bool = match expression {
   ExprExtern(_) => true,
   _ => false
 }
@@ -155,21 +155,21 @@ fn param_default_diagnostics(
   body: Shared<Expr>,
   registry: TypeRegistry
 ) -> [Diagnostic] = do
-  let mut out: [Diagnostic] = []
+  let mut default_diagnostics: [Diagnostic] = []
   if !param_defaults_in_tail(parameters) then
-    out.push(diagnostic_error_with_code('parameter defaults must be trailing', expr_span(body), diagnostic_code_e036()))
+    default_diagnostics.push(diagnostic_error_with_code('parameter defaults must be trailing', expr_span(body), diagnostic_code_e036()))
   end
   const has_any_default = parameters.any(parameter_under_signature => parameter_under_signature.has_default)
   if type_parameters.length() > 0 && has_any_default then
-    out.push(diagnostic_error_with_code('default parameters are not allowed on generic functions yet', expr_span(body), diagnostic_code_e037()))
+    default_diagnostics.push(diagnostic_error_with_code('default parameters are not allowed on generic functions yet', expr_span(body), diagnostic_code_e037()))
   end
   if is_extern_body(body) && has_any_default then
-    out.push(diagnostic_error_with_code('default parameters are not allowed on extern functions', expr_span(body), diagnostic_code_e038()))
+    default_diagnostics.push(diagnostic_error_with_code('default parameters are not allowed on extern functions', expr_span(body), diagnostic_code_e038()))
   end
   const empty_type_environment: Map<string, Shared<Type>> = Map.new()
   const default_infer_context = check_context_new(empty_type_environment, registry)
   parameters.fold(
-    out,
+    default_diagnostics,
     (diagnostic_list_so_far_under_parameters, parameter_under_scan_for_defaults) => do
       let mut diagnostics_after_parameter: [Diagnostic] = diagnostic_list_so_far_under_parameters
       if parameter_under_scan_for_defaults.has_default &&
@@ -352,18 +352,18 @@ fn accumulate_diagnostics_for_single_extend_method(
   registry: TypeRegistry
 ) -> [Diagnostic] =
   match method_declaration_shared_under_scan {
-    DeclFn(_, type_params, _, params, _, method_body, where_entries) => do
+    DeclFn(_, type_parameters, _, parameters, _, method_body, where_entries) => do
       let method_related_diagnostics =
         where_clause_unknown_parameter_diagnostics(
-          type_params,
+          type_parameters,
           where_entries,
           expr_span(method_body))
       const method_environment: Map<string, Shared<Type>> = Map.new()
       let mut parameter_index = 0
-      while parameter_index < params.length() do
+      while parameter_index < parameters.length() do
         method_environment.set(
-          param_name(params[parameter_index]),
-          type_from_annotation(param_type_value(params[parameter_index])))
+          param_name(parameters[parameter_index]),
+          type_from_annotation(param_type_value(parameters[parameter_index])))
         parameter_index = parameter_index + 1
       end
       const extend_context =

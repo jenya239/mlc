@@ -52,7 +52,7 @@ export fn array_hof_call_result_type(
   else if method_name == 'zip' then
     if argument_inferred_types.length() > 0 then
       match argument_inferred_types[0] {
-        TArray(other_el) => Shared.new(TArray(Shared.new(TPair(element_type, other_el)))),
+        TArray(other_element) => Shared.new(TArray(Shared.new(TPair(element_type, other_element)))),
         _ => Shared.new(TUnknown)
       }
     else
@@ -64,8 +64,8 @@ export fn array_hof_call_result_type(
   else if method_name == 'sum' then Shared.new(TI32)
   else if method_name == 'group_by' then
     if argument_inferred_types.length() > 0 then
-      const key_t = function_return_type(argument_inferred_types[0])
-      Shared.new(TArray(Shared.new(TPair(key_t, Shared.new(TArray(element_type))))))
+      const key_type = function_return_type(argument_inferred_types[0])
+      Shared.new(TArray(Shared.new(TPair(key_type, Shared.new(TArray(element_type))))))
     else
       Shared.new(TUnknown)
     end

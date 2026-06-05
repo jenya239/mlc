@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-66815f8f-b61b-4d3a-8651-5f2014db8e0f`|
-| driver_turns_since_plan | 1|
-| step_last | 14|
-| active_track | TRACK_RENAME_ABBREV → STEP=15 |
+| agent_token_last | TBD|
+| driver_turns_since_plan | 2|
+| step_last | 15|
+| active_track | TRACK_RENAME_ABBREV → STEP=16 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 15 — checker/check)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 15 |
+| track | TRACK_RENAME_ABBREV |
+| done | check/ abbreviations (5 files); quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; commit TBD |
+| next | ROLE=Driver STEP=16 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 14 — checker/transform)
 
