@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-32a25df6-da4d-426a-b71a-a249845f09d9`|
+| agent_token_last | `cr-agent-d2b4f73a-fa65-44ff-bddb-c9ffa3b48c11`|
 | driver_turns_since_plan | 4|
 | step_last | 2|
 | active_track | TRACK_RENAME_ABBREV → STEP=3 |
@@ -20,7 +20,7 @@
 | started | 2026-06-05 |
 | elapsed | ~45 min |
 | done | `Token.column`, `MatchArm.pattern`, `FieldVal.value`, `Param/FieldDef.type_value`; ripple 36 mlc; `semantic_ir`; fix `binding_span` vs `pattern_span` fn |
-| result | **961**/0; self-host `diff_exit=0` |
+| result | **961**/0; self-host `diff_exit=0`; commit `6c3ff916` |
 | issues | sed `.pat`→`.pattern` broke PatternResult; `pattern_span` local shadowed fn; reverted `cpp/lexer.mlc` (step 9) |
 | next | ROLE=Driver STEP=3 TRACK_RENAME_ABBREV |
 
