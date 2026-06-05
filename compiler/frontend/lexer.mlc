@@ -2,7 +2,7 @@
 
 import { TokenKind, Token, LexOut } from './ast_tokens'
 
-type LexState     = { src: string, pos: i32, line: i32, col: i32 }
+type LexState     = { source: string, position: i32, line: i32, column: i32 }
 type ScanResult   = { after: LexState, token: Token }
 type ScanStrResult = { after: LexState, token: Token, error: string }
 type SkipResult   = { after: LexState, error: string }
@@ -15,26 +15,26 @@ end
 
 extend LexState {
   fn eof(self) -> bool =
-    self.pos >= self.src.byte_size()
+    self.position >= self.source.byte_size()
 
   fn current(self) -> string =
-    if self.eof() then "\0" else self.src.byte_at(self.pos) end
+    if self.eof() then "\0" else self.source.byte_at(self.position) end
 
   fn peek(self, offset: i32) -> string = do
-    const position = self.pos + offset
-    if position < 0 then do
+    const byte_index = self.position + offset
+    if byte_index < 0 then do
       lexer_internal_panic('lexer peek before start of source')
       "\0"
     end
-    else if position >= self.src.byte_size() then "\0"
-    else self.src.byte_at(position)
+    else if byte_index >= self.source.byte_size() then "\0"
+    else self.source.byte_at(byte_index)
     end
   end
 
   fn lex_advance(self) -> LexState =
     if self.current() == "\n"
-    then LexState { src: self.src, pos: self.pos + 1, line: self.line + 1, col: 1 }
-    else LexState { src: self.src, pos: self.pos + 1, line: self.line, col: self.col + 1 }
+    then LexState { source: self.source, position: self.position + 1, line: self.line + 1, column: 1 }
+    else LexState { source: self.source, position: self.position + 1, line: self.line, column: self.column + 1 }
     end
 
   fn lex_advance_by(self, advance_count: i32) -> LexState =
@@ -42,7 +42,7 @@ extend LexState {
     end
 
   fn token(self, token_kind: TokenKind) -> Token =
-    Token { kind: token_kind, line: self.line, column: self.col }
+    Token { kind: token_kind, line: self.line, column: self.column }
 }
 
 fn is_alpha(character: string) -> bool =
@@ -122,16 +122,16 @@ fn keyword_kind(word: string) -> TokenKind =
   if is_reserved_keyword(word) then reserved_keyword_kind(word) else Ident(word) end
 
 fn scan_ident(state: LexState) -> ScanResult = do
-  const start = state.pos
-  const source = state.src
+  const start = state.position
+  const input_text = state.source
   const token_line = state.line
-  const token_col  = state.col
+  const token_column  = state.column
   let mut current = state
   while !current.eof() && is_alnum(current.current()) do
     current = current.lex_advance()
   end
-  const word = source.byte_substring(start, current.pos - start)
-  ScanResult { after: current, token: Token { kind: keyword_kind(word), line: token_line, column: token_col } }
+  const word = input_text.byte_substring(start, current.position - start)
+  ScanResult { after: current, token: Token { kind: keyword_kind(word), line: token_line, column: token_column } }
 end
 
 fn is_alpha_lower(character: string) -> bool = character >= "a" && character <= "z"
@@ -141,18 +141,18 @@ type SuffixScan = { suffix: string, after: LexState }
 fn try_scan_suffix(state: LexState) -> SuffixScan = do
   const numeric_type_suffixes: [string] = ['i64', 'u8', 'usize', 'f64', 'f32']
   if !state.eof() && is_alpha_lower(state.current()) then
-    const start = state.pos
+    const start = state.position
     const orig_line = state.line
-    const orig_col  = state.col
+    const original_column  = state.column
     let mut current_state = state
     while !current_state.eof() && (is_alpha_lower(current_state.current()) || is_digit(current_state.current())) do
       current_state = current_state.lex_advance()
     end
-    const candidate = current_state.src.byte_substring(start, current_state.pos - start)
+    const candidate = current_state.source.byte_substring(start, current_state.position - start)
     if numeric_type_suffixes.any(suffix_under_scan => suffix_under_scan == candidate) then
       SuffixScan { suffix: candidate, after: current_state }
     else
-      const back = LexState { src: current_state.src, pos: start, line: orig_line, col: orig_col }
+      const back = LexState { source: current_state.source, position: start, line: orig_line, column: original_column }
       SuffixScan { suffix: '', after: back }
     end
   else
@@ -162,8 +162,8 @@ end
 
 fn scan_int(state: LexState) -> ScanResult = do
   const token_line = state.line
-  const token_col  = state.col
-  const int_start  = state.pos
+  const token_column  = state.column
+  const int_start  = state.position
   let mut current = state
   let mut value = 0
   while !current.eof() && is_digit(current.current()) do
@@ -177,9 +177,9 @@ fn scan_int(state: LexState) -> ScanResult = do
     while !current.eof() && is_digit(current.current()) do
       current = current.lex_advance()
     end
-    const raw_float = current.src.byte_substring(int_start, current.pos - int_start)
+    const raw_float = current.source.byte_substring(int_start, current.position - int_start)
     let { after } = try_scan_suffix(current)
-    ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, column: token_col } }
+    ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, column: token_column } }
   else
     let { suffix, after } = try_scan_suffix(current)
     const token_kind = match suffix
@@ -188,13 +188,13 @@ fn scan_int(state: LexState) -> ScanResult = do
     | "usize" => LUsize(value.to_string())
     | _       => LInt(value)
     end
-    ScanResult { after: after, token: Token { kind: token_kind, line: token_line, column: token_col } }
+    ScanResult { after: after, token: Token { kind: token_kind, line: token_line, column: token_column } }
   end
 end
 
 fn scan_single_string(state: LexState) -> ScanStrResult = do
   const token_line = state.line
-  const token_col  = state.col
+  const token_column  = state.column
   let mut current = state.lex_advance()
   let mut parts: [string] = []
   let mut error = ''
@@ -235,7 +235,7 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
     end
   ScanStrResult {
     after: current,
-    token: Token { kind: token_kind, line: token_line, column: token_col },
+    token: Token { kind: token_kind, line: token_line, column: token_column },
     error
   }
 end
@@ -278,7 +278,7 @@ end
 
 fn scan_string(state: LexState) -> ScanStrResult = do
   const token_line = state.line
-  const token_col  = state.col
+  const token_column  = state.column
   let mut current = state.lex_advance()
   let mut parts: [string] = []
   let mut error = ''
@@ -298,9 +298,9 @@ fn scan_string(state: LexState) -> ScanStrResult = do
         current = current.lex_advance()
       end
     else
-      const run_start = current.pos
+      const run_start = current.position
       current = lex_advance_past_unescaped_string_run(current)
-      if current.pos > run_start then parts.push(current.src.byte_substring(run_start, current.pos - run_start)) end
+      if current.position > run_start then parts.push(current.source.byte_substring(run_start, current.position - run_start)) end
     end
   end
   if current.eof() then
@@ -310,7 +310,7 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   end
   ScanStrResult {
     after: current,
-    token: Token { kind: LStr(parts.join('')), line: token_line, column: token_col },
+    token: Token { kind: LStr(parts.join('')), line: token_line, column: token_column },
     error
   }
 end
@@ -337,7 +337,7 @@ end
 
 fn scan_template(state: LexState) -> ScanStrResult = do
   const token_line = state.line
-  const token_col  = state.col
+  const token_column  = state.column
   let mut current = state.lex_advance()
   let mut parts: [string] = []
   let mut current_lit: [string] = []
@@ -387,9 +387,9 @@ fn scan_template(state: LexState) -> ScanStrResult = do
       end
       parts.push(expr_chars.join(''))
     else
-      const run_start = current.pos
+      const run_start = current.position
       current = lex_advance_past_template_literal_run(current)
-      if current.pos > run_start then current_lit.push(current.src.byte_substring(run_start, current.pos - run_start)) end
+      if current.position > run_start then current_lit.push(current.source.byte_substring(run_start, current.position - run_start)) end
     end
   end
   if current.eof() then
@@ -400,7 +400,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   parts.push(current_lit.join(''))
   ScanStrResult {
     after: current,
-    token: Token { kind: LTemplate(parts), line: token_line, column: token_col },
+    token: Token { kind: LTemplate(parts), line: token_line, column: token_column },
     error
   }
 end
@@ -524,12 +524,12 @@ fn push_operator_scan(state: LexState, mut tokens: [Token]) -> LexState = do
   after
 end
 
-export fn tokenize(source: string) -> LexOut = do
-  let mut lexer_state = LexState { src: source, pos: 0, line: 1, col: 1 }
+export fn tokenize(input_text: string) -> LexOut = do
+  let mut lexer_state = LexState { source: input_text, position: 0, line: 1, column: 1 }
   const tokens: [Token] = []
   let mut errors: [string] = []
   while !lexer_state.eof() do
-    const position_before_token = lexer_state.pos
+    const position_before_token = lexer_state.position
     lexer_state = apply_skip_whitespace(lexer_state, errors)
     if lexer_state.eof() then break end
     const character = lexer_state.current()
@@ -552,8 +552,8 @@ export fn tokenize(source: string) -> LexOut = do
       lexer_state = push_operator_scan(lexer_state, tokens)
       ()
     end
-    if lexer_state.pos == position_before_token then
-      lexer_internal_panic('tokenize made no progress at byte ' + lexer_state.pos.to_string())
+    if lexer_state.position == position_before_token then
+      lexer_internal_panic('tokenize made no progress at byte ' + lexer_state.position.to_string())
     end
   end
   tokens.push(lexer_state.token(Eof))
