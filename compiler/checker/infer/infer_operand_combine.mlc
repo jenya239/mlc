@@ -46,7 +46,7 @@ export fn infer_index_from_operand_results(
   index_result: InferResult,
   bracket_source_span: Span
 ) -> InferResult = do
-  const element_type = match object_result.inferred_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  const element_type = match object_result.inferred_type { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
   const extra_not_array = index_not_array_diagnostic(object_result.inferred_type, bracket_source_span)
   const extra_bad_index = index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span)
   const merged = object_result.absorb(index_result)
@@ -62,11 +62,11 @@ fn expr_is_empty_array_literal(expression: Shared<Expr>) -> bool =
     _ => false
   }
 
-fn infer_merge_unknown_else_array_inner(then_inner: Shared<Type>, else_result: InferResult) -> InferResult =
+fn infer_merge_unknown_else_array_inner(then_element_type: Shared<Type>, else_result: InferResult) -> InferResult =
   match else_result.inferred_type {
-    TArray(inner_else) =>
-      if type_is_unknown(inner_else) then
-        InferResult { inferred_type: Shared.new(TArray(then_inner)), errors: else_result.errors }
+    TArray(else_element_type) =>
+      if type_is_unknown(else_element_type) then
+        InferResult { inferred_type: Shared.new(TArray(then_element_type)), errors: else_result.errors }
       else else_result
       end,
     _ => else_result
@@ -79,7 +79,7 @@ fn conditional_else_result_coerced_for_empty_unknown_array(
 ) -> InferResult =
   if !expr_is_empty_array_literal(else_expression) then else_result
   else match then_result.inferred_type {
-    TArray(inner_then) => infer_merge_unknown_else_array_inner(inner_then, else_result),
+    TArray(then_element_type) => infer_merge_unknown_else_array_inner(then_element_type, else_result),
     _ => else_result
   }
   end

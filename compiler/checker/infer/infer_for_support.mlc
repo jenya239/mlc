@@ -12,4 +12,4 @@ export fn infer_for_iterator_with_range_rules(iterator_base: InferResult, iterat
   }
 
 export fn element_type_for_for_iterator(iterator_type: Shared<Type>) -> Shared<Type> =
-  match iterator_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  match iterator_type { TArray(element_type) => element_type, _ => Shared.new(TUnknown) }

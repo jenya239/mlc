@@ -58,13 +58,13 @@ fn append_lambda_arity_diag(
     _ => errors
   }
 
-fn append_predicate_bool_diag(errors: [Diagnostic], lambda_expr: Shared<Expr>, fn_type: Shared<Type>, method_name: string) -> [Diagnostic] = do
-  const ret = function_return_type(fn_type)
-  if !type_is_unknown(ret) && !type_is_bool(ret) then
+fn append_predicate_bool_diag(errors: [Diagnostic], lambda_expression: Shared<Expr>, function_type: Shared<Type>, method_name: string) -> [Diagnostic] = do
+  const return_type = function_return_type(function_type)
+  if !type_is_unknown(return_type) && !type_is_bool(return_type) then
     diagnostics_append(errors, [
       diagnostic_error_with_code(
-        `method ${method_name} expects a predicate returning bool, got ${type_description(ret)}`,
-        expr_span(lambda_expr),
+        `method ${method_name} expects a predicate returning bool, got ${type_description(return_type)}`,
+        expr_span(lambda_expression),
         diagnostic_code_e046())])
   else
     errors
@@ -89,33 +89,33 @@ export fn infer_array_hof_method_call(
   const arity_errors = method_arity_after_receiver(
     receiver_errors, method_name, method_arguments.length(), method_span)
   let mut merged = object_parsed
-  let mut arg_types: [Shared<Type>] = []
+  let mut argument_types: [Shared<Type>] = []
 
   if method_name == 'fold' then
     if method_arguments.length() > 0 then
       const init_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(init_parsed)
-      arg_types.push(init_parsed.inferred_type)
+      argument_types.push(init_parsed.inferred_type)
       if method_arguments.length() > 1 then
-        const acc_type = init_parsed.inferred_type
-        let mut lam_errors = append_lambda_arity_diag([], method_arguments[1], 2, method_name)
+        const accumulator_type = init_parsed.inferred_type
+        let mut lambda_errors = append_lambda_arity_diag([], method_arguments[1], 2, method_name)
         const lambda_parsed = infer_expr_maybe_lambda(
-          method_arguments[1], [acc_type, element_type], inference_context, infer_expr_fn)
+          method_arguments[1], [accumulator_type, element_type], inference_context, infer_expr_fn)
         merged = merged.absorb(InferResult { inferred_type: lambda_parsed.inferred_type, errors: lambda_parsed.errors })
-        lam_errors = append_lambda_arity_diag(lam_errors, method_arguments[1], 2, method_name)
-        const lam_ret = function_return_type(lambda_parsed.inferred_type)
-        lam_errors =
-          if !type_is_unknown(acc_type) && !type_is_unknown(lam_ret) && !types_structurally_equal(lam_ret, acc_type) then
-            diagnostics_append(lam_errors, [
+        lambda_errors = append_lambda_arity_diag(lambda_errors, method_arguments[1], 2, method_name)
+        const lambda_return_type = function_return_type(lambda_parsed.inferred_type)
+        lambda_errors =
+          if !type_is_unknown(accumulator_type) && !type_is_unknown(lambda_return_type) && !types_structurally_equal(lambda_return_type, accumulator_type) then
+            diagnostics_append(lambda_errors, [
               diagnostic_error_with_code(
-                `fold step function must return the same type as the accumulator (expected ${type_description(acc_type)}, got ${type_description(lam_ret)})`,
+                `fold step function must return the same type as the accumulator (expected ${type_description(accumulator_type)}, got ${type_description(lambda_return_type)})`,
                 expr_span(method_arguments[1]),
                 diagnostic_code_e047())])
           else
-            lam_errors
+            lambda_errors
           end
-        merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lam_errors) }
-        arg_types.push(lambda_parsed.inferred_type)
+        merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_errors) }
+        argument_types.push(lambda_parsed.inferred_type)
       end
     end
   else if method_name == 'zip' || method_name == 'join' then
@@ -123,7 +123,7 @@ export fn infer_array_hof_method_call(
     if method_arguments.length() > 0 then
       const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(argument_parsed)
-      arg_types.push(argument_parsed.inferred_type)
+      argument_types.push(argument_parsed.inferred_type)
       if method_name == 'zip' then
         if !type_is_unknown(argument_parsed.inferred_type) && !type_is_array(argument_parsed.inferred_type) then
           zip_or_join_diagnostics = [
@@ -158,7 +158,7 @@ export fn infer_array_hof_method_call(
     if method_arguments.length() > 0 then
       const count_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(count_parsed)
-      arg_types.push(count_parsed.inferred_type)
+      argument_types.push(count_parsed.inferred_type)
       let mut count_errors: [Diagnostic] = []
       if !type_is_unknown(count_parsed.inferred_type) && !type_is_i32(count_parsed.inferred_type) then
         count_errors = [
@@ -188,39 +188,39 @@ export fn infer_array_hof_method_call(
     merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
   else do
     if method_arguments.length() > 0 then
-      let mut lam_errors = append_lambda_arity_diag([], method_arguments[0], 1, method_name)
+      let mut lambda_errors = append_lambda_arity_diag([], method_arguments[0], 1, method_name)
       const lambda_parsed = infer_expr_maybe_lambda(
         method_arguments[0], [element_type], inference_context, infer_expr_fn)
       merged = merged.absorb(lambda_parsed)
-      lam_errors = append_lambda_arity_diag(lam_errors, method_arguments[0], 1, method_name)
-      lam_errors =
+      lambda_errors = append_lambda_arity_diag(lambda_errors, method_arguments[0], 1, method_name)
+      lambda_errors =
         if method_expects_bool_predicate(method_name) then
-          append_predicate_bool_diag(lam_errors, method_arguments[0], lambda_parsed.inferred_type, method_name)
+          append_predicate_bool_diag(lambda_errors, method_arguments[0], lambda_parsed.inferred_type, method_name)
         else
-          lam_errors
+          lambda_errors
         end
-      lam_errors =
+      lambda_errors =
         if method_name == 'flat_map' then
           const callback_return = function_return_type(lambda_parsed.inferred_type)
           if !type_is_unknown(callback_return) && !type_is_array(callback_return) then
-            diagnostics_append(lam_errors, [
+            diagnostics_append(lambda_errors, [
               diagnostic_error_with_code(
                 `flat_map callback must return an array, got ${type_description(callback_return)}`,
                 expr_span(method_arguments[0]),
                 diagnostic_code_e054())])
           else
-            lam_errors
+            lambda_errors
           end
         else
-          lam_errors
+          lambda_errors
         end
-      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lam_errors) }
-      arg_types.push(lambda_parsed.inferred_type)
+      merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_errors) }
+      argument_types.push(lambda_parsed.inferred_type)
     end
   end
 
   InferResult {
-    inferred_type: hof_call_result_type(merged.inferred_type, method_name, arg_types),
+    inferred_type: hof_call_result_type(merged.inferred_type, method_name, argument_types),
     errors:        diagnostics_append(diagnostics_append(merged.errors, receiver_errors), arity_errors)
   }
 end

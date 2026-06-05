@@ -185,8 +185,8 @@ fn infer_expr_binary(operation: string, left: Shared<Expr>, right: Shared<Expr>,
   end
 end
 
-fn infer_expr_unary(operation: string, inner: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =
-  infer_operand_combine.infer_unary_from_inner_result(operation, infer_expr(inner, inference_context), source_span)
+fn infer_expr_unary(operation: string, inner_expression: Shared<Expr>, source_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_operand_combine.infer_unary_from_inner_result(operation, infer_expr(inner_expression, inference_context), source_span)
 
 fn infer_expr_method(
   object: Shared<Expr>,
@@ -237,11 +237,11 @@ fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>,
   result_parsed.absorb_stmt(statements_parsed)
 end
 
-fn infer_expr_with(resource: Shared<Expr>, binder: string, stmts: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+fn infer_expr_with(resource: Shared<Expr>, binder: string, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const resource_parsed = infer_expr(resource, inference_context)
-  const inner_env = inference_context.type_env
-  inner_env.set(binder, resource_parsed.inferred_type)
-  const statements_parsed = infer_statements(stmts, check_context_new(inner_env, inference_context.registry))
+  const with_body_environment = inference_context.type_env
+  with_body_environment.set(binder, resource_parsed.inferred_type)
+  const statements_parsed = infer_statements(statements, check_context_new(with_body_environment, inference_context.registry))
   resource_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
 
@@ -312,8 +312,8 @@ fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckCo
   infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, inference_context)
 end
 
-fn infer_expr_question(inner: Shared<Expr>, question_span: Span, inference_context: CheckContext) -> InferResult =
-  infer_question_from_inner_result(infer_expr(inner, inference_context), question_span)
+fn infer_expr_question(inner_expression: Shared<Expr>, question_span: Span, inference_context: CheckContext) -> InferResult =
+  infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span)
 
 fn inference_placeholder_unknown_type() -> Shared<Type> =
   Shared.new(TUnknown)
@@ -357,25 +357,31 @@ export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) 
     ExprExtern(_)                           => infer_literal_helpers.infer_expr_extern_placeholder(),
     ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
     ExprBin(operation, left, right, span) => infer_expr_binary(operation, left, right, span, inference_context),
-    ExprUn(operation, inner, span)          => infer_expr_unary(operation, inner, span, inference_context),
+    ExprUn(operation, inner_expression, span) => infer_expr_unary(operation, inner_expression, span, inference_context),
     ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr),
-    ExprMethod(object, method_name, margs, method_span) =>
-      infer_expr_method(object, method_name, margs, method_span, inference_context, infer_expr),
+    ExprMethod(object, method_name, method_arguments, method_span) =>
+      infer_expr_method(object, method_name, method_arguments, method_span, inference_context, infer_expr),
     ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),
     ExprIndex(object, index_expression, bracket_source_span) => infer_expr_index(object, index_expression, bracket_source_span, inference_context),
-    ExprIf(condition, then_expr, else_expr, _) => infer_expr_conditional(condition, then_expr, else_expr, inference_context),
-    ExprBlock(statements, result, _)        => infer_expr_block(statements, result, inference_context),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      infer_expr_conditional(condition, then_expression, else_expression, inference_context),
+    ExprBlock(statements, result_expression, _) =>
+      infer_expr_block(statements, result_expression, inference_context),
     ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
-    ExprFor(variable, iterator, statements, _) => infer_expr_for_loop(variable, iterator, statements, inference_context),
-    ExprMatch(subject, arms, _)             => infer_expr_match(subject, arms, inference_context, infer_expr),
+    ExprFor(variable_name, iterator, statements, _) =>
+      infer_expr_for_loop(variable_name, iterator, statements, inference_context),
+    ExprMatch(subject, match_arms, _)       => infer_expr_match(subject, match_arms, inference_context, infer_expr),
     ExprRecord(name, lit_parts, span)      => infer_expr_record(name, lit_parts, inference_context, span),
-    ExprRecordUpdate(name, base, field_vals, _) => infer_expr_record_update(name, base, field_vals, inference_context),
+    ExprRecordUpdate(name, base, field_values, _) =>
+      infer_expr_record_update(name, base, field_values, inference_context),
     ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
     ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),
-    ExprQuestion(inner, question_span)      => infer_expr_question(inner, question_span, inference_context),
-    ExprLambda(params, body, _)             => infer_expr_lambda(params, body, inference_context),
-    ExprNamedArg(_, inner, _)               => infer_expr(inner, inference_context),
-    ExprWith(resource, binder, stmts, _)    => infer_expr_with(resource, binder, stmts, inference_context)
+    ExprQuestion(inner_expression, question_span) =>
+      infer_expr_question(inner_expression, question_span, inference_context),
+    ExprLambda(parameter_names, body, _)    => infer_expr_lambda(parameter_names, body, inference_context),
+    ExprNamedArg(_, inner_expression, _)    => infer_expr(inner_expression, inference_context),
+    ExprWith(resource, binder, statements, _) =>
+      infer_expr_with(resource, binder, statements, inference_context)
   }
 end
 

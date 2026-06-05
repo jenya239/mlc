@@ -14,13 +14,13 @@ export fn infer_question_from_inner_result(inner_parsed: InferResult, question_s
     end,
     TUnknown => inner_parsed,
     _ => do
-      const error: [Diagnostic] = [diagnostic_error_with_code(
+      const error_diagnostics: [Diagnostic] = [diagnostic_error_with_code(
         '? operator requires a Result type, got ' + type_description(inner_parsed.inferred_type),
         question_span,
         diagnostic_code_e068())]
       InferResult {
         inferred_type: Shared.new(TUnknown),
-        errors: diagnostics_append(inner_parsed.errors, error)
+        errors: diagnostics_append(inner_parsed.errors, error_diagnostics)
       }
     end
   }

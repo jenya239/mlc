@@ -6,9 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-1dc5f2e7-5790-4fd0-b1cf-774cfbd4c0b5`|
-| driver_turns_since_plan | 0|
-| step_last | meta-review|
-| active_track | TRACK_RENAME_ABBREV → STEP=13 |
+| driver_turns_since_plan | 1|
+| step_last | 13 |
+| active_track | TRACK_RENAME_ABBREV → STEP=14 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 13 — checker/infer)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 13 |
+| track | TRACK_RENAME_ABBREV |
+| done | infer/ abbreviations: match/with/call/HOF binders; quotes ok |
+| result | **961**/0; self-host `diff_exit=0` |
+| next | ROLE=Driver STEP=14 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Meta meta-review — RENAME_ABBREV STEP=12 loop)
 

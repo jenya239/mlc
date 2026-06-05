@@ -13,19 +13,19 @@ export fn infer_lambda_with_param_types(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   let lambda_env = inference_context.type_env
-  let mut built: [Shared<Type>] = []
+  let mut built_parameter_types: [Shared<Type>] = []
   let mut index = 0
   while index < parameter_names.length() do
-    const param_type =
+    const parameter_type =
       if index < parameter_types.length() then parameter_types[index] else Shared.new(TUnknown) end
-    built.push(param_type)
-    lambda_env.set(parameter_names[index], param_type)
+    built_parameter_types.push(parameter_type)
+    lambda_env.set(parameter_names[index], parameter_type)
     index = index + 1
   end
-  const inner_context = check_context_new(lambda_env, inference_context.registry)
-  const body_parsed    = infer_expr_fn(body, inner_context)
+  const lambda_body_context = check_context_new(lambda_env, inference_context.registry)
+  const body_parsed    = infer_expr_fn(body, lambda_body_context)
   InferResult {
-    inferred_type: Shared.new(TFn(built, body_parsed.inferred_type)),
+    inferred_type: Shared.new(TFn(built_parameter_types, body_parsed.inferred_type)),
     errors:        body_parsed.errors
   }
 end

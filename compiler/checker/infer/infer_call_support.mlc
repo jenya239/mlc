@@ -21,8 +21,8 @@ export fn infer_expr_call_for_constructor_name(
     constructor_parameter_types.length(),
     call_arguments.length(),
     call_source_span)
-  const ctor_type = inference_context.registry.ctor_type(constructor_name)
-  const owner_name = match ctor_type { TNamed(n) => n, _ => '' }
+  const constructor_type = inference_context.registry.ctor_type(constructor_name)
+  const owner_name = match constructor_type { TNamed(type_name) => type_name, _ => '' }
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(constructor_name) &&
        inference_context.current_extend_type != owner_name then
@@ -32,7 +32,7 @@ export fn infer_expr_call_for_constructor_name(
         diagnostic_code_e065())]
     else [] end
   InferResult {
-    inferred_type: ctor_type,
+    inferred_type: constructor_type,
     errors: diagnostics_append(diagnostics_append(with_arguments.errors, call_errors), private_errors)
   }
 end
@@ -50,8 +50,8 @@ export fn infer_expr_call_non_constructor_arity_only(
   const max_arity = parameter_types.length()
   const min_arity =
     if callee_name != '' && registry.has_fn(callee_name) then
-      const r = registry.required_arity_for_fn(callee_name)
-      if r >= 0 then r else max_arity end
+      const required_arity = registry.required_arity_for_fn(callee_name)
+      if required_arity >= 0 then required_arity else max_arity end
     else
       max_arity
     end

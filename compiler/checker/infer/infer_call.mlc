@@ -97,20 +97,20 @@ export fn infer_expr_call(
     const max_arity = callee_parameter_types.length()
     const min_arity =
       if callee_name != '' && inference_context.registry.has_fn(callee_name) then
-        const r = inference_context.registry.required_arity_for_fn(callee_name)
-        if r >= 0 then r else max_arity end
+        const required_arity = inference_context.registry.required_arity_for_fn(callee_name)
+        if required_arity >= 0 then required_arity else max_arity end
       else
         max_arity
       end
-    const got = effective_args.length()
+    const argument_count = effective_args.length()
     const callee_type_parameter_names =
       if callee_name != '' && inference_context.registry.has_fn(callee_name) then
         inference_context.registry.registered_function_type_parameter_names(callee_name)
       else
         do const empty_callee_type_names: [string] = []; empty_callee_type_names end
       end
-    if type_is_function(function_parsed.inferred_type) && got >= min_arity && got <= max_arity then
-      const params_for_unify = take_first_param_types(callee_parameter_types, got)
+    if type_is_function(function_parsed.inferred_type) && argument_count >= min_arity && argument_count <= max_arity then
+      const params_for_unify = take_first_param_types(callee_parameter_types, argument_count)
       const unification_errors = call_argument_unification_diagnostics(
         params_for_unify, argument_inferred_types, callee_type_parameter_names, effective_args)
       const bound_errors = trait_bound_diagnostics(
