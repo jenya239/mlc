@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-570eb754-5140-49e3-8e8a-889db389e048`|
-| driver_turns_since_plan | 4|
-| step_last | 4|
-| active_track | TRACK_RENAME_ABBREV → STEP=9 |
+| agent_token_last | `cr-agent-592a95bf-b5d2-462f-8d7d-967b3a95bc84`|
+| driver_turns_since_plan | 5|
+| step_last | 9|
+| active_track | TRACK_RENAME_ABBREV → STEP=10 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 9 — cpp lexer/parser)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| track | TRACK_RENAME_ABBREV |
+| done | `CppToken.column`; scan state/token/error; `CppDeclarationResult.declaration` |
+| result | **961**/0; self-host `diff_exit=0`; commit `0428125c` |
+| next | ROLE=Driver STEP=10 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 4 — multi-agent targets)
 
