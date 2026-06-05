@@ -6,9 +6,20 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-302eb1e4-e85a-4064-a0f1-71251b462b6c`|
-| driver_turns_since_plan | 1|
-| step_last | 11 |
-| active_track | TRACK_RENAME_ABBREV → STEP=12 |
+| driver_turns_since_plan | 2|
+| step_last | 12 |
+| active_track | TRACK_RENAME_ABBREV → STEP=13 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 12 — names/check_mutations)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 12 |
+| track | TRACK_RENAME_ABBREV |
+| done | `names.mlc` pattern/with binders; `check_mutations` statement/match renames; quotes ok |
+| result | **961**/0; self-host `diff_exit=0` |
+| next | ROLE=Driver STEP=13 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 11 — registry/semantic_type_structure)
 

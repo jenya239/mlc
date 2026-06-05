@@ -36,14 +36,15 @@ fn collect_pattern_bindings(pattern: Shared<Pattern>, mut accumulator: [string])
       end
       accumulator
     end,
-    PatternArray(subs, rest, _) => do
+    PatternArray(sub_patterns, rest, _) => do
       let mut index = 0
-      while index < subs.length() do
-        accumulator = collect_pattern_bindings(subs[index], accumulator); index = index + 1
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
       end
       if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
-    PatternOr(alts, _) => if alts.length() > 0 then collect_pattern_bindings(alts[0], accumulator) else accumulator end,
+    PatternOr(alternatives, _) =>
+      if alternatives.length() > 0 then collect_pattern_bindings(alternatives[0], accumulator) else accumulator end,
     _ => accumulator
   }
 end
@@ -58,8 +59,8 @@ fn check_names_identifier(name: string, locals: [string], globals: Map<string, b
 fn check_names_binary_expression(left: Shared<Expr>, right: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
   diagnostics_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals))
 
-fn check_names_unary_expression(inner: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  check_names_expr(inner, locals, globals)
+fn check_names_unary_expression(inner_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_expr(inner_expression, locals, globals)
 
 fn check_names_call_expression(function: Shared<Expr>, call_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   const diagnostics_from_callable = check_names_expr(function, locals, globals)
@@ -104,10 +105,10 @@ fn check_names_for_expression(variable_name: string, iterator: Shared<Expr>, sta
   diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics)
 end
 
-fn check_names_with_expression(resource: Shared<Expr>, binder: string, stmts: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
+fn check_names_with_expression(resource: Shared<Expr>, binder: string, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   const inner_scope = locals; inner_scope.push(binder)
-  const stmts_check = check_names_statements(stmts, inner_scope, globals)
-  diagnostics_append(check_names_expr(resource, locals, globals), stmts_check.diagnostics)
+  const statements_check = check_names_statements(statements, inner_scope, globals)
+  diagnostics_append(check_names_expr(resource, locals, globals), statements_check.diagnostics)
 end
 
 fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
@@ -166,8 +167,8 @@ fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], glob
     (diagnostics_accumulator, element_under_walk) =>
       diagnostics_append(diagnostics_accumulator, check_names_expr(element_under_walk, locals, globals)))
 
-fn check_names_question_expression(inner: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  check_names_expr(inner, locals, globals)
+fn check_names_question_expression(inner_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_expr(inner_expression, locals, globals)
 
 fn check_names_lambda_expression(parameter_names: [string], body: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   const lambda_environment_names =
@@ -193,7 +194,7 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
   match expression {
     ExprIdent(name, source_span)            => check_names_identifier(name, locals, globals, source_span),
     ExprBin(_, left, right, _)              => check_names_binary_expression(left, right, locals, globals),
-    ExprUn(_, inner, _)                     => check_names_unary_expression(inner, locals, globals),
+    ExprUn(_, inner_expression, _)          => check_names_unary_expression(inner_expression, locals, globals),
     ExprCall(function, call_arguments, _)   => check_names_call_expression(function, call_arguments, locals, globals),
     ExprMethod(object, _, method_arguments, _) => check_names_method_expression(object, method_arguments, locals, globals),
     ExprField(object, _, _)                    => check_names_field_expression(object, locals, globals),
@@ -202,16 +203,18 @@ export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: 
       check_names_conditional_expression(condition, then_expression, else_expression, locals, globals),
     ExprBlock(statements, result, _)       => check_names_block_expression(statements, result, locals, globals),
     ExprWhile(condition, statements, _)    => check_names_while_expression(condition, statements, locals, globals),
-    ExprFor(variable, iterator, statements, _) => check_names_for_expression(variable, iterator, statements, locals, globals),
+    ExprFor(variable_name, iterator, statements, _) =>
+      check_names_for_expression(variable_name, iterator, statements, locals, globals),
     ExprMatch(subject, arms, _)            => check_names_match_expression(subject, arms, locals, globals),
     ExprRecord(_, lit_parts, _)            => check_names_record_lit_parts(lit_parts, locals, globals),
     ExprRecordUpdate(_, base, field_values, _) => check_names_record_update_expression(base, field_values, locals, globals),
     ExprArray(elements, _)                  => check_names_array_expression(elements, locals, globals),
     ExprTuple(elements, _)                  => check_names_array_expression(elements, locals, globals),
-    ExprQuestion(inner, _)                  => check_names_question_expression(inner, locals, globals),
+    ExprQuestion(inner_expression, _)     => check_names_question_expression(inner_expression, locals, globals),
     ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
-    ExprNamedArg(_, inner, _)             => check_names_expr(inner, locals, globals),
-    ExprWith(resource, binder, stmts, _)  => check_names_with_expression(resource, binder, stmts, locals, globals),
+    ExprNamedArg(_, inner_expression, _)  => check_names_expr(inner_expression, locals, globals),
+    ExprWith(resource, binder, statements, _) =>
+      check_names_with_expression(resource, binder, statements, locals, globals),
     _                                       => check_names_empty()
   }
 

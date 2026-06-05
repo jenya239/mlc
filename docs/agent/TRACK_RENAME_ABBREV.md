@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 11 done — 2026-06-05)
+## Status: **open** (step 12 done — 2026-06-05)
+
+**STEP=12 note (2026-06-05 Driver):** `names.mlc` `sub_patterns`/`alternatives`/`inner_expression`/`statements`/`variable_name`; `check/check_mutations.mlc` `then_expression`/`match_arms`/`check_mutation_statements_errors`/`block_mutable_locals`; quotes ok. Gate: **961**/0; self-host diff empty.
 
 **STEP=11 note (2026-06-05 Driver):** `FunctionIndex.function_types`; `AdtIndex` `constructor_types`/`constructor_parameters`/`private_constructors`; locals `declaration`/`return_type`/`type_arguments`/`builtin_required_arity`; `semantic_type_structure` tuple/pair/substitute binders; quotes ok (`"` char compares + string literals only). Gate: **961**/0; self-host diff empty. Commit `25b971c0`.
 
