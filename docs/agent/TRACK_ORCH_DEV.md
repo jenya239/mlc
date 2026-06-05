@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) §9; parallel to all MLC phases
 
-## Status: **open** (step 1 done — 2026-06-05)
+## Status: **open** (step 2 done â€” 2026-06-05)— 2026-06-05)
+
+**STEP=2 note (2026-06-05 OrchestratorDev):** `recordEnqueueCost` on enqueueSend; `GET /api/billing`; billing UI tab. Gate: billing tests 8/8; commit `9ced441`.
 
 **STEP=1 note (2026-06-05 OrchestratorDev):** `db/schema.sql`, `db/migrations/001_initial.sql`, `src/db/migrate.ts` + `cr-paths.ts`; gate: migrate tests 3/3, `npm run build` ok; full `npm test` 311/325 (14 pre-existing fails).
 
