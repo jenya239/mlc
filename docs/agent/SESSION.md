@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-cb487cd4-81ed-4833-baaa-24c34d784321`|
-| driver_turns_since_plan | 0|
-| step_last | orch-dev-2|
-| active_track | TRACK_RENAME_ABBREV → STEP=4 |
+| agent_token_last | `cr-agent-6a112713-86fa-4b5d-89a2-fd73f63fd6a1`|
+| driver_turns_since_plan | 1|
+| step_last | 4|
+| active_track | TRACK_RENAME_ABBREV → STEP=5 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 4 — predicates field renames)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_RENAME_ABBREV |
+| started | 2026-06-05 |
+| elapsed | ~45 min |
+| done | `Parser.position`; `ExprResult.expression`, `PatternResult.pattern`, `StmtResult.statement`, `DeclResult.declaration`, `PatternsResult.patterns`; ripple parser/*.mlc |
+| result | **961**/0; self-host `diff_exit=0`; commit `bd26730b` |
+| issues | `let { field: local }` invalid MLC syntax; sed corruption fixed |
+| next | ROLE=Driver STEP=5 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (OrchestratorDev TRACK_ORCH_DEV step 2 — billing)
 

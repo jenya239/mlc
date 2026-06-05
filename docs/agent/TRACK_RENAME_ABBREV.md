@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 3 done — 2026-06-05)
+## Status: **open** (step 4 done — 2026-06-05)
+
+**STEP=4 note (2026-06-05 Driver):** `predicates.mlc` Parser `position`; result fields `expression`/`pattern`/`statement`/`declaration`/`patterns`; ripple `comma_separated`/`decls`/`exprs`/`test_parser`. No `let { field: local }` destructuring (parse error). Gate: **961**/0; self-host diff empty. Commit `bd26730b`.
 
 **STEP=3 note (2026-06-05 Driver):** `frontend/lexer.mlc` LexState: `source`, `position`, `column`; ripple `cpp/lexer.mlc` (LexState only, `CppToken.col` step 9). Shadowing fix: `input_text`, `byte_index`, `token_column`. String quote audit: `"` only char compares — ok. Gate: **961**/0; self-host diff empty.
 
