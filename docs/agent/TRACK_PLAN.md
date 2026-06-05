@@ -94,21 +94,38 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppDeclFragment cleanup:** [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) — **closed** (step 5 audit 940/0; WIP `decl_cpp` uncommitted)
 - **Apply record destructuring:** [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) — **closed** (`fd95af6`)
 - **String match patterns:** [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) — **closed** (step 12 self-host diff green, 2026-06-05)
-- **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **open** (next after STRING_MATCH close)
-- **Rename abbreviations:** [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) — **open** (step 1 partial WIP; after TYPE_ALIASES)
-- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (deferred; after RENAME)
+- **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **open** (STEP=1 pending; PLAN §2.5 #4)
+- **Rename abbreviations:** [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) — **closed** (`0c68101b`, `7bc13d09`)
+- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (deferred; after TYPE_ALIASES)
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) **STEP=12** — close track (status closed, full gate incl. self-host diff). Uncommitted WIP (~267 files): STRING_MATCH migrations + partial RENAME step 1 (`SemanticExpression`, …); commit batch after green gate.
+> **Immediate:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) **STEP=1** — parser `DeclTypeAlias` for `type Name = Type` (not ADT `{…}` / variant syntax).
 
-> **Then:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) **STEP=1** — parser `DeclTypeAlias` / `type Name = Type` (PLAN §2.5 #4).
+> **Then:** TYPE_ALIASES steps 2–7 per TRACK.
 
 Gate from active TRACK. SESSION; enqueue next STEP.
 
 ## Next step (Planner)
 
-> plan-refresh after STRING_MATCH close or every ~8 driver turns.
+> plan-refresh after TYPE_ALIASES close or every ~8 driver turns.
+
+## Planner checklist (2026-05-19 plan-refresh — RENAME_ABBREV closed)
+
+- [x] RENAME_ABBREV closed (`0c68101b`, `7bc13d09`); gate **961**/0; self-host diff empty
+- [x] Priority **stability** — TYPE_ALIASES before VISITOR_PATTERN
+- [x] Next track: **TYPE_ALIASES** STEP=1 (parser `DeclTypeAlias`)
+- [x] Deferred: VISITOR_PATTERN; regex string match; parser `ref mut` branch
+- [x] Driver enqueued STEP=1 TYPE_ALIASES
+
+## Planner checklist (2026-06-05 plan-refresh — 8 driver turns, RENAME_ABBREV mid-track)
+
+- [x] 8 driver turns since last plan-refresh (steps 14–21 RENAME_ABBREV)
+- [x] Priority **stability > security > performance** — finish RENAME (22–23) before TYPE_ALIASES / VISITOR
+- [x] RENAME steps 1–21 done; gate **961**/0; self-host `diff_exit=0`; **uncommitted** (steps 18–21 batch)
+- [x] STEP=22 scoped: `"` literal audit across `compiler/`; no blind `replace_all` on short tokens
+- [x] Deferred: TYPE_ALIASES, VISITOR_PATTERN, regex string match; parser `ref mut` branch; e2e/fuzz corpus renames
+- [x] Driver enqueued STEP=22 RENAME_ABBREV
 
 ## Planner checklist (2026-05-19 plan-refresh — STRING_MATCH steps 1–11 done)
 
@@ -846,10 +863,10 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 |------|------|-------|--------|
 | 1 | Phase 2 финал — MODULE_TU_BRIDGE закрыть | [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) | **closed** (`df744e5`) |
 | 1b | Удалить CppDeclFragment + мёртвый код | [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) | **closed** (step 5 audit 2026-06-04) |
-| 2 | String match в языке | [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) | open |
+| 2 | String match в языке | [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) | **closed** |
 | 3 | Применить record destructuring | [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) | closed |
-| 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | open |
-| 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | open |
+| 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | open (after RENAME) |
+| 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | open (step 22 pending) |
 | 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | open |
 | 7 | TypeRegistry split + HOF helpers + parser helpers | [TRACK_REGISTRY_SPLIT.md](TRACK_REGISTRY_SPLIT.md) | **closed** (`20f9d45`) |
 | 8 | Lambda capture: `[&]` → `[=]` в codegen | TRACK_LAMBDA_CAPTURE.md | planned |

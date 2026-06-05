@@ -1,16 +1,18 @@
-# Track: Type aliases (Phase 2.5 §3)
+# Track: Type aliases (Phase 2.5 #3)
 
-Parent: [../PLAN.md](../PLAN.md) §Phase 2.5; previous: [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md)
+Parent: [../PLAN.md](../PLAN.md) Phase 2.5; previous: [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md)
 
 ## Status: **open** (step 1 pending)
 
-**Goal:** ???????? ? ???? `type Alias = ExistingType` (?? ????? ADT, ? ???????). ????????? ?????????? `[Shared<CppExpression>]`, `[Shared<CppStatement>]` ? ?.?. ? `cpp_ast.mlc` ? parser.
+**Planner (2026-05-19):** RENAME_ABBREV closed; TYPE_ALIASES active. Step 1 parser-only; checker/codegen in steps 2â€“3. Depends on stable names in `cpp_ast.mlc` (step 5).
+
+**Goal:** Support `type Alias = ExistingType` (not ADT, not sum). Apply repeated `[Shared<CppExpression>]`, `[Shared<CppStatement>]` etc. in `cpp_ast.mlc` and parser.
 
 ```mlc
-// ??:
+// before:
 type CppFunctionDef = CppFunctionDef(string, [Shared<CppType>], [Shared<CppParam>], [Shared<CppStatement>])
 
-// ?????:
+// after:
 type CppExpressions = [Shared<CppExpression>]
 type CppStatements  = [Shared<CppStatement>]
 type CppParameters  = [Shared<CppParameter>]
@@ -32,10 +34,11 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Parser: `DeclTypeAlias` — `type Name = Type` ??? ????????? | pending |
-| 2 | Checker: alias ??????????????? ??? ???????? ?????; ??????????? ?????? — ?????? | pending |
-| 3 | Codegen: alias ?? ?????????? C++ ??? — ?????????? ?????? | pending |
-| 4 | ????? ? `test_checker.mlc` + `test_parser.mlc` | pending |
-| 5 | ????????? ? `cpp/cpp_ast.mlc` — ???????? `CppExpressions`, `CppStatements`, `CppParameters`, `CppFields` | pending |
-| 6 | ????????? ? `frontend/parser/predicates.mlc` — `ParseResult<T>` (???? generics ?????????, ????? ??????????) | pending |
-| 7 | Audit + ??????? ???? | pending |
+| 1 | Parser: `DeclTypeAlias` â€” `type Name = Type` (not ADT) | pending |
+<!-- sub-steps: 1) add `DeclTypeAlias(name, type_params, Shared<TypeExpr>, Span)` to `frontend/ast.mlc` + `decl_name`/`decl_inner` arms; 2) in `parse_type_decl` (`decls.mlc`): after `=`, if token is type-expr start (not `{`/variant ident), `parse_type` â†’ `DeclTypeAlias`; 3) minimal `semantic_ir`/`transform` stub or skip decl in checker until step 2; 4) `test_parser.mlc` positive + negative (`type Foo = Bar | Baz` stays sum) -->
+| 2 | Checker: alias resolves as underlying type; diagnostics on cycle | pending |
+| 3 | Codegen: alias emits no C++ decl â€” underlying type only | pending |
+| 4 | Tests in `test_checker.mlc` + `test_parser.mlc` | pending |
+| 5 | Apply in `cpp/cpp_ast.mlc` â€” `CppExpressions`, `CppStatements`, `CppParameters`, `CppFields` | pending |
+| 6 | Apply in `frontend/parser/predicates.mlc` â€” `ParseResult<T>` (after generics stable) | pending |
+| 7 | Audit + close track | pending |

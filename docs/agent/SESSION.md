@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-e3016677-9d08-4e11-a343-b8a7e1767296` |
-| driver_turns_since_plan | 3|
-| step_last | 23|
-| active_track | none (RENAME_ABBREV closed) |
+| agent_token_last | `cr-agent-66e0404d-92da-4013-8a60-51cd320817bf` |
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh |
+| active_track | TRACK_TYPE_ALIASES → STEP=1 |
+
+### Turn 2026-05-19 (Planner plan-refresh — RENAME closed)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN |
+| done | RENAME closed; TYPE_ALIASES STEP=1 next; TRACK_PLAN backlog updated |
+| result | gate **961**/0 (prior); sub-steps on TYPE_ALIASES step 1 |
+| next | ROLE=Driver STEP=1 TRACK_TYPE_ALIASES (enqueued) |
 
 ### Turn 2026-05-19 (Driver RENAME_ABBREV step 23 — commit batch / close)
 
