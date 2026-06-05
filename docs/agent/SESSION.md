@@ -18,7 +18,7 @@
 | step | 7 |
 | track | TRACK_RENAME_ABBREV |
 | done | `types.mlc` `return_type_parsed`, `type_arguments`; string quotes ok |
-| result | **961**/0; self-host `diff_exit=0` |
+| result | **961**/0; self-host `diff_exit=0`; commit `3f61a746` |
 | next | ROLE=Driver STEP=8 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)

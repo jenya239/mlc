@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md]
 
 ## Status: **open** (step 7 done — 2026-06-05)
 
-**STEP=7 note (2026-06-05 Driver):** `types.mlc` locals `return_type_parsed`, `type_arguments`; string quotes: `"` char compares only — ok. Gate: **961**/0; self-host diff empty.
+**STEP=7 note (2026-06-05 Driver):** `types.mlc` locals `return_type_parsed`, `type_arguments`; string quotes: `"` char compares only — ok. Gate: **961**/0; self-host diff empty. Commit `3f61a746`.
 
 **STEP=6 note (2026-06-05 Driver):** `decls.mlc` `parse_declaration`/`parse_function_declaration`; `return_type_parsed`, `type_parameters_parsed`, `declarations` locals; string quotes ok. Gate: **961**/0; self-host diff empty. Commit `ced551de`.
 
