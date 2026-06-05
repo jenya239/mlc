@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md]
 
 ## Status: **open** (step 11 done — 2026-06-05)
 
-**STEP=11 note (2026-06-05 Driver):** `FunctionIndex.function_types`; `AdtIndex` `constructor_types`/`constructor_parameters`/`private_constructors`; locals `declaration`/`return_type`/`type_arguments`/`builtin_required_arity`; `semantic_type_structure` tuple/pair/substitute binders; quotes ok (`"` char compares + string literals only). Gate: **961**/0; self-host diff empty. Commit `75a99792`.
+**STEP=11 note (2026-06-05 Driver):** `FunctionIndex.function_types`; `AdtIndex` `constructor_types`/`constructor_parameters`/`private_constructors`; locals `declaration`/`return_type`/`type_arguments`/`builtin_required_arity`; `semantic_type_structure` tuple/pair/substitute binders; quotes ok (`"` char compares + string literals only). Gate: **961**/0; self-host diff empty. Commit `25b971c0`.
 
 **STEP=10 note (2026-06-05 Driver):** `emit_helpers.mlc`/`hash_stmt_helpers.mlc` already compliant; comment fix; quotes ok. Gate: **961**/0; self-host diff empty. Commit `0a5cbcc6`.
 

@@ -18,7 +18,7 @@
 | step | 11 |
 | track | TRACK_RENAME_ABBREV |
 | done | `FunctionIndex.function_types`; `AdtIndex` constructor fields; locals/bindings; quotes ok |
-| result | **961**/0; self-host `diff_exit=0`; commit `75a99792` |
+| result | **961**/0; self-host `diff_exit=0`; commit `25b971c0` |
 | next | ROLE=Driver STEP=12 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)
