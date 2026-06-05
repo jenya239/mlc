@@ -5,10 +5,17 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-6d32a432-cb32-4494-a92b-aaabbf8c9eb8`|
+| agent_token_last | `cr-agent-1ca2b8bc-4f3a-40ec-a96b-04de6d984008`|
 | driver_turns_since_plan | 6|
 | step_last | 6|
 | active_track | TRACK_RENAME_ABBREV → STEP=7 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 6 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| action | STEP=6 done (`ced551de`); gate **961**/0 re-verified |
+| next | STEP=7 already queued or re-enqueued |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 6 — decls.mlc)
 
