@@ -18,7 +18,7 @@
 | step | 23 |
 | track | TRACK_RENAME_ABBREV |
 | done | commit steps 18–22; track closed |
-| result | **961**/0; self-host `diff_exit=0`; commit pending |
+| result | **961**/0; self-host `diff_exit=0`; commit `0c68101b` |
 | next | ROLE=Planner STEP=plan-refresh (enqueued) |
 
 ### Turn 2026-05-19 (Driver RENAME_ABBREV step 22 — quote audit)
