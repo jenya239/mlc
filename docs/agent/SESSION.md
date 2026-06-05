@@ -23,6 +23,18 @@
 | result | **966**/0; self-host `diff_exit=0` |
 | issues | `match` on `Map.get()` → visit without deref; fixed via helper |
 | next | ROLE=Driver STEP=3 TRACK_TYPE_ALIASES |
+| commit | `dae2eacd` |
+
+### Turn 2026-05-19 (Driver TYPE_ALIASES step 2 — idempotent re-queue)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 (skip) |
+| track | TRACK_TYPE_ALIASES |
+| done | STEP=2 already done; TRACK hash `dae2eacd`; re-verify gate |
+| result | **966**/0; commit `dae2eacd` |
+| next | ROLE=Driver STEP=3 TRACK_TYPE_ALIASES |
 
 ### Turn 2026-06-05 (Meta meta-review — TYPE_ALIASES STEP=1 loop)
 
