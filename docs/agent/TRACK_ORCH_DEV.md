@@ -42,7 +42,7 @@ npm run build
 | 2 | Billing: ?????? `cost_entries` ??? ?????? enqueue (cursor_usage context%, ??????, timestamp); web UI tab `/billing` | done |
 | 3 | tmux transport: `cr/src/tmux/` ù `listPanes()`, `sendKeys(pane, text)`, `capturePaneOutput(pane, lines)`, `registerAgent(pane, role, token)` | done |
 | 4 | Multi-agent targets: extend `AGENT_TARGETS` ? `transport: 'cdp' \| 'tmux'` ? `paneId?`; unified watchdog loop | pending |
-| 5 | Session DB cache: sync SESSION.md turns ? SQLite `turns` table ??? ????????? ????? (fs.watch); ????????-?????? ?????? ?? DB | pending |
+| 5 | Session DB cache: sync SESSION.md turns ? SQLite `turns` table on fs.watch; progress reads from DB | done |
 | 6 | Meeting rooms: `docs/agent/meetings/YYYY-MM-DD-<topic>.md`; `listMeetings()` ?????? ?? DB+dir; render ? web UI progress tab | pending |
 
 ## Notes

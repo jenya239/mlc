@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-1ca2b8bc-4f3a-40ec-a96b-04de6d984008`|
-| driver_turns_since_plan | 6|
-| step_last | 6|
+| agent_token_last | `cr-agent-2713dc06-3325-4799-a35d-4680832d0041`|
+| driver_turns_since_plan | 0|
+| step_last | critique-audit|
 | active_track | TRACK_RENAME_ABBREV → STEP=7 |
+
+### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| audited | RENAME_ABBREV s4–6 (`bd26730b`,`36c8dfab`,`ced551de`); ORCH_DEV s3+s5 (`ed84883`,`fbc130c`) |
+| gate | mlc **961**/0; self-host diff empty; cr session+tmux tests 15/15 |
+| findings | TRACK_ORCH_DEV step 5 row was `pending` — fixed; ORCH step 4 still pending (skipped); exprs.mlc residual `pat_parsed`/`then_expr`/`is_unit_expr` — non-blocker, fold into step 7 |
+| reopen | none |
+| next | ROLE=Driver STEP=7 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 6 — idempotent re-prompt)
 
