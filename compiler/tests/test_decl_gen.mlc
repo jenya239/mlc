@@ -37,7 +37,7 @@ fn make_bool(value: bool) -> Shared<SemanticExpression> = Shared.new(SemanticExp
 fn make_question(inner: Shared<SemanticExpression>) -> Shared<SemanticExpression> =
   Shared.new(SemanticExpressionQuestion(inner, unk(), span_unknown()))
 
-fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, type_value: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) -> Shared<SemanticDeclaration> = do
   const where_clause_bounds: [WhereClauseBound] = []
   Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
@@ -47,7 +47,7 @@ fn generic_param(name: string) -> Shared<Param> =
   Shared.new(Param {
     name: name,
     is_mut: false,
-    typ: Shared.new(TyNamed("T")),
+    type_value: Shared.new(TyNamed("T")),
     has_default: false,
     default: Shared.new(ExprUnit(span_unknown())),
     param_pattern: Shared.new(PatternUnit(span_unknown()))
@@ -212,7 +212,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_fn_proto('push_token', [], [], [Shared.new(Param {
       name: 'tokens',
       is_mut: true,
-      typ: Shared.new(TyArray(Shared.new(TyNamed('Token')))),
+      type_value: Shared.new(TyArray(Shared.new(TyNamed('Token')))),
       has_default: false,
       default: Shared.new(ExprUnit(span_unknown())),
       param_pattern: Shared.new(PatternUnit(span_unknown()))
@@ -220,15 +220,15 @@ export fn decl_gen_tests() -> [TestResult] = do
     'void push_token(mlc::Array<Token>& tokens) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_proto: string return type',
-    gen_fn_proto('greet', [], [], [Shared.new(Param { name: 'name', is_mut: false, typ: Shared.new(TyString), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], tstr(), context),
+    gen_fn_proto('greet', [], [], [Shared.new(Param { name: 'name', is_mut: false, type_value: Shared.new(TyString), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], tstr(), context),
     'mlc::String greet(mlc::String name) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_proto: default param literal',
-    gen_fn_proto("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), context),
+    gen_fn_proto("f", [], [], [Shared.new(Param { name: "a", is_mut: false, type_value: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), context),
     'int f(int a = 2) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_decl: body omits default value',
-    gen_fn_decl("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), make_ident("a"), context),
+    gen_fn_decl("f", [], [], [Shared.new(Param { name: "a", is_mut: false, type_value: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), make_ident("a"), context),
     'int f(int a) noexcept{\nreturn a;\n}\n'))
 
   // --- gen_fn_decl ------------------------------------------------------------
@@ -339,7 +339,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   // --- gen_trait_decl + SemanticDeclarationExtend --------------------------------------------
 
-  const display_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Display')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const display_self = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyNamed('Display')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const display_method = fn_decl('Display_to_string', [display_self], tstr(), make_unit_expr())
   results.push(assert_code_contains('gen_trait_decl: concept keyword',
     gen_trait_decl(context, 'Display', [], [display_method]), 'concept'))
@@ -371,7 +371,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_trait_struct_cpp(context, 'Display', [], [display_method])),
     gen_trait_struct(context, 'Display', [], [display_method])))
 
-  const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const color_self = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const color_to_string = fn_decl('Color_to_string', [color_self], tstr(), make_str_expr('red'))
   const extend_display_for_color = extend_decl('Color', 'Display', [color_to_string])
   results.push(assert_code_contains('gen_decl SemanticDeclarationExtend: static_assert implements trait',
@@ -450,7 +450,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_decl_cpp(extend_color_only, context)),
     gen_decl(extend_color_only, context)))
 
-  const box_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Box')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const box_self = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyNamed('Box')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const item_assoc_bind = Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown()))
   const bare_assoc_import = Shared.new(SemanticDeclarationImport('', []))
   const iter_next_method = fn_decl('Box_Iter_next', [box_self], ti32(), make_int(0))
@@ -502,7 +502,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(trait_extend_native[0]),
     gen_fn_decl('Color_to_string', [], [], [color_self], tstr(), make_str_expr('red'), color_extend_context)))
 
-  const integer_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const integer_self = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const extern_method_string = gen_extend_extern_method(
     'i32_to_string', 'i32', [integer_self], tstr(), 'Display', context, extend_context_resolve)
   results.push(assert_eq_str('gen_extend_extern_method_cpp matches string',
@@ -643,7 +643,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   const match_arm_block_body = Shared.new(SemanticExpressionMatch(
     make_int(1),
     [Shared.new(SemanticMatchArm {
-      pat: Shared.new(PatternUnit(span_unknown())),
+      pattern: Shared.new(PatternUnit(span_unknown())),
       has_guard: false,
       when_condition: make_unit_expr(),
       body: Shared.new(SemanticExpressionBlock(
@@ -662,19 +662,19 @@ export fn decl_gen_tests() -> [TestResult] = do
     make_ident('word'),
     [
       Shared.new(SemanticMatchArm {
-        pat: Shared.new(PatternStringLit('fn', span_unknown())),
+        pattern: Shared.new(PatternStringLit('fn', span_unknown())),
         has_guard: false,
         when_condition: make_unit_expr(),
         body: make_int(1)
       }),
       Shared.new(SemanticMatchArm {
-        pat: Shared.new(PatternStringLit('type', span_unknown())),
+        pattern: Shared.new(PatternStringLit('type', span_unknown())),
         has_guard: false,
         when_condition: make_unit_expr(),
         body: make_int(2)
       }),
       Shared.new(SemanticMatchArm {
-        pat: Shared.new(PatternWild(span_unknown())),
+        pattern: Shared.new(PatternWild(span_unknown())),
         has_guard: false,
         when_condition: make_unit_expr(),
         body: make_int(0)

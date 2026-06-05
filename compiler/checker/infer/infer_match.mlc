@@ -8,7 +8,7 @@ import {
   diagnostics_append,
   diagnostic_error_with_code,
   expr_span,
-  pat_span,
+  pattern_span,
   Pattern,
   PatternStringLit,
   PatternStr,
@@ -77,7 +77,7 @@ fn pattern_string_literals_flat(pattern: Shared<Pattern>, mut accumulator: [stri
 end
 
 fn match_arms_use_string_literals(arms: [Shared<MatchArm>]) -> bool =
-  arms.any(arm => pattern_contains_string_literal(arm.pat))
+  arms.any(arm => pattern_contains_string_literal(arm.pattern))
 
 fn should_apply_string_match_rules(subject_type: Shared<Type>, arms: [Shared<MatchArm>]) -> bool =
   match_arms_use_string_literals(arms) || type_is_string(subject_type)
@@ -98,11 +98,11 @@ fn string_match_invalid_arm_pattern_diagnostic(arms: [Shared<MatchArm>]) -> [Dia
   let mut errors: [Diagnostic] = []
   let mut arm_index = 0
   while arm_index < arms.length() do
-    if !pattern_is_string_match_pattern(arms[arm_index].pat) then
+    if !pattern_is_string_match_pattern(arms[arm_index].pattern) then
       errors.push(
         diagnostic_error_with_code(
           'string match arm must use string literal or wildcard pattern',
-          pat_span(arms[arm_index].pat),
+          pattern_span(arms[arm_index].pattern),
           diagnostic_code_e079()))
     end
     arm_index = arm_index + 1
@@ -115,7 +115,7 @@ fn string_match_duplicate_literal_diagnostic(arms: [Shared<MatchArm>]) -> [Diagn
   let mut errors: [Diagnostic] = []
   let mut arm_index = 0
   while arm_index < arms.length() do
-    const literals = pattern_string_literals_flat(arms[arm_index].pat, [])
+    const literals = pattern_string_literals_flat(arms[arm_index].pattern, [])
     let mut literal_index = 0
     while literal_index < literals.length() do
       const literal_value = literals[literal_index]
@@ -123,7 +123,7 @@ fn string_match_duplicate_literal_diagnostic(arms: [Shared<MatchArm>]) -> [Diagn
         errors.push(
           diagnostic_error_with_code(
             'duplicate string literal in match',
-            pat_span(arms[arm_index].pat),
+            pattern_span(arms[arm_index].pattern),
             diagnostic_code_e078()))
       else
         seen_literals.set(literal_value, true)
@@ -140,13 +140,13 @@ fn string_match_wildcard_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = 
   let mut wildcard_count = 0
   let mut arm_index = 0
   while arm_index < arms.length() do
-    if pattern_is_wildcard_only(arms[arm_index].pat) then
+    if pattern_is_wildcard_only(arms[arm_index].pattern) then
       wildcard_count = wildcard_count + 1
       if arm_index != arms.length() - 1 then
         errors.push(
           diagnostic_error_with_code(
             'wildcard match arm must be last for string match',
-            pat_span(arms[arm_index].pat),
+            pattern_span(arms[arm_index].pattern),
             diagnostic_code_e080()))
       end
     end
@@ -156,7 +156,7 @@ fn string_match_wildcard_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = 
     errors.push(
       diagnostic_error_with_code(
         'string match allows at most one wildcard arm',
-        pat_span(arms[0].pat),
+        pattern_span(arms[0].pattern),
         diagnostic_code_e080()))
   end
   errors
@@ -193,10 +193,10 @@ export fn infer_expr_match(
   let mut arm_type: Shared<Type> = Shared.new(TUnknown)
   let mut arm_index = 0
   while arm_index < arms.length() do
-    const arm_environment = env_for_pattern_substituted(inference_context.type_env, arms[arm_index].pat, inference_context.registry, substitution, subject_parsed.inferred_type)
+    const arm_environment = env_for_pattern_substituted(inference_context.type_env, arms[arm_index].pattern, inference_context.registry, substitution, subject_parsed.inferred_type)
     const arm_context     = check_context_new(arm_environment, inference_context.registry)
     if arms[arm_index].has_guard then
-      collected_errors = diagnostics_append(collected_errors, pattern_guard_unsupported_tuple_or_array_diagnostic(arms[arm_index].pat))
+      collected_errors = diagnostics_append(collected_errors, pattern_guard_unsupported_tuple_or_array_diagnostic(arms[arm_index].pattern))
       const guard_inference = infer_expr_fn(arms[arm_index].when_condition, arm_context)
       collected_errors = diagnostics_append(collected_errors, guard_inference.errors)
       if !type_is_unknown(guard_inference.inferred_type) && !type_is_bool(guard_inference.inferred_type) then

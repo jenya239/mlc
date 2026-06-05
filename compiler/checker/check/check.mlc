@@ -1,6 +1,6 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
-import { Program, Decl, Result, decl_inner, decl_span, param_name, param_typ, Param,
+import { Program, Decl, Result, decl_inner, decl_span, param_name, param_type_value, Param,
          Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
          span_unknown, TypeVariant, FieldDef } from '../../frontend/ast'
@@ -92,7 +92,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
               diagnostics_after_field =
                 diagnostics_append(diagnostics_after_field, default_parsed.errors)
               const annotated_field_type =
-                type_from_annotation(record_field_under_literal_definition.typ)
+                type_from_annotation(record_field_under_literal_definition.type_value)
               if type_is_checkable(annotated_field_type, registry) &&
                  type_is_checkable(default_parsed.inferred_type, registry) &&
                  !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
@@ -193,7 +193,7 @@ fn param_default_diagnostics(
           diagnostics_after_parameter =
             diagnostics_append(diagnostics_after_parameter, default_infer.errors)
           const parameter_expected_type =
-            type_from_annotation(param_typ(parameter_under_scan_for_defaults))
+            type_from_annotation(param_type_value(parameter_under_scan_for_defaults))
           if type_is_checkable(parameter_expected_type, registry) &&
              type_is_checkable(default_infer.inferred_type, registry) &&
              !types_structurally_equal(parameter_expected_type, default_infer.inferred_type) then
@@ -363,7 +363,7 @@ fn accumulate_diagnostics_for_single_extend_method(
       while parameter_index < params.length() do
         method_environment.set(
           param_name(params[parameter_index]),
-          type_from_annotation(param_typ(params[parameter_index])))
+          type_from_annotation(param_type_value(params[parameter_index])))
         parameter_index = parameter_index + 1
       end
       const extend_context =
@@ -403,7 +403,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         let mut parameter_index = 0
         while parameter_index < parameters.length() do
           locals.push(param_name(parameters[parameter_index]))
-          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation(param_typ(parameters[parameter_index])))
+          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation(param_type_value(parameters[parameter_index])))
           parameter_index = parameter_index + 1
         end
         const body_partial_application = partial_application_desugar_expr(body)

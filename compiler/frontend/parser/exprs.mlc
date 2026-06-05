@@ -273,22 +273,22 @@ end
 // --- Expression and pattern parser ---------------------------------------
 
 fn parse_pattern_identifier_branch(parser: Parser, name: string) -> PatternResult = do
-  const pattern_span = parser.span_at_cursor()
+  const binding_span = parser.span_at_cursor()
   if name == "_" then
-    PatternResult { pat: Shared.new(PatternWild(pattern_span)), parser: parser.advance() }
+    PatternResult { pat: Shared.new(PatternWild(binding_span)), parser: parser.advance() }
   else if is_ctor_name(name) then
     const after = parser.advance()
     if after.kind().is_lparen() then
       const sub_patterns = parse_pat_args(after.advance())
-      PatternResult { pat: Shared.new(PatternCtor(name, sub_patterns.pats, pattern_span)), parser: sub_patterns.parser }
+      PatternResult { pat: Shared.new(PatternCtor(name, sub_patterns.pats, binding_span)), parser: sub_patterns.parser }
     else if after.kind().is_lbrace() then
       const fields_parsed = parse_record_pat_fields(after.advance())
-      PatternResult { pat: Shared.new(PatternRecord(name, fields_parsed.pats, pattern_span)), parser: fields_parsed.parser }
+      PatternResult { pat: Shared.new(PatternRecord(name, fields_parsed.pats, binding_span)), parser: fields_parsed.parser }
     else
-      PatternResult { pat: Shared.new(PatternCtor(name, [], pattern_span)), parser: after }
+      PatternResult { pat: Shared.new(PatternCtor(name, [], binding_span)), parser: after }
     end
   else
-    PatternResult { pat: Shared.new(PatternIdent(name, pattern_span)), parser: parser.advance() }
+    PatternResult { pat: Shared.new(PatternIdent(name, binding_span)), parser: parser.advance() }
   end
 end
 
@@ -968,7 +968,7 @@ fn parse_match_arm(pat_parsed: PatternResult) -> MatchArmParseOutcome = do
   let { expr } = body_parsed
   MatchArmParseOutcome {
     arm: Shared.new(MatchArm {
-      pat: pat_parsed.pat,
+      pattern: pat_parsed.pat,
       has_guard: has_guard,
       when_condition: guard_expression,
       body: expr
@@ -1048,10 +1048,10 @@ fn parse_record_lit_parts(parser: Parser) -> RecordLitPartsResult = do
       if after_field_name.kind().is_colon() then
         const field_value_parsed = parse_expr(after_field_name.advance())
         let { expr } = field_value_parsed
-        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: expr }))
+        current_field_vals.push(Shared.new(FieldVal { name: field_name, value: expr }))
         state = field_value_parsed.parser
       else
-        current_field_vals.push(Shared.new(FieldVal { name: field_name, val: Shared.new(ExprIdent(field_name, field_span)) }))
+        current_field_vals.push(Shared.new(FieldVal { name: field_name, value: Shared.new(ExprIdent(field_name, field_span)) }))
         state = after_field_name
       end
       if state.kind().is_comma() then state = state.advance() end

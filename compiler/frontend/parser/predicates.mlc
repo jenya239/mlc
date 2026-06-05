@@ -170,7 +170,7 @@ export extend Parser {
     if self.pos >= self.tokens.length() then Span { file: self.source_path, line: 0, column: 0 }
     else do
       const tok: Token = self.tokens[self.pos]
-      Span { file: self.source_path, line: tok.line, column: tok.col }
+      Span { file: self.source_path, line: tok.line, column: tok.column }
     end
   fn prev_line(self) -> i32 = do
     if self.pos > 0 then

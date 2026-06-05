@@ -32,15 +32,15 @@ fn default_expr_to_cpp(e: Shared<Expr>) -> string = match e {
 }
 
 fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
-  match parameter.typ {
+  match parameter.type_value {
     TyGeneric(type_name, _) =>
-      if type_name == 'ref' then type_to_cpp(context, parameter.typ)
-      else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.typ))
-      else type_to_cpp(context, parameter.typ)
+      if type_name == 'ref' then type_to_cpp(context, parameter.type_value)
+      else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+      else type_to_cpp(context, parameter.type_value)
       end,
     _ =>
-      if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.typ))
-      else type_to_cpp(context, parameter.typ)
+      if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+      else type_to_cpp(context, parameter.type_value)
       end
   }
 
@@ -72,7 +72,7 @@ export fn gen_parameter_def_items(context: CodegenContext, params: [Shared<Param
 
 export fn non_self_parameter_types_cpp(context: CodegenContext, params: [Shared<Param>]) -> [string] =
   params.filter(parameter => parameter.name != 'self')
-    .map(parameter => type_to_cpp(context, parameter.typ))
+    .map(parameter => type_to_cpp(context, parameter.type_value))
 
 export fn parameter_call_argument_names(params: [Shared<Param>]) -> [string] =
   params.map(parameter => cpp_safe(parameter.name))

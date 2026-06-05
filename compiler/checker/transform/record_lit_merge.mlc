@@ -32,7 +32,7 @@ fn merge_explicit_record_literal_with_type_defaults_nonempty(
     else if registry.record_field_has_default_expression(nominal_record_name, slot_field_name) then
       merged_ordered_fields.push(Shared.new(FieldVal {
         name: slot_field_name,
-        val: registry.record_field_default_expression_ast(nominal_record_name, slot_field_name)
+        value: registry.record_field_default_expression_ast(nominal_record_name, slot_field_name)
       }))
     end
     ordered_walk_index = ordered_walk_index + 1
@@ -157,7 +157,7 @@ export fn merge_record_literal_parts_to_field_values(
       merged_field_values.push(explicit_map.get(merge_field_name))
     else if expanded_member_expressions.has(merge_field_name) then
       merged_field_values.push(
-        Shared.new(FieldVal { name: merge_field_name, val: expanded_member_expressions.get(merge_field_name) }))
+        Shared.new(FieldVal { name: merge_field_name, value: expanded_member_expressions.get(merge_field_name) }))
     end
     ordered_merge_index = ordered_merge_index + 1
   end

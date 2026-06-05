@@ -2,9 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 1 done — 2026-06-05)
+## Status: **open** (step 2 done — 2026-06-05)
 
-**STEP=1 note (2026-06-05 Driver):** wip-rename stash applied; merged self-host fixes (`temp_name_counter` i32, `parameter_type_cpp` mut `&`). Gate: **961**/0; self-host diff empty. Next: step 2 `ast.mlc` + `ast_tokens.mlc` field renames.
+**STEP=2 note (2026-06-05 Driver):** `ast.mlc`/`ast_tokens.mlc` fields: `column`, `pattern`, `value`, `type_value`; ripple checker/codegen/parser/tests + `semantic_ir.mlc`. Fix: local `binding_span` (not `pattern_span`). Gate: **961**/0; self-host diff empty. Next: step 3 `lexer.mlc`.
+
+**STEP=1 note (2026-06-05 Driver):** wip-rename stash applied; merged self-host fixes (`temp_name_counter` i32, `parameter_type_cpp` mut `&`). Gate: **961**/0; self-host diff empty.
 
 **Planner (2026-05-19):** STRING_MATCH closing; **TYPE_ALIASES** next. Step 1 partial WIP in worktree (`SemanticExpression`, `TokenKind`, `Pattern` — verify `Pattern*` variants before gate). Do **not** blind re-run STEP=1; audit diff then continue step 2+.
 

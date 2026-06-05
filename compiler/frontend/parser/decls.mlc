@@ -293,7 +293,7 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const self_param = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const self_param = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const params: [Shared<Param>] = []
   const leading_self = after_lparen.kind().is_ident() && after_lparen.kind().ident() == 'self'
   if leading_self then params.push(self_param) end
@@ -317,7 +317,7 @@ fn parse_extend_method(parser: Parser, type_name: string) -> DeclResult = do
   const fn_name       = parser.advance().kind().ident()
   const mangled_name  = type_name + "_" + fn_name
   const after_lparen  = parser.advance_by(3)
-  const self_param = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const self_param = Shared.new(Param { name: 'self', is_mut: false, type_value: Shared.new(TyNamed(type_name)), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const params: [Shared<Param>] = []
   params.push(self_param)
   const rest_start = if after_lparen.kind().is_ident() && after_lparen.kind().ident() == 'self' then
@@ -483,7 +483,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: synthetic_aggregate_identifier,
           is_mut: mutable_binding_requested,
-          typ: record_field_type_parse.type_expr,
+          type_value: record_field_type_parse.type_expr,
           has_default: true,
           default: parsed_default_expression.expr,
           param_pattern: record_destructure_pattern
@@ -495,7 +495,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: synthetic_aggregate_identifier,
           is_mut: mutable_binding_requested,
-          typ: record_field_type_parse.type_expr,
+          type_value: record_field_type_parse.type_expr,
           has_default: false,
           default: Shared.new(ExprUnit(span_unknown())),
           param_pattern: record_destructure_pattern
@@ -518,7 +518,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: synthetic_tuple_aggregate_identifier,
           is_mut: mutable_binding_requested,
-          typ: tuple_parameter_type_parse.type_expr,
+          type_value: tuple_parameter_type_parse.type_expr,
           has_default: true,
           default: parsed_tuple_default_expression.expr,
           param_pattern: tuple_destructure_pattern
@@ -530,7 +530,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: synthetic_tuple_aggregate_identifier,
           is_mut: mutable_binding_requested,
-          typ: tuple_parameter_type_parse.type_expr,
+          type_value: tuple_parameter_type_parse.type_expr,
           has_default: false,
           default: Shared.new(ExprUnit(span_unknown())),
           param_pattern: tuple_destructure_pattern
@@ -551,7 +551,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: binding_name,
           is_mut: mutable_binding_requested,
-          typ: plain_binding_type_parse.type_expr,
+          type_value: plain_binding_type_parse.type_expr,
           has_default: true,
           default: parsed_plain_default_expression.expr,
           param_pattern: plain_identifier_parameter_pattern_marker()
@@ -563,7 +563,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
         param: Shared.new(Param {
           name: binding_name,
           is_mut: mutable_binding_requested,
-          typ: plain_binding_type_parse.type_expr,
+          type_value: plain_binding_type_parse.type_expr,
           has_default: false,
           default: Shared.new(ExprUnit(span_unknown())),
           param_pattern: plain_identifier_parameter_pattern_marker()
@@ -755,7 +755,7 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
       const default_parsed = parse_expr(remainder_after_field_type.advance())
       field_defs.push(Shared.new(FieldDef {
         name: field_name,
-        typ: type_parsed.type_expr,
+        type_value: type_parsed.type_expr,
         has_default_expression: true,
         default_expression: default_parsed.expr
       }))
@@ -763,7 +763,7 @@ fn parse_field_defs(parser: Parser) -> FieldDefsResult = do
     else
       field_defs.push(Shared.new(FieldDef {
         name: field_name,
-        typ: type_parsed.type_expr,
+        type_value: type_parsed.type_expr,
         has_default_expression: false,
         default_expression: Shared.new(ExprUnit(span_unknown()))
       }))

@@ -62,7 +62,7 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
     VarRecord(variant_name, field_defs, _) =>
       field_defs.flat_map(field_definition =>
         derive_hash_field_error(
-          `variant "${variant_name}"`, field_definition.name, field_definition.typ, diagnostic_span))
+          `variant "${variant_name}"`, field_definition.name, field_definition.type_value, diagnostic_span))
   }
 
 fn derive_hash_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =

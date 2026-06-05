@@ -115,7 +115,7 @@ fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>],
   arms.fold(
     diagnostics_after_subject,
     (diagnostics_accumulator, arm_under_walk) => do
-      const bindings = pattern_bindings(arm_under_walk.pat)
+      const bindings = pattern_bindings(arm_under_walk.pattern)
       const arm_scope = locals
       let mut binding_index = 0
       while binding_index < bindings.length() do
@@ -152,13 +152,13 @@ fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [stri
   field_values.fold(
     do let starting_record_names: [Diagnostic] = []; starting_record_names end,
     (diagnostics_accumulator, field_value_under_walk) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.val, locals, globals)))
+      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.value, locals, globals)))
 
 fn check_names_record_update_expression(base: Shared<Expr>, field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
   field_values.fold(
     check_names_expr(base, locals, globals),
     (diagnostics_accumulator, field_value_under_walk) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.val, locals, globals)))
+      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.value, locals, globals)))
 
 fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
   elements.fold(

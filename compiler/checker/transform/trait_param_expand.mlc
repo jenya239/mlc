@@ -7,7 +7,7 @@ import {
   DeclFn, DeclType, DeclTrait, DeclExtend,
   DeclExported,
   WhereClauseBound,
-  param_name, param_typ,
+  param_name, param_type_value,
   Diagnostic, diagnostic_error_with_code, decl_name_span
 } from '../../frontend/ast'
 import { diagnostic_code_e073 } from '../diagnostic_codes'
@@ -282,7 +282,7 @@ fn expand_decl_fn_trait_parameters(
     (expanded_state_before_traversal_step, parameter_under_traversal_shared) => do
       const parameter_traversal_expression_chunk =
         expand_type_expression_for_trait_param(
-          param_typ(parameter_under_traversal_shared),
+          param_type_value(parameter_under_traversal_shared),
           explicit_type_parameter_environment,
           trait_declaration_names,
           nominal_type_declaration_names,
@@ -300,7 +300,7 @@ fn expand_decl_fn_trait_parameters(
             Shared.new(Param {
               name:           param_name(parameter_under_traversal_shared),
               is_mut:         parameter_under_traversal_shared.is_mut,
-              typ:            parameter_traversal_expression_chunk.type_expression,
+              type_value:            parameter_traversal_expression_chunk.type_expression,
               has_default:    parameter_under_traversal_shared.has_default,
               default:        parameter_under_traversal_shared.default,
               param_pattern:  parameter_under_traversal_shared.param_pattern

@@ -91,7 +91,7 @@ export fn lambda_expr(parameters: [string], body_expr: Shared<Expr>) -> Shared<E
 // --- FieldVal builder --------------------------------------------------------
 
 export fn field_value(field_name: string, value_expr: Shared<Expr>) -> Shared<FieldVal> =
-  Shared.new(FieldVal { name: field_name, val: value_expr })
+  Shared.new(FieldVal { name: field_name, value: value_expr })
 
 // --- Pattern builders --------------------------------------------------------
 
@@ -105,7 +105,7 @@ export fn ctor_pattern(ctor_name: string, sub_patterns: [Shared<Pattern>]) -> Sh
 
 export fn match_arm(pattern: Shared<Pattern>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
   Shared.new(MatchArm {
-    pat: pattern,
+    pattern: pattern,
     has_guard: false,
     when_condition: Shared.new(ExprBool(true, span_unknown())),
     body: body_expr
@@ -113,7 +113,7 @@ export fn match_arm(pattern: Shared<Pattern>, body_expr: Shared<Expr>) -> Shared
 
 export fn match_arm_with_guard(pattern: Shared<Pattern>, when_condition_expression: Shared<Expr>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
   Shared.new(MatchArm {
-    pat: pattern,
+    pattern: pattern,
     has_guard: true,
     when_condition: when_condition_expression,
     body: body_expr
@@ -136,7 +136,7 @@ export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
 // --- Param builder -----------------------------------------------------------
 
 export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) -> Shared<Param> =
-  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  Shared.new(Param { name: parameter_name, is_mut: false, type_value: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
 
 // --- Declaration builders ----------------------------------------------------
 
@@ -161,7 +161,7 @@ export fn unit_variant(variant_name: string) -> Shared<TypeVariant> =
 export fn field_definition(field_name: string, field_type: Shared<TypeExpr>) -> Shared<FieldDef> =
   Shared.new(FieldDef {
     name: field_name,
-    typ: field_type,
+    type_value: field_type,
     has_default_expression: false,
     default_expression: Shared.new(ExprUnit(span_unknown()))
   })

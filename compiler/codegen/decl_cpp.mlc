@@ -41,7 +41,7 @@ export fn print_cpp_declarations(declarations: [Shared<CppDeclaration>]) -> stri
 
 fn prototype_context_for_function(context: CodegenContext, params: [Shared<Param>]) -> CodegenContext =
   if params.length() > 0 && params[0].name == 'self' then
-    match params[0].typ {
+    match params[0].type_value {
       TyNamed(type_name) => do
         const resolved_type = if type_name == 'Self' || type_name == 'self' then context.self_type else type_name end
         context.for_type_body(resolved_type)
@@ -140,7 +140,7 @@ export fn gen_type_decl_fwd_cpp(
 
 fn record_field_cpp(context: CodegenContext, field_definition: Shared<FieldDef>) -> Shared<CppField> =
   Shared.new(CppField {
-    typ: type_to_cpp(context, field_definition.typ),
+    typ: type_to_cpp(context, field_definition.type_value),
     name: cpp_safe(field_definition.name)
   })
 

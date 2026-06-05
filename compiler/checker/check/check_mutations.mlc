@@ -81,13 +81,13 @@ fn check_mutation_field_vals(field_values: [Shared<FieldVal>], mutable_locals: [
   field_values.fold(
     do let empty: [Diagnostic] = []; empty end,
     (errors_accumulator, field_value_under_walk) =>
-      diagnostics_append(errors_accumulator, check_mutation_expr(field_value_under_walk.val, mutable_locals)))
+      diagnostics_append(errors_accumulator, check_mutation_expr(field_value_under_walk.value, mutable_locals)))
 
 fn check_mutation_arms(arms: [Shared<MatchArm>], mutable_locals: [string]) -> [Diagnostic] =
   arms.fold(
     do let empty: [Diagnostic] = []; empty end,
     (errors_accumulator, arm_under_walk) => do
-      const bindings = pattern_bindings(arm_under_walk.pat)
+      const bindings = pattern_bindings(arm_under_walk.pattern)
       const arm_scope = mutable_locals
       let mut binding_index = 0
       while binding_index < bindings.length() do

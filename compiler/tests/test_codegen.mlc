@@ -33,7 +33,7 @@ fn empty_parameter_mutability_pattern() -> [i32] = do let pattern: [i32] = []; p
 
 fn smatch_arm(pattern: Shared<Pattern>, body_expression: Shared<SemanticExpression>) -> Shared<SemanticMatchArm> =
   Shared.new(SemanticMatchArm {
-    pat: pattern,
+    pattern: pattern,
     has_guard: false,
     when_condition: Shared.new(SemanticExpressionBool(true, bool_t(), span_unknown())),
     body: body_expression
@@ -41,7 +41,7 @@ fn smatch_arm(pattern: Shared<Pattern>, body_expression: Shared<SemanticExpressi
 
 fn smatch_arm_guarded(pattern: Shared<Pattern>, when_condition_expression: Shared<SemanticExpression>, body_expression: Shared<SemanticExpression>) -> Shared<SemanticMatchArm> =
   Shared.new(SemanticMatchArm {
-    pat: pattern,
+    pattern: pattern,
     has_guard: true,
     when_condition: when_condition_expression,
     body: body_expression
@@ -461,14 +461,14 @@ export fn codegen_tests() -> [TestResult] = do
 
   // --- ExprRecord ---------------------------------------------------------------
 
-  const fv_a: [Shared<SemanticFieldVal>] = [Shared.new(SemanticFieldVal { name: "a", val: si(1) }), Shared.new(SemanticFieldVal { name: "b", val: si(2) })]
+  const fv_a: [Shared<SemanticFieldVal>] = [Shared.new(SemanticFieldVal { name: "a", value: si(1) }), Shared.new(SemanticFieldVal { name: "b", value: si(2) })]
   results.push(assert_eq_str('ExprRecord positional',
     gen_expr(Shared.new(SemanticExpressionRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), ctx),
     'Point{1, 2}'))
 
   // --- DeclFn via gen_program ---------------------------------------------------
 
-  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })]
+  const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, type_value: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
   const fn_decl = DeclFn('double_it', [], [], fn_param, Shared.new(TyI32), fn_body, [])
   const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
@@ -625,7 +625,7 @@ export fn codegen_tests() -> [TestResult] = do
 
   const phantom_fds: [Shared<FieldDef>] = [Shared.new(FieldDef {
     name: 'value',
-    typ: Shared.new(TyI32),
+    type_value: Shared.new(TyI32),
     has_default_expression: false,
     default_expression: Shared.new(ExprUnit(span_unknown()))
   })]

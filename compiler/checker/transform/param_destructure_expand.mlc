@@ -3,7 +3,7 @@
 import {
   Program, Decl, DeclFn, DeclExported, DeclExtend,
   Shared, Param, Expr, Stmt, StmtLetPattern, ExprBlock, ExprIdent, ExprUnit, ExprExtern,
-  Pattern, PatternUnit, pat_span,
+  Pattern, PatternUnit, pattern_span,
   expr_span,
   Span,
   WhereClauseBound,
@@ -28,17 +28,17 @@ fn strip_parameter_to_synthetic_plain(parameter: Shared<Param>, synthetic_name: 
   Shared.new(Param {
     name: synthetic_name,
     is_mut: false,
-    typ: parameter.typ,
+    type_value: parameter.type_value,
     has_default: parameter.has_default,
     default: parameter.default,
-    param_pattern: Shared.new(PatternUnit(pat_span(parameter.param_pattern)))
+    param_pattern: Shared.new(PatternUnit(pattern_span(parameter.param_pattern)))
   })
 
 fn prelude_statement_destructure(parameter: Shared<Param>, synthetic_name: string, binding_span: Span) -> Shared<Stmt> =
   Shared.new(StmtLetPattern(
     parameter.param_pattern,
     parameter.is_mut,
-    parameter.typ,
+    parameter.type_value,
     Shared.new(ExprIdent(synthetic_name, binding_span)),
     false,
     Shared.new(ExprBlock([], Shared.new(ExprUnit(binding_span)), binding_span)),
@@ -83,7 +83,7 @@ fn expand_decl_fn_parameter_destructuring_inner(
       new_parameters.push(current_parameter)
     else
       const synthetic_name = synthetic_destructure_parameter_name(parameter_position_index)
-      const binding_span = pat_span(current_parameter.param_pattern)
+      const binding_span = pattern_span(current_parameter.param_pattern)
       prelude_statements.push(prelude_statement_destructure(current_parameter, synthetic_name, binding_span))
       new_parameters.push(strip_parameter_to_synthetic_plain(current_parameter, synthetic_name))
     end

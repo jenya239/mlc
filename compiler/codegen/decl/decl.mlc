@@ -21,7 +21,7 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
   const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
   const safe_name = context.resolve(name)
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then
-    match params[0].typ {
+    match params[0].type_value {
       TyNamed(type_name) => do
         const resolved_type = if type_name == 'Self' || type_name == 'self' then context.self_type else type_name end
         context.for_type_body(resolved_type)
@@ -49,7 +49,7 @@ export fn compute_fn_body_context(name: string, params: [Shared<Param>], context
   const fn_shared_map_params   = collect_shared_map_params(params)
   const fn_value_params        = collect_value_params(params)
   if params.length() > 0 && params[0].name == 'self' then
-    match params[0].typ {
+    match params[0].type_value {
       TyNamed(self_type_name) => do
         const resolved_type = if self_type_name == 'Self' || self_type_name == 'self' then context.self_type else self_type_name end
         make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, resolved_type, fn_value_params, [])

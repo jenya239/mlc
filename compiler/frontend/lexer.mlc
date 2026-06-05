@@ -42,7 +42,7 @@ extend LexState {
     end
 
   fn token(self, token_kind: TokenKind) -> Token =
-    Token { kind: token_kind, line: self.line, col: self.col }
+    Token { kind: token_kind, line: self.line, column: self.col }
 }
 
 fn is_alpha(character: string) -> bool =
@@ -131,7 +131,7 @@ fn scan_ident(state: LexState) -> ScanResult = do
     current = current.lex_advance()
   end
   const word = source.byte_substring(start, current.pos - start)
-  ScanResult { after: current, token: Token { kind: keyword_kind(word), line: token_line, col: token_col } }
+  ScanResult { after: current, token: Token { kind: keyword_kind(word), line: token_line, column: token_col } }
 end
 
 fn is_alpha_lower(character: string) -> bool = character >= "a" && character <= "z"
@@ -179,7 +179,7 @@ fn scan_int(state: LexState) -> ScanResult = do
     end
     const raw_float = current.src.byte_substring(int_start, current.pos - int_start)
     let { after } = try_scan_suffix(current)
-    ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
+    ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, column: token_col } }
   else
     let { suffix, after } = try_scan_suffix(current)
     const token_kind = match suffix
@@ -188,7 +188,7 @@ fn scan_int(state: LexState) -> ScanResult = do
     | "usize" => LUsize(value.to_string())
     | _       => LInt(value)
     end
-    ScanResult { after: after, token: Token { kind: token_kind, line: token_line, col: token_col } }
+    ScanResult { after: after, token: Token { kind: token_kind, line: token_line, column: token_col } }
   end
 end
 
@@ -235,7 +235,7 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
     end
   ScanStrResult {
     after: current,
-    token: Token { kind: token_kind, line: token_line, col: token_col },
+    token: Token { kind: token_kind, line: token_line, column: token_col },
     error
   }
 end
@@ -310,7 +310,7 @@ fn scan_string(state: LexState) -> ScanStrResult = do
   end
   ScanStrResult {
     after: current,
-    token: Token { kind: LStr(parts.join('')), line: token_line, col: token_col },
+    token: Token { kind: LStr(parts.join('')), line: token_line, column: token_col },
     error
   }
 end
@@ -400,7 +400,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   parts.push(current_lit.join(''))
   ScanStrResult {
     after: current,
-    token: Token { kind: LTemplate(parts), line: token_line, col: token_col },
+    token: Token { kind: LTemplate(parts), line: token_line, column: token_col },
     error
   }
 end

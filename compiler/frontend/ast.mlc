@@ -81,14 +81,14 @@ export type Pattern =
   | PatternArray([Shared<Pattern>], string, Span)
   | PatternOr([Shared<Pattern>], Span)
 
-export type FieldPattern = FieldPattern { name: string, pat: Shared<Pattern> }
+export type FieldPattern = FieldPattern { name: string, pattern: Shared<Pattern> }
 export type MatchArm = MatchArm {
-  pat: Shared<Pattern>,
+  pattern: Shared<Pattern>,
   has_guard: bool,
   when_condition: Shared<Expr>,
   body: Shared<Expr>
 }
-export type FieldVal = FieldVal { name: string, val: Shared<Expr> }
+export type FieldVal = FieldVal { name: string, value: Shared<Expr> }
 
 // Ordered chunks for TypeName { ... }: explicit fields and record spreads (`...expr`).
 export type RecordLitPart =
@@ -174,7 +174,7 @@ export fn stmt_span(statement: Shared<Stmt>) -> Span =
     StmtReturn(_, source_span)         => source_span,
   }
 
-export fn pat_span(pattern: Shared<Pattern>) -> Span =
+export fn pattern_span(pattern: Shared<Pattern>) -> Span =
   match pattern {
     PatternWild(source_span)                    => source_span,
     PatternIdent(_, source_span)                => source_span,
@@ -193,14 +193,14 @@ export fn pat_span(pattern: Shared<Pattern>) -> Span =
 export type Param    = Param    {
   name: string,
   is_mut: bool,
-  typ: Shared<TypeExpr>,
+  type_value: Shared<TypeExpr>,
   has_default: bool,
   default: Shared<Expr>,
   param_pattern: Shared<Pattern>
 }
 export type FieldDef = FieldDef {
   name: string,
-  typ: Shared<TypeExpr>,
+  type_value: Shared<TypeExpr>,
   has_default_expression: bool,
   default_expression: Shared<Expr>
 }
@@ -225,7 +225,7 @@ export type Decl =
 export type Program = Program { decls: [Shared<Decl>] }
 
 export fn param_name(p: Shared<Param>) -> string = p.name
-export fn param_typ(p: Shared<Param>) -> Shared<TypeExpr> = p.typ
+export fn param_type_value(parameter: Shared<Param>) -> Shared<TypeExpr> = parameter.type_value
 export fn param_is_mut(p: Shared<Param>) -> bool = p.is_mut
 
 export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do

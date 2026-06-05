@@ -93,9 +93,9 @@ fn partial_application_desugar_field_values_sequence(
   field_values.fold(
     FieldValuesAccumulator { mapped_field_values: [], next_serial: initial_serial },
     (accumulated, field_value_under_sequence) => do
-      const value_partial = partial_application_desugar_inner(field_value_under_sequence.val, accumulated.next_serial)
+      const value_partial = partial_application_desugar_inner(field_value_under_sequence.value, accumulated.next_serial)
       accumulated.mapped_field_values.push(
-        Shared.new(FieldVal { name: field_value_under_sequence.name, val: value_partial.expression }))
+        Shared.new(FieldVal { name: field_value_under_sequence.name, value: value_partial.expression }))
       FieldValuesAccumulator {
         mapped_field_values: accumulated.mapped_field_values,
         next_serial: value_partial.next_serial
@@ -336,7 +336,7 @@ fn partial_application_desugar_match_arms_list(arms: [Shared<MatchArm>], serial:
       const guard_pair = partial_application_desugar_inner(arm_shared_under_match.when_condition, accumulated.next_serial)
       const body_pair = partial_application_desugar_inner(arm_shared_under_match.body, guard_pair.next_serial)
       accumulated.arms.push(Shared.new(MatchArm {
-        pat: arm_shared_under_match.pat,
+        pattern: arm_shared_under_match.pattern,
         has_guard: arm_shared_under_match.has_guard,
         when_condition: guard_pair.expression,
         body: body_pair.expression

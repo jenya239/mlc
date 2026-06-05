@@ -130,7 +130,7 @@ export fn type_param_in_typeexpr_list(param: string, types: [Shared<TypeExpr>]) 
 export fn variant_field_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
   match variant {
     VarTuple(_, fts, _)  => fts,
-    VarRecord(_, fds, _) => fds.map(fd => fd.typ),
+    VarRecord(_, fds, _) => fds.map(fd => fd.type_value),
     VarUnit(_, _)        => do let empty: [Shared<TypeExpr>] = []; empty end
   }
 
@@ -148,7 +148,7 @@ export fn type_phantom_params_for_variants(type_params: [string], variants: [Sha
 end
 
 fn field_def_member_declaration(context: CodegenContext, fd: Shared<FieldDef>) -> string = do
-  const base = expression_output.struct_named_field_declaration(type_to_cpp(context, fd.typ), cpp_safe(fd.name))
+  const base = expression_output.struct_named_field_declaration(type_to_cpp(context, fd.type_value), cpp_safe(fd.name))
   if fd.has_default_expression && record_field_default_expression_acceptable_for_codegen(fd.default_expression) then
     base + ' = ' + record_field_default_expression_cpp_initializer(fd.default_expression, context)
   else base
@@ -264,9 +264,9 @@ fn derive_field_display(field_name: string, field_type: Shared<TypeExpr>) -> str
   }
 
 fn derive_display_record_fields(type_name: string, field_defs: [Shared<FieldDef>]) -> string =
-  `mlc::String("${type_name} { ${field_defs[0].name}: ") + ${derive_field_display(field_defs[0].name, field_defs[0].typ)}` +
+  `mlc::String("${type_name} { ${field_defs[0].name}: ") + ${derive_field_display(field_defs[0].name, field_defs[0].type_value)}` +
   field_defs.drop(1).fold('', (acc, fd) =>
-    acc + ` + mlc::String(", ${fd.name}: ") + ${derive_field_display(fd.name, fd.typ)}`) +
+    acc + ` + mlc::String(", ${fd.name}: ") + ${derive_field_display(fd.name, fd.type_value)}`) +
   ' + mlc::String(" }")'
 
 fn derive_display_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
@@ -371,7 +371,7 @@ fn derive_hash_record_operator_body(field_defs: [Shared<FieldDef>]) -> string =
   if field_defs.length() == 0 then 'return static_cast<size_t>(1469598103934665603ULL);\n'
   else
     field_defs.fold('size_t h = 1469598103934665603ULL;\n', (acc, fd) =>
-      acc + derive_hash_combine_line(derive_hash_std_cpp_type(fd.typ), `self.${fd.name}`)) +
+      acc + derive_hash_combine_line(derive_hash_std_cpp_type(fd.type_value), `self.${fd.name}`)) +
     'return h;\n'
   end
 
@@ -400,7 +400,7 @@ fn derive_hash_tuple_variant_inner(variant_struct_name: string, field_types: [Sh
 fn derive_hash_record_variant_inner(variant_struct_name: string, field_defs: [Shared<FieldDef>], discriminant_index: i32) -> string =
   field_defs.fold(derive_hash_combine_line('size_t', discriminant_index.to_string()), (acc, fd) =>
     acc + derive_hash_combine_line(
-      derive_hash_std_cpp_type(fd.typ),
+      derive_hash_std_cpp_type(fd.type_value),
       `std::get<${variant_struct_name}>(self._).${fd.name}`))
 
 fn derive_hash_sum_variant_inner(variant: Shared<TypeVariant>, discriminant_index: i32) -> string =

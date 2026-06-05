@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-fe87b866-9b1c-4802-8351-39ed1547f832`|
-| driver_turns_since_plan | 3|
-| step_last | 1|
-| active_track | TRACK_RENAME_ABBREV → STEP=2 |
+| agent_token_last | `cr-agent-32a25df6-da4d-426a-b71a-a249845f09d9`|
+| driver_turns_since_plan | 4|
+| step_last | 2|
+| active_track | TRACK_RENAME_ABBREV → STEP=3 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 2 — ast field renames)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_RENAME_ABBREV |
+| started | 2026-06-05 |
+| elapsed | ~45 min |
+| done | `Token.column`, `MatchArm.pattern`, `FieldVal.value`, `Param/FieldDef.type_value`; ripple 36 mlc; `semantic_ir`; fix `binding_span` vs `pattern_span` fn |
+| result | **961**/0; self-host `diff_exit=0` |
+| issues | sed `.pat`→`.pattern` broke PatternResult; `pattern_span` local shadowed fn; reverted `cpp/lexer.mlc` (step 9) |
+| next | ROLE=Driver STEP=3 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 1 — idempotent redirect)
 

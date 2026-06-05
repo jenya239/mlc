@@ -22,24 +22,24 @@ export fn array_elem_name(t: Shared<TypeExpr>) -> string =
   match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => '' }, _ => '' }
 
 export fn collect_shared_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_type(parameter.typ)).map(parameter => parameter.name)
+  params.filter(parameter => is_shared_type(parameter.type_value)).map(parameter => parameter.name)
 
 export fn collect_shared_array_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_array_type(parameter.typ)).map(parameter => parameter.name)
+  params.filter(parameter => is_shared_array_type(parameter.type_value)).map(parameter => parameter.name)
 
 export fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, string> = do
   let result: Map<string, string> = Map.new(); let mut i = 0
   while i < params.length() do
-    const en = array_elem_name(params[i].typ)
+    const en = array_elem_name(params[i].type_value)
     if en.length() > 0 then result.set(params[i].name, en) end; i = i + 1
   end
   result
 end
 
 export fn collect_shared_map_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_map_type(parameter.typ)).map(parameter => parameter.name)
+  params.filter(parameter => is_shared_map_type(parameter.type_value)).map(parameter => parameter.name)
 
 export fn collect_value_params(params: [Shared<Param>]) -> [string] =
   params.filter(
-    parameter => !is_shared_type(parameter.typ) && !is_shared_array_type(parameter.typ))
+    parameter => !is_shared_type(parameter.type_value) && !is_shared_array_type(parameter.type_value))
     .map(parameter => parameter.name)

@@ -16,7 +16,7 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       let mut param_env: Map<string, Shared<Type>> = Map.new()
       let mut index = 0
       while index < params.length() do
-        param_env.set(params[index].name, type_from_annotation(params[index].typ))
+        param_env.set(params[index].name, type_from_annotation(params[index].type_value))
         index = index + 1
       end
       const return_type      = type_from_annotation(return_type_expr)

@@ -88,10 +88,10 @@ fn derive_display_record_return_expression(type_name: string, field_definitions:
   else
     let mut parts: [Shared<CppExpression>] = []
     parts.push(make_string_constructor(type_name + " { " + field_definitions[0].name + ": "))
-    parts.push(derive_field_display_expression(field_definitions[0].name, field_definitions[0].typ))
+    parts.push(derive_field_display_expression(field_definitions[0].name, field_definitions[0].type_value))
     let mut index = 1
     while index < field_definitions.length() do
-      parts = append_display_field_parts(parts, field_definitions[index].name, field_definitions[index].typ)
+      parts = append_display_field_parts(parts, field_definitions[index].name, field_definitions[index].type_value)
       index = index + 1
     end
     parts.push(make_string_constructor(" }"))
@@ -109,7 +109,7 @@ fn append_variant_record_display_parts(
     parts.push(derive_variant_field_display_expression(
       variant_name,
       field_definitions[index].name,
-      field_definitions[index].typ))
+      field_definitions[index].type_value))
     index = index + 1
   end
   parts
@@ -127,7 +127,7 @@ fn derive_display_variant_record_return_expression(
     parts.push(derive_variant_field_display_expression(
       variant_name,
       field_definitions[0].name,
-      field_definitions[0].typ))
+      field_definitions[0].type_value))
     parts = append_variant_record_display_parts(parts, variant_name, field_definitions)
     parts.push(make_string_constructor(")"))
     fold_plus_expressions(parts)
@@ -390,7 +390,7 @@ fn derive_hash_record_body_statements(field_definitions: [Shared<FieldDef>]) -> 
     let mut index = 0
     while index < field_definitions.length() do
       statements.push(make_hash_combine_statement(
-        derive_hash_std_cpp_type(field_definitions[index].typ),
+        derive_hash_std_cpp_type(field_definitions[index].type_value),
         make_self_field_expression(field_definitions[index].name)))
       index = index + 1
     end
@@ -435,7 +435,7 @@ fn append_hash_record_variant_combine_statements(
   let mut index = 0
   while index < field_definitions.length() do
     statements.push(make_hash_combine_statement(
-      derive_hash_std_cpp_type(field_definitions[index].typ),
+      derive_hash_std_cpp_type(field_definitions[index].type_value),
       make_hash_variant_field_access_expression(variant_name, field_definitions[index].name)))
     index = index + 1
   end

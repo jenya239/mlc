@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
-import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pat_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
+import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parser_new } from '../frontend/parser/predicates'
 
@@ -192,7 +192,7 @@ fn expr_match_arm_pat_ident_name(parsed_expression: Shared<Expr>, arm_index: i32
   match parsed_expression {
     ExprMatch(_, arms, _) =>
       if arm_index < 0 || arm_index >= arms.length() then ''
-      else expr_pat_ident_binding_name(arms[arm_index].pat)
+      else expr_pat_ident_binding_name(arms[arm_index].pattern)
       end,
     _ => ''
   }
@@ -201,7 +201,7 @@ fn expr_match_arm_pat_or_alt_count(parsed_expression: Shared<Expr>, arm_index: i
   match parsed_expression {
     ExprMatch(_, arms, _) =>
       if arm_index < 0 || arm_index >= arms.length() then -1
-      else expr_pat_or_alt_count(arms[arm_index].pat)
+      else expr_pat_or_alt_count(arms[arm_index].pattern)
       end,
     _ => -1
   }
@@ -328,7 +328,7 @@ export fn parser_tests() -> [TestResult] = do
     match parse_expr_source('match x { A(r) | B(r) => r }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
-          match arms[0].pat {
+          match arms[0].pattern {
             PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
@@ -340,7 +340,7 @@ export fn parser_tests() -> [TestResult] = do
     match parse_expr_source('match x | A(r) | B(r) => r end') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
-          match arms[0].pat {
+          match arms[0].pattern {
             PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
@@ -352,7 +352,7 @@ export fn parser_tests() -> [TestResult] = do
     match parse_expr_source('match x { Red | Green => 1, Blue => 2 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
-          match arms[0].pat {
+          match arms[0].pattern {
             PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
@@ -366,7 +366,7 @@ export fn parser_tests() -> [TestResult] = do
         if arms.length() == 1 then
           if arms[0].has_guard then false
           else
-            match arms[0].pat {
+            match arms[0].pattern {
               PatternCtor(name, _, _) => name == "A",
               _ => false
             }
@@ -408,7 +408,7 @@ export fn parser_tests() -> [TestResult] = do
     match parse_expr_source('match x { 1 => 0, else => 1 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
-          match arms[1].pat {
+          match arms[1].pattern {
             PatternWild(_) => true,
             _ => false
           }
@@ -416,14 +416,14 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true('PatternStringLit pat_span',
-    pat_span(Shared.new(PatternStringLit("x", span_unknown()))).column >= 0))
+  results.push(assert_true('PatternStringLit pattern_span',
+    pattern_span(Shared.new(PatternStringLit("x", span_unknown()))).column >= 0))
 
   results.push(assert_true('match string literal arm parses PatternStringLit',
     match parse_expr_source('match s { | "x" -> 1 | _ -> 0 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
-          match arms[0].pat {
+          match arms[0].pattern {
             PatternStringLit(value, _) => value == "x",
             _ => false
           }
@@ -436,7 +436,7 @@ export fn parser_tests() -> [TestResult] = do
     match parse_expr_source('match word { | "a" | "b" -> 1 | _ -> 0 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() != 2 then false
-        else match arms[0].pat {
+        else match arms[0].pattern {
           PatternOr(alternatives, _) => alternatives.length() == 2,
           _ => false
         }

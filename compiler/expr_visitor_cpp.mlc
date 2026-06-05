@@ -335,7 +335,7 @@ fn record_field_expressions(
     field_order.map(field_name =>
       eval_expr_cpp(find_field_value(field_values, field_name), context, gen_stmts))
   else
-    field_values.map(field_value => eval_expr_cpp(field_value.val, context, gen_stmts))
+    field_values.map(field_value => eval_expr_cpp(field_value.value, context, gen_stmts))
   end
 end
 

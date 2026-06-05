@@ -7,12 +7,12 @@ import { Pattern, Span, TypeVariant, Param, Decl, WhereClauseBound, span_unknown
 
 // Forward-declare SemanticExpression so records referencing it can be defined first.
 export type SemanticMatchArm = SemanticMatchArm {
-  pat: Shared<Pattern>,
+  pattern: Shared<Pattern>,
   has_guard: bool,
   when_condition: Shared<SemanticExpression>,
   body: Shared<SemanticExpression>
 }
-export type SemanticFieldVal  = SemanticFieldVal  { name: string, val: Shared<SemanticExpression> }
+export type SemanticFieldVal  = SemanticFieldVal  { name: string, value: Shared<SemanticExpression> }
 
 // --- Typed expression -------------------------------------------------------
 

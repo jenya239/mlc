@@ -12,7 +12,7 @@ export type TokenKind =
   | LParen | RParen | LBrace | RBrace | LBracket | RBracket
   | Comma | Semicolon | Colon | Op(string) | Eof
 
-export type Token  = Token  { kind: TokenKind, line: i32, col: i32 }
+export type Token  = Token  { kind: TokenKind, line: i32, column: i32 }
 export type LexOut = LexOut { tokens: [Token], errors: [string] }
 
 extend Shared<T> {
@@ -26,5 +26,5 @@ export extend LexOut {
 export extend Token {
   fn kind_value(self) -> TokenKind = self.kind
   fn line_number(self) -> i32 = self.line
-  fn column(self) -> i32 = self.col
+  fn column(self) -> i32 = self.column
 }

@@ -75,13 +75,13 @@ fn infer_record_field_binding_value_inference_step(
             infer_expr_field_diagnostics(
               Shared.new(TNamed(record_type_name_for_fields)),
               field_value.name,
-              expr_span(field_value.val),
+              expr_span(field_value.value),
               inference_context.registry)),
       }
     else
       accumulator
     end
-  const value_inference = infer_expr(field_value.val, inference_context)
+  const value_inference = infer_expr(field_value.value, inference_context)
   if registry_has_ordered_fields_for_type then
     const expected_field_type =
       field_type_from_object(
@@ -102,7 +102,7 @@ fn infer_record_field_binding_value_inference_step(
             + type_description(expected_field_type)
             + ', got '
             + type_description(inferred_value_type),
-          expr_span(field_value.val),
+          expr_span(field_value.value),
           diagnostic_code_e075())]
       else
         []
@@ -148,7 +148,7 @@ fn infer_explicit_record_literal_field_unknown_name_step(
         infer_expr_field_diagnostics(
           Shared.new(TNamed(record_type_name)),
           field_value_binding.name,
-          expr_span(field_value_binding.val),
+          expr_span(field_value_binding.value),
           registry)),
   }
 

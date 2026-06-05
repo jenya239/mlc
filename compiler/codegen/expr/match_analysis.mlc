@@ -11,7 +11,7 @@ export fn subject_needs_deref(subject: Shared<SemanticExpression>, context: Code
   match sexpr_type(subject) { TShared(_) => true, _ => false }
 
 export fn first_arm_needs_deref(first_arm: Shared<SemanticMatchArm>, subject: Shared<SemanticExpression>, context: CodegenContext) -> bool =
-  match first_arm.pat {
+  match first_arm.pattern {
     PatternCtor(name, _, _) => do
       const resolved = context.resolve(name)
       if resolved.length() >= 12 && resolved.substring(0, 12) == 'ast_tokens::' then false
@@ -23,7 +23,7 @@ export fn first_arm_needs_deref(first_arm: Shared<SemanticMatchArm>, subject: Sh
       if alts.length() > 0 then
         first_arm_needs_deref(
           Shared.new(SemanticMatchArm {
-            pat: alts[0],
+            pattern: alts[0],
             has_guard: first_arm.has_guard,
             when_condition: first_arm.when_condition,
             body: first_arm.body
@@ -73,7 +73,7 @@ fn pattern_is_string_match_pattern(pattern: Shared<Pattern>) -> bool =
   }
 
 fn match_arms_use_string_literals(arms: [Shared<SemanticMatchArm>]) -> bool =
-  arms.any(arm => pattern_contains_string_literal(arm.pat))
+  arms.any(arm => pattern_contains_string_literal(arm.pattern))
 
 export fn subject_is_string_type(subject: Shared<SemanticExpression>) -> bool =
   match sexpr_type(subject) { TString => true, _ => false }
@@ -82,5 +82,5 @@ export fn should_use_string_match_if_chain(subject: Shared<SemanticExpression>, 
   if arms.length() == 0 then false
   else
     (match_arms_use_string_literals(arms) || subject_is_string_type(subject)) &&
-      arms.all(arm => pattern_is_string_match_pattern(arm.pat))
+      arms.all(arm => pattern_is_string_match_pattern(arm.pattern))
   end

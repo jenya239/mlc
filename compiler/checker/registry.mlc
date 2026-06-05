@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_typ, param_name, param_is_mut, Expr } from '../frontend/ast'
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_type_value, param_name, param_is_mut, Expr } from '../frontend/ast'
 import { expand_trait_as_param_program } from './transform/trait_param_expand'
 
 export type Type =
@@ -303,7 +303,7 @@ fn register_decl_into(registry: ref mut TypeRegistry, decl: Shared<Decl>) -> uni
       end
     end,
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
-      const param_types = parameters.map(parameter => type_from_annotation(param_typ(parameter)))
+      const param_types = parameters.map(parameter => type_from_annotation(param_type_value(parameter)))
       const parameter_names = parameters.map(parameter => param_name(parameter))
       const parameter_mutability_flags =
         parameters.map(parameter => if param_is_mut(parameter) then 1 else 0 end)
@@ -351,7 +351,7 @@ fn type_param_in_annotation_list(param: string, types: [Shared<TypeExpr>]) -> bo
 fn variant_annotation_typeexprs(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
   match variant {
     VarTuple(_, fts, _) => fts,
-    VarRecord(_, fds, _) => fds.map(field_definition => field_definition.typ),
+    VarRecord(_, fds, _) => fds.map(field_definition => field_definition.type_value),
     VarUnit(_, _) => do let empty_type_expressions: [Shared<TypeExpr>] = []; empty_type_expressions end
   }
 
@@ -385,7 +385,7 @@ fn register_variant_into(registry: ref mut TypeRegistry, type_name: string, vari
       let mut index = 0
       while index < field_defs.length() do
         const field_definition = field_defs[index]
-        field_map.set(field_definition.name, type_from_annotation(field_definition.typ))
+        field_map.set(field_definition.name, type_from_annotation(field_definition.type_value))
         if field_definition.has_default_expression then
           defaults_for_variant.set(field_definition.name, field_definition.default_expression)
         end

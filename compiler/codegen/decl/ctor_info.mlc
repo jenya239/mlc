@@ -11,7 +11,7 @@ type ConstructorArgumentScanState = ConstructorArgumentScanState {
   shared_array_positions: [i32]
 }
 
-fn field_def_type(field_definition: Shared<FieldDef>) -> Shared<TypeExpr> = field_definition.typ
+fn field_def_type(field_definition: Shared<FieldDef>) -> Shared<TypeExpr> = field_definition.type_value
 
 fn ctor_type_info_for(constructor_name: string, argument_type_expressions: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
   const scan_parsed = argument_type_expressions.fold(

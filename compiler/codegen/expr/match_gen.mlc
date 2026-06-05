@@ -143,14 +143,14 @@ end
 
 fn match_arm_with_pattern(arm: Shared<SemanticMatchArm>, pattern: Shared<Pattern>) -> Shared<SemanticMatchArm> =
   Shared.new(SemanticMatchArm {
-    pat: pattern,
+    pattern: pattern,
     has_guard: arm.has_guard,
     when_condition: arm.when_condition,
     body: arm.body
   })
 
 fn singleton_or_split(arm: Shared<SemanticMatchArm>) -> [Shared<SemanticMatchArm>] =
-  match arm.pat {
+  match arm.pattern {
     PatternOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
     _ => [arm]
   }
@@ -192,7 +192,7 @@ fn gen_guarded_literal_arm_fragment(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
-  const condition = guarded_literal_condition(arm.pat, variant_access_expression)
+  const condition = guarded_literal_condition(arm.pattern, variant_access_expression)
   const body_code = eval_expr_fn(arm.body, context, gen_stmts)
   if arm.has_guard then
     const guard_code = eval_expr_fn(arm.when_condition, context, gen_stmts)
@@ -299,7 +299,7 @@ fn gen_guarded_arm_fragment(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string =
-  match arm.pat {
+  match arm.pattern {
     PatternCtor(name, sub_patterns, _) =>
       gen_guarded_constructor_arm_fragment(arm, name, sub_patterns, variant_access_expression, context, gen_stmts, eval_expr_fn),
     PatternRecord(name, field_patterns, _) =>
@@ -375,17 +375,17 @@ fn string_match_arm_else_branch(
   else
     const arm = arms[start_index]
     const return_block = build_return_block(arm, context, gen_stmts)
-    match arm.pat {
+    match arm.pattern {
       PatternWild(_) => return_block,
       PatternStr(_, _) =>
         emit_helpers.make_if_cpp_statement(
-          string_match_literal_condition_cpp(arm.pat, subject_holder),
+          string_match_literal_condition_cpp(arm.pattern, subject_holder),
           return_block,
           string_match_arm_else_branch(
             arms, start_index + 1, subject_holder, context, gen_stmts, build_return_block)),
       PatternStringLit(_, _) =>
         emit_helpers.make_if_cpp_statement(
-          string_match_literal_condition_cpp(arm.pat, subject_holder),
+          string_match_literal_condition_cpp(arm.pattern, subject_holder),
           return_block,
           string_match_arm_else_branch(
             arms, start_index + 1, subject_holder, context, gen_stmts, build_return_block)),
@@ -544,7 +544,7 @@ export fn gen_arm(
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string,
   visit_void: bool
 ) -> string =
-  match arm.pat {
+  match arm.pattern {
     PatternWild(_) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
@@ -651,7 +651,7 @@ export fn gen_arm_cpp(
   eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
   visit_void: bool
 ) -> Shared<CppExpression> =
-  match arm.pat {
+  match arm.pattern {
     PatternWild(_) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
     PatternUnit(_) =>

@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SemanticExpression> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pat_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
+import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
 import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from '../registry'
 import {
   binary_operation_result_type,
@@ -258,8 +258,8 @@ fn semantic_field_val_from_source_field_after_transform(
 ) -> Shared<SemanticFieldVal> =
   Shared.new(SemanticFieldVal {
     name: field_value_under_transform.name,
-    val:
-      transform_expr(field_value_under_transform.val, transform_context, stmts_fn),
+    value:
+      transform_expr(field_value_under_transform.value, transform_context, stmts_fn),
   })
 
 fn transform_field_vals(field_values: [Shared<FieldVal>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticFieldVal>] =
@@ -279,7 +279,7 @@ fn transform_single_match_arm(
   const arm_environment_after_pattern =
     env_for_pattern_substituted(
       transform_context.type_env,
-      arm.pat,
+      arm.pattern,
       transform_context.registry,
       substitution,
       scrutinee_type)
@@ -291,10 +291,10 @@ fn transform_single_match_arm(
     if arm.has_guard then
       transform_expr(arm.when_condition, arm_transform_context, stmts_fn)
     else
-      Shared.new(SemanticExpressionBool(true, Shared.new(TBool), pat_span(arm.pat)))
+      Shared.new(SemanticExpressionBool(true, Shared.new(TBool), pattern_span(arm.pattern)))
     end
   Shared.new(SemanticMatchArm {
-    pat: arm.pat,
+    pattern: arm.pattern,
     has_guard: arm.has_guard,
     when_condition: typed_guard_expression,
     body: typed_body_expression,

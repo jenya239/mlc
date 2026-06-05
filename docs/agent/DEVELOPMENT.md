@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-**TRACK_RENAME_ABBREV** step 1 done (`e09fab44`). Next: **STEP=2** (`ast.mlc` + `ast_tokens.mlc` field renames).
+**TRACK_RENAME_ABBREV** step 2 done. Next: **STEP=3** (`lexer.mlc` field renames).
 
 ## Step sizing (good vs bad)
 

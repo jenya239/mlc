@@ -48,13 +48,13 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const point_decl = Shared.new(DeclType('Point', [], [Shared.new(VarRecord('Point', [
     Shared.new(FieldDef {
       name: "x",
-      typ: Shared.new(TyI32),
+      type_value: Shared.new(TyI32),
       has_default_expression: false,
       default_expression: Shared.new(ExprUnit(span_unknown()))
     }),
     Shared.new(FieldDef {
       name: "y",
-      typ: Shared.new(TyI32),
+      type_value: Shared.new(TyI32),
       has_default_expression: false,
       default_expression: Shared.new(ExprUnit(span_unknown()))
     })
@@ -64,7 +64,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
 
   const point_type = Shared.new(TNamed('Point'))
   const override_fields: [Shared<SemanticFieldVal>] = [
-    Shared.new(SemanticFieldVal { name: "x", val: si(10) })
+    Shared.new(SemanticFieldVal { name: "x", value: si(10) })
   ]
   const base_expr   = sid("p")
   const update_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
@@ -73,8 +73,8 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
     'Point{10, p.y}'))
 
   const two_overrides: [Shared<SemanticFieldVal>] = [
-    Shared.new(SemanticFieldVal { name: "x", val: si(0) }),
-    Shared.new(SemanticFieldVal { name: "y", val: si(0) })
+    Shared.new(SemanticFieldVal { name: "x", value: si(0) }),
+    Shared.new(SemanticFieldVal { name: "y", value: si(0) })
   ]
   const all_overrides_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, two_overrides, point_type, span_unknown()))
   results.push(assert_eq_str('Point { ...p, x: 0, y: 0 } - Point{0, 0}',
