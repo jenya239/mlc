@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-**TRACK_MODULE_TU_BRIDGE** open STEP=3 — wire `assemble_header_cpp_declarations` to native nodes.
+**TRACK_STRING_MATCH** closed (STEP=12 self-host diff green). Next: **TRACK_TYPE_ALIASES** STEP=1.
 
 ## Step sizing (good vs bad)
 

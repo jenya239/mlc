@@ -1,6 +1,6 @@
 // Trait and extend block code generation (helpers shared with decl.mlc).
 
-import { TypeVariant, TypeExpr, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../../frontend/ast'
+import { TypeVariant, TypeExpr, TyGeneric, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import * as lit from '../expr/literals'
 import { SDecl, SDeclFn, SExpr, SExprExtern } from '../../ir/semantic_ir'
@@ -31,8 +31,21 @@ fn default_expr_to_cpp(e: Shared<Expr>) -> string = match e {
   _                => "0"
 }
 
-fn param_item_def(context: CodegenContext, p: Shared<Param>) -> string =
-  expression_output.parameter_declaration_item(type_to_cpp(context, p.typ), cpp_safe(p.name))
+fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
+  match parameter.typ {
+    TyGeneric(type_name, _) =>
+      if type_name == 'ref' then type_to_cpp(context, parameter.typ)
+      else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.typ))
+      else type_to_cpp(context, parameter.typ)
+      end,
+    _ =>
+      if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.typ))
+      else type_to_cpp(context, parameter.typ)
+      end
+  }
+
+fn param_item_def(context: CodegenContext, parameter: Shared<Param>) -> string =
+  expression_output.parameter_declaration_item(parameter_type_cpp(context, parameter), cpp_safe(parameter.name))
 
 fn param_item_proto(context: CodegenContext, p: Shared<Param>) -> string = do
   const base = param_item_def(context, p)

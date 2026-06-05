@@ -8,7 +8,7 @@ import { build_trait_nominal_maps } from '../checker/transform/trait_param_expan
 import { NamespaceImportAlias, build_namespace_alias_prefixes, LoadItem, build_field_order_index, build_qualified, build_item_index } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
-         create_codegen_context, build_field_orders, build_variant_types_from_decls,
+         create_codegen_context, new_temp_name_counter, build_field_orders, build_variant_types_from_decls,
          build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
          build_method_owners_from_decls, StructUsingEntry, StructUsingData,
          struct_using_line_from_entry } from './context'
@@ -154,7 +154,8 @@ fn prepare_module_generation(
     match_deref_params: [],
     generic_variants: precomp.generic_variants,
     struct_using_entries: Map.new(),
-    struct_using_lines: Map.new()
+    struct_using_lines: Map.new(),
+    temp_name_counter: new_temp_name_counter()
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(s_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end

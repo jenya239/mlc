@@ -162,7 +162,8 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
               try_identifier,
               expression_output.let_from_try_ok_field0(cpp_safe(name), try_identifier),
               gen_expr_fn),
-            next_try: next_counter
+            next_try: next_counter,
+            codegen_context: context
           },
         SExprArray(elements, array_type, _) => do
           const value_code = match array_type {
@@ -182,7 +183,8 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
           }
           GenStmtResult {
             output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
-            next_try: try_counter
+            next_try: try_counter,
+            codegen_context: context
           }
         end,
         SExprMethod(map_object, method_name, _, _, _, _) => do
@@ -208,27 +210,33 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
           end
           GenStmtResult {
             output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
-            next_try: try_counter
+            next_try: try_counter,
+            codegen_context: context
           }
         end,
         _ => GenStmtResult {
           output: expression_output.auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),
-          next_try: try_counter
+          next_try: try_counter,
+          codegen_context: context
         }
       }
       statement_parsed
     end,
-    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) =>
+    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) => do
+      const pattern_parsed = gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn)
       GenStmtResult {
-        output: gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn),
-        next_try: try_counter
-      },
+        output: pattern_parsed.output,
+        next_try: try_counter,
+        codegen_context: pattern_parsed.codegen_context
+      }
+    end,
     SStmtLetConst(name, value, binding_semantic_type, _) =>
       GenStmtResult {
         output: expression_output.constexpr_auto_binding_statement(
           cpp_safe(name),
           constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       },
     SStmtExpr(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
@@ -240,13 +248,18 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
             try_identifier,
             expression_output.discard_try_ok_field0_statement(try_identifier),
             gen_expr_fn),
-          next_try: try_counter + 1
+          next_try: try_counter + 1,
+          codegen_context: context
         }
       end,
-      _ => GenStmtResult { output: eval_stmt_expr(expression, context, gen_expr_fn), next_try: try_counter }
+      _ => GenStmtResult {
+        output: eval_stmt_expr(expression, context, gen_expr_fn),
+        next_try: try_counter,
+        codegen_context: context
+      }
     },
-    SStmtBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter },
-    SStmtContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter },
+    SStmtBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter, codegen_context: context },
+    SStmtContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter, codegen_context: context },
     SStmtReturn(expression, _) => match expression {
       SExprQuestion(inner_expr, _, _) => do
         const try_identifier = `__try_ret_${try_counter.to_string()}`
@@ -257,12 +270,14 @@ export fn eval_stmt_with_try(stmt: Shared<SStmt>, context: CodegenContext, try_c
             try_identifier,
             expression_output.return_try_ok_field0_statement(try_identifier),
             gen_expr_fn),
-          next_try: try_counter + 1
+          next_try: try_counter + 1,
+          codegen_context: context
         }
       end,
       _ => GenStmtResult {
         output: expression_output.return_line(gen_expr_fn(expression, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       }
     }
   }
@@ -275,6 +290,7 @@ export fn eval_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenC
     const statement = statements[index]
     const statement_parsed = eval_stmt_with_try(statement, codegen_context, statements_parsed.next_try, gen_expr_fn)
     statements_parsed = statements_parsed.append_stmt(statement_parsed)
+    codegen_context = statement_parsed.codegen_context
     mutate_context_from_statement(statement, codegen_context)
     index = index + 1
   end

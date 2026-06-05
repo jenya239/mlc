@@ -36,11 +36,24 @@ export type CodegenContext = CodegenContext {
   match_deref_params: [string],
   generic_variants: [string],
   struct_using_entries: Map<string, [StructUsingEntry]>,
-  struct_using_lines: Map<string, [string]>
+  struct_using_lines: Map<string, [string]>,
+  temp_name_counter: i32
 }
+
+export fn new_temp_name_counter() -> i32 = 0
+
+export type TempNameResult = TempNameResult { name: string, codegen_context: CodegenContext }
+
+export fn take_temp_name(context: CodegenContext) -> TempNameResult = do
+  TempNameResult {
+    name: '__tmp_' + context.temp_name_counter.to_string(),
+    codegen_context: CodegenContext { ...context, temp_name_counter: context.temp_name_counter + 1 }
+  }
+end
+
 export type GenStmtsResult = GenStmtsResult { parts: [string], next_try: i32 }
 export type GenStmtsWithContext = GenStmtsWithContext { statements_parsed: GenStmtsResult, codegen_context: CodegenContext }
-export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32 }
+export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32, codegen_context: CodegenContext }
 
 extend GenStmtsResult {
   fn append_stmt(self, statement_parsed: GenStmtResult) -> GenStmtsResult = do
@@ -249,7 +262,8 @@ export fn create_codegen_context(prog: Program) -> CodegenContext = do
     match_deref_params: [],
     generic_variants: build_generic_variants_from_decls(prog.decls),
     struct_using_entries: Map.new(),
-    struct_using_lines: Map.new()
+    struct_using_lines: Map.new(),
+    temp_name_counter: new_temp_name_counter()
   }
 end
 

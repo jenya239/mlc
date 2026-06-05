@@ -90,11 +90,63 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Structured struct_using:** [TRACK_DECL_STRUCT_USING_BRIDGE.md](TRACK_DECL_STRUCT_USING_BRIDGE.md) — **closed** (step 5 audit, uncommitted)
 - **Native std::hash specialization:** [TRACK_DERIVE_HASH_FRAGMENT_BRIDGE.md](TRACK_DERIVE_HASH_FRAGMENT_BRIDGE.md) — **closed** (step 5 audit, uncommitted)
 - **Native derive Hash body stmts:** [TRACK_DERIVE_HASH_STMT_BRIDGE.md](TRACK_DERIVE_HASH_STMT_BRIDGE.md) — **closed** (step 5 audit, uncommitted)
-- **Native module TU scaffolding:** [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) — **open** (step 3 pending)
+- **Native module TU scaffolding:** [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) — **closed** (`df744e5`)
+- **CppDeclFragment cleanup:** [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) — **closed** (step 5 audit 940/0; WIP `decl_cpp` uncommitted)
+- **Apply record destructuring:** [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) — **closed** (`fd95af6`)
+- **String match patterns:** [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) — **closed** (step 12 self-host diff green, 2026-06-05)
+- **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **open** (next after STRING_MATCH close)
+- **Rename abbreviations:** [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) — **open** (step 1 partial WIP; after TYPE_ALIASES)
+- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (deferred; after RENAME)
 
 ## Next step (Driver)
 
-**STEP=3** — TRACK_MODULE_TU_BRIDGE wire `assemble_header_cpp_declarations` → native nodes.
+> **Immediate:** [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) **STEP=12** — close track (status closed, full gate incl. self-host diff). Uncommitted WIP (~267 files): STRING_MATCH migrations + partial RENAME step 1 (`SemanticExpression`, …); commit batch after green gate.
+
+> **Then:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) **STEP=1** — parser `DeclTypeAlias` / `type Name = Type` (PLAN §2.5 #4).
+
+Gate from active TRACK. SESSION; enqueue next STEP.
+
+## Next step (Planner)
+
+> plan-refresh after STRING_MATCH close or every ~8 driver turns.
+
+## Planner checklist (2026-05-19 plan-refresh — STRING_MATCH steps 1–11 done)
+
+- [x] TRACK_STRING_MATCH steps 1–11 done (960/0; pipe `match` + audit step 11)
+- [x] Step 12 pending: Driver close + self-host diff + TRACK status **closed**
+- [x] Priority: finish STRING_MATCH close before new Phase 2.5/2.6 tracks
+- [x] Next track: **TYPE_ALIASES** (PLAN §2.5 #4) — before RENAME_ABBREV / VISITOR (stability: smaller surface than rename)
+- [x] Deferred: regex string match (§2.5 #2); **RENAME_ABBREV** (step 1 partial WIP uncommitted — do not re-loop STEP=1 blind); **VISITOR_PATTERN** (after rename)
+- [x] Baseline **960**/0; `build.sh` OK; self-host diff pending step 12
+- [x] Driver enqueued STEP=12 STRING_MATCH close
+
+## Planner checklist (2026-06-04 plan-refresh — REGISTRY_SPLIT closed)
+
+- [x] TRACK_REGISTRY_SPLIT closed (`20f9d45`; steps 1–11)
+- [x] Priority: stability first — REGISTRY done; open Phase 2.5 language tracks
+- [x] Chosen **STRING_MATCH** (PLAN §2.5 #1) before TYPE_ALIASES / RENAME / VISITOR
+- [x] Deferred: regex string match (§2.5 #2); TYPE_ALIASES (#4); VISITOR (#2.6); RENAME_ABBREV (large, after aliases)
+- [x] Baseline **940**/0; gate per TRACK
+- [x] Driver enqueued STEP=1 STRING_MATCH
+
+## Planner checklist (2026-06-04 plan-refresh — 8 driver turns, REGISTRY_SPLIT mid-track)
+
+- [x] 8 driver turns since last plan-refresh (`01a04df`…`ad4cdf7`)
+- [x] Priority **stability > security > performance** — finish REGISTRY_SPLIT before Phase 2.5 language tracks
+- [x] REGISTRY steps 1–6 done: indices, migrate, cpp_printer join, codegen map, `named_args`, `substitution`
+- [x] Baseline **940**/0; `build.sh` OK; self-host diff N/A (`build_bin` pre-existing)
+- [x] STEP=7 scoped: `hof_method_spec` unifies infer/transform HOF dispatch (not full visitor rewrite)
+- [x] Deferred: STRING_MATCH, TYPE_ALIASES, RENAME_ABBREV, VISITOR_PATTERN; parser `ref mut` branch
+- [x] Driver enqueued STEP=7 REGISTRY_SPLIT
+
+## Planner checklist (2026-05-19 plan-refresh — REGISTRY_SPLIT open)
+
+- [x] TRACK_MODULE_TU_BRIDGE closed (`df744e5`; step 6 commit)
+- [x] TRACK_DECL_FRAGMENT_CLEANUP closed (940/0; `decl_cpp`/`cpp_ast` survivors WIP uncommitted)
+- [x] Priority Phase 2.6 §7 → REGISTRY_SPLIT (stability: shrink TypeRegistry god-object)
+- [x] REGISTRY step 1 done worktree; **commit pending** before step 2 migrate
+- [x] Deferred: DECL_FRAGMENT WIP commit batch, self-host `build_bin` pre-existing
+- [x] Driver enqueued STEP=1 REGISTRY_SPLIT (commit registry.mlc)
 
 ## Planner checklist (2026-06-03 plan-refresh — MODULE_TU open)
 
@@ -792,13 +844,15 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 
 | Step | Item | Track | Status |
 |------|------|-------|--------|
-| 1 | Phase 2 финал — MODULE_TU_BRIDGE закрыть | [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) | open |
+| 1 | Phase 2 финал — MODULE_TU_BRIDGE закрыть | [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) | **closed** (`df744e5`) |
+| 1b | Удалить CppDeclFragment + мёртвый код | [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) | **closed** (step 5 audit 2026-06-04) |
 | 2 | String match в языке | [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) | open |
-| 3 | Применить record destructuring | [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) | open |
+| 3 | Применить record destructuring | [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) | closed |
 | 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | open |
 | 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | open |
 | 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | open |
-| 7 | TypeRegistry split + HOF helpers + parser helpers | [TRACK_REGISTRY_SPLIT.md](TRACK_REGISTRY_SPLIT.md) | open |
+| 7 | TypeRegistry split + HOF helpers + parser helpers | [TRACK_REGISTRY_SPLIT.md](TRACK_REGISTRY_SPLIT.md) | **closed** (`20f9d45`) |
+| 8 | Lambda capture: `[&]` → `[=]` в codegen | TRACK_LAMBDA_CAPTURE.md | planned |
 
 ## Planner checklist (2026-06-03 plan-refresh)
 
@@ -806,10 +860,93 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 - [x] Phase 2.5 описана в PLAN.md (языковые улучшения)
 - [x] Phase 2.6 описана в PLAN.md (структурный рефакторинг)
 - [x] Треки созданы для всех задач Phase 2.5–2.6
-- [ ] MODULE_TU_BRIDGE закрыт (завершение Phase 2)
+- [x] MODULE_TU_BRIDGE закрыт (завершение Phase 2)
+- [x] TRACK_DECL_FRAGMENT_CLEANUP закрыт (940/0)
 - [ ] TRACK_STRING_MATCH выполнен
-- [ ] TRACK_DESTRUCTURING_APPLY выполнен
+- [x] TRACK_DESTRUCTURING_APPLY выполнен (`fd95af6`)
 - [ ] TRACK_TYPE_ALIASES выполнен
 - [ ] TRACK_RENAME_ABBREV выполнен
 - [ ] TRACK_VISITOR_PATTERN выполнен
-- [ ] TRACK_REGISTRY_SPLIT выполнен
+- [x] TRACK_REGISTRY_SPLIT выполнен (`20f9d45`)
+
+---
+
+# Track: Phase 3.5 — C++ Header Import (2026-06)
+
+Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
+
+## Status: **planned** (после Phase 2.5–2.6)
+
+Дизайн: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md)
+
+| Step | Item | Track | Status |
+|------|------|-------|--------|
+| A | Расширить лексер cpp/lexer.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| B | Расширить CppType + CppDecl в cpp_ast.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| C | Парсер типов compiler/cpp/parser/types.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| D | Парсер деклараций compiler/cpp/parser/decls.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| E | Парсер выражений compiler/cpp/parser/exprs.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| F | Тесты test_cpp_parser.mlc (≥30 кейсов) | TRACK_CPP_HEADER_IMPORT.md | planned |
+| G | Интеграция с import системой mlcc | TRACK_CPP_HEADER_IMPORT.md | planned |
+
+---
+
+# Track: Phase 2.7 — Language prerequisites for C++ parser (2026-06)
+
+Parent: [../PLAN.md](../PLAN.md) §Phase 2.7
+
+## Status: **planned** (после Phase 2.5–2.6)
+
+Цель: до начала C++ парсера язык MLC должен иметь всё необходимое для идиоматичного парсера.
+Чтобы не переписывать потом.
+
+| Step | Item | Track | Status |
+|------|------|-------|--------|
+| 1 | Обобщённые алиасы `type ParseResult<T>` | TRACK_GENERIC_ALIASES.md | planned |
+| 2 | String match (уже в Phase 2.5) | TRACK_STRING_MATCH.md | planned |
+| 3 | `guard let` (ранный выход без пирамиды match) | TRACK_GUARD_LET.md | planned |
+| 4 | `char` как первоклассный тип для лексера | TRACK_CHAR_TYPE.md | deferred |
+
+### Почему каждый пункт важен
+
+**1. Обобщённые алиасы** — без них для C++ парсера понадобится ~10 отдельных result-типов:
+```mlc
+// Без обобщённых алиасов — как сейчас:
+type CppTypeResult = CppTypeResult { value: Shared<CppType>, parser: CppParser }
+type CppDeclResult = CppDeclResult { value: Shared<CppDecl>, parser: CppParser }
+type CppExprResult = CppExprResult { value: Shared<CppExpr>, parser: CppParser }
+// ... и так для каждого типа
+
+// С обобщёнными алиасами:
+type CppParseResult<T> = CppParseResult { value: T, parser: CppParser }
+fn parse_type(parser: CppParser) -> CppParseResult<Shared<CppType>> = ...
+fn parse_decl(parser: CppParser) -> CppParseResult<Shared<CppDecl>> = ...
+```
+
+**2. String match** — `cpp_keyword_kind` сейчас 50 строк if/else. С string match — 15 строк match.
+
+**3. `guard let`** — без него парсер пишется через глубокие match-ветки:
+```mlc
+// Без guard let — пирамида:
+let result = parse_type(parser)
+match result {
+  Ok({ value, parser: p2 }) =>
+    let result2 = parse_name(p2)
+    match result2 {
+      Ok({ value: name, parser: p3 }) => ...
+    }
+}
+
+// С guard let + ?:
+let { value: type_value, parser: p2 } = parse_type(parser)?
+let { value: name, parser: p3 } = parse_name(p2)?
+```
+
+**4. `char` тип** (деферред) — сейчас `is_alpha`, `is_digit` работают через `string` с длиной 1. Достаточно.
+
+**Уже в языке (NB):**
+- Синтаксис обновления записей: `RecordType { ...base, field: val }` — **уже работает**
+- `?` оператор — **уже работает**
+- `Option<T>` с `.map()`, `.filter()`, `.find()` — **уже работает**
+- `extend Type { fn method(self) }` — **уже работает**
+- `Parser` как cursor с методами — **паттерн уже есть**, перенести на CppParser

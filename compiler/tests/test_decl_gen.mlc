@@ -1,7 +1,7 @@
 // Unit tests for declaration code generation.
 
 import { TestResult, assert_eq_str, assert_eq_int, assert_true } from './test_runner'
-import { Program, TypeVariant, Param, FieldDef, TyI32, TyBool, TyString, TyUnit, TyNamed, span_unknown, Span, ExprUnit, ExprInt, PatUnit, WhereClauseBound } from '../frontend/ast'
+import { Program, TypeVariant, Param, FieldDef, TyI32, TyBool, TyString, TyUnit, TyNamed, TyArray, span_unknown, Span, ExprUnit, ExprInt, PatUnit, WhereClauseBound } from '../frontend/ast'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
@@ -207,6 +207,17 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_fn_proto: two params',
     gen_fn_proto('add', [], [], [iparam('left'), iparam('right')], ti32(), context),
     'int add(int left, int right) noexcept;\n'))
+
+  results.push(assert_eq_str('gen_fn_proto: mut array param by reference',
+    gen_fn_proto('push_token', [], [], [Shared.new(Param {
+      name: 'tokens',
+      is_mut: true,
+      typ: Shared.new(TyArray(Shared.new(TyNamed('Token')))),
+      has_default: false,
+      default: Shared.new(ExprUnit(span_unknown())),
+      param_pattern: Shared.new(PatUnit(span_unknown()))
+    })], tunit(), context),
+    'void push_token(mlc::Array<Token>& tokens) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_proto: string return type',
     gen_fn_proto('greet', [], [], [Shared.new(Param { name: 'name', is_mut: false, typ: Shared.new(TyString), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })], tstr(), context),

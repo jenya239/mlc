@@ -15,26 +15,23 @@ import * as expr_visitor_cpp from '../expr_visitor_cpp'
 fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
 
-fn gen_stmts_cpp_mut(statements: [Shared<SStmt>], context: ref mut CodegenContext) -> [Shared<CppStmt>] =
-  eval_stmts_cpp_with_try(statements, context, 0).statements
-
 fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)
 
 type StmtsCppAccumState = StmtsCppAccumState {
   statements: [Shared<CppStmt>],
-  next_try: i32
+  next_try: i32,
+  codegen_context: CodegenContext
 }
 
 type GenStmtCppResult = GenStmtCppResult {
   statement: Shared<CppStmt>,
-  next_try: i32
+  next_try: i32,
+  codegen_context: CodegenContext
 }
 
-export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] = do
-  let mut codegen_context = context
-  gen_stmts_cpp_mut(statements, codegen_context)
-end
+export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] =
+  eval_stmts_cpp_with_try(statements, context, 0).statements
 
 export type GenStmtsCppWithContext = GenStmtsCppWithContext {
   statements: [Shared<CppStmt>],
@@ -46,11 +43,10 @@ export fn gen_stmts_cpp_with_context(
   context: CodegenContext,
   try_counter: i32
 ) -> GenStmtsCppWithContext = do
-  let mut codegen_context = context
-  const accumulated = eval_stmts_cpp_with_try(statements, codegen_context, try_counter)
+  const accumulated = eval_stmts_cpp_with_try(statements, context, try_counter)
   GenStmtsCppWithContext {
     statements: accumulated.statements,
-    codegen_context: codegen_context
+    codegen_context: accumulated.codegen_context
   }
 end
 
@@ -115,14 +111,14 @@ fn gen_for_statement_cpp(
   try_counter: i32
 ) -> GenStmtCppResult = do
   const iterator_cpp = gen_expr_cpp_for_stmt_codegen(iterator, context)
-  let mut body_context = context
-  const body_accumulated = eval_stmts_cpp_with_try(body_statements, body_context, try_counter)
+  const body_accumulated = eval_stmts_cpp_with_try(body_statements, context, try_counter)
   GenStmtCppResult {
     statement: emit_helpers.make_for_cpp_statement(
       cpp_safe(variable_name),
       iterator_cpp,
       body_accumulated.statements),
-    next_try: body_accumulated.next_try
+    next_try: body_accumulated.next_try,
+    codegen_context: body_accumulated.codegen_context
   }
 end
 
@@ -133,13 +129,13 @@ fn gen_while_statement_cpp(
   try_counter: i32
 ) -> GenStmtCppResult = do
   const condition_cpp = gen_expr_cpp_for_stmt_codegen(condition, context)
-  let mut body_context = context
-  const body_accumulated = eval_stmts_cpp_with_try(body_statements, body_context, try_counter)
+  const body_accumulated = eval_stmts_cpp_with_try(body_statements, context, try_counter)
   GenStmtCppResult {
     statement: emit_helpers.make_while_cpp_statement(
       condition_cpp,
       emit_helpers.make_block_cpp_statement(body_accumulated.statements)),
-    next_try: body_accumulated.next_try
+    next_try: body_accumulated.next_try,
+    codegen_context: body_accumulated.codegen_context
   }
 end
 
@@ -184,8 +180,7 @@ fn unit_if_branch_block_cpp(
   match branch_expression {
     SExprBlock(statements, result_expression, _, _) => do
       const final_context = stmts_final_ctx(statements, context)
-      let mut branch_context = context
-      const accumulated = eval_stmts_cpp_with_try(statements, branch_context, try_counter)
+      const accumulated = eval_stmts_cpp_with_try(statements, context, try_counter)
       emit_helpers.make_block_cpp_statement(append_block_trailing_cpp(
         accumulated.statements, result_expression, final_context, accumulated.next_try))
     end,
@@ -224,7 +219,8 @@ fn gen_unit_if_statement_cpp(
       condition_cpp,
       unit_if_branch_block_cpp(then_expression, context, try_counter),
       unit_if_else_branch_cpp(else_expression, context, try_counter)),
-    next_try: try_counter
+    next_try: try_counter,
+    codegen_context: context
   }
 end
 
@@ -235,18 +231,20 @@ fn eval_stmt_cpp(
 ) -> GenStmtCppResult =
   match statement {
     SStmtBreak(_) =>
-      GenStmtCppResult { statement: emit_helpers.make_break_cpp_statement(), next_try: try_counter },
+      GenStmtCppResult { statement: emit_helpers.make_break_cpp_statement(), next_try: try_counter, codegen_context: context },
     SStmtContinue(_) =>
-      GenStmtCppResult { statement: emit_helpers.make_continue_cpp_statement(), next_try: try_counter },
+      GenStmtCppResult { statement: emit_helpers.make_continue_cpp_statement(), next_try: try_counter, codegen_context: context },
     SStmtReturn(expression, _) => match expression {
       SExprQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_return_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter + 1
+        next_try: try_counter + 1,
+        codegen_context: context
       },
       _ => GenStmtCppResult {
         statement: emit_helpers.make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       }
     },
     SStmtLet(name, _, value, value_type, _) => match value {
@@ -254,11 +252,13 @@ fn eval_stmt_cpp(
         statement: emit_helpers.make_auto_cpp_statement(
           cpp_safe(name),
           gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter + 1
+        next_try: try_counter + 1,
+        codegen_context: context
       },
       SExprArray(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       },
       SExprMethod(map_object, method_name, _, _, _, _) =>
         if method_name == "new" then match map_object {
@@ -270,47 +270,58 @@ fn eval_stmt_cpp(
                   value_type,
                   context,
                   gen_expr_cpp_for_stmt_codegen(value, context))),
-              next_try: try_counter
+              next_try: try_counter,
+              codegen_context: context
             }
             else GenStmtCppResult {
               statement: emit_helpers.make_auto_cpp_statement(
                 cpp_safe(name),
                 gen_expr_cpp_for_stmt_codegen(value, context)),
-              next_try: try_counter
+              next_try: try_counter,
+              codegen_context: context
             }
             end,
           _ => GenStmtCppResult {
             statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-            next_try: try_counter
+            next_try: try_counter,
+            codegen_context: context
           }
         }
         else GenStmtCppResult {
           statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-          next_try: try_counter
+          next_try: try_counter,
+          codegen_context: context
         }
         end,
       _ => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       }
     },
-    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) => GenStmtCppResult {
-      statement: let_pat_cpp.gen_let_pattern_cpp_statement(
-        pat, value, value_type, has_else, else_body, context, gen_expr_cpp_for_stmt_codegen),
-      next_try: try_counter
-    },
+    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) => do
+      const pattern_parsed = let_pat_cpp.gen_let_pattern_cpp_statement(
+        pat, value, value_type, has_else, else_body, context, gen_expr_cpp_for_stmt_codegen)
+      GenStmtCppResult {
+        statement: pattern_parsed.statement,
+        next_try: try_counter,
+        codegen_context: pattern_parsed.codegen_context
+      }
+    end,
     SStmtLetConst(name, value, _, _) =>
       GenStmtCppResult {
         statement: emit_helpers.make_constexpr_auto_cpp_statement(
           cpp_safe(name),
           gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       },
     SStmtExpr(expression, _) => match expression {
       SExprQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_expression_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter + 1
+        next_try: try_counter + 1,
+        codegen_context: context
       },
       SExprWhile(condition, body_statements, _, _) =>
         gen_while_statement_cpp(condition, body_statements, context, try_counter),
@@ -327,29 +338,33 @@ fn eval_stmt_cpp(
             _ => GenStmtCppResult {
               statement: emit_helpers.make_expression_cpp_statement(
                 gen_expr_cpp_for_stmt_codegen(expression, context)),
-              next_try: try_counter
+              next_try: try_counter,
+              codegen_context: context
             }
           }
         end,
       _ => GenStmtCppResult {
         statement: emit_helpers.make_expression_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter
+        next_try: try_counter,
+        codegen_context: context
       }
     }
   }
 
-fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: ref mut CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
+fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
   let mut output_statements: [Shared<CppStmt>] = []
   let mut next_try = try_counter
+  let mut codegen_context = context
   let mut index = 0
   while index < statements.length() do
     const statement = statements[index]
-    const statement_parsed = eval_stmt_cpp(statement, context, next_try)
+    const statement_parsed = eval_stmt_cpp(statement, codegen_context, next_try)
     output_statements.push(statement_parsed.statement)
-    mutate_context_from_statement(statement, context)
+    codegen_context = statement_parsed.codegen_context
+    mutate_context_from_statement(statement, codegen_context)
     next_try = statement_parsed.next_try
     index = index + 1
   end
-  StmtsCppAccumState { statements: output_statements, next_try: next_try }
+  StmtsCppAccumState { statements: output_statements, next_try: next_try, codegen_context: codegen_context }
 end
