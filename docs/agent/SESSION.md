@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-c3b3c740-98ae-4730-bd71-93d2a2fbda5f`|
-| driver_turns_since_plan | 1|
-| step_last | 7|
-| active_track | TRACK_RENAME_ABBREV → STEP=8 |
+| agent_token_last | `cr-agent-1a7703ed-3fec-46be-b0d1-d32295a02f6d`|
+| driver_turns_since_plan | 2|
+| step_last | 6|
+| active_track | TRACK_ORCH_DEV → STEP=4 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 6 — meeting rooms)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_ORCH_DEV |
+| done | `meetings/parse-meeting`, `db/meetings`, `meetings/sync`; progress tab |
+| result | meetings tests 5/5; build ok; npm test 331/345 (14 pre-existing); commit `daa31ec` (cr) |
+| next | ROLE=Driver STEP=4 TRACK_ORCH_DEV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 7 — idempotent re-prompt)
 
