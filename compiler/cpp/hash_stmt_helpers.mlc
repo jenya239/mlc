@@ -1,4 +1,4 @@
-// Native C++ stmt builders for derive Hash body (Phase 2).
+// Native C++ statement builders for derive Hash body (Phase 2).
 
 import { CppExpression, CppBinary, CppCall, CppAggregateInit, CppCast, CppCastStatic, CppStatement } from './cpp_ast'
 import * as emit_helpers from './emit_helpers'
