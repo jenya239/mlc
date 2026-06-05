@@ -4,10 +4,25 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| driver_turns_since_plan | 2|
+| instructions_rev | `2026-06-01-session-detail`|
+| agent_token_last | `cr-agent-fe87b866-9b1c-4802-8351-39ed1547f832`|
+| driver_turns_since_plan | 3|
 | step_last | 1|
-| active_track | TRACK_STRING_MATCH (close) → TRACK_TYPE_ALIASES |
+| active_track | TRACK_RENAME_ABBREV → STEP=2 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 1 — core type renames)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_RENAME_ABBREV |
+| started | 2026-06-05 |
+| elapsed | ~90 min |
+| done | wip-rename stash applied (74 mlc); `SemanticExpression`/`Pattern`/`TokenKind`/`CppDeclaration` renames; merged `temp_name_counter` i32 + `parameter_type_cpp` mut `&`; `SemanticStatementLetPattern` fix |
+| result | **961**/0; self-host `diff -rq p1 p2` empty; commit `e09fab44` |
+| issues | stash conflict on let-pat/temp_name; test ctor expects `__tmp_1` not `__tmp_0` |
+| next | ROLE=Driver STEP=2 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-05-19 (Planner plan-refresh — idempotent)
 

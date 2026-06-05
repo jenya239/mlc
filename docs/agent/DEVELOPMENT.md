@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-**TRACK_STRING_MATCH** closed (STEP=12 self-host diff green). Next: **TRACK_TYPE_ALIASES** STEP=1.
+**TRACK_RENAME_ABBREV** step 1 done (`e09fab44`). Next: **STEP=2** (`ast.mlc` + `ast_tokens.mlc` field renames).
 
 ## Step sizing (good vs bad)
 

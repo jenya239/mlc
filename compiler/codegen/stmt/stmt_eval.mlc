@@ -222,7 +222,7 @@ export fn eval_stmt_with_try(stmt: Shared<SemanticStatement>, context: CodegenCo
       }
       statement_parsed
     end,
-    SemanticStatementLetPat(pat, _, value, value_type, has_else, else_body, _) => do
+    SemanticStatementLetPattern(pat, _, value, value_type, has_else, else_body, _) => do
       const pattern_parsed = gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn)
       GenStmtResult {
         output: pattern_parsed.output,
