@@ -27,6 +27,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
     end,
     DeclType(type_name, type_params, variants, derive_traits, name_span) =>
       Shared.new(SemanticDeclarationType(type_name, type_params, variants, derive_traits, name_span)),
+    DeclTypeAlias(type_name, type_params, type_expression, name_span) =>
+      Shared.new(SemanticDeclarationTypeAlias(type_name, type_params, type_expression, name_span)),
     DeclTrait(trait_name, type_params, methods, name_span) => do
       const typed_methods = transform_decls(methods, registry)
       Shared.new(SemanticDeclarationTrait(trait_name, type_params, typed_methods, name_span))

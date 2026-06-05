@@ -3,7 +3,7 @@
 // Produced by checker/transform.mlc; consumed by codegen/.
 
 import { Type } from '../checker/registry'
-import { Pattern, Span, TypeVariant, Param, Decl, WhereClauseBound, span_unknown } from '../frontend/ast'
+import { Pattern, Span, TypeVariant, TypeExpr, Param, Decl, WhereClauseBound, span_unknown } from '../frontend/ast'
 
 // Forward-declare SemanticExpression so records referencing it can be defined first.
 export type SemanticMatchArm = SemanticMatchArm {
@@ -65,6 +65,7 @@ export type SemanticStatement =
 export type SemanticDeclaration =
   | SemanticDeclarationFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SemanticExpression>, [WhereClauseBound], Span)
   | SemanticDeclarationType(string, [string], [Shared<TypeVariant>], [string], Span)
+  | SemanticDeclarationTypeAlias(string, [string], Shared<TypeExpr>, Span)
   | SemanticDeclarationTrait(string, [string], [Shared<SemanticDeclaration>], Span)
   | SemanticDeclarationExtend(string, string, [Shared<SemanticDeclaration>], Span)
   | SemanticDeclarationImport(string, [string])
@@ -161,6 +162,7 @@ export fn sdecl_span(declaration: Shared<SemanticDeclaration>) -> Span =
   match declaration {
     SemanticDeclarationFn(_, _, _, _, _, _, _, span) => span,
     SemanticDeclarationType(_, _, _, _, span) => span,
+    SemanticDeclarationTypeAlias(_, _, _, span) => span,
     SemanticDeclarationTrait(_, _, _, span) => span,
     SemanticDeclarationExtend(_, _, _, span) => span,
     SemanticDeclarationAssocBind(_, _, span) => span,

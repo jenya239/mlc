@@ -4,7 +4,7 @@
 import {
   Program, Decl, TypeExpr, Param, Expr, Shared,
   TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc,
-  DeclFn, DeclType, DeclTrait, DeclExtend,
+  DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend,
   DeclExported,
   WhereClauseBound,
   param_name, param_type_value,
@@ -32,6 +32,15 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
   each_program_declaration_depth_first(program, (current_declaration) => do
     match current_declaration {
       DeclType(type_name, _, _, _, _) => do
+        if trait_declaration_names.has(type_name) then
+          conflicts.push(diagnostic_error_with_code(
+            'the name "' + type_name + '" is declared as both a type and a trait',
+            decl_name_span(current_declaration),
+            diagnostic_code_e073()))
+        end
+        nominal_type_declaration_names.set(type_name, true); ()
+      end,
+      DeclTypeAlias(type_name, _, _, _) => do
         if trait_declaration_names.has(type_name) then
           conflicts.push(diagnostic_error_with_code(
             'the name "' + type_name + '" is declared as both a type and a trait',
@@ -375,6 +384,7 @@ export fn build_trait_nominal_maps(program: Program) -> TraitNominalMaps = do
   each_program_declaration_depth_first(program, (current_declaration) => do
     match current_declaration {
       DeclType(type_name, _, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
+      DeclTypeAlias(type_name, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
       DeclTrait(trait_name, _, _, _) => do trait_declaration_names.set(trait_name, true); () end,
       _ => ()
     }

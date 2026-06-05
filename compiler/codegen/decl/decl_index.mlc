@@ -19,6 +19,7 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
     DeclExported(inner_declaration) => do
       match inner_declaration {
         DeclFn(name, _, _, _, _, _, _) => do names.push(name); () end,
+        DeclTypeAlias(type_name, _, _, _) => do names.push(type_name); () end,
         DeclType(type_name, _, variants, _, _) => do
           names.push(type_name); let mut variant_index = 0
           while variant_index < variants.length() do

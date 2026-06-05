@@ -1,7 +1,7 @@
 // CppDeclaration dual path for declaration codegen (Phase 2 step 17).
 
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
-import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
+import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
@@ -414,6 +414,7 @@ export fn gen_decl_cpp(declaration: Shared<SemanticDeclaration>, context: Codege
         append_cpp_declarations(
           gen_type_decl_fwd_cpp(context, type_name, type_params, variants),
           gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits))),
+    SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
     SemanticDeclarationTrait(name, type_params, methods, _) =>
       gen_trait_decl_cpp(context, name, type_params, methods),
     SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
@@ -432,6 +433,7 @@ export fn gen_proto_cpp(declaration: Shared<SemanticDeclaration>, context: Codeg
         _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
       },
     SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declaration(),
+    SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
     SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
     SemanticDeclarationExtend(type_name, _, methods, _) => do
       const extend_context = context.for_type_body(type_name)

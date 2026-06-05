@@ -6,7 +6,7 @@ import { parse_type } from './types'
 import { parse_expr, parse_record_pattern_fields } from './exprs'
 import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace } from './expect_close'
-import { Decl, DeclFn, DeclTrait, DeclType, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
+import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
 
 fn parser_expect_generic_close(state: Parser, opened: bool) -> Parser =
   if !opened then state
@@ -603,6 +603,18 @@ fn parse_derive_clause(parser: Parser) -> DeriveResult = do
   end
 end
 
+fn type_decl_after_equal_is_sum_variant(parser: Parser) -> bool = do
+  let mut state = parser
+  if state.kind().is_ident() && state.kind().ident() == 'private' then state = state.advance() end
+  if state.kind().is_bar() then true
+  else if state.kind().is_ident() then do
+    const after_ident = state.advance()
+    after_ident.kind().is_bar() || after_ident.kind().is_lparen() || after_ident.kind().is_lbrace()
+  end
+  else false
+  end
+end
+
 fn parse_type_decl(parser: Parser) -> DeclResult = do
   const name_parser = parser_expect_ident(parser, 'type name')
   const type_name = name_parser.kind().ident()
@@ -626,10 +638,17 @@ fn parse_type_decl(parser: Parser) -> DeclResult = do
       variants.push(Shared.new(VarRecord(type_name, field_defs_parsed.field_defs, false)))
       const derive_parsed = parse_derive_clause(field_defs_parsed.parser)
       DeclResult { declaration: Shared.new(DeclType(type_name, type_parameters_parsed.params, variants, derive_parsed.traits, type_name_span)), parser: derive_parsed.parser }
-    else
+    else if type_decl_after_equal_is_sum_variant(state) then do
       const variants_parsed = parse_variants(state)
       const derive_parsed = parse_derive_clause(variants_parsed.parser)
       DeclResult { declaration: Shared.new(DeclType(type_name, type_parameters_parsed.params, variants_parsed.variants, derive_parsed.traits, type_name_span)), parser: derive_parsed.parser }
+    end
+    else do
+      const type_parsed = parse_type(state)
+      DeclResult {
+        declaration: Shared.new(DeclTypeAlias(type_name, type_parameters_parsed.params, type_parsed.type_expr, type_name_span)),
+        parser: type_parsed.parser
+      }
     end
   else
     const state_after_eof_check = if state.at_eof()

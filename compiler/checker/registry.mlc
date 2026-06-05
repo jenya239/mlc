@@ -327,6 +327,7 @@ fn register_decl_into(registry: ref mut TypeRegistry, declaration: Shared<Decl>)
       const phantom = compute_phantom_type_params(type_parameters, variants)
       registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)
     end,
+    DeclTypeAlias(_, _, _, _) => (),
     DeclImport(_, _) => (),
     DeclExported(exported_declaration) => register_decl_into(registry, exported_declaration),
     DeclAssocType(_, _) => (),

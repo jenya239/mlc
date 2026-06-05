@@ -283,6 +283,10 @@ fn global_names_merge_single_declaration_into_map(
             names_after_type_definition,
             variant_shared_under_scan))
     end,
+    DeclTypeAlias(name, _, _, _) => do
+      global_names_so_far.set(name, true)
+      global_names_so_far
+    end,
     DeclTrait(name, _, methods, _) => do
       global_names_so_far.set(name, true)
       methods.fold(
@@ -435,6 +439,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
           record_field_default_value_diagnostics(type_parameters, variants, registry))
         ()
       end,
+      DeclTypeAlias(_, _, _, _) => do () end,
       DeclTrait(_, _, _, _)   => do () end,
       DeclExtend(extend_type_name, _, methods, _) => do
         all_diagnostics =

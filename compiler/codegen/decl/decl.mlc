@@ -88,6 +88,7 @@ export fn gen_decl(declaration: Shared<SemanticDeclaration>, context: CodegenCon
   match declaration {
     SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
       gen_type_decl(context, type_name, type_parameters, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
+    SemanticDeclarationTypeAlias(_, _, _, _) => '',
     SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(context, name, type_parameters, methods),
     SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
       match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, context) },
@@ -103,6 +104,7 @@ export fn gen_decl(declaration: Shared<SemanticDeclaration>, context: CodegenCon
 export fn gen_proto(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
   match declaration {
     SemanticDeclarationType(_, _, _, _, _) => '',
+    SemanticDeclarationTypeAlias(_, _, _, _) => '',
     SemanticDeclarationTrait(_, _, _, _) => '',
     SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
       match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, context) },
@@ -153,6 +155,7 @@ fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: Codeg
         gen_derive_methods(codegen_context, type_name, variants, derive_traits)
       else ''
       end,
+    SemanticDeclarationTypeAlias(_, _, _, _) => '',
     SemanticDeclarationTrait(name, type_parameters, methods, _) =>
       if phase == 0 then gen_trait_decl(codegen_context, name, type_parameters, methods)
       else if phase == 4 then gen_trait_struct(codegen_context, name, type_parameters, methods)

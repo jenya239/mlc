@@ -215,6 +215,7 @@ export type TypeVariant =
 export type Decl =
   | DeclFn(string, [string], [[string]], [Shared<Param>], Shared<TypeExpr>, Shared<Expr>, [WhereClauseBound])
   | DeclType(string, [string], [Shared<TypeVariant>], [string], Span)
+  | DeclTypeAlias(string, [string], Shared<TypeExpr>, Span)
   | DeclTrait(string, [string], [Shared<Decl>], Span)
   | DeclExtend(string, string, [Shared<Decl>], Span)
   | DeclImport(string, [string])
@@ -234,6 +235,7 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
     DeclExported(inner) => inner,
     DeclFn(_, _, _, _, _, _, _) => decl,
     DeclType(_, _, _, _, _) => decl,
+    DeclTypeAlias(_, _, _, _) => decl,
     DeclTrait(_, _, _, _) => decl,
     DeclExtend(_, _, _, _) => decl,
     DeclImport(_, _) => decl,
@@ -247,6 +249,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
   match unwrapped {
     DeclFn(name, _, _, _, _, _, _) => name,
     DeclType(name, _, _, _, _) => name,
+    DeclTypeAlias(name, _, _, _) => name,
     DeclTrait(name, _, _, _) => name,
     DeclExtend(type_name, _, _, _) => type_name,
     DeclImport(_, _) => '',
@@ -260,6 +263,7 @@ export fn decl_name_span(decl: Shared<Decl>) -> Span = do
   const unwrapped: Shared<Decl> = decl
   match unwrapped {
     DeclType(_, _, _, _, name_span) => name_span,
+    DeclTypeAlias(_, _, _, name_span) => name_span,
     DeclTrait(_, _, _, name_span) => name_span,
     DeclExtend(_, _, _, name_span) => name_span,
     DeclExported(inner) => decl_name_span(inner),
@@ -271,6 +275,7 @@ export fn decl_span(declaration: Shared<Decl>) -> Span = do
   match decl_inner(declaration) {
     DeclFn(_, _, _, _, _, body, _) => expr_span(body),
     DeclType(_, _, _, _, name_span) => name_span,
+    DeclTypeAlias(_, _, _, name_span) => name_span,
     DeclTrait(_, _, _, name_span) => name_span,
     DeclExtend(_, _, _, name_span) => name_span,
     DeclAssocBind(_, _, span) => span,
