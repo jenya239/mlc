@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) Phase 2.5; previous: [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md)
 
-## Status: **open** (step 3 pending)
+## Status: **open** (step 4 pending)
 
 **STEP=1 note (2026-06-05 Meta recovery):** `DeclTypeAlias` parser + semantic stub; sum/ADT disambiguation; `test_parser` (+2). Gate **963**/0; self-host `diff_exit=0`. Commit `99b11438`. Guard `Driver:1:TYPE_ALIASES` loop cleared.
 

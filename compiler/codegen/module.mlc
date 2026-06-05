@@ -114,6 +114,7 @@ end
 export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx = do
   const field_orders = build_field_orders(program)
   const ctor_type_infos = build_ctor_type_infos_from_decls(program.decls)
+  const registry = build_registry(program)
   PrecomputedCtx {
     field_orders: field_orders,
     variant_types: build_variant_types_from_decls(program.decls),
@@ -122,7 +123,8 @@ export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx 
     generic_variants: build_generic_variants_from_decls(program.decls),
     method_owners: build_method_owners_from_decls(program.decls),
     field_order_index: build_field_order_index(field_orders),
-    ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos)
+    ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
+    type_alias_annotations: registry.type_alias_annotations
   }
 end
 
@@ -155,6 +157,7 @@ fn prepare_module_generation(
     generic_variants: precomputed_context.generic_variants,
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
+    type_alias_annotations: precomputed_context.type_alias_annotations,
     temp_name_counter: new_temp_name_counter()
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))

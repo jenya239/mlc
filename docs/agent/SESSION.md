@@ -6,9 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-0b5b4184-f1c7-436f-b8f2-f153801d7d12` |
-| driver_turns_since_plan | 2|
-| step_last | 2|
-| active_track | TRACK_TYPE_ALIASES → STEP=3 |
+| driver_turns_since_plan | 3|
+| step_last | 3|
+| active_track | TRACK_TYPE_ALIASES → STEP=4 |
+
+### Turn 2026-06-06 (Driver TYPE_ALIASES step 3 — codegen alias)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_TYPE_ALIASES |
+| done | `type_alias_annotations` in CodegenContext; `type_to_cpp` resolve; empty decl stubs; `test_codegen` (+5) |
+| result | **971**/0; self-host `diff_exit=0` |
+| issues | param `Count` → `int` via alias map in context |
+| next | ROLE=Driver STEP=4 TRACK_TYPE_ALIASES |
 
 ### Turn 2026-05-19 (Driver TYPE_ALIASES step 2 — checker alias resolve + cycle)
 

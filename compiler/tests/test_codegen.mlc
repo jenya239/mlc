@@ -482,6 +482,25 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_eq_str('DeclFn: body in output',
     if fn_prog_out.contains('return (n * 2)') then 'yes' else 'no' end,
     'yes'))
+
+  const type_alias_return_source =
+    'type Words = [string]\nexport fn main() -> Words = []'
+  const type_alias_return_output = gen_program(parse_program(tokenize(type_alias_return_source).tokens))
+  results.push(assert_code_contains('type alias: return uses underlying array type',
+    type_alias_return_output, 'mlc::Array<mlc::String>'))
+  results.push(assert_code_not_contains('type alias: no struct decl for alias name',
+    type_alias_return_output, 'struct Words'))
+  results.push(assert_code_not_contains('type alias: no using decl for alias name',
+    type_alias_return_output, 'using Words'))
+
+  const type_alias_parameter_source =
+    'type Count = i32\nexport fn double_count(value: Count) -> Count = value * 2'
+  const type_alias_parameter_output = gen_program(parse_program(tokenize(type_alias_parameter_source).tokens))
+  results.push(assert_code_contains('type alias: parameter uses underlying int type',
+    type_alias_parameter_output, 'int value'))
+  results.push(assert_code_not_contains('type alias parameter: no struct for alias name',
+    type_alias_parameter_output, 'struct Count'))
+
   const d3_trait_parameter_source =
     'type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'
   const d3_trait_parameter_output = gen_program(parse_program(tokenize(d3_trait_parameter_source).tokens))

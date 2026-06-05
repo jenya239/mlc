@@ -59,8 +59,17 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TAssoc(param, assoc) => `typename ${cpp_safe(param)}::${assoc}`
   }
 
-export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
-  match type_name
+fn type_alias_annotation_cpp(context: CodegenContext, alias_name: string) -> string =
+  if context.type_alias_annotations.has(alias_name) then
+    type_to_cpp(context, context.type_alias_annotations.get(alias_name))
+  else
+    ''
+  end
+
+export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string = do
+  const alias_type_cpp = type_alias_annotation_cpp(context, type_name)
+  if alias_type_cpp != '' then alias_type_cpp
+  else match type_name
   | 'i32'    => 'int'
   | 'string' => 'mlc::String'
   | 'bool'   => 'bool'
@@ -74,6 +83,8 @@ export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string
     if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
   | _ => context.resolve(type_name)
   end
+  end
+end
 
 export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> string =
   match type_expr {

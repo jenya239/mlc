@@ -1,6 +1,7 @@
 // Context types and mutation for the code generator.
 
-import { Program, Pattern } from '../frontend/ast'
+import { Program, Pattern, TypeExpr } from '../frontend/ast'
+import { build_registry } from '../checker/registry'
 import { SemanticStatement } from '../ir/semantic_ir'
 import { Type, TShared, TArray } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
@@ -37,6 +38,7 @@ export type CodegenContext = CodegenContext {
   generic_variants: [string],
   struct_using_entries: Map<string, [StructUsingEntry]>,
   struct_using_lines: Map<string, [string]>,
+  type_alias_annotations: Map<string, Shared<TypeExpr>>,
   temp_name_counter: i32
 }
 
@@ -74,7 +76,8 @@ export type PrecomputedCtx = PrecomputedCtx {
   generic_variants: [string],
   method_owners: Map<string, string>,
   field_order_index: Map<string, [string]>,
-  ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >
+  ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >,
+  type_alias_annotations: Map<string, Shared<TypeExpr>>
 }
 
 export fn context_resolve(context: CodegenContext, name: string) -> string =
@@ -243,6 +246,7 @@ export fn lookup_ctor_type_info_for_context(context: CodegenContext, constructor
 export fn create_codegen_context(program: Program) -> CodegenContext = do
   const field_orders = build_field_orders(program)
   const ctor_type_infos = build_ctor_type_infos_from_decls(program.decls)
+  const registry = build_registry(program)
   CodegenContext {
     field_orders: field_orders,
     field_order_index: decl_index.build_field_order_index(field_orders),
@@ -263,6 +267,7 @@ export fn create_codegen_context(program: Program) -> CodegenContext = do
     generic_variants: build_generic_variants_from_decls(program.decls),
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
+    type_alias_annotations: registry.type_alias_annotations,
     temp_name_counter: new_temp_name_counter()
   }
 end
