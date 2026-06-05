@@ -5,10 +5,17 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-1a7703ed-3fec-46be-b0d1-d32295a02f6d`|
+| agent_token_last | `cr-agent-473214ab-328c-43e2-b2b3-8864c2c6b18c`|
 | driver_turns_since_plan | 2|
 | step_last | 6|
 | active_track | TRACK_ORCH_DEV → STEP=4 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 6 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| action | STEP=6 done (`daa31ec`); meetings tests 5/5; build ok |
+| next | enqueued ROLE=Driver STEP=4 |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 6 — meeting rooms)
 
