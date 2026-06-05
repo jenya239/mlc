@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md]
 
 ## Status: **open** (step 16 done — 2026-06-05)
 
-**STEP=16 note (2026-06-05 Driver):** `codegen/context.mlc`/`eval.mlc`/`module.mlc`: `collect_pattern_bind_names_for_context`, `program`, `inner_expression`, `load_item`, `precomputed_context`, `GenModuleOut.header`/`source`; ripple `pipeline.mlc`; quotes ok (`'`/` `` only). Gate: **961**/0; self-host diff empty. Commit TBD.
+**STEP=16 note (2026-06-05 Driver):** `codegen/context.mlc`/`eval.mlc`/`module.mlc`: `collect_pattern_bind_names_for_context`, `program`, `inner_expression`, `load_item`, `precomputed_context`, `GenModuleOut.header`/`source`; ripple `pipeline.mlc`; quotes ok (`'`/` `` only). Gate: **961**/0; self-host diff empty. Commit `3149c9af`.
 
 **STEP=15 note (2026-06-05 Driver):** `checker/check/` (5 files): `expression`, `parameter_index`, `default_diagnostics`, `parameters`, `expected_elements`/`actual_elements`, `type_arguments`, `success_type`/`error_type`/`inner_option_type`, `argument_inferred_types`; diagnostics/`check_context`/`derive_validation` clean; quotes ok. Gate: **961**/0; self-host diff empty. Commit `97072ee5`.
 
@@ -107,7 +107,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 13 | `checker/infer/` (??? ?????) � ?????????? | done |
 | 14 | `checker/transform/` (??? ?????) � ?????????? | done |
 | 15 | `checker/check/` (??? ?????) � ?????????? | done |
-| 16 | `codegen/context.mlc` + `codegen/eval.mlc` + `codegen/module.mlc` � ?????????? + ??????? | pending |
+| 16 | `codegen/context.mlc` + `codegen/eval.mlc` + `codegen/module.mlc` � ?????????? + ??????? | done |
 | 17 | `codegen/decl/` (??? ?????) � ?????????? + ??????? | pending |
 | 18 | `codegen/expr/` (??? ?????) � ?????????? + ??????? | pending |
 | 19 | `codegen/stmt/` (??? ?????) � ?????????? + ??????? | pending |
