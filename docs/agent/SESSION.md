@@ -10,6 +10,15 @@
 | step_last | 1|
 | active_track | TRACK_RENAME_ABBREV → STEP=2 |
 
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 1 — idempotent redirect)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 (prompt) |
+| done | skip — TRACK step 1 already `done` (`e09fab44`+`fac88261`); gate **961**/0 re-verified |
+| next | ROLE=Driver STEP=2 TRACK_RENAME_ABBREV (enqueued) |
+
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 1 — core type renames)
 
 | field | value |
