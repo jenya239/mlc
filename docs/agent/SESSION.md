@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-5fe7cc6e-4438-435d-89e6-0686737ec07c`|
-| driver_turns_since_plan | 3|
-| step_last | 3|
-| active_track | TRACK_RENAME_ABBREV → STEP=5 |
+| agent_token_last | `cr-agent-463a82d4-c30f-45d1-95b3-c9abbf21f216`|
+| driver_turns_since_plan | 4|
+| step_last | 5|
+| active_track | TRACK_RENAME_ABBREV → STEP=6 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 5 — exprs.mlc)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_RENAME_ABBREV |
+| done | `exprs.mlc` expression/pattern locals; parse_pattern/parse_statement; no destructuring; ripple decls |
+| result | **961**/0; self-host `diff_exit=0`; commit `36c8dfab` |
+| issues | missed `e0` ripple on first pass |
+| next | ROLE=Driver STEP=6 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 3 — idempotent re-prompt)
 

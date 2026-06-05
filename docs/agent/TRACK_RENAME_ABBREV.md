@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 4 done — 2026-06-05)
+## Status: **open** (step 5 done — 2026-06-05)
+
+**STEP=5 note (2026-06-05 Driver):** `exprs.mlc` locals `expression`/`pattern`; `parse_pattern`/`parse_statement`/`parse_statements_until_*`; removed `let { }` destructuring; ripple `decls.mlc` `parse_record_pattern_fields`. String quotes: `"` only char compares — ok. Gate: **961**/0; self-host diff empty. Commit `36c8dfab`.
 
 **STEP=4 note (2026-06-05 Driver):** `predicates.mlc` Parser `position`; result fields `expression`/`pattern`/`statement`/`declaration`/`patterns`; ripple `comma_separated`/`decls`/`exprs`/`test_parser`. No `let { field: local }` destructuring (parse error). Gate: **961**/0; self-host diff empty. Commit `bd26730b`.
 
@@ -71,8 +73,8 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 1 | Core type renames: `SExpr`→`SemanticExpression`, `CppExpr`→`CppExpression`, `SDecl`→`SemanticDeclaration`, `CppDecl`→`CppDeclaration`, `SStmt`→`SemanticStatement`, `CppStmt`→`CppStatement`, `TKind`→`TokenKind`, `CppTKind`→`CppTokenKind`, `Pat`→`Pattern` | done |
 | 2 | `frontend/ast.mlc` + `frontend/ast_tokens.mlc` � ?????????? + ??????? | done |
 | 3 | `frontend/lexer.mlc` — поля + кавычки | done |
-| 4 | `frontend/parser/predicates.mlc` � ?????????? + ??????? | pending |
-| 5 | `frontend/parser/exprs.mlc` � ?????????? + ??????? | pending |
+| 4 | `frontend/parser/predicates.mlc` � ?????????? + ??????? | done |
+| 5 | `frontend/parser/exprs.mlc` � ?????????? + ??????? | done |
 | 6 | `frontend/parser/decls.mlc` � ?????????? + ??????? | pending |
 | 7 | `frontend/parser/types.mlc` � ?????????? + ??????? | pending |
 | 8 | `cpp/cpp_ast.mlc` + `cpp/cpp_printer.mlc` � ?????????? + ??????? | pending |
