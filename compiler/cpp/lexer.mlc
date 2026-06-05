@@ -15,13 +15,13 @@ type CppTokenKind =
   | COp(string)
   | CEof
 
-type CppToken  = CppToken  { kind: CppTokenKind, line: i32, col: i32 }
+type CppToken  = CppToken  { kind: CppTokenKind, line: i32, column: i32 }
 type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
 
-type CppScanIdR  = { st: LexState, tok: CppToken }
-type CppScanIntR = { st: LexState, tok: CppToken }
-type CppScanStrR = { st: LexState, tok: CppToken, err: string }
-type CppScanOpR  = { st: LexState, tok: CppToken }
+type CppScanIdR  = { state: LexState, token: CppToken }
+type CppScanIntR = { state: LexState, token: CppToken }
+type CppScanStrR = { state: LexState, token: CppToken, error: string }
+type CppScanOpR  = { state: LexState, token: CppToken }
 
 fn is_cpp_reserved_keyword(word: string) -> bool =
   match word
@@ -97,7 +97,7 @@ fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
   let current = state
   while !current.eof() && is_alnum(current.current()) do current = current.lex_advance() end
   const word = input_text.substring(start, current.position - start)
-  CppScanIdR { st: current, tok: CppToken { kind: cpp_keyword_kind(word), line: line, col: token_column } }
+  CppScanIdR { state: current, token: CppToken { kind: cpp_keyword_kind(word), line: line, column: token_column } }
 end
 
 fn cpp_scan_int(state: LexState) -> CppScanIntR = do
@@ -109,7 +109,7 @@ fn cpp_scan_int(state: LexState) -> CppScanIntR = do
     value = value * 10 + current.current().to_i()
     current = current.lex_advance()
   end
-  CppScanIntR { st: current, tok: CppToken { kind: CLInt(value), line: line, col: token_column } }
+  CppScanIntR { state: current, token: CppToken { kind: CLInt(value), line: line, column: token_column } }
 end
 
 fn cpp_scan_string(state: LexState) -> CppScanStrR = do
@@ -135,31 +135,31 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
   if current.eof() then error = 'unterminated string'
   else current = current.lex_advance()
   end
-  CppScanStrR { st: current, tok: CppToken { kind: CLStr(parts.join('')), line: line, col: token_column }, err: error }
+  CppScanStrR { state: current, token: CppToken { kind: CLStr(parts.join('')), line: line, column: token_column }, error: error }
 end
 
 fn cpp_scan_op_single(state: LexState, character: string, line: i32, column: i32) -> CppScanOpR =
   match character
-  | "(" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CLParen, line: line, col: column } }
-  | ")" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CRParen, line: line, col: column } }
-  | "{" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CLBrace, line: line, col: column } }
-  | "}" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CRBrace, line: line, col: column } }
-  | "[" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CLBracket, line: line, col: column } }
-  | "]" => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CRBracket, line: line, col: column } }
-  | _   => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: COp(character), line: line, col: column } }
+  | "(" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLParen, line: line, column: column } }
+  | ")" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRParen, line: line, column: column } }
+  | "{" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLBrace, line: line, column: column } }
+  | "}" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRBrace, line: line, column: column } }
+  | "[" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLBracket, line: line, column: column } }
+  | "]" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRBracket, line: line, column: column } }
+  | _   => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: COp(character), line: line, column: column } }
   end
 
 fn cpp_scan_op_two_character(state: LexState, character: string, next_char: string, line: i32, column: i32) -> CppScanOpR =
   match character
-  | "-" => match next_char | ">" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CArrow, line: line, col: column } } | "-" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CDec, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | ":" => match next_char | ":" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CScope, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "=" => match next_char | "=" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CEq, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "!" => match next_char | "=" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CNe, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "<" => match next_char | "=" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CLe, line: line, col: column } } | "<" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CLShift, line: line, col: column } } | _ => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CLAngle, line: line, col: column } } end
-  | ">" => match next_char | "=" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CGe, line: line, col: column } } | ">" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CRShift, line: line, col: column } } | _ => CppScanOpR { st: state.lex_advance(), tok: CppToken { kind: CRAngle, line: line, col: column } } end
-  | "&" => match next_char | "&" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CAnd, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "|" => match next_char | "|" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: COr, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "+" => match next_char | "+" => CppScanOpR { st: state.lex_advance_by(2), tok: CppToken { kind: CInc, line: line, col: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "-" => match next_char | ">" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CArrow, line: line, column: column } } | "-" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CDec, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | ":" => match next_char | ":" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CScope, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "=" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CEq, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "!" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CNe, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "<" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CLe, line: line, column: column } } | "<" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CLShift, line: line, column: column } } | _ => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLAngle, line: line, column: column } } end
+  | ">" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CGe, line: line, column: column } } | ">" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CRShift, line: line, column: column } } | _ => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRAngle, line: line, column: column } } end
+  | "&" => match next_char | "&" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CAnd, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "|" => match next_char | "|" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: COr, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "+" => match next_char | "+" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CInc, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
   | _   => cpp_scan_op_single(state, character, line, column)
   end
 
@@ -172,28 +172,28 @@ fn cpp_scan_op(state: LexState) -> CppScanOpR = do
 end
 
 fn push_ident_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  let { st, tok } = cpp_scan_ident(state)
-  tokens.push(tok)
-  st
+  const ident_scan = cpp_scan_ident(state)
+  tokens.push(ident_scan.token)
+  ident_scan.state
 end
 
 fn push_int_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  let { st, tok } = cpp_scan_int(state)
-  tokens.push(tok)
-  st
+  const integer_scan = cpp_scan_int(state)
+  tokens.push(integer_scan.token)
+  integer_scan.state
 end
 
 fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string]) -> LexState = do
-  let { st, tok, err } = cpp_scan_string(state)
-  tokens.push(tok)
-  if err != '' then errors.push(err) end
-  st
+  const string_scan = cpp_scan_string(state)
+  tokens.push(string_scan.token)
+  if string_scan.error != '' then errors.push(string_scan.error) end
+  string_scan.state
 end
 
 fn push_operator_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  let { st, tok } = cpp_scan_op(state)
-  tokens.push(tok)
-  st
+  const operator_scan = cpp_scan_op(state)
+  tokens.push(operator_scan.token)
+  operator_scan.state
 end
 
 fn cpp_tokenize(input_text: string) -> CppLexOut = do
@@ -216,6 +216,6 @@ fn cpp_tokenize(input_text: string) -> CppLexOut = do
       lexer_state = push_operator_scan(lexer_state, tokens)
     end
   end
-  tokens.push(CppToken { kind: CEof, line: lexer_state.line, col: lexer_state.column })
+  tokens.push(CppToken { kind: CEof, line: lexer_state.line, column: lexer_state.column })
   CppLexOut { tokens: tokens, errors: errors }
 end
