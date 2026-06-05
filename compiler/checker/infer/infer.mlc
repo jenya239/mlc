@@ -4,7 +4,7 @@ import {
   Expr,
   Stmt,
   FieldVal,
-  Pat,
+  Pattern,
   Diagnostic,
   Span,
   diagnostic_error,
@@ -504,7 +504,7 @@ fn infer_single_statement_augment_fold_state(
         type_environment_under_construction: accumulator.type_environment_under_construction,
       }
     end,
-    StmtLetPat(pattern, _, _, value_expression, has_else, else_body, source_span) => do
+    StmtLetPattern(pattern, _, _, value_expression, has_else, else_body, source_span) => do
       const value_inference =
         infer_expr(
           value_expression,
@@ -516,7 +516,7 @@ fn infer_single_statement_augment_fold_state(
         registry)
       let mut next_diagnostics =
         diagnostics_append(accumulator.diagnostics_collected_so_far, value_inference.errors)
-      const pattern_is_refutable: bool = match pattern { PatCtor(_, _, _) => true, _ => false }
+      const pattern_is_refutable: bool = match pattern { PatternCtor(_, _, _) => true, _ => false }
       if pattern_is_refutable && !has_else then
         next_diagnostics = diagnostics_append(
           next_diagnostics,

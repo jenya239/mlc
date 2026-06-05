@@ -1,7 +1,7 @@
-// SStmtLetPat: structured let — tuple/record/array/ctor (A3).
+// SemanticStatementLetPat: structured let — tuple/record/array/ctor (A3).
 
-import { Pat, PatIdent } from '../../frontend/ast'
-import { SExpr } from '../../ir/semantic_ir'
+import { Pattern, PatternIdent } from '../../frontend/ast'
+import { SemanticExpression } from '../../ir/semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context, take_temp_name } from '../context'
 import { list_contains } from '../decl/decl_index'
@@ -16,24 +16,24 @@ export fn gen_let_array_rest_slice(temp: string, from_index: i32, element_cpp: s
   'mlc::Array<' + element_cpp + '>(' + temp + '.cbegin() + ' + from_index.to_string() + ', ' + temp + '.cend())'
 
 export fn gen_let_pattern_statement(
-  pat: Shared<Pat>,
-  value: Shared<SExpr>,
+  pat: Shared<Pattern>,
+  value: Shared<SemanticExpression>,
   value_type: Shared<Type>,
   has_else: bool,
-  else_body: Shared<SExpr>,
+  else_body: Shared<SemanticExpression>,
   context: CodegenContext,
-  eval_fn: (Shared<SExpr>, CodegenContext) -> string
+  eval_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenLetPatternResult = do
   const rhs = eval_fn(value, context)
   const first_temp = take_temp_name(context)
   const temp_name = first_temp.name
   let mut codegen_context = first_temp.codegen_context
   match pat {
-    PatIdent(n, _) => GenLetPatternResult {
+    PatternIdent(n, _) => GenLetPatternResult {
       output: expression_output.auto_binding_statement(cpp_safe(n), rhs),
       codegen_context: codegen_context
     },
-    PatTuple(subs, _) => do
+    PatternTuple(subs, _) => do
       const output = match value_type {
         TTuple(_) | TPair(_, _) => do
           const primitive_tuple_binding_names = pat_bind_names(subs)
@@ -52,7 +52,7 @@ export fn gen_let_pattern_statement(
               let mut member_slot_index = 0
               while member_slot_index < subs.length() do
                 match subs[member_slot_index] {
-                  PatIdent(binding_member_name, _) => do
+                  PatternIdent(binding_member_name, _) => do
                     record_ordered_tuple_fragment = record_ordered_tuple_fragment + expression_output.auto_binding_statement(
                       cpp_safe(binding_member_name),
                       `${temp_name}.${cpp_safe(ordered_member_labels[member_slot_index])}`)
@@ -74,12 +74,12 @@ export fn gen_let_pattern_statement(
       }
       GenLetPatternResult { output: output, codegen_context: codegen_context }
     end,
-    PatRecord(_, field_pats, _) => do
+    PatternRecord(_, field_pats, _) => do
       let mut binding_fragment = 'auto ' + temp_name + ' = ' + rhs + ';\n'
       let mut index = 0
       while index < field_pats.length() do
         match field_pats[index] {
-          PatIdent(field_name, _) => do
+          PatternIdent(field_name, _) => do
             binding_fragment = binding_fragment + expression_output.auto_binding_statement(cpp_safe(field_name), `${temp_name}.${cpp_safe(field_name)}`)
           end,
           _ => do end
@@ -88,13 +88,13 @@ export fn gen_let_pattern_statement(
       end
       GenLetPatternResult { output: binding_fragment, codegen_context: codegen_context }
     end,
-    PatArray(subs, rest, _) => do
+    PatternArray(subs, rest, _) => do
       const element_cpp = match value_type { TArray(inner) => sem_type_to_cpp(codegen_context, inner), _ => 'auto' }
       let mut binding_fragment = 'auto ' + temp_name + ' = ' + rhs + ';\n'
       let mut index = 0
       while index < subs.length() do
         match subs[index] {
-          PatIdent(name, _) => do
+          PatternIdent(name, _) => do
             binding_fragment = binding_fragment + `auto ${cpp_safe(name)} = ${temp_name}[${index.to_string()}];\n`
           end,
           _ => do end
@@ -106,7 +106,7 @@ export fn gen_let_pattern_statement(
       end
       GenLetPatternResult { output: binding_fragment, codegen_context: codegen_context }
     end,
-    PatCtor(ctor_name, sub_patterns, _) => do
+    PatternCtor(ctor_name, sub_patterns, _) => do
       const qualified_name = codegen_context.resolve(ctor_name)
       const second_temp = take_temp_name(codegen_context)
       const variant_binding_name = second_temp.name

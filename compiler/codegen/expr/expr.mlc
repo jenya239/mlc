@@ -1,5 +1,5 @@
 // Pre-rendered C++ substrings for expressions and related statement fragments.
-// Mutual recursion (gen_expr <-> gen_stmts_str) stays in eval.mlc; this module has no SExpr traversal.
+// Mutual recursion (gen_expr <-> gen_stmts_str) stays in eval.mlc; this module has no SemanticExpression traversal.
 // Export names must not collide with other compiler modules (single global symbol namespace).
 
 export fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
@@ -84,6 +84,9 @@ export fn return_line(expression_code: string) -> string =
 
 export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
   `if (${condition_code}) {\n${inner_statements}}`
+
+export fn else_if_brace_block(condition_code: string, inner_statements: string) -> string =
+  ` else if (${condition_code}) {\n${inner_statements}}`
 
 export fn else_brace_block(inner_statements: string) -> string =
   ` else {\n${inner_statements}}`

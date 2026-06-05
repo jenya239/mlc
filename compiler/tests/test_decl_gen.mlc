@@ -1,7 +1,7 @@
 // Unit tests for declaration code generation.
 
 import { TestResult, assert_eq_str, assert_eq_int, assert_true } from './test_runner'
-import { Program, TypeVariant, Param, FieldDef, TyI32, TyBool, TyString, TyUnit, TyNamed, TyArray, span_unknown, Span, ExprUnit, ExprInt, PatUnit, WhereClauseBound } from '../frontend/ast'
+import { Program, TypeVariant, Param, FieldDef, TyI32, TyBool, TyString, TyUnit, TyNamed, TyArray, span_unknown, Span, ExprUnit, ExprInt, PatternUnit, PatternStringLit, PatternWild, WhereClauseBound } from '../frontend/ast'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
@@ -12,13 +12,13 @@ import { gen_extend_wrapper_protos, gen_decl_extend, gen_decl_extend_trait_suffi
 import { gen_fn_proto, gen_fn_decl, gen_trait_decl, gen_trait_struct, gen_decl, gen_proto, decls_have_main, extend_method_forward_segments, extend_cpp_forward_segment, collect_all_decl_parts, extend_helper_protos_for_exported_types } from '../codegen/decl/decl'
 import { gen_derive_display_cpp, gen_derive_eq_cpp, gen_derive_ord_cpp, gen_derive_hash_cpp, gen_derive_methods_cpp } from '../codegen/decl/derive_methods_cpp'
 import { trait_method_field_cpp, gen_trait_struct_cpp } from '../codegen/decl/trait_struct_cpp'
-import { CppDecl, CppStruct, CppDeclSequence, CppDeclEmpty, CppUsing, CppStdHashSpecialization, CppDeclFragment, CppStmt, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor } from '../cpp/cpp_ast'
+import { CppDeclaration, CppStruct, CppDeclarationSequence, CppDeclarationEmpty, CppUsing, CppStdHashSpecialization, CppDeclarationFragment, CppStatement, CppStatementFragment, CppBlock, CppIf, CppWhile, CppFor } from '../cpp/cpp_ast'
 import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, extend_helper_protos_for_exported_types_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp, decl_segment_cpp, gen_decl_extend_cpp, gen_decl_extend_trait_suffix_cpp, gen_extend_extern_method_cpp } from '../codegen/decl_cpp'
 import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
 import { main_program_parameter_list, static_assert_concept_for_type_line, static_assert_concept_for_result_and_implementor_line } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
-import { assert_code_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SDecl, SExpr, SExprUnit, SExprIdent, SExprStr, SExprBin, SExprInt, SExprBool, SExprQuestion, SExprBlock, SExprIf, SExprMatch, SExprWhile, SExprExtern, SMatchArm, SStmtLet, SStmtExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExported, SDeclExtend, SDeclAssocBind, SDeclImport, sdecl_span } from '../ir/semantic_ir'
+import { assert_code_contains, assert_code_not_contains, empty_codegen_context } from './codegen_test_helpers'
+import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span } from '../ir/semantic_ir'
 import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
@@ -29,18 +29,18 @@ fn tunit() -> Shared<Type> = Shared.new(TUnit)
 fn tbool() -> Shared<Type> = Shared.new(TBool)
 fn unk()   -> Shared<Type> = Shared.new(TUnknown)
 
-fn make_ident(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, unk(), span_unknown()))
-fn make_bin(op: string, left: Shared<SExpr>, right: Shared<SExpr>) -> Shared<SExpr> = Shared.new(SExprBin(op, left, right, unk(), span_unknown()))
-fn make_unit_expr() -> Shared<SExpr> = Shared.new(SExprUnit(tunit(), span_unknown()))
-fn make_int(value: i32) -> Shared<SExpr> = Shared.new(SExprInt(value, ti32(), span_unknown()))
-fn make_bool(value: bool) -> Shared<SExpr> = Shared.new(SExprBool(value, tbool(), span_unknown()))
-fn make_question(inner: Shared<SExpr>) -> Shared<SExpr> =
-  Shared.new(SExprQuestion(inner, unk(), span_unknown()))
+fn make_ident(name: string) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionIdent(name, unk(), span_unknown()))
+fn make_bin(op: string, left: Shared<SemanticExpression>, right: Shared<SemanticExpression>) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionBin(op, left, right, unk(), span_unknown()))
+fn make_unit_expr() -> Shared<SemanticExpression> = Shared.new(SemanticExpressionUnit(tunit(), span_unknown()))
+fn make_int(value: i32) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionInt(value, ti32(), span_unknown()))
+fn make_bool(value: bool) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionBool(value, tbool(), span_unknown()))
+fn make_question(inner: Shared<SemanticExpression>) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionQuestion(inner, unk(), span_unknown()))
 
-fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
-fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SExpr>) -> Shared<SDecl> = do
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) -> Shared<SemanticDeclaration> = do
   const where_clause_bounds: [WhereClauseBound] = []
-  Shared.new(SDeclFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
 end
 
 fn generic_param(name: string) -> Shared<Param> =
@@ -50,17 +50,17 @@ fn generic_param(name: string) -> Shared<Param> =
     typ: Shared.new(TyNamed("T")),
     has_default: false,
     default: Shared.new(ExprUnit(span_unknown())),
-    param_pattern: Shared.new(PatUnit(span_unknown()))
+    param_pattern: Shared.new(PatternUnit(span_unknown()))
   })
 
-fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SDecl> =
-  Shared.new(SDeclType(name, type_params, variants, derive_traits, span_unknown()))
+fn type_decl(name: string, type_params: [string], variants: [Shared<TypeVariant>], derive_traits: [string]) -> Shared<SemanticDeclaration> =
+  Shared.new(SemanticDeclarationType(name, type_params, variants, derive_traits, span_unknown()))
 
-fn trait_decl(name: string, type_params: [string], methods: [Shared<SDecl>]) -> Shared<SDecl> =
-  Shared.new(SDeclTrait(name, type_params, methods, span_unknown()))
+fn trait_decl(name: string, type_params: [string], methods: [Shared<SemanticDeclaration>]) -> Shared<SemanticDeclaration> =
+  Shared.new(SemanticDeclarationTrait(name, type_params, methods, span_unknown()))
 
-fn extend_decl(type_name: string, trait_name: string, methods: [Shared<SDecl>]) -> Shared<SDecl> =
-  Shared.new(SDeclExtend(type_name, trait_name, methods, span_unknown()))
+fn extend_decl(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>]) -> Shared<SemanticDeclaration> =
+  Shared.new(SemanticDeclarationExtend(type_name, trait_name, methods, span_unknown()))
 
 fn first_transformed_decl_span(program: Program, registry: TypeRegistry) -> Span = do
   const transformed = transform_program(program, registry)
@@ -80,26 +80,26 @@ fn transformed_type_decl_span(source: string) -> Span = transformed_decl_span(so
 fn transformed_trait_decl_span(source: string) -> Span = transformed_decl_span(source)
 fn transformed_extend_decl_span(source: string) -> Span = transformed_decl_span(source)
 
-fn cpp_decl_sequence_children(declaration: Shared<CppDecl>) -> [Shared<CppDecl>] =
+fn cpp_decl_sequence_children(declaration: Shared<CppDeclaration>) -> [Shared<CppDeclaration>] =
   match declaration {
-    CppDeclSequence(declarations) => declarations,
+    CppDeclarationSequence(declarations) => declarations,
     _ => []
   }
 
-fn is_cpp_decl_empty(declaration: Shared<CppDecl>) -> bool =
+fn is_cpp_decl_empty(declaration: Shared<CppDeclaration>) -> bool =
   match declaration {
-    CppDeclEmpty => true,
+    CppDeclarationEmpty => true,
     _ => false
   }
 
-fn cpp_decl_is_using(declaration: Shared<CppDecl>, alias: string, type_cpp: string) -> bool =
+fn cpp_decl_is_using(declaration: Shared<CppDeclaration>, alias: string, type_cpp: string) -> bool =
   match declaration {
     CppUsing(decl_alias, decl_type) => decl_alias == alias && decl_type == type_cpp,
     _ => false
   }
 
 fn cpp_decl_list_contains_using(
-  declarations: [Shared<CppDecl>],
+  declarations: [Shared<CppDeclaration>],
   alias: string,
   type_cpp: string
 ) -> bool = do
@@ -112,26 +112,26 @@ fn cpp_decl_list_contains_using(
   found
 end
 
-fn cpp_decl_is_std_hash_specialization(declaration: Shared<CppDecl>, type_name: string) -> bool =
+fn cpp_decl_is_std_hash_specialization(declaration: Shared<CppDeclaration>, type_name: string) -> bool =
   match declaration {
     CppStdHashSpecialization(specialized_type_name, _) =>
       specialized_type_name == type_name,
     _ => false
   }
 
-fn cpp_decl_is_fragment(declaration: Shared<CppDecl>) -> bool =
+fn cpp_decl_is_fragment(declaration: Shared<CppDeclaration>) -> bool =
   match declaration {
-    CppDeclFragment(_) => true,
+    CppDeclarationFragment(_) => true,
     _ => false
   }
 
-fn cpp_stmt_is_fragment(statement: Shared<CppStmt>) -> bool =
+fn cpp_stmt_is_fragment(statement: Shared<CppStatement>) -> bool =
   match statement {
-    CppStmtFragment(_) => true,
+    CppStatementFragment(_) => true,
     _ => false
   }
 
-fn cpp_stmt_tree_contains_fragment(statement: Shared<CppStmt>) -> bool =
+fn cpp_stmt_tree_contains_fragment(statement: Shared<CppStatement>) -> bool =
   if cpp_stmt_is_fragment(statement) then
     true
   else
@@ -146,7 +146,7 @@ fn cpp_stmt_tree_contains_fragment(statement: Shared<CppStmt>) -> bool =
     }
   end
 
-fn cpp_stmt_list_contains_fragment(statements: [Shared<CppStmt>]) -> bool = do
+fn cpp_stmt_list_contains_fragment(statements: [Shared<CppStatement>]) -> bool = do
   let mut index = 0
   let mut found = false
   while index < statements.length() && !found do
@@ -156,13 +156,13 @@ fn cpp_stmt_list_contains_fragment(statements: [Shared<CppStmt>]) -> bool = do
   found
 end
 
-fn cpp_std_hash_body_statements(declaration: Shared<CppDecl>) -> [Shared<CppStmt>] =
+fn cpp_std_hash_body_statements(declaration: Shared<CppDeclaration>) -> [Shared<CppStatement>] =
   match declaration {
     CppStdHashSpecialization(_, body) => body,
     _ => []
   }
 
-fn cpp_decl_list_hash_body_contains_fragment(declarations: [Shared<CppDecl>]) -> bool = do
+fn cpp_decl_list_hash_body_contains_fragment(declarations: [Shared<CppDeclaration>]) -> bool = do
   let mut index = 0
   let mut found = false
   while index < declarations.length() && !found do
@@ -176,7 +176,7 @@ fn cpp_decl_list_hash_body_contains_fragment(declarations: [Shared<CppDecl>]) ->
 end
 
 fn cpp_decl_list_contains_std_hash_specialization(
-  declarations: [Shared<CppDecl>],
+  declarations: [Shared<CppDeclaration>],
   type_name: string
 ) -> bool = do
   let mut index = 0
@@ -188,7 +188,7 @@ fn cpp_decl_list_contains_std_hash_specialization(
   found
 end
 
-fn make_str_expr(text: string) -> Shared<SExpr> = Shared.new(SExprStr(text, tstr(), span_unknown()))
+fn make_str_expr(text: string) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionStr(text, tstr(), span_unknown()))
 
 export fn decl_gen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -215,20 +215,20 @@ export fn decl_gen_tests() -> [TestResult] = do
       typ: Shared.new(TyArray(Shared.new(TyNamed('Token')))),
       has_default: false,
       default: Shared.new(ExprUnit(span_unknown())),
-      param_pattern: Shared.new(PatUnit(span_unknown()))
+      param_pattern: Shared.new(PatternUnit(span_unknown()))
     })], tunit(), context),
     'void push_token(mlc::Array<Token>& tokens) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_proto: string return type',
-    gen_fn_proto('greet', [], [], [Shared.new(Param { name: 'name', is_mut: false, typ: Shared.new(TyString), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })], tstr(), context),
+    gen_fn_proto('greet', [], [], [Shared.new(Param { name: 'name', is_mut: false, typ: Shared.new(TyString), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], tstr(), context),
     'mlc::String greet(mlc::String name) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_proto: default param literal',
-    gen_fn_proto("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })], ti32(), context),
+    gen_fn_proto("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), context),
     'int f(int a = 2) noexcept;\n'))
 
   results.push(assert_eq_str('gen_fn_decl: body omits default value',
-    gen_fn_decl("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })], ti32(), make_ident("a"), context),
+    gen_fn_decl("f", [], [], [Shared.new(Param { name: "a", is_mut: false, typ: Shared.new(TyI32), has_default: true, default: Shared.new(ExprInt(2, span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })], ti32(), make_ident("a"), context),
     'int f(int a) noexcept{\nreturn a;\n}\n'))
 
   // --- gen_fn_decl ------------------------------------------------------------
@@ -246,7 +246,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_fn_decl('nothing', [], [], [], tunit(), make_unit_expr(), context),
     'void nothing() noexcept{\n}\n'))
 
-  // --- gen_decl with SDeclFn ---------------------------------------------------
+  // --- gen_decl with SemanticDeclarationFn ---------------------------------------------------
 
   const add_decl = fn_decl('add', [iparam('left'), iparam('right')], ti32(),
     make_bin("+", make_ident('left'), make_ident('right')))
@@ -257,7 +257,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('gen_decl DeclFn: contains body',
     gen_decl(add_decl, context), 'return (left + right)'))
 
-  // --- gen_decl with SDeclType -------------------------------------------------
+  // --- gen_decl with SemanticDeclarationType -------------------------------------------------
 
   const point_type = type_decl('Point', [],
     [record_variant('Point', [field_definition("x", Shared.new(TyI32)), field_definition("y", Shared.new(TyI32))])], [])
@@ -337,9 +337,9 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('derive Hash sum tuple variant: std get and field0',
     gen_decl(shape_hash, context), 'std::get<Circle>(self._).field0'))
 
-  // --- gen_trait_decl + SDeclExtend --------------------------------------------
+  // --- gen_trait_decl + SemanticDeclarationExtend --------------------------------------------
 
-  const display_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Display')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  const display_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Display')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const display_method = fn_decl('Display_to_string', [display_self], tstr(), make_unit_expr())
   results.push(assert_code_contains('gen_trait_decl: concept keyword',
     gen_trait_decl(context, 'Display', [], [display_method]), 'concept'))
@@ -371,12 +371,12 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(gen_trait_struct_cpp(context, 'Display', [], [display_method])),
     gen_trait_struct(context, 'Display', [], [display_method])))
 
-  const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  const color_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Color')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const color_to_string = fn_decl('Color_to_string', [color_self], tstr(), make_str_expr('red'))
   const extend_display_for_color = extend_decl('Color', 'Display', [color_to_string])
-  results.push(assert_code_contains('gen_decl SDeclExtend: static_assert implements trait',
+  results.push(assert_code_contains('gen_decl SemanticDeclarationExtend: static_assert implements trait',
     gen_decl(extend_display_for_color, context), 'static_assert'))
-  results.push(assert_code_contains('gen_decl SDeclExtend: trait name in assert',
+  results.push(assert_code_contains('gen_decl SemanticDeclarationExtend: trait name in assert',
     gen_decl(extend_display_for_color, context), 'Display'))
 
   results.push(assert_eq_str('extend_method_forward_segments_cpp matches string',
@@ -396,7 +396,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     collect_all_decl_parts([extend_display_for_color], context).fn_defs.join('')))
 
   const extend_context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
-  const extend_gen_decl = (decl: Shared<SDecl>, codegen_context: CodegenContext) => gen_decl(decl, codegen_context)
+  const extend_gen_decl = (decl: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => gen_decl(decl, codegen_context)
   const extend_string = gen_decl_extend('Color', 'Display', [color_to_string], context, extend_context_resolve, extend_gen_decl)
 
   results.push(assert_eq_str('gen_decl_extend_cpp matches string gen_decl_extend',
@@ -428,15 +428,15 @@ export fn decl_gen_tests() -> [TestResult] = do
       'Color', 'Display', [color_to_string], context, extend_context_resolve)),
     'inline mlc::String to_string'))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclExtend matches string gen_decl',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationExtend matches string gen_decl',
     print_cpp_declaration(gen_decl_cpp(extend_display_for_color, context)),
     gen_decl(extend_display_for_color, context)))
 
   const extend_display_native = gen_decl_cpp(extend_display_for_color, context)
   const extend_display_children = cpp_decl_sequence_children(extend_display_native)
-  results.push(assert_eq_int('gen_decl_cpp SDeclExtend: CppDeclSequence child count',
+  results.push(assert_eq_int('gen_decl_cpp SemanticDeclarationExtend: CppDeclarationSequence child count',
     extend_display_children.length(), 4))
-  results.push(assert_eq_str('gen_decl_cpp SDeclExtend: CppDeclSequence print parity',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationExtend: CppDeclarationSequence print parity',
     print_cpp_declaration(extend_display_native),
     print_cpp_declarations(extend_display_children)))
 
@@ -446,13 +446,13 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_decl_extend_cpp non-trait matches string',
     print_cpp_declarations(gen_decl_extend_cpp('Color', '', [color_bump], context)),
     extend_only_string))
-  results.push(assert_eq_str('gen_decl_cpp SDeclExtend non-trait matches string gen_decl',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationExtend non-trait matches string gen_decl',
     print_cpp_declaration(gen_decl_cpp(extend_color_only, context)),
     gen_decl(extend_color_only, context)))
 
-  const box_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Box')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
-  const item_assoc_bind = Shared.new(SDeclAssocBind('Item', ti32(), span_unknown()))
-  const bare_assoc_import = Shared.new(SDeclImport('', []))
+  const box_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyNamed('Box')), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
+  const item_assoc_bind = Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown()))
+  const bare_assoc_import = Shared.new(SemanticDeclarationImport('', []))
   const iter_next_method = fn_decl('Box_Iter_next', [box_self], ti32(), make_int(0))
   const assoc_extend_methods = [item_assoc_bind, bare_assoc_import, iter_next_method]
   const assoc_extend_string = gen_decl_extend('Box', 'Iter', assoc_extend_methods, context, extend_context_resolve, extend_gen_decl)
@@ -502,7 +502,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declaration(trait_extend_native[0]),
     gen_fn_decl('Color_to_string', [], [], [color_self], tstr(), make_str_expr('red'), color_extend_context)))
 
-  const integer_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  const integer_self = Shared.new(Param { name: 'self', is_mut: false, typ: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
   const extern_method_string = gen_extend_extern_method(
     'i32_to_string', 'i32', [integer_self], tstr(), 'Display', context, extend_context_resolve)
   results.push(assert_eq_str('gen_extend_extern_method_cpp matches string',
@@ -518,37 +518,37 @@ export fn decl_gen_tests() -> [TestResult] = do
       'Color_to_string', 'Color', [color_self], tstr(), 'Display', context, extend_context_resolve)),
     ''))
 
-  // --- gen_decl with SDeclExported ---------------------------------------------
+  // --- gen_decl with SemanticDeclarationExported ---------------------------------------------
 
-  const exported_fn = Shared.new(SDeclExported(fn_decl('square',
+  const exported_fn = Shared.new(SemanticDeclarationExported(fn_decl('square',
     [iparam('value')], ti32(),
     make_bin("*", make_ident('value'), make_ident('value')))))
 
-  results.push(assert_code_contains('gen_decl SDeclExported: generates body',
+  results.push(assert_code_contains('gen_decl SemanticDeclarationExported: generates body',
     gen_decl(exported_fn, context), 'int square'))
 
-  results.push(assert_code_contains('gen_decl SDeclExported: contains multiplication',
+  results.push(assert_code_contains('gen_decl SemanticDeclarationExported: contains multiplication',
     gen_decl(exported_fn, context), 'value * value'))
 
   // --- gen_proto --------------------------------------------------------------
 
-  results.push(assert_eq_str('gen_proto SDeclFn: produces prototype',
+  results.push(assert_eq_str('gen_proto SemanticDeclarationFn: produces prototype',
     gen_proto(add_decl, context),
     'int add(int left, int right) noexcept;\n'))
 
-  results.push(assert_true('transform_decl SDeclFn span from body',
+  results.push(assert_true('transform_decl SemanticDeclarationFn span from body',
     transformed_fn_decl_span('fn probe() -> i32 = 42').line > 0))
 
-  results.push(assert_true('transform_decl SDeclType span from name',
+  results.push(assert_true('transform_decl SemanticDeclarationType span from name',
     transformed_type_decl_span('type Box = { value: i32 }').line > 0))
 
-  results.push(assert_true('transform_decl SDeclTrait span from name',
+  results.push(assert_true('transform_decl SemanticDeclarationTrait span from name',
     transformed_trait_decl_span('trait Display { fn to_string(self: Display) -> string = "" }').line > 0))
 
-  results.push(assert_true('transform_decl SDeclExtend span from name',
+  results.push(assert_true('transform_decl SemanticDeclarationExtend span from name',
     transformed_extend_decl_span('extend Color : Display { fn to_string(self: Color) -> string = "red" }').line > 0))
 
-  results.push(assert_eq_str('gen_proto SDeclType: empty string',
+  results.push(assert_eq_str('gen_proto SemanticDeclarationType: empty string',
     gen_proto(point_type, context), ''))
 
   // --- decls_have_main --------------------------------------------------------
@@ -588,8 +588,8 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(question_body, context)),
     'std::get<0>(__try_ret).field0'))
 
-  const block_return_body = Shared.new(SExprBlock(
-    [Shared.new(SStmtLet('counter', false, make_int(1), ti32(), span_unknown()))],
+  const block_return_body = Shared.new(SemanticExpressionBlock(
+    [Shared.new(SemanticStatementLet('counter', false, make_int(1), ti32(), span_unknown()))],
     make_ident('counter'),
     ti32(),
     span_unknown()))
@@ -597,8 +597,8 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(block_return_body, context)),
     gen_return_body(block_return_body, context)))
 
-  const block_unit_body = Shared.new(SExprBlock(
-    [Shared.new(SStmtLet('counter', false, make_int(1), ti32(), span_unknown()))],
+  const block_unit_body = Shared.new(SemanticExpressionBlock(
+    [Shared.new(SemanticStatementLet('counter', false, make_int(1), ti32(), span_unknown()))],
     make_unit_expr(),
     tunit(),
     span_unknown()))
@@ -606,7 +606,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(block_unit_body, context)),
     gen_return_body(block_unit_body, context)))
 
-  const if_return_body = Shared.new(SExprIf(
+  const if_return_body = Shared.new(SemanticExpressionIf(
     make_bool(true),
     make_int(1),
     make_int(0),
@@ -616,20 +616,20 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(if_return_body, context)),
     'if (true) {\n  return 1;\n} else {\n  return 0;\n}\n'))
 
-  const else_if_return_body = Shared.new(SExprIf(
+  const else_if_return_body = Shared.new(SemanticExpressionIf(
     make_bool(true),
     make_int(1),
-    Shared.new(SExprIf(make_bool(false), make_int(2), make_int(3), ti32(), span_unknown())),
+    Shared.new(SemanticExpressionIf(make_bool(false), make_int(2), make_int(3), ti32(), span_unknown())),
     ti32(),
     span_unknown()))
   results.push(assert_eq_str('gen_return_body_cpp: else-if return native',
     print_cpp_statements(gen_return_body_cpp(else_if_return_body, context)),
     'if (true) {\n  return 1;\n} else if (false) {\n  return 2;\n} else {\n  return 3;\n}\n'))
 
-  const if_then_block_body = Shared.new(SExprIf(
+  const if_then_block_body = Shared.new(SemanticExpressionIf(
     make_bool(true),
-    Shared.new(SExprBlock(
-      [Shared.new(SStmtLet('temporary', false, make_int(1), ti32(), span_unknown()))],
+    Shared.new(SemanticExpressionBlock(
+      [Shared.new(SemanticStatementLet('temporary', false, make_int(1), ti32(), span_unknown()))],
       make_ident('temporary'),
       ti32(),
       span_unknown())),
@@ -640,14 +640,14 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(if_then_block_body, context)),
     'if (true) {\n  auto temporary = 1;\n  return temporary;\n} else {\n  return 0;\n}\n'))
 
-  const match_arm_block_body = Shared.new(SExprMatch(
+  const match_arm_block_body = Shared.new(SemanticExpressionMatch(
     make_int(1),
-    [Shared.new(SMatchArm {
-      pat: Shared.new(PatUnit(span_unknown())),
+    [Shared.new(SemanticMatchArm {
+      pat: Shared.new(PatternUnit(span_unknown())),
       has_guard: false,
       when_condition: make_unit_expr(),
-      body: Shared.new(SExprBlock(
-        [Shared.new(SStmtLet('temporary', false, make_int(2), ti32(), span_unknown()))],
+      body: Shared.new(SemanticExpressionBlock(
+        [Shared.new(SemanticStatementLet('temporary', false, make_int(2), ti32(), span_unknown()))],
         make_ident('temporary'),
         ti32(),
         span_unknown()))
@@ -658,9 +658,44 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_statements(gen_return_body_cpp(match_arm_block_body, context)),
     'auto temporary = 2'))
 
-  const while_return_body = Shared.new(SExprWhile(
+  const string_match_return_body = Shared.new(SemanticExpressionMatch(
+    make_ident('word'),
+    [
+      Shared.new(SemanticMatchArm {
+        pat: Shared.new(PatternStringLit('fn', span_unknown())),
+        has_guard: false,
+        when_condition: make_unit_expr(),
+        body: make_int(1)
+      }),
+      Shared.new(SemanticMatchArm {
+        pat: Shared.new(PatternStringLit('type', span_unknown())),
+        has_guard: false,
+        when_condition: make_unit_expr(),
+        body: make_int(2)
+      }),
+      Shared.new(SemanticMatchArm {
+        pat: Shared.new(PatternWild(span_unknown())),
+        has_guard: false,
+        when_condition: make_unit_expr(),
+        body: make_int(0)
+      })
+    ],
+    ti32(),
+    span_unknown()))
+  const string_match_return_cpp = print_cpp_statements(gen_return_body_cpp(string_match_return_body, context))
+  results.push(assert_code_contains('gen_return_body_cpp: string match else if chain',
+    string_match_return_cpp, 'else if'))
+  results.push(assert_code_contains('gen_return_body_cpp: string match subject compare',
+    string_match_return_cpp, '__match_subject =='))
+  results.push(assert_code_not_contains('gen_return_body_cpp: string match avoids std::visit',
+    string_match_return_cpp, 'std::visit'))
+  results.push(assert_eq_str('gen_return_body_cpp: string match matches string gen_return_body',
+    string_match_return_cpp,
+    gen_return_body(string_match_return_body, context)))
+
+  const while_return_body = Shared.new(SemanticExpressionWhile(
     make_bool(true),
-    [Shared.new(SStmtExpr(make_int(0), span_unknown()))],
+    [Shared.new(SemanticStatementExpr(make_int(0), span_unknown()))],
     tunit(),
     span_unknown()))
   results.push(assert_code_contains('gen_fn_decl_cpp: while return body native',
@@ -772,7 +807,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declarations(collect_all_decl_parts_cpp([add_decl], context).fn_protos),
     collect_all_decl_parts([add_decl], context).fn_protos.join('')))
 
-  const exported_color = Shared.new(SDeclExported(color_sum))
+  const exported_color = Shared.new(SemanticDeclarationExported(color_sum))
   const exported_extend_bundle = [exported_color, extend_display_for_color]
   results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp matches string',
     print_cpp_declarations(extend_helper_protos_for_exported_types_cpp(exported_extend_bundle, context)),
@@ -781,7 +816,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([color_sum, extend_display_for_color], context)),
     extend_helper_protos_for_exported_types([color_sum, extend_display_for_color], context).join('')))
   const extend_display_extern = extend_decl('Color', 'Display',
-    [fn_decl('Color_to_string', [color_self], tstr(), Shared.new(SExprExtern(tunit(), span_unknown())))])
+    [fn_decl('Color_to_string', [color_self], tstr(), Shared.new(SemanticExpressionExtern(tunit(), span_unknown())))])
   results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp skips extern method',
     print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([exported_color, extend_display_extern], context)),
     extend_helper_protos_for_exported_types([exported_color, extend_display_extern], context).join('')))
@@ -852,23 +887,23 @@ export fn decl_gen_tests() -> [TestResult] = do
   const hash_record_native = gen_derive_hash_cpp('Point', point_hash_variants)
   results.push(assert_true('gen_derive_hash_cpp record: CppStdHashSpecialization',
     cpp_decl_is_std_hash_specialization(hash_record_native[0], 'Point')))
-  results.push(assert_true('gen_derive_hash_cpp record: not CppDeclFragment',
+  results.push(assert_true('gen_derive_hash_cpp record: not CppDeclarationFragment',
     !cpp_decl_is_fragment(hash_record_native[0])))
 
   const hash_sum_native = gen_derive_hash_cpp('Hue', hue_hash_variants)
   results.push(assert_true('gen_derive_hash_cpp sum: CppStdHashSpecialization',
     cpp_decl_is_std_hash_specialization(hash_sum_native[0], 'Hue')))
-  results.push(assert_true('gen_derive_hash_cpp sum: not CppDeclFragment',
+  results.push(assert_true('gen_derive_hash_cpp sum: not CppDeclarationFragment',
     !cpp_decl_is_fragment(hash_sum_native[0])))
 
-  results.push(assert_true('gen_derive_hash_cpp record: body no CppStmtFragment',
+  results.push(assert_true('gen_derive_hash_cpp record: body no CppStatementFragment',
     !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(hash_record_native[0]))))
 
-  results.push(assert_true('gen_derive_hash_cpp sum: body no CppStmtFragment',
+  results.push(assert_true('gen_derive_hash_cpp sum: body no CppStatementFragment',
     !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(hash_sum_native[0]))))
 
   const empty_hash_native = gen_derive_hash_cpp('Empty', empty_hash_variants)
-  results.push(assert_true('gen_derive_hash_cpp empty record: body no CppStmtFragment',
+  results.push(assert_true('gen_derive_hash_cpp empty record: body no CppStatementFragment',
     !cpp_stmt_list_contains_fragment(cpp_std_hash_body_statements(empty_hash_native[0]))))
 
   const point_hash_body = gen_type_decl_body_cpp(context, 'Point', [], point_hash_variants, ['Hash'])
@@ -879,10 +914,10 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_true('gen_type_decl_body_cpp sum Hash: CppStdHashSpecialization',
     cpp_decl_list_contains_std_hash_specialization(hue_hash_body, 'Hue')))
 
-  results.push(assert_true('gen_type_decl_body_cpp record Hash: body no CppStmtFragment',
+  results.push(assert_true('gen_type_decl_body_cpp record Hash: body no CppStatementFragment',
     !cpp_decl_list_hash_body_contains_fragment(point_hash_body)))
 
-  results.push(assert_true('gen_type_decl_body_cpp sum Hash: body no CppStmtFragment',
+  results.push(assert_true('gen_type_decl_body_cpp sum Hash: body no CppStatementFragment',
     !cpp_decl_list_hash_body_contains_fragment(hue_hash_body)))
 
   results.push(assert_code_contains('gen_derive_methods_cpp: Display and Eq',
@@ -908,99 +943,99 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_proto(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)))
 
-  results.push(assert_eq_str('decl_segment_cpp phase 2 SDeclFn matches string',
+  results.push(assert_eq_str('decl_segment_cpp phase 2 SemanticDeclarationFn matches string',
     print_cpp_declarations(decl_segment_cpp(add_decl, context, 2)),
     collect_decl_parts([add_decl], context, 2).join('')))
 
-  results.push(assert_eq_str('decl_segment_cpp phase 2 SDeclExported fn matches string',
+  results.push(assert_eq_str('decl_segment_cpp phase 2 SemanticDeclarationExported fn matches string',
     print_cpp_declarations(decl_segment_cpp(exported_fn, context, 2)),
     collect_decl_parts([exported_fn], context, 2).join('')))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclType record matches native body print',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationType record matches native body print',
     print_cpp_declaration(gen_decl_cpp(point_type, context)),
     print_cpp_declarations(gen_type_decl_body_cpp(context, 'Point', [], point_variants, []))))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclType sum matches string gen_decl',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationType sum matches string gen_decl',
     print_cpp_declaration(gen_decl_cpp(color_type, context)),
     gen_decl(color_type, context)))
 
   const color_sum_native = gen_decl_cpp(color_type, context)
   const color_sum_children = cpp_decl_sequence_children(color_sum_native)
-  results.push(assert_eq_int('gen_decl_cpp SDeclType sum: CppDeclSequence child count',
+  results.push(assert_eq_int('gen_decl_cpp SemanticDeclarationType sum: CppDeclarationSequence child count',
     color_sum_children.length(), 7))
-  results.push(assert_eq_str('gen_decl_cpp SDeclType sum: CppDeclSequence print parity',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationType sum: CppDeclarationSequence print parity',
     print_cpp_declaration(color_sum_native),
     print_cpp_declarations(color_sum_children)))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclTrait matches string gen_decl',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationTrait matches string gen_decl',
     print_cpp_declaration(gen_decl_cpp(display_trait, context)),
     gen_decl(display_trait, context)))
 
   const square_decl = fn_decl('square', [iparam('value')], ti32(),
     make_bin("*", make_ident('value'), make_ident('value')))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclExported matches unwrapped SDeclFn',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationExported matches unwrapped SemanticDeclarationFn',
     print_cpp_declaration(gen_decl_cpp(exported_fn, context)),
     print_cpp_declaration(gen_decl_cpp(square_decl, context))))
 
-  results.push(assert_code_contains('gen_decl_cpp SDeclExported matches string gen_decl signature',
+  results.push(assert_code_contains('gen_decl_cpp SemanticDeclarationExported matches string gen_decl signature',
     print_cpp_declaration(gen_decl_cpp(exported_fn, context)),
     'int square(int value)'))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclImport empty',
-    print_cpp_declaration(gen_decl_cpp(Shared.new(SDeclImport('', [])), context)), ''))
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationImport empty',
+    print_cpp_declaration(gen_decl_cpp(Shared.new(SemanticDeclarationImport('', [])), context)), ''))
 
-  results.push(assert_eq_str('gen_decl_cpp SDeclAssocBind empty',
-    print_cpp_declaration(gen_decl_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context)), ''))
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationAssocBind empty',
+    print_cpp_declaration(gen_decl_cpp(Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown())), context)), ''))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclType empty',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationType empty',
     print_cpp_declaration(gen_proto_cpp(point_type, context)), ''))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclTrait empty',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationTrait empty',
     print_cpp_declaration(gen_proto_cpp(display_trait, context)), ''))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclExtend matches string gen_proto',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationExtend matches string gen_proto',
     print_cpp_declaration(gen_proto_cpp(extend_display_for_color, context)),
     gen_proto(extend_display_for_color, context)))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclExported matches unwrapped SDeclFn',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationExported matches unwrapped SemanticDeclarationFn',
     print_cpp_declaration(gen_proto_cpp(exported_fn, context)),
     print_cpp_declaration(gen_proto_cpp(square_decl, context))))
 
-  results.push(assert_code_contains('gen_proto_cpp SDeclExported matches string gen_proto signature',
+  results.push(assert_code_contains('gen_proto_cpp SemanticDeclarationExported matches string gen_proto signature',
     print_cpp_declaration(gen_proto_cpp(exported_fn, context)),
     'int square(int value)'))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclImport empty',
-    print_cpp_declaration(gen_proto_cpp(Shared.new(SDeclImport('', [])), context)), ''))
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationImport empty',
+    print_cpp_declaration(gen_proto_cpp(Shared.new(SemanticDeclarationImport('', [])), context)), ''))
 
-  results.push(assert_eq_str('gen_proto_cpp SDeclAssocBind empty',
-    print_cpp_declaration(gen_proto_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context)), ''))
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationAssocBind empty',
+    print_cpp_declaration(gen_proto_cpp(Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown())), context)), ''))
 
-  const extern_fn = fn_decl('external_helper', [], tunit(), Shared.new(SExprExtern(tunit(), span_unknown())))
+  const extern_fn = fn_decl('external_helper', [], tunit(), Shared.new(SemanticExpressionExtern(tunit(), span_unknown())))
   const extern_decl_native = gen_decl_cpp(extern_fn, context)
-  results.push(assert_true('gen_decl_cpp SDeclFn extern: native CppDeclEmpty',
+  results.push(assert_true('gen_decl_cpp SemanticDeclarationFn extern: native CppDeclarationEmpty',
     is_cpp_decl_empty(extern_decl_native)))
-  results.push(assert_eq_str('gen_decl_cpp SDeclFn extern empty print',
+  results.push(assert_eq_str('gen_decl_cpp SemanticDeclarationFn extern empty print',
     print_cpp_declaration(extern_decl_native), ''))
 
   const extern_proto_native = gen_proto_cpp(extern_fn, context)
-  results.push(assert_true('gen_proto_cpp SDeclFn extern: native CppDeclEmpty',
+  results.push(assert_true('gen_proto_cpp SemanticDeclarationFn extern: native CppDeclarationEmpty',
     is_cpp_decl_empty(extern_proto_native)))
-  results.push(assert_eq_str('gen_proto_cpp SDeclFn extern empty print',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationFn extern empty print',
     print_cpp_declaration(extern_proto_native), ''))
 
   const extend_proto_extern_native = gen_proto_cpp(extend_display_extern, context)
-  results.push(assert_true('gen_proto_cpp SDeclExtend all-extern: native CppDeclEmpty',
+  results.push(assert_true('gen_proto_cpp SemanticDeclarationExtend all-extern: native CppDeclarationEmpty',
     is_cpp_decl_empty(extend_proto_extern_native)))
-  results.push(assert_eq_str('gen_proto_cpp SDeclExtend all-extern empty print',
+  results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationExtend all-extern empty print',
     print_cpp_declaration(extend_proto_extern_native), ''))
 
-  results.push(assert_true('gen_decl_cpp SDeclImport: native CppDeclEmpty',
-    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SDeclImport('', [])), context))))
+  results.push(assert_true('gen_decl_cpp SemanticDeclarationImport: native CppDeclarationEmpty',
+    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SemanticDeclarationImport('', [])), context))))
 
-  results.push(assert_true('gen_decl_cpp SDeclAssocBind: native CppDeclEmpty',
-    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SDeclAssocBind('Item', ti32(), span_unknown())), context))))
+  results.push(assert_true('gen_decl_cpp SemanticDeclarationAssocBind: native CppDeclarationEmpty',
+    is_cpp_decl_empty(gen_decl_cpp(Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown())), context))))
 
   results
 end

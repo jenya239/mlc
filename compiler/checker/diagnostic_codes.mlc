@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 76
+export fn diagnostic_code_catalog_count() -> i32 = 80
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -154,3 +154,11 @@ export fn diagnostic_code_e074() -> string = 'E074'
 export fn diagnostic_code_e075() -> string = 'E075'
 // E076: where clause unknown type parameter
 export fn diagnostic_code_e076() -> string = 'E076'
+// E077: string literal match requires string subject
+export fn diagnostic_code_e077() -> string = 'E077'
+// E078: duplicate string literal in match
+export fn diagnostic_code_e078() -> string = 'E078'
+// E079: string match arm pattern must be string literal or wildcard
+export fn diagnostic_code_e079() -> string = 'E079'
+// E080: string match wildcard must be the last arm
+export fn diagnostic_code_e080() -> string = 'E080'

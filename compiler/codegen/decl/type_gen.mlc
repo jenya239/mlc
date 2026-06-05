@@ -12,9 +12,10 @@ import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
 import * as expression_output from '../expr/expr'
 
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
-  if type_name == 'Map' then 'mlc::HashMap'
-  else if type_name == 'Shared' then 'std::shared_ptr'
-  else context.resolve(type_name)
+  match type_name
+  | "Map"    => "mlc::HashMap"
+  | "Shared" => "std::shared_ptr"
+  | _        => context.resolve(type_name)
   end
 
 // Converts a semantic Type (from checker/registry) to a C++ type string.
@@ -59,18 +60,19 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
   }
 
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
-  if type_name == 'i32' then 'int'
-  else if type_name == 'string' then 'mlc::String'
-  else if type_name == 'bool' then 'bool'
-  else if type_name == 'unit' then 'void'
-  else if type_name == 'i64' then 'int64_t'
-  else if type_name == 'f64' then 'double'
-  else if type_name == 'u8' then 'uint8_t'
-  else if type_name == 'usize' then 'size_t'
-  else if type_name == 'char' then 'char32_t'
-  else if type_name == 'Self' || type_name == 'self' then
-    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
-  else context.resolve(type_name)
+  match type_name
+  | "i32"    => "int"
+  | "string" => "mlc::String"
+  | "bool"   => "bool"
+  | "unit"   => "void"
+  | "i64"    => "int64_t"
+  | "f64"    => "double"
+  | "u8"     => "uint8_t"
+  | "usize"  => "size_t"
+  | "char"   => "char32_t"
+  | "Self" | "self" =>
+    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else "void" end
+  | _ => context.resolve(type_name)
   end
 
 export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> string =
@@ -458,20 +460,22 @@ end
 
 fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
   const fds = derive_record_field_defs(variants)
-  if trait_name == 'Display' then derive_display_record(type_name, fds)
-  else if trait_name == 'Eq' then derive_eq_record(type_name, fds)
-  else if trait_name == 'Ord' then derive_ord_record(type_name, fds)
-  else if trait_name == 'Hash' then derive_hash_record(type_name, fds)
-  else ''
+  match trait_name
+  | "Display" => derive_display_record(type_name, fds)
+  | "Eq"      => derive_eq_record(type_name, fds)
+  | "Ord"     => derive_ord_record(type_name, fds)
+  | "Hash"    => derive_hash_record(type_name, fds)
+  | _         => ""
   end
 end
 
 fn gen_derive_sum_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string =
-  if trait_name == 'Display' then derive_display_sum(type_name, variants)
-  else if trait_name == 'Eq' then derive_eq_sum(type_name)
-  else if trait_name == 'Ord' then derive_ord_sum(type_name)
-  else if trait_name == 'Hash' then derive_hash_sum(type_name, variants)
-  else ''
+  match trait_name
+  | "Display" => derive_display_sum(type_name, variants)
+  | "Eq"      => derive_eq_sum(type_name)
+  | "Ord"     => derive_ord_sum(type_name)
+  | "Hash"    => derive_hash_sum(type_name, variants)
+  | _         => ""
   end
 
 export fn gen_derive_methods(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>], derive_traits: [string]) -> string = do

@@ -1,49 +1,49 @@
 // Checker: name resolution.
 
-import { Expr, Stmt, Pat, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
+import { Expr, Stmt, Pattern, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
          Diagnostic, Span, diagnostic_error, diagnostic_error_with_code, diagnostics_append, span_unknown } from '../frontend/ast'
 import { diagnostic_code_e001 } from './diagnostic_codes'
 
 fn scope_contains(scope: [string], name: string) -> bool =
   scope.any(scope_entry => scope_entry == name)
 
-export fn pattern_bindings(pattern: Shared<Pat>) -> [string] = do
+export fn pattern_bindings(pattern: Shared<Pattern>) -> [string] = do
   const accumulator: [string] = []
   collect_pattern_bindings(pattern, accumulator)
 end
 
-fn collect_pattern_bindings(pattern: Shared<Pat>, mut accumulator: [string]) -> [string] = do
+fn collect_pattern_bindings(pattern: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
   match pattern {
-    PatIdent(name, _) => do accumulator.push(name); accumulator end,
-    PatCtor(_, sub_patterns, _) => do
+    PatternIdent(name, _) => do accumulator.push(name); accumulator end,
+    PatternCtor(_, sub_patterns, _) => do
       let mut index = 0
       while index < sub_patterns.length() do
         accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatRecord(_, field_patterns, _) => do
+    PatternRecord(_, field_patterns, _) => do
       let mut index = 0
       while index < field_patterns.length() do
         accumulator = collect_pattern_bindings(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatTuple(sub_patterns, _) => do
+    PatternTuple(sub_patterns, _) => do
       let mut index = 0
       while index < sub_patterns.length() do
         accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatArray(subs, rest, _) => do
+    PatternArray(subs, rest, _) => do
       let mut index = 0
       while index < subs.length() do
         accumulator = collect_pattern_bindings(subs[index], accumulator); index = index + 1
       end
       if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
-    PatOr(alts, _) => if alts.length() > 0 then collect_pattern_bindings(alts[0], accumulator) else accumulator end,
+    PatternOr(alts, _) => if alts.length() > 0 then collect_pattern_bindings(alts[0], accumulator) else accumulator end,
     _ => accumulator
   }
 end
@@ -235,7 +235,7 @@ export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], g
             scope.push(name)
             next_after_let_value
           end,
-          StmtLetPat(pattern, _, _, value, has_else, else_body, _) => do
+          StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
             let mut next_after_pattern_let_value =
               diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
             const bound_pattern_names = pattern_bindings(pattern)

@@ -1,7 +1,7 @@
 // Leaf helpers for eval (no gen_expr dependency).
 
 import { span_unknown } from '../../frontend/ast'
-import { SExpr, SFieldVal, SExprUnit, sexpr_type, sexpr_span, SExprArray } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticFieldVal, SemanticExpressionUnit, sexpr_type, sexpr_span, SemanticExpressionArray } from '../../ir/semantic_ir'
 import { Type, TArray, TUnit, TShared } from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
@@ -21,12 +21,12 @@ export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   capture + "(" + parameter_list + ") mutable"
 end
 
-export fn find_field_value(field_values: [Shared<SFieldVal>], field_name: string) -> Shared<SExpr> = do
+export fn find_field_value(field_values: [Shared<SemanticFieldVal>], field_name: string) -> Shared<SemanticExpression> = do
   const fallback_span =
     if field_values.length() > 0 then sexpr_span(field_values[0].val)
     else span_unknown()
     end
-  let mut result: Shared<SExpr> = Shared.new(SExprUnit(Shared.new(TUnit), fallback_span))
+  let mut result: Shared<SemanticExpression> = Shared.new(SemanticExpressionUnit(Shared.new(TUnit), fallback_span))
   let mut index = 0
   while index < field_values.length() do
     if field_values[index].name == field_name then result = field_values[index].val end
@@ -35,9 +35,9 @@ export fn find_field_value(field_values: [Shared<SFieldVal>], field_name: string
   result
 end
 
-export fn is_constructor_call(function_expr: Shared<SExpr>) -> bool =
+export fn is_constructor_call(function_expr: Shared<SemanticExpression>) -> bool =
   match function_expr {
-    SExprIdent(name, _, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
+    SemanticExpressionIdent(name, _, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
     _ => false
   }
 
@@ -50,7 +50,7 @@ export fn resolve_object_code_in_self_context(object_name: string, context: Code
 end
 
 // Infer the C++ type name for std::make_shared<T>() from the argument's semantic type.
-export fn infer_shared_new_type_name(argument: Shared<SExpr>, context: CodegenContext) -> string = do
+export fn infer_shared_new_type_name(argument: Shared<SemanticExpression>, context: CodegenContext) -> string = do
   const type_name = match sexpr_type(argument) {
     TNamed(name)   => name,
     TShared(inner) => match inner { TNamed(name) => name, _ => '' },
@@ -60,47 +60,49 @@ export fn infer_shared_new_type_name(argument: Shared<SExpr>, context: CodegenCo
 end
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
-  if method_name == 'read' then 'mlc::file::read_to_string'
-  else if method_name == 'write' then 'mlc::file::write_string'
-  else if method_name == 'make_temp_directory' then 'mlc::file::make_temp_directory'
-  else if method_name == 'temp_directory_base' then 'mlc::file::temp_directory_base'
-  else 'mlc::file::' + method_name
+  match method_name
+  | "read"                => "mlc::file::read_to_string"
+  | "write"               => "mlc::file::write_string"
+  | "make_temp_directory" => "mlc::file::make_temp_directory"
+  | "temp_directory_base" => "mlc::file::temp_directory_base"
+  | _                     => "mlc::file::" + method_name
   end
 
 export fn cpp_function_name_for_profile_method(method_name: string) -> string =
-  if method_name == 'scope_begin' then 'mlc::profile::scope_begin'
-  else if method_name == 'scope_end' then 'mlc::profile::scope_end'
-  else if method_name == 'monotonic_nanos' then 'mlc::profile::monotonic_nanos'
-  else if method_name == 'peak_rss_kib' then 'mlc::profile::peak_rss_kib'
-  else if method_name == 'print_report' then 'mlc::profile::print_report'
-  else if method_name == 'reset' then 'mlc::profile::reset'
-  else 'mlc::profile::' + method_name
+  match method_name
+  | "scope_begin"      => "mlc::profile::scope_begin"
+  | "scope_end"        => "mlc::profile::scope_end"
+  | "monotonic_nanos"  => "mlc::profile::monotonic_nanos"
+  | "peak_rss_kib"     => "mlc::profile::peak_rss_kib"
+  | "print_report"     => "mlc::profile::print_report"
+  | "reset"            => "mlc::profile::reset"
+  | _                  => "mlc::profile::" + method_name
   end
 
 // Determine whether field access should use -> (shared) or . (value).
-export fn field_access_operator(object: Shared<SExpr>, context: CodegenContext) -> string =
+export fn field_access_operator(object: Shared<SemanticExpression>, context: CodegenContext) -> string =
   match sexpr_type(object) { TShared(_) => '->', _ => "." }
 
-// Prefer preferred_array_semantic_type (annotated binding / SExprIf carrier) so empty [] matches TArray element.
+// Prefer preferred_array_semantic_type (annotated binding / SemanticExpressionIf carrier) so empty [] matches TArray element.
 export fn generate_conditional_else_with_empty_array_coercion(
-  then_expression: Shared<SExpr>,
-  else_expression: Shared<SExpr>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>,
   preferred_array_semantic_type: Shared<Type>,
   context: CodegenContext,
-  evaluate_expression: (Shared<SExpr>, CodegenContext) -> string
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> string = do
   match else_expression {
-    SExprArray(elements, _, array_span) => do
+    SemanticExpressionArray(elements, _, array_span) => do
       if elements.length() > 0 then evaluate_expression(else_expression, context)
       else match preferred_array_semantic_type {
         TArray(inner_from_preferred) =>
           evaluate_expression(
-            Shared.new(SExprArray(elements, Shared.new(TArray(inner_from_preferred)), array_span)),
+            Shared.new(SemanticExpressionArray(elements, Shared.new(TArray(inner_from_preferred)), array_span)),
             context),
         _ => match sexpr_type(then_expression) {
           TArray(inner_then) =>
             evaluate_expression(
-              Shared.new(SExprArray(elements, Shared.new(TArray(inner_then)), array_span)),
+              Shared.new(SemanticExpressionArray(elements, Shared.new(TArray(inner_then)), array_span)),
               context),
           _ => evaluate_expression(else_expression, context),
         },

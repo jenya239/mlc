@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
-import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pat, PatOr, PatCtor, PatWild, PatIdent, ExprBlock, Stmt, StmtLetPat } from '../frontend/ast'
+import { Decl, DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pat_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parser_new } from '../frontend/parser/predicates'
 
@@ -163,15 +163,15 @@ fn expr_guard_binary_operation(candidate_guard: Shared<Expr>) -> string =
     _ => ''
   }
 
-fn expr_pat_ident_binding_name(pattern: Shared<Pat>) -> string =
+fn expr_pat_ident_binding_name(pattern: Shared<Pattern>) -> string =
   match pattern {
-    PatIdent(binding_name, _) => binding_name,
+    PatternIdent(binding_name, _) => binding_name,
     _ => ''
   }
 
-fn expr_pat_or_alt_count(pattern: Shared<Pat>) -> i32 =
+fn expr_pat_or_alt_count(pattern: Shared<Pattern>) -> i32 =
   match pattern {
-    PatOr(alts, _) => do
+    PatternOr(alts, _) => do
       let mut count = 0
       while count < alts.length() do count = count + 1 end
       count
@@ -324,50 +324,50 @@ export fn parser_tests() -> [TestResult] = do
     }))
 
   // Or-pattern tests (B2)
-  results.push(assert_true('or-pattern brace-style: PatOr produced',
+  results.push(assert_true('or-pattern brace-style: PatternOr produced',
     match parse_expr_source('match x { A(r) | B(r) => r }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pat {
-            PatOr(alts, _) => alts.length() == 2,
+            PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
         else false end,
       _ => false
     }))
 
-  results.push(assert_true('or-pattern pipe-style: PatOr produced',
+  results.push(assert_true('or-pattern pipe-style: PatternOr produced',
     match parse_expr_source('match x | A(r) | B(r) => r end') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pat {
-            PatOr(alts, _) => alts.length() == 2,
+            PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
         else false end,
       _ => false
     }))
 
-  results.push(assert_true('unit or-pattern: PatOr produced',
+  results.push(assert_true('unit or-pattern: PatternOr produced',
     match parse_expr_source('match x { Red | Green => 1, Blue => 2 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
           match arms[0].pat {
-            PatOr(alts, _) => alts.length() == 2,
+            PatternOr(alts, _) => alts.length() == 2,
             _ => false
           }
         else false end,
       _ => false
     }))
 
-  results.push(assert_true('single pattern: no PatOr, no guard',
+  results.push(assert_true('single pattern: no PatternOr, no guard',
     match parse_expr_source('match x { A(r) => r }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           if arms[0].has_guard then false
           else
             match arms[0].pat {
-              PatCtor(name, _, _) => name == "A",
+              PatternCtor(name, _, _) => name == "A",
               _ => false
             }
           end
@@ -404,17 +404,48 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
-  results.push(assert_true('match catch-all: else => synonyms wildcard PatWild',
+  results.push(assert_true('match catch-all: else => synonyms wildcard PatternWild',
     match parse_expr_source('match x { 1 => 0, else => 1 }') {
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
           match arms[1].pat {
-            PatWild(_) => true,
+            PatternWild(_) => true,
             _ => false
           }
         else false end,
       _ => false
     }))
+
+  results.push(assert_true('PatternStringLit pat_span',
+    pat_span(Shared.new(PatternStringLit("x", span_unknown()))).column >= 0))
+
+  results.push(assert_true('match string literal arm parses PatternStringLit',
+    match parse_expr_source('match s { | "x" -> 1 | _ -> 0 }') {
+      ExprMatch(_, arms, _) =>
+        if arms.length() == 2 then
+          match arms[0].pat {
+            PatternStringLit(value, _) => value == "x",
+            _ => false
+          }
+        else false
+        end,
+      _ => false
+    }))
+
+  results.push(assert_true('match string or-pattern parses PatternOr of PatternStringLit',
+    match parse_expr_source('match word { | "a" | "b" -> 1 | _ -> 0 }') {
+      ExprMatch(_, arms, _) =>
+        if arms.length() != 2 then false
+        else match arms[0].pat {
+          PatternOr(alternatives, _) => alternatives.length() == 2,
+          _ => false
+        }
+        end,
+      _ => false
+    }))
+
+  results.push(assert_eq_int('match string arms in function — 1 decl',
+    decl_count('fn f(word: string) -> i32 = match word { | "fn" => 1 | _ => 0 }'), 1))
 
   // Template literal parser tests
   results.push(assert_eq_int('plain template literal - 1 decl',
@@ -442,7 +473,7 @@ export fn parser_tests() -> [TestResult] = do
       ExprBlock(stmts, _, _) =>
         if stmts.length() >= 1 then
           match stmts[0] {
-            StmtLetPat(_, _, _, _, has_else, _, _) => has_else,
+            StmtLetPattern(_, _, _, _, has_else, _, _) => has_else,
             _ => false
           }
         else false end,
@@ -454,7 +485,7 @@ export fn parser_tests() -> [TestResult] = do
       ExprBlock(stmts, _, _) =>
         if stmts.length() >= 1 then
           match stmts[0] {
-            StmtLetPat(_, _, _, _, has_else, _, _) => !has_else,
+            StmtLetPattern(_, _, _, _, has_else, _, _) => !has_else,
             _ => false
           }
         else false end,

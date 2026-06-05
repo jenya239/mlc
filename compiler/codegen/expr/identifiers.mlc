@@ -1,4 +1,4 @@
-import { CppExpr } from '../../cpp/cpp_ast'
+import { CppExpression } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
@@ -27,5 +27,5 @@ export fn gen_identifier(name: string, context: CodegenContext) -> string =
     if needs_constructor_brace then resolved + '{}' else resolved end
   end
 
-export fn gen_identifier_cpp(name: string, context: CodegenContext) -> Shared<CppExpr> =
+export fn gen_identifier_cpp(name: string, context: CodegenContext) -> Shared<CppExpression> =
   emit_helpers.make_identifier_cpp_expression(gen_identifier(name, context))

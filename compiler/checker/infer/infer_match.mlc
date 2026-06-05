@@ -1,20 +1,178 @@
 // Match expression type inference.
 // infer_expr injected as a parameter to break the import cycle with infer.mlc.
 
-import { Expr, MatchArm, Diagnostic, diagnostics_append, diagnostic_error_with_code, expr_span, Pat, PatTuple, PatArray } from '../../frontend/ast'
+import {
+  Expr,
+  MatchArm,
+  Diagnostic,
+  diagnostics_append,
+  diagnostic_error_with_code,
+  expr_span,
+  pat_span,
+  Pattern,
+  PatternStringLit,
+  PatternStr,
+  PatternWild,
+  PatternOr,
+  PatternTuple,
+  PatternArray
+} from '../../frontend/ast'
 import { Type } from '../registry'
 import { CheckContext, check_context_new } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { match_arm_type_mismatch_diagnostic } from '../check/diagnostics/type_diagnostics'
 import { env_for_pattern_substituted } from '../transform/pattern_env'
 import { substitution_from_generic } from '../substitution'
-import { type_is_bool, type_is_unknown } from '../semantic_type_structure'
-import { diagnostic_code_e032 } from '../diagnostic_codes'
+import { type_is_bool, type_is_unknown, type_is_string } from '../semantic_type_structure'
+import {
+  diagnostic_code_e032,
+  diagnostic_code_e077,
+  diagnostic_code_e078,
+  diagnostic_code_e079,
+  diagnostic_code_e080
+} from '../diagnostic_codes'
 
-fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pat>) -> [Diagnostic] =
+fn pattern_contains_string_literal(pattern: Shared<Pattern>) -> bool =
   match pattern {
-    PatTuple(_, span)    => [ diagnostic_error_with_code('match guard is not supported with tuple patterns', span, diagnostic_code_e032()) ],
-    PatArray(_, _, span) => [ diagnostic_error_with_code('match guard is not supported with array patterns', span, diagnostic_code_e032()) ],
+    PatternStringLit(_, _) => true,
+    PatternStr(_, _) => true,
+    PatternOr(alternatives, _) =>
+      alternatives.any(alternative => pattern_contains_string_literal(alternative)),
+    _ => false
+  }
+
+fn pattern_is_string_match_pattern(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternStringLit(_, _) => true,
+    PatternStr(_, _) => true,
+    PatternWild(_) => true,
+    PatternOr(alternatives, _) =>
+      alternatives.all(alternative => pattern_is_string_match_pattern(alternative)),
+    _ => false
+  }
+
+fn pattern_is_wildcard_only(pattern: Shared<Pattern>) -> bool =
+  match pattern { PatternWild(_) => true, _ => false }
+
+fn pattern_string_literals_flat(pattern: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
+  match pattern {
+    PatternStringLit(value, _) => do
+      accumulator.push(value)
+      accumulator
+    end,
+    PatternStr(value, _) => do
+      accumulator.push(value)
+      accumulator
+    end,
+    PatternOr(alternatives, _) => do
+      let mut alternative_index = 0
+      while alternative_index < alternatives.length() do
+        accumulator = pattern_string_literals_flat(alternatives[alternative_index], accumulator)
+        alternative_index = alternative_index + 1
+      end
+      accumulator
+    end,
+    _ => accumulator
+  }
+end
+
+fn match_arms_use_string_literals(arms: [Shared<MatchArm>]) -> bool =
+  arms.any(arm => pattern_contains_string_literal(arm.pat))
+
+fn should_apply_string_match_rules(subject_type: Shared<Type>, arms: [Shared<MatchArm>]) -> bool =
+  match_arms_use_string_literals(arms) || type_is_string(subject_type)
+
+fn string_match_subject_type_diagnostic(subject: Shared<Expr>, subject_type: Shared<Type>) -> [Diagnostic] =
+  if type_is_unknown(subject_type) || type_is_string(subject_type) then
+    do let empty_list: [Diagnostic] = []; empty_list end
+  else
+    [
+      diagnostic_error_with_code(
+        'string literal match requires subject type string',
+        expr_span(subject),
+        diagnostic_code_e077())
+    ]
+  end
+
+fn string_match_invalid_arm_pattern_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = do
+  let mut errors: [Diagnostic] = []
+  let mut arm_index = 0
+  while arm_index < arms.length() do
+    if !pattern_is_string_match_pattern(arms[arm_index].pat) then
+      errors.push(
+        diagnostic_error_with_code(
+          'string match arm must use string literal or wildcard pattern',
+          pat_span(arms[arm_index].pat),
+          diagnostic_code_e079()))
+    end
+    arm_index = arm_index + 1
+  end
+  errors
+end
+
+fn string_match_duplicate_literal_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = do
+  let mut seen_literals: Map<string, bool> = Map.new()
+  let mut errors: [Diagnostic] = []
+  let mut arm_index = 0
+  while arm_index < arms.length() do
+    const literals = pattern_string_literals_flat(arms[arm_index].pat, [])
+    let mut literal_index = 0
+    while literal_index < literals.length() do
+      const literal_value = literals[literal_index]
+      if seen_literals.has(literal_value) then
+        errors.push(
+          diagnostic_error_with_code(
+            'duplicate string literal in match',
+            pat_span(arms[arm_index].pat),
+            diagnostic_code_e078()))
+      else
+        seen_literals.set(literal_value, true)
+      end
+      literal_index = literal_index + 1
+    end
+    arm_index = arm_index + 1
+  end
+  errors
+end
+
+fn string_match_wildcard_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = do
+  let mut errors: [Diagnostic] = []
+  let mut wildcard_count = 0
+  let mut arm_index = 0
+  while arm_index < arms.length() do
+    if pattern_is_wildcard_only(arms[arm_index].pat) then
+      wildcard_count = wildcard_count + 1
+      if arm_index != arms.length() - 1 then
+        errors.push(
+          diagnostic_error_with_code(
+            'wildcard match arm must be last for string match',
+            pat_span(arms[arm_index].pat),
+            diagnostic_code_e080()))
+      end
+    end
+    arm_index = arm_index + 1
+  end
+  if wildcard_count > 1 then
+    errors.push(
+      diagnostic_error_with_code(
+        'string match allows at most one wildcard arm',
+        pat_span(arms[0].pat),
+        diagnostic_code_e080()))
+  end
+  errors
+end
+
+fn string_match_pattern_diagnostic(arms: [Shared<MatchArm>]) -> [Diagnostic] = do
+  let mut collected: [Diagnostic] = []
+  collected = diagnostics_append(collected, string_match_invalid_arm_pattern_diagnostic(arms))
+  collected = diagnostics_append(collected, string_match_duplicate_literal_diagnostic(arms))
+  diagnostics_append(collected, string_match_wildcard_diagnostic(arms))
+end
+
+fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pattern>) -> [Diagnostic] =
+  match pattern {
+    PatternTuple(_, span)    => [ diagnostic_error_with_code('match guard is not supported with tuple patterns', span, diagnostic_code_e032()) ],
+    PatternArray(_, _, span) => [ diagnostic_error_with_code('match guard is not supported with array patterns', span, diagnostic_code_e032()) ],
     _                    => do let empty_list: [Diagnostic] = []; empty_list end
   }
 
@@ -27,6 +185,11 @@ export fn infer_expr_match(
   const subject_parsed = infer_expr_fn(subject, inference_context)
   const substitution = substitution_from_generic(subject_parsed.inferred_type, inference_context.registry)
   let mut collected_errors = subject_parsed.errors
+  if should_apply_string_match_rules(subject_parsed.inferred_type, arms) then
+    collected_errors =
+      diagnostics_append(collected_errors, string_match_subject_type_diagnostic(subject, subject_parsed.inferred_type))
+    collected_errors = diagnostics_append(collected_errors, string_match_pattern_diagnostic(arms))
+  end
   let mut arm_type: Shared<Type> = Shared.new(TUnknown)
   let mut arm_index = 0
   while arm_index < arms.length() do

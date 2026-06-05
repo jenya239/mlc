@@ -1,9 +1,9 @@
-// CppDecl dual path for declaration codegen (Phase 2 step 17).
+// CppDeclaration dual path for declaration codegen (Phase 2 step 17).
 
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
-import { SDecl, SExpr, SDeclFn, SDeclType, SDeclTrait, SDeclExtend, SDeclExported, SDeclImport, SDeclAssocBind, SExprExtern, sdecl_inner } from '../ir/semantic_ir'
+import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
-import { CppDecl, CppFnProto, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclSequence, CppDeclEmpty } from '../cpp/cpp_ast'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp/cpp_ast'
 import { print_decl } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, StructUsingEntry } from './context'
@@ -18,25 +18,25 @@ import { gen_return_body_cpp } from './stmt/return_body'
 import { cpp_safe } from './cpp_naming'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
-  type_fwds: [Shared<CppDecl>],
-  type_defs: [Shared<CppDecl>],
-  fn_protos: [Shared<CppDecl>],
-  fn_defs: [Shared<CppDecl>]
+  type_fwds: [Shared<CppDeclaration>],
+  type_defs: [Shared<CppDeclaration>],
+  fn_protos: [Shared<CppDeclaration>],
+  fn_defs: [Shared<CppDeclaration>]
 }
 
-export fn cpp_decl_from_string_output(output: string) -> Shared<CppDecl> =
+export fn cpp_decl_from_string_output(output: string) -> Shared<CppDeclaration> =
   emit_helpers.make_fragment_cpp_declaration(output)
 
-fn empty_cpp_declaration() -> Shared<CppDecl> =
-  Shared.new(CppDeclEmpty)
+fn empty_cpp_declaration() -> Shared<CppDeclaration> =
+  Shared.new(CppDeclarationEmpty)
 
-export fn cpp_decls_from_string_parts(parts: [string]) -> [Shared<CppDecl>] =
+export fn cpp_decls_from_string_parts(parts: [string]) -> [Shared<CppDeclaration>] =
   parts.map(part => cpp_decl_from_string_output(part))
 
-export fn print_cpp_declaration(declaration: Shared<CppDecl>) -> string =
+export fn print_cpp_declaration(declaration: Shared<CppDeclaration>) -> string =
   print_decl(declaration)
 
-export fn print_cpp_declarations(declarations: [Shared<CppDecl>]) -> string =
+export fn print_cpp_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_cpp_declaration(declaration)).join('')
 
 fn prototype_context_for_function(context: CodegenContext, params: [Shared<Param>]) -> CodegenContext =
@@ -81,7 +81,7 @@ fn variant_forward_struct_cpp(
   type_params: [string],
   phantom: [string],
   variant: Shared<TypeVariant>
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const variant_name = context.resolve(variant_ctor_name(variant))
   const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
   Shared.new(CppStruct(template_prefix(used), variant_name, [], true))
@@ -100,12 +100,12 @@ fn variant_alias_arm_cpp(
 end
 
 fn append_type_forward_declarations(
-  output: [Shared<CppDecl>],
+  output: [Shared<CppDeclaration>],
   context: CodegenContext,
   type_name: string,
   type_params: [string],
   variants: [Shared<TypeVariant>]
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const phantom = type_phantom_params_for_variants(type_params, variants)
   let mut result = output
   let mut variant_index = 0
@@ -131,7 +131,7 @@ export fn gen_type_decl_fwd_cpp(
   type_name: string,
   type_params: [string],
   variants: [Shared<TypeVariant>]
-) -> [Shared<CppDecl>] =
+) -> [Shared<CppDeclaration>] =
   if variants.length() == 1 then
     []
   else
@@ -165,7 +165,7 @@ fn variant_body_struct_cpp(
   type_params: [string],
   phantom: [string],
   variant: Shared<TypeVariant>
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
   const prefix = template_prefix(used)
   match variant {
@@ -178,12 +178,12 @@ fn variant_body_struct_cpp(
   }
 end
 
-fn cpp_using_from_struct_using_entry(entry: StructUsingEntry) -> Shared<CppDecl> =
+fn cpp_using_from_struct_using_entry(entry: StructUsingEntry) -> Shared<CppDeclaration> =
   Shared.new(CppUsing(entry.alias, entry.type_cpp))
 
-fn struct_using_declarations_cpp(context: CodegenContext, type_name: string) -> [Shared<CppDecl>] = do
+fn struct_using_declarations_cpp(context: CodegenContext, type_name: string) -> [Shared<CppDeclaration>] = do
   const using_entries = context.struct_using_entries.get(type_name)
-  let mut declarations: [Shared<CppDecl>] = []
+  let mut declarations: [Shared<CppDeclaration>] = []
   let mut entry_index = 0
   while entry_index < using_entries.length() do
     declarations.push(cpp_using_from_struct_using_entry(using_entries[entry_index]))
@@ -197,7 +197,7 @@ fn single_variant_body_struct_cpp(
   type_name: string,
   type_params: [string],
   variant: Shared<TypeVariant>
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const prefix = template_prefix(type_params)
   const resolved_name = context.resolve(type_name)
   match variant {
@@ -211,12 +211,12 @@ fn single_variant_body_struct_cpp(
 end
 
 fn append_type_body_struct_declarations(
-  output: [Shared<CppDecl>],
+  output: [Shared<CppDeclaration>],
   context: CodegenContext,
   type_name: string,
   type_params: [string],
   variants: [Shared<TypeVariant>]
-) -> [Shared<CppDecl>] =
+) -> [Shared<CppDeclaration>] =
   if variants.length() == 1 then
     do
       let mut result = output
@@ -243,7 +243,7 @@ export fn gen_type_decl_body_cpp(
   type_params: [string],
   variants: [Shared<TypeVariant>],
   derive_traits: [string]
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   let mut result = append_type_body_struct_declarations([], context, type_name, type_params, variants)
   const derive_declarations = gen_derive_methods_cpp(type_name, variants, derive_traits)
   let mut derive_index = 0
@@ -264,14 +264,14 @@ fn trait_template_header(type_params: [string]) -> string =
 fn trait_requires_expressions_cpp(
   context: CodegenContext,
   trait_name: string,
-  methods: [Shared<SDecl>]
+  methods: [Shared<SemanticDeclaration>]
 ) -> [string] = do
   const trait_context = context.for_type_body(trait_name)
   let expressions: [string] = []
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+      SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
         const prefixed_callee = cpp_safe(mangled)
         const return_cpp = sem_type_to_cpp(trait_context, return_type)
         const declval_arguments = concept_declval_arguments_for_params(trait_context, params)
@@ -291,15 +291,15 @@ export fn gen_trait_decl_cpp(
   context: CodegenContext,
   trait_name: string,
   type_params: [string],
-  methods: [Shared<SDecl>]
-) -> Shared<CppDecl> =
+  methods: [Shared<SemanticDeclaration>]
+) -> Shared<CppDeclaration> =
   Shared.new(CppConceptRequires(
     trait_template_header(type_params),
     cpp_safe(trait_name),
     'Self',
     trait_requires_expressions_cpp(context, trait_name, methods)))
 
-fn main_set_args_vector_argument_cpp() -> Shared<CppExpr> =
+fn main_set_args_vector_argument_cpp() -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression('std::vector<mlc::String>'),
     [
@@ -312,13 +312,13 @@ fn main_set_args_vector_argument_cpp() -> Shared<CppExpr> =
         emit_helpers.make_identifier_cpp_expression('argv'),
         emit_helpers.make_identifier_cpp_expression('argc')))]))
 
-export fn main_set_args_preamble_cpp() -> [Shared<CppStmt>] =
+export fn main_set_args_preamble_cpp() -> [Shared<CppStatement>] =
   [emit_helpers.make_expression_cpp_statement(
     Shared.new(CppCall(
       emit_helpers.make_identifier_cpp_expression('mlc::io::set_args'),
       [main_set_args_vector_argument_cpp()])))]
 
-fn prepend_main_set_args_preamble(statements: [Shared<CppStmt>]) -> [Shared<CppStmt>] = do
+fn prepend_main_set_args_preamble(statements: [Shared<CppStatement>]) -> [Shared<CppStatement>] = do
   let mut result = main_set_args_preamble_cpp()
   let mut statement_index = 0
   while statement_index < statements.length() do
@@ -338,7 +338,7 @@ fn native_fn_proto_cpp(
   params: [Shared<Param>],
   return_type: Shared<Type>,
   context: CodegenContext
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const prototype_context = prototype_context_for_function(context, params)
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
@@ -356,10 +356,10 @@ fn native_fn_decl_cpp(
   type_bounds: [[string]],
   params: [Shared<Param>],
   return_type: Shared<Type>,
-  body: Shared<SExpr>,
+  body: Shared<SemanticExpression>,
   context: CodegenContext,
   body_statement_depth: i32
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const body_context = compute_fn_body_context(name, params, context)
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
   const safe_name = context.resolve(name)
@@ -388,7 +388,7 @@ export fn gen_fn_proto_cpp(
   params: [Shared<Param>],
   return_type: Shared<Type>,
   context: CodegenContext
-) -> Shared<CppDecl> =
+) -> Shared<CppDeclaration> =
   native_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
 
 export fn gen_fn_decl_cpp(
@@ -397,52 +397,52 @@ export fn gen_fn_decl_cpp(
   type_bounds: [[string]],
   params: [Shared<Param>],
   return_type: Shared<Type>,
-  body: Shared<SExpr>,
+  body: Shared<SemanticExpression>,
   context: CodegenContext
-) -> Shared<CppDecl> =
+) -> Shared<CppDeclaration> =
   native_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context, 1)
 
-export fn gen_decl_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
+export fn gen_decl_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> Shared<CppDeclaration> =
   match declaration {
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body {
-        SExprExtern(_, _) => empty_cpp_declaration(),
+        SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
         _ => gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)
       },
-    SDeclType(type_name, type_params, variants, derive_traits, _) =>
+    SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
       cpp_decl_from_native_declarations(
         append_cpp_declarations(
           gen_type_decl_fwd_cpp(context, type_name, type_params, variants),
           gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits))),
-    SDeclTrait(name, type_params, methods, _) =>
+    SemanticDeclarationTrait(name, type_params, methods, _) =>
       gen_trait_decl_cpp(context, name, type_params, methods),
-    SDeclExtend(type_name, trait_name, methods, _) =>
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
       cpp_decl_from_native_declarations(
         gen_decl_extend_cpp(type_name, trait_name, methods, context)),
-    SDeclImport(_, _) => empty_cpp_declaration(),
-    SDeclAssocBind(_, _, _) => empty_cpp_declaration(),
-    SDeclExported(inner_declaration) => gen_decl_cpp(sdecl_inner(inner_declaration), context)
+    SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
+    SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
+    SemanticDeclarationExported(inner_declaration) => gen_decl_cpp(sdecl_inner(inner_declaration), context)
   }
 
-export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> Shared<CppDecl> =
+export fn gen_proto_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> Shared<CppDeclaration> =
   match declaration {
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body {
-        SExprExtern(_, _) => empty_cpp_declaration(),
+        SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
         _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
       },
-    SDeclType(_, _, _, _, _) => empty_cpp_declaration(),
-    SDeclTrait(_, _, _, _) => empty_cpp_declaration(),
-    SDeclExtend(type_name, _, methods, _) => do
+    SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declaration(),
+    SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
+    SemanticDeclarationExtend(type_name, _, methods, _) => do
       const extend_context = context.for_type_body(type_name)
-      let mut proto_declarations: [Shared<CppDecl>] = []
+      let mut proto_declarations: [Shared<CppDeclaration>] = []
       let mut method_index = 0
       while method_index < methods.length() do
         const method = methods[method_index]
         match method {
-          SDeclFn(_, _, _, _, _, body, _, _) =>
+          SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
             match body {
-              SExprExtern(_, _) => (),
+              SemanticExpressionExtern(_, _) => (),
               _ => do
                 proto_declarations.push(gen_proto_cpp(method, extend_context))
                 ()
@@ -454,26 +454,26 @@ export fn gen_proto_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> 
       end
       cpp_decl_from_native_declarations(proto_declarations)
     end,
-    SDeclImport(_, _) => empty_cpp_declaration(),
-    SDeclAssocBind(_, _, _) => empty_cpp_declaration(),
-    SDeclExported(inner_declaration) => gen_proto_cpp(sdecl_inner(inner_declaration), context)
+    SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
+    SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
+    SemanticDeclarationExported(inner_declaration) => gen_proto_cpp(sdecl_inner(inner_declaration), context)
   }
 
 export fn extend_method_forward_segments_cpp(
-  declarations: [Shared<SDecl>],
+  declarations: [Shared<SemanticDeclaration>],
   context: CodegenContext
-) -> [Shared<CppDecl>] = do
-  let mut result: [Shared<CppDecl>] = []
+) -> [Shared<CppDeclaration>] = do
+  let mut result: [Shared<CppDeclaration>] = []
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     match declarations[declaration_index] {
-      SDeclExtend(_, _, methods, _) => do
+      SemanticDeclarationExtend(_, _, methods, _) => do
         let mut method_index = 0
         while method_index < methods.length() do
           match methods[method_index] {
-            SDeclFn(_, _, _, _, _, body, _, _) =>
+            SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
               match body {
-                SExprExtern(_, _) => (),
+                SemanticExpressionExtern(_, _) => (),
                 _ => do
                   result.push(gen_proto_cpp(methods[method_index], context))
                   ()
@@ -493,22 +493,22 @@ export fn extend_method_forward_segments_cpp(
 end
 
 export fn extend_helper_protos_for_exported_types_cpp(
-  declarations: [Shared<SDecl>],
+  declarations: [Shared<SemanticDeclaration>],
   context: CodegenContext
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const exported_types = exported_type_names_from_decls(declarations)
-  let mut result: [Shared<CppDecl>] = []
+  let mut result: [Shared<CppDeclaration>] = []
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     match declarations[declaration_index] {
-      SDeclExtend(type_name, _, methods, _) => do
+      SemanticDeclarationExtend(type_name, _, methods, _) => do
         if list_contains(exported_types, type_name) then
           let mut method_index = 0
           while method_index < methods.length() do
             match methods[method_index] {
-              SDeclFn(_, _, _, _, _, body, _, _) =>
+              SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
                 match body {
-                  SExprExtern(_, _) => (),
+                  SemanticExpressionExtern(_, _) => (),
                   _ => do
                     result.push(gen_proto_cpp(methods[method_index], context))
                     ()
@@ -528,12 +528,12 @@ export fn extend_helper_protos_for_exported_types_cpp(
   result
 end
 
-fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SDecl>]) -> string = do
+fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SemanticDeclaration>]) -> string = do
   let mut result = 'void'
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(_, _, _, _, return_type, _, _, _) => do
+      SemanticDeclarationFn(_, _, _, _, return_type, _, _, _) => do
         result = sem_type_to_cpp(extend_context, return_type)
         ()
       end,
@@ -558,8 +558,8 @@ fn extend_forward_call_argument_list(params: [Shared<Param>]) -> string = do
   argument_names.join(', ')
 end
 
-fn extend_forward_call_argument_expressions(params: [Shared<Param>]) -> [Shared<CppExpr>] = do
-  let mut expressions: [Shared<CppExpr>] = []
+fn extend_forward_call_argument_expressions(params: [Shared<Param>]) -> [Shared<CppExpression>] = do
+  let mut expressions: [Shared<CppExpression>] = []
   let mut parameter_index = 0
   while parameter_index < params.length() do
     expressions.push(emit_helpers.make_identifier_cpp_expression(cpp_safe(params[parameter_index].name)))
@@ -573,8 +573,8 @@ fn native_inline_noexcept_forwarding_fn_cpp(
   method_name_cpp: string,
   parameter_items: [string],
   callee_code: string,
-  call_arguments: [Shared<CppExpr>]
-) -> Shared<CppDecl> =
+  call_arguments: [Shared<CppExpression>]
+) -> Shared<CppDeclaration> =
   Shared.new(CppFnDef(
     'inline ',
     return_type_cpp,
@@ -589,8 +589,8 @@ fn native_noexcept_one_line_returning_fn_cpp(
   return_type_cpp: string,
   name_cpp: string,
   parameter_items: [string],
-  return_expression: Shared<CppExpr>
-) -> Shared<CppDecl> =
+  return_expression: Shared<CppExpression>
+) -> Shared<CppDeclaration> =
   Shared.new(CppFnDef(
     '',
     return_type_cpp,
@@ -606,7 +606,7 @@ fn extend_trait_wrapper_decl_cpp(
   return_type: Shared<Type>,
   context: CodegenContext,
   context_resolve: (CodegenContext, string) -> string
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const wrapper_context = context.for_type_body(type_name)
   const method_name = extract_method_name(mangled, type_name)
   const return_type_cpp = sem_type_to_cpp(wrapper_context, return_type)
@@ -626,7 +626,7 @@ fn extend_trait_concept_adapter_decl_cpp(
   return_type: Shared<Type>,
   context: CodegenContext,
   context_resolve: (CodegenContext, string) -> string
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const extend_context = context.for_type_body(type_name)
   const method_name = extract_method_name(mangled, type_name)
   const trait_callee = cpp_safe(trait_name + "_" + method_name)
@@ -642,10 +642,10 @@ end
 fn extend_trait_static_assert_decl_cpp(
   trait_name: string,
   type_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   extend_context: CodegenContext,
   implementor_type_cpp: string
-) -> Shared<CppDecl> = do
+) -> Shared<CppDeclaration> = do
   const trait_safe = cpp_safe(trait_name)
   const message = type_name + ' does not implement ' + trait_name
   if trait_name == 'ExprVisitor' then
@@ -661,17 +661,17 @@ end
 export fn gen_decl_extend_trait_suffix_cpp(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   context_resolve: (CodegenContext, string) -> string
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const extend_context = context.for_type_body(type_name)
   const implementor_type_cpp = type_name_to_cpp(context, type_name)
-  let mut result: [Shared<CppDecl>] = []
+  let mut result: [Shared<CppDeclaration>] = []
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+      SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
         result.push(extend_trait_wrapper_decl_cpp(
           type_name, mangled, params, return_type, context, context_resolve))
         result.push(extend_trait_concept_adapter_decl_cpp(
@@ -695,13 +695,13 @@ export fn gen_extend_extern_method_cpp(
   trait_name: string,
   context: CodegenContext,
   context_resolve: (CodegenContext, string) -> string
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const method_name = if trait_name.length() > 0 then extract_method_name(mangled, type_name) else '' end
   if type_name == 'i32' && method_name == 'to_string' && params.length() > 0 then
     do
       const return_type_cpp = sem_type_to_cpp(context, return_type)
       const parameter_name = cpp_safe(params[0].name)
-      let mut result: [Shared<CppDecl>] = []
+      let mut result: [Shared<CppDeclaration>] = []
       result.push(native_noexcept_one_line_returning_fn_cpp(
         return_type_cpp,
         context_resolve(context, mangled),
@@ -719,18 +719,18 @@ end
 export fn gen_decl_extend_cpp(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const extend_context = context.for_type_body(type_name)
   const context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
-  let mut result: [Shared<CppDecl>] = []
+  let mut result: [Shared<CppDeclaration>] = []
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(mangled, type_params, type_bounds, params, return_type, body, _, _) => do
+      SemanticDeclarationFn(mangled, type_params, type_bounds, params, return_type, body, _, _) => do
         match body {
-          SExprExtern(_, _) => do
+          SemanticExpressionExtern(_, _) => do
             result = append_cpp_declarations(
               result,
               gen_extend_extern_method_cpp(
@@ -760,17 +760,17 @@ end
 export fn gen_extend_wrapper_protos_cpp(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   if trait_name.length() == 0 then
     empty_cpp_declarations()
   else
-    let mut wrappers: [Shared<CppDecl>] = []
+    let mut wrappers: [Shared<CppDeclaration>] = []
     let mut method_index = 0
     while method_index < methods.length() do
       match methods[method_index] {
-        SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+        SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
           const wrapper_context = context.for_type_body(type_name)
           const method_name = extract_method_name(mangled, type_name)
           wrappers.push(Shared.new(CppFnProto(
@@ -791,17 +791,17 @@ end
 fn extend_forward_segment_for_extend(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   codegen_context: CodegenContext
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   const extend_context = codegen_context.for_type_body(type_name)
   let mut result = gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context)
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(_, _, _, _, _, body, _, _) =>
+      SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
         match body {
-          SExprExtern(_, _) => (),
+          SemanticExpressionExtern(_, _) => (),
           _ => do
             result.push(gen_proto_cpp(methods[method_index], extend_context))
             ()
@@ -815,23 +815,23 @@ fn extend_forward_segment_for_extend(
 end
 
 export fn extend_cpp_forward_segment_cpp(
-  declaration: Shared<SDecl>,
+  declaration: Shared<SemanticDeclaration>,
   codegen_context: CodegenContext
-) -> [Shared<CppDecl>] =
+) -> [Shared<CppDeclaration>] =
   match declaration {
-    SDeclExtend(type_name, trait_name, methods, _) =>
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
       extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context),
-    SDeclExported(inner_declaration) => match sdecl_inner(inner_declaration) {
-      SDeclExtend(type_name, trait_name, methods, _) =>
+    SemanticDeclarationExported(inner_declaration) => match sdecl_inner(inner_declaration) {
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
         extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context),
       _ => empty_cpp_declarations()
     },
     _ => empty_cpp_declarations()
   }
 
-export fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, phase: i32) -> [Shared<CppDecl>] =
+export fn decl_segment_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext, phase: i32) -> [Shared<CppDeclaration>] =
   match declaration {
-    SDeclType(type_name, type_params, variants, derive_traits, _) =>
+    SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
       if phase == 0 then
         gen_type_decl_fwd_cpp(context, type_name, type_params, variants)
       else if phase == 1 then
@@ -839,7 +839,7 @@ export fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, 
       else
         empty_cpp_declarations()
       end,
-    SDeclTrait(name, type_params, methods, _) =>
+    SemanticDeclarationTrait(name, type_params, methods, _) =>
       if phase == 0 then
         [gen_trait_decl_cpp(context, name, type_params, methods)]
       else if phase == 4 then
@@ -847,32 +847,32 @@ export fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, 
       else
         empty_cpp_declarations()
       end,
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       if phase == 2 then
         match body {
-          SExprExtern(_, _) => empty_cpp_declarations(),
+          SemanticExpressionExtern(_, _) => empty_cpp_declarations(),
           _ => [gen_proto_cpp(declaration, context)]
         }
       else
         empty_cpp_declarations()
       end,
-    SDeclExported(inner_declaration) =>
+    SemanticDeclarationExported(inner_declaration) =>
       if phase == 0 then match sdecl_inner(inner_declaration) {
-        SDeclType(type_name, type_params, variants, _, _) =>
+        SemanticDeclarationType(type_name, type_params, variants, _, _) =>
           gen_type_decl_fwd_cpp(context, type_name, type_params, variants),
-        SDeclTrait(name, type_params, methods, _) =>
+        SemanticDeclarationTrait(name, type_params, methods, _) =>
           [gen_trait_decl_cpp(context, name, type_params, methods)],
         _ => empty_cpp_declarations()
       }
       else if phase == 1 then match sdecl_inner(inner_declaration) {
-        SDeclType(type_name, type_params, variants, derive_traits, _) =>
+        SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
           gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits),
         _ => empty_cpp_declarations()
       }
       else if phase == 2 then match sdecl_inner(inner_declaration) {
-        SDeclFn(_, type_parameters, _, _, _, body, _, _) =>
+        SemanticDeclarationFn(_, type_parameters, _, _, _, body, _, _) =>
           if type_parameters.length() > 0 then match body {
-            SExprExtern(_, _) => [gen_proto_cpp(inner_declaration, context)],
+            SemanticExpressionExtern(_, _) => [gen_proto_cpp(inner_declaration, context)],
             _ => [gen_decl_cpp(inner_declaration, context)]
           }
           else [gen_proto_cpp(inner_declaration, context)]
@@ -880,7 +880,7 @@ export fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, 
         _ => [gen_proto_cpp(inner_declaration, context)]
       }
       else if phase == 4 then match sdecl_inner(inner_declaration) {
-        SDeclTrait(name, type_params, methods, _) =>
+        SemanticDeclarationTrait(name, type_params, methods, _) =>
           [gen_trait_struct_cpp(context, name, type_params, methods)],
         _ => empty_cpp_declarations()
       }
@@ -890,11 +890,11 @@ export fn decl_segment_cpp(declaration: Shared<SDecl>, context: CodegenContext, 
   }
 
 fn collect_native_decl_segments_cpp(
-  declarations: [Shared<SDecl>],
+  declarations: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   phase: i32
-) -> [Shared<CppDecl>] = do
-  let mut output: [Shared<CppDecl>] = []
+) -> [Shared<CppDeclaration>] = do
+  let mut output: [Shared<CppDeclaration>] = []
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     output = append_cpp_declarations(output, decl_segment_cpp(declarations[declaration_index], context, phase))
@@ -903,7 +903,7 @@ fn collect_native_decl_segments_cpp(
   output
 end
 
-export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> DeclPartsBundleCpp = do
+export fn collect_all_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> DeclPartsBundleCpp = do
   let mut fn_protos = collect_decl_parts_cpp(declarations, context, 2)
   fn_protos = append_cpp_declarations(
     fn_protos,
@@ -916,7 +916,7 @@ export fn collect_all_decl_parts_cpp(declarations: [Shared<SDecl>], context: Cod
   }
 end
 
-export fn collect_decl_parts_cpp(declarations: [Shared<SDecl>], context: CodegenContext, phase: i32) -> [Shared<CppDecl>] =
+export fn collect_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>], context: CodegenContext, phase: i32) -> [Shared<CppDeclaration>] =
   if phase == 0 || phase == 1 || phase == 2 || phase == 4 then
     collect_native_decl_segments_cpp(declarations, context, phase)
   else if phase == 3 then
@@ -925,12 +925,12 @@ export fn collect_decl_parts_cpp(declarations: [Shared<SDecl>], context: Codegen
     empty_cpp_declarations()
   end
 
-fn empty_cpp_declarations() -> [Shared<CppDecl>] = do
-  const empty: [Shared<CppDecl>] = []
+fn empty_cpp_declarations() -> [Shared<CppDeclaration>] = do
+  const empty: [Shared<CppDeclaration>] = []
   empty
 end
 
-fn append_cpp_declarations(output: [Shared<CppDecl>], declarations: [Shared<CppDecl>]) -> [Shared<CppDecl>] = do
+fn append_cpp_declarations(output: [Shared<CppDeclaration>], declarations: [Shared<CppDeclaration>]) -> [Shared<CppDeclaration>] = do
   let mut index = 0
   while index < declarations.length() do
     output.push(declarations[index])
@@ -939,43 +939,43 @@ fn append_cpp_declarations(output: [Shared<CppDecl>], declarations: [Shared<CppD
   output
 end
 
-fn cpp_decl_from_native_declarations(declarations: [Shared<CppDecl>]) -> Shared<CppDecl> =
+fn cpp_decl_from_native_declarations(declarations: [Shared<CppDeclaration>]) -> Shared<CppDeclaration> =
   if declarations.length() == 0 then
     empty_cpp_declaration()
   else if declarations.length() == 1 then
     declarations[0]
   else
-    Shared.new(CppDeclSequence(declarations))
+    Shared.new(CppDeclarationSequence(declarations))
   end
 
-fn decl_fn_def_cpp(declaration: Shared<SDecl>, context: CodegenContext) -> [Shared<CppDecl>] =
+fn decl_fn_def_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> [Shared<CppDeclaration>] =
   match declaration {
-    SDeclFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
       match body {
-        SExprExtern(_, _) => empty_cpp_declarations(),
+        SemanticExpressionExtern(_, _) => empty_cpp_declarations(),
         _ => [gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)]
       },
-    SDeclExtend(type_name, trait_name, methods, _) =>
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
       gen_decl_extend_cpp(type_name, trait_name, methods, context),
-    SDeclExported(inner_declaration) => match sdecl_inner(inner_declaration) {
-      SDeclType(_, _, _, _, _) => empty_cpp_declarations(),
-      SDeclTrait(_, _, _, _) => empty_cpp_declarations(),
-      SDeclFn(_, type_parameters, _, _, _, body, _, _) =>
+    SemanticDeclarationExported(inner_declaration) => match sdecl_inner(inner_declaration) {
+      SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declarations(),
+      SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declarations(),
+      SemanticDeclarationFn(_, type_parameters, _, _, _, body, _, _) =>
         if type_parameters.length() > 0 then match body {
-          SExprExtern(_, _) => [gen_decl_cpp(inner_declaration, context)],
+          SemanticExpressionExtern(_, _) => [gen_decl_cpp(inner_declaration, context)],
           _ => empty_cpp_declarations()
         }
         else [gen_decl_cpp(inner_declaration, context)]
         end,
-      SDeclExtend(type_name, trait_name, methods, _) =>
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
         gen_decl_extend_cpp(type_name, trait_name, methods, context),
       _ => [gen_decl_cpp(inner_declaration, context)]
     },
     _ => empty_cpp_declarations()
   }
 
-export fn collect_fn_defs_cpp(declarations: [Shared<SDecl>], context: CodegenContext) -> [Shared<CppDecl>] = do
-  let mut output: [Shared<CppDecl>] = []
+export fn collect_fn_defs_cpp(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> [Shared<CppDeclaration>] = do
+  let mut output: [Shared<CppDeclaration>] = []
   output = append_cpp_declarations(output, extend_method_forward_segments_cpp(declarations, context))
   let mut declaration_index = 0
   while declaration_index < declarations.length() do

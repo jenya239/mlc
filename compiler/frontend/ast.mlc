@@ -1,6 +1,6 @@
 // Shared AST type definitions for the self-hosted MLC compiler.
 
-import { TKind, Token, LexOut } from './ast_tokens'
+import { TokenKind, Token, LexOut } from './ast_tokens'
 
 // --- Source spans and diagnostics -----------------------------------------
 
@@ -71,18 +71,19 @@ export type TypeExpr =
   | TyFn([Shared<TypeExpr>], Shared<TypeExpr>)
   | TyAssoc(string, string)
 
-export type Pat =
-  | PatWild(Span) | PatIdent(string, Span) | PatInt(i32, Span) | PatStr(string, Span)
-  | PatBool(bool, Span) | PatUnit(Span)
-  | PatCtor(string, [Shared<Pat>], Span)
-  | PatRecord(string, [Shared<Pat>], Span)
-  | PatTuple([Shared<Pat>], Span)
-  | PatArray([Shared<Pat>], string, Span)
-  | PatOr([Shared<Pat>], Span)
+export type Pattern =
+  | PatternWild(Span) | PatternIdent(string, Span) | PatternInt(i32, Span) | PatternStr(string, Span)
+  | PatternStringLit(string, Span)
+  | PatternBool(bool, Span) | PatternUnit(Span)
+  | PatternCtor(string, [Shared<Pattern>], Span)
+  | PatternRecord(string, [Shared<Pattern>], Span)
+  | PatternTuple([Shared<Pattern>], Span)
+  | PatternArray([Shared<Pattern>], string, Span)
+  | PatternOr([Shared<Pattern>], Span)
 
-export type FieldPat = FieldPat { name: string, pat: Shared<Pat> }
+export type FieldPattern = FieldPattern { name: string, pat: Shared<Pattern> }
 export type MatchArm = MatchArm {
-  pat: Shared<Pat>,
+  pat: Shared<Pattern>,
   has_guard: bool,
   when_condition: Shared<Expr>,
   body: Shared<Expr>
@@ -157,7 +158,7 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
 
 export type Stmt =
   | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>, Span)
-  | StmtLetPat(Shared<Pat>, bool, Shared<TypeExpr>, Shared<Expr>, bool, Shared<Expr>, Span)
+  | StmtLetPattern(Shared<Pattern>, bool, Shared<TypeExpr>, Shared<Expr>, bool, Shared<Expr>, Span)
   | StmtLetConst(string, Shared<TypeExpr>, Shared<Expr>, Span)
   | StmtExpr(Shared<Expr>, Span)
   | StmtBreak(Span) | StmtContinue(Span) | StmtReturn(Shared<Expr>, Span)
@@ -165,7 +166,7 @@ export type Stmt =
 export fn stmt_span(statement: Shared<Stmt>) -> Span =
   match statement {
     StmtLet(_, _, _, _, source_span)  => source_span,
-    StmtLetPat(_, _, _, _, _, _, source_span) => source_span,
+    StmtLetPattern(_, _, _, _, _, _, source_span) => source_span,
     StmtLetConst(_, _, _, source_span) => source_span,
     StmtExpr(_, source_span)           => source_span,
     StmtBreak(source_span)             => source_span,
@@ -173,19 +174,20 @@ export fn stmt_span(statement: Shared<Stmt>) -> Span =
     StmtReturn(_, source_span)         => source_span,
   }
 
-export fn pat_span(pattern: Shared<Pat>) -> Span =
+export fn pat_span(pattern: Shared<Pattern>) -> Span =
   match pattern {
-    PatWild(source_span)                    => source_span,
-    PatIdent(_, source_span)                => source_span,
-    PatInt(_, source_span)                  => source_span,
-    PatStr(_, source_span)                  => source_span,
-    PatBool(_, source_span)                 => source_span,
-    PatUnit(source_span)                    => source_span,
-    PatCtor(_, _, source_span)              => source_span,
-    PatRecord(_, _, source_span)            => source_span,
-    PatTuple(_, source_span)                => source_span,
-    PatArray(_, _, source_span)             => source_span,
-    PatOr(_, source_span)                   => source_span,
+    PatternWild(source_span)                    => source_span,
+    PatternIdent(_, source_span)                => source_span,
+    PatternInt(_, source_span)                  => source_span,
+    PatternStr(_, source_span)                  => source_span,
+    PatternStringLit(_, source_span)            => source_span,
+    PatternBool(_, source_span)                 => source_span,
+    PatternUnit(source_span)                    => source_span,
+    PatternCtor(_, _, source_span)              => source_span,
+    PatternRecord(_, _, source_span)            => source_span,
+    PatternTuple(_, source_span)                => source_span,
+    PatternArray(_, _, source_span)             => source_span,
+    PatternOr(_, source_span)                   => source_span,
   }
 
 export type Param    = Param    {
@@ -194,7 +196,7 @@ export type Param    = Param    {
   typ: Shared<TypeExpr>,
   has_default: bool,
   default: Shared<Expr>,
-  param_pattern: Shared<Pat>
+  param_pattern: Shared<Pattern>
 }
 export type FieldDef = FieldDef {
   name: string,

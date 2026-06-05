@@ -2,18 +2,30 @@
 // eval_expr injected as a function parameter to break the import cycle
 // with eval.mlc (same pattern as gen_stmts).
 
-import { Pat } from '../../frontend/ast'
-import { SExpr, SStmt, SMatchArm } from '../../ir/semantic_ir'
+import { Pattern, PatternWild, PatternStr, PatternStringLit } from '../../frontend/ast'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
-import { first_arm_needs_deref, pat_bind_names } from './match_analysis'
+import { first_arm_needs_deref, pat_bind_names, should_use_string_match_if_chain } from './match_analysis'
 import * as expression_output from './expr'
 import { Type, TUnit } from '../../checker/registry'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
-import { CppExpr, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppInvokedBlockWithReturn } from '../../cpp/cpp_ast'
-import { print_expr } from '../../cpp/cpp_printer'
+import {
+  CppExpression,
+  CppStatement,
+  CppBinary,
+  CppIdent,
+  CppVisitArmWild,
+  CppVisitArmBinding,
+  CppVisitArmConstructed,
+  CppVisitArmConstructedGeneric,
+  CppInvokedBlockWithReturn
+} from '../../cpp/cpp_ast'
+import * as emit_helpers from '../../cpp/emit_helpers'
+import { print_expr, print_statement } from '../../cpp/cpp_printer'
+import { gen_string_literal_cpp } from './literals'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {
   field_bindings: string,
@@ -25,11 +37,11 @@ export fn match_visit_uses_void_lambdas(match_result_type: Shared<Type>) -> bool
 
 fn record_field_bind_step(
   accumulated: RecordFieldBindAccum,
-  field_pattern: Shared<Pat>,
+  field_pattern: Shared<Pattern>,
   lower_name: string
 ) -> RecordFieldBindAccum =
   match field_pattern {
-    PatIdent(field_name, _) =>
+    PatternIdent(field_name, _) =>
       RecordFieldBindAccum {
         field_bindings: accumulated.field_bindings +
           expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name),
@@ -39,7 +51,7 @@ fn record_field_bind_step(
   }
 
 fn record_pattern_field_bindings_and_context(
-  field_patterns: [Shared<Pat>],
+  field_patterns: [Shared<Pattern>],
   lower_name: string,
   start_context: CodegenContext
 ) -> RecordFieldBindAccum =
@@ -49,7 +61,7 @@ fn record_pattern_field_bindings_and_context(
 
 fn codegen_context_with_ctor_field_bindings(
   constructor_name: string,
-  sub_patterns: [Shared<Pat>],
+  sub_patterns: [Shared<Pattern>],
   base_context: CodegenContext
 ) -> CodegenContext = do
   const ctor_type_information: Shared<CtorTypeInfo> = lookup_ctor_type_info_for_context(base_context, constructor_name)
@@ -57,7 +69,7 @@ fn codegen_context_with_ctor_field_bindings(
   let mut pattern_index = 0
   while pattern_index < sub_patterns.length() do
     match sub_patterns[pattern_index] {
-      PatIdent(pattern_name, _) => do
+      PatternIdent(pattern_name, _) => do
         if ctor_type_information.shared_pos.contains(pattern_index) then
           arm_context = arm_context.add_shared(pattern_name)
         end
@@ -76,10 +88,10 @@ fn codegen_context_with_ctor_field_bindings(
 end
 
 fn gen_arm_ctor(
-  ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  ctor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string,
   visit_void: bool
 ) -> string = do
   const qualified_name = context.resolve(ctor_name)
@@ -104,10 +116,10 @@ fn gen_arm_ctor(
 end
 
 fn gen_arm_record_pattern(
-  record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  record_name: string, field_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string,
   visit_void: bool
 ) -> string = do
   const qualified_name = context.resolve(record_name)
@@ -129,39 +141,40 @@ fn gen_arm_record_pattern(
   end
 end
 
-fn match_arm_with_pattern(arm: Shared<SMatchArm>, pattern: Shared<Pat>) -> Shared<SMatchArm> =
-  Shared.new(SMatchArm {
+fn match_arm_with_pattern(arm: Shared<SemanticMatchArm>, pattern: Shared<Pattern>) -> Shared<SemanticMatchArm> =
+  Shared.new(SemanticMatchArm {
     pat: pattern,
     has_guard: arm.has_guard,
     when_condition: arm.when_condition,
     body: arm.body
   })
 
-fn singleton_or_split(arm: Shared<SMatchArm>) -> [Shared<SMatchArm>] =
+fn singleton_or_split(arm: Shared<SemanticMatchArm>) -> [Shared<SemanticMatchArm>] =
   match arm.pat {
-    PatOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
+    PatternOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
     _ => [arm]
   }
 
-export fn expand_or_arms(arms: [Shared<SMatchArm>]) -> [Shared<SMatchArm>] =
+export fn expand_or_arms(arms: [Shared<SemanticMatchArm>]) -> [Shared<SemanticMatchArm>] =
   arms.flat_map(arm => singleton_or_split(arm))
 
-export fn expanded_any_guard(expanded_arms: [Shared<SMatchArm>]) -> bool =
+export fn expanded_any_guard(expanded_arms: [Shared<SemanticMatchArm>]) -> bool =
   expanded_arms.any(arm => arm.has_guard)
 
-fn guarded_literal_condition(pattern: Shared<Pat>, variant_access_expression: string) -> string =
+fn guarded_literal_condition(pattern: Shared<Pattern>, variant_access_expression: string) -> string =
   match pattern {
-    PatBool(value, _) => `(${variant_access_expression} == ${gen_boolean_literal(value)})`,
-    PatInt(value, _)  => `(${variant_access_expression} == ${gen_integer_literal(value)})`,
-    PatStr(value, _)  => `(${variant_access_expression} == ${gen_string_literal(value)})`,
+    PatternBool(value, _) => `(${variant_access_expression} == ${gen_boolean_literal(value)})`,
+    PatternInt(value, _)  => `(${variant_access_expression} == ${gen_integer_literal(value)})`,
+    PatternStr(value, _)  => `(${variant_access_expression} == ${gen_string_literal(value)})`,
+    PatternStringLit(value, _)  => `(${variant_access_expression} == ${gen_string_literal(value)})`,
     _                 => 'false'
   }
 
 fn gen_guarded_wild_or_unit_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const body_code = eval_expr_fn(arm.body, context, gen_stmts)
   if arm.has_guard then
@@ -173,11 +186,11 @@ fn gen_guarded_wild_or_unit_arm_fragment(
 end
 
 fn gen_guarded_literal_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   variant_access_expression: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const condition = guarded_literal_condition(arm.pat, variant_access_expression)
   const body_code = eval_expr_fn(arm.body, context, gen_stmts)
@@ -191,12 +204,12 @@ fn gen_guarded_literal_arm_fragment(
 end
 
 fn gen_guarded_identifier_binding_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   binding_name: string,
   subject_holder_name: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const binding_cpp_safe = cpp_safe(binding_name)
   const extended_context = context.add_value(binding_name)
@@ -213,13 +226,13 @@ fn gen_guarded_identifier_binding_arm_fragment(
 end
 
 fn gen_guarded_constructor_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   constructor_name: string,
-  sub_patterns: [Shared<Pat>],
+  sub_patterns: [Shared<Pattern>],
   variant_access_expression: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))
@@ -248,13 +261,13 @@ fn gen_guarded_constructor_arm_fragment(
 end
 
 fn gen_guarded_record_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   record_name: string,
-  field_patterns: [Shared<Pat>],
+  field_patterns: [Shared<Pattern>],
   variant_access_expression: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
@@ -279,44 +292,207 @@ fn gen_guarded_record_arm_fragment(
 end
 
 fn gen_guarded_arm_fragment(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   variant_access_expression: string,
   subject_holder_name: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string =
   match arm.pat {
-    PatCtor(name, sub_patterns, _) =>
+    PatternCtor(name, sub_patterns, _) =>
       gen_guarded_constructor_arm_fragment(arm, name, sub_patterns, variant_access_expression, context, gen_stmts, eval_expr_fn),
-    PatRecord(name, field_patterns, _) =>
+    PatternRecord(name, field_patterns, _) =>
       gen_guarded_record_arm_fragment(arm, name, field_patterns, variant_access_expression, context, gen_stmts, eval_expr_fn),
-    PatWild(_) =>
+    PatternWild(_) =>
       gen_guarded_wild_or_unit_arm_fragment(arm, context, gen_stmts, eval_expr_fn),
-    PatUnit(_) =>
+    PatternUnit(_) =>
       gen_guarded_wild_or_unit_arm_fragment(arm, context, gen_stmts, eval_expr_fn),
-    PatBool(_, _) =>
+    PatternBool(_, _) =>
       gen_guarded_literal_arm_fragment(arm, variant_access_expression, context, gen_stmts, eval_expr_fn),
-    PatInt(_, _) =>
+    PatternInt(_, _) =>
       gen_guarded_literal_arm_fragment(arm, variant_access_expression, context, gen_stmts, eval_expr_fn),
-    PatStr(_, _) =>
+    PatternStr(_, _) =>
       gen_guarded_literal_arm_fragment(arm, variant_access_expression, context, gen_stmts, eval_expr_fn),
-    PatIdent(binding_name, _) =>
+    PatternStringLit(_, _) =>
+      gen_guarded_literal_arm_fragment(arm, variant_access_expression, context, gen_stmts, eval_expr_fn),
+    PatternIdent(binding_name, _) =>
       gen_guarded_identifier_binding_arm_fragment(arm, binding_name, subject_holder_name, context, gen_stmts, eval_expr_fn),
-    PatTuple(_, _) =>
+    PatternTuple(_, _) =>
       '',
-    PatArray(_, _, _) =>
+    PatternArray(_, _, _) =>
       '',
-    PatOr(_, _) =>
+    PatternOr(_, _) =>
       ''
   }
 
-fn gen_match_guarded_body(
-  subject: Shared<SExpr>,
-  expanded_arms: [Shared<SMatchArm>],
+fn string_match_literal_condition_cpp(pattern: Shared<Pattern>, subject_holder: string) -> Shared<CppExpression> =
+  match pattern {
+    PatternStr(value, _) =>
+      Shared.new(CppBinary(
+        "==",
+        Shared.new(CppIdent(subject_holder)),
+        gen_string_literal_cpp(value))),
+    PatternStringLit(value, _) =>
+      Shared.new(CppBinary(
+        "==",
+        Shared.new(CppIdent(subject_holder)),
+        gen_string_literal_cpp(value))),
+    _ => emit_helpers.make_boolean_cpp_expression(false)
+  }
+
+fn string_match_return_block_cpp(
+  arm: Shared<SemanticMatchArm>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppStatement> =
+  emit_helpers.make_block_cpp_statement([
+    emit_helpers.make_return_cpp_statement(
+      eval_expr_cpp_fn(arm.body, context, gen_stmts))])
+
+fn string_match_return_block_string(
+  arm: Shared<SemanticMatchArm>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> Shared<CppStatement> =
+  emit_helpers.make_block_cpp_statement([
+    emit_helpers.make_fragment_cpp_statement(
+      expression_output.return_line(eval_expr_fn(arm.body, context, gen_stmts)))])
+
+fn string_match_arm_else_branch(
+  arms: [Shared<SemanticMatchArm>],
+  start_index: i32,
+  subject_holder: string,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  build_return_block: (Shared<SemanticMatchArm>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppStatement>
+) -> Shared<CppStatement> =
+  if start_index >= arms.length() then
+    emit_helpers.make_expression_cpp_statement(
+      emit_helpers.make_identifier_cpp_expression("std::abort()"))
+  else
+    const arm = arms[start_index]
+    const return_block = build_return_block(arm, context, gen_stmts)
+    match arm.pat {
+      PatternWild(_) => return_block,
+      PatternStr(_, _) =>
+        emit_helpers.make_if_cpp_statement(
+          string_match_literal_condition_cpp(arm.pat, subject_holder),
+          return_block,
+          string_match_arm_else_branch(
+            arms, start_index + 1, subject_holder, context, gen_stmts, build_return_block)),
+      PatternStringLit(_, _) =>
+        emit_helpers.make_if_cpp_statement(
+          string_match_literal_condition_cpp(arm.pat, subject_holder),
+          return_block,
+          string_match_arm_else_branch(
+            arms, start_index + 1, subject_holder, context, gen_stmts, build_return_block)),
+      _ => return_block
+    }
+  end
+
+fn string_match_statements_cpp(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> [Shared<CppStatement>] = do
+  let statements: [Shared<CppStatement>] = []
+  statements.push(
+    emit_helpers.make_auto_cpp_statement(
+      '__match_subject',
+      eval_expr_cpp_fn(subject, context, gen_stmts)))
+  statements.push(
+    string_match_arm_else_branch(
+      expanded_arms,
+      0,
+      '__match_subject',
+      context,
+      gen_stmts,
+      (arm, arm_context, gen_stmts_fn) =>
+        string_match_return_block_cpp(arm, arm_context, gen_stmts_fn, eval_expr_cpp_fn)))
+  statements
+end
+
+fn string_match_statements_string(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> [Shared<CppStatement>] = do
+  let statements: [Shared<CppStatement>] = []
+  statements.push(
+    emit_helpers.make_fragment_cpp_statement(
+      `auto __match_subject = ${eval_expr_fn(subject, context, gen_stmts)};\n`))
+  statements.push(
+    string_match_arm_else_branch(
+      expanded_arms,
+      0,
+      '__match_subject',
+      context,
+      gen_stmts,
+      (arm, arm_context, gen_stmts_fn) =>
+        string_match_return_block_string(arm, arm_context, gen_stmts_fn, eval_expr_fn)))
+  statements
+end
+
+fn string_match_statements_to_source(statements: [Shared<CppStatement>]) -> string = do
+  let mut body_source = ''
+  let mut statement_index = 0
+  while statement_index < statements.length() do
+    body_source = body_source + print_statement(statements[statement_index]) + "\n"
+    statement_index = statement_index + 1
+  end
+  body_source
+end
+
+fn gen_string_match_body(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> string =
+  string_match_statements_to_source(
+    string_match_statements_string(subject, expanded_arms, context, gen_stmts, eval_expr_fn))
+
+fn gen_match_string_literal_expression(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  match_result_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> string = do
+  const return_cpp = sem_type_to_cpp(context, match_result_type)
+  const inner_body = gen_string_match_body(subject, expanded_arms, context, gen_stmts, eval_expr_fn)
+  `[&]() -> ${return_cpp} {\n${inner_body}}()`
+end
+
+export fn gen_match_string_literal_expression_cpp(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  match_result_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const return_cpp = sem_type_to_cpp(context, match_result_type)
+  const inner_body = string_match_statements_to_source(
+    string_match_statements_cpp(subject, expanded_arms, context, gen_stmts, eval_expr_cpp_fn))
+  Shared.new(CppInvokedBlockWithReturn(return_cpp, inner_body))
+end
+
+fn gen_match_guarded_body(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const subject_code = eval_expr_fn(subject, context, gen_stmts)
   const needs_dereference =
@@ -329,12 +505,12 @@ fn gen_match_guarded_body(
 end
 
 fn gen_match_guarded_expression(
-  subject: Shared<SExpr>,
-  expanded_arms: [Shared<SMatchArm>],
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
   match_result_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const return_cpp = sem_type_to_cpp(context, match_result_type)
   const inner_body =
@@ -343,13 +519,13 @@ fn gen_match_guarded_expression(
 end
 
 export fn gen_match_guarded_expression_cpp(
-  subject: Shared<SExpr>,
-  expanded_arms: [Shared<SMatchArm>],
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
   match_result_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> = do
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
   const return_cpp = sem_type_to_cpp(context, match_result_type)
   const inner_body = gen_match_guarded_body(
     subject,
@@ -362,34 +538,38 @@ export fn gen_match_guarded_expression_cpp(
 end
 
 export fn gen_arm(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string,
   visit_void: bool
 ) -> string =
   match arm.pat {
-    PatWild(_) =>
+    PatternWild(_) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatUnit(_) =>
+    PatternUnit(_) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatBool(_, _) =>
+    PatternBool(_, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatInt(_, _) =>
+    PatternInt(_, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatStr(_, _) =>
+    PatternStr(_, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatIdent(name, _) =>
+    PatternStringLit(_, _) =>
+      if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
+      else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
+      end,
+    PatternIdent(name, _) =>
       if visit_void then
         expression_output.match_arm_binding_identifier_void(
           cpp_safe(name),
@@ -399,29 +579,29 @@ export fn gen_arm(
           cpp_safe(name),
           eval_expr_fn(arm.body, context.add_value(name), gen_stmts))
       end,
-    PatCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
-    PatRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
-    PatTuple(_, _) =>
+    PatternCtor(name, sub_patterns, _)     => gen_arm_ctor(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
+    PatternRecord(name, field_patterns, _) => gen_arm_record_pattern(name, field_patterns, arm.body, context, gen_stmts, eval_expr_fn, visit_void),
+    PatternTuple(_, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatArray(_, _, _) =>
+    PatternArray(_, _, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end,
-    PatOr(_, _) =>
+    PatternOr(_, _) =>
       if visit_void then expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm.body, context, gen_stmts))
       else expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm.body, context, gen_stmts))
       end
   }
 
 fn gen_arm_ctor_cpp(
-  ctor_name: string, sub_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  ctor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
   visit_void: bool
-) -> Shared<CppExpr> = do
+) -> Shared<CppExpression> = do
   const qualified_name = context.resolve(ctor_name)
   const lower_name = cpp_safe(lower_first(ctor_name))
   const binding =
@@ -442,12 +622,12 @@ fn gen_arm_ctor_cpp(
 end
 
 fn gen_arm_record_pattern_cpp(
-  record_name: string, field_patterns: [Shared<Pat>], arm_body: Shared<SExpr>,
+  record_name: string, field_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
   visit_void: bool
-) -> Shared<CppExpr> = do
+) -> Shared<CppExpression> = do
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
@@ -465,49 +645,53 @@ fn gen_arm_record_pattern_cpp(
 end
 
 export fn gen_arm_cpp(
-  arm: Shared<SMatchArm>,
+  arm: Shared<SemanticMatchArm>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_cpp_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
   visit_void: bool
-) -> Shared<CppExpr> =
+) -> Shared<CppExpression> =
   match arm.pat {
-    PatWild(_) =>
+    PatternWild(_) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatUnit(_) =>
+    PatternUnit(_) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatBool(_, _) =>
+    PatternBool(_, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatInt(_, _) =>
+    PatternInt(_, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatStr(_, _) =>
+    PatternStr(_, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatIdent(name, _) =>
+    PatternStringLit(_, _) =>
+      Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
+    PatternIdent(name, _) =>
       Shared.new(CppVisitArmBinding(
         cpp_safe(name),
         visit_void,
         eval_expr_cpp_fn(arm.body, context.add_value(name), gen_stmts))),
-    PatCtor(name, sub_patterns, _) =>
+    PatternCtor(name, sub_patterns, _) =>
       gen_arm_ctor_cpp(name, sub_patterns, arm.body, context, gen_stmts, eval_expr_cpp_fn, visit_void),
-    PatRecord(name, field_patterns, _) =>
+    PatternRecord(name, field_patterns, _) =>
       gen_arm_record_pattern_cpp(name, field_patterns, arm.body, context, gen_stmts, eval_expr_cpp_fn, visit_void),
-    PatTuple(_, _) =>
+    PatternTuple(_, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatArray(_, _, _) =>
+    PatternArray(_, _, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts))),
-    PatOr(_, _) =>
+    PatternOr(_, _) =>
       Shared.new(CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm.body, context, gen_stmts)))
   }
 
 export fn gen_match(
-  subject: Shared<SExpr>, arms: [Shared<SMatchArm>], match_result_type: Shared<Type>,
+  subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>], match_result_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const expanded = expand_or_arms(arms)
   if expanded_any_guard(expanded) then
     gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
+  else if should_use_string_match_if_chain(subject, expanded) then
+    gen_match_string_literal_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
   else
     const visit_void = match_visit_uses_void_lambdas(match_result_type)
     const arm_lines =

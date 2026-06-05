@@ -1,78 +1,78 @@
 // Token kind predicates. Use in conditions instead of match to avoid parse issues.
 
-fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTKind =
+fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTokenKind =
   if position < tokens.length() then tokens[position].kind else CEof end
 
 fn cpp_at_end(tokens: [CppToken], position: i32) -> bool =
   match cpp_token_kind_at(tokens, position) { CEof => true, _ => false }
 
-fn cpp_get_identifier(kind: CppTKind) -> string =
+fn cpp_get_identifier(kind: CppTokenKind) -> string =
   match kind { CIdent(name) => name, _ => '' }
 
-fn cpp_get_string(kind: CppTKind) -> string =
+fn cpp_get_string(kind: CppTokenKind) -> string =
   match kind { CLStr(value) => value, _ => '' }
 
-fn cpp_get_operator(kind: CppTKind) -> string =
+fn cpp_get_operator(kind: CppTokenKind) -> string =
   match kind { COp(symbol) => symbol, _ => '' }
 
-fn cpp_is_hash(kind: CppTKind) -> bool =
+fn cpp_is_hash(kind: CppTokenKind) -> bool =
   match kind { COp(symbol) => symbol == "#", _ => false }
 
-fn cpp_is_identifier(kind: CppTKind) -> bool =
+fn cpp_is_identifier(kind: CppTokenKind) -> bool =
   match kind { CIdent(_) => true, _ => false }
 
-fn cpp_is_string(kind: CppTKind) -> bool =
+fn cpp_is_string(kind: CppTokenKind) -> bool =
   match kind { CLStr(_) => true, _ => false }
 
-fn cpp_is_angle(kind: CppTKind) -> bool =
+fn cpp_is_angle(kind: CppTokenKind) -> bool =
   match kind { CLAngle => true, _ => false }
 
-fn cpp_is_right_angle(kind: CppTKind) -> bool =
+fn cpp_is_right_angle(kind: CppTokenKind) -> bool =
   match kind { CRAngle => true, _ => false }
 
-fn cpp_is_scope(kind: CppTKind) -> bool =
+fn cpp_is_scope(kind: CppTokenKind) -> bool =
   match kind { CScope => true, _ => false }
 
-fn cpp_is_semicolon(kind: CppTKind) -> bool =
+fn cpp_is_semicolon(kind: CppTokenKind) -> bool =
   match kind { COp(symbol) => symbol == ";", _ => false }
 
-fn cpp_is_equals(kind: CppTKind) -> bool =
+fn cpp_is_equals(kind: CppTokenKind) -> bool =
   match kind { COp(symbol) => symbol == "=", _ => false }
 
-fn cpp_is_left_paren(kind: CppTKind) -> bool =
+fn cpp_is_left_paren(kind: CppTokenKind) -> bool =
   match kind { CLParen => true, _ => false }
 
-fn cpp_is_right_paren(kind: CppTKind) -> bool =
+fn cpp_is_right_paren(kind: CppTokenKind) -> bool =
   match kind { CRParen => true, _ => false }
 
-fn cpp_is_left_brace(kind: CppTKind) -> bool =
+fn cpp_is_left_brace(kind: CppTokenKind) -> bool =
   match kind { CLBrace => true, _ => false }
 
-fn cpp_is_right_brace(kind: CppTKind) -> bool =
+fn cpp_is_right_brace(kind: CppTokenKind) -> bool =
   match kind { CRBrace => true, _ => false }
 
-fn cpp_is_stop_for_type(kind: CppTKind) -> bool =
+fn cpp_is_stop_for_type(kind: CppTokenKind) -> bool =
   match kind { COp(symbol) => (symbol == ";" || symbol == "," || symbol == ")"), _ => false }
 
-fn cpp_is_using_keyword(kind: CppTKind) -> bool =
+fn cpp_is_using_keyword(kind: CppTokenKind) -> bool =
   match kind { CKUsing => true, _ => false }
 
-fn cpp_is_struct_keyword(kind: CppTKind) -> bool =
+fn cpp_is_struct_keyword(kind: CppTokenKind) -> bool =
   match kind { CKStruct => true, _ => false }
 
-fn cpp_is_void_keyword(kind: CppTKind) -> bool =
+fn cpp_is_void_keyword(kind: CppTokenKind) -> bool =
   match kind { CKVoid => true, _ => false }
 
-fn cpp_is_int_keyword(kind: CppTKind) -> bool =
+fn cpp_is_int_keyword(kind: CppTokenKind) -> bool =
   match kind { CKInt => true, _ => false }
 
-fn cpp_is_bool_keyword(kind: CppTKind) -> bool =
+fn cpp_is_bool_keyword(kind: CppTokenKind) -> bool =
   match kind { CKBool => true, _ => false }
 
-fn cpp_is_char_keyword(kind: CppTKind) -> bool =
+fn cpp_is_char_keyword(kind: CppTokenKind) -> bool =
   match kind { CKChar => true, _ => false }
 
-fn cpp_type_part_string(kind: CppTKind) -> string = do
+fn cpp_type_part_string(kind: CppTokenKind) -> string = do
   if cpp_get_identifier(kind) != '' then cpp_get_identifier(kind)
   else if cpp_get_string(kind) != '' then "\"" + cpp_get_string(kind) + "\""
   else if cpp_is_angle(kind) then "<"

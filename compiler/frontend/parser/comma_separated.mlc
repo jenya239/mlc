@@ -6,12 +6,12 @@ import {
   TypesResult,
   ParamResult,
   ParamsResult,
-  PatResult,
-  PatsResult,
+  PatternResult,
+  PatternsResult,
   ExprResult,
   ExprsResult
 } from './predicates'
-import { TypeExpr, Param, Pat, Expr } from '../ast'
+import { TypeExpr, Param, Pattern, Expr } from '../ast'
 
 export fn comma_separated_types_suffix_from_first(
   first: TypeResult,
@@ -47,10 +47,10 @@ export fn comma_separated_params_suffix_from_first(
 end
 
 export fn comma_separated_pats_suffix_from_first(
-  first: PatResult,
-  parse_one: (Parser) -> PatResult
-) -> PatsResult = do
-  const pats: [Shared<Pat>] = []
+  first: PatternResult,
+  parse_one: (Parser) -> PatternResult
+) -> PatternsResult = do
+  const pats: [Shared<Pattern>] = []
   pats.push(first.pat)
   let mut state = first.parser
   while state.kind().is_comma() do
@@ -58,7 +58,7 @@ export fn comma_separated_pats_suffix_from_first(
     pats.push(next.pat)
     state = next.parser
   end
-  PatsResult { pats, parser: state }
+  PatternsResult { pats, parser: state }
 end
 
 export fn comma_separated_exprs_suffix_from_first(

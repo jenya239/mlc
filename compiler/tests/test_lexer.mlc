@@ -2,12 +2,12 @@
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
-import { TKind, LStr, LChar, LTemplate } from '../frontend/ast_tokens'
+import { TokenKind, LStr, LChar, LTemplate } from '../frontend/ast_tokens'
 
 fn lex_token_count(source: string) -> i32 =
   tokenize(source).tokens.length()
 
-fn lex_first_kind(source: string) -> TKind =
+fn lex_first_kind(source: string) -> TokenKind =
   tokenize(source).tokens[0].kind
 
 fn lex_first_string(source: string) -> string =

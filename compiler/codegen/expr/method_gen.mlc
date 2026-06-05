@@ -1,9 +1,9 @@
 // Method call code generation.
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
-import { SExpr, SStmt, SExprIdent, sexpr_type } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
-import { CppExpr, CppCall, CppMember, CppInitList } from '../../cpp/cpp_ast'
+import { CppExpression, CppCall, CppMember, CppInitList } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import { map_method } from '../cpp_naming'
@@ -42,10 +42,10 @@ fn gen_method_profile_using_trailing_argument_fragments(
   end
 
 fn gen_method_shared_new(
-  argument: Shared<SExpr>,
+  argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const type_name = infer_shared_new_type_name(argument, context)
@@ -108,6 +108,52 @@ fn is_user_defined_method_for_type(method_name: string, type_name: string, conte
 
 fn trailing_argument_fragments_join(fragments: [string]) -> string = fragments.join(', ')
 
+fn result_option_method_cpp_name(is_option: bool, method_name: string) -> string =
+  match method_name
+  | "ok" => if is_option then method_name else "ok_into_optional" end
+  | _    => method_name
+  end
+
+fn gen_method_expr_fallback_using_fragments(
+  receiver_fragment: string,
+  object_type_name: string,
+  method_name: string,
+  trailing_arguments_joined: string,
+  argument_count: i32,
+  context: CodegenContext
+) -> string =
+  if is_user_defined_method_for_type(method_name, object_type_name, context) then
+    gen_method_owner_call_using_fragments(receiver_fragment, method_name, trailing_arguments_joined, context)
+  else
+    match method_name
+    | "to_string" =>
+      if argument_count == 0 then expression_output.runtime_to_string_call(receiver_fragment)
+      else gen_method_builtin_using_fragments(receiver_fragment, method_name, trailing_arguments_joined)
+      end
+    | _ => gen_method_builtin_using_fragments(receiver_fragment, method_name, trailing_arguments_joined)
+    end
+  end
+
+fn gen_method_expr_fallback_cpp(
+  receiver_expression: Shared<CppExpression>,
+  object_type_name: string,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpression>],
+  argument_count: i32,
+  context: CodegenContext
+) -> Shared<CppExpression> =
+  if is_user_defined_method_for_type(method_name, object_type_name, context) then
+    gen_method_owner_call_cpp(receiver_expression, method_name, trailing_arguments, context)
+  else
+    match method_name
+    | "to_string" =>
+      if argument_count == 0 then make_callee_call_cpp("mlc::to_string", [receiver_expression])
+      else gen_method_builtin_cpp(receiver_expression, method_name, trailing_arguments)
+      end
+    | _ => gen_method_builtin_cpp(receiver_expression, method_name, trailing_arguments)
+    end
+  end
+
 fn gen_method_expr_after_object_using_fragments(
   receiver_fragment: string,
   object_type_name: string,
@@ -115,29 +161,38 @@ fn gen_method_expr_after_object_using_fragments(
   trailing_arguments_joined: string,
   argument_count: i32,
   context: CodegenContext,
-  original_object_expression: Shared<SExpr>,
-  original_trailing_arguments: [Shared<SExpr>],
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  original_object_expression: Shared<SemanticExpression>,
+  original_trailing_arguments: [Shared<SemanticExpression>],
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const static_receiver_name = match original_object_expression {
-    SExprIdent(name, _, _) => name,
+    SemanticExpressionIdent(name, _, _) => name,
     _ => receiver_fragment
   }
-  if static_receiver_name == 'File' then
-    gen_method_file_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
-  else if static_receiver_name == 'Profile' then
-    gen_method_profile_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
-  else if static_receiver_name == 'Map' && method_name == 'new' then
-    expression_output.empty_map_initializer()
-  else if static_receiver_name == 'Shared' && method_name == 'new' && argument_count == 1 then
-    gen_method_shared_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
-  else if is_user_defined_method_for_type(method_name, object_type_name, context) then
-    gen_method_owner_call_using_fragments(receiver_fragment, method_name, trailing_arguments_joined, context)
-  else if method_name == 'to_string' && argument_count == 0 then
-    expression_output.runtime_to_string_call(receiver_fragment)
-  else
-    gen_method_builtin_using_fragments(receiver_fragment, method_name, trailing_arguments_joined)
+  match static_receiver_name
+  | "File" => gen_method_file_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
+  | "Profile" => gen_method_profile_using_trailing_argument_fragments(method_name, trailing_arguments_joined)
+  | "Map" =>
+    match method_name
+    | "new" => expression_output.empty_map_initializer()
+    | _ => gen_method_expr_fallback_using_fragments(
+        receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+    end
+  | "Shared" =>
+    match method_name
+    | "new" =>
+      if argument_count == 1 then
+        gen_method_shared_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
+      else
+        gen_method_expr_fallback_using_fragments(
+          receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_using_fragments(
+        receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+    end
+  | _ => gen_method_expr_fallback_using_fragments(
+      receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
   end
 end
 
@@ -147,8 +202,8 @@ fn gen_result_option_combinator_call_using_fragments(
   method_name: string,
   trailing_arguments_joined: string
 ) -> string = do
-  const base = if is_option then 'mlc::opt::' else 'mlc::result::' end
-  const cpp_name = if !is_option && method_name == 'ok' then 'ok_into_optional' else method_name end
+  const base = if is_option then "mlc::opt::" else "mlc::result::" end
+  const cpp_name = result_option_method_cpp_name(is_option, method_name)
   const callee = `${base}${cpp_name}`
   if trailing_arguments_joined.length() == 0 then
     expression_output.function_call_parentheses(callee, receiver_fragment)
@@ -159,8 +214,8 @@ fn gen_result_option_combinator_call_using_fragments(
   end
 end
 
-fn build_positional_receiver_and_arguments(object: Shared<SExpr>, trailing_arguments: [Shared<SExpr>]) -> [Shared<SExpr>] = do
-  let positional: [Shared<SExpr>] = []
+fn build_positional_receiver_and_arguments(object: Shared<SemanticExpression>, trailing_arguments: [Shared<SemanticExpression>]) -> [Shared<SemanticExpression>] = do
+  let positional: [Shared<SemanticExpression>] = []
   positional.push(object)
   let mut argument_walk_index = 0
   while argument_walk_index < trailing_arguments.length() do
@@ -171,13 +226,13 @@ fn build_positional_receiver_and_arguments(object: Shared<SExpr>, trailing_argum
 end
 
 export fn gen_method_expr(
-  object: Shared<SExpr>,
+  object: Shared<SemanticExpression>,
   method_name: string,
-  arguments: [Shared<SExpr>],
+  arguments: [Shared<SemanticExpression>],
   receiver_and_method_parameter_mutability_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> string = do
   const object_type = sexpr_type(object)
   const object_type_name = object_type_name_for_dispatch(object_type)
@@ -198,28 +253,24 @@ export fn gen_method_expr(
   end
   const trailing_arguments_joined = trailing_argument_fragments_join(trailing_argument_fragments)
   const ro_code = match object_type {
-    TGeneric(gname, _) =>
-      if gname == 'Result' then
-        gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
-      else if gname == 'Option' then
-        gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
-      else
-        ''
+    TGeneric(generic_name, _) =>
+      match generic_name
+      | "Result" => gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
+      | "Option" => gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
+      | _ => ''
       end,
     TNamed(receiver_named) =>
-      if receiver_named == 'Result' then
-        gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
-      else if receiver_named == 'Option' then
-        gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
-      else
-        ''
+      match receiver_named
+      | "Result" => gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
+      | "Option" => gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
+      | _ => ''
       end,
     _ => '',
   }
   const invoke_expression =
     if ro_code != '' then ro_code
     else match object {
-      SExprIdent(namespace_object_name, _, _) =>
+      SemanticExpressionIdent(namespace_object_name, _, _) =>
         if context.namespace_alias_prefixes.has(namespace_object_name) then
           gen_method_namespace_alias_using_fragments(
             context.namespace_alias_prefixes.get(namespace_object_name),
@@ -257,14 +308,14 @@ export fn gen_method_expr(
     invoke_expression)
 end
 
-fn make_callee_call_cpp(callee_name: string, arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+fn make_callee_call_cpp(callee_name: string, arguments: [Shared<CppExpression>]) -> Shared<CppExpression> =
   Shared.new(CppCall(emit_helpers.make_identifier_cpp_expression(callee_name), arguments))
 
 fn prepend_expression_to_argument_list(
-  leading_expression: Shared<CppExpr>,
-  trailing_expressions: [Shared<CppExpr>]
-) -> [Shared<CppExpr>] = do
-  let arguments: [Shared<CppExpr>] = [leading_expression]
+  leading_expression: Shared<CppExpression>,
+  trailing_expressions: [Shared<CppExpression>]
+) -> [Shared<CppExpression>] = do
+  let arguments: [Shared<CppExpression>] = [leading_expression]
   let mut index = 0
   while index < trailing_expressions.length() do
     arguments.push(trailing_expressions[index])
@@ -273,29 +324,29 @@ fn prepend_expression_to_argument_list(
   arguments
 end
 
-fn gen_method_file_cpp(method_name: string, trailing_arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+fn gen_method_file_cpp(method_name: string, trailing_arguments: [Shared<CppExpression>]) -> Shared<CppExpression> =
   make_callee_call_cpp(cpp_function_name_for_file_method(method_name), trailing_arguments)
 
-fn gen_method_profile_cpp(method_name: string, trailing_arguments: [Shared<CppExpr>]) -> Shared<CppExpr> =
+fn gen_method_profile_cpp(method_name: string, trailing_arguments: [Shared<CppExpression>]) -> Shared<CppExpression> =
   make_callee_call_cpp(cpp_function_name_for_profile_method(method_name), trailing_arguments)
 
 fn gen_method_shared_new_cpp(
-  argument: Shared<SExpr>,
+  argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> = do
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
   const argument_expression = evaluate_expression(argument, context, gen_stmts)
   const element_type = infer_shared_new_type_name(argument, context)
   make_callee_call_cpp(`std::make_shared<${element_type}>`, [argument_expression])
 end
 
 fn gen_method_owner_call_cpp(
-  receiver_expression: Shared<CppExpr>,
+  receiver_expression: Shared<CppExpression>,
   method_name: string,
-  trailing_arguments: [Shared<CppExpr>],
+  trailing_arguments: [Shared<CppExpression>],
   context: CodegenContext
-) -> Shared<CppExpr> = do
+) -> Shared<CppExpression> = do
   const mangled_name = context.method_owners.get(method_name)
   make_callee_call_cpp(
     context.resolve(mangled_name),
@@ -303,10 +354,10 @@ fn gen_method_owner_call_cpp(
 end
 
 fn gen_method_builtin_cpp(
-  receiver_expression: Shared<CppExpr>,
+  receiver_expression: Shared<CppExpression>,
   method_name: string,
-  trailing_arguments: [Shared<CppExpr>]
-) -> Shared<CppExpr> =
+  trailing_arguments: [Shared<CppExpression>]
+) -> Shared<CppExpression> =
   Shared.new(CppCall(
     Shared.new(CppMember(receiver_expression, map_method(method_name), false)),
     trailing_arguments))
@@ -314,66 +365,78 @@ fn gen_method_builtin_cpp(
 fn gen_method_namespace_alias_cpp(
   static_prefix: string,
   method_name: string,
-  trailing_arguments: [Shared<CppExpr>]
-) -> Shared<CppExpr> =
+  trailing_arguments: [Shared<CppExpression>]
+) -> Shared<CppExpression> =
   make_callee_call_cpp(`${static_prefix}${map_method(method_name)}`, trailing_arguments)
 
 fn gen_method_expr_after_object_cpp(
-  receiver_expression: Shared<CppExpr>,
+  receiver_expression: Shared<CppExpression>,
   object_type_name: string,
   method_name: string,
-  trailing_arguments: [Shared<CppExpr>],
+  trailing_arguments: [Shared<CppExpression>],
   argument_count: i32,
   context: CodegenContext,
-  original_object_expression: Shared<SExpr>,
-  original_trailing_arguments: [Shared<SExpr>],
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> = do
+  original_object_expression: Shared<SemanticExpression>,
+  original_trailing_arguments: [Shared<SemanticExpression>],
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
   const static_receiver_name = match original_object_expression {
-    SExprIdent(name, _, _) => name,
+    SemanticExpressionIdent(name, _, _) => name,
     _ => ''
   }
-  if static_receiver_name == 'File' then gen_method_file_cpp(method_name, trailing_arguments)
-  else if static_receiver_name == 'Profile' then gen_method_profile_cpp(method_name, trailing_arguments)
-  else if static_receiver_name == 'Map' && method_name == 'new' then Shared.new(CppInitList([]))
-  else if static_receiver_name == 'Shared' && method_name == 'new' && argument_count == 1 then
-    gen_method_shared_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
-  else if is_user_defined_method_for_type(method_name, object_type_name, context) then
-    gen_method_owner_call_cpp(receiver_expression, method_name, trailing_arguments, context)
-  else if method_name == 'to_string' && argument_count == 0 then
-    make_callee_call_cpp('mlc::to_string', [receiver_expression])
-  else
-    gen_method_builtin_cpp(receiver_expression, method_name, trailing_arguments)
+  match static_receiver_name
+  | "File" => gen_method_file_cpp(method_name, trailing_arguments)
+  | "Profile" => gen_method_profile_cpp(method_name, trailing_arguments)
+  | "Map" =>
+    match method_name
+    | "new" => Shared.new(CppInitList([]))
+    | _ => gen_method_expr_fallback_cpp(
+        receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+    end
+  | "Shared" =>
+    match method_name
+    | "new" =>
+      if argument_count == 1 then
+        gen_method_shared_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
+      else
+        gen_method_expr_fallback_cpp(
+          receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_cpp(
+        receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+    end
+  | _ => gen_method_expr_fallback_cpp(
+      receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   end
 end
 
 fn gen_result_option_combinator_call_cpp(
   is_option: bool,
-  receiver_expression: Shared<CppExpr>,
+  receiver_expression: Shared<CppExpression>,
   method_name: string,
-  trailing_arguments: [Shared<CppExpr>]
-) -> Shared<CppExpr> = do
-  const namespace_prefix = if is_option then 'mlc::opt::' else 'mlc::result::' end
-  const combinator_name = if !is_option && method_name == 'ok' then 'ok_into_optional' else method_name end
+  trailing_arguments: [Shared<CppExpression>]
+) -> Shared<CppExpression> = do
+  const namespace_prefix = if is_option then "mlc::opt::" else "mlc::result::" end
+  const combinator_name = result_option_method_cpp_name(is_option, method_name)
   make_callee_call_cpp(
     `${namespace_prefix}${combinator_name}`,
     prepend_expression_to_argument_list(receiver_expression, trailing_arguments))
 end
 
 fn gen_method_dispatch_cpp(
-  object: Shared<SExpr>,
+  object: Shared<SemanticExpression>,
   object_type_name: string,
   method_name: string,
-  receiver_expression: Shared<CppExpr>,
-  trailing_argument_expressions: [Shared<CppExpr>],
-  arguments: [Shared<SExpr>],
+  receiver_expression: Shared<CppExpression>,
+  trailing_argument_expressions: [Shared<CppExpression>],
+  arguments: [Shared<SemanticExpression>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> =
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
   match object {
-    SExprIdent(namespace_object_name, _, _) =>
+    SemanticExpressionIdent(namespace_object_name, _, _) =>
       if context.namespace_alias_prefixes.has(namespace_object_name) then
         gen_method_namespace_alias_cpp(
           context.namespace_alias_prefixes.get(namespace_object_name),
@@ -407,14 +470,14 @@ fn gen_method_dispatch_cpp(
   }
 
 export fn gen_method_expr_cpp(
-  object: Shared<SExpr>,
+  object: Shared<SemanticExpression>,
   method_name: string,
-  arguments: [Shared<SExpr>],
+  arguments: [Shared<SemanticExpression>],
   receiver_and_method_parameter_mutability_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
-) -> Shared<CppExpr> = do
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
   const object_type = sexpr_type(object)
   const object_type_name = object_type_name_for_dispatch(object_type)
   const positional_argument_expressions = build_positional_receiver_and_arguments(object, arguments)
@@ -426,7 +489,7 @@ export fn gen_method_expr_cpp(
       gen_stmts,
       evaluate_expression)
   const receiver_expression = materialization_outcome.materialized_argument_expressions[0]
-  let trailing_argument_expressions: [Shared<CppExpr>] = []
+  let trailing_argument_expressions: [Shared<CppExpression>] = []
   let mut tail_index = 1
   while tail_index < materialization_outcome.materialized_argument_expressions.length() do
     trailing_argument_expressions.push(materialization_outcome.materialized_argument_expressions[tail_index])
@@ -434,21 +497,19 @@ export fn gen_method_expr_cpp(
   end
   const result_or_option_code = match object_type {
     TGeneric(generic_name, _) =>
-      if generic_name == 'Result' then
-        gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
-      else if generic_name == 'Option' then
-        gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
-      else
+      match generic_name
+      | "Result" => gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      | "Option" => gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      | _ =>
         gen_method_dispatch_cpp(
           object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
           arguments, context, gen_stmts, evaluate_expression)
       end,
     TNamed(receiver_named) =>
-      if receiver_named == 'Result' then
-        gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
-      else if receiver_named == 'Option' then
-        gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
-      else
+      match receiver_named
+      | "Result" => gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      | "Option" => gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      | _ =>
         gen_method_dispatch_cpp(
           object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
           arguments, context, gen_stmts, evaluate_expression)

@@ -1,7 +1,7 @@
 // Context types and mutation for the code generator.
 
-import { Program, Pat } from '../frontend/ast'
-import { SStmt } from '../ir/semantic_ir'
+import { Program, Pattern } from '../frontend/ast'
+import { SemanticStatement } from '../ir/semantic_ir'
 import { Type, TShared, TArray } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
@@ -101,31 +101,31 @@ export fn qualify_function_callee(name: string, context: CodegenContext) -> stri
   else type_method_namespace_prefix(name, context) + cpp_safe(name)
   end
 
-fn collect_pat_bind_names_for_context(pat: Shared<Pat>, mut accumulator: [string]) -> [string] = do
+fn collect_pat_bind_names_for_context(pat: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
   match pat {
-    PatIdent(n, _) => do accumulator.push(n); accumulator end,
-    PatCtor(_, subs, _) => do
+    PatternIdent(n, _) => do accumulator.push(n); accumulator end,
+    PatternCtor(_, subs, _) => do
       let mut index = 0
       while index < subs.length() do
         accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatRecord(_, field_patterns, _) => do
+    PatternRecord(_, field_patterns, _) => do
       let mut index = 0
       while index < field_patterns.length() do
         accumulator = collect_pat_bind_names_for_context(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatTuple(subs, _) => do
+    PatternTuple(subs, _) => do
       let mut index = 0
       while index < subs.length() do
         accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatArray(subs, rest, _) => do
+    PatternArray(subs, rest, _) => do
       let mut index = 0
       while index < subs.length() do
         accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
@@ -174,16 +174,16 @@ extend CodegenContext {
   fn with_namespace_alias_prefixes(self: CodegenContext, prefixes: Map<string, string>) -> CodegenContext =
     CodegenContext { ...self, namespace_alias_prefixes: prefixes }
 
-  fn update_from_statement(self: CodegenContext, statement: Shared<SStmt>) -> CodegenContext =
+  fn update_from_statement(self: CodegenContext, statement: Shared<SemanticStatement>) -> CodegenContext =
     match statement {
-      SStmtLetConst(binding_name, _, _, _) => self.add_value(binding_name),
-      SStmtLet(binding_name, _, _, value_type, _) =>
+      SemanticStatementLetConst(binding_name, _, _, _) => self.add_value(binding_name),
+      SemanticStatementLet(binding_name, _, _, value_type, _) =>
         match value_type {
           TShared(_)      => self.add_shared(binding_name),
           TArray(inner)   => match inner { TShared(_) => self.add_shared_array(binding_name), _ => self.add_value(binding_name) },
           _               => self.add_value(binding_name)
         },
-      SStmtLetPat(pattern, _, _, _, _, _, _) => do
+      SemanticStatementLetPattern(pattern, _, _, _, _, _, _) => do
         const names = collect_pat_bind_names_for_context(pattern, [])
         let mut codegen_context = self; let mut name_index = 0
         while name_index < names.length() do
@@ -206,13 +206,13 @@ export fn context_add_value(context: CodegenContext, name: string) -> CodegenCon
 
 export fn context_add_match_deref(context: CodegenContext, name: string) -> CodegenContext = context.add_match_deref(name)
 
-export fn update_context_from_statement(statement: Shared<SStmt>, context: CodegenContext) -> CodegenContext =
+export fn update_context_from_statement(statement: Shared<SemanticStatement>, context: CodegenContext) -> CodegenContext =
   context.update_from_statement(statement)
 
-export fn mutate_context_from_statement(statement: Shared<SStmt>, context: ref mut CodegenContext) -> unit = do
+export fn mutate_context_from_statement(statement: Shared<SemanticStatement>, context: ref mut CodegenContext) -> unit = do
   match statement {
-    SStmtLetConst(binding_name, _, _, _) => context.value_params.push(binding_name),
-    SStmtLet(binding_name, _, _, value_type, _) =>
+    SemanticStatementLetConst(binding_name, _, _, _) => context.value_params.push(binding_name),
+    SemanticStatementLet(binding_name, _, _, value_type, _) =>
       match value_type {
         TShared(_) => context.shared_params.push(binding_name),
         TArray(inner) => match inner {
@@ -221,7 +221,7 @@ export fn mutate_context_from_statement(statement: Shared<SStmt>, context: ref m
         },
         _ => context.value_params.push(binding_name)
       },
-    SStmtLetPat(pattern, _, _, _, _, _, _) => do
+    SemanticStatementLetPattern(pattern, _, _, _, _, _, _) => do
       const names = collect_pat_bind_names_for_context(pattern, [])
       let mut name_index = 0
       while name_index < names.length() do
@@ -284,3 +284,4 @@ export fn context_with_namespace_alias_prefixes(
   namespace_alias_prefixes: Map<string, string>
 ) -> CodegenContext =
   base.with_namespace_alias_prefixes(namespace_alias_prefixes)
+

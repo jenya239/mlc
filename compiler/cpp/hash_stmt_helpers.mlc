@@ -1,17 +1,17 @@
 // Native C++ stmt builders for derive Hash body (Phase 2).
 
-import { CppExpr, CppBinary, CppCall, CppAggregateInit, CppCast, CppCastStatic, CppStmt } from './cpp_ast'
+import { CppExpression, CppBinary, CppCall, CppAggregateInit, CppCast, CppCastStatic, CppStatement } from './cpp_ast'
 import * as emit_helpers from './emit_helpers'
 
-fn make_hash_call_expression(cpp_type: string, access: Shared<CppExpr>) -> Shared<CppExpr> =
+fn make_hash_call_expression(cpp_type: string, access: Shared<CppExpression>) -> Shared<CppExpression> =
   Shared.new(CppCall(
     Shared.new(CppAggregateInit("std::hash<" + cpp_type + ">", [])),
     [access]))
 
-fn add_hash_combine_terms(left: Shared<CppExpr>, right: Shared<CppExpr>) -> Shared<CppExpr> =
+fn add_hash_combine_terms(left: Shared<CppExpression>, right: Shared<CppExpression>) -> Shared<CppExpression> =
   Shared.new(CppBinary("+", left, right))
 
-fn make_hash_combine_right_side(access: Shared<CppExpr>, cpp_type: string) -> Shared<CppExpr> = do
+fn make_hash_combine_right_side(access: Shared<CppExpression>, cpp_type: string) -> Shared<CppExpression> = do
   const hash_call = make_hash_call_expression(cpp_type, access)
   const hash_identifier = emit_helpers.make_identifier_cpp_expression("h")
   add_hash_combine_terms(
@@ -23,19 +23,19 @@ fn make_hash_combine_right_side(access: Shared<CppExpr>, cpp_type: string) -> Sh
     Shared.new(CppBinary(">>", hash_identifier, emit_helpers.make_integer_cpp_expression(2))))
 end
 
-export fn make_hash_seed_cpp_statement() -> Shared<CppStmt> =
+export fn make_hash_seed_cpp_statement() -> Shared<CppStatement> =
   emit_helpers.make_variable_cpp_statement(
     "h",
     emit_helpers.make_size_t_type(),
     emit_helpers.make_identifier_cpp_expression("1469598103934665603ULL"))
 
-export fn make_hash_combine_cpp_statement(cpp_type: string, access: Shared<CppExpr>) -> Shared<CppStmt> =
+export fn make_hash_combine_cpp_statement(cpp_type: string, access: Shared<CppExpression>) -> Shared<CppStatement> =
   emit_helpers.make_expression_cpp_statement(Shared.new(CppBinary(
     "^=",
     emit_helpers.make_identifier_cpp_expression("h"),
     make_hash_combine_right_side(access, cpp_type))))
 
-export fn make_hash_empty_return_cpp_statement() -> Shared<CppStmt> =
+export fn make_hash_empty_return_cpp_statement() -> Shared<CppStatement> =
   emit_helpers.make_return_cpp_statement(Shared.new(CppCast(
     CppCastStatic,
     emit_helpers.make_size_t_type(),

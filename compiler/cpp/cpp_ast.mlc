@@ -15,53 +15,53 @@ export type CppCapture = CppCapture { name: string, by_reference: bool }
 
 export type CppParam = CppParam { name: string, parameter_type: Shared<CppType> }
 
-export type CppStmt =
-  | CppAutoDecl(string, Shared<CppExpr>)
-  | CppVarDecl(string, Shared<CppType>, Shared<CppExpr>)
-  | CppConstDecl(string, Shared<CppType>, Shared<CppExpr>)
-  | CppConstexprAutoDecl(string, Shared<CppExpr>)
-  | CppReturn(Shared<CppExpr>)
-  | CppExprStmt(Shared<CppExpr>)
-  | CppBlock([Shared<CppStmt>])
-  | CppIf(Shared<CppExpr>, Shared<CppStmt>, Shared<CppStmt>)
-  | CppWhile(Shared<CppExpr>, Shared<CppStmt>)
-  | CppFor(string, Shared<CppExpr>, [Shared<CppStmt>])
-  | CppStructuredBinding([string], Shared<CppExpr>)
-  | CppStmtFragment(string)
+export type CppStatement =
+  | CppAutoDecl(string, Shared<CppExpression>)
+  | CppVarDecl(string, Shared<CppType>, Shared<CppExpression>)
+  | CppConstDecl(string, Shared<CppType>, Shared<CppExpression>)
+  | CppConstexprAutoDecl(string, Shared<CppExpression>)
+  | CppReturn(Shared<CppExpression>)
+  | CppExpressionStatement(Shared<CppExpression>)
+  | CppBlock([Shared<CppStatement>])
+  | CppIf(Shared<CppExpression>, Shared<CppStatement>, Shared<CppStatement>)
+  | CppWhile(Shared<CppExpression>, Shared<CppStatement>)
+  | CppFor(string, Shared<CppExpression>, [Shared<CppStatement>])
+  | CppStructuredBinding([string], Shared<CppExpression>)
+  | CppStatementFragment(string)
 
-export type CppExpr =
+export type CppExpression =
   | CppInt(i32)
   | CppStr(string)
   | CppBool(bool)
   | CppIdent(string)
-  | CppCall(Shared<CppExpr>, [Shared<CppExpr>])
-  | CppMember(Shared<CppExpr>, string, bool)
-  | CppIndex(Shared<CppExpr>, Shared<CppExpr>)
-  | CppBinary(string, Shared<CppExpr>, Shared<CppExpr>)
-  | CppUnary(string, Shared<CppExpr>)
-  | CppTernary(Shared<CppExpr>, Shared<CppExpr>, Shared<CppExpr>)
-  | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStmt>])
-  | CppMutableLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppExpr>)
-  | CppInitList([Shared<CppExpr>])
-  | CppAggregateInit(string, [Shared<CppExpr>])
-  | CppStdVisit(Shared<CppExpr>, [Shared<CppExpr>])
-  | CppVisitArmWild(bool, Shared<CppExpr>)
-  | CppVisitArmBinding(string, bool, Shared<CppExpr>)
-  | CppVisitArmConstructed(string, string, bool, Shared<CppExpr>)
-  | CppVisitArmConstructedGeneric(string, string, string, bool, Shared<CppExpr>)
-  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpr>)
-  | CppInvokedWhile(Shared<CppExpr>, string)
-  | CppInvokedFor(string, Shared<CppExpr>, string)
+  | CppCall(Shared<CppExpression>, [Shared<CppExpression>])
+  | CppMember(Shared<CppExpression>, string, bool)
+  | CppIndex(Shared<CppExpression>, Shared<CppExpression>)
+  | CppBinary(string, Shared<CppExpression>, Shared<CppExpression>)
+  | CppUnary(string, Shared<CppExpression>)
+  | CppTernary(Shared<CppExpression>, Shared<CppExpression>, Shared<CppExpression>)
+  | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStatement>])
+  | CppMutableLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppExpression>)
+  | CppInitList([Shared<CppExpression>])
+  | CppAggregateInit(string, [Shared<CppExpression>])
+  | CppStdVisit(Shared<CppExpression>, [Shared<CppExpression>])
+  | CppVisitArmWild(bool, Shared<CppExpression>)
+  | CppVisitArmBinding(string, bool, Shared<CppExpression>)
+  | CppVisitArmConstructed(string, string, bool, Shared<CppExpression>)
+  | CppVisitArmConstructedGeneric(string, string, string, bool, Shared<CppExpression>)
+  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpression>)
+  | CppInvokedWhile(Shared<CppExpression>, string)
+  | CppInvokedFor(string, Shared<CppExpression>, string)
   | CppInvokedBlock(string)
   | CppInvokedBlockWithReturn(string, string)
-  | CppQuestionTry(Shared<CppExpr>)
-  | CppWithBlock(Shared<CppExpr>, string, string)
+  | CppQuestionTry(Shared<CppExpression>)
+  | CppWithBlock(Shared<CppExpression>, string, string)
 
 export type CppField = CppField { typ: string, name: string }
 
 export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
 
-export type CppDecl =
+export type CppDeclaration =
   | CppInclude(bool, string)
   | CppIfndef(string)
   | CppDefineMacro(string, string)
@@ -73,21 +73,21 @@ export type CppDecl =
   | CppUsingNamespace(string)
   | CppStruct(string, string, [Shared<CppField>], bool)
   | CppFnProto(string, string, string, [string])
-  | CppFnDef(string, string, string, [string], [Shared<CppStmt>], i32)
-  | CppNamespace(string, [Shared<CppDecl>])
+  | CppFnDef(string, string, string, [string], [Shared<CppStatement>], i32)
+  | CppNamespace(string, [Shared<CppDeclaration>])
   | CppVariant(string, string, [Shared<CppVariantArm>])
   | CppConceptRequires(string, string, string, [string])
   | CppStaticAssert(string, [string], string)
-  | CppStdHashSpecialization(string, [Shared<CppStmt>])
-  | CppDeclSequence([Shared<CppDecl>])
-  | CppDeclEmpty
+  | CppStdHashSpecialization(string, [Shared<CppStatement>])
+  | CppDeclarationSequence([Shared<CppDeclaration>])
+  | CppDeclarationEmpty
   | CppBlankLine
   | CppHostEntryMain(string)
-  | CppDeclFragment(string)
+  | CppDeclarationFragment(string)
 
-export type CppFile = CppFile { header: [Shared<CppDecl>], source: [Shared<CppDecl>] }
+export type CppFile = CppFile { header: [Shared<CppDeclaration>], source: [Shared<CppDeclaration>] }
 
-export type CppProgram = CppProgram { decls: [Shared<CppDecl>] }
+export type CppProgram = CppProgram { decls: [Shared<CppDeclaration>] }
 
 export fn cpp_capture_name(capture: Shared<CppCapture>) -> string = capture.name
 export fn cpp_capture_by_reference(capture: Shared<CppCapture>) -> bool = capture.by_reference
@@ -97,5 +97,5 @@ export fn cpp_field_type(field: Shared<CppField>) -> string = field.typ
 export fn cpp_field_name(field: Shared<CppField>) -> string = field.name
 export fn cpp_variant_arm_name(arm: Shared<CppVariantArm>) -> string = arm.name
 export fn cpp_variant_arm_types(arm: Shared<CppVariantArm>) -> [Shared<CppType>] = arm.types
-export fn cpp_file_header(file: Shared<CppFile>) -> [Shared<CppDecl>] = file.header
-export fn cpp_file_source(file: Shared<CppFile>) -> [Shared<CppDecl>] = file.source
+export fn cpp_file_header(file: Shared<CppFile>) -> [Shared<CppDeclaration>] = file.header
+export fn cpp_file_source(file: Shared<CppFile>) -> [Shared<CppDeclaration>] = file.source

@@ -1,6 +1,6 @@
 // Lexer: source string - token array.
 
-import { TKind, Token, LexOut } from './ast_tokens'
+import { TokenKind, Token, LexOut } from './ast_tokens'
 
 type LexState     = { src: string, pos: i32, line: i32, col: i32 }
 type ScanResult   = { after: LexState, token: Token }
@@ -41,7 +41,7 @@ extend LexState {
     if advance_count <= 0 then self else self.lex_advance().lex_advance_by(advance_count - 1)
     end
 
-  fn token(self, token_kind: TKind) -> Token =
+  fn token(self, token_kind: TokenKind) -> Token =
     Token { kind: token_kind, line: self.line, col: self.col }
 }
 
@@ -55,36 +55,71 @@ fn is_alnum(character: string) -> bool = is_alpha(character) || is_digit(charact
 fn is_ws(character: string) -> bool =
   character == " " || character == "\t" || character == "\r" || character == "\n"
 
-fn keyword_kind(word: string) -> TKind =
-  if      word == 'fn'       then KFn
-  else if word == 'type'     then KType
-  else if word == 'let'      then KLet
-  else if word == 'mut'      then KMut
-  else if word == 'const'    then KConst
-  else if word == 'return'   then KReturn
-  else if word == 'break'    then KBreak
-  else if word == 'continue' then KContinue
-  else if word == 'if'       then KIf
-  else if word == 'then'     then KThen
-  else if word == 'else'     then KElse
-  else if word == 'unless'   then KUnless
-  else if word == 'while'    then KWhile
-  else if word == 'for'      then KFor
-  else if word == 'in'       then KIn
-  else if word == 'do'       then KDo
-  else if word == 'end'      then KEnd
-  else if word == 'match'    then KMatch
-  else if word == 'with'     then KWith
-  else if word == 'import'   then KImport
-  else if word == 'from'     then KFrom
-  else if word == 'as'       then KAs
-  else if word == 'extern'   then KExtern
-  else if word == 'extend'   then KExtend
-  else if word == 'where'    then KWhere
-  else if word == 'true'     then KTrue
-  else if word == 'false'    then KFalse
-  else Ident(word)
+fn is_reserved_keyword(word: string) -> bool =
+  match word
+  | "fn"       => true
+  | "type"     => true
+  | "let"      => true
+  | "mut"      => true
+  | "const"    => true
+  | "return"   => true
+  | "break"    => true
+  | "continue" => true
+  | "if"       => true
+  | "then"     => true
+  | "else"     => true
+  | "unless"   => true
+  | "while"    => true
+  | "for"      => true
+  | "in"       => true
+  | "do"       => true
+  | "end"      => true
+  | "match"    => true
+  | "with"     => true
+  | "import"   => true
+  | "from"     => true
+  | "as"       => true
+  | "extern"   => true
+  | "extend"   => true
+  | "where"    => true
+  | "true"     => true
+  | "false"    => true
+  | _          => false
   end
+
+fn reserved_keyword_kind(word: string) -> TokenKind =
+  match word
+  | "fn"       => KFn
+  | "type"     => KType
+  | "let"      => KLet
+  | "mut"      => KMut
+  | "const"    => KConst
+  | "return"   => KReturn
+  | "break"    => KBreak
+  | "continue" => KContinue
+  | "if"       => KIf
+  | "then"     => KThen
+  | "else"     => KElse
+  | "unless"   => KUnless
+  | "while"    => KWhile
+  | "for"      => KFor
+  | "in"       => KIn
+  | "do"       => KDo
+  | "end"      => KEnd
+  | "match"    => KMatch
+  | "with"     => KWith
+  | "import"   => KImport
+  | "from"     => KFrom
+  | "as"       => KAs
+  | "extern"   => KExtern
+  | "extend"   => KExtend
+  | "where"    => KWhere
+  | "true"     => KTrue
+  | "false"    => KFalse
+  end
+
+fn keyword_kind(word: string) -> TokenKind =
+  if is_reserved_keyword(word) then reserved_keyword_kind(word) else Ident(word) end
 
 fn scan_ident(state: LexState) -> ScanResult = do
   const start = state.pos
@@ -147,15 +182,13 @@ fn scan_int(state: LexState) -> ScanResult = do
     ScanResult { after: after, token: Token { kind: LFloat(raw_float), line: token_line, col: token_col } }
   else
     let { suffix, after } = try_scan_suffix(current)
-    if suffix == 'i64' then
-      ScanResult { after: after, token: Token { kind: LI64(value.to_string()), line: token_line, col: token_col } }
-    else if suffix == 'u8' then
-      ScanResult { after: after, token: Token { kind: LU8(value.to_string()), line: token_line, col: token_col } }
-    else if suffix == 'usize' then
-      ScanResult { after: after, token: Token { kind: LUsize(value.to_string()), line: token_line, col: token_col } }
-    else
-      ScanResult { after: after, token: Token { kind: LInt(value), line: token_line, col: token_col } }
+    const token_kind = match suffix
+    | "i64"   => LI64(value.to_string())
+    | "u8"    => LU8(value.to_string())
+    | "usize" => LUsize(value.to_string())
+    | _       => LInt(value)
     end
+    ScanResult { after: after, token: Token { kind: token_kind, line: token_line, col: token_col } }
   end
 end
 
@@ -208,15 +241,16 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
 end
 
 fn map_escape(character: string) -> string =
-  if      character == "n"  then "\n"
-  else if character == "t"  then "\t"
-  else if character == "r"  then "\r"
-  else if character == "\"" then "\""
-  else if character == "\\" then "\\"
-  else if character == "0"  then "\0"
-  else if character == "{"  then "{"
-  else if character == "}"  then "}"
-  else ''
+  match character
+  | "n"  => "\n"
+  | "t"  => "\t"
+  | "r"  => "\r"
+  | "\"" => "\""
+  | "\\" => "\\"
+  | "0"  => "\0"
+  | "{"  => "{"
+  | "}"  => "}"
+  | _    => ''
   end
 
 fn lex_advance_past_unescaped_string_run(state: LexState) -> LexState = do
@@ -400,36 +434,43 @@ fn skip_whitespace(state: LexState) -> SkipResult = do
   SkipResult { after: current, error: error }
 end
 
+fn scan_op_two_character(state: LexState, character: string, next: string) -> ScanResult =
+  match character
+  | "-" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Arrow) } | _ => scan_op_single(character, state) end
+  | "=" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) } | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("==")) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Equal) } end
+  | "|" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) } | "|" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("||")) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Bar) } end
+  | "!" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("!=")) } | _ => scan_op_single(character, state) end
+  | "<" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("<=")) } | _ => scan_op_single(character, state) end
+  | ">" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op(">=")) } | _ => scan_op_single(character, state) end
+  | "&" => match next | "&" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("&&")) } | _ => scan_op_single(character, state) end
+  | _   => scan_op_single(character, state)
+  end
+
+fn scan_op_single(character: string, state: LexState) -> ScanResult =
+  match character
+  | "=" => ScanResult { after: state.lex_advance(), token: state.token(Equal) }
+  | "|" => ScanResult { after: state.lex_advance(), token: state.token(Bar) }
+  | "?" => ScanResult { after: state.lex_advance(), token: state.token(Question) }
+  | "." => ScanResult { after: state.lex_advance(), token: state.token(Dot) }
+  | "(" => ScanResult { after: state.lex_advance(), token: state.token(LParen) }
+  | ")" => ScanResult { after: state.lex_advance(), token: state.token(RParen) }
+  | "\{" => ScanResult { after: state.lex_advance(), token: state.token(LBrace) }
+  | "\}" => ScanResult { after: state.lex_advance(), token: state.token(RBrace) }
+  | "[" => ScanResult { after: state.lex_advance(), token: state.token(LBracket) }
+  | "]" => ScanResult { after: state.lex_advance(), token: state.token(RBracket) }
+  | "," => ScanResult { after: state.lex_advance(), token: state.token(Comma) }
+  | ";" => ScanResult { after: state.lex_advance(), token: state.token(Semicolon) }
+  | ":" => ScanResult { after: state.lex_advance(), token: state.token(Colon) }
+  | _   => ScanResult { after: state.lex_advance(), token: state.token(Op(character)) }
+  end
+
 fn scan_op(state: LexState) -> ScanResult = do
-  const token_line = state.line
-  const token_col  = state.col
-  const character  = state.current()
-  const next       = state.peek(1)
-  if      character == "-" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(Arrow) }
-  else if character == "=" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) }
-  else if character == "|" && next == ">" then ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) }
-  else if character == "=" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('==')) }
-  else if character == "!" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('!=')) }
-  else if character == "<" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<=')) }
-  else if character == ">" && next == "=" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>=')) }
-  else if character == "&" && next == "&" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('&&')) }
-  else if character == "|" && next == "|" then ScanResult { after: state.lex_advance_by(2), token: state.token(Op('||')) }
-  else if character == "=" then ScanResult { after: state.lex_advance(), token: state.token(Equal) }
-  else if character == "|" then ScanResult { after: state.lex_advance(), token: state.token(Bar) }
-  else if character == "?" then ScanResult { after: state.lex_advance(), token: state.token(Question) }
-  else if character == "." && next == "." && state.peek(2) == "."
-    then ScanResult { after: state.lex_advance_by(3), token: state.token(Spread) }
-  else if character == "."  then ScanResult { after: state.lex_advance(), token: state.token(Dot) }
-  else if character == "("  then ScanResult { after: state.lex_advance(), token: state.token(LParen) }
-  else if character == ")"  then ScanResult { after: state.lex_advance(), token: state.token(RParen) }
-  else if character == "\{" then ScanResult { after: state.lex_advance(), token: state.token(LBrace) }
-  else if character == "\}" then ScanResult { after: state.lex_advance(), token: state.token(RBrace) }
-  else if character == "["  then ScanResult { after: state.lex_advance(), token: state.token(LBracket) }
-  else if character == "]"  then ScanResult { after: state.lex_advance(), token: state.token(RBracket) }
-  else if character == ","  then ScanResult { after: state.lex_advance(), token: state.token(Comma) }
-  else if character == ";"  then ScanResult { after: state.lex_advance(), token: state.token(Semicolon) }
-  else if character == ":"  then ScanResult { after: state.lex_advance(), token: state.token(Colon) }
-  else ScanResult { after: state.lex_advance(), token: state.token(Op(character)) }
+  const character = state.current()
+  const next = state.peek(1)
+  if character == "." && next == "." && state.peek(2) == "." then
+    ScanResult { after: state.lex_advance_by(3), token: state.token(Spread) }
+  else
+    scan_op_two_character(state, character, next)
   end
 end
 

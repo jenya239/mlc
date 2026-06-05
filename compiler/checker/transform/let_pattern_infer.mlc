@@ -1,6 +1,6 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
-import { Pat } from '../../frontend/ast'
+import { Pattern } from '../../frontend/ast'
 import { Type, TypeRegistry, field_type_from_object, TNamed, TTuple, TPair } from '../registry'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
@@ -12,7 +12,7 @@ type Tuple_or_slot_pattern_environment_fold_state = Tuple_or_slot_pattern_enviro
 
 fn let_tuple_environment_fold_step(
   state: Tuple_or_slot_pattern_environment_fold_state,
-  tuple_component_pattern: Shared<Pat>,
+  tuple_component_pattern: Shared<Pattern>,
   tuple_member_types: [Shared<Type>],
   registry: TypeRegistry
 ) -> Tuple_or_slot_pattern_environment_fold_state = do
@@ -26,7 +26,7 @@ end
 
 fn let_array_element_patterns_fold_step(
   state: Tuple_or_slot_pattern_environment_fold_state,
-  array_cell_pattern: Shared<Pat>,
+  array_cell_pattern: Shared<Pattern>,
   array_element_type: Shared<Type>,
   registry: TypeRegistry
 ) -> Tuple_or_slot_pattern_environment_fold_state =
@@ -38,13 +38,13 @@ fn let_array_element_patterns_fold_step(
 
 fn let_record_literal_field_pattern_fold_step(
   field_pattern_environment: Map<string, Shared<Type>>,
-  field_subpattern: Shared<Pat>,
+  field_subpattern: Shared<Pattern>,
   let_rhs_object_type: Shared<Type>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
   const record_field_binding_name =
     match field_subpattern {
-      PatIdent(binding_name_for_field_literal, _) => binding_name_for_field_literal,
+      PatternIdent(binding_name_for_field_literal, _) => binding_name_for_field_literal,
       _ => ''
     }
   if record_field_binding_name != '' then
@@ -57,7 +57,7 @@ end
 
 fn ordered_record_tuple_environment_fold_step(
   state: Tuple_or_slot_pattern_environment_fold_state,
-  tuple_component_pattern_in_record_order: Shared<Pat>,
+  tuple_component_pattern_in_record_order: Shared<Pattern>,
   ordered_field_labels: [string],
   let_rhs_record_object_type: Shared<Type>,
   registry: TypeRegistry
@@ -78,19 +78,19 @@ fn ordered_record_tuple_environment_fold_step(
 end
 
 fn apply_let_pattern_to_env(
-  pat: Shared<Pat>,
+  pat: Shared<Pattern>,
   value_type: Shared<Type>,
   base_env: Map<string, Shared<Type>>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
   match pat {
-    PatWild(_) => base_env,
-    PatIdent(let_binding_name, _) => do
+    PatternWild(_) => base_env,
+    PatternIdent(let_binding_name, _) => do
       const environment_where_ident_binding_is_added = base_env
       environment_where_ident_binding_is_added.set(let_binding_name, value_type)
       environment_where_ident_binding_is_added
     end,
-    PatTuple(tuple_component_patterns, _) => do
+    PatternTuple(tuple_component_patterns, _) => do
       match value_type {
         TTuple(tuple_member_types) =>
           if tuple_component_patterns.length() != tuple_member_types.length()
@@ -131,7 +131,7 @@ fn apply_let_pattern_to_env(
             registry)
       }
     end,
-    PatArray(cell_patterns, remainder_binding_name, _) => do
+    PatternArray(cell_patterns, remainder_binding_name, _) => do
       match value_type {
         TArray(element_type_inside_array) => do
           const environment_after_fixed_array_cells =
@@ -159,7 +159,7 @@ fn apply_let_pattern_to_env(
         _ => base_env
       }
     end,
-    PatRecord(record_heading_name_or_empty, literal_field_patterns, _) => do
+    PatternRecord(record_heading_name_or_empty, literal_field_patterns, _) => do
       if record_heading_name_or_empty != '' then
         base_env
       else
@@ -173,7 +173,7 @@ fn apply_let_pattern_to_env(
               registry))
       end
     end,
-    PatCtor(_, _, _) =>
+    PatternCtor(_, _, _) =>
       env_for_pattern_substituted(
         base_env,
         pat,
@@ -192,7 +192,7 @@ fn record_base_name_for_ordered_tuple_pattern(value_type: Shared<Type>) -> strin
   }
 
 fn tuple_pattern_environment_using_ordered_record_fields(
-  tuple_component_patterns: [Shared<Pat>],
+  tuple_component_patterns: [Shared<Pattern>],
   value_type_shaped_like_record_under_tuple_syntax: Shared<Type>,
   base_environment_before_ordered_fields: Map<string, Shared<Type>>,
   registry: TypeRegistry
@@ -225,7 +225,7 @@ fn tuple_pattern_environment_using_ordered_record_fields(
 end
 
 export fn infer_let_pattern_env(
-  pat: Shared<Pat>,
+  pat: Shared<Pattern>,
   value_type: Shared<Type>,
   base_env: Map<string, Shared<Type>>,
   registry: TypeRegistry

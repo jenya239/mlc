@@ -44,21 +44,23 @@ export fn lower_first(name: string) -> string =
   end
 
 export fn map_method(method_name: string) -> string =
-  if method_name == 'length' || method_name == 'len' then 'length'
-  else if method_name == 'push' then 'push_back'
-  else if method_name == 'to_string' then 'to_string'
-  else if method_name == 'to_int' || method_name == 'to_i' then 'to_i'
-  else if method_name == 'upper' || method_name == 'to_upper' then 'upper'
-  else if method_name == 'lower' || method_name == 'to_lower' then 'lower'
-  else method_name
+  match method_name
+  | "length" | "len"              => "length"
+  | "push"                        => "push_back"
+  | "to_string"                   => "to_string"
+  | "to_int" | "to_i"             => "to_i"
+  | "upper" | "to_upper"          => "upper"
+  | "lower" | "to_lower"          => "lower"
+  | _                             => method_name
   end
 
 export fn map_builtin(name: string) -> string =
-  if name == 'print'   then 'mlc::io::print'
-  else if name == 'println' then 'mlc::io::println'
-  else if name == 'exit'    then 'mlc::io::exit'
-  else if name == 'args'    then 'mlc::io::args'
-  else name
+  match name
+  | "print"   => "mlc::io::print"
+  | "println" => "mlc::io::println"
+  | "exit"    => "mlc::io::exit"
+  | "args"    => "mlc::io::args"
+  | _         => name
   end
 
 // Identifiers named `args` often shadow the CLI helper (match bindings, parameters).

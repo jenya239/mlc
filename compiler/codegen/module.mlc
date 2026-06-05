@@ -1,7 +1,7 @@
 // Module and program level code generation entry points.
 
 import { Program, errs_append } from '../frontend/ast'
-import { SLoadItem, SNamespaceImportAlias } from '../ir/semantic_ir'
+import { SemanticLoadItem, SemanticNamespaceImportAlias } from '../ir/semantic_ir'
 import { build_registry } from '../checker/registry'
 import { transform_load_items } from '../checker/transform/transform_decl'
 import { build_trait_nominal_maps } from '../checker/transform/trait_param_expand'
@@ -12,12 +12,12 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
          build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
          build_method_owners_from_decls, StructUsingEntry, StructUsingData,
          struct_using_line_from_entry } from './context'
-import { SDecl } from '../ir/semantic_ir'
+import { SemanticDeclaration } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
 import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations } from './decl_cpp'
-import { CppDecl, CppFile } from '../cpp/cpp_ast'
+import { CppDeclaration, CppFile } from '../cpp/cpp_ast'
 import * as cpp_ast from '../cpp/cpp_ast'
 import * as module_tu_helpers from '../cpp/module_tu_helpers'
 import * as expression_output from './expr/expr'
@@ -33,7 +33,7 @@ type ModuleGenerationContext = ModuleGenerationContext {
   implementation_import_paths: [string]
 }
 
-fn namespace_aliases_mapped(items: [SNamespaceImportAlias]) -> [NamespaceImportAlias] = do
+fn namespace_aliases_mapped(items: [SemanticNamespaceImportAlias]) -> [NamespaceImportAlias] = do
   let mut mapped_aliases: [NamespaceImportAlias] = []
   let mut index = 0
   while index < items.length() do
@@ -67,13 +67,13 @@ fn add_assoc_bind_struct_using(
   entries: ref mut Map<string, [StructUsingEntry]>,
   lines: ref mut Map<string, [string]>,
   type_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
 ) -> unit = do
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclAssocBind(assoc_name, bound_type, _) => do
+      SemanticDeclarationAssocBind(assoc_name, bound_type, _) => do
         const type_cpp = sem_type_to_cpp(context, bound_type)
         push_struct_using_entry(entries, lines, type_name, StructUsingEntry { alias: assoc_name, type_cpp: type_cpp })
         ()
@@ -84,19 +84,19 @@ fn add_assoc_bind_struct_using(
   end
 end
 
-export fn build_struct_using_data(decls: [Shared<SDecl>], context: CodegenContext) -> StructUsingData = do
+export fn build_struct_using_data(decls: [Shared<SemanticDeclaration>], context: CodegenContext) -> StructUsingData = do
   let mut entries: Map<string, [StructUsingEntry]> = Map.new()
   let mut lines: Map<string, [string]> = Map.new()
   let mut declaration_index = 0
   while declaration_index < decls.length() do
     match decls[declaration_index] {
-      SDeclExtend(type_name, _, methods, _) => do
+      SemanticDeclarationExtend(type_name, _, methods, _) => do
         add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
         ()
       end,
-      SDeclExported(inner) => do
+      SemanticDeclarationExported(inner) => do
         match inner {
-          SDeclExtend(type_name, _, methods, _) => do
+          SemanticDeclarationExtend(type_name, _, methods, _) => do
             add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
             ()
           end,
@@ -127,7 +127,7 @@ export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx = d
 end
 
 fn prepare_module_generation(
-  s_item: SLoadItem,
+  s_item: SemanticLoadItem,
   all_items: [LoadItem],
   precomp: PrecomputedCtx
 ) -> ModuleGenerationContext = do
@@ -175,7 +175,7 @@ fn prepare_module_generation(
   }
 end
 
-fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
+fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDeclaration>] = do
   let mut declarations = [
     module_tu_helpers.make_include_guard_ifndef_cpp_declaration(parts.guard),
     module_tu_helpers.make_include_guard_define_cpp_declaration(parts.guard),
@@ -195,7 +195,7 @@ fn assemble_header_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<C
     .concat(epilogue)
 end
 
-fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDecl>] = do
+fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<CppDeclaration>] = do
   let mut declarations = [
     module_tu_helpers.make_define_main_as_user_main_cpp_declaration(),
     module_tu_helpers.make_quoted_include_cpp_declaration(parts.base + '.hpp'),
@@ -236,7 +236,7 @@ fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   }
 end
 
-export fn gen_module(s_item: SLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
+export fn gen_module(s_item: SemanticLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
   const parts = prepare_module_generation(s_item, all_items, precomp)
   gen_module_output(parts)
 end

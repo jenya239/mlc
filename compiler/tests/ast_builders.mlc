@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pat, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatUnit } from '../frontend/ast'
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pattern, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatternUnit } from '../frontend/ast'
 
 // --- Program ------------------------------------------------------------------
 
@@ -95,15 +95,15 @@ export fn field_value(field_name: string, value_expr: Shared<Expr>) -> Shared<Fi
 
 // --- Pattern builders --------------------------------------------------------
 
-export fn wildcard_pattern() -> Shared<Pat> = Shared.new(PatWild(span_unknown()))
-export fn integer_pattern(value: i32) -> Shared<Pat> = Shared.new(PatInt(value, span_unknown()))
-export fn identifier_pattern(name: string) -> Shared<Pat> = Shared.new(PatIdent(name, span_unknown()))
-export fn ctor_pattern(ctor_name: string, sub_patterns: [Shared<Pat>]) -> Shared<Pat> =
-  Shared.new(PatCtor(ctor_name, sub_patterns, span_unknown()))
+export fn wildcard_pattern() -> Shared<Pattern> = Shared.new(PatternWild(span_unknown()))
+export fn integer_pattern(value: i32) -> Shared<Pattern> = Shared.new(PatternInt(value, span_unknown()))
+export fn identifier_pattern(name: string) -> Shared<Pattern> = Shared.new(PatternIdent(name, span_unknown()))
+export fn ctor_pattern(ctor_name: string, sub_patterns: [Shared<Pattern>]) -> Shared<Pattern> =
+  Shared.new(PatternCtor(ctor_name, sub_patterns, span_unknown()))
 
 // --- MatchArm builder --------------------------------------------------------
 
-export fn match_arm(pattern: Shared<Pat>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
+export fn match_arm(pattern: Shared<Pattern>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
   Shared.new(MatchArm {
     pat: pattern,
     has_guard: false,
@@ -111,7 +111,7 @@ export fn match_arm(pattern: Shared<Pat>, body_expr: Shared<Expr>) -> Shared<Mat
     body: body_expr
   })
 
-export fn match_arm_with_guard(pattern: Shared<Pat>, when_condition_expression: Shared<Expr>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
+export fn match_arm_with_guard(pattern: Shared<Pattern>, when_condition_expression: Shared<Expr>, body_expr: Shared<Expr>) -> Shared<MatchArm> =
   Shared.new(MatchArm {
     pat: pattern,
     has_guard: true,
@@ -136,7 +136,7 @@ export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
 // --- Param builder -----------------------------------------------------------
 
 export fn value_param(parameter_name: string, parameter_type: Shared<TypeExpr>) -> Shared<Param> =
-  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatUnit(span_unknown())) })
+  Shared.new(Param { name: parameter_name, is_mut: false, typ: parameter_type, has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
 
 // --- Declaration builders ----------------------------------------------------
 

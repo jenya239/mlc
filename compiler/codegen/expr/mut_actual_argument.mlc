@@ -1,8 +1,8 @@
 // C++ non-const reference parameters: materialize prvalue actual arguments into locals
 // before the call (same idea as Ruby lower_call_with_cpp_mutable_actual_argument_holders).
 
-import { SExpr, SStmt, sexpr_type, SExprIdent, SExprField, SExprIndex } from '../../ir/semantic_ir'
-import { CppExpr, CppCall, CppLambda, CppCapture, CppType, CppTypeName, CppStmt } from '../../cpp/cpp_ast'
+import { SemanticExpression, SemanticStatement, sexpr_type, SemanticExpressionIdent, SemanticExpressionField, SemanticExpressionIndex } from '../../ir/semantic_ir'
+import { CppExpression, CppCall, CppLambda, CppCapture, CppType, CppTypeName, CppStatement } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import { CodegenContext } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
@@ -13,15 +13,15 @@ export type MutActualArgumentMaterializationOutcome = MutActualArgumentMateriali
 }
 
 export type MutActualArgumentMaterializationOutcomeCpp = MutActualArgumentMaterializationOutcomeCpp {
-  prelude_statements: [Shared<CppStmt>],
-  materialized_argument_expressions: [Shared<CppExpr>],
+  prelude_statements: [Shared<CppStatement>],
+  materialized_argument_expressions: [Shared<CppExpression>],
 }
 
-export fn sexpr_is_stable_reference_for_cpp_mut_parameter(actual_argument: Shared<SExpr>) -> bool =
+export fn sexpr_is_stable_reference_for_cpp_mut_parameter(actual_argument: Shared<SemanticExpression>) -> bool =
   match actual_argument {
-    SExprIdent(_, _, _) => true,
-    SExprField(inner, _, _, _) => sexpr_is_stable_reference_for_cpp_mut_parameter(inner),
-    SExprIndex(inner, _, _, _) => sexpr_is_stable_reference_for_cpp_mut_parameter(inner),
+    SemanticExpressionIdent(_, _, _) => true,
+    SemanticExpressionField(inner, _, _, _) => sexpr_is_stable_reference_for_cpp_mut_parameter(inner),
+    SemanticExpressionIndex(inner, _, _, _) => sexpr_is_stable_reference_for_cpp_mut_parameter(inner),
     _ => false,
   }
 
@@ -34,9 +34,9 @@ export fn wrap_invoke_with_mut_actual_argument_holder_prelude_if_any(prelude_blo
   end
 
 export fn wrap_invoke_with_mut_prelude_cpp(
-  prelude_statements: [Shared<CppStmt>],
-  invoke_expression: Shared<CppExpr>
-) -> Shared<CppExpr> =
+  prelude_statements: [Shared<CppStatement>],
+  invoke_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
   if prelude_statements.length() == 0 then invoke_expression
   else do
     let body_statements = prelude_statements
@@ -52,11 +52,11 @@ export fn wrap_invoke_with_mut_prelude_cpp(
   end
 
 export fn materialize_positional_actual_arguments_maybe_holding_mut_references(
-  positional_argument_expressions: [Shared<SExpr>],
+  positional_argument_expressions: [Shared<SemanticExpression>],
   mut_parameter_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
 ) -> MutActualArgumentMaterializationOutcome =
   if mut_parameter_flags.length() != positional_argument_expressions.length() then
     MutActualArgumentMaterializationOutcome {
@@ -92,11 +92,11 @@ export fn materialize_positional_actual_arguments_maybe_holding_mut_references(
   end
 
 export fn materialize_positional_actual_arguments_cpp(
-  positional_argument_expressions: [Shared<SExpr>],
+  positional_argument_expressions: [Shared<SemanticExpression>],
   mut_parameter_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SStmt>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SExpr>, CodegenContext, ([Shared<SStmt>], CodegenContext) -> string) -> Shared<CppExpr>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
 ) -> MutActualArgumentMaterializationOutcomeCpp =
   if mut_parameter_flags.length() != positional_argument_expressions.length() then
     MutActualArgumentMaterializationOutcomeCpp {

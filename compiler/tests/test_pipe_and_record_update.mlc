@@ -6,13 +6,13 @@ import { create_codegen_context } from '../codegen/context'
 import { pipe_desugar } from '../frontend/parser/exprs'
 import { tokenize } from '../frontend/lexer'
 import { Program, Expr, Stmt, DeclType, VarRecord, FieldDef, TyI32, ExprIdent, ExprCall, ExprInt, ExprUnit, span_unknown } from '../frontend/ast'
-import { SExpr, SFieldVal, SExprInt, SExprIdent, SExprRecordUpdate } from '../ir/semantic_ir'
+import { SemanticExpression, SemanticFieldVal, SemanticExpressionInt, SemanticExpressionIdent, SemanticExpressionRecordUpdate } from '../ir/semantic_ir'
 import { Type, TNamed, TI32, TUnknown } from '../checker/registry'
 import { transform_expr, empty_transform_context, TransformContext, TransformStmtsResult } from '../checker/transform/transform'
 import { transform_stmts } from '../checker/transform/transform_stmts'
 
-fn sid(name: string) -> Shared<SExpr> = Shared.new(SExprIdent(name, Shared.new(TUnknown), span_unknown()))
-fn si(v: i32) -> Shared<SExpr> = Shared.new(SExprInt(v, Shared.new(TI32), span_unknown()))
+fn sid(name: string) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionIdent(name, Shared.new(TUnknown), span_unknown()))
+fn si(v: i32) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionInt(v, Shared.new(TI32), span_unknown()))
 
 export fn pipe_and_record_update_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -63,25 +63,25 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const ctx_point   = create_codegen_context(point_prog)
 
   const point_type = Shared.new(TNamed('Point'))
-  const override_fields: [Shared<SFieldVal>] = [
-    Shared.new(SFieldVal { name: "x", val: si(10) })
+  const override_fields: [Shared<SemanticFieldVal>] = [
+    Shared.new(SemanticFieldVal { name: "x", val: si(10) })
   ]
   const base_expr   = sid("p")
-  const update_expr = Shared.new(SExprRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
+  const update_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
   results.push(assert_eq_str('Point { ...p, x: 10 } - Point{10, p.y}',
     gen_expr(update_expr, ctx_point),
     'Point{10, p.y}'))
 
-  const two_overrides: [Shared<SFieldVal>] = [
-    Shared.new(SFieldVal { name: "x", val: si(0) }),
-    Shared.new(SFieldVal { name: "y", val: si(0) })
+  const two_overrides: [Shared<SemanticFieldVal>] = [
+    Shared.new(SemanticFieldVal { name: "x", val: si(0) }),
+    Shared.new(SemanticFieldVal { name: "y", val: si(0) })
   ]
-  const all_overrides_expr = Shared.new(SExprRecordUpdate('Point', base_expr, two_overrides, point_type, span_unknown()))
+  const all_overrides_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, two_overrides, point_type, span_unknown()))
   results.push(assert_eq_str('Point { ...p, x: 0, y: 0 } - Point{0, 0}',
     gen_expr(all_overrides_expr, ctx_point),
     'Point{0, 0}'))
 
-  const lazy_update = Shared.new(SExprRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
+  const lazy_update = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
   results.push(assert_true('record update without field order registry uses lazy block',
     gen_expr(lazy_update, ctx).contains('__upd')))
 

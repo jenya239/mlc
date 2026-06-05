@@ -1,15 +1,15 @@
 // Unit tests for the C++ lexer (cpp_tokenize).
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
-import { cpp_tokenize, CppTKind, CIdent, CLStr, CLInt } from '../cpp/lexer'
+import { cpp_tokenize, CppTokenKind, CIdent, CLStr, CLInt } from '../cpp/lexer'
 
 fn cpp_tok_count(src: string) -> i32 =
   cpp_tokenize(src).tokens.length()
 
-fn cpp_kind_at(src: string, i: i32) -> CppTKind =
+fn cpp_kind_at(src: string, i: i32) -> CppTokenKind =
   cpp_tokenize(src).tokens[i].kind
 
-fn cpp_first_kind(src: string) -> CppTKind =
+fn cpp_first_kind(src: string) -> CppTokenKind =
   cpp_kind_at(src, 0)
 
 fn cpp_ident_at(src: string, i: i32) -> string =

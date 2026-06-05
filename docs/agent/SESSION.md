@@ -5,12 +5,777 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| driver_turns_since_plan | 3|
+| driver_turns_since_plan | 2|
 | step_last | 1|
-| run_tests | 936 |
-| self_host_diff | DIFF_EXIT=0 |
-| TRACK_PLAN | MODULE_TU_BRIDGE open STEP=3 |
-| agent_token_last | cr-agent-888669ae-9871-4909-beed-599545fdb369 |
+| active_track | TRACK_STRING_MATCH (close) → TRACK_TYPE_ALIASES |
+
+### Turn 2026-05-19 (Planner plan-refresh — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | no delta; checklist 2026-05-19 unchanged |
+| next | ROLE=Driver STEP=12 STRING_MATCH close (enqueued) |
+
+### Turn 2026-05-19 (Planner plan-refresh — STRING_MATCH close)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | STRING_MATCH 1–11 done; step 12 → Driver close; next TYPE_ALIASES; RENAME WIP noted |
+| gate | baseline **960**/0 (step 12 self-host pending) |
+| next | ROLE=Driver STEP=12 STRING_MATCH close |
+
+### Turn 2026-05-19 (Driver TRACK_STRING_MATCH step 11)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| done | audit `if == '…'`; pipe `match` in types/lexer/registry/cpp_naming/expression_support/type_gen/derive_methods_cpp |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=12 close track |
+
+### Turn 2026-05-19 (Driver TRACK_STRING_MATCH step 10)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| done | `method_gen.mlc` static/Result dispatch pipe `match`; `compile_options` flag predicates + `"` usage |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=11 audit single-quote |
+
+### Turn 2026-05-19 (Driver TRACK_STRING_MATCH step 9)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| done | `semantic_type_structure.mlc` pipe `match` on `operation`/`method_name`; `"` literals |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=10 method_gen + compile_options |
+
+### Turn 2026-05-19 (Driver TRACK_STRING_MATCH step 8)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| done | `cpp/lexer.mlc` pipe match: `is_cpp_reserved_keyword`/`reserved_cpp_keyword_kind`, `cpp_scan_op_*` |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=9 semantic_type_structure |
+
+### Turn 2026-05-19 (Driver TRACK_STRING_MATCH step 7)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| done | `lexer.mlc` pipe `match` (not `{ }`); `is_reserved_keyword`/`reserved_keyword_kind`; `map_escape`/`scan_op` |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=8 cpp/lexer |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 6)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| done | `test_parser` or-pattern; `test_checker` or/E078; `test_decl_gen` string match return |
+| gate | build_tests **960**/0; build.sh OK |
+| next | ROLE=Driver STEP=7 lexer |
+
+### Turn 2026-06-04 (Meta meta-review — RENAME loop / STRING_MATCH recovery)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| supervisor | ok, blocked `[]` |
+| issue | `Driver:1:RENAME_ABBREV` loop; STRING_MATCH steps 1–5 done (952/0) |
+| action | RENAME deferred; TRACK/RESEARCH updated; enqueue Driver **STRING_MATCH STEP=6** |
+| next | ROLE=Driver STEP=6 |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 5)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| done | nested `CppIf` chain via `string_match_arm_else_branch`; `print_statement` |
+| gate | build_tests **952**/0; build.sh OK |
+| next | ROLE=Driver STEP=6 tests |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 4)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `gen_string_match_*` if/else if IIFE; `gen_match` + `gen_match_via_cpp_visitor`; `test_codegen` |
+| gate | build_tests **952**/0; build.sh OK |
+| next | ROLE=Driver STEP=5 CppAST CppIfElse |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 3)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `infer_match.mlc` E077–E080; `should_apply_string_match_rules` (string subject or string-literal arms); `test_checker` |
+| gate | build_tests **947**/0; build.sh OK |
+| next | ROLE=Driver STEP=4 codegen string if/else |
+
+### Turn 2026-06-04 (Driver RENAME_ABBREV step 1 — idempotent redirect)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 (RENAME prompt) |
+| done | skip — **STRING_MATCH** active (1–2 worktree); RENAME deferred |
+| gate | **942**/0; build.sh OK |
+| next | ROLE=Driver STEP=3 STRING_MATCH |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 2)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| done | `parse_pattern_string` → `PatStringLit`; test_parser match arm |
+| gate | build_tests **942**/0; build.sh OK |
+| next | ROLE=Driver STEP=3 checker string subject |
+
+### Turn 2026-06-04 (Driver TRACK_STRING_MATCH step 1)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `PatStringLit` + `pat_span`; test_parser; match_gen arms |
+| gate | build_tests **941**/0; build.sh OK |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-04 (Planner plan-refresh — post REGISTRY_SPLIT)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| closed | TRACK_REGISTRY_SPLIT (`20f9d45`) |
+| next track | **TRACK_STRING_MATCH** STEP=1 (`PatStringLit` AST) |
+| deferred | TYPE_ALIASES, RENAME_ABBREV, VISITOR_PATTERN |
+| next | ROLE=Driver STEP=1 TRACK_STRING_MATCH |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 11 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| audit | steps 1–10: `01a04df`…`8aee4a9`, parser `20f9d45` |
+| gate | build_tests **940**/0; build.sh OK |
+| commit | `20f9d45` (comma_separated + expect_close) |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-04 (Cleaner cleanup-sweep — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Cleaner |
+| step | cleanup-sweep |
+| done | prior sweep OK; no extra junk |
+| next | ROLE=Driver STEP=11 |
+
+### Turn 2026-06-04 (Cleaner cleanup-sweep — 10 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Cleaner |
+| step | cleanup-sweep |
+| deleted | `.tmp_selfcheck/`, `.tmp_verify/`; `.tmp_selfhost/mlcc2`, `p2b/`, `p2c/` |
+| kept | Driver WIP: `parser/comma_separated.mlc`, `expect_close.mlc`, parser edits; active TRACK/PLAN/CONTINUITY |
+| next | ROLE=Driver STEP=11 TRACK_REGISTRY_SPLIT |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 10 — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| done | `expect_close.mlc` already; skip to STEP=11 |
+| gate | build.sh OK; build_tests **940**/0 (prior) |
+| next | ROLE=Driver STEP=11 |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 10)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| done | `parser/expect_close.mlc`; exprs + decls imports |
+| gate | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=11 audit + close track |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 9 — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| done | `comma_separated.mlc` + 6 call sites; TRACK step 9 done |
+| gate | build.sh OK; build_tests **940**/0 (prior run) |
+| next | ROLE=Driver STEP=10 |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 9 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| done | worktree OK (`comma_separated.mlc`); skip to STEP=10 |
+| gate | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=10 |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 9)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| done | `parser/comma_separated.mlc`; types/decls/exprs call sites |
+| gate | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=10 parser `expect_rbrace/rparen/rbracket` |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 8 — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| done | already `8aee4a9`; skip to STEP=9 |
+| gate | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=9 parser `comma_separated` |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 1 — idempotent, gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | steps 1–8 in HEAD (`8aee4a9`); skip to STEP=9 |
+| gate | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=9 parser `comma_separated` helper |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 1 — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | steps 1–8 in HEAD; skip to STEP=9 |
+| next | ROLE=Driver STEP=9 parser comma_separated |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 8)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| done | checker/check `.any`/`.all`/`.flat_map` |
+| result | **940**/0; build.sh OK |
+| commit | `8aee4a9` |
+| next | ROLE=Driver STEP=9 |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 7 — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| done | already in HEAD `9220227` |
+| result | gate **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=8 checker/check `.all`/`.any()` |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 7)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| done | `hof_method_spec.mlc`; infer + transform wired |
+| result | **940**/0; build.sh OK |
+| commit | `9220227` |
+| next | ROLE=Driver STEP=8 |
+
+### Turn 2026-06-04 (Planner plan-refresh — 8 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_PLAN next Driver STEP=7; REGISTRY step 7 scope in TRACK |
+| priority | stability > security > performance |
+| result | REGISTRY 1–6 done (`ad4cdf7`); gate 940/0 |
+| next | ROLE=Driver STEP=7 hof_method_spec |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 6 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| done | already in HEAD `ad4cdf7`; TRACK table synced |
+| next | ROLE=Driver STEP=7 hof_method_spec (enqueue blocked duplicate) |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 6)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | `substitution.mlc`; infer_match, transform, let_pattern_infer |
+| result | build_tests **940**/0; build.sh OK |
+| commit | `ad4cdf7` |
+| next | ROLE=Driver STEP=7 hof_method_spec |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 5)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | `named_args.mlc`; infer + transform wired |
+| result | build_tests **940**/0; build.sh OK |
+| commit | `e0652e8` |
+| next | ROLE=Driver STEP=6 substitution.mlc |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 1 — skip to pending)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | steps 1–4 already done in TRACK/HEAD (`01a04df`…`a604a1b`) |
+| result | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=5 named_args.mlc |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 4 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | already in HEAD `a604a1b`; TRACK step 4 done |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 4)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | decl/stmt while-push → map/filter/flat_map |
+| result | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=5 named_args.mlc |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 3)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | cpp_printer while-push → map/join |
+| result | build_tests **940**/0; build.sh OK |
+| commit | `8d9e29f` |
+| next | ROLE=Driver STEP=4 codegen decl/stmt |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 1b — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | idempotent — `01a04df` already in HEAD |
+| result | build_tests **940**/0; build.sh OK |
+| next | ROLE=Driver STEP=3 (steps 1b–2 done) |
+
+### Turn 2026-05-19 (Driver TRACK_REGISTRY_SPLIT step 2)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | commit step 1b (`01a04df`); checker usage audit |
+| result | build_tests **940**/0; build.sh OK |
+| findings | checker/ uses extend API only; no flat-field access outside registry |
+| next | ROLE=Driver STEP=3 cpp_printer while-push |
+
+### Turn 2026-05-19 (Planner plan-refresh — REGISTRY_SPLIT)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | MODULE_TU + DECL_FRAGMENT closed in TRACK_PLAN; active **REGISTRY_SPLIT** |
+| pick | commit `registry.mlc` (step 1b) before step 2 migrate |
+| next | ROLE=Driver STEP=1 TRACK_REGISTRY_SPLIT |
+
+### Turn 2026-05-19 (Driver TRACK_MODULE_TU_BRIDGE step 6 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | commit steps 4–5; track **closed** |
+| result | build_tests **940**/0; build.sh OK |
+| commit | native TU source + helpers (`module.mlc`, `test_cpp_printer.mlc`, …) |
+| next | ROLE=Driver STEP=2 TRACK_REGISTRY_SPLIT |
+
+### Turn 2026-06-04 (Driver TRACK_DECL_FRAGMENT_CLEANUP step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DECL_FRAGMENT_CLEANUP |
+| done | survivors audit; track **closed** |
+| result | build_tests **940**/0; build.sh OK |
+| issues | `CppDeclFragment` kept in AST (0 production callers); WIP uncommitted |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-04 (Meta meta-review — DECL_FRAGMENT STEP=4 loop)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | supervisor mlc; killed hung `build_tests\|grep` |
+| findings | STEP=4 code in worktree (`CppHostEntryMain`, no `cli_wrapper` fragment); TRACK stale; gate unverified (long-running verify) |
+| action | mark STEP=4 done; **enqueue Driver STEP=5 only** |
+| next | ROLE=Driver STEP=5 DECL_FRAGMENT audit |
+
+### Turn 2026-06-04 (Critic critique-audit — DECL_FRAGMENT steps 1–3)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| done | re-audit DECL_FRAGMENT steps 1–3 vs git |
+| findings | steps 1–3 OK worktree, **not HEAD**; gate **939**/0; step 4 pending (`cli_wrapper` fragment); 8+ `.mlc` uncommitted |
+| action | no reopen 1–3; enqueue Driver STEP=4 |
+| next | ROLE=Driver STEP=4 cli_wrapper native |
+
+### Turn 2026-06-04 (Driver TRACK_DECL_FRAGMENT_CLEANUP step 3 — CppUsingNamespace)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DECL_FRAGMENT_CLEANUP |
+| done | `CppUsingNamespace`; `append_using_namespace_declarations` |
+| result | build_tests **939**/0; build.sh OK |
+| next | ROLE=Driver STEP=4 cli_wrapper |
+
+### Turn 2026-06-04 (Driver TRACK_DECL_FRAGMENT_CLEANUP step 2 — CppBlankLine)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DECL_FRAGMENT_CLEANUP |
+| done | `CppBlankLine`; `make_blank_line_cpp_declaration` native |
+| result | build_tests **938**/0; build.sh OK |
+| issues | idempotent re-prompt |
+| next | ROLE=Driver STEP=3 using_namespace |
+
+### Turn 2026-06-04 (Driver TRACK_DECL_FRAGMENT_CLEANUP step 1 — dead decl_cpp exports)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_DECL_FRAGMENT_CLEANUP |
+| done | removed `cpp_decl_from_string_output` + `cpp_decls_from_string_parts` from `decl_cpp.mlc` |
+| result | build_tests **937**/0; build.sh OK |
+| issues | idempotent re-prompt |
+| next | ROLE=Driver STEP=2 blank line native |
+
+### Turn 2026-06-04 (Critic critique-audit — 6 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| done | re-audit REGISTRY s1, MODULE_TU s4–5, DESTRUCTURING s13, DECL_FRAGMENT track |
+| findings | MODULE_TU s4–5 OK worktree, **not HEAD** — reopen step 6 commit; REGISTRY s1 OK worktree, **not HEAD** — hold s2; DESTRUCTURING `fd95af6` OK; gate **937**/0 build.sh OK |
+| action | reopen MODULE_TU step 6; enqueue Driver commit WIP then DECL_FRAGMENT step 1 |
+| next | ROLE=Driver STEP=6 MODULE_TU_BRIDGE (commit) or batch commit + STEP=1 DECL_FRAGMENT |
+
+### Turn 2026-06-04 (Driver TRACK_REGISTRY_SPLIT step 1 — index types)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_REGISTRY_SPLIT |
+| done | `FunctionIndex`/`AdtIndex`/`RecordIndex` + composed `TypeRegistry` in `registry.mlc` |
+| result | build_tests **937**/0; build.sh OK |
+| issues | self-host N/A (`build_bin` pre-existing) |
+| next | ROLE=Driver STEP=2 migrate checker usage |
+
+### Turn 2026-06-04 (Driver TRACK_MODULE_TU_BRIDGE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | survivors audit; track **closed** |
+| result | build_tests **937**/0; build.sh OK |
+| issues | self-host N/A; dead `expr.mlc:284-306` TU line helpers |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-06-04 (Driver TRACK_MODULE_TU_BRIDGE step 4 — source native)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | `assemble_source_cpp_declarations` native; removed `cpp_declarations_from_text_parts`; `test_cpp_printer` source imports/using golden |
+| result | build_tests **937**/0; build.sh OK |
+| issues | self-host `build_bin` FAIL — `exprs.cpp` `TypeResult.expr` / `__lt` redef (pre-existing destructuring codegen) |
+| next | ROLE=Driver STEP=5 MODULE_TU_BRIDGE |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 13 — commit WIP)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 13 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | commit `fd95af6` — 26 `.mlc` steps 2–12 |
+| result | build_tests 936/0; build.sh OK |
+| issues | idempotent re-prompt |
+| next | ROLE=Driver STEP=4 MODULE_TU_BRIDGE |
+
+### Turn 2026-06-03 (Critic critique-audit — 6 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| done | re-audit DESTRUCTURING steps 8–12 + MODULE_TU steps 1–3 |
+| findings | DESTRUCTURING closed but **25 `.mlc` uncommitted** (steps 2–12 WIP; HEAD=`06dfa9e` lexer only); gate 936/0 on worktree; MODULE_TU step 3 OK in HEAD |
+| action | reopen DESTRUCTURING step 13 (commit batch); MODULE_TU step 4 unchanged |
+| next | ROLE=Driver STEP=4 MODULE_TU_BRIDGE |
+
+### Turn 2026-06-03 (Driver TRACK_MODULE_TU_BRIDGE step 3 — header native)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_MODULE_TU_BRIDGE |
+| done | `assemble_header_cpp_declarations` native (already wired step 2) |
+| result | build_tests 936/0; build.sh OK |
+| issues | source path still fragments (step 4) |
+| next | ROLE=Driver STEP=4 assemble_source + parity tests |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 12 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 12 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | track closed; gate build.sh OK (build_tests 936/0 from step 11) |
+| result | 12/12 steps done |
+| issues | self-host diff pre-existing FAIL |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 11 — audit survivors)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | audit + fix `*_result` in main/check/names/infer_*/exprs/ctor_info/stmt_cpp |
+| result | build_tests 936/0; build.sh OK |
+| issues | survivors: coerced_result, *_pair, test s_result |
+| next | ROLE=Driver STEP=12 final cleanup |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 10 — codegen context/eval/module)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `context.mlc`: `statements_parsed`; `module.mlc`: `module_parsed`; `stmt_eval`/`return_body` field access |
+| result | build_tests 936/0; build.sh OK |
+| issues | field rename in type + callers (stability) |
+| next | ROLE=Driver STEP=11 audit `result.` / `let result =` |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 9 — transform TransformStmtsResult)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `transform.mlc`: `statements_parsed`/`result_parsed`; `transform_stmts.mlc` unchanged |
+| result | build_tests 936/0; build.sh OK |
+| issues | field access only (stability) |
+| next | ROLE=Driver STEP=10 context.mlc + eval.mlc + module.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 8 — array/result-option methods)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `infer_array_method.mlc`/`infer_result_option_method.mlc`: `object_parsed`, `lambda_parsed`, `argument_parsed`, … |
+| result | build_tests 936/0; build.sh OK |
+| issues | field access only (stability) |
+| next | ROLE=Driver STEP=9 transform.mlc + transform_stmts.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 7 — infer InferResult)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `infer.mlc`/`infer_call.mlc`: `*_parsed` bindings; `record_inference` accumulator |
+| result | build_tests 936/0; build.sh OK |
+| issues | field access only (Ruby CppAst stability) |
+| next | ROLE=Driver STEP=8 infer_array_method + infer_result_option_method |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 6 — types.mlc)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `types.mlc`: `*_parsed` bindings; field access (no `let { }` — stability) |
+| result | build_tests 936/0; build.sh OK |
+| issues | none |
+| next | ROLE=Driver STEP=7 checker/infer/infer.mlc + infer_call.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 5 — decls.mlc destructuring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | `decls.mlc`: `*_parsed` for method/type/ret/trait/body/variant/derive/params; grep zero `*_result`; loops `let parsed` + field access |
+| result | build_tests 936/0; build.sh OK |
+| issues | Ruby bootstrap: `let { field }` in decls breaks CppAst (use `.field` on `*_parsed`); parse_param unchanged; self-host diff not re-run |
+| next | ROLE=Driver STEP=6 frontend/parser/types.mlc |
+
+### Turn 2026-06-03 (Critic critique-audit — DESTRUCTURING_APPLY steps 1–4)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | re-audit last 4 done steps vs git/grep/tests |
+| result | STEP=1 committed (06dfa9e, lexer clean). STEPs 2–4: code OK, grep targets met, build_tests 936/0 per SESSION; **all uncommitted**, no commit hashes in TRACK |
+| issues | (1) WIP 6 files uncommitted — done status premature until commit. (2) self-host diff never green — logged blocker OK. (3) STEP=4 left expr-climbing `left`/`right`/`param_result` — out of step scope; step 11 audit. (4) no reopen |
+| next | ROLE=Driver STEP=5 decls.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 4 — exprs.mlc destructuring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| started | 2026-06-03 |
+| elapsed | ~60 min |
+| done | `exprs.mlc`: stmt loops `let parsed + let { stmt }`; `parse_statement_let_pat_finish`; type/value/else via `type_parsed`/`value_parsed`/`else_parsed` + field destructuring; if/while/for/match/record-lit same pattern; record `MatchArmParseOutcome` |
+| result | build_tests 936/0; build.sh OK |
+| issues | no `field: alias` in destructuring (Ruby parse); no `let { parser }` when param named `parser` (move) |
+| next | ROLE=Driver STEP=5 frontend/parser/decls.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 3 — cpp/parser destructuring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| started | 2026-06-03 |
+| elapsed | ~15 min |
+| done | `cpp/parser.mlc`: record `CppDeclResult`/`CppTypeResult`; destructuring in `parse_using_decl`, `parse_struct_decl`, `cpp_parse` loop; zero `let result`/`result.`/`type_result` |
+| result | build_tests 936/0; build.sh OK |
+| issues | self-host diff not re-run; pre-existing mlcc2 blocker |
+| next | ROLE=Driver STEP=4 frontend/parser/exprs.mlc |
+
+### Turn 2026-06-03 (Driver TRACK_DESTRUCTURING_APPLY step 2 — cpp/lexer destructuring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_DESTRUCTURING_APPLY |
+| started | 2026-06-03 |
+| elapsed | ~45 min |
+| done | pre-flight: `let_pat.mlc` flat bindings; `let_pat_cpp.mlc` `CppStmtFragment` via `print_statements_as_fragment` (fixes scoped `{}` in self-host lexer.cpp). STEP=2: `cpp/lexer.mlc` record scan types, `push_ident_scan`/`push_int_scan`/`push_string_scan`/`push_operator_scan`, `let { after } = skip_whitespace`, zero `result.`/`let result`. `test_codegen.mlc`: flat let-pattern expectations (4 tests). |
+| result | build_tests 936/0; build.sh OK; p1=174; build_bin OK; diff FAIL mlcc2→p2=2 |
+| issues | self-host identity blocked: mlcc2 merge loads 0 deps (profile lex 1×); not introduced by STEP=2 |
+| next | ROLE=Driver STEP=3 cpp/parser.mlc CppDeclResult CppTypeResult |
+
+### Turn 2026-06-03 (Meta meta-review — idempotent ×2)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | no-op: recovery closed; Driver STEP=2 in queue |
+| result | supervisor no_window warn; blocked=[]; queue=1 |
+| next | wait for Driver STEP=2 drain |
+
+### Turn 2026-06-03 (Meta meta-review — idempotent, duplicate prompt)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | idempotent: STEP=1 done; STEP=2 already queued; no re-enqueue |
+| result | supervisor: no_window warn, blocked=[]; queueLength=1 (Driver STEP=2) |
+| issues | agent busy; duplicate Meta prompt — skip enqueue |
+| next | drain queued Driver STEP=2 |
+
+### Turn 2026-06-03 (Meta meta-review — DESTRUCTURING_APPLY STEP=1 loop)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_DESTRUCTURING_APPLY |
+| done | drained stuck Driver:1; TRACK step 1 → done; RESEARCH log; supervisor check |
+| result | supervisor: `no_window` warn (4x), blocked=[]; STEP=1 lexer in tree; uncommitted `let_pat.mlc` |
+| issues | verify gate not green; do not re-enqueue Driver STEP=1 |
+| next | ROLE=Driver STEP=2 (enqueued `cr-agent-91be3b6e`) |
 
 ### Turn 2026-06-03 (Driver TRACK_MODULE_TU_BRIDGE step 2 — native decl helpers)
 

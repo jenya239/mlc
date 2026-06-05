@@ -1,9 +1,9 @@
-// E3: desugar `{ x, y }: T` / `(a, b): T` into synthetic parameter + StmtLetPat prelude.
+// E3: desugar `{ x, y }: T` / `(a, b): T` into synthetic parameter + StmtLetPattern prelude.
 
 import {
   Program, Decl, DeclFn, DeclExported, DeclExtend,
-  Shared, Param, Expr, Stmt, StmtLetPat, ExprBlock, ExprIdent, ExprUnit, ExprExtern,
-  Pat, PatUnit, pat_span,
+  Shared, Param, Expr, Stmt, StmtLetPattern, ExprBlock, ExprIdent, ExprUnit, ExprExtern,
+  Pattern, PatternUnit, pat_span,
   expr_span,
   Span,
   WhereClauseBound,
@@ -17,7 +17,7 @@ fn synthetic_destructure_parameter_name(parameter_position_index: i32) -> string
 
 export fn parameter_binding_is_plain_identifier(parameter: Shared<Param>) -> bool =
   match parameter.param_pattern {
-    PatUnit(_) => true,
+    PatternUnit(_) => true,
     _ => false
   }
 
@@ -31,11 +31,11 @@ fn strip_parameter_to_synthetic_plain(parameter: Shared<Param>, synthetic_name: 
     typ: parameter.typ,
     has_default: parameter.has_default,
     default: parameter.default,
-    param_pattern: Shared.new(PatUnit(pat_span(parameter.param_pattern)))
+    param_pattern: Shared.new(PatternUnit(pat_span(parameter.param_pattern)))
   })
 
 fn prelude_statement_destructure(parameter: Shared<Param>, synthetic_name: string, binding_span: Span) -> Shared<Stmt> =
-  Shared.new(StmtLetPat(
+  Shared.new(StmtLetPattern(
     parameter.param_pattern,
     parameter.is_mut,
     parameter.typ,

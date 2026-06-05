@@ -1,13 +1,13 @@
 // Native C++ AST codegen for trait vtable struct (phase 4).
 
 import { Param } from '../../frontend/ast'
-import { SDecl, SDeclFn } from '../../ir/semantic_ir'
+import { SemanticDeclaration, SemanticDeclarationFn } from '../../ir/semantic_ir'
 import { Type } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { sem_type_to_cpp, type_to_cpp } from './type_gen'
 import { extract_method_name, non_self_parameter_types_cpp } from './decl_extend'
 import { cpp_safe } from '../cpp_naming'
-import { CppDecl, CppField, CppStruct } from '../../cpp/cpp_ast'
+import { CppDeclaration, CppField, CppStruct } from '../../cpp/cpp_ast'
 import * as expression_output from '../expr/expr'
 
 export fn trait_method_field_cpp(
@@ -33,10 +33,10 @@ fn trait_struct_template_prefix(type_params: [string]) -> string =
 fn trait_struct_field_for_method(
   trait_context: CodegenContext,
   trait_name: string,
-  method: Shared<SDecl>
+  method: Shared<SemanticDeclaration>
 ) -> [Shared<CppField>] =
   match method {
-    SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
       const method_fields: [Shared<CppField>] = []
       method_fields.push(trait_method_field_cpp(
         trait_context, extract_method_name(mangled, trait_name), params, return_type))
@@ -48,7 +48,7 @@ fn trait_struct_field_for_method(
 fn trait_struct_fields_cpp(
   trait_context: CodegenContext,
   trait_name: string,
-  methods: [Shared<SDecl>]
+  methods: [Shared<SemanticDeclaration>]
 ) -> [Shared<CppField>] =
   methods.flat_map(method => trait_struct_field_for_method(trait_context, trait_name, method))
 
@@ -56,8 +56,8 @@ export fn gen_trait_struct_cpp(
   context: CodegenContext,
   trait_name: string,
   type_params: [string],
-  methods: [Shared<SDecl>]
-) -> Shared<CppDecl> =
+  methods: [Shared<SemanticDeclaration>]
+) -> Shared<CppDeclaration> =
   Shared.new(CppStruct(
     trait_struct_template_prefix(type_params),
     expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),

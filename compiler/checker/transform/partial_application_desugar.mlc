@@ -6,7 +6,7 @@ import {
   ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex,
   ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
   ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
-  StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
+  StmtLet, StmtLetPattern, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   Span
 } from '../../frontend/ast'
 
@@ -294,11 +294,11 @@ fn partial_application_desugar_statement(statement: Shared<Stmt>, serial: i32) -
         next_serial: value_pair.next_serial
       }
     end,
-    StmtLetPat(pat, is_mut, typ, value_expression, has_else, else_body, span_statement) => do
+    StmtLetPattern(pat, is_mut, typ, value_expression, has_else, else_body, span_statement) => do
       const value_pair = partial_application_desugar_inner(value_expression, serial)
       const else_pair = partial_application_desugar_inner(else_body, value_pair.next_serial)
       StmtPartialPair {
-        statement: Shared.new(StmtLetPat(pat, is_mut, typ, value_pair.expression, has_else, else_pair.expression, span_statement)),
+        statement: Shared.new(StmtLetPattern(pat, is_mut, typ, value_pair.expression, has_else, else_pair.expression, span_statement)),
         next_serial: else_pair.next_serial
       }
     end,

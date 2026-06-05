@@ -1,28 +1,28 @@
-import { Pat } from '../../frontend/ast'
-import { SExpr, SMatchArm, sexpr_type } from '../../ir/semantic_ir'
-import { Type } from '../../checker/registry'
+import { Pattern, PatternStringLit, PatternStr, PatternWild, PatternOr } from '../../frontend/ast'
+import { SemanticExpression, SemanticMatchArm, sexpr_type } from '../../ir/semantic_ir'
+import { Type, TString } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe } from '../cpp_naming'
 
 // Determine if the match subject expression should be dereferenced (*subject).
 // A subject needs deref if it holds a shared pointer to a sum type.
-export fn subject_needs_deref(subject: Shared<SExpr>, context: CodegenContext) -> bool =
+export fn subject_needs_deref(subject: Shared<SemanticExpression>, context: CodegenContext) -> bool =
   match sexpr_type(subject) { TShared(_) => true, _ => false }
 
-export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SExpr>, context: CodegenContext) -> bool =
+export fn first_arm_needs_deref(first_arm: Shared<SemanticMatchArm>, subject: Shared<SemanticExpression>, context: CodegenContext) -> bool =
   match first_arm.pat {
-    PatCtor(name, _, _) => do
+    PatternCtor(name, _, _) => do
       const resolved = context.resolve(name)
       if resolved.length() >= 12 && resolved.substring(0, 12) == 'ast_tokens::' then false
       else if list_contains(context.generic_variants, name) then false
       else subject_needs_deref(subject, context)
       end
     end,
-    PatOr(alts, _) =>
+    PatternOr(alts, _) =>
       if alts.length() > 0 then
         first_arm_needs_deref(
-          Shared.new(SMatchArm {
+          Shared.new(SemanticMatchArm {
             pat: alts[0],
             has_guard: first_arm.has_guard,
             when_condition: first_arm.when_condition,
@@ -36,12 +36,12 @@ export fn first_arm_needs_deref(first_arm: Shared<SMatchArm>, subject: Shared<SE
     _ => subject_needs_deref(subject, context)
   }
 
-export fn pat_binding_name_list(sub_patterns: [Shared<Pat>]) -> [string] = do
+export fn pat_binding_name_list(sub_patterns: [Shared<Pattern>]) -> [string] = do
   let parts: [string] = []
   let mut index = 0
   while index < sub_patterns.length() do
     const bind_name = match sub_patterns[index] {
-      PatIdent(name, _) => cpp_safe(name),
+      PatternIdent(name, _) => cpp_safe(name),
       _ => '__' + index.to_string()
     }
     parts.push(bind_name)
@@ -50,5 +50,37 @@ export fn pat_binding_name_list(sub_patterns: [Shared<Pat>]) -> [string] = do
   parts
 end
 
-export fn pat_bind_names(sub_patterns: [Shared<Pat>]) -> string =
+export fn pat_bind_names(sub_patterns: [Shared<Pattern>]) -> string =
   pat_binding_name_list(sub_patterns).join(', ')
+
+fn pattern_contains_string_literal(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternStringLit(_, _) => true,
+    PatternStr(_, _) => true,
+    PatternOr(alternatives, _) =>
+      alternatives.any(alternative => pattern_contains_string_literal(alternative)),
+    _ => false
+  }
+
+fn pattern_is_string_match_pattern(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternStringLit(_, _) => true,
+    PatternStr(_, _) => true,
+    PatternWild(_) => true,
+    PatternOr(alternatives, _) =>
+      alternatives.all(alternative => pattern_is_string_match_pattern(alternative)),
+    _ => false
+  }
+
+fn match_arms_use_string_literals(arms: [Shared<SemanticMatchArm>]) -> bool =
+  arms.any(arm => pattern_contains_string_literal(arm.pat))
+
+export fn subject_is_string_type(subject: Shared<SemanticExpression>) -> bool =
+  match sexpr_type(subject) { TString => true, _ => false }
+
+export fn should_use_string_match_if_chain(subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>]) -> bool =
+  if arms.length() == 0 then false
+  else
+    (match_arms_use_string_literals(arms) || subject_is_string_type(subject)) &&
+      arms.all(arm => pattern_is_string_match_pattern(arm.pat))
+  end

@@ -1,7 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
-import { TKind, Token, LexOut } from '../ast_tokens'
-import { TypeExpr, Pat, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from '../ast'
+import { TokenKind, Token, LexOut } from '../ast_tokens'
+import { TypeExpr, Pattern, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from '../ast'
 
 // --- Parser state ---------------------------------------------------------
 
@@ -17,7 +17,7 @@ export fn parser_new(tokens: [Token]) -> Parser =
 
 export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
 export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
-export type PatResult       = PatResult       { pat:        Shared<Pat>,            parser: Parser }
+export type PatternResult       = PatternResult       { pat:        Shared<Pattern>,            parser: Parser }
 export type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
 export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
 export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
@@ -28,7 +28,7 @@ export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],    
 export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
 export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
 export type RecordLitPartsResult = RecordLitPartsResult { lit_parts: [RecordLitPart], parser: Parser }
-export type PatsResult      = PatsResult      { pats:       [Shared<Pat>],          parser: Parser }
+export type PatternsResult      = PatternsResult      { pats:       [Shared<Pattern>],          parser: Parser }
 export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
 export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
@@ -42,9 +42,9 @@ export type ParseProgramResult = ParseProgramResult { program: Program, errors: 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"
 
-// --- extend TKind ---------------------------------------------------------
+// --- extend TokenKind ---------------------------------------------------------
 
-export extend TKind {
+export extend TokenKind {
   fn is_fn(self)       -> bool = match self { KFn       => true, _ => false }
   fn is_type(self)     -> bool = match self { KType     => true, _ => false }
   fn is_let(self)      -> bool = match self { KLet      => true, _ => false }
@@ -115,7 +115,7 @@ export extend TKind {
 // --- extend Parser --------------------------------------------------------
 
 export extend Parser {
-  fn kind(self) -> TKind =
+  fn kind(self) -> TokenKind =
     if self.pos >= self.tokens.length() then Eof
     else do const tok: Token = self.tokens[self.pos]; tok.kind end
   fn lambda_shorthand_suppression_active(self) -> bool = self.suppress_lambda_shorthand

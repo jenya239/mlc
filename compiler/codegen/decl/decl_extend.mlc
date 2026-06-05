@@ -3,7 +3,7 @@
 import { TypeVariant, TypeExpr, TyGeneric, Param, Expr, ExprInt, ExprStr, ExprBool, ExprUnit } from '../../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import * as lit from '../expr/literals'
-import { SDecl, SDeclFn, SExpr, SExprExtern } from '../../ir/semantic_ir'
+import { SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionExtern } from '../../ir/semantic_ir'
 import { Type } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { cpp_safe } from '../cpp_naming'
@@ -82,12 +82,12 @@ export fn concept_declval_arguments_for_params(context: CodegenContext, params: 
     .map(type_code => expression_output.std_declval_expression(type_code))
     .join(', ')
 
-fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SDecl>]) -> string = do
+fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SemanticDeclaration>]) -> string = do
   let mut result = 'void'
   let mut method_index = 0
   while method_index < methods.length() do
     match methods[method_index] {
-      SDeclFn(_, _, _, _, return_type, _, _, _) =>
+      SemanticDeclarationFn(_, _, _, _, return_type, _, _, _) =>
         do result = sem_type_to_cpp(extend_context, return_type) end,
       _ => do end
     }
@@ -103,7 +103,7 @@ end
 fn generic_trait_static_assert_line(
   trait_name: string,
   type_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   extend_context: CodegenContext,
   implementor_type_cpp: string
 ) -> string = do
@@ -124,19 +124,19 @@ end
 fn trait_struct_field_line_for_method(
   trait_context: CodegenContext,
   trait_name: string,
-  method: Shared<SDecl>
+  method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SDeclFn(mangled, _, _, params, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
       trait_method_field_line(
         trait_context, extract_method_name(mangled, trait_name), params, return_type)
     end,
     _ => ''
   }
 
-fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Shared<SDecl>) -> [string] =
+fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Shared<SemanticDeclaration>) -> [string] =
   match method {
-    SDeclFn(mangled, _, _, params, ret_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, params, ret_type, _, _, _) =>
       do const requirement_parts: [string] = []
       requirement_parts.push(expression_output.concept_requires_expression_method_returns_convertible(
         cpp_safe(mangled),
@@ -147,9 +147,9 @@ fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Share
     _ => do const empty_requirements: [string] = []; empty_requirements end
   }
 
-fn extend_wrapper_proto_line(type_name: string, context: CodegenContext, method: Shared<SDecl>) -> string =
+fn extend_wrapper_proto_line(type_name: string, context: CodegenContext, method: Shared<SemanticDeclaration>) -> string =
   match method {
-    SDeclFn(mangled, _, _, params, ret_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, params, ret_type, _, _, _) =>
       do const wrapper_context = context.for_type_body(type_name)
       expression_output.noexcept_function_prototype(
         sem_type_to_cpp(wrapper_context, ret_type),
@@ -163,10 +163,10 @@ fn extend_trait_wrapper_line(
   type_name: string,
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string,
-  method: Shared<SDecl>
+  method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SDeclFn(mangled, _, _, params, ret_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, params, ret_type, _, _, _) =>
       gen_extend_trait_wrapper(type_name, mangled, params, ret_type, context, context_resolve_fn),
     _ => ''
   }
@@ -176,10 +176,10 @@ fn extend_trait_concept_adapter_line(
   trait_name: string,
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string,
-  method: Shared<SDecl>
+  method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SDeclFn(mangled, _, _, params, ret_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, params, ret_type, _, _, _) => do
       gen_extend_trait_concept_adapter(
         type_name, trait_name, mangled, params, ret_type, context, context_resolve_fn)
     end,
@@ -192,13 +192,13 @@ fn extend_method_part_strings(
   extend_context: CodegenContext,
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string,
-  gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string,
-  method: Shared<SDecl>
+  gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string,
+  method: Shared<SemanticDeclaration>
 ) -> [string] =
   match method {
-    SDeclFn(mangled, _, _, params, ret_type, body, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, params, ret_type, body, _, _) => do
       match body {
-        SExprExtern(_, _) => do
+        SemanticExpressionExtern(_, _) => do
           const generated = gen_extend_extern_method(
             mangled, type_name, params, ret_type, trait_name, context, context_resolve_fn)
           if generated.length() > 0 then
@@ -219,7 +219,7 @@ fn trait_method_field_line(context: CodegenContext, method_name: string, params:
   expression_output.std_function_field_line(return_cpp, parameter_types.join(', '), cpp_safe(method_name))
 end
 
-export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SDecl>]) -> string = do
+export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SemanticDeclaration>]) -> string = do
   const trait_context = context.for_type_body(trait_name)
   const template_header = if type_params.length() > 0 then
     expression_output.cpp_template_typename_header_line(type_params.join(', '))
@@ -235,7 +235,7 @@ export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_par
     field_lines.join(''))
 end
 
-export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SDecl>]) -> string = do
+export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_params: [string], methods: [Shared<SemanticDeclaration>]) -> string = do
   const trait_context = context.for_type_body(trait_name)
   const template_header = if type_params.length() > 0 then
     'template<typename ' + type_params[0] + ', typename Self>\n'
@@ -252,7 +252,7 @@ export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_param
     req_body)
 end
 
-export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext) -> string =
+export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext) -> string =
   if trait_name.length() == 0 then ''
   else
     methods.map(method => extend_wrapper_proto_line(type_name, context, method)).join('')
@@ -272,7 +272,7 @@ fn gen_extend_trait_wrapper(type_name: string, mangled: string, params: [Shared<
     parameter_call_argument_names(params).join(', '))
 end
 
-fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string =
+fn gen_extend_trait_wrappers(type_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string =
   methods.map(method => extend_trait_wrapper_line(type_name, context, context_resolve_fn, method)).join('')
 
 export fn gen_extend_extern_method(mangled: string, type_name: string, params: [Shared<Param>], ret_type: Shared<Type>, trait_name: string, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string) -> string = do
@@ -291,7 +291,7 @@ export fn gen_extend_extern_method(mangled: string, type_name: string, params: [
   end
 end
 
-fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shared<SDecl>], extend_context: CodegenContext, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> [string] =
+fn gen_extend_method_parts(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], extend_context: CodegenContext, context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string) -> [string] =
   methods.flat_map(method =>
     extend_method_part_strings(
       type_name, trait_name, extend_context, context, context_resolve_fn, gen_decl_fn, method))
@@ -322,7 +322,7 @@ end
 fn gen_extend_trait_concept_adapters(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string
 ) -> string =
@@ -333,7 +333,7 @@ fn gen_extend_trait_concept_adapters(
 export fn gen_decl_extend_trait_suffix(
   type_name: string,
   trait_name: string,
-  methods: [Shared<SDecl>],
+  methods: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string
 ) -> string = do
@@ -344,7 +344,7 @@ export fn gen_decl_extend_trait_suffix(
   generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type)
 end
 
-export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SDecl>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SDecl>, CodegenContext) -> string) -> string = do
+export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string) -> string = do
   const extend_context = context.for_type_body(type_name)
   const method_parts = gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn)
   const methods_str = method_parts.join('')

@@ -215,13 +215,14 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyString  => Shared.new(TString),
     TyBool    => Shared.new(TBool),
     TyUnit    => Shared.new(TUnit),
-    TyNamed(name)   =>
-      if name == 'i64' then Shared.new(TI64)
-      else if name == 'f64' then Shared.new(TF64)
-      else if name == 'u8' then Shared.new(TU8)
-      else if name == 'usize' then Shared.new(TUsize)
-      else if name == 'char' then Shared.new(TChar)
-      else Shared.new(TNamed(name))
+    TyNamed(name) =>
+      match name
+      | "i64"   => Shared.new(TI64)
+      | "f64"   => Shared.new(TF64)
+      | "u8"    => Shared.new(TU8)
+      | "usize" => Shared.new(TUsize)
+      | "char"  => Shared.new(TChar)
+      | _       => Shared.new(TNamed(name))
       end,
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),

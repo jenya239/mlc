@@ -41,18 +41,19 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
     TypeResult { type_expr: Shared.new(TyArray(inner_parsed.type_expr)), parser: inner_parsed.parser.advance() }
   else if kind.is_ident() then
     const name = kind.ident()
-    if      name == 'i32'    then TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
-    else if name == 'string' then TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
-    else if name == 'bool'   then TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
-    else if name == 'unit'   then TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
-    else if name == 'ref' then do
+    match name
+    | "i32"    => TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
+    | "string" => TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
+    | "bool"   => TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
+    | "unit"   => TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
+    | "ref" => do
       const after_ref = if parser.advance().kind().is_mut()
                         then parser.advance_by(2) else parser.advance() end
       const inner_parsed = parse_type(after_ref)
       const targs: [Shared<TypeExpr>] = [inner_parsed.type_expr]
       TypeResult { type_expr: Shared.new(TyGeneric('ref', targs)), parser: inner_parsed.parser }
     end
-    else
+    | _ => do
       const after = parser.advance()
       if after.kind().is_op() && after.kind().op_val() == "<" then
         const type_args_parsed = parse_type_args(after.advance())
@@ -67,6 +68,7 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
       else
         TypeResult { type_expr: Shared.new(TyNamed(name)), parser: after }
       end
+    end
     end
   else
     TypeResult { type_expr: Shared.new(TyUnit), parser: parser.advance_by(2) }

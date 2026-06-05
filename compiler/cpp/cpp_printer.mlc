@@ -1,12 +1,12 @@
-// Pretty-printer: CppExpr / CppStmt / CppDecl → C++ source text (Phase 2).
+// Pretty-printer: CppExpression / CppStatement / CppDeclaration → C++ source text (Phase 2).
 
 import { CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppCastKind, CppCastStatic, CppCastDynamic, CppCastReinterpret, CppCastConst,
          CppCapture, CppParam,
-         CppStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExprStmt, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStmtFragment,
-         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppBlankLine, CppHostEntryMain, CppDeclFragment,
+         CppStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor, CppStructuredBinding, CppStatementFragment,
+         CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppStruct, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine, CppHostEntryMain, CppDeclarationFragment,
          CppField, CppVariantArm, CppFile,
-         CppExpr, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
+         CppExpression, CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex,
          CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit,
          CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock } from './cpp_ast'
@@ -45,7 +45,7 @@ fn escape_cpp_string_content(input: string) -> string = do
   parts.join('')
 end
 
-fn print_comma_separated_expressions(expressions: [Shared<CppExpr>]) -> string =
+fn print_comma_separated_expressions(expressions: [Shared<CppExpression>]) -> string =
   expressions.map(expression => print_expr(expression)).join(", ")
 
 fn print_comma_separated_types(types: [Shared<CppType>]) -> string =
@@ -91,20 +91,20 @@ fn value_field_access(object_code: string, field_name: string) -> string =
 fn init_list_braces(element_list: string) -> string =
   if element_list.length() == 0 then "{}" else `{${element_list}}` end
 
-fn aggregate_initializer_expression(type_name: string, elements: [Shared<CppExpr>]) -> string =
+fn aggregate_initializer_expression(type_name: string, elements: [Shared<CppExpression>]) -> string =
   `${type_name}{${print_comma_separated_expressions(elements)}}`
 
 fn std_visit_expression(arm_lambdas: string, visit_subject: string) -> string =
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
 
-fn print_visit_arm_wild(void_return: bool, body: Shared<CppExpr>) -> string =
+fn print_visit_arm_wild(void_return: bool, body: Shared<CppExpression>) -> string =
   if void_return then
     `[&](const auto& __v) -> void { ${print_expr(body)}; }`
   else
     `[&](const auto& __v) { return ${print_expr(body)}; }`
   end
 
-fn print_visit_arm_binding(parameter_name: string, void_return: bool, body: Shared<CppExpr>) -> string =
+fn print_visit_arm_binding(parameter_name: string, void_return: bool, body: Shared<CppExpression>) -> string =
   if void_return then
     `[&](const auto& ${parameter_name}) -> void { ${print_expr(body)}; }`
   else
@@ -115,7 +115,7 @@ fn print_visit_arm_constructed(
   parameter_declaration: string,
   binding_prefix: string,
   void_return: bool,
-  body: Shared<CppExpr>
+  body: Shared<CppExpression>
 ) -> string =
   if void_return then
     `[&](${parameter_declaration}) -> void { ${binding_prefix}${print_expr(body)}; }`
@@ -128,7 +128,7 @@ fn print_visit_arm_constructed_generic(
   binding_name: string,
   binding_prefix: string,
   void_return: bool,
-  body: Shared<CppExpr>
+  body: Shared<CppExpression>
 ) -> string =
   if void_return then
     `[&]<typename __mlcT>(const ${type_name}<__mlcT>& ${binding_name}) -> void { ${binding_prefix}${print_expr(body)}; }`
@@ -147,7 +147,7 @@ fn print_cast_kind_prefix(kind: CppCastKind) -> string =
     CppCastConst => "const_cast"
   }
 
-fn print_comma_separated_expressions_multiline(expressions: [Shared<CppExpr>]) -> string =
+fn print_comma_separated_expressions_multiline(expressions: [Shared<CppExpression>]) -> string =
   expressions.map(expression => print_expr(expression)).join(",\n")
 
 fn print_capture_entry(capture_entry: Shared<CppCapture>) -> string =
@@ -167,16 +167,16 @@ fn print_parameter_list(parameters: [Shared<CppParam>]) -> string =
 fn block_braces(body_code: string) -> string =
   `{${body_code}}`
 
-fn print_statements(statements: [Shared<CppStmt>], depth: i32) -> string =
+fn print_statements(statements: [Shared<CppStatement>], depth: i32) -> string =
   statements.map(statement => print_statement_at_depth(statement, depth)).join("\n")
 
-fn print_statement_at_depth(statement: Shared<CppStmt>, depth: i32) -> string =
+fn print_statement_at_depth(statement: Shared<CppStatement>, depth: i32) -> string =
   match statement {
-    CppStmtFragment(fragment) => fragment,
+    CppStatementFragment(fragment) => fragment,
     _ => indent_text(depth) + print_statement_node(statement, depth)
   }
 
-fn print_statement_body(statement: Shared<CppStmt>, depth: i32) -> string =
+fn print_statement_body(statement: Shared<CppStatement>, depth: i32) -> string =
   match statement {
     CppBlock(statements) =>
       formatted_block(print_statements(statements, depth + 1), depth),
@@ -297,7 +297,7 @@ fn print_function_definition(
   return_type: string,
   name: string,
   parameters_code: string,
-  body: [Shared<CppStmt>],
+  body: [Shared<CppStatement>],
   body_statement_depth: i32
 ) -> string =
   if body_statement_depth == -1 && body.length() == 1 then
@@ -343,10 +343,10 @@ fn concept_requires_definition(
 fn static_assert_declaration(concept_cpp: string, type_arguments: [string], message: string) -> string =
   `static_assert(${concept_cpp}<${print_comma_separated_strings(type_arguments)}>, "${message}");\n`
 
-fn print_hash_specialization_body(statements: [Shared<CppStmt>]) -> string =
+fn print_hash_specialization_body(statements: [Shared<CppStatement>]) -> string =
   statements.map(statement => '    ' + print_statement(statement)).join("\n")
 
-fn std_hash_specialization_definition(type_name: string, body_statements: [Shared<CppStmt>]) -> string =
+fn std_hash_specialization_definition(type_name: string, body_statements: [Shared<CppStatement>]) -> string =
   "namespace std {\n" +
   "template<>\n" +
   "struct hash<" + type_name + "> {\n" +
@@ -373,7 +373,7 @@ end
 fn print_variant_types(arms: [Shared<CppVariantArm>]) -> string =
   arms.flat_map(arm => variant_arm_type_strings(arm)).join(", ")
 
-fn is_empty_cpp_block(statement: Shared<CppStmt>) -> bool =
+fn is_empty_cpp_block(statement: Shared<CppStatement>) -> bool =
   match statement {
     CppBlock(statements) => statements.length() == 0,
     _ => false
@@ -382,7 +382,7 @@ fn is_empty_cpp_block(statement: Shared<CppStmt>) -> bool =
 fn conditional_if_statement(
   condition_code: string,
   then_code: string,
-  else_branch: Shared<CppStmt>,
+  else_branch: Shared<CppStatement>,
   depth: i32
 ) -> string =
   if is_empty_cpp_block(else_branch) then
@@ -391,7 +391,7 @@ fn conditional_if_statement(
     if_statement(condition_code, then_code, print_statement_body(else_branch, depth))
   end
 
-fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
+fn print_statement_node(statement: Shared<CppStatement>, depth: i32) -> string =
   match statement {
     CppAutoDecl(name, initializer) => auto_declaration(name, print_expr(initializer)),
     CppVarDecl(name, type_node, initializer) =>
@@ -401,7 +401,7 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
     CppConstexprAutoDecl(name, initializer) =>
       constexpr_auto_declaration(name, print_expr(initializer)),
     CppReturn(expression) => "return " + print_expr(expression) + ";",
-    CppExprStmt(expression) => print_expr(expression) + ";",
+    CppExpressionStatement(expression) => print_expr(expression) + ";",
     CppBlock(statements) => formatted_block(print_statements(statements, depth + 1), depth),
     CppIf(condition, then_branch, else_branch) =>
       conditional_if_statement(
@@ -419,13 +419,13 @@ fn print_statement_node(statement: Shared<CppStmt>, depth: i32) -> string =
       ),
     CppStructuredBinding(binding_names, initializer) =>
       structured_binding_declaration(binding_names, print_expr(initializer)),
-    CppStmtFragment(fragment) => fragment
+    CppStatementFragment(fragment) => fragment
   }
 
-fn print_decl_sequence(declarations: [Shared<CppDecl>]) -> string =
+fn print_decl_sequence(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl_node(declaration)).join('')
 
-fn print_decl_node(declaration: Shared<CppDecl>) -> string =
+fn print_decl_node(declaration: Shared<CppDeclaration>) -> string =
   match declaration {
     CppInclude(is_angle, path) =>
       if is_angle then include_angle(path) else include_quoted(path) end,
@@ -458,14 +458,14 @@ fn print_decl_node(declaration: Shared<CppDecl>) -> string =
       static_assert_declaration(concept_cpp, type_arguments, message),
     CppStdHashSpecialization(type_name, body_statements) =>
       std_hash_specialization_definition(type_name, body_statements),
-    CppDeclSequence(declarations) => print_decl_sequence(declarations),
-    CppDeclEmpty => '',
+    CppDeclarationSequence(declarations) => print_decl_sequence(declarations),
+    CppDeclarationEmpty => '',
     CppBlankLine => "\n",
     CppHostEntryMain(qualified_namespace) => host_entry_main_epilogue(qualified_namespace),
-    CppDeclFragment(code) => code
+    CppDeclarationFragment(code) => code
   }
 
-fn print_decls(declarations: [Shared<CppDecl>]) -> string =
+fn print_decls(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl_node(declaration)).join("\n\n")
 
 fn print_file_node(file: Shared<CppFile>) -> string = do
@@ -477,10 +477,10 @@ fn print_file_node(file: Shared<CppFile>) -> string = do
   end
 end
 
-fn invoked_while_expression(condition: Shared<CppExpr>, body_statements: string) -> string =
+fn invoked_while_expression(condition: Shared<CppExpression>, body_statements: string) -> string =
   `[&]() {\nwhile (${print_expr(condition)}) {\n${body_statements}}\n}()`
 
-fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpr>, body_statements: string) -> string =
+fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpression>, body_statements: string) -> string =
   `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${body_statements}}\n}()`
 
 fn invoked_block_expression(body_statements: string) -> string =
@@ -489,10 +489,10 @@ fn invoked_block_expression(body_statements: string) -> string =
 fn invoked_block_with_return_expression(return_type: string, body_statements: string) -> string =
   `[&]() -> ${return_type} {\n${body_statements}}()`
 
-fn question_try_expression(inner: Shared<CppExpr>) -> string =
+fn question_try_expression(inner: Shared<CppExpression>) -> string =
   `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
 
-fn with_block_expression(resource: Shared<CppExpr>, binder: string, body_statements: string) -> string =
+fn with_block_expression(resource: Shared<CppExpression>, binder: string, body_statements: string) -> string =
   `{\nauto ${binder} = (${print_expr(resource)});\n${body_statements}${binder}.drop();\n}\n`
 
 fn lambda_expression(capture_prefix: string, parameters_code: string, return_type_code: string, body_code: string) -> string =
@@ -502,7 +502,7 @@ fn print_lambda_expression(
   captures: [Shared<CppCapture>],
   parameters: [Shared<CppParam>],
   return_type: Shared<CppType>,
-  body: [Shared<CppStmt>]
+  body: [Shared<CppStatement>]
 ) -> string = do
   const capture_prefix = print_capture_list(captures)
   const parameters_code = print_parameter_list(parameters)
@@ -517,14 +517,14 @@ fn mutable_lambda_expression(capture_prefix: string, parameters_code: string, bo
 fn print_mutable_lambda_expression(
   captures: [Shared<CppCapture>],
   parameters: [Shared<CppParam>],
-  body: Shared<CppExpr>
+  body: Shared<CppExpression>
 ) -> string = do
   const capture_prefix = print_capture_list(captures)
   const parameters_code = print_parameter_list(parameters)
   mutable_lambda_expression(capture_prefix, parameters_code, print_expr(body))
 end
 
-fn print_member_expression(object: Shared<CppExpr>, member_name: string, is_pointer: bool) -> string =
+fn print_member_expression(object: Shared<CppExpression>, member_name: string, is_pointer: bool) -> string =
   if is_pointer then pointer_field_access(print_expr(object), member_name) else value_field_access(print_expr(object), member_name) end
 
 export fn print_integer_literal(integer_value: i32) -> string =
@@ -539,7 +539,7 @@ export fn print_boolean_literal(boolean_value: bool) -> string =
 export fn print_identifier(name: string) -> string =
   name
 
-export fn print_expr(expression: Shared<CppExpr>) -> string =
+export fn print_expr(expression: Shared<CppExpression>) -> string =
   match expression {
     CppInt(integer_value) => print_integer_literal(integer_value),
     CppStr(string_value) => print_string_literal(string_value),
@@ -588,10 +588,10 @@ export fn print_expr(expression: Shared<CppExpr>) -> string =
       with_block_expression(resource, binder, body_statements)
   }
 
-export fn print_statement(statement: Shared<CppStmt>) -> string =
+export fn print_statement(statement: Shared<CppStatement>) -> string =
   print_statement_at_depth(statement, 0)
 
-export fn print_decl(declaration: Shared<CppDecl>) -> string =
+export fn print_decl(declaration: Shared<CppDeclaration>) -> string =
   print_decl_node(declaration)
 
 export fn print_file(file: Shared<CppFile>) -> string =

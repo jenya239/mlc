@@ -7,12 +7,12 @@ import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
-         CppReturn, CppExprStmt, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStmtFragment, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
-         CppDecl, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclSequence, CppDeclEmpty, CppBlankLine,
+         CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
          CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
 
-fn print_declarations(declarations: [Shared<CppDecl>]) -> string =
+fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')
 
 fn integer_type() -> Shared<CppType> =
@@ -177,7 +177,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     Shared.new(CppBinary(">>", hash_identifier, Shared.new(CppInt(2))))))
   const hash_combine = Shared.new(CppBinary("^=", hash_identifier, hash_rhs))
   results.push(assert_eq_str('print_statement hash combine expr',
-    print_statement(Shared.new(CppExprStmt(hash_combine))),
+    print_statement(Shared.new(CppExpressionStatement(hash_combine))),
     "(h ^= (((std::hash<int>{}(self.tag) + 0x9e3779b97f4a7c15ULL) + (h << 6)) + (h >> 2)));"))
 
   results.push(assert_eq_str('print_statement CppConstexprAutoDecl',
@@ -190,8 +190,8 @@ export fn cpp_printer_tests() -> [TestResult] = do
       Shared.new(CppIdent('__lt'))))),
     'auto [first, second] = __lt;'))
 
-  results.push(assert_eq_str('print_statement CppStmtFragment',
-    print_statement(Shared.new(CppStmtFragment('if (ready) { step(); }'))),
+  results.push(assert_eq_str('print_statement CppStatementFragment',
+    print_statement(Shared.new(CppStatementFragment('if (ready) { step(); }'))),
     'if (ready) { step(); }'))
 
   results.push(assert_eq_str('print_statement CppIf',
@@ -206,7 +206,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_statement(Shared.new(CppFor(
       'item',
       Shared.new(CppIdent('items')),
-      [Shared.new(CppExprStmt(Shared.new(CppCall(Shared.new(CppIdent('process')), [Shared.new(CppIdent('item'))]))))]
+      [Shared.new(CppExpressionStatement(Shared.new(CppCall(Shared.new(CppIdent('process')), [Shared.new(CppIdent('item'))]))))]
     ))),
     'for (auto item : items) {\n  process(item);\n}'))
 
@@ -304,14 +304,14 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_decl(Shared.new(CppStaticAssert('ExprVisitor', ['mlc::String', 'Color'], 'Color does not implement ExprVisitor'))),
     'static_assert(ExprVisitor<mlc::String, Color>, "Color does not implement ExprVisitor");\n'))
 
-  results.push(assert_eq_str('print_decl CppDeclSequence',
-    print_decl(Shared.new(CppDeclSequence([
+  results.push(assert_eq_str('print_decl CppDeclarationSequence',
+    print_decl(Shared.new(CppDeclarationSequence([
       Shared.new(CppUsing('Left', 'int')),
       Shared.new(CppUsing('Right', 'int'))]))),
     'using Left = int;using Right = int;'))
 
-  results.push(assert_eq_str('print_decl CppDeclEmpty',
-    print_decl(Shared.new(CppDeclEmpty)), ''))
+  results.push(assert_eq_str('print_decl CppDeclarationEmpty',
+    print_decl(Shared.new(CppDeclarationEmpty)), ''))
 
   results.push(assert_eq_str('print_decl CppBlankLine',
     print_decl(Shared.new(CppBlankLine)), "\n"))

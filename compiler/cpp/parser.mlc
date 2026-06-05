@@ -3,7 +3,7 @@
 
 type CppParseResult = CppParseResult { program: CppProgram, errors: [string] }
 
-type CppDeclResult = { decl: Shared<CppDecl>, position: i32 }
+type CppDeclarationResult = { decl: Shared<CppDeclaration>, position: i32 }
 
 type CppTypeResult = { type_string: string, position: i32 }
 
@@ -32,31 +32,31 @@ fn parse_type_tokens(tokens: [CppToken], position: i32) -> CppTypeResult = do
   CppTypeResult { type_string: parts.join(" "), position: pos }
 end
 
-fn parse_include_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+fn parse_include_decl(tokens: [CppToken], position: i32) -> CppDeclarationResult = do
   const after_skip = parse_include_skip(tokens, position)
   let kind = cpp_token_kind_at(tokens, after_skip)
   if cpp_is_angle(kind) then
     const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_skip + 1))
-    CppDeclResult { decl: Shared.new(CppInclude(true, name)), position: after_skip + 3 }
+    CppDeclarationResult { decl: Shared.new(CppInclude(true, name)), position: after_skip + 3 }
   else if cpp_is_string(kind) then
     const path = cpp_get_string(kind)
-    CppDeclResult { decl: Shared.new(CppInclude(false, path)), position: after_skip + 1 }
+    CppDeclarationResult { decl: Shared.new(CppInclude(false, path)), position: after_skip + 1 }
   else
-    CppDeclResult { decl: Shared.new(CppInclude(true, '')), position: after_skip }
+    CppDeclarationResult { decl: Shared.new(CppInclude(true, '')), position: after_skip }
   end
 end
 
-fn parse_using_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+fn parse_using_decl(tokens: [CppToken], position: i32) -> CppDeclarationResult = do
   const after_using = position + 1
   const alias = cpp_get_identifier(cpp_token_kind_at(tokens, after_using))
   const after_alias = after_using + 1
   const after_equals = if cpp_is_equals(cpp_token_kind_at(tokens, after_alias)) then after_alias + 1 else after_alias end
   let { type_string, position: after_type } = parse_type_tokens(tokens, after_equals)
   const after_semicolon = if cpp_is_semicolon(cpp_token_kind_at(tokens, after_type)) then after_type + 1 else after_type end
-  CppDeclResult { decl: Shared.new(CppUsing(alias, type_string)), position: after_semicolon }
+  CppDeclarationResult { decl: Shared.new(CppUsing(alias, type_string)), position: after_semicolon }
 end
 
-fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclarationResult = do
   const after_struct = position + 1
   const name = cpp_get_identifier(cpp_token_kind_at(tokens, after_struct))
   const after_name = after_struct + 1
@@ -80,23 +80,23 @@ fn parse_struct_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
     end
     if cpp_is_right_brace(cpp_token_kind_at(tokens, pos)) then pos = pos + 1 end
   end
-  CppDeclResult { decl: Shared.new(CppStruct('', name, fields, false)), position: pos }
+  CppDeclarationResult { decl: Shared.new(CppStruct('', name, fields, false)), position: pos }
 end
 
-fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclResult = do
+fn cpp_parse_decl(tokens: [CppToken], position: i32) -> CppDeclarationResult = do
   let kind = cpp_token_kind_at(tokens, position)
   if cpp_is_hash(kind) then parse_include_decl(tokens, position)
   else if cpp_is_using_keyword(kind) then parse_using_decl(tokens, position)
   else if cpp_is_struct_keyword(kind) then parse_struct_decl(tokens, position)
-  else CppDeclResult { decl: Shared.new(CppInclude(true, '__skip__')), position: position }
+  else CppDeclarationResult { decl: Shared.new(CppInclude(true, '__skip__')), position: position }
   end
 end
 
-fn cpp_is_skip_decl(decl: Shared<CppDecl>) -> bool =
+fn cpp_is_skip_decl(decl: Shared<CppDeclaration>) -> bool =
   match decl { CppInclude(is_angle, path) => is_angle && path == '__skip__', _ => false }
 
 fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
-  const decls: [Shared<CppDecl>] = []
+  const decls: [Shared<CppDeclaration>] = []
   let position = 0
   while !cpp_at_end(tokens, position) do
     let { decl, position: next_position } = cpp_parse_decl(tokens, position)

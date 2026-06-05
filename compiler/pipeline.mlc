@@ -6,7 +6,7 @@ import { TypeRegistry } from './checker/registry'
 import { build_trait_nominal_maps } from './checker/transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './checker/transform/param_destructure_expand'
 import { transform_load_items } from './checker/transform/transform_decl'
-import { SLoadItem } from './ir/semantic_ir'
+import { SemanticLoadItem } from './ir/semantic_ir'
 import { LoadItem } from './codegen/decl/decl_index'
 import { PrecomputedCtx, precompute, gen_module } from './codegen/module'
 import { path_to_module_base } from './codegen/cpp_naming'
@@ -33,7 +33,7 @@ export type CheckedCompileState = CheckedCompileState {
 
 export type TransformedCompileState = TransformedCompileState {
   load_items: [LoadItem],
-  transformed_items: [SLoadItem],
+  transformed_items: [SemanticLoadItem],
   expanded_program: Program,
   precomputed: PrecomputedCtx,
   output_directory: string,

@@ -115,7 +115,7 @@ fn check_mutation_block(statements: [Shared<Stmt>], result: Shared<Expr>, mutabl
             if is_mut then inner_mutable.push(name) end
             next_errors
           end,
-          StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
+          StmtLetPattern(pattern, is_mut, _, value, _, _, _) => do
             const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
             if is_mut then do
               const bound_pattern_names = pattern_bindings(pattern)
@@ -151,7 +151,7 @@ fn check_mutation_stmts_errors(statements: [Shared<Stmt>], mutable_locals: [stri
           if is_mut then inner_mutable.push(name) end
           next_errors
         end,
-        StmtLetPat(pattern, is_mut, _, value, _, _, _) => do
+        StmtLetPattern(pattern, is_mut, _, value, _, _, _) => do
           const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, inner_mutable))
           if is_mut then do
             const bound_pattern_names = pattern_bindings(pattern)

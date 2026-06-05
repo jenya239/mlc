@@ -1,43 +1,43 @@
 // Binding layer: threads gen_expr <-> gen_stmts_str via closures.
 // Public API has no extra parameters; the cross-module dependency is injected here.
 
-import { SExpr, SStmt } from '../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement } from '../ir/semantic_ir'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
 import { print_expr } from '../cpp/cpp_printer'
 import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 import { gen_stmts_cpp, print_cpp_statements } from './stmt_cpp'
 
-export fn gen_expr(expression: Shared<SExpr>, context: CodegenContext) -> string =
+export fn gen_expr(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
   print_expr(expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str))
 
-export fn gen_stmts_str(statements: [Shared<SStmt>], context: CodegenContext) -> string =
+export fn gen_stmts_str(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
 
-export fn gen_argument_list(expressions: [Shared<SExpr>], context: CodegenContext) -> string =
+export fn gen_argument_list(expressions: [Shared<SemanticExpression>], context: CodegenContext) -> string =
   expressions.map(expression => gen_expr(expression, context)).join(', ')
 
-export fn gen_try_unwrap(inner_expr: Shared<SExpr>, context: CodegenContext, try_identifier: string, success_line: string) -> string =
+export fn gen_try_unwrap(inner_expr: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string) -> string =
   stmt_eval.eval_try_unwrap(
     inner_expr,
     context,
     try_identifier,
     success_line,
-    (expression: Shared<SExpr>, codegen_context: CodegenContext) =>
+    (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
       gen_expr(expression, codegen_context))
 
-export fn gen_stmt_with_try(statement: Shared<SStmt>, context: CodegenContext, try_counter: i32) -> GenStmtResult =
+export fn gen_stmt_with_try(statement: Shared<SemanticStatement>, context: CodegenContext, try_counter: i32) -> GenStmtResult =
   stmt_eval.eval_stmt_with_try(
     statement,
     context,
     try_counter,
-    (expression: Shared<SExpr>, codegen_context: CodegenContext) =>
+    (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
       gen_expr(expression, codegen_context))
 
-export fn gen_stmts_str_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> GenStmtsWithContext =
+export fn gen_stmts_str_with_try(statements: [Shared<SemanticStatement>], context: CodegenContext, try_counter: i32) -> GenStmtsWithContext =
   stmt_eval.eval_stmts_str_with_try(
     statements,
     context,
     try_counter,
-    (expression: Shared<SExpr>, codegen_context: CodegenContext) =>
+    (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
       gen_expr(expression, codegen_context))

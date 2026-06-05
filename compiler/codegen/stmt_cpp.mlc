@@ -1,8 +1,8 @@
-// CppStmt dual path for statement codegen (Phase 2 step 16).
+// CppStatement dual path for statement codegen (Phase 2 step 16).
 
-import { SExpr, SStmt, SExprQuestion, SExprArray, SExprMethod, SExprIdent, SExprWhile, SExprFor, SExprIf, SExprBlock, SExprUnit } from '../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionQuestion, SemanticExpressionArray, SemanticExpressionMethod, SemanticExpressionIdent, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionUnit } from '../ir/semantic_ir'
 import { Type, TGeneric, TUnit } from '../checker/registry'
-import { CppExpr, CppStmt, CppCall } from '../cpp/cpp_ast'
+import { CppExpression, CppStatement, CppCall } from '../cpp/cpp_ast'
 import { print_statement } from '../cpp/cpp_printer'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
@@ -12,34 +12,34 @@ import * as let_pat_cpp from './stmt/let_pat_cpp'
 import { stmts_final_ctx } from './stmt/statement_context'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
-fn gen_stmts_for_cpp_codegen(statements: [Shared<SStmt>], context: CodegenContext) -> string =
+fn gen_stmts_for_cpp_codegen(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
 
-fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SExpr>, context: CodegenContext) -> Shared<CppExpr> =
+fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SemanticExpression>, context: CodegenContext) -> Shared<CppExpression> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)
 
 type StmtsCppAccumState = StmtsCppAccumState {
-  statements: [Shared<CppStmt>],
+  statements: [Shared<CppStatement>],
   next_try: i32,
   codegen_context: CodegenContext
 }
 
 type GenStmtCppResult = GenStmtCppResult {
-  statement: Shared<CppStmt>,
+  statement: Shared<CppStatement>,
   next_try: i32,
   codegen_context: CodegenContext
 }
 
-export fn gen_stmts_cpp(statements: [Shared<SStmt>], context: CodegenContext) -> [Shared<CppStmt>] =
+export fn gen_stmts_cpp(statements: [Shared<SemanticStatement>], context: CodegenContext) -> [Shared<CppStatement>] =
   eval_stmts_cpp_with_try(statements, context, 0).statements
 
 export type GenStmtsCppWithContext = GenStmtsCppWithContext {
-  statements: [Shared<CppStmt>],
+  statements: [Shared<CppStatement>],
   codegen_context: CodegenContext
 }
 
 export fn gen_stmts_cpp_with_context(
-  statements: [Shared<SStmt>],
+  statements: [Shared<SemanticStatement>],
   context: CodegenContext,
   try_counter: i32
 ) -> GenStmtsCppWithContext = do
@@ -50,30 +50,30 @@ export fn gen_stmts_cpp_with_context(
   }
 end
 
-export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStmt> =
+export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStatement> =
   cpp_stmt_fragment_from_string_output(output)
 
-export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStmt>] =
+export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStatement>] =
   if output.length() == 0 then []
   else do
-    let statements: [Shared<CppStmt>] = []
+    let statements: [Shared<CppStatement>] = []
     statements.push(cpp_stmt_from_string_output(output))
     statements
   end
 
-export fn print_cpp_statements(statements: [Shared<CppStmt>]) -> string =
+export fn print_cpp_statements(statements: [Shared<CppStatement>]) -> string =
   statements.map(statement => print_cpp_statement_line(statement)).join("")
 
-fn print_cpp_statement_line(statement: Shared<CppStmt>) -> string =
+fn print_cpp_statement_line(statement: Shared<CppStatement>) -> string =
   match statement {
-    CppStmtFragment(fragment) =>
+    CppStatementFragment(fragment) =>
       if fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == "\n" then fragment
       else fragment + "\n"
     end,
     _ => print_statement(statement) + "\n"
   }
 
-fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStmt> =
+fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStatement> =
   emit_helpers.make_fragment_cpp_statement(strip_trailing_newline(output))
 
 fn strip_trailing_newline(text: string) -> string =
@@ -82,7 +82,7 @@ fn strip_trailing_newline(text: string) -> string =
   else text
   end
 
-fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) -> Shared<CppExpr> =
+fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression(`mlc::HashMap<${key_type_cpp}, ${value_type_cpp}>`),
     []))
@@ -90,8 +90,8 @@ fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) ->
 fn gen_map_new_let_value_cpp(
   value_type: Shared<Type>,
   context: CodegenContext,
-  fallback: Shared<CppExpr>
-) -> Shared<CppExpr> =
+  fallback: Shared<CppExpression>
+) -> Shared<CppExpression> =
   match value_type {
     TGeneric(type_name, type_args) =>
       if type_name == 'Map' && type_args.length() == 2 then
@@ -105,8 +105,8 @@ fn gen_map_new_let_value_cpp(
 
 fn gen_for_statement_cpp(
   variable_name: string,
-  iterator: Shared<SExpr>,
-  body_statements: [Shared<SStmt>],
+  iterator: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>],
   context: CodegenContext,
   try_counter: i32
 ) -> GenStmtCppResult = do
@@ -123,8 +123,8 @@ fn gen_for_statement_cpp(
 end
 
 fn gen_while_statement_cpp(
-  condition: Shared<SExpr>,
-  body_statements: [Shared<SStmt>],
+  condition: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>],
   context: CodegenContext,
   try_counter: i32
 ) -> GenStmtCppResult = do
@@ -139,27 +139,27 @@ fn gen_while_statement_cpp(
   }
 end
 
-fn if_statement_has_unit_else(else_expression: Shared<SExpr>) -> bool =
+fn if_statement_has_unit_else(else_expression: Shared<SemanticExpression>) -> bool =
   match else_expression {
-    SExprUnit(_, _) => true,
-    SExprBlock(_, result_expression, _, _) =>
+    SemanticExpressionUnit(_, _) => true,
+    SemanticExpressionBlock(_, result_expression, _, _) =>
       match result_expression {
-        SExprUnit(_, _) => true,
+        SemanticExpressionUnit(_, _) => true,
         _ => false
       },
     _ => false
   }
 
 fn append_block_trailing_cpp(
-  block_statements: [Shared<CppStmt>],
-  result_expression: Shared<SExpr>,
+  block_statements: [Shared<CppStatement>],
+  result_expression: Shared<SemanticExpression>,
   final_context: CodegenContext,
   try_counter: i32
-) -> [Shared<CppStmt>] = do
+) -> [Shared<CppStatement>] = do
   let mut output = block_statements
   match result_expression {
-    SExprUnit(_, _) => output,
-    SExprIf(condition, then_expression, else_expression, semantic_type, _) => do
+    SemanticExpressionUnit(_, _) => output,
+    SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) => do
       output.push(gen_unit_if_statement_cpp(
         condition, then_expression, else_expression, semantic_type, final_context, try_counter).statement)
       output
@@ -173,18 +173,18 @@ fn append_block_trailing_cpp(
 end
 
 fn unit_if_branch_block_cpp(
-  branch_expression: Shared<SExpr>,
+  branch_expression: Shared<SemanticExpression>,
   context: CodegenContext,
   try_counter: i32
-) -> Shared<CppStmt> =
+) -> Shared<CppStatement> =
   match branch_expression {
-    SExprBlock(statements, result_expression, _, _) => do
+    SemanticExpressionBlock(statements, result_expression, _, _) => do
       const final_context = stmts_final_ctx(statements, context)
       const accumulated = eval_stmts_cpp_with_try(statements, context, try_counter)
       emit_helpers.make_block_cpp_statement(append_block_trailing_cpp(
         accumulated.statements, result_expression, final_context, accumulated.next_try))
     end,
-    SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+    SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
       gen_unit_if_statement_cpp(
         condition, then_expression, else_expression, semantic_type, context, try_counter).statement,
     _ => emit_helpers.make_block_cpp_statement([
@@ -193,22 +193,22 @@ fn unit_if_branch_block_cpp(
   }
 
 fn unit_if_else_branch_cpp(
-  else_expression: Shared<SExpr>,
+  else_expression: Shared<SemanticExpression>,
   context: CodegenContext,
   try_counter: i32
-) -> Shared<CppStmt> =
+) -> Shared<CppStatement> =
   match else_expression {
-    SExprUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
-    SExprIf(condition, then_expression, nested_else_expression, semantic_type, _) =>
+    SemanticExpressionUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
+    SemanticExpressionIf(condition, then_expression, nested_else_expression, semantic_type, _) =>
       gen_unit_if_statement_cpp(
         condition, then_expression, nested_else_expression, semantic_type, context, try_counter).statement,
     _ => unit_if_branch_block_cpp(else_expression, context, try_counter)
   }
 
 fn gen_unit_if_statement_cpp(
-  condition: Shared<SExpr>,
-  then_expression: Shared<SExpr>,
-  else_expression: Shared<SExpr>,
+  condition: Shared<SemanticExpression>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>,
   _if_semantic_type: Shared<Type>,
   context: CodegenContext,
   try_counter: i32
@@ -225,17 +225,17 @@ fn gen_unit_if_statement_cpp(
 end
 
 fn eval_stmt_cpp(
-  statement: Shared<SStmt>,
+  statement: Shared<SemanticStatement>,
   context: CodegenContext,
   try_counter: i32
 ) -> GenStmtCppResult =
   match statement {
-    SStmtBreak(_) =>
+    SemanticStatementBreak(_) =>
       GenStmtCppResult { statement: emit_helpers.make_break_cpp_statement(), next_try: try_counter, codegen_context: context },
-    SStmtContinue(_) =>
+    SemanticStatementContinue(_) =>
       GenStmtCppResult { statement: emit_helpers.make_continue_cpp_statement(), next_try: try_counter, codegen_context: context },
-    SStmtReturn(expression, _) => match expression {
-      SExprQuestion(_, _, _) => GenStmtCppResult {
+    SemanticStatementReturn(expression, _) => match expression {
+      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_return_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter + 1,
@@ -247,22 +247,22 @@ fn eval_stmt_cpp(
         codegen_context: context
       }
     },
-    SStmtLet(name, _, value, value_type, _) => match value {
-      SExprQuestion(_, _, _) => GenStmtCppResult {
+    SemanticStatementLet(name, _, value, value_type, _) => match value {
+      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(
           cpp_safe(name),
           gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter + 1,
         codegen_context: context
       },
-      SExprArray(_, _, _) => GenStmtCppResult {
+      SemanticExpressionArray(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
         next_try: try_counter,
         codegen_context: context
       },
-      SExprMethod(map_object, method_name, _, _, _, _) =>
+      SemanticExpressionMethod(map_object, method_name, _, _, _, _) =>
         if method_name == "new" then match map_object {
-          SExprIdent(object_name, _, _) =>
+          SemanticExpressionIdent(object_name, _, _) =>
             if object_name == "Map" then GenStmtCppResult {
               statement: emit_helpers.make_auto_cpp_statement(
                 cpp_safe(name),
@@ -299,7 +299,7 @@ fn eval_stmt_cpp(
         codegen_context: context
       }
     },
-    SStmtLetPat(pat, _, value, value_type, has_else, else_body, _) => do
+    SemanticStatementLetPattern(pat, _, value, value_type, has_else, else_body, _) => do
       const pattern_parsed = let_pat_cpp.gen_let_pattern_cpp_statement(
         pat, value, value_type, has_else, else_body, context, gen_expr_cpp_for_stmt_codegen)
       GenStmtCppResult {
@@ -308,7 +308,7 @@ fn eval_stmt_cpp(
         codegen_context: pattern_parsed.codegen_context
       }
     end,
-    SStmtLetConst(name, value, _, _) =>
+    SemanticStatementLetConst(name, value, _, _) =>
       GenStmtCppResult {
         statement: emit_helpers.make_constexpr_auto_cpp_statement(
           cpp_safe(name),
@@ -316,18 +316,18 @@ fn eval_stmt_cpp(
         next_try: try_counter,
         codegen_context: context
       },
-    SStmtExpr(expression, _) => match expression {
-      SExprQuestion(_, _, _) => GenStmtCppResult {
+    SemanticStatementExpr(expression, _) => match expression {
+      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
         statement: emit_helpers.make_expression_cpp_statement(
           gen_expr_cpp_for_stmt_codegen(expression, context)),
         next_try: try_counter + 1,
         codegen_context: context
       },
-      SExprWhile(condition, body_statements, _, _) =>
+      SemanticExpressionWhile(condition, body_statements, _, _) =>
         gen_while_statement_cpp(condition, body_statements, context, try_counter),
-      SExprFor(variable_name, iterator, body_statements, _, _) =>
+      SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
         gen_for_statement_cpp(variable_name, iterator, body_statements, context, try_counter),
-      SExprIf(condition, then_expression, else_expression, semantic_type, _) =>
+      SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
         if if_statement_has_unit_else(else_expression) then
           gen_unit_if_statement_cpp(
             condition, then_expression, else_expression, semantic_type, context, try_counter)
@@ -352,8 +352,8 @@ fn eval_stmt_cpp(
     }
   }
 
-fn eval_stmts_cpp_with_try(statements: [Shared<SStmt>], context: CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
-  let mut output_statements: [Shared<CppStmt>] = []
+fn eval_stmts_cpp_with_try(statements: [Shared<SemanticStatement>], context: CodegenContext, try_counter: i32) -> StmtsCppAccumState = do
+  let mut output_statements: [Shared<CppStatement>] = []
   let mut next_try = try_counter
   let mut codegen_context = context
   let mut index = 0

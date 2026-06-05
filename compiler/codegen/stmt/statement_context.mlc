@@ -1,7 +1,7 @@
-import { SStmt } from '../../ir/semantic_ir'
+import { SemanticStatement } from '../../ir/semantic_ir'
 import { CodegenContext, mutate_context_from_statement } from '../context'
 
-export fn stmts_final_ctx(statements: [Shared<SStmt>], context: CodegenContext) -> CodegenContext = do
+export fn stmts_final_ctx(statements: [Shared<SemanticStatement>], context: CodegenContext) -> CodegenContext = do
   let mut current_context = context
   let mut index = 0
   while index < statements.length() do

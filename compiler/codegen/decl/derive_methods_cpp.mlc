@@ -1,43 +1,43 @@
 // Native C++ AST codegen for derive traits (Display, Eq, …).
 
 import { TypeVariant, FieldDef, TypeExpr, TyString, TyI32, TyBool, VarUnit, VarTuple, VarRecord } from '../../frontend/ast'
-import { CppDecl, CppFnDef, CppExpr, CppStmt, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp/cpp_ast'
+import { CppDeclaration, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp/cpp_ast'
 import * as emit_helpers from '../../cpp/emit_helpers'
 import * as hash_stmt_helpers from '../../cpp/hash_stmt_helpers'
 
-fn make_string_constructor(text: string) -> Shared<CppExpr> =
+fn make_string_constructor(text: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression('mlc::String'),
     [emit_helpers.make_string_cpp_expression(text)]))
 
-fn make_mlc_to_string_call(argument: Shared<CppExpr>) -> Shared<CppExpr> =
+fn make_mlc_to_string_call(argument: Shared<CppExpression>) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression('mlc::to_string'),
     [argument]))
 
-fn make_self_field_expression(field_name: string) -> Shared<CppExpr> =
+fn make_self_field_expression(field_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(
     emit_helpers.make_identifier_cpp_expression('self'),
     field_name,
     false))
 
-fn make_self_discriminant_expression() -> Shared<CppExpr> =
+fn make_self_discriminant_expression() -> Shared<CppExpression> =
   Shared.new(CppMember(
     emit_helpers.make_identifier_cpp_expression('self'),
     "_",
     false))
 
-fn make_std_get_expression(variant_name: string) -> Shared<CppExpr> =
+fn make_std_get_expression(variant_name: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression("std::get<" + variant_name + ">"),
     [make_self_discriminant_expression()]))
 
-fn make_holds_alternative_expression(variant_name: string) -> Shared<CppExpr> =
+fn make_holds_alternative_expression(variant_name: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression("std::holds_alternative<" + variant_name + ">"),
     [make_self_discriminant_expression()]))
 
-fn derive_field_display_expression(field_name: string, field_type: Shared<TypeExpr>) -> Shared<CppExpr> =
+fn derive_field_display_expression(field_name: string, field_type: Shared<TypeExpr>) -> Shared<CppExpression> =
   match field_type {
     TyString => make_self_field_expression(field_name),
     _ => make_mlc_to_string_call(make_self_field_expression(field_name))
@@ -47,7 +47,7 @@ fn derive_variant_field_display_expression(
   variant_name: string,
   field_name: string,
   field_type: Shared<TypeExpr>
-) -> Shared<CppExpr> =
+) -> Shared<CppExpression> =
   match field_type {
     TyString =>
       Shared.new(CppMember(make_std_get_expression(variant_name), field_name, false)),
@@ -56,7 +56,7 @@ fn derive_variant_field_display_expression(
         Shared.new(CppMember(make_std_get_expression(variant_name), field_name, false)))
   }
 
-fn fold_plus_expressions(expressions: [Shared<CppExpr>]) -> Shared<CppExpr> = do
+fn fold_plus_expressions(expressions: [Shared<CppExpression>]) -> Shared<CppExpression> = do
   if expressions.length() == 0 then
     emit_helpers.make_string_cpp_expression('')
   else if expressions.length() == 1 then
@@ -73,20 +73,20 @@ fn fold_plus_expressions(expressions: [Shared<CppExpr>]) -> Shared<CppExpr> = do
 end
 
 fn append_display_field_parts(
-  parts: [Shared<CppExpr>],
+  parts: [Shared<CppExpression>],
   field_name: string,
   field_type: Shared<TypeExpr>
-) -> [Shared<CppExpr>] = do
+) -> [Shared<CppExpression>] = do
   parts.push(make_string_constructor(", " + field_name + ": "))
   parts.push(derive_field_display_expression(field_name, field_type))
   parts
 end
 
-fn derive_display_record_return_expression(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppExpr> =
+fn derive_display_record_return_expression(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppExpression> =
   if field_definitions.length() == 0 then
     make_string_constructor(type_name + " {}")
   else
-    let mut parts: [Shared<CppExpr>] = []
+    let mut parts: [Shared<CppExpression>] = []
     parts.push(make_string_constructor(type_name + " { " + field_definitions[0].name + ": "))
     parts.push(derive_field_display_expression(field_definitions[0].name, field_definitions[0].typ))
     let mut index = 1
@@ -99,10 +99,10 @@ fn derive_display_record_return_expression(type_name: string, field_definitions:
   end
 
 fn append_variant_record_display_parts(
-  parts: [Shared<CppExpr>],
+  parts: [Shared<CppExpression>],
   variant_name: string,
   field_definitions: [Shared<FieldDef>]
-) -> [Shared<CppExpr>] = do
+) -> [Shared<CppExpression>] = do
   let mut index = 1
   while index < field_definitions.length() do
     parts.push(make_string_constructor(", "))
@@ -118,11 +118,11 @@ end
 fn derive_display_variant_record_return_expression(
   variant_name: string,
   field_definitions: [Shared<FieldDef>]
-) -> Shared<CppExpr> =
+) -> Shared<CppExpression> =
   if field_definitions.length() == 0 then
     make_string_constructor(variant_name)
   else
-    let mut parts: [Shared<CppExpr>] = []
+    let mut parts: [Shared<CppExpression>] = []
     parts.push(make_string_constructor(variant_name + "("))
     parts.push(derive_variant_field_display_expression(
       variant_name,
@@ -133,7 +133,7 @@ fn derive_display_variant_record_return_expression(
     fold_plus_expressions(parts)
   end
 
-fn derive_display_tuple_return_expression(variant_name: string, field_types: [Shared<TypeExpr>]) -> Shared<CppExpr> =
+fn derive_display_tuple_return_expression(variant_name: string, field_types: [Shared<TypeExpr>]) -> Shared<CppExpression> =
   if field_types.length() == 0 then
     make_string_constructor(variant_name)
   else
@@ -145,7 +145,7 @@ fn derive_display_tuple_return_expression(variant_name: string, field_types: [Sh
     ])
   end
 
-fn derive_display_variant_return_expression(variant: Shared<TypeVariant>) -> Shared<CppExpr> =
+fn derive_display_variant_return_expression(variant: Shared<TypeVariant>) -> Shared<CppExpression> =
   match variant {
     VarUnit(name, _) => make_string_constructor(name),
     VarTuple(name, field_types, _) => derive_display_tuple_return_expression(name, field_types),
@@ -153,7 +153,7 @@ fn derive_display_variant_return_expression(variant: Shared<TypeVariant>) -> Sha
       derive_display_variant_record_return_expression(name, field_definitions)
   }
 
-fn display_to_string_if_statement(variant: Shared<TypeVariant>) -> Shared<CppStmt> = do
+fn display_to_string_if_statement(variant: Shared<TypeVariant>) -> Shared<CppStatement> = do
   const variant_name = match variant {
     VarUnit(name, _) => name,
     VarTuple(name, _, _) => name,
@@ -165,8 +165,8 @@ fn display_to_string_if_statement(variant: Shared<TypeVariant>) -> Shared<CppStm
     emit_helpers.make_block_cpp_statement([]))
 end
 
-fn derive_display_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<CppStmt>] = do
-  let statements: [Shared<CppStmt>] = []
+fn derive_display_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<CppStatement>] = do
+  let statements: [Shared<CppStatement>] = []
   let mut index = 0
   while index < variants.length() do
     statements.push(display_to_string_if_statement(variants[index]))
@@ -178,8 +178,8 @@ end
 
 fn display_to_string_function_definition(
   type_name: string,
-  body_statements: [Shared<CppStmt>]
-) -> Shared<CppDecl> =
+  body_statements: [Shared<CppStatement>]
+) -> Shared<CppDeclaration> =
   Shared.new(CppFnDef(
     '',
     'mlc::String',
@@ -188,13 +188,13 @@ fn display_to_string_function_definition(
     body_statements,
     1))
 
-fn derive_display_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDecl> =
+fn derive_display_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDeclaration> =
   display_to_string_function_definition(
     type_name,
     [emit_helpers.make_return_cpp_statement(
       derive_display_record_return_expression(type_name, field_definitions))])
 
-fn derive_display_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<CppDecl> =
+fn derive_display_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<CppDeclaration> =
   display_to_string_function_definition(type_name, derive_display_sum_body_statements(variants))
 
 fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
@@ -207,26 +207,26 @@ fn derive_record_field_definitions(variants: [Shared<TypeVariant>]) -> [Shared<F
   match variants[0] { VarRecord(_, field_definitions, _) => field_definitions, _ => empty }
 end
 
-export fn gen_derive_display_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDecl>] =
+export fn gen_derive_display_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
     [derive_display_record_cpp(type_name, derive_record_field_definitions(variants))]
   else
     [derive_display_sum_cpp(type_name, variants)]
   end
 
-fn make_parameter_field_expression(parameter_name: string, field_name: string) -> Shared<CppExpr> =
+fn make_parameter_field_expression(parameter_name: string, field_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(
     emit_helpers.make_identifier_cpp_expression(parameter_name),
     field_name,
     false))
 
-fn make_parameter_discriminant_expression(parameter_name: string) -> Shared<CppExpr> =
+fn make_parameter_discriminant_expression(parameter_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(
     emit_helpers.make_identifier_cpp_expression(parameter_name),
     "_",
     false))
 
-fn fold_and_expressions(expressions: [Shared<CppExpr>]) -> Shared<CppExpr> = do
+fn fold_and_expressions(expressions: [Shared<CppExpression>]) -> Shared<CppExpression> = do
   if expressions.length() == 0 then
     emit_helpers.make_boolean_cpp_expression(true)
   else if expressions.length() == 1 then
@@ -242,8 +242,8 @@ fn fold_and_expressions(expressions: [Shared<CppExpr>]) -> Shared<CppExpr> = do
   end
 end
 
-fn build_eq_field_comparisons(field_definitions: [Shared<FieldDef>]) -> [Shared<CppExpr>] = do
-  let comparisons: [Shared<CppExpr>] = []
+fn build_eq_field_comparisons(field_definitions: [Shared<FieldDef>]) -> [Shared<CppExpression>] = do
+  let comparisons: [Shared<CppExpression>] = []
   let mut index = 0
   while index < field_definitions.length() do
     comparisons.push(Shared.new(CppBinary("==",
@@ -254,15 +254,15 @@ fn build_eq_field_comparisons(field_definitions: [Shared<FieldDef>]) -> [Shared<
   comparisons
 end
 
-fn derive_eq_sum_return_expression() -> Shared<CppExpr> =
+fn derive_eq_sum_return_expression() -> Shared<CppExpression> =
   Shared.new(CppBinary("==",
     make_parameter_discriminant_expression("a"),
     make_parameter_discriminant_expression("b")))
 
 fn eq_operator_function_definition(
   type_name: string,
-  return_expression: Shared<CppExpr>
-) -> Shared<CppDecl> =
+  return_expression: Shared<CppExpression>
+) -> Shared<CppDeclaration> =
   Shared.new(CppFnDef(
     '',
     'bool',
@@ -271,33 +271,33 @@ fn eq_operator_function_definition(
     [emit_helpers.make_return_cpp_statement(return_expression)],
     1))
 
-fn derive_eq_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDecl> =
+fn derive_eq_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDeclaration> =
   eq_operator_function_definition(
     type_name,
     fold_and_expressions(build_eq_field_comparisons(field_definitions)))
 
-fn derive_eq_sum_cpp(type_name: string) -> Shared<CppDecl> =
+fn derive_eq_sum_cpp(type_name: string) -> Shared<CppDeclaration> =
   eq_operator_function_definition(type_name, derive_eq_sum_return_expression())
 
-export fn gen_derive_eq_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDecl>] =
+export fn gen_derive_eq_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
     [derive_eq_record_cpp(type_name, derive_record_field_definitions(variants))]
   else
     [derive_eq_sum_cpp(type_name)]
   end
 
-fn make_field_less_than_expression(field_name: string) -> Shared<CppExpr> =
+fn make_field_less_than_expression(field_name: string) -> Shared<CppExpression> =
   Shared.new(CppBinary("<",
     make_parameter_field_expression("a", field_name),
     make_parameter_field_expression("b", field_name)))
 
-fn make_field_equal_expression(field_name: string) -> Shared<CppExpr> =
+fn make_field_equal_expression(field_name: string) -> Shared<CppExpression> =
   Shared.new(CppBinary("==",
     make_parameter_field_expression("a", field_name),
     make_parameter_field_expression("b", field_name)))
 
-fn build_prefix_equal_expression(field_definitions: [Shared<FieldDef>], up_to_index: i32) -> Shared<CppExpr> = do
-  let comparisons: [Shared<CppExpr>] = []
+fn build_prefix_equal_expression(field_definitions: [Shared<FieldDef>], up_to_index: i32) -> Shared<CppExpression> = do
+  let comparisons: [Shared<CppExpression>] = []
   let mut index = 0
   while index < up_to_index do
     comparisons.push(make_field_equal_expression(field_definitions[index].name))
@@ -306,7 +306,7 @@ fn build_prefix_equal_expression(field_definitions: [Shared<FieldDef>], up_to_in
   fold_and_expressions(comparisons)
 end
 
-fn build_ord_record_return_expression(field_definitions: [Shared<FieldDef>]) -> Shared<CppExpr> =
+fn build_ord_record_return_expression(field_definitions: [Shared<FieldDef>]) -> Shared<CppExpression> =
   if field_definitions.length() == 0 then
     emit_helpers.make_boolean_cpp_expression(false)
   else
@@ -322,15 +322,15 @@ fn build_ord_record_return_expression(field_definitions: [Shared<FieldDef>]) -> 
     result
   end
 
-fn derive_ord_sum_return_expression() -> Shared<CppExpr> =
+fn derive_ord_sum_return_expression() -> Shared<CppExpression> =
   Shared.new(CppBinary("<",
     make_parameter_discriminant_expression("a"),
     make_parameter_discriminant_expression("b")))
 
 fn ord_operator_function_definition(
   type_name: string,
-  return_expression: Shared<CppExpr>
-) -> Shared<CppDecl> =
+  return_expression: Shared<CppExpression>
+) -> Shared<CppDeclaration> =
   Shared.new(CppFnDef(
     '',
     'bool',
@@ -339,13 +339,13 @@ fn ord_operator_function_definition(
     [emit_helpers.make_return_cpp_statement(return_expression)],
     1))
 
-fn derive_ord_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDecl> =
+fn derive_ord_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDeclaration> =
   ord_operator_function_definition(type_name, build_ord_record_return_expression(field_definitions))
 
-fn derive_ord_sum_cpp(type_name: string) -> Shared<CppDecl> =
+fn derive_ord_sum_cpp(type_name: string) -> Shared<CppDeclaration> =
   ord_operator_function_definition(type_name, derive_ord_sum_return_expression())
 
-export fn gen_derive_ord_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDecl>] =
+export fn gen_derive_ord_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
     [derive_ord_record_cpp(type_name, derive_record_field_definitions(variants))]
   else
@@ -360,32 +360,32 @@ fn derive_hash_std_cpp_type(field_type: Shared<TypeExpr>) -> string =
     _ => ''
   }
 
-fn make_hash_tuple_field_access_expression(variant_name: string, field_index: i32) -> Shared<CppExpr> =
+fn make_hash_tuple_field_access_expression(variant_name: string, field_index: i32) -> Shared<CppExpression> =
   Shared.new(CppMember(
     make_std_get_expression(variant_name),
     "field" + field_index.to_string(),
     false))
 
-fn make_hash_variant_field_access_expression(variant_name: string, field_name: string) -> Shared<CppExpr> =
+fn make_hash_variant_field_access_expression(variant_name: string, field_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(make_std_get_expression(variant_name), field_name, false))
 
-fn make_hash_combine_statement(cpp_type: string, access: Shared<CppExpr>) -> Shared<CppStmt> =
+fn make_hash_combine_statement(cpp_type: string, access: Shared<CppExpression>) -> Shared<CppStatement> =
   hash_stmt_helpers.make_hash_combine_cpp_statement(cpp_type, access)
 
-fn make_hash_seed_declaration_statement() -> Shared<CppStmt> =
+fn make_hash_seed_declaration_statement() -> Shared<CppStatement> =
   hash_stmt_helpers.make_hash_seed_cpp_statement()
 
-fn make_hash_empty_return_statement() -> Shared<CppStmt> =
+fn make_hash_empty_return_statement() -> Shared<CppStatement> =
   hash_stmt_helpers.make_hash_empty_return_cpp_statement()
 
-fn make_hash_return_h_statement() -> Shared<CppStmt> =
+fn make_hash_return_h_statement() -> Shared<CppStatement> =
   emit_helpers.make_return_cpp_statement(emit_helpers.make_identifier_cpp_expression("h"))
 
-fn derive_hash_record_body_statements(field_definitions: [Shared<FieldDef>]) -> [Shared<CppStmt>] =
+fn derive_hash_record_body_statements(field_definitions: [Shared<FieldDef>]) -> [Shared<CppStatement>] =
   if field_definitions.length() == 0 then
     [make_hash_empty_return_statement()]
   else
-    let statements: [Shared<CppStmt>] = []
+    let statements: [Shared<CppStatement>] = []
     statements.push(make_hash_seed_declaration_statement())
     let mut index = 0
     while index < field_definitions.length() do
@@ -405,15 +405,15 @@ fn type_variant_constructor_name(variant: Shared<TypeVariant>) -> string =
     VarRecord(name, _, _) => name
   }
 
-fn derive_hash_discriminant_combine_statement(discriminant_index: i32) -> Shared<CppStmt> =
+fn derive_hash_discriminant_combine_statement(discriminant_index: i32) -> Shared<CppStatement> =
   make_hash_combine_statement("size_t", emit_helpers.make_integer_cpp_expression(discriminant_index))
 
 fn append_hash_tuple_field_combine_statements(
-  statements: [Shared<CppStmt>],
+  statements: [Shared<CppStatement>],
   variant_name: string,
   field_types: [Shared<TypeExpr>],
   discriminant_index: i32
-) -> [Shared<CppStmt>] = do
+) -> [Shared<CppStatement>] = do
   statements.push(derive_hash_discriminant_combine_statement(discriminant_index))
   let mut field_index = 0
   while field_index < field_types.length() do
@@ -426,11 +426,11 @@ fn append_hash_tuple_field_combine_statements(
 end
 
 fn append_hash_record_variant_combine_statements(
-  statements: [Shared<CppStmt>],
+  statements: [Shared<CppStatement>],
   variant_name: string,
   field_definitions: [Shared<FieldDef>],
   discriminant_index: i32
-) -> [Shared<CppStmt>] = do
+) -> [Shared<CppStatement>] = do
   statements.push(derive_hash_discriminant_combine_statement(discriminant_index))
   let mut index = 0
   while index < field_definitions.length() do
@@ -442,29 +442,29 @@ fn append_hash_record_variant_combine_statements(
   statements
 end
 
-fn derive_hash_variant_body_statements(variant: Shared<TypeVariant>, discriminant_index: i32) -> [Shared<CppStmt>] =
+fn derive_hash_variant_body_statements(variant: Shared<TypeVariant>, discriminant_index: i32) -> [Shared<CppStatement>] =
   match variant {
     VarUnit(_, _) => do
-      let statements: [Shared<CppStmt>] = []
+      let statements: [Shared<CppStatement>] = []
       statements.push(derive_hash_discriminant_combine_statement(discriminant_index))
       statements.push(make_hash_return_h_statement())
       statements
     end,
     VarTuple(variant_name, field_types, _) => do
-      let statements: [Shared<CppStmt>] = []
+      let statements: [Shared<CppStatement>] = []
       append_hash_tuple_field_combine_statements(statements, variant_name, field_types, discriminant_index)
       statements.push(make_hash_return_h_statement())
       statements
     end,
     VarRecord(variant_name, field_definitions, _) => do
-      let statements: [Shared<CppStmt>] = []
+      let statements: [Shared<CppStatement>] = []
       append_hash_record_variant_combine_statements(statements, variant_name, field_definitions, discriminant_index)
       statements.push(make_hash_return_h_statement())
       statements
     end
   }
 
-fn derive_hash_sum_branch_statement(variant: Shared<TypeVariant>, discriminant_index: i32) -> Shared<CppStmt> = do
+fn derive_hash_sum_branch_statement(variant: Shared<TypeVariant>, discriminant_index: i32) -> Shared<CppStatement> = do
   const variant_name = type_variant_constructor_name(variant)
   emit_helpers.make_if_cpp_statement(
     make_holds_alternative_expression(variant_name),
@@ -472,8 +472,8 @@ fn derive_hash_sum_branch_statement(variant: Shared<TypeVariant>, discriminant_i
     emit_helpers.make_block_cpp_statement([]))
 end
 
-fn derive_hash_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<CppStmt>] = do
-  let statements: [Shared<CppStmt>] = []
+fn derive_hash_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<CppStatement>] = do
+  let statements: [Shared<CppStatement>] = []
   statements.push(make_hash_seed_declaration_statement())
   let mut discriminant_index = 0
   let mut variant_index = 0
@@ -486,38 +486,39 @@ fn derive_hash_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<C
   statements
 end
 
-fn hash_specialization_declaration(type_name: string, body_statements: [Shared<CppStmt>]) -> Shared<CppDecl> =
+fn hash_specialization_declaration(type_name: string, body_statements: [Shared<CppStatement>]) -> Shared<CppDeclaration> =
   Shared.new(CppStdHashSpecialization(type_name, body_statements))
 
-fn derive_hash_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDecl> =
+fn derive_hash_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDeclaration> =
   hash_specialization_declaration(type_name, derive_hash_record_body_statements(field_definitions))
 
-fn derive_hash_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<CppDecl> =
+fn derive_hash_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<CppDeclaration> =
   hash_specialization_declaration(type_name, derive_hash_sum_body_statements(variants))
 
-export fn gen_derive_hash_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDecl>] =
+export fn gen_derive_hash_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
     [derive_hash_record_cpp(type_name, derive_record_field_definitions(variants))]
   else
     [derive_hash_sum_cpp(type_name, variants)]
   end
 
-fn gen_derive_trait_cpp(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> [Shared<CppDecl>] =
-  if trait_name == 'Display' then gen_derive_display_cpp(type_name, variants)
-  else if trait_name == 'Eq' then gen_derive_eq_cpp(type_name, variants)
-  else if trait_name == 'Ord' then gen_derive_ord_cpp(type_name, variants)
-  else if trait_name == 'Hash' then gen_derive_hash_cpp(type_name, variants)
-  else []
+fn gen_derive_trait_cpp(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> [Shared<CppDeclaration>] =
+  match trait_name
+  | "Display" => gen_derive_display_cpp(type_name, variants)
+  | "Eq"      => gen_derive_eq_cpp(type_name, variants)
+  | "Ord"     => gen_derive_ord_cpp(type_name, variants)
+  | "Hash"    => gen_derive_hash_cpp(type_name, variants)
+  | _         => []
   end
 
 export fn gen_derive_methods_cpp(
   type_name: string,
   variants: [Shared<TypeVariant>],
   derive_traits: [string]
-) -> [Shared<CppDecl>] = do
+) -> [Shared<CppDeclaration>] = do
   if derive_traits.length() == 0 then []
   else
-    let declarations: [Shared<CppDecl>] = []
+    let declarations: [Shared<CppDeclaration>] = []
     let mut trait_index = 0
     while trait_index < derive_traits.length() do
       const trait_declarations = gen_derive_trait_cpp(type_name, variants, derive_traits[trait_index])
