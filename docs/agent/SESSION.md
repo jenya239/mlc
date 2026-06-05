@@ -18,7 +18,7 @@
 | step | 12 |
 | track | TRACK_RENAME_ABBREV |
 | done | `names.mlc` pattern/with binders; `check_mutations` statement/match renames; quotes ok |
-| result | **961**/0; self-host `diff_exit=0` |
+| result | **961**/0; self-host `diff_exit=0`; commit `c3eb310d` |
 | next | ROLE=Driver STEP=13 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 11 — registry/semantic_type_structure)
