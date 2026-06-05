@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-c83b85e6-08c6-45b9-b183-718a88726a0a`|
-| driver_turns_since_plan | 0|
-| step_last | critique-audit|
-| active_track | TRACK_RENAME_ABBREV → STEP=11 |
+| agent_token_last | `cr-agent-302eb1e4-e85a-4064-a0f1-71251b462b6c`|
+| driver_turns_since_plan | 1|
+| step_last | 11 |
+| active_track | TRACK_RENAME_ABBREV → STEP=12 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 11 — registry/semantic_type_structure)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| track | TRACK_RENAME_ABBREV |
+| done | `FunctionIndex.function_types`; `AdtIndex` constructor fields; locals/bindings; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; commit `75a99792` |
+| next | ROLE=Driver STEP=12 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)
 

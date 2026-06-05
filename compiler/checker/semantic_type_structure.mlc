@@ -28,27 +28,35 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
         zipped_shared_types_structurally_equal(left_args, right_args),
       _ => false
     },
-    TTuple(t1) => match right {
-      TTuple(t2) =>
-        t1.length() == t2.length() && zipped_shared_types_structurally_equal(t1, t2),
-      TPair(a2, b2) =>
-        t1.length() == 2 && types_structurally_equal(t1[0], a2) && types_structurally_equal(t1[1], b2),
+    TTuple(left_tuple_types) => match right {
+      TTuple(right_tuple_types) =>
+        left_tuple_types.length() == right_tuple_types.length() &&
+        zipped_shared_types_structurally_equal(left_tuple_types, right_tuple_types),
+      TPair(right_first, right_second) =>
+        left_tuple_types.length() == 2 &&
+        types_structurally_equal(left_tuple_types[0], right_first) &&
+        types_structurally_equal(left_tuple_types[1], right_second),
       _ => false
     },
-    TPair(a1, b1) => match right {
-      TPair(a2, b2) => types_structurally_equal(a1, a2) && types_structurally_equal(b1, b2),
-      TTuple(t2) =>
-        t2.length() == 2 && types_structurally_equal(a1, t2[0]) && types_structurally_equal(b1, t2[1]),
+    TPair(left_first, left_second) => match right {
+      TPair(right_first, right_second) =>
+        types_structurally_equal(left_first, right_first) &&
+        types_structurally_equal(left_second, right_second),
+      TTuple(right_tuple_types) =>
+        right_tuple_types.length() == 2 &&
+        types_structurally_equal(left_first, right_tuple_types[0]) &&
+        types_structurally_equal(left_second, right_tuple_types[1]),
       _ => false
     },
-    TFn(left_params, left_ret) => match right {
-      TFn(right_params, right_ret) =>
-        left_params.length() == right_params.length() &&
-        zipped_shared_types_structurally_equal(left_params, right_params) &&
-        types_structurally_equal(left_ret, right_ret),
+    TFn(left_parameters, left_return_type) => match right {
+      TFn(right_parameters, right_return_type) =>
+        left_parameters.length() == right_parameters.length() &&
+        zipped_shared_types_structurally_equal(left_parameters, right_parameters) &&
+        types_structurally_equal(left_return_type, right_return_type),
       _ => false
     },
-    TAssoc(p1, a1) => match right { TAssoc(p2, a2) => p1 == p2 && a1 == a2, _ => true }
+    TAssoc(left_parameter, left_associated) =>
+      match right { TAssoc(right_parameter, right_associated) => left_parameter == right_parameter && left_associated == right_associated, _ => true }
   }
   end
 
@@ -142,8 +150,8 @@ export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
     _ => false
   }
 
-export fn is_numeric_type(t: Shared<Type>) -> bool =
-  match t { TI32 => true, TI64 => true, TF64 => true, TU8 => true, TUsize => true, TChar => true, _ => false }
+export fn is_numeric_type(type_value: Shared<Type>) -> bool =
+  match type_value { TI32 => true, TI64 => true, TF64 => true, TU8 => true, TUsize => true, TChar => true, _ => false }
 
 fn arithmetic_binary_result_type(left_type: Shared<Type>) -> Shared<Type> =
   match left_type
@@ -256,13 +264,16 @@ export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Sh
       if substitution.has(name) then substitute_type(substitution.get(name), substitution) else type_value end,
     TArray(inner) => Shared.new(TArray(substitute_type(inner, substitution))),
     TShared(inner) => Shared.new(TShared(substitute_type(inner, substitution))),
-    TGeneric(name, args) => Shared.new(TGeneric(name, args.map(arg => substitute_type(arg, substitution)))),
+    TGeneric(name, type_arguments) =>
+      Shared.new(TGeneric(name, type_arguments.map(argument => substitute_type(argument, substitution)))),
     TPair(a, b) =>
       Shared.new(TPair(substitute_type(a, substitution), substitute_type(b, substitution))),
     TTuple(parameter_types) =>
       Shared.new(TTuple(parameter_types.map(entry => substitute_type(entry, substitution)))),
-    TFn(parameter_list, ret) =>
-      Shared.new(TFn(parameter_list.map(param => substitute_type(param, substitution)), substitute_type(ret, substitution))),
+    TFn(parameter_list, return_type) =>
+      Shared.new(TFn(
+        parameter_list.map(parameter => substitute_type(parameter, substitution)),
+        substitute_type(return_type, substitution))),
     _ => type_value
   }
 
