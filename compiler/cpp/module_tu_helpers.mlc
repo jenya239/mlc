@@ -5,11 +5,11 @@ import { CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNam
 
 fn push_parsed_include_line(declarations: [Shared<CppDeclaration>], line: string) -> [Shared<CppDeclaration>] = do
   if line.length() >= 10
-     && line.substring(0, 10) == "#include \""
+     && line.substring(0, 10) == '#include "'
      && line.char_at(line.length() - 1) == "\"" then
     declarations.push(Shared.new(CppInclude(false, line.substring(10, line.length() - 11))))
   else if line.length() >= 10
-     && line.substring(0, 10) == "#include <"
+     && line.substring(0, 10) == '#include <'
      && line.char_at(line.length() - 1) == ">" then
     declarations.push(Shared.new(CppInclude(true, line.substring(10, line.length() - 11))))
   end
@@ -46,7 +46,7 @@ export fn make_include_guard_ifndef_cpp_declaration(guard_macro: string) -> Shar
   Shared.new(CppIfndef(guard_macro))
 
 export fn make_include_guard_define_cpp_declaration(guard_macro: string) -> Shared<CppDeclaration> =
-  Shared.new(CppDefineMacro(guard_macro, ""))
+  Shared.new(CppDefineMacro(guard_macro, ''))
 
 export fn make_include_guard_endif_cpp_declaration(guard_macro: string) -> Shared<CppDeclaration> =
   Shared.new(CppEndif(guard_macro))
@@ -58,7 +58,7 @@ export fn make_namespace_close_cpp_declaration(namespace_identifier: string) -> 
   Shared.new(CppNamespaceEnd(namespace_identifier))
 
 export fn make_define_main_as_user_main_cpp_declaration() -> Shared<CppDeclaration> =
-  Shared.new(CppDefineMacro("main", "mlc_user_main"))
+  Shared.new(CppDefineMacro('main', 'mlc_user_main'))
 
 export fn make_quoted_include_cpp_declaration(header_filename: string) -> Shared<CppDeclaration> =
   Shared.new(CppInclude(false, header_filename))

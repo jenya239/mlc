@@ -37,13 +37,13 @@ export fn make_variable_cpp_statement(
   Shared.new(CppVarDecl(name, type_node, initializer))
 
 export fn make_size_t_type() -> Shared<CppType> =
-  Shared.new(CppTypeName("size_t"))
+  Shared.new(CppTypeName('size_t'))
 
 export fn make_break_cpp_statement() -> Shared<CppStatement> =
-  Shared.new(CppExpressionStatement(make_identifier_cpp_expression("break")))
+  Shared.new(CppExpressionStatement(make_identifier_cpp_expression('break')))
 
 export fn make_continue_cpp_statement() -> Shared<CppStatement> =
-  Shared.new(CppExpressionStatement(make_identifier_cpp_expression("continue")))
+  Shared.new(CppExpressionStatement(make_identifier_cpp_expression('continue')))
 
 export fn make_block_cpp_statement(statements: [Shared<CppStatement>]) -> Shared<CppStatement> =
   Shared.new(CppBlock(statements))

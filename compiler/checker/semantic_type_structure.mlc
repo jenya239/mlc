@@ -145,8 +145,8 @@ export fn type_is_string(type_value: Shared<Type>) -> bool =
 
 export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
   match receiver_type {
-    TNamed(name)      => name == "Map",
-    TGeneric(name, _) => name == "Map",
+    TNamed(name)      => name == 'Map',
+    TGeneric(name, _) => name == 'Map',
     _ => false
   }
 
@@ -177,23 +177,23 @@ export fn binary_operation_result_type(operation: string, left_type: Shared<Type
 
 export fn type_description(type_value: Shared<Type>) -> string =
   match type_value
-  | TI32       => "i32"
-  | TString    => "string"
-  | TBool      => "bool"
-  | TUnit      => "unit"
-  | TI64       => "i64"
-  | TF64       => "f64"
-  | TU8        => "u8"
-  | TUsize     => "usize"
-  | TChar      => "char"
-  | TUnknown   => "unknown"
-  | TArray(_)  => "array"
-  | TShared(_) => "shared"
+  | TI32       => 'i32'
+  | TString    => 'string'
+  | TBool      => 'bool'
+  | TUnit      => 'unit'
+  | TI64       => 'i64'
+  | TF64       => 'f64'
+  | TU8        => 'u8'
+  | TUsize     => 'usize'
+  | TChar      => 'char'
+  | TUnknown   => 'unknown'
+  | TArray(_)  => 'array'
+  | TShared(_) => 'shared'
   | TNamed(type_name)      => type_name
   | TGeneric(type_name, _) => type_name
-  | TPair(_, _) => "pair"
-  | TTuple(_)   => "tuple"
-  | TFn(_, _)  => "function"
+  | TPair(_, _) => 'pair'
+  | TTuple(_)   => 'tuple'
+  | TFn(_, _)  => 'function'
   | TAssoc(parameter_name, associated_type_name) => parameter_name + "." + associated_type_name
   end
 
@@ -217,44 +217,44 @@ export fn types_allowed_for_logical_and_or(left_type: Shared<Type>, right_type: 
 
 export fn builtin_method_return_type(method_name: string) -> Shared<Type> =
   match method_name
-  | "length" => Shared.new(TI32)
-  | "size" => Shared.new(TI32)
-  | "to_i" => Shared.new(TI32)
-  | "push" => Shared.new(TUnit)
-  | "set" => Shared.new(TUnit)
-  | "remove" => Shared.new(TUnit)
-  | "keys" => Shared.new(TArray(Shared.new(TUnknown)))
-  | "values" => Shared.new(TArray(Shared.new(TUnknown)))
-  | "char_at" => Shared.new(TString)
-  | "join" => Shared.new(TString)
-  | "to_string" => Shared.new(TString)
-  | "substring" => Shared.new(TString)
-  | "to_lower" => Shared.new(TString)
-  | "make_temp_directory" => Shared.new(TString)
-  | "temp_directory_base" => Shared.new(TString)
-  | "has" => Shared.new(TBool)
+  | 'length' => Shared.new(TI32)
+  | 'size' => Shared.new(TI32)
+  | 'to_i' => Shared.new(TI32)
+  | 'push' => Shared.new(TUnit)
+  | 'set' => Shared.new(TUnit)
+  | 'remove' => Shared.new(TUnit)
+  | 'keys' => Shared.new(TArray(Shared.new(TUnknown)))
+  | 'values' => Shared.new(TArray(Shared.new(TUnknown)))
+  | 'char_at' => Shared.new(TString)
+  | 'join' => Shared.new(TString)
+  | 'to_string' => Shared.new(TString)
+  | 'substring' => Shared.new(TString)
+  | 'to_lower' => Shared.new(TString)
+  | 'make_temp_directory' => Shared.new(TString)
+  | 'temp_directory_base' => Shared.new(TString)
+  | 'has' => Shared.new(TBool)
   | _ => Shared.new(TUnknown)
   end
 
 export fn builtin_method_expected_argument_count(method_name: string) -> i32 =
   match method_name
-  | "push" => 1
-  | "set" => 2
-  | "length" => 0
-  | "size" => 0
-  | "to_i" => 0
-  | "to_lower" => 0
-  | "char_at" => 1
-  | "substring" => 2
-  | "join" => 1
-  | "make_temp_directory" => 1
-  | "temp_directory_base" => 0
-  | "to_string" => 0
-  | "has" => 1
-  | "get" => 1
-  | "remove" => 1
-  | "keys" => 0
-  | "values" => 0
+  | 'push' => 1
+  | 'set' => 2
+  | 'length' => 0
+  | 'size' => 0
+  | 'to_i' => 0
+  | 'to_lower' => 0
+  | 'char_at' => 1
+  | 'substring' => 2
+  | 'join' => 1
+  | 'make_temp_directory' => 1
+  | 'temp_directory_base' => 0
+  | 'to_string' => 0
+  | 'has' => 1
+  | 'get' => 1
+  | 'remove' => 1
+  | 'keys' => 0
+  | 'values' => 0
   | _ => -1
   end
 
@@ -279,10 +279,10 @@ export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Sh
 
 export fn operator_method_for(operation: string) -> string =
   match operation
-  | "+" => "add"
-  | "-" => "sub"
-  | "*" => "mul"
-  | "/" => "div"
-  | "%" => "rem"
-  | _   => ""
+  | "+" => 'add'
+  | "-" => 'sub'
+  | "*" => 'mul'
+  | "/" => 'div'
+  | "%" => 'rem'
+  | _   => ''
   end

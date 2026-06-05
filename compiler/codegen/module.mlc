@@ -160,7 +160,7 @@ fn prepare_module_generation(
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end
   const is_entry = decls_have_main(load_item.decls)
-  const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + "\n"
+  const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + `\n`
   const decl_parts = collect_all_decl_parts_cpp(load_item.decls, context)
   const guard = base.upper() + '_HPP'
   ModuleGenerationContext {

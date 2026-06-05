@@ -16,7 +16,7 @@ import {
   ExprUn
 } from '../frontend/ast'
 import { CodegenContext } from '../codegen/context'
-import * as lit from '../codegen/expr/literals'
+import * as literals from '../codegen/expr/literals'
 import * as expression_output from '../codegen/expr/expr'
 import { map_builtin_identifier_reference } from '../codegen/cpp_naming'
 
@@ -32,13 +32,13 @@ export fn record_field_default_expression_acceptable_for_codegen(expression: Sha
     ExprInt(_, _) | ExprStr(_, _) | ExprBool(_, _) | ExprUnit(_) => true,
     ExprFloat(_, _) | ExprI64(_, _) | ExprU8(_, _) | ExprUsize(_, _) | ExprChar(_, _) => true,
     ExprIdent(_, _) => true,
-    ExprBin(operation, left, right, _) =>
+    ExprBin(operation, left_expression, right_expression, _) =>
       binary_operator_permitted_for_record_field_default_initializer(operation) &&
-      record_field_default_expression_acceptable_for_codegen(left) &&
-      record_field_default_expression_acceptable_for_codegen(right),
-    ExprUn(operation, inner, _) =>
+      record_field_default_expression_acceptable_for_codegen(left_expression) &&
+      record_field_default_expression_acceptable_for_codegen(right_expression),
+    ExprUn(operation, inner_expression, _) =>
       (operation == "-" || operation == "+") &&
-      record_field_default_expression_acceptable_for_codegen(inner),
+      record_field_default_expression_acceptable_for_codegen(inner_expression),
     _ => false
   }
 
@@ -47,24 +47,24 @@ fn record_field_default_identifier_cpp(name: string, context: CodegenContext) ->
 
 export fn record_field_default_expression_cpp_initializer(expression: Shared<Expr>, context: CodegenContext) -> string =
   match expression {
-    ExprInt(integer_value, _) => lit.gen_integer_literal(integer_value),
-    ExprStr(text_value, _) => lit.gen_string_literal(text_value),
-    ExprBool(boolean_value, _) => lit.gen_boolean_literal(boolean_value),
-    ExprUnit(_) => lit.gen_unit_literal(),
-    ExprFloat(raw, _) => lit.gen_float_literal(raw),
-    ExprI64(raw, _) => lit.gen_i64_literal(raw),
-    ExprU8(raw, _) => lit.gen_u8_literal(raw),
-    ExprUsize(raw, _) => lit.gen_usize_literal(raw),
-    ExprChar(raw, _) => lit.gen_char_literal(raw),
+    ExprInt(integer_value, _) => literals.gen_integer_literal(integer_value),
+    ExprStr(text_value, _) => literals.gen_string_literal(text_value),
+    ExprBool(boolean_value, _) => literals.gen_boolean_literal(boolean_value),
+    ExprUnit(_) => literals.gen_unit_literal(),
+    ExprFloat(raw, _) => literals.gen_float_literal(raw),
+    ExprI64(raw, _) => literals.gen_i64_literal(raw),
+    ExprU8(raw, _) => literals.gen_u8_literal(raw),
+    ExprUsize(raw, _) => literals.gen_usize_literal(raw),
+    ExprChar(raw, _) => literals.gen_char_literal(raw),
     ExprIdent(name, _) => record_field_default_identifier_cpp(name, context),
-    ExprBin(operation, left, right, _) =>
+    ExprBin(operation, left_expression, right_expression, _) =>
       expression_output.parenthesized_binary(
-        record_field_default_expression_cpp_initializer(left, context),
+        record_field_default_expression_cpp_initializer(left_expression, context),
         operation,
-        record_field_default_expression_cpp_initializer(right, context)),
-    ExprUn(operation, inner, _) =>
+        record_field_default_expression_cpp_initializer(right_expression, context)),
+    ExprUn(operation, inner_expression, _) =>
       expression_output.parenthesized_unary(
         operation,
-        record_field_default_expression_cpp_initializer(inner, context)),
-    _ => "0"
+        record_field_default_expression_cpp_initializer(inner_expression, context)),
+    _ => 0.to_string()
   }

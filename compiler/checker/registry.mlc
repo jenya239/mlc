@@ -217,11 +217,11 @@ export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
     TyUnit    => Shared.new(TUnit),
     TyNamed(name) =>
       match name
-      | "i64"   => Shared.new(TI64)
-      | "f64"   => Shared.new(TF64)
-      | "u8"    => Shared.new(TU8)
-      | "usize" => Shared.new(TUsize)
-      | "char"  => Shared.new(TChar)
+      | 'i64'   => Shared.new(TI64)
+      | 'f64'   => Shared.new(TF64)
+      | 'u8'    => Shared.new(TU8)
+      | 'usize' => Shared.new(TUsize)
+      | 'char'  => Shared.new(TChar)
       | _       => Shared.new(TNamed(name))
       end,
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),

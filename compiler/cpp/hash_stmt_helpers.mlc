@@ -5,7 +5,7 @@ import * as emit_helpers from './emit_helpers'
 
 fn make_hash_call_expression(cpp_type: string, access: Shared<CppExpression>) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppAggregateInit("std::hash<" + cpp_type + ">", [])),
+    Shared.new(CppAggregateInit('std::hash<' + cpp_type + `>`, [])),
     [access]))
 
 fn add_hash_combine_terms(left: Shared<CppExpression>, right: Shared<CppExpression>) -> Shared<CppExpression> =
@@ -18,20 +18,20 @@ fn make_hash_combine_right_side(access: Shared<CppExpression>, cpp_type: string)
     add_hash_combine_terms(
       add_hash_combine_terms(
         hash_call,
-        emit_helpers.make_identifier_cpp_expression("0x9e3779b97f4a7c15ULL")),
-      Shared.new(CppBinary("<<", hash_identifier, emit_helpers.make_integer_cpp_expression(6)))),
-    Shared.new(CppBinary(">>", hash_identifier, emit_helpers.make_integer_cpp_expression(2))))
+        emit_helpers.make_identifier_cpp_expression('0x9e3779b97f4a7c15ULL')),
+      Shared.new(CppBinary('<<', hash_identifier, emit_helpers.make_integer_cpp_expression(6)))),
+    Shared.new(CppBinary('>>', hash_identifier, emit_helpers.make_integer_cpp_expression(2))))
 end
 
 export fn make_hash_seed_cpp_statement() -> Shared<CppStatement> =
   emit_helpers.make_variable_cpp_statement(
     "h",
     emit_helpers.make_size_t_type(),
-    emit_helpers.make_identifier_cpp_expression("1469598103934665603ULL"))
+    emit_helpers.make_identifier_cpp_expression('1469598103934665603ULL'))
 
 export fn make_hash_combine_cpp_statement(cpp_type: string, access: Shared<CppExpression>) -> Shared<CppStatement> =
   emit_helpers.make_expression_cpp_statement(Shared.new(CppBinary(
-    "^=",
+    '^=',
     emit_helpers.make_identifier_cpp_expression("h"),
     make_hash_combine_right_side(access, cpp_type))))
 
@@ -39,4 +39,4 @@ export fn make_hash_empty_return_cpp_statement() -> Shared<CppStatement> =
   emit_helpers.make_return_cpp_statement(Shared.new(CppCast(
     CppCastStatic,
     emit_helpers.make_size_t_type(),
-    emit_helpers.make_identifier_cpp_expression("1469598103934665603ULL"))))
+    emit_helpers.make_identifier_cpp_expression('1469598103934665603ULL'))))

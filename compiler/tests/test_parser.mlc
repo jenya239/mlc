@@ -171,9 +171,9 @@ fn expr_pat_ident_binding_name(pattern: Shared<Pattern>) -> string =
 
 fn expr_pat_or_alt_count(pattern: Shared<Pattern>) -> i32 =
   match pattern {
-    PatternOr(alts, _) => do
+    PatternOr(alternatives, _) => do
       let mut count = 0
-      while count < alts.length() do count = count + 1 end
+      while count < alternatives.length() do count = count + 1 end
       count
     end,
     _ => -1
@@ -329,7 +329,7 @@ export fn parser_tests() -> [TestResult] = do
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pattern {
-            PatternOr(alts, _) => alts.length() == 2,
+            PatternOr(alternatives, _) => alternatives.length() == 2,
             _ => false
           }
         else false end,
@@ -341,7 +341,7 @@ export fn parser_tests() -> [TestResult] = do
       ExprMatch(_, arms, _) =>
         if arms.length() == 1 then
           match arms[0].pattern {
-            PatternOr(alts, _) => alts.length() == 2,
+            PatternOr(alternatives, _) => alternatives.length() == 2,
             _ => false
           }
         else false end,
@@ -353,7 +353,7 @@ export fn parser_tests() -> [TestResult] = do
       ExprMatch(_, arms, _) =>
         if arms.length() == 2 then
           match arms[0].pattern {
-            PatternOr(alts, _) => alts.length() == 2,
+            PatternOr(alternatives, _) => alternatives.length() == 2,
             _ => false
           }
         else false end,
@@ -470,9 +470,9 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('let-else: has_else=true when else present',
     match parse_expr_source('do\n  let Some(v) = opt else return 0 end\n  0\nend') {
-      ExprBlock(stmts, _, _) =>
-        if stmts.length() >= 1 then
-          match stmts[0] {
+      ExprBlock(statements, _, _) =>
+        if statements.length() >= 1 then
+          match statements[0] {
             StmtLetPattern(_, _, _, _, has_else, _, _) => has_else,
             _ => false
           }
@@ -482,9 +482,9 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('let-else: has_else=false without else',
     match parse_expr_source('do\n  let {x} = pt\n  0\nend') {
-      ExprBlock(stmts, _, _) =>
-        if stmts.length() >= 1 then
-          match stmts[0] {
+      ExprBlock(statements, _, _) =>
+        if statements.length() >= 1 then
+          match statements[0] {
             StmtLetPattern(_, _, _, _, has_else, _, _) => !has_else,
             _ => false
           }

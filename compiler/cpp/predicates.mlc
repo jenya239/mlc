@@ -74,7 +74,7 @@ fn cpp_is_char_keyword(kind: CppTokenKind) -> bool =
 
 fn cpp_type_part_string(kind: CppTokenKind) -> string = do
   if cpp_get_identifier(kind) != '' then cpp_get_identifier(kind)
-  else if cpp_get_string(kind) != '' then "\"" + cpp_get_string(kind) + "\""
+  else if cpp_get_string(kind) != '' then `"` + cpp_get_string(kind) + `"`
   else if cpp_is_angle(kind) then "<"
   else if cpp_is_right_angle(kind) then ">"
   else if cpp_is_scope(kind) then '::'

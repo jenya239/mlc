@@ -127,8 +127,8 @@ export fn let_statement(binding_name: string, type_expr: Shared<TypeExpr>, value
 export fn let_mut_statement(binding_name: string, type_expr: Shared<TypeExpr>, value_expr: Shared<Expr>) -> Shared<Stmt> =
   Shared.new(StmtLet(binding_name, true, type_expr, value_expr, span_unknown()))
 
-export fn expression_statement(expr: Shared<Expr>) -> Shared<Stmt> =
-  Shared.new(StmtExpr(expr, span_unknown()))
+export fn expression_statement(expression: Shared<Expr>) -> Shared<Stmt> =
+  Shared.new(StmtExpr(expression, span_unknown()))
 
 export fn return_statement(value_expr: Shared<Expr>) -> Shared<Stmt> =
   Shared.new(StmtReturn(value_expr, span_unknown()))

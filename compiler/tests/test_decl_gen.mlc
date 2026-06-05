@@ -396,7 +396,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     collect_all_decl_parts([extend_display_for_color], context).fn_defs.join('')))
 
   const extend_context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
-  const extend_gen_decl = (decl: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => gen_decl(decl, codegen_context)
+  const extend_gen_decl = (declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => gen_decl(declaration, codegen_context)
   const extend_string = gen_decl_extend('Color', 'Display', [color_to_string], context, extend_context_resolve, extend_gen_decl)
 
   results.push(assert_eq_str('gen_decl_extend_cpp matches string gen_decl_extend',

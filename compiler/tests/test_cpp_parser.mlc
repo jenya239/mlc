@@ -2,12 +2,12 @@
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 
-fn cpp_parse_decl_count(src: string) -> i32 =
-  cpp_parse(cpp_tokenize(src).tokens).program.declarations.length()
+fn cpp_parse_decl_count(source_text: string) -> i32 =
+  cpp_parse(cpp_tokenize(source_text).tokens).program.declarations.length()
 
-fn cpp_parse_first(src: string) -> Shared<CppDeclaration> =
-  const prog = cpp_parse(cpp_tokenize(src).tokens).program
-  if prog.decls.length() > 0 then prog.decls[0] else Shared.new(CppInclude(true, '')) end
+fn cpp_parse_first(source_text: string) -> Shared<CppDeclaration> =
+  const program = cpp_parse(cpp_tokenize(source_text).tokens).program
+  if program.declarations.length() > 0 then program.declarations[0] else Shared.new(CppInclude(true, '')) end
 
 fn cpp_parser_tests() -> [TestResult] = do
   let results: [TestResult] = []

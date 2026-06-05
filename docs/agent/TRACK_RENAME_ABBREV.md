@@ -2,9 +2,21 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 17 done — 2026-06-05)
+## Status: **closed** (commit pending — STEP=23)
 
-**STEP=17 note (2026-06-05 Driver):** `codegen/decl/` (8 files + ripple `decl_cpp.mlc`): `type_parameters`, `parameters`, `type_arguments`, `field_definitions`, `declaration_index`, `variant_used_type_parameters`; `derive_methods_cpp` clean; quotes ok (`'`/`` ` `` only). Gate: **961**/0; self-host diff empty. Commit TBD.
+**STEP=23 note (2026-05-19 Driver):** commit batch steps 18–22 (`codegen/expr`, `stmt`, `ir`, `main`, `pipeline`, `tests`, quote audit); gate **961**/0; self-host diff empty.
+
+**STEP=22 note (2026-05-19 Driver):** production `compiler/` quote audit: `"` → `'`/`` ` ``; char-compare `"` only; C++ emitted `"` via `'…"…'` / `` ` + `"` + `` (not inside backticks). Fixes: `string+char` (`'>`, `')`, `'}'`, `'"'`), `module_tu_helpers` `'#include "'`, derive/static_assert/include/json output. Gate: **961**/0; self-host diff empty. Uncommitted.
+
+**STEP=21 note (2026-06-05 Driver):** `tests/` harness (9 files): `context`/`source_text`/`program`/`alternatives`/`statements`/`pattern_arms`/`transform_context`; `ast_builders`/`codegen_test_helpers`; e2e/fuzz corpus skipped (stability); test-name strings with abbrev unchanged; quotes ok (`'`/`"` char compares + expected C++). Gate: **961**/0; self-host diff empty. Uncommitted.
+
+**STEP=20 note (2026-06-05 Driver):** `ir/semantic_ir` (`type_value`/`span_value`/`inner_declaration`), `record_defaults` (`literals`, `left_expression`/`right_expression`/`inner_expression`), `main.mlc` (`program`/`lexer_output`/`module_declarations`/`merged_declarations`/`loaded_paths_seen`/`format_errors`, `MergeResult.program`), `pipeline.mlc` (`checked_state`/`transformed_state`), `compile_options` usage `'` quote; `pass.mlc` clean; `sexpr_*`/`SemanticFieldVal`/`decls` unchanged (stability). Gate: **961**/0; self-host diff empty. Uncommitted.
+
+**STEP=19 note (2026-06-05 Driver):** `codegen/stmt/` (4 files): `pattern`/`value_expression`/`inner_expression`/`result_expression`/`with_statements`/`left_expression`/`right_expression`/`statement`/`then_expression`/`else_expression`/`body_expression`/`match_arms`/`error_pointer`/`constructor_mismatch_else_statements`; `statement_context` clean; `eval_stmts_str`/`gen_expr_fn`/`stmts_final_ctx` unchanged (stability); quotes ok (`'`/`` ` ``/`"` C++ ident only). Gate: **961**/0; self-host diff empty. Uncommitted (includes step 18 expr/).
+
+**STEP=18 note (2026-06-05 Driver):** `codegen/expr/` (10 files): `pattern_binding_name_list`, `pattern_bind_names`, `pattern`/`value_code`/`sub_patterns`/`field_patterns`/`binding_name`/`temporary_name`/`constructor_name`, `alternatives`; ripple `stmt/let_pat_cpp.mlc`; `'col'` AST field kept; `gen_stmts`/`eval_expr_fn` unchanged (stability); quotes ok (`'`/`` ` ``/`"` char compares only). Gate: **961**/0; self-host diff empty. Uncommitted.
+
+**STEP=17 note (2026-06-05 Driver):** `codegen/decl/` (8 files + ripple `decl_cpp.mlc`): `type_parameters`, `parameters`, `type_arguments`, `field_definitions`, `declaration_index`, `variant_used_type_parameters`; `derive_methods_cpp` clean; quotes ok (`'`/`` ` `` only). Gate: **961**/0; self-host diff empty. Commit `4baad09e`.
 
 **STEP=16 note (2026-06-05 Driver):** `codegen/context.mlc`/`eval.mlc`/`module.mlc`: `collect_pattern_bind_names_for_context`, `program`, `inner_expression`, `load_item`, `precomputed_context`, `GenModuleOut.header`/`source`; ripple `pipeline.mlc`; quotes ok (`'`/` `` only). Gate: **961**/0; self-host diff empty. Commit `3149c9af`.
 
@@ -110,13 +122,13 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 14 | `checker/transform/` (??? ?????) � ?????????? | done |
 | 15 | `checker/check/` (??? ?????) � ?????????? | done |
 | 16 | `codegen/context.mlc` + `codegen/eval.mlc` + `codegen/module.mlc` � ?????????? + ??????? | done |
-| 17 | `codegen/decl/` (??? ?????) � ?????????? + ??????? | pending |
-| 18 | `codegen/expr/` (??? ?????) � ?????????? + ??????? | pending |
-| 19 | `codegen/stmt/` (??? ?????) � ?????????? + ??????? | pending |
-| 20 | `ir/`, `main.mlc`, `pipeline.mlc`, `pass.mlc`, `compile_options.mlc` � ?????????? + ??????? | pending |
-| 21 | `tests/` � ?????????? + ??????? | pending |
-| 22 | Audit: ??? `"` ????? char-????????? ? ???????; ??? ?????????? ?? ??????? | pending |
-| 23 | ??????? ???? | pending |
+| 17 | `codegen/decl/` (??? ?????) � ?????????? + ??????? | done |
+| 18 | `codegen/expr/` (??? ?????) � ?????????? + ??????? | done |
+| 19 | `codegen/stmt/` (??? ?????) � ?????????? + ??????? | done |
+| 20 | `ir/`, `main.mlc`, `pipeline.mlc`, `pass.mlc`, `compile_options.mlc` � ?????????? + ??????? | done |
+| 21 | `tests/` � ?????????? + ??????? | done |
+| 22 | Audit: all `"` except char-compares in compiler/; fix violations | done |
+| 23 | Commit batch / close track | done |
 
 ## Sub-steps (step 1 detail � ?????????????? ?????)
 

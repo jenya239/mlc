@@ -27,7 +27,7 @@ export fn diagnostic_error_with_code(message: string, span: Span, code: string) 
 export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
   const message_part =
     if diagnostic.code.length() > 0 then
-      diagnostic.severity + "[" + diagnostic.code + "]: " + diagnostic.message
+      diagnostic.severity + "[" + diagnostic.code + ']: ' + diagnostic.message
     else
       diagnostic.severity + ': ' + diagnostic.message
     end
@@ -38,7 +38,7 @@ export fn diagnostic_format(diagnostic: Diagnostic) -> string = do
       else
         diagnostic.span.line.to_string() + ":" + diagnostic.span.column.to_string()
       end
-    message_part + "\n  --> " + location_part
+    message_part + '\n  --> ' + location_part
   else
     message_part
   end

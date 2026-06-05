@@ -5,10 +5,87 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-c5461213-01ad-43ad-83d7-c03912110670`|
-| driver_turns_since_plan | 4|
-| step_last | 17|
-| active_track | TRACK_RENAME_ABBREV → STEP=18 |
+| agent_token_last | pending |
+| driver_turns_since_plan | 3|
+| step_last | 23|
+| active_track | none (RENAME_ABBREV closed) |
+
+### Turn 2026-05-19 (Driver RENAME_ABBREV step 23 — commit batch / close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 23 |
+| track | TRACK_RENAME_ABBREV |
+| done | commit steps 18–22; track closed |
+| result | **961**/0; self-host `diff_exit=0`; commit pending |
+| next | ROLE=Planner STEP=plan-refresh (enqueued) |
+
+### Turn 2026-05-19 (Driver RENAME_ABBREV step 22 — quote audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 22 |
+| track | TRACK_RENAME_ABBREV |
+| done | production compiler/ `"` audit; `'`/backtick; C++ `"` via concat; char+string fixes |
+| result | **961**/0; self-host `diff_exit=0`; uncommitted (steps 18–22) |
+| next | ROLE=Driver STEP=23 TRACK_RENAME_ABBREV (enqueued) |
+
+### Turn 2026-06-05 (Planner plan-refresh — 8 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN |
+| done | RENAME steps 14–21 verified; priority stability; TYPE_ALIASES deferred |
+| result | **961**/0; self-host diff=0; uncommitted WIP steps 18–21 |
+| next | ROLE=Driver STEP=22 TRACK_RENAME_ABBREV (enqueued) |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 21 — tests/)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 21 |
+| track | TRACK_RENAME_ABBREV |
+| done | tests/ harness abbreviations (9 files); e2e/fuzz corpus skipped; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; uncommitted (steps 18–21) |
+| next | ROLE=Driver STEP=22 TRACK_RENAME_ABBREV (enqueued) |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 20 — ir/main/pipeline)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 20 |
+| track | TRACK_RENAME_ABBREV |
+| done | ir/main/pipeline/compile_options abbreviations; pass clean; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; uncommitted (steps 18–20) |
+| next | ROLE=Driver STEP=21 TRACK_RENAME_ABBREV (enqueued) |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 19 — codegen/stmt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 19 |
+| track | TRACK_RENAME_ABBREV |
+| done | stmt/ abbreviations (stmt_eval, let_pat_cpp, return_body); statement_context clean; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; uncommitted (steps 18–19) |
+| next | ROLE=Driver STEP=20 TRACK_RENAME_ABBREV (enqueued) |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 18 — codegen/expr)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 18 |
+| track | TRACK_RENAME_ABBREV |
+| done | expr/ abbreviations (let_pat, match_analysis, match_gen); let_pat_cpp ripple; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=19 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 17 — codegen/decl)
 

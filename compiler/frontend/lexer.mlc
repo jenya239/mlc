@@ -57,65 +57,65 @@ fn is_ws(character: string) -> bool =
 
 fn is_reserved_keyword(word: string) -> bool =
   match word
-  | "fn"       => true
-  | "type"     => true
-  | "let"      => true
-  | "mut"      => true
-  | "const"    => true
-  | "return"   => true
-  | "break"    => true
-  | "continue" => true
-  | "if"       => true
-  | "then"     => true
-  | "else"     => true
-  | "unless"   => true
-  | "while"    => true
-  | "for"      => true
-  | "in"       => true
-  | "do"       => true
-  | "end"      => true
-  | "match"    => true
-  | "with"     => true
-  | "import"   => true
-  | "from"     => true
-  | "as"       => true
-  | "extern"   => true
-  | "extend"   => true
-  | "where"    => true
-  | "true"     => true
-  | "false"    => true
+  | 'fn'       => true
+  | 'type'     => true
+  | 'let'      => true
+  | 'mut'      => true
+  | 'const'    => true
+  | 'return'   => true
+  | 'break'    => true
+  | 'continue' => true
+  | 'if'       => true
+  | 'then'     => true
+  | 'else'     => true
+  | 'unless'   => true
+  | 'while'    => true
+  | 'for'      => true
+  | 'in'       => true
+  | 'do'       => true
+  | 'end'      => true
+  | 'match'    => true
+  | 'with'     => true
+  | 'import'   => true
+  | 'from'     => true
+  | 'as'       => true
+  | 'extern'   => true
+  | 'extend'   => true
+  | 'where'    => true
+  | 'true'     => true
+  | 'false'    => true
   | _          => false
   end
 
 fn reserved_keyword_kind(word: string) -> TokenKind =
   match word
-  | "fn"       => KFn
-  | "type"     => KType
-  | "let"      => KLet
-  | "mut"      => KMut
-  | "const"    => KConst
-  | "return"   => KReturn
-  | "break"    => KBreak
-  | "continue" => KContinue
-  | "if"       => KIf
-  | "then"     => KThen
-  | "else"     => KElse
-  | "unless"   => KUnless
-  | "while"    => KWhile
-  | "for"      => KFor
-  | "in"       => KIn
-  | "do"       => KDo
-  | "end"      => KEnd
-  | "match"    => KMatch
-  | "with"     => KWith
-  | "import"   => KImport
-  | "from"     => KFrom
-  | "as"       => KAs
-  | "extern"   => KExtern
-  | "extend"   => KExtend
-  | "where"    => KWhere
-  | "true"     => KTrue
-  | "false"    => KFalse
+  | 'fn'       => KFn
+  | 'type'     => KType
+  | 'let'      => KLet
+  | 'mut'      => KMut
+  | 'const'    => KConst
+  | 'return'   => KReturn
+  | 'break'    => KBreak
+  | 'continue' => KContinue
+  | 'if'       => KIf
+  | 'then'     => KThen
+  | 'else'     => KElse
+  | 'unless'   => KUnless
+  | 'while'    => KWhile
+  | 'for'      => KFor
+  | 'in'       => KIn
+  | 'do'       => KDo
+  | 'end'      => KEnd
+  | 'match'    => KMatch
+  | 'with'     => KWith
+  | 'import'   => KImport
+  | 'from'     => KFrom
+  | 'as'       => KAs
+  | 'extern'   => KExtern
+  | 'extend'   => KExtend
+  | 'where'    => KWhere
+  | 'true'     => KTrue
+  | 'false'    => KFalse
   end
 
 fn keyword_kind(word: string) -> TokenKind =
@@ -183,9 +183,9 @@ fn scan_int(state: LexState) -> ScanResult = do
   else
     let { suffix, after } = try_scan_suffix(current)
     const token_kind = match suffix
-    | "i64"   => LI64(value.to_string())
-    | "u8"    => LU8(value.to_string())
-    | "usize" => LUsize(value.to_string())
+    | 'i64'   => LI64(value.to_string())
+    | 'u8'    => LU8(value.to_string())
+    | 'usize' => LUsize(value.to_string())
     | _       => LInt(value)
     end
     ScanResult { after: after, token: Token { kind: token_kind, line: token_line, column: token_column } }
@@ -437,12 +437,12 @@ end
 fn scan_op_two_character(state: LexState, character: string, next: string) -> ScanResult =
   match character
   | "-" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Arrow) } | _ => scan_op_single(character, state) end
-  | "=" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) } | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("==")) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Equal) } end
-  | "|" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) } | "|" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("||")) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Bar) } end
-  | "!" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("!=")) } | _ => scan_op_single(character, state) end
-  | "<" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("<=")) } | _ => scan_op_single(character, state) end
-  | ">" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op(">=")) } | _ => scan_op_single(character, state) end
-  | "&" => match next | "&" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op("&&")) } | _ => scan_op_single(character, state) end
+  | "=" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) } | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('==')) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Equal) } end
+  | "|" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) } | "|" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('||')) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Bar) } end
+  | "!" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('!=')) } | _ => scan_op_single(character, state) end
+  | "<" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<=')) } | _ => scan_op_single(character, state) end
+  | ">" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>=')) } | _ => scan_op_single(character, state) end
+  | "&" => match next | "&" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('&&')) } | _ => scan_op_single(character, state) end
   | _   => scan_op_single(character, state)
   end
 

@@ -16,9 +16,9 @@ fn si(v: i32) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionInt(v
 
 export fn pipe_and_record_update_tests() -> [TestResult] = do
   let results: [TestResult] = []
-  const empty_prog = Program { decls: [] }
-  const ctx = create_codegen_context(empty_prog)
-  const tctx = empty_transform_context()
+  const empty_program = Program { decls: [] }
+  const context = create_codegen_context(empty_program)
+  const transform_context = empty_transform_context()
 
   // -- Pipe operator desugaring ---------------------------------------------
 
@@ -26,21 +26,21 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const right_fn   = Shared.new(ExprIdent('double', span_unknown()))
   const plain_pipe = pipe_desugar(left_expr, right_fn)
   results.push(assert_eq_str('pipe x |> double - double_(x)',
-    gen_expr(transform_expr(plain_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
+    gen_expr(transform_expr(plain_pipe, transform_context, (statements: [Shared<Stmt>], nested_transform_context: TransformContext) => transform_stmts(statements, nested_transform_context)), context),
     'double_(x)'))
 
   const right_call_args: [Shared<Expr>] = [Shared.new(ExprInt(5, span_unknown()))]
   const right_call   = Shared.new(ExprCall(Shared.new(ExprIdent('add', span_unknown())), right_call_args, span_unknown()))
   const partial_pipe = pipe_desugar(left_expr, right_call)
   results.push(assert_eq_str('pipe x |> add(5) - add(x, 5)',
-    gen_expr(transform_expr(partial_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
+    gen_expr(transform_expr(partial_pipe, transform_context, (statements: [Shared<Stmt>], nested_transform_context: TransformContext) => transform_stmts(statements, nested_transform_context)), context),
     'add(x, 5)'))
 
   const right_multi_args: [Shared<Expr>] = [Shared.new(ExprInt(3, span_unknown())), Shared.new(ExprInt(4, span_unknown()))]
   const right_multi_call  = Shared.new(ExprCall(Shared.new(ExprIdent('clamp', span_unknown())), right_multi_args, span_unknown()))
   const multi_partial_pipe = pipe_desugar(left_expr, right_multi_call)
   results.push(assert_eq_str('pipe x |> clamp(3, 4) - clamp(x, 3, 4)',
-    gen_expr(transform_expr(multi_partial_pipe, tctx, (stmts: [Shared<Stmt>], ctx2: TransformContext) => transform_stmts(stmts, ctx2)), ctx),
+    gen_expr(transform_expr(multi_partial_pipe, transform_context, (statements: [Shared<Stmt>], nested_transform_context: TransformContext) => transform_stmts(statements, nested_transform_context)), context),
     'clamp(x, 3, 4)'))
 
   // -- Record update codegen ------------------------------------------------
@@ -59,8 +59,8 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
       default_expression: Shared.new(ExprUnit(span_unknown()))
     })
   ], false))], [], span_unknown()))
-  const point_prog  = Program { decls: [point_decl] }
-  const ctx_point   = create_codegen_context(point_prog)
+  const point_program  = Program { decls: [point_decl] }
+  const point_context   = create_codegen_context(point_program)
 
   const point_type = Shared.new(TNamed('Point'))
   const override_fields: [Shared<SemanticFieldVal>] = [
@@ -69,7 +69,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   const base_expr   = sid("p")
   const update_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
   results.push(assert_eq_str('Point { ...p, x: 10 } - Point{10, p.y}',
-    gen_expr(update_expr, ctx_point),
+    gen_expr(update_expr, point_context),
     'Point{10, p.y}'))
 
   const two_overrides: [Shared<SemanticFieldVal>] = [
@@ -78,12 +78,12 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
   ]
   const all_overrides_expr = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, two_overrides, point_type, span_unknown()))
   results.push(assert_eq_str('Point { ...p, x: 0, y: 0 } - Point{0, 0}',
-    gen_expr(all_overrides_expr, ctx_point),
+    gen_expr(all_overrides_expr, point_context),
     'Point{0, 0}'))
 
   const lazy_update = Shared.new(SemanticExpressionRecordUpdate('Point', base_expr, override_fields, point_type, span_unknown()))
   results.push(assert_true('record update without field order registry uses lazy block',
-    gen_expr(lazy_update, ctx).contains('__upd')))
+    gen_expr(lazy_update, context).contains('__upd')))
 
   // -- Lexer tokenizes ... as Spread ----------------------------------------
 
