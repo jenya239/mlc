@@ -51,6 +51,7 @@
 | 2026-06-04 | TRACK_DECL_FRAGMENT_CLEANUP closed | STEP=5: 0 production `CppDeclFragment`; 940/0; Planner plan-refresh enqueued |
 | 2026-06-04 | Guard loop `Driver:1:RENAME_ABBREV` while **STRING_MATCH** active (steps 1–5 done, 952/0) | Meta: supervisor ok; RENAME STEP=1 deferred; fix TRACK table; enqueue **Driver STRING_MATCH STEP=6** once (not RENAME STEP=1) |
 | 2026-06-05 | Guard stuck `Driver:12:RENAME_ABBREV` after assistant — STEP=12 committed (`c3eb310d`, 961/0, self-host diff empty) | Meta: supervisor ok; TRACK step 12 → done; no re-enqueue STEP=12; enqueue **Driver STEP=13** once |
+| 2026-06-05 | Guard stuck `Driver:13:RENAME_ABBREV` after assistant — STEP=13 committed (`c487d3fc`, 961/0, self-host diff empty) | Meta: supervisor ok; TRACK step 13 → done; no re-enqueue STEP=13; enqueue **Driver STEP=14** once |
 
 Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role, stale-step skip + single pending enqueue, Critic→Driver handoff without re-enqueue same STEP, **Meta drain stuck STEP=1 → enqueue STEP=2 (DESTRUCTURING_APPLY)**, **post-commit stuck STEP → enqueue STEP+1 (RENAME_ABBREV s12→s13)**.
 
