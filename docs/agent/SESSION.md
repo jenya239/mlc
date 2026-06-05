@@ -5,10 +5,17 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-6d32a432-cb32-4494-a92b-aaabbf8c9eb8`|
+| agent_token_last | `cr-agent-c3b3c740-98ae-4730-bd71-93d2a2fbda5f`|
 | driver_turns_since_plan | 1|
 | step_last | 7|
 | active_track | TRACK_RENAME_ABBREV → STEP=8 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 7 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| action | STEP=7 done (`3f61a746`); gate **961**/0 re-verified |
+| next | enqueued ROLE=Driver STEP=8 |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 7 — types.mlc)
 
