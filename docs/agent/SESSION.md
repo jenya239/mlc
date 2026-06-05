@@ -18,7 +18,7 @@
 | step | 13 |
 | track | TRACK_RENAME_ABBREV |
 | done | infer/ abbreviations: match/with/call/HOF binders; quotes ok |
-| result | **961**/0; self-host `diff_exit=0` |
+| result | **961**/0; self-host `diff_exit=0`; commit `c487d3fc` |
 | next | ROLE=Driver STEP=14 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Meta meta-review — RENAME_ABBREV STEP=12 loop)

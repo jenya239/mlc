@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md]
 
 ## Status: **open** (step 13 done — 2026-06-05)
 
-**STEP=13 note (2026-06-05 Driver):** `checker/infer/` locals/bindings: `inner_expression`, `match_arms`, `callback_argument`, `argument_types`, `required_arity`, etc.; quotes ok. Gate: **961**/0; self-host diff empty.
+**STEP=13 note (2026-06-05 Driver):** `checker/infer/` locals/bindings: `inner_expression`, `match_arms`, `callback_argument`, `argument_types`, `required_arity`, etc.; quotes ok. Gate: **961**/0; self-host diff empty. Commit `c487d3fc`.
 
 **STEP=12 note (2026-06-05 Driver):** `names.mlc` `sub_patterns`/`alternatives`/`inner_expression`/`statements`/`variable_name`; `check/check_mutations.mlc` `then_expression`/`match_arms`/`check_mutation_statements_errors`/`block_mutable_locals`; quotes ok. Gate: **961**/0; self-host diff empty. Commit `c3eb310d`.
 
