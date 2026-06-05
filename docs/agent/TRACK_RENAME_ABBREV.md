@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 2 done — 2026-06-05)
+## Status: **open** (step 3 done — 2026-06-05)
+
+**STEP=3 note (2026-06-05 Driver):** `frontend/lexer.mlc` LexState: `source`, `position`, `column`; ripple `cpp/lexer.mlc` (LexState only, `CppToken.col` step 9). Shadowing fix: `input_text`, `byte_index`, `token_column`. String quote audit: `"` only char compares — ok. Gate: **961**/0; self-host diff empty.
 
 **STEP=2 note (2026-06-05 Driver):** `ast.mlc`/`ast_tokens.mlc` fields: `column`, `pattern`, `value`, `type_value`; ripple checker/codegen/parser/tests + `semantic_ir.mlc`. Fix: local `binding_span` (not `pattern_span`). Gate: **961**/0; self-host diff empty. Next: step 3 `lexer.mlc`.
 
@@ -66,7 +68,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | Core type renames: `SExpr`→`SemanticExpression`, `CppExpr`→`CppExpression`, `SDecl`→`SemanticDeclaration`, `CppDecl`→`CppDeclaration`, `SStmt`→`SemanticStatement`, `CppStmt`→`CppStatement`, `TKind`→`TokenKind`, `CppTKind`→`CppTokenKind`, `Pat`→`Pattern` | done |
 | 2 | `frontend/ast.mlc` + `frontend/ast_tokens.mlc` � ?????????? + ??????? | done |
-| 3 | `frontend/lexer.mlc` � ?????????? + ??????? | pending |
+| 3 | `frontend/lexer.mlc` — поля + кавычки | done |
 | 4 | `frontend/parser/predicates.mlc` � ?????????? + ??????? | pending |
 | 5 | `frontend/parser/exprs.mlc` � ?????????? + ??????? | pending |
 | 6 | `frontend/parser/decls.mlc` � ?????????? + ??????? | pending |

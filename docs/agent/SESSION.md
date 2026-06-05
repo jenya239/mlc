@@ -6,9 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-d2b4f73a-fa65-44ff-bddb-c9ffa3b48c11`|
-| driver_turns_since_plan | 4|
-| step_last | 2|
-| active_track | TRACK_RENAME_ABBREV → STEP=3 |
+| driver_turns_since_plan | 5|
+| step_last | 3|
+| active_track | TRACK_RENAME_ABBREV → STEP=4 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 3 — lexer LexState renames)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_RENAME_ABBREV |
+| started | 2026-06-05 |
+| elapsed | ~60 min |
+| done | `LexState` `source`/`position`/`column`; ripple `cpp/lexer.mlc`; shadowing `input_text`/`byte_index`/`token_column`; `lex_advance`/`lex_advance_by` |
+| result | **961**/0; self-host `diff_exit=0`; commit `d4303d76` |
+| issues | mlcc2 codegen breaks when local shadows renamed field (`position`, `source`, `column`) |
+| next | ROLE=Driver STEP=4 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 2 — ast field renames)
 
