@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-ba140ffc-02ef-4ceb-802c-6b941a5fcd9d`|
-| driver_turns_since_plan | 6|
-| step_last | 10|
+| agent_token_last | `cr-agent-cdf03fc2-8a12-4194-9314-aa2aedb112a8`|
+| driver_turns_since_plan | 0|
+| step_last | critique-audit|
 | active_track | TRACK_RENAME_ABBREV → STEP=11 |
+
+### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)
+
+| field | value |
+|-------|-------|
+| role | Critic |
+| step | critique-audit |
+| audited | RENAME s7–10 (`3f61a746`,`a11b5372`,`0428125c`,`0a5cbcc6`); ORCH s4+s6 (`e271c82`,`daa31ec`) |
+| gate | mlc **961**/0; self-host `diff_exit=0`; cr step tests 19/19; build ok |
+| findings | all commits match claims; s9 `predicates.mlc` unchanged (already clean); s10 `emit_helpers.mlc` unchanged (audit-only); `exprs.mlc` residuals (`pat_parsed`/`then_expr`/`is_unit_expr`/`stmts`) still open — non-blocker |
+| reopen | none |
+| next | ROLE=Driver STEP=11 TRACK_RENAME_ABBREV (already queued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 10 — emit/hash helpers)
 
