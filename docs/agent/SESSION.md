@@ -7,8 +7,22 @@
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-a0d1a53a-eba9-4291-a455-6bc11e6a12de`|
 | driver_turns_since_plan | 0|
-| step_last | orch-dev-1|
+| step_last | orch-dev-2|
 | active_track | TRACK_RENAME_ABBREV → STEP=4 |
+
+### Turn 2026-06-05 (OrchestratorDev TRACK_ORCH_DEV step 2 — billing)
+
+| field | value |
+|-------|-------|
+| role | OrchestratorDev |
+| step | 2 |
+| track | TRACK_ORCH_DEV |
+| started | 2026-06-05 |
+| elapsed | ~30 min |
+| done | cr `recordEnqueueCost`, `cost-entries.ts`, `/api/billing`, billing UI tab; commit `9ced441` |
+| result | billing tests 8/8; build ok |
+| issues | full npm test not all green (pre-existing) |
+| next | ROLE=Driver STEP=4 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (OrchestratorDev TRACK_ORCH_DEV step 1 — cr db schema)
 
