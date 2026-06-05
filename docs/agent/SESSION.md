@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-9f260515-b291-4149-86ea-e9e13acf6bf7`|
-| driver_turns_since_plan | 3|
-| step_last | 8|
+| agent_token_last | `cr-agent-570eb754-5140-49e3-8e8a-889db389e048`|
+| driver_turns_since_plan | 4|
+| step_last | 4|
 | active_track | TRACK_RENAME_ABBREV → STEP=9 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 4 — multi-agent targets)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_ORCH_DEV |
+| done | `AgentTarget.transport`/`paneId`; `tmux-observe`; unified `batchTick` |
+| result | step tests 14/14; build ok; npm test 331/344 (13 pre-existing); commit `e271c82` (cr) |
+| next | ROLE=Driver STEP=9 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 8 — cpp_ast/cpp_printer)
 
