@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-592a95bf-b5d2-462f-8d7d-967b3a95bc84`|
-| driver_turns_since_plan | 5|
-| step_last | 9|
-| active_track | TRACK_RENAME_ABBREV → STEP=10 |
+| agent_token_last | `cr-agent-ba140ffc-02ef-4ceb-802c-6b941a5fcd9d`|
+| driver_turns_since_plan | 6|
+| step_last | 10|
+| active_track | TRACK_RENAME_ABBREV → STEP=11 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 10 — emit/hash helpers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| track | TRACK_RENAME_ABBREV |
+| done | audit `emit_helpers.mlc`/`hash_stmt_helpers.mlc`; comment fix |
+| result | **961**/0; self-host `diff_exit=0`; commit `0a5cbcc6` |
+| next | ROLE=Driver STEP=11 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 9 — cpp lexer/parser)
 

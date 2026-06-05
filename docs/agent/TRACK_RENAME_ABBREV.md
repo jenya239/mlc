@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 9 done — 2026-06-05)
+## Status: **open** (step 10 done — 2026-06-05)
+
+**STEP=10 note (2026-06-05 Driver):** `emit_helpers.mlc`/`hash_stmt_helpers.mlc` already compliant; comment fix; quotes ok. Gate: **961**/0; self-host diff empty. Commit `0a5cbcc6`.
 
 **STEP=9 note (2026-06-05 Driver):** `CppToken.column`; scan `state`/`token`/`error`; `CppDeclarationResult.declaration`; `predicates.mlc` quotes ok. Gate: **961**/0; self-host diff empty. Commit `0428125c`.
 
@@ -87,7 +89,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 7 | `frontend/parser/types.mlc` — abbreviations + quotes | done |
 | 8 | `cpp/cpp_ast.mlc` + `cpp/cpp_printer.mlc` — abbreviations + quotes | done |
 | 9 | `cpp/lexer.mlc` + `cpp/parser.mlc` + `cpp/predicates.mlc` — abbreviations + quotes | done |
-| 10 | `cpp/emit_helpers.mlc` + `cpp/hash_stmt_helpers.mlc` � ?????????? + ??????? | pending |
+| 10 | `cpp/emit_helpers.mlc` + `cpp/hash_stmt_helpers.mlc` — abbreviations + quotes | done |
 | 11 | `checker/registry.mlc` + `checker/semantic_type_structure.mlc` � ?????????? | pending |
 | 12 | `checker/names.mlc` + `checker/check_mutations.mlc` � ?????????? | pending |
 | 13 | `checker/infer/` (??? ?????) � ?????????? | pending |
