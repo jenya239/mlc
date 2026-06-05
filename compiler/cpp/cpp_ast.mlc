@@ -57,7 +57,7 @@ export type CppExpression =
   | CppQuestionTry(Shared<CppExpression>)
   | CppWithBlock(Shared<CppExpression>, string, string)
 
-export type CppField = CppField { typ: string, name: string }
+export type CppField = CppField { type_value: string, name: string }
 
 export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
 
@@ -87,13 +87,13 @@ export type CppDeclaration =
 
 export type CppFile = CppFile { header: [Shared<CppDeclaration>], source: [Shared<CppDeclaration>] }
 
-export type CppProgram = CppProgram { decls: [Shared<CppDeclaration>] }
+export type CppProgram = CppProgram { declarations: [Shared<CppDeclaration>] }
 
 export fn cpp_capture_name(capture: Shared<CppCapture>) -> string = capture.name
 export fn cpp_capture_by_reference(capture: Shared<CppCapture>) -> bool = capture.by_reference
 export fn cpp_param_name(parameter: Shared<CppParam>) -> string = parameter.name
 export fn cpp_param_type(parameter: Shared<CppParam>) -> Shared<CppType> = parameter.parameter_type
-export fn cpp_field_type(field: Shared<CppField>) -> string = field.typ
+export fn cpp_field_type(field: Shared<CppField>) -> string = field.type_value
 export fn cpp_field_name(field: Shared<CppField>) -> string = field.name
 export fn cpp_variant_arm_name(arm: Shared<CppVariantArm>) -> string = arm.name
 export fn cpp_variant_arm_types(arm: Shared<CppVariantArm>) -> [Shared<CppType>] = arm.types

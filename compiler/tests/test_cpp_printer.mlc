@@ -243,7 +243,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '} // namespace ast\n'))
 
   results.push(assert_eq_str('print_decl CppStruct',
-    print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { typ: "int", name: "x" })], false))),
+    print_decl(Shared.new(CppStruct('', 'Point', [Shared.new(CppField { type_value: "int", name: "x" })], false))),
     "struct Point {\n  int x;\n};\n"))
 
   results.push(assert_eq_str('print_decl CppStruct forward',

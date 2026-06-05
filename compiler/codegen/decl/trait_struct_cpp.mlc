@@ -17,7 +17,7 @@ export fn trait_method_field_cpp(
   return_type: Shared<Type>
 ) -> Shared<CppField> =
   Shared.new(CppField {
-    typ: expression_output.cpp_std_function_type(
+    type_value: expression_output.cpp_std_function_type(
       sem_type_to_cpp(context, return_type),
       non_self_parameter_types_cpp(context, params).join(', ')),
     name: cpp_safe(method_name)

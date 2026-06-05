@@ -140,7 +140,7 @@ export fn gen_type_decl_fwd_cpp(
 
 fn record_field_cpp(context: CodegenContext, field_definition: Shared<FieldDef>) -> Shared<CppField> =
   Shared.new(CppField {
-    typ: type_to_cpp(context, field_definition.type_value),
+    type_value: type_to_cpp(context, field_definition.type_value),
     name: cpp_safe(field_definition.name)
   })
 
@@ -152,7 +152,7 @@ fn tuple_fields_cpp(context: CodegenContext, field_types: [Shared<TypeExpr>]) ->
   let mut field_index = 0
   while field_index < field_types.length() do
     fields.push(Shared.new(CppField {
-      typ: type_to_cpp(context, field_types[field_index]),
+      type_value: type_to_cpp(context, field_types[field_index]),
       name: 'field' + field_index.to_string()
     }))
     field_index = field_index + 1

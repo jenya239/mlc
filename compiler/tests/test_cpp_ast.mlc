@@ -8,15 +8,15 @@ export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   const inc = Shared.new(CppInclude(true, 'string'))
-  const prog = CppProgram { decls: [inc] }
+  const prog = CppProgram { declarations: [inc] }
   results.push(assert_eq_int('CppProgram with 1 decl',
-    prog.decls.length(), 1))
+    prog.declarations.length(), 1))
 
-  const field = Shared.new(CppField { typ: 'int', name: "x" })
+  const field = Shared.new(CppField { type_value: 'int', name: "x" })
   const st = Shared.new(CppStruct('', 'Point', [field], false))
-  const prog2 = CppProgram { decls: [st] }
+  const prog2 = CppProgram { declarations: [st] }
   results.push(assert_true('CppStruct in program',
-    match prog2.decls[0] { CppStruct(_, _, _, _) => true, _ => false }))
+    match prog2.declarations[0] { CppStruct(_, _, _, _) => true, _ => false }))
 
   const vector_type = Shared.new(CppTypeName('std::vector'))
   const int_type = Shared.new(CppTypeName('int'))

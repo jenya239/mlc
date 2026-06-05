@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 
 fn cpp_parse_decl_count(src: string) -> i32 =
-  cpp_parse(cpp_tokenize(src).tokens).program.decls.length()
+  cpp_parse(cpp_tokenize(src).tokens).program.declarations.length()
 
 fn cpp_parse_first(src: string) -> Shared<CppDeclaration> =
   const prog = cpp_parse(cpp_tokenize(src).tokens).program
