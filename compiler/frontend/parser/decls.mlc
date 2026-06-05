@@ -3,7 +3,7 @@
 import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatternResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult, ParseProgramResult } from './predicates'
 import { Token } from '../ast_tokens'
 import { parse_type } from './types'
-import { parse_expr, parse_record_pat_fields } from './exprs'
+import { parse_expr, parse_record_pattern_fields } from './exprs'
 import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace } from './expect_close'
 import { Decl, DeclFn, DeclTrait, DeclType, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
@@ -471,7 +471,7 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
 
   if cursor_after_mutability_keyword.kind().is_lbrace() then
     const record_pattern_span = cursor_after_mutability_keyword.span_at_cursor()
-    const shorthand_record_fields = parse_record_pat_fields(cursor_after_mutability_keyword.advance())
+    const shorthand_record_fields = parse_record_pattern_fields(cursor_after_mutability_keyword.advance())
     const cursor_after_record_fields = shorthand_record_fields.parser
     const record_field_type_parse = parse_type(cursor_after_record_fields.advance())
     let remainder_after_record_type = record_field_type_parse.parser
