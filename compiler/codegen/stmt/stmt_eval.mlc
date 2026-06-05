@@ -47,8 +47,8 @@ fn constexpr_binding_value_code(
     _ => gen_expr_fn(value, context)
   }
 
-export fn eval_try_unwrap(inner_expr: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string = do
-  const inner_code = gen_expr_fn(inner_expr, context)
+export fn eval_try_unwrap(inner_expression: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string = do
+  const inner_code = gen_expr_fn(inner_expression, context)
   expression_output.try_unwrap_result_block(try_identifier, inner_code, success_line)
 end
 
@@ -86,37 +86,37 @@ fn eval_stmt_if_nested(if_expression: Shared<SemanticExpression>, context: Codeg
     _ => expression_output.if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn))
   }
 
-fn eval_block_body(expr: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
-  match expr {
-    SemanticExpressionBlock(statements, result_expr, _, _) => do
+fn eval_block_body(expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) => do
       const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
       const statements_code = statements_with_context.statements_parsed.joined_code()
       const final_context   = statements_with_context.codegen_context
-      match result_expr {
-        SemanticExpressionIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expr, final_context, gen_expr_fn),
+      match result_expression {
+        SemanticExpressionIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expression, final_context, gen_expr_fn),
         SemanticExpressionUnit(_, _)        => statements_code,
         _ => do
-          const result_code = gen_expr_fn(result_expr, final_context)
+          const result_code = gen_expr_fn(result_expression, final_context)
           if result_code == gen_unit_literal() then statements_code
           else expression_output.append_trailing_expression_statement(statements_code, result_code)
           end
         end
       }
     end,
-    SemanticExpressionIf(_, _, _, _, _) => eval_stmt_if_nested(expr, context, gen_expr_fn),
-    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expr, context))
+    SemanticExpressionIf(_, _, _, _, _) => eval_stmt_if_nested(expression, context, gen_expr_fn),
+    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
   }
 
 fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   match expression {
-    SemanticExpressionBin(operation, left_expr, right_expr, _, _) =>
+    SemanticExpressionBin(operation, left_expression, right_expression, _, _) =>
       if operation == "=" then
-        expression_output.assignment_statement(gen_expr_fn(left_expr, context), gen_expr_fn(right_expr, context))
+        expression_output.assignment_statement(gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context))
       else
         expression_output.expression_operation_statement(
           operation,
-          gen_expr_fn(left_expr, context),
-          gen_expr_fn(right_expr, context))
+          gen_expr_fn(left_expression, context),
+          gen_expr_fn(right_expression, context))
       end,
     SemanticExpressionIf(_, _, _, _, _) =>
       eval_stmt_if_nested(expression, context, gen_expr_fn),
@@ -129,15 +129,15 @@ fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContex
         cpp_safe(variable),
         gen_expr_fn(iterator, context),
         eval_stmts_str(statements, context, gen_expr_fn)),
-    SemanticExpressionWith(resource, binder, stmts, _, _) =>
+    SemanticExpressionWith(resource, binder, with_statements, _, _) =>
       expression_output.with_block_statement(
         gen_expr_fn(resource, context),
         cpp_safe(binder),
-        eval_stmts_str(stmts, context, gen_expr_fn)),
-    SemanticExpressionBlock(statements, result_expr, _, _) => do
+        eval_stmts_str(with_statements, context, gen_expr_fn)),
+    SemanticExpressionBlock(statements, result_expression, _, _) => do
       const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
       const statements_code = statements_with_context.statements_parsed.joined_code()
-      const result_code = gen_expr_fn(result_expr, statements_with_context.codegen_context)
+      const result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context)
       if result_code == gen_unit_literal() then statements_code
       else expression_output.append_trailing_expression_statement(statements_code, result_code)
       end
@@ -148,16 +148,16 @@ fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContex
 fn eval_elements_code(elements: [Shared<SemanticExpression>], context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   elements.map(element => gen_expr_fn(element, context)).join(', ')
 
-export fn eval_stmt_with_try(stmt: Shared<SemanticStatement>, context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> GenStmtResult =
-  match stmt {
+export fn eval_stmt_with_try(statement: Shared<SemanticStatement>, context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> GenStmtResult =
+  match statement {
     SemanticStatementLet(name, _, value, value_type, _) => do
       const try_identifier = `__try_${try_counter.to_string()}`
       const next_counter = try_counter + 1
       const statement_parsed = match value {
-        SemanticExpressionQuestion(inner_expr, _, _) =>
+        SemanticExpressionQuestion(inner_expression, _, _) =>
           GenStmtResult {
             output: eval_try_unwrap(
-              inner_expr,
+              inner_expression,
               context,
               try_identifier,
               expression_output.let_from_try_ok_field0(cpp_safe(name), try_identifier),
@@ -222,8 +222,8 @@ export fn eval_stmt_with_try(stmt: Shared<SemanticStatement>, context: CodegenCo
       }
       statement_parsed
     end,
-    SemanticStatementLetPattern(pat, _, value, value_type, has_else, else_body, _) => do
-      const pattern_parsed = gen_let_pattern_statement(pat, value, value_type, has_else, else_body, context, gen_expr_fn)
+    SemanticStatementLetPattern(pattern, _, value, value_type, has_else, else_body, _) => do
+      const pattern_parsed = gen_let_pattern_statement(pattern, value, value_type, has_else, else_body, context, gen_expr_fn)
       GenStmtResult {
         output: pattern_parsed.output,
         next_try: try_counter,
@@ -239,11 +239,11 @@ export fn eval_stmt_with_try(stmt: Shared<SemanticStatement>, context: CodegenCo
         codegen_context: context
       },
     SemanticStatementExpr(expression, _) => match expression {
-      SemanticExpressionQuestion(inner_expr, _, _) => do
+      SemanticExpressionQuestion(inner_expression, _, _) => do
         const try_identifier = `__try_${try_counter.to_string()}`
         GenStmtResult {
           output: eval_try_unwrap(
-            inner_expr,
+            inner_expression,
             context,
             try_identifier,
             expression_output.discard_try_ok_field0_statement(try_identifier),
@@ -261,11 +261,11 @@ export fn eval_stmt_with_try(stmt: Shared<SemanticStatement>, context: CodegenCo
     SemanticStatementBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter, codegen_context: context },
     SemanticStatementContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter, codegen_context: context },
     SemanticStatementReturn(expression, _) => match expression {
-      SemanticExpressionQuestion(inner_expr, _, _) => do
+      SemanticExpressionQuestion(inner_expression, _, _) => do
         const try_identifier = `__try_ret_${try_counter.to_string()}`
         GenStmtResult {
           output: eval_try_unwrap(
-            inner_expr,
+            inner_expression,
             context,
             try_identifier,
             expression_output.return_try_ok_field0_statement(try_identifier),

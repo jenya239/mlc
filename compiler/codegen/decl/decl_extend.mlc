@@ -28,7 +28,7 @@ fn default_expr_to_cpp(expression: Shared<Expr>) -> string = match expression {
   ExprU8(v, _)     => lit.gen_u8_literal(v),
   ExprUsize(v, _)  => lit.gen_usize_literal(v),
   ExprChar(v, _)   => lit.gen_char_literal(v),
-  _                => "0"
+  _                => 0.to_string()
 }
 
 fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =

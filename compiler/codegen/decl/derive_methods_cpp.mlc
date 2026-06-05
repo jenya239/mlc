@@ -29,12 +29,12 @@ fn make_self_discriminant_expression() -> Shared<CppExpression> =
 
 fn make_std_get_expression(variant_name: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    emit_helpers.make_identifier_cpp_expression("std::get<" + variant_name + ">"),
+    emit_helpers.make_identifier_cpp_expression('std::get<' + variant_name + `>`),
     [make_self_discriminant_expression()]))
 
 fn make_holds_alternative_expression(variant_name: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    emit_helpers.make_identifier_cpp_expression("std::holds_alternative<" + variant_name + ">"),
+    emit_helpers.make_identifier_cpp_expression('std::holds_alternative<' + variant_name + `>`),
     [make_self_discriminant_expression()]))
 
 fn derive_field_display_expression(field_name: string, field_type: Shared<TypeExpr>) -> Shared<CppExpression> =
@@ -77,24 +77,24 @@ fn append_display_field_parts(
   field_name: string,
   field_type: Shared<TypeExpr>
 ) -> [Shared<CppExpression>] = do
-  parts.push(make_string_constructor(", " + field_name + ": "))
+  parts.push(make_string_constructor(', ' + field_name + ': '))
   parts.push(derive_field_display_expression(field_name, field_type))
   parts
 end
 
 fn derive_display_record_return_expression(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppExpression> =
   if field_definitions.length() == 0 then
-    make_string_constructor(type_name + " {}")
+    make_string_constructor(type_name + ' {}')
   else
     let mut parts: [Shared<CppExpression>] = []
-    parts.push(make_string_constructor(type_name + " { " + field_definitions[0].name + ": "))
+    parts.push(make_string_constructor(type_name + ' { ' + field_definitions[0].name + ': '))
     parts.push(derive_field_display_expression(field_definitions[0].name, field_definitions[0].type_value))
     let mut index = 1
     while index < field_definitions.length() do
       parts = append_display_field_parts(parts, field_definitions[index].name, field_definitions[index].type_value)
       index = index + 1
     end
-    parts.push(make_string_constructor(" }"))
+    parts.push(make_string_constructor(' }'))
     fold_plus_expressions(parts)
   end
 
@@ -105,7 +105,7 @@ fn append_variant_record_display_parts(
 ) -> [Shared<CppExpression>] = do
   let mut index = 1
   while index < field_definitions.length() do
-    parts.push(make_string_constructor(", "))
+    parts.push(make_string_constructor(', '))
     parts.push(derive_variant_field_display_expression(
       variant_name,
       field_definitions[index].name,
@@ -123,13 +123,13 @@ fn derive_display_variant_record_return_expression(
     make_string_constructor(variant_name)
   else
     let mut parts: [Shared<CppExpression>] = []
-    parts.push(make_string_constructor(variant_name + "("))
+    parts.push(make_string_constructor(variant_name + `(`))
     parts.push(derive_variant_field_display_expression(
       variant_name,
       field_definitions[0].name,
       field_definitions[0].type_value))
     parts = append_variant_record_display_parts(parts, variant_name, field_definitions)
-    parts.push(make_string_constructor(")"))
+    parts.push(make_string_constructor(`)`))
     fold_plus_expressions(parts)
   end
 
@@ -138,10 +138,10 @@ fn derive_display_tuple_return_expression(variant_name: string, field_types: [Sh
     make_string_constructor(variant_name)
   else
     fold_plus_expressions([
-      make_string_constructor(variant_name + "("),
+      make_string_constructor(variant_name + `(`),
       make_mlc_to_string_call(
-        Shared.new(CppMember(make_std_get_expression(variant_name), "_0", false))),
-      make_string_constructor(")")
+        Shared.new(CppMember(make_std_get_expression(variant_name), '_0', false))),
+      make_string_constructor(`)`)
     ])
   end
 
@@ -183,8 +183,8 @@ fn display_to_string_function_definition(
   Shared.new(CppFnDef(
     '',
     'mlc::String',
-    type_name + "_to_string",
-    ["const " + type_name + "& self"],
+    type_name + '_to_string',
+    ['const ' + type_name + '& self'],
     body_statements,
     1))
 
@@ -235,7 +235,7 @@ fn fold_and_expressions(expressions: [Shared<CppExpression>]) -> Shared<CppExpre
     let mut result = expressions[0]
     let mut index = 1
     while index < expressions.length() do
-      result = Shared.new(CppBinary("&&", result, expressions[index]))
+      result = Shared.new(CppBinary('&&', result, expressions[index]))
       index = index + 1
     end
     result
@@ -246,7 +246,7 @@ fn build_eq_field_comparisons(field_definitions: [Shared<FieldDef>]) -> [Shared<
   let comparisons: [Shared<CppExpression>] = []
   let mut index = 0
   while index < field_definitions.length() do
-    comparisons.push(Shared.new(CppBinary("==",
+    comparisons.push(Shared.new(CppBinary('==',
       make_parameter_field_expression("a", field_definitions[index].name),
       make_parameter_field_expression("b", field_definitions[index].name))))
     index = index + 1
@@ -255,7 +255,7 @@ fn build_eq_field_comparisons(field_definitions: [Shared<FieldDef>]) -> [Shared<
 end
 
 fn derive_eq_sum_return_expression() -> Shared<CppExpression> =
-  Shared.new(CppBinary("==",
+  Shared.new(CppBinary('==',
     make_parameter_discriminant_expression("a"),
     make_parameter_discriminant_expression("b")))
 
@@ -267,7 +267,7 @@ fn eq_operator_function_definition(
     '',
     'bool',
     'operator==',
-    ["const " + type_name + "& a", "const " + type_name + "& b"],
+    ['const ' + type_name + '& a', 'const ' + type_name + '& b'],
     [emit_helpers.make_return_cpp_statement(return_expression)],
     1))
 
@@ -292,7 +292,7 @@ fn make_field_less_than_expression(field_name: string) -> Shared<CppExpression> 
     make_parameter_field_expression("b", field_name)))
 
 fn make_field_equal_expression(field_name: string) -> Shared<CppExpression> =
-  Shared.new(CppBinary("==",
+  Shared.new(CppBinary('==',
     make_parameter_field_expression("a", field_name),
     make_parameter_field_expression("b", field_name)))
 
@@ -313,8 +313,8 @@ fn build_ord_record_return_expression(field_definitions: [Shared<FieldDef>]) -> 
     let mut result = make_field_less_than_expression(field_definitions[0].name)
     let mut index = 1
     while index < field_definitions.length() do
-      result = Shared.new(CppBinary("||", result,
-        Shared.new(CppBinary("&&",
+      result = Shared.new(CppBinary('||', result,
+        Shared.new(CppBinary('&&',
           build_prefix_equal_expression(field_definitions, index),
           make_field_less_than_expression(field_definitions[index].name)))))
       index = index + 1
@@ -335,7 +335,7 @@ fn ord_operator_function_definition(
     '',
     'bool',
     'operator<',
-    ["const " + type_name + "& a", "const " + type_name + "& b"],
+    ['const ' + type_name + '& a', 'const ' + type_name + '& b'],
     [emit_helpers.make_return_cpp_statement(return_expression)],
     1))
 
@@ -363,7 +363,7 @@ fn derive_hash_std_cpp_type(field_type: Shared<TypeExpr>) -> string =
 fn make_hash_tuple_field_access_expression(variant_name: string, field_index: i32) -> Shared<CppExpression> =
   Shared.new(CppMember(
     make_std_get_expression(variant_name),
-    "field" + field_index.to_string(),
+    'field' + field_index.to_string(),
     false))
 
 fn make_hash_variant_field_access_expression(variant_name: string, field_name: string) -> Shared<CppExpression> =
@@ -406,7 +406,7 @@ fn type_variant_constructor_name(variant: Shared<TypeVariant>) -> string =
   }
 
 fn derive_hash_discriminant_combine_statement(discriminant_index: i32) -> Shared<CppStatement> =
-  make_hash_combine_statement("size_t", emit_helpers.make_integer_cpp_expression(discriminant_index))
+  make_hash_combine_statement('size_t', emit_helpers.make_integer_cpp_expression(discriminant_index))
 
 fn append_hash_tuple_field_combine_statements(
   statements: [Shared<CppStatement>],
@@ -504,10 +504,10 @@ export fn gen_derive_hash_cpp(type_name: string, variants: [Shared<TypeVariant>]
 
 fn gen_derive_trait_cpp(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> [Shared<CppDeclaration>] =
   match trait_name
-  | "Display" => gen_derive_display_cpp(type_name, variants)
-  | "Eq"      => gen_derive_eq_cpp(type_name, variants)
-  | "Ord"     => gen_derive_ord_cpp(type_name, variants)
-  | "Hash"    => gen_derive_hash_cpp(type_name, variants)
+  | 'Display' => gen_derive_display_cpp(type_name, variants)
+  | 'Eq'      => gen_derive_eq_cpp(type_name, variants)
+  | 'Ord'     => gen_derive_ord_cpp(type_name, variants)
+  | 'Hash'    => gen_derive_hash_cpp(type_name, variants)
   | _         => []
   end
 

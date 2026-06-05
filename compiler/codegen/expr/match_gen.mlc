@@ -7,7 +7,7 @@ import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../i
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
-import { first_arm_needs_deref, pat_bind_names, should_use_string_match_if_chain } from './match_analysis'
+import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain } from './match_analysis'
 import * as expression_output from './expr'
 import { Type, TUnit } from '../../checker/registry'
 import { sem_type_to_cpp } from '../decl/type_gen'
@@ -88,20 +88,20 @@ fn codegen_context_with_ctor_field_bindings(
 end
 
 fn gen_arm_ctor(
-  ctor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
+  constructor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string,
   visit_void: bool
 ) -> string = do
-  const qualified_name = context.resolve(ctor_name)
-  const lower_name = cpp_safe(lower_first(ctor_name))
+  const qualified_name = context.resolve(constructor_name)
+  const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
+    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
-  const is_generic = list_contains(context.generic_variants, ctor_name)
-  const arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context)
+  const is_generic = list_contains(context.generic_variants, constructor_name)
+  const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
   const body_code = eval_expr_fn(arm_body, arm_context, gen_stmts)
   if is_generic then
     if visit_void then expression_output.match_arm_constructed_value_generic_void(qualified_name, lower_name, binding, body_code)
@@ -151,7 +151,7 @@ fn match_arm_with_pattern(arm: Shared<SemanticMatchArm>, pattern: Shared<Pattern
 
 fn singleton_or_split(arm: Shared<SemanticMatchArm>) -> [Shared<SemanticMatchArm>] =
   match arm.pattern {
-    PatternOr(alts, _) => alts.map(alt => match_arm_with_pattern(arm, alt)),
+    PatternOr(alternatives, _) => alternatives.map(alternative => match_arm_with_pattern(arm, alternative)),
     _ => [arm]
   }
 
@@ -179,7 +179,7 @@ fn gen_guarded_wild_or_unit_arm_fragment(
   const body_code = eval_expr_fn(arm.body, context, gen_stmts)
   if arm.has_guard then
     const guard_code = eval_expr_fn(arm.when_condition, context, gen_stmts)
-    expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + "\n"
+    expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + `\n`
   else
     expression_output.return_line(body_code)
   end
@@ -197,9 +197,9 @@ fn gen_guarded_literal_arm_fragment(
   if arm.has_guard then
     const guard_code = eval_expr_fn(arm.when_condition, context, gen_stmts)
     const combined_condition = `(${condition} && (${guard_code}))`
-    expression_output.if_brace_block(combined_condition, expression_output.return_line(body_code)) + "\n"
+    expression_output.if_brace_block(combined_condition, expression_output.return_line(body_code)) + `\n`
   else
-    expression_output.if_brace_block(condition, expression_output.return_line(body_code)) + "\n"
+    expression_output.if_brace_block(condition, expression_output.return_line(body_code)) + `\n`
   end
 end
 
@@ -238,7 +238,7 @@ fn gen_guarded_constructor_arm_fragment(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding_prefix =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
+    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
   const type_argument = if list_contains(context.generic_variants, constructor_name) then '<auto>' else '' end
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
@@ -253,7 +253,7 @@ fn gen_guarded_constructor_arm_fragment(
   const inner =
     if arm.has_guard then
       const guard_code = eval_expr_fn(arm.when_condition, arm_context, gen_stmts)
-      expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + "\n"
+      expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + `\n`
     else
       expression_output.return_line(body_code)
     end
@@ -284,7 +284,7 @@ fn gen_guarded_record_arm_fragment(
   const inner =
     if arm.has_guard then
       const guard_code = eval_expr_fn(arm.when_condition, accumulated.arm_context, gen_stmts)
-      expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + "\n"
+      expression_output.if_brace_block(guard_code, expression_output.return_line(body_code)) + `\n`
     else
       expression_output.return_line(body_code)
     end
@@ -330,12 +330,12 @@ fn string_match_literal_condition_cpp(pattern: Shared<Pattern>, subject_holder: 
   match pattern {
     PatternStr(value, _) =>
       Shared.new(CppBinary(
-        "==",
+        '==',
         Shared.new(CppIdent(subject_holder)),
         gen_string_literal_cpp(value))),
     PatternStringLit(value, _) =>
       Shared.new(CppBinary(
-        "==",
+        '==',
         Shared.new(CppIdent(subject_holder)),
         gen_string_literal_cpp(value))),
     _ => emit_helpers.make_boolean_cpp_expression(false)
@@ -371,7 +371,7 @@ fn string_match_arm_else_branch(
 ) -> Shared<CppStatement> =
   if start_index >= arms.length() then
     emit_helpers.make_expression_cpp_statement(
-      emit_helpers.make_identifier_cpp_expression("std::abort()"))
+      emit_helpers.make_identifier_cpp_expression('std::abort()'))
   else
     const arm = arms[start_index]
     const return_block = build_return_block(arm, context, gen_stmts)
@@ -444,7 +444,7 @@ fn string_match_statements_to_source(statements: [Shared<CppStatement>]) -> stri
   let mut body_source = ''
   let mut statement_index = 0
   while statement_index < statements.length() do
-    body_source = body_source + print_statement(statements[statement_index]) + "\n"
+    body_source = body_source + print_statement(statements[statement_index]) + `\n`
     statement_index = statement_index + 1
   end
   body_source
@@ -596,20 +596,20 @@ export fn gen_arm(
   }
 
 fn gen_arm_ctor_cpp(
-  ctor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
+  constructor_name: string, sub_patterns: [Shared<Pattern>], arm_body: Shared<SemanticExpression>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
   visit_void: bool
 ) -> Shared<CppExpression> = do
-  const qualified_name = context.resolve(ctor_name)
-  const lower_name = cpp_safe(lower_first(ctor_name))
+  const qualified_name = context.resolve(constructor_name)
+  const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pat_bind_names(sub_patterns), lower_name)
+    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
-  const is_generic = list_contains(context.generic_variants, ctor_name)
-  const arm_context = codegen_context_with_ctor_field_bindings(ctor_name, sub_patterns, context)
+  const is_generic = list_contains(context.generic_variants, constructor_name)
+  const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
   const body_expression = eval_expr_cpp_fn(arm_body, arm_context, gen_stmts)
   if is_generic then
     Shared.new(CppVisitArmConstructedGeneric(qualified_name, lower_name, binding, visit_void, body_expression))

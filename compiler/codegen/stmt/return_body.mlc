@@ -11,70 +11,70 @@ import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from 
 import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
-fn gen_return_if_stmt(expr: Shared<SemanticExpression>, context: CodegenContext) -> string =
-  match expr {
-    SemanticExpressionIf(condition, then_expr, else_expr, _, _) => do
+fn gen_return_if_stmt(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
+  match expression {
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
       let mut output = expression_output.if_brace_block(
         gen_expr(condition, context),
-        gen_return_body(then_expr, context))
-      const else_string = match else_expr {
+        gen_return_body(then_expression, context))
+      const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
-        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
+        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
+        _                      => expression_output.else_brace_block(gen_return_body(else_expression, context))
       }
       expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
-    _ => expression_output.if_always_true_block(gen_return_body(expr, context))
+    _ => expression_output.if_always_true_block(gen_return_body(expression, context))
   }
 
-export fn gen_return_body(expr: Shared<SemanticExpression>, context: CodegenContext) -> string =
-  match expr {
-    SemanticExpressionBlock(statements, result_expr, _, _) => do
+export fn gen_return_body(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) => do
       const statements_with_context = gen_stmts_str_with_try(statements, context, 0)
       const final_context   = statements_with_context.codegen_context
       const statements_code = statements_with_context.statements_parsed.joined_code()
-      match result_expr {
-        SemanticExpressionQuestion(inner_expr, _, _) => do
+      match result_expression {
+        SemanticExpressionQuestion(inner_expression, _, _) => do
           const try_identifier = '__try_ret'
           statements_code + gen_try_unwrap(
-            inner_expr,
+            inner_expression,
             final_context,
             try_identifier,
             expression_output.return_try_ok_field0_statement(try_identifier))
         end,
         SemanticExpressionUnit(_, _)        => statements_code,
-        SemanticExpressionIf(_, _, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        SemanticExpressionMatch(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
-        SemanticExpressionBlock(_, _, _, _) => statements_code + gen_return_body(result_expr, final_context),
+        SemanticExpressionIf(_, _, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
+        SemanticExpressionMatch(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
+        SemanticExpressionBlock(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         _ =>
-          statements_code + expression_output.return_line(gen_expr(result_expr, final_context))
+          statements_code + expression_output.return_line(gen_expr(result_expression, final_context))
       }
     end,
-    SemanticExpressionIf(condition, then_expr, else_expr, _, _) => do
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
       let mut output = expression_output.if_brace_block(
         gen_expr(condition, context),
-        gen_return_body(then_expr, context))
-      const else_string = match else_expr {
+        gen_return_body(then_expression, context))
+      const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
-        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expr, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expr, context))
+        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
+        _                      => expression_output.else_brace_block(gen_return_body(else_expression, context))
       }
       expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
     end,
     SemanticExpressionUnit(_, _) => '',
-    SemanticExpressionQuestion(inner_expr, _, _) => do
+    SemanticExpressionQuestion(inner_expression, _, _) => do
       const try_identifier = '__try_ret'
       gen_try_unwrap(
-        inner_expr,
+        inner_expression,
         context,
         try_identifier,
         expression_output.return_try_ok_field0_statement(try_identifier))
     end,
-    _ => expression_output.return_line(gen_expr(expr, context))
+    _ => expression_output.return_line(gen_expr(expression, context))
   }
 
-export fn gen_fn_body(body_expr: Shared<SemanticExpression>, context: CodegenContext) -> string =
-  gen_return_body(body_expr, context)
+export fn gen_fn_body(body_expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
+  gen_return_body(body_expression, context)
 
 fn gen_stmts_for_return_body_cpp(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
   print_cpp_statements(gen_stmts_cpp(statements, context))
@@ -90,15 +90,15 @@ fn try_result_address_expression(try_identifier: string) -> Shared<CppExpression
 
 fn try_result_err_pointer_expression(try_identifier: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent("std::get_if<1>")),
+    Shared.new(CppIdent('std::get_if<1>')),
     [try_result_address_expression(try_identifier)]))
 
 fn try_result_ok_field0_expression(try_identifier: string) -> Shared<CppExpression> =
   Shared.new(CppMember(
     Shared.new(CppCall(
-      Shared.new(CppIdent("std::get<0>")),
+      Shared.new(CppIdent('std::get<0>')),
       [try_result_identifier_expression(try_identifier)])),
-    "field0",
+    'field0',
     false))
 
 fn gen_try_unwrap_return_statements_cpp(
@@ -107,14 +107,14 @@ fn gen_try_unwrap_return_statements_cpp(
 ) -> [Shared<CppStatement>] = do
   const try_identifier = '__try_ret'
   const inner_cpp = gen_expr_for_return_body_cpp(inner_expression, context)
-  const err_pointer = try_result_err_pointer_expression(try_identifier)
+  const error_pointer = try_result_err_pointer_expression(try_identifier)
   let statements: [Shared<CppStatement>] = []
   statements.push(emit_helpers.make_auto_cpp_statement(try_identifier, inner_cpp))
   statements.push(emit_helpers.make_if_cpp_statement(
-    err_pointer,
+    error_pointer,
     emit_helpers.make_block_cpp_statement([
       emit_helpers.make_return_cpp_statement(
-        Shared.new(CppUnary("*", err_pointer)))]),
+        Shared.new(CppUnary("*", error_pointer)))]),
     emit_helpers.make_block_cpp_statement([])))
   statements.push(emit_helpers.make_return_cpp_statement(
     try_result_ok_field0_expression(try_identifier)))
@@ -231,14 +231,14 @@ end
 
 fn gen_return_match_body_cpp(
   subject: Shared<SemanticExpression>,
-  arms: [Shared<SemanticMatchArm>],
+  match_arms: [Shared<SemanticMatchArm>],
   match_type: Shared<Type>,
   span: Span,
   context: CodegenContext
 ) -> [Shared<CppStatement>] = do
   let statements: [Shared<CppStatement>] = []
   statements.push(emit_helpers.make_return_cpp_statement(
-    gen_expr_for_return_body_cpp(Shared.new(SemanticExpressionMatch(subject, arms, match_type, span)), context)))
+    gen_expr_for_return_body_cpp(Shared.new(SemanticExpressionMatch(subject, match_arms, match_type, span)), context)))
   statements
 end
 
@@ -248,7 +248,7 @@ export fn gen_return_body_cpp(body_expression: Shared<SemanticExpression>, conte
       gen_return_block_body_cpp(block_statements, result_expression, context),
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
       gen_return_if_body_cpp(condition, then_expression, else_expression, context),
-    SemanticExpressionMatch(subject, arms, match_type, span) =>
-      gen_return_match_body_cpp(subject, arms, match_type, span, context),
+    SemanticExpressionMatch(subject, match_arms, match_type, span) =>
+      gen_return_match_body_cpp(subject, match_arms, match_type, span, context),
     _ => gen_return_body_leaf_cpp(body_expression, context)
   }

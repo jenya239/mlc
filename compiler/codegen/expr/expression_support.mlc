@@ -18,7 +18,7 @@ export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
       parts.join(', ')
     end
     end
-  capture + "(" + parameter_list + ") mutable"
+  capture + `(` + parameter_list + `) mutable`
 end
 
 export fn find_field_value(field_values: [Shared<SemanticFieldVal>], field_name: string) -> Shared<SemanticExpression> = do
@@ -61,22 +61,22 @@ end
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
   match method_name
-  | "read"                => "mlc::file::read_to_string"
-  | "write"               => "mlc::file::write_string"
-  | "make_temp_directory" => "mlc::file::make_temp_directory"
-  | "temp_directory_base" => "mlc::file::temp_directory_base"
-  | _                     => "mlc::file::" + method_name
+  | 'read'                => 'mlc::file::read_to_string'
+  | 'write'               => 'mlc::file::write_string'
+  | 'make_temp_directory' => 'mlc::file::make_temp_directory'
+  | 'temp_directory_base' => 'mlc::file::temp_directory_base'
+  | _                     => 'mlc::file::' + method_name
   end
 
 export fn cpp_function_name_for_profile_method(method_name: string) -> string =
   match method_name
-  | "scope_begin"      => "mlc::profile::scope_begin"
-  | "scope_end"        => "mlc::profile::scope_end"
-  | "monotonic_nanos"  => "mlc::profile::monotonic_nanos"
-  | "peak_rss_kib"     => "mlc::profile::peak_rss_kib"
-  | "print_report"     => "mlc::profile::print_report"
-  | "reset"            => "mlc::profile::reset"
-  | _                  => "mlc::profile::" + method_name
+  | 'scope_begin'      => 'mlc::profile::scope_begin'
+  | 'scope_end'        => 'mlc::profile::scope_end'
+  | 'monotonic_nanos'  => 'mlc::profile::monotonic_nanos'
+  | 'peak_rss_kib'     => 'mlc::profile::peak_rss_kib'
+  | 'print_report'     => 'mlc::profile::print_report'
+  | 'reset'            => 'mlc::profile::reset'
+  | _                  => 'mlc::profile::' + method_name
   end
 
 // Determine whether field access should use -> (shared) or . (value).

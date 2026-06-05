@@ -27,7 +27,7 @@ type CppExpressionVisitor = CppExpressionVisitor {
 }
 
 fn unsupported_cpp_expression() -> Shared<CppExpression> =
-  emit_helpers.make_identifier_cpp_expression("/* unsupported expr */")
+  emit_helpers.make_identifier_cpp_expression('/* unsupported expr */')
 
 fn evaluate_via_cpp_visitor(
   expression: Shared<SemanticExpression>,
@@ -36,7 +36,7 @@ fn evaluate_via_cpp_visitor(
 ) -> Shared<CppExpression> =
   gen_expr_via_cpp_visitor(expression, context)
 
-fn ignored_gen_stmts(_statements: [Shared<SemanticStatement>], _context: CodegenContext) -> string = ""
+fn ignored_gen_stmts(_statements: [Shared<SemanticStatement>], _context: CodegenContext) -> string = ''
 
 export fn eval_expr_cpp(
   expression: Shared<SemanticExpression>,
@@ -532,8 +532,8 @@ export fn gen_binary_via_cpp_visitor(
 ) -> Shared<CppExpression> = do
   const method = operator_method_for(operation)
   const left_type = sexpr_type(left_expression)
-  const type_name = match left_type { TNamed(name) => name, _ => "" }
-  if method != "" && type_name != "" then
+  const type_name = match left_type { TNamed(name) => name, _ => '' }
+  if method != '' && type_name != '' then
     Shared.new(CppCall(
       emit_helpers.make_identifier_cpp_expression(type_name + "_" + method),
       [evaluate_expression(left_expression, context, gen_stmts),

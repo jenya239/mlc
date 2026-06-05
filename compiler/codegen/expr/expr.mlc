@@ -303,7 +303,7 @@ export fn implementation_define_main_as_user_main_line() -> string =
   '#define main mlc_user_main\n'
 
 export fn implementation_include_quotefile_line(header_filename: string) -> string =
-  `#include "${header_filename}"\n`
+  `#include ` + `"` + header_filename + `"` + `\n`
 
 export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
   `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
@@ -361,7 +361,7 @@ export fn static_assert_concept_for_type_line(
   type_cpp: string,
   diagnostic_message_inside_cpp_string_literal: string
 ) -> string =
-  `static_assert(${concept_cpp_safe}<${type_cpp}>, "${diagnostic_message_inside_cpp_string_literal}");\n`
+  `static_assert(${concept_cpp_safe}<${type_cpp}>, ` + `"` + diagnostic_message_inside_cpp_string_literal + `"` + `);\n`
 
 export fn static_assert_concept_for_result_and_implementor_line(
   concept_cpp_safe: string,
@@ -369,7 +369,7 @@ export fn static_assert_concept_for_result_and_implementor_line(
   implementor_type_cpp: string,
   diagnostic_message_inside_cpp_string_literal: string
 ) -> string =
-  `static_assert(${concept_cpp_safe}<${result_type_cpp}, ${implementor_type_cpp}>, "${diagnostic_message_inside_cpp_string_literal}");\n`
+  `static_assert(${concept_cpp_safe}<${result_type_cpp}, ${implementor_type_cpp}>, ` + `"` + diagnostic_message_inside_cpp_string_literal + `"` + `);\n`
 
 export fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
   `{\nauto ${binder} = (${resource_code});\n${body_statements}${binder}.drop();\n}\n`

@@ -34,7 +34,7 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
       DeclType(type_name, _, _, _, _) => do
         if trait_declaration_names.has(type_name) then
           conflicts.push(diagnostic_error_with_code(
-            `the name "${type_name}" is declared as both a type and a trait`,
+            'the name "' + type_name + '" is declared as both a type and a trait',
             decl_name_span(current_declaration),
             diagnostic_code_e073()))
         end
@@ -43,7 +43,7 @@ export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnos
       DeclTrait(trait_name, _, _, _) => do
         if nominal_type_declaration_names.has(trait_name) then
           conflicts.push(diagnostic_error_with_code(
-            `the name "${trait_name}" is declared as both a type and a trait`,
+            'the name "' + trait_name + '" is declared as both a type and a trait',
             decl_name_span(current_declaration),
             diagnostic_code_e073()))
         end

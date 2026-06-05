@@ -19,11 +19,11 @@ export fn first_arm_needs_deref(first_arm: Shared<SemanticMatchArm>, subject: Sh
       else subject_needs_deref(subject, context)
       end
     end,
-    PatternOr(alts, _) =>
-      if alts.length() > 0 then
+    PatternOr(alternatives, _) =>
+      if alternatives.length() > 0 then
         first_arm_needs_deref(
           Shared.new(SemanticMatchArm {
-            pattern: alts[0],
+            pattern: alternatives[0],
             has_guard: first_arm.has_guard,
             when_condition: first_arm.when_condition,
             body: first_arm.body
@@ -36,7 +36,7 @@ export fn first_arm_needs_deref(first_arm: Shared<SemanticMatchArm>, subject: Sh
     _ => subject_needs_deref(subject, context)
   }
 
-export fn pat_binding_name_list(sub_patterns: [Shared<Pattern>]) -> [string] = do
+export fn pattern_binding_name_list(sub_patterns: [Shared<Pattern>]) -> [string] = do
   let parts: [string] = []
   let mut index = 0
   while index < sub_patterns.length() do
@@ -50,8 +50,8 @@ export fn pat_binding_name_list(sub_patterns: [Shared<Pattern>]) -> [string] = d
   parts
 end
 
-export fn pat_bind_names(sub_patterns: [Shared<Pattern>]) -> string =
-  pat_binding_name_list(sub_patterns).join(', ')
+export fn pattern_bind_names(sub_patterns: [Shared<Pattern>]) -> string =
+  pattern_binding_name_list(sub_patterns).join(', ')
 
 fn pattern_contains_string_literal(pattern: Shared<Pattern>) -> bool =
   match pattern {

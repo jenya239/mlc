@@ -13,8 +13,8 @@ import * as expression_output from '../expr/expr'
 
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   match type_name
-  | "Map"    => "mlc::HashMap"
-  | "Shared" => "std::shared_ptr"
+  | 'Map'    => 'mlc::HashMap'
+  | 'Shared' => 'std::shared_ptr'
   | _        => context.resolve(type_name)
   end
 
@@ -61,17 +61,17 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
 
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
   match type_name
-  | "i32"    => "int"
-  | "string" => "mlc::String"
-  | "bool"   => "bool"
-  | "unit"   => "void"
-  | "i64"    => "int64_t"
-  | "f64"    => "double"
-  | "u8"     => "uint8_t"
-  | "usize"  => "size_t"
-  | "char"   => "char32_t"
-  | "Self" | "self" =>
-    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else "void" end
+  | 'i32'    => 'int'
+  | 'string' => 'mlc::String'
+  | 'bool'   => 'bool'
+  | 'unit'   => 'void'
+  | 'i64'    => 'int64_t'
+  | 'f64'    => 'double'
+  | 'u8'     => 'uint8_t'
+  | 'usize'  => 'size_t'
+  | 'char'   => 'char32_t'
+  | 'Self' | 'self' =>
+    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
   | _ => context.resolve(type_name)
   end
 
@@ -275,15 +275,15 @@ fn derive_field_display(field_name: string, field_type: Shared<TypeExpr>) -> str
   }
 
 fn derive_display_record_fields(type_name: string, field_defs: [Shared<FieldDef>]) -> string =
-  `mlc::String("${type_name} { ${field_defs[0].name}: ") + ${derive_field_display(field_defs[0].name, field_defs[0].type_value)}` +
+  'mlc::String("' + type_name + ' { ' + field_defs[0].name + ': ") + ' + derive_field_display(field_defs[0].name, field_defs[0].type_value) +
   field_defs.drop(1).fold('', (accumulator, field_definition) =>
-    accumulator + ` + mlc::String(", ${field_definition.name}: ") + ${derive_field_display(field_definition.name, field_definition.type_value)}`) +
+    accumulator + ' + mlc::String(", ' + field_definition.name + ': ") + ' + derive_field_display(field_definition.name, field_definition.type_value)) +
   ' + mlc::String(" }")'
 
 fn derive_display_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
   const signature = `mlc::String ${type_name}_to_string(const ${type_name}& self) noexcept`
   if field_defs.length() == 0 then
-    signature + ` { return mlc::String("${type_name} {}"); }\n`
+    signature + ' { return mlc::String("' + type_name + ' {}"); }\n'
   else
     signature + ' {\n  return ' + derive_display_record_fields(type_name, field_defs) + ';\n}\n'
   end
@@ -292,31 +292,31 @@ end
 fn derive_display_variant_case(variant: Shared<TypeVariant>) -> string =
   match variant {
     VarUnit(name, _) =>
-      `  if (std::holds_alternative<${name}>(self._)) return mlc::String("${name}");\n`,
+      '  if (std::holds_alternative<' + name + '>(self._)) return mlc::String("' + name + '");\n',
     VarTuple(name, field_types, _) =>
       if field_types.length() == 0 then
-        `  if (std::holds_alternative<${name}>(self._)) return mlc::String("${name}");\n`
+        '  if (std::holds_alternative<' + name + '>(self._)) return mlc::String("' + name + '");\n'
       else
-        `  if (std::holds_alternative<${name}>(self._)) return mlc::String("${name}(") + mlc::to_string(std::get<${name}>(self._)._0) + mlc::String(")");\n`
+        '  if (std::holds_alternative<' + name + '>(self._)) return mlc::String("' + name + '(") + mlc::to_string(std::get<' + name + '>(self._)._0) + mlc::String(")");\n'
       end,
     VarRecord(name, field_definitions, _) => derive_display_variant_record(name, field_definitions)
   }
 
 fn derive_display_variant_record(name: string, field_definitions: [Shared<FieldDef>]) -> string = do
   if field_definitions.length() == 0 then
-    `  if (std::holds_alternative<${name}>(self._)) return mlc::String("${name}");\n`
+    '  if (std::holds_alternative<' + name + '>(self._)) return mlc::String("' + name + '");\n'
   else
     const parts =
-      `mlc::to_string(std::get<${name}>(self._).${field_definitions[0].name})` +
+      'mlc::to_string(std::get<' + name + '>(self._).' + field_definitions[0].name + `)` +
       field_definitions.drop(1).fold('', (accumulator, field_definition) =>
-        accumulator + ` + mlc::String(", ") + mlc::to_string(std::get<${name}>(self._).${field_definition.name})`)
-    `  if (std::holds_alternative<${name}>(self._)) return mlc::String("${name}(") + ${parts} + mlc::String(")");\n`
+        accumulator + ' + mlc::String(", ") + mlc::to_string(std::get<' + name + '>(self._).' + field_definition.name + `)`)
+    '  if (std::holds_alternative<' + name + '>(self._)) return mlc::String("' + name + '(") + ' + parts + ' + mlc::String(")");\n'
   end
 end
 
 fn derive_display_sum(type_name: string, variants: [Shared<TypeVariant>]) -> string = do
   const cases = variants.map(variant => derive_display_variant_case(variant)).join('')
-  `mlc::String ${type_name}_to_string(const ${type_name}& self) noexcept {\n` + cases + '  return mlc::String("");\n}\n'
+  `mlc::String ${type_name}_to_string(const ${type_name}& self) noexcept {\n` + cases + `  return mlc::String(` + `"` + `"` + `);\n}\n`
 end
 
 fn derive_eq_record(type_name: string, field_defs: [Shared<FieldDef>]) -> string = do
@@ -476,21 +476,21 @@ end
 fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
   const field_definitions = derive_record_field_defs(variants)
   match trait_name
-  | "Display" => derive_display_record(type_name, field_definitions)
-  | "Eq"      => derive_eq_record(type_name, field_definitions)
-  | "Ord"     => derive_ord_record(type_name, field_definitions)
-  | "Hash"    => derive_hash_record(type_name, field_definitions)
-  | _         => ""
+  | 'Display' => derive_display_record(type_name, field_definitions)
+  | 'Eq'      => derive_eq_record(type_name, field_definitions)
+  | 'Ord'     => derive_ord_record(type_name, field_definitions)
+  | 'Hash'    => derive_hash_record(type_name, field_definitions)
+  | _         => ''
   end
 end
 
 fn gen_derive_sum_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string =
   match trait_name
-  | "Display" => derive_display_sum(type_name, variants)
-  | "Eq"      => derive_eq_sum(type_name)
-  | "Ord"     => derive_ord_sum(type_name)
-  | "Hash"    => derive_hash_sum(type_name, variants)
-  | _         => ""
+  | 'Display' => derive_display_sum(type_name, variants)
+  | 'Eq'      => derive_eq_sum(type_name)
+  | 'Ord'     => derive_ord_sum(type_name)
+  | 'Hash'    => derive_hash_sum(type_name, variants)
+  | _         => ''
   end
 
 export fn gen_derive_methods(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>], derive_traits: [string]) -> string = do

@@ -79,7 +79,7 @@ export fn infer_expr_call_non_constructor_not_callable(
       inferred_type: Shared.new(TUnknown),
       errors: diagnostics_append(base.errors, [
         diagnostic_error_with_code(
-          'called value is not a function (got ' + semantic_type_structure.type_description(function_parsed.inferred_type) + ")",
+          'called value is not a function (got ' + semantic_type_structure.type_description(function_parsed.inferred_type) + `)`,
           call_source_span,
           diagnostic_code_e002())])
     }

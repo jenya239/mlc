@@ -1,10 +1,10 @@
 import { escape_str } from './codegen/cpp_naming'
 
 fn json_string_value(input: string) -> string =
-  "\"" + escape_str(input) + "\""
+  `"` + escape_str(input) + `"`
 
 fn json_string_array(values: [string]) -> string =
-  "[" + values.map(value => json_string_value(value)).join(", ") + "]"
+  `[` + values.map(value => json_string_value(value)).join(', ') + `]`
 
 export fn runtime_include_directory() -> string =
   'runtime/include'
@@ -22,7 +22,7 @@ end
 
 export fn compile_commands_entry_json(output_directory: string, implementation_path: string) -> string = do
   const arguments = compile_command_arguments(output_directory, implementation_path)
-  "  {\"directory\": " + json_string_value(output_directory) + ", \"file\": " + json_string_value(implementation_path) + ", \"arguments\": " + json_string_array(arguments) + "}"
+  '  {"directory": ' + json_string_value(output_directory) + ', "file": ' + json_string_value(implementation_path) + ', "arguments": ' + json_string_array(arguments) + `}`
 end
 
 export fn build_compile_commands_json(output_directory: string, implementation_paths: [string]) -> string = do
@@ -32,7 +32,7 @@ export fn build_compile_commands_json(output_directory: string, implementation_p
     entries.push(compile_commands_entry_json(output_directory, implementation_paths[index]))
     index = index + 1
   end
-  "[\n" + entries.join(",\n") + "\n]\n"
+  '[\n' + entries.join(',\n') + '\n]\n'
 end
 
 export fn write_compile_commands_file(output_directory: string, implementation_paths: [string]) -> () = do

@@ -7,19 +7,19 @@ export type CompileOptions = CompileOptions {
 }
 
 export fn compile_usage_message() -> string =
-  "Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]"
+  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]'
 
 fn is_output_directory_flag(argument: string) -> bool =
-  match argument | "-o" => true | _ => false end
+  match argument | '-o' => true | _ => false end
 
 fn is_profile_flag(argument: string) -> bool =
-  match argument | "--profile" => true | _ => false end
+  match argument | '--profile' => true | _ => false end
 
 fn is_check_only_flag(argument: string) -> bool =
-  match argument | "--check-only" => true | _ => false end
+  match argument | '--check-only' => true | _ => false end
 
 fn is_emit_compile_commands_flag(argument: string) -> bool =
-  match argument | "--emit-compile-commands" => true | _ => false end
+  match argument | '--emit-compile-commands' => true | _ => false end
 
 fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool, out_directory: string) -> string =
   if check_only && !out_directory_explicit then ''

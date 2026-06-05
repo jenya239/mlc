@@ -97,7 +97,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
                  type_is_checkable(default_parsed.inferred_type, registry) &&
                  !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
                 diagnostics_after_field.push(diagnostic_error_with_code(
-                  `record field default type mismatch for field "${record_field_under_literal_definition.name}"`,
+                  'record field default type mismatch for field "' + record_field_under_literal_definition.name + `"`,
                   expr_span(default_ast_expression),
                   diagnostic_code_e044()))
               end
@@ -226,7 +226,7 @@ fn where_clause_unknown_parameter_diagnostics(
         diagnostics_accumulated_so_far
       else
         diagnostics_accumulated_so_far.push(diagnostic_error_with_code(
-          `where clause names unknown type parameter "${where_entry_under_scan.parameter_name}"`,
+          `where clause names unknown type parameter '${where_entry_under_scan.parameter_name}'`,
           source_span,
           diagnostic_code_e076()))
         diagnostics_accumulated_so_far

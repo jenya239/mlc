@@ -53,44 +53,44 @@ export fn run_checker_pass(input: ModularCompileInput) -> Result<CheckedCompileS
   })
 end
 
-export fn run_transform_pass(state: CheckedCompileState) -> Result<TransformedCompileState, [string]> = do
-  profile_maybe_begin(state.profile_enabled, 'expand_destructure')
-  const expanded_program = expand_parameter_destructuring_in_program(state.full_program)
-  profile_maybe_end(state.profile_enabled, 'expand_destructure')
+export fn run_transform_pass(checked_state: CheckedCompileState) -> Result<TransformedCompileState, [string]> = do
+  profile_maybe_begin(checked_state.profile_enabled, 'expand_destructure')
+  const expanded_program = expand_parameter_destructuring_in_program(checked_state.full_program)
+  profile_maybe_end(checked_state.profile_enabled, 'expand_destructure')
   const trait_maps = build_trait_nominal_maps(expanded_program)
-  profile_maybe_begin(state.profile_enabled, 'transform')
-  const transformed_items = transform_load_items(state.load_items, state.registry, trait_maps)
-  profile_maybe_end(state.profile_enabled, 'transform')
-  profile_maybe_begin(state.profile_enabled, 'precompute')
-  const precomputed = precompute(expanded_program, state.load_items)
-  profile_maybe_end(state.profile_enabled, 'precompute')
+  profile_maybe_begin(checked_state.profile_enabled, 'transform')
+  const transformed_items = transform_load_items(checked_state.load_items, checked_state.registry, trait_maps)
+  profile_maybe_end(checked_state.profile_enabled, 'transform')
+  profile_maybe_begin(checked_state.profile_enabled, 'precompute')
+  const precomputed = precompute(expanded_program, checked_state.load_items)
+  profile_maybe_end(checked_state.profile_enabled, 'precompute')
   Ok(TransformedCompileState {
-    load_items: state.load_items,
+    load_items: checked_state.load_items,
     transformed_items: transformed_items,
     expanded_program: expanded_program,
     precomputed: precomputed,
-    output_directory: state.output_directory,
-    profile_enabled: state.profile_enabled
+    output_directory: checked_state.output_directory,
+    profile_enabled: checked_state.profile_enabled
   })
 end
 
-export fn run_codegen_pass(state: TransformedCompileState, emit_compile_commands: bool) -> Result<string, [string]> = do
-  profile_maybe_begin(state.profile_enabled, 'codegen')
+export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_compile_commands: bool) -> Result<string, [string]> = do
+  profile_maybe_begin(transformed_state.profile_enabled, 'codegen')
   let implementation_paths: [string] = []
   let mut index = 0
-  while index < state.transformed_items.length() do
-    const transformed_load_item = state.transformed_items[index]
+  while index < transformed_state.transformed_items.length() do
+    const transformed_load_item = transformed_state.transformed_items[index]
     const generated_output =
-      gen_module(transformed_load_item, state.load_items, state.expanded_program, state.precomputed)
+      gen_module(transformed_load_item, transformed_state.load_items, transformed_state.expanded_program, transformed_state.precomputed)
     const module_base = path_to_module_base(transformed_load_item.path)
     const header_path =
-      if state.output_directory.length() > 0
-        then `${state.output_directory}/${module_base}.hpp`
+      if transformed_state.output_directory.length() > 0
+        then `${transformed_state.output_directory}/${module_base}.hpp`
         else `${module_base}.hpp`
       end
     const implementation_path =
-      if state.output_directory.length() > 0
-        then `${state.output_directory}/${module_base}.cpp`
+      if transformed_state.output_directory.length() > 0
+        then `${transformed_state.output_directory}/${module_base}.cpp`
         else `${module_base}.cpp`
       end
     File.write(header_path, generated_output.header)
@@ -99,14 +99,14 @@ export fn run_codegen_pass(state: TransformedCompileState, emit_compile_commands
     index = index + 1
   end
   if emit_compile_commands then
-    write_compile_commands_file(state.output_directory, implementation_paths)
+    write_compile_commands_file(transformed_state.output_directory, implementation_paths)
   end
-  profile_maybe_end(state.profile_enabled, 'codegen')
+  profile_maybe_end(transformed_state.profile_enabled, 'codegen')
   Ok('')
 end
 
 export fn run_modular_compiler_pipeline(input: ModularCompileInput) -> Result<string, [string]> = do
-  const checked = run_checker_pass(input)?
-  const transformed = run_transform_pass(checked)?
-  if input.check_only then Ok('') else run_codegen_pass(transformed, input.emit_compile_commands) end
+  const checked_state = run_checker_pass(input)?
+  const transformed_state = run_transform_pass(checked_state)?
+  if input.check_only then Ok('') else run_codegen_pass(transformed_state, input.emit_compile_commands) end
 end

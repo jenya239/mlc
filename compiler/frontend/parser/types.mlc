@@ -42,11 +42,11 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
   else if kind.is_ident() then
     const name = kind.ident()
     match name
-    | "i32"    => TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
-    | "string" => TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
-    | "bool"   => TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
-    | "unit"   => TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
-    | "ref" => do
+    | 'i32'    => TypeResult { type_expr: Shared.new(TyI32),    parser: parser.advance() }
+    | 'string' => TypeResult { type_expr: Shared.new(TyString), parser: parser.advance() }
+    | 'bool'   => TypeResult { type_expr: Shared.new(TyBool),   parser: parser.advance() }
+    | 'unit'   => TypeResult { type_expr: Shared.new(TyUnit),   parser: parser.advance() }
+    | 'ref' => do
       const after_ref = if parser.advance().kind().is_mut()
                         then parser.advance_by(2) else parser.advance() end
       const inner_parsed = parse_type(after_ref)

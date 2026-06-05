@@ -50,7 +50,7 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
       while field_index < field_types.length() do
         const slot_label = "_" + field_index.to_string()
         const chunk = derive_hash_field_error(
-          `variant "${variant_name}"`, slot_label, field_types[field_index], diagnostic_span)
+          `variant '${variant_name}'`, slot_label, field_types[field_index], diagnostic_span)
         let mut merge_index = 0
         while merge_index < chunk.length() do
           collected.push(chunk[merge_index]); merge_index = merge_index + 1
@@ -62,7 +62,7 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
     VarRecord(variant_name, field_defs, _) =>
       field_defs.flat_map(field_definition =>
         derive_hash_field_error(
-          `variant "${variant_name}"`, field_definition.name, field_definition.type_value, diagnostic_span))
+          `variant '${variant_name}'`, field_definition.name, field_definition.type_value, diagnostic_span))
   }
 
 fn derive_hash_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =
@@ -83,13 +83,13 @@ export fn derive_clause_diagnostics(
     const trait_name = derive_trait_names[trait_index]
     if seen.has(trait_name) then
       collected.push(diagnostic_error_with_code(
-        `duplicate derive trait "${trait_name}"`, diagnostic_span, diagnostic_code_e070()))
+        'duplicate derive trait "' + trait_name + `"`, diagnostic_span, diagnostic_code_e070()))
     else
       seen.set(trait_name, true)
     end
     if !derive_trait_name_allowed(trait_name) then
       collected.push(diagnostic_error_with_code(
-        `unknown derive trait "${trait_name}"`, diagnostic_span, diagnostic_code_e071()))
+        `unknown derive trait '${trait_name}'`, diagnostic_span, diagnostic_code_e071()))
     end
     trait_index = trait_index + 1
   end

@@ -9,13 +9,13 @@ import { CodegenContext, lookup_fields_for_context, take_temp_name } from '../co
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
-import { pat_binding_name_list } from '../expr/match_analysis'
+import { pattern_binding_name_list } from '../expr/match_analysis'
 import { print_statement } from '../../cpp/cpp_printer'
 
 export type GenLetPatternCppResult = GenLetPatternCppResult { statement: Shared<CppStatement>, codegen_context: CodegenContext }
 
 fn print_statements_as_fragment(statements: [Shared<CppStatement>]) -> string =
-  statements.map(statement => print_statement(statement) + "\n").join("")
+  statements.map(statement => print_statement(statement) + `\n`).join('')
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -35,12 +35,12 @@ fn variant_holds_alternative_expression(
   subject_name: string
 ) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent("std::holds_alternative<" + variant_type_name + ">")),
+    Shared.new(CppIdent('std::holds_alternative<' + variant_type_name + `>`)),
     [emit_helpers.make_identifier_cpp_expression(subject_name)]))
 
 fn variant_get_expression(variant_type_name: string, subject_name: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent("std::get<" + variant_type_name + ">")),
+    Shared.new(CppIdent('std::get<' + variant_type_name + `>`)),
     [emit_helpers.make_identifier_cpp_expression(subject_name)]))
 
 fn array_rest_slice_expression(
@@ -49,13 +49,13 @@ fn array_rest_slice_expression(
   element_cpp_type: string
 ) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent("mlc::Array<" + element_cpp_type + ">")),
+    Shared.new(CppIdent('mlc::Array<' + element_cpp_type + `>`)),
     [
       Shared.new(CppBinary(
         "+",
-        method_call(array_name, "cbegin"),
+        method_call(array_name, 'cbegin'),
         emit_helpers.make_integer_cpp_expression(from_index))),
-      method_call(array_name, "cend")
+      method_call(array_name, 'cend')
     ]))
 
 fn append_statements(output: [Shared<CppStatement>], extra: [Shared<CppStatement>]) -> [Shared<CppStatement>] = do
@@ -67,7 +67,7 @@ fn append_statements(output: [Shared<CppStatement>], extra: [Shared<CppStatement
   output
 end
 
-fn ctor_mismatch_else_statements(
+fn constructor_mismatch_else_statements(
   has_else: bool,
   else_body: Shared<SemanticExpression>,
   context: CodegenContext,
@@ -77,7 +77,7 @@ fn ctor_mismatch_else_statements(
     [emit_helpers.make_expression_cpp_statement(expression_codegen(else_body, context))]
   else
     [emit_helpers.make_expression_cpp_statement(
-      Shared.new(CppCall(Shared.new(CppIdent("std::abort")), [])))]
+      Shared.new(CppCall(Shared.new(CppIdent('std::abort')), [])))]
   end
 
 fn variant_get_binding_statement(variant_type_name: string, binding_name: string, subject_name: string) -> Shared<CppStatement> =
@@ -88,11 +88,11 @@ fn variant_get_binding_statement(variant_type_name: string, binding_name: string
 
 fn tuple_element_access(source_name: string, element_index: i32) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent("std::get<" + element_index.to_string() + ">")),
+    Shared.new(CppIdent('std::get<' + element_index.to_string() + `>`)),
     [emit_helpers.make_identifier_cpp_expression(source_name)]))
 
-fn pattern_is_identifier(pat: Shared<Pattern>) -> bool =
-  match pat {
+fn pattern_is_identifier(pattern: Shared<Pattern>) -> bool =
+  match pattern {
     PatternIdent(_, _) => true,
     _ => false
   }
@@ -131,12 +131,12 @@ fn tuple_structured_binding_statement(
   source_name: string
 ) -> Shared<CppStatement> =
   emit_helpers.make_structured_binding_cpp_statement(
-    pat_binding_name_list(subpatterns),
+    pattern_binding_name_list(subpatterns),
     emit_helpers.make_identifier_cpp_expression(source_name))
 
-fn let_pattern_block(statements: [Shared<CppStatement>], rhs: Shared<CppExpression>, temp_name: string) -> Shared<CppStatement> = do
+fn let_pattern_block(statements: [Shared<CppStatement>], value_expression: Shared<CppExpression>, temp_name: string) -> Shared<CppStatement> = do
   const block_statements: [Shared<CppStatement>] = []
-  block_statements.push(emit_helpers.make_auto_cpp_statement(temp_name, rhs))
+  block_statements.push(emit_helpers.make_auto_cpp_statement(temp_name, value_expression))
   let mut index = 0
   while index < statements.length() do
     block_statements.push(statements[index])
@@ -146,7 +146,7 @@ fn let_pattern_block(statements: [Shared<CppStatement>], rhs: Shared<CppExpressi
 end
 
 export fn gen_let_pattern_cpp_statement(
-  pat: Shared<Pattern>,
+  pattern: Shared<Pattern>,
   value: Shared<SemanticExpression>,
   value_type: Shared<Type>,
   has_else: bool,
@@ -154,27 +154,27 @@ export fn gen_let_pattern_cpp_statement(
   context: CodegenContext,
   expression_codegen: (Shared<SemanticExpression>, CodegenContext) -> Shared<CppExpression>
 ) -> GenLetPatternCppResult = do
-  const rhs = expression_codegen(value, context)
+  const value_expression = expression_codegen(value, context)
   const first_temp = take_temp_name(context)
   const temp_name = first_temp.name
   let mut codegen_context = first_temp.codegen_context
-  match pat {
+  match pattern {
     PatternIdent(name, _) => GenLetPatternCppResult {
-      statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), rhs),
+      statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), value_expression),
       codegen_context: codegen_context
     },
     PatternTuple(subpatterns, _) => match value_type {
       TTuple(_) | TPair(_, _) =>
         if tuple_subpatterns_are_simple_identifiers(subpatterns) then
           GenLetPatternCppResult {
-            statement: let_pattern_block(simple_tuple_ident_binding_statements(subpatterns, temp_name), rhs, temp_name),
+            statement: let_pattern_block(simple_tuple_ident_binding_statements(subpatterns, temp_name), value_expression, temp_name),
             codegen_context: codegen_context
           }
         else
           GenLetPatternCppResult {
             statement: let_pattern_block(
               [tuple_structured_binding_statement(subpatterns, temp_name)],
-              rhs,
+              value_expression,
               temp_name),
             codegen_context: codegen_context
           }
@@ -201,14 +201,14 @@ export fn gen_let_pattern_cpp_statement(
               member_slot_index = member_slot_index + 1
             end
             GenLetPatternCppResult {
-              statement: let_pattern_block(member_statements, rhs, temp_name),
+              statement: let_pattern_block(member_statements, value_expression, temp_name),
               codegen_context: codegen_context
             }
           end else
             GenLetPatternCppResult {
               statement: let_pattern_block(
                 [tuple_structured_binding_statement(subpatterns, temp_name)],
-                rhs,
+                value_expression,
                 temp_name),
               codegen_context: codegen_context
             }
@@ -217,7 +217,7 @@ export fn gen_let_pattern_cpp_statement(
           GenLetPatternCppResult {
             statement: let_pattern_block(
               [tuple_structured_binding_statement(subpatterns, temp_name)],
-              rhs,
+              value_expression,
               temp_name),
             codegen_context: codegen_context
           }
@@ -238,7 +238,7 @@ export fn gen_let_pattern_cpp_statement(
         index = index + 1
       end
       GenLetPatternCppResult {
-        statement: let_pattern_block(field_statements, rhs, temp_name),
+        statement: let_pattern_block(field_statements, value_expression, temp_name),
         codegen_context: codegen_context
       }
     end,
@@ -265,24 +265,24 @@ export fn gen_let_pattern_cpp_statement(
           array_rest_slice_expression(temp_name, subpatterns.length(), element_cpp)))
       end
       GenLetPatternCppResult {
-        statement: let_pattern_block(array_statements, rhs, temp_name),
+        statement: let_pattern_block(array_statements, value_expression, temp_name),
         codegen_context: codegen_context
       }
     end,
     PatternCtor(constructor_name, subpatterns, _) => do
       const qualified_name = codegen_context.resolve(constructor_name)
       const is_generic = list_contains(codegen_context.generic_variants, constructor_name)
-      const type_arguments = if is_generic then "<auto>" else "" end
+      const type_arguments = if is_generic then '<auto>' else '' end
       const variant_type_name = qualified_name + type_arguments
       const second_temp = take_temp_name(codegen_context)
       const variant_binding_name = second_temp.name
       codegen_context = second_temp.codegen_context
       let mut constructor_statements: [Shared<CppStatement>] = []
-      constructor_statements.push(emit_helpers.make_auto_cpp_statement(temp_name, rhs))
+      constructor_statements.push(emit_helpers.make_auto_cpp_statement(temp_name, value_expression))
       constructor_statements.push(emit_helpers.make_if_cpp_statement(
         Shared.new(CppUnary("!", variant_holds_alternative_expression(variant_type_name, temp_name))),
         emit_helpers.make_block_cpp_statement(
-          ctor_mismatch_else_statements(has_else, else_body, codegen_context, expression_codegen)),
+          constructor_mismatch_else_statements(has_else, else_body, codegen_context, expression_codegen)),
         emit_helpers.make_block_cpp_statement([])))
       constructor_statements.push(variant_get_binding_statement(variant_type_name, variant_binding_name, temp_name))
       if subpatterns.length() > 0 then
@@ -300,7 +300,7 @@ export fn gen_let_pattern_cpp_statement(
       }
     end,
     _ => GenLetPatternCppResult {
-      statement: emit_helpers.make_expression_cpp_statement(rhs),
+      statement: emit_helpers.make_expression_cpp_statement(value_expression),
       codegen_context: codegen_context
     }
   }
