@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-6a112713-86fa-4b5d-89a2-fd73f63fd6a1`|
-| driver_turns_since_plan | 1|
-| step_last | 4|
+| agent_token_last | `cr-agent-96ae5dea-4389-4b33-a74a-2ef7323afc11`|
+| driver_turns_since_plan | 3|
+| step_last | 3|
 | active_track | TRACK_RENAME_ABBREV → STEP=5 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 3 — tmux transport)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_ORCH_DEV |
+| started | 2026-06-05 |
+| elapsed | ~25 min |
+| done | cr `src/tmux/` panes+register; `src/db/agent-states.ts`; injectable `TmuxRunner`; commit `ed84883` |
+| result | tmux tests 6/6; build ok; npm test 324/337 (13 pre-existing) |
+| issues | loop-guard flakes in send-queue tests (pre-existing) |
+| next | ROLE=Driver STEP=5 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 4 — predicates field renames)
 
