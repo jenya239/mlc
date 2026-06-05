@@ -2,9 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **closed** (commit `0c68101b`)
+## Status: **closed** (commits `0c68101b`, `7bc13d09`)
 
-**STEP=23 note (2026-05-19 Driver):** commit batch steps 18–22 (`codegen/expr`, `stmt`, `ir`, `main`, `pipeline`, `tests`, quote audit); gate **961**/0; self-host diff empty. Commit `0c68101b`.
+**STEP=23 note (2026-05-19 Driver):** commit batch steps 18–22: `0c68101b` (expr/stmt/ir/tests renames), `7bc13d09` (quote audit remainder); gate **961**/0; self-host diff empty.
 
 **STEP=22 note (2026-05-19 Driver):** production `compiler/` quote audit: `"` → `'`/`` ` ``; char-compare `"` only; C++ emitted `"` via `'…"…'` / `` ` + `"` + `` (not inside backticks). Fixes: `string+char` (`'>`, `')`, `'}'`, `'"'`), `module_tu_helpers` `'#include "'`, derive/static_assert/include/json output. Gate: **961**/0; self-host diff empty. Uncommitted.
 

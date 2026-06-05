@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | pending |
+| agent_token_last | pending register |
 | driver_turns_since_plan | 3|
 | step_last | 23|
 | active_track | none (RENAME_ABBREV closed) |
@@ -18,7 +18,7 @@
 | step | 23 |
 | track | TRACK_RENAME_ABBREV |
 | done | commit steps 18–22; track closed |
-| result | **961**/0; self-host `diff_exit=0`; commit `0c68101b` |
+| result | **961**/0; self-host `diff_exit=0`; commits `0c68101b`, `7bc13d09` |
 | next | ROLE=Planner STEP=plan-refresh (enqueued) |
 
 ### Turn 2026-05-19 (Driver RENAME_ABBREV step 22 — quote audit)
