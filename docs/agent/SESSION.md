@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-66e0404d-92da-4013-8a60-51cd320817bf` |
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh |
-| active_track | TRACK_TYPE_ALIASES → STEP=1 |
+| agent_token_last | pending register |
+| driver_turns_since_plan | 1|
+| step_last | meta-review|
+| active_track | TRACK_TYPE_ALIASES → STEP=2 |
+
+### Turn 2026-06-05 (Meta meta-review — TYPE_ALIASES STEP=1 loop)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_TYPE_ALIASES |
+| issue | guard stuck `Driver:1:TYPE_ALIASES`; WIP uncommitted |
+| done | finished STEP=1; commit `99b11438`; TRACK step 1 done |
+| result | **963**/0; self-host `diff_exit=0` |
+| next | ROLE=Driver STEP=2 TRACK_TYPE_ALIASES (enqueued) |
 
 ### Turn 2026-05-19 (Planner plan-refresh — RENAME closed)
 

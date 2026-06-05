@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) Phase 2.5; previous: [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md)
 
-## Status: **open** (step 1 pending)
+## Status: **open** (step 2 pending)
+
+**STEP=1 note (2026-06-05 Meta recovery):** `DeclTypeAlias` parser + semantic stub; sum/ADT disambiguation; `test_parser` (+2). Gate **963**/0; self-host `diff_exit=0`. Commit `99b11438`. Guard `Driver:1:TYPE_ALIASES` loop cleared.
 
 **Planner (2026-05-19):** RENAME_ABBREV closed; TYPE_ALIASES active. Step 1 parser-only; checker/codegen in steps 2–3. Depends on stable names in `cpp_ast.mlc` (step 5).
 
