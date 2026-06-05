@@ -14,7 +14,7 @@ fn parse_source_errors(source: string) -> [string] =
   parse_program_with_errors(tokenize(source).tokens, '').errors
 
 fn parse_expr_source(source: string) -> Shared<Expr> =
-  parse_expr(parser_new(tokenize(source).tokens)).expr
+  parse_expr(parser_new(tokenize(source).tokens)).expression
 
 fn parse_expr_errors(source: string) -> [string] =
   parse_expr(parser_new(tokenize(source).tokens)).parser.errors

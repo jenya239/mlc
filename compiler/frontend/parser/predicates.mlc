@@ -5,30 +5,30 @@ import { TypeExpr, Pattern, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, Typ
 
 // --- Parser state ---------------------------------------------------------
 
-export type Parser = Parser { tokens: [Token], pos: i32, source_path: string, suppress_lambda_shorthand: bool, errors: [string] }
+export type Parser = Parser { tokens: [Token], position: i32, source_path: string, suppress_lambda_shorthand: bool, errors: [string] }
 
 export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
-  Parser { tokens: tokens, pos: 0, source_path: source_path, suppress_lambda_shorthand: false, errors: [] }
+  Parser { tokens: tokens, position: 0, source_path: source_path, suppress_lambda_shorthand: false, errors: [] }
 
 export fn parser_new(tokens: [Token]) -> Parser =
   parser_new_with_source_path(tokens, '')
 
 // --- Result types ---------------------------------------------------------
 
-export type ExprResult      = ExprResult      { expr:       Shared<Expr>,          parser: Parser }
+export type ExprResult      = ExprResult      { expression: Shared<Expr>,          parser: Parser }
 export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
-export type PatternResult       = PatternResult       { pat:        Shared<Pattern>,            parser: Parser }
-export type StmtResult      = StmtResult      { stmt:       Shared<Stmt>,           parser: Parser }
+export type PatternResult       = PatternResult       { pattern:        Shared<Pattern>,            parser: Parser }
+export type StmtResult      = StmtResult      { statement:       Shared<Stmt>,           parser: Parser }
 export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
 export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
 export type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
 export type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
 export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
 export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
-export type DeclResult      = DeclResult      { decl:       Shared<Decl>,           parser: Parser }
+export type DeclResult      = DeclResult      { declaration:       Shared<Decl>,           parser: Parser }
 export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
 export type RecordLitPartsResult = RecordLitPartsResult { lit_parts: [RecordLitPart], parser: Parser }
-export type PatternsResult      = PatternsResult      { pats:       [Shared<Pattern>],          parser: Parser }
+export type PatternsResult      = PatternsResult      { patterns:       [Shared<Pattern>],          parser: Parser }
 export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
 export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
 export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
@@ -116,13 +116,13 @@ export extend TokenKind {
 
 export extend Parser {
   fn kind(self) -> TokenKind =
-    if self.pos >= self.tokens.length() then Eof
-    else do const tok: Token = self.tokens[self.pos]; tok.kind end
+    if self.position >= self.tokens.length() then Eof
+    else do const current_token: Token = self.tokens[self.position]; current_token.kind end
   fn lambda_shorthand_suppression_active(self) -> bool = self.suppress_lambda_shorthand
   fn with_lambda_shorthand_suppressed(self, value: bool) -> Parser =
     Parser {
       tokens: self.tokens,
-      pos: self.pos,
+      position: self.position,
       source_path: self.source_path,
       suppress_lambda_shorthand: value,
       errors: self.errors,
@@ -132,7 +132,7 @@ export extend Parser {
     updated_errors.push(message)
     Parser {
       tokens: self.tokens,
-      pos: self.pos,
+      position: self.position,
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: updated_errors,
@@ -142,7 +142,7 @@ export extend Parser {
   fn advance(self)   -> Parser =
     Parser {
       tokens: self.tokens,
-      pos: self.pos + 1,
+      position: self.position + 1,
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: self.errors,
@@ -150,31 +150,31 @@ export extend Parser {
   fn advance_by(self, count: i32) -> Parser =
     Parser {
       tokens: self.tokens,
-      pos: self.pos + count,
+      position: self.position + count,
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: self.errors,
     }
   fn at_eof(self) -> bool =
-    if self.pos >= self.tokens.length() then true
+    if self.position >= self.tokens.length() then true
     else
-      const tok: Token = self.tokens[self.pos]; tok.kind.is_eof()
+      const current_token: Token = self.tokens[self.position]; current_token.kind.is_eof()
     end
   fn skip_semi(self) -> Parser =
-    if self.pos >= self.tokens.length() then self
+    if self.position >= self.tokens.length() then self
     else do
-      const tok: Token = self.tokens[self.pos]
-      match tok.kind { Semicolon => self.advance(), _ => self }
+      const current_token: Token = self.tokens[self.position]
+      match current_token.kind { Semicolon => self.advance(), _ => self }
     end
   fn span_at_cursor(self) -> Span =
-    if self.pos >= self.tokens.length() then Span { file: self.source_path, line: 0, column: 0 }
+    if self.position >= self.tokens.length() then Span { file: self.source_path, line: 0, column: 0 }
     else do
-      const tok: Token = self.tokens[self.pos]
-      Span { file: self.source_path, line: tok.line, column: tok.column }
+      const current_token: Token = self.tokens[self.position]
+      Span { file: self.source_path, line: current_token.line, column: current_token.column }
     end
   fn prev_line(self) -> i32 = do
-    if self.pos > 0 then
-      const tok: Token = self.tokens[self.pos - 1]; tok.line
+    if self.position > 0 then
+      const current_token: Token = self.tokens[self.position - 1]; current_token.line
     else 0 end
   end
 }

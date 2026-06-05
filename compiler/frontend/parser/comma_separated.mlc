@@ -51,14 +51,14 @@ export fn comma_separated_pats_suffix_from_first(
   parse_one: (Parser) -> PatternResult
 ) -> PatternsResult = do
   const pats: [Shared<Pattern>] = []
-  pats.push(first.pat)
+  pats.push(first.pattern)
   let mut state = first.parser
   while state.kind().is_comma() do
     const next = parse_one(state.advance())
-    pats.push(next.pat)
+    pats.push(next.pattern)
     state = next.parser
   end
-  PatternsResult { pats, parser: state }
+  PatternsResult { patterns: pats, parser: state }
 end
 
 export fn comma_separated_exprs_suffix_from_first(
@@ -66,11 +66,11 @@ export fn comma_separated_exprs_suffix_from_first(
   parse_one: (Parser) -> ExprResult
 ) -> ExprsResult = do
   const exprs: [Shared<Expr>] = []
-  exprs.push(first.expr)
+  exprs.push(first.expression)
   let mut state = first.parser
   while state.kind().is_comma() do
     const next = parse_one(state.advance())
-    exprs.push(next.expr)
+    exprs.push(next.expression)
     state = next.parser
   end
   ExprsResult { exprs, parser: state }
