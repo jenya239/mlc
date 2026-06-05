@@ -17,9 +17,9 @@ export fn gen_stmts_str(statements: [Shared<SemanticStatement>], context: Codege
 export fn gen_argument_list(expressions: [Shared<SemanticExpression>], context: CodegenContext) -> string =
   expressions.map(expression => gen_expr(expression, context)).join(', ')
 
-export fn gen_try_unwrap(inner_expr: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string) -> string =
+export fn gen_try_unwrap(inner_expression: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string) -> string =
   stmt_eval.eval_try_unwrap(
-    inner_expr,
+    inner_expression,
     context,
     try_identifier,
     success_line,

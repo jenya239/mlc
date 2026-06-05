@@ -93,8 +93,8 @@ export fn run_codegen_pass(state: TransformedCompileState, emit_compile_commands
         then `${state.output_directory}/${module_base}.cpp`
         else `${module_base}.cpp`
       end
-    File.write(header_path, generated_output.h)
-    File.write(implementation_path, generated_output.c)
+    File.write(header_path, generated_output.header)
+    File.write(implementation_path, generated_output.source)
     implementation_paths.push(implementation_path)
     index = index + 1
   end

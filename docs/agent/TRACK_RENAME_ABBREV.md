@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 15 done — 2026-06-05)
+## Status: **open** (step 16 done — 2026-06-05)
+
+**STEP=16 note (2026-06-05 Driver):** `codegen/context.mlc`/`eval.mlc`/`module.mlc`: `collect_pattern_bind_names_for_context`, `program`, `inner_expression`, `load_item`, `precomputed_context`, `GenModuleOut.header`/`source`; ripple `pipeline.mlc`; quotes ok (`'`/` `` only). Gate: **961**/0; self-host diff empty. Commit TBD.
 
 **STEP=15 note (2026-06-05 Driver):** `checker/check/` (5 files): `expression`, `parameter_index`, `default_diagnostics`, `parameters`, `expected_elements`/`actual_elements`, `type_arguments`, `success_type`/`error_type`/`inner_option_type`, `argument_inferred_types`; diagnostics/`check_context`/`derive_validation` clean; quotes ok. Gate: **961**/0; self-host diff empty. Commit `97072ee5`.
 

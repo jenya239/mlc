@@ -84,12 +84,12 @@ fn add_assoc_bind_struct_using(
   end
 end
 
-export fn build_struct_using_data(decls: [Shared<SemanticDeclaration>], context: CodegenContext) -> StructUsingData = do
+export fn build_struct_using_data(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> StructUsingData = do
   let mut entries: Map<string, [StructUsingEntry]> = Map.new()
   let mut lines: Map<string, [string]> = Map.new()
   let mut declaration_index = 0
-  while declaration_index < decls.length() do
-    match decls[declaration_index] {
+  while declaration_index < declarations.length() do
+    match declarations[declaration_index] {
       SemanticDeclarationExtend(type_name, _, methods, _) => do
         add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
         ()
@@ -111,57 +111,57 @@ export fn build_struct_using_data(decls: [Shared<SemanticDeclaration>], context:
   StructUsingData { entries: entries, lines: lines }
 end
 
-export fn precompute(prog: Program, all_items: [LoadItem]) -> PrecomputedCtx = do
-  const field_orders = build_field_orders(prog)
-  const ctor_type_infos = build_ctor_type_infos_from_decls(prog.decls)
+export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx = do
+  const field_orders = build_field_orders(program)
+  const ctor_type_infos = build_ctor_type_infos_from_decls(program.decls)
   PrecomputedCtx {
     field_orders: field_orders,
-    variant_types: build_variant_types_from_decls(prog.decls),
+    variant_types: build_variant_types_from_decls(program.decls),
     item_index: build_item_index(all_items),
     ctor_type_infos: ctor_type_infos,
-    generic_variants: build_generic_variants_from_decls(prog.decls),
-    method_owners: build_method_owners_from_decls(prog.decls),
+    generic_variants: build_generic_variants_from_decls(program.decls),
+    method_owners: build_method_owners_from_decls(program.decls),
     field_order_index: build_field_order_index(field_orders),
     ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos)
   }
 end
 
 fn prepare_module_generation(
-  s_item: SemanticLoadItem,
+  load_item: SemanticLoadItem,
   all_items: [LoadItem],
-  precomp: PrecomputedCtx
+  precomputed_context: PrecomputedCtx
 ) -> ModuleGenerationContext = do
-  const base = path_to_module_base(s_item.path)
-  const namespace_aliases = s_item.namespace_import_aliases
-  const qualified = build_qualified(s_item.imports, all_items)
+  const base = path_to_module_base(load_item.path)
+  const namespace_aliases = load_item.namespace_import_aliases
+  const qualified = build_qualified(load_item.imports, all_items)
   const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
   const base_context = CodegenContext {
-    field_orders: precomp.field_orders,
-    field_order_index: precomp.field_order_index,
+    field_orders: precomputed_context.field_orders,
+    field_order_index: precomputed_context.field_order_index,
     namespace_prefix: '',
     qualified: qualified,
     namespace_alias_prefixes: namespace_alias_prefixes,
     self_type: '',
-    method_owners: precomp.method_owners,
+    method_owners: precomputed_context.method_owners,
     shared_params: [],
     shared_array_params: [],
     array_elem_types: Map.new(),
     shared_map_params: [],
-    ctor_type_infos: precomp.ctor_type_infos,
-    ctor_type_info_index: precomp.ctor_type_info_index,
-    variant_types: precomp.variant_types,
+    ctor_type_infos: precomputed_context.ctor_type_infos,
+    ctor_type_info_index: precomputed_context.ctor_type_info_index,
+    variant_types: precomputed_context.variant_types,
     value_params: [],
     match_deref_params: [],
-    generic_variants: precomp.generic_variants,
+    generic_variants: precomputed_context.generic_variants,
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     temp_name_counter: new_temp_name_counter()
   }
-  const context = base_context.with_struct_using_data(build_struct_using_data(s_item.decls, base_context))
+  const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end
-  const is_entry = decls_have_main(s_item.decls)
-  const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(s_item.imports) + "\n"
-  const decl_parts = collect_all_decl_parts_cpp(s_item.decls, context)
+  const is_entry = decls_have_main(load_item.decls)
+  const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + "\n"
+  const decl_parts = collect_all_decl_parts_cpp(load_item.decls, context)
   const guard = base.upper() + '_HPP'
   ModuleGenerationContext {
     base: base,
@@ -170,8 +170,8 @@ fn prepare_module_generation(
     module_namespace: module_namespace,
     is_entry: is_entry,
     decl_parts: decl_parts,
-    implementation_import_includes: include_lines(s_item.imports),
-    implementation_import_paths: s_item.imports
+    implementation_import_includes: include_lines(load_item.imports),
+    implementation_import_paths: load_item.imports
   }
 end
 
@@ -231,22 +231,22 @@ fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =
 fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   const file = gen_module_cpp_file(parts)
   GenModuleOut {
-    h: print_cpp_declarations(cpp_ast.cpp_file_header(file)),
-    c: print_cpp_declarations(cpp_ast.cpp_file_source(file))
+    header: print_cpp_declarations(cpp_ast.cpp_file_header(file)),
+    source: print_cpp_declarations(cpp_ast.cpp_file_source(file))
   }
 end
 
-export fn gen_module(s_item: SemanticLoadItem, all_items: [LoadItem], full_prog: Program, precomp: PrecomputedCtx) -> GenModuleOut = do
-  const parts = prepare_module_generation(s_item, all_items, precomp)
+export fn gen_module(load_item: SemanticLoadItem, all_items: [LoadItem], full_program: Program, precomputed_context: PrecomputedCtx) -> GenModuleOut = do
+  const parts = prepare_module_generation(load_item, all_items, precomputed_context)
   gen_module_output(parts)
 end
 
 export fn gen_program(program: Program) -> string = do
   const all_items: [LoadItem] = []
-  const precomp   = precompute(program, all_items)
+  const precomputed_context = precompute(program, all_items)
   const registry  = build_registry(program)
-  const single    = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
-  const s_items   = transform_load_items([single], registry, build_trait_nominal_maps(program))
-  const module_parsed = gen_module(s_items[0], all_items, program, precomp)
-  module_parsed.h + module_parsed.c
+  const single_load_item = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
+  const semantic_load_items = transform_load_items([single_load_item], registry, build_trait_nominal_maps(program))
+  const module_parsed = gen_module(semantic_load_items[0], all_items, program, precomputed_context)
+  module_parsed.header + module_parsed.source
 end

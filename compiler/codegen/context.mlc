@@ -65,7 +65,7 @@ extend GenStmtsResult {
   fn joined_code(self) -> string = self.parts.join('')
 }
 
-export type GenModuleOut   = GenModuleOut   { h: string, c: string }
+export type GenModuleOut   = GenModuleOut   { header: string, source: string }
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],
   variant_types: Map<string, string>,
@@ -101,34 +101,34 @@ export fn qualify_function_callee(name: string, context: CodegenContext) -> stri
   else type_method_namespace_prefix(name, context) + cpp_safe(name)
   end
 
-fn collect_pat_bind_names_for_context(pat: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
-  match pat {
-    PatternIdent(n, _) => do accumulator.push(n); accumulator end,
-    PatternCtor(_, subs, _) => do
+fn collect_pattern_bind_names_for_context(pattern: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
+  match pattern {
+    PatternIdent(binding_name, _) => do accumulator.push(binding_name); accumulator end,
+    PatternCtor(_, sub_patterns, _) => do
       let mut index = 0
-      while index < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
     PatternRecord(_, field_patterns, _) => do
       let mut index = 0
       while index < field_patterns.length() do
-        accumulator = collect_pat_bind_names_for_context(field_patterns[index], accumulator); index = index + 1
+        accumulator = collect_pattern_bind_names_for_context(field_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatternTuple(subs, _) => do
+    PatternTuple(sub_patterns, _) => do
       let mut index = 0
-      while index < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator); index = index + 1
       end
       accumulator
     end,
-    PatternArray(subs, rest, _) => do
+    PatternArray(sub_patterns, rest, _) => do
       let mut index = 0
-      while index < subs.length() do
-        accumulator = collect_pat_bind_names_for_context(subs[index], accumulator); index = index + 1
+      while index < sub_patterns.length() do
+        accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator); index = index + 1
       end
       if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
     end,
@@ -184,7 +184,7 @@ extend CodegenContext {
           _               => self.add_value(binding_name)
         },
       SemanticStatementLetPattern(pattern, _, _, _, _, _, _) => do
-        const names = collect_pat_bind_names_for_context(pattern, [])
+        const names = collect_pattern_bind_names_for_context(pattern, [])
         let mut codegen_context = self; let mut name_index = 0
         while name_index < names.length() do
           codegen_context = codegen_context.add_value(names[name_index]); name_index = name_index + 1
@@ -222,7 +222,7 @@ export fn mutate_context_from_statement(statement: Shared<SemanticStatement>, co
         _ => context.value_params.push(binding_name)
       },
     SemanticStatementLetPattern(pattern, _, _, _, _, _, _) => do
-      const names = collect_pat_bind_names_for_context(pattern, [])
+      const names = collect_pattern_bind_names_for_context(pattern, [])
       let mut name_index = 0
       while name_index < names.length() do
         context.value_params.push(names[name_index])
@@ -240,9 +240,9 @@ export fn lookup_fields_for_context(context: CodegenContext, name: string) -> [s
 export fn lookup_ctor_type_info_for_context(context: CodegenContext, constructor_name: string) -> Shared<CtorTypeInfo> =
   lookup_ctor_type_info_indexed(context.ctor_type_info_index, context.ctor_type_infos, constructor_name)
 
-export fn create_codegen_context(prog: Program) -> CodegenContext = do
-  const field_orders = build_field_orders(prog)
-  const ctor_type_infos = build_ctor_type_infos_from_decls(prog.decls)
+export fn create_codegen_context(program: Program) -> CodegenContext = do
+  const field_orders = build_field_orders(program)
+  const ctor_type_infos = build_ctor_type_infos_from_decls(program.decls)
   CodegenContext {
     field_orders: field_orders,
     field_order_index: decl_index.build_field_order_index(field_orders),
@@ -250,17 +250,17 @@ export fn create_codegen_context(prog: Program) -> CodegenContext = do
     qualified: Map.new(),
     namespace_alias_prefixes: Map.new(),
     self_type: '',
-    method_owners: build_method_owners_from_decls(prog.decls),
+    method_owners: build_method_owners_from_decls(program.decls),
     shared_params: [],
     shared_array_params: [],
     array_elem_types: Map.new(),
     shared_map_params: [],
     ctor_type_infos: ctor_type_infos,
     ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
-    variant_types: build_variant_types_from_decls(prog.decls),
+    variant_types: build_variant_types_from_decls(program.decls),
     value_params: [],
     match_deref_params: [],
-    generic_variants: build_generic_variants_from_decls(prog.decls),
+    generic_variants: build_generic_variants_from_decls(program.decls),
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     temp_name_counter: new_temp_name_counter()
