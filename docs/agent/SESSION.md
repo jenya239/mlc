@@ -5,10 +5,20 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-96ae5dea-4389-4b33-a74a-2ef7323afc11`|
+| agent_token_last | `cr-agent-5fe7cc6e-4438-435d-89e6-0686737ec07c`|
 | driver_turns_since_plan | 3|
 | step_last | 3|
 | active_track | TRACK_RENAME_ABBREV → STEP=5 |
+
+### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 3 — idempotent re-prompt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_ORCH_DEV |
+| action | STEP=3 already done (`ed84883`); gate re-verified tmux 6/6 + build ok |
+| next | enqueued ROLE=Driver STEP=5 TRACK_RENAME_ABBREV (`cr-agent-5fe7cc6e`) |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 3 — tmux transport)
 
