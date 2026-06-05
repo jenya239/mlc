@@ -6,9 +6,9 @@ import { comma_separated_types_suffix_from_first } from './comma_separated'
 export fn parse_type(parser: Parser) -> TypeResult = do
   const base_parsed = parse_base_type(parser)
   if base_parsed.parser.kind().is_arrow() then
-    const ret_parsed = parse_type(base_parsed.parser.advance())
+    const return_type_parsed = parse_type(base_parsed.parser.advance())
     const params: [Shared<TypeExpr>] = [base_parsed.type_expr]
-    TypeResult { type_expr: Shared.new(TyFn(params, ret_parsed.type_expr)), parser: ret_parsed.parser }
+    TypeResult { type_expr: Shared.new(TyFn(params, return_type_parsed.type_expr)), parser: return_type_parsed.parser }
   else
     base_parsed
   end
@@ -31,8 +31,8 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
   if kind.is_lparen() then
     const paren_types_parsed = parse_paren_types(parser.advance())
     if paren_types_parsed.parser.kind().is_arrow() then
-      const ret_parsed = parse_type(paren_types_parsed.parser.advance())
-      TypeResult { type_expr: Shared.new(TyFn(paren_types_parsed.types, ret_parsed.type_expr)), parser: ret_parsed.parser }
+      const return_type_parsed = parse_type(paren_types_parsed.parser.advance())
+      TypeResult { type_expr: Shared.new(TyFn(paren_types_parsed.types, return_type_parsed.type_expr)), parser: return_type_parsed.parser }
     else
       TypeResult { type_expr: Shared.new(TyUnit), parser: paren_types_parsed.parser }
     end
@@ -50,8 +50,8 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
       const after_ref = if parser.advance().kind().is_mut()
                         then parser.advance_by(2) else parser.advance() end
       const inner_parsed = parse_type(after_ref)
-      const targs: [Shared<TypeExpr>] = [inner_parsed.type_expr]
-      TypeResult { type_expr: Shared.new(TyGeneric('ref', targs)), parser: inner_parsed.parser }
+      const type_arguments: [Shared<TypeExpr>] = [inner_parsed.type_expr]
+      TypeResult { type_expr: Shared.new(TyGeneric('ref', type_arguments)), parser: inner_parsed.parser }
     end
     | _ => do
       const after = parser.advance()

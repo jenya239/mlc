@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-2713dc06-3325-4799-a35d-4680832d0041`|
-| driver_turns_since_plan | 0|
-| step_last | critique-audit|
-| active_track | TRACK_RENAME_ABBREV → STEP=7 |
+| agent_token_last | `cr-agent-6d32a432-cb32-4494-a92b-aaabbf8c9eb8`|
+| driver_turns_since_plan | 1|
+| step_last | 7|
+| active_track | TRACK_RENAME_ABBREV → STEP=8 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 7 — types.mlc)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_RENAME_ABBREV |
+| done | `types.mlc` `return_type_parsed`, `type_arguments`; string quotes ok |
+| result | **961**/0; self-host `diff_exit=0` |
+| next | ROLE=Driver STEP=8 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Critic critique-audit — last 6 driver turns)
 
