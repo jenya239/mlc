@@ -17,11 +17,11 @@ import { list_contains } from './decl_index'
 
 // --- Function prototype and declaration --------------------------------------
 
-export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<Type>, context: CodegenContext) -> string = do
-  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
+export fn gen_fn_proto(name: string, type_parameters: [string], type_bounds: [[string]], parameters: [Shared<Param>], return_type: Shared<Type>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_parameters) + requires_clause(type_parameters, type_bounds)
   const safe_name = context.resolve(name)
-  const prototype_context = if params.length() > 0 && params[0].name == 'self' then
-    match params[0].type_value {
+  const prototype_context = if parameters.length() > 0 && parameters[0].name == 'self' then
+    match parameters[0].type_value {
       TyNamed(type_name) => do
         const resolved_type = if type_name == 'Self' || type_name == 'self' then context.self_type else type_name end
         context.for_type_body(resolved_type)
@@ -29,7 +29,7 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
       _ => context
     }
   else context end
-  if name == 'main' && params.length() == 0 then
+  if name == 'main' && parameters.length() == 0 then
     prefix + expression_output.noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
@@ -38,18 +38,18 @@ export fn gen_fn_proto(name: string, type_params: [string], type_bounds: [[strin
     prefix + expression_output.noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      gen_params_proto(prototype_context, params))
+      gen_params_proto(prototype_context, parameters))
   end
 end
 
-export fn compute_fn_body_context(name: string, params: [Shared<Param>], context: CodegenContext) -> CodegenContext = do
-  const fn_shared_params       = collect_shared_params(params)
-  const fn_shared_array_params = collect_shared_array_params(params)
-  const fn_array_elem_types    = collect_array_elem_types(params)
-  const fn_shared_map_params   = collect_shared_map_params(params)
-  const fn_value_params        = collect_value_params(params)
-  if params.length() > 0 && params[0].name == 'self' then
-    match params[0].type_value {
+export fn compute_fn_body_context(name: string, parameters: [Shared<Param>], context: CodegenContext) -> CodegenContext = do
+  const fn_shared_params       = collect_shared_params(parameters)
+  const fn_shared_array_params = collect_shared_array_params(parameters)
+  const fn_array_elem_types    = collect_array_elem_types(parameters)
+  const fn_shared_map_params   = collect_shared_map_params(parameters)
+  const fn_value_params        = collect_value_params(parameters)
+  if parameters.length() > 0 && parameters[0].name == 'self' then
+    match parameters[0].type_value {
       TyNamed(self_type_name) => do
         const resolved_type = if self_type_name == 'Self' || self_type_name == 'self' then context.self_type else self_type_name end
         make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, resolved_type, fn_value_params, [])
@@ -61,12 +61,12 @@ export fn compute_fn_body_context(name: string, params: [Shared<Param>], context
   end
 end
 
-export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string]], params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>, context: CodegenContext) -> string = do
-  const prefix = template_prefix(type_params) + requires_clause(type_params, type_bounds)
+export fn gen_fn_decl(name: string, type_parameters: [string], type_bounds: [[string]], parameters: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>, context: CodegenContext) -> string = do
+  const prefix = template_prefix(type_parameters) + requires_clause(type_parameters, type_bounds)
   const safe_name = context.resolve(name)
-  const body_context = compute_fn_body_context(name, params, context)
-  const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
-  if name == 'main' && params.length() == 0 then
+  const body_context = compute_fn_body_context(name, parameters, context)
+  const prototype_context = if parameters.length() > 0 && parameters[0].name == 'self' then body_context else context end
+  if name == 'main' && parameters.length() == 0 then
     const preamble = expression_output.user_main_arguments_copy_into_runtime_statement()
     prefix + expression_output.noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
@@ -77,41 +77,41 @@ export fn gen_fn_decl(name: string, type_params: [string], type_bounds: [[string
     prefix + expression_output.noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      gen_params_def(prototype_context, params)) +
+      gen_params_def(prototype_context, parameters)) +
     gen_fn_body(body, body_context) + expression_output.block_close_newline()
   end
 end
 
 // --- Main declaration dispatcher ---------------------------------------------
 
-export fn gen_decl(decl: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
-  match decl {
-    SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
-      gen_type_decl(context, type_name, type_params, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
-    SemanticDeclarationTrait(name, type_params, methods, _) => gen_trait_decl(context, name, type_params, methods),
-    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
-      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_decl(name, type_params, type_bounds, params, return_type, body, context) },
+export fn gen_decl(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
+  match declaration {
+    SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
+      gen_type_decl(context, type_name, type_parameters, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
+    SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(context, name, type_parameters, methods),
+    SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
+      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, context) },
     SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
       gen_decl_extend(type_name, trait_name, methods, context,
-        (ctx: CodegenContext, name: string) => ctx.resolve(name),
-        (decl: Shared<SemanticDeclaration>, ctx: CodegenContext) => gen_decl(decl, ctx)),
+        (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name),
+        (inner_declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => gen_decl(inner_declaration, codegen_context)),
     SemanticDeclarationImport(_, _) => '',
-    SemanticDeclarationExported(d) => gen_decl(d, context),
+    SemanticDeclarationExported(inner_declaration) => gen_decl(inner_declaration, context),
     SemanticDeclarationAssocBind(_, _, _) => ''
   }
 
-export fn gen_proto(decl: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
-  match decl {
+export fn gen_proto(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
+  match declaration {
     SemanticDeclarationType(_, _, _, _, _) => '',
     SemanticDeclarationTrait(_, _, _, _) => '',
-    SemanticDeclarationFn(name, type_params, type_bounds, params, ret, body, _, _) =>
-      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_proto(name, type_params, type_bounds, params, ret, context) },
+    SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
+      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, context) },
     SemanticDeclarationExtend(type_name, _, methods, _) => do
       const extend_context = context.for_type_body(type_name)
       methods.map(method => gen_proto(method, extend_context)).join('')
     end,
     SemanticDeclarationImport(_, _) => '',
-    SemanticDeclarationExported(d) => gen_proto(d, context),
+    SemanticDeclarationExported(inner_declaration) => gen_proto(inner_declaration, context),
     SemanticDeclarationAssocBind(_, _, _) => ''
   }
 
@@ -123,8 +123,8 @@ fn inner_declaration_is_main(declaration: Shared<SemanticDeclaration>) -> bool =
     _ => false
   }
 
-export fn decls_have_main(decls: [Shared<SemanticDeclaration>]) -> bool =
-  decls.any(declaration => inner_declaration_is_main(declaration))
+export fn decls_have_main(declarations: [Shared<SemanticDeclaration>]) -> bool =
+  declarations.any(declaration => inner_declaration_is_main(declaration))
 
 export fn extend_cpp_forward_segment(declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) -> string =
   match declaration {
@@ -146,16 +146,16 @@ export fn extend_cpp_forward_segment(declaration: Shared<SemanticDeclaration>, c
 
 fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext, phase: i32) -> string =
   match declaration {
-    SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
-      if phase == 0 then gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants)
+    SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
+      if phase == 0 then gen_type_decl_fwd_only(codegen_context, type_name, type_parameters, variants)
       else if phase == 1 then
-        gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
+        gen_type_decl_body_only(codegen_context, type_name, type_parameters, variants) +
         gen_derive_methods(codegen_context, type_name, variants, derive_traits)
       else ''
       end,
-    SemanticDeclarationTrait(name, type_params, methods, _) =>
-      if phase == 0 then gen_trait_decl(codegen_context, name, type_params, methods)
-      else if phase == 4 then gen_trait_struct(codegen_context, name, type_params, methods)
+    SemanticDeclarationTrait(name, type_parameters, methods, _) =>
+      if phase == 0 then gen_trait_decl(codegen_context, name, type_parameters, methods)
+      else if phase == 4 then gen_trait_struct(codegen_context, name, type_parameters, methods)
       else ''
       end,
     SemanticDeclarationFn(_, _, _, _, _, _, _, _) =>
@@ -171,13 +171,13 @@ fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: Codeg
     SemanticDeclarationAssocBind(_, _, _) => '',
     SemanticDeclarationExported(inner_declaration) =>
       if phase == 0 then match sdecl_inner(inner_declaration) {
-        SemanticDeclarationType(type_name, type_params, variants, _, _) => gen_type_decl_fwd_only(codegen_context, type_name, type_params, variants),
-        SemanticDeclarationTrait(name, type_params, methods, _) => gen_trait_decl(codegen_context, name, type_params, methods),
+        SemanticDeclarationType(type_name, type_parameters, variants, _, _) => gen_type_decl_fwd_only(codegen_context, type_name, type_parameters, variants),
+        SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(codegen_context, name, type_parameters, methods),
         _ => ''
       }
       else if phase == 1 then match sdecl_inner(inner_declaration) {
-        SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
-          gen_type_decl_body_only(codegen_context, type_name, type_params, variants) +
+        SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
+          gen_type_decl_body_only(codegen_context, type_name, type_parameters, variants) +
           gen_derive_methods(codegen_context, type_name, variants, derive_traits),
         _ => ''
       }
@@ -205,7 +205,7 @@ fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: Codeg
         _ => gen_decl(inner_declaration, codegen_context)
       }
       else if phase == 4 then match sdecl_inner(inner_declaration) {
-        SemanticDeclarationTrait(name, type_params, methods, _) => gen_trait_struct(codegen_context, name, type_params, methods),
+        SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_struct(codegen_context, name, type_parameters, methods),
         _ => ''
       }
       else ''
@@ -219,11 +219,11 @@ export type DeclPartsBundle = DeclPartsBundle {
   fn_defs: [string]
 }
 
-export fn exported_type_names_from_decls(decls: [Shared<SemanticDeclaration>]) -> [string] = do
+export fn exported_type_names_from_decls(declarations: [Shared<SemanticDeclaration>]) -> [string] = do
   let names: [string] = []
   let mut index = 0
-  while index < decls.length() do
-    match decls[index] {
+  while index < declarations.length() do
+    match declarations[index] {
       SemanticDeclarationExported(inner) => do
         match sdecl_inner(inner) {
           SemanticDeclarationType(type_name, _, _, _, _) => do names.push(type_name); () end,
@@ -263,24 +263,24 @@ fn extend_forward_prototypes_for_declaration(
     _ => do const empty_forward_segments: [string] = []; empty_forward_segments end
   }
 
-export fn extend_helper_protos_for_exported_types(decls: [Shared<SemanticDeclaration>], context: CodegenContext) -> [string] = do
-  const exported_types = exported_type_names_from_decls(decls)
-  decls.flat_map(declaration =>
+export fn extend_helper_protos_for_exported_types(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> [string] = do
+  const exported_types = exported_type_names_from_decls(declarations)
+  declarations.flat_map(declaration =>
     extend_helper_prototypes_for_declaration(exported_types, context, declaration))
 end
 
-export fn extend_method_forward_segments(decls: [Shared<SemanticDeclaration>], context: CodegenContext) -> [string] =
-  decls.flat_map(declaration => extend_forward_prototypes_for_declaration(context, declaration))
+export fn extend_method_forward_segments(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> [string] =
+  declarations.flat_map(declaration => extend_forward_prototypes_for_declaration(context, declaration))
 
-export fn collect_all_decl_parts(decls: [Shared<SemanticDeclaration>], context: CodegenContext) -> DeclPartsBundle = do
+export fn collect_all_decl_parts(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> DeclPartsBundle = do
   let type_fwds: [string] = []
   let type_defs: [string] = []
   let mut fn_protos: [string] = []
-  const extend_forward_segments = extend_method_forward_segments(decls, context)
+  const extend_forward_segments = extend_method_forward_segments(declarations, context)
   let mut fn_defs = extend_forward_segments
   let mut declaration_index = 0
-  while declaration_index < decls.length() do
-    const declaration = decls[declaration_index]
+  while declaration_index < declarations.length() do
+    const declaration = declarations[declaration_index]
     const extend_forward_segment = extend_cpp_forward_segment(declaration, context)
     if extend_forward_segment.length() > 0 then fn_defs.push(extend_forward_segment) end
     const forward_segment = decl_segment(declaration, context, 0)
@@ -295,17 +295,17 @@ export fn collect_all_decl_parts(decls: [Shared<SemanticDeclaration>], context: 
     if trait_struct_segment.length() > 0 then fn_defs.push(trait_struct_segment) end
     declaration_index = declaration_index + 1
   end
-  const extend_helper_prototypes = extend_helper_protos_for_exported_types(decls, context)
+  const extend_helper_prototypes = extend_helper_protos_for_exported_types(declarations, context)
   fn_protos = fn_protos.concat(extend_helper_prototypes)
   DeclPartsBundle { type_fwds: type_fwds, type_defs: type_defs, fn_protos: fn_protos, fn_defs: fn_defs }
 end
 
-export fn collect_decl_parts(decls: [Shared<SemanticDeclaration>], context: CodegenContext, phase: i32) -> [string] = do
+export fn collect_decl_parts(declarations: [Shared<SemanticDeclaration>], context: CodegenContext, phase: i32) -> [string] = do
   const extend_forward_segments =
     if phase == 3 then
-      decls.map(declaration => extend_cpp_forward_segment(declaration, context)).filter(segment => segment.length() > 0)
+      declarations.map(declaration => extend_cpp_forward_segment(declaration, context)).filter(segment => segment.length() > 0)
     else []
     end
   extend_forward_segments.concat(
-    decls.map(declaration => decl_segment(declaration, context, phase)).filter(segment => segment.length() > 0))
+    declarations.map(declaration => decl_segment(declaration, context, phase)).filter(segment => segment.length() > 0))
 end

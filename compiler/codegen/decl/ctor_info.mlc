@@ -41,15 +41,16 @@ end
 fn variant_to_ctor_info(variant: Shared<TypeVariant>) -> [Shared<CtorTypeInfo>] =
   match variant {
     VarTuple(variant_name, types, _) => [ctor_type_info_for(variant_name, types)],
-    VarRecord(variant_name, field_defs, _) => [ctor_type_info_for(variant_name, field_defs.map(fd => field_def_type(fd)))],
+    VarRecord(variant_name, field_definitions, _) =>
+      [ctor_type_info_for(variant_name, field_definitions.map(field_definition => field_def_type(field_definition)))],
     VarUnit(_, _) => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
 fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] =
   variants.flat_map(variant => variant_to_ctor_info(variant))
 
-fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
-  match decl {
+fn declaration_to_ctor_infos(declaration: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
+  match declaration {
     DeclExported(inner) => match decl_inner(inner) {
       DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants),
       _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
@@ -58,8 +59,8 @@ fn decl_to_ctor_infos(decl: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
     _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
-export fn build_ctor_type_infos_from_decls(decls: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =
-  decls.flat_map(decl => decl_to_ctor_infos(decl))
+export fn build_ctor_type_infos_from_decls(declarations: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =
+  declarations.flat_map(declaration => declaration_to_ctor_infos(declaration))
 
 export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], constructor_lookup_name: string) -> Shared<CtorTypeInfo> =
   infos.fold(

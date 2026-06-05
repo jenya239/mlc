@@ -2,44 +2,50 @@
 
 import { TypeExpr, Param } from '../../frontend/ast'
 
-export fn is_shared_type(t: Shared<TypeExpr>) -> bool =
-  match t {
-    TyGeneric(n, _) => n == 'Shared',
+export fn is_shared_type(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyGeneric(type_name, _) => type_name == 'Shared',
     TyShared(_) => true,
     _ => false
   }
 
-export fn is_shared_array_type(t: Shared<TypeExpr>) -> bool =
-  match t { TyArray(inner) => is_shared_type(inner), _ => false }
+export fn is_shared_array_type(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression { TyArray(inner) => is_shared_type(inner), _ => false }
 
-export fn is_shared_map_type(t: Shared<TypeExpr>) -> bool =
-  match t {
-    TyGeneric(n, targs) => n == 'Map' && targs.length() >= 2 && is_shared_type(targs[1]),
+export fn is_shared_map_type(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyGeneric(type_name, type_arguments) =>
+      type_name == 'Map' && type_arguments.length() >= 2 && is_shared_type(type_arguments[1]),
     _ => false
   }
 
-export fn array_elem_name(t: Shared<TypeExpr>) -> string =
-  match t { TyArray(inner) => match inner { TyNamed(n) => n, _ => '' }, _ => '' }
+export fn array_elem_name(type_expression: Shared<TypeExpr>) -> string =
+  match type_expression {
+    TyArray(inner) => match inner { TyNamed(type_name) => type_name, _ => '' },
+    _ => ''
+  }
 
-export fn collect_shared_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_type(parameter.type_value)).map(parameter => parameter.name)
+export fn collect_shared_params(parameters: [Shared<Param>]) -> [string] =
+  parameters.filter(parameter => is_shared_type(parameter.type_value)).map(parameter => parameter.name)
 
-export fn collect_shared_array_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_array_type(parameter.type_value)).map(parameter => parameter.name)
+export fn collect_shared_array_params(parameters: [Shared<Param>]) -> [string] =
+  parameters.filter(parameter => is_shared_array_type(parameter.type_value)).map(parameter => parameter.name)
 
-export fn collect_array_elem_types(params: [Shared<Param>]) -> Map<string, string> = do
-  let result: Map<string, string> = Map.new(); let mut i = 0
-  while i < params.length() do
-    const en = array_elem_name(params[i].type_value)
-    if en.length() > 0 then result.set(params[i].name, en) end; i = i + 1
+export fn collect_array_elem_types(parameters: [Shared<Param>]) -> Map<string, string> = do
+  let result: Map<string, string> = Map.new()
+  let mut parameter_index = 0
+  while parameter_index < parameters.length() do
+    const element_name = array_elem_name(parameters[parameter_index].type_value)
+    if element_name.length() > 0 then result.set(parameters[parameter_index].name, element_name) end
+    parameter_index = parameter_index + 1
   end
   result
 end
 
-export fn collect_shared_map_params(params: [Shared<Param>]) -> [string] =
-  params.filter(parameter => is_shared_map_type(parameter.type_value)).map(parameter => parameter.name)
+export fn collect_shared_map_params(parameters: [Shared<Param>]) -> [string] =
+  parameters.filter(parameter => is_shared_map_type(parameter.type_value)).map(parameter => parameter.name)
 
-export fn collect_value_params(params: [Shared<Param>]) -> [string] =
-  params.filter(
+export fn collect_value_params(parameters: [Shared<Param>]) -> [string] =
+  parameters.filter(
     parameter => !is_shared_type(parameter.type_value) && !is_shared_array_type(parameter.type_value))
     .map(parameter => parameter.name)

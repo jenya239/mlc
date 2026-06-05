@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-d434afc9-3683-4691-8bcb-1a7c1e67e7c5`|
-| driver_turns_since_plan | 3|
-| step_last | 16|
-| active_track | TRACK_RENAME_ABBREV → STEP=17 |
+| agent_token_last | TBD|
+| driver_turns_since_plan | 4|
+| step_last | 17|
+| active_track | TRACK_RENAME_ABBREV → STEP=18 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 17 — codegen/decl)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 17 |
+| track | TRACK_RENAME_ABBREV |
+| done | decl/ abbreviations (8 files); decl_cpp ripple; quotes ok |
+| result | **961**/0; self-host `diff_exit=0`; commit TBD |
+| next | ROLE=Driver STEP=18 TRACK_RENAME_ABBREV (enqueued) |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 16 — codegen context/eval/module)
 

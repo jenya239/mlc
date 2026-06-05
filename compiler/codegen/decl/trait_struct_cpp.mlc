@@ -13,19 +13,19 @@ import * as expression_output from '../expr/expr'
 export fn trait_method_field_cpp(
   context: CodegenContext,
   method_name: string,
-  params: [Shared<Param>],
+  parameters: [Shared<Param>],
   return_type: Shared<Type>
 ) -> Shared<CppField> =
   Shared.new(CppField {
     type_value: expression_output.cpp_std_function_type(
       sem_type_to_cpp(context, return_type),
-      non_self_parameter_types_cpp(context, params).join(', ')),
+      non_self_parameter_types_cpp(context, parameters).join(', ')),
     name: cpp_safe(method_name)
   })
 
-fn trait_struct_template_prefix(type_params: [string]) -> string =
-  if type_params.length() > 0 then
-    expression_output.cpp_template_typename_header_line(type_params.join(', '))
+fn trait_struct_template_prefix(type_parameters: [string]) -> string =
+  if type_parameters.length() > 0 then
+    expression_output.cpp_template_typename_header_line(type_parameters.join(', '))
   else
     ''
   end
@@ -36,10 +36,10 @@ fn trait_struct_field_for_method(
   method: Shared<SemanticDeclaration>
 ) -> [Shared<CppField>] =
   match method {
-    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) => do
       const method_fields: [Shared<CppField>] = []
       method_fields.push(trait_method_field_cpp(
-        trait_context, extract_method_name(mangled, trait_name), params, return_type))
+        trait_context, extract_method_name(mangled, trait_name), parameters, return_type))
       method_fields
     end,
     _ => do const empty_method_fields: [Shared<CppField>] = []; empty_method_fields end
@@ -55,11 +55,11 @@ fn trait_struct_fields_cpp(
 export fn gen_trait_struct_cpp(
   context: CodegenContext,
   trait_name: string,
-  type_params: [string],
+  type_parameters: [string],
   methods: [Shared<SemanticDeclaration>]
 ) -> Shared<CppDeclaration> =
   Shared.new(CppStruct(
-    trait_struct_template_prefix(type_params),
+    trait_struct_template_prefix(type_parameters),
     expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
     trait_struct_fields_cpp(context.for_type_body(trait_name), trait_name, methods),
     false))

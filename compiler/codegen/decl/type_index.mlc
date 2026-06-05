@@ -53,111 +53,116 @@ fn extend_may_register_method_owner(
   end
 end
 
-export fn add_method_owners_from_decls(decls: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
-  const trait_names = build_trait_names_from_decls(decls)
-  let mut i = 0
-  while i < decls.length() do
-    match decl_inner(decls[i]) {
+export fn add_method_owners_from_decls(declarations: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+  const trait_names = build_trait_names_from_decls(declarations)
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    match decl_inner(declarations[declaration_index]) {
       DeclTrait(trait_name, _, methods, _) => do
-        let mut mi = 0
-        while mi < methods.length() do
-          match methods[mi] {
-            DeclFn(fn_name, _, _, _, _, _, _) => do
-              const unmangled = extract_method_name(fn_name, trait_name)
-              if !owners.has(unmangled) then owners.set(unmangled, fn_name) end
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            DeclFn(function_name, _, _, _, _, _, _) => do
+              const unmangled = extract_method_name(function_name, trait_name)
+              if !owners.has(unmangled) then owners.set(unmangled, function_name) end
             end,
             _ => do end
           }
-          mi = mi + 1
+          method_index = method_index + 1
         end
       end,
       DeclExtend(type_name, _, methods, _) => do
-        let mut mi = 0
-        while mi < methods.length() do
-          match methods[mi] {
-            DeclFn(fn_name, _, _, _, _, _, _) => do
-              const unmangled = extract_method_name(fn_name, type_name)
+        let mut method_index = 0
+        while method_index < methods.length() do
+          match methods[method_index] {
+            DeclFn(function_name, _, _, _, _, _, _) => do
+              const unmangled = extract_method_name(function_name, type_name)
               if extend_may_register_method_owner(owners, unmangled, type_name, trait_names) then
-                owners.set(unmangled, fn_name)
+                owners.set(unmangled, function_name)
               end
             end,
             _ => do end
           }
-          mi = mi + 1
+          method_index = method_index + 1
         end
       end,
       _ => do end
     }
-    i = i + 1
+    declaration_index = declaration_index + 1
   end
   owners
 end
 
-export fn build_method_owners_from_decls(decls: [Shared<Decl>]) -> Map<string, string> =
-  add_method_owners_from_decls(decls, Map.new())
+export fn build_method_owners_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> =
+  add_method_owners_from_decls(declarations, Map.new())
 
-export fn build_generic_variants_from_decls(decls: [Shared<Decl>]) -> [string] = do
-  let result: [string] = []; let mut i = 0
-  while i < decls.length() do
-    const inner_decl = decl_inner(decls[i])
-    match inner_decl {
-      DeclType(_, type_params, variants, _, _) => do
-        let mut vi = 0
-        while vi < variants.length() do
-          let should_add = type_params.length() > 0
-          let vname = match variants[vi] {
-            VarRecord(n, _, _) => n,
-            VarTuple(n, _, _)  => n,
-            VarUnit(n, _)      => n
+export fn build_generic_variants_from_decls(declarations: [Shared<Decl>]) -> [string] = do
+  let result: [string] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    const inner_declaration = decl_inner(declarations[declaration_index])
+    match inner_declaration {
+      DeclType(_, type_parameters, variants, _, _) => do
+        let mut variant_index = 0
+        while variant_index < variants.length() do
+          let should_add = type_parameters.length() > 0
+          let variant_name = match variants[variant_index] {
+            VarRecord(name, _, _) => name,
+            VarTuple(name, _, _)  => name,
+            VarUnit(name, _)      => name
           }
-          if should_add then result.push(vname) else result.push('__skip__') end
-          vi = vi + 1
+          if should_add then result.push(variant_name) else result.push('__skip__') end
+          variant_index = variant_index + 1
         end
       end,
       _ => do end
     }
-    i = i + 1
+    declaration_index = declaration_index + 1
   end
   result
 end
 
-export fn build_variant_types_from_decls(decls: [Shared<Decl>]) -> Map<string, string> = do
+export fn build_variant_types_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> = do
   let variant_map: Map<string, string> = Map.new()
-  let mut i = 0
-  while i < decls.length() do
-    const inner_decl = decl_inner(decls[i])
-    match inner_decl {
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    const inner_declaration = decl_inner(declarations[declaration_index])
+    match inner_declaration {
       DeclType(type_name, _, variants, _, _) => do
-        let mut vi = 0
-        while vi < variants.length() do
-          match variants[vi] {
+        let mut variant_index = 0
+        while variant_index < variants.length() do
+          match variants[variant_index] {
             VarRecord(variant_name, _, _) => variant_map.set(variant_name, type_name),
             VarTuple(variant_name, _, _)  => variant_map.set(variant_name, type_name),
             VarUnit(variant_name, _)      => variant_map.set(variant_name, type_name)
           }
-          vi = vi + 1
+          variant_index = variant_index + 1
         end
       end,
       _ => do end
     }
-    i = i + 1
+    declaration_index = declaration_index + 1
   end
   variant_map
 end
 
-export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
+export fn build_field_orders(program: Program) -> [Shared<FieldOrder>] = do
   const orders: [Shared<FieldOrder>] = []
-  let mut i = 0
-  while i < prog.decls.length() do
-    match prog.decls[i] {
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    match program.decls[declaration_index] {
       DeclExported(inner) => match decl_inner(inner) {
         DeclType(type_name, _, variants, _, _) => do
-          let mut vi = 0
-          while vi < variants.length() do
-            match variants[vi] {
-              VarRecord(variant_name, field_defs, _) => do
-                const field_names: [string] = []; let mut fi = 0
-                while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+          let mut variant_index = 0
+          while variant_index < variants.length() do
+            match variants[variant_index] {
+              VarRecord(variant_name, field_definitions, _) => do
+                const field_names: [string] = []
+                let mut field_index = 0
+                while field_index < field_definitions.length() do
+                  field_names.push(field_definitions[field_index].name)
+                  field_index = field_index + 1
+                end
                 orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
                 if variants.length() == 1 then
                   orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
@@ -167,7 +172,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
               VarTuple(_, _, _) => do end,
               VarUnit(_, _)     => do end
             }
-            vi = vi + 1
+            variant_index = variant_index + 1
           end
         end,
         DeclFn(_, _, _, _, _, _, _) => do end,
@@ -179,12 +184,16 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
         DeclAssocBind(_, _, _)   => do end
       },
       DeclType(type_name, _, variants, _, _) => do
-        let mut vi = 0
-        while vi < variants.length() do
-          match variants[vi] {
-            VarRecord(variant_name, field_defs, _) => do
-              const field_names: [string] = []; let mut fi = 0
-              while fi < field_defs.length() do field_names.push(field_defs[fi].name); fi = fi + 1 end
+        let mut variant_index = 0
+        while variant_index < variants.length() do
+          match variants[variant_index] {
+            VarRecord(variant_name, field_definitions, _) => do
+              const field_names: [string] = []
+              let mut field_index = 0
+              while field_index < field_definitions.length() do
+                field_names.push(field_definitions[field_index].name)
+                field_index = field_index + 1
+              end
               orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
               if variants.length() == 1 then
                 orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
@@ -194,7 +203,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
             VarTuple(_, _, _) => do end,
             VarUnit(_, _)     => do end
           }
-          vi = vi + 1
+          variant_index = variant_index + 1
         end
       end,
       DeclFn(_, _, _, _, _, _, _) => do end,
@@ -204,7 +213,7 @@ export fn build_field_orders(prog: Program) -> [Shared<FieldOrder>] = do
       DeclAssocType(_, _)      => do end,
       DeclAssocBind(_, _, _)   => do end
     }
-    i = i + 1
+    declaration_index = declaration_index + 1
   end
   orders
 end

@@ -11,7 +11,7 @@ import { compute_fn_body_context, exported_type_names_from_decls } from './decl/
 import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
 import * as expression_output from './expr/expr'
-import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_params, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp } from './decl/type_gen'
+import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp } from './decl/type_gen'
 import { gen_derive_methods_cpp } from './decl/derive_methods_cpp'
 import { gen_trait_struct_cpp } from './decl/trait_struct_cpp'
 import { gen_return_body_cpp } from './stmt/return_body'
@@ -83,7 +83,7 @@ fn variant_forward_struct_cpp(
   variant: Shared<TypeVariant>
 ) -> Shared<CppDeclaration> = do
   const variant_name = context.resolve(variant_ctor_name(variant))
-  const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
+  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
   Shared.new(CppStruct(template_prefix(used), variant_name, [], true))
 end
 
@@ -94,7 +94,7 @@ fn variant_alias_arm_cpp(
   variant: Shared<TypeVariant>
 ) -> Shared<CppVariantArm> = do
   const variant_name = context.resolve(variant_ctor_name(variant))
-  const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
+  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
   const type_argument_suffix = if used.length() > 0 then `<${used.join(', ')}>` else '' end
   Shared.new(CppVariantArm { name: variant_name + type_argument_suffix, types: [] })
 end
@@ -166,7 +166,7 @@ fn variant_body_struct_cpp(
   phantom: [string],
   variant: Shared<TypeVariant>
 ) -> Shared<CppDeclaration> = do
-  const used = union_string_lists(variant_used_type_params(type_params, variant), phantom)
+  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
   const prefix = template_prefix(used)
   match variant {
     VarUnit(name, _) =>
