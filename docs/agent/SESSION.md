@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-473214ab-328c-43e2-b2b3-8864c2c6b18c`|
-| driver_turns_since_plan | 2|
-| step_last | 6|
-| active_track | TRACK_ORCH_DEV → STEP=4 |
+| agent_token_last | `cr-agent-9f260515-b291-4149-86ea-e9e13acf6bf7`|
+| driver_turns_since_plan | 3|
+| step_last | 8|
+| active_track | TRACK_RENAME_ABBREV → STEP=9 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 8 — cpp_ast/cpp_printer)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| track | TRACK_RENAME_ABBREV |
+| done | `CppField.type_value`, `CppProgram.declarations`; ripple parser/codegen/tests |
+| result | **961**/0; self-host `diff_exit=0`; commit `a11b5372` |
+| next | ROLE=Driver STEP=9 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 6 — idempotent re-prompt)
 

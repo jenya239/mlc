@@ -2,7 +2,9 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md)
 
-## Status: **open** (step 7 done — 2026-06-05)
+## Status: **open** (step 8 done — 2026-06-05)
+
+**STEP=8 note (2026-06-05 Driver):** `CppField.type_value`, `CppProgram.declarations`; ripple parser/codegen/tests; `cpp_printer.mlc` already clean; quotes ok. Gate: **961**/0; self-host diff empty. Commit `a11b5372`.
 
 **STEP=7 note (2026-06-05 Driver):** `types.mlc` locals `return_type_parsed`, `type_arguments`; string quotes: `"` char compares only — ok. Gate: **961**/0; self-host diff empty. Commit `3f61a746`.
 
@@ -81,7 +83,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 5 | `frontend/parser/exprs.mlc` � ?????????? + ??????? | done |
 | 6 | `frontend/parser/decls.mlc` � ?????????? + ??????? | done |
 | 7 | `frontend/parser/types.mlc` — abbreviations + quotes | done |
-| 8 | `cpp/cpp_ast.mlc` + `cpp/cpp_printer.mlc` � ?????????? + ??????? | pending |
+| 8 | `cpp/cpp_ast.mlc` + `cpp/cpp_printer.mlc` — abbreviations + quotes | done |
 | 9 | `cpp/lexer.mlc` + `cpp/parser.mlc` + `cpp/predicates.mlc` � ?????????? + ??????? | pending |
 | 10 | `cpp/emit_helpers.mlc` + `cpp/hash_stmt_helpers.mlc` � ?????????? + ??????? | pending |
 | 11 | `checker/registry.mlc` + `checker/semantic_type_structure.mlc` � ?????????? | pending |
