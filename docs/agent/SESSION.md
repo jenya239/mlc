@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-d2b4f73a-fa65-44ff-bddb-c9ffa3b48c11`|
-| driver_turns_since_plan | 5|
-| step_last | 3|
+| agent_token_last | `cr-agent-a0d1a53a-eba9-4291-a455-6bc11e6a12de`|
+| driver_turns_since_plan | 0|
+| step_last | orch-dev-1|
 | active_track | TRACK_RENAME_ABBREV → STEP=4 |
+
+### Turn 2026-06-05 (OrchestratorDev TRACK_ORCH_DEV step 1 — cr db schema)
+
+| field | value |
+|-------|-------|
+| role | OrchestratorDev |
+| step | 1 |
+| track | TRACK_ORCH_DEV |
+| started | 2026-06-05 |
+| elapsed | ~20 min |
+| done | cr `db/schema.sql`, `migrations/001_initial.sql`, `src/db/migrate.ts`, `cr-paths.ts`; commit `fe0c46a` |
+| result | migrate tests 3/3; build ok; full npm test 311/325 (14 pre-existing) |
+| issues | full npm test not green (server/watchdog flakes, unrelated) |
+| next | ROLE=Driver STEP=4 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 3 — lexer LexState renames)
 
