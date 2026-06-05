@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-93527a9d-3a27-4ae8-a200-61f6c3f6d7be`|
+| agent_token_last | `cr-agent-1dc5f2e7-5790-4fd0-b1cf-774cfbd4c0b5`|
 | driver_turns_since_plan | 0|
 | step_last | meta-review|
 | active_track | TRACK_RENAME_ABBREV → STEP=13 |
@@ -18,7 +18,7 @@
 | step | meta-review |
 | supervisor | ok, blocked `[]` |
 | issue | guard stuck `Driver:12:RENAME_ABBREV` after assistant; STEP=12 already committed `c3eb310d` |
-| action | TRACK/RESEARCH updated; no re-enqueue STEP=12; enqueue Driver **STEP=13** once |
+| action | TRACK/RESEARCH updated; no re-enqueue STEP=12; STEP=13 already queued (enqueue blocked) |
 | next | ROLE=Driver STEP=13 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver RENAME_ABBREV step 12 — names/check_mutations)
