@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | pending register |
+| agent_token_last | `cr-agent-e3016677-9d08-4e11-a343-b8a7e1767296` |
 | driver_turns_since_plan | 3|
 | step_last | 23|
 | active_track | none (RENAME_ABBREV closed) |
