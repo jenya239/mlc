@@ -78,12 +78,12 @@ fn ordered_record_tuple_environment_fold_step(
 end
 
 fn apply_let_pattern_to_env(
-  pat: Shared<Pattern>,
+  pattern: Shared<Pattern>,
   value_type: Shared<Type>,
   base_env: Map<string, Shared<Type>>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
-  match pat {
+  match pattern {
     PatternWild(_) => base_env,
     PatternIdent(let_binding_name, _) => do
       const environment_where_ident_binding_is_added = base_env
@@ -176,7 +176,7 @@ fn apply_let_pattern_to_env(
     PatternCtor(_, _, _) =>
       env_for_pattern_substituted(
         base_env,
-        pat,
+        pattern,
         registry,
         substitution_from_generic(value_type, registry),
         value_type),
@@ -225,9 +225,9 @@ fn tuple_pattern_environment_using_ordered_record_fields(
 end
 
 export fn infer_let_pattern_env(
-  pat: Shared<Pattern>,
+  pattern: Shared<Pattern>,
   value_type: Shared<Type>,
   base_env: Map<string, Shared<Type>>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> =
-  apply_let_pattern_to_env(pat, value_type, base_env, registry)
+  apply_let_pattern_to_env(pattern, value_type, base_env, registry)

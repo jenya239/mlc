@@ -57,7 +57,7 @@ fn record_type_base_name(value_type: Shared<Type>) -> string =
   match value_type {
     TNamed(name) => name,
     TGeneric(name, _) => name,
-    TShared(inner) => record_type_base_name(inner),
+    TShared(shared_inner_type) => record_type_base_name(shared_inner_type),
     _ => ''
   }
 

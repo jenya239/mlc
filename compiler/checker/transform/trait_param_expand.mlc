@@ -14,7 +14,7 @@ import { diagnostic_code_e073 } from '../diagnostic_codes'
 
 fn declaration_without_export_wrappers(declaration: Shared<Decl>) -> Shared<Decl> =
   match declaration {
-    DeclExported(inner) => declaration_without_export_wrappers(inner),
+    DeclExported(exported_declaration) => declaration_without_export_wrappers(exported_declaration),
     _ => declaration
   }
 
@@ -345,7 +345,8 @@ fn expand_decl_shared(declaration: Shared<Decl>, trait_declaration_names: Map<st
         where_clause_bounds_entries,
         trait_declaration_names,
         nominal_type_declaration_names),
-    DeclExported(inner) => Shared.new(DeclExported(expand_decl_shared(inner, trait_declaration_names, nominal_type_declaration_names))),
+    DeclExported(exported_declaration) =>
+      Shared.new(DeclExported(expand_decl_shared(exported_declaration, trait_declaration_names, nominal_type_declaration_names))),
     DeclExtend(extended_type_name, implemented_trait_name, methods, name_span) =>
       Shared.new(DeclExtend(
         extended_type_name,

@@ -46,8 +46,8 @@ fn expr_is_placeholder(expression: Shared<Expr>) -> bool =
 
 fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
   match argument {
-    ExprNamedArg(_, inner, _) =>
-      if expr_is_placeholder(inner) then 1 else 0 end,
+    ExprNamedArg(_, inner_expression, _) =>
+      if expr_is_placeholder(inner_expression) then 1 else 0 end,
     ExprIdent(name, _) =>
       if name == "_" then 1 else 0 end,
     _ => 0
@@ -113,8 +113,8 @@ fn partial_replace_call_arguments_inner(
 ) -> [Shared<Expr>] =
   if argument_index >= arguments.length() then output
   else match arguments[argument_index] {
-    ExprNamedArg(label, inner, span_named) =>
-      if expr_is_placeholder(inner) then
+    ExprNamedArg(label, inner_expression, span_named) =>
+      if expr_is_placeholder(inner_expression) then
           partial_replace_call_arguments_inner(
           arguments,
           parameter_names,
@@ -221,8 +221,8 @@ fn partial_application_map_arguments_at(
 ) -> ArgumentsPartialPair =
   if index >= arguments.length() then ArgumentsPartialPair { arguments: mapped, next_serial: serial }
   else match arguments[index] {
-    ExprNamedArg(label, inner, span_named) => do
-      const inner_pair = partial_application_desugar_inner(inner, serial)
+    ExprNamedArg(label, inner_expression, span_named) => do
+      const inner_pair = partial_application_desugar_inner(inner_expression, serial)
       partial_application_map_arguments_at(
         arguments,
         index + 1,
@@ -287,25 +287,25 @@ type StmtPartialPair = StmtPartialPair { statement: Shared<Stmt>, next_serial: i
 
 fn partial_application_desugar_statement(statement: Shared<Stmt>, serial: i32) -> StmtPartialPair =
   match statement {
-    StmtLet(name, is_mut, typ, value_expression, span_statement) => do
+    StmtLet(name, is_mut, type_expression, value_expression, span_statement) => do
       const value_pair = partial_application_desugar_inner(value_expression, serial)
       StmtPartialPair {
-        statement: Shared.new(StmtLet(name, is_mut, typ, value_pair.expression, span_statement)),
+        statement: Shared.new(StmtLet(name, is_mut, type_expression, value_pair.expression, span_statement)),
         next_serial: value_pair.next_serial
       }
     end,
-    StmtLetPattern(pat, is_mut, typ, value_expression, has_else, else_body, span_statement) => do
+    StmtLetPattern(pattern, is_mut, type_expression, value_expression, has_else, else_body, span_statement) => do
       const value_pair = partial_application_desugar_inner(value_expression, serial)
       const else_pair = partial_application_desugar_inner(else_body, value_pair.next_serial)
       StmtPartialPair {
-        statement: Shared.new(StmtLetPattern(pat, is_mut, typ, value_pair.expression, has_else, else_pair.expression, span_statement)),
+        statement: Shared.new(StmtLetPattern(pattern, is_mut, type_expression, value_pair.expression, has_else, else_pair.expression, span_statement)),
         next_serial: else_pair.next_serial
       }
     end,
-    StmtLetConst(name, typ, value_expression, span_statement) => do
+    StmtLetConst(name, type_expression, value_expression, span_statement) => do
       const value_pair = partial_application_desugar_inner(value_expression, serial)
       StmtPartialPair {
-        statement: Shared.new(StmtLetConst(name, typ, value_pair.expression, span_statement)),
+        statement: Shared.new(StmtLetConst(name, type_expression, value_pair.expression, span_statement)),
         next_serial: value_pair.next_serial
       }
     end,
@@ -327,22 +327,22 @@ fn partial_application_desugar_statement(statement: Shared<Stmt>, serial: i32) -
     StmtContinue(_) => StmtPartialPair { statement, next_serial: serial }
   }
 
-type MatchArmsPartialPair = MatchArmsPartialPair { arms: [Shared<MatchArm>], next_serial: i32 }
+type MatchArmsPartialPair = MatchArmsPartialPair { match_arms: [Shared<MatchArm>], next_serial: i32 }
 
-fn partial_application_desugar_match_arms_list(arms: [Shared<MatchArm>], serial: i32) -> MatchArmsPartialPair =
-  arms.fold(
-    MatchArmsPartialPair { arms: [], next_serial: serial },
+fn partial_application_desugar_match_arms_list(match_arms: [Shared<MatchArm>], serial: i32) -> MatchArmsPartialPair =
+  match_arms.fold(
+    MatchArmsPartialPair { match_arms: [], next_serial: serial },
     (accumulated, arm_shared_under_match) => do
       const guard_pair = partial_application_desugar_inner(arm_shared_under_match.when_condition, accumulated.next_serial)
       const body_pair = partial_application_desugar_inner(arm_shared_under_match.body, guard_pair.next_serial)
-      accumulated.arms.push(Shared.new(MatchArm {
+      accumulated.match_arms.push(Shared.new(MatchArm {
         pattern: arm_shared_under_match.pattern,
         has_guard: arm_shared_under_match.has_guard,
         when_condition: guard_pair.expression,
         body: body_pair.expression
       }))
       MatchArmsPartialPair {
-        arms: accumulated.arms,
+        match_arms: accumulated.match_arms,
         next_serial: body_pair.next_serial
       }
     end
@@ -445,11 +445,11 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
         next_serial: stmts_pair.next_serial
       }
     end,
-    ExprMatch(subject, arms, span_match) => do
+    ExprMatch(subject, match_arms, span_match) => do
       const subject_pair = partial_application_desugar_inner(subject, serial)
-      const arms_pair = partial_application_desugar_match_arms_list(arms, subject_pair.next_serial)
+      const arms_pair = partial_application_desugar_match_arms_list(match_arms, subject_pair.next_serial)
       PartialPair {
-        expression: Shared.new(ExprMatch(subject_pair.expression, arms_pair.arms, span_match)),
+        expression: Shared.new(ExprMatch(subject_pair.expression, arms_pair.match_arms, span_match)),
         next_serial: arms_pair.next_serial
       }
     end,

@@ -21,7 +21,7 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       end
       const return_type      = type_from_annotation(return_type_expr)
       const initial_context  = TransformContext { type_env: param_env, registry }
-      const typed_body       = transform_expr(body, initial_context, (stmts: [Shared<Stmt>], ctx: TransformContext) => transform_stmts(stmts, ctx))
+      const typed_body       = transform_expr(body, initial_context, (statements: [Shared<Stmt>], transform_context: TransformContext) => transform_stmts(statements, transform_context))
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
       Shared.new(SemanticDeclarationFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, expr_span(body)))
     end,
@@ -36,7 +36,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       Shared.new(SemanticDeclarationExtend(type_name, trait_name, typed_methods, name_span))
     end,
     DeclImport(path, names) => Shared.new(SemanticDeclarationImport(path, names)),
-    DeclExported(inner)     => Shared.new(SemanticDeclarationExported(transform_decl(inner, registry))),
+    DeclExported(exported_declaration) =>
+      Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry))),
     DeclAssocType(_, _)     => Shared.new(SemanticDeclarationImport('', [])),
     DeclAssocBind(name, type_expr, span) => Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation(type_expr), span))
   }
