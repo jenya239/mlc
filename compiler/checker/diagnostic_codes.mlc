@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 80
+export fn diagnostic_code_catalog_count() -> i32 = 81
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -162,3 +162,5 @@ export fn diagnostic_code_e078() -> string = 'E078'
 export fn diagnostic_code_e079() -> string = 'E079'
 // E080: string match wildcard must be the last arm
 export fn diagnostic_code_e080() -> string = 'E080'
+// E081: cyclic type alias
+export fn diagnostic_code_e081() -> string = 'E081'

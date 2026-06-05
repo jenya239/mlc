@@ -6,9 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-ad65398b-105d-4627-ac39-e85d56de50f6` |
-| driver_turns_since_plan | 1|
-| step_last | meta-review|
-| active_track | TRACK_TYPE_ALIASES → STEP=2 |
+| driver_turns_since_plan | 2|
+| step_last | 2|
+| active_track | TRACK_TYPE_ALIASES → STEP=3 |
+
+### Turn 2026-05-19 (Driver TYPE_ALIASES step 2 — checker alias resolve + cycle)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_TYPE_ALIASES |
+| started | 2026-05-19 |
+| elapsed | ~15 min |
+| done | `type_alias_annotations` in registry; `type_from_annotation_with_registry`; E081 cycle; `type_alias_named_target` helper (self-host visit fix) |
+| result | **966**/0; self-host `diff_exit=0` |
+| issues | `match` on `Map.get()` → visit without deref; fixed via helper |
+| next | ROLE=Driver STEP=3 TRACK_TYPE_ALIASES |
 
 ### Turn 2026-06-05 (Meta meta-review — TYPE_ALIASES STEP=1 loop)
 

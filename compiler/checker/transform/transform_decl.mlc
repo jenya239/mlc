@@ -4,7 +4,7 @@
 import { Decl, TypeVariant, Param, Program, Stmt, Span, expr_span } from '../../frontend/ast'
 import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
-import { Type, TypeRegistry, type_from_annotation } from '../registry'
+import { Type, TypeRegistry, type_from_annotation_with_registry } from '../registry'
 import { SemanticDeclaration, SemanticProgram, SemanticLoadItem, SemanticNamespaceImportAlias } from '../../ir/semantic_ir'
 import { LoadItem, NamespaceImportAlias } from '../../codegen/decl/decl_index'
 import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from './transform'
@@ -16,10 +16,10 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       let mut param_env: Map<string, Shared<Type>> = Map.new()
       let mut index = 0
       while index < params.length() do
-        param_env.set(params[index].name, type_from_annotation(params[index].type_value))
+        param_env.set(params[index].name, type_from_annotation_with_registry(params[index].type_value, registry))
         index = index + 1
       end
-      const return_type      = type_from_annotation(return_type_expr)
+      const return_type      = type_from_annotation_with_registry(return_type_expr, registry)
       const initial_context  = TransformContext { type_env: param_env, registry }
       const typed_body       = transform_expr(body, initial_context, (statements: [Shared<Stmt>], transform_context: TransformContext) => transform_stmts(statements, transform_context))
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
@@ -41,7 +41,8 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
     DeclExported(exported_declaration) =>
       Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry))),
     DeclAssocType(_, _)     => Shared.new(SemanticDeclarationImport('', [])),
-    DeclAssocBind(name, type_expr, span) => Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation(type_expr), span))
+    DeclAssocBind(name, type_expr, span) =>
+      Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation_with_registry(type_expr, registry), span))
   }
 
 fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SemanticDeclaration>] = do

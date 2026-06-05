@@ -3,7 +3,7 @@
 // mirroring the gen_stmts / eval_expr pattern in codegen.
 
 import { Stmt } from '../../frontend/ast'
-import { Type, type_from_annotation } from '../registry'
+import { Type, type_from_annotation_with_registry } from '../registry'
 import { SemanticStatement, SemanticExpression, sexpr_type } from '../../ir/semantic_ir'
 import { TransformContext, TransformStmtsResult,
          transform_expr, transform_context_with_env, coerce_expr_to_type } from './transform'
@@ -20,7 +20,7 @@ export fn transform_stmts(
     const current_context = transform_context_with_env(transform_context, current_env)
     match statements[statement_index] {
       StmtLet(binding_name, is_mut, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation(annotation)
+        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
         const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
         const inferred_type  = sexpr_type(typed_value)
         const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
@@ -30,7 +30,7 @@ export fn transform_stmts(
         ()
       end,
       StmtLetPattern(pattern, is_mut, annotation, value_expression, has_else, else_body, source_span) => do
-        const annotated_type = type_from_annotation(annotation)
+        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
         const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
         const inferred_type  = sexpr_type(typed_value)
         const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
@@ -41,7 +41,7 @@ export fn transform_stmts(
         ()
       end,
       StmtLetConst(binding_name, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation(annotation)
+        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
         const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
         const inferred_type  = sexpr_type(typed_value)
         const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }

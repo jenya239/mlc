@@ -1,20 +1,20 @@
 // Checker entry: name resolution + type inference over a program (or entry slice).
 
-import { Program, Decl, Result, decl_inner, decl_span, param_name, param_type_value, Param,
+import { Program, Decl, Result, decl_inner, decl_span, decl_name_span, param_name, param_type_value, Param,
          Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append, diagnostics_to_strings, expr_span,
          Expr, ExprExtern, ExprInt, ExprStr, ExprBool, ExprUnit, WhereClauseBound, Span,
          span_unknown, TypeVariant, FieldDef } from '../../frontend/ast'
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import { check_names_expr } from '../names'
 import { check_fn_body_mutations } from './check_mutations'
-import { Type, TypeRegistry, build_registry, type_from_annotation } from '../registry'
+import { Type, TypeRegistry, build_registry, type_from_annotation_with_registry, type_alias_has_cycle } from '../registry'
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from '../transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from '../transform/param_destructure_expand'
 import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
-import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076 } from '../diagnostic_codes'
+import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076, diagnostic_code_e081 } from '../diagnostic_codes'
 import { record_field_default_expression_acceptable_for_codegen } from '../../ir/record_defaults'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 
@@ -92,7 +92,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
               diagnostics_after_field =
                 diagnostics_append(diagnostics_after_field, default_parsed.errors)
               const annotated_field_type =
-                type_from_annotation(record_field_under_literal_definition.type_value)
+                type_from_annotation_with_registry(record_field_under_literal_definition.type_value, registry)
               if type_is_checkable(annotated_field_type, registry) &&
                  type_is_checkable(default_parsed.inferred_type, registry) &&
                  !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
@@ -193,7 +193,7 @@ fn param_default_diagnostics(
           diagnostics_after_parameter =
             diagnostics_append(diagnostics_after_parameter, default_infer.errors)
           const parameter_expected_type =
-            type_from_annotation(param_type_value(parameter_under_scan_for_defaults))
+            type_from_annotation_with_registry(param_type_value(parameter_under_scan_for_defaults), registry)
           if type_is_checkable(parameter_expected_type, registry) &&
              type_is_checkable(default_infer.inferred_type, registry) &&
              !types_structurally_equal(parameter_expected_type, default_infer.inferred_type) then
@@ -367,7 +367,7 @@ fn accumulate_diagnostics_for_single_extend_method(
       while parameter_index < parameters.length() do
         method_environment.set(
           param_name(parameters[parameter_index]),
-          type_from_annotation(param_type_value(parameters[parameter_index])))
+          type_from_annotation_with_registry(param_type_value(parameters[parameter_index]), registry))
         parameter_index = parameter_index + 1
       end
       const extend_context =
@@ -382,6 +382,27 @@ fn accumulate_diagnostics_for_single_extend_method(
       end,
   }
 
+fn type_alias_cycle_diagnostics(program: Program, registry: TypeRegistry) -> [Diagnostic] = do
+  let mut diagnostics: [Diagnostic] = []
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    match decl_inner(program.decls[declaration_index]) {
+      DeclTypeAlias(alias_name, _, _, _) => do
+        if type_alias_has_cycle(registry, alias_name) then
+          diagnostics.push(diagnostic_error_with_code(
+            'cyclic type alias ' + alias_name,
+            decl_name_span(program.decls[declaration_index]),
+            diagnostic_code_e081()))
+        end
+        ()
+      end,
+      _ => do () end
+    }
+    declaration_index = declaration_index + 1
+  end
+  diagnostics
+end
+
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
   let mut all_diagnostics: [Diagnostic] = trait_and_type_name_conflict_diagnostics(full_program)
   const destructured_full_program = expand_parameter_destructuring_in_program(full_program)
@@ -390,6 +411,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
     expand_trait_as_param_entry_using_full(entry, destructured_full_program))
   const globals = collect_globals(destructured_full_program)
   let registry = build_registry(destructured_full_program)
+  all_diagnostics = diagnostics_append(all_diagnostics, type_alias_cycle_diagnostics(destructured_full_program, registry))
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {
@@ -407,7 +429,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         let mut parameter_index = 0
         while parameter_index < parameters.length() do
           locals.push(param_name(parameters[parameter_index]))
-          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation(param_type_value(parameters[parameter_index])))
+          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation_with_registry(param_type_value(parameters[parameter_index]), registry))
           parameter_index = parameter_index + 1
         end
         const body_partial_application = partial_application_desugar_expr(body)
@@ -415,7 +437,7 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
         const inference_context = check_context_new(type_environment, registry)
         const body_parsed = infer_expr(body_partial_application, inference_context)
-        const expected_type = type_from_annotation(return_type_annotation)
+        const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const actual_type = body_parsed.inferred_type
         const return_type_errors: [Diagnostic] =
           if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
