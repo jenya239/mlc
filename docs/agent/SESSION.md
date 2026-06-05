@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-302eb1e4-e85a-4064-a0f1-71251b462b6c`|
+| agent_token_last | `cr-agent-3737008b-4cb3-4588-af1f-d8e35287f107`|
 | driver_turns_since_plan | 2|
 | step_last | 12 |
 | active_track | TRACK_RENAME_ABBREV → STEP=13 |
