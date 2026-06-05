@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-545ab24d-17ea-4f36-834b-272d13903c40`|
-| driver_turns_since_plan | 5|
-| step_last | 5|
-| active_track | TRACK_RENAME_ABBREV → STEP=6 |
+| agent_token_last | `cr-agent-6d32a432-cb32-4494-a92b-aaabbf8c9eb8`|
+| driver_turns_since_plan | 6|
+| step_last | 6|
+| active_track | TRACK_RENAME_ABBREV → STEP=7 |
+
+### Turn 2026-06-05 (Driver RENAME_ABBREV step 6 — decls.mlc)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_RENAME_ABBREV |
+| done | `parse_declaration`, `parse_function_declaration`; `return_type_parsed`; `declarations` locals |
+| result | **961**/0; self-host `diff_exit=0`; commit `ced551de` |
+| next | ROLE=Driver STEP=7 TRACK_RENAME_ABBREV |
 
 ### Turn 2026-06-05 (Driver TRACK_ORCH_DEV step 5 — session DB cache)
 
