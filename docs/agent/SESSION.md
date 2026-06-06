@@ -6,9 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-a5657b2a-6538-401f-85dc-2e6096631829` |
-| driver_turns_since_plan | 3|
-| step_last | 3|
-| active_track | TRACK_TYPE_ALIASES → STEP=4 |
+| driver_turns_since_plan | 4|
+| step_last | 4|
+| active_track | TRACK_TYPE_ALIASES → STEP=5 |
+
+### Turn 2026-06-06 (Driver TYPE_ALIASES step 4 — tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_TYPE_ALIASES |
+| done | `test_parser` sum vs alias, export alias; `test_checker` param, chain, mutual cycle, mismatch |
+| result | **978**/0; self-host `diff_exit=0` |
+| issues | mutual cycle → 2× E081 (A and B) |
+| next | ROLE=Driver STEP=5 TRACK_TYPE_ALIASES |
 
 ### Turn 2026-06-06 (Driver TYPE_ALIASES step 3 — codegen alias)
 

@@ -62,6 +62,21 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true('cyclic type alias E081',
     first_checker_error_line('type Loop = Loop\nfn main() -> i32 = 0').contains('error[E081]')))
 
+  results.push(assert_eq_int('type alias resolves in parameter type - 0 errors',
+    check_error_count('type Count = i32\nfn f(value: Count) -> Count = value'), 0))
+
+  results.push(assert_eq_int('chained type alias resolves - 0 errors',
+    check_error_count('type Offset = i32\ntype Count = Offset\nfn f() -> Count = 1'), 0))
+
+  results.push(assert_eq_int('mutual cyclic type alias - 2 errors',
+    check_error_count('type A = B\ntype B = A\nfn main() -> i32 = 0'), 2))
+
+  results.push(assert_true('mutual cyclic type alias E081',
+    first_checker_error_line('type A = B\ntype B = A\nfn main() -> i32 = 0').contains('error[E081]')))
+
+  results.push(assert_eq_int('type alias return mismatch - 1 error',
+    check_error_count('type Words = [string]\nfn f() -> Words = 1'), 1))
+
   results.push(assert_eq_int('fn returning literal - 0 errors',
     check_error_count('fn f() -> i32 = 42'), 0))
 
