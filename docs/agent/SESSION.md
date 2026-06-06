@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-840a67ba-6723-4b7e-a671-8f108c865b1c` |
-| driver_turns_since_plan | 5|
-| step_last | 7|
-| active_track | TRACK_TYPE_ALIASES **closed** → TRACK_VISITOR_PATTERN STEP=1 |
+| agent_token_last | `cr-agent-43ad88b9-66fb-4c85-ad2f-1a43b4d95952` |
+| driver_turns_since_plan | 6|
+| step_last | 1|
+| active_track | TRACK_VISITOR_PATTERN → STEP=2 |
+
+### Turn 2026-06-06 (Driver VISITOR_PATTERN step 1 — ExprVisitor trait tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_VISITOR_PATTERN |
+| done | `test_expr_visitor.mlc`: `TagExprVisitor` stub all 29 `visit_*`; trait already in `expr_visitor.mlc` |
+| result | **984**/0; self-host `diff_exit=0` |
+| issues | empty record receiver codegen `tag_state{}` — workaround `seed: i32` field |
+| next | ROLE=Driver STEP=2 TRACK_VISITOR_PATTERN |
 
 ### Turn 2026-06-06 (Driver TYPE_ALIASES step 7 — audit close)
 

@@ -1,6 +1,69 @@
-import { TestResult } from './test_runner'
+import { TestResult, assert_eq_int } from './test_runner'
+import { span_unknown } from '../frontend/ast'
+import {
+  SemanticExpression, SemanticExpressionInt, SemanticExpressionBin,
+  SemanticStatement, SemanticMatchArm, SemanticFieldVal
+} from '../ir/semantic_ir'
+import { Type, TI32, TString, TUnit, TUnknown } from '../checker/registry'
+import { ExprVisitor } from '../expr_visitor'
+
+fn unknown_type() -> Shared<Type> = Shared.new(TUnknown)
+fn integer_type() -> Shared<Type> = Shared.new(TI32)
+fn string_type() -> Shared<Type> = Shared.new(TString)
+fn unit_type() -> Shared<Type> = Shared.new(TUnit)
+
+type TagExprVisitor = TagExprVisitor { seed: i32 }
+
+extend TagExprVisitor : ExprVisitor<i32> {
+  fn visit_int(self: TagExprVisitor, integer_value: i32, semantic_type: Shared<Type>) -> i32 = 1
+  fn visit_str(self: TagExprVisitor, string_value: string, semantic_type: Shared<Type>) -> i32 = 2
+  fn visit_bool(self: TagExprVisitor, boolean_value: bool, semantic_type: Shared<Type>) -> i32 = 3
+  fn visit_unit(self: TagExprVisitor, semantic_type: Shared<Type>) -> i32 = 4
+  fn visit_float(self: TagExprVisitor, float_value: string, semantic_type: Shared<Type>) -> i32 = 5
+  fn visit_i64(self: TagExprVisitor, integer_value: string, semantic_type: Shared<Type>) -> i32 = 6
+  fn visit_u8(self: TagExprVisitor, byte_value: string, semantic_type: Shared<Type>) -> i32 = 7
+  fn visit_usize(self: TagExprVisitor, size_value: string, semantic_type: Shared<Type>) -> i32 = 8
+  fn visit_char(self: TagExprVisitor, character_value: string, semantic_type: Shared<Type>) -> i32 = 9
+  fn visit_extern(self: TagExprVisitor, semantic_type: Shared<Type>) -> i32 = 10
+  fn visit_ident(self: TagExprVisitor, name: string, semantic_type: Shared<Type>) -> i32 = 11
+  fn visit_bin(self: TagExprVisitor, operation: string, left_expression: Shared<SemanticExpression>, right_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 12
+  fn visit_un(self: TagExprVisitor, operation: string, inner_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 13
+  fn visit_call(self: TagExprVisitor, function_expression: Shared<SemanticExpression>, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], semantic_type: Shared<Type>) -> i32 = 14
+  fn visit_method(self: TagExprVisitor, object: Shared<SemanticExpression>, method_name: string, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], semantic_type: Shared<Type>) -> i32 = 15
+  fn visit_field(self: TagExprVisitor, object: Shared<SemanticExpression>, field_name: string, semantic_type: Shared<Type>) -> i32 = 16
+  fn visit_index(self: TagExprVisitor, object: Shared<SemanticExpression>, index_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 17
+  fn visit_if(self: TagExprVisitor, condition: Shared<SemanticExpression>, then_expression: Shared<SemanticExpression>, else_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 18
+  fn visit_block(self: TagExprVisitor, statements: [Shared<SemanticStatement>], result_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 19
+  fn visit_while(self: TagExprVisitor, condition: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], semantic_type: Shared<Type>) -> i32 = 20
+  fn visit_for(self: TagExprVisitor, variable: string, iterator: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], semantic_type: Shared<Type>) -> i32 = 21
+  fn visit_match(self: TagExprVisitor, subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>], semantic_type: Shared<Type>) -> i32 = 22
+  fn visit_record(self: TagExprVisitor, type_name: string, field_values: [Shared<SemanticFieldVal>], semantic_type: Shared<Type>) -> i32 = 23
+  fn visit_record_update(self: TagExprVisitor, type_name: string, base_expression: Shared<SemanticExpression>, overrides: [Shared<SemanticFieldVal>], semantic_type: Shared<Type>) -> i32 = 24
+  fn visit_array(self: TagExprVisitor, elements: [Shared<SemanticExpression>], semantic_type: Shared<Type>) -> i32 = 25
+  fn visit_tuple(self: TagExprVisitor, elements: [Shared<SemanticExpression>], semantic_type: Shared<Type>) -> i32 = 26
+  fn visit_question(self: TagExprVisitor, inner_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 27
+  fn visit_lambda(self: TagExprVisitor, parameter_names: [string], body_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> i32 = 28
+  fn visit_with(self: TagExprVisitor, resource: Shared<SemanticExpression>, binder: string, statements: [Shared<SemanticStatement>], semantic_type: Shared<Type>) -> i32 = 29
+  fn visit_unsupported(self: TagExprVisitor, expression: Shared<SemanticExpression>) -> i32 = 0
+}
 
 export fn expr_visitor_tests() -> [TestResult] = do
+  const tag_state = TagExprVisitor { seed: 0 }
   let results: [TestResult] = []
+  results.push(assert_eq_int('ExprVisitor stub: visit_int', tag_state.visit_int(7, integer_type()), 1))
+  results.push(assert_eq_int('ExprVisitor stub: visit_str', tag_state.visit_str('text', string_type()), 2))
+  results.push(assert_eq_int('ExprVisitor stub: visit_ident', tag_state.visit_ident('value', unknown_type()), 11))
+  results.push(assert_eq_int('ExprVisitor stub: visit_unit', tag_state.visit_unit(unit_type()), 4))
+  results.push(assert_eq_int('ExprVisitor stub: visit_extern', tag_state.visit_extern(unit_type()), 10))
+  const binary_expression = Shared.new(SemanticExpressionBin(
+    "+",
+    Shared.new(SemanticExpressionInt(1, integer_type(), span_unknown())),
+    Shared.new(SemanticExpressionInt(2, integer_type(), span_unknown())),
+    integer_type(),
+    span_unknown()))
+  results.push(assert_eq_int(
+    'ExprVisitor stub: visit_bin',
+    tag_state.visit_bin("+", binary_expression, binary_expression, integer_type()),
+    12))
   results
 end
