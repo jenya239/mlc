@@ -5,10 +5,22 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-7dea14ec-8b0b-4a7e-8814-3b8351793ddd` |
+| agent_token_last | `cr-agent-840a67ba-6723-4b7e-a671-8f108c865b1c` |
 | driver_turns_since_plan | 5|
-| step_last | 5|
-| active_track | TRACK_TYPE_ALIASES → STEP=6 |
+| step_last | 7|
+| active_track | TRACK_TYPE_ALIASES **closed** → TRACK_VISITOR_PATTERN STEP=1 |
+
+### Turn 2026-06-06 (Driver TYPE_ALIASES step 7 — audit close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_TYPE_ALIASES |
+| done | Reverted STEP=6 WIP (parser/codegen/registry); TRACK closed; steps 1–5 on HEAD `5bf2bd55` |
+| result | **978**/0; self-host `diff_exit=0` |
+| issues | STEP=6 WIP broke self-host (`Value` leak, broken `apply_type_parameter_substitution` codegen) |
+| next | ROLE=Driver STEP=1 TRACK_VISITOR_PATTERN |
 
 ### Turn 2026-06-06 (Driver TYPE_ALIASES step 5 — cpp_ast aliases)
 
