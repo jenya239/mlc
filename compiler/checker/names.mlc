@@ -2,6 +2,9 @@
 
 import { Expr, Stmt, Pattern, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
          Diagnostic, Span, diagnostic_error, diagnostic_error_with_code, diagnostics_append, span_unknown } from '../frontend/ast'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal } from '../ir/semantic_ir'
+import { Type } from './registry'
+import { ExprVisitor } from '../expr_visitor'
 import { diagnostic_code_e001 } from './diagnostic_codes'
 
 fn scope_contains(scope: [string], name: string) -> bool =
@@ -268,4 +271,389 @@ export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], g
         }
       end)
   NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
+end
+
+// --- Semantic expression visitor (ExprVisitor<NameCheckResult>) ----------------
+
+type NamesPass = NamesPass { locals: [string], globals: Map<string, bool>, seed: i32 }
+
+fn names_pass_new(locals: [string], globals: Map<string, bool>) -> NamesPass =
+  NamesPass { locals: locals, globals: globals, seed: 0 }
+
+fn name_check_ok(scope: [string]) -> NameCheckResult =
+  NameCheckResult { diagnostics: check_names_empty(), scope: scope }
+
+fn merge_name_check_results(first: NameCheckResult, second: NameCheckResult) -> NameCheckResult =
+  NameCheckResult {
+    diagnostics: diagnostics_append(first.diagnostics, second.diagnostics),
+    scope: second.scope
+  }
+
+fn dispatch_names_pass(names_pass: NamesPass, expression: Shared<SemanticExpression>) -> NameCheckResult =
+  match expression {
+    SemanticExpressionInt(integer_value, type_value, _) =>
+      names_pass.visit_int(integer_value, type_value),
+    SemanticExpressionStr(string_value, type_value, _) =>
+      names_pass.visit_str(string_value, type_value),
+    SemanticExpressionBool(boolean_value, type_value, _) =>
+      names_pass.visit_bool(boolean_value, type_value),
+    SemanticExpressionUnit(type_value, _) =>
+      names_pass.visit_unit(type_value),
+    SemanticExpressionFloat(float_value, type_value, _) =>
+      names_pass.visit_float(float_value, type_value),
+    SemanticExpressionI64(integer_value, type_value, _) =>
+      names_pass.visit_i64(integer_value, type_value),
+    SemanticExpressionU8(byte_value, type_value, _) =>
+      names_pass.visit_u8(byte_value, type_value),
+    SemanticExpressionUsize(size_value, type_value, _) =>
+      names_pass.visit_usize(size_value, type_value),
+    SemanticExpressionChar(character_value, type_value, _) =>
+      names_pass.visit_char(character_value, type_value),
+    SemanticExpressionExtern(type_value, _) =>
+      names_pass.visit_extern(type_value),
+    SemanticExpressionIdent(name_value, type_value, _) =>
+      names_pass.visit_ident(name_value, type_value),
+    SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
+      names_pass.visit_bin(operation, left_expression, right_expression, type_value),
+    SemanticExpressionUn(operation, inner_expression, type_value, _) =>
+      names_pass.visit_un(operation, inner_expression, type_value),
+    SemanticExpressionCall(function_expression, arguments, mutability_flags, type_value, _) =>
+      names_pass.visit_call(function_expression, arguments, mutability_flags, type_value),
+    SemanticExpressionMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+      names_pass.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SemanticExpressionField(object, field_name, type_value, _) =>
+      names_pass.visit_field(object, field_name, type_value),
+    SemanticExpressionIndex(object, index_expression, type_value, _) =>
+      names_pass.visit_index(object, index_expression, type_value),
+    SemanticExpressionIf(condition, then_expression, else_expression, type_value, _) =>
+      names_pass.visit_if(condition, then_expression, else_expression, type_value),
+    SemanticExpressionBlock(statements, result_expression, type_value, _) =>
+      names_pass.visit_block(statements, result_expression, type_value),
+    SemanticExpressionWhile(condition, statements, type_value, _) =>
+      names_pass.visit_while(condition, statements, type_value),
+    SemanticExpressionFor(variable, iterator, statements, type_value, _) =>
+      names_pass.visit_for(variable, iterator, statements, type_value),
+    SemanticExpressionMatch(subject, arms, type_value, _) =>
+      names_pass.visit_match(subject, arms, type_value),
+    SemanticExpressionRecord(type_name, field_values, type_value, _) =>
+      names_pass.visit_record(type_name, field_values, type_value),
+    SemanticExpressionRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+      names_pass.visit_record_update(type_name, base_expression, overrides, type_value),
+    SemanticExpressionArray(elements, type_value, _) =>
+      names_pass.visit_array(elements, type_value),
+    SemanticExpressionTuple(elements, type_value, _) =>
+      names_pass.visit_tuple(elements, type_value),
+    SemanticExpressionQuestion(inner_expression, type_value, _) =>
+      names_pass.visit_question(inner_expression, type_value),
+    SemanticExpressionLambda(parameter_names, body_expression, type_value, _) =>
+      names_pass.visit_lambda(parameter_names, body_expression, type_value),
+    SemanticExpressionWith(resource, binder, statements, type_value, _) =>
+      names_pass.visit_with(resource, binder, statements, type_value),
+    _ => names_pass.visit_unsupported(expression)
+  }
+
+fn check_names_semantic_field_values(
+  field_values: [Shared<SemanticFieldVal>],
+  names_pass: NamesPass
+) -> NameCheckResult =
+  field_values.fold(
+    name_check_ok(names_pass.locals),
+    (accumulator, field_value_under_walk) =>
+      merge_name_check_results(
+        accumulator,
+        dispatch_names_pass(names_pass, field_value_under_walk.value)))
+
+fn check_names_semantic_elements(
+  elements: [Shared<SemanticExpression>],
+  names_pass: NamesPass
+) -> NameCheckResult =
+  elements.fold(
+    name_check_ok(names_pass.locals),
+    (accumulator, element_under_walk) =>
+      merge_name_check_results(accumulator, dispatch_names_pass(names_pass, element_under_walk)))
+
+export fn check_names_semantic_statements(
+  statements: [Shared<SemanticStatement>],
+  locals: [string],
+  globals: Map<string, bool>
+) -> NameCheckResult = do
+  const scope = locals
+  const collected_diagnostics =
+    statements.fold(
+      do let starting_statement_diagnostics: [Diagnostic] = []; starting_statement_diagnostics end,
+      (diagnostics_accumulator, statement_under_walk) => do
+        match statement_under_walk {
+          SemanticStatementLet(name, _, value, _, _) => do
+            const next_after_let_value =
+              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
+            scope.push(name)
+            next_after_let_value
+          end,
+          SemanticStatementLetPattern(pattern, _, value, _, has_else, else_body, _) => do
+            let mut next_after_pattern_let_value =
+              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
+            const bound_pattern_names = pattern_bindings(pattern)
+            let mut pattern_binding_index = 0
+            while pattern_binding_index < bound_pattern_names.length() do
+              scope.push(bound_pattern_names[pattern_binding_index])
+              pattern_binding_index = pattern_binding_index + 1
+            end
+            if has_else then
+              next_after_pattern_let_value =
+                diagnostics_append(next_after_pattern_let_value, check_names_semantic_expression(else_body, scope, globals))
+            end
+            next_after_pattern_let_value
+          end,
+          SemanticStatementLetConst(name, value, _, _) => do
+            const next_after_const =
+              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
+            scope.push(name)
+            next_after_const
+          end,
+          SemanticStatementExpr(expression, _) =>
+            diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(expression, scope, globals)),
+          SemanticStatementReturn(expression, _) =>
+            diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(expression, scope, globals)),
+          SemanticStatementBreak(_)    => diagnostics_accumulator,
+          SemanticStatementContinue(_) => diagnostics_accumulator,
+        }
+      end)
+  NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
+end
+
+extend NamesPass : ExprVisitor<NameCheckResult> {
+  fn visit_int(self: NamesPass, _integer_value: i32, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_str(self: NamesPass, _string_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_bool(self: NamesPass, _boolean_value: bool, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_unit(self: NamesPass, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_float(self: NamesPass, _float_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_i64(self: NamesPass, _integer_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_u8(self: NamesPass, _byte_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_usize(self: NamesPass, _size_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_char(self: NamesPass, _character_value: string, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_extern(self: NamesPass, _semantic_type: Shared<Type>) -> NameCheckResult =
+    name_check_ok(self.locals)
+  fn visit_ident(self: NamesPass, name: string, _semantic_type: Shared<Type>) -> NameCheckResult = do
+    NameCheckResult {
+      diagnostics: check_names_identifier(name, self.locals, self.globals, span_unknown()),
+      scope: self.locals
+    }
+  end
+  fn visit_bin(
+    self: NamesPass,
+    _operation: string,
+    left_expression: Shared<SemanticExpression>,
+    right_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(
+      dispatch_names_pass(self, left_expression),
+      dispatch_names_pass(self, right_expression))
+  fn visit_un(
+    self: NamesPass,
+    _operation: string,
+    inner_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    dispatch_names_pass(self, inner_expression)
+  fn visit_call(
+    self: NamesPass,
+    function_expression: Shared<SemanticExpression>,
+    arguments: [Shared<SemanticExpression>],
+    _mutability_flags: [i32],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(
+      dispatch_names_pass(self, function_expression),
+      check_names_semantic_elements(arguments, self))
+  fn visit_method(
+    self: NamesPass,
+    object: Shared<SemanticExpression>,
+    _method_name: string,
+    arguments: [Shared<SemanticExpression>],
+    _mutability_flags: [i32],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(
+      dispatch_names_pass(self, object),
+      check_names_semantic_elements(arguments, self))
+  fn visit_field(
+    self: NamesPass,
+    object: Shared<SemanticExpression>,
+    _field_name: string,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    dispatch_names_pass(self, object)
+  fn visit_index(
+    self: NamesPass,
+    object: Shared<SemanticExpression>,
+    index_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(dispatch_names_pass(self, object), dispatch_names_pass(self, index_expression))
+  fn visit_if(
+    self: NamesPass,
+    condition: Shared<SemanticExpression>,
+    then_expression: Shared<SemanticExpression>,
+    else_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(
+      dispatch_names_pass(self, condition),
+      merge_name_check_results(dispatch_names_pass(self, then_expression), dispatch_names_pass(self, else_expression)))
+  fn visit_block(
+    self: NamesPass,
+    statements: [Shared<SemanticStatement>],
+    result_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    const statements_check = check_names_semantic_statements(statements, self.locals, self.globals)
+    const result_check =
+      dispatch_names_pass(names_pass_new(statements_check.scope, self.globals), result_expression)
+    NameCheckResult {
+      diagnostics: diagnostics_append(statements_check.diagnostics, result_check.diagnostics),
+      scope: statements_check.scope
+    }
+  end
+  fn visit_while(
+    self: NamesPass,
+    condition: Shared<SemanticExpression>,
+    statements: [Shared<SemanticStatement>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    const statement_check = check_names_semantic_statements(statements, self.locals, self.globals)
+    NameCheckResult {
+      diagnostics: diagnostics_append(dispatch_names_pass(self, condition).diagnostics, statement_check.diagnostics),
+      scope: self.locals
+    }
+  end
+  fn visit_for(
+    self: NamesPass,
+    variable: string,
+    iterator: Shared<SemanticExpression>,
+    statements: [Shared<SemanticStatement>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    const inner_scope = self.locals; inner_scope.push(variable)
+    const statement_check = check_names_semantic_statements(statements, inner_scope, self.globals)
+    NameCheckResult {
+      diagnostics: diagnostics_append(dispatch_names_pass(self, iterator).diagnostics, statement_check.diagnostics),
+      scope: self.locals
+    }
+  end
+  fn visit_match(
+    self: NamesPass,
+    subject: Shared<SemanticExpression>,
+    arms: [Shared<SemanticMatchArm>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    let mut accumulator = dispatch_names_pass(self, subject)
+    let mut arm_index = 0
+    while arm_index < arms.length() do
+      const arm_under_walk = arms[arm_index]
+      const bindings = pattern_bindings(arm_under_walk.pattern)
+      const arm_scope = self.locals
+      let mut binding_index = 0
+      while binding_index < bindings.length() do
+        arm_scope.push(bindings[binding_index])
+        binding_index = binding_index + 1
+      end
+      const arm_pass = names_pass_new(arm_scope, self.globals)
+      if arm_under_walk.has_guard then
+        accumulator = merge_name_check_results(accumulator, dispatch_names_pass(arm_pass, arm_under_walk.when_condition))
+      end
+      accumulator = merge_name_check_results(accumulator, dispatch_names_pass(arm_pass, arm_under_walk.body))
+      arm_index = arm_index + 1
+    end
+    NameCheckResult { diagnostics: accumulator.diagnostics, scope: self.locals }
+  end
+  fn visit_record(
+    self: NamesPass,
+    _type_name: string,
+    field_values: [Shared<SemanticFieldVal>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    check_names_semantic_field_values(field_values, self)
+  fn visit_record_update(
+    self: NamesPass,
+    _type_name: string,
+    base_expression: Shared<SemanticExpression>,
+    overrides: [Shared<SemanticFieldVal>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    merge_name_check_results(
+      dispatch_names_pass(self, base_expression),
+      check_names_semantic_field_values(overrides, self))
+  fn visit_array(
+    self: NamesPass,
+    elements: [Shared<SemanticExpression>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    check_names_semantic_elements(elements, self)
+  fn visit_tuple(
+    self: NamesPass,
+    elements: [Shared<SemanticExpression>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    check_names_semantic_elements(elements, self)
+  fn visit_question(
+    self: NamesPass,
+    inner_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult =
+    dispatch_names_pass(self, inner_expression)
+  fn visit_lambda(
+    self: NamesPass,
+    parameter_names: [string],
+    body_expression: Shared<SemanticExpression>,
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    const lambda_environment =
+      parameter_names.fold(
+        self.locals.fold(
+          do let enclosing_copied: [string] = []; enclosing_copied end,
+          (accumulated, enclosing_local_name) => do
+            accumulated.push(enclosing_local_name)
+            accumulated
+          end),
+        (accumulated, lambda_parameter_name) => do
+          accumulated.push(lambda_parameter_name)
+          accumulated
+        end)
+    dispatch_names_pass(names_pass_new(lambda_environment, self.globals), body_expression)
+  end
+  fn visit_with(
+    self: NamesPass,
+    resource: Shared<SemanticExpression>,
+    binder: string,
+    statements: [Shared<SemanticStatement>],
+    _semantic_type: Shared<Type>
+  ) -> NameCheckResult = do
+    const inner_scope = self.locals; inner_scope.push(binder)
+    const statements_check = check_names_semantic_statements(statements, inner_scope, self.globals)
+    NameCheckResult {
+      diagnostics: diagnostics_append(dispatch_names_pass(self, resource).diagnostics, statements_check.diagnostics),
+      scope: self.locals
+    }
+  end
+  fn visit_unsupported(self: NamesPass, _expression: Shared<SemanticExpression>) -> NameCheckResult =
+    name_check_ok(self.locals)
+}
+
+export fn check_names_semantic_expression(
+  expression: Shared<SemanticExpression>,
+  locals: [string],
+  globals: Map<string, bool>
+) -> [Diagnostic] = do
+  const check_result: NameCheckResult = dispatch_names_pass(names_pass_new(locals, globals), expression)
+  check_result.diagnostics
 end

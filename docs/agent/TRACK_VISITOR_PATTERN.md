@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md)
 
-## Status: **open** (step 2 pending)
+## Status: **open** (step 3 pending)
 
 **STEP=1 note (2026-06-06):** `ExprVisitor<VisitorResult>` trait + `dispatch_expr` in `expr_visitor.mlc` (29 `visit_*` arms); `test_expr_visitor.mlc` stub `TagExprVisitor` (+6). Gate **984**/0; self-host `diff_exit=0`.
 
@@ -24,7 +24,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | Step | Item | Status |
 |------|------|--------|
 | 1 | `ExprVisitor<Result>` trait + `dispatch_expr` + `visit_*` for SemanticExpression | done (`23b65206`) |
-| 2 | `checker/names.mlc` ? `extend NamesPass : ExprVisitor<NameCheckResult>` | pending |
+| 2 | `checker/names.mlc` → `extend NamesPass : ExprVisitor<NameCheckResult>` | done |
 | 3 | `checker/check_mutations.mlc` ? `extend MutationsPass : ExprVisitor<MutationCheckResult>` | pending |
 | 4 | `checker/infer/infer.mlc` � ??????? `infer_expr` dispatch ? `extend InferPass : ExprVisitor<InferResult>` | pending |
 | 5 | `checker/transform/transform.mlc` � ??????? `transform_expr` dispatch ? `extend TransformPass : ExprVisitor<SemanticExpression>` | pending |

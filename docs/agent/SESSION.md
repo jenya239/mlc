@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-9b825cd2-be2c-446d-a4dc-bdeb49bb7010` |
-| driver_turns_since_plan | 7|
-| step_last | 1|
-| active_track | TRACK_VISITOR_PATTERN → STEP=2 |
+| agent_token_last | `cr-agent-7cbf7876-a1b1-4249-a158-7963fe9772f7` |
+| driver_turns_since_plan | 8|
+| step_last | 2|
+| active_track | TRACK_VISITOR_PATTERN → STEP=3 |
+
+### Turn 2026-05-19 (Driver VISITOR_PATTERN step 2 — NamesPass ExprVisitor)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-05-19 |
+| elapsed | ~15 min |
+| done | `names.mlc`: `NamesPass : ExprVisitor<NameCheckResult>` (29 `visit_*`); `dispatch_names_pass`; `check_names_semantic_expression/statements` |
+| result | **984**/0; self-host `diff_exit=0` |
+| issues | generic `dispatch_expr` codegen calls `.visit_*` on struct — use `dispatch_names_pass` with method syntax |
+| next | ROLE=Driver STEP=3 TRACK_VISITOR_PATTERN |
 
 ### Turn 2026-05-19 (Driver VISITOR_PATTERN step 1 — idempotent verify)
 
