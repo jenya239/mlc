@@ -59,6 +59,11 @@ export type CppExpression =
 
 export type CppField = CppField { type_value: string, name: string }
 
+export type CppExpressions = [Shared<CppExpression>]
+export type CppStatements = [Shared<CppStatement>]
+export type CppParameters = [Shared<CppParam>]
+export type CppFields = [Shared<CppField>]
+
 export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
 
 export type CppDeclaration =
@@ -71,14 +76,14 @@ export type CppDeclaration =
   | CppNamespaceEnd(string)
   | CppUsing(string, string)
   | CppUsingNamespace(string)
-  | CppStruct(string, string, [Shared<CppField>], bool)
+  | CppStruct(string, string, CppFields, bool)
   | CppFnProto(string, string, string, [string])
-  | CppFnDef(string, string, string, [string], [Shared<CppStatement>], i32)
+  | CppFnDef(string, string, string, [string], CppStatements, i32)
   | CppNamespace(string, [Shared<CppDeclaration>])
   | CppVariant(string, string, [Shared<CppVariantArm>])
   | CppConceptRequires(string, string, string, [string])
   | CppStaticAssert(string, [string], string)
-  | CppStdHashSpecialization(string, [Shared<CppStatement>])
+  | CppStdHashSpecialization(string, CppStatements)
   | CppDeclarationSequence([Shared<CppDeclaration>])
   | CppDeclarationEmpty
   | CppBlankLine

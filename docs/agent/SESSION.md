@@ -6,9 +6,21 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-834deb7c-cbfd-4fa7-ad80-40a7cb918359` |
-| driver_turns_since_plan | 4|
-| step_last | 4|
-| active_track | TRACK_TYPE_ALIASES → STEP=5 |
+| driver_turns_since_plan | 5|
+| step_last | 5|
+| active_track | TRACK_TYPE_ALIASES → STEP=6 |
+
+### Turn 2026-06-06 (Driver TYPE_ALIASES step 5 — cpp_ast aliases)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_TYPE_ALIASES |
+| done | `CppExpressions/Statements/Parameters/Fields` in `cpp_ast.mlc`; `CppStruct`, `CppFnDef`, `CppStdHashSpecialization` |
+| result | **978**/0; self-host `diff_exit=0` |
+| issues | none |
+| next | ROLE=Driver STEP=6 TRACK_TYPE_ALIASES |
 
 ### Turn 2026-06-06 (Driver TYPE_ALIASES step 4 — tests)
 
