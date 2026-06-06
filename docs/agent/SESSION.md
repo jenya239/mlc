@@ -6,9 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-43ad88b9-66fb-4c85-ad2f-1a43b4d95952` |
-| driver_turns_since_plan | 6|
+| driver_turns_since_plan | 7|
 | step_last | 1|
 | active_track | TRACK_VISITOR_PATTERN → STEP=2 |
+
+### Turn 2026-05-19 (Driver VISITOR_PATTERN step 1 — idempotent verify)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-05-19 |
+| elapsed | ~2 min |
+| done | idempotent: STEP=1 already `done` (`23b65206`); fixed TRACK table row encoding |
+| result | **984**/0; self-host `diff_exit=0` |
+| issues | none |
+| next | ROLE=Driver STEP=2 TRACK_VISITOR_PATTERN |
 
 ### Turn 2026-06-06 (Driver VISITOR_PATTERN step 1 — ExprVisitor trait tests)
 
