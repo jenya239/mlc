@@ -41,6 +41,6 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 2 | Checker: alias resolves as underlying type; diagnostics on cycle | done (`dae2eacd`) |
 | 3 | Codegen: alias emits no C++ decl — underlying type only | done (`9cc3eae8`) |
 | 4 | Tests in `test_checker.mlc` + `test_parser.mlc` | done (`6ed2911b`) |
-| 5 | Apply in `cpp/cpp_ast.mlc` — `CppExpressions`, `CppStatements`, `CppParameters`, `CppFields` | pending |
+| 5 | Apply in `cpp/cpp_ast.mlc` — `CppExpressions`, `CppStatements`, `CppParameters`, `CppFields` | done (`5bf2bd55`) |
 | 6 | Apply in `frontend/parser/predicates.mlc` — `ParseResult<T>` (after generics stable) | pending |
 | 7 | Audit + close track | pending |
