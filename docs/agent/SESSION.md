@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-6f93b581-8dc8-4516-aed0-82e4f5fed3bf` |
-| driver_turns_since_plan | 5|
-| step_last | 2|
-| active_track | TRACK_LOOP_CONTRACTS → STEP=3 |
+| agent_token_last | `cr-agent-754a048c-4a37-481c-9ffc-40b71c26e4b6` |
+| driver_turns_since_plan | 3|
+| step_last | meta-review|
+| active_track | TRACK_LOOP_CONTRACTS → STEP=4 |
+
+### Turn 2026-06-15 (Meta LOOP_CONTRACTS recovery — Driver:3 stuck)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~3 min |
+| done | commit STEP=3 WIP: `AGENTS.md`, `docs/agent/README.md`; TRACK step 3 → done; RESEARCH recovery log |
+| result | docs-only; regression_gate N/A (step 2 gate **14/0** on HEAD) |
+| issues | `user-cr-cursor` MCP down — supervisor skip; enqueue STEP=4 blocked |
+| next | ROLE=Driver STEP=4 TRACK_LOOP_CONTRACTS |
 
 ### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 2 — idempotent verify)
 

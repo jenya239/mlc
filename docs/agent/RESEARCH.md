@@ -53,6 +53,7 @@
 | 2026-06-04 | Guard loop `Driver:1:RENAME_ABBREV` while **STRING_MATCH** active (steps 1–5 done, 952/0) | Meta: supervisor ok; RENAME STEP=1 deferred; fix TRACK table; enqueue **Driver STRING_MATCH STEP=6** once (not RENAME STEP=1) |
 | 2026-06-05 | Guard stuck `Driver:12:RENAME_ABBREV` after assistant — STEP=12 committed (`c3eb310d`, 961/0, self-host diff empty) | Meta: supervisor ok; TRACK step 12 → done; no re-enqueue STEP=12; enqueue **Driver STEP=13** once |
 | 2026-06-05 | Guard stuck `Driver:13:RENAME_ABBREV` after assistant — STEP=13 committed (`c487d3fc`, 961/0, self-host diff empty) | Meta: supervisor ok; TRACK step 13 → done; no re-enqueue STEP=13; enqueue **Driver STEP=14** once |
+| 2026-06-15 | Guard stuck `Driver:3:LOOP_CONTRACTS` — `AGENTS.md` + README worktree-only; verify interrupted | Meta: commit STEP=3 docs; TRACK step 3 → done; no re-enqueue STEP=3; enqueue **Driver STEP=4** once |
 
 Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role, stale-step skip + single pending enqueue, Critic→Driver handoff without re-enqueue same STEP, **Meta drain stuck STEP=1 → enqueue STEP=2 (DESTRUCTURING_APPLY)**, **post-commit stuck STEP → enqueue STEP+1 (RENAME_ABBREV s12→s13)**.
 
@@ -82,3 +83,18 @@ Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recov
 
 **Не добавлять:** `AtomicInt`, глобальные `Mutex`, `async/await` в полном объёме.
 
+
+---
+
+## Generics на record-типах (ParseResult<T> и аналоги)
+
+**Связано:** TRACK_TYPE_ALIASES step 6 (skip), PLAN.md §Phase 2.5 п.5
+
+**Проблема:** В `frontend/` есть ~15 одинаковых структур `{ value: T, parser: Parser }` типа ParseResult. Без generics на record-типах их нельзя объединить в одну. Step 6 TYPE_ALIASES (`ParseResult<T>` через type alias) заблокирован этим.
+
+**Что нужно исследовать:**
+1. Как далеко реализованы generics сейчас: `[string]` работает, `Shared<T>` — через C++ template. Что именно не работает для record-generics?
+2. Минимальный синтаксис: `type Result<T> = Result { value: T, error: string }` — что нужно добавить в parser/checker/codegen?
+3. Оценка объёма: отдельный трек или часть Phase 2.5?
+
+**Действие для Planner:** создать TRACK_GENERICS_RECORD.md или добавить шаги в TRACK_PHASE1.md.
