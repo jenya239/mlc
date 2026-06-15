@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md)
 
-## Status: **open** (step 3 pending)
+## Status: **open** (step 4 pending)
 
 **MAX_ITER:** 20  
 **GATE:** `compiler/tests/build_tests.sh` + self-host diff (see Verify gate below)
@@ -28,7 +28,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | `ExprVisitor<Result>` trait + `dispatch_expr` + `visit_*` for SemanticExpression | done (`23b65206`) |
 | 2 | `checker/names.mlc` → `extend NamesPass : ExprVisitor<NameCheckResult>` | done |
-| 3 | `checker/check_mutations.mlc` ? `extend MutationsPass : ExprVisitor<MutationCheckResult>` | pending |
+| 3 | `checker/check_mutations.mlc` → `extend MutationsPass : ExprVisitor<MutationCheckResult>` | done (`1f99fb8f`) |
 | 4 | `checker/infer/infer.mlc` � ??????? `infer_expr` dispatch ? `extend InferPass : ExprVisitor<InferResult>` | pending |
 | 5 | `checker/transform/transform.mlc` � ??????? `transform_expr` dispatch ? `extend TransformPass : ExprVisitor<SemanticExpression>` | pending |
 | 6 | `codegen/eval.mlc` ? `extend CodegenPass : ExprVisitor<Shared<CppExpression>>` | pending |

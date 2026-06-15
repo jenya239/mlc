@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-2f1dd3bd-4c05-4c77-b996-c4dff2d483e7` |
-| driver_turns_since_plan | 0|
-| step_last | 6|
-| active_track | TRACK_LOOP_CONTRACTS **closed** → Planner |
+| agent_token_last | `cr-agent-db1d93e2-a3e6-481e-96b7-a5352ae0f01b` |
+| driver_turns_since_plan | 5|
+| step_last | 3|
+| active_track | TRACK_VISITOR_PATTERN → STEP=4 |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 3 — MutationsPass)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-06-15 |
+| elapsed | ~30 min |
+| done | `check_mutations.mlc`: `MutationsPass` + `dispatch_mutations_pass`; codegen type-scoped `method_owners` |
+| result | **984**/0; self-host `diff_exit=0` |
+| issues | duplicate `visit_*` owners — fixed in `type_index.mlc` + `method_gen.mlc` |
+| next | ROLE=Driver STEP=4 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 6 — on-demand specs + close)
 
