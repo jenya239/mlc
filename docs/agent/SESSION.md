@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-cc0d256f-8a42-4eae-99db-86d83dfef605` |
-| driver_turns_since_plan | 7|
-| step_last | 5|
-| active_track | TRACK_LOOP_CONTRACTS → STEP=6 |
+| agent_token_last | `cr-agent-2f1dd3bd-4c05-4c77-b996-c4dff2d483e7` |
+| driver_turns_since_plan | 0|
+| step_last | 6|
+| active_track | TRACK_LOOP_CONTRACTS **closed** → Planner |
+
+### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 6 — on-demand specs + close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~5 min |
+| done | `AGENTS.md` + `CONTINUITY.md`: on-demand `docs/specs/index.md`; track **closed** |
+| result | regression_gate **14/0**; commit `a28a4823` |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh (enqueued) |
 
 ### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 5 — idempotent verify)
 
