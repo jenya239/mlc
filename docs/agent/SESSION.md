@@ -19,7 +19,7 @@
 | track | TRACK_VISITOR_PATTERN |
 | started | 2026-06-15 |
 | elapsed | ~45 min |
-| done | `infer.mlc`: `InferPass` + `dispatch_infer_pass`; `infer_expr` routes through visitor |
+| done | `infer.mlc`: `InferPass` + `dispatch_infer_pass`; commit `80e5268d` |
 | result | **984**/0; self-host `diff_exit=0` |
 | issues | none |
 | next | ROLE=Driver STEP=5 TRACK_VISITOR_PATTERN (enqueued) |
