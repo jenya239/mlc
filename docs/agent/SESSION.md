@@ -4,11 +4,25 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-d9be819e-c8bc-40b5-8d73-08b98a2da9eb` |
-| driver_turns_since_plan | 4|
+| instructions_rev | `2026-06-01-session-detail`|
+| agent_token_last | `cr-agent-6f93b581-8dc8-4516-aed0-82e4f5fed3bf` |
+| driver_turns_since_plan | 5|
 | step_last | 2|
-| active_track | TRACK_LOOP_CONTRACTS → STEP=2 |
+| active_track | TRACK_LOOP_CONTRACTS → STEP=3 |
+
+### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 2 — idempotent verify)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~6 min |
+| done | idempotent: STEP=2 already `done` (`1ccea8f6`); `scripts/regression_gate.sh`; TRACK commit hash |
+| result | regression_gate **14/0**; exit 0 |
+| issues | `user-cr-cursor` MCP unavailable — enqueue STEP=3 blocked |
+| next | ROLE=Driver STEP=3 TRACK_LOOP_CONTRACTS (enqueue when MCP up) |
 
 ### Turn 2026-05-19 (Driver LOOP_CONTRACTS step 1 — regression baselines)
 
