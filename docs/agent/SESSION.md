@@ -20,7 +20,7 @@
 | started | 2026-05-19 |
 | elapsed | ~20 min |
 | done | `specs/regression/`: 14 programs + expected stdout; `scripts/capture_regression_baselines.sh` (bundle exec Ruby mlc) |
-| result | capture 14/14 ok; no compiler changes |
+| result | capture 14/14 ok; commit `a7c752cd` |
 | issues | Ruby mlc: no `?` in result, no bool.to_string, char literals need `"` for compare |
 | next | ROLE=Driver STEP=2 TRACK_LOOP_CONTRACTS |
 
