@@ -6,9 +6,23 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-e1c932be-6643-495a-910a-0ad0f3bc59d6` |
-| driver_turns_since_plan | 6|
-| step_last | 4|
-| active_track | TRACK_LOOP_CONTRACTS → STEP=5 |
+| driver_turns_since_plan | 7|
+| step_last | 5|
+| active_track | TRACK_LOOP_CONTRACTS → STEP=6 |
+
+### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 5 — specs index)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~5 min |
+| done | `docs/specs/index.md`: product specs + verify + tag→track map |
+| result | regression_gate **14/0**; exit 0 |
+| issues | none |
+| next | ROLE=Driver STEP=6 TRACK_LOOP_CONTRACTS (enqueued) |
 
 ### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 4 — idempotent verify + enqueue)
 

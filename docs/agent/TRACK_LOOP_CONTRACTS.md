@@ -22,7 +22,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1
 | 2 | Написать `scripts/regression_gate.sh` — запускает frozen suite, сравнивает вывод Ruby vs C++, exit 1 при расхождении | done (`1ccea8f6`) |
 | 3 | Добавить в `AGENTS.md`: любой трек затрагивающий `compiler/**` обязан пройти `scripts/regression_gate.sh` перед закрытием | done (`fe33734d`) |
 | 4 | Добавить `MAX_ITER: 20` и `GATE:` поле в заголовки всех открытых треков | done (`62f0107b`) |
-| 5 | Создать `docs/specs/index.md` — карта существующих доков (`LANGUAGE_DESIGN.md`, `CPP_PARSER_DESIGN.md`, `MEMORY_MODEL.md` и др.) с тегами по теме | pending |
+| 5 | Создать `docs/specs/index.md` — карта существующих доков (`LANGUAGE_DESIGN.md`, `CPP_PARSER_DESIGN.md`, `MEMORY_MODEL.md` и др.) с тегами по теме | done |
 | 6 | Обновить `AGENTS.md` и `CONTINUITY.md` — агент читает `specs/index.md` и грузит только релевантные доки для текущего трека | pending |
 
 ---
