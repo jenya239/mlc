@@ -4,10 +4,10 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-06-01-session-detail`|
+| instructions_rev | `2026-05-28-cleaner`|
 | agent_token_last | `cr-agent-d9be819e-c8bc-40b5-8d73-08b98a2da9eb` |
-| driver_turns_since_plan | 5|
-| step_last | 1|
+| driver_turns_since_plan | 4|
+| step_last | 2|
 | active_track | TRACK_LOOP_CONTRACTS → STEP=2 |
 
 ### Turn 2026-05-19 (Driver LOOP_CONTRACTS step 1 — regression baselines)

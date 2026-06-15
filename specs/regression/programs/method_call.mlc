@@ -1,11 +1,11 @@
 type Counter = { value: i32 }
 
 extend Counter {
-  fn get(self: Counter) -> i32 = self.value
+  fn read_value(self: Counter) -> i32 = self.value
 }
 
 fn main() -> i32 = do
   let counter = Counter { value: 42 }
-  println(counter.get().to_string())
+  println(counter.read_value().to_string())
   0
 end

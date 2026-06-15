@@ -36,3 +36,9 @@ Self-host round-trip: covered by `compiler/main.mlc` in the standard self-host d
 ```bash
 scripts/capture_regression_baselines.sh
 ```
+
+## Gate (Ruby vs mlcc vs frozen expected)
+
+```bash
+scripts/regression_gate.sh
+```
