@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-0921a83b-fbac-40d6-9a89-4c97822615f5` |
-| driver_turns_since_plan | 1|
-| step_last | 4|
-| active_track | TRACK_VISITOR_PATTERN → STEP=5 |
+| agent_token_last | `cr-agent-c0da9f53-3469-4137-aa46-15ad8834a5d9` |
+| driver_turns_since_plan | 2|
+| step_last | 5|
+| active_track | TRACK_VISITOR_PATTERN → STEP=6 |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 5 — TransformPass)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-06-15 |
+| elapsed | ~40 min |
+| done | `transform.mlc`: `TransformPass` + `dispatch_transform_pass`; `stmts_fn` as param (not record field) |
+| result | **984**/0; self-host `diff_exit=0`; commit `edf88d24` |
+| issues | record field `stmts_fn` rejected by checker — passed as visit arg |
+| next | ROLE=Driver STEP=6 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Driver VISITOR_PATTERN step 4 — InferPass)
 
