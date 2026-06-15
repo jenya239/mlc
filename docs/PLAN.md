@@ -532,6 +532,28 @@ compiler/
    - `mlc.toml` с зависимостями.
    - Fetch из git, compile, link.
 
+### Phase 3.5: C++ Header Import
+
+**Цель**: импортировать существующие C++ библиотеки из mlcc через парсинг заголовочных файлов.
+
+Дизайн: `docs/CPP_PARSER_DESIGN.md`
+
+1. **Лексер** (`compiler/cpp/lexer.mlc` расширить): все ключевые слова, char/float/hex литералы, пропуск комментариев, `#` как токен.
+
+2. **Расширить CppType** (`cpp_ast.mlc`): `CppTypePtr`, `CppTypeConst`, `CppTypeRRef`, `CppTypeArray`, `CppTypeAuto`, `CppTypeDecltype`.
+
+3. **Расширить CppDecl**: `CppClassDecl(CppClassDef)`, `CppEnumDecl`, `CppTypedefDecl`, `CppForwardDecl`, `CppTemplateDecl`, `CppExternBlock`.
+
+4. **Парсер типов** (`compiler/cpp/parser/types.mlc`): `parse_type(tokens, pos)` — квалификаторы, указатели, ссылки, template параметры.
+
+5. **Парсер деклараций** (`compiler/cpp/parser/decls.mlc`): class/struct, fn proto, enum, namespace, template, using, typedef, extern "C", error recovery.
+
+6. **Парсер выражений** (`compiler/cpp/parser/exprs.mlc`): Pratt parser для default args, array sizes, constexpr.
+
+7. **Интеграция с import**: `import "path/to/header.h"` регистрирует C++ типы и функции в TypeRegistry.
+
+Трек: `TRACK_CPP_HEADER_IMPORT.md`
+
 ### Phase 4: Self-hosting completeness
 
 **Цель**: mlcc компилирует 100% собственного кода без Ruby.
@@ -601,6 +623,87 @@ fn area(shape: Shape) -> f64 = match shape {
 | Codegen: строки vs CppAST | CppAST default; string bridges for edge cases | 0% string bridges |
 | mlcc компилирует себя | да | да + детерминировано |
 | Время компиляции mlcc собой | ? измерить | < 1 с |
+
+---
+
+## 9. Orchestrator / Multi-agent System
+
+**Параллельный трек** — развивается вместе с MLC, не блокирует язык. Ресурсы: ~20% Driver-ходов (каждый 5-й ход OrchestratorDev, см. ROLES.md).
+
+### Текущее состояние (cr)
+
+- `cr` server: watchdog, CDP, SSE, web UI (progress, tracks, commits, agent turns)
+- Агент работает в Cursor через MCP `user-cr-cursor`
+- Overnight loop: supervisor + guard каждые 5 минут
+- Роли: Driver, Planner, Critic, Cleaner, Backlog, Meta, Orchestrator, Researcher, Reviewer, Blogger
+
+### Pending (трек: TRACK_ORCH_DEV.md)
+
+| # | Item | Status |
+|---|------|--------|
+| 1 | Billing: SQLite `cost_entries` + дашборд в web UI | pending |
+| 2 | Meeting rooms: `docs/agent/meetings/`, MEETING_PROTOCOL.md, render в progress | pending |
+| 3 | Terminal agents: tmux transport (аналог CDP для non-Cursor агентов) | pending |
+| 4 | Multi-agent: общий `AGENT_TARGETS` для Cursor + tmux агентов | pending |
+| 5 | Session DB: SQLite кэш для SESSION.md (быстрый query вместо парсинга) | pending |
+
+### Архитектура
+
+**Транспорт агентов:**
+- Cursor agents → CDP (существующий путь через `user-cr-cursor` MCP)
+- Terminal agents (Claude в терминале, скрипты) → **tmux**: `send-keys` для отправки, `capture-pane` для чтения
+
+**Гибридное хранилище:**
+
+| Слой | Хранилище | Что лежит |
+|------|-----------|-----------|
+| Инструкции, планы, треки | markdown + git | PLAN.md, TRACK_*.md, ROLES.md, SESSION.md — agent-native, история в git |
+| Оперативные данные | **SQLite** (`cr/db/cr.db`, `better-sqlite3`) | turns, cost_entries, agent_states, meetings |
+
+DB можно дропнуть и пересобрать из markdown-файлов — это кэш, не источник истины.
+
+### Роль OrchestratorDev
+
+Выделенная роль для работ по `cr/` и оркестрации.  
+STEP = `orch-dev-N` (берёт шаги из TRACK_ORCH_DEV.md).  
+Частота: каждые 5 Driver-ходов mlc — 1 ход OrchestratorDev.  
+Касается только `cr/` workspace, не `compiler/` / `lib/mlc/`.
+
+---
+
+## 10. Заимствования из других языков
+
+Фильтр: только то что транслируется в C++ без введения отдельного рантайма или интерпретатора.
+
+### Nim — C++ interop (приоритет)
+
+Nim имеет `{.importcpp.}` для вызова C++ кода без биндингов. В mlc нет никакого способа вызвать C++ библиотеку из mlc-кода — это принципиальное ограничение для реального использования.
+
+Предлагаемый синтаксис:
+```mlc
+extern fn sqrt(x: f64) -> f64 = "sqrt" from "<cmath>"
+extern type FILE = "FILE" from "<stdio.h>"
+```
+
+Транслируется в `#include <cmath>` + вызов напрямую. Без промежуточных биндингов.
+
+### Nim — ARC cycle detection (долгосрочно)
+
+Nim ORC автоматически детектирует циклы в reference-counted структурах. В mlc циклы требуют ручного `Weak<T>`. Автоматическое обнаружение — отдельный pass в кодогенераторе. Не в текущем roadmap, но стоит учитывать при проектировании IR.
+
+### Zig — Error unions (применимо)
+
+Zig использует `T!E` вместо `Result<T, E>`. Транслируется в `std::expected<T,E>` (C++23) или `std::variant<T,E>`.
+
+```mlc
+fn divide(a: i32, b: i32) -> i32!DivError = ...
+```
+
+Как сахар над существующим `Result<T,E>` — минимальные изменения в checker и codegen.
+
+### Roc / Zig — явный рантайм (архитектурно, после self-hosting)
+
+Выделить `mlc-runtime` как отдельную C++ библиотеку. Компилятор знает типы (`Array<T>`, `Shared<T>`), реализация — снаружи. Позволяет подменять memory strategy без изменения языка.
 
 ---
 
