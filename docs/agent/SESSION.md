@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-754a048c-4a37-481c-9ffc-40b71c26e4b6` |
-| driver_turns_since_plan | 3|
-| step_last | meta-review|
-| active_track | TRACK_LOOP_CONTRACTS → STEP=4 |
+| agent_token_last | `cr-agent-08a39be6-a40c-4908-a5be-a7358e55c658` |
+| driver_turns_since_plan | 5|
+| step_last | 4|
+| active_track | TRACK_LOOP_CONTRACTS → STEP=5 |
+
+### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 4 — MAX_ITER/GATE headers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~5 min |
+| done | `MAX_ITER` + `GATE` in `TRACK_LOOP_CONTRACTS`, `TRACK_VISITOR_PATTERN`, `TRACK_PLAN` (Phase 2.5 section) |
+| result | regression_gate **14/0**; exit 0 |
+| issues | `user-cr-cursor` MCP unavailable — enqueue STEP=5 blocked |
+| next | ROLE=Driver STEP=5 TRACK_LOOP_CONTRACTS |
 
 ### Turn 2026-06-15 (Meta LOOP_CONTRACTS recovery — Driver:3 stuck)
 

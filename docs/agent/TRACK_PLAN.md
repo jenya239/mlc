@@ -859,6 +859,9 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 
 ## Status: **open** (step 1 pending)
 
+**MAX_ITER:** 20  
+**GATE:** see active child TRACK verify gates
+
 | Step | Item | Track | Status |
 |------|------|-------|--------|
 | 1 | Phase 2 финал — MODULE_TU_BRIDGE закрыть | [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) | **closed** (`df744e5`) |
