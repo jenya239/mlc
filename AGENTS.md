@@ -3,6 +3,10 @@
 Turn workflow: [docs/agent/CONTINUITY.md](docs/agent/CONTINUITY.md)  
 Development: [docs/agent/DEVELOPMENT.md](docs/agent/DEVELOPMENT.md)
 
+## On-demand specs
+
+Read [docs/specs/index.md](docs/specs/index.md) before loading product docs. Load only rows whose **tags** match the active track; do not bulk-read `docs/`.
+
 ## Regression gate (`compiler/**` tracks)
 
 Before marking **closed** any track that touched `compiler/**`, run:

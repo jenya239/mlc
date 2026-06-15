@@ -7,11 +7,12 @@
 ## Turn start (before any work)
 
 1. Read this file + [DEVELOPMENT.md](DEVELOPMENT.md) + active [TRACK_*.md](.) — **every turn** (no cache; instructions apply on the fly).
-2. Compare `INSTRUCTIONS_REV` below to `instructions_rev` in [SESSION.md](SESSION.md).
-3. **If different:** one line `Инструкции обновлены (rev <old> → <new>): <summary>.` → patch SESSION → **continue STEP** (rev sync is not a turn; do not stop).
-4. **Every enqueue** must use `INSTRUCTIONS_REV` from this header — never copy from the previous prompt.
-5. Before enqueue: if TRACK marks this STEP `done` → skip to next pending STEP (idempotent).
-6. Read `ROLE=` and `STEP=` from queued prompt, or pick role + step (see **Role rotation**).
+2. Consult [../specs/index.md](../specs/index.md) — load tagged product docs **on demand** only (match active track; skip bulk `docs/` reads).
+3. Compare `INSTRUCTIONS_REV` below to `instructions_rev` in [SESSION.md](SESSION.md).
+4. **If different:** one line `Инструкции обновлены (rev <old> → <new>): <summary>.` → patch SESSION → **continue STEP** (rev sync is not a turn; do not stop).
+5. **Every enqueue** must use `INSTRUCTIONS_REV` from this header — never copy from the previous prompt.
+6. Before enqueue: if TRACK marks this STEP `done` → skip to next pending STEP (idempotent).
+7. Read `ROLE=` and `STEP=` from queued prompt, or pick role + step (see **Role rotation**).
 
 **Loop guard (cr server):** `cursor_enqueue_send` / guard блокируют дубли того же `ROLE:STEP` (30m) и авто-правят `INSTRUCTIONS_REV`. При `enqueue blocked` — не повторять; продолжить работу или enqueue следующий STEP.
 
@@ -62,7 +63,7 @@ Routing — token из `cursor_agent_register` bubble **или** `CR_AGENT_COMPO
 ```
 AGENT_TOKEN=cr-agent-…
 INSTRUCTIONS_REV=2026-05-28-cleaner
-ROLE=Driver|Planner|Backlog|Meta|Critic|Orchestrator|Cleaner
+ROLE=Driver|Planner|Backlog|Meta|Critic|Orchestrator|Cleaner|Reviewer|OrchestratorDev|Monitor
 STEP=<track-sub-step|plan-refresh|backlog-review|cleanup-sweep|critique-audit|roles-review|meta-review>
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
@@ -206,6 +207,9 @@ Read `driver_turns_since_plan` from [SESSION.md](SESSION.md). Full table: [ROLES
 | Every **10** Driver turns | **Cleaner** (`STEP=cleanup-sweep`) |
 | Every **8** Driver turns | **Planner** (`STEP=plan-refresh`) |
 | Every **6** Driver turns | **Critic** (`STEP=critique-audit`) |
+| Every **35** Driver turns | **Reviewer** (`STEP=history-review`) |
+| Every **5** Driver turns (mlc only) | **OrchestratorDev** (`STEP=orch-dev-N`, если есть pending в TRACK_ORCH_DEV.md) |
+| Every **18** Driver turns | **Monitor** (`STEP=process-monitor`) |
 | No open `pending` step in TRACK | **Planner** |
 | Otherwise | **Driver** (next pending sub-step) |
 
