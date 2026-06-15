@@ -5,6 +5,7 @@ import {
   Stmt,
   FieldVal,
   Pattern,
+  MatchArm,
   Diagnostic,
   Span,
   diagnostic_error,
@@ -340,49 +341,206 @@ fn infer_expr_lambda(parameter_names: [string], body: Shared<Expr>, inference_co
   infer_ok(Shared.new(TFn(inferred_unknown_parameter_types, body_inference.inferred_type)))
 end
 
+// --- InferPass visitor (parser Expr) ----------------------------------------
+
+type InferPass = InferPass { inference_context: CheckContext, seed: i32 }
+
+fn infer_pass_new(inference_context: CheckContext) -> InferPass =
+  InferPass { inference_context: inference_context, seed: 0 }
+
+fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> InferResult =
+  match expression {
+    ExprInt(_, _) =>
+      infer_pass.visit_int(),
+    ExprStr(_, _) =>
+      infer_pass.visit_str(),
+    ExprBool(_, _) =>
+      infer_pass.visit_bool(),
+    ExprUnit(_) =>
+      infer_pass.visit_unit(),
+    ExprFloat(_, _) =>
+      infer_pass.visit_float(),
+    ExprI64(_, _) =>
+      infer_pass.visit_i64(),
+    ExprU8(_, _) =>
+      infer_pass.visit_u8(),
+    ExprUsize(_, _) =>
+      infer_pass.visit_usize(),
+    ExprChar(_, _) =>
+      infer_pass.visit_char(),
+    ExprExtern(_) =>
+      infer_pass.visit_extern(),
+    ExprIdent(name, _) =>
+      infer_pass.visit_ident(name),
+    ExprBin(operation, left, right, span) =>
+      infer_pass.visit_bin(operation, left, right, span),
+    ExprUn(operation, inner_expression, span) =>
+      infer_pass.visit_un(operation, inner_expression, span),
+    ExprCall(function, call_arguments, call_source_span) =>
+      infer_pass.visit_call(function, call_arguments, call_source_span),
+    ExprMethod(object, method_name, method_arguments, method_span) =>
+      infer_pass.visit_method(object, method_name, method_arguments, method_span),
+    ExprField(object, field_name, field_source_span) =>
+      infer_pass.visit_field(object, field_name, field_source_span),
+    ExprIndex(object, index_expression, bracket_source_span) =>
+      infer_pass.visit_index(object, index_expression, bracket_source_span),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      infer_pass.visit_if(condition, then_expression, else_expression),
+    ExprBlock(statements, result_expression, _) =>
+      infer_pass.visit_block(statements, result_expression),
+    ExprWhile(condition, statements, _) =>
+      infer_pass.visit_while(condition, statements),
+    ExprFor(variable_name, iterator, statements, _) =>
+      infer_pass.visit_for(variable_name, iterator, statements),
+    ExprMatch(subject, match_arms, _) =>
+      infer_pass.visit_match(subject, match_arms),
+    ExprRecord(name, lit_parts, span) =>
+      infer_pass.visit_record(name, lit_parts, span),
+    ExprRecordUpdate(name, base, field_values, _) =>
+      infer_pass.visit_record_update(name, base, field_values),
+    ExprArray(elements, _) =>
+      infer_pass.visit_array(elements),
+    ExprTuple(elements, _) =>
+      infer_pass.visit_tuple(elements),
+    ExprQuestion(inner_expression, question_span) =>
+      infer_pass.visit_question(inner_expression, question_span),
+    ExprLambda(parameter_names, body, _) =>
+      infer_pass.visit_lambda(parameter_names, body),
+    ExprNamedArg(_, inner_expression, _) =>
+      infer_pass.visit_named_arg(inner_expression),
+    ExprWith(resource, binder, statements, _) =>
+      infer_pass.visit_with(resource, binder, statements),
+    _ =>
+      infer_pass.visit_unsupported()
+  }
+
+extend InferPass {
+  fn visit_int(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_integer_literal()
+  fn visit_str(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_string_literal()
+  fn visit_bool(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_boolean_literal()
+  fn visit_unit(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_unit_literal()
+  fn visit_float(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_f64_literal()
+  fn visit_i64(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_i64_literal()
+  fn visit_u8(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_u8_literal()
+  fn visit_usize(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_usize_literal()
+  fn visit_char(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_char_literal()
+  fn visit_extern(self: InferPass) -> InferResult =
+    infer_literal_helpers.infer_expr_extern_placeholder()
+  fn visit_ident(self: InferPass, name: string) -> InferResult =
+    infer_expr_identifier(name, self.inference_context)
+  fn visit_bin(
+    self: InferPass,
+    operation: string,
+    left: Shared<Expr>,
+    right: Shared<Expr>,
+    source_span: Span
+  ) -> InferResult =
+    infer_expr_binary(operation, left, right, source_span, self.inference_context)
+  fn visit_un(
+    self: InferPass,
+    operation: string,
+    inner_expression: Shared<Expr>,
+    source_span: Span
+  ) -> InferResult =
+    infer_expr_unary(operation, inner_expression, source_span, self.inference_context)
+  fn visit_call(
+    self: InferPass,
+    function: Shared<Expr>,
+    call_arguments: [Shared<Expr>],
+    call_source_span: Span
+  ) -> InferResult =
+    infer_expr_call(function, call_arguments, call_source_span, self.inference_context, infer_expr)
+  fn visit_method(
+    self: InferPass,
+    object: Shared<Expr>,
+    method_name: string,
+    method_arguments: [Shared<Expr>],
+    method_span: Span
+  ) -> InferResult =
+    infer_expr_method(object, method_name, method_arguments, method_span, self.inference_context, infer_expr)
+  fn visit_field(
+    self: InferPass,
+    object: Shared<Expr>,
+    field_name: string,
+    field_source_span: Span
+  ) -> InferResult =
+    infer_expr_field(object, field_name, field_source_span, self.inference_context)
+  fn visit_index(
+    self: InferPass,
+    object: Shared<Expr>,
+    index_expression: Shared<Expr>,
+    bracket_source_span: Span
+  ) -> InferResult =
+    infer_expr_index(object, index_expression, bracket_source_span, self.inference_context)
+  fn visit_if(
+    self: InferPass,
+    condition: Shared<Expr>,
+    then_expression: Shared<Expr>,
+    else_expression: Shared<Expr>
+  ) -> InferResult =
+    infer_expr_conditional(condition, then_expression, else_expression, self.inference_context)
+  fn visit_block(self: InferPass, statements: [Shared<Stmt>], result_expression: Shared<Expr>) -> InferResult =
+    infer_expr_block(statements, result_expression, self.inference_context)
+  fn visit_while(self: InferPass, condition: Shared<Expr>, statements: [Shared<Stmt>]) -> InferResult =
+    infer_expr_while_loop(condition, statements, self.inference_context)
+  fn visit_for(
+    self: InferPass,
+    variable_name: string,
+    iterator: Shared<Expr>,
+    statements: [Shared<Stmt>]
+  ) -> InferResult =
+    infer_expr_for_loop(variable_name, iterator, statements, self.inference_context)
+  fn visit_match(self: InferPass, subject: Shared<Expr>, match_arms: [Shared<MatchArm>]) -> InferResult =
+    infer_expr_match(subject, match_arms, self.inference_context, infer_expr)
+  fn visit_record(
+    self: InferPass,
+    type_name: string,
+    lit_parts: [RecordLitPart],
+    span: Span
+  ) -> InferResult =
+    infer_expr_record(type_name, lit_parts, self.inference_context, span)
+  fn visit_record_update(
+    self: InferPass,
+    type_name: string,
+    base: Shared<Expr>,
+    field_values: [Shared<FieldVal>]
+  ) -> InferResult =
+    infer_expr_record_update(type_name, base, field_values, self.inference_context)
+  fn visit_array(self: InferPass, elements: [Shared<Expr>]) -> InferResult =
+    infer_expr_array_literal(elements, self.inference_context)
+  fn visit_tuple(self: InferPass, elements: [Shared<Expr>]) -> InferResult =
+    infer_expr_tuple_literal(elements, self.inference_context)
+  fn visit_question(self: InferPass, inner_expression: Shared<Expr>, question_span: Span) -> InferResult =
+    infer_expr_question(inner_expression, question_span, self.inference_context)
+  fn visit_lambda(self: InferPass, parameter_names: [string], body: Shared<Expr>) -> InferResult =
+    infer_expr_lambda(parameter_names, body, self.inference_context)
+  fn visit_named_arg(self: InferPass, inner_expression: Shared<Expr>) -> InferResult =
+    dispatch_infer_pass(self, inner_expression)
+  fn visit_with(
+    self: InferPass,
+    resource: Shared<Expr>,
+    binder: string,
+    statements: [Shared<Stmt>]
+  ) -> InferResult =
+    infer_expr_with(resource, binder, statements, self.inference_context)
+  fn visit_unsupported(self: InferPass) -> InferResult =
+    infer_ok(Shared.new(TUnknown))
+}
+
 // --- Dispatcher -------------------------------------------------------------
 
 export fn infer_expr(expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   const expression_partial_application = partial_application_desugar_expr(expression)
-  match expression_partial_application {
-    ExprInt(_, _)                           => infer_literal_helpers.infer_expr_integer_literal(),
-    ExprStr(_, _)                           => infer_literal_helpers.infer_expr_string_literal(),
-    ExprBool(_, _)                          => infer_literal_helpers.infer_expr_boolean_literal(),
-    ExprUnit(_)                             => infer_literal_helpers.infer_expr_unit_literal(),
-    ExprFloat(_, _)                         => infer_literal_helpers.infer_expr_f64_literal(),
-    ExprI64(_, _)                           => infer_literal_helpers.infer_expr_i64_literal(),
-    ExprU8(_, _)                            => infer_literal_helpers.infer_expr_u8_literal(),
-    ExprUsize(_, _)                         => infer_literal_helpers.infer_expr_usize_literal(),
-    ExprChar(_, _)                          => infer_literal_helpers.infer_expr_char_literal(),
-    ExprExtern(_)                           => infer_literal_helpers.infer_expr_extern_placeholder(),
-    ExprIdent(name, _)                      => infer_expr_identifier(name, inference_context),
-    ExprBin(operation, left, right, span) => infer_expr_binary(operation, left, right, span, inference_context),
-    ExprUn(operation, inner_expression, span) => infer_expr_unary(operation, inner_expression, span, inference_context),
-    ExprCall(function, call_arguments, call_source_span)   => infer_expr_call(function, call_arguments, call_source_span, inference_context, infer_expr),
-    ExprMethod(object, method_name, method_arguments, method_span) =>
-      infer_expr_method(object, method_name, method_arguments, method_span, inference_context, infer_expr),
-    ExprField(object, field_name, field_source_span) => infer_expr_field(object, field_name, field_source_span, inference_context),
-    ExprIndex(object, index_expression, bracket_source_span) => infer_expr_index(object, index_expression, bracket_source_span, inference_context),
-    ExprIf(condition, then_expression, else_expression, _) =>
-      infer_expr_conditional(condition, then_expression, else_expression, inference_context),
-    ExprBlock(statements, result_expression, _) =>
-      infer_expr_block(statements, result_expression, inference_context),
-    ExprWhile(condition, statements, _)     => infer_expr_while_loop(condition, statements, inference_context),
-    ExprFor(variable_name, iterator, statements, _) =>
-      infer_expr_for_loop(variable_name, iterator, statements, inference_context),
-    ExprMatch(subject, match_arms, _)       => infer_expr_match(subject, match_arms, inference_context, infer_expr),
-    ExprRecord(name, lit_parts, span)      => infer_expr_record(name, lit_parts, inference_context, span),
-    ExprRecordUpdate(name, base, field_values, _) =>
-      infer_expr_record_update(name, base, field_values, inference_context),
-    ExprArray(elements, _)                  => infer_expr_array_literal(elements, inference_context),
-    ExprTuple(elements, _)                  => infer_expr_tuple_literal(elements, inference_context),
-    ExprQuestion(inner_expression, question_span) =>
-      infer_expr_question(inner_expression, question_span, inference_context),
-    ExprLambda(parameter_names, body, _)    => infer_expr_lambda(parameter_names, body, inference_context),
-    ExprNamedArg(_, inner_expression, _)    => infer_expr(inner_expression, inference_context),
-    ExprWith(resource, binder, statements, _) =>
-      infer_expr_with(resource, binder, statements, inference_context)
-  }
+  dispatch_infer_pass(infer_pass_new(inference_context), expression_partial_application)
 end
 
 type Record_literal_spread_inference_fold_state = Record_literal_spread_inference_fold_state {

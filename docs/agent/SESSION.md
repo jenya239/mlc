@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-96b5ba7e-c153-476e-9997-7dff854c47f9` |
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh|
-| active_track | TRACK_VISITOR_PATTERN → STEP=4 |
+| agent_token_last | `cr-agent-0921a83b-fbac-40d6-9a89-4c97822615f5` |
+| driver_turns_since_plan | 1|
+| step_last | 4|
+| active_track | TRACK_VISITOR_PATTERN → STEP=5 |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 4 — InferPass)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-06-15 |
+| elapsed | ~45 min |
+| done | `infer.mlc`: `InferPass` + `dispatch_infer_pass`; `infer_expr` routes through visitor |
+| result | **984**/0; self-host `diff_exit=0` |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Planner plan-refresh — LOOP closed, VISITOR mid-track)
 
