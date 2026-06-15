@@ -77,6 +77,8 @@ export fn add_method_owners_from_decls(declarations: [Shared<Decl>], owners: Map
           match methods[method_index] {
             DeclFn(function_name, _, _, _, _, _, _) => do
               const unmangled = extract_method_name(function_name, type_name)
+              const type_owner_key = type_name + "_" + unmangled
+              owners.set(type_owner_key, function_name)
               if extend_may_register_method_owner(owners, unmangled, type_name, trait_names) then
                 owners.set(unmangled, function_name)
               end

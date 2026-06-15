@@ -52,13 +52,24 @@ fn gen_method_shared_new(
   expression_output.make_shared_call(type_name, argument_code)
 end
 
+fn type_method_owner_key(type_name: string, method_name: string) -> string =
+  type_name + "_" + method_name
+
+fn resolve_method_owner_mangled(method_name: string, type_name: string, context: CodegenContext) -> string =
+  if type_name != '' && context.method_owners.has(type_method_owner_key(type_name, method_name)) then
+    context.method_owners.get(type_method_owner_key(type_name, method_name))
+  else
+    context.method_owners.get(method_name)
+  end
+
 fn gen_method_owner_call_using_fragments(
   receiver_fragment: string,
+  type_name: string,
   method_name: string,
   trailing_arguments_joined: string,
   context: CodegenContext
 ) -> string = do
-  const mangled_name = context.method_owners.get(method_name)
+  const mangled_name = resolve_method_owner_mangled(method_name, type_name, context)
   const function_name = context.resolve(mangled_name)
   if trailing_arguments_joined.length() == 0 then
     expression_output.function_call_parentheses(function_name, receiver_fragment)
@@ -102,9 +113,12 @@ fn object_type_name_for_dispatch(type_value: Shared<Type>) -> string =
   }
 
 fn is_user_defined_method_for_type(method_name: string, type_name: string, context: CodegenContext) -> bool =
-  context.method_owners.has(method_name) &&
-  type_name != '' &&
-  context.method_owners.get(method_name) == `${type_name}_${method_name}`
+  if type_name != '' && context.method_owners.has(type_method_owner_key(type_name, method_name)) then true
+  else
+    context.method_owners.has(method_name) &&
+    type_name != '' &&
+    context.method_owners.get(method_name) == type_method_owner_key(type_name, method_name)
+  end
 
 fn trailing_argument_fragments_join(fragments: [string]) -> string = fragments.join(', ')
 
@@ -123,7 +137,7 @@ fn gen_method_expr_fallback_using_fragments(
   context: CodegenContext
 ) -> string =
   if is_user_defined_method_for_type(method_name, object_type_name, context) then
-    gen_method_owner_call_using_fragments(receiver_fragment, method_name, trailing_arguments_joined, context)
+    gen_method_owner_call_using_fragments(receiver_fragment, object_type_name, method_name, trailing_arguments_joined, context)
   else
     match method_name
     | 'to_string' =>
@@ -143,7 +157,7 @@ fn gen_method_expr_fallback_cpp(
   context: CodegenContext
 ) -> Shared<CppExpression> =
   if is_user_defined_method_for_type(method_name, object_type_name, context) then
-    gen_method_owner_call_cpp(receiver_expression, method_name, trailing_arguments, context)
+    gen_method_owner_call_cpp(receiver_expression, object_type_name, method_name, trailing_arguments, context)
   else
     match method_name
     | 'to_string' =>
@@ -343,11 +357,12 @@ end
 
 fn gen_method_owner_call_cpp(
   receiver_expression: Shared<CppExpression>,
+  type_name: string,
   method_name: string,
   trailing_arguments: [Shared<CppExpression>],
   context: CodegenContext
 ) -> Shared<CppExpression> = do
-  const mangled_name = context.method_owners.get(method_name)
+  const mangled_name = resolve_method_owner_mangled(method_name, type_name, context)
   make_callee_call_cpp(
     context.resolve(mangled_name),
     prepend_expression_to_argument_list(receiver_expression, trailing_arguments))
