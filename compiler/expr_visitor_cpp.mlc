@@ -20,11 +20,24 @@ import { CodegenContext, lookup_fields_for_context, qualify_function_callee } fr
 import { stmts_final_ctx } from './codegen/stmt/statement_context'
 import { ExprVisitor } from './expr_visitor'
 
-type CppExpressionVisitor = CppExpressionVisitor {
+type CodegenPass = CodegenPass {
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
+  seed: i32,
+}
+
+fn codegen_pass_new(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
-}
+) -> CodegenPass =
+  CodegenPass {
+    context: context,
+    gen_stmts: gen_stmts,
+    evaluate_expression: evaluate_expression,
+    seed: 0,
+  }
 
 fn unsupported_cpp_expression() -> Shared<CppExpression> =
   emit_helpers.make_identifier_cpp_expression('/* unsupported expr */')
@@ -555,66 +568,129 @@ export fn gen_unary_via_cpp_visitor(
 ) -> Shared<CppExpression> =
   Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
 
-extend CppExpressionVisitor : ExprVisitor<Shared<CppExpression>> {
-  fn visit_int(self: CppExpressionVisitor, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+fn dispatch_codegen_pass(codegen_pass: CodegenPass, expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
+  match expression {
+    SemanticExpressionInt(integer_value, type_value, _) =>
+      codegen_pass.visit_int(integer_value, type_value),
+    SemanticExpressionStr(string_value, type_value, _) =>
+      codegen_pass.visit_str(string_value, type_value),
+    SemanticExpressionBool(boolean_value, type_value, _) =>
+      codegen_pass.visit_bool(boolean_value, type_value),
+    SemanticExpressionUnit(type_value, _) =>
+      codegen_pass.visit_unit(type_value),
+    SemanticExpressionFloat(float_value, type_value, _) =>
+      codegen_pass.visit_float(float_value, type_value),
+    SemanticExpressionI64(integer_value, type_value, _) =>
+      codegen_pass.visit_i64(integer_value, type_value),
+    SemanticExpressionU8(byte_value, type_value, _) =>
+      codegen_pass.visit_u8(byte_value, type_value),
+    SemanticExpressionUsize(size_value, type_value, _) =>
+      codegen_pass.visit_usize(size_value, type_value),
+    SemanticExpressionChar(character_value, type_value, _) =>
+      codegen_pass.visit_char(character_value, type_value),
+    SemanticExpressionExtern(type_value, _) =>
+      codegen_pass.visit_extern(type_value),
+    SemanticExpressionIdent(name_value, type_value, _) =>
+      codegen_pass.visit_ident(name_value, type_value),
+    SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
+      codegen_pass.visit_bin(operation, left_expression, right_expression, type_value),
+    SemanticExpressionUn(operation, inner_expression, type_value, _) =>
+      codegen_pass.visit_un(operation, inner_expression, type_value),
+    SemanticExpressionCall(function_expression, arguments, mutability_flags, type_value, _) =>
+      codegen_pass.visit_call(function_expression, arguments, mutability_flags, type_value),
+    SemanticExpressionMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+      codegen_pass.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SemanticExpressionField(object, field_name, type_value, _) =>
+      codegen_pass.visit_field(object, field_name, type_value),
+    SemanticExpressionIndex(object, index_expression, type_value, _) =>
+      codegen_pass.visit_index(object, index_expression, type_value),
+    SemanticExpressionIf(condition, then_expression, else_expression, type_value, _) =>
+      codegen_pass.visit_if(condition, then_expression, else_expression, type_value),
+    SemanticExpressionBlock(statements, result_expression, type_value, _) =>
+      codegen_pass.visit_block(statements, result_expression, type_value),
+    SemanticExpressionWhile(condition, statements, type_value, _) =>
+      codegen_pass.visit_while(condition, statements, type_value),
+    SemanticExpressionFor(variable, iterator, statements, type_value, _) =>
+      codegen_pass.visit_for(variable, iterator, statements, type_value),
+    SemanticExpressionMatch(subject, arms, type_value, _) =>
+      codegen_pass.visit_match(subject, arms, type_value),
+    SemanticExpressionRecord(type_name, field_values, type_value, _) =>
+      codegen_pass.visit_record(type_name, field_values, type_value),
+    SemanticExpressionRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+      codegen_pass.visit_record_update(type_name, base_expression, overrides, type_value),
+    SemanticExpressionArray(elements, type_value, _) =>
+      codegen_pass.visit_array(elements, type_value),
+    SemanticExpressionTuple(elements, type_value, _) =>
+      codegen_pass.visit_tuple(elements, type_value),
+    SemanticExpressionQuestion(inner_expression, type_value, _) =>
+      codegen_pass.visit_question(inner_expression, type_value),
+    SemanticExpressionLambda(parameter_names, body_expression, type_value, _) =>
+      codegen_pass.visit_lambda(parameter_names, body_expression, type_value),
+    SemanticExpressionWith(resource, binder, statements, type_value, _) =>
+      codegen_pass.visit_with(resource, binder, statements, type_value),
+    _ => codegen_pass.visit_unsupported(expression)
+  }
+
+extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
+  fn visit_int(self: CodegenPass, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_integer_literal_cpp(value)
-  fn visit_str(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_str(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_string_literal_cpp(value)
-  fn visit_bool(self: CppExpressionVisitor, value: bool, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_bool(self: CodegenPass, value: bool, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_boolean_literal_cpp(value)
-  fn visit_unit(self: CppExpressionVisitor, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_unit(self: CodegenPass, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_unit_literal_cpp()
-  fn visit_float(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_float(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_float_literal_cpp(value)
-  fn visit_i64(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_i64(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_i64_literal_cpp(value)
-  fn visit_u8(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_u8(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_u8_literal_cpp(value)
-  fn visit_usize(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_usize(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_usize_literal_cpp(value)
-  fn visit_char(self: CppExpressionVisitor, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_char(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_char_literal_cpp(value)
-  fn visit_extern(self: CppExpressionVisitor, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_extern(self: CodegenPass, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_extern_placeholder_cpp()
-  fn visit_ident(self: CppExpressionVisitor, name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_ident(self: CodegenPass, name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     identifiers.gen_identifier_cpp(name, self.context)
-  fn visit_bin(self: CppExpressionVisitor, operation: string, left_expression: Shared<SemanticExpression>, right_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_bin(self: CodegenPass, operation: string, left_expression: Shared<SemanticExpression>, right_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_binary_via_cpp_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_un(self: CppExpressionVisitor, operation: string, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_un(self: CodegenPass, operation: string, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_unary_via_cpp_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_call(self: CppExpressionVisitor, function_expression: Shared<SemanticExpression>, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_call(self: CodegenPass, function_expression: Shared<SemanticExpression>, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, self.context, self.gen_stmts)
-  fn visit_method(self: CppExpressionVisitor, object: Shared<SemanticExpression>, method_name: string, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_method(self: CodegenPass, object: Shared<SemanticExpression>, method_name: string, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_method_via_cpp_visitor(object, method_name, arguments, mutability_flags, self.context, self.gen_stmts)
-  fn visit_field(self: CppExpressionVisitor, object: Shared<SemanticExpression>, field_name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_field(self: CodegenPass, object: Shared<SemanticExpression>, field_name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_field_via_cpp_visitor(object, field_name, self.context, self.gen_stmts)
-  fn visit_index(self: CppExpressionVisitor, object: Shared<SemanticExpression>, index_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_index(self: CodegenPass, object: Shared<SemanticExpression>, index_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_index_via_cpp_visitor(object, index_expression, self.context, self.gen_stmts)
-  fn visit_if(self: CppExpressionVisitor, condition: Shared<SemanticExpression>, then_expression: Shared<SemanticExpression>, else_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_if(self: CodegenPass, condition: Shared<SemanticExpression>, then_expression: Shared<SemanticExpression>, else_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_if_via_cpp_visitor(condition, then_expression, else_expression, semantic_type, self.context, self.gen_stmts)
-  fn visit_block(self: CppExpressionVisitor, statements: [Shared<SemanticStatement>], result_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_block(self: CodegenPass, statements: [Shared<SemanticStatement>], result_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_block_via_cpp_visitor(statements, result_expression, self.context, self.gen_stmts)
-  fn visit_while(self: CppExpressionVisitor, condition: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_while(self: CodegenPass, condition: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_while_via_cpp_visitor(condition, statements, self.context, self.gen_stmts)
-  fn visit_for(self: CppExpressionVisitor, variable: string, iterator: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_for(self: CodegenPass, variable: string, iterator: Shared<SemanticExpression>, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_for_via_cpp_visitor(variable, iterator, statements, self.context, self.gen_stmts)
-  fn visit_match(self: CppExpressionVisitor, subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_match(self: CodegenPass, subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_match_via_cpp_visitor(subject, arms, semantic_type, self.context, self.gen_stmts)
-  fn visit_record(self: CppExpressionVisitor, type_name: string, field_values: [Shared<SemanticFieldVal>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_record(self: CodegenPass, type_name: string, field_values: [Shared<SemanticFieldVal>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_record_via_cpp_visitor(type_name, field_values, semantic_type, self.context, self.gen_stmts)
-  fn visit_record_update(self: CppExpressionVisitor, type_name: string, base_expression: Shared<SemanticExpression>, overrides: [Shared<SemanticFieldVal>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_record_update(self: CodegenPass, type_name: string, base_expression: Shared<SemanticExpression>, overrides: [Shared<SemanticFieldVal>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_record_update_via_cpp_visitor(type_name, base_expression, overrides, self.context, self.gen_stmts)
-  fn visit_array(self: CppExpressionVisitor, elements: [Shared<SemanticExpression>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_array(self: CodegenPass, elements: [Shared<SemanticExpression>], semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_array_via_cpp_visitor(elements, semantic_type, self.context, self.gen_stmts)
-  fn visit_tuple(self: CppExpressionVisitor, elements: [Shared<SemanticExpression>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_tuple(self: CodegenPass, elements: [Shared<SemanticExpression>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_tuple_via_cpp_visitor(elements, self.context, self.gen_stmts)
-  fn visit_question(self: CppExpressionVisitor, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_question(self: CodegenPass, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_question_via_cpp_visitor(inner_expression, self.context, self.gen_stmts)
-  fn visit_lambda(self: CppExpressionVisitor, parameter_names: [string], body_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_lambda(self: CodegenPass, parameter_names: [string], body_expression: Shared<SemanticExpression>, semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_lambda_via_cpp_visitor(parameter_names, body_expression, semantic_type, self.context, self.gen_stmts)
-  fn visit_with(self: CppExpressionVisitor, resource: Shared<SemanticExpression>, binder: string, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
+  fn visit_with(self: CodegenPass, resource: Shared<SemanticExpression>, binder: string, statements: [Shared<SemanticStatement>], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_with_via_cpp_visitor(resource, binder, statements, self.context, self.gen_stmts)
-  fn visit_unsupported(self: CppExpressionVisitor, _expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
+  fn visit_unsupported(self: CodegenPass, _expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
     unsupported_cpp_expression()
 }
 
@@ -624,49 +700,7 @@ export fn eval_expr_with_cpp_visitor(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
-  match expression {
-    SemanticExpressionInt(integer_value, _, _) => literals.gen_integer_literal_cpp(integer_value),
-    SemanticExpressionStr(string_value, _, _) => literals.gen_string_literal_cpp(string_value),
-    SemanticExpressionBool(boolean_value, _, _) => literals.gen_boolean_literal_cpp(boolean_value),
-    SemanticExpressionUnit(_, _) => literals.gen_unit_literal_cpp(),
-    SemanticExpressionFloat(float_value, _, _) => literals.gen_float_literal_cpp(float_value),
-    SemanticExpressionI64(integer_value, _, _) => literals.gen_i64_literal_cpp(integer_value),
-    SemanticExpressionU8(byte_value, _, _) => literals.gen_u8_literal_cpp(byte_value),
-    SemanticExpressionUsize(size_value, _, _) => literals.gen_usize_literal_cpp(size_value),
-    SemanticExpressionChar(character_value, _, _) => literals.gen_char_literal_cpp(character_value),
-    SemanticExpressionExtern(_, _) => literals.gen_extern_placeholder_cpp(),
-    SemanticExpressionIdent(name_value, _, _) => identifiers.gen_identifier_cpp(name_value, context),
-    SemanticExpressionBin(operation, left_expression, right_expression, _, _) =>
-      gen_binary_via_cpp_visitor(operation, left_expression, right_expression, context, gen_stmts, evaluate_expression),
-    SemanticExpressionUn(operation, inner_expression, _, _) =>
-      gen_unary_via_cpp_visitor(operation, inner_expression, context, gen_stmts, evaluate_expression),
-    SemanticExpressionCall(function_expression, arguments, mutability_flags, _, _) =>
-      gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, context, gen_stmts),
-    SemanticExpressionMethod(object, method_name, arguments, mutability_flags, _, _) =>
-      gen_method_via_cpp_visitor(object, method_name, arguments, mutability_flags, context, gen_stmts),
-    SemanticExpressionField(object, field_name, _, _) => gen_field_via_cpp_visitor(object, field_name, context, gen_stmts),
-    SemanticExpressionIndex(object, index_expression, _, _) => gen_index_via_cpp_visitor(object, index_expression, context, gen_stmts),
-    SemanticExpressionIf(condition, then_expression, else_expression, if_semantic_type, _) =>
-      gen_if_via_cpp_visitor(condition, then_expression, else_expression, if_semantic_type, context, gen_stmts),
-    SemanticExpressionBlock(statements, result_expression, _, _) =>
-      gen_block_via_cpp_visitor(statements, result_expression, context, gen_stmts),
-    SemanticExpressionWhile(condition, statements, _, _) => gen_while_via_cpp_visitor(condition, statements, context, gen_stmts),
-    SemanticExpressionFor(variable, iterator, statements, _, _) => gen_for_via_cpp_visitor(variable, iterator, statements, context, gen_stmts),
-    SemanticExpressionMatch(subject, arms, match_semantic_type, _) =>
-      gen_match_via_cpp_visitor(subject, arms, match_semantic_type, context, gen_stmts),
-    SemanticExpressionRecord(type_name, field_values, semantic_type, _) =>
-      gen_record_via_cpp_visitor(type_name, field_values, semantic_type, context, gen_stmts),
-    SemanticExpressionRecordUpdate(type_name, base_expression, overrides, _, _) =>
-      gen_record_update_via_cpp_visitor(type_name, base_expression, overrides, context, gen_stmts),
-    SemanticExpressionArray(elements, semantic_type, _) =>
-      gen_array_via_cpp_visitor(elements, semantic_type, context, gen_stmts),
-    SemanticExpressionTuple(elements, _, _) => gen_tuple_via_cpp_visitor(elements, context, gen_stmts),
-    SemanticExpressionQuestion(inner_expression, _, _) => gen_question_via_cpp_visitor(inner_expression, context, gen_stmts),
-    SemanticExpressionLambda(parameter_names, body_expression, semantic_type, _) =>
-      gen_lambda_via_cpp_visitor(parameter_names, body_expression, semantic_type, context, gen_stmts),
-    SemanticExpressionWith(resource, binder, statements, _, _) =>
-      gen_with_via_cpp_visitor(resource, binder, statements, context, gen_stmts),
-  }
+  dispatch_codegen_pass(codegen_pass_new(context, gen_stmts, evaluate_expression), expression)
 
 export fn gen_expr_via_cpp_visitor(expression: Shared<SemanticExpression>, context: CodegenContext) -> Shared<CppExpression> =
   eval_expr_with_cpp_visitor(expression, context, ignored_gen_stmts, evaluate_via_cpp_visitor)

@@ -1,5 +1,5 @@
 // Binding layer: threads gen_expr <-> gen_stmts_str via closures.
-// Public API has no extra parameters; the cross-module dependency is injected here.
+// CodegenPass : ExprVisitor<Shared<CppExpression>> lives in expr_visitor_cpp.mlc.
 
 import { SemanticExpression, SemanticStatement } from '../ir/semantic_ir'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
