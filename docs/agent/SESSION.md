@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-c0da9f53-3469-4137-aa46-15ad8834a5d9` |
-| driver_turns_since_plan | 2|
-| step_last | 5|
-| active_track | TRACK_VISITOR_PATTERN → STEP=6 |
+| agent_token_last | `cr-agent-9d7493bf-bd81-411f-a4c4-de6ca7f34ff6` |
+| driver_turns_since_plan | 3|
+| step_last | 6|
+| active_track | TRACK_VISITOR_PATTERN → STEP=7 |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 6 — CodegenPass)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_VISITOR_PATTERN |
+| started | 2026-06-15 |
+| elapsed | ~25 min |
+| done | `expr_visitor_cpp.mlc`: `CodegenPass` + `dispatch_codegen_pass`; removed duplicate match |
+| result | **984**/0; self-host `diff_exit=0`; commit `b5f5e16d` |
+| issues | `dispatch_expr` generic → manual dispatch (extend method codegen) |
+| next | ROLE=Driver STEP=7 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Driver VISITOR_PATTERN step 5 — TransformPass)
 

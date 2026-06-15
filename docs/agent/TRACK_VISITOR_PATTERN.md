@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.6; previous: [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md)
 
-## Status: **open** (step 6 pending)
+## Status: **open** (step 7 pending)
 
 **MAX_ITER:** 20  
 **GATE:** `compiler/tests/build_tests.sh` + self-host diff (see Verify gate below)
@@ -31,7 +31,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 | 3 | `checker/check_mutations.mlc` → `extend MutationsPass : ExprVisitor<MutationCheckResult>` | done (`1f99fb8f`) |
 | 4 | `checker/infer/infer.mlc` → `InferPass` + `dispatch_infer_pass` | done (`80e5268d`) |
 | 5 | `checker/transform/transform.mlc` → `TransformPass` + `dispatch_transform_pass` | done (`edf88d24`) |
-| 6 | `codegen/eval.mlc` ? `extend CodegenPass : ExprVisitor<Shared<CppExpression>>` | pending |
+| 6 | `expr_visitor_cpp.mlc` → `CodegenPass` + `dispatch_codegen_pass` | done (`b5f5e16d`) |
 | 7 | ?????? ?? ?????????: `extend CodegenContext` � ????????? ????????? `fn gen_*` ??? ?????? | pending |
 | 8 | `extend InferResult` � ???????? `.and_then`, `.map_type`, `.merge_errors` | pending |
 | 9 | `extend NameCheckResult` � ?????????? | pending |
