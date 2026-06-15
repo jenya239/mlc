@@ -23,7 +23,7 @@ import { check_context_new } from '../check/check_context'
 import * as record_lit_merge from './record_lit_merge'
 import { partial_application_desugar_expr } from './partial_application_desugar'
 import * as named_args from '../named_args'
-import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
 
 fn receiver_type_key_for_method_dispatch(receiver_semantic_type: Shared<Type>) -> string =
   match receiver_semantic_type {
@@ -445,288 +445,441 @@ fn inferred_types_from_record_literal_part_for_merge(
     RecordLitFields(_) => do const empty_types: [Shared<Type>] = []; empty_types end,
   }
 
-// --- Expression transform ---------------------------------------------------
+// --- TransformPass visitor (parser Expr) ------------------------------------
+
+type TransformPass = TransformPass { transform_context: TransformContext, seed: i32 }
+
+fn transform_pass_new(transform_context: TransformContext) -> TransformPass =
+  TransformPass { transform_context: transform_context, seed: 0 }
+
+fn dispatch_transform_pass(
+  transform_pass: TransformPass,
+  expression: Shared<Expr>,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> =
+  match expression {
+    ExprInt(value, source_span) =>
+      transform_pass.visit_int(value, source_span, stmts_fn),
+    ExprStr(value, source_span) =>
+      transform_pass.visit_str(value, source_span, stmts_fn),
+    ExprBool(value, source_span) =>
+      transform_pass.visit_bool(value, source_span, stmts_fn),
+    ExprUnit(source_span) =>
+      transform_pass.visit_unit(source_span, stmts_fn),
+    ExprFloat(value, source_span) =>
+      transform_pass.visit_float(value, source_span, stmts_fn),
+    ExprI64(value, source_span) =>
+      transform_pass.visit_i64(value, source_span, stmts_fn),
+    ExprU8(value, source_span) =>
+      transform_pass.visit_u8(value, source_span, stmts_fn),
+    ExprUsize(value, source_span) =>
+      transform_pass.visit_usize(value, source_span, stmts_fn),
+    ExprChar(value, source_span) =>
+      transform_pass.visit_char(value, source_span, stmts_fn),
+    ExprExtern(source_span) =>
+      transform_pass.visit_extern(source_span, stmts_fn),
+    ExprIdent(name, source_span) =>
+      transform_pass.visit_ident(name, source_span, stmts_fn),
+    ExprBin(operation, left, right, source_span) =>
+      transform_pass.visit_bin(operation, left, right, source_span, stmts_fn),
+    ExprUn(operation, inner_expression, source_span) =>
+      transform_pass.visit_un(operation, inner_expression, source_span, stmts_fn),
+    ExprCall(function, call_arguments, source_span) =>
+      transform_pass.visit_call(function, call_arguments, source_span, stmts_fn),
+    ExprMethod(object, method_name, method_arguments, source_span) =>
+      transform_pass.visit_method(object, method_name, method_arguments, source_span, stmts_fn),
+    ExprField(object, field_name, source_span) =>
+      transform_pass.visit_field(object, field_name, source_span, stmts_fn),
+    ExprIndex(object, index_expression, source_span) =>
+      transform_pass.visit_index(object, index_expression, source_span, stmts_fn),
+    ExprIf(condition, then_expression, else_expression, source_span) =>
+      transform_pass.visit_if(condition, then_expression, else_expression, source_span, stmts_fn),
+    ExprBlock(statements, result_expression, source_span) =>
+      transform_pass.visit_block(statements, result_expression, source_span, stmts_fn),
+    ExprWhile(condition, statements, source_span) =>
+      transform_pass.visit_while(condition, statements, source_span, stmts_fn),
+    ExprFor(variable_name, iterator, statements, source_span) =>
+      transform_pass.visit_for(variable_name, iterator, statements, source_span, stmts_fn),
+    ExprMatch(subject, match_arms, source_span) =>
+      transform_pass.visit_match(subject, match_arms, source_span, stmts_fn),
+    ExprRecord(type_name, lit_parts, source_span) =>
+      transform_pass.visit_record(type_name, lit_parts, source_span, stmts_fn),
+    ExprRecordUpdate(type_name, base, field_values, source_span) =>
+      transform_pass.visit_record_update(type_name, base, field_values, source_span, stmts_fn),
+    ExprArray(elements, source_span) =>
+      transform_pass.visit_array(elements, source_span, stmts_fn),
+    ExprTuple(elements, source_span) =>
+      transform_pass.visit_tuple(elements, source_span, stmts_fn),
+    ExprQuestion(inner_expression, source_span) =>
+      transform_pass.visit_question(inner_expression, source_span, stmts_fn),
+    ExprLambda(parameter_names, body, source_span) =>
+      transform_pass.visit_lambda(parameter_names, body, source_span, stmts_fn),
+    ExprNamedArg(_, inner_expression, _) =>
+      transform_pass.visit_named_arg(inner_expression, stmts_fn),
+    ExprWith(resource, binder, statements, source_span) =>
+      transform_pass.visit_with(resource, binder, statements, source_span, stmts_fn),
+    _ =>
+      transform_pass.visit_unsupported(expression, stmts_fn)
+  }
+
+extend TransformPass {
+  fn visit_int(self: TransformPass, value: i32, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionInt(value, Shared.new(TI32), source_span))
+  fn visit_str(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionStr(value, Shared.new(TString), source_span))
+  fn visit_bool(self: TransformPass, value: bool, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionBool(value, Shared.new(TBool), source_span))
+  fn visit_unit(self: TransformPass, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span))
+  fn visit_float(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionFloat(value, Shared.new(TF64), source_span))
+  fn visit_i64(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionI64(value, Shared.new(TI64), source_span))
+  fn visit_u8(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionU8(value, Shared.new(TU8), source_span))
+  fn visit_usize(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionUsize(value, Shared.new(TUsize), source_span))
+  fn visit_char(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionChar(value, Shared.new(TChar), source_span))
+  fn visit_extern(self: TransformPass, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionExtern(Shared.new(TUnit), source_span))
+  fn visit_ident(self: TransformPass, name: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const resolved_type =
+      if self.transform_context.type_env.has(name) then self.transform_context.type_env.get(name)
+      else if self.transform_context.registry.has_fn(name) then self.transform_context.registry.fn_type(name)
+      else if self.transform_context.registry.has_ctor(name) then self.transform_context.registry.ctor_type(name)
+      else Shared.new(TUnknown)
+      end
+    Shared.new(SemanticExpressionIdent(name, resolved_type, source_span))
+  end
+  fn visit_bin(
+    self: TransformPass,
+    operation: string,
+    left: Shared<Expr>,
+    right: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_left  = dispatch_transform_pass(self, left, stmts_fn)
+    const typed_right = dispatch_transform_pass(self, right, stmts_fn)
+    const left_type   = sexpr_type(typed_left)
+    const method      = operator_method_for(operation)
+    const result_type = if method != '' then
+      const from_reg = method_return_type_from_object(left_type, method, self.transform_context.registry)
+      if type_is_unknown(from_reg) then binary_operation_result_type(operation, left_type) else from_reg end
+    else binary_operation_result_type(operation, left_type)
+    end
+    Shared.new(SemanticExpressionBin(operation, typed_left, typed_right, result_type, source_span))
+  end
+  fn visit_un(
+    self: TransformPass,
+    operation: string,
+    inner_expression: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_inner = dispatch_transform_pass(self, inner_expression, stmts_fn)
+    const result_type = if operation == "!" then Shared.new(TBool) else sexpr_type(typed_inner) end
+    Shared.new(SemanticExpressionUn(operation, typed_inner, result_type, source_span))
+  end
+  fn visit_call(
+    self: TransformPass,
+    function: Shared<Expr>,
+    call_arguments: [Shared<Expr>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
+    const resolved_call_args =
+      named_args.resolve_named_call_arguments_for_transform(
+        call_arguments, callee_name, self.transform_context.registry)
+    const typed_function = dispatch_transform_pass(self, function, stmts_fn)
+    const typed_arguments =
+      transform_call_arguments_using_callee_semantic_type(
+        typed_function, resolved_call_args, self.transform_context, stmts_fn)
+    const result_type =
+      if callee_name != '' && self.transform_context.registry.has_ctor(callee_name) then
+        self.transform_context.registry.ctor_type(callee_name)
+      else
+        match sexpr_type(typed_function) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
+      end
+    const call_parameter_mutability_flags =
+      direct_call_parameter_mutability_flags(
+        self.transform_context.registry, callee_name, typed_arguments.length())
+    Shared.new(SemanticExpressionCall(
+      typed_function, typed_arguments, call_parameter_mutability_flags, result_type, source_span))
+  end
+  fn visit_method(
+    self: TransformPass,
+    object: Shared<Expr>,
+    method_name: string,
+    method_arguments: [Shared<Expr>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_object = dispatch_transform_pass(self, object, stmts_fn)
+    const receiver_type = sexpr_type(typed_object)
+    if is_result_option_hof_method(receiver_type, method_name) then
+      const typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn)
+      const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+      const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+      const method_parameter_mutability_flags =
+        instance_method_receiver_and_parameters_mutability_pattern(
+          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
+      Shared.new(SemanticExpressionMethod(
+        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+    else if is_array_hof_method_on_receiver(receiver_type, method_name) then
+      const typed_arguments = transform_array_hof_method_arguments(
+        typed_object, method_name, method_arguments, self.transform_context, stmts_fn)
+      const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+      const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+      const method_parameter_mutability_flags =
+        instance_method_receiver_and_parameters_mutability_pattern(
+          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
+      Shared.new(SemanticExpressionMethod(
+        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+    else
+      const typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn)
+      const builtin_type = builtin_method_return_type(method_name)
+      const result_type =
+        if type_is_unknown(builtin_type) then
+          method_return_type_from_object(receiver_type, method_name, self.transform_context.registry)
+        else builtin_type
+        end
+      const method_parameter_mutability_flags =
+        instance_method_receiver_and_parameters_mutability_pattern(
+          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
+      Shared.new(SemanticExpressionMethod(
+        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+    end
+  end
+  fn visit_field(
+    self: TransformPass,
+    object: Shared<Expr>,
+    field_name: string,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_object = dispatch_transform_pass(self, object, stmts_fn)
+    const result_type  = field_type_from_object(sexpr_type(typed_object), field_name, self.transform_context.registry)
+    Shared.new(SemanticExpressionField(typed_object, field_name, result_type, source_span))
+  end
+  fn visit_index(
+    self: TransformPass,
+    object: Shared<Expr>,
+    index_expression: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_object = dispatch_transform_pass(self, object, stmts_fn)
+    const typed_index  = dispatch_transform_pass(self, index_expression, stmts_fn)
+    const element_type = match sexpr_type(typed_object) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
+    Shared.new(SemanticExpressionIndex(typed_object, typed_index, element_type, source_span))
+  end
+  fn visit_if(
+    self: TransformPass,
+    condition: Shared<Expr>,
+    then_expression: Shared<Expr>,
+    else_expression: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_condition = dispatch_transform_pass(self, condition, stmts_fn)
+    const typed_then      = dispatch_transform_pass(self, then_expression, stmts_fn)
+    const typed_else_raw  = dispatch_transform_pass(self, else_expression, stmts_fn)
+    const typed_else      =
+      conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw)
+    const merged_conditional_type =
+      match sexpr_type(typed_then) {
+        TArray(then_element_type) =>
+          match sexpr_type(typed_else) {
+            TArray(else_element_type) =>
+              if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
+              else Shared.new(TArray(then_element_type))
+              end,
+            _ => sexpr_type(typed_then),
+          },
+        _ => sexpr_type(typed_then),
+      }
+    Shared.new(SemanticExpressionIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span))
+  end
+  fn visit_block(
+    self: TransformPass,
+    statements: [Shared<Stmt>],
+    result_expression: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const statements_parsed = stmts_fn(statements, self.transform_context)
+    const body_context = transform_context_with_env(self.transform_context, statements_parsed.type_env)
+    const body_pass = transform_pass_new(body_context)
+    const result_parsed = dispatch_transform_pass(body_pass, result_expression, stmts_fn)
+    const result_type  = sexpr_type(result_parsed)
+    Shared.new(SemanticExpressionBlock(statements_parsed.statements, result_parsed, result_type, source_span))
+  end
+  fn visit_while(
+    self: TransformPass,
+    condition: Shared<Expr>,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_condition = dispatch_transform_pass(self, condition, stmts_fn)
+    const statements_parsed = stmts_fn(statements, self.transform_context)
+    Shared.new(SemanticExpressionWhile(typed_condition, statements_parsed.statements, Shared.new(TUnit), source_span))
+  end
+  fn visit_for(
+    self: TransformPass,
+    variable_name: string,
+    iterator: Shared<Expr>,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_iterator = dispatch_transform_pass(self, iterator, stmts_fn)
+    const element_type   = match sexpr_type(typed_iterator) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
+    let loop_body_environment = self.transform_context.type_env
+    loop_body_environment.set(variable_name, element_type)
+    const loop_context   = transform_context_with_env(self.transform_context, loop_body_environment)
+    const statements_parsed = stmts_fn(statements, loop_context)
+    Shared.new(SemanticExpressionFor(variable_name, typed_iterator, statements_parsed.statements, Shared.new(TUnit), source_span))
+  end
+  fn visit_match(
+    self: TransformPass,
+    subject: Shared<Expr>,
+    match_arms: [Shared<MatchArm>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_subject = dispatch_transform_pass(self, subject, stmts_fn)
+    const substitution  = substitution_from_generic(sexpr_type(typed_subject), self.transform_context.registry)
+    const typed_arms    = transform_match_arms(
+      match_arms, self.transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
+    const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
+    Shared.new(SemanticExpressionMatch(typed_subject, typed_arms, result_type, source_span))
+  end
+  fn visit_record(
+    self: TransformPass,
+    type_name: string,
+    lit_parts: [RecordLitPart],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    let mut merged_field_values_for_transform: [Shared<FieldVal>] = []
+    if !record_lit_merge.record_literal_contains_spread(lit_parts) then
+      merged_field_values_for_transform = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
+    else do
+      const inference_context_for_literal_spreads =
+        check_context_new(self.transform_context.type_env, self.transform_context.registry)
+      const spread_types_for_merge =
+        lit_parts.flat_map(part_under_merge =>
+          inferred_types_from_record_literal_part_for_merge(
+            part_under_merge,
+            inference_context_for_literal_spreads))
+      merged_field_values_for_transform =
+        record_lit_merge.merge_record_literal_parts_to_field_values(
+          type_name, lit_parts, self.transform_context.registry, spread_types_for_merge)
+    end
+    merged_field_values_for_transform =
+      record_lit_merge.merge_explicit_record_literal_with_type_defaults(
+        type_name,
+        merged_field_values_for_transform,
+        self.transform_context.registry)
+    const typed_fields = transform_field_values(merged_field_values_for_transform, self.transform_context, stmts_fn)
+    const phantom = self.transform_context.registry.phantom_type_params_for(type_name)
+    const all_params = self.transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
+    const expr_type = if all_params.length() > 0 && phantom.length() == all_params.length()
+      then
+        Shared.new(
+          TGeneric(
+            type_name,
+            all_params.map(_algebraic_type_parameter_placeholder => standalone_unknown_cell())))
+      else Shared.new(TNamed(type_name)) end
+    Shared.new(SemanticExpressionRecord(type_name, typed_fields, expr_type, source_span))
+  end
+  fn visit_record_update(
+    self: TransformPass,
+    type_name: string,
+    base: Shared<Expr>,
+    field_values: [Shared<FieldVal>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_base   = dispatch_transform_pass(self, base, stmts_fn)
+    const typed_fields = transform_field_values(field_values, self.transform_context, stmts_fn)
+    Shared.new(SemanticExpressionRecordUpdate(type_name, typed_base, typed_fields, Shared.new(TNamed(type_name)), source_span))
+  end
+  fn visit_array(
+    self: TransformPass,
+    elements: [Shared<Expr>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_elements = transform_exprs(elements, self.transform_context, stmts_fn)
+    const element_type   = if typed_elements.length() > 0
+      then sexpr_type(typed_elements[0])
+      else Shared.new(TUnknown)
+      end
+    Shared.new(SemanticExpressionArray(typed_elements, Shared.new(TArray(element_type)), source_span))
+  end
+  fn visit_tuple(
+    self: TransformPass,
+    elements: [Shared<Expr>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    if elements.length() < 2 then
+      Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span))
+    else
+      const typed = transform_exprs(elements, self.transform_context, stmts_fn)
+      const tuple_types =
+        typed.map(typed_tuple_member => sexpr_type(typed_tuple_member))
+      Shared.new(SemanticExpressionTuple(typed, Shared.new(TTuple(tuple_types)), source_span))
+    end
+  end
+  fn visit_question(
+    self: TransformPass,
+    inner_expression: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_inner  = dispatch_transform_pass(self, inner_expression, stmts_fn)
+    const inner_expression_type = sexpr_type(typed_inner)
+    const unwrapped_type = match inner_expression_type {
+      TGeneric(_, type_args) => if type_args.length() > 0 then type_args[0] else Shared.new(TUnknown) end,
+      _ => Shared.new(TUnknown)
+    }
+    Shared.new(SemanticExpressionQuestion(typed_inner, unwrapped_type, source_span))
+  end
+  fn visit_lambda(
+    self: TransformPass,
+    parameter_names: [string],
+    body: Shared<Expr>,
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    let lambda_environment = self.transform_context.type_env
+    const parameter_types =
+      parameter_names.map(parameter_binding_placeholder => standalone_unknown_cell())
+    parameter_names.fold(
+      lambda_environment,
+      (environment_map, parameter_binding_name) =>
+        lambda_environment_assign_unknown_placeholder(
+          environment_map,
+          parameter_binding_name))
+    const lambda_context = transform_context_with_env(self.transform_context, lambda_environment)
+    const lambda_pass = transform_pass_new(lambda_context)
+    const typed_body     = dispatch_transform_pass(lambda_pass, body, stmts_fn)
+    const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
+    Shared.new(SemanticExpressionLambda(parameter_names, typed_body, function_type, source_span))
+  end
+  fn visit_named_arg(self: TransformPass, inner_expression: Shared<Expr>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    dispatch_transform_pass(self, inner_expression, stmts_fn)
+  fn visit_with(
+    self: TransformPass,
+    resource: Shared<Expr>,
+    binder: string,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const typed_resource = dispatch_transform_pass(self, resource, stmts_fn)
+    let with_body_environment = self.transform_context.type_env
+    with_body_environment.set(binder, sexpr_type(typed_resource))
+    const with_body_context = transform_context_with_env(self.transform_context, with_body_environment)
+    const statements_parsed = stmts_fn(statements, with_body_context)
+    Shared.new(SemanticExpressionWith(typed_resource, binder, statements_parsed.statements, Shared.new(TUnit), source_span))
+  end
+  fn visit_unsupported(self: TransformPass, expression: Shared<Expr>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionUnit(Shared.new(TUnit), expr_span(expression)))
+}
+
+// --- Expression transform dispatcher ----------------------------------------
 
 export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
   const expression_partial_application = partial_application_desugar_expr(expression)
-  match expression_partial_application {
-    ExprInt(value, source_span) =>
-      Shared.new(SemanticExpressionInt(value, Shared.new(TI32), source_span)),
-
-    ExprStr(value, source_span) =>
-      Shared.new(SemanticExpressionStr(value, Shared.new(TString), source_span)),
-
-    ExprBool(value, source_span) =>
-      Shared.new(SemanticExpressionBool(value, Shared.new(TBool), source_span)),
-
-    ExprUnit(source_span) =>
-      Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span)),
-
-    ExprFloat(value, source_span) =>
-      Shared.new(SemanticExpressionFloat(value, Shared.new(TF64), source_span)),
-
-    ExprI64(value, source_span) =>
-      Shared.new(SemanticExpressionI64(value, Shared.new(TI64), source_span)),
-
-    ExprU8(value, source_span) =>
-      Shared.new(SemanticExpressionU8(value, Shared.new(TU8), source_span)),
-
-    ExprUsize(value, source_span) =>
-      Shared.new(SemanticExpressionUsize(value, Shared.new(TUsize), source_span)),
-
-    ExprChar(value, source_span) =>
-      Shared.new(SemanticExpressionChar(value, Shared.new(TChar), source_span)),
-
-    ExprExtern(source_span) =>
-      Shared.new(SemanticExpressionExtern(Shared.new(TUnit), source_span)),
-
-    ExprIdent(name, source_span) => do
-      const resolved_type =
-        if transform_context.type_env.has(name) then transform_context.type_env.get(name)
-        else if transform_context.registry.has_fn(name) then transform_context.registry.fn_type(name)
-        else if transform_context.registry.has_ctor(name) then transform_context.registry.ctor_type(name)
-        else Shared.new(TUnknown)
-        end
-      Shared.new(SemanticExpressionIdent(name, resolved_type, source_span))
-    end,
-
-    ExprBin(operation, left, right, source_span) => do
-      const typed_left  = transform_expr(left,  transform_context, stmts_fn)
-      const typed_right = transform_expr(right, transform_context, stmts_fn)
-      const left_type   = sexpr_type(typed_left)
-      const method      = operator_method_for(operation)
-      const result_type = if method != '' then
-        const from_reg = method_return_type_from_object(left_type, method, transform_context.registry)
-        if type_is_unknown(from_reg) then binary_operation_result_type(operation, left_type) else from_reg end
-      else binary_operation_result_type(operation, left_type)
-      end
-      Shared.new(SemanticExpressionBin(operation, typed_left, typed_right, result_type, source_span))
-    end,
-
-    ExprUn(operation, inner_expression, source_span) => do
-      const typed_inner = transform_expr(inner_expression, transform_context, stmts_fn)
-      const result_type = if operation == "!" then Shared.new(TBool) else sexpr_type(typed_inner) end
-      Shared.new(SemanticExpressionUn(operation, typed_inner, result_type, source_span))
-    end,
-
-    ExprCall(function, call_arguments, source_span) => do
-      const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
-      const resolved_call_args =
-        named_args.resolve_named_call_arguments_for_transform(
-          call_arguments, callee_name, transform_context.registry)
-      const typed_function = transform_expr(function, transform_context, stmts_fn)
-      const typed_arguments =
-        transform_call_arguments_using_callee_semantic_type(typed_function, resolved_call_args, transform_context, stmts_fn)
-      const result_type =
-        if callee_name != '' && transform_context.registry.has_ctor(callee_name) then
-          transform_context.registry.ctor_type(callee_name)
-        else
-          match sexpr_type(typed_function) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
-        end
-      const call_parameter_mutability_flags =
-        direct_call_parameter_mutability_flags(transform_context.registry, callee_name, typed_arguments.length())
-      Shared.new(SemanticExpressionCall(typed_function, typed_arguments, call_parameter_mutability_flags, result_type, source_span))
-    end,
-
-    ExprMethod(object, method_name, method_arguments, source_span) => do
-      const typed_object = transform_expr(object, transform_context, stmts_fn)
-      const receiver_type = sexpr_type(typed_object)
-      if is_result_option_hof_method(receiver_type, method_name) then
-        const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
-        const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
-        const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
-        const method_parameter_mutability_flags =
-          instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry, receiver_type, method_name, typed_arguments.length())
-        Shared.new(SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
-      else if is_array_hof_method_on_receiver(receiver_type, method_name) then
-        const typed_arguments = transform_array_hof_method_arguments(
-          typed_object, method_name, method_arguments, transform_context, stmts_fn)
-        const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
-        const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
-        const method_parameter_mutability_flags =
-          instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry, receiver_type, method_name, typed_arguments.length())
-        Shared.new(SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
-      else
-        const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
-        const builtin_type = builtin_method_return_type(method_name)
-        const result_type =
-          if type_is_unknown(builtin_type) then
-            method_return_type_from_object(receiver_type, method_name, transform_context.registry)
-          else builtin_type
-          end
-        const method_parameter_mutability_flags =
-          instance_method_receiver_and_parameters_mutability_pattern(
-            transform_context.registry, receiver_type, method_name, typed_arguments.length())
-        Shared.new(SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
-      end
-    end,
-
-    ExprField(object, field_name, source_span) => do
-      const typed_object = transform_expr(object, transform_context, stmts_fn)
-      const result_type  = field_type_from_object(sexpr_type(typed_object), field_name, transform_context.registry)
-      Shared.new(SemanticExpressionField(typed_object, field_name, result_type, source_span))
-    end,
-
-    ExprIndex(object, index_expression, source_span) => do
-      const typed_object = transform_expr(object, transform_context, stmts_fn)
-      const typed_index  = transform_expr(index_expression, transform_context, stmts_fn)
-      const element_type = match sexpr_type(typed_object) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
-      Shared.new(SemanticExpressionIndex(typed_object, typed_index, element_type, source_span))
-    end,
-
-    ExprIf(condition, then_expression, else_expression, source_span) => do
-      const typed_condition = transform_expr(condition, transform_context, stmts_fn)
-      const typed_then      = transform_expr(then_expression, transform_context, stmts_fn)
-      const typed_else_raw  = transform_expr(else_expression, transform_context, stmts_fn)
-      const typed_else      =
-        conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw)
-      const merged_conditional_type =
-        match sexpr_type(typed_then) {
-          TArray(then_element_type) =>
-            match sexpr_type(typed_else) {
-              TArray(else_element_type) =>
-                if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
-                else Shared.new(TArray(then_element_type))
-                end,
-              _ => sexpr_type(typed_then),
-            },
-          _ => sexpr_type(typed_then),
-        }
-      Shared.new(SemanticExpressionIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span))
-    end,
-
-    ExprBlock(statements, result_expression, source_span) => do
-      const statements_parsed = stmts_fn(statements, transform_context)
-      const body_context = transform_context_with_env(transform_context, statements_parsed.type_env)
-      const result_parsed = transform_expr(result_expression, body_context, stmts_fn)
-      const result_type  = sexpr_type(result_parsed)
-      Shared.new(SemanticExpressionBlock(statements_parsed.statements, result_parsed, result_type, source_span))
-    end,
-
-    ExprWhile(condition, statements, source_span) => do
-      const typed_condition = transform_expr(condition, transform_context, stmts_fn)
-      const statements_parsed = stmts_fn(statements, transform_context)
-      Shared.new(SemanticExpressionWhile(typed_condition, statements_parsed.statements, Shared.new(TUnit), source_span))
-    end,
-
-    ExprFor(variable_name, iterator, statements, source_span) => do
-      const typed_iterator = transform_expr(iterator, transform_context, stmts_fn)
-      const element_type   = match sexpr_type(typed_iterator) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
-      let loop_body_environment = transform_context.type_env
-      loop_body_environment.set(variable_name, element_type)
-      const loop_context   = transform_context_with_env(transform_context, loop_body_environment)
-      const statements_parsed = stmts_fn(statements, loop_context)
-      Shared.new(SemanticExpressionFor(variable_name, typed_iterator, statements_parsed.statements, Shared.new(TUnit), source_span))
-    end,
-
-    ExprMatch(subject, match_arms, source_span) => do
-      const typed_subject = transform_expr(subject, transform_context, stmts_fn)
-      const substitution  = substitution_from_generic(sexpr_type(typed_subject), transform_context.registry)
-      const typed_arms    = transform_match_arms(match_arms, transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
-      const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
-      Shared.new(SemanticExpressionMatch(typed_subject, typed_arms, result_type, source_span))
-    end,
-
-    ExprRecord(type_name, lit_parts, source_span) => do
-      let mut merged_field_values_for_transform: [Shared<FieldVal>] = []
-      if !record_lit_merge.record_literal_contains_spread(lit_parts) then
-        merged_field_values_for_transform = record_lit_merge.collect_explicit_field_values_flat(lit_parts)
-      else do
-        const inference_context_for_literal_spreads =
-          check_context_new(transform_context.type_env, transform_context.registry)
-        const spread_types_for_merge =
-          lit_parts.flat_map(part_under_merge =>
-            inferred_types_from_record_literal_part_for_merge(
-              part_under_merge,
-              inference_context_for_literal_spreads))
-        merged_field_values_for_transform =
-          record_lit_merge.merge_record_literal_parts_to_field_values(
-            type_name, lit_parts, transform_context.registry, spread_types_for_merge)
-      end
-      merged_field_values_for_transform =
-        record_lit_merge.merge_explicit_record_literal_with_type_defaults(
-          type_name,
-          merged_field_values_for_transform,
-          transform_context.registry)
-      const typed_fields = transform_field_values(merged_field_values_for_transform, transform_context, stmts_fn)
-      const phantom = transform_context.registry.phantom_type_params_for(type_name)
-      const all_params = transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
-      const expr_type = if all_params.length() > 0 && phantom.length() == all_params.length()
-        then
-          Shared.new(
-            TGeneric(
-              type_name,
-              all_params.map(_algebraic_type_parameter_placeholder => standalone_unknown_cell())))
-        else Shared.new(TNamed(type_name)) end
-      Shared.new(SemanticExpressionRecord(type_name, typed_fields, expr_type, source_span))
-    end,
-
-    ExprRecordUpdate(type_name, base, field_values, source_span) => do
-      const typed_base   = transform_expr(base, transform_context, stmts_fn)
-      const typed_fields = transform_field_values(field_values, transform_context, stmts_fn)
-      Shared.new(SemanticExpressionRecordUpdate(type_name, typed_base, typed_fields, Shared.new(TNamed(type_name)), source_span))
-    end,
-
-    ExprArray(elements, source_span) => do
-      const typed_elements = transform_exprs(elements, transform_context, stmts_fn)
-      const element_type   = if typed_elements.length() > 0
-        then sexpr_type(typed_elements[0])
-        else Shared.new(TUnknown)
-        end
-      Shared.new(SemanticExpressionArray(typed_elements, Shared.new(TArray(element_type)), source_span))
-    end,
-
-    ExprTuple(elements, source_span) => do
-      if elements.length() < 2 then
-        Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span))
-      else
-        const typed = transform_exprs(elements, transform_context, stmts_fn)
-        const tuple_types =
-          typed.map(typed_tuple_member => sexpr_type(typed_tuple_member))
-        Shared.new(SemanticExpressionTuple(typed, Shared.new(TTuple(tuple_types)), source_span))
-      end
-    end,
-
-    ExprQuestion(inner_expression, source_span) => do
-      const typed_inner  = transform_expr(inner_expression, transform_context, stmts_fn)
-      const inner_expression_type = sexpr_type(typed_inner)
-      const unwrapped_type = match inner_expression_type {
-        TGeneric(_, type_args) => if type_args.length() > 0 then type_args[0] else Shared.new(TUnknown) end,
-        _ => Shared.new(TUnknown)
-      }
-      Shared.new(SemanticExpressionQuestion(typed_inner, unwrapped_type, source_span))
-    end,
-
-    ExprLambda(parameter_names, body, source_span) => do
-      let lambda_environment = transform_context.type_env
-      const parameter_types =
-        parameter_names.map(parameter_binding_placeholder => standalone_unknown_cell())
-      parameter_names.fold(
-        lambda_environment,
-        (environment_map, parameter_binding_name) =>
-          lambda_environment_assign_unknown_placeholder(
-            environment_map,
-            parameter_binding_name))
-      const lambda_context = transform_context_with_env(transform_context, lambda_environment)
-      const typed_body     = transform_expr(body, lambda_context, stmts_fn)
-      const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
-      Shared.new(SemanticExpressionLambda(parameter_names, typed_body, function_type, source_span))
-    end,
-
-    ExprNamedArg(_, inner_expression, _) => transform_expr(inner_expression, transform_context, stmts_fn),
-
-    ExprWith(resource, binder, statements, source_span) => do
-      const typed_resource = transform_expr(resource, transform_context, stmts_fn)
-      let with_body_environment = transform_context.type_env
-      with_body_environment.set(binder, sexpr_type(typed_resource))
-      const with_body_context = transform_context_with_env(transform_context, with_body_environment)
-      const statements_parsed = stmts_fn(statements, with_body_context)
-      Shared.new(SemanticExpressionWith(typed_resource, binder, statements_parsed.statements, Shared.new(TUnit), source_span))
-    end,
-
-    _ => Shared.new(SemanticExpressionUnit(Shared.new(TUnit), expr_span(expression_partial_application)))
-  }
+  dispatch_transform_pass(transform_pass_new(transform_context), expression_partial_application, stmts_fn)
 end
 
