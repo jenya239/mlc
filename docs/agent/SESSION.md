@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-e1c932be-6643-495a-910a-0ad0f3bc59d6` |
+| agent_token_last | `cr-agent-cc0d256f-8a42-4eae-99db-86d83dfef605` |
 | driver_turns_since_plan | 7|
 | step_last | 5|
 | active_track | TRACK_LOOP_CONTRACTS → STEP=6 |
+
+### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 5 — idempotent verify)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-06-15 |
+| elapsed | ~1 min |
+| done | idempotent: STEP=5 `done` (`b8139417`); TRACK commit hash; enqueue STEP=6 |
+| result | regression_gate **14/0** on HEAD (prior run) |
+| issues | none |
+| next | ROLE=Driver STEP=6 TRACK_LOOP_CONTRACTS (enqueued) |
 
 ### Turn 2026-06-15 (Driver LOOP_CONTRACTS step 5 — specs index)
 
