@@ -1,0 +1,14 @@
+hello	expected/hello.txt
+fibonacci	expected/fibonacci.txt
+result	expected/result.txt
+sum_types	expected/sum_types.txt
+match_guard	expected/match_guard.txt
+record_update	expected/record_update.txt
+literals	expected/literals.txt
+conditionals	expected/conditionals.txt
+while_sum	expected/while_sum.txt
+for_loop	expected/for_loop.txt
+method_call	expected/method_call.txt
+array_ops	expected/array_ops.txt
+char_classify	expected/char_classify.txt
+lexer_scan	expected/lexer_scan.txt

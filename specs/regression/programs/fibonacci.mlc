@@ -1,0 +1,7 @@
+fn fib(n: i32) -> i32 =
+  if n <= 1 then n else fib(n - 1) + fib(n - 2) end
+
+fn main() -> i32 = do
+  println(fib(10).to_string())
+  0
+end

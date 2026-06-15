@@ -15,7 +15,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 1
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Выбрать 10-20 test-программ из `test/`, зафиксировать эталонный вывод в `specs/regression/` | pending |
+| 1 | Выбрать 10-20 test-программ из `test/`, зафиксировать эталонный вывод в `specs/regression/` | done |
 | 2 | Написать `scripts/regression_gate.sh` — запускает frozen suite, сравнивает вывод Ruby vs C++, exit 1 при расхождении | pending |
 | 3 | Добавить в `AGENTS.md`: любой трек затрагивающий `compiler/**` обязан пройти `scripts/regression_gate.sh` перед закрытием | pending |
 | 4 | Добавить `MAX_ITER: 20` и `GATE:` поле в заголовки всех открытых треков | pending |

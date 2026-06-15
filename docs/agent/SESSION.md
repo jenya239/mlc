@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-079143e9-0818-43df-865f-fd9527f526a4` |
-| driver_turns_since_plan | 8|
-| step_last | 2|
-| active_track | TRACK_VISITOR_PATTERN → STEP=3 |
+| agent_token_last | `cr-agent-d9be819e-c8bc-40b5-8d73-08b98a2da9eb` |
+| driver_turns_since_plan | 5|
+| step_last | 1|
+| active_track | TRACK_LOOP_CONTRACTS → STEP=2 |
+
+### Turn 2026-05-19 (Driver LOOP_CONTRACTS step 1 — regression baselines)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_LOOP_CONTRACTS |
+| started | 2026-05-19 |
+| elapsed | ~20 min |
+| done | `specs/regression/`: 14 programs + expected stdout; `scripts/capture_regression_baselines.sh` (bundle exec Ruby mlc) |
+| result | capture 14/14 ok; no compiler changes |
+| issues | Ruby mlc: no `?` in result, no bool.to_string, char literals need `"` for compare |
+| next | ROLE=Driver STEP=2 TRACK_LOOP_CONTRACTS |
 
 ### Turn 2026-05-19 (Driver VISITOR_PATTERN step 2 — NamesPass ExprVisitor)
 

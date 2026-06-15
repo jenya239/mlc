@@ -1,0 +1,15 @@
+type Answer = Yes(i32) | No
+
+fn pick(answer: Answer) -> i32 =
+  match answer {
+    Yes(n) if n > 0 => n,
+    Yes(_) => 0,
+    No => -1
+  }
+
+fn main() -> i32 = do
+  println(pick(Yes(5)).to_string())
+  println(pick(Yes(-2)).to_string())
+  println(pick(No).to_string())
+  0
+end

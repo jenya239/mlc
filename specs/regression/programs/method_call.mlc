@@ -1,0 +1,11 @@
+type Counter = { value: i32 }
+
+extend Counter {
+  fn get(self: Counter) -> i32 = self.value
+}
+
+fn main() -> i32 = do
+  let counter = Counter { value: 42 }
+  println(counter.get().to_string())
+  0
+end

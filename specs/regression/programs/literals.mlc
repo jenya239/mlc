@@ -1,0 +1,6 @@
+fn main() -> i32 = do
+  println(42.to_string())
+  println('hello')
+  if true then println('true') else println('false') end
+  0
+end

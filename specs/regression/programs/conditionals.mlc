@@ -1,0 +1,5 @@
+fn main() -> i32 = do
+  if 2 > 1 then println('yes') else println('no') end
+  if 1 > 2 then println('bad') else println('ok') end
+  0
+end
