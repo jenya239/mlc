@@ -5,10 +5,24 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-db1d93e2-a3e6-481e-96b7-a5352ae0f01b` |
-| driver_turns_since_plan | 5|
-| step_last | 3|
+| agent_token_last | `cr-agent-96b5ba7e-c153-476e-9997-7dff854c47f9` |
+| driver_turns_since_plan | 0|
+| step_last | plan-refresh|
 | active_track | TRACK_VISITOR_PATTERN → STEP=4 |
+
+### Turn 2026-06-15 (Planner plan-refresh — LOOP closed, VISITOR mid-track)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN |
+| started | 2026-06-15 |
+| elapsed | ~5 min |
+| done | TRACK_PLAN: LOOP closed, TYPE_ALIASES closed; active VISITOR STEP=4; LAMBDA deferred |
+| result | no verify (docs only) |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Driver VISITOR_PATTERN step 3 — MutationsPass)
 

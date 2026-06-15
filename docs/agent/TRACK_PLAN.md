@@ -94,21 +94,33 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppDeclFragment cleanup:** [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) — **closed** (step 5 audit 940/0; WIP `decl_cpp` uncommitted)
 - **Apply record destructuring:** [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) — **closed** (`fd95af6`)
 - **String match patterns:** [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) — **closed** (step 12 self-host diff green, 2026-06-05)
-- **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **open** (STEP=1 pending; PLAN §2.5 #4)
+- **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **closed** (steps 1–5 + audit; STEP=6 deferred `TRACK_GENERICS_RECORD`)
 - **Rename abbreviations:** [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) — **closed** (`0c68101b`, `7bc13d09`)
-- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (deferred; after TYPE_ALIASES)
+- **Loop contracts:** [TRACK_LOOP_CONTRACTS.md](TRACK_LOOP_CONTRACTS.md) — **closed** (`a28a4823`)
+- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (STEP=4 pending; Phase 2.6 §1)
+- **Lambda capture:** [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) — planned (after VISITOR close)
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) **STEP=1** — parser `DeclTypeAlias` for `type Name = Type` (not ADT `{…}` / variant syntax).
+> **Immediate:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) **STEP=4** — `infer.mlc` → `InferPass : ExprVisitor<InferResult>` (split dispatch; see sub-steps in TRACK).
 
-> **Then:** TYPE_ALIASES steps 2–7 per TRACK.
+> **Then:** VISITOR steps 5–13; **LAMBDA_CAPTURE** STEP=1 after close.
 
 Gate from active TRACK. SESSION; enqueue next STEP.
 
 ## Next step (Planner)
 
-> plan-refresh after TYPE_ALIASES close or every ~8 driver turns.
+> plan-refresh after VISITOR_PATTERN close or every ~8 driver turns.
+
+## Planner checklist (2026-06-15 plan-refresh — LOOP_CONTRACTS closed)
+
+- [x] TRACK_LOOP_CONTRACTS closed (`a28a4823`); regression_gate **14/0**
+- [x] TRACK_TYPE_ALIASES closed (audit 2026-06-06); TYPE_ALIASES STEP=6 deferred (generics)
+- [x] Priority **stability** — finish VISITOR_PATTERN (steps 4–13) before LAMBDA_CAPTURE / Phase 2.7
+- [x] Active track unchanged: **VISITOR_PATTERN** STEP=4 (mid-track; no new STEP=1)
+- [x] Deferred: LAMBDA_CAPTURE; generic record aliases; parser `ref mut` branch; regex string match
+- [x] Baseline **984**/0; self-host `diff_exit=0` (step 3)
+- [x] Driver enqueued STEP=4 VISITOR_PATTERN
 
 ## Planner checklist (2026-05-19 plan-refresh — RENAME_ABBREV closed)
 
@@ -868,11 +880,12 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 | 1b | Удалить CppDeclFragment + мёртвый код | [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) | **closed** (step 5 audit 2026-06-04) |
 | 2 | String match в языке | [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) | **closed** |
 | 3 | Применить record destructuring | [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) | closed |
-| 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | open (after RENAME) |
-| 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | open (step 22 pending) |
-| 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | open |
+| 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | **closed** (audit 2026-06-06) |
+| 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | **closed** (`7bc13d09`) |
+| 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | **open** (STEP=4 pending) |
 | 7 | TypeRegistry split + HOF helpers + parser helpers | [TRACK_REGISTRY_SPLIT.md](TRACK_REGISTRY_SPLIT.md) | **closed** (`20f9d45`) |
-| 8 | Lambda capture: `[&]` → `[=]` в codegen | TRACK_LAMBDA_CAPTURE.md | planned |
+| 8 | Lambda capture: `[&]` → `[=]` в codegen | [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) | planned |
+| 9 | Loop contracts (regression gate, MAX_ITER, specs index) | [TRACK_LOOP_CONTRACTS.md](TRACK_LOOP_CONTRACTS.md) | **closed** (`a28a4823`) |
 
 ## Planner checklist (2026-06-03 plan-refresh)
 
