@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3.5; design: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md); follows [TRACK_LSP.md](TRACK_LSP.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_LSP)
 
 **Depends on:** TRACK_LSP closed (stable checker/registry); Cpp lexer/ast baseline in `compiler/cpp/`.
 

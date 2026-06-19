@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3 п.2; follows [TRACK_SELF_HOST_BOOTSTRAP.md](TRACK_SELF_HOST_BOOTSTRAP.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_SELF_HOST_BOOTSTRAP)
 
 **Depends on:** TRACK_SELF_HOST_BOOTSTRAP closed; TRACK_FORMATTER done (formatting optional for v1).
 

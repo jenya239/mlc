@@ -16,24 +16,27 @@ export fn path_to_module_base(path: string) -> string = do
 end
 
 export fn cpp_keyword(name: string) -> bool =
-  name == 'export' || name == 'import' || name == 'module' || name == 'struct' || name == 'class'
-  || name == 'template' || name == 'typename' || name == 'const' || name == 'return'
-  || name == 'if' || name == 'else' || name == 'for' || name == 'while' || name == 'do'
-  || name == 'switch' || name == 'case' || name == 'default' || name == 'break' || name == 'continue'
-  || name == 'try' || name == 'catch' || name == 'throw' || name == 'new' || name == 'delete'
-  || name == 'virtual' || name == 'override' || name == 'final' || name == 'public' || name == 'private'
-  || name == 'protected' || name == 'friend' || name == 'static' || name == 'extern' || name == 'inline'
-  || name == 'using' || name == 'namespace' || name == 'typedef' || name == 'enum' || name == 'union'
-  || name == 'true' || name == 'false' || name == 'nullptr' || name == 'void' || name == 'bool'
-  || name == 'int' || name == 'long' || name == 'short' || name == 'char' || name == 'float' || name == 'double'
-  || name == 'signed' || name == 'unsigned' || name == 'auto' || name == 'typeid' || name == 'sizeof'
-  || name == 'and' || name == 'or' || name == 'not' || name == 'xor' || name == 'and_eq' || name == 'or_eq'
-  || name == 'not_eq' || name == 'xor_eq' || name == 'bitand' || name == 'bitor' || name == 'compl'
-  || name == 'alignas' || name == 'alignof' || name == 'asm' || name == 'concept' || name == 'consteval'
-  || name == 'constexpr' || name == 'constinit' || name == 'const_cast' || name == 'decltype'
-  || name == 'dynamic_cast' || name == 'explicit' || name == 'mutable' || name == 'noexcept'
-  || name == 'operator' || name == 'reinterpret_cast' || name == 'requires' || name == 'static_cast'
-  || name == 'this' || name == 'thread_local' || name == 'volatile' || name == 'wchar_t'
+  match name
+  | 'export' | 'import' | 'module' | 'struct' | 'class' => true
+  | 'template' | 'typename' | 'const' | 'return' => true
+  | 'if' | 'else' | 'for' | 'while' | 'do' => true
+  | 'switch' | 'case' | 'default' | 'break' | 'continue' => true
+  | 'try' | 'catch' | 'throw' | 'new' | 'delete' => true
+  | 'virtual' | 'override' | 'final' | 'public' | 'private' => true
+  | 'protected' | 'friend' | 'static' | 'extern' | 'inline' => true
+  | 'using' | 'namespace' | 'typedef' | 'enum' | 'union' => true
+  | 'true' | 'false' | 'nullptr' | 'void' | 'bool' => true
+  | 'int' | 'long' | 'short' | 'char' | 'float' | 'double' => true
+  | 'signed' | 'unsigned' | 'auto' | 'typeid' | 'sizeof' => true
+  | 'and' | 'or' | 'not' | 'xor' | 'and_eq' | 'or_eq' => true
+  | 'not_eq' | 'xor_eq' | 'bitand' | 'bitor' | 'compl' => true
+  | 'alignas' | 'alignof' | 'asm' | 'concept' | 'consteval' => true
+  | 'constexpr' | 'constinit' | 'const_cast' | 'decltype' => true
+  | 'dynamic_cast' | 'explicit' | 'mutable' | 'noexcept' => true
+  | 'operator' | 'reinterpret_cast' | 'requires' | 'static_cast' => true
+  | 'this' | 'thread_local' | 'volatile' | 'wchar_t' => true
+  | _ => false
+  end
 
 export fn cpp_safe(name: string) -> string =
   if cpp_keyword(name) then `${name}_` else name end

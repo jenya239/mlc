@@ -67,7 +67,7 @@ using WhereClauseParseResult = predicates::ParseResult<mlc::Array<ast::WhereClau
 
 using TraitBodyResult = predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Decl>>>;
 
-struct ParseProgramResult {ast::Program program;mlc::Array<mlc::String> errors;};
+struct ProgramParseValue {ast::Program program;mlc::Array<mlc::String> errors;};
 
 predicates::Parser parser_new_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
@@ -115,6 +115,8 @@ predicates::TraitBodyResult trait_body_parse_result(mlc::Array<std::shared_ptr<a
 predicates::ExprResult expression_parse_result(std::shared_ptr<ast::Expr> expression, predicates::Parser parser) noexcept;
 
 predicates::TypeParamsResult type_params_parse_result(mlc::Array<mlc::String> params, mlc::Array<mlc::Array<mlc::String>> bounds, predicates::Parser parser) noexcept;
+
+predicates::ProgramParseValue program_parse_result(ast::Program program, mlc::Array<mlc::String> errors) noexcept;
 
 bool is_ctor_name(mlc::String name) noexcept;
 

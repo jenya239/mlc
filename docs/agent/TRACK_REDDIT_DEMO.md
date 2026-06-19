@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 5; follows [TRACK_CPP_HEADER_IMPORT.md](TRACK_CPP_HEADER_IMPORT.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_SELF_HOST_BOOTSTRAP)
 
 **Depends on:** TRACK_SELF_HOST_BOOTSTRAP closed (minimum); FORMATTER + LSP preferred for polish.
 

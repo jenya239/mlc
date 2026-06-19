@@ -9,17 +9,18 @@ import {
 } from '../diagnostic_codes'
 
 fn derive_trait_name_allowed(trait_name: string) -> bool =
-  trait_name == 'Display' || trait_name == 'Eq' || trait_name == 'Ord' || trait_name == 'Hash'
+  match trait_name
+  | 'Display' | 'Eq' | 'Ord' | 'Hash' => true
+  | _ => false
+  end
 
 fn string_list_contains_derive_trait(haystack: [string], needle: string) -> bool =
   haystack.any(trait_name => trait_name == needle)
 
 fn type_expr_allowed_for_derive_hash_field(type_expression: Shared<TypeExpr>) -> bool =
   match type_expression {
-    TyI32    => true,
-    TyBool   => true,
-    TyString => true,
-    _        => false
+    TyI32 | TyBool | TyString => true,
+    _                         => false
   }
 
 fn derive_hash_field_error(

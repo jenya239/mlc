@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3 п.1; follows [TRACK_CODE_QUALITY.md](TRACK_CODE_QUALITY.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_PARSE_PROGRAM_RESULT)
 
 **Depends on:** TRACK_CODE_QUALITY closed (stable AST + readable compiler sources).
 

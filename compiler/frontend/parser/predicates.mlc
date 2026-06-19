@@ -39,7 +39,7 @@ export type TypeParamsResult = ParseResult<TypeParamsValue>
 export type BoundsResult = ParseResult<[string]>
 export type WhereClauseParseResult = ParseResult<[WhereClauseBound]>
 export type TraitBodyResult  = ParseResult<[Shared<Decl>]>
-export type ParseProgramResult = ParseProgramResult { program: Program, errors: [string] }
+export type ProgramParseValue = ProgramParseValue { program: Program, errors: [string] }
 
 export fn parse_result<Value>(value: Value, parser: Parser) -> ParseResult<Value> =
   ParseResult { value: value, parser: parser }
@@ -103,6 +103,9 @@ export fn expression_parse_result(expression: Shared<Expr>, parser: Parser) -> E
 
 export fn type_params_parse_result(params: [string], bounds: [[string]], parser: Parser) -> TypeParamsResult =
   parse_result(TypeParamsValue { params: params, bounds: bounds }, parser)
+
+export fn program_parse_result(program: Program, errors: [string]) -> ProgramParseValue =
+  ProgramParseValue { program: program, errors: errors }
 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"

@@ -101,7 +101,7 @@ predicates::FieldDefsResult parse_field_defs(predicates::Parser parser) noexcept
 
 ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
-predicates::ParseProgramResult parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
+predicates::ProgramParseValue parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
 
@@ -898,7 +898,7 @@ state = parsed.parser;
 return ast::Program{declarations};
 }
 
-predicates::ParseProgramResult parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{
+predicates::ProgramParseValue parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept{
 mlc::Array<std::shared_ptr<ast::Decl>> declarations = {};
 predicates::Parser state = predicates::parser_new_with_source_path(tokens, source_path);
 while (!predicates::Parser_at_eof(state)){
@@ -912,7 +912,7 @@ declarations.push_back(parsed.value);
 state = parsed.parser;
 }
 }
-return predicates::ParseProgramResult{ast::Program{declarations}, state.errors};
+return predicates::program_parse_result(ast::Program{declarations}, state.errors);
 }
 
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept{return parse_program_with_source_path(tokens, mlc::String(""));}

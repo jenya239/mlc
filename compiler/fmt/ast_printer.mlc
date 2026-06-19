@@ -1,0 +1,41 @@
+// MLC source formatter: AST → text (STEP=1: literals and identifiers).
+
+import {
+  Expr,
+  ExprInt,
+  ExprStr,
+  ExprBool,
+  ExprUnit,
+  ExprIdent
+} from '../frontend/ast'
+
+fn escape_string_literal_content(input: string) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < input.length() do
+    const character = input.char_at(index)
+    if character == "\\" then parts.push('\\\\')
+    else if character == "\"" then parts.push('\\"')
+    else if character == "\n" then parts.push('\\n')
+    else if character == "\r" then parts.push('\\r')
+    else if character == "\t" then parts.push('\\t')
+    else parts.push(character)
+    end
+    index = index + 1
+  end
+  parts.join('')
+end
+
+fn print_string_literal(value: string) -> string =
+  `"` + escape_string_literal_content(value) + `"`
+
+export fn print_expr(expression: Shared<Expr>) -> string =
+  match expression {
+    ExprInt(value, _) => value.to_string(),
+    ExprStr(value, _) => print_string_literal(value),
+    ExprBool(true, _) => 'true',
+    ExprBool(false, _) => 'false',
+    ExprUnit(_) => '()',
+    ExprIdent(name, _) => name,
+    _ => '<unsupported-expr>',
+  }

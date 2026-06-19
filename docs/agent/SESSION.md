@@ -4,11 +4,131 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-098d4e12-6d53-4fdf-acc7-d906ec8589c7` |
-| driver_turns_since_plan | 0|
-| step_last | full-replan|
-| active_track | TRACK_PARSE_PROGRAM_RESULT → STEP=1 (priority queue set) |
+| instructions_rev | `2026-05-28-cleaner`|
+| agent_token_last | `cr-agent-abffe2d2-465e-4094-bc2b-43b4a1fee643` |
+| driver_turns_since_plan | 4|
+| step_last | 1|
+| active_track | TRACK_FORMATTER → STEP=1 |
+
+### Turn 2026-06-19 (Driver STEP=5 — CODE_QUALITY audit close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| done | audit survivors grep; TRACK_CODE_QUALITY **closed** |
+| verify | pass — build_tests **1005/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=1 TRACK_FORMATTER |
+
+**Enqueue payload (Driver FORMATTER STEP=1):**
+```
+AGENT_TOKEN=cr-agent-abffe2d2-465e-4094-bc2b-43b4a1fee643
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+AST printer module — `compiler/fmt/ast_printer.mlc`; round-trip smoke. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=4 — CODE_QUALITY string-match)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `cpp_naming.cpp_keyword` → string `match`; `derive_trait_name_allowed` → string `match`; lexers already pipe-match (bootstrap: no `Ident` in wildcard arm) |
+| verify | pass — build_tests **1005/0**; build.sh ok; **diff_exit=0** |
+| issues | merged `keyword_kind` wildcard breaks Ruby bootstrap — kept split `is_reserved`+`reserved_kind` |
+| next | ROLE=Driver STEP=5 TRACK_CODE_QUALITY |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-608bb232-8c67-4dad-b73e-af00cd85a2ba
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CODE_QUALITY.md
+
+Audit + close — grep survivors; gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=3 — CODE_QUALITY or-patterns)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `check.mlc`: literal or-arms in `default_expr_mvp_ok`; `VarTuple\|VarUnit`; variant-name merge; `derive_validation.mlc`: `TyI32\|TyBool\|TyString` |
+| verify | pass — build_tests **1005/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_CODE_QUALITY |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-7f10baa8-d22e-467b-8a16-cb2c1d099674
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CODE_QUALITY.md
+
+String-match adoption — `keyword_kind` and similar if-chains → `match` on `string`. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=2 — CODE_QUALITY HOF cpp_ast)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| done | `cpp_ast.mlc`: `indent_text`/`escape_cpp_string_content` → `zero_based_indices`+`.map().join()`; `variant_arm_type_strings` push → `[name]` |
+| verify | pass — build_tests **1005/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_CODE_QUALITY |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-0265d87d-0b48-4eed-a3d2-21615fdabc2d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CODE_QUALITY.md
+
+Or-patterns in checker — collapse duplicate variant arms (`check.mlc`, `derive_validation.mlc`). Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=1 — CODE_QUALITY destructuring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `cpp/lexer.mlc` push_*_scan → `let { state, token }`; `frontend/lexer.mlc` already had destructuring |
+| verify | pass — build_tests **1005/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=2 TRACK_CODE_QUALITY |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-90361840-ee7d-475a-80ea-730409c7cdf3
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CODE_QUALITY.md
+
+HOF in codegen — `.map`/`.fold` in `cpp_ast.mlc` printer paths. Gate from TRACK.
+```
 
 ### Turn 2026-06-19 (Meta-Planner full-replan)
 

@@ -46,7 +46,7 @@ mlc::String eval_expr_gen_stmts_callback(mlc::Array<std::shared_ptr<semantic_ir:
 
 mlc::String CodegenContext_gen_stmts_str(context::CodegenContext self, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements) noexcept{return stmt_cpp::print_cpp_statements(stmt_cpp::gen_stmts_cpp(statements, self));}
 
-mlc::String CodegenContext_gen_expr(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return cpp_ast::print_expr(expr_visitor_cpp::eval_expr_cpp(expression, self, eval_expr_gen_stmts_callback));}
+mlc::String CodegenContext_gen_expr(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return ast_printer::print_expr(expr_visitor_cpp::eval_expr_cpp(expression, self, eval_expr_gen_stmts_callback));}
 
 mlc::String CodegenContext_gen_argument_list(context::CodegenContext self, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> expressions) noexcept{return expressions.map([self](std::shared_ptr<semantic_ir::SemanticExpression> expression) mutable { return gen_expr(expression, self); }).join(mlc::String(", "));}
 

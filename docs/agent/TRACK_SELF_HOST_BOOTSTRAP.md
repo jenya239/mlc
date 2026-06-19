@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 4; follows [TRACK_PHASE26_REMAINING.md](TRACK_PHASE26_REMAINING.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_PHASE26_REMAINING)
 
 **Depends on:** TRACK_PHASE26_REMAINING closed.
 

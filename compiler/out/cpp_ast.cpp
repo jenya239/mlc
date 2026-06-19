@@ -24,11 +24,15 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_source(std::shared
 
 mlc::String printer_indent_unit() noexcept;
 
+mlc::Array<int> zero_based_indices(int count) noexcept;
+
 mlc::String indent_text(int depth) noexcept;
 
-mlc::String formatted_block(mlc::String statements_code, int depth) noexcept;
+mlc::String escape_cpp_character(mlc::String character) noexcept;
 
 mlc::String escape_cpp_string_content(mlc::String input) noexcept;
+
+mlc::String formatted_block(mlc::String statements_code, int depth) noexcept;
 
 mlc::String print_comma_separated_expressions(mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> expressions) noexcept;
 
@@ -240,60 +244,15 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_source(std::shared
 
 mlc::String printer_indent_unit() noexcept{return mlc::String("  ");}
 
-mlc::String indent_text(int depth) noexcept{
-mlc::String result = mlc::String("");
-int index = 0;
-while (index < depth){
-{
-result = result + printer_indent_unit();
-index = index + 1;
-}
-}
-return result;
-}
+mlc::Array<int> zero_based_indices(int count) noexcept{return count <= 0 ? mlc::Array<int>{} : zero_based_indices(count - 1).concat(mlc::Array<int>{count - 1});}
+
+mlc::String indent_text(int depth) noexcept{return zero_based_indices(depth).map([](int _) mutable { return printer_indent_unit(); }).join(mlc::String(""));}
+
+mlc::String escape_cpp_character(mlc::String character) noexcept{return character == mlc::String("\\") ? mlc::String("\\\\") : character == mlc::String("\"") ? mlc::String("\\\"") : character == mlc::String("\n") ? mlc::String("\\n") : character == mlc::String("\r") ? mlc::String("\\r") : character == mlc::String("\t") ? mlc::String("\\t") : character == mlc::String("\0", 1) ? mlc::String("\\0") : character;}
+
+mlc::String escape_cpp_string_content(mlc::String input) noexcept{return zero_based_indices(input.length()).map([input](int index) mutable { return escape_cpp_character(input.char_at(index)); }).join(mlc::String(""));}
 
 mlc::String formatted_block(mlc::String statements_code, int depth) noexcept{return indent_text(depth) + mlc::String("{\n") + statements_code + mlc::String("\n") + indent_text(depth) + mlc::String("}");}
-
-mlc::String escape_cpp_string_content(mlc::String input) noexcept{
-mlc::Array<mlc::String> parts = {};
-int index = 0;
-while (index < input.length()){
-{
-mlc::String character = input.char_at(index);
-if (character == mlc::String("\\")){
-{
-parts.push_back(mlc::String("\\\\"));
-}
-} else {
-{
-if (character == mlc::String("\"")){
-parts.push_back(mlc::String("\\\""));
-} else {
-if (character == mlc::String("\n")){
-parts.push_back(mlc::String("\\n"));
-} else {
-if (character == mlc::String("\r")){
-parts.push_back(mlc::String("\\r"));
-} else {
-if (character == mlc::String("\t")){
-parts.push_back(mlc::String("\\t"));
-} else {
-if (character == mlc::String("\0", 1)){
-parts.push_back(mlc::String("\\0"));
-} else {
-parts.push_back(character);
-}
-}
-}
-}
-}
-}
-}
-index = index + 1;
-}
-}
-return parts.join(mlc::String(""));
-}
 
 mlc::String print_comma_separated_expressions(mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> expressions) noexcept{return expressions.map([](std::shared_ptr<cpp_ast::CppExpression> expression) mutable { return print_expr(expression); }).join(mlc::String(", "));}
 
@@ -438,11 +397,7 @@ mlc::String print_struct_fields(mlc::Array<std::shared_ptr<cpp_ast::CppField>> f
 
 mlc::Array<mlc::String> variant_arm_type_strings(std::shared_ptr<cpp_ast::CppVariantArm> arm) noexcept{
 mlc::Array<std::shared_ptr<cpp_ast::CppType>> types = cpp_variant_arm_types(arm);
-return types.size() == 0 ? [&]() -> mlc::Array<mlc::String> { 
-  mlc::Array<mlc::String> arm_name_parts = {};
-  arm_name_parts.push_back(cpp_variant_arm_name(arm));
-  return arm_name_parts;
- }() : types.map([](std::shared_ptr<cpp_ast::CppType> type_node) mutable { return print_type(type_node); });
+return types.size() == 0 ? mlc::Array<mlc::String>{cpp_variant_arm_name(arm)} : types.map([](std::shared_ptr<cpp_ast::CppType> type_node) mutable { return print_type(type_node); });
 }
 
 mlc::String print_variant_types(mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> arms) noexcept{return mlc::collections::flat_map(arms, [](std::shared_ptr<cpp_ast::CppVariantArm> arm) mutable { return variant_arm_type_strings(arm); }).join(mlc::String(", "));}

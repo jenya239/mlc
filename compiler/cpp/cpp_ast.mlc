@@ -108,36 +108,31 @@ export fn cpp_file_source(file: Shared<CppFile>) -> [Shared<CppDeclaration>] = f
 
 fn printer_indent_unit() -> string = '  '
 
-fn indent_text(depth: i32) -> string = do
-  let mut result = ''
-  let mut index = 0
-  while index < depth do
-    result = result + printer_indent_unit()
-    index = index + 1
+fn zero_based_indices(count: i32) -> [i32] =
+  if count <= 0 then []
+  else zero_based_indices(count - 1).concat([count - 1])
   end
-  result
-end
+
+fn indent_text(depth: i32) -> string =
+  zero_based_indices(depth).map(_ => printer_indent_unit()).join('')
+
+fn escape_cpp_character(character: string) -> string =
+  if character == "\\" then '\\\\'
+  else if character == "\"" then '\\"'
+  else if character == "\n" then '\\n'
+  else if character == "\r" then '\\r'
+  else if character == "\t" then '\\t'
+  else if character == "\0" then '\\0'
+  else character
+  end
+
+fn escape_cpp_string_content(input: string) -> string =
+  zero_based_indices(input.length())
+    .map(index => escape_cpp_character(input.char_at(index)))
+    .join('')
 
 fn formatted_block(statements_code: string, depth: i32) -> string =
   indent_text(depth) + '{\n' + statements_code + `\n` + indent_text(depth) + `}`
-
-fn escape_cpp_string_content(input: string) -> string = do
-  let parts: [string] = []
-  let mut index = 0
-  while index < input.length() do
-    const character = input.char_at(index)
-    if character == "\\" then parts.push('\\\\')
-    else if character == "\"" then parts.push('\\"')
-    else if character == "\n" then parts.push('\\n')
-    else if character == "\r" then parts.push('\\r')
-    else if character == "\t" then parts.push('\\t')
-    else if character == "\0" then parts.push('\\0')
-    else parts.push(character)
-    end
-    index = index + 1
-  end
-  parts.join('')
-end
 
 fn print_comma_separated_expressions(expressions: [Shared<CppExpression>]) -> string =
   expressions.map(expression => print_expr(expression)).join(', ')
@@ -458,8 +453,7 @@ fn print_struct_fields(fields: [Shared<CppField>]) -> string =
 
 fn variant_arm_type_strings(arm: Shared<CppVariantArm>) -> [string] = do
   const types = cpp_variant_arm_types(arm)
-  if types.length() == 0 then
-    do const arm_name_parts: [string] = []; arm_name_parts.push(cpp_variant_arm_name(arm)); arm_name_parts end
+  if types.length() == 0 then [cpp_variant_arm_name(arm)]
   else types.map(type_node => print_type(type_node))
   end
 end

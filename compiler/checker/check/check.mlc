@@ -31,15 +31,8 @@ fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
 end
 
 fn default_expr_mvp_ok(expression: Shared<Expr>) -> bool = match expression {
-  ExprInt(_, _)   => true,
-  ExprStr(_, _)   => true,
-  ExprBool(_, _)  => true,
-  ExprUnit(_)     => true,
-  ExprFloat(_, _) => true,
-  ExprI64(_, _)   => true,
-  ExprU8(_, _)    => true,
-  ExprUsize(_, _) => true,
-  ExprChar(_, _)  => true,
+  ExprInt(_, _) | ExprStr(_, _) | ExprBool(_, _) | ExprUnit(_) => true,
+  ExprFloat(_, _) | ExprI64(_, _) | ExprU8(_, _) | ExprUsize(_, _) | ExprChar(_, _) => true,
   _ => false
 }
 
@@ -61,8 +54,7 @@ fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_pa
             diagnostic_list_so_far_under_record
           end
         end),
-    VarTuple(_, _, _) => diagnostics_accumulator_so_far,
-    VarUnit(_, _)     => diagnostics_accumulator_so_far,
+    VarTuple(_, _, _) | VarUnit(_, _) => diagnostics_accumulator_so_far,
   }
 
 fn accumulate_diagnostics_after_literal_record_default_checks(
@@ -103,8 +95,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
               with_infer_errors
             end
           end),
-    VarTuple(_, _, _) => diagnostics_accumulator_so_far,
-    VarUnit(_, _)     => diagnostics_accumulator_so_far,
+    VarTuple(_, _, _) | VarUnit(_, _) => diagnostics_accumulator_so_far,
   }
 
 fn record_field_default_value_diagnostics(
@@ -254,15 +245,7 @@ fn global_names_merge_type_constructor_variant_into_map(
   type_constructor_variant_under_scan: Shared<TypeVariant>
 ) -> Map<string, bool> =
   match type_constructor_variant_under_scan {
-    VarUnit(variant_name, _) => do
-      global_names_so_far.set(variant_name, true)
-      global_names_so_far
-    end,
-    VarTuple(variant_name, _, _) => do
-      global_names_so_far.set(variant_name, true)
-      global_names_so_far
-    end,
-    VarRecord(variant_name, _, _) => do
+    VarUnit(variant_name, _) | VarTuple(variant_name, _, _) | VarRecord(variant_name, _, _) => do
       global_names_so_far.set(variant_name, true)
       global_names_so_far
     end,

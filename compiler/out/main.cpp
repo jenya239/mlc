@@ -127,7 +127,7 @@ return cache.has(norm_path) ? cache.get(norm_path) : loaded.has(norm_path) ? Loa
   profile::profile_maybe_end(profile_enabled, mlc::String("lex"));
   return ast_tokens::LexOut_has_errors(lexer_output) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("lex ") + path + mlc::String(": ") + lexer_output.errors[0]}} : [&]() -> LoadResult { 
   profile::profile_maybe_begin(profile_enabled, mlc::String("parse"));
-  predicates::ParseProgramResult parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, norm_path);
+  predicates::ProgramParseValue parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, norm_path);
   profile::profile_maybe_end(profile_enabled, mlc::String("parse"));
   ast::Program program = parse_parsed.program;
   mlc::Array<decl_index::LoadItem> items = {};
@@ -259,7 +259,7 @@ return ast_tokens::LexOut_has_errors(lexer_output) ? ast::Result<mlc::String, ml
  }()) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   mlc::String source_path = resolve_dotdot(entry_path);
   profile::profile_maybe_begin(profile_enabled, mlc::String("parse"));
-  predicates::ParseProgramResult parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, source_path);
+  predicates::ProgramParseValue parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, source_path);
   profile::profile_maybe_end(profile_enabled, mlc::String("parse"));
   return check_only && parse_parsed.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   profile::profile_maybe_end(profile_enabled, mlc::String("total"));

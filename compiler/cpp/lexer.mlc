@@ -172,28 +172,28 @@ fn cpp_scan_op(state: LexState) -> CppScanOpR = do
 end
 
 fn push_ident_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  const ident_scan = cpp_scan_ident(state)
-  tokens.push(ident_scan.token)
-  ident_scan.state
+  let { state, token } = cpp_scan_ident(state)
+  tokens.push(token)
+  state
 end
 
 fn push_int_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  const integer_scan = cpp_scan_int(state)
-  tokens.push(integer_scan.token)
-  integer_scan.state
+  let { state, token } = cpp_scan_int(state)
+  tokens.push(token)
+  state
 end
 
 fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string]) -> LexState = do
-  const string_scan = cpp_scan_string(state)
-  tokens.push(string_scan.token)
-  if string_scan.error != '' then errors.push(string_scan.error) end
-  string_scan.state
+  let { state, token, error } = cpp_scan_string(state)
+  tokens.push(token)
+  if error != '' then errors.push(error) end
+  state
 end
 
 fn push_operator_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  const operator_scan = cpp_scan_op(state)
-  tokens.push(operator_scan.token)
-  operator_scan.state
+  let { state, token } = cpp_scan_op(state)
+  tokens.push(token)
+  state
 end
 
 fn cpp_tokenize(input_text: string) -> CppLexOut = do

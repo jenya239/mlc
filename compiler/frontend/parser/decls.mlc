@@ -1,6 +1,6 @@
 // --- Declaration parsers --------------------------------------------------
 
-import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatternResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult, ParseProgramResult, bounds_parse_result, parse_result, pattern_parse_result, variant_parse_result, parameters_parse_result, variants_parse_result, types_parse_result, field_definitions_parse_result, declaration_parse_result, where_clause_parse_result, trait_body_parse_result, expression_parse_result, type_params_parse_result } from './predicates'
+import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatternResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult, ProgramParseValue, bounds_parse_result, parse_result, pattern_parse_result, variant_parse_result, parameters_parse_result, variants_parse_result, types_parse_result, field_definitions_parse_result, declaration_parse_result, where_clause_parse_result, trait_body_parse_result, expression_parse_result, type_params_parse_result, program_parse_result } from './predicates'
 import { Token } from '../ast_tokens'
 import { parse_type } from './types'
 import { parse_expr, parse_record_pattern_fields } from './exprs'
@@ -806,7 +806,7 @@ export fn parse_program_with_source_path(tokens: [Token], source_path: string) -
   Program { decls: declarations }
 end
 
-export fn parse_program_with_errors(tokens: [Token], source_path: string) -> ParseProgramResult = do
+export fn parse_program_with_errors(tokens: [Token], source_path: string) -> ProgramParseValue = do
   const declarations: [Shared<Decl>] = []
   let mut state = parser_new_with_source_path(tokens, source_path)
   while !state.at_eof() do
@@ -816,7 +816,7 @@ export fn parse_program_with_errors(tokens: [Token], source_path: string) -> Par
     end
     state = parsed.parser
   end
-  ParseProgramResult { program: Program { decls: declarations }, errors: state.errors }
+  program_parse_result(Program { decls: declarations }, state.errors)
 end
 
 export fn parse_program(tokens: [Token]) -> Program =

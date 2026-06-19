@@ -53,6 +53,8 @@ predicates::ExprResult expression_parse_result(std::shared_ptr<ast::Expr> expres
 
 predicates::TypeParamsResult type_params_parse_result(mlc::Array<mlc::String> params, mlc::Array<mlc::Array<mlc::String>> bounds, predicates::Parser parser) noexcept;
 
+predicates::ProgramParseValue program_parse_result(ast::Program program, mlc::Array<mlc::String> errors) noexcept;
+
 bool is_ctor_name(mlc::String name) noexcept;
 
 bool TokenKind_is_fn(ast_tokens::TokenKind self) noexcept;
@@ -244,6 +246,8 @@ predicates::TraitBodyResult trait_body_parse_result(mlc::Array<std::shared_ptr<a
 predicates::ExprResult expression_parse_result(std::shared_ptr<ast::Expr> expression, predicates::Parser parser) noexcept{return parse_result<std::shared_ptr<ast::Expr>>(expression, parser);}
 
 predicates::TypeParamsResult type_params_parse_result(mlc::Array<mlc::String> params, mlc::Array<mlc::Array<mlc::String>> bounds, predicates::Parser parser) noexcept{return parse_result<predicates::TypeParamsValue>(predicates::TypeParamsValue{params, bounds}, parser);}
+
+predicates::ProgramParseValue program_parse_result(ast::Program program, mlc::Array<mlc::String> errors) noexcept{return predicates::ProgramParseValue{program, errors};}
 
 bool is_ctor_name(mlc::String name) noexcept{return name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z");}
 

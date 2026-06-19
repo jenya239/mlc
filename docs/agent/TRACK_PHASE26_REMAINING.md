@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2.6; follows [TRACK_FORMATTER.md](TRACK_FORMATTER.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **planned** (blocked: depends on TRACK_FORMATTER)
 
 **Depends on:** TRACK_FORMATTER closed (or parallel after CODE_QUALITY if Planner reorders — default: after FORMATTER).
 

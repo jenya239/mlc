@@ -119,7 +119,7 @@ Strict order; each track depends on previous unless noted.
 | # | Track | Phase | Status |
 |---|-------|-------|--------|
 | 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **open** STEP=1 |
-| 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | planned |
+| 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** |
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | planned |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | planned |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |

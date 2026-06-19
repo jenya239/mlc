@@ -33,11 +33,11 @@ mlc::Array<ast::Diagnostic> derive_clause_diagnostics_after_trait_scan(mlc::Arra
 
 mlc::Array<ast::Diagnostic> derive_clause_diagnostics(mlc::Array<mlc::String> type_parameter_names, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_trait_names, ast::Span diagnostic_span) noexcept;
 
-bool derive_trait_name_allowed(mlc::String trait_name) noexcept{return trait_name == mlc::String("Display") || trait_name == mlc::String("Eq") || trait_name == mlc::String("Ord") || trait_name == mlc::String("Hash");}
+bool derive_trait_name_allowed(mlc::String trait_name) noexcept{return [&]() { if (trait_name == mlc::String("Display") || trait_name == mlc::String("Eq") || trait_name == mlc::String("Ord") || trait_name == mlc::String("Hash")) { return true; } return false; }();}
 
 bool string_list_contains_derive_trait(mlc::Array<mlc::String> haystack, mlc::String needle) noexcept{return haystack.any([needle](mlc::String trait_name) mutable { return trait_name == needle; });}
 
-bool type_expr_allowed_for_derive_hash_field(std::shared_ptr<ast::TypeExpr> type_expression) noexcept{return [&]() { if (std::holds_alternative<ast::TyI32>((*type_expression))) {  return true; } if (std::holds_alternative<ast::TyBool>((*type_expression))) {  return true; } if (std::holds_alternative<ast::TyString>((*type_expression))) {  return true; } return false; }();}
+bool type_expr_allowed_for_derive_hash_field(std::shared_ptr<ast::TypeExpr> type_expression) noexcept{return [&]() { if (std::holds_alternative<ast::TyI32>((*type_expression)) || std::holds_alternative<ast::TyBool>((*type_expression)) || std::holds_alternative<ast::TyString>((*type_expression))) { return true; } return false; }();}
 
 mlc::Array<ast::Diagnostic> derive_hash_field_error(mlc::String variant_label, mlc::String field_label, std::shared_ptr<ast::TypeExpr> type_expression, ast::Span diagnostic_span) noexcept{
 return type_expr_allowed_for_derive_hash_field(type_expression) ? mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("derive Hash: unsupported field type for \"") + field_label + mlc::String("\" in ") + variant_label + mlc::String(" (allowed: i32, bool, string)"), diagnostic_span, diagnostic_codes::diagnostic_code_e069())};

@@ -25,7 +25,7 @@ predicates::DeclResult parse_declaration(predicates::Parser parser) noexcept;
 
 ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
-predicates::ParseProgramResult parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
+predicates::ProgramParseValue parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
 

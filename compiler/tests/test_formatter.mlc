@@ -1,0 +1,30 @@
+// Formatter smoke tests (compiler/fmt/ast_printer.mlc).
+
+import { TestResult, assert_eq_str } from './test_runner'
+import { print_expr } from '../fmt/ast_printer'
+import { tokenize } from '../frontend/lexer'
+import { parser_new } from '../frontend/parser/predicates'
+import { parse_expr } from '../frontend/parser/exprs'
+
+fn format_expression_source(source: string) -> string =
+  print_expr(parse_expr(parser_new(tokenize(source).tokens)).value)
+
+export fn formatter_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_str('format int literal', format_expression_source('42'), '42'))
+  results.push(assert_eq_str('format string literal', format_expression_source('"hello"'), '"hello"'))
+  results.push(assert_eq_str('format bool true', format_expression_source('true'), 'true'))
+  results.push(assert_eq_str('format bool false', format_expression_source('false'), 'false'))
+  results.push(assert_eq_str('format unit', format_expression_source('()'), '()'))
+  results.push(assert_eq_str('format ident', format_expression_source('my_variable'), 'my_variable'))
+
+  const first_format = format_expression_source('my_variable')
+  const second_format = format_expression_source(first_format)
+  results.push(assert_eq_str('format round-trip ident', second_format, 'my_variable'))
+
+  const integer_round_trip = format_expression_source(format_expression_source("7"))
+  results.push(assert_eq_str('format round-trip int', integer_round_trip, "7"))
+
+  results
+end
