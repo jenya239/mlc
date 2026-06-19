@@ -110,14 +110,52 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (`bf6c46e8`)
 - **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (`bf6c46e8`)
 - **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (`bf6c46e8`)
+- **ParseProgramResult cleanup:** [TRACK_PARSE_PROGRAM_RESULT.md](TRACK_PARSE_PROGRAM_RESULT.md) — **open** STEP=1
+
+## Priority queue (2026-06-19 full-replan)
+
+Strict order; each track depends on previous unless noted.
+
+| # | Track | Phase | Status |
+|---|-------|-------|--------|
+| 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **open** STEP=1 |
+| 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | planned |
+| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | planned |
+| 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | planned |
+| 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |
+| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
+| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | planned |
+| 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
+
+```
+PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
+  → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT → REDDIT_DEMO
+```
+
+**Deferred:** parser `ref mut` (TRACK_PLAN step 15); MLC IR; package manager.
 
 ## Next step (Driver)
 
-> plan-refresh — no open Driver track; wait for Planner.
+> **Immediate:** [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) **STEP=1** (guard resumes after replan).
 
 ## Next step (Planner)
 
-> **Immediate:** plan-refresh — pick next track (stability > security > performance).
+> plan-refresh after each track close or every ~8 driver turns.
+
+## Meta-Planner checklist (2026-06-19 full-replan)
+
+- [x] Updated [PLAN.md](../PLAN.md) §5 — phase status table + dependency graph
+- [x] Priority queue in TRACK_PLAN (8 tracks)
+- [x] Skeleton tracks: CODE_QUALITY, FORMATTER, PHASE26_REMAINING, SELF_HOST_BOOTSTRAP, LSP, CPP_HEADER_IMPORT, REDDIT_DEMO
+- [x] Commit docs; enqueue Planner plan-refresh
+
+## Planner checklist (2026-06-19 plan-refresh — PARSE_PROGRAM_RESULT open)
+
+- [x] All tracks closed; batch committed **`bf6c46e8`**; gate **1005/0**
+- [x] Priority **stability** > security > performance — `ParseProgramResult` remainder (PLAN §2.5.5)
+- [x] Opened **TRACK_PARSE_PROGRAM_RESULT**
+- [x] Deferred: parser `ref mut`; security (parser panic audit) after stability
+- [x] Enqueue Driver STEP=1 PARSE_PROGRAM_RESULT
 
 ## Meta checklist (2026-06-15 meta-review — batch commit)
 

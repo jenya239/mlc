@@ -366,205 +366,69 @@ compiler/
 
 ## 5. Фазы разработки
 
-### Phase 1: Стабилизация (приоритет сейчас)
+**Сводка (2026-06-19):**
 
-**Цель**: надёжный mlcc без регрессий, полное покрытие тестами.
+| Фаза | Статус | Трек / примечание |
+|------|--------|-------------------|
+| **1** Стабилизация | **done** | [TRACK_PHASE1](agent/TRACK_PHASE1.md) closed |
+| **2** C++ AST backend | **done** | TRACK_CPPEXPR + TRACK_CPPGEN closed |
+| **2.5** Языковые улучшения | **nearly done** | ParseResult family → [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md) **open** |
+| **2.6** Структурный рефакторинг | **partial** | ExprVisitor codegen/infer/transform done; names/mutations/transform passes + context methods → [TRACK_PHASE26_REMAINING](agent/TRACK_PHASE26_REMAINING.md) |
+| **3** Инструментарий | **planned** | Formatter → [TRACK_FORMATTER](agent/TRACK_FORMATTER.md); LSP → [TRACK_LSP](agent/TRACK_LSP.md) |
+| **3.5** C++ header import | **planned** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md); дизайн: [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md) |
+| **4** Self-host bootstrap | **planned** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) — убрать Ruby из `build.sh` |
+| **5** Reddit / demo | **planned** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) |
 
-1. **Диагностика**: все ошибки должны иметь точный `span` (файл:строка:колонка).
-   - Формат rustc-style message + location — **step 1 done** ([TRACK_PHASE1](agent/TRACK_PHASE1.md) `a74d480`).
-   - Коды ошибок `error[E001]:` — step 2 in progress.
-   - Добавить span к типам в `SemanticIR` где отсутствует.
-   - Унифицировать формат: `error[E001]: message\n  --> file:line:col`.
+**Приоритет очереди (строгий порядок + зависимости):**
 
-2. **Тесты**: расширить `test_checker.mlc` и `test_codegen.mlc`.
-   - Цель: каждый вариант каждого `SExpr`/`SStmt` покрыт хотя бы одним тестом.
-   - Negative tests: невалидный ввод должен давать конкретную ошибку, не crash.
+```
+PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
+  → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT → REDDIT_DEMO
+```
 
-3. **Fuzzing**: написать простой random AST generator на MLC.
-   - Генерировать случайные синтаксически корректные программы.
-   - Проверять: mlcc не падает, вывод компилируется g++.
+Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
 
-4. **Crash-safety**: mlcc не должен производить core dump ни на каком вводе.
-   - Все `unreachable` ветки → `panic` с сообщением.
-   - Добавить `--check-only` флаг: только checker, без codegen.
+---
 
-5. **Out-директория**: убрать `out/` из workspace.
-   - Писать в `--output` или в `/tmp/mlc_XXXXX/` по умолчанию.
-   - Или: `--output-dir path`.
+### Phase 1: Стабилизация — **done**
 
-6. **Сборка**: `build.sh` должен быть детерминированным.
-   - Зафиксировать порядок линковки.
-   - Добавить `--emit-compile-commands` для clangd.
+**Цель**: надёжный mlcc без регрессий. Закрыто: диагностика, fuzz, `--check-only`, crash-safety, out-dir, build determinism. См. [TRACK_PHASE1](agent/TRACK_PHASE1.md).
 
-### Phase 2: C++ AST backend (архитектурное улучшение)
+### Phase 2: C++ AST backend — **done**
 
-**Статус:** основной переход выполнен (TRACK_CPPEXPR + TRACK_CPPGEN closed). Остатки string-bridge — bootstrap edge cases.
+**Статус:** TRACK_CPPEXPR + TRACK_CPPGEN closed. Codegen строит CppAST; string-bridge только bootstrap edge cases.
 
-**Цель**: заменить строковую конкатенацию в codegen на построение CppAST.
+### Phase 2.5: Языковые улучшения — **nearly done**
 
-1. Расширить `compiler/cpp/ast.mlc` до полного AST (см. выше).
-2. Написать `compiler/cpp/printer.mlc` — форматированный pretty-printer.
-3. Перевести `codegen/` модули с `-> string` на `-> CppExpr` / `-> CppStmt`.
-   - Начать с листьев: литералы, идентификаторы.
-   - Затем выражения, затем statements, затем declarations.
-4. Параллельно запускать старый и новый backend, сравнивать вывод (diff-тест).
-5. После полного перехода — удалить старый string-based codegen.
+**Статус:** string match, type aliases, generics, ParseResult migration (ExprResult, TypeParamsResult) — closed (`bf6c46e8`). Остаток: `ProgramParseValue` / `parse_program_with_errors` → [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md).
 
-Это основная архитектурная работа. Делается инкрементально, без регрессий.
+**Отложено:** parser `ref mut` (отдельная ветка); regex match-паттерны.
 
-### Phase 2.5: Языковые улучшения
+### Phase 2.6: Структурный рефакторинг — **partial**
 
-**Цель**: убрать boilerplate, который заметен уже в текущем коде компилятора.
+**Сделано:** folder restructure; ExprVisitor для infer/transform/codegen ([TRACK_VISITOR_PATTERN](agent/TRACK_VISITOR_PATTERN.md) closed).
 
-1. **Match по строкам** — сейчас все `keyword_kind`-функции это длинные `if/else if` цепочки. Нужно:
-   - Parser: разрешить строковые литералы как паттерны в `match`-армах.
-   - Checker: тип subject должен быть `string`; паттерны проверяются на уникальность.
-   - Codegen: генерить `if/else if` или lookup-таблицу.
-   - Пример после:
-     ```
-     fn keyword_kind(word: string) -> TKind =
-       match word {
-       | "fn"     -> KFn
-       | "type"   -> KType
-       | "let"    -> KLet
-       | _        -> KIdent(word)
-       }
-     ```
+**Остаток:** names + mutations + transform passes на ExprVisitor; методы на CodegenContext → [TRACK_PHASE26_REMAINING](agent/TRACK_PHASE26_REMAINING.md). См. [CODE_REVIEW_2026_06.md](CODE_REVIEW_2026_06.md).
 
-2. **Match со строковыми regex-паттернами** (опционально, после п.1):
-   - Синтаксис: `| /^[0-9]+$/ -> ...` в match-армах.
-   - Codegen: вызов `std::regex_match` или `re2` в C++ выходе.
-   - Полезно для лексеров, валидации, CLI-парсеров.
+### Phase 3: Инструментарий — **planned**
 
-3. **Деструктуризация в let** — `let { st, tok } = scan(state)` — синтаксис уже в parser/checker (тесты есть), но в коде компилятора не используется. Задача: пройтись по `compiler/` и заменить `result.field` паттерн.
+1. **Форматтер** — [TRACK_FORMATTER](agent/TRACK_FORMATTER.md) (зависит от CODE_QUALITY audit).
+2. **LSP** — [TRACK_LSP](agent/TRACK_LSP.md) (зависит от formatter + стабильных диагностик).
+3. Playground / package manager — после LSP.
 
-4. **Type aliases** — `type CppExprs = [Shared<CppExpr>]`. Нужно в parser + codegen для устранения повторений длинных generic-типов.
+### Phase 3.5: C++ Header Import — **planned**
 
-5. **ParseResult<T>** — сейчас 15 одинаковых структур `{ value: T, parser: Parser }` в `frontend/`. После generics на record — одна. Зависит от полных generics.
+Дизайн: [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md). Трек: [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md).
 
-### Phase 2.6: Структурный рефакторинг компилятора
+### Phase 4: Self-hosting completeness — **planned**
 
-**Цель**: перейти от процедурного стиля (свободные функции `fn f(ctx, node)`) к методам через `extend` и трейты. Сделать добавление новых форм AST явным на уровне системы типов.
+**Цель:** `compiler/build.sh` без Ruby. Трек: [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md).
 
-**Контекст**: сейчас в 138 файлах компилятора только 22 использования `extend`. Основная масса кода — свободные функции. Каждый проход (names, mutations, infer, transform, codegen) содержит свой полный `match expression { ... }` на все ~25 форм AST — итого 4–5 копий одинаковой структуры.
+### Phase 5: Reddit / Community — **planned**
 
-1. **Visitor-паттерн через трейт** — `ExprVisitor<Result>` уже есть в `expr_visitor.mlc`. Перевести все проходы:
-   ```
-   // Сейчас — fn infer_expr(ctx, expr) с match внутри на 25 веток
-   // После:
-   extend InferPass : ExprVisitor<InferResult> {
-     fn visit_call(self, ...) -> InferResult
-     fn visit_match(self, ...) -> InferResult
-     // компилятор скажет, если какой-то формы нет
-   }
-   extend CodegenPass : ExprVisitor<Shared<CppExpr>> { ... }
-   extend NamesPass   : ExprVisitor<NameCheckResult>  { ... }
-   ```
-   Файлы: `checker/infer/infer.mlc`, `checker/names.mlc`, `checker/check_mutations.mlc`, `transform/transform.mlc`, `codegen/eval.mlc`.
+Трек: [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md). После self-host bootstrap + форматтер.
 
-2. **Методы на контексте** — перевести `fn gen_expr(context, expr)` в `extend CodegenContext { fn gen_expr(self, expr) }`. Уже начато в `context.mlc:129`, нужно распространить на весь `codegen/`.
-
-3. **Методы на типах результатов** — `extend InferResult`, `extend NameCheckResult` уже частично сделаны. Дополнить: `.and_then`, `.map_type`, `.merge_errors`.
-
-4. **Display-трейт для CppAST** — вместо `fn print_expr(expr) -> string` в `cpp_printer.mlc`:
-   ```
-   extend CppExpr : Display {
-     fn display(self) -> string = match self { ... }
-   }
-   ```
-   Это позволит `expr.display()` и использовать в string interpolation.
-
-5. **Рефакторинг checker/transform** — разбить `transform/transform.mlc` (828 строк) по форме AST по аналогии с существующими `infer_call.mlc`, `infer_match.mlc`. Один файл = одна форма или группа форм.
-
-6. **TypeRegistry → подструктуры** — разбить god-object (15+ map) на `FnIndex`, `AdtIndex`, `RecordIndex`. Каждый index — своя структура с методами.
-
-7. **Устранение сокращений** — все переменные, параметры, поля и типы должны иметь полные имена. Текущий масштаб (~1000 вхождений):
-
-   | Сокращение | Замена | Примечание |
-   |------------|--------|------------|
-   | `ctx` | `context` | переменные и типы |
-   | `expr` / `SExpr` / `CppExpr` | `expression` / `SemanticExpression` / `CppExpression` | |
-   | `decl` / `SDecl` / `CppDecl` | `declaration` / `SemanticDeclaration` / `CppDeclaration` | |
-   | `pat` / `Pat` | `pattern` / `Pattern` | |
-   | `typ` | `type_value` | `type` — ключевое слово, поэтому суффикс `_value` |
-   | `st` | `state` | |
-   | `tok` / `TKind` / `CppTKind` | `token` / `TokenKind` / `CppTokenKind` | |
-   | `stmt` / `SStmt` / `CppStmt` | `statement` / `SemanticStatement` / `CppStatement` | |
-   | `col` | `column` | |
-   | `ident` | `identifier` | |
-   | `src` | `source` | |
-   | `arg` | `argument` | |
-   | `pos` | `position` | |
-   | `val` | `value` | |
-   | `err` | `error` | |
-   | `ret` | `return_value` | |
-
-   Делать пофайлово, верифицировать selfhost diff после каждого файла.
-
-8. **Кавычки строковых литералов** — единое правило:
-   - Одинарные кавычки `'text'` — все строки без интерполяции, включая `'\n'`, `'\t'`, `'\0'`.
-   - Backticks `` `Hello ${name}` `` — только при интерполяции.
-   - Двойные кавычки — не используются.
-
-   Сейчас: 69 файлов содержат ~1602 строки с двойными кавычками там, где интерполяция не нужна. Заменить пофайлово вместе с п.7.
-
-**Верификация**: `compiler/build.sh` + selfhost diff пустой после каждого шага.
-**Ссылка**: полный анализ → `docs/CODE_REVIEW_2026_06.md`.
-
-### Phase 3: Инструментарий
-
-**Цель**: сделать язык пригодным для использования другими.
-
-1. **Форматтер** (`mlc fmt`): детерминированное форматирование .mlc файлов.
-   - Основан на AST (уже есть parser).
-   - Правила: отступы 2 пробела, выравнивание полей record, etc.
-
-2. **LSP-сервер** (`mlc lsp`): Language Server Protocol.
-   - Минимум: go-to-definition, hover types, диагностика.
-   - Используется как clangd для C++.
-   - Строится поверх checker (уже есть type inference).
-
-3. **Playground** (веб): компиляция MLC в браузере.
-   - mlcc → WASM (после WASM backend) или через сервер.
-   - Показывает: MLC source | SemanticIR | C++ output | вывод программы.
-
-4. **Пакетный менеджер**: минималистичный (только для демонстрации).
-   - `mlc.toml` с зависимостями.
-   - Fetch из git, compile, link.
-
-### Phase 3.5: C++ Header Import
-
-**Цель**: импортировать существующие C++ библиотеки из mlcc через парсинг заголовочных файлов.
-
-Дизайн: `docs/CPP_PARSER_DESIGN.md`
-
-1. **Лексер** (`compiler/cpp/lexer.mlc` расширить): все ключевые слова, char/float/hex литералы, пропуск комментариев, `#` как токен.
-
-2. **Расширить CppType** (`cpp_ast.mlc`): `CppTypePtr`, `CppTypeConst`, `CppTypeRRef`, `CppTypeArray`, `CppTypeAuto`, `CppTypeDecltype`.
-
-3. **Расширить CppDecl**: `CppClassDecl(CppClassDef)`, `CppEnumDecl`, `CppTypedefDecl`, `CppForwardDecl`, `CppTemplateDecl`, `CppExternBlock`.
-
-4. **Парсер типов** (`compiler/cpp/parser/types.mlc`): `parse_type(tokens, pos)` — квалификаторы, указатели, ссылки, template параметры.
-
-5. **Парсер деклараций** (`compiler/cpp/parser/decls.mlc`): class/struct, fn proto, enum, namespace, template, using, typedef, extern "C", error recovery.
-
-6. **Парсер выражений** (`compiler/cpp/parser/exprs.mlc`): Pratt parser для default args, array sizes, constexpr.
-
-7. **Интеграция с import**: `import "path/to/header.h"` регистрирует C++ типы и функции в TypeRegistry.
-
-Трек: `TRACK_CPP_HEADER_IMPORT.md`
-
-### Phase 4: Self-hosting completeness
-
-**Цель**: mlcc компилирует 100% собственного кода без Ruby.
-
-- Сейчас: mlcc компилирует весь `compiler/`, E2E работает, но bootstrap через Ruby.
-- Цель: `compiler/build.sh` с `MLCC_BOOTSTRAP=1` → mlcc_bootstrap через mlcc.
-- Критерий: `mlcc_bootstrap compiler/main.mlc` → результат идентичен mlcc.
-
-### Phase 5: Reddit / Community
-
-**Цель**: убедительная демонстрация self-hosted компилятора.
+**Качество кода (параллельный слой после 2.5):** [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) — деструктуризация, HOF в codegen, or-patterns, string-match adoption, audit.
 
 ---
 

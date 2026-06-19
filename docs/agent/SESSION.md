@@ -5,10 +5,59 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf` |
+| agent_token_last | `cr-agent-098d4e12-6d53-4fdf-acc7-d906ec8589c7` |
 | driver_turns_since_plan | 0|
-| step_last | commit-and-continue|
-| active_track | none (committed `bf6c46e8`) |
+| step_last | full-replan|
+| active_track | TRACK_PARSE_PROGRAM_RESULT → STEP=1 (priority queue set) |
+
+### Turn 2026-06-19 (Meta-Planner full-replan)
+
+| field | value |
+|-------|-------|
+| role | Meta-Planner |
+| step | full-replan |
+| done | PLAN §5; TRACK_PLAN priority queue (8 tracks); skeleton tracks created |
+| result | dependency: PARSE_PROGRAM → CODE_QUALITY → FORMATTER → PHASE26 → BOOTSTRAP → LSP → CPP_HEADER → REDDIT |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-098d4e12-6d53-4fdf-acc7-d906ec8589c7
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+Replan committed. Resume TRACK_PARSE_PROGRAM_RESULT STEP=1 (WIP); enqueue Driver.
+```
+
+### Turn 2026-06-19 (Planner plan-refresh — PARSE_PROGRAM_RESULT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PARSE_PROGRAM_RESULT (new) |
+| done | TYPE_PARAMS closed (`bf6c46e8`); stability → `ParseProgramResult` remainder |
+| result | baseline **1005/0**; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=1 TRACK_PARSE_PROGRAM_RESULT |
+
+**Enqueue payload (Driver STEP=1):**
+```
+AGENT_TOKEN=cr-agent-7a597b27-8b5d-493e-9d48-ed40cb97737e
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_PROGRAM_RESULT.md
+
+Migrate ParseProgramResult → ProgramParseValue; program_parse_result; parse_program_with_errors. build_tests ok.
+```
 
 ### Turn 2026-06-15 (Meta commit-and-continue — idempotent)
 
