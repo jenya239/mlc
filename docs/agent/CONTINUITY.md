@@ -16,7 +16,7 @@
 
 **Loop guard (cr server):** `cursor_enqueue_send` / guard блокируют дубли того же `ROLE:STEP` (30m) и авто-правят `INSTRUCTIONS_REV`. При `enqueue blocked` — не повторять; продолжить работу или enqueue следующий STEP.
 
-## MCP `user-cr-cursor` — только через token
+## MCP `agent-loop` — только через token
 
 Self-методов (`cursor_enqueue_self`, `cursor_send_self`, `cursor_active_composer`) **нет**.  
 Routing — token из `cursor_agent_register` bubble **или** `CR_AGENT_COMPOSER_ID` / `composerId` в register|enqueue. **Без CDP bind на active composer** (orch из другого чата иначе уходит не туда).

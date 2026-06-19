@@ -46,7 +46,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 - No abbreviations (`.cursor/rules/no-abbreviations.mdc`).
 - Minimal diff; match surrounding style.
 
-## MCP (`user-cr-cursor`)
+## MCP (`agent-loop`)
 
 Token-only — [CONTINUITY.md](CONTINUITY.md).
 
