@@ -4,6 +4,12 @@ import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
+import {
+  match_arm_wild_or_unit_return,
+  match_arm_binding_identifier,
+  match_arm_constructed_value,
+  match_arm_constructed_value_generic
+} from '../codegen/expr/expr'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
 import { gen_program } from '../codegen/module'
@@ -123,34 +129,42 @@ export fn codegen_tests() -> [TestResult] = do
   const single_params: [string] = ["x"]
   results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) mutable { return ... }\'',
     gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
-    '[&](auto x) mutable { return (x + 1); }'))
+    '[=](auto x) mutable { return (x + 1); }'))
 
   const lambda_typed_with_single_i32_parameter = Shared.new(TFn([Shared.new(TI32)], Shared.new(TI32)))
   results.push(assert_eq_str('ExprLambda annotated TFn([i32], i32) uses explicit int parameter',
     gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), context),
-    '[&](int x) mutable { return (x + 1); }'))
+    '[=](int x) mutable { return (x + 1); }'))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) mutable { return ... }\'',
     gen_expr(Shared.new(SemanticExpressionLambda(two_params, Shared.new(SemanticExpressionBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
-    '[&](auto a, auto b) mutable { return (a + b); }'))
+    '[=](auto a, auto b) mutable { return (a + b); }'))
 
   const zero_params: [string] = []
   results.push(assert_eq_str('ExprLambda zero params - \'[]() mutable { return ... }\'',
     gen_expr(Shared.new(SemanticExpressionLambda(zero_params, si(42), unk_t(), span_unknown())), context),
     '[]() mutable { return 42; }'))
 
+  const stored_lambda_program =
+    'fn make_checker(allowed: [string]) -> i32 = do\n  const checker = fn word => if allowed.contains(word) then 1 else 0 end\n  checker("fn")\nend\nfn main() -> i32 = make_checker(["fn"])\n'
+  const stored_lambda_cpp = gen_program(parse_program(tokenize(stored_lambda_program).tokens))
+  results.push(assert_code_contains('stored lambda make_checker uses value capture',
+    stored_lambda_cpp, '[=](auto word)'))
+  results.push(assert_code_not_contains('stored lambda make_checker avoids reference capture',
+    stored_lambda_cpp, '[&](auto word)'))
+
   const three_lambda_parameters: [string] = ['first_parameter', 'second_parameter', 'third_parameter']
   results.push(assert_eq_str(
     'cpp_lambda_header_prefix — three identifiers',
     cpp_lambda_header_prefix(three_lambda_parameters),
-    '[&](auto first_parameter, auto second_parameter, auto third_parameter) mutable'))
+    '[=](auto first_parameter, auto second_parameter, auto third_parameter) mutable'))
 
   const escaped_cpp_keyword_parameter: [string] = ['class']
   results.push(assert_eq_str(
     'cpp_lambda_header_prefix — cpp keyword parameter uses cpp_safe',
     cpp_lambda_header_prefix(escaped_cpp_keyword_parameter),
-    '[&](auto class_) mutable'))
+    '[=](auto class_) mutable'))
 
   results.push(assert_eq_str('map_method: length - length',
     map_method('length'), 'length'))
@@ -185,7 +199,7 @@ export fn codegen_tests() -> [TestResult] = do
   const call_lambda_args: [Shared<SemanticExpression>] = [si(5), Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
     gen_expr(Shared.new(SemanticExpressionCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
-    'apply(5, [&](auto x) mutable { return (x + 1); })'))
+    'apply(5, [=](auto x) mutable { return (x + 1); })'))
 
   const ok_args: [Shared<SemanticExpression>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',
@@ -297,6 +311,17 @@ export fn codegen_tests() -> [TestResult] = do
     if match_out.contains('"one"') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('ExprMatch contains other',
     if match_out.contains('"other"') then 'yes' else 'no' end, 'yes'))
+
+  results.push(assert_eq_str('match_arm_wild_or_unit_return uses value capture',
+    match_arm_wild_or_unit_return("1"), "[=](const auto& __v) { return 1; }"))
+  results.push(assert_eq_str('match_arm_binding_identifier uses value capture',
+    match_arm_binding_identifier("n", "n"), "[=](const auto& n) { return n; }"))
+  results.push(assert_eq_str('match_arm_constructed_value uses value capture',
+    match_arm_constructed_value("const Point& p", "", "p.x"),
+    "[=](const Point& p) { return p.x; }"))
+  results.push(assert_eq_str('match_arm_constructed_value_generic uses value capture',
+    match_arm_constructed_value_generic("Shape", "shape", "", "1"),
+    "[=]<typename __mlcT>(const Shape<__mlcT>& shape) { return 1; }"))
 
   const string_match_arms: [Shared<SemanticMatchArm>] = [
     smatch_arm(Shared.new(PatternStringLit('fn', span_unknown())), si(1)),

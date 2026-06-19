@@ -9,61 +9,103 @@ import { TransformContext, TransformStmtsResult,
          transform_expr, transform_context_with_env, coerce_expr_to_type } from './transform'
 import { infer_let_pattern_env } from './let_pattern_infer'
 
+type Transform_stmts_fold_state = Transform_stmts_fold_state {
+  typed_statements: [Shared<SemanticStatement>],
+  type_environment: Map<string, Shared<Type>>,
+}
+
+fn transform_stmts_fold_step(
+  accumulator: Transform_stmts_fold_state,
+  statement: Shared<Stmt>,
+  transform_context: TransformContext
+) -> Transform_stmts_fold_state = do
+  const current_context = transform_context_with_env(transform_context, accumulator.type_environment)
+  match statement {
+    StmtLet(binding_name, is_mut, annotation, value_expression, source_span) => do
+      const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
+      const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+      const inferred_type  = sexpr_type(typed_value)
+      const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+      let type_environment = accumulator.type_environment
+      type_environment.set(binding_name, value_type)
+      const coerced_value = coerce_expr_to_type(typed_value, value_type)
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementLet(binding_name, is_mut, coerced_value, value_type, source_span))]),
+        type_environment: type_environment,
+      }
+    end,
+    StmtLetPattern(pattern, is_mut, annotation, value_expression, has_else, else_body, source_span) => do
+      const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
+      const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+      const inferred_type  = sexpr_type(typed_value)
+      const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+      const coerced_value = coerce_expr_to_type(typed_value, value_type)
+      let type_environment = accumulator.type_environment
+      infer_let_pattern_env(pattern, value_type, type_environment, current_context.registry)
+      const typed_else_body = transform_expr(else_body, current_context, transform_stmts)
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementLetPattern(
+            pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span))]),
+        type_environment: type_environment,
+      }
+    end,
+    StmtLetConst(binding_name, annotation, value_expression, source_span) => do
+      const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
+      const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
+      const inferred_type  = sexpr_type(typed_value)
+      const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
+      let type_environment = accumulator.type_environment
+      type_environment.set(binding_name, value_type)
+      const coerced_value = coerce_expr_to_type(typed_value, value_type)
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementLetConst(binding_name, coerced_value, value_type, source_span))]),
+        type_environment: type_environment,
+      }
+    end,
+    StmtExpr(expression, source_span) => do
+      const typed_expr = transform_expr(expression, current_context, transform_stmts)
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementExpr(typed_expr, source_span))]),
+        type_environment: accumulator.type_environment,
+      }
+    end,
+    StmtReturn(return_expression, source_span) => do
+      const typed_return = transform_expr(return_expression, current_context, transform_stmts)
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementReturn(typed_return, source_span))]),
+        type_environment: accumulator.type_environment,
+      }
+    end,
+    StmtBreak(source_span) =>
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementBreak(source_span))]),
+        type_environment: accumulator.type_environment,
+      },
+    StmtContinue(source_span) =>
+      Transform_stmts_fold_state {
+        typed_statements: accumulator.typed_statements.concat([Shared.new(
+          SemanticStatementContinue(source_span))]),
+        type_environment: accumulator.type_environment,
+      },
+  }
+end
+
 export fn transform_stmts(
   statements: [Shared<Stmt>],
   transform_context: TransformContext
 ) -> TransformStmtsResult = do
-  let mut typed_statements: [Shared<SemanticStatement>] = []
-  const current_env = transform_context.type_env
-  let mut statement_index = 0
-  while statement_index < statements.length() do
-    const current_context = transform_context_with_env(transform_context, current_env)
-    match statements[statement_index] {
-      StmtLet(binding_name, is_mut, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
-        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
-        const inferred_type  = sexpr_type(typed_value)
-        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
-        current_env.set(binding_name, value_type)
-        const coerced_value = coerce_expr_to_type(typed_value, value_type)
-        typed_statements.push(Shared.new(SemanticStatementLet(binding_name, is_mut, coerced_value, value_type, source_span)))
-        ()
-      end,
-      StmtLetPattern(pattern, is_mut, annotation, value_expression, has_else, else_body, source_span) => do
-        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
-        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
-        const inferred_type  = sexpr_type(typed_value)
-        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
-        const coerced_value = coerce_expr_to_type(typed_value, value_type)
-        infer_let_pattern_env(pattern, value_type, current_env, current_context.registry)
-        const typed_else_body = transform_expr(else_body, current_context, transform_stmts)
-        typed_statements.push(Shared.new(SemanticStatementLetPattern(pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span)))
-        ()
-      end,
-      StmtLetConst(binding_name, annotation, value_expression, source_span) => do
-        const annotated_type = type_from_annotation_with_registry(annotation, current_context.registry)
-        const typed_value    = transform_expr(value_expression, current_context, transform_stmts)
-        const inferred_type  = sexpr_type(typed_value)
-        const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
-        current_env.set(binding_name, value_type)
-        const coerced_value = coerce_expr_to_type(typed_value, value_type)
-        typed_statements.push(Shared.new(SemanticStatementLetConst(binding_name, coerced_value, value_type, source_span)))
-        ()
-      end,
-      StmtExpr(expression, source_span) => do
-        const typed_expr = transform_expr(expression, current_context, transform_stmts)
-        typed_statements.push(Shared.new(SemanticStatementExpr(typed_expr, source_span)))
-        ()
-      end,
-      StmtReturn(return_expression, source_span) => do
-        const typed_return = transform_expr(return_expression, current_context, transform_stmts)
-        typed_statements.push(Shared.new(SemanticStatementReturn(typed_return, source_span)))
-        ()
-      end,
-      StmtBreak(source_span)    => do typed_statements.push(Shared.new(SemanticStatementBreak(source_span)));    () end,
-      StmtContinue(source_span) => do typed_statements.push(Shared.new(SemanticStatementContinue(source_span))); () end
-    }
-    statement_index = statement_index + 1
-  end
-  TransformStmtsResult { statements: typed_statements, type_env: current_env }
+  const final_state = statements.fold(
+    Transform_stmts_fold_state {
+      typed_statements: [],
+      type_environment: transform_context.type_env,
+    },
+    (accumulator, statement) =>
+      transform_stmts_fold_step(accumulator, statement, transform_context))
+  TransformStmtsResult { statements: final_state.typed_statements, type_env: final_state.type_environment }
 end

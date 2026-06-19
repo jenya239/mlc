@@ -25,43 +25,97 @@ fn each_program_declaration_depth_first(program: Program, handle_declaration: (S
       do handle_declaration(declaration_without_export_wrappers(root_declaration_under_program)); 0 end)
 end
 
-export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
-  let mut trait_declaration_names: Map<string, bool> = Map.new()
-  let mut nominal_type_declaration_names: Map<string, bool> = Map.new()
-  let conflicts: [Diagnostic] = []
-  each_program_declaration_depth_first(program, (current_declaration) => do
-    match current_declaration {
-      DeclType(type_name, _, _, _, _) => do
-        if trait_declaration_names.has(type_name) then
-          conflicts.push(diagnostic_error_with_code(
+type Trait_name_conflict_fold_state = Trait_name_conflict_fold_state {
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>,
+  conflicts: [Diagnostic],
+}
+
+fn trait_name_conflict_fold_step(
+  fold_state: Trait_name_conflict_fold_state,
+  current_declaration: Shared<Decl>
+) -> Trait_name_conflict_fold_state = do
+  match current_declaration {
+    DeclType(type_name, _, _, _, _) => do
+      const conflicts_after_type =
+        if fold_state.trait_declaration_names.has(type_name) then
+          fold_state.conflicts.concat([diagnostic_error_with_code(
             'the name "' + type_name + '" is declared as both a type and a trait',
             decl_name_span(current_declaration),
-            diagnostic_code_e073()))
+            diagnostic_code_e073())])
+        else
+          fold_state.conflicts
         end
-        nominal_type_declaration_names.set(type_name, true); ()
-      end,
-      DeclTypeAlias(type_name, _, _, _) => do
-        if trait_declaration_names.has(type_name) then
-          conflicts.push(diagnostic_error_with_code(
+      Trait_name_conflict_fold_state {
+        trait_declaration_names: fold_state.trait_declaration_names,
+        nominal_type_declaration_names: do
+          let nominal_names = fold_state.nominal_type_declaration_names
+          nominal_names.set(type_name, true)
+          nominal_names
+        end,
+        conflicts: conflicts_after_type,
+      }
+    end,
+    DeclTypeAlias(type_name, _, _, _) => do
+      const conflicts_after_alias =
+        if fold_state.trait_declaration_names.has(type_name) then
+          fold_state.conflicts.concat([diagnostic_error_with_code(
             'the name "' + type_name + '" is declared as both a type and a trait',
             decl_name_span(current_declaration),
-            diagnostic_code_e073()))
+            diagnostic_code_e073())])
+        else
+          fold_state.conflicts
         end
-        nominal_type_declaration_names.set(type_name, true); ()
-      end,
-      DeclTrait(trait_name, _, _, _) => do
-        if nominal_type_declaration_names.has(trait_name) then
-          conflicts.push(diagnostic_error_with_code(
+      Trait_name_conflict_fold_state {
+        trait_declaration_names: fold_state.trait_declaration_names,
+        nominal_type_declaration_names: do
+          let nominal_names = fold_state.nominal_type_declaration_names
+          nominal_names.set(type_name, true)
+          nominal_names
+        end,
+        conflicts: conflicts_after_alias,
+      }
+    end,
+    DeclTrait(trait_name, _, _, _) => do
+      const conflicts_after_trait =
+        if fold_state.nominal_type_declaration_names.has(trait_name) then
+          fold_state.conflicts.concat([diagnostic_error_with_code(
             'the name "' + trait_name + '" is declared as both a type and a trait',
             decl_name_span(current_declaration),
-            diagnostic_code_e073()))
+            diagnostic_code_e073())])
+        else
+          fold_state.conflicts
         end
-        trait_declaration_names.set(trait_name, true); ()
-      end,
-      _ => ()
-    }
-  end)
-  conflicts
+      Trait_name_conflict_fold_state {
+        trait_declaration_names: do
+          let trait_names = fold_state.trait_declaration_names
+          trait_names.set(trait_name, true)
+          trait_names
+        end,
+        nominal_type_declaration_names: fold_state.nominal_type_declaration_names,
+        conflicts: conflicts_after_trait,
+      }
+    end,
+    _ => fold_state,
+  }
+end
+
+export fn trait_and_type_name_conflict_diagnostics(program: Program) -> [Diagnostic] = do
+  const initial_fold_state = Trait_name_conflict_fold_state {
+    trait_declaration_names: Map.new(),
+    nominal_type_declaration_names: Map.new(),
+    conflicts: do
+      let empty_conflicts: [Diagnostic] = []
+      empty_conflicts
+    end,
+  }
+  const final_fold_state = program.decls.fold(
+    initial_fold_state,
+    (fold_state_so_far, root_declaration) =>
+      trait_name_conflict_fold_step(
+        fold_state_so_far,
+        declaration_without_export_wrappers(root_declaration)))
+  final_fold_state.conflicts
 end
 
 fn align_trait_bounds_matrix(type_parameter_names: [string], trait_bounds_rows: [[string]]) -> [[string]] = do

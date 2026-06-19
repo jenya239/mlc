@@ -8,7 +8,7 @@ import { list_contains } from '../decl/decl_index'
 import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
-  const capture = if parameters.length() == 0 then '[]' else '[&]' end
+  const capture = if parameters.length() == 0 then '[]' else '[=]' end
   const parameter_list = if parameters.length() == 0 then ''
     else do
       let parts: [string] = []; let mut index = 0

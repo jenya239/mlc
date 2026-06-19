@@ -17,13 +17,12 @@
 
 namespace test_pipe_and_record_update {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> pipe_and_record_update_tests() noexcept;
 

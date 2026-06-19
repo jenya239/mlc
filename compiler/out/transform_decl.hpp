@@ -15,17 +15,16 @@
 
 namespace transform_decl {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-semantic_ir::SProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
+semantic_ir::SemanticProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
 
-mlc::Array<semantic_ir::SLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
+mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
 
 } // namespace transform_decl
 

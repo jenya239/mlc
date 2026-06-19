@@ -5,16 +5,16 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace trait_param_expand {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 struct TraitNominalMaps {mlc::HashMap<mlc::String, bool> trait_declaration_names;mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;};
 

@@ -8,13 +8,12 @@
 
 namespace infer_literals {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 infer_result::InferResult infer_expr_integer_literal() noexcept;
 

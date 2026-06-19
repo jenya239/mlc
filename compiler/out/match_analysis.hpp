@@ -13,19 +13,24 @@
 
 namespace match_analysis {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-bool subject_needs_deref(std::shared_ptr<semantic_ir::SExpr> subject, context::CodegenContext context) noexcept;
+bool subject_needs_deref(std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context) noexcept;
 
-bool first_arm_needs_deref(std::shared_ptr<semantic_ir::SMatchArm> first_arm, std::shared_ptr<semantic_ir::SExpr> subject, context::CodegenContext context) noexcept;
+bool first_arm_needs_deref(std::shared_ptr<semantic_ir::SemanticMatchArm> first_arm, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context) noexcept;
 
-mlc::String pat_bind_names(mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns) noexcept;
+mlc::Array<mlc::String> pattern_binding_name_list(mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns) noexcept;
+
+mlc::String pattern_bind_names(mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns) noexcept;
+
+bool subject_is_string_type(std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept;
+
+bool should_use_string_match_if_chain(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms) noexcept;
 
 } // namespace match_analysis
 

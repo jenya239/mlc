@@ -32,7 +32,7 @@ results.push_back(test_runner::assert_eq_int(mlc::String("partial: three-arg nes
 results.push_back(test_runner::assert_eq_int(mlc::String("partial: pipe into partially applied callee"), check_error_count(mlc::String("fn add(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add(10, _)\n  3 |> bound\nend")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("partial: match arm with partial call"), check_error_count(mlc::String("fn combine(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let value = 1\n  match value {\n    1 => combine(10, _)(2),\n    _ => 0\n  }\nend")), 0));
 results.push_back(test_runner::assert_true(mlc::String("partial: bare underscore is error"), check_error_count(mlc::String("fn main() -> i32 = _")) > 0));
-results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("partial: codegen emits lambda for bound call"), module::gen_program(decls::parse_program(lexer::tokenize(mlc::String("fn add(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add(1, _)\n  bound(2)\nend")).tokens)), mlc::String("[&]")));
+results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("partial: codegen emits lambda for bound call"), module::gen_program(decls::parse_program(lexer::tokenize(mlc::String("fn add(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add(1, _)\n  bound(2)\nend")).tokens)), mlc::String("[=]")));
 return results;
 }
 

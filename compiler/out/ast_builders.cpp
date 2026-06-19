@@ -65,23 +65,23 @@ std::shared_ptr<ast::Expr> lambda_expr(mlc::Array<mlc::String> parameters, std::
 
 std::shared_ptr<ast::FieldVal> field_value(mlc::String field_name, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
-std::shared_ptr<ast::Pat> wildcard_pattern() noexcept;
+std::shared_ptr<ast::Pattern> wildcard_pattern() noexcept;
 
-std::shared_ptr<ast::Pat> integer_pattern(int value) noexcept;
+std::shared_ptr<ast::Pattern> integer_pattern(int value) noexcept;
 
-std::shared_ptr<ast::Pat> identifier_pattern(mlc::String name) noexcept;
+std::shared_ptr<ast::Pattern> identifier_pattern(mlc::String name) noexcept;
 
-std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns) noexcept;
+std::shared_ptr<ast::Pattern> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns) noexcept;
 
-std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
+std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
-std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_mut_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
-std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expr) noexcept;
+std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expression) noexcept;
 
 std::shared_ptr<ast::Stmt> return_statement(std::shared_ptr<ast::Expr> value_expr) noexcept;
 
@@ -153,7 +153,7 @@ std::shared_ptr<ast::Expr> array_expr(mlc::Array<std::shared_ptr<ast::Expr>> ele
 
 std::shared_ptr<ast::Expr> record_expr(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values) noexcept{
 mlc::Array<ast::RecordLitPart> parts = {};
-parts.push_back(ast::RecordLitPart(ast::RecordLitFields(field_values)));
+parts.push_back(ast::RecordLitFields(field_values));
 return std::make_shared<ast::Expr>(ast::ExprRecord(type_name, parts, ast::span_unknown()));
 }
 
@@ -163,31 +163,31 @@ std::shared_ptr<ast::Expr> lambda_expr(mlc::Array<mlc::String> parameters, std::
 
 std::shared_ptr<ast::FieldVal> field_value(mlc::String field_name, std::shared_ptr<ast::Expr> value_expr) noexcept{return std::make_shared<ast::FieldVal>(ast::FieldVal{field_name, value_expr});}
 
-std::shared_ptr<ast::Pat> wildcard_pattern() noexcept{return std::make_shared<ast::Pat>(ast::PatWild(ast::span_unknown()));}
+std::shared_ptr<ast::Pattern> wildcard_pattern() noexcept{return std::make_shared<ast::Pattern>(ast::PatternWild(ast::span_unknown()));}
 
-std::shared_ptr<ast::Pat> integer_pattern(int value) noexcept{return std::make_shared<ast::Pat>(ast::PatInt(value, ast::span_unknown()));}
+std::shared_ptr<ast::Pattern> integer_pattern(int value) noexcept{return std::make_shared<ast::Pattern>(ast::PatternInt(value, ast::span_unknown()));}
 
-std::shared_ptr<ast::Pat> identifier_pattern(mlc::String name) noexcept{return std::make_shared<ast::Pat>(ast::PatIdent(name, ast::span_unknown()));}
+std::shared_ptr<ast::Pattern> identifier_pattern(mlc::String name) noexcept{return std::make_shared<ast::Pattern>(ast::PatternIdent(name, ast::span_unknown()));}
 
-std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns) noexcept{return std::make_shared<ast::Pat>(ast::PatCtor(ctor_name, sub_patterns, ast::span_unknown()));}
+std::shared_ptr<ast::Pattern> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns) noexcept{return std::make_shared<ast::Pattern>(ast::PatternCtor(ctor_name, sub_patterns, ast::span_unknown()));}
 
-std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, false, std::make_shared<ast::Expr>(ast::ExprBool(true, ast::span_unknown())), body_expr});}
+std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, false, std::make_shared<ast::Expr>(ast::ExprBool(true, ast::span_unknown())), body_expr});}
 
-std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, true, when_condition_expression, body_expr});}
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::MatchArm>(ast::MatchArm{pattern, true, when_condition_expression, body_expr});}
 
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept{return std::make_shared<ast::Stmt>(ast::StmtLet(binding_name, false, type_expr, value_expr, ast::span_unknown()));}
 
 std::shared_ptr<ast::Stmt> let_mut_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept{return std::make_shared<ast::Stmt>(ast::StmtLet(binding_name, true, type_expr, value_expr, ast::span_unknown()));}
 
-std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expr) noexcept{return std::make_shared<ast::Stmt>(ast::StmtExpr(expr, ast::span_unknown()));}
+std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expression) noexcept{return std::make_shared<ast::Stmt>(ast::StmtExpr(expression, ast::span_unknown()));}
 
 std::shared_ptr<ast::Stmt> return_statement(std::shared_ptr<ast::Expr> value_expr) noexcept{return std::make_shared<ast::Stmt>(ast::StmtReturn(value_expr, ast::span_unknown()));}
 
-std::shared_ptr<ast::Param> value_param(mlc::String parameter_name, std::shared_ptr<ast::TypeExpr> parameter_type) noexcept{return std::make_shared<ast::Param>(ast::Param{parameter_name, false, parameter_type, false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), std::make_shared<ast::Pat>(ast::PatUnit(ast::span_unknown()))});}
+std::shared_ptr<ast::Param> value_param(mlc::String parameter_name, std::shared_ptr<ast::TypeExpr> parameter_type) noexcept{return std::make_shared<ast::Param>(ast::Param{parameter_name, false, parameter_type, false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), std::make_shared<ast::Pattern>(ast::PatternUnit(ast::span_unknown()))});}
 
 std::shared_ptr<ast::Decl> function_decl(mlc::String function_name, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type, std::shared_ptr<ast::Expr> body_expr) noexcept{return std::make_shared<ast::Decl>(ast::DeclFn(function_name, {}, {}, parameters, return_type, body_expr, {}));}
 
-std::shared_ptr<ast::Decl> type_decl(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, variants, {}));}
+std::shared_ptr<ast::Decl> type_decl(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, variants, {}, ast::span_unknown()));}
 
 std::shared_ptr<ast::Decl> exported_decl(std::shared_ptr<ast::Decl> inner_decl) noexcept{return std::make_shared<ast::Decl>(ast::DeclExported(inner_decl));}
 

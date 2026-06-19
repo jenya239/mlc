@@ -6,13 +6,12 @@
 
 namespace cpp_naming {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::String path_to_module_base(mlc::String path) noexcept;
 
@@ -33,6 +32,8 @@ mlc::String escape_str(mlc::String input) noexcept;
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept;
 
 mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept;
+
+mlc::Array<mlc::String> using_namespace_names(mlc::Array<mlc::String> import_paths) noexcept;
 
 mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept;
 

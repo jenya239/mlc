@@ -12,17 +12,16 @@
 
 namespace identifiers {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::String gen_identifier(mlc::String name, context::CodegenContext context) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept;
 
 } // namespace identifiers
 

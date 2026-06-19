@@ -8,16 +8,16 @@
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
 #include "array_method_types.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace type_diagnostics {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<ast::Diagnostic> unary_minus_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
 

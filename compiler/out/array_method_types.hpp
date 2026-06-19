@@ -9,13 +9,12 @@
 
 namespace array_method_types {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 bool is_array_hof_method(mlc::String method_name) noexcept;
 

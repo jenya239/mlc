@@ -12,13 +12,12 @@
 
 namespace test_merge_imports {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> merge_import_tests() noexcept;
 

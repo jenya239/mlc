@@ -5,6 +5,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
 import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
+import { parse_type } from '../frontend/parser/types'
 import { parser_new } from '../frontend/parser/predicates'
 
 fn parse_source(source: string) -> Program =
@@ -14,7 +15,10 @@ fn parse_source_errors(source: string) -> [string] =
   parse_program_with_errors(tokenize(source).tokens, '').errors
 
 fn parse_expr_source(source: string) -> Shared<Expr> =
-  parse_expr(parser_new(tokenize(source).tokens)).expression
+  parse_expr(parser_new(tokenize(source).tokens)).value
+
+fn parse_type_source(source: string) -> Shared<TypeExpr> =
+  parse_type(parser_new(tokenize(source).tokens)).value
 
 fn parse_expr_errors(source: string) -> [string] =
   parse_expr(parser_new(tokenize(source).tokens)).parser.errors
@@ -329,6 +333,15 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_eq_int('trait plus fn with where clause — 2 decls',
     decl_count('type Display { fn to_string(self: Self) -> string }\nfn f<T>(x: T) -> unit where T: Display = ()'), 2))
 
+  results.push(assert_eq_int('fn where multi-parameter — 0 parse errors',
+    parse_source_errors('fn f<T, U>() -> unit where T: Display, U: Clone = ()').length(), 0))
+
+  results.push(assert_true('parse_type tuple fn uses TypesResult value',
+    match parse_type_source('(i32, string) -> bool') {
+      TyFn(parameters, _) => parameters.length() == 2,
+      _ => false
+    }))
+
   results.push(assert_eq_int('fn with parenthesized lambda - 1 decl',
     decl_count('fn f() -> i32 = (() => 7)()'), 1))
 
@@ -548,6 +561,12 @@ export fn parser_tests() -> [TestResult] = do
 
   results.push(assert_true('pipe precedence: pipeline binds tighter than equality on left',
     pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source('a |> b == c'))))
+
+  results.push(assert_eq_int('typed lambda - 0 parse errors',
+    parse_expr_errors('(x: i32) => x').length(), 0))
+
+  results.push(assert_eq_int('type derive clause - 1 decl',
+    parse_source('type Point = { x: i32 } derive { Hash }').decls.length(), 1))
 
   results.push(assert_true('parse trait: DeclTrait with one method',
     trait_display_decl(parse_source('trait Display { fn to_string(self: Display) -> string }'))))

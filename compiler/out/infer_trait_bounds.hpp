@@ -8,16 +8,16 @@
 #include "registry.hpp"
 #include "check_context.hpp"
 #include "call_argument_unify.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace infer_trait_bounds {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<ast::Diagnostic> trait_bound_diagnostics(mlc::String callee_name, mlc::Array<std::shared_ptr<registry::Type>> callee_parameter_types, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types, mlc::Array<mlc::String> callee_type_parameter_names, ast::Span call_source_span, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions, check_context::CheckContext inference_context) noexcept;
 

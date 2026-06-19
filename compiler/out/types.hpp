@@ -5,16 +5,16 @@
 #include <variant>
 
 #include "predicates.hpp"
+#include "comma_separated.hpp"
 
 namespace types {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 predicates::TypeResult parse_type(predicates::Parser parser) noexcept;
 

@@ -2,7 +2,26 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2; previous: [TRACK_DERIVE_HASH_STMT_BRIDGE.md](TRACK_DERIVE_HASH_STMT_BRIDGE.md) (**closed**, step 5 audit)
 
-## Status: **open** (step 3 pending)
+## Status: **closed** (step 6 commit — 2026-05-19 Driver)
+
+**STEP=6 note (2026-05-19 Driver):** Committed `module.mlc`, `test_cpp_printer.mlc`, `module_tu_helpers.mlc`, `cpp_ast.mlc`, `cpp_printer.mlc`, `cpp_naming.mlc`. Gate: build_tests **940**/0; build.sh OK; self-host diff N/A (`build_bin` pre-existing).
+
+**Critic audit (2026-06-04):** Steps 4–5 verified on worktree; step 6 landed in git.
+
+**STEP=5 audit (2026-06-04 Driver):**
+
+| Check | Result |
+|-------|--------|
+| `cpp_decl_from_string_output` in `module.mlc` | **0** (removed with `cpp_declarations_from_text_parts`) |
+| `cpp_declarations_from_text_parts` | **0** in repo |
+| TU assembly fragments (intentional) | `module.mlc`: `using_namespace_lines`, `cli_wrapper` → `make_fragment_cpp_declaration`; `module_tu_helpers`: blank line → fragment |
+| `expr.mlc:284-306` TU line helpers | **0** production callers (dead; `std_includes` / `bootstrap_host_main` still string-built in `prepare_module_generation`) |
+| `decl_cpp.cpp_decl_from_string_output` | export only; **0** production callers |
+| Gate | build_tests **937**/0; build.sh OK; self-host diff N/A (`build_bin` pre-existing `exprs.cpp` destructuring) |
+
+**STEP=4 note (2026-06-04 Driver):** `assemble_source_cpp_declarations` native prologue/epilogue (`CppDefineMacro`, `CppInclude`, `CppNamespaceBegin`/`CppNamespaceEnd`); `implementation_import_includes` via `append_cpp_declarations_from_include_text`; survivors: `using_namespace_lines` + `cli_wrapper` → single `CppDeclFragment` each. Removed `cpp_declarations_from_text_parts` from `module.mlc`. Golden: `test_cpp_printer.mlc` source imports/using. Gate: build_tests **937**/0, build.sh OK; self-host diff pre-existing FAIL.
+
+**STEP=3 note (2026-06-03 Driver):** `assemble_header_cpp_declarations` already native; zero text_parts in header path.
 
 **Goal:** eliminate `cpp_decl_from_string_output` in `module.mlc` TU assembly — native `CppDecl` for include guards, `#include`, namespace wrapper, and entry `main` shim instead of `CppDeclFragment` text parts.
 
@@ -23,9 +42,10 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # empty
 |------|------|--------|
 | 1 | Reachability audit — `cpp_declarations_from_text_parts`; text helpers; tests | done |
 | 2 | Native decl helpers (include guard, `#include`, namespace open/close, `#define main`) | done |
-| 3 | `assemble_header_cpp_declarations` → native nodes | pending |
-| 4 | `assemble_source_cpp_declarations` + cli wrapper; parity tests | pending |
-| 5 | Survivors audit; close track | pending |
+| 3 | `assemble_header_cpp_declarations` → native nodes | done |
+| 4 | `assemble_source_cpp_declarations` + cli wrapper; parity tests | done |
+| 5 | Survivors audit; close track | done |
+| 6 | Commit steps 4–5 WIP (`module.mlc`, `test_cpp_printer.mlc`) | done |
 
 <!-- step 1 sub-steps:
   1) grep `cpp_decl_from_string_output` / `cpp_declarations_from_text_parts` in module.mlc

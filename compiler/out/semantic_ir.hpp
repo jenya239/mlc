@@ -9,73 +9,74 @@
 
 namespace semantic_ir {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-struct SMatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<semantic_ir::SExpr> when_condition;std::shared_ptr<semantic_ir::SExpr> body;};
+struct SemanticMatchArm {std::shared_ptr<ast::Pattern> pattern;bool has_guard;std::shared_ptr<semantic_ir::SemanticExpression> when_condition;std::shared_ptr<semantic_ir::SemanticExpression> body;};
 
-struct SFieldVal {mlc::String name;std::shared_ptr<semantic_ir::SExpr> val;};
+struct SemanticFieldVal {mlc::String name;std::shared_ptr<semantic_ir::SemanticExpression> value;};
 
-struct SExprInt {int field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprStr {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprFloat {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprI64 {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprU8 {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprUsize {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprChar {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprBool {bool field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprUnit {std::shared_ptr<registry::Type> field0;ast::Span field1;};
-struct SExprExtern {std::shared_ptr<registry::Type> field0;ast::Span field1;};
-struct SExprIdent {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprBin {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExprUn {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprCall {std::shared_ptr<semantic_ir::SExpr> field0;mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field1;mlc::Array<int> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExprMethod {std::shared_ptr<semantic_ir::SExpr> field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field2;mlc::Array<int> field3;std::shared_ptr<registry::Type> field4;ast::Span field5;};
-struct SExprField {std::shared_ptr<semantic_ir::SExpr> field0;mlc::String field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprIndex {std::shared_ptr<semantic_ir::SExpr> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprIf {std::shared_ptr<semantic_ir::SExpr> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExprBlock {mlc::Array<std::shared_ptr<semantic_ir::SStmt>> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprWhile {std::shared_ptr<semantic_ir::SExpr> field0;mlc::Array<std::shared_ptr<semantic_ir::SStmt>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprFor {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;mlc::Array<std::shared_ptr<semantic_ir::SStmt>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExprMatch {std::shared_ptr<semantic_ir::SExpr> field0;mlc::Array<std::shared_ptr<semantic_ir::SMatchArm>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprRecord {mlc::String field0;mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprRecordUpdate {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;mlc::Array<std::shared_ptr<semantic_ir::SFieldVal>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExprArray {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprTuple {mlc::Array<std::shared_ptr<semantic_ir::SExpr>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprQuestion {std::shared_ptr<semantic_ir::SExpr> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
-struct SExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SExprWith {std::shared_ptr<semantic_ir::SExpr> field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SStmt>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SExpr {std::variant<SExprInt, SExprStr, SExprFloat, SExprI64, SExprU8, SExprUsize, SExprChar, SExprBool, SExprUnit, SExprExtern, SExprIdent, SExprBin, SExprUn, SExprCall, SExprMethod, SExprField, SExprIndex, SExprIf, SExprBlock, SExprWhile, SExprFor, SExprMatch, SExprRecord, SExprRecordUpdate, SExprArray, SExprTuple, SExprQuestion, SExprLambda, SExprWith> _;};
-
-
-struct SStmtLet {mlc::String field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
-struct SStmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<semantic_ir::SExpr> field2;std::shared_ptr<registry::Type> field3;bool field4;std::shared_ptr<semantic_ir::SExpr> field5;ast::Span field6;};
-struct SStmtLetConst {mlc::String field0;std::shared_ptr<semantic_ir::SExpr> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
-struct SStmtExpr {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};
-struct SStmtReturn {std::shared_ptr<semantic_ir::SExpr> field0;ast::Span field1;};
-struct SStmtBreak {ast::Span field0;};
-struct SStmtContinue {ast::Span field0;};
-struct SStmt {std::variant<SStmtLet, SStmtLetPat, SStmtLetConst, SStmtExpr, SStmtReturn, SStmtBreak, SStmtContinue> _;};
+struct SemanticExpressionInt {int field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionStr {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionFloat {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionI64 {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionU8 {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionUsize {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionChar {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionBool {bool field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionUnit {std::shared_ptr<registry::Type> field0;ast::Span field1;};
+struct SemanticExpressionExtern {std::shared_ptr<registry::Type> field0;ast::Span field1;};
+struct SemanticExpressionIdent {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionBin {mlc::String field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<semantic_ir::SemanticExpression> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpressionUn {mlc::String field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionCall {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> field1;mlc::Array<int> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpressionMethod {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> field2;mlc::Array<int> field3;std::shared_ptr<registry::Type> field4;ast::Span field5;};
+struct SemanticExpressionField {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::String field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionIndex {std::shared_ptr<semantic_ir::SemanticExpression> field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionIf {std::shared_ptr<semantic_ir::SemanticExpression> field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<semantic_ir::SemanticExpression> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpressionBlock {mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionWhile {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionFor {mlc::String field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpressionMatch {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionRecord {mlc::String field0;mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionRecordUpdate {mlc::String field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpressionArray {mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionTuple {mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionQuestion {std::shared_ptr<semantic_ir::SemanticExpression> field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticExpressionLambda {mlc::Array<mlc::String> field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticExpressionWith {std::shared_ptr<semantic_ir::SemanticExpression> field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticExpression {std::variant<SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionBool, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith> _;};
 
 
-struct SDeclFn;struct SDeclType;struct SDeclTrait;struct SDeclExtend;struct SDeclImport;struct SDeclExported;struct SDeclAssocBind;using SDecl = std::variant<SDeclFn, SDeclType, SDeclTrait, SDeclExtend, SDeclImport, SDeclExported, SDeclAssocBind>;struct SDeclFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<registry::Type> field4;std::shared_ptr<semantic_ir::SExpr> field5;mlc::Array<ast::WhereClauseBound> field6;};struct SDeclType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;mlc::Array<mlc::String> field3;};struct SDeclTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> field2;};struct SDeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> field2;};struct SDeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct SDeclExported {std::shared_ptr<semantic_ir::SDecl> field0;};struct SDeclAssocBind {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
+struct SemanticStatementLet {mlc::String field0;bool field1;std::shared_ptr<semantic_ir::SemanticExpression> field2;std::shared_ptr<registry::Type> field3;ast::Span field4;};
+struct SemanticStatementLetPattern {std::shared_ptr<ast::Pattern> field0;bool field1;std::shared_ptr<semantic_ir::SemanticExpression> field2;std::shared_ptr<registry::Type> field3;bool field4;std::shared_ptr<semantic_ir::SemanticExpression> field5;ast::Span field6;};
+struct SemanticStatementLetConst {mlc::String field0;std::shared_ptr<semantic_ir::SemanticExpression> field1;std::shared_ptr<registry::Type> field2;ast::Span field3;};
+struct SemanticStatementExpr {std::shared_ptr<semantic_ir::SemanticExpression> field0;ast::Span field1;};
+struct SemanticStatementReturn {std::shared_ptr<semantic_ir::SemanticExpression> field0;ast::Span field1;};
+struct SemanticStatementBreak {ast::Span field0;};
+struct SemanticStatementContinue {ast::Span field0;};
+struct SemanticStatement {std::variant<SemanticStatementLet, SemanticStatementLetPattern, SemanticStatementLetConst, SemanticStatementExpr, SemanticStatementReturn, SemanticStatementBreak, SemanticStatementContinue> _;};
 
-struct SProgram {mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls;};
 
-struct SNamespaceImportAlias {mlc::String alias;mlc::String module_path;};
+struct SemanticDeclarationFn;struct SemanticDeclarationType;struct SemanticDeclarationTypeAlias;struct SemanticDeclarationTrait;struct SemanticDeclarationExtend;struct SemanticDeclarationImport;struct SemanticDeclarationExported;struct SemanticDeclarationAssocBind;using SemanticDeclaration = std::variant<SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationImport, SemanticDeclarationExported, SemanticDeclarationAssocBind>;struct SemanticDeclarationFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<registry::Type> field4;std::shared_ptr<semantic_ir::SemanticExpression> field5;mlc::Array<ast::WhereClauseBound> field6;ast::Span field7;};struct SemanticDeclarationType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;mlc::Array<mlc::String> field3;ast::Span field4;};struct SemanticDeclarationTypeAlias {mlc::String field0;mlc::Array<mlc::String> field1;std::shared_ptr<ast::TypeExpr> field2;ast::Span field3;};struct SemanticDeclarationTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> field2;ast::Span field3;};struct SemanticDeclarationExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> field2;ast::Span field3;};struct SemanticDeclarationImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct SemanticDeclarationExported {std::shared_ptr<semantic_ir::SemanticDeclaration> field0;};struct SemanticDeclarationAssocBind {mlc::String field0;std::shared_ptr<registry::Type> field1;ast::Span field2;};
 
-struct SLoadItem {mlc::String path;mlc::Array<std::shared_ptr<semantic_ir::SDecl>> decls;mlc::Array<mlc::String> imports;mlc::Array<semantic_ir::SNamespaceImportAlias> namespace_import_aliases;};
+struct SemanticProgram {mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> decls;};
 
-std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SExpr> expression) noexcept;
+struct SemanticNamespaceImportAlias {mlc::String alias;mlc::String module_path;};
 
-ast::Span sexpr_span(std::shared_ptr<semantic_ir::SExpr> expression) noexcept;
+struct SemanticLoadItem {mlc::String path;mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> decls;mlc::Array<mlc::String> imports;mlc::Array<semantic_ir::SemanticNamespaceImportAlias> namespace_import_aliases;};
 
-std::shared_ptr<semantic_ir::SDecl> sdecl_inner(std::shared_ptr<semantic_ir::SDecl> declaration) noexcept;
+std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+ast::Span sexpr_span(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticDeclaration> sdecl_inner(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
+
+ast::Span sdecl_span(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
 
 } // namespace semantic_ir
 

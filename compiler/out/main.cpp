@@ -26,7 +26,7 @@ using namespace ast_tokens;
 
 struct LoadResult {mlc::Array<decl_index::LoadItem> items;mlc::Array<mlc::String> errors;};
 
-struct MergeResult {ast::Program prog;mlc::Array<mlc::String> errors;mlc::Array<decl_index::LoadItem> items;};
+struct MergeResult {ast::Program program;mlc::Array<mlc::String> errors;mlc::Array<decl_index::LoadItem> items;};
 
 mlc::String dirname(mlc::String path) noexcept;
 
@@ -34,15 +34,17 @@ mlc::String resolve_dotdot(mlc::String path) noexcept;
 
 mlc::String resolve_import_path(mlc::String base_path, mlc::String import_path) noexcept;
 
+mlc::Array<mlc::String> prefix_parse_errors(mlc::String source_path, mlc::Array<mlc::String> messages) noexcept;
+
 LoadResult load_module_impl(mlc::String path, mlc::HashMap<mlc::String, bool>& loaded, mlc::HashMap<mlc::String, LoadResult>& cache, bool profile_enabled) noexcept;
 
 LoadResult load_module(mlc::String path, mlc::HashMap<mlc::String, LoadResult>& cache, bool profile_enabled) noexcept;
 
-MergeResult merge_program(mlc::String entry_path, ast::Program prog, bool profile_enabled) noexcept;
+MergeResult merge_program(mlc::String entry_path, ast::Program program, bool profile_enabled) noexcept;
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands) noexcept;
 
-mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
+mlc::String format_errors(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
 
 int main(int argc, char** argv) noexcept;
 
@@ -100,6 +102,18 @@ mlc::String combined_before_normalization = base_dir == mlc::String("") ? with_e
 return resolve_dotdot(combined_before_normalization);
 }
 
+mlc::Array<mlc::String> prefix_parse_errors(mlc::String source_path, mlc::Array<mlc::String> messages) noexcept{
+mlc::Array<mlc::String> prefixed = {};
+int index = 0;
+while (index < messages.size()){
+{
+prefixed.push_back(mlc::String("parse ") + source_path + mlc::String(": ") + messages[index]);
+index = index + 1;
+}
+}
+return prefixed;
+}
+
 LoadResult load_module_impl(mlc::String path, mlc::HashMap<mlc::String, bool>& loaded, mlc::HashMap<mlc::String, LoadResult>& cache, bool profile_enabled) noexcept{
 mlc::String norm_path = resolve_dotdot(path);
 return cache.has(norm_path) ? cache.get(norm_path) : loaded.has(norm_path) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("circular: ") + norm_path}} : [&]() -> LoadResult { 
@@ -109,22 +123,23 @@ return cache.has(norm_path) ? cache.get(norm_path) : loaded.has(norm_path) ? Loa
   profile::profile_maybe_end(profile_enabled, mlc::String("load_io"));
   return source.length() == 0 && !mlc::file::exists(path) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("file not found: ") + path}} : [&]() -> LoadResult { 
   profile::profile_maybe_begin(profile_enabled, mlc::String("lex"));
-  ast_tokens::LexOut lex = lexer::tokenize(source);
+  ast_tokens::LexOut lexer_output = lexer::tokenize(source);
   profile::profile_maybe_end(profile_enabled, mlc::String("lex"));
-  return ast_tokens::LexOut_has_errors(lex) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("lex ") + path + mlc::String(": ") + lex.errors[0]}} : [&]() -> LoadResult { 
+  return ast_tokens::LexOut_has_errors(lexer_output) ? LoadResult{{}, mlc::Array<mlc::String>{mlc::String("lex ") + path + mlc::String(": ") + lexer_output.errors[0]}} : [&]() -> LoadResult { 
   profile::profile_maybe_begin(profile_enabled, mlc::String("parse"));
-  ast::Program prog = decls::parse_program_with_source_path(lex.tokens, norm_path);
+  predicates::ParseProgramResult parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, norm_path);
   profile::profile_maybe_end(profile_enabled, mlc::String("parse"));
+  ast::Program program = parse_parsed.program;
   mlc::Array<decl_index::LoadItem> items = {};
-  mlc::HashMap<mlc::String, bool> seen = mlc::HashMap<mlc::String, bool>();
-  mlc::Array<std::shared_ptr<ast::Decl>> my_decls = {};
+  mlc::HashMap<mlc::String, bool> loaded_paths_seen = mlc::HashMap<mlc::String, bool>();
+  mlc::Array<std::shared_ptr<ast::Decl>> module_declarations = {};
   mlc::Array<mlc::String> my_imports = {};
   mlc::Array<decl_index::NamespaceImportAlias> my_namespace_import_aliases = {};
   mlc::Array<mlc::String> all_errors = {};
   int index = 0;
-  while (index < prog.decls.size()){
+  while (index < program.decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [import_path, symbols] = _v_declimport; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*program.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*program.decls[index])); auto [import_path, symbols] = _v_declimport; return [&]() { 
   mlc::String resolved = resolve_dotdot(resolve_import_path(path, import_path));
   my_imports.push_back(resolved);
   if (symbols.size() >= 2 && symbols[0] == mlc::String("*")){
@@ -132,16 +147,16 @@ return cache.has(norm_path) ? cache.get(norm_path) : loaded.has(norm_path) ? Loa
 my_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1], resolved});
 }
 }
-  LoadResult dep_result = load_module_impl(resolved, loaded, cache, profile_enabled);
-  all_errors = ast::errs_append(all_errors, dep_result.errors);
+  LoadResult dependency_parsed = load_module_impl(resolved, loaded, cache, profile_enabled);
+  all_errors = ast::errs_append(all_errors, dependency_parsed.errors);
   int dep_item_index = 0;
   return [&]() { 
-  while (dep_item_index < dep_result.items.size()){
+  while (dep_item_index < dependency_parsed.items.size()){
 {
-decl_index::LoadItem dependency_item = dep_result.items[dep_item_index];
-if (!seen.has(dependency_item.path)){
+decl_index::LoadItem dependency_item = dependency_parsed.items[dep_item_index];
+if (!loaded_paths_seen.has(dependency_item.path)){
 {
-seen.set(dependency_item.path, true);
+loaded_paths_seen.set(dependency_item.path, true);
 items.push_back(dependency_item);
 }
 }
@@ -149,14 +164,14 @@ dep_item_index = dep_item_index + 1;
 }
 }
  }();
- }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return my_decls.push_back(prog.decls[index]); } return my_decls.push_back(prog.decls[index]); }();
+ }(); } if (std::holds_alternative<ast::DeclExported>((*program.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*program.decls[index])); auto [_w0] = _v_declexported; return module_declarations.push_back(program.decls[index]); } return module_declarations.push_back(program.decls[index]); }();
 index = index + 1;
 }
 }
-  items.push_back(decl_index::LoadItem{norm_path, my_decls, my_imports, my_namespace_import_aliases});
-  LoadResult result = LoadResult{items, all_errors};
-  cache.set(norm_path, result);
-  return result;
+  items.push_back(decl_index::LoadItem{norm_path, module_declarations, my_imports, my_namespace_import_aliases});
+  LoadResult load_parsed = LoadResult{items, all_errors};
+  cache.set(norm_path, load_parsed);
+  return load_parsed;
  }();
  }();
  }();
@@ -167,8 +182,8 @@ mlc::HashMap<mlc::String, bool> loaded = mlc::HashMap<mlc::String, bool>();
 return load_module_impl(path, loaded, cache, profile_enabled);
 }
 
-MergeResult merge_program(mlc::String entry_path, ast::Program prog, bool profile_enabled) noexcept{
-mlc::Array<std::shared_ptr<ast::Decl>> all_decls = {};
+MergeResult merge_program(mlc::String entry_path, ast::Program program, bool profile_enabled) noexcept{
+mlc::Array<std::shared_ptr<ast::Decl>> merged_declarations = {};
 mlc::Array<mlc::String> all_errors = {};
 mlc::HashMap<mlc::String, bool> seen_paths = mlc::HashMap<mlc::String, bool>();
 mlc::Array<decl_index::LoadItem> items_ordered = {};
@@ -177,9 +192,9 @@ mlc::Array<mlc::String> entry_imports = {};
 mlc::Array<decl_index::NamespaceImportAlias> entry_namespace_import_aliases = {};
 mlc::HashMap<mlc::String, LoadResult> cache = mlc::HashMap<mlc::String, LoadResult>();
 int index = 0;
-while (index < prog.decls.size()){
+while (index < program.decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*prog.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*prog.decls[index])); auto [path, symbols] = _v_declimport; return [&]() { 
+[&]() -> void { if (std::holds_alternative<ast::DeclImport>((*program.decls[index]))) { auto _v_declimport = std::get<ast::DeclImport>((*program.decls[index])); auto [path, symbols] = _v_declimport; return [&]() { 
   mlc::String resolved = resolve_dotdot(resolve_import_path(entry_path, path));
   entry_imports.push_back(resolved);
   if (symbols.size() >= 2 && symbols[0] == mlc::String("*")){
@@ -187,13 +202,13 @@ while (index < prog.decls.size()){
 entry_namespace_import_aliases.push_back(decl_index::NamespaceImportAlias{symbols[1], resolved});
 }
 }
-  LoadResult dep_result = load_module(resolved, cache, profile_enabled);
-  all_errors = ast::errs_append(all_errors, dep_result.errors);
+  LoadResult dependency_parsed = load_module(resolved, cache, profile_enabled);
+  all_errors = ast::errs_append(all_errors, dependency_parsed.errors);
   int dep_item_index = 0;
   return [&]() { 
-  while (dep_item_index < dep_result.items.size()){
+  while (dep_item_index < dependency_parsed.items.size()){
 {
-decl_index::LoadItem dependency_item = dep_result.items[dep_item_index];
+decl_index::LoadItem dependency_item = dependency_parsed.items[dep_item_index];
 if (!seen_paths.has(dependency_item.path)){
 {
 seen_paths.set(dependency_item.path, true);
@@ -202,7 +217,7 @@ int decl_inner_index = 0;
 [&]() { 
   while (decl_inner_index < dependency_item.decls.size()){
 {
-all_decls.push_back(dependency_item.decls[decl_inner_index]);
+merged_declarations.push_back(dependency_item.decls[decl_inner_index]);
 decl_inner_index = decl_inner_index + 1;
 }
 }
@@ -213,41 +228,46 @@ dep_item_index = dep_item_index + 1;
 }
 }
  }();
- }(); } if (std::holds_alternative<ast::DeclExported>((*prog.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*prog.decls[index])); auto [d] = _v_declexported; return [&]() { 
-  entry_decls.push_back(d);
-  return all_decls.push_back(d);
+ }(); } if (std::holds_alternative<ast::DeclExported>((*program.decls[index]))) { auto _v_declexported = std::get<ast::DeclExported>((*program.decls[index])); auto [exported_declaration] = _v_declexported; return [&]() { 
+  entry_decls.push_back(exported_declaration);
+  return merged_declarations.push_back(exported_declaration);
  }(); } return [&]() { 
-  entry_decls.push_back(prog.decls[index]);
-  return all_decls.push_back(prog.decls[index]);
+  entry_decls.push_back(program.decls[index]);
+  return merged_declarations.push_back(program.decls[index]);
  }(); }();
 index = index + 1;
 }
 }
 mlc::String norm_entry = resolve_dotdot(entry_path);
 items_ordered.push_back(decl_index::LoadItem{norm_entry, entry_decls, entry_imports, entry_namespace_import_aliases});
-return MergeResult{ast::Program{all_decls}, all_errors, items_ordered};
+return MergeResult{ast::Program{merged_declarations}, all_errors, items_ordered};
 }
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only) noexcept{
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands) noexcept{
 profile::profile_reset_if_enabled(profile_enabled);
 profile::profile_maybe_begin(profile_enabled, mlc::String("total"));
 profile::profile_maybe_begin(profile_enabled, mlc::String("load_io"));
 mlc::String entry_source = mlc::file::read_to_string(entry_path);
 profile::profile_maybe_end(profile_enabled, mlc::String("load_io"));
 profile::profile_maybe_begin(profile_enabled, mlc::String("lex"));
-ast_tokens::LexOut lex = lexer::tokenize(entry_source);
+ast_tokens::LexOut lexer_output = lexer::tokenize(entry_source);
 profile::profile_maybe_end(profile_enabled, mlc::String("lex"));
-return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
+return ast_tokens::LexOut_has_errors(lexer_output) ? ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   profile::profile_maybe_end(profile_enabled, mlc::String("total"));
   profile::profile_finish(profile_enabled);
-  return ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("lex: ") + lex.errors[0]});
+  return ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("lex: ") + lexer_output.errors[0]});
  }()) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   mlc::String source_path = resolve_dotdot(entry_path);
   profile::profile_maybe_begin(profile_enabled, mlc::String("parse"));
-  ast::Program parsed_program = decls::parse_program_with_source_path(lex.tokens, source_path);
+  predicates::ParseProgramResult parse_parsed = decls::parse_program_with_errors(lexer_output.tokens, source_path);
   profile::profile_maybe_end(profile_enabled, mlc::String("parse"));
+  return check_only && parse_parsed.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
+  profile::profile_maybe_end(profile_enabled, mlc::String("total"));
+  profile::profile_finish(profile_enabled);
+  return ast::Err<mlc::Array<mlc::String>>(prefix_parse_errors(source_path, parse_parsed.errors));
+ }()) : ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   profile::profile_maybe_begin(profile_enabled, mlc::String("merge"));
-  MergeResult merged = merge_program(entry_path, parsed_program, profile_enabled);
+  MergeResult merged = merge_program(entry_path, parse_parsed.program, profile_enabled);
   profile::profile_maybe_end(profile_enabled, mlc::String("merge"));
   return merged.errors.size() > 0 ? ast::Result<mlc::String, mlc::Array<mlc::String>>([&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   profile::profile_maybe_end(profile_enabled, mlc::String("total"));
@@ -257,18 +277,19 @@ return ast_tokens::LexOut_has_errors(lex) ? ast::Result<mlc::String, mlc::Array<
   int merged_item_count = merged.items.size();
   decl_index::LoadItem entry_load_item = merged.items[merged_item_count - 1];
   ast::Program entry_only_program = ast::Program{entry_load_item.decls};
-  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.prog, entry_only_program, out_dir, profile_enabled, check_only};
-  auto __try_pipeline_result = pipeline::run_modular_compiler_pipeline(pipeline_input);
-  if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_result));
-  mlc::String pipeline_result = std::get<ast::Ok<mlc::String>>(__try_pipeline_result).field0;
+  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.program, entry_only_program, out_dir, profile_enabled, check_only, emit_compile_commands};
+  auto __try_pipeline_parsed = pipeline::run_modular_compiler_pipeline(pipeline_input);
+  if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_parsed)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_parsed));
+  mlc::String pipeline_parsed = std::get<ast::Ok<mlc::String>>(__try_pipeline_parsed).field0;
   profile::profile_maybe_end(profile_enabled, mlc::String("total"));
   profile::profile_finish(profile_enabled);
   return ast::Ok<mlc::String>(mlc::String(""));
  }());
  }());
+ }());
 }
 
-mlc::String format_errs(mlc::String label, mlc::Array<mlc::String> errors) noexcept{return errors.map([label](mlc::String message_line) mutable { return label + mlc::String(": ") + message_line + mlc::String("\n"); }).join(mlc::String(""));}
+mlc::String format_errors(mlc::String label, mlc::Array<mlc::String> errors) noexcept{return errors.map([label](mlc::String message_line) mutable { return label + mlc::String(": ") + message_line + mlc::String("\n"); }).join(mlc::String(""));}
 
 int main(int argc, char** argv) noexcept{
 mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));
@@ -289,11 +310,11 @@ mlc::io::exit(1);
 return std::visit(overloaded{
   [&](const ast::Ok<mlc::String>& ok) -> int { auto [_w0] = ok; return 0; },
   [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 
-  mlc::io::print(format_errs(mlc::String("error"), errors));
+  mlc::io::print(format_errors(mlc::String("error"), errors));
   mlc::io::exit(1);
   return 0;
  }(); }
-}, compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only));
+}, compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands));
 }
 
 } // namespace mlc_main

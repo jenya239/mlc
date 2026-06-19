@@ -5,10 +5,1409 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-9d7493bf-bd81-411f-a4c4-de6ca7f34ff6` |
-| driver_turns_since_plan | 3|
-| step_last | 6|
-| active_track | TRACK_VISITOR_PATTERN → STEP=7 |
+| agent_token_last | `cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf` |
+| driver_turns_since_plan | 7|
+| step_last | 4|
+| active_track | none (TRACK_TYPE_PARAMS_RESULT **closed**) |
+
+### Turn 2026-05-19 (Driver TYPE_PARAMS_RESULT step 4 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_TYPE_PARAMS_RESULT |
+| done | full gate; track **closed** |
+| result | **1005/0**; parity **2/2**; **diff_exit=0**; mlcc p1 **7.59s** / mlcc2 p2 **5.82s** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+TYPE_PARAMS_RESULT closed. Pick next track; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver TYPE_PARAMS_RESULT step 3 — idempotent close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 (re-queued) |
+| track | TRACK_TYPE_PARAMS_RESULT |
+| done | STEP=3 already verified: `build_tests` + self-host `build_bin` + diff |
+| result | **1005/0**; **diff_exit=0**; mlcc p1 **1.95s** / mlcc2 p2 **1.81s** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_TYPE_PARAMS_RESULT |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-4e009786-b12a-4619-baca-f166c965f854
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_TYPE_PARAMS_RESULT.md
+
+Full gate (parity + diff); close TRACK_TYPE_PARAMS_RESULT.
+```
+
+### Turn 2026-05-19 (Driver TYPE_PARAMS_RESULT step 1 — idempotent close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 (re-queued) |
+| track | TRACK_TYPE_PARAMS_RESULT |
+| done | STEP=1–2 already **done**; no code change |
+| result | prior: `build_tests` **1005/0**; `build.sh` ok |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_TYPE_PARAMS_RESULT |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-85fcc33e-6c56-4c40-be96-8b9b5fea5f80
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_TYPE_PARAMS_RESULT.md
+
+Self-host build_bin + diff. build_tests ok.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — TYPE_PARAMS_RESULT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_TYPE_PARAMS_RESULT (new) |
+| done | EXPR_RESULT closed; stability queue → `TypeParamsResult` remainder (PLAN §2.5.5) |
+| result | baseline **1005/0**; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=1 TRACK_TYPE_PARAMS_RESULT |
+
+**Enqueue payload (Driver STEP=1):**
+```
+AGENT_TOKEN=cr-agent-0eedc1d8-4291-43ea-b374-8ccdc6c306b0
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_TYPE_PARAMS_RESULT.md
+
+Migrate TypeParamsResult → ParseResult<TypeParamsValue>; type_params_parse_result; parse_type_params_opt. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver EXPR_RESULT step 4 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 (re-queued) |
+| track | TRACK_EXPR_RESULT |
+| done | full gate; track **closed** |
+| result | **1005/0**; parity **2/2**; **diff_exit=0**; mlcc p1 **2.08s** / mlcc2 p2 **1.70s** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-bfdb5a9d-76bb-43e2-8b8e-56003211bf12
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+EXPR_RESULT closed. Pick next track (security focus); enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver EXPR_RESULT step 3 — idempotent close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 (re-queued) |
+| track | TRACK_EXPR_RESULT |
+| done | STEP=3 already verified: parser smoke + fuzz in `build_tests`; self-host `build_bin` + diff |
+| result | `build_tests` **1005/0**; **diff_exit=0**; mlcc p1 **2.32s** / mlcc2 p2 **1.76s** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_EXPR_RESULT |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-95af4f0d-79d7-4f6c-8022-55e2c0ff25e3
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_EXPR_RESULT.md
+
+Full gate (parity + diff); close TRACK_EXPR_RESULT.
+```
+
+### Turn 2026-05-19 (Driver EXPR_RESULT step 1 — idempotent close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 (re-queued) |
+| track | TRACK_EXPR_RESULT |
+| done | `ExprResult` → `ParseResult<Shared<Expr>>`; `expression_parse_result`; `exprs.mlc` + `decls.mlc` + `comma_separated.mlc` + `test_parser.mlc` (`.value`) |
+| result | `build.sh` ok; `build_tests` **1005/0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_EXPR_RESULT |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-da99723e-5b66-452c-afa2-fa80eab7b5b6
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_EXPR_RESULT.md
+
+Parser smoke; self-host build_bin + diff. build_tests ok.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — EXPR_RESULT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_EXPR_RESULT (new) |
+| done | PARSE_RESULT closed; stability → `ExprResult` remainder (PLAN §2.5.5) |
+| result | baseline **1005/0**; **diff_exit=0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_EXPR_RESULT |
+
+**Enqueue payload (Driver STEP=1):**
+```
+AGENT_TOKEN=cr-agent-2d80a5f2-555b-439c-b09b-84dbb486ce76
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_EXPR_RESULT.md
+
+Migrate ExprResult → ParseResult<Shared<Expr>>; exprs.mlc + expression_parse_result. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 5 — close; idempotent re-queue)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 (re-queued) |
+| track | TRACK_PARSE_RESULT |
+| done | STEP=5 already **done**; track **closed** |
+| result | gate: **1005/0**; parity **2/2**; **diff_exit=0**; mlcc **1.91s** / mlcc2 **1.77s** |
+| issues | MCP enqueue unavailable; `ExprResult` deferred |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-9fd262d4-cc9b-43cc-9cc0-ab5b26aedc81
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+PARSE_RESULT closed. Pick next track from PLAN; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 4 — idempotent re-queue)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 (re-queued) |
+| track | TRACK_PARSE_RESULT |
+| done | STEP=4 already **done** in TRACK; no code change |
+| result | prior gate: **1005/0**; **diff_exit=0**; `build.sh` ok |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-83f1477c-fb85-4f74-abd3-6a35b94847b4
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Full gate (parity + diff); close TRACK_PARSE_RESULT.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 4 — parser tests + self-host)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_PARSE_RESULT |
+| done | +2 parser tests (`where` multi-param, `parse_type` tuple fn); self-host `build_bin` + diff |
+| result | `build_tests` **1005/0**; **diff_exit=0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 — full gate; close track |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-83f1477c-fb85-4f74-abd3-6a35b94847b4
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Full gate (parity + diff); close TRACK_PARSE_RESULT.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 3 — decl/trait/where)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_PARSE_RESULT |
+| done | `DeclResult`/`TraitBodyResult`/`WhereClauseParseResult` → `ParseResult`; typed helpers; `.value` at call sites |
+| result | `build.sh` ok; `build_tests` **1003/0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 — parser tests; self-host `build_bin` |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-874332c1-88d1-4118-ace2-2beac3003511
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Parser tests; self-host build_bin. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 2 — list-value types)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_PARSE_RESULT |
+| done | list-value `ParseResult<[T]>` + typed helpers; `.value` at call sites; `statements_result_to_block_expr` |
+| result | `build.sh` ok; `build_tests` **1003/0** |
+| issues | `extend StmtsResult` breaks Ruby bootstrap on alias; MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 — `DeclResult`/`TraitBodyResult`/`WhereClauseParseResult` |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-599e9b7b-aabd-4442-bfc9-5efcb1dd5c51
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Migrate DeclResult, TraitBodyResult, WhereClauseParseResult. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver PARSE_RESULT step 1 — single-value types)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_PARSE_RESULT |
+| done | `TypeResult`/`PatternResult`/`StmtResult`/`VariantResult` → `ParseResult<T>`; `.value` at call sites; typed helpers for mlcc codegen |
+| result | `build.sh` ok; `build_tests` **1003/0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 — list-value types |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-a746d88a-1660-4cbb-8a8a-32af127f05ca
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Migrate list-value types (ExprsResult, StmtsResult, TypesResult, …). build_tests ok.
+```
+
+### Turn 2026-06-19 (Planner plan-refresh — PARSE_RESULT open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PARSE_RESULT (new) |
+| done | all tracks closed; opened ParseResult remainder (PLAN §2.5.5) |
+| result | baseline **1003/0**; **diff_exit=0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_PARSE_RESULT |
+
+**Enqueue payload (Driver STEP=1):**
+```
+AGENT_TOKEN=cr-agent-400600bd-e453-4811-85f3-469e12fa8c6c
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_RESULT.md
+
+Inventory remaining parser result types; migrate TypeResult/PatternResult/StmtResult/VariantResult. build_tests ok.
+```
+
+### Turn 2026-06-19 (Driver GENERICS_RECORD step 5 — close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_GENERICS_RECORD |
+| done | full gate; track closed |
+| result | build_tests **1003/0**; parity **2/2**; **diff_exit=0**; mlcc **1.95s** / mlcc2 **1.79s** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner):**
+```
+AGENT_TOKEN=cr-agent-63c58262-df5b-4970-901e-561fa38bf559
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+GENERICS_RECORD closed. Pick next track; enqueue Driver STEP=1.
+```
+
+### Turn 2026-06-19 (Driver GENERICS_RECORD step 4 — ParseResult batch)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_GENERICS_RECORD |
+| done | `parse_result<Value>`; `ParamResult`/`NamesResult`/`DeriveResult`/`MatchArmParseOutcome` → `ParseResult`; 2 parser tests; `field_type_from_object` codegen fix |
+| result | build_tests **1003/0**; self-host **diff_exit=0**; mlcc **2.56s** |
+| issues | empty `[]` needs typed path (`bounds_parse_result`); nested `do` breaks mlcc codegen; MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 — full gate; close track |
+
+**Enqueue payload (STEP=5):**
+```
+AGENT_TOKEN=cr-agent-ab9a70f4-11f0-4491-908a-089a5e6d1b84
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_GENERICS_RECORD.md
+
+Full gate per TRACK; close GENERICS_RECORD; update TRACK_PLAN.
+```
+
+### Turn 2026-06-19 (Driver GENERICS_RECORD step 3 — ParseResult alias)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_GENERICS_RECORD |
+| done | `ParseResult<Value>`; `BoundsResult = ParseResult<[string]>`; `bounds_parse_result`; decls `.value` |
+| result | `build.sh` ok; build_tests **1001/0**; mlcc **2.55s** |
+| issues | RHS `= { … }` not `= ParseResult<T> { … }` for Ruby bootstrap; MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 — remaining predicates refactor + self-host |
+
+**Enqueue payload (STEP=4):**
+```
+AGENT_TOKEN=cr-agent-57274ca0-6d03-4c07-987c-994b62c9ff34
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_GENERICS_RECORD.md
+
+Refactor remaining ParseResult-like types; build_tests + self-host build_bin.
+```
+
+### Turn 2026-06-19 (Driver GENERICS_RECORD step 2 — alias substitution)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_GENERICS_RECORD |
+| done | `type_alias_type_parameter_names`; `TyGeneric` alias expand; `field_type_from_object` substitution; 2 checker tests |
+| result | `build.sh` ok; build_tests **1001/0**; mlcc translate **1.71s** |
+| issues | cycle broken via local `substitute_semantic_type`; MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 — `ParseResult<T>` + one predicates consumer |
+
+**Enqueue payload (STEP=3):**
+```
+AGENT_TOKEN=cr-agent-eeacb63b-e38e-4dd7-8e72-52973da458f1
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_GENERICS_RECORD.md
+
+ParseResult<T> alias + one predicates.mlc consumer. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver GENERICS_RECORD step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_GENERICS_RECORD |
+| done | 24 ParseResult-like types; blocker table (alias params dropped) |
+| result | gate skip ok; `Box<T>` path documented as working |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 — alias type params + TyGeneric expansion |
+
+**Enqueue payload (STEP=2):**
+```
+AGENT_TOKEN=cr-agent-064c7014-dc6d-413d-aff4-1567553e8d46
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_GENERICS_RECORD.md
+
+Fix generic type alias resolution: store alias params; expand TyGeneric(alias,args). build_tests ok.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — GENERICS_RECORD open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_GENERICS_RECORD (new) |
+| done | REGISTRY_COW closed; stability scan — TYPE_ALIASES STEP=6 deferred |
+| result | baseline **999/0**, **diff_exit=0**; opened stability track |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_GENERICS_RECORD |
+
+**Enqueue payload (STEP=1):**
+```
+AGENT_TOKEN=cr-agent-4e427f5f-1741-4913-9aad-bae053c4439c
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_GENERICS_RECORD.md
+
+Inventory ParseResult-like structs; document substitution blocker. Gate skip ok.
+```
+
+### Turn 2026-05-19 (Driver REGISTRY_COW step 5 — close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_REGISTRY_COW |
+| done | track closed; TRACK_PLAN updated |
+| result | gate idempotent (STEP=4): **999/0**, **diff_exit=0** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner):**
+```
+AGENT_TOKEN=cr-agent-d9cb99df-7660-4138-8331-a6fc1142d277
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+REGISTRY_COW closed. Pick next track; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver REGISTRY_COW step 4 — full gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_REGISTRY_COW |
+| done | full gate per TRACK |
+| result | build_tests **999/0**; parity **2/2**; **diff_exit=0**; mlcc **2.58s** / mlcc2 **1.56s** |
+| issues | mlcc p1 +0.70s vs 1.88s baseline (<2×); MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 — close track |
+
+**Enqueue payload (STEP=5):**
+```
+AGENT_TOKEN=cr-agent-a434b1b5-02f9-456d-8eed-f0dd9f1cc693
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REGISTRY_COW.md
+
+Close TRACK_REGISTRY_COW; update TRACK_PLAN.
+```
+
+### Turn 2026-05-19 (Driver REGISTRY_COW step 3 — trait/ADT)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_REGISTRY_COW |
+| done | 5 sites: fold+concat trait assoc; trait_impl concat; private_ctor Map.set |
+| result | build_tests ok; **0** `.push` in `registry.mlc` |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 — full gate + mlcc timings |
+
+**Enqueue payload (STEP=4):**
+```
+AGENT_TOKEN=cr-agent-f7e9af0f-f965-48b0-8c74-2459629022a6
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REGISTRY_COW.md
+
+Full gate per TRACK; record mlcc/mlcc2 times vs 1.88s baseline.
+```
+
+### Turn 2026-05-19 (Driver REGISTRY_COW step 2 — stack + ctor)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_REGISTRY_COW |
+| done | 5 sites: `empty_registry` literals + `extended_stack` → `concat` |
+| result | build_tests **999/0**; **5** `.push` remain |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 — `register_decl_into` + `register_variant_into` |
+
+**Enqueue payload (STEP=3):**
+```
+AGENT_TOKEN=cr-agent-c5ae9250-b82e-4a23-99be-4cd566e51582
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REGISTRY_COW.md
+
+Fix 5 sites: register_decl_into + register_variant_into. build_tests ok.
+```
+
+### Turn 2026-05-19 (Driver REGISTRY_COW step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_REGISTRY_COW |
+| done | 10 `.push` sites mapped to 5 fns; STEP=2/3 split documented |
+| result | gate skip ok |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 — resolution_stack + empty_registry |
+
+**Enqueue payload (STEP=2):**
+```
+AGENT_TOKEN=cr-agent-c7979900-9496-40f6-8914-0d648d8e20af
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REGISTRY_COW.md
+
+Fix 5 sites: empty_registry + extended_stack (concat). build_tests ok.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — REGISTRY_COW open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_REGISTRY_COW (new) |
+| done | E046 closed; stability empty → perf track `registry.mlc` (10 `.push`) |
+| result | build_tests **999/0**; baseline mlcc **1.88s** / mlcc2 **1.43s** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_REGISTRY_COW |
+
+**Enqueue payload (STEP=1):**
+```
+AGENT_TOKEN=cr-agent-edb3f748-58a9-4eeb-8312-3e7cf3082cc9
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REGISTRY_COW.md
+
+Grep inventory: 10 .push sites in registry.mlc. Document in TRACK.
+```
+
+### Turn 2026-05-19 (Driver E046 step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_E046_FILTER_PREDICATE |
+| done | Track **closed**; TRACK_PLAN updated |
+| result | Final gate holds; 1-file fix `infer_lambda_context.mlc`; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner):**
+```
+AGENT_TOKEN=cr-agent-098a98dc-d850-4f38-a927-f62f93ad50e3
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+E046 closed (999/0, diff_exit=0). Pick next track: registry COW perf. Update TRACK_PLAN; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver E046 step 4 — self-host gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_E046_FILTER_PREDICATE |
+| done | p1/p2 self-host + diff gate |
+| result | main_check=**0**; **diff_exit=0**; mlcc **1.88s**; mlcc2 **1.43s**; g++ **91s** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 — close track; Planner plan-refresh |
+
+**Enqueue payload (STEP=5):**
+```
+AGENT_TOKEN=cr-agent-097c4bae-ed13-4de9-86d0-abc731a98a0a
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_E046_FILTER_PREDICATE.md
+
+Close TRACK_E046_FILTER_PREDICATE; update TRACK_PLAN; enqueue Planner plan-refresh.
+```
+
+### Turn 2026-05-19 (Driver E046 step 3 — gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_E046_FILTER_PREDICATE |
+| done | Full build_tests + parity + build.sh |
+| result | **999/0**; parity **2/2**; build.sh **16.4s** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 — self-host diff gate |
+
+**Enqueue payload (STEP=4):**
+```
+AGENT_TOKEN=cr-agent-c986e12b-1cdb-431e-882e-7ff3adaeee27
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_E046_FILTER_PREDICATE.md
+
+Self-host gate: mlcc p1/p2 + diff -rq. Record mlcc/mlcc2 compile times.
+```
+
+### Turn 2026-05-19 (Driver E046 step 2 — lambda env fix)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_E046_FILTER_PREDICATE |
+| done | `infer_lambda_context.mlc` inline fold `lambda_environment.set` |
+| result | build_tests **999/0**; mlcc `--check-only` E046 exit 1 |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 — parity + build.sh |
+
+**Enqueue payload (STEP=3):**
+```
+AGENT_TOKEN=cr-agent-78b0a589-6a25-492b-a585-36a1490e5e75
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_E046_FILTER_PREDICATE.md
+
+Full build_tests + run_mlcc2_checker_parity + compiler/build.sh.
+```
+
+### Turn 2026-05-19 (Driver E046 step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_E046_FILTER_PREDICATE |
+| done | Root cause: `infer_lambda_with_param_types` fold doesn't persist `lambda_env.set`; E046 guard skips unknown return |
+| result | build_tests **998/1**; mlcc `--check-only` exit 0 on filter identity; gate skip ok |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 — fix `infer_lambda_context.mlc` env threading |
+
+**Enqueue payload (STEP=2):**
+```
+AGENT_TOKEN=cr-agent-adc37226-5967-475a-9cb7-8bd9251ec78c
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_E046_FILTER_PREDICATE.md
+
+Fix infer_lambda_with_param_types: persist param bindings in lambda_env. build_tests E046 green.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — E046 open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_E046_FILTER_PREDICATE (new) |
+| done | All prior tracks closed; opened E046 (stability > registry COW perf) |
+| result | build_tests **998/1**; TRACK + TRACK_PLAN updated |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_E046_FILTER_PREDICATE |
+
+**Enqueue payload (STEP=1):**
+```
+AGENT_TOKEN=cr-agent-ac7e22aa-c203-4a88-8890-a6bc3538998d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_E046_FILTER_PREDICATE.md
+
+Trace E046 miss on a.filter(x => x). Document root cause in TRACK inventory.
+```
+
+### Turn 2026-05-19 (Driver VARIANT_CTOR_BRACE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_VARIANT_CTOR_BRACE |
+| done | Track **closed**; TRACK_PLAN updated |
+| result | Final gate from steps 3–4 holds; 1-file fix `expr_visitor_cpp.mlc`; uncommitted |
+| issues | E046 deferred; MCP enqueue unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner):**
+```
+AGENT_TOKEN=cr-agent-767a8119-53c1-4606-b493-c9f1af193629
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+VARIANT_CTOR_BRACE closed. Pick next track: E046 (998/1) vs registry COW. Update TRACK_PLAN; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Driver VARIANT_CTOR_BRACE step 4 — self-host gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_VARIANT_CTOR_BRACE |
+| done | p1/p2 self-host + diff gate |
+| result | main_check=**0**; **diff_exit=0**; mlcc **1.81s**; mlcc2 **1.56s**; g++ link **206s** |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 — close track; Planner plan-refresh |
+
+**Enqueue payload (STEP=5):**
+```
+AGENT_TOKEN=cr-agent-a536fb8b-5c90-4262-ac91-c14e342e4d85
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_VARIANT_CTOR_BRACE.md
+
+Close TRACK_VARIANT_CTOR_BRACE; update TRACK_PLAN; enqueue Planner plan-refresh.
+```
+
+### Turn 2026-05-19 (Driver VARIANT_CTOR_BRACE step 3 — gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_VARIANT_CTOR_BRACE |
+| done | Full build_tests + parity + build.sh |
+| result | build_tests **998/1** (E046 only); parity **2/2**; build.sh **15.5s**; fuzz/differential ok |
+| issues | E046 pre-existing; MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 — self-host diff gate |
+
+**Enqueue payload (STEP=4):**
+```
+AGENT_TOKEN=cr-agent-d2d3b4eb-a34c-4818-bcbd-b93917dee5ce
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_VARIANT_CTOR_BRACE.md
+
+Self-host gate: mlcc p1/p2 + diff -rq. Record mlcc/mlcc2 compile times.
+```
+
+### Turn 2026-05-19 (Driver VARIANT_CTOR_BRACE step 2 — ctor brace fix)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_VARIANT_CTOR_BRACE |
+| done | `gen_constructor_call_cpp_expression` → always `CppAggregateInit` for ident ctors |
+| result | `compiler/build.sh` ok; build_tests **998/1 fail** (ctor green; E046 unrelated) |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 — full build_tests + parity + build.sh |
+
+**Enqueue payload (STEP=3):**
+```
+AGENT_TOKEN=cr-agent-4acde1f7-5778-456d-b15c-d7c7c3749bad
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_VARIANT_CTOR_BRACE.md
+
+Full build_tests + run_mlcc2_checker_parity + compiler/build.sh. E046 out of scope unless trivial.
+```
+
+### Turn 2026-05-19 (Driver VARIANT_CTOR_BRACE step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_VARIANT_CTOR_BRACE |
+| done | Call-chain trace; root cause `gen_constructor_call_cpp_expression` zero-arg-only `CppAggregateInit`; TRACK inventory table |
+| result | build_tests **996/3 fail** (2 ctor + E046 unrelated); gate skip ok |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 — fix `expr_visitor_cpp.mlc`; ctor tests green |
+
+**Enqueue payload (STEP=2):**
+```
+AGENT_TOKEN=cr-agent-c5db8635-dc26-43d5-826a-a5e09af6f504
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_VARIANT_CTOR_BRACE.md
+
+Fix gen_constructor_call_cpp_expression: CppAggregateInit for all constructor arities. build_tests ctor cases.
+```
+
+### Turn 2026-05-19 (Planner plan-refresh — VARIANT_CTOR_BRACE open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_VARIANT_CTOR_BRACE (new) |
+| done | COW_P2 closed; opened VARIANT_CTOR_BRACE (codegen ctor brace); TRACK_PLAN updated |
+| result | Priority stability: 2–3 test_codegen fails; registry COW deferred |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_VARIANT_CTOR_BRACE |
+
+### Turn 2026-05-19 (Driver COW_P2_AUDIT step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_COW_P2_AUDIT |
+| done | `check.mlc` fold survivors; final gate; TRACK closed |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; mlcc **7.01s** / mlcc2 **2.57s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-05-19 (Driver COW_P2_AUDIT step 4 — param_destructure + transform_decl)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_COW_P2_AUDIT |
+| done | `param_destructure_expand` fold+`concat`; `transform_decl` fold+`concat` |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; mlcc **5.38s** / mlcc2 **4.10s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-05-19 (Driver COW_P2_AUDIT step 3 — infer_result_option_method)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_COW_P2_AUDIT |
+| done | `infer_result_option_method` `append_argument_type` (12 sites) |
+| result | build_tests 996/3 fail (pre-existing); parity 2/2; main=0; **diff_exit=0**; mlcc **4.36s** / mlcc2 **3.09s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-05-19 (Driver COW_P2_AUDIT step 2 — infer_lambda_context + infer_array_method)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_COW_P2_AUDIT |
+| done | `infer_lambda_context` fold+`concat`; `infer_array_method` `append_argument_type` |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; mlcc **2.38s** / mlcc2 **1.79s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-05-19 (Driver COW_P2_AUDIT step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_COW_P2_AUDIT |
+| done | Grep 6 files; 33 `.push`; inventory table + fn names + line refs |
+| result | docs only; gate skipped |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-05-19 (Planner plan-refresh — COW_P2 open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_COW_P2_AUDIT (new) |
+| done | All tracks closed; opened COW_P2 (33 `.push` / 6 checker files); TRACK_PLAN updated |
+| result | Priority stability: P2 COW before registry/parser; baseline 997/2; diff_exit=0 |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_COW_P2_AUDIT |
+
+### Turn 2026-05-19 (Driver COW_WHILE_AUDIT step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_COW_WHILE_AUDIT |
+| done | Final gate; inventory 0 `.push` in 6 files; TRACK closed; TRACK_PLAN updated |
+| result | build_tests 997/2 fail (pre-existing); parity 2/2; main=0; **diff_exit=0**; mlcc **3.31s** / mlcc2 **2.09s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner plan-refresh |
+
+### Turn 2026-05-19 (Driver COW_WHILE_AUDIT step 4 — infer_match + derive_validation)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_COW_WHILE_AUDIT |
+| done | `infer_match` string-match folds; `derive_validation` trait/hash fold states |
+| result | build_tests 997/2 fail (ctor brace, pre-existing); parity 2/2; main=0; **diff_exit=0**; mlcc **1.91s** / mlcc2 **1.71s**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-05-19 (Driver COW_WHILE_AUDIT step 3 — named_args + names)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_COW_WHILE_AUDIT |
+| done | `named_args` reorder fold state; `names` `collect_pattern_bindings` fold+`concat` |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-05-19 (Driver COW_WHILE_AUDIT step 2 — transform_stmts + transform)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_COW_WHILE_AUDIT |
+| done | `transform_stmts` fold state; `transform_call_arguments` fold; `transform_array_hof_method_arguments` concat helper |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=3 |
+
+### Turn 2026-05-19 (Driver COW_WHILE_AUDIT step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_COW_WHILE_AUDIT |
+| done | Grep 6 files; 28 push sites; inventory table + fn names; new: `pattern_string_literals_flat` |
+| result | docs only; gate skipped |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-05-19 (Planner plan-refresh — COW_WHILE open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_COW_WHILE_AUDIT (new) |
+| done | All prior tracks closed; opened COW_WHILE (P1 deferral from COW_FOLD); TRACK_PLAN updated |
+| result | Priority stability: 7 P1 while/closure sites; 5-step track |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_COW_WHILE_AUDIT |
+
+### Turn 2026-05-19 (Driver COW_FOLD_AUDIT step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_COW_FOLD_AUDIT |
+| done | Full verify gate; TRACK closed; TRACK_PLAN updated |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; uncommitted |
+| issues | P1 while/closure COW sites deferred; MCP enqueue unavailable |
+| next | ROLE=Planner STEP=plan-refresh |
+
+### Turn 2026-05-19 (Driver COW_FOLD_AUDIT step 4 — checker folds)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_COW_FOLD_AUDIT |
+| done | `infer.mlc` tuple+spread; `transform.mlc` lambda params; `check.mlc` diagnostic folds; `trait_param_expand` fold state |
+| result | build_tests ok; parity 2/2; main=0; **diff_exit=0**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=5 |
+
+### Turn 2026-06-19 (Driver COW_FOLD_AUDIT step 3 — infer_call)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_COW_FOLD_AUDIT |
+| done | `infer_call.mlc` fold accumulator → `concat` |
+| result | parity 2/2; main=0; **diff_exit=0** |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-19 (Driver COW_FOLD_AUDIT step 2 — partial_application_desugar)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_COW_FOLD_AUDIT |
+| done | `partial_application_desugar`: block/match fold+`concat`; `partial_allocate_parameter_names` recursive+`do/end` |
+| result | parity 2/2; main=0; **diff_exit=0** |
+| next | ROLE=Driver STEP=3 (`infer_call.mlc`) |
+
+### Turn 2026-06-19 (Driver COW_FOLD_AUDIT step 1 — inventory)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_COW_FOLD_AUDIT |
+| done | Inventory P0/P1/P2 in TRACK; 10 P0 fold+push; 8 P1 while/closure; 4 fixed refs |
+| result | docs only; gate skipped (no compiler change) |
+| next | ROLE=Driver STEP=2 |
+
+### Turn 2026-06-19 (Planner plan-refresh — MLCC2 closed, COW_FOLD open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_COW_FOLD_AUDIT (new) |
+| done | MLCC2_CHECKER_PARITY → closed; TRACK_COW_FOLD_AUDIT drafted (5 steps); TRACK_PLAN updated |
+| result | Priority stability: audit `fold`+`.push` survivors (`partial_application_desugar`, `infer_call`, …) |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Driver STEP=1 TRACK_COW_FOLD_AUDIT |
+
+### Turn 2026-06-19 (Driver MLCC2_CHECKER_PARITY step 6 — desugar fold, gate green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | Bisect: E030 from `partial_application_desugar_record_lit_parts` `.push` in `fold` (not parser); fix `partial_application_desugar.mlc` fold+`concat`; `record_lit_merge.mlc` fold; parser `exprs.mlc` recursive; corpus `record_literal_explicit_fields.mlc`; TRACK closed |
+| result | mlcc2 main=0; parity 2/2; **diff_exit=0**; uncommitted |
+| issues | MCP enqueue unavailable |
+| next | ROLE=Planner STEP=plan-refresh (pick next track from PLAN) |
+
+### Turn 2026-06-18 (Meta MLCC2_CHECKER_PARITY — stuck Driver:5 recovery)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | Guard `Driver:5` loop broken; TRACK step 5 → blocked; STEP=6 added; RESEARCH meta log; `expr_visitor_cpp` ctor `CppCall` fix documented |
+| result | build.sh ok; p1 `RecordLitFields(...)` parens; mlcc point=0 mlcc2 point=1 main=1 corpus=0; diff unreached; worktree uncommitted (~220 files) |
+| issues | MCP `user-cr-cursor` / agent-loop unavailable — manual enqueue |
+| next | ROLE=Driver STEP=6 (bisect mlcc2 empty record fields; corpus; verify gate) |
+
+### Turn 2026-06-18 (Meta MLCC2_CHECKER_PARITY — stuck Driver:4 recovery)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | Guard `Driver:4` loop broken; TRACK step 4 → blocked (E030); RESEARCH meta log; no re-enqueue STEP=4 |
+| result | build_tests ok; build.sh ok; mlcc check main=0; mlcc2 check main=1 (E030 `ModularCompileInput` + minimal `Pair` repro); worktree uncommitted |
+| issues | `user-cr-cursor` MCP down — enqueue via SESSION payload |
+| next | ROLE=Driver STEP=5 (bisect E030 `record_lit_merge` in mlcc2 p1, then self-host diff gate) |
+
+### Turn 2026-06-19 (Driver MLCC2_CHECKER_PARITY step 3 — names scope fold)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | `names.mlc`: fold+`scope.concat`/`scope_with_bindings`; `run_mlcc2_checker_parity.sh` mlcc2=0 |
+| result | **999**/0; corpus mlcc2 exit 0; main.mlc E030/E031; diff_exit=1 |
+| issues | main.mlc gaps — STEP=4 |
+| next | ROLE=Driver STEP=4 |
+
+### Turn 2026-06-19 (Driver MLCC2_CHECKER_PARITY step 2 — bisect names/infer/transform)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | Bisect: E001 only from `names.mlc`; pipeline `check_names_expr` before `infer_expr`; failure in `check_names_block_expression` / `check_names_statements` scope for tail; TRACK bisect section |
+| result | mlcc=0 mlcc2=1 on corpus (unchanged); gate **999**/0; docs only |
+| issues | none |
+| next | ROLE=Driver STEP=3 (fix `names.mlc` do-block scope) |
+
+### Turn 2026-06-16 (Driver MLCC2_CHECKER_PARITY step 1 — minimal repro)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_MLCC2_CHECKER_PARITY |
+| done | corpus `do_block_tail_let_mut.mlc`; `run_mlcc2_checker_parity.sh`; test_checker assertion |
+| result | **999**/0; mlcc=0 mlcc2=1 on corpus; uncommitted |
+| next | ROLE=Driver STEP=2 (enqueued) |
+
+### Turn 2026-06-16 (Planner plan-refresh — LAMBDA closed)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | LAMBDA_CAPTURE → closed; new **MLCC2_CHECKER_PARITY**; Phase 2.6 roadmap closed |
+| note | uncommitted VISITOR 7–12 + LAMBDA 1–5; mlcc2 diff blocker |
+| next | ROLE=Driver STEP=1 TRACK_MLCC2_CHECKER_PARITY (enqueued) |
+
+### Turn 2026-06-16 (Driver LAMBDA_CAPTURE step 5 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_LAMBDA_CAPTURE |
+| done | IIFE `[&]` comments in `expr.mlc` + `expr_visitor_cpp.mlc`; track **closed** |
+| result | **998**/0; uncommitted batch steps 1–5 |
+| next | ROLE=Planner plan-refresh (enqueued) |
+
+### Turn 2026-06-16 (Driver LAMBDA_CAPTURE step 4 — stored lambda)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_LAMBDA_CAPTURE |
+| done | `value_capture_for_lambda` in `expr_visitor_cpp.mlc`; `make_checker` stored-lambda test; ExprLambda/partial `[=]` expectations |
+| result | **998**/0; mlcc `--check-only` ok; mlcc2 check main.mlc fails (undefined `let mut` in do-blocks — parity gap); uncommitted |
+| next | ROLE=Driver STEP=5 TRACK_LAMBDA_CAPTURE (enqueued) |
+
+### Turn 2026-06-16 (Driver LAMBDA_CAPTURE step 3 — match_arm_constructed_value_generic*)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_LAMBDA_CAPTURE |
+| done | `expr.mlc` 2× `match_arm_constructed_value_generic*` `[&]` → `[=]`; unit test |
+| result | **996**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=4 TRACK_LAMBDA_CAPTURE (enqueued) |
+
+### Turn 2026-06-16 (Driver LAMBDA_CAPTURE step 2 — match_arm_*)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_LAMBDA_CAPTURE |
+| done | `expr.mlc` 6× `match_arm_*` `[&]` → `[=]`; `test_codegen.mlc` direct unit tests |
+| result | **995**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=3 TRACK_LAMBDA_CAPTURE (enqueued) |
+
+### Turn 2026-06-16 (Planner plan-refresh — VISITOR closed, LAMBDA active)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_PLAN updated; VISITOR_PATTERN → closed; active **LAMBDA_CAPTURE** STEP=2 |
+| note | uncommitted: VISITOR steps 7–12 batch + LAMBDA step 1 |
+| next | ROLE=Driver STEP=2 TRACK_LAMBDA_CAPTURE (enqueued) |
+
+### Turn 2026-06-16 (Driver LAMBDA_CAPTURE step 1 — cpp_lambda_header_prefix)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_LAMBDA_CAPTURE |
+| done | `expression_support.mlc` `cpp_lambda_header_prefix`: `[&]` → `[=]`; `test_codegen.mlc` expectations |
+| result | **992**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=2 TRACK_LAMBDA_CAPTURE (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 13 — close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 13 |
+| track | TRACK_VISITOR_PATTERN |
+| done | final gate; TRACK **closed**; uncommitted batch steps 7–12 noted in TRACK STEP=13 note |
+| result | **992**/0; self-host `diff_exit=0` |
+| next | ROLE=Planner plan-refresh (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 12 — expr-pass survivor audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 12 |
+| track | TRACK_VISITOR_PATTERN |
+| done | audit: `infer_expr`/`transform_expr`/`gen_expr` → dispatch only; legacy `check_names_expr`/`check_mutation_expr` documented; TRACK STEP=12 note |
+| result | **992**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=13 TRACK_VISITOR_PATTERN (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 11 — visitor pass parity tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| track | TRACK_VISITOR_PATTERN |
+| done | `test_visitor_pass_parity.mlc`: names/mutations diagnostic-count parity (legacy `check_*_expr` vs `dispatch_*_pass`); codegen `gen_expr` vs `eval_expr_cpp`+`print_expr` |
+| result | **992**/0 (+8); self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=12 TRACK_VISITOR_PATTERN (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 10 — Cpp AST printer stability)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| track | TRACK_VISITOR_PATTERN |
+| done | printer in `cpp_ast.mlc`; deleted `cpp_printer.mlc`; imports → `cpp_ast`; no `Display` trait / no sum-type `extend .display()` (self-host: wrong receiver + facade qualified names) |
+| result | **984**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=11 TRACK_VISITOR_PATTERN (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 9 — NameCheckResult helpers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| track | TRACK_VISITOR_PATTERN |
+| done | `names.mlc`: `.merge`, `.with_scope`, `.append_diagnostics`; `merge_name_check_results` → `.merge`; visit_block/while/for |
+| result | **984**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=10 TRACK_VISITOR_PATTERN (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 8 — InferResult helpers)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| track | TRACK_VISITOR_PATTERN |
+| done | `infer_result.mlc`: `.map_type`, `.merge_errors`, `.and_then`; `infer.mlc` → `map_type`; `infer_operand_combine` → `merge_errors` |
+| result | **984**/0; self-host `diff_exit=0`; uncommitted |
+| next | ROLE=Driver STEP=9 TRACK_VISITOR_PATTERN (enqueued) |
+
+### Turn 2026-06-15 (Driver VISITOR_PATTERN step 7 — CodegenContext gen_*)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_VISITOR_PATTERN |
+| done | `eval.mlc`: `extend CodegenContext` + export wrappers; lambdas → `gen_expr(...)` not `.gen_expr` (C++ member bug) |
+| result | **984**/0; self-host `diff_exit=0`; uncommitted |
+| issues | `auto` lambda + `codegen_context.gen_expr` → invalid C++ member; fixed via free fn |
+| next | ROLE=Driver STEP=8 TRACK_VISITOR_PATTERN (enqueued) |
 
 ### Turn 2026-06-15 (Driver VISITOR_PATTERN step 6 — CodegenPass)
 

@@ -68,6 +68,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('chained type alias resolves - 0 errors',
     check_error_count('type Offset = i32\ntype Count = Offset\nfn f() -> Count = 1'), 0))
 
+  results.push(assert_eq_int('generic record field substitutes type param - 0 errors',
+    check_error_count('type Box<T> = { value: T }\nfn f(b: Box<i32>) -> i32 = b.value'), 0))
+
+  results.push(assert_eq_int('generic type alias expands - 0 errors',
+    check_error_count('type Cell<T> = T\nfn f(x: Cell<i32>) -> i32 = x'), 0))
+
   results.push(assert_eq_int('mutual cyclic type alias - 2 errors',
     check_error_count('type A = B\ntype B = A\nfn main() -> i32 = 0'), 2))
 
@@ -200,6 +206,9 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('let const compile-time binding - 0 errors',
     check_error_count('fn f() -> i32 = do\n  let const c = 42\n  c\nend'), 0))
+
+  results.push(assert_eq_int('mlcc2 parity corpus: do-block let mut tail — 0 errors (Ruby/mlcc checker)',
+    check_error_count('fn main() -> i32 = do\n  let mut counter = 0\n  counter\nend'), 0))
 
   results.push(assert_eq_int('nested generic in array type annotation - 0 errors',
     check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let items: [Result<i32, string>] = []\n  0\nend'), 0))

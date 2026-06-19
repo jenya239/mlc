@@ -9,7 +9,11 @@ import {
   PatternResult,
   PatternsResult,
   ExprResult,
-  ExprsResult
+  ExprsResult,
+  types_parse_result,
+  parameters_parse_result,
+  patterns_parse_result,
+  expressions_parse_result
 } from './predicates'
 import { TypeExpr, Param, Pattern, Expr } from '../ast'
 
@@ -18,14 +22,14 @@ export fn comma_separated_types_suffix_from_first(
   parse_one: (Parser) -> TypeResult
 ) -> TypesResult = do
   const types: [Shared<TypeExpr>] = []
-  types.push(first.type_expr)
+  types.push(first.value)
   let mut state = first.parser
   while state.kind().is_comma() do
     const next_parsed = parse_one(state.advance())
-    types.push(next_parsed.type_expr)
+    types.push(next_parsed.value)
     state = next_parsed.parser
   end
-  TypesResult { types, parser: state }
+  types_parse_result(types, state)
 end
 
 export fn comma_separated_params_suffix_from_first(
@@ -33,45 +37,45 @@ export fn comma_separated_params_suffix_from_first(
   parameter_slot_index: i32,
   parse_one: (Parser, i32) -> ParamResult
 ) -> ParamsResult = do
-  const params: [Shared<Param>] = []
-  params.push(first.param)
+  const parameters: [Shared<Param>] = []
+  parameters.push(first.value)
   let mut state = first.parser
   let mut slot_index = parameter_slot_index
   while state.kind().is_comma() do
     const next = parse_one(state.advance(), slot_index)
-    params.push(next.param)
+    parameters.push(next.value)
     state = next.parser
     slot_index = slot_index + 1
   end
-  ParamsResult { params, parser: state }
+  parameters_parse_result(parameters, state)
 end
 
 export fn comma_separated_pats_suffix_from_first(
   first: PatternResult,
   parse_one: (Parser) -> PatternResult
 ) -> PatternsResult = do
-  const pats: [Shared<Pattern>] = []
-  pats.push(first.pattern)
+  const patterns: [Shared<Pattern>] = []
+  patterns.push(first.value)
   let mut state = first.parser
   while state.kind().is_comma() do
     const next = parse_one(state.advance())
-    pats.push(next.pattern)
+    patterns.push(next.value)
     state = next.parser
   end
-  PatternsResult { patterns: pats, parser: state }
+  patterns_parse_result(patterns, state)
 end
 
 export fn comma_separated_exprs_suffix_from_first(
   first: ExprResult,
   parse_one: (Parser) -> ExprResult
 ) -> ExprsResult = do
-  const exprs: [Shared<Expr>] = []
-  exprs.push(first.expression)
+  const expressions: [Shared<Expr>] = []
+  expressions.push(first.value)
   let mut state = first.parser
   while state.kind().is_comma() do
     const next = parse_one(state.advance())
-    exprs.push(next.expression)
+    expressions.push(next.value)
     state = next.parser
   end
-  ExprsResult { exprs, parser: state }
+  expressions_parse_result(expressions, state)
 end

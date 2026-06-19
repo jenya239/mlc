@@ -8,16 +8,16 @@
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "check.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace test_checker {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> checker_tests() noexcept;
 

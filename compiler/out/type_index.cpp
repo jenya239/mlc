@@ -17,15 +17,15 @@ mlc::HashMap<mlc::String, bool> build_trait_names_from_decls(mlc::Array<std::sha
 
 bool extend_may_register_method_owner(mlc::HashMap<mlc::String, mlc::String> owners, mlc::String unmangled, mlc::String type_name, mlc::HashMap<mlc::String, bool> trait_names) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls, mlc::HashMap<mlc::String, mlc::String> owners) noexcept;
+mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, mlc::String> owners) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
+mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept;
 
-mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
+mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept;
+mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept;
 
-mlc::Array<std::shared_ptr<decl_index::FieldOrder>> build_field_orders(ast::Program prog) noexcept;
+mlc::Array<std::shared_ptr<decl_index::FieldOrder>> build_field_orders(ast::Program program) noexcept;
 
 mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noexcept{
 mlc::String prefix = type_name + mlc::String("_");
@@ -57,7 +57,7 @@ mlc::HashMap<mlc::String, bool> trait_names = mlc::HashMap<mlc::String, bool>();
 int index = 0;
 while (index < decls.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclTrait>((*ast::decl_inner(decls[index])))) { auto _v_decltrait = std::get<ast::DeclTrait>((*ast::decl_inner(decls[index]))); auto [trait_name, _w0, _w1] = _v_decltrait; return trait_names.set(trait_name, true); } return; }();
+[&]() -> void { if (std::holds_alternative<ast::DeclTrait>((*ast::decl_inner(decls[index])))) { auto _v_decltrait = std::get<ast::DeclTrait>((*ast::decl_inner(decls[index]))); auto [trait_name, _w0, _w1, _w2] = _v_decltrait; return trait_names.set(trait_name, true); } return; }();
 index = index + 1;
 }
 }
@@ -71,134 +71,136 @@ return !owners.has(unmangled) ? true : [&]() -> bool {
  }();
 }
 
-mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls, mlc::HashMap<mlc::String, mlc::String> owners) noexcept{
-mlc::HashMap<mlc::String, bool> trait_names = build_trait_names_from_decls(decls);
-int i = 0;
-while (i < decls.size()){
+mlc::HashMap<mlc::String, mlc::String> add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, mlc::String> owners) noexcept{
+mlc::HashMap<mlc::String, bool> trait_names = build_trait_names_from_decls(declarations);
+int declaration_index = 0;
+while (declaration_index < declarations.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclTrait>((*ast::decl_inner(decls[i])))) { auto _v_decltrait = std::get<ast::DeclTrait>((*ast::decl_inner(decls[i]))); auto [trait_name, _w0, methods] = _v_decltrait; return [&]() { 
-  int mi = 0;
+[&]() -> void { if (std::holds_alternative<ast::DeclTrait>((*ast::decl_inner(declarations[declaration_index])))) { auto _v_decltrait = std::get<ast::DeclTrait>((*ast::decl_inner(declarations[declaration_index]))); auto [trait_name, _w0, methods, _w1] = _v_decltrait; return [&]() { 
+  int method_index = 0;
   return [&]() { 
-  while (mi < methods.size()){
+  while (method_index < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
-  mlc::String unmangled = extract_method_name(fn_name, trait_name);
+[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
+  mlc::String unmangled = extract_method_name(function_name, trait_name);
   if (!owners.has(unmangled)){
-owners.set(unmangled, fn_name);
+owners.set(unmangled, function_name);
 }
  }(); } return; }();
-mi = mi + 1;
+method_index = method_index + 1;
 }
 }
  }();
- }(); } if (std::holds_alternative<ast::DeclExtend>((*ast::decl_inner(decls[i])))) { auto _v_declextend = std::get<ast::DeclExtend>((*ast::decl_inner(decls[i]))); auto [type_name, _w0, methods] = _v_declextend; return [&]() { 
-  int mi = 0;
+ }(); } if (std::holds_alternative<ast::DeclExtend>((*ast::decl_inner(declarations[declaration_index])))) { auto _v_declextend = std::get<ast::DeclExtend>((*ast::decl_inner(declarations[declaration_index]))); auto [type_name, _w0, methods, _w1] = _v_declextend; return [&]() { 
+  int method_index = 0;
   return [&]() { 
-  while (mi < methods.size()){
+  while (method_index < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[mi]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[mi])); auto [fn_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
-  mlc::String unmangled = extract_method_name(fn_name, type_name);
+[&]() -> void { if (std::holds_alternative<ast::DeclFn>((*methods[method_index]))) { auto _v_declfn = std::get<ast::DeclFn>((*methods[method_index])); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return [&]() { 
+  mlc::String unmangled = extract_method_name(function_name, type_name);
+  mlc::String type_owner_key = type_name + mlc::String("_") + unmangled;
+  owners.set(type_owner_key, function_name);
   if (extend_may_register_method_owner(owners, unmangled, type_name, trait_names)){
-owners.set(unmangled, fn_name);
+owners.set(unmangled, function_name);
 }
  }(); } return; }();
-mi = mi + 1;
+method_index = method_index + 1;
 }
 }
  }();
  }(); } return; }();
-i = i + 1;
+declaration_index = declaration_index + 1;
 }
 }
 return owners;
 }
 
-mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{return add_method_owners_from_decls(decls, mlc::HashMap<mlc::String, mlc::String>());}
+mlc::HashMap<mlc::String, mlc::String> build_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept{return add_method_owners_from_decls(declarations, mlc::HashMap<mlc::String, mlc::String>());}
 
-mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{
+mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept{
 mlc::Array<mlc::String> result = {};
-int i = 0;
-while (i < decls.size()){
+int declaration_index = 0;
+while (declaration_index < declarations.size()){
 {
-std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
-[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [_w0, type_params, variants, _w1] = _v_decltype; return [&]() { 
-  int vi = 0;
+std::shared_ptr<ast::Decl> inner_declaration = ast::decl_inner(declarations[declaration_index]);
+[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*inner_declaration)); auto [_w0, type_parameters, variants, _w1, _w2] = _v_decltype; return [&]() { 
+  int variant_index = 0;
   return [&]() { 
-  while (vi < variants.size()){
+  while (variant_index < variants.size()){
 {
-bool should_add = type_params.size() > 0;
-mlc::String vname = std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> mlc::String { auto [n, _w0, _w1] = varrecord; return n; },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [n, _w0, _w1] = vartuple; return n; },
-  [&](const VarUnit& varunit) -> mlc::String { auto [n, _w0] = varunit; return n; }
-}, (*variants[vi]));
+bool should_add = type_parameters.size() > 0;
+mlc::String variant_name = std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0, _w1] = varrecord; return name; },
+  [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
+  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; }
+}, (*variants[variant_index]));
 if (should_add){
 {
-result.push_back(vname);
+result.push_back(variant_name);
 }
 } else {
 {
 result.push_back(mlc::String("__skip__"));
 }
 }
-vi = vi + 1;
+variant_index = variant_index + 1;
 }
 }
  }();
  }(); } return; }();
-i = i + 1;
+declaration_index = declaration_index + 1;
 }
 }
 return result;
 }
 
-mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> decls) noexcept{
+mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept{
 mlc::HashMap<mlc::String, mlc::String> variant_map = mlc::HashMap<mlc::String, mlc::String>();
-int i = 0;
-while (i < decls.size()){
+int declaration_index = 0;
+while (declaration_index < declarations.size()){
 {
-std::shared_ptr<ast::Decl> inner_decl = ast::decl_inner(decls[i]);
-[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_decl))) { auto _v_decltype = std::get<ast::DeclType>((*inner_decl)); auto [type_name, _w0, variants, _w1] = _v_decltype; return [&]() { 
-  int vi = 0;
+std::shared_ptr<ast::Decl> inner_declaration = ast::decl_inner(declarations[declaration_index]);
+[&]() -> void { if (std::holds_alternative<ast::DeclType>((*inner_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*inner_declaration)); auto [type_name, _w0, variants, _w1, _w2] = _v_decltype; return [&]() { 
+  int variant_index = 0;
   return [&]() { 
-  while (vi < variants.size()){
+  while (variant_index < variants.size()){
 {
 std::visit(overloaded{
   [&](const VarRecord& varrecord) -> void { auto [variant_name, _w0, _w1] = varrecord; variant_map.set(variant_name, type_name); },
   [&](const VarTuple& vartuple) -> void { auto [variant_name, _w0, _w1] = vartuple; variant_map.set(variant_name, type_name); },
   [&](const VarUnit& varunit) -> void { auto [variant_name, _w0] = varunit; variant_map.set(variant_name, type_name); }
-}, (*variants[vi]));
-vi = vi + 1;
+}, (*variants[variant_index]));
+variant_index = variant_index + 1;
 }
 }
  }();
  }(); } return; }();
-i = i + 1;
+declaration_index = declaration_index + 1;
 }
 }
 return variant_map;
 }
 
-mlc::Array<std::shared_ptr<decl_index::FieldOrder>> build_field_orders(ast::Program prog) noexcept{
+mlc::Array<std::shared_ptr<decl_index::FieldOrder>> build_field_orders(ast::Program program) noexcept{
 mlc::Array<std::shared_ptr<decl_index::FieldOrder>> orders = {};
-int i = 0;
-while (i < prog.decls.size()){
+int declaration_index = 0;
+while (declaration_index < program.decls.size()){
 {
 std::visit(overloaded{
   [&](const DeclExported& declexported) -> void { auto [inner] = declexported; std::visit(overloaded{
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; [&]() { 
-  int vi = 0;
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1, _w2] = decltype_; [&]() { 
+  int variant_index = 0;
   return [&]() { 
-  while (vi < variants.size()){
+  while (variant_index < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_definitions, _w0] = varrecord; [&]() { 
   mlc::Array<mlc::String> field_names = {};
-  int fi = 0;
-  while (fi < field_defs.size()){
+  int field_index = 0;
+  while (field_index < field_definitions.size()){
 {
-field_names.push_back(field_defs[fi]->name);
-fi = fi + 1;
+field_names.push_back(field_definitions[field_index]->name);
+field_index = field_index + 1;
 }
 }
   orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder{variant_name, field_names}));
@@ -211,33 +213,34 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
  }(); },
   [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; },
   [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; }
-}, (*variants[vi]));
-vi = vi + 1;
+}, (*variants[variant_index]));
+variant_index = variant_index + 1;
 }
 }
  }();
  }(); },
   [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; },
-  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; },
-  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; },
+  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2, _w3] = decltrait; },
+  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2, _w3] = declextend; },
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; },
   [&](const DeclExported& declexported) -> void { auto [_w0] = declexported; },
   [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; },
-  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; }
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; },
+  [&](const DeclTypeAlias& decltypealias) -> void { auto [_w0, _w1, _w2, _w3] = decltypealias; }
 }, (*ast::decl_inner(inner))); },
-  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1] = decltype_; [&]() { 
-  int vi = 0;
+  [&](const DeclType& decltype_) -> void { auto [type_name, _w0, variants, _w1, _w2] = decltype_; [&]() { 
+  int variant_index = 0;
   return [&]() { 
-  while (vi < variants.size()){
+  while (variant_index < variants.size()){
 {
 std::visit(overloaded{
-  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_defs, _w0] = varrecord; [&]() { 
+  [&](const VarRecord& varrecord) -> void { auto [variant_name, field_definitions, _w0] = varrecord; [&]() { 
   mlc::Array<mlc::String> field_names = {};
-  int fi = 0;
-  while (fi < field_defs.size()){
+  int field_index = 0;
+  while (field_index < field_definitions.size()){
 {
-field_names.push_back(field_defs[fi]->name);
-fi = fi + 1;
+field_names.push_back(field_definitions[field_index]->name);
+field_index = field_index + 1;
 }
 }
   orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder{variant_name, field_names}));
@@ -250,20 +253,21 @@ orders.push_back(std::make_shared<decl_index::FieldOrder>(decl_index::FieldOrder
  }(); },
   [&](const VarTuple& vartuple) -> void { auto [_w0, _w1, _w2] = vartuple; },
   [&](const VarUnit& varunit) -> void { auto [_w0, _w1] = varunit; }
-}, (*variants[vi]));
-vi = vi + 1;
+}, (*variants[variant_index]));
+variant_index = variant_index + 1;
 }
 }
  }();
  }(); },
   [&](const DeclFn& declfn) -> void { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; },
-  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2] = decltrait; },
-  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2] = declextend; },
+  [&](const DeclTrait& decltrait) -> void { auto [_w0, _w1, _w2, _w3] = decltrait; },
+  [&](const DeclExtend& declextend) -> void { auto [_w0, _w1, _w2, _w3] = declextend; },
   [&](const DeclImport& declimport) -> void { auto [_w0, _w1] = declimport; },
   [&](const DeclAssocType& declassoctype) -> void { auto [_w0, _w1] = declassoctype; },
-  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; }
-}, (*prog.decls[i]));
-i = i + 1;
+  [&](const DeclAssocBind& declassocbind) -> void { auto [_w0, _w1, _w2] = declassocbind; },
+  [&](const DeclTypeAlias& decltypealias) -> void { auto [_w0, _w1, _w2, _w3] = decltypealias; }
+}, (*program.decls[declaration_index]));
+declaration_index = declaration_index + 1;
 }
 }
 return orders;

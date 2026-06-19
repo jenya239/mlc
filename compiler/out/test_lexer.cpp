@@ -12,7 +12,7 @@ using namespace ast_tokens;
 
 int lex_token_count(mlc::String source) noexcept;
 
-ast_tokens::TKind lex_first_kind(mlc::String source) noexcept;
+ast_tokens::TokenKind lex_first_kind(mlc::String source) noexcept;
 
 mlc::String lex_first_string(mlc::String source) noexcept;
 
@@ -28,7 +28,7 @@ mlc::Array<test_runner::TestResult> lexer_tests() noexcept;
 
 int lex_token_count(mlc::String source) noexcept{return lexer::tokenize(source).tokens.size();}
 
-ast_tokens::TKind lex_first_kind(mlc::String source) noexcept{return lexer::tokenize(source).tokens[0].kind;}
+ast_tokens::TokenKind lex_first_kind(mlc::String source) noexcept{return lexer::tokenize(source).tokens[0].kind;}
 
 mlc::String lex_first_string(mlc::String source) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind)) { auto _v_lstr = std::get<ast_tokens::LStr>(lexer::tokenize(source).tokens[0].kind); auto [text] = _v_lstr; return text; } return mlc::String(""); }();}
 
@@ -65,6 +65,7 @@ results.push_back(test_runner::assert_eq_str(mlc::String("single-quoted escape d
 results.push_back(test_runner::assert_eq_int(mlc::String("multiline double-quoted string - 2 tokens (LStr + Eof)"), lex_token_count(mlc::String("\"a\nb\"")), 2));
 results.push_back(test_runner::assert_eq_str(mlc::String("multiline double-quoted string literal preserves embedded newline"), lex_first_string(mlc::String("\"a\nb\"")), mlc::String("a\nb")));
 results.push_back(test_runner::assert_true(mlc::String("unterminated double-quoted string yields lex error"), lex_error_count(mlc::String("\"no closing quote")) > 0));
+results.push_back(test_runner::assert_true(mlc::String("lex: corpus unclosed string yields unterminated string error"), lex_error_count(mlc::String("fn f() -> string = \"unclosed")) > 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("identifier - 2 tokens"), lex_token_count(mlc::String("foo")), 2));
 results.push_back(test_runner::assert_eq_int(mlc::String("no lex errors on valid source"), lex_error_count(mlc::String("fn f() -> i32 = 42")), 0));
 results.push_back(test_runner::assert_eq_int(mlc::String("fn decl - correct token count"), lex_token_count(mlc::String("fn f() -> i32 = 42")), 9));

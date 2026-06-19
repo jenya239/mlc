@@ -5,16 +5,16 @@
 #include <variant>
 
 #include "ast.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace param_destructure_expand {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 bool parameter_binding_is_plain_identifier(std::shared_ptr<ast::Param> parameter) noexcept;
 

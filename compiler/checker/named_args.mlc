@@ -30,62 +30,153 @@ fn inner_expression_without_named_label(argument: Shared<Expr>) -> Shared<Expr> 
 export fn strip_named_argument_labels(arguments: [Shared<Expr>]) -> [Shared<Expr>] =
   arguments.map(inner_expression_without_named_label)
 
+fn build_placeholder_slot_expressions(parameter_names: [string]) -> [Shared<Expr>] =
+  parameter_names.fold(
+    do let empty_slot_expressions: [Shared<Expr>] = []; empty_slot_expressions end,
+    (slot_expressions_so_far, _parameter_name) =>
+      slot_expressions_so_far.concat([expr_placeholder()]))
+
+fn build_zero_filled_slot_flags(parameter_names: [string]) -> [i32] =
+  parameter_names.fold(
+    do let empty_slot_filled_flags: [i32] = []; empty_slot_filled_flags end,
+    (slot_filled_flags_so_far, _parameter_name) =>
+      slot_filled_flags_so_far.concat([0]))
+
+fn first_unfilled_positional_slot(
+  slot_filled_flags: [i32],
+  parameter_count: i32,
+  start_at: i32
+) -> i32 = do
+  let mut slot_index = start_at
+  while slot_index < parameter_count && slot_filled_flags[slot_index] == 1 do
+    slot_index = slot_index + 1
+  end
+  slot_index
+end
+
+type Named_argument_reorder_state = Named_argument_reorder_state {
+  slot_expressions:  [Shared<Expr>],
+  slot_filled_flags: [i32],
+  errors:            [Diagnostic],
+  positional_slot:   i32,
+}
+
+fn process_one_call_argument_for_named_reorder(
+  state: Named_argument_reorder_state,
+  argument: Shared<Expr>,
+  parameter_names: [string],
+  parameter_count: i32,
+  collect_parameter_errors: bool
+) -> Named_argument_reorder_state =
+  match argument {
+    ExprNamedArg(name, inner_expression, argument_span) => do
+      const slot = find_parameter_slot(parameter_names, name)
+      const errors_after_named_argument =
+        if collect_parameter_errors && slot == -1 then
+          state.errors.concat([diagnostic_error_with_code(
+            'unknown parameter name: ' + name, argument_span, diagnostic_code_e034())])
+        else if collect_parameter_errors && slot >= 0 && state.slot_filled_flags[slot] == 1 then
+          state.errors.concat([diagnostic_error_with_code(
+            'duplicate named arg: ' + name, argument_span, diagnostic_code_e035())])
+        else
+          state.errors
+        end
+      if slot >= 0 && state.slot_filled_flags[slot] == 0 then do
+        let slot_expressions = state.slot_expressions
+        slot_expressions.set(slot, inner_expression)
+        let slot_filled_flags = state.slot_filled_flags
+        slot_filled_flags.set(slot, 1)
+        Named_argument_reorder_state {
+          slot_expressions:  slot_expressions,
+          slot_filled_flags: slot_filled_flags,
+          errors:            errors_after_named_argument,
+          positional_slot:   state.positional_slot,
+        }
+      end else
+        Named_argument_reorder_state {
+          slot_expressions:  state.slot_expressions,
+          slot_filled_flags: state.slot_filled_flags,
+          errors:            errors_after_named_argument,
+          positional_slot:   state.positional_slot,
+        }
+      end
+    end,
+    _ => do
+      const positional_slot = first_unfilled_positional_slot(
+        state.slot_filled_flags, parameter_count, state.positional_slot)
+      if positional_slot < parameter_count then do
+        let slot_expressions = state.slot_expressions
+        slot_expressions.set(positional_slot, argument)
+        let slot_filled_flags = state.slot_filled_flags
+        slot_filled_flags.set(positional_slot, 1)
+        Named_argument_reorder_state {
+          slot_expressions:  slot_expressions,
+          slot_filled_flags: slot_filled_flags,
+          errors:            state.errors,
+          positional_slot:   positional_slot + 1,
+        }
+      end else
+        state
+      end
+    end,
+  }
+
+type Compact_slot_expressions_fold_state = Compact_slot_expressions_fold_state {
+  compact_expressions: [Shared<Expr>],
+  next_slot_index:     i32,
+}
+
+fn compact_slot_expressions_fold_step(
+  state: Compact_slot_expressions_fold_state,
+  slot_expression: Shared<Expr>,
+  slot_filled_flags: [i32]
+) -> Compact_slot_expressions_fold_state =
+  Compact_slot_expressions_fold_state {
+    compact_expressions:
+      if slot_filled_flags[state.next_slot_index] == 1 then
+        state.compact_expressions.concat([slot_expression])
+      else
+        state.compact_expressions
+      end,
+    next_slot_index: state.next_slot_index + 1,
+  }
+
+fn compact_filled_slot_expressions(
+  slot_expressions: [Shared<Expr>],
+  slot_filled_flags: [i32]
+) -> [Shared<Expr>] =
+  slot_expressions
+    .fold(
+      Compact_slot_expressions_fold_state {
+        compact_expressions: do let empty_compact_expressions: [Shared<Expr>] = []; empty_compact_expressions end,
+        next_slot_index:     0,
+      },
+      (fold_state, slot_expression) =>
+        compact_slot_expressions_fold_step(fold_state, slot_expression, slot_filled_flags))
+    .compact_expressions
+
 fn reorder_named_arguments_to_positional(
   arguments: [Shared<Expr>],
   parameter_names: [string],
   collect_parameter_errors: bool
 ) -> ResolvedNamedArguments = do
   const parameter_count = parameter_names.length()
-  let mut slot_expressions: [Shared<Expr>] = []
-  let mut slot_filled: [i32] = []
-  let mut index = 0
-  while index < parameter_count do
-    slot_expressions.push(expr_placeholder())
-    slot_filled.push(0)
-    index = index + 1
-  end
-  const errors: [Diagnostic] = []
-  let mut positional_slot = 0
-  let mut argument_index = 0
-  while argument_index < arguments.length() do
-    match arguments[argument_index] {
-      ExprNamedArg(name, inner_expression, argument_span) => do
-        const slot = find_parameter_slot(parameter_names, name)
-        if collect_parameter_errors && slot == -1 then
-          errors.push(
-            diagnostic_error_with_code(
-              'unknown parameter name: ' + name, argument_span, diagnostic_code_e034()))
-        else if collect_parameter_errors && slot >= 0 && slot_filled[slot] == 1 then
-          errors.push(
-            diagnostic_error_with_code(
-              'duplicate named arg: ' + name, argument_span, diagnostic_code_e035()))
-        else if slot >= 0 && slot_filled[slot] == 0 then
-          slot_expressions.set(slot, inner_expression)
-          slot_filled.set(slot, 1)
-        end
-        ()
-      end,
-      _ => do
-        while positional_slot < parameter_count && slot_filled[positional_slot] == 1 do
-          positional_slot = positional_slot + 1
-        end
-        if positional_slot < parameter_count then
-          slot_expressions.set(positional_slot, arguments[argument_index])
-          slot_filled.set(positional_slot, 1)
-          positional_slot = positional_slot + 1
-        end
-        ()
-      end
-    }
-    argument_index = argument_index + 1
-  end
-  const compact_expressions: [Shared<Expr>] = []
-  let mut slot_index = 0
-  while slot_index < parameter_count do
-    if slot_filled[slot_index] == 1 then compact_expressions.push(slot_expressions[slot_index]) end
-    slot_index = slot_index + 1
-  end
-  ResolvedNamedArguments { expressions: compact_expressions, errors: errors }
+  const initial_state = Named_argument_reorder_state {
+    slot_expressions:  build_placeholder_slot_expressions(parameter_names),
+    slot_filled_flags: build_zero_filled_slot_flags(parameter_names),
+    errors:            do let empty_errors: [Diagnostic] = []; empty_errors end,
+    positional_slot:   0,
+  }
+  const final_state = arguments.fold(
+    initial_state,
+    (state, argument) =>
+      process_one_call_argument_for_named_reorder(
+        state, argument, parameter_names, parameter_count, collect_parameter_errors))
+  ResolvedNamedArguments {
+    expressions: compact_filled_slot_expressions(
+      final_state.slot_expressions, final_state.slot_filled_flags),
+    errors: final_state.errors,
+  }
 end
 
 export fn resolve_named_call_arguments_for_infer(

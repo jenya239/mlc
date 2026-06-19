@@ -6,15 +6,14 @@
 
 namespace compile_options {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-struct CompileOptions {mlc::String entry_path;mlc::String out_directory;bool profile_enabled;bool check_only;};
+struct CompileOptions {mlc::String entry_path;mlc::String out_directory;bool profile_enabled;bool check_only;bool emit_compile_commands;};
 
 mlc::String compile_usage_message() noexcept;
 

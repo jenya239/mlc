@@ -15,70 +15,62 @@ using namespace transform;
 using namespace let_pattern_infer;
 using namespace ast_tokens;
 
+struct Transform_stmts_fold_state {mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> typed_statements;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;};
+
+transform_stmts::Transform_stmts_fold_state transform_stmts_fold_step(transform_stmts::Transform_stmts_fold_state accumulator, std::shared_ptr<ast::Stmt> statement, transform::TransformContext transform_context) noexcept;
+
 transform::TransformStmtsResult transform_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, transform::TransformContext transform_context) noexcept;
 
+transform_stmts::Transform_stmts_fold_state transform_stmts_fold_step(transform_stmts::Transform_stmts_fold_state accumulator, std::shared_ptr<ast::Stmt> statement, transform::TransformContext transform_context) noexcept{
+transform::TransformContext current_context = transform::transform_context_with_env(transform_context, accumulator.type_environment);
+return std::visit(overloaded{
+  [&](const StmtLet& stmtlet) -> transform_stmts::Transform_stmts_fold_state { auto [binding_name, is_mut, annotation, value_expression, source_span] = stmtlet; return [&]() -> transform_stmts::Transform_stmts_fold_state { 
+  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation_with_registry(annotation, current_context.registry);
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
+  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
+  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment = accumulator.type_environment;
+  type_environment.set(binding_name, value_type);
+  std::shared_ptr<semantic_ir::SemanticExpression> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
+  return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementLet(binding_name, is_mut, coerced_value, value_type, source_span))}), type_environment};
+ }(); },
+  [&](const StmtLetPattern& stmtletpattern) -> transform_stmts::Transform_stmts_fold_state { auto [pattern, is_mut, annotation, value_expression, has_else, else_body, source_span] = stmtletpattern; return [&]() -> transform_stmts::Transform_stmts_fold_state { 
+  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation_with_registry(annotation, current_context.registry);
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
+  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
+  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
+  std::shared_ptr<semantic_ir::SemanticExpression> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment = accumulator.type_environment;
+  let_pattern_infer::infer_let_pattern_env(pattern, value_type, type_environment, current_context.registry);
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_else_body = transform::transform_expr(else_body, current_context, transform_stmts);
+  return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementLetPattern(pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span))}), type_environment};
+ }(); },
+  [&](const StmtLetConst& stmtletconst) -> transform_stmts::Transform_stmts_fold_state { auto [binding_name, annotation, value_expression, source_span] = stmtletconst; return [&]() -> transform_stmts::Transform_stmts_fold_state { 
+  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation_with_registry(annotation, current_context.registry);
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
+  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
+  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment = accumulator.type_environment;
+  type_environment.set(binding_name, value_type);
+  std::shared_ptr<semantic_ir::SemanticExpression> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
+  return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementLetConst(binding_name, coerced_value, value_type, source_span))}), type_environment};
+ }(); },
+  [&](const StmtExpr& stmtexpr) -> transform_stmts::Transform_stmts_fold_state { auto [expression, source_span] = stmtexpr; return [&]() -> transform_stmts::Transform_stmts_fold_state { 
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_expr = transform::transform_expr(expression, current_context, transform_stmts);
+  return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementExpr(typed_expr, source_span))}), accumulator.type_environment};
+ }(); },
+  [&](const StmtReturn& stmtreturn) -> transform_stmts::Transform_stmts_fold_state { auto [return_expression, source_span] = stmtreturn; return [&]() -> transform_stmts::Transform_stmts_fold_state { 
+  std::shared_ptr<semantic_ir::SemanticExpression> typed_return = transform::transform_expr(return_expression, current_context, transform_stmts);
+  return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementReturn(typed_return, source_span))}), accumulator.type_environment};
+ }(); },
+  [&](const StmtBreak& stmtbreak) -> transform_stmts::Transform_stmts_fold_state { auto [source_span] = stmtbreak; return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementBreak(source_span))}), accumulator.type_environment}; },
+  [&](const StmtContinue& stmtcontinue) -> transform_stmts::Transform_stmts_fold_state { auto [source_span] = stmtcontinue; return transform_stmts::Transform_stmts_fold_state{accumulator.typed_statements.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementContinue(source_span))}), accumulator.type_environment}; }
+}, (*statement)._);
+}
+
 transform::TransformStmtsResult transform_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, transform::TransformContext transform_context) noexcept{
-mlc::Array<std::shared_ptr<semantic_ir::SStmt>> typed_statements = {};
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> current_env = transform_context.type_env;
-int statement_index = 0;
-while (statement_index < statements.size()){
-{
-transform::TransformContext current_context = transform::transform_context_with_env(transform_context, current_env);
-std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> std::tuple<> { auto [binding_name, is_mut, annotation, value_expression, source_span] = stmtlet; return [&]() -> std::tuple<> { 
-  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation(annotation);
-  std::shared_ptr<semantic_ir::SExpr> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
-  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
-  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
-  current_env.set(binding_name, value_type);
-  std::shared_ptr<semantic_ir::SExpr> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLet(binding_name, is_mut, coerced_value, value_type, source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtLetPat& stmtletpat) -> std::tuple<> { auto [pattern, is_mut, annotation, value_expression, has_else, else_body, source_span] = stmtletpat; return [&]() -> std::tuple<> { 
-  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation(annotation);
-  std::shared_ptr<semantic_ir::SExpr> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
-  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
-  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
-  std::shared_ptr<semantic_ir::SExpr> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
-  let_pattern_infer::infer_let_pattern_env(pattern, value_type, current_env, current_context.registry);
-  std::shared_ptr<semantic_ir::SExpr> typed_else_body = transform::transform_expr(else_body, current_context, transform_stmts);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetPat(pattern, is_mut, coerced_value, value_type, has_else, typed_else_body, source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtLetConst& stmtletconst) -> std::tuple<> { auto [binding_name, annotation, value_expression, source_span] = stmtletconst; return [&]() -> std::tuple<> { 
-  std::shared_ptr<registry::Type> annotated_type = registry::type_from_annotation(annotation);
-  std::shared_ptr<semantic_ir::SExpr> typed_value = transform::transform_expr(value_expression, current_context, transform_stmts);
-  std::shared_ptr<registry::Type> inferred_type = semantic_ir::sexpr_type(typed_value);
-  std::shared_ptr<registry::Type> value_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TUnit>((*annotated_type))) {  return inferred_type; } return annotated_type; }();
-  current_env.set(binding_name, value_type);
-  std::shared_ptr<semantic_ir::SExpr> coerced_value = transform::coerce_expr_to_type(typed_value, value_type);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtLetConst(binding_name, coerced_value, value_type, source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtExpr& stmtexpr) -> std::tuple<> { auto [expression, source_span] = stmtexpr; return [&]() -> std::tuple<> { 
-  std::shared_ptr<semantic_ir::SExpr> typed_expr = transform::transform_expr(expression, current_context, transform_stmts);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtExpr(typed_expr, source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtReturn& stmtreturn) -> std::tuple<> { auto [return_expression, source_span] = stmtreturn; return [&]() -> std::tuple<> { 
-  std::shared_ptr<semantic_ir::SExpr> typed_return = transform::transform_expr(return_expression, current_context, transform_stmts);
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtReturn(typed_return, source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtBreak& stmtbreak) -> std::tuple<> { auto [source_span] = stmtbreak; return [&]() -> std::tuple<> { 
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtBreak(source_span)));
-  return std::make_tuple();
- }(); },
-  [&](const StmtContinue& stmtcontinue) -> std::tuple<> { auto [source_span] = stmtcontinue; return [&]() -> std::tuple<> { 
-  typed_statements.push_back(std::make_shared<semantic_ir::SStmt>(semantic_ir::SStmtContinue(source_span)));
-  return std::make_tuple();
- }(); }
-}, (*statements[statement_index])._);
-statement_index = statement_index + 1;
-}
-}
-return transform::TransformStmtsResult{typed_statements, current_env};
+transform_stmts::Transform_stmts_fold_state final_state = statements.fold(transform_stmts::Transform_stmts_fold_state{{}, transform_context.type_env}, [transform_context](transform_stmts::Transform_stmts_fold_state accumulator, std::shared_ptr<ast::Stmt> statement) mutable { return transform_stmts_fold_step(accumulator, statement, transform_context); });
+return transform::TransformStmtsResult{final_state.typed_statements, final_state.type_environment};
 }
 
 } // namespace transform_stmts

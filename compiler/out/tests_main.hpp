@@ -13,20 +13,21 @@
 #include "test_partial_application.hpp"
 #include "test_merge_imports.hpp"
 #include "test_pass.hpp"
+#include "test_compile_commands.hpp"
 #include "test_expr_visitor.hpp"
+#include "test_visitor_pass_parity.hpp"
 #include "test_cpp_printer.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"
 
 namespace tests_main {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 } // namespace tests_main
 

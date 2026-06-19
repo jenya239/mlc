@@ -13,13 +13,12 @@
 
 namespace test_partial_application {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> partial_application_tests() noexcept;
 

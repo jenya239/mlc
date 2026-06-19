@@ -26,6 +26,12 @@ import {
   diagnostic_code_e053, diagnostic_code_e054
 } from '../diagnostic_codes'
 
+fn append_argument_type(
+  argument_types_so_far: [Shared<Type>],
+  type_to_append: Shared<Type>
+) -> [Shared<Type>] =
+  argument_types_so_far.concat([type_to_append])
+
 fn infer_expr_maybe_lambda(
   expression: Shared<Expr>,
   expected_param_types: [Shared<Type>],
@@ -95,7 +101,7 @@ export fn infer_array_hof_method_call(
     if method_arguments.length() > 0 then
       const init_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(init_parsed)
-      argument_types.push(init_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, init_parsed.inferred_type)
       if method_arguments.length() > 1 then
         const accumulator_type = init_parsed.inferred_type
         let mut lambda_errors = append_lambda_arity_diag([], method_arguments[1], 2, method_name)
@@ -115,7 +121,7 @@ export fn infer_array_hof_method_call(
             lambda_errors
           end
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_errors) }
-        argument_types.push(lambda_parsed.inferred_type)
+        argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
       end
     end
   else if method_name == 'zip' || method_name == 'join' then
@@ -123,7 +129,7 @@ export fn infer_array_hof_method_call(
     if method_arguments.length() > 0 then
       const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(argument_parsed)
-      argument_types.push(argument_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, argument_parsed.inferred_type)
       if method_name == 'zip' then
         if !type_is_unknown(argument_parsed.inferred_type) && !type_is_array(argument_parsed.inferred_type) then
           zip_or_join_diagnostics = [
@@ -158,7 +164,7 @@ export fn infer_array_hof_method_call(
     if method_arguments.length() > 0 then
       const count_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(count_parsed)
-      argument_types.push(count_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, count_parsed.inferred_type)
       let mut count_errors: [Diagnostic] = []
       if !type_is_unknown(count_parsed.inferred_type) && !type_is_i32(count_parsed.inferred_type) then
         count_errors = [
@@ -215,7 +221,7 @@ export fn infer_array_hof_method_call(
           lambda_errors
         end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_errors) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     end
   end
 

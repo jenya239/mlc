@@ -8,18 +8,18 @@
 #include "infer_result.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace infer_question_expression {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_result, ast::Span question_span) noexcept;
+infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span) noexcept;
 
 } // namespace infer_question_expression
 

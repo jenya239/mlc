@@ -9,13 +9,12 @@
 
 namespace decl_index {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 struct NamespaceImportAlias {mlc::String alias;mlc::String module_path;};
 

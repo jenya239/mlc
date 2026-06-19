@@ -8,13 +8,12 @@
 
 namespace ast {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 struct Span {mlc::String file;int line;int column;};
 
@@ -22,18 +21,15 @@ struct Diagnostic {mlc::String message;ast::Span span;mlc::String severity;mlc::
 
 struct TyI32;struct TyString;struct TyBool;struct TyUnit;struct TyNamed;struct TyArray;struct TyShared;struct TyGeneric;struct TyFn;struct TyAssoc;using TypeExpr = std::variant<TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc>;struct TyI32 {};struct TyString {};struct TyBool {};struct TyUnit {};struct TyNamed {mlc::String field0;};struct TyArray {std::shared_ptr<ast::TypeExpr> field0;};struct TyShared {std::shared_ptr<ast::TypeExpr> field0;};struct TyGeneric {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;};struct TyFn {mlc::Array<std::shared_ptr<ast::TypeExpr>> field0;std::shared_ptr<ast::TypeExpr> field1;};struct TyAssoc {mlc::String field0;mlc::String field1;};
 
-struct PatWild;struct PatIdent;struct PatInt;struct PatStr;struct PatBool;struct PatUnit;struct PatCtor;struct PatRecord;struct PatTuple;struct PatArray;struct PatOr;using Pat = std::variant<PatWild, PatIdent, PatInt, PatStr, PatBool, PatUnit, PatCtor, PatRecord, PatTuple, PatArray, PatOr>;struct PatWild {ast::Span field0;};struct PatIdent {mlc::String field0;ast::Span field1;};struct PatInt {int field0;ast::Span field1;};struct PatStr {mlc::String field0;ast::Span field1;};struct PatBool {bool field0;ast::Span field1;};struct PatUnit {ast::Span field0;};struct PatCtor {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pat>> field1;ast::Span field2;};struct PatRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pat>> field1;ast::Span field2;};struct PatTuple {mlc::Array<std::shared_ptr<ast::Pat>> field0;ast::Span field1;};struct PatArray {mlc::Array<std::shared_ptr<ast::Pat>> field0;mlc::String field1;ast::Span field2;};struct PatOr {mlc::Array<std::shared_ptr<ast::Pat>> field0;ast::Span field1;};
+struct PatternWild;struct PatternIdent;struct PatternInt;struct PatternStr;struct PatternStringLit;struct PatternBool;struct PatternUnit;struct PatternCtor;struct PatternRecord;struct PatternTuple;struct PatternArray;struct PatternOr;using Pattern = std::variant<PatternWild, PatternIdent, PatternInt, PatternStr, PatternStringLit, PatternBool, PatternUnit, PatternCtor, PatternRecord, PatternTuple, PatternArray, PatternOr>;struct PatternWild {ast::Span field0;};struct PatternIdent {mlc::String field0;ast::Span field1;};struct PatternInt {int field0;ast::Span field1;};struct PatternStr {mlc::String field0;ast::Span field1;};struct PatternStringLit {mlc::String field0;ast::Span field1;};struct PatternBool {bool field0;ast::Span field1;};struct PatternUnit {ast::Span field0;};struct PatternCtor {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pattern>> field1;ast::Span field2;};struct PatternRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::Pattern>> field1;ast::Span field2;};struct PatternTuple {mlc::Array<std::shared_ptr<ast::Pattern>> field0;ast::Span field1;};struct PatternArray {mlc::Array<std::shared_ptr<ast::Pattern>> field0;mlc::String field1;ast::Span field2;};struct PatternOr {mlc::Array<std::shared_ptr<ast::Pattern>> field0;ast::Span field1;};
 
-struct FieldPat {mlc::String name;std::shared_ptr<ast::Pat> pat;};
+struct FieldPattern {mlc::String name;std::shared_ptr<ast::Pattern> pattern;};
 
-struct MatchArm {std::shared_ptr<ast::Pat> pat;bool has_guard;std::shared_ptr<ast::Expr> when_condition;std::shared_ptr<ast::Expr> body;};
+struct MatchArm {std::shared_ptr<ast::Pattern> pattern;bool has_guard;std::shared_ptr<ast::Expr> when_condition;std::shared_ptr<ast::Expr> body;};
 
-struct FieldVal {mlc::String name;std::shared_ptr<ast::Expr> val;};
+struct FieldVal {mlc::String name;std::shared_ptr<ast::Expr> value;};
 
-struct RecordLitFields {mlc::Array<std::shared_ptr<ast::FieldVal>> field0;};
-struct RecordLitSpread {std::shared_ptr<ast::Expr> field0;};
-struct RecordLitPart {std::variant<RecordLitFields, RecordLitSpread> _;};
-
+struct RecordLitFields {mlc::Array<std::shared_ptr<ast::FieldVal>> field0;};struct RecordLitSpread {std::shared_ptr<ast::Expr> field0;};using RecordLitPart = std::variant<RecordLitFields, RecordLitSpread>;
 
 struct ExprInt {int field0;ast::Span field1;};
 struct ExprStr {mlc::String field0;ast::Span field1;};
@@ -69,24 +65,24 @@ struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
-struct StmtLetPat {std::shared_ptr<ast::Pat> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;bool field4;std::shared_ptr<ast::Expr> field5;ast::Span field6;};
+struct StmtLetPattern {std::shared_ptr<ast::Pattern> field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;bool field4;std::shared_ptr<ast::Expr> field5;ast::Span field6;};
 struct StmtLetConst {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;std::shared_ptr<ast::Expr> field2;ast::Span field3;};
 struct StmtExpr {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct StmtBreak {ast::Span field0;};
 struct StmtContinue {ast::Span field0;};
 struct StmtReturn {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
-struct Stmt {std::variant<StmtLet, StmtLetPat, StmtLetConst, StmtExpr, StmtBreak, StmtContinue, StmtReturn> _;};
+struct Stmt {std::variant<StmtLet, StmtLetPattern, StmtLetConst, StmtExpr, StmtBreak, StmtContinue, StmtReturn> _;};
 
 
-struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> typ;bool has_default;std::shared_ptr<ast::Expr> default_;std::shared_ptr<ast::Pat> param_pattern;};
+struct Param {mlc::String name;bool is_mut;std::shared_ptr<ast::TypeExpr> type_value;bool has_default;std::shared_ptr<ast::Expr> default_;std::shared_ptr<ast::Pattern> param_pattern;};
 
-struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> typ;bool has_default_expression;std::shared_ptr<ast::Expr> default_expression;};
+struct FieldDef {mlc::String name;std::shared_ptr<ast::TypeExpr> type_value;bool has_default_expression;std::shared_ptr<ast::Expr> default_expression;};
 
 struct WhereClauseBound {mlc::String parameter_name;mlc::Array<mlc::String> traits;};
 
 struct VarUnit {mlc::String field0;bool field1;};struct VarTuple {mlc::String field0;mlc::Array<std::shared_ptr<ast::TypeExpr>> field1;bool field2;};struct VarRecord {mlc::String field0;mlc::Array<std::shared_ptr<ast::FieldDef>> field1;bool field2;};using TypeVariant = std::variant<VarUnit, VarTuple, VarRecord>;
 
-struct DeclFn;struct DeclType;struct DeclTrait;struct DeclExtend;struct DeclImport;struct DeclExported;struct DeclAssocType;struct DeclAssocBind;using Decl = std::variant<DeclFn, DeclType, DeclTrait, DeclExtend, DeclImport, DeclExported, DeclAssocType, DeclAssocBind>;struct DeclFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<ast::TypeExpr> field4;std::shared_ptr<ast::Expr> field5;mlc::Array<ast::WhereClauseBound> field6;};struct DeclType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;mlc::Array<mlc::String> field3;};struct DeclTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;};struct DeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;};struct DeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct DeclExported {std::shared_ptr<ast::Decl> field0;};struct DeclAssocType {mlc::String field0;ast::Span field1;};struct DeclAssocBind {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;ast::Span field2;};
+struct DeclFn;struct DeclType;struct DeclTypeAlias;struct DeclTrait;struct DeclExtend;struct DeclImport;struct DeclExported;struct DeclAssocType;struct DeclAssocBind;using Decl = std::variant<DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, DeclAssocType, DeclAssocBind>;struct DeclFn {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<mlc::Array<mlc::String>> field2;mlc::Array<std::shared_ptr<ast::Param>> field3;std::shared_ptr<ast::TypeExpr> field4;std::shared_ptr<ast::Expr> field5;mlc::Array<ast::WhereClauseBound> field6;};struct DeclType {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::TypeVariant>> field2;mlc::Array<mlc::String> field3;ast::Span field4;};struct DeclTypeAlias {mlc::String field0;mlc::Array<mlc::String> field1;std::shared_ptr<ast::TypeExpr> field2;ast::Span field3;};struct DeclTrait {mlc::String field0;mlc::Array<mlc::String> field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;ast::Span field3;};struct DeclExtend {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<ast::Decl>> field2;ast::Span field3;};struct DeclImport {mlc::String field0;mlc::Array<mlc::String> field1;};struct DeclExported {std::shared_ptr<ast::Decl> field0;};struct DeclAssocType {mlc::String field0;ast::Span field1;};struct DeclAssocBind {mlc::String field0;std::shared_ptr<ast::TypeExpr> field1;ast::Span field2;};
 
 struct Program {mlc::Array<std::shared_ptr<ast::Decl>> decls;};
 
@@ -117,17 +113,21 @@ ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept;
 
 ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept;
 
-ast::Span pat_span(std::shared_ptr<ast::Pat> pattern) noexcept;
+ast::Span pattern_span(std::shared_ptr<ast::Pattern> pattern) noexcept;
 
 mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
 
-std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept;
+std::shared_ptr<ast::TypeExpr> param_type_value(std::shared_ptr<ast::Param> parameter) noexcept;
 
 bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept;
 
 std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept;
 
 mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept;
+
+ast::Span decl_name_span(std::shared_ptr<ast::Decl> decl) noexcept;
+
+ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept;
 
 mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
 

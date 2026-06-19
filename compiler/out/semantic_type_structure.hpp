@@ -8,13 +8,12 @@
 
 namespace semantic_type_structure {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
@@ -44,7 +43,7 @@ bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept;
 
-bool is_numeric_type(std::shared_ptr<registry::Type> t) noexcept;
+bool is_numeric_type(std::shared_ptr<registry::Type> type_value) noexcept;
 
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
 

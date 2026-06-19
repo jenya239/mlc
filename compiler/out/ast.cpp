@@ -28,17 +28,21 @@ ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept;
 
 ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept;
 
-ast::Span pat_span(std::shared_ptr<ast::Pat> pattern) noexcept;
+ast::Span pattern_span(std::shared_ptr<ast::Pattern> pattern) noexcept;
 
 mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
 
-std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept;
+std::shared_ptr<ast::TypeExpr> param_type_value(std::shared_ptr<ast::Param> parameter) noexcept;
 
 bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept;
 
 std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept;
 
 mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept;
+
+ast::Span decl_name_span(std::shared_ptr<ast::Decl> decl) noexcept;
+
+ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept;
 
 mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
 
@@ -90,7 +94,7 @@ ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept{return [&]()
 
 ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept{return std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> ast::Span { auto [_w0, _w1, _w2, _w3, source_span] = stmtlet; return source_span; },
-  [&](const StmtLetPat& stmtletpat) -> ast::Span { auto [_w0, _w1, _w2, _w3, _w4, _w5, source_span] = stmtletpat; return source_span; },
+  [&](const StmtLetPattern& stmtletpattern) -> ast::Span { auto [_w0, _w1, _w2, _w3, _w4, _w5, source_span] = stmtletpattern; return source_span; },
   [&](const StmtLetConst& stmtletconst) -> ast::Span { auto [_w0, _w1, _w2, source_span] = stmtletconst; return source_span; },
   [&](const StmtExpr& stmtexpr) -> ast::Span { auto [_w0, source_span] = stmtexpr; return source_span; },
   [&](const StmtBreak& stmtbreak) -> ast::Span { auto [source_span] = stmtbreak; return source_span; },
@@ -98,23 +102,24 @@ ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept{return std::v
   [&](const StmtReturn& stmtreturn) -> ast::Span { auto [_w0, source_span] = stmtreturn; return source_span; }
 }, (*statement)._);}
 
-ast::Span pat_span(std::shared_ptr<ast::Pat> pattern) noexcept{return std::visit(overloaded{
-  [&](const PatWild& patwild) -> ast::Span { auto [source_span] = patwild; return source_span; },
-  [&](const PatIdent& patident) -> ast::Span { auto [_w0, source_span] = patident; return source_span; },
-  [&](const PatInt& patint) -> ast::Span { auto [_w0, source_span] = patint; return source_span; },
-  [&](const PatStr& patstr) -> ast::Span { auto [_w0, source_span] = patstr; return source_span; },
-  [&](const PatBool& patbool) -> ast::Span { auto [_w0, source_span] = patbool; return source_span; },
-  [&](const PatUnit& patunit) -> ast::Span { auto [source_span] = patunit; return source_span; },
-  [&](const PatCtor& patctor) -> ast::Span { auto [_w0, _w1, source_span] = patctor; return source_span; },
-  [&](const PatRecord& patrecord) -> ast::Span { auto [_w0, _w1, source_span] = patrecord; return source_span; },
-  [&](const PatTuple& pattuple) -> ast::Span { auto [_w0, source_span] = pattuple; return source_span; },
-  [&](const PatArray& patarray) -> ast::Span { auto [_w0, _w1, source_span] = patarray; return source_span; },
-  [&](const PatOr& pator) -> ast::Span { auto [_w0, source_span] = pator; return source_span; }
+ast::Span pattern_span(std::shared_ptr<ast::Pattern> pattern) noexcept{return std::visit(overloaded{
+  [&](const PatternWild& patternwild) -> ast::Span { auto [source_span] = patternwild; return source_span; },
+  [&](const PatternIdent& patternident) -> ast::Span { auto [_w0, source_span] = patternident; return source_span; },
+  [&](const PatternInt& patternint) -> ast::Span { auto [_w0, source_span] = patternint; return source_span; },
+  [&](const PatternStr& patternstr) -> ast::Span { auto [_w0, source_span] = patternstr; return source_span; },
+  [&](const PatternStringLit& patternstringlit) -> ast::Span { auto [_w0, source_span] = patternstringlit; return source_span; },
+  [&](const PatternBool& patternbool) -> ast::Span { auto [_w0, source_span] = patternbool; return source_span; },
+  [&](const PatternUnit& patternunit) -> ast::Span { auto [source_span] = patternunit; return source_span; },
+  [&](const PatternCtor& patternctor) -> ast::Span { auto [_w0, _w1, source_span] = patternctor; return source_span; },
+  [&](const PatternRecord& patternrecord) -> ast::Span { auto [_w0, _w1, source_span] = patternrecord; return source_span; },
+  [&](const PatternTuple& patterntuple) -> ast::Span { auto [_w0, source_span] = patterntuple; return source_span; },
+  [&](const PatternArray& patternarray) -> ast::Span { auto [_w0, _w1, source_span] = patternarray; return source_span; },
+  [&](const PatternOr& patternor) -> ast::Span { auto [_w0, source_span] = patternor; return source_span; }
 }, (*pattern));}
 
 mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept{return p->name;}
 
-std::shared_ptr<ast::TypeExpr> param_typ(std::shared_ptr<ast::Param> p) noexcept{return p->typ;}
+std::shared_ptr<ast::TypeExpr> param_type_value(std::shared_ptr<ast::Param> parameter) noexcept{return parameter->type_value;}
 
 bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept{return p->is_mut;}
 
@@ -123,9 +128,10 @@ std::shared_ptr<ast::Decl> unwrapped = decl;
 return std::visit(overloaded{
   [&](const DeclExported& declexported) -> std::shared_ptr<ast::Decl> { auto [inner] = declexported; return inner; },
   [&](const DeclFn& declfn) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return decl; },
-  [&](const DeclType& decltype_) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltype_; return decl; },
-  [&](const DeclTrait& decltrait) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = decltrait; return decl; },
-  [&](const DeclExtend& declextend) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = declextend; return decl; },
+  [&](const DeclType& decltype_) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3, _w4] = decltype_; return decl; },
+  [&](const DeclTypeAlias& decltypealias) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltypealias; return decl; },
+  [&](const DeclTrait& decltrait) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltrait; return decl; },
+  [&](const DeclExtend& declextend) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = declextend; return decl; },
   [&](const DeclImport& declimport) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declimport; return decl; },
   [&](const DeclAssocType& declassoctype) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declassoctype; return decl; },
   [&](const DeclAssocBind& declassocbind) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = declassocbind; return decl; }
@@ -136,14 +142,24 @@ mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept{
 std::shared_ptr<ast::Decl> unwrapped = decl;
 return std::visit(overloaded{
   [&](const DeclFn& declfn) -> mlc::String { auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = declfn; return name; },
-  [&](const DeclType& decltype_) -> mlc::String { auto [name, _w0, _w1, _w2] = decltype_; return name; },
-  [&](const DeclTrait& decltrait) -> mlc::String { auto [name, _w0, _w1] = decltrait; return name; },
-  [&](const DeclExtend& declextend) -> mlc::String { auto [type_name, _w0, _w1] = declextend; return type_name; },
+  [&](const DeclType& decltype_) -> mlc::String { auto [name, _w0, _w1, _w2, _w3] = decltype_; return name; },
+  [&](const DeclTypeAlias& decltypealias) -> mlc::String { auto [name, _w0, _w1, _w2] = decltypealias; return name; },
+  [&](const DeclTrait& decltrait) -> mlc::String { auto [name, _w0, _w1, _w2] = decltrait; return name; },
+  [&](const DeclExtend& declextend) -> mlc::String { auto [type_name, _w0, _w1, _w2] = declextend; return type_name; },
   [&](const DeclImport& declimport) -> mlc::String { auto [_w0, _w1] = declimport; return mlc::String(""); },
   [&](const DeclExported& declexported) -> mlc::String { auto [inner] = declexported; return decl_name(inner); },
   [&](const DeclAssocType& declassoctype) -> mlc::String { auto [name, _w0] = declassoctype; return name; },
   [&](const DeclAssocBind& declassocbind) -> mlc::String { auto [name, _w0, _w1] = declassocbind; return name; }
 }, (*unwrapped));
+}
+
+ast::Span decl_name_span(std::shared_ptr<ast::Decl> decl) noexcept{
+std::shared_ptr<ast::Decl> unwrapped = decl;
+return [&]() -> ast::Span { if (std::holds_alternative<ast::DeclType>((*unwrapped))) { auto _v_decltype = std::get<ast::DeclType>((*unwrapped)); auto [_w0, _w1, _w2, _w3, name_span] = _v_decltype; return name_span; } if (std::holds_alternative<ast::DeclTypeAlias>((*unwrapped))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_decltypealias; return name_span; } if (std::holds_alternative<ast::DeclTrait>((*unwrapped))) { auto _v_decltrait = std::get<ast::DeclTrait>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_decltrait; return name_span; } if (std::holds_alternative<ast::DeclExtend>((*unwrapped))) { auto _v_declextend = std::get<ast::DeclExtend>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_declextend; return name_span; } if (std::holds_alternative<ast::DeclExported>((*unwrapped))) { auto _v_declexported = std::get<ast::DeclExported>((*unwrapped)); auto [inner] = _v_declexported; return decl_name_span(inner); } return span_unknown(); }();
+}
+
+ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept{
+return [&]() -> ast::Span { if (std::holds_alternative<ast::DeclFn>((*decl_inner(declaration)))) { auto _v_declfn = std::get<ast::DeclFn>((*decl_inner(declaration))); auto [_w0, _w1, _w2, _w3, _w4, body, _w5] = _v_declfn; return expr_span(body); } if (std::holds_alternative<ast::DeclType>((*decl_inner(declaration)))) { auto _v_decltype = std::get<ast::DeclType>((*decl_inner(declaration))); auto [_w0, _w1, _w2, _w3, name_span] = _v_decltype; return name_span; } if (std::holds_alternative<ast::DeclTypeAlias>((*decl_inner(declaration)))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_decltypealias; return name_span; } if (std::holds_alternative<ast::DeclTrait>((*decl_inner(declaration)))) { auto _v_decltrait = std::get<ast::DeclTrait>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_decltrait; return name_span; } if (std::holds_alternative<ast::DeclExtend>((*decl_inner(declaration)))) { auto _v_declextend = std::get<ast::DeclExtend>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_declextend; return name_span; } if (std::holds_alternative<ast::DeclAssocBind>((*decl_inner(declaration)))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*decl_inner(declaration))); auto [_w0, _w1, span] = _v_declassocbind; return span; } if (std::holds_alternative<ast::DeclAssocType>((*decl_inner(declaration)))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*decl_inner(declaration))); auto [_w0, span] = _v_declassoctype; return span; } if (std::holds_alternative<ast::DeclExported>((*decl_inner(declaration)))) { auto _v_declexported = std::get<ast::DeclExported>((*decl_inner(declaration))); auto [inner] = _v_declexported; return decl_span(inner); } return span_unknown(); }();
 }
 
 mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept{

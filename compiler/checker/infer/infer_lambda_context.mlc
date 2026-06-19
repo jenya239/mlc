@@ -1,7 +1,7 @@
 // Lambda inference with known parameter types (call-site context).
 
 import { Expr } from '../../frontend/ast'
-import { Type } from '../registry'
+import { Type, TUnknown, TFn } from '../registry'
 import { CheckContext, check_context_new } from '../check/check_context'
 import { InferResult } from './infer_result'
 
@@ -12,18 +12,18 @@ export fn infer_lambda_with_param_types(
   inference_context: CheckContext,
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
-  let lambda_env = inference_context.type_env
-  let mut built_parameter_types: [Shared<Type>] = []
-  let mut index = 0
-  while index < parameter_names.length() do
-    const parameter_type =
-      if index < parameter_types.length() then parameter_types[index] else Shared.new(TUnknown) end
-    built_parameter_types.push(parameter_type)
-    lambda_env.set(parameter_names[index], parameter_type)
-    index = index + 1
-  end
-  const lambda_body_context = check_context_new(lambda_env, inference_context.registry)
-  const body_parsed    = infer_expr_fn(body, lambda_body_context)
+  let lambda_environment = inference_context.type_env
+  const built_parameter_types = parameter_names.fold(
+    do let empty_parameter_types: [Shared<Type>] = []; empty_parameter_types end,
+    (built_parameter_types_so_far, parameter_name) => do
+      const parameter_index = built_parameter_types_so_far.length()
+      const parameter_type =
+        if parameter_index < parameter_types.length() then parameter_types[parameter_index] else Shared.new(TUnknown) end
+      lambda_environment.set(parameter_name, parameter_type)
+      built_parameter_types_so_far.concat([parameter_type])
+    end)
+  const lambda_body_context = check_context_new(lambda_environment, inference_context.registry)
+  const body_parsed = infer_expr_fn(body, lambda_body_context)
   InferResult {
     inferred_type: Shared.new(TFn(built_parameter_types, body_parsed.inferred_type)),
     errors:        body_parsed.errors

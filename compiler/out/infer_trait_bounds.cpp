@@ -4,6 +4,7 @@
 #include "registry.hpp"
 #include "check_context.hpp"
 #include "call_argument_unify.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace infer_trait_bounds {
 
@@ -11,6 +12,7 @@ using namespace ast;
 using namespace registry;
 using namespace check_context;
 using namespace call_argument_unify;
+using namespace diagnostic_codes;
 using namespace ast_tokens;
 
 mlc::String type_name_for_bound_check(std::shared_ptr<registry::Type> type_value) noexcept;
@@ -36,7 +38,7 @@ int trait_index = 0;
 mlc::String required_trait = bounds[trait_index];
 if (!registry::TypeRegistry_type_implements_trait(inference_context.registry, actual_name, required_trait)){
 {
-param_errors = ast::diagnostics_append(param_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error(mlc::String("type ") + actual_name + mlc::String(" does not implement ") + required_trait, bound_diagnostic_span)});
+param_errors = ast::diagnostics_append(param_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("type ") + actual_name + mlc::String(" does not implement ") + required_trait, bound_diagnostic_span, diagnostic_codes::diagnostic_code_e033())});
 }
 }
 trait_index = trait_index + 1;
@@ -56,7 +58,7 @@ return bounds_per_param.size() == 0 ? [&]() -> mlc::Array<ast::Diagnostic> {
   return empty_bound_errors;
  }() : [&]() -> mlc::Array<ast::Diagnostic> { 
   mlc::HashMap<mlc::String, int> type_parameter_source_argument_index = mlc::HashMap<mlc::String, int>();
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = call_argument_unify::build_call_type_substitution(callee_parameter_types, argument_inferred_types, callee_type_parameter_names, type_parameter_source_argument_index);
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = call_argument_unify::build_call_type_substitution(callee_parameter_types, argument_inferred_types, callee_type_parameter_names, type_parameter_source_argument_index, argument_expressions, call_source_span);
   mlc::Array<ast::Diagnostic> bound_errors = {};
   int param_index = 0;
   while (param_index < callee_type_parameter_names.size() && param_index < bounds_per_param.size()){

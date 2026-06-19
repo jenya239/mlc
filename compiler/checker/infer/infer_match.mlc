@@ -54,27 +54,17 @@ fn pattern_is_string_match_pattern(pattern: Shared<Pattern>) -> bool =
 fn pattern_is_wildcard_only(pattern: Shared<Pattern>) -> bool =
   match pattern { PatternWild(_) => true, _ => false }
 
-fn pattern_string_literals_flat(pattern: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
+fn pattern_string_literals_flat(pattern: Shared<Pattern>, literals_so_far: [string]) -> [string] =
   match pattern {
-    PatternStringLit(value, _) => do
-      accumulator.push(value)
-      accumulator
-    end,
-    PatternStr(value, _) => do
-      accumulator.push(value)
-      accumulator
-    end,
-    PatternOr(alternatives, _) => do
-      let mut alternative_index = 0
-      while alternative_index < alternatives.length() do
-        accumulator = pattern_string_literals_flat(alternatives[alternative_index], accumulator)
-        alternative_index = alternative_index + 1
-      end
-      accumulator
-    end,
-    _ => accumulator
+    PatternStringLit(value, _) => literals_so_far.concat([value]),
+    PatternStr(value, _) => literals_so_far.concat([value]),
+    PatternOr(alternatives, _) =>
+      alternatives.fold(
+        literals_so_far,
+        (accumulator, alternative_pattern) =>
+          pattern_string_literals_flat(alternative_pattern, accumulator)),
+    _ => literals_so_far,
   }
-end
 
 fn match_arms_use_string_literals(match_arms: [Shared<MatchArm>]) -> bool =
   match_arms.any(match_arm => pattern_contains_string_literal(match_arm.pattern))
@@ -94,80 +84,133 @@ fn string_match_subject_type_diagnostic(subject: Shared<Expr>, subject_type: Sha
     ]
   end
 
-fn string_match_invalid_arm_pattern_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []
-  let mut arm_index = 0
-  while arm_index < match_arms.length() do
-    if !pattern_is_string_match_pattern(match_arms[arm_index].pattern) then
-      errors.push(
-        diagnostic_error_with_code(
-          'string match arm must use string literal or wildcard pattern',
-          pattern_span(match_arms[arm_index].pattern),
-          diagnostic_code_e079()))
-    end
-    arm_index = arm_index + 1
+fn string_match_invalid_arm_pattern_fold_step(
+  diagnostics_so_far: [Diagnostic],
+  match_arm: Shared<MatchArm>
+) -> [Diagnostic] =
+  if pattern_is_string_match_pattern(match_arm.pattern) then
+    diagnostics_so_far
+  else
+    diagnostics_so_far.concat([diagnostic_error_with_code(
+      'string match arm must use string literal or wildcard pattern',
+      pattern_span(match_arm.pattern),
+      diagnostic_code_e079())])
   end
-  errors
-end
+
+fn string_match_invalid_arm_pattern_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] =
+  match_arms.fold(
+    do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+    (diagnostics_so_far, match_arm) =>
+      string_match_invalid_arm_pattern_fold_step(diagnostics_so_far, match_arm))
+
+type String_match_duplicate_literal_fold_state = String_match_duplicate_literal_fold_state {
+  seen_literals: Map<string, bool>,
+  errors:        [Diagnostic],
+}
+
+fn string_match_duplicate_literal_fold_step(
+  state: String_match_duplicate_literal_fold_state,
+  literal_value: string,
+  pattern_for_diagnostic: Shared<Pattern>
+) -> String_match_duplicate_literal_fold_state =
+  if state.seen_literals.has(literal_value) then
+    String_match_duplicate_literal_fold_state {
+      seen_literals: state.seen_literals,
+      errors: state.errors.concat([diagnostic_error_with_code(
+        'duplicate string literal in match',
+        pattern_span(pattern_for_diagnostic),
+        diagnostic_code_e078())]),
+    }
+  else do
+    let seen_literals = state.seen_literals
+    seen_literals.set(literal_value, true)
+    String_match_duplicate_literal_fold_state {
+      seen_literals: seen_literals,
+      errors:        state.errors,
+    }
+  end
 
 fn string_match_duplicate_literal_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] = do
-  let mut seen_literals: Map<string, bool> = Map.new()
-  let mut errors: [Diagnostic] = []
-  let mut arm_index = 0
-  while arm_index < match_arms.length() do
-    const literals = pattern_string_literals_flat(match_arms[arm_index].pattern, [])
-    let mut literal_index = 0
-    while literal_index < literals.length() do
-      const literal_value = literals[literal_index]
-      if seen_literals.has(literal_value) then
-        errors.push(
-          diagnostic_error_with_code(
-            'duplicate string literal in match',
-            pattern_span(match_arms[arm_index].pattern),
-            diagnostic_code_e078()))
-      else
-        seen_literals.set(literal_value, true)
-      end
-      literal_index = literal_index + 1
+  let empty_literals: [string] = []
+  match_arms
+    .fold(
+      String_match_duplicate_literal_fold_state {
+        seen_literals: Map.new(),
+        errors:        do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+      },
+      (fold_state, match_arm) =>
+        pattern_string_literals_flat(match_arm.pattern, empty_literals).fold(
+          fold_state,
+          (state_after_literals, literal_value) =>
+            string_match_duplicate_literal_fold_step(
+              state_after_literals, literal_value, match_arm.pattern)))
+    .errors
+end
+
+type String_match_wildcard_fold_state = String_match_wildcard_fold_state {
+  errors:          [Diagnostic],
+  wildcard_count:  i32,
+  arm_index:       i32,
+  last_arm_index:  i32,
+}
+
+fn string_match_wildcard_fold_step(
+  state: String_match_wildcard_fold_state,
+  match_arm: Shared<MatchArm>
+) -> String_match_wildcard_fold_state = do
+  const is_wildcard_arm = pattern_is_wildcard_only(match_arm.pattern)
+  const wildcard_count_after_arm =
+    if is_wildcard_arm then state.wildcard_count + 1 else state.wildcard_count end
+  const errors_after_arm =
+    if is_wildcard_arm && state.arm_index != state.last_arm_index then
+      state.errors.concat([diagnostic_error_with_code(
+        'wildcard match arm must be last for string match',
+        pattern_span(match_arm.pattern),
+        diagnostic_code_e080())])
+    else
+      state.errors
     end
-    arm_index = arm_index + 1
-  end
-  errors
+  String_match_wildcard_fold_state {
+    errors:          errors_after_arm,
+    wildcard_count:  wildcard_count_after_arm,
+    arm_index:       state.arm_index + 1,
+    last_arm_index:  state.last_arm_index,
+  }
 end
 
 fn string_match_wildcard_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] = do
-  let mut errors: [Diagnostic] = []
-  let mut wildcard_count = 0
-  let mut arm_index = 0
-  while arm_index < match_arms.length() do
-    if pattern_is_wildcard_only(match_arms[arm_index].pattern) then
-      wildcard_count = wildcard_count + 1
-      if arm_index != match_arms.length() - 1 then
-        errors.push(
-          diagnostic_error_with_code(
-            'wildcard match arm must be last for string match',
-            pattern_span(match_arms[arm_index].pattern),
-            diagnostic_code_e080()))
-      end
-    end
-    arm_index = arm_index + 1
+  let mut last_arm_index: i32 = -1
+  let mut arm_count_index: i32 = 0
+  while arm_count_index < match_arms.length() do
+    last_arm_index = arm_count_index
+    arm_count_index = arm_count_index + 1
   end
-  if wildcard_count > 1 then
-    errors.push(
-      diagnostic_error_with_code(
-        'string match allows at most one wildcard arm',
-        pattern_span(match_arms[0].pattern),
-        diagnostic_code_e080()))
+  const fold_result = match_arms.fold(
+    String_match_wildcard_fold_state {
+      errors:          do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+      wildcard_count:  0,
+      arm_index:       0,
+      last_arm_index:  last_arm_index,
+    },
+    (fold_state, match_arm) => string_match_wildcard_fold_step(fold_state, match_arm))
+  if fold_result.wildcard_count > 1 then
+    fold_result.errors.concat([diagnostic_error_with_code(
+      'string match allows at most one wildcard arm',
+      pattern_span(match_arms[0].pattern),
+      diagnostic_code_e080())])
+  else
+    fold_result.errors
   end
-  errors
 end
 
-fn string_match_pattern_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] = do
-  let mut collected: [Diagnostic] = []
-  collected = diagnostics_append(collected, string_match_invalid_arm_pattern_diagnostic(match_arms))
-  collected = diagnostics_append(collected, string_match_duplicate_literal_diagnostic(match_arms))
-  diagnostics_append(collected, string_match_wildcard_diagnostic(match_arms))
-end
+fn string_match_pattern_diagnostic(match_arms: [Shared<MatchArm>]) -> [Diagnostic] =
+  diagnostics_append(
+    diagnostics_append(
+      do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+      string_match_invalid_arm_pattern_diagnostic(match_arms)),
+    diagnostics_append(
+      string_match_duplicate_literal_diagnostic(match_arms),
+      string_match_wildcard_diagnostic(match_arms)))
 
 fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pattern>) -> [Diagnostic] =
   match pattern {

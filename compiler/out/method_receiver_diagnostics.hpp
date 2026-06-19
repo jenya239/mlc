@@ -9,16 +9,16 @@
 #include "semantic_type_structure.hpp"
 #include "array_method_types.hpp"
 #include "result_option_method_types.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace method_receiver_diagnostics {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<ast::Diagnostic> infer_builtin_method_receiver_diagnostics(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, ast::Span method_span) noexcept;
 

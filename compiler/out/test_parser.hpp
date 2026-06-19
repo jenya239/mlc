@@ -9,17 +9,17 @@
 #include "decls.hpp"
 #include "ast.hpp"
 #include "exprs.hpp"
+#include "types.hpp"
 #include "predicates.hpp"
 
 namespace test_parser {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> parser_tests() noexcept;
 

@@ -27,7 +27,7 @@ infer_result::InferResult infer_index_from_operand_results(infer_result::InferRe
 
 bool expr_is_empty_array_literal(std::shared_ptr<ast::Expr> expression) noexcept;
 
-infer_result::InferResult infer_merge_unknown_else_array_inner(std::shared_ptr<registry::Type> then_inner, infer_result::InferResult else_result) noexcept;
+infer_result::InferResult infer_merge_unknown_else_array_inner(std::shared_ptr<registry::Type> then_element_type, infer_result::InferResult else_result) noexcept;
 
 infer_result::InferResult conditional_else_result_coerced_for_empty_unknown_array(infer_result::InferResult then_result, infer_result::InferResult else_result, std::shared_ptr<ast::Expr> else_expression) noexcept;
 
@@ -51,7 +51,7 @@ return infer_result::InferResult{result_type, ast::diagnostics_append(ast::diagn
 }
 
 infer_result::InferResult infer_index_from_operand_results(infer_result::InferResult object_result, infer_result::InferResult index_result, ast::Span bracket_source_span) noexcept{
-std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*object_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*object_result.inferred_type)); auto [inner] = _v_tarray; return inner; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*object_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*object_result.inferred_type)); auto [element_type_value] = _v_tarray; return element_type_value; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
 mlc::Array<ast::Diagnostic> extra_not_array = type_diagnostics::index_not_array_diagnostic(object_result.inferred_type, bracket_source_span);
 mlc::Array<ast::Diagnostic> extra_bad_index = type_diagnostics::index_not_i32_diagnostic(index_result.inferred_type, bracket_source_span);
 infer_result::InferResult merged = infer_result::InferResult_absorb(object_result, index_result);
@@ -60,9 +60,9 @@ return infer_result::InferResult{element_type, ast::diagnostics_append(ast::diag
 
 bool expr_is_empty_array_literal(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprArray>((*expression)._)) { auto _v_exprarray = std::get<ast::ExprArray>((*expression)._); auto [elements, _w0] = _v_exprarray; return elements.size() == 0; } return false; }();}
 
-infer_result::InferResult infer_merge_unknown_else_array_inner(std::shared_ptr<registry::Type> then_inner, infer_result::InferResult else_result) noexcept{return [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TArray>((*else_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*else_result.inferred_type)); auto [inner_else] = _v_tarray; return semantic_type_structure::type_is_unknown(inner_else) ? infer_result::InferResult{std::make_shared<registry::Type>(registry::TArray(then_inner)), else_result.errors} : else_result; } return else_result; }();}
+infer_result::InferResult infer_merge_unknown_else_array_inner(std::shared_ptr<registry::Type> then_element_type, infer_result::InferResult else_result) noexcept{return [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TArray>((*else_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*else_result.inferred_type)); auto [else_element_type] = _v_tarray; return semantic_type_structure::type_is_unknown(else_element_type) ? infer_result::InferResult{std::make_shared<registry::Type>(registry::TArray(then_element_type)), else_result.errors} : else_result; } return else_result; }();}
 
-infer_result::InferResult conditional_else_result_coerced_for_empty_unknown_array(infer_result::InferResult then_result, infer_result::InferResult else_result, std::shared_ptr<ast::Expr> else_expression) noexcept{return !expr_is_empty_array_literal(else_expression) ? else_result : [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TArray>((*then_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*then_result.inferred_type)); auto [inner_then] = _v_tarray; return infer_merge_unknown_else_array_inner(inner_then, else_result); } return else_result; }();}
+infer_result::InferResult conditional_else_result_coerced_for_empty_unknown_array(infer_result::InferResult then_result, infer_result::InferResult else_result, std::shared_ptr<ast::Expr> else_expression) noexcept{return !expr_is_empty_array_literal(else_expression) ? else_result : [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TArray>((*then_result.inferred_type))) { auto _v_tarray = std::get<registry::TArray>((*then_result.inferred_type)); auto [then_element_type] = _v_tarray; return infer_merge_unknown_else_array_inner(then_element_type, else_result); } return else_result; }();}
 
 infer_result::InferResult infer_conditional_from_branch_results(infer_result::InferResult condition_result, infer_result::InferResult then_result, infer_result::InferResult else_result, std::shared_ptr<ast::Expr> else_expression) noexcept{
 infer_result::InferResult else_coerced = conditional_else_result_coerced_for_empty_unknown_array(then_result, else_result, else_expression);

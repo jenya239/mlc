@@ -1,7 +1,7 @@
-// Golden tests for compiler/cpp/cpp_printer.mlc.
+// Golden tests for Cpp AST printer (compiler/cpp/cpp_ast.mlc).
 
 import { TestResult, assert_eq_str } from './test_runner'
-import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_printer'
+import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_ast'
 import * as module_tu_helpers from '../cpp/module_tu_helpers'
 import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,

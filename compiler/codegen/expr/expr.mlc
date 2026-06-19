@@ -14,6 +14,7 @@ export fn ternary_conditional(condition_code: string, then_code: string, else_co
 export fn array_literal(argument_list: string) -> string =
   if argument_list.length() == 0 then '{}' else `mlc::Array{${argument_list}}` end
 
+// IIFE (ExprBlock, while/for): [&] — body may mutate outer `let mut`; invoked immediately, not stored.
 export fn block_as_immediate_invoked_function_expression(body_statements_and_return: string) -> string =
   `[&]() {\n${body_statements_and_return}}()`
 
@@ -21,34 +22,35 @@ export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string)
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
 
 export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
-  `[&](const auto& __v) { return ${return_expression_code}; }`
+  `[=](const auto& __v) { return ${return_expression_code}; }`
 
 export fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
-  `[&](const auto& __v) -> void { ${body_expression_code}; }`
+  `[=](const auto& __v) -> void { ${body_expression_code}; }`
 
 export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
-  `[&](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
+  `[=](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
 
 export fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
-  `[&](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
+  `[=](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
 
 export fn match_arm_constructed_value(
   const_reference_parameter: string,
   binding_prefix: string,
   return_expression_code: string
 ) -> string =
-  `[&](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
+  `[=](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
 
 export fn match_arm_constructed_value_void(
   const_reference_parameter: string,
   binding_prefix: string,
   body_expression_code: string
 ) -> string =
-  `[&](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
+  `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
 
 export fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
   `${type_resolved}{${values_comma_separated}}`
 
+// Record-update IIFE: [&] — mutates `__upd` and may touch outer locals; invoked immediately.
 export fn record_update_lazy_closure(initializer_and_assignments: string) -> string =
   `[&]() { ${initializer_and_assignments}return __upd; }()`
 
@@ -176,7 +178,7 @@ export fn match_arm_constructed_value_generic(
   binding_prefix: string,
   return_expression_code: string
 ) -> string =
-  `[&]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
 
 export fn match_arm_constructed_value_generic_void(
   resolved_type_name: string,
@@ -184,7 +186,7 @@ export fn match_arm_constructed_value_generic_void(
   binding_prefix: string,
   body_expression_code: string
 ) -> string =
-  `[&]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
 
 export fn dot_member_access(receiver_code: string, member_code: string) -> string =
   `${receiver_code}.${member_code}`

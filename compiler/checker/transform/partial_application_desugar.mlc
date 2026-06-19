@@ -53,16 +53,25 @@ fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
     _ => 0
   }
 
-fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation = do
-  const names: [string] = []
-  let mut serial = serial_start
-  let mut remaining = hole_count
-  while remaining > 0 do
-    names.push('partial_application_parameter_' + serial.to_string())
-    serial = serial + 1
-    remaining = remaining - 1
+fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation =
+  partial_allocate_parameter_names_loop(
+    do let empty_names: [string] = []; empty_names end,
+    serial_start,
+    hole_count)
+
+fn partial_allocate_parameter_names_loop(
+  names: [string],
+  serial: i32,
+  remaining: i32
+) -> PartialNamesAllocation = do
+  if remaining <= 0 then
+    PartialNamesAllocation { names: names, next_serial: serial }
+  else
+    partial_allocate_parameter_names_loop(
+      names.concat(['partial_application_parameter_' + serial.to_string()]),
+      serial + 1,
+      remaining - 1)
   end
-  PartialNamesAllocation { names: names, next_serial: serial }
 end
 
 fn partial_count_placeholder_arguments(arguments: [Shared<Expr>]) -> i32 =
@@ -78,9 +87,8 @@ fn partial_application_desugar_expression_element_sequence(
     ExpressionListAccumulator { mapped_expressions: [], next_serial: initial_serial },
     (accumulated, element_under_sequence) => do
       const element_partial = partial_application_desugar_inner(element_under_sequence, accumulated.next_serial)
-      accumulated.mapped_expressions.push(element_partial.expression)
       ExpressionListAccumulator {
-        mapped_expressions: accumulated.mapped_expressions,
+        mapped_expressions: accumulated.mapped_expressions.concat([element_partial.expression]),
         next_serial: element_partial.next_serial
       }
     end
@@ -94,10 +102,10 @@ fn partial_application_desugar_field_values_sequence(
     FieldValuesAccumulator { mapped_field_values: [], next_serial: initial_serial },
     (accumulated, field_value_under_sequence) => do
       const value_partial = partial_application_desugar_inner(field_value_under_sequence.value, accumulated.next_serial)
-      accumulated.mapped_field_values.push(
-        Shared.new(FieldVal { name: field_value_under_sequence.name, value: value_partial.expression }))
       FieldValuesAccumulator {
-        mapped_field_values: accumulated.mapped_field_values,
+        mapped_field_values: accumulated.mapped_field_values.concat([
+          Shared.new(FieldVal { name: field_value_under_sequence.name, value: value_partial.expression })
+        ]),
         next_serial: value_partial.next_serial
       }
     end
@@ -243,29 +251,43 @@ fn partial_application_map_arguments_at(
 fn partial_application_map_arguments(arguments: [Shared<Expr>], serial: i32) -> ArgumentsPartialPair =
   partial_application_map_arguments_at(arguments, 0, serial, [])
 
+type RecordLitPartsFoldState = RecordLitPartsFoldState {
+  output_parts: [RecordLitPart],
+  next_serial: i32,
+}
+
 fn partial_application_desugar_record_lit_parts(parts: [RecordLitPart], serial: i32) -> RecordLitPartsPartialPair = do
-  const output_parts: [RecordLitPart] = []
-  const next_serial_after_fold = parts.fold(
-    serial,
-    (next_serial_under_fold, part_under_scan) => do
+  const final_state = parts.fold(
+    RecordLitPartsFoldState {
+      output_parts: do let empty_parts: [RecordLitPart] = []; empty_parts end,
+      next_serial: serial,
+    },
+    (state, part_under_scan) => do
       match part_under_scan {
         RecordLitFields(field_values_under_part) => do
           const fields_accumulator = partial_application_desugar_field_values_sequence(
             field_values_under_part,
-            next_serial_under_fold
-          )
-          output_parts.push(RecordLitFields(fields_accumulator.mapped_field_values))
-          fields_accumulator.next_serial
+            state.next_serial)
+          RecordLitPartsFoldState {
+            output_parts: state.output_parts.concat([
+              RecordLitFields(fields_accumulator.mapped_field_values)]),
+            next_serial: fields_accumulator.next_serial,
+          }
         end,
         RecordLitSpread(spread_expression_under_part) => do
-          const spread_partial = partial_application_desugar_inner(spread_expression_under_part, next_serial_under_fold)
-          output_parts.push(RecordLitSpread(spread_partial.expression))
-          spread_partial.next_serial
+          const spread_partial = partial_application_desugar_inner(
+            spread_expression_under_part,
+            state.next_serial)
+          RecordLitPartsFoldState {
+            output_parts: state.output_parts.concat([
+              RecordLitSpread(spread_partial.expression)]),
+            next_serial: spread_partial.next_serial,
+          }
         end
       }
     end
   )
-  RecordLitPartsPartialPair { parts: output_parts, next_serial: next_serial_after_fold }
+  RecordLitPartsPartialPair { parts: final_state.output_parts, next_serial: final_state.next_serial }
 end
 
 fn partial_application_desugar_statements_block(statements: [Shared<Stmt>], serial: i32) -> StatementsPartialPair = do
@@ -273,9 +295,8 @@ fn partial_application_desugar_statements_block(statements: [Shared<Stmt>], seri
     StatementsBlockAccumulator { accumulated_statements: [], next_serial: serial },
     (accumulated, statement_under_block) => do
       const statement_partial = partial_application_desugar_statement(statement_under_block, accumulated.next_serial)
-      accumulated.accumulated_statements.push(statement_partial.statement)
       StatementsBlockAccumulator {
-        accumulated_statements: accumulated.accumulated_statements,
+        accumulated_statements: accumulated.accumulated_statements.concat([statement_partial.statement]),
         next_serial: statement_partial.next_serial
       }
     end
@@ -335,14 +356,13 @@ fn partial_application_desugar_match_arms_list(match_arms: [Shared<MatchArm>], s
     (accumulated, arm_shared_under_match) => do
       const guard_pair = partial_application_desugar_inner(arm_shared_under_match.when_condition, accumulated.next_serial)
       const body_pair = partial_application_desugar_inner(arm_shared_under_match.body, guard_pair.next_serial)
-      accumulated.match_arms.push(Shared.new(MatchArm {
-        pattern: arm_shared_under_match.pattern,
-        has_guard: arm_shared_under_match.has_guard,
-        when_condition: guard_pair.expression,
-        body: body_pair.expression
-      }))
       MatchArmsPartialPair {
-        match_arms: accumulated.match_arms,
+        match_arms: accumulated.match_arms.concat([Shared.new(MatchArm {
+          pattern: arm_shared_under_match.pattern,
+          has_guard: arm_shared_under_match.has_guard,
+          when_condition: guard_pair.expression,
+          body: body_pair.expression
+        })]),
         next_serial: body_pair.next_serial
       }
     end

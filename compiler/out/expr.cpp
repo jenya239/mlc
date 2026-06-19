@@ -52,6 +52,8 @@ mlc::String return_line(mlc::String expression_code) noexcept;
 
 mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
 
+mlc::String else_if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
+
 mlc::String else_brace_block(mlc::String inner_statements) noexcept;
 
 mlc::String else_fragment_raw(mlc::String raw_else_suffix) noexcept;
@@ -210,17 +212,17 @@ mlc::String block_as_immediate_invoked_function_expression(mlc::String body_stat
 
 mlc::String std_visit_match_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept{return mlc::String("std::visit(overloaded{") + arm_lambdas + mlc::String("\n}, ") + visit_subject + mlc::String(")");}
 
-mlc::String match_arm_wild_or_unit_return(mlc::String return_expression_code) noexcept{return mlc::String("[&](const auto& __v) { return ") + return_expression_code + mlc::String("; }");}
+mlc::String match_arm_wild_or_unit_return(mlc::String return_expression_code) noexcept{return mlc::String("[=](const auto& __v) { return ") + return_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_wild_or_unit_statement(mlc::String body_expression_code) noexcept{return mlc::String("[&](const auto& __v) -> void { ") + body_expression_code + mlc::String("; }");}
+mlc::String match_arm_wild_or_unit_statement(mlc::String body_expression_code) noexcept{return mlc::String("[=](const auto& __v) -> void { ") + body_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_binding_identifier(mlc::String parameter_cpp_safe, mlc::String return_expression_code) noexcept{return mlc::String("[&](const auto& ") + parameter_cpp_safe + mlc::String(") { return ") + return_expression_code + mlc::String("; }");}
+mlc::String match_arm_binding_identifier(mlc::String parameter_cpp_safe, mlc::String return_expression_code) noexcept{return mlc::String("[=](const auto& ") + parameter_cpp_safe + mlc::String(") { return ") + return_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_binding_identifier_void(mlc::String parameter_cpp_safe, mlc::String body_expression_code) noexcept{return mlc::String("[&](const auto& ") + parameter_cpp_safe + mlc::String(") -> void { ") + body_expression_code + mlc::String("; }");}
+mlc::String match_arm_binding_identifier_void(mlc::String parameter_cpp_safe, mlc::String body_expression_code) noexcept{return mlc::String("[=](const auto& ") + parameter_cpp_safe + mlc::String(") -> void { ") + body_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_constructed_value(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String return_expression_code) noexcept{return mlc::String("[&](") + const_reference_parameter + mlc::String(") { ") + binding_prefix + mlc::String("return ") + return_expression_code + mlc::String("; }");}
+mlc::String match_arm_constructed_value(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String return_expression_code) noexcept{return mlc::String("[=](") + const_reference_parameter + mlc::String(") { ") + binding_prefix + mlc::String("return ") + return_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_constructed_value_void(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String body_expression_code) noexcept{return mlc::String("[&](") + const_reference_parameter + mlc::String(") -> void { ") + binding_prefix + body_expression_code + mlc::String("; }");}
+mlc::String match_arm_constructed_value_void(mlc::String const_reference_parameter, mlc::String binding_prefix, mlc::String body_expression_code) noexcept{return mlc::String("[=](") + const_reference_parameter + mlc::String(") -> void { ") + binding_prefix + body_expression_code + mlc::String("; }");}
 
 mlc::String record_initializer(mlc::String type_resolved, mlc::String values_comma_separated) noexcept{return type_resolved + mlc::String("{") + values_comma_separated + mlc::String("}");}
 
@@ -247,6 +249,8 @@ mlc::String constexpr_auto_binding_statement(mlc::String binding_cpp_safe, mlc::
 mlc::String return_line(mlc::String expression_code) noexcept{return mlc::String("return ") + expression_code + mlc::String(";\n");}
 
 mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept{return mlc::String("if (") + condition_code + mlc::String(") {\n") + inner_statements + mlc::String("}");}
+
+mlc::String else_if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept{return mlc::String(" else if (") + condition_code + mlc::String(") {\n") + inner_statements + mlc::String("}");}
 
 mlc::String else_brace_block(mlc::String inner_statements) noexcept{return mlc::String(" else {\n") + inner_statements + mlc::String("}");}
 
@@ -300,9 +304,9 @@ mlc::String array_string_fallback_empty() noexcept{return mlc::String("mlc::Arra
 
 mlc::String match_lambda_const_reference_parameter(mlc::String resolved_type_name, mlc::String generic_angle_bracket_argument, mlc::String binding_name_cpp_safe) noexcept{return mlc::String("const ") + resolved_type_name + generic_angle_bracket_argument + mlc::String("& ") + binding_name_cpp_safe;}
 
-mlc::String match_arm_constructed_value_generic(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String return_expression_code) noexcept{return mlc::String("[&]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") { ") + binding_prefix + mlc::String("return ") + return_expression_code + mlc::String("; }");}
+mlc::String match_arm_constructed_value_generic(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String return_expression_code) noexcept{return mlc::String("[=]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") { ") + binding_prefix + mlc::String("return ") + return_expression_code + mlc::String("; }");}
 
-mlc::String match_arm_constructed_value_generic_void(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String body_expression_code) noexcept{return mlc::String("[&]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") -> void { ") + binding_prefix + body_expression_code + mlc::String("; }");}
+mlc::String match_arm_constructed_value_generic_void(mlc::String resolved_type_name, mlc::String binding_name_cpp_safe, mlc::String binding_prefix, mlc::String body_expression_code) noexcept{return mlc::String("[=]<typename __mlcT>(const ") + resolved_type_name + mlc::String("<__mlcT>& ") + binding_name_cpp_safe + mlc::String(") -> void { ") + binding_prefix + body_expression_code + mlc::String("; }");}
 
 mlc::String dot_member_access(mlc::String receiver_code, mlc::String member_code) noexcept{return receiver_code + mlc::String(".") + member_code;}
 
@@ -366,7 +370,7 @@ mlc::String namespace_close_comment_line(mlc::String namespace_identifier) noexc
 
 mlc::String implementation_define_main_as_user_main_line() noexcept{return mlc::String("#define main mlc_user_main\n");}
 
-mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept{return mlc::String("#include \"") + header_filename + mlc::String("\"\n");}
+mlc::String implementation_include_quotefile_line(mlc::String header_filename) noexcept{return mlc::String("#include ") + mlc::String("\"") + header_filename + mlc::String("\"") + mlc::String("\n");}
 
 mlc::String bootstrap_host_main_calling_namespaced_user_main(mlc::String qualified_namespace) noexcept{return mlc::String("\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::") + qualified_namespace + mlc::String("::mlc_user_main(argc, argv);\n}\n");}
 
@@ -388,9 +392,9 @@ mlc::String trait_struct_definition_lines(mlc::String template_header, mlc::Stri
 
 mlc::String user_main_arguments_copy_into_runtime_statement() noexcept{return mlc::String("mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n");}
 
-mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
+mlc::String static_assert_concept_for_type_line(mlc::String concept_cpp_safe, mlc::String type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + type_cpp + mlc::String(">, ") + mlc::String("\"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\"") + mlc::String(");\n");}
 
-mlc::String static_assert_concept_for_result_and_implementor_line(mlc::String concept_cpp_safe, mlc::String result_type_cpp, mlc::String implementor_type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + result_type_cpp + mlc::String(", ") + implementor_type_cpp + mlc::String(">, \"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\");\n");}
+mlc::String static_assert_concept_for_result_and_implementor_line(mlc::String concept_cpp_safe, mlc::String result_type_cpp, mlc::String implementor_type_cpp, mlc::String diagnostic_message_inside_cpp_string_literal) noexcept{return mlc::String("static_assert(") + concept_cpp_safe + mlc::String("<") + result_type_cpp + mlc::String(", ") + implementor_type_cpp + mlc::String(">, ") + mlc::String("\"") + diagnostic_message_inside_cpp_string_literal + mlc::String("\"") + mlc::String(");\n");}
 
 mlc::String with_block_statement(mlc::String resource_code, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + resource_code + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
 

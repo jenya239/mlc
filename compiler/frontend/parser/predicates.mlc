@@ -15,29 +15,94 @@ export fn parser_new(tokens: [Token]) -> Parser =
 
 // --- Result types ---------------------------------------------------------
 
-export type ExprResult      = ExprResult      { expression: Shared<Expr>,          parser: Parser }
-export type TypeResult      = TypeResult      { type_expr:  Shared<TypeExpr>,       parser: Parser }
-export type PatternResult       = PatternResult       { pattern:        Shared<Pattern>,            parser: Parser }
-export type StmtResult      = StmtResult      { statement:       Shared<Stmt>,           parser: Parser }
-export type StmtsResult     = StmtsResult     { stmts:      [Shared<Stmt>],         parser: Parser }
-export type ExprsResult     = ExprsResult     { exprs:      [Shared<Expr>],         parser: Parser }
-export type ArmsResult      = ArmsResult      { arms:       [Shared<MatchArm>],     parser: Parser }
-export type VariantResult   = VariantResult   { variant:    Shared<TypeVariant>,    parser: Parser }
-export type VariantsResult  = VariantsResult  { variants:   [Shared<TypeVariant>],  parser: Parser }
-export type ParamsResult    = ParamsResult    { params:     [Shared<Param>],        parser: Parser }
-export type DeclResult      = DeclResult      { declaration:       Shared<Decl>,           parser: Parser }
-export type FieldValsResult = FieldValsResult { field_vals: [Shared<FieldVal>],     parser: Parser }
-export type RecordLitPartsResult = RecordLitPartsResult { lit_parts: [RecordLitPart], parser: Parser }
-export type PatternsResult      = PatternsResult      { patterns:       [Shared<Pattern>],          parser: Parser }
-export type FieldDefsResult = FieldDefsResult { field_defs: [Shared<FieldDef>],     parser: Parser }
-export type TypesResult     = TypesResult     { types:      [Shared<TypeExpr>],     parser: Parser }
-export type ParamResult     = ParamResult     { param:      Shared<Param>,          parser: Parser }
-export type NamesResult     = NamesResult     { exprs:      [string],               parser: Parser }
-export type TypeParamsResult = TypeParamsResult { params: [string], bounds: [[string]], parser: Parser }
-export type BoundsResult = BoundsResult { bounds: [string], parser: Parser }
-export type WhereClauseParseResult = WhereClauseParseResult { where_bounds: [WhereClauseBound], parser: Parser }
-export type TraitBodyResult  = TraitBodyResult  { methods:  [Shared<Decl>],           parser: Parser }
+export type ParseResult<Value> = { value: Value, parser: Parser }
+export type ExprResult      = ParseResult<Shared<Expr>>
+export type TypeResult      = ParseResult<Shared<TypeExpr>>
+export type PatternResult       = ParseResult<Shared<Pattern>>
+export type StmtResult      = ParseResult<Shared<Stmt>>
+export type StmtsResult     = ParseResult<[Shared<Stmt>]>
+export type ExprsResult     = ParseResult<[Shared<Expr>]>
+export type ArmsResult      = ParseResult<[Shared<MatchArm>]>
+export type VariantResult   = ParseResult<Shared<TypeVariant>>
+export type VariantsResult  = ParseResult<[Shared<TypeVariant>]>
+export type ParamsResult    = ParseResult<[Shared<Param>]>
+export type DeclResult      = ParseResult<Shared<Decl>>
+export type FieldValsResult = ParseResult<[Shared<FieldVal>]>
+export type RecordLitPartsResult = ParseResult<[RecordLitPart]>
+export type PatternsResult      = ParseResult<[Shared<Pattern>]>
+export type FieldDefsResult = ParseResult<[Shared<FieldDef>]>
+export type TypesResult     = ParseResult<[Shared<TypeExpr>]>
+export type ParamResult     = ParseResult<Shared<Param>>
+export type NamesResult     = ParseResult<[string]>
+export type TypeParamsValue = TypeParamsValue { params: [string], bounds: [[string]] }
+export type TypeParamsResult = ParseResult<TypeParamsValue>
+export type BoundsResult = ParseResult<[string]>
+export type WhereClauseParseResult = ParseResult<[WhereClauseBound]>
+export type TraitBodyResult  = ParseResult<[Shared<Decl>]>
 export type ParseProgramResult = ParseProgramResult { program: Program, errors: [string] }
+
+export fn parse_result<Value>(value: Value, parser: Parser) -> ParseResult<Value> =
+  ParseResult { value: value, parser: parser }
+
+export fn bounds_parse_result(bounds: [string], parser: Parser) -> ParseResult<[string]> =
+  parse_result(bounds, parser)
+
+export fn type_parse_result(type_expression: Shared<TypeExpr>, parser: Parser) -> TypeResult =
+  parse_result(type_expression, parser)
+
+export fn pattern_parse_result(pattern: Shared<Pattern>, parser: Parser) -> PatternResult =
+  parse_result(pattern, parser)
+
+export fn statement_parse_result(statement: Shared<Stmt>, parser: Parser) -> StmtResult =
+  parse_result(statement, parser)
+
+export fn variant_parse_result(variant: Shared<TypeVariant>, parser: Parser) -> VariantResult =
+  parse_result(variant, parser)
+
+export fn statements_parse_result(statements: [Shared<Stmt>], parser: Parser) -> StmtsResult =
+  parse_result(statements, parser)
+
+export fn expressions_parse_result(expressions: [Shared<Expr>], parser: Parser) -> ExprsResult =
+  parse_result(expressions, parser)
+
+export fn arms_parse_result(arms: [Shared<MatchArm>], parser: Parser) -> ArmsResult =
+  parse_result(arms, parser)
+
+export fn variants_parse_result(variants: [Shared<TypeVariant>], parser: Parser) -> VariantsResult =
+  parse_result(variants, parser)
+
+export fn parameters_parse_result(parameters: [Shared<Param>], parser: Parser) -> ParamsResult =
+  parse_result(parameters, parser)
+
+export fn field_values_parse_result(field_values: [Shared<FieldVal>], parser: Parser) -> FieldValsResult =
+  parse_result(field_values, parser)
+
+export fn record_lit_parts_parse_result(lit_parts: [RecordLitPart], parser: Parser) -> RecordLitPartsResult =
+  parse_result(lit_parts, parser)
+
+export fn patterns_parse_result(patterns: [Shared<Pattern>], parser: Parser) -> PatternsResult =
+  parse_result(patterns, parser)
+
+export fn field_definitions_parse_result(field_definitions: [Shared<FieldDef>], parser: Parser) -> FieldDefsResult =
+  parse_result(field_definitions, parser)
+
+export fn types_parse_result(types: [Shared<TypeExpr>], parser: Parser) -> TypesResult =
+  parse_result(types, parser)
+
+export fn declaration_parse_result(declaration: Shared<Decl>, parser: Parser) -> DeclResult =
+  parse_result(declaration, parser)
+
+export fn where_clause_parse_result(where_bounds: [WhereClauseBound], parser: Parser) -> WhereClauseParseResult =
+  parse_result(where_bounds, parser)
+
+export fn trait_body_parse_result(methods: [Shared<Decl>], parser: Parser) -> TraitBodyResult =
+  parse_result(methods, parser)
+
+export fn expression_parse_result(expression: Shared<Expr>, parser: Parser) -> ExprResult =
+  parse_result(expression, parser)
+
+export fn type_params_parse_result(params: [string], bounds: [[string]], parser: Parser) -> TypeParamsResult =
+  parse_result(TypeParamsValue { params: params, bounds: bounds }, parser)
 
 export fn is_ctor_name(name: string) -> bool =
   name.char_at(0) >= "A" && name.char_at(0) <= "Z"

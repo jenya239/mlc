@@ -1,11 +1,15 @@
 #include "trait_param_expand.hpp"
 
 #include "ast.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace trait_param_expand {
 
 using namespace ast;
+using namespace diagnostic_codes;
 using namespace ast_tokens;
+
+struct Trait_name_conflict_fold_state {mlc::HashMap<mlc::String, bool> trait_declaration_names;mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;mlc::Array<ast::Diagnostic> conflicts;};
 
 struct TraitExpandChunk {std::shared_ptr<ast::TypeExpr> type_expression;int next_counter;mlc::Array<mlc::String> appended_type_parameter_names;mlc::Array<mlc::Array<mlc::String>> appended_trait_bounds_rows;};
 
@@ -18,6 +22,8 @@ struct ExpandedFunctionParametersTraversalState {int synthetic_counter;mlc::Arra
 std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept;
 
 void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept;
+
+trait_param_expand::Trait_name_conflict_fold_state trait_name_conflict_fold_step(trait_param_expand::Trait_name_conflict_fold_state fold_state, std::shared_ptr<ast::Decl> current_declaration) noexcept;
 
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
 
@@ -45,7 +51,7 @@ ast::Program expand_trait_as_param_entry_using_full(ast::Program entry, ast::Pro
 
 ast::Program expand_trait_as_param_program(ast::Program program) noexcept;
 
-std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> std::shared_ptr<ast::Decl> { if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner] = _v_declexported; return declaration_without_export_wrappers(inner); } return declaration; }();}
+std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> std::shared_ptr<ast::Decl> { if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [exported_declaration] = _v_declexported; return declaration_without_export_wrappers(exported_declaration); } return declaration; }();}
 
 void each_program_declaration_depth_first(ast::Program program, std::function<void(std::shared_ptr<ast::Decl>)> handle_declaration) noexcept{
 int fold_traversal_placeholder = program.decls.fold(0, [handle_declaration](int _, std::shared_ptr<ast::Decl> root_declaration_under_program) mutable { return [&]() -> int { 
@@ -54,28 +60,38 @@ int fold_traversal_placeholder = program.decls.fold(0, [handle_declaration](int 
  }(); });
 }
 
+trait_param_expand::Trait_name_conflict_fold_state trait_name_conflict_fold_step(trait_param_expand::Trait_name_conflict_fold_state fold_state, std::shared_ptr<ast::Decl> current_declaration) noexcept{
+return [&]() -> trait_param_expand::Trait_name_conflict_fold_state { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2, _w3] = _v_decltype; return [&]() -> trait_param_expand::Trait_name_conflict_fold_state { 
+  mlc::Array<ast::Diagnostic> conflicts_after_type = fold_state.trait_declaration_names.has(type_name) ? fold_state.conflicts.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("the name \"") + type_name + mlc::String("\" is declared as both a type and a trait"), ast::decl_name_span(current_declaration), diagnostic_codes::diagnostic_code_e073())}) : fold_state.conflicts;
+  return trait_param_expand::Trait_name_conflict_fold_state{fold_state.trait_declaration_names, [&]() -> mlc::HashMap<mlc::String, bool> { 
+  mlc::HashMap<mlc::String, bool> nominal_names = fold_state.nominal_type_declaration_names;
+  nominal_names.set(type_name, true);
+  return nominal_names;
+ }(), conflicts_after_type};
+ }(); } if (std::holds_alternative<ast::DeclTypeAlias>((*current_declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltypealias; return [&]() -> trait_param_expand::Trait_name_conflict_fold_state { 
+  mlc::Array<ast::Diagnostic> conflicts_after_alias = fold_state.trait_declaration_names.has(type_name) ? fold_state.conflicts.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("the name \"") + type_name + mlc::String("\" is declared as both a type and a trait"), ast::decl_name_span(current_declaration), diagnostic_codes::diagnostic_code_e073())}) : fold_state.conflicts;
+  return trait_param_expand::Trait_name_conflict_fold_state{fold_state.trait_declaration_names, [&]() -> mlc::HashMap<mlc::String, bool> { 
+  mlc::HashMap<mlc::String, bool> nominal_names = fold_state.nominal_type_declaration_names;
+  nominal_names.set(type_name, true);
+  return nominal_names;
+ }(), conflicts_after_alias};
+ }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1, _w2] = _v_decltrait; return [&]() -> trait_param_expand::Trait_name_conflict_fold_state { 
+  mlc::Array<ast::Diagnostic> conflicts_after_trait = fold_state.nominal_type_declaration_names.has(trait_name) ? fold_state.conflicts.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("the name \"") + trait_name + mlc::String("\" is declared as both a type and a trait"), ast::decl_name_span(current_declaration), diagnostic_codes::diagnostic_code_e073())}) : fold_state.conflicts;
+  return trait_param_expand::Trait_name_conflict_fold_state{[&]() -> mlc::HashMap<mlc::String, bool> { 
+  mlc::HashMap<mlc::String, bool> trait_names = fold_state.trait_declaration_names;
+  trait_names.set(trait_name, true);
+  return trait_names;
+ }(), fold_state.nominal_type_declaration_names, conflicts_after_trait};
+ }(); } return fold_state; }();
+}
+
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept{
-mlc::HashMap<mlc::String, bool> trait_declaration_names = mlc::HashMap<mlc::String, bool>();
-mlc::HashMap<mlc::String, bool> nominal_type_declaration_names = mlc::HashMap<mlc::String, bool>();
-mlc::Array<ast::Diagnostic> conflicts = {};
-each_program_declaration_depth_first(program, [&trait_declaration_names, &conflicts, &nominal_type_declaration_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
-  if (trait_declaration_names.has(type_name)){
-{
-conflicts.push_back(ast::diagnostic_error(mlc::String("the name \"") + type_name + mlc::String("\" is declared as both a type and a trait"), ast::span_unknown()));
-}
-}
-  nominal_type_declaration_names.set(type_name, true);
-  return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1] = _v_decltrait; return [&]() -> std::tuple<> { 
-  if (nominal_type_declaration_names.has(trait_name)){
-{
-conflicts.push_back(ast::diagnostic_error(mlc::String("the name \"") + trait_name + mlc::String("\" is declared as both a type and a trait"), ast::span_unknown()));
-}
-}
-  trait_declaration_names.set(trait_name, true);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }(); });
-return conflicts;
+trait_param_expand::Trait_name_conflict_fold_state initial_fold_state = trait_param_expand::Trait_name_conflict_fold_state{mlc::HashMap<mlc::String, bool>(), mlc::HashMap<mlc::String, bool>(), [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty_conflicts = {};
+  return empty_conflicts;
+ }()};
+trait_param_expand::Trait_name_conflict_fold_state final_fold_state = program.decls.fold(initial_fold_state, [](trait_param_expand::Trait_name_conflict_fold_state fold_state_so_far, std::shared_ptr<ast::Decl> root_declaration) mutable { return trait_name_conflict_fold_step(fold_state_so_far, declaration_without_export_wrappers(root_declaration)); });
+return final_fold_state.conflicts;
 }
 
 mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept{
@@ -128,7 +144,7 @@ type_parameter_names.fold(0, [&explicit_type_parameter_environment](int _, mlc::
  }(); });
 mlc::Array<mlc::String> initial_expanded_function_type_parameter_names = type_parameter_names.concat({});
 trait_param_expand::ExpandedFunctionParametersTraversalState after_parameter_list_expanded = parameters.fold(trait_param_expand::ExpandedFunctionParametersTraversalState{0, initial_expanded_function_type_parameter_names, align_trait_bounds_matrix(type_parameter_names, trait_bounds_rows), {}}, [explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names](trait_param_expand::ExpandedFunctionParametersTraversalState expanded_state_before_traversal_step, std::shared_ptr<ast::Param> parameter_under_traversal_shared) mutable { return [&]() -> trait_param_expand::ExpandedFunctionParametersTraversalState { 
-  trait_param_expand::TraitExpandChunk parameter_traversal_expression_chunk = expand_type_expression_for_trait_param(ast::param_typ(parameter_under_traversal_shared), explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, expanded_state_before_traversal_step.synthetic_counter);
+  trait_param_expand::TraitExpandChunk parameter_traversal_expression_chunk = expand_type_expression_for_trait_param(ast::param_type_value(parameter_under_traversal_shared), explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, expanded_state_before_traversal_step.synthetic_counter);
   return trait_param_expand::ExpandedFunctionParametersTraversalState{parameter_traversal_expression_chunk.next_counter, expanded_state_before_traversal_step.expanded_type_parameter_names.concat(parameter_traversal_expression_chunk.appended_type_parameter_names), expanded_state_before_traversal_step.expanded_trait_bounds.concat(parameter_traversal_expression_chunk.appended_trait_bounds_rows), expanded_state_before_traversal_step.expanded_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{std::make_shared<ast::Param>(ast::Param{ast::param_name(parameter_under_traversal_shared), parameter_under_traversal_shared->is_mut, parameter_traversal_expression_chunk.type_expression, parameter_under_traversal_shared->has_default, parameter_under_traversal_shared->default_, parameter_under_traversal_shared->param_pattern})})};
  }(); });
 trait_param_expand::TraitExpandChunk return_chunk_under_function_declaration = expand_type_expression_for_trait_param(return_type_expression, explicit_type_parameter_environment, trait_declaration_names, nominal_type_declaration_names, after_parameter_list_expanded.synthetic_counter);
@@ -137,17 +153,20 @@ return std::make_shared<ast::Decl>(ast::DeclFn(function_name, after_parameter_li
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_extend_methods(mlc::Array<std::shared_ptr<ast::Decl>> methods, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept{return methods.map([trait_declaration_names, nominal_type_declaration_names](std::shared_ptr<ast::Decl> method_declaration_under_extend) mutable { return expand_decl_shared(method_declaration_under_extend, trait_declaration_names, nominal_type_declaration_names); });}
 
-std::shared_ptr<ast::Decl> expand_decl_shared(std::shared_ptr<ast::Decl> declaration, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept{return [&]() -> std::shared_ptr<ast::Decl> { if (std::holds_alternative<ast::DeclFn>((*declaration))) { auto _v_declfn = std::get<ast::DeclFn>((*declaration)); auto [function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression, where_clause_bounds_entries] = _v_declfn; return expand_decl_fn_trait_parameters(function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression, where_clause_bounds_entries, trait_declaration_names, nominal_type_declaration_names); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner] = _v_declexported; return std::make_shared<ast::Decl>(ast::DeclExported(expand_decl_shared(inner, trait_declaration_names, nominal_type_declaration_names))); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [extended_type_name, implemented_trait_name, methods] = _v_declextend; return std::make_shared<ast::Decl>(ast::DeclExtend(extended_type_name, implemented_trait_name, expand_extend_methods(methods, trait_declaration_names, nominal_type_declaration_names))); } return declaration; }();}
+std::shared_ptr<ast::Decl> expand_decl_shared(std::shared_ptr<ast::Decl> declaration, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept{return [&]() -> std::shared_ptr<ast::Decl> { if (std::holds_alternative<ast::DeclFn>((*declaration))) { auto _v_declfn = std::get<ast::DeclFn>((*declaration)); auto [function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression, where_clause_bounds_entries] = _v_declfn; return expand_decl_fn_trait_parameters(function_name, type_parameter_names, trait_bounds_rows, parameters, return_type_expression, body_expression, where_clause_bounds_entries, trait_declaration_names, nominal_type_declaration_names); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [exported_declaration] = _v_declexported; return std::make_shared<ast::Decl>(ast::DeclExported(expand_decl_shared(exported_declaration, trait_declaration_names, nominal_type_declaration_names))); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [extended_type_name, implemented_trait_name, methods, name_span] = _v_declextend; return std::make_shared<ast::Decl>(ast::DeclExtend(extended_type_name, implemented_trait_name, expand_extend_methods(methods, trait_declaration_names, nominal_type_declaration_names), name_span)); } return declaration; }();}
 
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_and_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept{return declarations.map([trait_declaration_names, nominal_type_declaration_names](std::shared_ptr<ast::Decl> declaration_under_expansion_candidate) mutable { return expand_decl_shared(declaration_under_expansion_candidate, trait_declaration_names, nominal_type_declaration_names); });}
 
 trait_param_expand::TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept{
 mlc::HashMap<mlc::String, bool> trait_declaration_names = mlc::HashMap<mlc::String, bool>();
 mlc::HashMap<mlc::String, bool> nominal_type_declaration_names = mlc::HashMap<mlc::String, bool>();
-each_program_declaration_depth_first(program, [&nominal_type_declaration_names, &trait_declaration_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltype; return [&]() -> std::tuple<> { 
+each_program_declaration_depth_first(program, [&nominal_type_declaration_names, &trait_declaration_names](std::shared_ptr<ast::Decl> current_declaration) mutable { return [&]() -> std::tuple<> { if (std::holds_alternative<ast::DeclType>((*current_declaration))) { auto _v_decltype = std::get<ast::DeclType>((*current_declaration)); auto [type_name, _w0, _w1, _w2, _w3] = _v_decltype; return [&]() -> std::tuple<> { 
   nominal_type_declaration_names.set(type_name, true);
   return std::make_tuple();
- }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1] = _v_decltrait; return [&]() -> std::tuple<> { 
+ }(); } if (std::holds_alternative<ast::DeclTypeAlias>((*current_declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*current_declaration)); auto [type_name, _w0, _w1, _w2] = _v_decltypealias; return [&]() -> std::tuple<> { 
+  nominal_type_declaration_names.set(type_name, true);
+  return std::make_tuple();
+ }(); } if (std::holds_alternative<ast::DeclTrait>((*current_declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*current_declaration)); auto [trait_name, _w0, _w1, _w2] = _v_decltrait; return [&]() -> std::tuple<> { 
   trait_declaration_names.set(trait_name, true);
   return std::make_tuple();
  }(); } return std::make_tuple(); }(); });

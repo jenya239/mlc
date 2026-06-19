@@ -19,21 +19,23 @@
 #include "decl_cpp.hpp"
 #include "cpp_ast.hpp"
 #include "cpp_ast.hpp"
+#include "module_tu_helpers.hpp"
 #include "expr.hpp"
 
 namespace module {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-context::PrecomputedCtx precompute(ast::Program prog, mlc::Array<decl_index::LoadItem> all_items) noexcept;
+context::StructUsingData build_struct_using_data(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context) noexcept;
 
-context::GenModuleOut gen_module(semantic_ir::SLoadItem s_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_prog, context::PrecomputedCtx precomp) noexcept;
+context::PrecomputedCtx precompute(ast::Program program, mlc::Array<decl_index::LoadItem> all_items) noexcept;
+
+context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept;
 
 mlc::String gen_program(ast::Program program) noexcept;
 

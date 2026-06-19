@@ -15,18 +15,18 @@
 #include "infer.hpp"
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
+#include "diagnostic_codes.hpp"
 #include "record_defaults.hpp"
 #include "partial_application_desugar.hpp"
 
 namespace check {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;};
 

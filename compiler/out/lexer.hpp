@@ -8,15 +8,14 @@
 
 namespace lexer {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
-ast_tokens::LexOut tokenize(mlc::String source) noexcept;
+ast_tokens::LexOut tokenize(mlc::String input_text) noexcept;
 
 } // namespace lexer
 

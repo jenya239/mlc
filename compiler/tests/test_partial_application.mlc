@@ -43,7 +43,7 @@ export fn partial_application_tests() -> [TestResult] = do
     gen_program(parse_program(tokenize(
       'fn add(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add(1, _)\n  bound(2)\nend'
     ).tokens)),
-    '[&]'))
+    '[=]'))
 
   results
 end

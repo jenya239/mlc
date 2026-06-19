@@ -18,7 +18,7 @@ mlc::String resolve_identifier_in_self_context(mlc::String name, context::Codege
 
 mlc::String gen_identifier(mlc::String name, context::CodegenContext context) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept;
 
 mlc::String resolve_identifier_in_self_context(mlc::String name, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> self_fields = context::lookup_fields_for_context(context, context.self_type);
@@ -38,6 +38,6 @@ mlc::String gen_identifier(mlc::String name, context::CodegenContext context) no
   return needs_constructor_brace ? resolved + mlc::String("{}") : resolved;
  }();}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_identifier(name, context));}
+std::shared_ptr<cpp_ast::CppExpression> gen_identifier_cpp(mlc::String name, context::CodegenContext context) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_identifier(name, context));}
 
 } // namespace identifiers

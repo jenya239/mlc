@@ -2,7 +2,7 @@
 
 import {
   TypeVariant, VarUnit, VarTuple, VarRecord, TypeExpr,
-  TyI32, TyBool, TyString, Diagnostic, diagnostic_error_with_code, Span
+  TyI32, TyBool, TyString, Diagnostic, diagnostic_error_with_code, diagnostics_append, Span
 } from '../../frontend/ast'
 import {
   diagnostic_code_e069, diagnostic_code_e070, diagnostic_code_e071, diagnostic_code_e072
@@ -38,27 +38,42 @@ fn derive_hash_field_error(
   end
 end
 
+type Derive_hash_tuple_field_fold_state = Derive_hash_tuple_field_fold_state {
+  diagnostics: [Diagnostic],
+  field_index: i32,
+}
+
+fn derive_hash_tuple_field_fold_step(
+  state: Derive_hash_tuple_field_fold_state,
+  field_type: Shared<TypeExpr>,
+  variant_name: string,
+  diagnostic_span: Span
+) -> Derive_hash_tuple_field_fold_state = do
+  const slot_label = "_" + state.field_index.to_string()
+  const field_errors = derive_hash_field_error(
+    `variant '${variant_name}'`, slot_label, field_type, diagnostic_span)
+  Derive_hash_tuple_field_fold_state {
+    diagnostics: diagnostics_append(state.diagnostics, field_errors),
+    field_index:   state.field_index + 1,
+  }
+end
+
 fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic_span: Span) -> [Diagnostic] =
   match variant {
     VarUnit(_, _) => do
       const diagnostics_none: [Diagnostic] = []
       diagnostics_none
     end,
-    VarTuple(variant_name, field_types, _) => do
-      let collected: [Diagnostic] = []
-      let mut field_index = 0
-      while field_index < field_types.length() do
-        const slot_label = "_" + field_index.to_string()
-        const chunk = derive_hash_field_error(
-          `variant '${variant_name}'`, slot_label, field_types[field_index], diagnostic_span)
-        let mut merge_index = 0
-        while merge_index < chunk.length() do
-          collected.push(chunk[merge_index]); merge_index = merge_index + 1
-        end
-        field_index = field_index + 1
-      end
-      collected
-    end,
+    VarTuple(variant_name, field_types, _) =>
+      field_types
+        .fold(
+          Derive_hash_tuple_field_fold_state {
+            diagnostics: do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+            field_index:   0,
+          },
+          (state, field_type) =>
+            derive_hash_tuple_field_fold_step(state, field_type, variant_name, diagnostic_span))
+        .diagnostics,
     VarRecord(variant_name, field_defs, _) =>
       field_defs.flat_map(field_definition =>
         derive_hash_field_error(
@@ -68,46 +83,79 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
 fn derive_hash_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =
   variants.flat_map(variant => derive_hash_field_errors_for_variant(variant, diagnostic_span))
 
+type Derive_clause_trait_scan_fold_state = Derive_clause_trait_scan_fold_state {
+  diagnostics: [Diagnostic],
+  seen_traits: Map<string, bool>,
+}
+
+fn derive_clause_trait_scan_fold_step(
+  state: Derive_clause_trait_scan_fold_state,
+  trait_name: string,
+  diagnostic_span: Span
+) -> Derive_clause_trait_scan_fold_state = do
+  const diagnostics_after_duplicate =
+    if state.seen_traits.has(trait_name) then
+      state.diagnostics.concat([diagnostic_error_with_code(
+        'duplicate derive trait "' + trait_name + `"`, diagnostic_span, diagnostic_code_e070())])
+    else
+      state.diagnostics
+    end
+  let seen_traits = state.seen_traits
+  if !state.seen_traits.has(trait_name) then seen_traits.set(trait_name, true) end
+  const diagnostics_after_unknown =
+    if !derive_trait_name_allowed(trait_name) then
+      diagnostics_after_duplicate.concat([diagnostic_error_with_code(
+        `unknown derive trait '${trait_name}'`, diagnostic_span, diagnostic_code_e071())])
+    else
+      diagnostics_after_duplicate
+    end
+  Derive_clause_trait_scan_fold_state {
+    diagnostics: diagnostics_after_unknown,
+    seen_traits:   seen_traits,
+  }
+end
+
+fn derive_clause_diagnostics_after_trait_scan(
+  type_parameter_names: [string],
+  variants: [Shared<TypeVariant>],
+  derive_trait_names: [string],
+  trait_scan_diagnostics: [Diagnostic],
+  diagnostic_span: Span
+) -> [Diagnostic] =
+  if string_list_contains_derive_trait(derive_trait_names, 'Hash') then
+    if type_parameter_names.length() > 0 then
+      trait_scan_diagnostics.concat([diagnostic_error_with_code(
+        'derive Hash is not supported for generic types in this version',
+        diagnostic_span,
+        diagnostic_code_e072())])
+    else
+      diagnostics_append(
+        trait_scan_diagnostics,
+        derive_hash_errors_for_variants(variants, diagnostic_span))
+    end
+  else
+    trait_scan_diagnostics
+  end
+
 export fn derive_clause_diagnostics(
   type_parameter_names: [string],
   variants: [Shared<TypeVariant>],
   derive_trait_names: [string],
   diagnostic_span: Span
-) -> [Diagnostic] = do
-  let collected: [Diagnostic] = []
-  if derive_trait_names.length() == 0 then return collected end
-
-  let mut seen: Map<string, bool> = Map.new()
-  let mut trait_index = 0
-  while trait_index < derive_trait_names.length() do
-    const trait_name = derive_trait_names[trait_index]
-    if seen.has(trait_name) then
-      collected.push(diagnostic_error_with_code(
-        'duplicate derive trait "' + trait_name + `"`, diagnostic_span, diagnostic_code_e070()))
-    else
-      seen.set(trait_name, true)
-    end
-    if !derive_trait_name_allowed(trait_name) then
-      collected.push(diagnostic_error_with_code(
-        `unknown derive trait '${trait_name}'`, diagnostic_span, diagnostic_code_e071()))
-    end
-    trait_index = trait_index + 1
+) -> [Diagnostic] =
+  if derive_trait_names.length() == 0 then
+    do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end
+  else
+    const trait_scan_result = derive_trait_names.fold(
+      Derive_clause_trait_scan_fold_state {
+        diagnostics: do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+        seen_traits: Map.new(),
+      },
+      (state, trait_name) => derive_clause_trait_scan_fold_step(state, trait_name, diagnostic_span))
+    derive_clause_diagnostics_after_trait_scan(
+      type_parameter_names,
+      variants,
+      derive_trait_names,
+      trait_scan_result.diagnostics,
+      diagnostic_span)
   end
-
-  if string_list_contains_derive_trait(derive_trait_names, 'Hash') then
-    if type_parameter_names.length() > 0 then
-      collected.push(diagnostic_error_with_code(
-        'derive Hash is not supported for generic types in this version',
-        diagnostic_span,
-        diagnostic_code_e072()))
-    else
-      const hash_field_errors = derive_hash_errors_for_variants(variants, diagnostic_span)
-      let mut merge_index = 0
-      while merge_index < hash_field_errors.length() do
-        collected.push(hash_field_errors[merge_index]); merge_index = merge_index + 1
-      end
-    end
-  end
-
-  collected
-end

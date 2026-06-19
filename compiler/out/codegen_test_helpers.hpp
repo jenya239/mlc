@@ -14,17 +14,16 @@
 
 namespace codegen_test_helpers {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 context::CodegenContext empty_codegen_context() noexcept;
 
-test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SExpr> expr, mlc::String expected_code) noexcept;
+test_runner::TestResult assert_expr_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<semantic_ir::SemanticExpression> expression, mlc::String expected_code) noexcept;
 
 test_runner::TestResult assert_type_generates(mlc::String test_name, context::CodegenContext context, std::shared_ptr<ast::TypeExpr> type_expr, mlc::String expected_code) noexcept;
 

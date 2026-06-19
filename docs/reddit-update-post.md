@@ -10,7 +10,7 @@ A lot happened since then.
 
 **The self-hosting thing**
 
-The main goal was always to get the compiler written in mlc itself. That's done now. The compiler compiles its own source - about 175 .mlc files going through the C\+\+ backend to produce a working binary. The bootstrap round-trip (Ruby compiler ? mlcc binary ? mlcc compiles itself ? compare output) passes. So technically we're there.
+The main goal was always to get the compiler written in mlc itself. That's done now. The compiler compiles its own source - 143 .mlc files going through the C\+\+ backend to produce a working binary. The bootstrap round-trip (Ruby compiler ? mlcc binary ? mlcc compiles itself ? compare output) passes. So technically we're there.
 
 "Technically" is doing a lot of work in that sentence. The generated C\+\+ is functional but not pretty. Error messages are still terrible. There's no incremental compilation. The self-hosted binary and the Ruby bootstrap agree on output, but that just means they have the same bugs.
 
@@ -66,14 +66,20 @@ Single-threaded only right now. The reference counting is atomic but COW detach 
 **Current state**
 
 - Self-hosting works (compiler compiles itself, round-trip passes)
-- ~1300 tests across bootstrap and compiler suites
-- Language features: sum types, generics, pattern matching, records, closures, modules
-- Missing: good error messages, optimization, guards in patterns, mutable references
+- ~2100 tests (~1100 Ruby bootstrap + ~980 self-hosted compiler suite)
+- Language features: sum types, generics, pattern matching (incl. guards, string patterns), records, closures, modules, traits, Option/Result, pipe operator, type aliases
+- Missing/in progress: full span coverage in error messages, optimization, incremental compilation
 - Code quality of the self-hosted binary: works, could be cleaner
 
-Next thing is stabilization - the compiler handles the cases that exist in its own source, but there are language features it doesn't use that are partially broken. Need to actually stress-test the self-hosted path before claiming it's real.
+One concrete win: compile speed. Compiling the compiler itself (143 source files ? 92 C++ files) with warm ccache:
 
----
+- Ruby bootstrap: ~13s
+- mlcc codegen only: ~1.7s
+- mlcc full build (codegen + clang++): ~4.3s
+
+So mlcc is ~7-8x faster at the codegen step and ~3x faster end-to-end. Cold cache the first time is ~6 minutes either way - bottlenecked by clang++ compiling 92 files.
+
+Next thing is stabilization - the compiler handles the cases that exist in its own source, but there are language features it doesn't use that are partially broken. Need to actually stress-test the self-hosted path before claiming it's real.
 
 ---
 

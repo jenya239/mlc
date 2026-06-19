@@ -32,6 +32,12 @@ fn append_lambda_arity(
     _ => errors
   }
 
+fn append_argument_type(
+  argument_types_so_far: [Shared<Type>],
+  type_to_append: Shared<Type>
+) -> [Shared<Type>] =
+  argument_types_so_far.concat([type_to_append])
+
 fn is_result_type(type_value: Shared<Type>) -> bool =
   match type_value {
     TGeneric(name, _) => name == 'Result',
@@ -78,7 +84,7 @@ export fn infer_result_option_hof_method_call(
     if method_name == 'unwrap_or' && method_arguments.length() > 0 then
       const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(argument_parsed)
-      argument_types.push(argument_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, argument_parsed.inferred_type)
       if !type_is_unknown(result_ok_type_value) && !type_is_unknown(argument_parsed.inferred_type) && !types_structurally_equal(result_ok_type_value, argument_parsed.inferred_type) then
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
           diagnostic_error_with_code(
@@ -105,7 +111,7 @@ export fn infer_result_option_hof_method_call(
             expr_span(callback_argument),
             diagnostic_code_e057())]) }
       end
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'map' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -117,7 +123,7 @@ export fn infer_result_option_hof_method_call(
       lambda_arity_errors = append_lambda_arity(lambda_arity_errors, callback_argument, 1, method_name)
       merged = merged.absorb(lambda_parsed)
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_arity_errors) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'map_err' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -129,7 +135,7 @@ export fn infer_result_option_hof_method_call(
       lambda_arity_errors = append_lambda_arity(lambda_arity_errors, callback_argument, 1, method_name)
       merged = merged.absorb(lambda_parsed)
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_arity_errors) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'and_then' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -159,7 +165,7 @@ export fn infer_result_option_hof_method_call(
             diagnostic_code_e059())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'ok' then
       let _noop = 0
     else if method_name == 'or_else' && method_arguments.length() > 0 then
@@ -173,14 +179,14 @@ export fn infer_result_option_hof_method_call(
       lambda_arity_errors = append_lambda_arity(lambda_arity_errors, callback_argument, 1, method_name)
       merged = merged.absorb(lambda_parsed)
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_arity_errors) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     end
   else if is_option_generic(receiver_type) then
     const option_inner_type_value = option_inner_type(receiver_type)
     if method_name == 'unwrap_or' && method_arguments.length() > 0 then
       const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(argument_parsed)
-      argument_types.push(argument_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, argument_parsed.inferred_type)
       if !type_is_unknown(option_inner_type_value) && !type_is_unknown(argument_parsed.inferred_type) && !types_structurally_equal(option_inner_type_value, argument_parsed.inferred_type) then
         merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, [
           diagnostic_error_with_code(
@@ -217,11 +223,11 @@ export fn infer_result_option_hof_method_call(
             diagnostic_code_e062())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'ok_or' && method_arguments.length() > 0 then
       const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
       merged = merged.absorb(argument_parsed)
-      argument_types.push(argument_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, argument_parsed.inferred_type)
     else if method_name == 'map' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -233,7 +239,7 @@ export fn infer_result_option_hof_method_call(
       lambda_arity_errors = append_lambda_arity(lambda_arity_errors, callback_argument, 1, method_name)
       merged = merged.absorb(lambda_parsed)
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, lambda_arity_errors) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'and_then' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -254,7 +260,7 @@ export fn infer_result_option_hof_method_call(
             diagnostic_code_e063())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     else if method_name == 'filter' && method_arguments.length() > 0 then
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
@@ -275,7 +281,7 @@ export fn infer_result_option_hof_method_call(
             diagnostic_code_e064())])
       end
       merged = InferResult { inferred_type: merged.inferred_type, errors: diagnostics_append(merged.errors, extra) }
-      argument_types.push(lambda_parsed.inferred_type)
+      argument_types = append_argument_type(argument_types, lambda_parsed.inferred_type)
     end
   end
 

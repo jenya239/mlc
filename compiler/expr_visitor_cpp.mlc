@@ -3,7 +3,7 @@
 import { Type, TNamed, TGeneric, TArray, TFn, TUnit } from './checker/registry'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionIdent, SemanticExpressionArray, SemanticExpressionUnit, SemanticExpressionIf, SemanticExpressionBlock, sexpr_type } from './ir/semantic_ir'
 import { CppExpression, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStatement } from './cpp/cpp_ast'
-import { print_expr, print_statement } from './cpp/cpp_printer'
+import { print_expr, print_statement } from './cpp/cpp_ast'
 import * as emit_helpers from './cpp/emit_helpers'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
@@ -80,9 +80,8 @@ fn gen_constructor_call_cpp_expression(
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
-      Shared.new(CppAggregateInit(
-        qualify_function_callee(map_builtin(name), context),
-        argument_expressions))
+      const callee_code = qualify_function_callee(map_builtin(name), context)
+      Shared.new(CppAggregateInit(callee_code, argument_expressions))
     end,
     _ => do
       Shared.new(CppCall(
@@ -139,8 +138,12 @@ export fn gen_method_via_cpp_visitor(
     gen_stmts,
     eval_expr_cpp)
 
+// Immediate IIFE only (if/while/for/block): [&] — same rationale as `block_as_immediate_invoked_function_expression`.
 fn reference_capture_for_immediate_lambda() -> Shared<CppCapture> =
   Shared.new(CppCapture { name: '', by_reference: true })
+
+fn value_capture_for_lambda() -> Shared<CppCapture> =
+  Shared.new(CppCapture { name: "=", by_reference: false })
 
 fn invoke_immediate_lambda_cpp(return_type: Shared<CppType>, body_statements: [Shared<CppStatement>]) -> Shared<CppExpression> =
   Shared.new(CppCall(
@@ -400,7 +403,7 @@ fn lambda_capture_list(parameter_binding_names: [string]) -> [Shared<CppCapture>
   if parameter_binding_names.length() == 0 then []
   else do
     let captures: [Shared<CppCapture>] = []
-    captures.push(reference_capture_for_immediate_lambda())
+    captures.push(value_capture_for_lambda())
     captures
   end
 

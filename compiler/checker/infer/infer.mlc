@@ -278,10 +278,9 @@ fn infer_tuple_literal_element_fold_step(
   inference_context: CheckContext
 ) -> Infer_tuple_literal_fold_state = do
   const element_inference = infer_expr(tuple_element, inference_context)
-  state.member_types.push(element_inference.inferred_type)
   Infer_tuple_literal_fold_state {
     combined_inference: state.combined_inference.absorb(element_inference),
-    member_types:       state.member_types,
+    member_types: state.member_types.concat([element_inference.inferred_type]),
   }
 end
 
@@ -557,13 +556,13 @@ fn accumulate_record_literal_spread_inference_for_literal_part(
     RecordLitSpread(spread_expression_under_inference) => do
       const spread_expression_inference =
         infer_expr(spread_expression_under_inference, inference_context)
-      fold_state.spread_inferred_types_in_visit_order.push(
-        spread_expression_inference.inferred_type)
       Record_literal_spread_inference_fold_state {
         inference_result_so_far:
           fold_state.inference_result_so_far.absorb(spread_expression_inference),
         spread_inferred_types_in_visit_order:
-          fold_state.spread_inferred_types_in_visit_order,
+          fold_state.spread_inferred_types_in_visit_order.concat([
+            spread_expression_inference.inferred_type
+          ]),
       }
     end,
     RecordLitFields(_) => fold_state,

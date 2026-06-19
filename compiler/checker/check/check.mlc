@@ -53,12 +53,13 @@ fn accumulate_diagnostics_when_record_fields_have_defaults_under_generic_type_pa
         diagnostics_accumulator_so_far,
         (diagnostic_list_so_far_under_record, record_field_definition_under_scan) => do
           if record_field_definition_under_scan.has_default_expression then
-            diagnostic_list_so_far_under_record.push(diagnostic_error_with_code(
+            diagnostic_list_so_far_under_record.concat([diagnostic_error_with_code(
               'record field default values are not supported when the type has generic parameters',
               expr_span(record_field_definition_under_scan.default_expression),
-              diagnostic_code_e042()))
+              diagnostic_code_e042())])
+          else
+            diagnostic_list_so_far_under_record
           end
-          diagnostic_list_so_far_under_record
         end),
     VarTuple(_, _, _) => diagnostics_accumulator_so_far,
     VarUnit(_, _)     => diagnostics_accumulator_so_far,
@@ -77,34 +78,31 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
         (diagnostic_list_so_far_under_fields, record_field_under_literal_definition) =>
           if !record_field_under_literal_definition.has_default_expression then
             diagnostic_list_so_far_under_fields
-          else
+          else if !record_field_default_expression_acceptable_for_codegen(
+            record_field_under_literal_definition.default_expression) then
+            diagnostic_list_so_far_under_fields.concat([diagnostic_error_with_code(
+              'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
+              expr_span(record_field_under_literal_definition.default_expression),
+              diagnostic_code_e043())])
+          else do
             const default_ast_expression = record_field_under_literal_definition.default_expression
-            let mut diagnostics_after_field: [Diagnostic] = diagnostic_list_so_far_under_fields
-            if !record_field_default_expression_acceptable_for_codegen(default_ast_expression) then
-              diagnostics_after_field.push(diagnostic_error_with_code(
-                'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',
+            const default_parsed =
+              infer_expr(default_ast_expression, record_default_inference_context)
+            const with_infer_errors =
+              diagnostics_append(diagnostic_list_so_far_under_fields, default_parsed.errors)
+            const annotated_field_type =
+              type_from_annotation_with_registry(record_field_under_literal_definition.type_value, registry)
+            if type_is_checkable(annotated_field_type, registry) &&
+               type_is_checkable(default_parsed.inferred_type, registry) &&
+               !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
+              with_infer_errors.concat([diagnostic_error_with_code(
+                'record field default type mismatch for field "' + record_field_under_literal_definition.name + `"`,
                 expr_span(default_ast_expression),
-                diagnostic_code_e043()))
-              diagnostics_after_field
+                diagnostic_code_e044())])
             else
-              const default_parsed =
-                infer_expr(default_ast_expression, record_default_inference_context)
-              diagnostics_after_field =
-                diagnostics_append(diagnostics_after_field, default_parsed.errors)
-              const annotated_field_type =
-                type_from_annotation_with_registry(record_field_under_literal_definition.type_value, registry)
-              if type_is_checkable(annotated_field_type, registry) &&
-                 type_is_checkable(default_parsed.inferred_type, registry) &&
-                 !types_structurally_equal(annotated_field_type, default_parsed.inferred_type) then
-                diagnostics_after_field.push(diagnostic_error_with_code(
-                  'record field default type mismatch for field "' + record_field_under_literal_definition.name + `"`,
-                  expr_span(default_ast_expression),
-                  diagnostic_code_e044()))
-              end
-              diagnostics_after_field
+              with_infer_errors
             end
-          end
-      ),
+          end),
     VarTuple(_, _, _) => diagnostics_accumulator_so_far,
     VarUnit(_, _)     => diagnostics_accumulator_so_far,
   }
@@ -155,57 +153,75 @@ fn param_default_diagnostics(
   body: Shared<Expr>,
   registry: TypeRegistry
 ) -> [Diagnostic] = do
-  let mut default_diagnostics: [Diagnostic] = []
-  if !param_defaults_in_tail(parameters) then
-    default_diagnostics.push(diagnostic_error_with_code('parameter defaults must be trailing', expr_span(body), diagnostic_code_e036()))
-  end
+  const trailing_default_diagnostics =
+    if !param_defaults_in_tail(parameters) then
+      [diagnostic_error_with_code(
+        'parameter defaults must be trailing',
+        expr_span(body),
+        diagnostic_code_e036())]
+    else do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end
   const has_any_default = parameters.any(parameter_under_signature => parameter_under_signature.has_default)
-  if type_parameters.length() > 0 && has_any_default then
-    default_diagnostics.push(diagnostic_error_with_code('default parameters are not allowed on generic functions yet', expr_span(body), diagnostic_code_e037()))
-  end
-  if is_extern_body(body) && has_any_default then
-    default_diagnostics.push(diagnostic_error_with_code('default parameters are not allowed on extern functions', expr_span(body), diagnostic_code_e038()))
-  end
+  const generic_default_diagnostics =
+    if type_parameters.length() > 0 && has_any_default then
+      trailing_default_diagnostics.concat([diagnostic_error_with_code(
+        'default parameters are not allowed on generic functions yet',
+        expr_span(body),
+        diagnostic_code_e037())])
+    else
+      trailing_default_diagnostics
+    end
+  const initial_default_diagnostics =
+    if is_extern_body(body) && has_any_default then
+      generic_default_diagnostics.concat([diagnostic_error_with_code(
+        'default parameters are not allowed on extern functions',
+        expr_span(body),
+        diagnostic_code_e038())])
+    else
+      generic_default_diagnostics
+    end
   const empty_type_environment: Map<string, Shared<Type>> = Map.new()
   const default_infer_context = check_context_new(empty_type_environment, registry)
   parameters.fold(
-    default_diagnostics,
+    initial_default_diagnostics,
     (diagnostic_list_so_far_under_parameters, parameter_under_scan_for_defaults) => do
-      let mut diagnostics_after_parameter: [Diagnostic] = diagnostic_list_so_far_under_parameters
-      if parameter_under_scan_for_defaults.has_default &&
-         !parameter_binding_is_plain_identifier(parameter_under_scan_for_defaults) then
-        diagnostics_after_parameter.push(
-          diagnostic_error_with_code(
+      let diagnostics_after_parameter =
+        if parameter_under_scan_for_defaults.has_default &&
+           !parameter_binding_is_plain_identifier(parameter_under_scan_for_defaults) then
+          diagnostic_list_so_far_under_parameters.concat([diagnostic_error_with_code(
             'default values are not supported for destructuring parameters',
             expr_span(body),
-            diagnostic_code_e039()))
-      end
+            diagnostic_code_e039())])
+        else
+          diagnostic_list_so_far_under_parameters
+        end
       if parameter_under_scan_for_defaults.has_default then
         const param_default_expression = parameter_under_scan_for_defaults.default
         if !default_expr_mvp_ok(param_default_expression) then
-          diagnostics_after_parameter.push(
-            diagnostic_error_with_code(
-              'parameter default must be a literal in this version',
-              expr_span(param_default_expression),
-              diagnostic_code_e040()))
+          diagnostics_after_parameter.concat([diagnostic_error_with_code(
+            'parameter default must be a literal in this version',
+            expr_span(param_default_expression),
+            diagnostic_code_e040())])
         else
           const default_infer = infer_expr(param_default_expression, default_infer_context)
-          diagnostics_after_parameter =
+          const with_infer_errors =
             diagnostics_append(diagnostics_after_parameter, default_infer.errors)
           const parameter_expected_type =
             type_from_annotation_with_registry(param_type_value(parameter_under_scan_for_defaults), registry)
           if type_is_checkable(parameter_expected_type, registry) &&
              type_is_checkable(default_infer.inferred_type, registry) &&
              !types_structurally_equal(parameter_expected_type, default_infer.inferred_type) then
-            diagnostics_after_parameter.push(diagnostic_error_with_code(
+            with_infer_errors.concat([diagnostic_error_with_code(
               'parameter default: expected ' + type_description(parameter_expected_type) +
                 ', got ' + type_description(default_infer.inferred_type),
               expr_span(param_default_expression),
-              diagnostic_code_e041()))
+              diagnostic_code_e041())])
+          else
+            with_infer_errors
           end
         end
+      else
+        diagnostics_after_parameter
       end
-      diagnostics_after_parameter
     end)
 end
 
@@ -225,11 +241,10 @@ fn where_clause_unknown_parameter_diagnostics(
       if type_parameter_name_known(type_parameter_names, where_entry_under_scan.parameter_name) then
         diagnostics_accumulated_so_far
       else
-        diagnostics_accumulated_so_far.push(diagnostic_error_with_code(
+        diagnostics_accumulated_so_far.concat([diagnostic_error_with_code(
           `where clause names unknown type parameter '${where_entry_under_scan.parameter_name}'`,
           source_span,
-          diagnostic_code_e076()))
-        diagnostics_accumulated_so_far
+          diagnostic_code_e076())])
       end
     end)
 end
@@ -382,25 +397,49 @@ fn accumulate_diagnostics_for_single_extend_method(
       end,
   }
 
-fn type_alias_cycle_diagnostics(program: Program, registry: TypeRegistry) -> [Diagnostic] = do
-  let mut diagnostics: [Diagnostic] = []
-  let mut declaration_index = 0
-  while declaration_index < program.decls.length() do
-    match decl_inner(program.decls[declaration_index]) {
-      DeclTypeAlias(alias_name, _, _, _) => do
-        if type_alias_has_cycle(registry, alias_name) then
-          diagnostics.push(diagnostic_error_with_code(
-            'cyclic type alias ' + alias_name,
-            decl_name_span(program.decls[declaration_index]),
-            diagnostic_code_e081()))
-        end
-        ()
+fn type_alias_cycle_diagnostic_fold_step(
+  diagnostics_so_far: [Diagnostic],
+  declaration: Shared<Decl>,
+  registry: TypeRegistry
+) -> [Diagnostic] =
+  match decl_inner(declaration) {
+    DeclTypeAlias(alias_name, _, _, _) =>
+      if type_alias_has_cycle(registry, alias_name) then
+        diagnostics_so_far.concat([diagnostic_error_with_code(
+          'cyclic type alias ' + alias_name,
+          decl_name_span(declaration),
+          diagnostic_code_e081())])
+      else
+        diagnostics_so_far
       end,
-      _ => do () end
-    }
-    declaration_index = declaration_index + 1
-  end
-  diagnostics
+    _ => diagnostics_so_far
+  }
+
+fn type_alias_cycle_diagnostics(program: Program, registry: TypeRegistry) -> [Diagnostic] =
+  program.decls.fold(
+    do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
+    (diagnostics_so_far, declaration) =>
+      type_alias_cycle_diagnostic_fold_step(diagnostics_so_far, declaration, registry))
+
+type Check_fn_locals_fold_state = Check_fn_locals_fold_state {
+  locals:           [string],
+  type_environment: Map<string, Shared<Type>>,
+}
+
+fn check_fn_locals_parameter_fold_step(
+  state: Check_fn_locals_fold_state,
+  parameter: Shared<Param>,
+  registry: TypeRegistry
+) -> Check_fn_locals_fold_state = do
+  const parameter_name = param_name(parameter)
+  let type_environment = state.type_environment
+  type_environment.set(
+    parameter_name,
+    type_from_annotation_with_registry(param_type_value(parameter), registry))
+  Check_fn_locals_fold_state {
+    locals:           state.locals.concat([parameter_name]),
+    type_environment: type_environment,
+  }
 end
 
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
@@ -418,20 +457,20 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
       DeclFn(name, type_parameters, trait_bounds, parameters, return_type_annotation, body, where_clause_bounds_entries) => do
         all_diagnostics = diagnostics_append(all_diagnostics, where_clause_unknown_parameter_diagnostics(type_parameters, where_clause_bounds_entries, expr_span(body)))
         all_diagnostics = diagnostics_append(all_diagnostics, param_default_diagnostics(type_parameters, parameters, body, registry))
-        const locals: [string] = []
-        let mut type_parameter_index = 0
-        while type_parameter_index < type_parameters.length() do
-          locals.push(type_parameters[type_parameter_index])
-          globals.set(type_parameters[type_parameter_index], true)
-          type_parameter_index = type_parameter_index + 1
-        end
-        const type_environment: Map<string, Shared<Type>> = Map.new()
-        let mut parameter_index = 0
-        while parameter_index < parameters.length() do
-          locals.push(param_name(parameters[parameter_index]))
-          type_environment.set(param_name(parameters[parameter_index]), type_from_annotation_with_registry(param_type_value(parameters[parameter_index]), registry))
-          parameter_index = parameter_index + 1
-        end
+        const locals_after_type_parameters = type_parameters.fold(
+          do let empty_locals: [string] = []; empty_locals end,
+          (locals_so_far, type_parameter_name) => do
+            globals.set(type_parameter_name, true)
+            locals_so_far.concat([type_parameter_name])
+          end)
+        const locals_fold_result = parameters.fold(
+          Check_fn_locals_fold_state {
+            locals:           locals_after_type_parameters,
+            type_environment: Map.new(),
+          },
+          (state, parameter) => check_fn_locals_parameter_fold_step(state, parameter, registry))
+        const locals = locals_fold_result.locals
+        const type_environment = locals_fold_result.type_environment
         const body_partial_application = partial_application_desugar_expr(body)
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body_partial_application, locals, globals))
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))

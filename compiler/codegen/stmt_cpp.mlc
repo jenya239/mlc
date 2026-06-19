@@ -3,7 +3,7 @@
 import { SemanticExpression, SemanticStatement, SemanticExpressionQuestion, SemanticExpressionArray, SemanticExpressionMethod, SemanticExpressionIdent, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionUnit } from '../ir/semantic_ir'
 import { Type, TGeneric, TUnit } from '../checker/registry'
 import { CppExpression, CppStatement, CppCall } from '../cpp/cpp_ast'
-import { print_statement } from '../cpp/cpp_printer'
+import { print_statement } from '../cpp/cpp_ast'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'

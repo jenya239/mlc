@@ -6,17 +6,20 @@
 
 namespace random_program {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
+int fuzz_variant_count() noexcept;
 
 int fuzz_mix(int seed) noexcept;
 
 int fuzz_pick(int seed, int choice_count) noexcept;
+
+int fuzz_program_kind(int seed) noexcept;
 
 mlc::String fuzz_random_program(int seed) noexcept;
 

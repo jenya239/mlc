@@ -8,6 +8,7 @@
 #include "codegen_test_helpers.hpp"
 #include "eval.hpp"
 #include "expression_support.hpp"
+#include "expr.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
 #include "module.hpp"
@@ -23,13 +24,12 @@
 
 namespace test_codegen {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> codegen_tests() noexcept;
 

@@ -6,13 +6,12 @@
 
 namespace expr {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::String parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept;
 
@@ -63,6 +62,8 @@ mlc::String constexpr_auto_binding_statement(mlc::String binding_cpp_safe, mlc::
 mlc::String return_line(mlc::String expression_code) noexcept;
 
 mlc::String if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
+
+mlc::String else_if_brace_block(mlc::String condition_code, mlc::String inner_statements) noexcept;
 
 mlc::String else_brace_block(mlc::String inner_statements) noexcept;
 

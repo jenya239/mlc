@@ -1,0 +1,119 @@
+// Parity: legacy parser-Expr paths vs ExprVisitor dispatch (names, mutations, codegen).
+
+import { TestResult, assert_eq_int, assert_eq_str } from './test_runner'
+import { Expr, Stmt, span_unknown, TyUnit, TypeExpr } from '../frontend/ast'
+import { SemanticExpression, SemanticExpressionInt, SemanticExpressionBin, SemanticExpressionIdent } from '../ir/semantic_ir'
+import { check_names_expr, check_names_semantic_expression } from '../checker/names'
+import { check_fn_body_mutations, check_mutation_semantic_expression } from '../checker/check/check_mutations'
+import { transform_expr, empty_transform_context, TransformContext } from '../checker/transform/transform'
+import { transform_stmts } from '../checker/transform/transform_stmts'
+import { gen_expr, gen_stmts_str } from '../codegen/eval'
+import { create_codegen_context, CodegenContext } from '../codegen/context'
+import { Type, TI32, TUnknown } from '../checker/registry'
+import * as expr_visitor_cpp from '../expr_visitor_cpp'
+import { print_expr } from '../cpp/cpp_ast'
+import {
+  empty_program, integer_expr, identifier_expr, binary_expr, block_expr,
+  let_statement, let_mut_statement
+} from './ast_builders'
+
+fn unit_type_for_let() -> Shared<TypeExpr> = Shared.new(TyUnit)
+
+fn transform_parser_expression(expression: Shared<Expr>) -> Shared<SemanticExpression> =
+  transform_expr(
+    expression,
+    empty_transform_context(),
+    (statements: [Shared<Stmt>], nested_transform_context: TransformContext) =>
+      transform_stmts(statements, nested_transform_context))
+
+fn names_parity_count(parser_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> i32 =
+  check_names_expr(parser_expression, locals, globals).length()
+
+fn names_visitor_count(parser_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> i32 =
+  check_names_semantic_expression(
+    transform_parser_expression(parser_expression),
+    locals,
+    globals).length()
+
+fn mutations_parity_count(parser_body: Shared<Expr>, mutable_locals: [string]) -> i32 =
+  check_fn_body_mutations([], parser_body).length()
+
+fn mutations_visitor_count(parser_body: Shared<Expr>, mutable_locals: [string]) -> i32 =
+  check_mutation_semantic_expression(
+    transform_parser_expression(parser_body),
+    mutable_locals).length()
+
+fn codegen_visitor_parity_string(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> string =
+  print_expr(expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_str))
+
+export fn visitor_pass_parity_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const empty_locals: [string] = []
+  const empty_globals: Map<string, bool> = Map.new()
+  const codegen_context = create_codegen_context(empty_program())
+  const registry_integer_type = Shared.new(TI32)
+  const registry_unknown_type = Shared.new(TUnknown)
+
+  results.push(assert_eq_int(
+    'names parity: literal',
+    names_visitor_count(integer_expr(1), empty_locals, empty_globals),
+    names_parity_count(integer_expr(1), empty_locals, empty_globals)))
+
+  results.push(assert_eq_int(
+    'names parity: unknown ident',
+    names_visitor_count(identifier_expr("missing_name"), empty_locals, empty_globals),
+    names_parity_count(identifier_expr("missing_name"), empty_locals, empty_globals)))
+
+  const binary_parser = binary_expr(
+    "+",
+    identifier_expr("left_name"),
+    identifier_expr("right_name"))
+  results.push(assert_eq_int(
+    'names parity: binary unknown operands',
+    names_visitor_count(binary_parser, empty_locals, empty_globals),
+    names_parity_count(binary_parser, empty_locals, empty_globals)))
+
+  const immutable_assign_body = block_expr(
+    [let_statement("counter", unit_type_for_let(), integer_expr(1))],
+    binary_expr("=", identifier_expr("counter"), integer_expr(2)))
+  results.push(assert_eq_int(
+    'mutations parity: assign immutable',
+    mutations_visitor_count(immutable_assign_body, []),
+    mutations_parity_count(immutable_assign_body, [])))
+
+  const mutable_assign_body = block_expr(
+    [let_mut_statement("counter", unit_type_for_let(), integer_expr(1))],
+    binary_expr("=", identifier_expr("counter"), integer_expr(2)))
+  results.push(assert_eq_int(
+    'mutations parity: assign let mut',
+    mutations_visitor_count(mutable_assign_body, []),
+    mutations_parity_count(mutable_assign_body, [])))
+
+  const semantic_integer = Shared.new(SemanticExpressionInt(42, registry_integer_type, span_unknown()))
+  results.push(assert_eq_str(
+    'codegen parity: integer literal',
+    gen_expr(semantic_integer, codegen_context),
+    codegen_visitor_parity_string(semantic_integer, codegen_context)))
+
+  const semantic_binary = Shared.new(SemanticExpressionBin(
+    "+",
+    Shared.new(SemanticExpressionInt(1, registry_integer_type, span_unknown())),
+    Shared.new(SemanticExpressionInt(2, registry_integer_type, span_unknown())),
+    registry_integer_type,
+    span_unknown()))
+  results.push(assert_eq_str(
+    'codegen parity: binary +',
+    gen_expr(semantic_binary, codegen_context),
+    codegen_visitor_parity_string(semantic_binary, codegen_context)))
+
+  const semantic_ident = Shared.new(SemanticExpressionIdent("value_name", registry_unknown_type, span_unknown()))
+  results.push(assert_eq_str(
+    'codegen parity: ident',
+    gen_expr(semantic_ident, codegen_context),
+    codegen_visitor_parity_string(semantic_ident, codegen_context)))
+
+  results
+end

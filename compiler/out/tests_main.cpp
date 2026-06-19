@@ -12,7 +12,9 @@
 #include "test_partial_application.hpp"
 #include "test_merge_imports.hpp"
 #include "test_pass.hpp"
+#include "test_compile_commands.hpp"
 #include "test_expr_visitor.hpp"
+#include "test_visitor_pass_parity.hpp"
 #include "test_cpp_printer.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"
@@ -28,7 +30,9 @@ using namespace test_decl_gen;
 using namespace test_partial_application;
 using namespace test_merge_imports;
 using namespace test_pass;
+using namespace test_compile_commands;
 using namespace test_expr_visitor;
+using namespace test_visitor_pass_parity;
 using namespace test_cpp_printer;
 using namespace test_fuzz;
 using namespace test_runner;
@@ -112,11 +116,27 @@ all.push_back(suite_pass[index]);
 index = index + 1;
 }
 }
+mlc::Array<test_runner::TestResult> suite_compile_commands = test_compile_commands::compile_commands_tests();
+index = 0;
+while (index < suite_compile_commands.size()){
+{
+all.push_back(suite_compile_commands[index]);
+index = index + 1;
+}
+}
 mlc::Array<test_runner::TestResult> suite_expr_visitor = test_expr_visitor::expr_visitor_tests();
 index = 0;
 while (index < suite_expr_visitor.size()){
 {
 all.push_back(suite_expr_visitor[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_visitor_pass_parity = test_visitor_pass_parity::visitor_pass_parity_tests();
+index = 0;
+while (index < suite_visitor_pass_parity.size()){
+{
+all.push_back(suite_visitor_pass_parity[index]);
 index = index + 1;
 }
 }

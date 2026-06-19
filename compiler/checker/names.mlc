@@ -11,46 +11,41 @@ fn scope_contains(scope: [string], name: string) -> bool =
   scope.any(scope_entry => scope_entry == name)
 
 export fn pattern_bindings(pattern: Shared<Pattern>) -> [string] = do
-  const accumulator: [string] = []
-  collect_pattern_bindings(pattern, accumulator)
+  let empty_pattern_bindings: [string] = []
+  collect_pattern_bindings(pattern, empty_pattern_bindings)
 end
 
-fn collect_pattern_bindings(pattern: Shared<Pattern>, mut accumulator: [string]) -> [string] = do
+fn collect_pattern_bindings(pattern: Shared<Pattern>, bindings_so_far: [string]) -> [string] =
   match pattern {
-    PatternIdent(name, _) => do accumulator.push(name); accumulator end,
-    PatternCtor(_, sub_patterns, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
-      end
-      accumulator
-    end,
-    PatternRecord(_, field_patterns, _) => do
-      let mut index = 0
-      while index < field_patterns.length() do
-        accumulator = collect_pattern_bindings(field_patterns[index], accumulator); index = index + 1
-      end
-      accumulator
-    end,
-    PatternTuple(sub_patterns, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
-      end
-      accumulator
-    end,
+    PatternIdent(name, _) => bindings_so_far.concat([name]),
+    PatternCtor(_, sub_patterns, _) =>
+      sub_patterns.fold(
+        bindings_so_far,
+        (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator)),
+    PatternRecord(_, field_patterns, _) =>
+      field_patterns.fold(
+        bindings_so_far,
+        (accumulator, field_pattern) => collect_pattern_bindings(field_pattern, accumulator)),
+    PatternTuple(sub_patterns, _) =>
+      sub_patterns.fold(
+        bindings_so_far,
+        (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator)),
     PatternArray(sub_patterns, rest, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        accumulator = collect_pattern_bindings(sub_patterns[index], accumulator); index = index + 1
-      end
-      if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
+      const bindings_after_array_elements =
+        sub_patterns.fold(
+          bindings_so_far,
+          (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator))
+      if rest != '' && rest != "_" then bindings_after_array_elements.concat([rest])
+      else bindings_after_array_elements end
     end,
     PatternOr(alternatives, _) =>
-      if alternatives.length() > 0 then collect_pattern_bindings(alternatives[0], accumulator) else accumulator end,
-    _ => accumulator
+      if alternatives.length() > 0 then
+        collect_pattern_bindings(alternatives[0], bindings_so_far)
+      else
+        bindings_so_far
+      end,
+    _ => bindings_so_far,
   }
-end
 
 // --- Name check rule functions (per expression form) -----------------------
 
@@ -102,14 +97,17 @@ fn check_names_while_expression(condition: Shared<Expr>, statements: [Shared<Stm
   diagnostics_append(check_names_expr(condition, locals, globals), statement_check.diagnostics)
 end
 
+fn scope_with_bindings(scope: [string], binding_names: [string]) -> [string] =
+  binding_names.fold(scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
+
 fn check_names_for_expression(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const inner_scope = locals; inner_scope.push(variable_name)
+  const inner_scope = locals.concat([variable_name])
   const statement_check = check_names_statements(statements, inner_scope, globals)
   diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics)
 end
 
 fn check_names_with_expression(resource: Shared<Expr>, binder: string, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const inner_scope = locals; inner_scope.push(binder)
+  const inner_scope = locals.concat([binder])
   const statements_check = check_names_statements(statements, inner_scope, globals)
   diagnostics_append(check_names_expr(resource, locals, globals), statements_check.diagnostics)
 end
@@ -119,13 +117,7 @@ fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>],
   arms.fold(
     diagnostics_after_subject,
     (diagnostics_accumulator, arm_under_walk) => do
-      const bindings = pattern_bindings(arm_under_walk.pattern)
-      const arm_scope = locals
-      let mut binding_index = 0
-      while binding_index < bindings.length() do
-        arm_scope.push(bindings[binding_index])
-        binding_index = binding_index + 1
-      end
+      const arm_scope = scope_with_bindings(locals, pattern_bindings(arm_under_walk.pattern))
       const after_guard =
         if arm_under_walk.has_guard then
           diagnostics_append(diagnostics_accumulator, check_names_expr(arm_under_walk.when_condition, arm_scope, globals))
@@ -176,16 +168,9 @@ fn check_names_question_expression(inner_expression: Shared<Expr>, locals: [stri
 fn check_names_lambda_expression(parameter_names: [string], body: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
   const lambda_environment_names =
     parameter_names.fold(
-      locals.fold(
-        do let enclosing_copied_into_lambda: [string] = []; enclosing_copied_into_lambda end,
-        (accumulated_enclosing_names, enclosing_local_name) => do
-          accumulated_enclosing_names.push(enclosing_local_name)
-          accumulated_enclosing_names
-        end),
-      (accumulated_scope_names, lambda_parameter_name) => do
-        accumulated_scope_names.push(lambda_parameter_name)
-        accumulated_scope_names
-      end)
+      locals,
+      (accumulated_scope_names, lambda_parameter_name) =>
+        accumulated_scope_names.concat([lambda_parameter_name]))
   check_names_expr(body, lambda_environment_names, globals)
 end
 
@@ -226,52 +211,60 @@ export type NameCheckResult = NameCheckResult { diagnostics: [Diagnostic], scope
 extend NameCheckResult {
   fn append_expression_diagnostics(self, expression_diagnostics: [Diagnostic]) -> [Diagnostic] =
     diagnostics_append(self.diagnostics, expression_diagnostics)
+
+  fn append_diagnostics(self, extra_diagnostics: [Diagnostic]) -> NameCheckResult =
+    NameCheckResult { diagnostics: diagnostics_append(self.diagnostics, extra_diagnostics), scope: self.scope }
+
+  fn with_scope(self: NameCheckResult, new_scope: [string]) -> NameCheckResult =
+    NameCheckResult { diagnostics: self.diagnostics, scope: new_scope }
+
+  fn merge(self: NameCheckResult, other: NameCheckResult) -> NameCheckResult =
+    NameCheckResult {
+      diagnostics: diagnostics_append(self.diagnostics, other.diagnostics),
+      scope: other.scope
+    }
 }
 
-export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult = do
-  const scope = locals
-  const collected_diagnostics =
-    statements.fold(
-      do let starting_statement_diagnostics: [Diagnostic] = []; starting_statement_diagnostics end,
-      (diagnostics_accumulator, statement_under_walk) => do
-        match statement_under_walk {
-          StmtLet(name, _, _, value, _) => do
-            const next_after_let_value =
-              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
-            scope.push(name)
-            next_after_let_value
-          end,
-          StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
-            let mut next_after_pattern_let_value =
-              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
-            const bound_pattern_names = pattern_bindings(pattern)
-            let mut pattern_binding_index = 0
-            while pattern_binding_index < bound_pattern_names.length() do
-              scope.push(bound_pattern_names[pattern_binding_index])
-              pattern_binding_index = pattern_binding_index + 1
-            end
-            if has_else then
-              next_after_pattern_let_value =
-                diagnostics_append(next_after_pattern_let_value, check_names_expr(else_body, scope, globals))
-            end
-            next_after_pattern_let_value
-          end,
-          StmtLetConst(name, _, value, _) => do
-            const next_after_const =
-              diagnostics_append(diagnostics_accumulator, check_names_expr(value, scope, globals))
-            scope.push(name)
-            next_after_const
-          end,
-          StmtExpr(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)),
-          StmtReturn(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_names_expr(expression, scope, globals)),
-          StmtBreak(_)    => diagnostics_accumulator,
-          StmtContinue(_) => diagnostics_accumulator,
-        }
-      end)
-  NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
-end
+export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult =
+  statements.fold(
+    NameCheckResult { diagnostics: [], scope: locals },
+    (accumulator, statement_under_walk) => do
+      match statement_under_walk {
+        StmtLet(name, _, _, value, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
+          const scope_after_value = accumulator.scope
+          let mut diagnostics_after_pattern =
+            diagnostics_append(accumulator.diagnostics, check_names_expr(value, scope_after_value, globals))
+          const scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern))
+          if has_else then
+            diagnostics_after_pattern =
+              diagnostics_append(diagnostics_after_pattern, check_names_expr(else_body, scope_after_bindings, globals))
+          end
+          NameCheckResult { diagnostics: diagnostics_after_pattern, scope: scope_after_bindings }
+        end,
+        StmtLetConst(name, _, value, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        StmtExpr(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        StmtReturn(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        StmtBreak(_)    => accumulator,
+        StmtContinue(_) => accumulator,
+      }
+    end)
 
 // --- Semantic expression visitor (ExprVisitor<NameCheckResult>) ----------------
 
@@ -284,10 +277,7 @@ fn name_check_ok(scope: [string]) -> NameCheckResult =
   NameCheckResult { diagnostics: check_names_empty(), scope: scope }
 
 fn merge_name_check_results(first: NameCheckResult, second: NameCheckResult) -> NameCheckResult =
-  NameCheckResult {
-    diagnostics: diagnostics_append(first.diagnostics, second.diagnostics),
-    scope: second.scope
-  }
+  first.merge(second)
 
 fn dispatch_names_pass(names_pass: NamesPass, expression: Shared<SemanticExpression>) -> NameCheckResult =
   match expression {
@@ -376,50 +366,46 @@ export fn check_names_semantic_statements(
   statements: [Shared<SemanticStatement>],
   locals: [string],
   globals: Map<string, bool>
-) -> NameCheckResult = do
-  const scope = locals
-  const collected_diagnostics =
-    statements.fold(
-      do let starting_statement_diagnostics: [Diagnostic] = []; starting_statement_diagnostics end,
-      (diagnostics_accumulator, statement_under_walk) => do
-        match statement_under_walk {
-          SemanticStatementLet(name, _, value, _, _) => do
-            const next_after_let_value =
-              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
-            scope.push(name)
-            next_after_let_value
-          end,
-          SemanticStatementLetPattern(pattern, _, value, _, has_else, else_body, _) => do
-            let mut next_after_pattern_let_value =
-              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
-            const bound_pattern_names = pattern_bindings(pattern)
-            let mut pattern_binding_index = 0
-            while pattern_binding_index < bound_pattern_names.length() do
-              scope.push(bound_pattern_names[pattern_binding_index])
-              pattern_binding_index = pattern_binding_index + 1
-            end
-            if has_else then
-              next_after_pattern_let_value =
-                diagnostics_append(next_after_pattern_let_value, check_names_semantic_expression(else_body, scope, globals))
-            end
-            next_after_pattern_let_value
-          end,
-          SemanticStatementLetConst(name, value, _, _) => do
-            const next_after_const =
-              diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(value, scope, globals))
-            scope.push(name)
-            next_after_const
-          end,
-          SemanticStatementExpr(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(expression, scope, globals)),
-          SemanticStatementReturn(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_names_semantic_expression(expression, scope, globals)),
-          SemanticStatementBreak(_)    => diagnostics_accumulator,
-          SemanticStatementContinue(_) => diagnostics_accumulator,
-        }
-      end)
-  NameCheckResult { diagnostics: collected_diagnostics, scope: scope }
-end
+) -> NameCheckResult =
+  statements.fold(
+    NameCheckResult { diagnostics: [], scope: locals },
+    (accumulator, statement_under_walk) => do
+      match statement_under_walk {
+        SemanticStatementLet(name, _, value, _, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        SemanticStatementLetPattern(pattern, _, value, _, has_else, else_body, _) => do
+          const scope_after_value = accumulator.scope
+          let mut diagnostics_after_pattern =
+            diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, scope_after_value, globals))
+          const scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern))
+          if has_else then
+            diagnostics_after_pattern =
+              diagnostics_append(diagnostics_after_pattern, check_names_semantic_expression(else_body, scope_after_bindings, globals))
+          end
+          NameCheckResult { diagnostics: diagnostics_after_pattern, scope: scope_after_bindings }
+        end,
+        SemanticStatementLetConst(name, value, _, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        SemanticStatementExpr(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        SemanticStatementReturn(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        SemanticStatementBreak(_)    => accumulator,
+        SemanticStatementContinue(_) => accumulator,
+      }
+    end)
 
 extend NamesPass : ExprVisitor<NameCheckResult> {
   fn visit_int(self: NamesPass, _integer_value: i32, _semantic_type: Shared<Type>) -> NameCheckResult =
@@ -519,10 +505,7 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     const statements_check = check_names_semantic_statements(statements, self.locals, self.globals)
     const result_check =
       dispatch_names_pass(names_pass_new(statements_check.scope, self.globals), result_expression)
-    NameCheckResult {
-      diagnostics: diagnostics_append(statements_check.diagnostics, result_check.diagnostics),
-      scope: statements_check.scope
-    }
+    statements_check.merge(result_check)
   end
   fn visit_while(
     self: NamesPass,
@@ -531,10 +514,7 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     _semantic_type: Shared<Type>
   ) -> NameCheckResult = do
     const statement_check = check_names_semantic_statements(statements, self.locals, self.globals)
-    NameCheckResult {
-      diagnostics: diagnostics_append(dispatch_names_pass(self, condition).diagnostics, statement_check.diagnostics),
-      scope: self.locals
-    }
+    dispatch_names_pass(self, condition).merge(statement_check).with_scope(self.locals)
   end
   fn visit_for(
     self: NamesPass,
@@ -543,12 +523,9 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     statements: [Shared<SemanticStatement>],
     _semantic_type: Shared<Type>
   ) -> NameCheckResult = do
-    const inner_scope = self.locals; inner_scope.push(variable)
+    const inner_scope = self.locals.concat([variable])
     const statement_check = check_names_semantic_statements(statements, inner_scope, self.globals)
-    NameCheckResult {
-      diagnostics: diagnostics_append(dispatch_names_pass(self, iterator).diagnostics, statement_check.diagnostics),
-      scope: self.locals
-    }
+    dispatch_names_pass(self, iterator).merge(statement_check).with_scope(self.locals)
   end
   fn visit_match(
     self: NamesPass,
@@ -560,13 +537,7 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     let mut arm_index = 0
     while arm_index < arms.length() do
       const arm_under_walk = arms[arm_index]
-      const bindings = pattern_bindings(arm_under_walk.pattern)
-      const arm_scope = self.locals
-      let mut binding_index = 0
-      while binding_index < bindings.length() do
-        arm_scope.push(bindings[binding_index])
-        binding_index = binding_index + 1
-      end
+      const arm_scope = scope_with_bindings(self.locals, pattern_bindings(arm_under_walk.pattern))
       const arm_pass = names_pass_new(arm_scope, self.globals)
       if arm_under_walk.has_guard then
         accumulator = merge_name_check_results(accumulator, dispatch_names_pass(arm_pass, arm_under_walk.when_condition))
@@ -619,16 +590,9 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
   ) -> NameCheckResult = do
     const lambda_environment =
       parameter_names.fold(
-        self.locals.fold(
-          do let enclosing_copied: [string] = []; enclosing_copied end,
-          (accumulated, enclosing_local_name) => do
-            accumulated.push(enclosing_local_name)
-            accumulated
-          end),
-        (accumulated, lambda_parameter_name) => do
-          accumulated.push(lambda_parameter_name)
-          accumulated
-        end)
+        self.locals,
+        (accumulated, lambda_parameter_name) =>
+          accumulated.concat([lambda_parameter_name]))
     dispatch_names_pass(names_pass_new(lambda_environment, self.globals), body_expression)
   end
   fn visit_with(
@@ -638,7 +602,7 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     statements: [Shared<SemanticStatement>],
     _semantic_type: Shared<Type>
   ) -> NameCheckResult = do
-    const inner_scope = self.locals; inner_scope.push(binder)
+    const inner_scope = self.locals.concat([binder])
     const statements_check = check_names_semantic_statements(statements, inner_scope, self.globals)
     NameCheckResult {
       diagnostics: diagnostics_append(dispatch_names_pass(self, resource).diagnostics, statements_check.diagnostics),

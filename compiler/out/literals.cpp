@@ -30,25 +30,25 @@ mlc::String gen_usize_literal(mlc::String v) noexcept;
 
 mlc::String gen_char_literal(mlc::String v) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_integer_literal_cpp(int integer_value) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_integer_literal_cpp(int integer_value) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_string_literal_cpp(mlc::String string_value) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_string_literal_cpp(mlc::String string_value) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_boolean_literal_cpp(bool boolean_value) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_boolean_literal_cpp(bool boolean_value) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_unit_literal_cpp() noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_unit_literal_cpp() noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_extern_placeholder_cpp() noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_extern_placeholder_cpp() noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_float_literal_cpp(mlc::String v) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_float_literal_cpp(mlc::String v) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_i64_literal_cpp(mlc::String v) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_i64_literal_cpp(mlc::String v) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_u8_literal_cpp(mlc::String v) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_u8_literal_cpp(mlc::String v) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_usize_literal_cpp(mlc::String v) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_usize_literal_cpp(mlc::String v) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpr> gen_char_literal_cpp(mlc::String v) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_char_literal_cpp(mlc::String v) noexcept;
 
 mlc::String gen_integer_literal(int integer_value) noexcept{return mlc::to_string(integer_value);}
 
@@ -70,24 +70,24 @@ mlc::String gen_usize_literal(mlc::String v) noexcept{return mlc::String("static
 
 mlc::String gen_char_literal(mlc::String v) noexcept{return mlc::String("static_cast<char32_t>(") + v + mlc::String(")");}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_integer_literal_cpp(int integer_value) noexcept{return emit_helpers::make_integer_cpp_expression(integer_value);}
+std::shared_ptr<cpp_ast::CppExpression> gen_integer_literal_cpp(int integer_value) noexcept{return emit_helpers::make_integer_cpp_expression(integer_value);}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_string_literal_cpp(mlc::String string_value) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_string_literal(string_value));}
+std::shared_ptr<cpp_ast::CppExpression> gen_string_literal_cpp(mlc::String string_value) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_string_literal(string_value));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_boolean_literal_cpp(bool boolean_value) noexcept{return emit_helpers::make_boolean_cpp_expression(boolean_value);}
+std::shared_ptr<cpp_ast::CppExpression> gen_boolean_literal_cpp(bool boolean_value) noexcept{return emit_helpers::make_boolean_cpp_expression(boolean_value);}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_unit_literal_cpp() noexcept{return emit_helpers::make_identifier_cpp_expression(gen_unit_literal());}
+std::shared_ptr<cpp_ast::CppExpression> gen_unit_literal_cpp() noexcept{return emit_helpers::make_identifier_cpp_expression(gen_unit_literal());}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_extern_placeholder_cpp() noexcept{return emit_helpers::make_identifier_cpp_expression(gen_extern_placeholder());}
+std::shared_ptr<cpp_ast::CppExpression> gen_extern_placeholder_cpp() noexcept{return emit_helpers::make_identifier_cpp_expression(gen_extern_placeholder());}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_float_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_float_literal(v));}
+std::shared_ptr<cpp_ast::CppExpression> gen_float_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_float_literal(v));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_i64_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_i64_literal(v));}
+std::shared_ptr<cpp_ast::CppExpression> gen_i64_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_i64_literal(v));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_u8_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_u8_literal(v));}
+std::shared_ptr<cpp_ast::CppExpression> gen_u8_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_u8_literal(v));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_usize_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_usize_literal(v));}
+std::shared_ptr<cpp_ast::CppExpression> gen_usize_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_usize_literal(v));}
 
-std::shared_ptr<cpp_ast::CppExpr> gen_char_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_char_literal(v));}
+std::shared_ptr<cpp_ast::CppExpression> gen_char_literal_cpp(mlc::String v) noexcept{return emit_helpers::make_identifier_cpp_expression(gen_char_literal(v));}
 
 } // namespace literals

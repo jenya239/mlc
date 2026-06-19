@@ -1,7 +1,7 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
 // Separate pass from names.mlc; builds its own mutable-names scope.
 
-import { Expr, Stmt, FieldVal, MatchArm, Param, Diagnostic, diagnostic_error_with_code, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
+import { Expr, Stmt, FieldVal, MatchArm, Param, Pattern, Diagnostic, diagnostic_error_with_code, diagnostics_append, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionIdent, SemanticExpressionBin, sexpr_span } from '../../ir/semantic_ir'
 import { Type } from '../registry'
 import { ExprVisitor } from '../../expr_visitor'
@@ -10,6 +10,20 @@ import { diagnostic_code_e031 } from '../diagnostic_codes'
 
 fn scope_has(scope: [string], sought_name: string) -> bool =
   scope.any(scope_entry => scope_entry == sought_name)
+
+fn mutable_scope_with_binding(scope: [string], binding_name: string) -> [string] =
+  scope.concat([binding_name])
+
+fn mutable_scope_with_bindings(scope: [string], binding_names: [string]) -> [string] =
+  binding_names.fold(scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
+
+fn mutable_scope_after_let(scope: [string], name: string, is_mut: bool) -> [string] =
+  if is_mut then mutable_scope_with_binding(scope, name) else scope end
+
+fn mutable_scope_after_pattern_let(scope: [string], pattern: Shared<Pattern>, is_mut: bool) -> [string] =
+  if is_mut then mutable_scope_with_bindings(scope, pattern_bindings(pattern)) else scope end
+
+export type MutationCheckResult = MutationCheckResult { diagnostics: [Diagnostic], mutable_locals: [string] }
 
 fn check_mutation_expr(expression: Shared<Expr>, mutable_locals: [string]) -> [Diagnostic] =
   match expression {
@@ -106,13 +120,7 @@ fn check_mutation_match_arms(match_arms: [Shared<MatchArm>], mutable_locals: [st
   match_arms.fold(
     do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
     (errors_accumulator, arm_under_walk) => do
-      const bindings = pattern_bindings(arm_under_walk.pattern)
-      const arm_scope = mutable_locals
-      let mut binding_index = 0
-      while binding_index < bindings.length() do
-        arm_scope.push(bindings[binding_index])
-        binding_index = binding_index + 1
-      end
+      const arm_scope = mutable_scope_with_bindings(mutable_locals, pattern_bindings(arm_under_walk.pattern))
       const after_guard =
         if arm_under_walk.has_guard then
           diagnostics_append(errors_accumulator, check_mutation_expr(arm_under_walk.when_condition, arm_scope))
@@ -123,91 +131,101 @@ fn check_mutation_match_arms(match_arms: [Shared<MatchArm>], mutable_locals: [st
     end)
 
 fn check_mutation_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, mutable_locals: [string]) -> [Diagnostic] = do
-  const block_mutable_locals = mutable_locals
-  const statement_errors =
+  const block_check =
     statements.fold(
-      do let starting_errors: [Diagnostic] = []; starting_errors end,
-      (errors_accumulator, statement_under_block) => do
+      MutationCheckResult { diagnostics: [], mutable_locals: mutable_locals },
+      (accumulator, statement_under_block) => do
         match statement_under_block {
           StmtLet(name, is_mut, _, value, _) => do
-            const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, block_mutable_locals))
-            if is_mut then block_mutable_locals.push(name) end
-            next_errors
+            const scope_after = mutable_scope_after_let(accumulator.mutable_locals, name, is_mut)
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, accumulator.mutable_locals)),
+              mutable_locals: scope_after,
+            }
           end,
           StmtLetPattern(pattern, is_mut, _, value, _, _, _) => do
-            const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, block_mutable_locals))
-            if is_mut then do
-              const bound_pattern_names = pattern_bindings(pattern)
-              let mut pattern_binding_index = 0
-              while pattern_binding_index < bound_pattern_names.length() do
-                block_mutable_locals.push(bound_pattern_names[pattern_binding_index])
-                pattern_binding_index = pattern_binding_index + 1
-              end
-            end end
-            next_errors
+            const scope_after_value = accumulator.mutable_locals
+            const scope_after_bindings = mutable_scope_after_pattern_let(scope_after_value, pattern, is_mut)
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, scope_after_value)),
+              mutable_locals: scope_after_bindings,
+            }
           end,
           StmtLetConst(_, _, value, _) =>
-            diagnostics_append(errors_accumulator, check_mutation_expr(value, block_mutable_locals)),
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
           StmtExpr(expression, _) =>
-            diagnostics_append(errors_accumulator, check_mutation_expr(expression, block_mutable_locals)),
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(expression, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
           StmtReturn(expression, _) =>
-            diagnostics_append(errors_accumulator, check_mutation_expr(expression, block_mutable_locals)),
-          StmtBreak(_)               => errors_accumulator,
-          StmtContinue(_)            => errors_accumulator,
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(expression, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
+          StmtBreak(_)    => accumulator,
+          StmtContinue(_) => accumulator,
         }
       end)
-  diagnostics_append(statement_errors, check_mutation_expr(result_expression, block_mutable_locals))
+  diagnostics_append(block_check.diagnostics, check_mutation_expr(result_expression, block_check.mutable_locals))
 end
 
 fn check_mutation_statements_errors(statements: [Shared<Stmt>], mutable_locals: [string]) -> [Diagnostic] = do
-  const nested_mutable_locals = mutable_locals
-  statements.fold(
-    do let starting_errors: [Diagnostic] = []; starting_errors end,
-    (errors_accumulator, statement_under_walk) => do
-      match statement_under_walk {
-        StmtLet(name, is_mut, _, value, _) => do
-          const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, nested_mutable_locals))
-          if is_mut then nested_mutable_locals.push(name) end
-          next_errors
-        end,
-        StmtLetPattern(pattern, is_mut, _, value, _, _, _) => do
-          const next_errors = diagnostics_append(errors_accumulator, check_mutation_expr(value, nested_mutable_locals))
-          if is_mut then do
-            const bound_pattern_names = pattern_bindings(pattern)
-            let mut pattern_binding_index = 0
-            while pattern_binding_index < bound_pattern_names.length() do
-              nested_mutable_locals.push(bound_pattern_names[pattern_binding_index])
-              pattern_binding_index = pattern_binding_index + 1
-            end
-          end end
-          next_errors
-        end,
-        StmtLetConst(_, _, value, _) =>
-          diagnostics_append(errors_accumulator, check_mutation_expr(value, nested_mutable_locals)),
-        StmtExpr(expression, _) =>
-          diagnostics_append(errors_accumulator, check_mutation_expr(expression, nested_mutable_locals)),
-        StmtReturn(expression, _) =>
-          diagnostics_append(errors_accumulator, check_mutation_expr(expression, nested_mutable_locals)),
-        StmtBreak(_)               => errors_accumulator,
-        StmtContinue(_)            => errors_accumulator,
-      }
-    end)
+  const fold_result =
+    statements.fold(
+      MutationCheckResult { diagnostics: [], mutable_locals: mutable_locals },
+      (accumulator, statement_under_walk) => do
+        match statement_under_walk {
+          StmtLet(name, is_mut, _, value, _) => do
+            const scope_after = mutable_scope_after_let(accumulator.mutable_locals, name, is_mut)
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, accumulator.mutable_locals)),
+              mutable_locals: scope_after,
+            }
+          end,
+          StmtLetPattern(pattern, is_mut, _, value, _, _, _) => do
+            const scope_after_value = accumulator.mutable_locals
+            const scope_after_bindings = mutable_scope_after_pattern_let(scope_after_value, pattern, is_mut)
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, scope_after_value)),
+              mutable_locals: scope_after_bindings,
+            }
+          end,
+          StmtLetConst(_, _, value, _) =>
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(value, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
+          StmtExpr(expression, _) =>
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(expression, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
+          StmtReturn(expression, _) =>
+            MutationCheckResult {
+              diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_expr(expression, accumulator.mutable_locals)),
+              mutable_locals: accumulator.mutable_locals,
+            },
+          StmtBreak(_)    => accumulator,
+          StmtContinue(_) => accumulator,
+        }
+      end)
+  fold_result.diagnostics
 end
 
 export fn check_fn_body_mutations(parameters: [Shared<Param>], body: Shared<Expr>) -> [Diagnostic] = do
   const mutable_locals =
     parameters.fold(
       do let empty_scope: [string] = []; empty_scope end,
-      (parameter_scope, parameter_under_check) => do
-        if parameter_under_check.is_mut then parameter_scope.push(parameter_under_check.name) end
-        parameter_scope
-      end)
+      (parameter_scope, parameter_under_check) =>
+        mutable_scope_after_let(parameter_scope, parameter_under_check.name, parameter_under_check.is_mut))
   check_mutation_expr(body, mutable_locals)
 end
 
 // --- Semantic expression visitor (ExprVisitor<MutationCheckResult>) ------------
-
-export type MutationCheckResult = MutationCheckResult { diagnostics: [Diagnostic], mutable_locals: [string] }
 
 type MutationsPass = MutationsPass { mutable_locals: [string], seed: i32 }
 
@@ -311,44 +329,45 @@ fn check_mutation_semantic_elements(
 export fn check_mutation_semantic_statements(
   statements: [Shared<SemanticStatement>],
   mutable_locals: [string]
-) -> MutationCheckResult = do
-  const scope = mutable_locals
-  const collected_diagnostics =
-    statements.fold(
-      do let starting_diagnostics: [Diagnostic] = []; starting_diagnostics end,
-      (diagnostics_accumulator, statement_under_walk) => do
-        match statement_under_walk {
-          SemanticStatementLet(name, is_mut, value, _, _) => do
-            const next_errors =
-              diagnostics_append(diagnostics_accumulator, check_mutation_semantic_expression(value, scope))
-            if is_mut then scope.push(name) end
-            next_errors
-          end,
-          SemanticStatementLetPattern(pattern, is_mut, value, _, _, _, _) => do
-            const next_errors =
-              diagnostics_append(diagnostics_accumulator, check_mutation_semantic_expression(value, scope))
-            if is_mut then do
-              const bound_pattern_names = pattern_bindings(pattern)
-              let mut pattern_binding_index = 0
-              while pattern_binding_index < bound_pattern_names.length() do
-                scope.push(bound_pattern_names[pattern_binding_index])
-                pattern_binding_index = pattern_binding_index + 1
-              end
-            end end
-            next_errors
-          end,
-          SemanticStatementLetConst(name, value, _, _) =>
-            diagnostics_append(diagnostics_accumulator, check_mutation_semantic_expression(value, scope)),
-          SemanticStatementExpr(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_mutation_semantic_expression(expression, scope)),
-          SemanticStatementReturn(expression, _) =>
-            diagnostics_append(diagnostics_accumulator, check_mutation_semantic_expression(expression, scope)),
-          SemanticStatementBreak(_)    => diagnostics_accumulator,
-          SemanticStatementContinue(_) => diagnostics_accumulator,
-        }
-      end)
-  MutationCheckResult { diagnostics: collected_diagnostics, mutable_locals: scope }
-end
+) -> MutationCheckResult =
+  statements.fold(
+    MutationCheckResult { diagnostics: [], mutable_locals: mutable_locals },
+    (accumulator, statement_under_walk) => do
+      match statement_under_walk {
+        SemanticStatementLet(name, is_mut, value, _, _) => do
+          const scope_after = mutable_scope_after_let(accumulator.mutable_locals, name, is_mut)
+          MutationCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_semantic_expression(value, accumulator.mutable_locals)),
+            mutable_locals: scope_after,
+          }
+        end,
+        SemanticStatementLetPattern(pattern, is_mut, value, _, _, _, _) => do
+          const scope_after_value = accumulator.mutable_locals
+          const scope_after_bindings = mutable_scope_after_pattern_let(scope_after_value, pattern, is_mut)
+          MutationCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_semantic_expression(value, scope_after_value)),
+            mutable_locals: scope_after_bindings,
+          }
+        end,
+        SemanticStatementLetConst(name, value, _, _) =>
+          MutationCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_semantic_expression(value, accumulator.mutable_locals)),
+            mutable_locals: accumulator.mutable_locals,
+          },
+        SemanticStatementExpr(expression, _) =>
+          MutationCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_semantic_expression(expression, accumulator.mutable_locals)),
+            mutable_locals: accumulator.mutable_locals,
+          },
+        SemanticStatementReturn(expression, _) =>
+          MutationCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_mutation_semantic_expression(expression, accumulator.mutable_locals)),
+            mutable_locals: accumulator.mutable_locals,
+          },
+        SemanticStatementBreak(_)    => accumulator,
+        SemanticStatementContinue(_) => accumulator,
+      }
+    end)
 
 extend MutationsPass : ExprVisitor<MutationCheckResult> {
   fn visit_int(self: MutationsPass, _integer_value: i32, _semantic_type: Shared<Type>) -> MutationCheckResult =
@@ -513,13 +532,7 @@ extend MutationsPass : ExprVisitor<MutationCheckResult> {
     let mut arm_index = 0
     while arm_index < arms.length() do
       const arm_under_walk = arms[arm_index]
-      const bindings = pattern_bindings(arm_under_walk.pattern)
-      const arm_scope = self.mutable_locals
-      let mut binding_index = 0
-      while binding_index < bindings.length() do
-        arm_scope.push(bindings[binding_index])
-        binding_index = binding_index + 1
-      end
+      const arm_scope = mutable_scope_with_bindings(self.mutable_locals, pattern_bindings(arm_under_walk.pattern))
       const arm_pass = mutations_pass_new(arm_scope)
       if arm_under_walk.has_guard then
         accumulator = merge_mutation_check_results(
@@ -612,9 +625,7 @@ export fn check_fn_body_semantic_mutations(
   const mutable_locals =
     parameters.fold(
       do let empty_scope: [string] = []; empty_scope end,
-      (parameter_scope, parameter_under_check) => do
-        if parameter_under_check.is_mut then parameter_scope.push(parameter_under_check.name) end
-        parameter_scope
-      end)
+      (parameter_scope, parameter_under_check) =>
+        mutable_scope_after_let(parameter_scope, parameter_under_check.name, parameter_under_check.is_mut))
   check_mutation_semantic_expression(body, mutable_locals)
 end

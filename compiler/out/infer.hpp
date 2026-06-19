@@ -20,18 +20,19 @@
 #include "let_pattern_infer.hpp"
 #include "infer_array_method.hpp"
 #include "infer_result_option_method.hpp"
+#include "hof_method_spec.hpp"
 #include "record_lit_merge.hpp"
 #include "partial_application_desugar.hpp"
+#include "diagnostic_codes.hpp"
 
 namespace infer {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept;
 

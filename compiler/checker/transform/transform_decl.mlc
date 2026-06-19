@@ -45,45 +45,33 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation_with_registry(type_expr, registry), span))
   }
 
-fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SemanticDeclaration>] = do
-  let mut result: [Shared<SemanticDeclaration>] = []
-  let mut index = 0
-  while index < declarations.length() do
-    result.push(transform_decl(declarations[index], registry))
-    index = index + 1
-  end
-  result
-end
+fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SemanticDeclaration>] =
+  declarations.fold(
+    do let empty_declarations: [Shared<SemanticDeclaration>] = []; empty_declarations end,
+    (result, declaration) => result.concat([transform_decl(declaration, registry)]))
 
 export fn transform_program(program: Program, registry: TypeRegistry) -> SemanticProgram =
   SemanticProgram { decls: transform_decls(program.decls, registry) }
 
-fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SemanticNamespaceImportAlias] = do
-  let mut result: [SemanticNamespaceImportAlias] = []
-  let mut index = 0
-  while index < items.length() do
-    const entry = items[index]
-    result.push(SemanticNamespaceImportAlias { alias: entry.alias, module_path: entry.module_path })
-    index = index + 1
-  end
-  result
-end
+fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SemanticNamespaceImportAlias] =
+  items.fold(
+    do let empty_aliases: [SemanticNamespaceImportAlias] = []; empty_aliases end,
+    (result, entry) =>
+      result.concat([SemanticNamespaceImportAlias { alias: entry.alias, module_path: entry.module_path }]))
 
-export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_maps: TraitNominalMaps) -> [SemanticLoadItem] = do
-  let mut result: [SemanticLoadItem] = []
-  let mut index = 0
-  while index < items.length() do
-    const item = items[index]
-    const destructured_entry_declarations = expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
-    const expanded_declarations = expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
-    const typed_decls = transform_decls(expanded_declarations, registry)
-    result.push(SemanticLoadItem {
-      path: item.path,
-      decls: typed_decls,
-      imports: item.imports,
-      namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
-    })
-    index = index + 1
-  end
-  result
-end
+export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_maps: TraitNominalMaps) -> [SemanticLoadItem] =
+  items.fold(
+    do let empty_items: [SemanticLoadItem] = []; empty_items end,
+    (result, item) => do
+      const destructured_entry_declarations =
+        expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
+      const expanded_declarations =
+        expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
+      const typed_declarations = transform_decls(expanded_declarations, registry)
+      result.concat([SemanticLoadItem {
+        path: item.path,
+        decls: typed_declarations,
+        imports: item.imports,
+        namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
+      }])
+    end)

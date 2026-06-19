@@ -24,11 +24,12 @@ fn accumulate_inference_for_one_call_argument(
 ) -> Call_arguments_inference_accumulator = do
   const inference_for_single_argument =
     infer_expr_fn(argument_expression, inference_context)
-  accumulator.inferred_argument_types_list.push(inference_for_single_argument.inferred_type)
   Call_arguments_inference_accumulator {
     accumulated_errors:
       diagnostics_append(accumulator.accumulated_errors, inference_for_single_argument.errors),
-    inferred_argument_types_list: accumulator.inferred_argument_types_list,
+    inferred_argument_types_list: accumulator.inferred_argument_types_list.concat([
+      inference_for_single_argument.inferred_type
+    ]),
   }
 end
 

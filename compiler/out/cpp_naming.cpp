@@ -24,6 +24,8 @@ mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept;
 
 bool is_stdlib_import_path(mlc::String path) noexcept;
 
+mlc::Array<mlc::String> using_namespace_names(mlc::Array<mlc::String> import_paths) noexcept;
+
 mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept;
 
 mlc::String path_to_module_base(mlc::String path) noexcept{
@@ -55,9 +57,9 @@ mlc::String cpp_safe(mlc::String name) noexcept{return cpp_keyword(name) ? name 
 
 mlc::String lower_first(mlc::String name) noexcept{return name.length() == 0 ? name : name.char_at(0).to_lower() + name.substring(1, name.length());}
 
-mlc::String map_method(mlc::String method_name) noexcept{return method_name == mlc::String("length") || method_name == mlc::String("len") ? mlc::String("length") : method_name == mlc::String("push") ? mlc::String("push_back") : method_name == mlc::String("to_string") ? mlc::String("to_string") : method_name == mlc::String("to_int") || method_name == mlc::String("to_i") ? mlc::String("to_i") : method_name == mlc::String("upper") || method_name == mlc::String("to_upper") ? mlc::String("upper") : method_name == mlc::String("lower") || method_name == mlc::String("to_lower") ? mlc::String("lower") : method_name;}
+mlc::String map_method(mlc::String method_name) noexcept{return [&]() -> mlc::String { if (method_name == mlc::String("length") || method_name == mlc::String("len")) { return mlc::String("length"); } if (method_name == mlc::String("push")) { return mlc::String("push_back"); } if (method_name == mlc::String("to_string")) { return mlc::String("to_string"); } if (method_name == mlc::String("to_int") || method_name == mlc::String("to_i")) { return mlc::String("to_i"); } if (method_name == mlc::String("upper") || method_name == mlc::String("to_upper")) { return mlc::String("upper"); } if (method_name == mlc::String("lower") || method_name == mlc::String("to_lower")) { return mlc::String("lower"); } return method_name; }();}
 
-mlc::String map_builtin(mlc::String name) noexcept{return name == mlc::String("print") ? mlc::String("mlc::io::print") : name == mlc::String("println") ? mlc::String("mlc::io::println") : name == mlc::String("exit") ? mlc::String("mlc::io::exit") : name == mlc::String("args") ? mlc::String("mlc::io::args") : name;}
+mlc::String map_builtin(mlc::String name) noexcept{return [&]() -> mlc::String { if (name == mlc::String("print")) { return mlc::String("mlc::io::print"); } if (name == mlc::String("println")) { return mlc::String("mlc::io::println"); } if (name == mlc::String("exit")) { return mlc::String("mlc::io::exit"); } if (name == mlc::String("args")) { return mlc::String("mlc::io::args"); } return name; }();}
 
 mlc::String map_builtin_identifier_reference(mlc::String name) noexcept{return name == mlc::String("args") ? name : map_builtin(name);}
 
@@ -104,7 +106,7 @@ return parts.join(mlc::String(""));
 
 mlc::String template_prefix(mlc::Array<mlc::String> type_params) noexcept{return type_params.size() > 0 ? mlc::String("template<typename ") + type_params.join(mlc::String(", typename ")) + mlc::String(">\n") : mlc::String("");}
 
-mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{return import_paths.map([](mlc::String path) mutable { return mlc::String("#include \"") + path_to_module_base(path) + mlc::String(".hpp\"\n"); }).join(mlc::String(""));}
+mlc::String include_lines(mlc::Array<mlc::String> import_paths) noexcept{return import_paths.map([](mlc::String path) mutable { return mlc::String("#include ") + mlc::String("\"") + path_to_module_base(path) + mlc::String(".hpp") + mlc::String("\"") + mlc::String("\n"); }).join(mlc::String(""));}
 
 bool is_stdlib_import_path(mlc::String path) noexcept{
 return path.length() >= 4 && path.substring(0, 4) == mlc::String("std/") ? true : [&]() -> bool { 
@@ -113,8 +115,8 @@ return path.length() >= 4 && path.substring(0, 4) == mlc::String("std/") ? true 
  }();
 }
 
-mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept{
-mlc::String lines = mlc::String("");
+mlc::Array<mlc::String> using_namespace_names(mlc::Array<mlc::String> import_paths) noexcept{
+mlc::Array<mlc::String> names = {};
 bool has_ast = false;
 int index = 0;
 while (index < import_paths.size()){
@@ -123,7 +125,7 @@ mlc::String path = import_paths[index];
 mlc::String base = path_to_module_base(path);
 if (!is_stdlib_import_path(path) && base.length() > 0){
 {
-lines = lines + mlc::String("using namespace ") + base + mlc::String(";\n");
+names.push_back(base);
 if (base == mlc::String("ast")){
 has_ast = true;
 }
@@ -134,7 +136,20 @@ index = index + 1;
 }
 if (has_ast){
 {
-lines = lines + mlc::String("using namespace ast_tokens;\n");
+names.push_back(mlc::String("ast_tokens"));
+}
+}
+return names;
+}
+
+mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept{
+mlc::String lines = mlc::String("");
+int index = 0;
+mlc::Array<mlc::String> names = using_namespace_names(import_paths);
+while (index < names.size()){
+{
+lines = lines + mlc::String("using namespace ") + names[index] + mlc::String(";\n");
+index = index + 1;
 }
 }
 return lines;

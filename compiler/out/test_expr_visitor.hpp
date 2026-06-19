@@ -5,16 +5,19 @@
 #include <variant>
 
 #include "test_runner.hpp"
+#include "ast.hpp"
+#include "semantic_ir.hpp"
+#include "registry.hpp"
+#include "expr_visitor.hpp"
 
 namespace test_expr_visitor {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 mlc::Array<test_runner::TestResult> expr_visitor_tests() noexcept;
 

@@ -8,13 +8,12 @@
 
 namespace ast_builders {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 ast::Program empty_program() noexcept;
 
@@ -74,23 +73,23 @@ std::shared_ptr<ast::Expr> lambda_expr(mlc::Array<mlc::String> parameters, std::
 
 std::shared_ptr<ast::FieldVal> field_value(mlc::String field_name, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
-std::shared_ptr<ast::Pat> wildcard_pattern() noexcept;
+std::shared_ptr<ast::Pattern> wildcard_pattern() noexcept;
 
-std::shared_ptr<ast::Pat> integer_pattern(int value) noexcept;
+std::shared_ptr<ast::Pattern> integer_pattern(int value) noexcept;
 
-std::shared_ptr<ast::Pat> identifier_pattern(mlc::String name) noexcept;
+std::shared_ptr<ast::Pattern> identifier_pattern(mlc::String name) noexcept;
 
-std::shared_ptr<ast::Pat> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pat>> sub_patterns) noexcept;
+std::shared_ptr<ast::Pattern> ctor_pattern(mlc::String ctor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns) noexcept;
 
-std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
+std::shared_ptr<ast::MatchArm> match_arm(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
-std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pat> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
+std::shared_ptr<ast::MatchArm> match_arm_with_guard(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<ast::Expr> when_condition_expression, std::shared_ptr<ast::Expr> body_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
 std::shared_ptr<ast::Stmt> let_mut_statement(mlc::String binding_name, std::shared_ptr<ast::TypeExpr> type_expr, std::shared_ptr<ast::Expr> value_expr) noexcept;
 
-std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expr) noexcept;
+std::shared_ptr<ast::Stmt> expression_statement(std::shared_ptr<ast::Expr> expression) noexcept;
 
 std::shared_ptr<ast::Stmt> return_statement(std::shared_ptr<ast::Expr> value_expr) noexcept;
 

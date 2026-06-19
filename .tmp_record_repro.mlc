@@ -1,0 +1,2 @@
+type Pair = Pair { left: i32, right: i32 }
+fn main() -> Pair = Pair { left: 0, right: 0 }

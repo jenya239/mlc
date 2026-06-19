@@ -4,7 +4,7 @@ import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } 
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp/cpp_ast'
-import { print_decl } from '../cpp/cpp_printer'
+import { print_decl } from '../cpp/cpp_ast'
 import * as emit_helpers from '../cpp/emit_helpers'
 import { CodegenContext, StructUsingEntry } from './context'
 import { compute_fn_body_context, exported_type_names_from_decls } from './decl/decl'

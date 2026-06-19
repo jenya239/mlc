@@ -97,20 +97,184 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **Type aliases:** [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) — **closed** (steps 1–5 + audit; STEP=6 deferred `TRACK_GENERICS_RECORD`)
 - **Rename abbreviations:** [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) — **closed** (`0c68101b`, `7bc13d09`)
 - **Loop contracts:** [TRACK_LOOP_CONTRACTS.md](TRACK_LOOP_CONTRACTS.md) — **closed** (`a28a4823`)
-- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **open** (STEP=4 pending; Phase 2.6 §1)
-- **Lambda capture:** [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) — planned (after VISITOR close)
+- **Visitor pattern:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) — **closed** (steps 1–13; gate **992**/0; uncommitted batch steps 7–12)
+- **Lambda capture:** [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) — **closed** (steps 1–5; gate **998**/0; uncommitted; mlcc2 diff blocked)
+- **mlcc2 checker parity:** [TRACK_MLCC2_CHECKER_PARITY.md](TRACK_MLCC2_CHECKER_PARITY.md) — **closed** (STEP=6; diff_exit=0; uncommitted)
+- **COW fold audit (mlcc2):** [TRACK_COW_FOLD_AUDIT.md](TRACK_COW_FOLD_AUDIT.md) — **closed** (STEP=5; P0 fixed; P1 deferred; diff_exit=0; uncommitted)
+- **COW while/closure audit (mlcc2):** [TRACK_COW_WHILE_AUDIT.md](TRACK_COW_WHILE_AUDIT.md) — **closed** (STEP=5; 11 P1 sites fixed; diff_exit=0; uncommitted)
+- **COW P2 audit (mlcc2):** [TRACK_COW_P2_AUDIT.md](TRACK_COW_P2_AUDIT.md) — **closed** (STEP=5; 33 sites fixed; diff_exit=0; uncommitted)
+- **Variant ctor brace init:** [TRACK_VARIANT_CTOR_BRACE.md](TRACK_VARIANT_CTOR_BRACE.md) — **closed** (steps 1–5; ctor green; **diff_exit=0**; uncommitted; E046 deferred)
+- **E046 filter predicate:** [TRACK_E046_FILTER_PREDICATE.md](TRACK_E046_FILTER_PREDICATE.md) — **closed** (steps 1–5; **999/0**; **diff_exit=0**; uncommitted)
+- **Registry COW:** [TRACK_REGISTRY_COW.md](TRACK_REGISTRY_COW.md) — **closed** (10/10 `.push`; **diff_exit=0**; uncommitted)
+- **Generic record types:** [TRACK_GENERICS_RECORD.md](TRACK_GENERICS_RECORD.md) — **closed** (2026-06-19; **1003/0**; **diff_exit=0**; uncommitted)
+- **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
+- **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
+- **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) **STEP=4** — `infer.mlc` → `InferPass : ExprVisitor<InferResult>` (split dispatch; see sub-steps in TRACK).
-
-> **Then:** VISITOR steps 5–13; **LAMBDA_CAPTURE** STEP=1 after close.
-
-Gate from active TRACK. SESSION; enqueue next STEP.
+> plan-refresh — no open Driver track; wait for Planner.
 
 ## Next step (Planner)
 
-> plan-refresh after VISITOR_PATTERN close or every ~8 driver turns.
+> **Immediate:** plan-refresh — pick next track (stability > security > performance).
+
+## Next step (Planner)
+
+> plan-refresh after TYPE_PARAMS_RESULT close or every ~8 driver turns.
+
+## Planner checklist (2026-05-19 plan-refresh — TYPE_PARAMS_RESULT open)
+
+- [x] All tracks closed; EXPR_RESULT gate **1005/0**; **diff_exit=0**
+- [x] Priority **stability** > security > performance — ParseResult remainder (`TypeParamsResult`)
+- [x] Opened **TRACK_TYPE_PARAMS_RESULT**
+- [ ] Uncommitted batch — commit on user command
+- [x] Deferred: `ParseProgramResult`; parser `ref mut`
+- [x] Enqueue Driver STEP=1 TYPE_PARAMS_RESULT
+
+## Planner checklist (2026-05-19 plan-refresh — EXPR_RESULT closed)
+
+- [x] All tracks closed; PARSE_RESULT gate **1005/0**; **diff_exit=0**
+- [x] Priority **stability** > security > performance — finish ParseResult (`ExprResult` deferred)
+- [x] Opened **TRACK_EXPR_RESULT**
+- [ ] Uncommitted batch — commit on user command
+- [x] Enqueue Driver STEP=1 EXPR_RESULT
+
+## Planner checklist (2026-06-19 plan-refresh — PARSE_RESULT open)
+
+- [x] All prior tracks closed; GENERICS_RECORD gate **1003/0**; **diff_exit=0**
+- [x] Priority scan: stability → **ParseResult** remainder (PLAN §2.5.5)
+- [x] Opened **TRACK_PARSE_RESULT**
+- [ ] Uncommitted batch — commit on user command
+- [x] Enqueue Driver STEP=1 PARSE_RESULT
+
+## Planner checklist (2026-05-19 plan-refresh — GENERICS_RECORD open)
+
+- [x] TRACK_REGISTRY_COW closed; stability queue scanned
+- [x] Priority **stability** > security > performance — no open stability/security tracks
+- [x] Opened **TRACK_GENERICS_RECORD** (TYPE_ALIASES STEP=6 deferred)
+- [ ] Uncommitted batch — commit on user command
+- [x] Enqueue Driver STEP=1 GENERICS_RECORD
+
+## Planner checklist (2026-05-19 plan-refresh — REGISTRY_COW closed)
+
+- [x] TRACK_REGISTRY_COW closed (steps 1–5); **0** `.push` in `registry.mlc`
+- [x] Gate: build_tests **999/0**; parity **2/2**; **diff_exit=0**; mlcc **2.58s** / mlcc2 **1.56s**
+- [x] Open next track (perf/stability) → **GENERICS_RECORD**
+- [ ] Uncommitted batch — commit on user command
+- [x] Enqueue Driver STEP=1
+
+## Planner checklist (2026-05-19 plan-refresh — REGISTRY_COW open)
+
+- [x] TRACK_E046_FILTER_PREDICATE closed; build_tests **999/0**; **diff_exit=0**
+- [x] Stability queue empty — next **performance**: `registry.mlc` COW (10 sites)
+- [x] Opened **TRACK_REGISTRY_COW**
+- [x] Uncommitted batch — commit on user command
+- [x] Deferred: parser `ref mut`
+- [x] Driver enqueued STEP=1 REGISTRY_COW
+
+## Planner checklist (2026-05-19 plan-refresh — E046 closed)
+
+- [x] TRACK_E046_FILTER_PREDICATE closed (steps 1–5); build_tests **999/0**; **diff_exit=0**
+- [x] Fix: `infer_lambda_context.mlc` lambda env in fold closure
+- [x] Uncommitted batch (COW + ctor + E046) — commit on user command
+- [x] Draft next track: `registry.mlc` COW perf vs parser `ref mut`
+- [x] Update TRACK_PLAN; enqueue Driver STEP=1
+
+## Planner checklist (2026-05-19 plan-refresh — E046 open)
+
+- [x] TRACK_VARIANT_CTOR_BRACE closed (steps 1–5); **diff_exit=0**; mlcc **1.81s** / mlcc2 **1.56s**
+- [x] Priority **stability** > security > performance — E046 (998/1) before `registry.mlc` COW
+- [x] Opened **TRACK_E046_FILTER_PREDICATE** — last build_tests failure
+- [x] Uncommitted batch — commit on user command
+- [x] Deferred: `registry.mlc` COW; parser `ref mut`; E064 verify only
+- [x] Driver enqueued STEP=1 E046
+
+## Planner checklist (2026-05-19 plan-refresh — VARIANT_CTOR_BRACE closed)
+
+- [x] TRACK_VARIANT_CTOR_BRACE closed (steps 1–5); ctor `Ok{42}`/`Err{…}` green
+- [x] Gate: build_tests **998/1** (E046 only); parity **2/2**; **diff_exit=0**; mlcc **1.81s** / mlcc2 **1.56s**
+- [x] Uncommitted batch (COW + ctor) — commit on user command
+- [x] Draft next track: E046 stability vs `registry.mlc` COW perf
+- [x] Update TRACK_PLAN; enqueue Driver STEP=1
+
+## Planner checklist (2026-05-19 plan-refresh — VARIANT_CTOR_BRACE open)
+
+- [x] TRACK_COW_P2_AUDIT closed; checker scope 0 `.push` (except `registry.mlc`)
+- [x] Next stability: **VARIANT_CTOR_BRACE** — fix 2–3 failing `test_codegen` ctor cases
+- [x] Priority **stability** > security > performance — ctor before registry COW / parser
+- [x] Uncommitted MLCC2+COW batch — commit on user command
+- [x] Baseline build_tests **996+/3 fail**; mlcc **7.01s** / mlcc2 **2.57s**; **diff_exit=0**
+- [x] Active track: **VARIANT_CTOR_BRACE** STEP=1
+- [x] Deferred: `registry.mlc` COW; parser `ref mut`
+- [x] Driver enqueued STEP=1 VARIANT_CTOR_BRACE
+
+## Planner checklist (2026-05-19 plan-refresh — COW_P2 closed)
+
+- [x] TRACK_COW_P2_AUDIT closed (steps 1–5); 33 in-scope `.push` → fold/`concat`; gate parity 2/2; **diff_exit=0**
+- [x] `registry.mlc` (10) deferred — perf track
+- [x] Uncommitted MLCC2+COW batch — commit on user command
+- [x] Baseline build_tests ok; mlcc **7.01s** / mlcc2 **2.57s**
+- [x] Draft next track; update TRACK_PLAN; enqueue Driver STEP=1
+- [x] Planner enqueued plan-refresh
+
+## Planner checklist (2026-05-19 plan-refresh — COW_P2 open)
+
+- [x] TRACK_COW_WHILE_AUDIT closed (steps 1–5); **diff_exit=0**
+- [x] P2 survivors → new **TRACK_COW_P2_AUDIT** (5 steps; 33 `.push` / 6 files)
+- [x] Priority **stability** > security > performance — COW P2 before registry/parser/perf
+- [x] Uncommitted MLCC2+COW batch — commit on user command
+- [x] Baseline build_tests **997**/2 fail (ctor brace pre-existing); mlcc **3.31s** / mlcc2 **2.09s**
+- [x] Active track: **COW_P2_AUDIT** STEP=1
+- [x] Deferred: `registry.mlc`; parser `ref mut`; test_codegen ctor brace; security/perf tracks (closed)
+- [x] Driver enqueued STEP=1 COW_P2_AUDIT
+
+## Planner checklist (2026-05-19 plan-refresh — COW_WHILE closed)
+
+- [x] TRACK_COW_WHILE_AUDIT closed (steps 1–5); 11 in-scope `.push` → fold/`concat`; gate parity 2/2; **diff_exit=0**
+- [x] P2 survivors deferred: `infer_array_method`, `infer_result_option_method`, `transform_decl`, `registry`
+- [x] Uncommitted MLCC2+COW batch — commit on user command
+- [x] Baseline build_tests **997**/2 fail (ctor brace pre-existing); mlcc **3.31s** / mlcc2 **2.09s**
+- [x] Draft next track; update TRACK_PLAN; enqueue Driver STEP=1
+- [x] Planner enqueued plan-refresh
+
+## Planner checklist (2026-05-19 plan-refresh — COW_FOLD closed, COW_WHILE open)
+
+- [x] TRACK_COW_FOLD_AUDIT closed (steps 1–5); gate parity 2/2; **diff_exit=0**
+- [x] P1 while/closure sites deferred → new **TRACK_COW_WHILE_AUDIT** (5 steps)
+- [x] Priority **stability** > security > performance — COW_WHILE before parser `ref mut` / Phase 2.7
+- [x] Uncommitted MLCC2+COW batch — commit on user command
+- [x] Active track: **COW_WHILE_AUDIT** STEP=1
+- [x] Deferred: parser `ref mut`; GENERIC_ALIASES; security/perf tracks (all closed)
+- [x] Driver enqueued STEP=1 COW_WHILE_AUDIT
+
+## Planner checklist (2026-06-19 plan-refresh — MLCC2_CHECKER_PARITY closed)
+
+- [x] TRACK_MLCC2_CHECKER_PARITY closed (steps 1–6); gate mlcc2 main=0; parity 2/2; **diff_exit=0**
+- [x] Root cause class documented: COW `.push` in `.fold` (names, desugar record, record_lit_merge)
+- [x] Uncommitted batch: names, check_mutations, record_lit_merge, exprs, partial_application_desugar, corpus — commit on user command
+- [x] Priority **stability** — COW_FOLD_AUDIT before Phase 2.7 / security / performance
+- [x] Active track: **COW_FOLD_AUDIT** STEP=1
+- [x] Deferred: parser `ref mut`; GENERIC_ALIASES; CPP_HEADER_IMPORT
+- [x] Driver enqueued STEP=1 COW_FOLD_AUDIT
+
+
+- [x] TRACK_LAMBDA_CAPTURE closed (steps 1–5); gate **998**/0
+- [x] Uncommitted: VISITOR steps 7–12 + LAMBDA steps 1–5 — commit on user command
+- [x] mlcc2 self-host `diff_exit=1` — checker `undefined` in `main.mlc` do-blocks (pre-existing parity gap)
+- [x] Active track: **MLCC2_CHECKER_PARITY** STEP=1 (stability blocker)
+- [x] Phase 2.6 roadmap items 6–9 closed (VISITOR, REGISTRY_SPLIT, LAMBDA, LOOP)
+- [x] Baseline **998**/0
+- [x] Driver enqueued STEP=1 MLCC2_CHECKER_PARITY
+
+## Planner checklist (2026-06-16 plan-refresh — VISITOR_PATTERN closed)
+
+- [x] TRACK_VISITOR_PATTERN closed (steps 1–13); gate **992**/0; `diff_exit=0`
+- [x] Uncommitted VISITOR batch steps 7–12 — see TRACK STEP=13 note; commit on user command
+- [x] Active track: **LAMBDA_CAPTURE** (correctness / MEMORY_MODEL `[=]`); step 1 done uncommitted
+- [x] Priority **stability** — finish LAMBDA_CAPTURE (steps 2–5) before new tracks
+- [x] Baseline **992**/0; self-host `diff_exit=0`
+- [x] Driver enqueued STEP=2 LAMBDA_CAPTURE
 
 ## Planner checklist (2026-06-15 plan-refresh — LOOP_CONTRACTS closed)
 
@@ -869,23 +1033,12 @@ Gate from active TRACK. SESSION; enqueue next STEP.
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 
-## Status: **open** (step 1 pending)
-
-**MAX_ITER:** 20  
-**GATE:** see active child TRACK verify gates
+## Status: **closed** (2026-06-16 — steps 1–9 child tracks done)
 
 | Step | Item | Track | Status |
 |------|------|-------|--------|
-| 1 | Phase 2 финал — MODULE_TU_BRIDGE закрыть | [TRACK_MODULE_TU_BRIDGE.md](TRACK_MODULE_TU_BRIDGE.md) | **closed** (`df744e5`) |
-| 1b | Удалить CppDeclFragment + мёртвый код | [TRACK_DECL_FRAGMENT_CLEANUP.md](TRACK_DECL_FRAGMENT_CLEANUP.md) | **closed** (step 5 audit 2026-06-04) |
-| 2 | String match в языке | [TRACK_STRING_MATCH.md](TRACK_STRING_MATCH.md) | **closed** |
-| 3 | Применить record destructuring | [TRACK_DESTRUCTURING_APPLY.md](TRACK_DESTRUCTURING_APPLY.md) | closed |
-| 4 | Type aliases в языке | [TRACK_TYPE_ALIASES.md](TRACK_TYPE_ALIASES.md) | **closed** (audit 2026-06-06) |
-| 5 | Переименование сокращений + кавычки | [TRACK_RENAME_ABBREV.md](TRACK_RENAME_ABBREV.md) | **closed** (`7bc13d09`) |
-| 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | **open** (STEP=4 pending) |
-| 7 | TypeRegistry split + HOF helpers + parser helpers | [TRACK_REGISTRY_SPLIT.md](TRACK_REGISTRY_SPLIT.md) | **closed** (`20f9d45`) |
-| 8 | Lambda capture: `[&]` → `[=]` в codegen | [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) | planned |
-| 9 | Loop contracts (regression gate, MAX_ITER, specs index) | [TRACK_LOOP_CONTRACTS.md](TRACK_LOOP_CONTRACTS.md) | **closed** (`a28a4823`) |
+| 6 | Visitor-паттерн + методы на контексте + Display | [TRACK_VISITOR_PATTERN.md](TRACK_VISITOR_PATTERN.md) | **closed** |
+| 8 | Lambda capture: `[&]` → `[=]` в codegen | [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md) | **closed** |
 
 ## Planner checklist (2026-06-03 plan-refresh)
 

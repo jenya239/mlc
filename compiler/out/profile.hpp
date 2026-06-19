@@ -6,13 +6,12 @@
 
 namespace profile {
 
-struct RecordLitPart;
 struct Expr;
 struct Stmt;
-struct SExpr;
-struct SStmt;
-struct CppStmt;
-struct CppExpr;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 void profile_reset_if_enabled(bool enabled) noexcept;
 

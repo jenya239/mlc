@@ -10,7 +10,7 @@ import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pattern_binding_name_list } from '../expr/match_analysis'
-import { print_statement } from '../../cpp/cpp_printer'
+import { print_statement } from '../../cpp/cpp_ast'
 
 export type GenLetPatternCppResult = GenLetPatternCppResult { statement: Shared<CppStatement>, codegen_context: CodegenContext }
 

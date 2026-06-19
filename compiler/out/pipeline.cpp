@@ -11,6 +11,7 @@
 #include "module.hpp"
 #include "cpp_naming.hpp"
 #include "profile.hpp"
+#include "compile_commands.hpp"
 
 namespace pipeline {
 
@@ -25,13 +26,14 @@ using namespace decl_index;
 using namespace module;
 using namespace cpp_naming;
 using namespace profile;
+using namespace compile_commands;
 using namespace ast_tokens;
 
 ast::Result<pipeline::CheckedCompileState, mlc::Array<mlc::String>> run_checker_pass(pipeline::ModularCompileInput input) noexcept;
 
-ast::Result<pipeline::TransformedCompileState, mlc::Array<mlc::String>> run_transform_pass(pipeline::CheckedCompileState state) noexcept;
+ast::Result<pipeline::TransformedCompileState, mlc::Array<mlc::String>> run_transform_pass(pipeline::CheckedCompileState checked_state) noexcept;
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(pipeline::TransformedCompileState state) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(pipeline::TransformedCompileState transformed_state, bool emit_compile_commands) noexcept;
 
 ast::Result<mlc::String, mlc::Array<mlc::String>> run_modular_compiler_pipeline(pipeline::ModularCompileInput input) noexcept;
 
@@ -45,49 +47,56 @@ profile::profile_maybe_end(input.profile_enabled, mlc::String("check"));
 return ast::Ok<pipeline::CheckedCompileState>(pipeline::CheckedCompileState{input.load_items, input.full_program, check_output.registry, input.output_directory, input.profile_enabled});
 }
 
-ast::Result<pipeline::TransformedCompileState, mlc::Array<mlc::String>> run_transform_pass(pipeline::CheckedCompileState state) noexcept{
-profile::profile_maybe_begin(state.profile_enabled, mlc::String("expand_destructure"));
-ast::Program expanded_program = param_destructure_expand::expand_parameter_destructuring_in_program(state.full_program);
-profile::profile_maybe_end(state.profile_enabled, mlc::String("expand_destructure"));
+ast::Result<pipeline::TransformedCompileState, mlc::Array<mlc::String>> run_transform_pass(pipeline::CheckedCompileState checked_state) noexcept{
+profile::profile_maybe_begin(checked_state.profile_enabled, mlc::String("expand_destructure"));
+ast::Program expanded_program = param_destructure_expand::expand_parameter_destructuring_in_program(checked_state.full_program);
+profile::profile_maybe_end(checked_state.profile_enabled, mlc::String("expand_destructure"));
 trait_param_expand::TraitNominalMaps trait_maps = trait_param_expand::build_trait_nominal_maps(expanded_program);
-profile::profile_maybe_begin(state.profile_enabled, mlc::String("transform"));
-mlc::Array<semantic_ir::SLoadItem> transformed_items = transform_decl::transform_load_items(state.load_items, state.registry, trait_maps);
-profile::profile_maybe_end(state.profile_enabled, mlc::String("transform"));
-profile::profile_maybe_begin(state.profile_enabled, mlc::String("precompute"));
-context::PrecomputedCtx precomputed = module::precompute(expanded_program, state.load_items);
-profile::profile_maybe_end(state.profile_enabled, mlc::String("precompute"));
-return ast::Ok<pipeline::TransformedCompileState>(pipeline::TransformedCompileState{state.load_items, transformed_items, expanded_program, precomputed, state.output_directory, state.profile_enabled});
+profile::profile_maybe_begin(checked_state.profile_enabled, mlc::String("transform"));
+mlc::Array<semantic_ir::SemanticLoadItem> transformed_items = transform_decl::transform_load_items(checked_state.load_items, checked_state.registry, trait_maps);
+profile::profile_maybe_end(checked_state.profile_enabled, mlc::String("transform"));
+profile::profile_maybe_begin(checked_state.profile_enabled, mlc::String("precompute"));
+context::PrecomputedCtx precomputed = module::precompute(expanded_program, checked_state.load_items);
+profile::profile_maybe_end(checked_state.profile_enabled, mlc::String("precompute"));
+return ast::Ok<pipeline::TransformedCompileState>(pipeline::TransformedCompileState{checked_state.load_items, transformed_items, expanded_program, precomputed, checked_state.output_directory, checked_state.profile_enabled});
 }
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(pipeline::TransformedCompileState state) noexcept{
-profile::profile_maybe_begin(state.profile_enabled, mlc::String("codegen"));
+ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(pipeline::TransformedCompileState transformed_state, bool emit_compile_commands) noexcept{
+profile::profile_maybe_begin(transformed_state.profile_enabled, mlc::String("codegen"));
+mlc::Array<mlc::String> implementation_paths = {};
 int index = 0;
-while (index < state.transformed_items.size()){
+while (index < transformed_state.transformed_items.size()){
 {
-semantic_ir::SLoadItem transformed_load_item = state.transformed_items[index];
-context::GenModuleOut generated_output = module::gen_module(transformed_load_item, state.load_items, state.expanded_program, state.precomputed);
+semantic_ir::SemanticLoadItem transformed_load_item = transformed_state.transformed_items[index];
+context::GenModuleOut generated_output = module::gen_module(transformed_load_item, transformed_state.load_items, transformed_state.expanded_program, transformed_state.precomputed);
 mlc::String module_base = cpp_naming::path_to_module_base(transformed_load_item.path);
-mlc::String header_path = state.output_directory.length() > 0 ? state.output_directory + mlc::String("/") + module_base + mlc::String(".hpp") : module_base + mlc::String(".hpp");
-mlc::String implementation_path = state.output_directory.length() > 0 ? state.output_directory + mlc::String("/") + module_base + mlc::String(".cpp") : module_base + mlc::String(".cpp");
-mlc::file::write_string(header_path, generated_output.h);
-mlc::file::write_string(implementation_path, generated_output.c);
+mlc::String header_path = transformed_state.output_directory.length() > 0 ? transformed_state.output_directory + mlc::String("/") + module_base + mlc::String(".hpp") : module_base + mlc::String(".hpp");
+mlc::String implementation_path = transformed_state.output_directory.length() > 0 ? transformed_state.output_directory + mlc::String("/") + module_base + mlc::String(".cpp") : module_base + mlc::String(".cpp");
+mlc::file::write_string(header_path, generated_output.header);
+mlc::file::write_string(implementation_path, generated_output.source);
+implementation_paths.push_back(implementation_path);
 index = index + 1;
 }
 }
-profile::profile_maybe_end(state.profile_enabled, mlc::String("codegen"));
+if (emit_compile_commands){
+{
+compile_commands::write_compile_commands_file(transformed_state.output_directory, implementation_paths);
+}
+}
+profile::profile_maybe_end(transformed_state.profile_enabled, mlc::String("codegen"));
 return ast::Ok<mlc::String>(mlc::String(""));
 }
 
 ast::Result<mlc::String, mlc::Array<mlc::String>> run_modular_compiler_pipeline(pipeline::ModularCompileInput input) noexcept{
-auto __try_checked = run_checker_pass(input);
-if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_checked)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_checked));
-pipeline::CheckedCompileState checked = std::get<ast::Ok<pipeline::CheckedCompileState>>(__try_checked).field0;
+auto __try_checked_state = run_checker_pass(input);
+if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_checked_state)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_checked_state));
+pipeline::CheckedCompileState checked_state = std::get<ast::Ok<pipeline::CheckedCompileState>>(__try_checked_state).field0;
 
-auto __try_transformed = run_transform_pass(checked);
-if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_transformed)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_transformed));
-pipeline::TransformedCompileState transformed = std::get<ast::Ok<pipeline::TransformedCompileState>>(__try_transformed).field0;
+auto __try_transformed_state = run_transform_pass(checked_state);
+if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_transformed_state)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_transformed_state));
+pipeline::TransformedCompileState transformed_state = std::get<ast::Ok<pipeline::TransformedCompileState>>(__try_transformed_state).field0;
 
-return input.check_only ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Ok<mlc::String>(mlc::String(""))) : ast::Result<mlc::String, mlc::Array<mlc::String>>(run_codegen_pass(transformed));
+return input.check_only ? ast::Result<mlc::String, mlc::Array<mlc::String>>(ast::Ok<mlc::String>(mlc::String(""))) : ast::Result<mlc::String, mlc::Array<mlc::String>>(run_codegen_pass(transformed_state, input.emit_compile_commands));
 }
 
 } // namespace pipeline
