@@ -105,11 +105,11 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **COW P2 audit (mlcc2):** [TRACK_COW_P2_AUDIT.md](TRACK_COW_P2_AUDIT.md) — **closed** (STEP=5; 33 sites fixed; diff_exit=0; uncommitted)
 - **Variant ctor brace init:** [TRACK_VARIANT_CTOR_BRACE.md](TRACK_VARIANT_CTOR_BRACE.md) — **closed** (steps 1–5; ctor green; **diff_exit=0**; uncommitted; E046 deferred)
 - **E046 filter predicate:** [TRACK_E046_FILTER_PREDICATE.md](TRACK_E046_FILTER_PREDICATE.md) — **closed** (steps 1–5; **999/0**; **diff_exit=0**; uncommitted)
-- **Registry COW:** [TRACK_REGISTRY_COW.md](TRACK_REGISTRY_COW.md) — **closed** (10/10 `.push`; **diff_exit=0**; uncommitted)
-- **Generic record types:** [TRACK_GENERICS_RECORD.md](TRACK_GENERICS_RECORD.md) — **closed** (2026-06-19; **1003/0**; **diff_exit=0**; uncommitted)
-- **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
-- **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
-- **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (2026-05-19; **1005/0**; **diff_exit=0**; uncommitted)
+- **Registry COW:** [TRACK_REGISTRY_COW.md](TRACK_REGISTRY_COW.md) — **closed** (`bf6c46e8`)
+- **Generic record types:** [TRACK_GENERICS_RECORD.md](TRACK_GENERICS_RECORD.md) — **closed** (`bf6c46e8`)
+- **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (`bf6c46e8`)
+- **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (`bf6c46e8`)
+- **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (`bf6c46e8`)
 
 ## Next step (Driver)
 
@@ -119,9 +119,13 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 
 > **Immediate:** plan-refresh — pick next track (stability > security > performance).
 
-## Next step (Planner)
+## Meta checklist (2026-06-15 meta-review — batch commit)
 
-> plan-refresh after TYPE_PARAMS_RESULT close or every ~8 driver turns.
+- [x] Supervisor: 292 uncommitted since closed tracks; step-loop / stale Driver re-enqueue
+- [x] Recovery: `git add -A && git commit` → **`bf6c46e8`** (293 files); gate baseline **1005/0**
+- [x] No re-enqueue closed Driver STEP (TYPE_PARAMS_RESULT STEP=4, etc.)
+- [x] RESEARCH recovery log updated
+- [x] Enqueue **Planner plan-refresh** once
 
 ## Planner checklist (2026-05-19 plan-refresh — TYPE_PARAMS_RESULT open)
 

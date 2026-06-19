@@ -56,8 +56,9 @@
 | 2026-06-15 | Guard stuck `Driver:3:LOOP_CONTRACTS` — `AGENTS.md` + README worktree-only; verify interrupted | Meta: commit STEP=3 docs; TRACK step 3 → done; no re-enqueue STEP=3; enqueue **Driver STEP=4** once |
 | 2026-06-18 | Guard stuck `Driver:5:MLCC2_CHECKER_PARITY` — ctor `CppCall` fix in `expr_visitor_cpp.mlc`; p1 `RecordLitFields(...)` parens; mlcc2 E030 persists (point_repro, main); corpus mlcc2=0 | Meta: TRACK step 5 → blocked; STEP=6 pending; no re-enqueue STEP=5; enqueue **Driver STEP=6** once |
 | 2026-06-18 | Guard stuck `Driver:4:MLCC2_CHECKER_PARITY` — STEP=4 E030 on mlcc2 (`record_lit_merge`); mlcc=0; build_tests+build.sh ok; fold/flat_map/while fixes tried | Meta: supervisor ok (MCP enqueue unavailable); TRACK step 4 → blocked; no re-enqueue STEP=4; enqueue **Driver STEP=5** once (bisect E030 in p1 checker, then self-host diff) |
+| 2026-06-15 | **292 uncommitted** — closed tracks (ParseResult, COW, generics, parity, visitor, …) never committed; step-loop / stuck Driver re-enqueue | Meta **commit-and-continue**: `git add -A && git commit` → `bf6c46e8` (293 files); no re-enqueue closed Driver STEP; enqueue **Planner plan-refresh** once |
 
-Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role, stale-step skip + single pending enqueue, Critic→Driver handoff without re-enqueue same STEP, **Meta drain stuck STEP=1 → enqueue STEP=2 (DESTRUCTURING_APPLY)**, **post-commit stuck STEP → enqueue STEP+1 (RENAME_ABBREV s12→s13)**.
+Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recovery path in Meta role, stale-step skip + single pending enqueue, Critic→Driver handoff without re-enqueue same STEP, **Meta drain stuck STEP=1 → enqueue STEP=2 (DESTRUCTURING_APPLY)**, **post-commit stuck STEP → enqueue STEP+1 (RENAME_ABBREV s12→s13)**, **batch uncommitted recovery → single commit + Planner plan-refresh (2026-06-15, `bf6c46e8`)**.
 
 ---
 

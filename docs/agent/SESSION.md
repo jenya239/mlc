@@ -6,9 +6,57 @@
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
 | agent_token_last | `cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf` |
-| driver_turns_since_plan | 7|
-| step_last | 4|
-| active_track | none (TRACK_TYPE_PARAMS_RESULT **closed**) |
+| driver_turns_since_plan | 0|
+| step_last | commit-and-continue|
+| active_track | none (committed `bf6c46e8`) |
+
+### Turn 2026-06-15 (Meta commit-and-continue — idempotent)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | commit-and-continue (re-queued) |
+| done | batch already **`bf6c46e8`**; meta docs (RESEARCH/TRACK/SESSION) |
+| result | worktree clean after docs commit |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+All tracks committed (bf6c46e8). Pick next track; enqueue Driver STEP=1.
+```
+
+### Turn 2026-05-19 (Meta commit-and-continue)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | commit-and-continue |
+| done | `git add -A && git commit` — **293** files, `bf6c46e8` |
+| result | batch: ParseResult/ExprResult/TypeParamsResult, COW audits, generics, parity, visitor, … |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+All tracks committed (bf6c46e8). Pick next track; enqueue Driver STEP=1.
+```
 
 ### Turn 2026-05-19 (Driver TYPE_PARAMS_RESULT step 4 — close track)
 
