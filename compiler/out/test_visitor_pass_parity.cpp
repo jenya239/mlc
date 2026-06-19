@@ -59,7 +59,7 @@ int mutations_parity_count(std::shared_ptr<ast::Expr> parser_body, mlc::Array<ml
 
 int mutations_visitor_count(std::shared_ptr<ast::Expr> parser_body, mlc::Array<mlc::String> mutable_locals) noexcept{return check_mutations::check_mutation_semantic_expression(transform_parser_expression(parser_body), mutable_locals).size();}
 
-mlc::String codegen_visitor_parity_string(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context) noexcept{return ast_printer::print_expr(expr_visitor_cpp::eval_expr_cpp(expression, context, gen_stmts_str));}
+mlc::String codegen_visitor_parity_string(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context) noexcept{return cpp_ast::print_expr(expr_visitor_cpp::eval_expr_cpp(expression, context, gen_stmts_str));}
 
 mlc::Array<test_runner::TestResult> visitor_pass_parity_tests() noexcept{
 mlc::Array<test_runner::TestResult> results = {};

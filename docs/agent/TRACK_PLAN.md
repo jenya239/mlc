@@ -110,7 +110,7 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (`bf6c46e8`)
 - **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (`bf6c46e8`)
 - **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (`bf6c46e8`)
-- **ParseProgramResult cleanup:** [TRACK_PARSE_PROGRAM_RESULT.md](TRACK_PARSE_PROGRAM_RESULT.md) — **open** STEP=1
+- **ParseProgramResult cleanup:** [TRACK_PARSE_PROGRAM_RESULT.md](TRACK_PARSE_PROGRAM_RESULT.md) — **closed** (2026-06-19)
 
 ## Priority queue (2026-06-19 full-replan)
 
@@ -118,9 +118,9 @@ Strict order; each track depends on previous unless noted.
 
 | # | Track | Phase | Status |
 |---|-------|-------|--------|
-| 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **open** STEP=1 |
+| 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **closed** |
 | 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** (`36a6e8cc`) |
-| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **planned** (blocked: PARSE_PROGRAM_RESULT) |
+| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **open** STEP=1 |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | planned |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |
 | 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
@@ -136,7 +136,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) **STEP=1** (guard resumes after replan).
+> **Immediate:** [TRACK_FORMATTER](TRACK_FORMATTER.md) **STEP=1**.
 
 ## Next step (Planner)
 

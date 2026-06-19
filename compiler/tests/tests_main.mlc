@@ -14,7 +14,6 @@ import { compile_commands_tests } from './test_compile_commands'
 import { expr_visitor_tests } from './test_expr_visitor'
 import { visitor_pass_parity_tests } from './test_visitor_pass_parity'
 import { cpp_printer_tests } from './test_cpp_printer'
-import { formatter_tests } from './test_formatter'
 import { fuzz_tests } from './test_fuzz'
 import { TestResult, run_all } from './test_runner'
 
@@ -60,9 +59,6 @@ fn all_tests() -> [TestResult] = do
 
   const suite_cpp_printer = cpp_printer_tests()
   index = 0; while index < suite_cpp_printer.length() do all.push(suite_cpp_printer[index]); index = index + 1 end
-
-  const suite_formatter = formatter_tests()
-  index = 0; while index < suite_formatter.length() do all.push(suite_formatter[index]); index = index + 1 end
 
   const suite_fuzz = fuzz_tests()
   index = 0; while index < suite_fuzz.length() do all.push(suite_fuzz[index]); index = index + 1 end

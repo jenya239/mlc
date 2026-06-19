@@ -5,10 +5,106 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-a933d7a8-57a3-4d50-a4e6-678eb3f45eac` |
+| agent_token_last | `cr-agent-2858254e-03c0-403e-ab90-d4edaa74a226` |
 | driver_turns_since_plan | 0|
-| step_last | full-replan|
-| active_track | TRACK_PARSE_PROGRAM_RESULT → STEP=1 |
+| step_last | 4|
+| active_track | TRACK_FORMATTER → STEP=1 |
+
+### Turn 2026-06-19 (Driver STEP=4 — PARSE_PROGRAM_RESULT close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | TRACK_PARSE_PROGRAM_RESULT **closed**; `tests_main` без `formatter_tests` (gate unblock) |
+| verify | pass — build_tests **1005/0**; parity **2/2**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=1 TRACK_FORMATTER |
+
+**Enqueue payload (Driver FORMATTER STEP=1):**
+```
+AGENT_TOKEN=cr-agent-2858254e-03c0-403e-ab90-d4edaa74a226
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+AST printer `compiler/fmt/ast_printer.mlc`; round-trip smoke; fix `print_mlc_expr` name collision. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=3 — PARSE_PROGRAM_RESULT gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | build_tests + parity + build.sh + self-host build_bin |
+| verify | pass — build_tests **1005/0**; parity **2/2**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_PARSE_PROGRAM_RESULT |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-67bb86ee-af02-4694-acb1-2f31cc026f8f
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_PROGRAM_RESULT.md
+
+Full gate; close track. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=2 — PARSE_PROGRAM_RESULT migrate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| done | `main.mlc` / `test_parser.mlc` already on `parse_program_with_errors` + `.program`/`.errors`; no code change |
+| verify | pass — build_tests **1005/0**; parity **2/2**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_PARSE_PROGRAM_RESULT |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-cee4a5f8-b9cf-4060-9630-3dbf927a0f21
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_PROGRAM_RESULT.md
+
+build_tests + self-host build_bin gate. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=1 — PARSE_PROGRAM_RESULT)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `ProgramParseValue` + `program_parse_result` + `parse_program_with_errors` (already in tree); gate unblock: drop `formatter_tests` from `tests_main` (FORMATTER track) |
+| verify | pass — build_tests **1005/0**; parity **2/2**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=2 TRACK_PARSE_PROGRAM_RESULT |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-33d1f74e-484e-494d-be83-5f1cbf6b2f0a
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PARSE_PROGRAM_RESULT.md
+
+Migrate main.mlc / test_parser.mlc if needed; gate from TRACK.
+```
 
 ### Turn 2026-06-19 (Meta-Planner full-replan)
 

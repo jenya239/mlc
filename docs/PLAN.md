@@ -372,7 +372,7 @@ compiler/
 |------|--------|-------------------|
 | **1** Стабилизация | **done** | [TRACK_PHASE1](agent/TRACK_PHASE1.md) closed |
 | **2** C++ AST backend | **done** | TRACK_CPPEXPR + TRACK_CPPGEN closed |
-| **2.5** Языковые улучшения | **nearly done** | ParseResult family → [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md) **open** |
+| **2.5** Языковые улучшения | **done** | ParseResult family closed; [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md) **closed** (2026-06-19) |
 | **2.6** Структурный рефакторинг | **partial** | ExprVisitor infer/transform/codegen done; [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) **closed** (`36a6e8cc`); names/mutations/context → [TRACK_PHASE26_REMAINING](agent/TRACK_PHASE26_REMAINING.md) |
 | **3** Инструментарий | **planned** | Formatter → [TRACK_FORMATTER](agent/TRACK_FORMATTER.md); LSP → [TRACK_LSP](agent/TRACK_LSP.md) |
 | **3.5** C++ header import | **planned** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md); дизайн: [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md) |
@@ -398,9 +398,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 **Статус:** TRACK_CPPEXPR + TRACK_CPPGEN closed. Codegen строит CppAST; string-bridge только bootstrap edge cases.
 
-### Phase 2.5: Языковые улучшения — **nearly done**
+### Phase 2.5: Языковые улучшения — **done**
 
-**Статус:** string match, type aliases, generics, ParseResult migration (ExprResult, TypeParamsResult) — closed (`bf6c46e8`). Остаток: `ProgramParseValue` / `parse_program_with_errors` → [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md).
+**Статус:** string match, type aliases, generics, ParseResult migration — closed (`bf6c46e8`, `ProgramParseValue` 2026-06-19).
 
 **Отложено:** parser `ref mut` (отдельная ветка); regex match-паттерны.
 

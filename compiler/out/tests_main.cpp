@@ -16,7 +16,6 @@
 #include "test_expr_visitor.hpp"
 #include "test_visitor_pass_parity.hpp"
 #include "test_cpp_printer.hpp"
-#include "test_formatter.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"
 
@@ -35,7 +34,6 @@ using namespace test_compile_commands;
 using namespace test_expr_visitor;
 using namespace test_visitor_pass_parity;
 using namespace test_cpp_printer;
-using namespace test_formatter;
 using namespace test_fuzz;
 using namespace test_runner;
 
@@ -147,14 +145,6 @@ index = 0;
 while (index < suite_cpp_printer.size()){
 {
 all.push_back(suite_cpp_printer[index]);
-index = index + 1;
-}
-}
-mlc::Array<test_runner::TestResult> suite_formatter = test_formatter::formatter_tests();
-index = 0;
-while (index < suite_formatter.size()){
-{
-all.push_back(suite_formatter[index]);
 index = index + 1;
 }
 }

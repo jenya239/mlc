@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 п.5; follows [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) (**closed**, `bf6c46e8`)
 
-## Status: **open** (STEP=1 pending)
+## Status: **closed** (STEP=4 done, 2026-06-19)
 
 **Deferred from PARSE_RESULT / TYPE_PARAMS:** `ParseProgramResult { program, errors }` — last non-`ParseResult` parser result alias in `predicates.mlc` (no `parser` field; entry-point).
 
@@ -32,10 +32,10 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `ProgramParseValue` + `program_parse_result`; `parse_program_with_errors` in `decls.mlc` | pending |
-| 2 | Migrate `main.mlc` / `test_parser.mlc` if needed | pending |
-| 3 | `build_tests`; self-host `build_bin` | pending |
-| 4 | Full gate; close track | pending |
+| 1 | `ProgramParseValue` + `program_parse_result`; `parse_program_with_errors` in `decls.mlc` | done |
+| 2 | Migrate `main.mlc` / `test_parser.mlc` if needed | done |
+| 3 | `build_tests`; self-host `build_bin` | done |
+| 4 | Full gate; close track | done |
 
 ### Notes
 
