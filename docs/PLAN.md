@@ -416,6 +416,16 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 2. **LSP** — [TRACK_LSP](agent/TRACK_LSP.md) (зависит от formatter + стабильных диагностик).
 3. Playground / package manager — после LSP.
 
+### Phase 2.7: Языковые улучшения II — **planned**
+
+Scala-inspired фичи с высоким ROI для читаемости и корректности:
+
+1. **`?`-оператор / for-comprehensions на Result/Option** — цепочки `Result` без вложенных `match`. Аналог Rust `?` или Scala `for { x <- ... } yield`. Зависит: Phase 2.6 done.
+2. **Opaque types (newtype)** — `opaque type NodeId = i32`. Нулевые накладные расходы; компилятор различает `NodeId`, `Span`, `i32`. Зависит: Phase 2.6 done.
+3. **`lazy val`** — отложенное вычисление с мемоизацией. Полезно в checker для циклических зависимостей типов. Зависит: Phase 2.7 п.1.
+
+Треки: создать при старте фазы.
+
 ### Phase 3.5: C++ Header Import — **planned**
 
 Дизайн: [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md). Трек: [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md).
