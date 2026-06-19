@@ -23,7 +23,7 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Extend `cpp/lexer.mlc` — keywords, `#` token, block comments; roundtrip smoke | pending |
+| 1 | Extend `cpp/cpp_lexer.mlc` + `cpp/cpp_tokens.mlc` — keywords, `#` token, block comments; roundtrip smoke | pending |
 | 2 | Extend `cpp_ast.mlc` — `CppTypePtr`, `CppTypeConst`, `CppTypeRRef`, forward decls | pending |
 | 3 | `cpp/parser/types.mlc` — parse qualifiers, pointers, templates | pending |
 | 4 | `cpp/parser/decls.mlc` — struct/class, fn proto, enum, namespace; error recovery | pending |

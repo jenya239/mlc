@@ -4,11 +4,35 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-abffe2d2-465e-4094-bc2b-43b4a1fee643` |
-| driver_turns_since_plan | 4|
-| step_last | 1|
-| active_track | TRACK_FORMATTER → STEP=1 |
+| instructions_rev | `2026-06-01-session-detail`|
+| agent_token_last | `cr-agent-a933d7a8-57a3-4d50-a4e6-678eb3f45eac` |
+| driver_turns_since_plan | 0|
+| step_last | full-replan|
+| active_track | TRACK_PARSE_PROGRAM_RESULT → STEP=1 |
+
+### Turn 2026-06-19 (Meta-Planner full-replan)
+
+| field | value |
+|-------|-------|
+| role | Meta-Planner |
+| step | full-replan |
+| done | PLAN §5 sync (CODE_QUALITY closed `36a6e8cc`); TRACK_PLAN priority queue; skeleton tracks verified |
+| verify | n/a (docs only) |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-a933d7a8-57a3-4d50-a4e6-678eb3f45eac
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+Replan committed. Guard resumes TRACK_PARSE_PROGRAM_RESULT STEP=1; enqueue Driver.
+```
 
 ### Turn 2026-06-19 (Driver STEP=5 — CODE_QUALITY audit close)
 

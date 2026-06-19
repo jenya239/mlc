@@ -119,8 +119,8 @@ Strict order; each track depends on previous unless noted.
 | # | Track | Phase | Status |
 |---|-------|-------|--------|
 | 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **open** STEP=1 |
-| 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** |
-| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | planned |
+| 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** (`36a6e8cc`) |
+| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **planned** (blocked: PARSE_PROGRAM_RESULT) |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | planned |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |
 | 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
@@ -141,6 +141,13 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 ## Next step (Planner)
 
 > plan-refresh after each track close or every ~8 driver turns.
+
+## Meta-Planner checklist (2026-06-19 full-replan — sync)
+
+- [x] Updated [PLAN.md](../PLAN.md) §5 — CODE_QUALITY closed (`36a6e8cc`); phase table + dependency graph
+- [x] Priority queue in TRACK_PLAN (8 tracks); guard resumes at PARSE_PROGRAM_RESULT STEP=1
+- [x] Skeleton tracks verified (5 steps + gate each)
+- [x] Commit docs; enqueue Planner plan-refresh
 
 ## Meta-Planner checklist (2026-06-19 full-replan)
 

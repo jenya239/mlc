@@ -366,14 +366,14 @@ compiler/
 
 ## 5. Фазы разработки
 
-**Сводка (2026-06-19):**
+**Сводка (2026-06-19, replan sync):**
 
 | Фаза | Статус | Трек / примечание |
 |------|--------|-------------------|
 | **1** Стабилизация | **done** | [TRACK_PHASE1](agent/TRACK_PHASE1.md) closed |
 | **2** C++ AST backend | **done** | TRACK_CPPEXPR + TRACK_CPPGEN closed |
 | **2.5** Языковые улучшения | **nearly done** | ParseResult family → [TRACK_PARSE_PROGRAM_RESULT](agent/TRACK_PARSE_PROGRAM_RESULT.md) **open** |
-| **2.6** Структурный рефакторинг | **partial** | ExprVisitor codegen/infer/transform done; names/mutations/transform passes + context methods → [TRACK_PHASE26_REMAINING](agent/TRACK_PHASE26_REMAINING.md) |
+| **2.6** Структурный рефакторинг | **partial** | ExprVisitor infer/transform/codegen done; [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) **closed** (`36a6e8cc`); names/mutations/context → [TRACK_PHASE26_REMAINING](agent/TRACK_PHASE26_REMAINING.md) |
 | **3** Инструментарий | **planned** | Formatter → [TRACK_FORMATTER](agent/TRACK_FORMATTER.md); LSP → [TRACK_LSP](agent/TRACK_LSP.md) |
 | **3.5** C++ header import | **planned** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md); дизайн: [CPP_PARSER_DESIGN.md](CPP_PARSER_DESIGN.md) |
 | **4** Self-host bootstrap | **planned** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) — убрать Ruby из `build.sh` |
@@ -428,7 +428,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 Трек: [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md). После self-host bootstrap + форматтер.
 
-**Качество кода (параллельный слой после 2.5):** [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) — деструктуризация, HOF в codegen, or-patterns, string-match adoption, audit.
+**Качество кода (после 2.5):** [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) — **closed** (`36a6e8cc`): деструктуризация, HOF, or-patterns, string-match, audit.
 
 ---
 
