@@ -120,11 +120,11 @@ Strict order; each track depends on previous unless noted.
 |---|-------|-------|--------|
 | 1 | [TRACK_PARSE_PROGRAM_RESULT](TRACK_PARSE_PROGRAM_RESULT.md) | 2.5 | **closed** |
 | 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** (`36a6e8cc`) |
-| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **open** STEP=1 |
-| 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | planned |
+| 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
+| 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |
 | 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
-| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | planned |
+| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=3 |
 | 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
 
 ```
@@ -136,7 +136,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_FORMATTER](TRACK_FORMATTER.md) **STEP=1**.
+> **Immediate:** [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) **STEP=3** (resume; guard drained — no duplicate enqueue).
 
 ## Next step (Planner)
 
@@ -163,6 +163,14 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 - [x] Opened **TRACK_PARSE_PROGRAM_RESULT**
 - [x] Deferred: parser `ref mut`; security (parser panic audit) after stability
 - [x] Enqueue Driver STEP=1 PARSE_PROGRAM_RESULT
+
+## Meta checklist (2026-05-19 meta-review — FORMATTER STEP=5 recovery)
+
+- [x] Guard stuck `Driver:5:FORMATTER` — no re-enqueue STEP=5
+- [x] Recovery: `format_cli` codegen fix (`parse_parsed`); gate **1030/0** **diff_exit=0**
+- [x] TRACK_FORMATTER closed; TRACK_PHASE26_REMAINING open STEP=1
+- [x] RESEARCH recovery log updated
+- [x] Enqueue **Driver PHASE26 STEP=1** once
 
 ## Meta checklist (2026-06-15 meta-review — batch commit)
 

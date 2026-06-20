@@ -6,9 +6,11 @@
 
 #include "test_runner.hpp"
 #include "ast_printer.hpp"
+#include "format_cli.hpp"
 #include "lexer.hpp"
 #include "predicates.hpp"
 #include "exprs.hpp"
+#include "decls.hpp"
 
 namespace test_formatter {
 

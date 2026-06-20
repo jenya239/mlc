@@ -1,93 +1,16 @@
-// C++ lexer: source string - [CppToken]
+// C++ lexer: source string → [CppToken]
 
-import { LexState, is_alpha, is_digit, is_alnum, is_ws, map_escape, skip_whitespace } from '../frontend/lexer'
+import { LexState, is_alpha, is_digit, is_alnum, map_escape, skip_whitespace } from '../frontend/lexer'
+import { CppToken, CppTokenKind, CHash, CEof, CLInt, CLStr, CLParen, CRParen, CLBrace, CRBrace, CLBracket, CRBracket,
+         COp, CArrow, CScope, CEq, CNe, CLe, CGe, CAnd, COr, CInc, CDec, CLShift, CRShift, CLAngle, CRAngle,
+         cpp_keyword_kind, cpp_tokens_to_source, cpp_token_kinds_equal } from './cpp_tokens'
 
-type CppTokenKind =
-  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
-  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
-  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
-  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
-  | CIdent(string) | CLInt(i32) | CLStr(string)
-  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
-  | CLShift | CRShift
-  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
-  | CLAngle | CRAngle
-  | COp(string)
-  | CEof
-
-type CppToken  = CppToken  { kind: CppTokenKind, line: i32, column: i32 }
-type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
+export type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
 
 type CppScanIdR  = { state: LexState, token: CppToken }
 type CppScanIntR = { state: LexState, token: CppToken }
 type CppScanStrR = { state: LexState, token: CppToken, error: string }
 type CppScanOpR  = { state: LexState, token: CppToken }
-
-fn is_cpp_reserved_keyword(word: string) -> bool =
-  match word
-  | 'auto'       => true
-  | 'const'      => true
-  | 'constexpr'  => true
-  | 'if'         => true
-  | 'else'       => true
-  | 'while'      => true
-  | 'for'        => true
-  | 'return'     => true
-  | 'break'      => true
-  | 'struct'     => true
-  | 'using'      => true
-  | 'noexcept'   => true
-  | 'inline'     => true
-  | 'static'     => true
-  | 'void'       => true
-  | 'int'        => true
-  | 'bool'       => true
-  | 'char'       => true
-  | 'true'       => true
-  | 'false'      => true
-  | 'nullptr'    => true
-  | 'template'   => true
-  | 'typename'   => true
-  | 'namespace'  => true
-  | 'new'        => true
-  | 'delete'     => true
-  | 'operator'   => true
-  | _            => false
-  end
-
-fn reserved_cpp_keyword_kind(word: string) -> CppTokenKind =
-  match word
-  | 'auto'       => CKAuto
-  | 'const'      => CKConst
-  | 'constexpr'  => CKConstexpr
-  | 'if'         => CKIf
-  | 'else'       => CKElse
-  | 'while'      => CKWhile
-  | 'for'        => CKFor
-  | 'return'     => CKReturn
-  | 'break'      => CKBreak
-  | 'struct'     => CKStruct
-  | 'using'      => CKUsing
-  | 'noexcept'   => CKNoexcept
-  | 'inline'     => CKInline
-  | 'static'     => CKStatic
-  | 'void'       => CKVoid
-  | 'int'        => CKInt
-  | 'bool'       => CKBool
-  | 'char'       => CKChar
-  | 'true'       => CKTrue
-  | 'false'      => CKFalse
-  | 'nullptr'    => CKNullptr
-  | 'template'   => CKTemplate
-  | 'typename'   => CKTypename
-  | 'namespace'  => CKNamespace
-  | 'new'        => CKNew
-  | 'delete'     => CKDelete
-  | 'operator'   => CKOperator
-  end
-
-fn cpp_keyword_kind(word: string) -> CppTokenKind =
-  if is_cpp_reserved_keyword(word) then reserved_cpp_keyword_kind(word) else CIdent(word) end
 
 fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
   const start = state.position
@@ -190,13 +113,18 @@ fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string
   state
 end
 
+fn push_hash_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+  tokens.push(CppToken { kind: CHash, line: state.line, column: state.column })
+  state.lex_advance()
+end
+
 fn push_operator_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
   let { state, token } = cpp_scan_op(state)
   tokens.push(token)
   state
 end
 
-fn cpp_tokenize(input_text: string) -> CppLexOut = do
+export fn cpp_tokenize(input_text: string) -> CppLexOut = do
   let state = LexState { source: input_text, position: 0, line: 1, column: 1 }
   const tokens: [CppToken] = []
   let errors: [string] = []
@@ -212,10 +140,19 @@ fn cpp_tokenize(input_text: string) -> CppLexOut = do
       lexer_state = push_int_scan(lexer_state, tokens)
     else if character == "\"" then
       lexer_state = push_string_scan(lexer_state, tokens, errors)
+    else if character == "#" then
+      lexer_state = push_hash_scan(lexer_state, tokens)
     else
       lexer_state = push_operator_scan(lexer_state, tokens)
     end
   end
   tokens.push(CppToken { kind: CEof, line: lexer_state.line, column: lexer_state.column })
   CppLexOut { tokens: tokens, errors: errors }
+end
+
+export fn cpp_lex_roundtrip_preserves_kinds(source_text: string) -> bool = do
+  const first_tokens = cpp_tokenize(source_text).tokens
+  const rebuilt_source = cpp_tokens_to_source(first_tokens)
+  const second_tokens = cpp_tokenize(rebuilt_source).tokens
+  cpp_token_kinds_equal(first_tokens, second_tokens)
 end

@@ -20,7 +20,7 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
         index = index + 1
       end
       const return_type      = type_from_annotation_with_registry(return_type_expr, registry)
-      const initial_context  = TransformContext { type_env: param_env, registry }
+      const initial_context  = TransformContext { type_env: param_env, registry: registry, lambda_parameter_types: [] }
       const typed_body       = transform_expr(body, initial_context, (statements: [Shared<Stmt>], transform_context: TransformContext) => transform_stmts(statements, transform_context))
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
       Shared.new(SemanticDeclarationFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, expr_span(body)))

@@ -84,38 +84,46 @@ end
 
 // --- Main declaration dispatcher ---------------------------------------------
 
+extend CodegenContext {
+  fn gen_decl(self: CodegenContext, declaration: Shared<SemanticDeclaration>) -> string =
+    match declaration {
+      SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
+        gen_type_decl(self, type_name, type_parameters, variants) + gen_derive_methods(self, type_name, variants, derive_traits),
+      SemanticDeclarationTypeAlias(_, _, _, _) => '',
+      SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(self, name, type_parameters, methods),
+      SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
+        match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, self) },
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+        gen_decl_extend(type_name, trait_name, methods, self,
+          (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name),
+          (inner_declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => codegen_context.gen_decl(inner_declaration)),
+      SemanticDeclarationImport(_, _) => '',
+      SemanticDeclarationExported(inner_declaration) => self.gen_decl(inner_declaration),
+      SemanticDeclarationAssocBind(_, _, _) => ''
+    }
+
+  fn gen_proto(self: CodegenContext, declaration: Shared<SemanticDeclaration>) -> string =
+    match declaration {
+      SemanticDeclarationType(_, _, _, _, _) => '',
+      SemanticDeclarationTypeAlias(_, _, _, _) => '',
+      SemanticDeclarationTrait(_, _, _, _) => '',
+      SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
+        match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, self) },
+      SemanticDeclarationExtend(type_name, _, methods, _) => do
+        const extend_context = self.for_type_body(type_name)
+        methods.map(method => extend_context.gen_proto(method)).join('')
+      end,
+      SemanticDeclarationImport(_, _) => '',
+      SemanticDeclarationExported(inner_declaration) => self.gen_proto(inner_declaration),
+      SemanticDeclarationAssocBind(_, _, _) => ''
+    }
+}
+
 export fn gen_decl(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
-  match declaration {
-    SemanticDeclarationType(type_name, type_parameters, variants, derive_traits, _) =>
-      gen_type_decl(context, type_name, type_parameters, variants) + gen_derive_methods(context, type_name, variants, derive_traits),
-    SemanticDeclarationTypeAlias(_, _, _, _) => '',
-    SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(context, name, type_parameters, methods),
-    SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
-      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, context) },
-    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-      gen_decl_extend(type_name, trait_name, methods, context,
-        (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name),
-        (inner_declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => gen_decl(inner_declaration, codegen_context)),
-    SemanticDeclarationImport(_, _) => '',
-    SemanticDeclarationExported(inner_declaration) => gen_decl(inner_declaration, context),
-    SemanticDeclarationAssocBind(_, _, _) => ''
-  }
+  context.gen_decl(declaration)
 
 export fn gen_proto(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> string =
-  match declaration {
-    SemanticDeclarationType(_, _, _, _, _) => '',
-    SemanticDeclarationTypeAlias(_, _, _, _) => '',
-    SemanticDeclarationTrait(_, _, _, _) => '',
-    SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, _) =>
-      match body { SemanticExpressionExtern(_, _) => '', _ => gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, context) },
-    SemanticDeclarationExtend(type_name, _, methods, _) => do
-      const extend_context = context.for_type_body(type_name)
-      methods.map(method => gen_proto(method, extend_context)).join('')
-    end,
-    SemanticDeclarationImport(_, _) => '',
-    SemanticDeclarationExported(inner_declaration) => gen_proto(inner_declaration, context),
-    SemanticDeclarationAssocBind(_, _, _) => ''
-  }
+  context.gen_proto(declaration)
 
 // --- Whole-program helpers ---------------------------------------------------
 

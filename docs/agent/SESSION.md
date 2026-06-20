@@ -4,11 +4,359 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-2858254e-03c0-403e-ab90-d4edaa74a226` |
-| driver_turns_since_plan | 0|
-| step_last | 4|
-| active_track | TRACK_FORMATTER → STEP=1 |
+| instructions_rev | `2026-05-28-cleaner`|
+| agent_token_last | `cr-agent-44f467fc-d14a-4a07-b537-502f31d1bd08` |
+| driver_turns_since_plan | 4|
+| step_last | 3|
+| active_track | TRACK_CPP_HEADER_IMPORT → STEP=3 |
+
+### Turn 2026-05-19 (Meta meta-review idempotent — CPP_HEADER_IMPORT)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | idempotent; prior recovery turn sufficient |
+| verify | unchanged — **1033/0** **diff_exit=0**; STEP=3 not started |
+| issues | MCP `agent-loop` unavailable; guard blocks re-enqueue `Driver:3` |
+| next | ROLE=Driver STEP=3 (SESSION payload below; manual paste if queue empty) |
+
+### Turn 2026-05-19 (Meta meta-review — CPP_HEADER_IMPORT stuck Driver:3)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | Guard `Driver:3:CPP_HEADER_IMPORT` drained; RESEARCH + TRACK recovery note; STEP=3 pending (types.mlc not created); STEP=1–2 uncommitted worktree |
+| verify | last gate **1033/0** **diff_exit=0** (STEP=2); STEP=3 not run |
+| issues | MCP `agent-loop` unavailable; **no re-enqueue Driver:3** per guard |
+| next | ROLE=Driver STEP=3 TRACK_CPP_HEADER_IMPORT (continue — queue may already hold payload) |
+
+**Driver STEP=3 payload (do not duplicate-enqueue if guard active):**
+```
+AGENT_TOKEN=cr-agent-44f467fc-d14a-4a07-b537-502f31d1bd08
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+cpp/parser/types.mlc — parse qualifiers, pointers, templates. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=2 — CPP_HEADER_IMPORT cpp_ast types)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| done | `cpp_ast.mlc`: `CppTypePtr`/`CppTypeConst`/`CppTypeRRef`, `CppForwardDecl`, `print_type`/`print_forward_declaration`; tests in `test_cpp_ast` + `test_cpp_printer` |
+| verify | pass — build_tests **1033/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_CPP_HEADER_IMPORT |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-c7eefbcc-6b66-4a4e-a875-d2dfafe739e1
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+cpp/parser/types.mlc — parse qualifiers, pointers, templates. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=1 — CPP_HEADER_IMPORT lexer/tokens)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `cpp_tokens.mlc` (keywords, `CHash`, lexeme/to_source); `lexer.mlc` refactor; `predicates` + `test_cpp_lexer` roundtrip smoke |
+| verify | pass — build_tests **1030/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=2 TRACK_CPP_HEADER_IMPORT |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-760bef3f-664e-4e48-88c5-a08645e73f0d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+Extend cpp_ast.mlc — CppTypePtr, CppTypeConst, CppTypeRRef, forward decls. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=5 — PHASE26 audit + close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| done | survivors audit in TRACK; TRACK_PHASE26_REMAINING **closed**; TRACK_PLAN → SELF_HOST_BOOTSTRAP unblocked |
+| verify | pass — build_tests **1030/0**; mlcc2 checker parity ok; **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=1 TRACK_SELF_HOST_BOOTSTRAP |
+
+**Enqueue payload (Driver SELF_HOST_BOOTSTRAP STEP=1):**
+```
+AGENT_TOKEN=cr-agent-77bd59f7-a8fc-46d4-bb80-9e816adc56c6
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_SELF_HOST_BOOTSTRAP.md
+
+Document current bootstrap path; inventory Ruby-only steps in build.sh. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=4 — PHASE26 CodegenContext stmt/decl methods)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `decl.mlc`: `gen_decl`/`gen_proto` → `extend CodegenContext`; `decl_cpp.mlc`: `gen_decl_cpp`/`gen_proto_cpp`; `stmt_cpp.mlc`: `gen_stmts_cpp`; export wrappers retained |
+| verify | pass — build_tests **1030/0**; mlcc2 checker parity ok; build.sh ok; **diff_exit=0** |
+| issues | cross-module `.gen_stmts_cpp` in `eval.mlc` → C++ link error; kept `gen_stmts_cpp(statements, self)` wrapper; MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=5 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-0350b901-4ae8-4175-b7c5-ef1f50088f8f
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+Audit survivors + full gate; close TRACK_PHASE26_REMAINING.
+```
+
+### Turn 2026-05-19 (Driver STEP=3 idempotent — skip to STEP=4 enqueue)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 (already done in TRACK) |
+| done | no code change; idempotent per CONTINUITY |
+| verify | prior gate **1030/0**, parity ok, **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable (`cursor_agent_register` / `cursor_enqueue_send`) |
+| next | ROLE=Driver STEP=4 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-968bb4b6-e2c8-43e0-8417-66ba11bb4224
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+codegen/ — extend CodegenContext methods for stmt/decl entry points. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=3 — PHASE26 transform lambda visitor)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `transform.mlc`: removed `transform_expr_maybe_lambda_context`; `TransformContext.lambda_parameter_types`; HoF via `transform_expr_with_lambda_parameter_types`; `visit_lambda` dispatches typed path |
+| verify | pass — build_tests **1030/0**; mlcc2 checker parity ok; build.sh ok; **diff_exit=0** |
+| issues | MCP `agent-loop` server errored; enqueue payload below |
+| next | ROLE=Driver STEP=4 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-968bb4b6-e2c8-43e0-8417-66ba11bb4224
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+codegen/ — extend CodegenContext methods for stmt/decl entry points. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=2 — PHASE26 mutations visitor entry)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| done | `check_mutations.mlc`: removed legacy `check_mutation_expr` match; `check_fn_body_mutations` → transform + `check_fn_body_semantic_mutations` |
+| verify | pass — build_tests **1030/0**; mlcc2 checker parity ok; build.sh ok; **diff_exit=0** |
+| issues | MCP `cursor_enqueue_send` unavailable |
+| next | ROLE=Driver STEP=3 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-3691880a-6c63-4d99-baac-a66eeeeb593d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+transform.mlc — remove transform_expr_maybe_lambda_context duplicate match where visitor covers. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=1 — PHASE26 names visitor entry)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `names.mlc`: removed legacy `match` on `Expr`; `check_names_expr` → transform + `check_names_semantic_expression`; ident span in `dispatch_names_pass` |
+| verify | pass — build_tests **1030/0**; mlcc2 checker parity ok; build.sh ok; **diff_exit=0** |
+| issues | MCP `cursor_enqueue_send` unavailable |
+| next | ROLE=Driver STEP=2 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-98db8bed-3839-4b3a-8e29-a6ce0700dc6f
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+check_mutations.mlc — legacy fn-body checks → visitor-only entry; parity tests. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Meta meta-review — FORMATTER stuck STEP=5 recovery)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | Guard `Driver:5:FORMATTER` drained; `format_cli.mlc` `parse_parsed` rename (codegen collision); TRACK_FORMATTER **closed**; TRACK_PLAN → PHASE26 |
+| verify | pass — build_tests **1030/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `cursor_enqueue_send` unavailable; supervisor not polled |
+| next | ROLE=Driver STEP=1 TRACK_PHASE26_REMAINING |
+
+**Enqueue payload (Driver STEP=1):**
+```
+AGENT_TOKEN=cr-agent-60d535d5-cedd-4bc8-98d2-0e4f7fa6ba9e
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PHASE26_REMAINING.md
+
+names.mlc — legacy check_names_expr → visitor-only entry; parity tests. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=4 — FORMATTER idempotent tests)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `assert_expression_format_idempotent` / `assert_program_format_idempotent`; 8 idempotent cases |
+| verify | pass — build_tests **1029/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=5 TRACK_FORMATTER |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-0c789c86-99ab-4c2d-9b28-78274766a761
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+CLI integrate — mlcc fmt subcommand; close track. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=3 — FORMATTER record alignment)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `ast_printer.mlc`: `ExprRecord`/`ExprRecordUpdate`/`DeclType` multiline + colon-aligned fields; `test_formatter.mlc` record tests |
+| verify | pass — build_tests **1021/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_FORMATTER |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-b639a925-2324-4054-b882-a982e7833d97
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+Idempotent fmt tests — fmt(fmt(source)) == fmt(source). Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Meta meta-review — FORMATTER STEP=2 stuck)
+
+| field | value |
+|-------|-------|
+| role | Meta |
+| step | meta-review |
+| done | STEP=2 gate green: indent `do`/`end`, fn bodies, nested blocks; `ast_printer.mlc` fixes (no top-level `const`, `` `\n` ``, graph import line, no double-indent on block stmt/result) |
+| verify | pass — build_tests **1016/0**; build.sh ok; **diff_exit=0** |
+| supervisor | MCP `user-cr-cursor` unavailable |
+| guard | stuck `Driver:2:FORMATTER` — no re-enqueue STEP=2 |
+| next | ROLE=Driver STEP=3 TRACK_FORMATTER |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=cr-agent-f0f98348-7073-45e5-bb10-e78fe7ba2f18
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+Record alignment — field lists, multiline records. Gate from TRACK.
+```
+
+### Turn 2026-06-19 (Driver STEP=1 — FORMATTER ast_printer)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| done | `fmt/ast_printer.mlc` `print_mlc_expr`; `test_formatter.mlc` + wired in `tests_main` |
+| verify | pass — build_tests **1013/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `user-cr-cursor` unavailable |
+| next | ROLE=Driver STEP=2 TRACK_FORMATTER |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-e3a52c46-7e18-4b56-bea4-4d92303e69f3
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_FORMATTER.md
+
+Indent rules — 2-space do/end, fn bodies. Gate from TRACK.
+```
 
 ### Turn 2026-06-19 (Driver STEP=4 — PARSE_PROGRAM_RESULT close)
 

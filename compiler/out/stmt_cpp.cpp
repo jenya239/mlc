@@ -34,6 +34,8 @@ mlc::String gen_stmts_for_cpp_codegen(mlc::Array<std::shared_ptr<semantic_ir::Se
 
 std::shared_ptr<cpp_ast::CppExpression> gen_expr_cpp_for_stmt_codegen(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context) noexcept;
 
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> CodegenContext_gen_stmts_cpp(context::CodegenContext self, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements) noexcept;
+
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context) noexcept;
 
 stmt_cpp::GenStmtsCppWithContext gen_stmts_cpp_with_context(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, int try_counter) noexcept;
@@ -76,7 +78,9 @@ mlc::String gen_stmts_for_cpp_codegen(mlc::Array<std::shared_ptr<semantic_ir::Se
 
 std::shared_ptr<cpp_ast::CppExpression> gen_expr_cpp_for_stmt_codegen(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context) noexcept{return expr_visitor_cpp::eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen);}
 
-mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context) noexcept{return eval_stmts_cpp_with_try(statements, context, 0).statements;}
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> CodegenContext_gen_stmts_cpp(context::CodegenContext self, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements) noexcept{return eval_stmts_cpp_with_try(statements, self, 0).statements;}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> gen_stmts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context) noexcept{return CodegenContext_gen_stmts_cpp(context, statements);}
 
 stmt_cpp::GenStmtsCppWithContext gen_stmts_cpp_with_context(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, int try_counter) noexcept{
 stmt_cpp::StmtsCppAccumState accumulated = eval_stmts_cpp_with_try(statements, context, try_counter);

@@ -1,11 +1,13 @@
 // Checker: name resolution.
 
-import { Expr, Stmt, Pattern, FieldVal, MatchArm, RecordLitPart, RecordLitFields, RecordLitSpread,
+import { Expr, Stmt, Pattern,
          Diagnostic, Span, diagnostic_error, diagnostic_error_with_code, diagnostics_append, span_unknown } from '../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal } from '../ir/semantic_ir'
 import { Type } from './registry'
 import { ExprVisitor } from '../expr_visitor'
 import { diagnostic_code_e001 } from './diagnostic_codes'
+import { transform_expr, empty_transform_context, TransformContext } from './transform/transform'
+import { transform_stmts } from './transform/transform_stmts'
 
 fn scope_contains(scope: [string], name: string) -> bool =
   scope.any(scope_entry => scope_entry == name)
@@ -47,164 +49,15 @@ fn collect_pattern_bindings(pattern: Shared<Pattern>, bindings_so_far: [string])
     _ => bindings_so_far,
   }
 
-// --- Name check rule functions (per expression form) -----------------------
-
 fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] =
   if !scope_contains(locals, name) && !globals.has(name) then [diagnostic_error_with_code(`undefined: ${name}`, source_span, diagnostic_code_e001())]
   else do let empty_ident_diagnostics: [Diagnostic] = []; empty_ident_diagnostics end
   end
 
-fn check_names_binary_expression(left: Shared<Expr>, right: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  diagnostics_append(check_names_expr(left, locals, globals), check_names_expr(right, locals, globals))
-
-fn check_names_unary_expression(inner_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  check_names_expr(inner_expression, locals, globals)
-
-fn check_names_call_expression(function: Shared<Expr>, call_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const diagnostics_from_callable = check_names_expr(function, locals, globals)
-  call_arguments.fold(
-    diagnostics_from_callable,
-    (diagnostics_accumulator, argument_under_call) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(argument_under_call, locals, globals)))
-end
-
-fn check_names_method_expression(object: Shared<Expr>, method_arguments: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const diagnostics_from_receiver = check_names_expr(object, locals, globals)
-  method_arguments.fold(
-    diagnostics_from_receiver,
-    (diagnostics_accumulator, argument_under_method_call) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(argument_under_method_call, locals, globals)))
-end
-
-fn check_names_field_expression(object: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  check_names_expr(object, locals, globals)
-
-fn check_names_index_expression(object: Shared<Expr>, index_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  diagnostics_append(check_names_expr(object, locals, globals), check_names_expr(index_expression, locals, globals))
-
-fn check_names_conditional_expression(condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  diagnostics_append(
-    diagnostics_append(check_names_expr(condition, locals, globals), check_names_expr(then_expression, locals, globals)),
-    check_names_expr(else_expression, locals, globals))
-
-fn check_names_block_expression(statements: [Shared<Stmt>], result: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const statements_parsed = check_names_statements(statements, locals, globals)
-  statements_parsed.append_expression_diagnostics(check_names_expr(result, statements_parsed.scope, globals))
-end
-
-fn check_names_while_expression(condition: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const statement_check = check_names_statements(statements, locals, globals)
-  diagnostics_append(check_names_expr(condition, locals, globals), statement_check.diagnostics)
-end
+fn check_names_empty() -> [Diagnostic] = do let empty_list: [Diagnostic] = []; empty_list end
 
 fn scope_with_bindings(scope: [string], binding_names: [string]) -> [string] =
   binding_names.fold(scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
-
-fn check_names_for_expression(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const inner_scope = locals.concat([variable_name])
-  const statement_check = check_names_statements(statements, inner_scope, globals)
-  diagnostics_append(check_names_expr(iterator, locals, globals), statement_check.diagnostics)
-end
-
-fn check_names_with_expression(resource: Shared<Expr>, binder: string, statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const inner_scope = locals.concat([binder])
-  const statements_check = check_names_statements(statements, inner_scope, globals)
-  diagnostics_append(check_names_expr(resource, locals, globals), statements_check.diagnostics)
-end
-
-fn check_names_match_expression(subject: Shared<Expr>, arms: [Shared<MatchArm>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const diagnostics_after_subject = check_names_expr(subject, locals, globals)
-  arms.fold(
-    diagnostics_after_subject,
-    (diagnostics_accumulator, arm_under_walk) => do
-      const arm_scope = scope_with_bindings(locals, pattern_bindings(arm_under_walk.pattern))
-      const after_guard =
-        if arm_under_walk.has_guard then
-          diagnostics_append(diagnostics_accumulator, check_names_expr(arm_under_walk.when_condition, arm_scope, globals))
-        else
-          diagnostics_accumulator
-        end
-      diagnostics_append(after_guard, check_names_expr(arm_under_walk.body, arm_scope, globals))
-    end)
-end
-
-fn diagnostics_for_single_record_literal_name_part(
-  literal_part: RecordLitPart,
-  locals: [string],
-  globals: Map<string, bool>
-) -> [Diagnostic] =
-  match literal_part {
-    RecordLitFields(field_values) =>
-      check_names_record_expression(field_values, locals, globals),
-    RecordLitSpread(spread_expression) =>
-      check_names_expr(spread_expression, locals, globals),
-  }
-
-fn check_names_record_lit_parts(lit_parts: [RecordLitPart], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  lit_parts.flat_map(literal_part_under_walk =>
-    diagnostics_for_single_record_literal_name_part(literal_part_under_walk, locals, globals))
-
-fn check_names_record_expression(field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  field_values.fold(
-    do let starting_record_names: [Diagnostic] = []; starting_record_names end,
-    (diagnostics_accumulator, field_value_under_walk) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.value, locals, globals)))
-
-fn check_names_record_update_expression(base: Shared<Expr>, field_values: [Shared<FieldVal>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  field_values.fold(
-    check_names_expr(base, locals, globals),
-    (diagnostics_accumulator, field_value_under_walk) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(field_value_under_walk.value, locals, globals)))
-
-fn check_names_array_expression(elements: [Shared<Expr>], locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  elements.fold(
-    do let starting_array_names: [Diagnostic] = []; starting_array_names end,
-    (diagnostics_accumulator, element_under_walk) =>
-      diagnostics_append(diagnostics_accumulator, check_names_expr(element_under_walk, locals, globals)))
-
-fn check_names_question_expression(inner_expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  check_names_expr(inner_expression, locals, globals)
-
-fn check_names_lambda_expression(parameter_names: [string], body: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] = do
-  const lambda_environment_names =
-    parameter_names.fold(
-      locals,
-      (accumulated_scope_names, lambda_parameter_name) =>
-        accumulated_scope_names.concat([lambda_parameter_name]))
-  check_names_expr(body, lambda_environment_names, globals)
-end
-
-fn check_names_empty() -> [Diagnostic] = do let empty_list: [Diagnostic] = []; empty_list end
-
-// --- Expression dispatcher ---------------------------------------------------
-
-export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
-  match expression {
-    ExprIdent(name, source_span)            => check_names_identifier(name, locals, globals, source_span),
-    ExprBin(_, left, right, _)              => check_names_binary_expression(left, right, locals, globals),
-    ExprUn(_, inner_expression, _)          => check_names_unary_expression(inner_expression, locals, globals),
-    ExprCall(function, call_arguments, _)   => check_names_call_expression(function, call_arguments, locals, globals),
-    ExprMethod(object, _, method_arguments, _) => check_names_method_expression(object, method_arguments, locals, globals),
-    ExprField(object, _, _)                    => check_names_field_expression(object, locals, globals),
-    ExprIndex(object, index_expression, _)     => check_names_index_expression(object, index_expression, locals, globals),
-    ExprIf(condition, then_expression, else_expression, _) =>
-      check_names_conditional_expression(condition, then_expression, else_expression, locals, globals),
-    ExprBlock(statements, result, _)       => check_names_block_expression(statements, result, locals, globals),
-    ExprWhile(condition, statements, _)    => check_names_while_expression(condition, statements, locals, globals),
-    ExprFor(variable_name, iterator, statements, _) =>
-      check_names_for_expression(variable_name, iterator, statements, locals, globals),
-    ExprMatch(subject, arms, _)            => check_names_match_expression(subject, arms, locals, globals),
-    ExprRecord(_, lit_parts, _)            => check_names_record_lit_parts(lit_parts, locals, globals),
-    ExprRecordUpdate(_, base, field_values, _) => check_names_record_update_expression(base, field_values, locals, globals),
-    ExprArray(elements, _)                  => check_names_array_expression(elements, locals, globals),
-    ExprTuple(elements, _)                  => check_names_array_expression(elements, locals, globals),
-    ExprQuestion(inner_expression, _)     => check_names_question_expression(inner_expression, locals, globals),
-    ExprLambda(parameter_names, body, _)  => check_names_lambda_expression(parameter_names, body, locals, globals),
-    ExprNamedArg(_, inner_expression, _)  => check_names_expr(inner_expression, locals, globals),
-    ExprWith(resource, binder, statements, _) =>
-      check_names_with_expression(resource, binder, statements, locals, globals),
-    _                                       => check_names_empty()
-  }
 
 export type NameCheckResult = NameCheckResult { diagnostics: [Diagnostic], scope: [string] }
 
@@ -224,49 +77,6 @@ extend NameCheckResult {
       scope: other.scope
     }
 }
-
-export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult =
-  statements.fold(
-    NameCheckResult { diagnostics: [], scope: locals },
-    (accumulator, statement_under_walk) => do
-      match statement_under_walk {
-        StmtLet(name, _, _, value, _) =>
-          NameCheckResult {
-            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
-            scope: accumulator.scope.concat([name]),
-          },
-        StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
-          const scope_after_value = accumulator.scope
-          let mut diagnostics_after_pattern =
-            diagnostics_append(accumulator.diagnostics, check_names_expr(value, scope_after_value, globals))
-          const scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern))
-          if has_else then
-            diagnostics_after_pattern =
-              diagnostics_append(diagnostics_after_pattern, check_names_expr(else_body, scope_after_bindings, globals))
-          end
-          NameCheckResult { diagnostics: diagnostics_after_pattern, scope: scope_after_bindings }
-        end,
-        StmtLetConst(name, _, value, _) =>
-          NameCheckResult {
-            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
-            scope: accumulator.scope.concat([name]),
-          },
-        StmtExpr(expression, _) =>
-          NameCheckResult {
-            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
-            scope: accumulator.scope,
-          },
-        StmtReturn(expression, _) =>
-          NameCheckResult {
-            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
-            scope: accumulator.scope,
-          },
-        StmtBreak(_)    => accumulator,
-        StmtContinue(_) => accumulator,
-      }
-    end)
-
-// --- Semantic expression visitor (ExprVisitor<NameCheckResult>) ----------------
 
 type NamesPass = NamesPass { locals: [string], globals: Map<string, bool>, seed: i32 }
 
@@ -301,8 +111,11 @@ fn dispatch_names_pass(names_pass: NamesPass, expression: Shared<SemanticExpress
       names_pass.visit_char(character_value, type_value),
     SemanticExpressionExtern(type_value, _) =>
       names_pass.visit_extern(type_value),
-    SemanticExpressionIdent(name_value, type_value, _) =>
-      names_pass.visit_ident(name_value, type_value),
+    SemanticExpressionIdent(name_value, type_value, source_span) =>
+      NameCheckResult {
+        diagnostics: check_names_identifier(name_value, names_pass.locals, names_pass.globals, source_span),
+        scope: names_pass.locals,
+      },
     SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
       names_pass.visit_bin(operation, left_expression, right_expression, type_value),
     SemanticExpressionUn(operation, inner_expression, type_value, _) =>
@@ -621,3 +434,57 @@ export fn check_names_semantic_expression(
   const check_result: NameCheckResult = dispatch_names_pass(names_pass_new(locals, globals), expression)
   check_result.diagnostics
 end
+
+fn transform_parser_expression_for_names(expression: Shared<Expr>) -> Shared<SemanticExpression> =
+  transform_expr(
+    expression,
+    empty_transform_context(),
+    (statements: [Shared<Stmt>], nested_transform_context: TransformContext) =>
+      transform_stmts(statements, nested_transform_context))
+
+export fn check_names_expr(expression: Shared<Expr>, locals: [string], globals: Map<string, bool>) -> [Diagnostic] =
+  check_names_semantic_expression(
+    transform_parser_expression_for_names(expression),
+    locals,
+    globals)
+
+export fn check_names_statements(statements: [Shared<Stmt>], locals: [string], globals: Map<string, bool>) -> NameCheckResult =
+  statements.fold(
+    NameCheckResult { diagnostics: [], scope: locals },
+    (accumulator, statement_under_walk) => do
+      match statement_under_walk {
+        StmtLet(name, _, _, value, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
+          const scope_after_value = accumulator.scope
+          let mut diagnostics_after_pattern =
+            diagnostics_append(accumulator.diagnostics, check_names_expr(value, scope_after_value, globals))
+          const scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern))
+          if has_else then
+            diagnostics_after_pattern =
+              diagnostics_append(diagnostics_after_pattern, check_names_expr(else_body, scope_after_bindings, globals))
+          end
+          NameCheckResult { diagnostics: diagnostics_after_pattern, scope: scope_after_bindings }
+        end,
+        StmtLetConst(name, _, value, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)),
+            scope: accumulator.scope.concat([name]),
+          },
+        StmtExpr(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        StmtReturn(expression, _) =>
+          NameCheckResult {
+            diagnostics: diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)),
+            scope: accumulator.scope,
+          },
+        StmtBreak(_)    => accumulator,
+        StmtContinue(_) => accumulator,
+      }
+    end)

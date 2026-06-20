@@ -16,7 +16,7 @@ fn cpp_get_operator(kind: CppTokenKind) -> string =
   match kind { COp(symbol) => symbol, _ => '' }
 
 fn cpp_is_hash(kind: CppTokenKind) -> bool =
-  match kind { COp(symbol) => symbol == "#", _ => false }
+  match kind { CHash => true, _ => false }
 
 fn cpp_is_identifier(kind: CppTokenKind) -> bool =
   match kind { CIdent(_) => true, _ => false }

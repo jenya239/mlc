@@ -42,7 +42,7 @@ index = index + 1;
 }
 }
   std::shared_ptr<registry::Type> return_type = registry::type_from_annotation_with_registry(return_type_expr, registry);
-  transform::TransformContext initial_context = transform::TransformContext{param_env, registry};
+  transform::TransformContext initial_context = transform::TransformContext{param_env, registry, {}};
   std::shared_ptr<semantic_ir::SemanticExpression> typed_body = transform::transform_expr(body, initial_context, [](mlc::Array<std::shared_ptr<ast::Stmt>> statements, transform::TransformContext transform_context) mutable { return transform_stmts::transform_stmts(statements, transform_context); });
   std::shared_ptr<semantic_ir::SemanticExpression> coerced_body = transform::coerce_expr_to_type(typed_body, return_type);
   return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, ast::expr_span(body)));

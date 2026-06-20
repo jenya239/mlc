@@ -44,6 +44,12 @@ mlc::String type_template(mlc::String name, mlc::String arguments_code) noexcept
 
 mlc::String type_reference(mlc::String inner_code) noexcept;
 
+mlc::String type_rvalue_reference(mlc::String inner_code) noexcept;
+
+mlc::String type_pointer(mlc::String inner_code) noexcept;
+
+mlc::String type_const_prefix(mlc::String inner_code) noexcept;
+
 mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
 
 mlc::String render_ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
@@ -135,6 +141,12 @@ mlc::String using_namespace_directive(mlc::String namespace_identifier) noexcept
 mlc::String host_entry_main_epilogue(mlc::String qualified_namespace) noexcept;
 
 mlc::String struct_forward_declaration(mlc::String template_prefix, mlc::String name) noexcept;
+
+mlc::String class_forward_declaration(mlc::String name) noexcept;
+
+mlc::String enum_forward_declaration(mlc::String name) noexcept;
+
+mlc::String print_forward_declaration(mlc::String kind, mlc::String name) noexcept;
 
 mlc::String print_struct_empty_definition(mlc::String template_prefix, mlc::String name) noexcept;
 
@@ -264,10 +276,19 @@ mlc::String type_template(mlc::String name, mlc::String arguments_code) noexcept
 
 mlc::String type_reference(mlc::String inner_code) noexcept{return inner_code + mlc::String("&");}
 
+mlc::String type_rvalue_reference(mlc::String inner_code) noexcept{return inner_code + mlc::String("&&");}
+
+mlc::String type_pointer(mlc::String inner_code) noexcept{return inner_code + mlc::String("*");}
+
+mlc::String type_const_prefix(mlc::String inner_code) noexcept{return mlc::String("const ") + inner_code;}
+
 mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept{return std::visit(overloaded{
   [&](const CppTypeName& cpptypename) -> mlc::String { auto [name] = cpptypename; return name; },
   [&](const CppTypeTemplate& cpptypetemplate) -> mlc::String { auto [name, arguments] = cpptypetemplate; return type_template(name, print_comma_separated_types(arguments)); },
-  [&](const CppTypeRef& cpptyperef) -> mlc::String { auto [inner] = cpptyperef; return type_reference(print_type(inner)); }
+  [&](const CppTypeRef& cpptyperef) -> mlc::String { auto [inner] = cpptyperef; return type_reference(print_type(inner)); },
+  [&](const CppTypeRRef& cpptyperref) -> mlc::String { auto [inner] = cpptyperref; return type_rvalue_reference(print_type(inner)); },
+  [&](const CppTypePtr& cpptypeptr) -> mlc::String { auto [inner] = cpptypeptr; return type_pointer(print_type(inner)); },
+  [&](const CppTypeConst& cpptypeconst) -> mlc::String { auto [inner] = cpptypeconst; return type_const_prefix(print_type(inner)); }
 }, (*type_node));}
 
 mlc::String render_ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("(") + condition_code + mlc::String(" ? (") + then_code + mlc::String(") : (") + else_code + mlc::String("))");}
@@ -365,6 +386,12 @@ mlc::String host_entry_main_epilogue(mlc::String qualified_namespace) noexcept{r
 
 mlc::String struct_forward_declaration(mlc::String template_prefix, mlc::String name) noexcept{return template_prefix + mlc::String("struct ") + name + mlc::String(";\n");}
 
+mlc::String class_forward_declaration(mlc::String name) noexcept{return mlc::String("class ") + name + mlc::String(";\n");}
+
+mlc::String enum_forward_declaration(mlc::String name) noexcept{return mlc::String("enum ") + name + mlc::String(";\n");}
+
+mlc::String print_forward_declaration(mlc::String kind, mlc::String name) noexcept{return kind == mlc::String("class") ? class_forward_declaration(name) : kind == mlc::String("enum") ? enum_forward_declaration(name) : struct_forward_declaration(mlc::String(""), name);}
+
 mlc::String print_struct_empty_definition(mlc::String template_prefix, mlc::String name) noexcept{return template_prefix + mlc::String("struct ") + name + mlc::String(" {};\n");}
 
 mlc::String struct_definition(mlc::String template_prefix, mlc::String name, mlc::String fields_code, bool forward_only) noexcept{return fields_code.length() == 0 ? forward_only ? struct_forward_declaration(template_prefix, name) : print_struct_empty_definition(template_prefix, name) : template_prefix + mlc::String("struct ") + name + mlc::String(" {\n") + fields_code + mlc::String("\n};\n");}
@@ -434,6 +461,7 @@ mlc::String print_decl_node(std::shared_ptr<cpp_ast::CppDeclaration> declaration
   [&](const CppUsing& cppusing) -> mlc::String { auto [alias, type_code] = cppusing; return using_alias(alias, type_code); },
   [&](const CppUsingNamespace& cppusingnamespace) -> mlc::String { auto [namespace_identifier] = cppusingnamespace; return using_namespace_directive(namespace_identifier); },
   [&](const CppStruct& cppstruct) -> mlc::String { auto [template_prefix, name, fields, forward_only] = cppstruct; return struct_definition(template_prefix, name, print_struct_fields(fields), forward_only); },
+  [&](const CppForwardDecl& cppforwarddecl) -> mlc::String { auto [kind, name] = cppforwarddecl; return print_forward_declaration(kind, name); },
   [&](const CppFnProto& cppfnproto) -> mlc::String { auto [template_prefix, return_type, name, parameters] = cppfnproto; return function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)); },
   [&](const CppFnDef& cppfndef) -> mlc::String { auto [template_prefix, return_type, name, parameters, body, body_statement_depth] = cppfndef; return print_function_definition(template_prefix, return_type, name, print_comma_separated_strings(parameters), body, body_statement_depth); },
   [&](const CppNamespace& cppnamespace) -> mlc::String { auto [name, declarations] = cppnamespace; return namespace_block(name, print_decls(declarations)); },

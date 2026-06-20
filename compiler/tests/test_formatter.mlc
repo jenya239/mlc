@@ -1,13 +1,30 @@
 // Formatter smoke tests (compiler/fmt/ast_printer.mlc).
 
 import { TestResult, assert_eq_str } from './test_runner'
-import { print_expr } from '../fmt/ast_printer'
+import { print_mlc_expr, print_mlc_program } from '../fmt/ast_printer'
+import { format_mlc_source_text } from '../fmt/format_cli'
 import { tokenize } from '../frontend/lexer'
 import { parser_new } from '../frontend/parser/predicates'
 import { parse_expr } from '../frontend/parser/exprs'
+import { parse_program } from '../frontend/parser/decls'
 
 fn format_expression_source(source: string) -> string =
-  print_expr(parse_expr(parser_new(tokenize(source).tokens)).value)
+  print_mlc_expr(parse_expr(parser_new(tokenize(source).tokens)).value)
+
+fn format_program_source(source: string) -> string =
+  print_mlc_program(parse_program(tokenize(source).tokens))
+
+fn assert_expression_format_idempotent(label: string, source: string) -> TestResult = do
+  const once = format_expression_source(source)
+  const twice = format_expression_source(once)
+  assert_eq_str(label, twice, once)
+end
+
+fn assert_program_format_idempotent(label: string, source: string) -> TestResult = do
+  const once = format_program_source(source)
+  const twice = format_program_source(once)
+  assert_eq_str(label, twice, once)
+end
 
 export fn formatter_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -25,6 +42,63 @@ export fn formatter_tests() -> [TestResult] = do
 
   const integer_round_trip = format_expression_source(format_expression_source("7"))
   results.push(assert_eq_str('format round-trip int', integer_round_trip, "7"))
+
+  results.push(assert_eq_str('format do/end block',
+    format_expression_source('do\n  let value = 1\n  value\nend'),
+    "do\n  let value = 1\n  value\nend"))
+
+  results.push(assert_eq_str('format nested do/end',
+    format_expression_source('do\n  do\n    1\n  end\nend'),
+    "do\n  do\n    1\n  end\nend"))
+
+  results.push(assert_eq_str('format fn do/end body',
+    format_program_source('fn example() -> i32 = do\n  let value = 1\n  value\nend'),
+    "fn example() -> i32 = do\n  let value = 1\n  value\nend"))
+
+  results.push(assert_eq_str('format record inline',
+    format_expression_source('Point { x: 1 }'),
+    'Point { x: 1 }'))
+
+  results.push(assert_eq_str('format record multiline',
+    format_expression_source('Point { x: 1, y: 2 }'),
+    "Point {\n  x: 1,\n  y: 2,\n}"))
+
+  results.push(assert_eq_str('format record aligned fields',
+    format_expression_source('Point { first: 1, second: 2 }'),
+    "Point {\n  first:  1,\n  second: 2,\n}"))
+
+  results.push(assert_eq_str('format record update inline',
+    format_expression_source('Point { ...base, x: 10 }'),
+    'Point { ...base, x: 10 }'))
+
+  results.push(assert_eq_str('format type record multiline',
+    format_program_source('type Point = { x: i32, y: i32 }'),
+    "type Point = {\n  x: i32,\n  y: i32,\n}"))
+
+  results.push(assert_expression_format_idempotent('idempotent do/end block',
+    'do\n  let value = 1\n  value\nend'))
+  results.push(assert_expression_format_idempotent('idempotent nested do/end',
+    'do\n  do\n    1\n  end\nend'))
+  results.push(assert_expression_format_idempotent('idempotent record inline',
+    'Point { x: 1 }'))
+  results.push(assert_expression_format_idempotent('idempotent record multiline',
+    'Point { x: 1, y: 2 }'))
+  results.push(assert_expression_format_idempotent('idempotent record aligned fields',
+    'Point { first: 1, second: 2 }'))
+  results.push(assert_expression_format_idempotent('idempotent record update inline',
+    'Point { ...base, x: 10 }'))
+  results.push(assert_program_format_idempotent('idempotent type record multiline',
+    'type Point = { x: i32, y: i32 }'))
+  results.push(assert_program_format_idempotent('idempotent fn do/end body',
+    'fn example() -> i32 = do\n  let value = 1\n  value\nend'))
+
+  match format_mlc_source_text('fn example() -> i32 = 42', 'example.mlc') {
+    Ok(formatted) =>
+      results.push(assert_eq_str('format_cli program source',
+        formatted, 'fn example() -> i32 = 42')),
+    Err(_) =>
+      results.push(assert_eq_str('format_cli program source', 'ok', 'failed')),
+  }
 
   results
 end

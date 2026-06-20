@@ -5,6 +5,9 @@ export type CppType =
   | CppTypeName(string)
   | CppTypeTemplate(string, [Shared<CppType>])
   | CppTypeRef(Shared<CppType>)
+  | CppTypeRRef(Shared<CppType>)
+  | CppTypePtr(Shared<CppType>)
+  | CppTypeConst(Shared<CppType>)
 
 export type CppCastKind =
   | CppCastStatic
@@ -78,6 +81,7 @@ export type CppDeclaration =
   | CppUsing(string, string)
   | CppUsingNamespace(string)
   | CppStruct(string, string, CppFields, bool)
+  | CppForwardDecl(string, string)
   | CppFnProto(string, string, string, [string])
   | CppFnDef(string, string, string, [string], CppStatements, i32)
   | CppNamespace(string, [Shared<CppDeclaration>])
@@ -149,11 +153,23 @@ fn type_template(name: string, arguments_code: string) -> string =
 fn type_reference(inner_code: string) -> string =
   `${inner_code}&`
 
+fn type_rvalue_reference(inner_code: string) -> string =
+  `${inner_code}&&`
+
+fn type_pointer(inner_code: string) -> string =
+  `${inner_code}*`
+
+fn type_const_prefix(inner_code: string) -> string =
+  `const ${inner_code}`
+
 fn print_type(type_node: Shared<CppType>) -> string =
   match type_node {
     CppTypeName(name) => name,
     CppTypeTemplate(name, arguments) => type_template(name, print_comma_separated_types(arguments)),
-    CppTypeRef(inner) => type_reference(print_type(inner))
+    CppTypeRef(inner) => type_reference(print_type(inner)),
+    CppTypeRRef(inner) => type_rvalue_reference(print_type(inner)),
+    CppTypePtr(inner) => type_pointer(print_type(inner)),
+    CppTypeConst(inner) => type_const_prefix(print_type(inner))
   }
 
 fn render_ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
@@ -349,6 +365,18 @@ fn host_entry_main_epilogue(qualified_namespace: string) -> string =
 fn struct_forward_declaration(template_prefix: string, name: string) -> string =
   `${template_prefix}struct ${name};\n`
 
+fn class_forward_declaration(name: string) -> string =
+  `class ${name};\n`
+
+fn enum_forward_declaration(name: string) -> string =
+  `enum ${name};\n`
+
+fn print_forward_declaration(kind: string, name: string) -> string =
+  if kind == 'class' then class_forward_declaration(name)
+  else if kind == 'enum' then enum_forward_declaration(name)
+  else struct_forward_declaration('', name)
+  end
+
 fn print_struct_empty_definition(template_prefix: string, name: string) -> string =
   `${template_prefix}struct ${name} {};\n`
 
@@ -527,6 +555,7 @@ fn print_decl_node(declaration: Shared<CppDeclaration>) -> string =
     CppUsingNamespace(namespace_identifier) => using_namespace_directive(namespace_identifier),
     CppStruct(template_prefix, name, fields, forward_only) =>
       struct_definition(template_prefix, name, print_struct_fields(fields), forward_only),
+    CppForwardDecl(kind, name) => print_forward_declaration(kind, name),
     CppFnProto(template_prefix, return_type, name, parameters) =>
       function_prototype(template_prefix, return_type, name, print_comma_separated_strings(parameters)),
     CppFnDef(template_prefix, return_type, name, parameters, body, body_statement_depth) =>

@@ -2,11 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3 п.1; follows [TRACK_CODE_QUALITY.md](TRACK_CODE_QUALITY.md)
 
-## Status: **open** (STEP=1 pending)
+## Status: **closed** (STEP=5 done)
 
 **Depends on:** TRACK_PARSE_PROGRAM_RESULT closed; TRACK_CODE_QUALITY closed (`36a6e8cc`).
 
-**Baseline:** build_tests **1005/0**; **diff_exit=0**.
+**Baseline:** build_tests **1030/0**; **diff_exit=0**.
 
 **Goal:** deterministic `.mlc` formatting from AST; foundation for LSP.
 
@@ -25,11 +25,11 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | AST printer module — `compiler/fmt/ast_printer.mlc`; round-trip smoke on literals/idents | pending |
-| 2 | Indent rules — 2-space `do`/`end`, fn bodies, nested blocks | pending |
-| 3 | Record alignment — field lists, multiline records | pending |
-| 4 | Tests — `test_formatter.mlc`; idempotent `fmt(fmt(source)) == fmt(source)` | pending |
-| 5 | CLI integrate — `mlcc fmt` or `mlc fmt` subcommand; close track | pending |
+| 1 | AST printer module — `compiler/fmt/ast_printer.mlc`; round-trip smoke on literals/idents | done |
+| 2 | Indent rules — 2-space `do`/`end`, fn bodies, nested blocks | done |
+| 3 | Record alignment — field lists, multiline records | done |
+| 4 | Tests — `test_formatter.mlc`; idempotent `fmt(fmt(source)) == fmt(source)` | done |
+| 5 | CLI integrate — `mlcc fmt` or `mlc fmt` subcommand; close track | done |
 
 ### Out of scope
 

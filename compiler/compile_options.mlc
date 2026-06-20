@@ -7,7 +7,7 @@ export type CompileOptions = CompileOptions {
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]'
+  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>'
 
 fn is_output_directory_flag(argument: string) -> bool =
   match argument | '-o' => true | _ => false end

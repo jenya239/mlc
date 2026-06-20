@@ -11,6 +11,7 @@
 #include "ast.hpp"
 #include "pipeline.hpp"
 #include "compile_options.hpp"
+#include "format_cli.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {

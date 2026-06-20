@@ -10,6 +10,7 @@
 #include "ast.hpp"
 #include "pipeline.hpp"
 #include "compile_options.hpp"
+#include "format_cli.hpp"
 #include "profile.hpp"
 
 namespace mlc_main {
@@ -21,6 +22,7 @@ using namespace decl_index;
 using namespace ast;
 using namespace pipeline;
 using namespace compile_options;
+using namespace format_cli;
 using namespace profile;
 using namespace ast_tokens;
 
@@ -45,6 +47,8 @@ MergeResult merge_program(mlc::String entry_path, ast::Program program, bool pro
 ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands) noexcept;
 
 mlc::String format_errors(mlc::String label, mlc::Array<mlc::String> errors) noexcept;
+
+bool is_format_subcommand(mlc::String argument) noexcept;
 
 int main(int argc, char** argv) noexcept;
 
@@ -291,6 +295,8 @@ return ast_tokens::LexOut_has_errors(lexer_output) ? ast::Result<mlc::String, ml
 
 mlc::String format_errors(mlc::String label, mlc::Array<mlc::String> errors) noexcept{return errors.map([label](mlc::String message_line) mutable { return label + mlc::String(": ") + message_line + mlc::String("\n"); }).join(mlc::String(""));}
 
+bool is_format_subcommand(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("fmt")) { return true; } return false; }();}
+
 int main(int argc, char** argv) noexcept{
 mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));
 mlc::Array<mlc::String> command_line_arguments = mlc::io::args();
@@ -300,14 +306,33 @@ mlc::io::println(compile_options::compile_usage_message());
 mlc::io::exit(1);
 }
 }
-compile_options::CompileOptions options = compile_options::parse_compile_options(command_line_arguments);
-if (options.entry_path.length() == 0){
+return is_format_subcommand(command_line_arguments[0]) ? [&]() -> int { 
+  if (command_line_arguments.size() < 2){
+{
+mlc::io::println(format_cli::format_usage_message());
+mlc::io::exit(1);
+}
+}
+  return std::visit(overloaded{
+  [&](const ast::Ok<mlc::String>& ok) -> int { auto [formatted_source] = ok; return [&]() -> int { 
+  mlc::io::print(formatted_source);
+  return 0;
+ }(); },
+  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 
+  mlc::io::print(format_errors(mlc::String("error"), errors));
+  mlc::io::exit(1);
+  return 0;
+ }(); }
+}, format_cli::format_source_file(command_line_arguments[1]));
+ }() : [&]() -> int { 
+  compile_options::CompileOptions options = compile_options::parse_compile_options(command_line_arguments);
+  if (options.entry_path.length() == 0){
 {
 mlc::io::println(compile_options::compile_usage_message());
 mlc::io::exit(1);
 }
 }
-return std::visit(overloaded{
+  return std::visit(overloaded{
   [&](const ast::Ok<mlc::String>& ok) -> int { auto [_w0] = ok; return 0; },
   [&](const ast::Err<mlc::Array<mlc::String>>& err) -> int { auto [errors] = err; return [&]() -> int { 
   mlc::io::print(format_errors(mlc::String("error"), errors));
@@ -315,6 +340,7 @@ return std::visit(overloaded{
   return 0;
  }(); }
 }, compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands));
+ }();
 }
 
 } // namespace mlc_main

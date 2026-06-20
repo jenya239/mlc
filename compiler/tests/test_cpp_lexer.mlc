@@ -1,7 +1,8 @@
 // Unit tests for the C++ lexer (cpp_tokenize).
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
-import { cpp_tokenize, CppTokenKind, CIdent, CLStr, CLInt } from '../cpp/lexer'
+import { cpp_tokenize, cpp_lex_roundtrip_preserves_kinds } from '../cpp/lexer'
+import { CppTokenKind, CIdent, CLStr, CLInt, CHash, CKClass, CKEnum, CKExtern, cpp_tokens_to_source } from '../cpp/cpp_tokens'
 
 fn cpp_tok_count(source_text: string) -> i32 =
   cpp_tokenize(source_text).tokens.length()
@@ -160,8 +161,31 @@ export fn cpp_lexer_tests() -> [TestResult] = do
 
   // --- Hash token ----------------------------------------------------------
 
-  results.push(assert_true('\'#\' - COp("#")',
-    match cpp_first_kind("#") { COp(s) => s == "#", _ => false }))
+  results.push(assert_true('\'#\' - CHash',
+    match cpp_first_kind("#") { CHash => true, _ => false }))
+
+  results.push(assert_true('\'class\' - CKClass',
+    match cpp_first_kind('class') { CKClass => true, _ => false }))
+
+  results.push(assert_true('\'enum\' - CKEnum',
+    match cpp_first_kind('enum') { CKEnum => true, _ => false }))
+
+  results.push(assert_true('\'extern\' - CKExtern',
+    match cpp_first_kind('extern') { CKExtern => true, _ => false }))
+
+  // --- Roundtrip smoke -------------------------------------------------------
+
+  results.push(assert_true('roundtrip kinds - int x',
+    cpp_lex_roundtrip_preserves_kinds('int x')))
+
+  results.push(assert_true('roundtrip kinds - std::string',
+    cpp_lex_roundtrip_preserves_kinds('std::string')))
+
+  results.push(assert_true('roundtrip kinds - #include <vector>',
+    cpp_lex_roundtrip_preserves_kinds('#include <vector>')))
+
+  results.push(assert_eq_str('tokens_to_source - int x',
+    cpp_tokens_to_source(cpp_tokenize('int x').tokens), 'int x'))
 
   results
 end

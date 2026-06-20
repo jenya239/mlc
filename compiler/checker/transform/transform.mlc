@@ -124,16 +124,34 @@ fn conditional_else_empty_unknown_array_coerced_to_then_array_element(
 
 // --- Context ----------------------------------------------------------------
 
-export type TransformContext = TransformContext { type_env: Map<string, Shared<Type>>, registry: TypeRegistry }
+export type TransformContext = TransformContext {
+  type_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry,
+  lambda_parameter_types: [Shared<Type>],
+}
 
 fn transform_context_new(type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> TransformContext =
-  TransformContext { type_env, registry }
+  TransformContext { type_env: type_env, registry: registry, lambda_parameter_types: [] }
 
 export fn empty_transform_context() -> TransformContext =
-  TransformContext { type_env: Map.new(), registry: empty_registry() }
+  TransformContext { type_env: Map.new(), registry: empty_registry(), lambda_parameter_types: [] }
 
 export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
-  TransformContext { type_env, registry: base.registry }
+  TransformContext {
+    type_env: type_env,
+    registry: base.registry,
+    lambda_parameter_types: base.lambda_parameter_types,
+  }
+
+fn transform_context_with_lambda_parameter_types(
+  base: TransformContext,
+  lambda_parameter_types: [Shared<Type>]
+) -> TransformContext =
+  TransformContext {
+    type_env: base.type_env,
+    registry: base.registry,
+    lambda_parameter_types: lambda_parameter_types,
+  }
 
 // Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
@@ -395,7 +413,9 @@ fn transform_expr_lambda_with_param_types(
           parameter_binding_name,
           parameter_types))
   const lambda_context =
-    transform_context_with_env(transform_context, lambda_parameter_accumulator_after_bind.type_environment)
+    transform_context_with_lambda_parameter_types(
+      transform_context_with_env(transform_context, lambda_parameter_accumulator_after_bind.type_environment),
+      [])
   const typed_body =
     transform_expr(body, lambda_context, stmts_fn)
   Shared.new(SemanticExpressionLambda(
@@ -408,18 +428,16 @@ fn transform_expr_lambda_with_param_types(
     source_span))
 end
 
-fn transform_expr_maybe_lambda_context(
+fn transform_expr_with_lambda_parameter_types(
   expression: Shared<Expr>,
   expected_param_types: [Shared<Type>],
   transform_context: TransformContext,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
 ) -> Shared<SemanticExpression> =
-  match expression {
-    ExprLambda(parameter_names, body, source_span) =>
-      transform_expr_lambda_with_param_types(
-        parameter_names, expected_param_types, body, source_span, transform_context, stmts_fn),
-    _ => transform_expr(expression, transform_context, stmts_fn)
-  }
+  transform_expr(
+    expression,
+    transform_context_with_lambda_parameter_types(transform_context, expected_param_types),
+    stmts_fn)
 
 fn semantic_expression_list_singleton(
   expression: Shared<SemanticExpression>
@@ -445,7 +463,7 @@ fn transform_array_hof_method_arguments(
         transform_expr(method_arguments[0], transform_context, stmts_fn))
     else do
       const first_transformed = transform_expr(method_arguments[0], transform_context, stmts_fn)
-      const second_transformed = transform_expr_maybe_lambda_context(
+      const second_transformed = transform_expr_with_lambda_parameter_types(
         method_arguments[1], [sexpr_type(first_transformed), element_type], transform_context, stmts_fn)
       semantic_expression_list_singleton(first_transformed).concat([second_transformed])
     end
@@ -467,7 +485,7 @@ fn transform_array_hof_method_arguments(
     empty_transformed_arguments
   else if method_arguments.length() > 0 then
     semantic_expression_list_singleton(
-      transform_expr_maybe_lambda_context(
+      transform_expr_with_lambda_parameter_types(
         method_arguments[0], [element_type], transform_context, stmts_fn))
   else
     empty_transformed_arguments
@@ -880,6 +898,15 @@ extend TransformPass {
     body: Shared<Expr>,
     source_span: Span
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    if self.transform_context.lambda_parameter_types.length() > 0 then
+      transform_expr_lambda_with_param_types(
+        parameter_names,
+        self.transform_context.lambda_parameter_types,
+        body,
+        source_span,
+        transform_context_with_lambda_parameter_types(self.transform_context, []),
+        stmts_fn)
+    else do
     let lambda_environment = self.transform_context.type_env
     const parameter_types =
       parameter_names.map(parameter_binding_placeholder => standalone_unknown_cell())
@@ -894,6 +921,8 @@ extend TransformPass {
     const typed_body     = dispatch_transform_pass(lambda_pass, body, stmts_fn)
     const function_type  = Shared.new(TFn(parameter_types, sexpr_type(typed_body)))
     Shared.new(SemanticExpressionLambda(parameter_names, typed_body, function_type, source_span))
+    end
+    end
   end
   fn visit_named_arg(self: TransformPass, inner_expression: Shared<Expr>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
     dispatch_transform_pass(self, inner_expression, stmts_fn)

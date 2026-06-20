@@ -30,8 +30,13 @@ type GenStmtCppResult = GenStmtCppResult {
   codegen_context: CodegenContext
 }
 
+extend CodegenContext {
+  fn gen_stmts_cpp(self: CodegenContext, statements: [Shared<SemanticStatement>]) -> [Shared<CppStatement>] =
+    eval_stmts_cpp_with_try(statements, self, 0).statements
+}
+
 export fn gen_stmts_cpp(statements: [Shared<SemanticStatement>], context: CodegenContext) -> [Shared<CppStatement>] =
-  eval_stmts_cpp_with_try(statements, context, 0).statements
+  context.gen_stmts_cpp(statements)
 
 export type GenStmtsCppWithContext = GenStmtsCppWithContext {
   statements: [Shared<CppStatement>],

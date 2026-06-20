@@ -31,6 +31,10 @@ context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std
 
 mlc::String gen_fn_decl(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept;
 
+mlc::String CodegenContext_gen_decl(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
+
+mlc::String CodegenContext_gen_proto(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
+
 mlc::String gen_decl(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept;
 
 mlc::String gen_proto(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept;
@@ -92,30 +96,34 @@ return name == mlc::String("main") && parameters.size() == 0 ? [&]() -> mlc::Str
  }() : prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, decl_extend::gen_params_def(prototype_context, parameters)) + return_body::gen_fn_body(body, body_context) + expr::block_close_newline();
 }
 
-mlc::String gen_decl(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return std::visit(overloaded{
-  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [type_name, type_parameters, variants, derive_traits, _w0] = semanticdeclarationtype; return type_gen::gen_type_decl(context, type_name, type_parameters, variants) + type_gen::gen_derive_methods(context, type_name, variants, derive_traits); },
+mlc::String CodegenContext_gen_decl(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [type_name, type_parameters, variants, derive_traits, _w0] = semanticdeclarationtype; return type_gen::gen_type_decl(self, type_name, type_parameters, variants) + type_gen::gen_derive_methods(self, type_name, variants, derive_traits); },
   [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return mlc::String(""); },
-  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [name, type_parameters, methods, _w0] = semanticdeclarationtrait; return decl_extend::gen_trait_decl(context, name, type_parameters, methods); },
-  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [name, type_parameters, type_bounds, parameters, return_type, body, _w0, _w1] = semanticdeclarationfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::String(""); } return gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, context); }(); },
-  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return decl_extend::gen_decl_extend(type_name, trait_name, methods, context, [](context::CodegenContext codegen_context, mlc::String name) mutable { return context::CodegenContext_resolve(codegen_context, name); }, [](std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext codegen_context) mutable { return gen_decl(inner_declaration, codegen_context); }); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [name, type_parameters, methods, _w0] = semanticdeclarationtrait; return decl_extend::gen_trait_decl(self, name, type_parameters, methods); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [name, type_parameters, type_bounds, parameters, return_type, body, _w0, _w1] = semanticdeclarationfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::String(""); } return gen_fn_decl(name, type_parameters, type_bounds, parameters, return_type, body, self); }(); },
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return decl_extend::gen_decl_extend(type_name, trait_name, methods, self, [](context::CodegenContext codegen_context, mlc::String name) mutable { return context::CodegenContext_resolve(codegen_context, name); }, [](std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext codegen_context) mutable { return CodegenContext_gen_decl(codegen_context, inner_declaration); }); },
   [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::String { auto [_w0, _w1] = semanticdeclarationimport; return mlc::String(""); },
-  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return gen_decl(inner_declaration, context); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return CodegenContext_gen_decl(self, inner_declaration); },
   [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::String { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return mlc::String(""); }
 }, (*declaration));}
 
-mlc::String gen_proto(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return std::visit(overloaded{
+mlc::String CodegenContext_gen_proto(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return std::visit(overloaded{
   [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return mlc::String(""); },
   [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return mlc::String(""); },
   [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return mlc::String(""); },
-  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [name, type_parameters, type_bounds, parameters, return_type, body, _w0, _w1] = semanticdeclarationfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::String(""); } return gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, context); }(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [name, type_parameters, type_bounds, parameters, return_type, body, _w0, _w1] = semanticdeclarationfn; return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::String(""); } return gen_fn_proto(name, type_parameters, type_bounds, parameters, return_type, self); }(); },
   [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [type_name, _w0, methods, _w1] = semanticdeclarationextend; return [&]() -> mlc::String { 
-  context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
-  return methods.map([extend_context](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return gen_proto(method, extend_context); }).join(mlc::String(""));
+  context::CodegenContext extend_context = context::CodegenContext_for_type_body(self, type_name);
+  return methods.map([extend_context](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return CodegenContext_gen_proto(extend_context, method); }).join(mlc::String(""));
  }(); },
   [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::String { auto [_w0, _w1] = semanticdeclarationimport; return mlc::String(""); },
-  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return gen_proto(inner_declaration, context); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return CodegenContext_gen_proto(self, inner_declaration); },
   [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::String { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return mlc::String(""); }
 }, (*declaration));}
+
+mlc::String gen_decl(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return CodegenContext_gen_decl(context, declaration);}
+
+mlc::String gen_proto(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return CodegenContext_gen_proto(context, declaration);}
 
 bool inner_declaration_is_main(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(declaration))); auto [name, _w0, _w1, _w2, _w3, _w4, _w5, _w6] = _v_semanticdeclarationfn; return name == mlc::String("main"); } return false; }();}
 

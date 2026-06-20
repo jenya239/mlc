@@ -27,7 +27,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-struct TransformContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;};
+struct TransformContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types;};
 
 struct TransformStmtsResult {mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;};
 

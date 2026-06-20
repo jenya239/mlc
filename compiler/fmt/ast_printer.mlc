@@ -1,4 +1,4 @@
-// MLC source formatter: AST → text (STEP=1: literals and identifiers).
+// MLC source formatter: AST → text.
 
 import {
   Expr,
@@ -6,8 +6,48 @@ import {
   ExprStr,
   ExprBool,
   ExprUnit,
-  ExprIdent
+  ExprIdent,
+  ExprBlock,
+  ExprRecord,
+  ExprRecordUpdate,
+  RecordLitPart,
+  RecordLitFields,
+  RecordLitSpread,
+  Stmt,
+  StmtLet,
+  StmtExpr,
+  StmtReturn,
+  StmtBreak,
+  StmtContinue,
+  Decl,
+  DeclFn,
+  DeclType,
+  Program,
+  TypeExpr,
+  TyI32,
+  TyString,
+  TyBool,
+  TyUnit,
+  TyNamed,
+  Param,
+  FieldDef,
+  TypeVariant,
+  VarRecord
 } from '../frontend/ast'
+import { FieldVal } from '../frontend/ast'
+
+fn zero_based_indices(count: i32) -> [i32] =
+  if count <= 0 then []
+  else zero_based_indices(count - 1).concat([count - 1])
+  end
+
+fn indent_text(depth: i32) -> string =
+  zero_based_indices(depth).map(_ => '  ').join('')
+
+fn padding_spaces(count: i32) -> string =
+  if count <= 0 then ''
+  else zero_based_indices(count).map(_ => ` `).join('')
+  end
 
 fn escape_string_literal_content(input: string) -> string = do
   let parts: [string] = []
@@ -29,13 +69,311 @@ end
 fn print_string_literal(value: string) -> string =
   `"` + escape_string_literal_content(value) + `"`
 
-export fn print_expr(expression: Shared<Expr>) -> string =
+fn print_bool_literal(value: bool) -> string =
+  if value then 'true' else 'false'
+  end
+
+fn print_unit_literal() -> string =
+  `(` + `)`
+
+fn record_spread_text() -> string =
+  "." + "." + "."
+
+fn print_mlc_type(type_expression: Shared<TypeExpr>) -> string =
+  match type_expression {
+    TyI32 => 'i32',
+    TyString => 'string',
+    TyBool => 'bool',
+    TyUnit => 'unit',
+    TyNamed(name) => name,
+    _ => '<unsupported-type>',
+  }
+
+fn print_mlc_parameter(parameter: Shared<Param>) -> string =
+  if parameter.is_mut then
+    `let mut ` + parameter.name + `: ` + print_mlc_type(parameter.type_value)
+  else
+    parameter.name + `: ` + print_mlc_type(parameter.type_value)
+  end
+
+fn print_mlc_parameters(parameters: [Shared<Param>]) -> string =
+  parameters.map(parameter => print_mlc_parameter(parameter)).join(', ')
+
+fn max_field_name_length_from_values(field_values: [Shared<FieldVal>]) -> i32 = do
+  let mut maximum = 0
+  let mut index = 0
+  while index < field_values.length() do
+    if field_values[index].name.length() > maximum then
+      maximum = field_values[index].name.length()
+    end
+    index = index + 1
+  end
+  maximum
+end
+
+fn max_field_name_length_from_definitions(field_definitions: [Shared<FieldDef>]) -> i32 = do
+  let mut maximum = 0
+  let mut index = 0
+  while index < field_definitions.length() do
+    if field_definitions[index].name.length() > maximum then
+      maximum = field_definitions[index].name.length()
+    end
+    index = index + 1
+  end
+  maximum
+end
+
+fn record_fields_count(field_values: [Shared<FieldVal>]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < field_values.length() do
+    count = count + 1
+    index = index + 1
+  end
+  count
+end
+
+fn record_lit_part_field_count(part: RecordLitPart) -> i32 =
+  match part {
+    RecordLitFields(field_values) => record_fields_count(field_values),
+    RecordLitSpread(_) => 0,
+  }
+
+fn record_lit_part_max_name_length(part: RecordLitPart) -> i32 =
+  match part {
+    RecordLitFields(field_values) => max_field_name_length_from_values(field_values),
+    RecordLitSpread(_) => 0,
+  }
+
+fn max_field_name_length_in_lit_parts(lit_parts: [RecordLitPart]) -> i32 = do
+  let mut maximum = 0
+  let mut index = 0
+  while index < lit_parts.length() do
+    const part_maximum = record_lit_part_max_name_length(lit_parts[index])
+    if part_maximum > maximum then maximum = part_maximum end
+    index = index + 1
+  end
+  maximum
+end
+
+fn record_lit_parts_field_value_count(lit_parts: [RecordLitPart]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < lit_parts.length() do
+    count = count + record_lit_part_field_count(lit_parts[index])
+    index = index + 1
+  end
+  count
+end
+
+fn print_field_value_inline(field_value: Shared<FieldVal>, depth: i32) -> string =
+  field_value.name + `: ` + print_mlc_expr_at_depth(field_value.value, depth)
+
+fn print_field_values_inline(field_values: [Shared<FieldVal>], depth: i32) -> string =
+  field_values.map(field_value => print_field_value_inline(field_value, depth)).join(`, `)
+
+fn print_field_value_aligned(field_value: Shared<FieldVal>, name_width: i32, depth: i32) -> string =
+  indent_text(depth) + field_value.name + `: ` +
+  padding_spaces(name_width - field_value.name.length()) +
+  print_mlc_expr_at_depth(field_value.value, depth)
+
+fn append_field_values_inline(segments: [string], field_values: [Shared<FieldVal>], depth: i32) -> [string] = do
+  let mut result = segments
+  let mut field_index = 0
+  while field_index < field_values.length() do
+    result.push(print_field_value_inline(field_values[field_index], depth))
+    field_index = field_index + 1
+  end
+  result
+end
+
+fn append_record_lit_part_inline(segments: [string], part: RecordLitPart, depth: i32) -> [string] =
+  match part {
+    RecordLitFields(field_values) => append_field_values_inline(segments, field_values, depth),
+    RecordLitSpread(expression) => segments.concat([record_spread_text() + print_mlc_expr_at_depth(expression, depth)]),
+  }
+
+fn print_record_lit_parts_inline(lit_parts: [RecordLitPart], depth: i32) -> string = do
+  let mut segments: [string] = []
+  let mut index = 0
+  while index < lit_parts.length() do
+    segments = append_record_lit_part_inline(segments, lit_parts[index], depth)
+    index = index + 1
+  end
+  segments.join(`, `)
+end
+
+fn append_field_values_multiline(lines: [string], field_values: [Shared<FieldVal>], name_width: i32, depth: i32) -> [string] = do
+  let mut result = lines
+  let mut field_index = 0
+  while field_index < field_values.length() do
+    result.push(print_field_value_aligned(field_values[field_index], name_width, depth) + `,`)
+    field_index = field_index + 1
+  end
+  result
+end
+
+fn append_record_lit_part_multiline(lines: [string], part: RecordLitPart, name_width: i32, depth: i32) -> [string] =
+  match part {
+    RecordLitFields(field_values) => append_field_values_multiline(lines, field_values, name_width, depth),
+    RecordLitSpread(expression) =>
+      lines.concat([indent_text(depth) + record_spread_text() + print_mlc_expr_at_depth(expression, depth) + `,`]),
+  }
+
+fn print_record_lit_parts_multiline(lit_parts: [RecordLitPart], name_width: i32, depth: i32) -> string = do
+  let mut lines: [string] = []
+  let mut index = 0
+  while index < lit_parts.length() do
+    lines = append_record_lit_part_multiline(lines, lit_parts[index], name_width, depth)
+    index = index + 1
+  end
+  lines.join(`\n`)
+end
+
+fn print_record_literal(type_name: string, lit_parts: [RecordLitPart], depth: i32) -> string =
+  if record_lit_parts_field_value_count(lit_parts) <= 1 then
+    type_name + ` { ` + print_record_lit_parts_inline(lit_parts, depth) + ` }`
+  else do
+    let name_width = max_field_name_length_in_lit_parts(lit_parts)
+    type_name + ` {` + `\n` +
+    print_record_lit_parts_multiline(lit_parts, name_width, depth + 1) + `\n` +
+    indent_text(depth) + `}`
+  end
+  end
+
+fn print_record_update(type_name: string, base: Shared<Expr>, overrides: [Shared<FieldVal>], depth: i32) -> string =
+  if overrides.length() <= 1 then
+    type_name + ` { ` + record_spread_text() + print_mlc_expr_at_depth(base, depth) + `, ` +
+    print_field_values_inline(overrides, depth) + ` }`
+  else do
+    let name_width = max_field_name_length_from_values(overrides)
+    type_name + ` {` + `\n` +
+    indent_text(depth + 1) + record_spread_text() + print_mlc_expr_at_depth(base, depth + 1) + `,` + `\n` +
+    overrides.map(field_value => print_field_value_aligned(field_value, name_width, depth + 1) + `,`).join(`\n`) + `\n` +
+    indent_text(depth) + `}`
+  end
+  end
+
+fn print_type_fields_inline(field_definitions: [Shared<FieldDef>]) -> string =
+  field_definitions.map(field_definition =>
+    field_definition.name + `: ` + print_mlc_type(field_definition.type_value)
+  ).join(`, `)
+
+fn print_type_fields_multiline(field_definitions: [Shared<FieldDef>], name_width: i32, depth: i32) -> string =
+  field_definitions.map(field_definition =>
+    indent_text(depth) + field_definition.name + `: ` +
+    padding_spaces(name_width - field_definition.name.length()) +
+    print_mlc_type(field_definition.type_value) + `,`
+  ).join(`\n`)
+
+fn print_type_record_body(field_definitions: [Shared<FieldDef>], depth: i32) -> string =
+  if field_definitions.length() <= 1 then
+    `{ ` + print_type_fields_inline(field_definitions) + ` }`
+  else do
+    let name_width = max_field_name_length_from_definitions(field_definitions)
+    `{` + `\n` +
+    print_type_fields_multiline(field_definitions, name_width, depth + 1) + `\n` +
+    indent_text(depth) + `}`
+  end
+  end
+
+fn format_do_end_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, depth: i32) -> string = do
+  const header = indent_text(depth) + `do`
+  const body_lines = print_mlc_block_lines(statements, result_expression, depth + 1)
+  const footer = indent_text(depth) + `end`
+  if body_lines == '' then header + `\n` + footer
+  else header + `\n` + body_lines + `\n` + footer
+  end
+end
+
+fn print_mlc_stmt_expression_at_depth(expression: Shared<Expr>, depth: i32) -> string =
+  match expression {
+    ExprBlock(_, _, _) => print_mlc_expr_at_depth(expression, depth),
+    _ => indent_text(depth) + print_mlc_expr_at_depth(expression, depth),
+  }
+
+fn print_mlc_block_lines(statements: [Shared<Stmt>], result_expression: Shared<Expr>, depth: i32) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < statements.length() do
+    parts.push(print_mlc_stmt_at_depth(statements[index], depth))
+    index = index + 1
+  end
+  parts.push(print_mlc_stmt_expression_at_depth(result_expression, depth))
+  parts.join(`\n`)
+end
+
+fn print_mlc_let_stmt(name: string, is_mutable: bool, value: Shared<Expr>, depth: i32) -> string =
+  if is_mutable then
+    indent_text(depth) + `let mut ` + name + ` = ` + print_mlc_expr_at_depth(value, depth)
+  else
+    indent_text(depth) + `let ` + name + ` = ` + print_mlc_expr_at_depth(value, depth)
+  end
+
+fn print_mlc_type_decl(name: string, variants: [Shared<TypeVariant>]) -> string =
+  if variants.length() == 1 then
+    match variants[0] {
+      VarRecord(_, field_definitions, _) =>
+        `type ` + name + ` = ` + print_type_record_body(field_definitions, 0),
+      _ => '<unsupported-type-decl>',
+    }
+  else '<unsupported-type-decl>'
+  end
+
+fn print_mlc_stmt_at_depth(statement: Shared<Stmt>, depth: i32) -> string =
+  match statement {
+    StmtLet(name, is_mutable, _, value, _) =>
+      print_mlc_let_stmt(name, is_mutable, value, depth),
+    StmtExpr(expression, _) =>
+      print_mlc_stmt_expression_at_depth(expression, depth),
+    StmtReturn(expression, _) =>
+      indent_text(depth) + `return ` + print_mlc_expr_at_depth(expression, depth),
+    StmtBreak(_) => indent_text(depth) + `break`,
+    StmtContinue(_) => indent_text(depth) + `continue`,
+    _ => indent_text(depth) + '<unsupported-stmt>',
+  }
+
+fn print_mlc_expr_at_depth(expression: Shared<Expr>, depth: i32) -> string =
   match expression {
     ExprInt(value, _) => value.to_string(),
     ExprStr(value, _) => print_string_literal(value),
-    ExprBool(true, _) => 'true',
-    ExprBool(false, _) => 'false',
-    ExprUnit(_) => '()',
+    ExprBool(value, _) => print_bool_literal(value),
+    ExprUnit(_) => print_unit_literal(),
     ExprIdent(name, _) => name,
+    ExprBlock(statements, result_expression, _) =>
+      format_do_end_block(statements, result_expression, depth),
+    ExprRecord(type_name, lit_parts, _) =>
+      print_record_literal(type_name, lit_parts, depth),
+    ExprRecordUpdate(type_name, base, overrides, _) =>
+      print_record_update(type_name, base, overrides, depth),
     _ => '<unsupported-expr>',
   }
+
+export fn print_mlc_expr(expression: Shared<Expr>) -> string =
+  print_mlc_expr_at_depth(expression, 0)
+
+fn print_mlc_function_body(body_expression: Shared<Expr>, depth: i32) -> string =
+  match body_expression {
+    ExprBlock(statements, result_expression, _) =>
+      format_do_end_block(statements, result_expression, depth),
+    _ => print_mlc_expr_at_depth(body_expression, depth),
+  }
+
+export fn print_mlc_decl(declaration: Shared<Decl>) -> string =
+  match declaration {
+    DeclFn(name, _, _, parameters, return_type, body, _) =>
+      `fn ` + name + `(` + print_mlc_parameters(parameters) + `) -> ` +
+      print_mlc_type(return_type) + ` = ` + print_mlc_function_body(body, 0),
+    DeclType(name, _, variants, _, _) => print_mlc_type_decl(name, variants),
+    _ => '<unsupported-decl>',
+  }
+
+export fn print_mlc_program(program: Program) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < program.decls.length() do
+    parts.push(print_mlc_decl(program.decls[index]))
+    index = index + 1
+  end
+  parts.join(`\n`)
+end

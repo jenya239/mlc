@@ -403,63 +403,71 @@ export fn gen_fn_decl_cpp(
   native_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context, 1)
 
 export fn gen_decl_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> Shared<CppDeclaration> =
-  match declaration {
-    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
-      match body {
-        SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
-        _ => gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)
-      },
-    SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
-      cpp_decl_from_native_declarations(
-        append_cpp_declarations(
-          gen_type_decl_fwd_cpp(context, type_name, type_params, variants),
-          gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits))),
-    SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationTrait(name, type_params, methods, _) =>
-      gen_trait_decl_cpp(context, name, type_params, methods),
-    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-      cpp_decl_from_native_declarations(
-        gen_decl_extend_cpp(type_name, trait_name, methods, context)),
-    SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
-    SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationExported(inner_declaration) => gen_decl_cpp(sdecl_inner(inner_declaration), context)
-  }
+  context.gen_decl_cpp(declaration)
 
 export fn gen_proto_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenContext) -> Shared<CppDeclaration> =
-  match declaration {
-    SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
-      match body {
-        SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
-        _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
-      },
-    SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationExtend(type_name, _, methods, _) => do
-      const extend_context = context.for_type_body(type_name)
-      let mut proto_declarations: [Shared<CppDeclaration>] = []
-      let mut method_index = 0
-      while method_index < methods.length() do
-        const method = methods[method_index]
-        match method {
-          SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
-            match body {
-              SemanticExpressionExtern(_, _) => (),
-              _ => do
-                proto_declarations.push(gen_proto_cpp(method, extend_context))
-                ()
-              end
-            },
-          _ => ()
-        }
-        method_index = method_index + 1
-      end
-      cpp_decl_from_native_declarations(proto_declarations)
-    end,
-    SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
-    SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
-    SemanticDeclarationExported(inner_declaration) => gen_proto_cpp(sdecl_inner(inner_declaration), context)
-  }
+  context.gen_proto_cpp(declaration)
+
+extend CodegenContext {
+  fn gen_decl_cpp(self: CodegenContext, declaration: Shared<SemanticDeclaration>) -> Shared<CppDeclaration> =
+    match declaration {
+      SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+        match body {
+          SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
+          _ => gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, self)
+        },
+      SemanticDeclarationType(type_name, type_params, variants, derive_traits, _) =>
+        cpp_decl_from_native_declarations(
+          append_cpp_declarations(
+            gen_type_decl_fwd_cpp(self, type_name, type_params, variants),
+            gen_type_decl_body_cpp(self, type_name, type_params, variants, derive_traits))),
+      SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationTrait(name, type_params, methods, _) =>
+        gen_trait_decl_cpp(self, name, type_params, methods),
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+        cpp_decl_from_native_declarations(
+          gen_decl_extend_cpp(type_name, trait_name, methods, self)),
+      SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
+      SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationExported(inner_declaration) => self.gen_decl_cpp(sdecl_inner(inner_declaration))
+    }
+
+  fn gen_proto_cpp(self: CodegenContext, declaration: Shared<SemanticDeclaration>) -> Shared<CppDeclaration> =
+    match declaration {
+      SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, _) =>
+        match body {
+          SemanticExpressionExtern(_, _) => empty_cpp_declaration(),
+          _ => gen_fn_proto_cpp(name, type_params, type_bounds, params, return_type, self)
+        },
+      SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationExtend(type_name, _, methods, _) => do
+        const extend_context = self.for_type_body(type_name)
+        let mut proto_declarations: [Shared<CppDeclaration>] = []
+        let mut method_index = 0
+        while method_index < methods.length() do
+          const method = methods[method_index]
+          match method {
+            SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
+              match body {
+                SemanticExpressionExtern(_, _) => (),
+                _ => do
+                  proto_declarations.push(extend_context.gen_proto_cpp(method))
+                  ()
+                end
+              },
+            _ => ()
+          }
+          method_index = method_index + 1
+        end
+        cpp_decl_from_native_declarations(proto_declarations)
+      end,
+      SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
+      SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationExported(inner_declaration) => self.gen_proto_cpp(sdecl_inner(inner_declaration))
+    }
+}
 
 export fn extend_method_forward_segments_cpp(
   declarations: [Shared<SemanticDeclaration>],

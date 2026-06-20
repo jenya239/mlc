@@ -16,7 +16,7 @@ mlc::String resolve_default_out_directory(bool check_only, bool out_directory_ex
 
 compile_options::CompileOptions parse_compile_options(mlc::Array<mlc::String> arguments) noexcept;
 
-mlc::String compile_usage_message() noexcept{return mlc::String("Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]");}
+mlc::String compile_usage_message() noexcept{return mlc::String("Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>");}
 
 bool is_output_directory_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("-o")) { return true; } return false; }();}
 

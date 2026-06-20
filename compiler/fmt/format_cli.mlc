@@ -1,0 +1,32 @@
+// CLI: format .mlc source via AST printer.
+
+import { Result, Ok, Err } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_errors } from '../frontend/parser/decls'
+import { print_mlc_program } from './ast_printer'
+
+export fn format_usage_message() -> string =
+  'Usage: mlcc fmt <source.mlc>'
+
+export fn format_mlc_source_text(source: string, source_path: string) -> Result<string, [string]> = do
+  const lexer_output = tokenize(source)
+  if lexer_output.has_errors() then Err([`lex: ${lexer_output.errors[0]}`])
+  else do
+    const parse_parsed = parse_program_with_errors(lexer_output.tokens, source_path)
+    const parse_error_count = parse_parsed.errors.length()
+    if parse_error_count > 0 then Err(parse_parsed.errors)
+    else Ok(print_mlc_program(parse_parsed.program))
+    end
+  end
+  end
+end
+
+fn file_not_found_error(source_path: string) -> Result<string, [string]> =
+  Err([`file not found: ${source_path}`])
+
+export fn format_source_file(source_path: string) -> Result<string, [string]> = do
+  const source = File.read(source_path)
+  if source.length() == 0 && !File.exists(source_path) then file_not_found_error(source_path)
+  else format_mlc_source_text(source, source_path)
+  end
+end

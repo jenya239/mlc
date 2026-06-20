@@ -2,6 +2,7 @@
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
+         CppTypePtr, CppTypeConst, CppTypeRRef, CppForwardDecl,
          CppExpression, CppBool, CppTernary, CppInitList, CppCast, CppCastStatic, CppInt, CppIdent } from '../cpp/cpp_ast'
 
 export fn cpp_ast_tests() -> [TestResult] = do
@@ -28,6 +29,20 @@ export fn cpp_ast_tests() -> [TestResult] = do
     match vector_int { CppTypeTemplate(name, args) => name == 'std::vector' && args.length() == 1, _ => false }))
   results.push(assert_true('CppTypeRef',
     match int_ref { CppTypeRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+
+  const int_pointer = Shared.new(CppTypePtr(int_type))
+  const const_int = Shared.new(CppTypeConst(int_type))
+  const int_rvalue_reference = Shared.new(CppTypeRRef(int_type))
+  results.push(assert_true('CppTypePtr',
+    match int_pointer { CppTypePtr(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+  results.push(assert_true('CppTypeConst',
+    match const_int { CppTypeConst(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+  results.push(assert_true('CppTypeRRef',
+    match int_rvalue_reference { CppTypeRRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+
+  const class_forward = Shared.new(CppForwardDecl('class', 'Widget'))
+  results.push(assert_true('CppForwardDecl',
+    match class_forward { CppForwardDecl(kind, name) => kind == 'class' && name == 'Widget', _ => false }))
 
   const flag = Shared.new(CppBool(true))
   results.push(assert_true('CppBool',

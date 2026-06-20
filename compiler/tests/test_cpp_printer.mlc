@@ -9,8 +9,8 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
          CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
-         CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
-         CppFile, CppType, CppTypeName, CppCapture, CppParam } from '../cpp/cpp_ast'
+         CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
+         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam } from '../cpp/cpp_ast'
 
 fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')
@@ -253,6 +253,21 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_decl CppStruct empty definition',
     print_decl(Shared.new(CppStruct('', 'Red', [], false))),
     "struct Red {};\n"))
+
+  results.push(assert_eq_str('print_decl CppForwardDecl class',
+    print_decl(Shared.new(CppForwardDecl('class', 'Widget'))),
+    "class Widget;\n"))
+
+  results.push(assert_eq_str('print_decl CppForwardDecl enum',
+    print_decl(Shared.new(CppForwardDecl('enum', 'Color'))),
+    "enum Color;\n"))
+
+  results.push(assert_eq_str('print_statement CppVarDecl const int pointer',
+    print_statement(Shared.new(CppVarDecl(
+      'value',
+      Shared.new(CppTypePtr(Shared.new(CppTypeConst(int_type)))),
+      Shared.new(CppInt(0))))),
+    'const int* value = 0;'))
 
   results.push(assert_eq_str('print_decl CppFnProto',
     print_decl(Shared.new(CppFnProto('', 'int', 'add', ['int left', 'int right']))),
