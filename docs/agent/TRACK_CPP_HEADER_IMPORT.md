@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3.5; design: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md); follows [TRACK_LSP.md](TRACK_LSP.md)
 
-## Status: **open** STEP=3
+## Status: **planned** (blocked: depends on TRACK_LSP)
 
 **Baseline:** build_tests **1033/0**; build.sh ok; **diff_exit=0**.
 
