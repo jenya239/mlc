@@ -4,11 +4,59 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-44f467fc-d14a-4a07-b537-502f31d1bd08` |
-| driver_turns_since_plan | 4|
-| step_last | 3|
-| active_track | TRACK_CPP_HEADER_IMPORT → STEP=3 |
+| instructions_rev | `2026-06-01-session-detail`|
+| agent_token_last | `cr-agent-f64f9f00-b9a7-4ba7-aacf-dc8b9cc10310` |
+| driver_turns_since_plan | 0|
+| step_last | 4|
+| active_track | TRACK_SELF_HOST_BOOTSTRAP → STEP=5 |
+
+### Turn 2026-05-19 (Driver STEP=4 — SELF_HOST_BOOTSTRAP parity)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `run_mlcc_bootstrap_parity.sh` — mlcc ≡ mlcc_bootstrap codegen + bootstrap self-host diff |
+| verify | pass — **diff_exit=0**; parity script exit 0 |
+| issues | prompt STEP=1 idempotent → advanced STEP=4; MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=5 TRACK_SELF_HOST_BOOTSTRAP |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-f64f9f00-b9a7-4ba7-aacf-dc8b9cc10310
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_SELF_HOST_BOOTSTRAP.md
+
+Remove Ruby from default build.sh; gate; close track.
+```
+
+### Turn 2026-05-19 (Driver STEP=3 — SELF_HOST_BOOTSTRAP bootstrap)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `build.sh` bootstrap via `build_bin.sh`; hard fail; stale+`MLCC_BOOTSTRAP=1` skip main self-rebuild; CI smoke in `ci.yml` |
+| verify | pass — `MLCC_BOOTSTRAP=1` → `out/bootstrap/mlcc_bootstrap`; parity **2/2** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_SELF_HOST_BOOTSTRAP |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-aafcc78b-e2e5-434d-b127-4ccf047aba74
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_SELF_HOST_BOOTSTRAP.md
+
+Parity: mlcc_bootstrap output ≡ mlcc (self-host diff). Gate from TRACK.
+```
 
 ### Turn 2026-05-19 (Meta meta-review idempotent — CPP_HEADER_IMPORT)
 

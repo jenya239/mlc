@@ -122,7 +122,7 @@ Strict order; each track depends on previous unless noted.
 | 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** (`36a6e8cc`) |
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
-| 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | planned |
+| 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **open** STEP=5 |
 | 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
 | 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=3 |
 | 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
@@ -136,7 +136,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) **STEP=3** (resume; guard drained — no duplicate enqueue).
+> **Immediate:** [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) **STEP=5** (remove Ruby default path).
 
 ## Next step (Planner)
 

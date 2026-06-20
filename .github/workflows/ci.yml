@@ -29,5 +29,8 @@ jobs:
       - name: Build mlcc (modular compiler via Ruby)
         run: compiler/build.sh
 
+      - name: Bootstrap link smoke (mlcc_bootstrap)
+        run: MLCC_BOOTSTRAP=1 MLC_REQUIRE_BOOTSTRAP_LINK=1 compiler/build.sh
+
       - name: Profile regression
         run: benchmarks/profile/compare_baseline.sh
