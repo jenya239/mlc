@@ -96,7 +96,7 @@ STEP=4
 cpp/parser/decls.mlc — struct/class, fn proto, enum, namespace; error recovery. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=5 — SELF_HOST_BOOTSTRAP close)
+### Turn 2026-06-20 (Driver STEP=5 — SELF_HOST_BOOTSTRAP close)
 
 | field | value |
 |-------|-------|
@@ -119,7 +119,7 @@ STEP=plan-refresh
 SELF_HOST_BOOTSTRAP closed. Refresh TRACK_PLAN immediate (LSP vs CPP_HEADER_IMPORT).
 ```
 
-### Turn 2026-05-19 (Driver STEP=4 — SELF_HOST_BOOTSTRAP parity)
+### Turn 2026-06-20 (Driver STEP=4 — SELF_HOST_BOOTSTRAP parity)
 
 | field | value |
 |-------|-------|
@@ -143,7 +143,7 @@ STEP=5
 Remove Ruby from default build.sh; gate; close track.
 ```
 
-### Turn 2026-05-19 (Driver STEP=3 — SELF_HOST_BOOTSTRAP bootstrap)
+### Turn 2026-06-20 (Driver STEP=3 — SELF_HOST_BOOTSTRAP bootstrap)
 
 | field | value |
 |-------|-------|
@@ -167,7 +167,7 @@ STEP=4
 Parity: mlcc_bootstrap output ≡ mlcc (self-host diff). Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Meta meta-review idempotent — CPP_HEADER_IMPORT)
+### Turn 2026-06-21 (Meta meta-review idempotent — CPP_HEADER_IMPORT)
 
 | field | value |
 |-------|-------|
@@ -178,7 +178,7 @@ Parity: mlcc_bootstrap output ≡ mlcc (self-host diff). Gate from TRACK.
 | issues | MCP `agent-loop` unavailable; guard blocks re-enqueue `Driver:3` |
 | next | ROLE=Driver STEP=3 (SESSION payload below; manual paste if queue empty) |
 
-### Turn 2026-05-19 (Meta meta-review — CPP_HEADER_IMPORT stuck Driver:3)
+### Turn 2026-06-21 (Meta meta-review — CPP_HEADER_IMPORT stuck Driver:3)
 
 | field | value |
 |-------|-------|
@@ -250,7 +250,7 @@ STEP=2
 Extend cpp_ast.mlc — CppTypePtr, CppTypeConst, CppTypeRRef, forward decls. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=5 — PHASE26 audit + close)
+### Turn 2026-06-19 (Driver STEP=5 — PHASE26 audit + close)
 
 | field | value |
 |-------|-------|
@@ -274,7 +274,7 @@ STEP=1
 Document current bootstrap path; inventory Ruby-only steps in build.sh. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=4 — PHASE26 CodegenContext stmt/decl methods)
+### Turn 2026-06-19 (Driver STEP=4 — PHASE26 CodegenContext stmt/decl methods)
 
 | field | value |
 |-------|-------|
@@ -298,7 +298,7 @@ STEP=5
 Audit survivors + full gate; close TRACK_PHASE26_REMAINING.
 ```
 
-### Turn 2026-05-19 (Driver STEP=3 idempotent — skip to STEP=4 enqueue)
+### Turn 2026-06-19 (Driver STEP=3 idempotent — skip to STEP=4 enqueue)
 
 | field | value |
 |-------|-------|
@@ -322,7 +322,7 @@ STEP=4
 codegen/ — extend CodegenContext methods for stmt/decl entry points. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=3 — PHASE26 transform lambda visitor)
+### Turn 2026-06-19 (Driver STEP=3 — PHASE26 transform lambda visitor)
 
 | field | value |
 |-------|-------|
@@ -346,7 +346,7 @@ STEP=4
 codegen/ — extend CodegenContext methods for stmt/decl entry points. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=2 — PHASE26 mutations visitor entry)
+### Turn 2026-06-19 (Driver STEP=2 — PHASE26 mutations visitor entry)
 
 | field | value |
 |-------|-------|
@@ -370,7 +370,7 @@ STEP=3
 transform.mlc — remove transform_expr_maybe_lambda_context duplicate match where visitor covers. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=1 — PHASE26 names visitor entry)
+### Turn 2026-06-19 (Driver STEP=1 — PHASE26 names visitor entry)
 
 | field | value |
 |-------|-------|
@@ -394,7 +394,7 @@ STEP=2
 check_mutations.mlc — legacy fn-body checks → visitor-only entry; parity tests. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Meta meta-review — FORMATTER stuck STEP=5 recovery)
+### Turn 2026-06-19 (Meta meta-review — FORMATTER stuck STEP=5 recovery)
 
 | field | value |
 |-------|-------|
@@ -418,7 +418,7 @@ STEP=1
 names.mlc — legacy check_names_expr → visitor-only entry; parity tests. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=4 — FORMATTER idempotent tests)
+### Turn 2026-06-19 (Driver STEP=4 — FORMATTER idempotent tests)
 
 | field | value |
 |-------|-------|
@@ -442,7 +442,7 @@ STEP=5
 CLI integrate — mlcc fmt subcommand; close track. Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Driver STEP=3 — FORMATTER record alignment)
+### Turn 2026-06-19 (Driver STEP=3 — FORMATTER record alignment)
 
 | field | value |
 |-------|-------|
@@ -466,7 +466,7 @@ STEP=4
 Idempotent fmt tests — fmt(fmt(source)) == fmt(source). Gate from TRACK.
 ```
 
-### Turn 2026-05-19 (Meta meta-review — FORMATTER STEP=2 stuck)
+### Turn 2026-06-19 (Meta meta-review — FORMATTER STEP=2 stuck)
 
 | field | value |
 |-------|-------|
