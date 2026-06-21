@@ -5,10 +5,119 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-f64f9f00-b9a7-4ba7-aacf-dc8b9cc10310` |
+| agent_token_last | `cr-agent-9f4eab4b-7bd5-49cf-8b37-f0629f8a0e65` |
 | driver_turns_since_plan | 0|
-| step_last | 4|
-| active_track | TRACK_SELF_HOST_BOOTSTRAP → STEP=5 |
+| step_last | plan-refresh|
+| active_track | TRACK_CPP_HEADER_IMPORT STEP=5 pending |
+
+### Turn 2026-06-21 (Planner plan-refresh — CPP_HEADER_IMPORT STEP=5)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_PLAN queue synced (**STEP=5**); Phase 3.5 table; DEVELOPMENT priority |
+| verify | baseline **1117/0**; build.sh ok; **diff_exit=0** |
+| issues | uncommitted CPP parser batch |
+| next | ROLE=Driver STEP=5 TRACK_CPP_HEADER_IMPORT |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-9f4eab4b-7bd5-49cf-8b37-f0629f8a0e65
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+import "header.h" wiring + registry; tests; close track. Gate from TRACK.
+```
+
+### Turn 2026-06-21 (Driver recovery — CPP_HEADER_IMPORT stuck Driver:5)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_CPP_HEADER_IMPORT |
+| done | Guard `Driver:5` loop broken; gate re-verified; `MLCC_FORCE_RUBY=1 build.sh` restored `compiler/out`; STEP=5 still pending (no wiring started) |
+| verify | pass — build_tests **1117/0**; build.sh ok; **diff_exit=0** (reconfirmed) |
+| issues | prior `build.sh` fail: stale `compiler/out`; guard blocks re-enqueue Driver:5 |
+| next | ROLE=Planner STEP=plan-refresh (STEP=5 pending; Driver:5 enqueue blocked) |
+
+**Note:** STEP=5 work (`import "header.h"` + registry) not started. Next Driver turn continues STEP=5 without MCP re-enqueue loop.
+
+### Turn 2026-06-21 (Driver STEP=4 — CPP_HEADER_IMPORT decl parser)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| done | `cpp/parser/cpp_decls.mlc`; qualified-name fix in `cpp_types`; variable `CppDeclarationFragment`; tests in `test_cpp_parser` |
+| verify | pass — build_tests **1117/0**; build.sh ok; **diff_exit=0** |
+| issues | first gate run: `build_bin.sh` tail truncated (retry ok) |
+| next | ROLE=Driver STEP=5 TRACK_CPP_HEADER_IMPORT |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-d2543c27-8493-43e5-bcaa-11668781b4cc
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+import "header.h" wiring + registry; tests; close track. Gate from TRACK.
+```
+
+### Turn 2026-06-21 (Driver STEP=3 — CPP_HEADER_IMPORT type parser)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| done | `cpp/parser/cpp_types.mlc`; module renames (`cpp_lexer`, `cpp_predicates`, `cpp_parser`); type-aware `cpp_parser`; tests wired |
+| verify | pass — build_tests **1111/0**; build.sh ok; **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Driver STEP=4 TRACK_CPP_HEADER_IMPORT |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=cr-agent-e4ae3972-d9c4-42bb-8ae2-a2bb6ad8c9c8
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_HEADER_IMPORT.md
+
+cpp/parser/decls.mlc — struct/class, fn proto, enum, namespace; error recovery. Gate from TRACK.
+```
+
+### Turn 2026-05-19 (Driver STEP=5 — SELF_HOST_BOOTSTRAP close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| done | default `build.sh` mlcc-only; cold start `MLCC_FORCE_RUBY=1`; CI/triple-bootstrap/Rake/bisect updated; TRACK **closed** |
+| verify | pass — parity **2/2**; bootstrap **ok**; `run_mlcc_bootstrap_parity` **diff_exit=0** |
+| issues | MCP `agent-loop` unavailable |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-5d3e66c6-1893-433b-a413-c1da25f27c2d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/TRACK_PLAN.md
+
+SELF_HOST_BOOTSTRAP closed. Refresh TRACK_PLAN immediate (LSP vs CPP_HEADER_IMPORT).
+```
 
 ### Turn 2026-05-19 (Driver STEP=4 — SELF_HOST_BOOTSTRAP parity)
 
@@ -7887,6 +7996,58 @@ Fix gen_constructor_call_cpp_expression: CppAggregateInit for all constructor ar
 | uncommitted_files | ~52 after step 7 commit |
 | agent_token_last | cr-agent-874bb0df-ff9c-4eb4-9707-1522db3390b8 |
 | next | STEP=8 — ExprVisitor ident arm |
+
+---
+
+
+### Turn 2026-06-19 (code quality, step 5)
+
+| turn | 2026-06-19 |
+| role | Driver |
+| instructions_rev | 2026-06-01-session-detail |
+| step | 5 (TRACK_CODE_QUALITY) |
+| done | record destructuring everywhere, HOF (.map/.filter), or-patterns in match, string-match in keyword dispatch; cpp_keyword → match; lexer → destructuring |
+| verify | pass — 1005/0; diff_exit=0 |
+| uncommitted_files | 0 (committed `36a6e8cc`) |
+| agent_token_last | cr-agent-eb85dc39-a092-4875-b721-af3d119ff5bf |
+| next | ROLE=Driver TRACK_FORMATTER STEP=1 |
+
+### Turn 2026-06-19 (formatter, step 5)
+
+| turn | 2026-06-19 |
+| role | Driver |
+| instructions_rev | 2026-06-01-session-detail |
+| step | 5 (TRACK_FORMATTER) |
+| done | compiler/fmt/ast_printer.mlc + format_cli.mlc; AST-based formatter skeleton |
+| verify | pass — build_tests ok; diff_exit=0 |
+| uncommitted_files | 0 (committed `3612b7af`) |
+| agent_token_last | cr-agent-1e7b8429-2627-4079-ad84-1f632bd196d3 |
+| next | ROLE=Driver TRACK_PHASE26_REMAINING STEP=1 |
+
+### Turn 2026-06-19 (phase 2.6 remaining, step 5)
+
+| turn | 2026-06-19 |
+| role | Driver |
+| instructions_rev | 2026-06-01-session-detail |
+| step | 5 (TRACK_PHASE26_REMAINING) |
+| done | names.mlc + mutations + transform passes → ExprVisitor; CodegenContext methods; 61 ExprVisitor usages in names.mlc |
+| verify | pass — build_tests ok; diff_exit=0 |
+| uncommitted_files | 0 (committed `3612b7af`) |
+| agent_token_last | cr-agent-1e7b8429-2627-4079-ad84-1f632bd196d3 |
+| next | ROLE=Driver TRACK_SELF_HOST_BOOTSTRAP STEP=1 |
+
+### Turn 2026-06-20 (self-host bootstrap, step 5)
+
+| turn | 2026-06-20 |
+| role | Driver |
+| instructions_rev | 2026-06-01-session-detail |
+| step | 5 (TRACK_SELF_HOST_BOOTSTRAP) |
+| done | build.sh: mlcc_binary_is_fresh + build_via_mlcc + build_via_ruby fallback; mlcc_bootstrap binary; run_mlcc_bootstrap_parity.sh; CI updated; diff_exit=0 |
+| verify | pass — bootstrap parity ok; build_tests 1033/0; diff_exit=0 |
+| uncommitted_files | 0 (committed `54d9d901`) |
+| agent_token_last | cr-agent-c0554981-d8ff-465c-b48f-2cb2233fde51 |
+| next | ROLE=Planner plan-refresh |
+
 
 ---
 
