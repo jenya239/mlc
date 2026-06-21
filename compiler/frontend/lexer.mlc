@@ -2,10 +2,10 @@
 
 import { TokenKind, Token, LexOut } from './ast_tokens'
 
-type LexState     = { source: string, position: i32, line: i32, column: i32 }
+export type LexState     = { source: string, position: i32, line: i32, column: i32 }
+export type SkipResult   = { after: LexState, error: string }
 type ScanResult   = { after: LexState, token: Token }
 type ScanStrResult = { after: LexState, token: Token, error: string }
-type SkipResult   = { after: LexState, error: string }
 
 fn lexer_internal_panic(message: string) -> unit = do
   println('lexer panic: ' + message)
@@ -45,13 +45,13 @@ extend LexState {
     Token { kind: token_kind, line: self.line, column: self.column }
 }
 
-fn is_alpha(character: string) -> bool =
+export fn is_alpha(character: string) -> bool =
   (character >= "a" && character <= "z") ||
   (character >= "A" && character <= "Z") ||
    character == "_"
 
-fn is_digit(character: string) -> bool = character >= "0" && character <= "9"
-fn is_alnum(character: string) -> bool = is_alpha(character) || is_digit(character)
+export fn is_digit(character: string) -> bool = character >= "0" && character <= "9"
+export fn is_alnum(character: string) -> bool = is_alpha(character) || is_digit(character)
 fn is_ws(character: string) -> bool =
   character == " " || character == "\t" || character == "\r" || character == "\n"
 
@@ -240,7 +240,7 @@ fn scan_single_string(state: LexState) -> ScanStrResult = do
   }
 end
 
-fn map_escape(character: string) -> string =
+export fn map_escape(character: string) -> string =
   match character
   | "n"  => "\n"
   | "t"  => "\t"
@@ -405,7 +405,7 @@ fn scan_template(state: LexState) -> ScanStrResult = do
   }
 end
 
-fn skip_whitespace(state: LexState) -> SkipResult = do
+export fn skip_whitespace(state: LexState) -> SkipResult = do
   let mut current = state
   let mut error = ''
   while !current.eof() do

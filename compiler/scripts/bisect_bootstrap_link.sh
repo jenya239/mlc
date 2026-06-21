@@ -12,7 +12,7 @@ if [[ -d "$MAIN_CLONE_VENDOR" ]]; then
 fi
 LOG="${TMPDIR:-/tmp}/mlc_bisect_bootstrap.log"
 : >"$LOG"
-if ! compiler/build.sh >>"$LOG" 2>&1; then
+if ! MLCC_FORCE_RUBY=1 compiler/build.sh >>"$LOG" 2>&1; then
   exit 125
 fi
 BIN="$ROOT/compiler/out/mlcc"

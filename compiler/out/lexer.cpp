@@ -6,13 +6,9 @@ namespace lexer {
 
 using namespace ast_tokens;
 
-struct LexState {mlc::String source;int position;int line;int column;};
-
 struct ScanResult {lexer::LexState after;ast_tokens::Token token;};
 
 struct ScanStrResult {lexer::LexState after;ast_tokens::Token token;mlc::String error;};
-
-struct SkipResult {lexer::LexState after;mlc::String error;};
 
 struct SuffixScan {mlc::String suffix;lexer::LexState after;};
 

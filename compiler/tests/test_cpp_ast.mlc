@@ -8,73 +8,77 @@ import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppT
 export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  const inc = Shared.new(CppInclude(true, 'string'))
+  const inc = Shared.new(CppInclude(true, "string"))
   const program = CppProgram { declarations: [inc] }
-  results.push(assert_eq_int('CppProgram with 1 decl',
+  results.push(assert_eq_int("CppProgram with 1 decl",
     program.declarations.length(), 1))
 
-  const field = Shared.new(CppField { type_value: 'int', name: 'x' })
-  const struct_declaration = Shared.new(CppStruct('', 'Point', [field], false))
+  const field = Shared.new(CppField { type_value: "int", name: "x" })
+  const struct_declaration = Shared.new(CppStruct("", "Point", [field], false))
   const program_with_struct = CppProgram { declarations: [struct_declaration] }
-  results.push(assert_true('CppStruct in program',
+  results.push(assert_true("CppStruct in program",
     match program_with_struct.declarations[0] { CppStruct(_, _, _, _) => true, _ => false }))
 
-  const vector_type = Shared.new(CppTypeName('std::vector'))
-  const int_type = Shared.new(CppTypeName('int'))
-  const vector_int = Shared.new(CppTypeTemplate('std::vector', [int_type]))
+  const vector_type = Shared.new(CppTypeName("std::vector"))
+  const int_type = Shared.new(CppTypeName("int"))
+  const vector_int = Shared.new(CppTypeTemplate("std::vector", [int_type]))
   const int_ref = Shared.new(CppTypeRef(int_type))
-  results.push(assert_true('CppTypeName',
-    match vector_type { CppTypeName(name) => name == 'std::vector', _ => false }))
-  results.push(assert_true('CppTypeTemplate',
-    match vector_int { CppTypeTemplate(name, args) => name == 'std::vector' && args.length() == 1, _ => false }))
-  results.push(assert_true('CppTypeRef',
-    match int_ref { CppTypeRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+  results.push(assert_true("CppTypeName",
+    match vector_type { CppTypeName(name) => name == "std::vector", _ => false }))
+  results.push(assert_true("CppTypeTemplate",
+    match vector_int { CppTypeTemplate(name, args) => name == "std::vector" && args.length() == 1, _ => false }))
+  results.push(assert_true("CppTypeRef",
+    match int_ref { CppTypeRef(inner) => match inner { CppTypeName(name) => name == "int", _ => false }, _ => false }))
 
   const int_pointer = Shared.new(CppTypePtr(int_type))
   const const_int = Shared.new(CppTypeConst(int_type))
   const int_rvalue_reference = Shared.new(CppTypeRRef(int_type))
-  results.push(assert_true('CppTypePtr',
-    match int_pointer { CppTypePtr(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
-  results.push(assert_true('CppTypeConst',
-    match const_int { CppTypeConst(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
-  results.push(assert_true('CppTypeRRef',
-    match int_rvalue_reference { CppTypeRRef(inner) => match inner { CppTypeName(name) => name == 'int', _ => false }, _ => false }))
+  results.push(assert_true("CppTypePtr",
+    match int_pointer { CppTypePtr(inner) => match inner { CppTypeName(name) => name == "int", _ => false }, _ => false }))
+  results.push(assert_true("CppTypeConst",
+    match const_int { CppTypeConst(inner) => match inner { CppTypeName(name) => name == "int", _ => false }, _ => false }))
+  results.push(assert_true("CppTypeRRef",
+    match int_rvalue_reference { CppTypeRRef(inner) => match inner { CppTypeName(name) => name == "int", _ => false }, _ => false }))
 
-  const class_forward = Shared.new(CppForwardDecl('class', 'Widget'))
-  results.push(assert_true('CppForwardDecl',
-    match class_forward { CppForwardDecl(kind, name) => kind == 'class' && name == 'Widget', _ => false }))
+  const class_forward = Shared.new(CppForwardDecl("class", "Widget"))
+  results.push(assert_true("CppForwardDecl",
+    match class_forward { CppForwardDecl(kind, name) => kind == "class" && name == "Widget", _ => false }))
 
   const flag = Shared.new(CppBool(true))
-  results.push(assert_true('CppBool',
+  results.push(assert_true("CppBool",
     match flag { CppBool(value) => value, _ => false }))
 
-  const condition = Shared.new(CppIdent('ready'))
+  const condition = Shared.new(CppIdent("ready"))
   const then_branch = Shared.new(CppInt(1))
   const else_branch = Shared.new(CppInt(0))
   const ternary = Shared.new(CppTernary(condition, then_branch, else_branch))
-  results.push(assert_true('CppTernary',
+  results.push(assert_true("CppTernary",
     match ternary {
-      CppTernary(condition_expression, then_expression, else_expression) =>
-        match condition_expression { CppIdent(name) => name == 'ready', _ => false }
-        && match then_expression { CppInt(value) => value == 1, _ => false }
-        && match else_expression { CppInt(value) => value == 0, _ => false },
+      CppTernary(condition_expression, then_expression, else_expression) => do
+        const condition_ok = match condition_expression { CppIdent(name) => name == "ready", _ => false }
+        const then_ok = match then_expression { CppInt(value) => value == 1, _ => false }
+        const else_ok = match else_expression { CppInt(value) => value == 0, _ => false }
+        condition_ok && then_ok && else_ok
+      end,
       _ => false
     }))
 
   const element = Shared.new(CppInt(42))
   const init_list = Shared.new(CppInitList([element]))
-  results.push(assert_true('CppInitList',
+  results.push(assert_true("CppInitList",
     match init_list { CppInitList(elements) => elements.length() == 1, _ => false }))
 
-  const cast_target = Shared.new(CppTypeName('int'))
-  const cast_operand = Shared.new(CppIdent('value'))
+  const cast_target = Shared.new(CppTypeName("int"))
+  const cast_operand = Shared.new(CppIdent("value"))
   const cast_expression = Shared.new(CppCast(CppCastStatic, cast_target, cast_operand))
-  results.push(assert_true('CppCast',
+  results.push(assert_true("CppCast",
     match cast_expression {
-      CppCast(kind, target_type, operand) =>
-        match kind { CppCastStatic => true, _ => false }
-        && match target_type { CppTypeName(name) => name == 'int', _ => false }
-        && match operand { CppIdent(name) => name == 'value', _ => false },
+      CppCast(kind, target_type, operand) => do
+        const kind_ok = match kind { CppCastStatic => true, _ => false }
+        const target_ok = match target_type { CppTypeName(name) => name == "int", _ => false }
+        const operand_ok = match operand { CppIdent(name) => name == "value", _ => false }
+        kind_ok && target_ok && operand_ok
+      end,
       _ => false
     }))
 

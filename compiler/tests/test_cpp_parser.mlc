@@ -1,40 +1,75 @@
 // Unit tests for C++ parser.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { cpp_tokenize } from '../cpp/cpp_lexer'
+import { cpp_parse } from '../cpp/cpp_parser'
+import { CppDeclaration, CppInclude, CppUsing, CppStruct, CppForwardDecl, CppFnProto, CppVariant, CppNamespace } from '../cpp/cpp_ast'
 
 fn cpp_parse_decl_count(source_text: string) -> i32 =
   cpp_parse(cpp_tokenize(source_text).tokens).program.declarations.length()
 
-fn cpp_parse_first(source_text: string) -> Shared<CppDeclaration> =
+fn cpp_parse_first(source_text: string) -> Shared<CppDeclaration> = do
   const program = cpp_parse(cpp_tokenize(source_text).tokens).program
-  if program.declarations.length() > 0 then program.declarations[0] else Shared.new(CppInclude(true, '')) end
+  if program.declarations.length() > 0 then program.declarations[0] else Shared.new(CppInclude(true, "")) end
+end
 
-fn cpp_parser_tests() -> [TestResult] = do
+fn cpp_parse_error_count(source_text: string) -> i32 =
+  cpp_parse(cpp_tokenize(source_text).tokens).errors.length()
+
+export fn cpp_parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   results.push(assert_eq_int('#include <string> - 1 decl',
     cpp_parse_decl_count('#include <string>'), 1))
 
   results.push(assert_true('#include <string> - CppInclude angle',
-    match cpp_parse_first('#include <string>') { CppInclude(true, s) => s == 'string', _ => false }))
+    match cpp_parse_first('#include <string>') { CppInclude(is_angle, path) => is_angle && path == "string", _ => false }))
 
   results.push(assert_eq_int('#include "foo.h" - 1 decl',
     cpp_parse_decl_count('#include "foo.h"'), 1))
 
   results.push(assert_true('#include "foo.h" - CppInclude quote',
-    match cpp_parse_first('#include "foo.h"') { CppInclude(false, s) => s == 'foo.h', _ => false }))
+    match cpp_parse_first('#include "foo.h"') { CppInclude(is_angle, path) => !is_angle && path == "foo.h", _ => false }))
 
   results.push(assert_eq_int('using X = int; - 1 decl',
     cpp_parse_decl_count('using X = int;'), 1))
 
   results.push(assert_true('using X = int; - CppUsing',
-    match cpp_parse_first('using X = int;') { CppUsing(a, t) => a == "X" && t == 'int', _ => false }))
+    match cpp_parse_first('using X = int;') { CppUsing(alias, type_string) => alias == "X" && type_string == "int", _ => false }))
 
   results.push(assert_eq_int('struct S { int x; }; - 1 decl',
     cpp_parse_decl_count('struct S { int x; };'), 1))
 
   results.push(assert_true('struct S { int x; }; - CppStruct',
-    match cpp_parse_first('struct S { int x; };') { CppStruct(_, n, _, _) => n == "S", _ => false }))
+    match cpp_parse_first('struct S { int x; };') { CppStruct(_, name, _, _) => name == "S", _ => false }))
+
+  results.push(assert_true('class Widget; - CppForwardDecl',
+    match cpp_parse_first('class Widget;') { CppForwardDecl(kind, name) => kind == "class" && name == "Widget", _ => false }))
+
+  results.push(assert_eq_int('int add(int a, int b); - 1 decl',
+    cpp_parse_decl_count('int add(int a, int b);'), 1))
+
+  results.push(assert_true('int add(int a, int b); - CppFnProto',
+    match cpp_parse_first('int add(int a, int b);') {
+      CppFnProto(_, return_type, name, parameters) =>
+        return_type == "int" && name == "add" && parameters.length() == 2,
+      _ => false
+    }))
+
+  results.push(assert_true('enum Color { Red, Green }; - CppVariant',
+    match cpp_parse_first('enum Color { Red, Green };') {
+      CppVariant(_, name, arms) => name == "Color" && arms.length() == 2,
+      _ => false
+    }))
+
+  results.push(assert_true('namespace foo { int x; } - CppNamespace',
+    match cpp_parse_first('namespace foo { int x; }') {
+      CppNamespace(name, inner) => name == "foo" && inner.length() == 1,
+      _ => false
+    }))
+
+  results.push(assert_true('error recovery - garbage then ok',
+    cpp_parse_error_count('??? garbage; int ok();') > 0 && cpp_parse_decl_count('??? garbage; int ok();') == 1))
 
   results
 end

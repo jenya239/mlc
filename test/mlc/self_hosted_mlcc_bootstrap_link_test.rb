@@ -14,7 +14,7 @@ class SelfHostedMlccBootstrapLinkTest < Minitest::Test
     bootstrap_exe = File.join(compiler, "out", "bootstrap", "mlcc_bootstrap")
 
     Dir.chdir(root) do
-      assert_equal true, system("compiler/build.sh")
+      assert_equal true, system("MLCC_FORCE_RUBY=1 compiler/build.sh")
       output = `cd #{compiler} && MLCC_BOOTSTRAP=1 ./build.sh 2>&1`
       assert_equal 0, $?.exitstatus, "bootstrap build failed:\n#{output}"
 

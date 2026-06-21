@@ -2,13 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 4; follows [TRACK_PHASE26_REMAINING.md](TRACK_PHASE26_REMAINING.md)
 
-## Status: **open** STEP=5
+## Status: **closed** (2026-05-19)
 
 **Depends on:** TRACK_PHASE26_REMAINING closed.
 
-**Baseline:** `MLCC_BOOTSTRAP=1 compiler/build.sh` — bootstrap via `build_bin.sh` (STEP=3).
-
-**Goal:** `compiler/build.sh` produces `mlcc` via mlcc-only path; Ruby retained only for `rake test_mlc` reference.
+**Goal:** `compiler/build.sh` produces `mlcc` via mlcc-only path; Ruby retained only for `rake test_mlc` reference. **Achieved.**
 
 ## Verify gate
 
@@ -19,7 +17,7 @@ MLCC_BOOTSTRAP=1 compiler/build.sh
 bash compiler/tests/run_mlcc_bootstrap_parity.sh
 ```
 
-(`run_mlcc_bootstrap_parity.sh` — mlcc ≡ mlcc_bootstrap codegen + bootstrap self-host diff.)
+Cold start: `MLCC_FORCE_RUBY=1 compiler/build.sh` (CI, bisect, `rake triple_bootstrap`).
 
 ---
 
@@ -29,7 +27,9 @@ bash compiler/tests/run_mlcc_bootstrap_parity.sh
 | 2 | `build.sh` — default path uses existing `compiler/out/mlcc` when fresh enough | done |
 | 3 | `MLCC_BOOTSTRAP=1` — chain mlcc → g++ → mlcc_bootstrap; CI smoke | done |
 | 4 | Parity: mlcc_bootstrap output ≡ mlcc (diff self-host) | done |
-| 5 | Remove Ruby from default `build.sh`; gate; close track | pending |
+| 5 | Remove Ruby from default `build.sh`; gate; close track | done |
+
+**STEP=5 note (2026-05-19 Driver):** default `build.sh` mlcc-only; cold start `MLCC_FORCE_RUBY=1`; CI/triple-bootstrap/Rake/bisect updated. Gate: parity **2/2**, bootstrap **ok**, bootstrap parity **diff_exit=0**.
 
 **STEP=2 note (2026-05-19 Driver):** `mlcc_binary_is_fresh` (mtime vs `compiler/**/*.mlc`); skip / `build_via_mlcc` / `build_via_ruby`; `MLCC_FORCE_RUBY=1`. Gate: self-host **diff_exit=0**.
 

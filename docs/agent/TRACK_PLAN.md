@@ -122,9 +122,9 @@ Strict order; each track depends on previous unless noted.
 | 2 | [TRACK_CODE_QUALITY](TRACK_CODE_QUALITY.md) | 2.6/code | **closed** (`36a6e8cc`) |
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
-| 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **open** STEP=5 |
+| 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **closed** (2026-05-19) |
 | 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
-| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=3 |
+| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=5 |
 | 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
 
 ```
@@ -136,11 +136,24 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) **STEP=5** (remove Ruby default path).
+> **Immediate:** [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) STEP=5 — `import "header.h"` wiring + registry; close track. Gate from TRACK.
 
 ## Next step (Planner)
 
-> plan-refresh after each track close or every ~8 driver turns.
+> plan-refresh after CPP_HEADER_IMPORT close or every ~8 driver turns.
+
+## Planner checklist (2026-06-21 plan-refresh — CPP_HEADER_IMPORT STEP=5)
+
+- [x] Recovery: guard `Driver:5` loop broken; gate **1117/0**; build.sh ok; **diff_exit=0**
+- [x] CPP_HEADER_IMPORT steps 1–4 done (parser stack); STEP=5 pending (wiring not started)
+- [x] Priority **stability** — finish CPP_HEADER_IMPORT before LSP / REDDIT_DEMO
+- [x] LSP deferred until header import track closes
+- [ ] Uncommitted CPP parser batch — commit on user command
+- [x] Driver enqueued STEP=5 CPP_HEADER_IMPORT (guard cooldown)
+
+## Next step (Driver)
+
+> ~~**Immediate:** LSP or CPP_HEADER_IMPORT~~ — **CPP_HEADER_IMPORT STEP=5** (2026-06-21 plan-refresh).
 
 ## Meta-Planner checklist (2026-06-19 full-replan — sync)
 
@@ -1118,19 +1131,21 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
 
-## Status: **planned** (после Phase 2.5–2.6)
+## Status: **open** STEP=5 (steps 1–4 done; wiring pending)
+
+Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
 
 Дизайн: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md)
 
 | Step | Item | Track | Status |
 |------|------|-------|--------|
-| A | Расширить лексер cpp/lexer.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
-| B | Расширить CppType + CppDecl в cpp_ast.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
-| C | Парсер типов compiler/cpp/parser/types.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
-| D | Парсер деклараций compiler/cpp/parser/decls.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
-| E | Парсер выражений compiler/cpp/parser/exprs.mlc | TRACK_CPP_HEADER_IMPORT.md | planned |
-| F | Тесты test_cpp_parser.mlc (≥30 кейсов) | TRACK_CPP_HEADER_IMPORT.md | planned |
-| G | Интеграция с import системой mlcc | TRACK_CPP_HEADER_IMPORT.md | planned |
+| A | Расширить лексер `cpp_lexer.mlc` | TRACK_CPP_HEADER_IMPORT | done |
+| B | Расширить CppType + CppDecl в `cpp_ast.mlc` | TRACK_CPP_HEADER_IMPORT | done |
+| C | Парсер типов `cpp/parser/cpp_types.mlc` | TRACK_CPP_HEADER_IMPORT | done |
+| D | Парсер деклараций `cpp/parser/cpp_decls.mlc` | TRACK_CPP_HEADER_IMPORT | done |
+| E | Парсер выражений | TRACK_CPP_HEADER_IMPORT | deferred |
+| F | Тесты `test_cpp_parser.mlc` | TRACK_CPP_HEADER_IMPORT | partial |
+| G | Интеграция `import "foo.h"` + registry | TRACK_CPP_HEADER_IMPORT | **STEP=5 pending** |
 
 ---
 

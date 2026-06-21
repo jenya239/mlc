@@ -127,55 +127,103 @@ export fn cpp_keyword_kind(word: string) -> CppTokenKind =
   if is_cpp_reserved_keyword(word) then reserved_cpp_keyword_kind(word) else CIdent(word) end
 
 export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
-  match kind {
-    CKAuto => 'auto', CKConst => 'const', CKConstexpr => 'constexpr',
-    CKIf => 'if', CKElse => 'else', CKWhile => 'while', CKFor => 'for',
-    CKReturn => 'return', CKBreak => 'break', CKStruct => 'struct',
-    CKUsing => 'using', CKNoexcept => 'noexcept', CKInline => 'inline',
-    CKStatic => 'static', CKVoid => 'void', CKInt => 'int', CKBool => 'bool',
-    CKChar => 'char', CKTrue => 'true', CKFalse => 'false', CKNullptr => 'nullptr',
-    CKTemplate => 'template', CKTypename => 'typename', CKNamespace => 'namespace',
-    CKNew => 'new', CKDelete => 'delete', CKOperator => 'operator',
-    CKClass => 'class', CKEnum => 'enum', CKTypedef => 'typedef', CKExtern => 'extern',
-    CKSigned => 'signed', CKUnsigned => 'unsigned', CKLong => 'long', CKShort => 'short',
-    CKFloat => 'float', CKDouble => 'double',
-    CKVirtual => 'virtual', CKOverride => 'override', CKFinal => 'final',
-    CKPublic => 'public', CKPrivate => 'private', CKProtected => 'protected',
-    CKExplicit => 'explicit', CKMutable => 'mutable', CKVolatile => 'volatile',
-    CKFriend => 'friend',
-    CIdent(name) => name,
-    CLInt(value) => value.to_string(),
-    CLStr(value) => `"` + value + `"`,
-    CArrow => '->', CScope => '::', CEq => '==', CNe => '!=', CLe => '<=', CGe => '>=',
-    CAnd => '&&', COr => '||', CInc => '++', CDec => '--',
-    CLShift => '<<', CRShift => '>>',
-    CLParen => '(', CRParen => ')', CLBrace => '{', CRBrace => '}',
-    CLBracket => '[', CRBracket => ']', CLAngle => '<', CRAngle => '>',
-    CHash => '#',
-    COp(symbol) => symbol,
-    CEof => ''
-  }
+  match kind
+  | CKAuto       => "auto"
+  | CKConst      => "const"
+  | CKConstexpr  => "constexpr"
+  | CKIf         => "if"
+  | CKElse       => "else"
+  | CKWhile      => "while"
+  | CKFor        => "for"
+  | CKReturn     => "return"
+  | CKBreak      => "break"
+  | CKStruct     => "struct"
+  | CKUsing      => "using"
+  | CKNoexcept   => "noexcept"
+  | CKInline     => "inline"
+  | CKStatic     => "static"
+  | CKVoid       => "void"
+  | CKInt        => "int"
+  | CKBool       => "bool"
+  | CKChar       => "char"
+  | CKTrue       => "true"
+  | CKFalse      => "false"
+  | CKNullptr    => "nullptr"
+  | CKTemplate   => "template"
+  | CKTypename   => "typename"
+  | CKNamespace  => "namespace"
+  | CKNew        => "new"
+  | CKDelete     => "delete"
+  | CKOperator   => "operator"
+  | CKClass      => "class"
+  | CKEnum       => "enum"
+  | CKTypedef    => "typedef"
+  | CKExtern     => "extern"
+  | CKSigned     => "signed"
+  | CKUnsigned   => "unsigned"
+  | CKLong       => "long"
+  | CKShort      => "short"
+  | CKFloat      => "float"
+  | CKDouble     => "double"
+  | CKVirtual    => "virtual"
+  | CKOverride   => "override"
+  | CKFinal      => "final"
+  | CKPublic     => "public"
+  | CKPrivate    => "private"
+  | CKProtected  => "protected"
+  | CKExplicit   => "explicit"
+  | CKMutable    => "mutable"
+  | CKVolatile   => "volatile"
+  | CKFriend     => "friend"
+  | CIdent(name) => name
+  | CLInt(value) => value.to_string()
+  | CLStr(value) => `"` + value + `"`
+  | CArrow       => "->"
+  | CScope       => "::"
+  | CEq          => "=="
+  | CNe          => "!="
+  | CLe          => "<="
+  | CGe          => ">="
+  | CAnd         => "&&"
+  | COr          => "||"
+  | CInc         => "++"
+  | CDec         => "--"
+  | CLShift      => "<<"
+  | CRShift      => ">>"
+  | CLParen      => "("
+  | CRParen      => ")"
+  | CLBrace      => "{"
+  | CRBrace      => "}"
+  | CLBracket    => "["
+  | CRBracket    => "]"
+  | CLAngle      => "<"
+  | CRAngle      => ">"
+  | CHash        => "#"
+  | COp(symbol)  => symbol
+  | CEof         => ""
+  end
+
+fn cpp_token_kind_is_eof(kind: CppTokenKind) -> bool =
+  match kind { CEof => true, _ => false }
 
 export fn cpp_tokens_to_source(tokens: [CppToken]) -> string = do
   let parts: [string] = []
   let mut index = 0
   while index < tokens.length() do
-    match tokens[index].kind {
-      CEof => (),
-      kind => parts.push(cpp_token_lexeme(kind))
-    }
+    const kind = tokens[index].kind
+    if !cpp_token_kind_is_eof(kind) then parts.push(cpp_token_lexeme(kind)) end
     index = index + 1
   end
-  parts.join(' ')
+  parts.join(" ")
 end
 
 export fn cpp_token_kinds_equal(first: [CppToken], second: [CppToken]) -> bool = do
   if first.length() != second.length() then false
-  else do
+  else
     let mut index = 0
     let mut equal = true
     while index < first.length() && equal do
-      if first[index].kind != second[index].kind then equal = false end
+      if cpp_token_lexeme(first[index].kind) != cpp_token_lexeme(second[index].kind) then equal = false end
       index = index + 1
     end
     equal

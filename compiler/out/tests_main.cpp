@@ -16,6 +16,10 @@
 #include "test_expr_visitor.hpp"
 #include "test_visitor_pass_parity.hpp"
 #include "test_cpp_printer.hpp"
+#include "test_cpp_lexer.hpp"
+#include "test_cpp_ast.hpp"
+#include "test_cpp_parser.hpp"
+#include "test_cpp_types.hpp"
 #include "test_formatter.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"
@@ -35,6 +39,10 @@ using namespace test_compile_commands;
 using namespace test_expr_visitor;
 using namespace test_visitor_pass_parity;
 using namespace test_cpp_printer;
+using namespace test_cpp_lexer;
+using namespace test_cpp_ast;
+using namespace test_cpp_parser;
+using namespace test_cpp_types;
 using namespace test_formatter;
 using namespace test_fuzz;
 using namespace test_runner;
@@ -147,6 +155,38 @@ index = 0;
 while (index < suite_cpp_printer.size()){
 {
 all.push_back(suite_cpp_printer[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_lexer = test_cpp_lexer::cpp_lexer_tests();
+index = 0;
+while (index < suite_cpp_lexer.size()){
+{
+all.push_back(suite_cpp_lexer[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_ast = test_cpp_ast::cpp_ast_tests();
+index = 0;
+while (index < suite_cpp_ast.size()){
+{
+all.push_back(suite_cpp_ast[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_parser = test_cpp_parser::cpp_parser_tests();
+index = 0;
+while (index < suite_cpp_parser.size()){
+{
+all.push_back(suite_cpp_parser[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_types = test_cpp_types::cpp_type_parser_tests();
+index = 0;
+while (index < suite_cpp_types.size()){
+{
+all.push_back(suite_cpp_types[index]);
 index = index + 1;
 }
 }

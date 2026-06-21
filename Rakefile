@@ -68,9 +68,9 @@ task :test_compiler_mlc do
   sh "#{__dir__}/compiler/tests/build_tests.sh"
 end
 
-desc "Сборка mlcc (compiler/build.sh), затем triple-bootstrap (compiler/triple_bootstrap.sh); долго, нужны g++ и ~10+ мин"
+desc "Сборка mlcc (MLCC_FORCE_RUBY=1 compiler/build.sh), затем triple-bootstrap (compiler/triple_bootstrap.sh); долго, нужны g++ и ~10+ мин"
 task :triple_bootstrap do
-  sh "#{__dir__}/compiler/build.sh"
+  sh "MLCC_FORCE_RUBY=1 #{__dir__}/compiler/build.sh"
   sh "#{__dir__}/compiler/triple_bootstrap.sh", "#{__dir__}/compiler/out/mlcc"
 end
 

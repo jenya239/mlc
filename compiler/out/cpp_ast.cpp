@@ -50,6 +50,8 @@ mlc::String type_pointer(mlc::String inner_code) noexcept;
 
 mlc::String type_const_prefix(mlc::String inner_code) noexcept;
 
+mlc::String print_cpp_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
+
 mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
 
 mlc::String render_ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
@@ -282,14 +284,16 @@ mlc::String type_pointer(mlc::String inner_code) noexcept{return inner_code + ml
 
 mlc::String type_const_prefix(mlc::String inner_code) noexcept{return mlc::String("const ") + inner_code;}
 
-mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept{return std::visit(overloaded{
+mlc::String print_cpp_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept{return std::visit(overloaded{
   [&](const CppTypeName& cpptypename) -> mlc::String { auto [name] = cpptypename; return name; },
   [&](const CppTypeTemplate& cpptypetemplate) -> mlc::String { auto [name, arguments] = cpptypetemplate; return type_template(name, print_comma_separated_types(arguments)); },
-  [&](const CppTypeRef& cpptyperef) -> mlc::String { auto [inner] = cpptyperef; return type_reference(print_type(inner)); },
-  [&](const CppTypeRRef& cpptyperref) -> mlc::String { auto [inner] = cpptyperref; return type_rvalue_reference(print_type(inner)); },
-  [&](const CppTypePtr& cpptypeptr) -> mlc::String { auto [inner] = cpptypeptr; return type_pointer(print_type(inner)); },
-  [&](const CppTypeConst& cpptypeconst) -> mlc::String { auto [inner] = cpptypeconst; return type_const_prefix(print_type(inner)); }
+  [&](const CppTypeRef& cpptyperef) -> mlc::String { auto [inner] = cpptyperef; return type_reference(print_cpp_type(inner)); },
+  [&](const CppTypeRRef& cpptyperref) -> mlc::String { auto [inner] = cpptyperref; return type_rvalue_reference(print_cpp_type(inner)); },
+  [&](const CppTypePtr& cpptypeptr) -> mlc::String { auto [inner] = cpptypeptr; return type_pointer(print_cpp_type(inner)); },
+  [&](const CppTypeConst& cpptypeconst) -> mlc::String { auto [inner] = cpptypeconst; return type_const_prefix(print_cpp_type(inner)); }
 }, (*type_node));}
+
+mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept{return print_cpp_type(type_node);}
 
 mlc::String render_ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept{return mlc::String("(") + condition_code + mlc::String(" ? (") + then_code + mlc::String(") : (") + else_code + mlc::String("))");}
 

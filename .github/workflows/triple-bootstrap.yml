@@ -18,8 +18,8 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Build mlcc (Ruby modular compiler)
-        run: compiler/build.sh
+      - name: Build mlcc (cold start via Ruby)
+        run: MLCC_FORCE_RUBY=1 compiler/build.sh
 
       - name: Triple-bootstrap (bs2 must equal bs3)
         run: compiler/triple_bootstrap.sh compiler/out/mlcc

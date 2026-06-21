@@ -103,6 +103,8 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_header(std::shared
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_source(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
 
+mlc::String print_cpp_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
+
 mlc::String print_integer_literal(int integer_value) noexcept;
 
 mlc::String print_string_literal(mlc::String string_value) noexcept;

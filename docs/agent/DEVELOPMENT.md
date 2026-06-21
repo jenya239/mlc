@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-**TRACK_RENAME_ABBREV** step 2 done. Next: **STEP=3** (`lexer.mlc` field renames).
+**TRACK_CPP_HEADER_IMPORT** STEP=5 — `import "header.h"` wiring + registry; close track.
 
 ## Step sizing (good vs bad)
 

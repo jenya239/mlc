@@ -14,6 +14,10 @@ import { compile_commands_tests } from './test_compile_commands'
 import { expr_visitor_tests } from './test_expr_visitor'
 import { visitor_pass_parity_tests } from './test_visitor_pass_parity'
 import { cpp_printer_tests } from './test_cpp_printer'
+import { cpp_lexer_tests } from './test_cpp_lexer'
+import { cpp_ast_tests } from './test_cpp_ast'
+import { cpp_parser_tests } from './test_cpp_parser'
+import { cpp_type_parser_tests } from './test_cpp_types'
 import { formatter_tests } from './test_formatter'
 import { fuzz_tests } from './test_fuzz'
 import { TestResult, run_all } from './test_runner'
@@ -60,6 +64,18 @@ fn all_tests() -> [TestResult] = do
 
   const suite_cpp_printer = cpp_printer_tests()
   index = 0; while index < suite_cpp_printer.length() do all.push(suite_cpp_printer[index]); index = index + 1 end
+
+  const suite_cpp_lexer = cpp_lexer_tests()
+  index = 0; while index < suite_cpp_lexer.length() do all.push(suite_cpp_lexer[index]); index = index + 1 end
+
+  const suite_cpp_ast = cpp_ast_tests()
+  index = 0; while index < suite_cpp_ast.length() do all.push(suite_cpp_ast[index]); index = index + 1 end
+
+  const suite_cpp_parser = cpp_parser_tests()
+  index = 0; while index < suite_cpp_parser.length() do all.push(suite_cpp_parser[index]); index = index + 1 end
+
+  const suite_cpp_types = cpp_type_parser_tests()
+  index = 0; while index < suite_cpp_types.length() do all.push(suite_cpp_types[index]); index = index + 1 end
 
   const suite_formatter = formatter_tests()
   index = 0; while index < suite_formatter.length() do all.push(suite_formatter[index]); index = index + 1 end

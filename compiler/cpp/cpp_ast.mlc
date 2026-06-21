@@ -162,15 +162,17 @@ fn type_pointer(inner_code: string) -> string =
 fn type_const_prefix(inner_code: string) -> string =
   `const ${inner_code}`
 
-fn print_type(type_node: Shared<CppType>) -> string =
+export fn print_cpp_type(type_node: Shared<CppType>) -> string =
   match type_node {
     CppTypeName(name) => name,
     CppTypeTemplate(name, arguments) => type_template(name, print_comma_separated_types(arguments)),
-    CppTypeRef(inner) => type_reference(print_type(inner)),
-    CppTypeRRef(inner) => type_rvalue_reference(print_type(inner)),
-    CppTypePtr(inner) => type_pointer(print_type(inner)),
-    CppTypeConst(inner) => type_const_prefix(print_type(inner))
+    CppTypeRef(inner) => type_reference(print_cpp_type(inner)),
+    CppTypeRRef(inner) => type_rvalue_reference(print_cpp_type(inner)),
+    CppTypePtr(inner) => type_pointer(print_cpp_type(inner)),
+    CppTypeConst(inner) => type_const_prefix(print_cpp_type(inner))
   }
+
+fn print_type(type_node: Shared<CppType>) -> string = print_cpp_type(type_node)
 
 fn render_ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
   `(${condition_code} ? (${then_code}) : (${else_code}))`

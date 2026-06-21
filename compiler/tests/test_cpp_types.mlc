@@ -1,0 +1,56 @@
+// Unit tests for C++ type parser (cpp/parser/cpp_types.mlc).
+
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { cpp_tokenize } from '../cpp/cpp_lexer'
+import { parse_cpp_type, parse_cpp_type_to_string } from '../cpp/parser/cpp_types'
+import { print_cpp_type, CppType, CppTypeName, CppTypeTemplate, CppTypePtr, CppTypeConst, CppTypeRef, CppTypeRRef } from '../cpp/cpp_ast'
+
+fn cpp_type_string(source_text: string) -> string =
+  parse_cpp_type_to_string(cpp_tokenize(source_text).tokens, 0).type_string
+
+fn cpp_parse_type_node(source_text: string) -> Shared<CppType> =
+  parse_cpp_type(cpp_tokenize(source_text).tokens, 0).type_node
+
+export fn cpp_type_parser_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_str("int", cpp_type_string("int"), "int"))
+
+  results.push(assert_eq_str("const int*",
+    cpp_type_string("const int*"), "const int*"))
+
+  results.push(assert_eq_str("std::vector<int>",
+    cpp_type_string("std::vector<int>"), "std::vector<int>"))
+
+  results.push(assert_eq_str("int&&",
+    cpp_type_string("int&&"), "int&&"))
+
+  results.push(assert_eq_str("const int&",
+    cpp_type_string("const int&"), "const int&"))
+
+  results.push(assert_true("CppTypeTemplate std::vector<int>",
+    match cpp_parse_type_node("std::vector<int>") {
+      CppTypeTemplate(name, arguments) => name == "std::vector" && arguments.length() == 1,
+      _ => false
+    }))
+
+  results.push(assert_true("CppTypePtr const int",
+    match cpp_parse_type_node("const int*") {
+      CppTypePtr(inner) => match inner {
+        CppTypeConst(inner_type) => match inner_type { CppTypeName(name) => name == "int", _ => false },
+        _ => false
+      },
+      _ => false
+    }))
+
+  results.push(assert_true("CppTypeRRef int",
+    match cpp_parse_type_node("int&&") {
+      CppTypeRRef(inner) => match inner { CppTypeName(name) => name == "int", _ => false },
+      _ => false
+    }))
+
+  results.push(assert_eq_str("print roundtrip unsigned long int",
+    print_cpp_type(cpp_parse_type_node("unsigned long int")), "unsigned long int"))
+
+  results
+end
