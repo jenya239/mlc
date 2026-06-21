@@ -26,7 +26,15 @@ jobs:
       - name: Self-hosted compiler tests
         run: compiler/tests/build_tests.sh
 
-      - name: Build mlcc (modular compiler via Ruby)
+      - name: Download bootstrap mlcc binary
+        run: |
+          gh release download --repo jenya239/mlc --pattern 'mlcc' --dir compiler/out/ \
+            $(gh release list --repo jenya239/mlc --limit 1 | awk '{print $3}')
+          chmod +x compiler/out/mlcc
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build mlcc (self-hosted, Ruby fallback if stale)
         run: compiler/build.sh
 
       - name: Bootstrap link smoke (mlcc_bootstrap)
