@@ -4,9 +4,9 @@ set -e
 # Progress during modular compile/link (semantic → codegen → g++): stderr lines prefixed with "[mlc build]".
 # Example: MLCC_BUILD_VERBOSE=1 compiler/build.sh
 #
-# Default: reuse compiler/out/mlcc when no compiler/**/*.mlc is newer than the binary.
-# Cold start / stale: Ruby ModularCompiler, or mlcc codegen + build_bin.sh when mlcc exists.
-# Force Ruby: MLCC_FORCE_RUBY=1
+# Default: mlcc-only (skip when fresh, rebuild via mlcc + build_bin.sh when stale).
+# Cold start (no mlcc): MLCC_FORCE_RUBY=1 compiler/build.sh
+# Bootstrap: MLCC_BOOTSTRAP=1 compiler/build.sh
 
 COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
@@ -48,14 +48,18 @@ puts "Built: #{result[:binary]}"
 
 build_via_mlcc() {
   echo "[mlcc build] mlcc codegen + build_bin.sh" >&2
+  find "$OUT_DIR" -maxdepth 1 \( -name '*.cpp' -o -name '*.hpp' \) -delete
   "$BIN_OUT" "$MAIN" -o "$OUT_DIR"
   "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$BIN_OUT"
 }
 
 if mlcc_binary_is_fresh; then
   echo "[mlcc build] ${BIN_OUT} up to date (skip)" >&2
-elif [ "${MLCC_FORCE_RUBY:-0}" = "1" ] || [ ! -x "$BIN_OUT" ]; then
+elif [ "${MLCC_FORCE_RUBY:-0}" = "1" ]; then
   build_via_ruby
+elif [ ! -x "$BIN_OUT" ]; then
+  echo "[mlcc build] no ${BIN_OUT}; cold start requires MLCC_FORCE_RUBY=1" >&2
+  exit 1
 elif [ "${MLCC_BOOTSTRAP:-0}" = "1" ]; then
   echo "[mlcc build] ${BIN_OUT} stale; skip main rebuild (bootstrap only)" >&2
 else
