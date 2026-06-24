@@ -2,11 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) ùPhase 3.6; design: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md); follows [TRACK_CPP_HEADER_IMPORT.md](TRACK_CPP_HEADER_IMPORT.md)
 
-## Status: **open** STEP=3 pending (STEP=1ù2 done)
+## Status: **open** STEP=4 pending (STEP=1ù2 done)
 
 **Depends on:** TRACK_CPP_HEADER_IMPORT closed (minimal subset); TRACK_LSP closed or STEP=5 done.
 
-**Baseline:** build_tests **1152/0**; `build_bin` mlcc2 **ok**; `mlcc2 --check-only compiler/main.mlc` ok.
+**Baseline:** build_tests **1162/0**; `build_bin` mlcc2 **ok**; `mlcc2 --check-only compiler/main.mlc` ok.
 
 **Goal:** ??????????? ?????? C++ ?????????? ? trivia roundtrip, expressions, class bodies, template decls ù ??????? ? Ruby ??? STL/real headers. ????????: [CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md).
 
@@ -28,7 +28,7 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 |------|------|--------|
 | 1 | Fix self-host codegen `cpp_decls.mlc` ù `build_bin` green | done |
 | 2 | Trivia model ù `leading_trivia`/`trailing_trivia` on `CppToken`; lexer collects comments/`#pragma` | done |
-| 3 | `parser/to_source.mlc` ù AST ? source via trivia; lexer roundtrip tests | pending |
+| 3 | `parser/to_source.mlc` ù AST ? source via trivia; lexer roundtrip tests | done |
 | 4 | Extend `cpp_ast.mlc` ù class members, access levels, fn modifiers, template decls, typedef | pending |
 | 5 | Expression parser (Pratt) ù `parser/cpp_exprs.mlc`; literals char/float/hex | pending |
 | 6 | Full decl parser ù class bodies, template decls, extern blocks, attributes `[[...]]` | pending |
@@ -47,6 +47,13 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 - Lexer: `cpp_collect_leading_trivia` (ws, `//`, `/* */`, `#pragma` lines); trailing horizontal ws; `#include` stays `CHash` token.
 - `cpp_tokens_to_source` = concat per token (no spaces); `cpp_lex_roundtrip_preserves_source`.
 - Gate: **1152/0**; `build_bin` mlcc2 ok; `mlcc2 --check-only` ok. Commits: `c7b61a22`, `90c250fc`.
+
+### STEP=3 notes (2026-06-24)
+
+- `parser/to_source.mlc`: `cpp_tokens_span_to_source`, `cpp_declaration_to_source`, `cpp_program_to_source`.
+- Trivia path: `cpp_program_from_tokens_preserving_trivia` wraps token spans as `CppDeclarationFragment`.
+- Canonical path: structured AST via `print_decl`. Tests: `test_cpp_to_source.mlc` (+10).
+- Gate: **1162/0**; commit `374f3a29`.
 
 ### Out of scope
 

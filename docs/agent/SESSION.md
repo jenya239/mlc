@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-05ba3d0a-0d9b-4722-a03e-f353409ac1c9` |
-| driver_turns_since_plan | 5|
-| step_last | recovery|
-| active_track | TRACK_CPP_PARSER_FULL STEP=3 pending |
+| agent_token_last | `cr-agent-c70ce56b-0a60-45db-81f0-14916b2230b8` |
+| driver_turns_since_plan | 6|
+| step_last | 3|
+| active_track | TRACK_CPP_PARSER_FULL STEP=4 pending |
+
+### Turn 2026-06-24 (Driver STEP=3 — to_source)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_CPP_PARSER_FULL |
+| done | `parser/to_source.mlc`; trivia span roundtrip; `test_cpp_to_source.mlc` (+10 tests) |
+| verify | `build_tests` **1162/0**; `build_bin` + `mlcc2 --check-only` ok |
+| next | ROLE=Driver STEP=4 |
 
 ### Turn 2026-06-24 (Driver recovery — close STEP=2)
 
