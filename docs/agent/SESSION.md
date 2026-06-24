@@ -5,10 +5,21 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-c70ce56b-0a60-45db-81f0-14916b2230b8` |
-| driver_turns_since_plan | 6|
-| step_last | 3|
-| active_track | TRACK_CPP_PARSER_FULL STEP=4 pending |
+| agent_token_last | `cr-agent-b0ea4711-eb83-497a-a76f-bd947f1fabef` |
+| driver_turns_since_plan | 5|
+| step_last | 4|
+| active_track | TRACK_CPP_PARSER_FULL STEP=5 pending |
+
+### Turn 2026-06-24 (Driver STEP=4 — cpp_ast extend)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_CPP_PARSER_FULL |
+| done | `cpp_ast.mlc`: class members, fn modifiers, template/typedef decls; printer + tests (+7) |
+| verify | `build_tests` **1169/0**; `build_bin` + `mlcc2 --check-only` ok |
+| next | ROLE=Driver STEP=5 |
 
 ### Turn 2026-06-24 (Driver STEP=3 — to_source)
 
