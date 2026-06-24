@@ -7,7 +7,7 @@
 | instructions_rev | `2026-05-28-cleaner`|
 | agent_token_last | `cr-agent-06c19d89-504d-4ef2-8d61-0554ebda2d24` |
 | driver_turns_since_plan | 4|
-| step_last | 5|
+| step_last | 1|
 | active_track | TRACK_LSP STEP=5 pending |
 
 ### Turn 2026-06-24 (Driver recovery — LSP STEP=4 diagnostics)

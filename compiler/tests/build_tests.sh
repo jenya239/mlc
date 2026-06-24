@@ -40,4 +40,5 @@ echo "[compiler tests] phase 6/7: compile_commands smoke (mlcc --emit-compile-co
 bash "$COMPILER_DIR/tests/run_compile_commands_smoke.sh" "$COMPILER_DIR/out/mlcc"
 
 echo "[compiler tests] phase 7/7: lsp smoke (mlcc lsp stdio)" >&2
-bash "$COMPILER_DIR/tests/run_lsp_smoke.sh" "$COMPILER_DIR/out/mlcc"
+MLCC_FORCE_RUBY=1 bash "$COMPILER_DIR/build.sh" "$OUT_DIR" >/dev/null
+bash "$COMPILER_DIR/tests/run_lsp_smoke.sh" "$OUT_DIR/mlcc"

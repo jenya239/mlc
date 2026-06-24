@@ -8,6 +8,8 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 3.5; design: [../CPP_PARSER_DESIGN.md](
 
 **Goal:** parse subset of C++ headers; register types/fn protos for `import "foo.h"`.
 
+> **Scope:** minimal subset only. Full parser (trivia, roundtrip, class bodies, Ruby parity) → [TRACK_CPP_PARSER_FULL.md](TRACK_CPP_PARSER_FULL.md) Phase 3.6.
+
 ## Verify gate
 
 ```

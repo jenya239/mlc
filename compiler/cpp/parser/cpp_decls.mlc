@@ -33,6 +33,7 @@ fn cpp_decl_empty_result(position: i32) -> CppDeclarationParseResult =
 
 fn cpp_decl_skip_token(tokens: [CppToken], position: i32) -> i32 =
   if cpp_predicates.cpp_at_end(tokens, position) then position else position + 1
+  end
 
 fn cpp_decl_skip_to_semicolon(tokens: [CppToken], position: i32) -> i32 = do
   let mut scan_position = position

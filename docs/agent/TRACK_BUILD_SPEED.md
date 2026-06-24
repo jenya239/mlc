@@ -1,0 +1,61 @@
+# Track: Build speed (C++ backend + link)
+
+Parent: [../PLAN.md](../PLAN.md) §Phase 2.9; baseline: mlcc codegen ~2s, g++ link 90–200s
+
+## Status: **open** STEP=1
+
+**Depends on:** none (infra-only; parallel with other tracks).
+
+**Baseline:** `build_bin.sh` — parallel compile, `ccache clang++` preferred, `lld`; obj in `mktemp` (no reuse); `build.sh` wipes `out/*.cpp` each rebuild; 132 generated TU.
+
+**Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast — optimize C++ compile/link + incremental artifacts.
+
+## Verify gate (every step)
+
+```
+# cold-ish rebuild after compiler/ touch
+/usr/bin/time -f 'link_sec=%e' compiler/build.sh
+compiler/tests/build_tests.sh
+```
+
+Record `link_sec` in SESSION; must not regress vs baseline after each step.
+
+---
+
+| Step | Item | Status |
+|------|------|--------|
+| 1 | Persistent `out/obj/` in `build_bin.sh` (drop `mktemp`); ccache-friendly | pending |
+| 2 | `MLCC_DEV=1` ? `-O0 -g`; `MLCC_OPT=2` default `-O2` for release | pending |
+| 3 | Linker: prefer `mold`, then `lld`, then gold; document in README | pending |
+| 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) — measure before/after | pending |
+| 5 | `build.sh`: optional skip `find -delete out/*.cpp` when `MLCC_INCREMENTAL=1` + module stamp | pending |
+| 6 | CI: install `clang`, `ccache`, `mold`; `MLC_CXX="ccache clang++"` | pending |
+| 7 | Benchmark script `compiler/scripts/bench_build.sh`; close track | pending |
+
+### Clang — ????? ???
+
+| | clang++ | g++ |
+|--|---------|-----|
+| **??????????** | ??? | fallback ? `build_bin.sh` |
+| **????????????** | ?? | — |
+| **??????** | ??????? compile ?? ??????? TU, ????? diagnostics, `-fuse-ld=lld/mold` | ?????? ???? ? CI |
+
+Default chain (already): `MLC_CXX` ? `ccache clang++` ? `clang++` ? `ccache g++` ? `g++`.
+
+**Dev setup:** `apt install clang ccache mold` (or `MLC_CXX='ccache clang++'`).
+
+### Out of scope
+
+- LLVM/Cranelift native backend (separate future track)
+- Incremental mlcc modular codegen (architecture track / later)
+- Unity-build amalgamation (STEP=5 alternative if PCH insufficient)
+
+---
+
+## Per-turn template
+
+```
+| step | <1–7> |
+| done | <one line> |
+| verify | link_sec=…; build_tests N/0 |
+```

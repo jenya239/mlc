@@ -21,7 +21,7 @@ end
 export fn lsp_read_message_body() -> string = do
   let mut content_length = -1
   while true do
-    const header_line = read_line()
+    const header_line = read_line().trim()
     if header_line == "" then break end
     const parsed_length = lsp_parse_content_length_header(header_line)
     if parsed_length >= 0 then content_length = parsed_length end

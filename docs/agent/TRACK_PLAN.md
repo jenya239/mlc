@@ -123,21 +123,25 @@ Strict order; each track depends on previous unless noted.
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **closed** (2026-05-19) |
-| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | **open** STEP=2b |
-| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=5 |
-| 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
+| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | **open** STEP=5 |
+| 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **closed** (minimal subset) |
+| 8 | [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) | 3.6 | **open** STEP=1 |
+| 9 | [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) | 2.8 | **open** STEP=3 |
+| 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **open** STEP=1 |
+| 11 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
-  → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT → REDDIT_DEMO
+  → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT (minimal)
+  → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO
 ```
 
 **Deferred:** parser `ref mut` (TRACK_PLAN step 15); MLC IR; package manager.
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_LSP](TRACK_LSP.md) **STEP=2b** — fix `lsp_protocol.mlc` char/string; gate green. (Guard: do not re-enqueue `Driver:2`; use STEP=2b.)  
-> Then: [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) STEP=5 when LSP STEP=2 closed.
+> **Immediate:** [TRACK_LSP](TRACK_LSP.md) **STEP=5**.  
+> Then: [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) STEP=1 → [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) STEP=1.
 
 ## Next step (Planner)
 
