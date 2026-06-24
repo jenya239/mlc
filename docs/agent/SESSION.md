@@ -4,11 +4,22 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-b0ea4711-eb83-497a-a76f-bd947f1fabef` |
+| instructions_rev | `2026-06-01-session-detail`|
+| agent_token_last | `cr-agent-d45103b7-c4d5-4ab1-b8e4-702094e984d5` |
 | driver_turns_since_plan | 5|
-| step_last | 4|
-| active_track | TRACK_CPP_PARSER_FULL STEP=5 pending |
+| step_last | 5|
+| active_track | TRACK_CPP_PARSER_FULL STEP=6 pending |
+
+### Turn 2026-06-24 (Driver STEP=5 — expr parser Pratt)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_CPP_PARSER_FULL |
+| done | `cpp_exprs.mlc` Pratt; lexer char/float/hex; `test_cpp_exprs.mlc` (+16), lexer (+5) |
+| verify | `build_tests` **1192/0**; `MLCC_FORCE_RUBY=1 build.sh`; `mlcc2 --check-only` ok |
+| next | ROLE=Driver STEP=6 |
 
 ### Turn 2026-06-24 (Driver STEP=4 — cpp_ast extend)
 

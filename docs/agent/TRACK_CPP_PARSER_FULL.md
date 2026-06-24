@@ -2,11 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) ùPhase 3.6; design: [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md); follows [TRACK_CPP_HEADER_IMPORT.md](TRACK_CPP_HEADER_IMPORT.md)
 
-## Status: **open** STEP=5 pending (STEP=1ù2 done)
+## Status: **open** STEP=6 pending (STEP=1‚Äì5 done)ù2 done)
 
 **Depends on:** TRACK_CPP_HEADER_IMPORT closed (minimal subset); TRACK_LSP closed or STEP=5 done.
 
-**Baseline:** build_tests **1169/0**; `build_bin` mlcc2 **ok**; `mlcc2 --check-only compiler/main.mlc` ok.
+**Baseline:** build_tests **1192/0**; `build_bin` mlcc2 **ok**; `mlcc2 --check-only compiler/main.mlc` ok.
 
 **Goal:** ??????????? ?????? C++ ?????????? ? trivia roundtrip, expressions, class bodies, template decls ù ??????? ? Ruby ??? STL/real headers. ????????: [CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md).
 
@@ -30,7 +30,7 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 | 2 | Trivia model ù `leading_trivia`/`trailing_trivia` on `CppToken`; lexer collects comments/`#pragma` | done |
 | 3 | `parser/to_source.mlc` ù AST ? source via trivia; lexer roundtrip tests | done |
 | 4 | Extend `cpp_ast.mlc` ù class members, access levels, fn modifiers, template decls, typedef | done |
-| 5 | Expression parser (Pratt) ù `parser/cpp_exprs.mlc`; literals char/float/hex | pending |
+| 5 | Expression parser (Pratt) ù `parser/cpp_exprs.mlc`; literals char/float/hex | done |
 | 6 | Full decl parser ù class bodies, template decls, extern blocks, attributes `[[...]]` | pending |
 | 7 | Structural + roundtrip tests (?20 + ?10); differential vs Ruby on fixture corpus | pending |
 | 8 | Re-wire `header_import.mlc`; fix fixture paths; close track | pending |
@@ -62,6 +62,13 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 - `print_decl` for class bodies (access, fields, virtual/const methods), typedef, template wrapper.
 - Rename `CppMember` ? `CppClassMember` (avoid clash with `CppExpression::CppMember`).
 - Gate: **1169/0**; `build_bin` + `mlcc2 --check-only` ok; commit `a2d7668d`.
+
+### STEP=5 notes (2026-06-24)
+
+- Lexer: `CLChar`/`CLFloat`/`CLHex` tokens; `cpp_scan_char`, `cpp_scan_number` (hex, float, exponent).
+- `parser/cpp_exprs.mlc`: Pratt parser ? `CppExpression` (literals, unary/binary, call, member, index, ternary).
+- `cpp_predicates.mlc`: literal/operator predicates; `CppCharLiteral`/`CppFloatLiteral` in `cpp_ast.mlc`.
+- Tests: `test_cpp_exprs.mlc` (+16), lexer (+5). Gate: **1192/0**; `mlcc2 --check-only` ok.
 
 ### Out of scope
 
