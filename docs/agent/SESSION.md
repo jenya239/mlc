@@ -5,7 +5,7 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-d45103b7-c4d5-4ab1-b8e4-702094e984d5` |
+| agent_token_last | `cr-agent-335c8ff3-ebf4-432f-a57e-c2fd21fed704` |
 | driver_turns_since_plan | 5|
 | step_last | 5|
 | active_track | TRACK_CPP_PARSER_FULL STEP=6 pending |
@@ -19,7 +19,21 @@
 | track | TRACK_CPP_PARSER_FULL |
 | done | `cpp_exprs.mlc` Pratt; lexer char/float/hex; `test_cpp_exprs.mlc` (+16), lexer (+5) |
 | verify | `build_tests` **1192/0**; `MLCC_FORCE_RUBY=1 build.sh`; `mlcc2 --check-only` ok |
+| issues | none |
 | next | ROLE=Driver STEP=6 |
+
+**Enqueue payload (Driver STEP=6):**
+```
+AGENT_TOKEN=cr-agent-335c8ff3-ebf4-432f-a57e-c2fd21fed704
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_PARSER_FULL.md
+
+STEP=6: Full decl parser — class bodies, template decls, extern blocks, attributes [[...]]. build_tests gate.
+```
 
 ### Turn 2026-06-24 (Driver STEP=4 — cpp_ast extend)
 
