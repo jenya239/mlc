@@ -5,10 +5,85 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-06c19d89-504d-4ef2-8d61-0554ebda2d24` |
-| driver_turns_since_plan | 4|
-| step_last | 1|
-| active_track | TRACK_LSP STEP=5 pending |
+| agent_token_last | `cr-agent-05ba3d0a-0d9b-4722-a03e-f353409ac1c9` |
+| driver_turns_since_plan | 5|
+| step_last | recovery|
+| active_track | TRACK_CPP_PARSER_FULL STEP=3 pending |
+
+### Turn 2026-06-24 (Driver recovery — close STEP=2)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery (closed STEP=2) |
+| track | TRACK_CPP_PARSER_FULL |
+| started | 2026-06-24 |
+| elapsed | ~5 min |
+| done | STEP=2 trivia: `cpp_tokens.mlc`, `cpp_lexer.mlc`, `test_cpp_lexer.mlc`; commits `c7b61a22` (step1), `90c250fc` (step2) |
+| result | `build_tests` **1152/0**; `build_bin` ok; `mlcc2 --check-only` ok |
+| issues | stuck `Driver:2:CPP_PARSER_FULL` — no re-enqueue STEP=2 |
+| next | ROLE=Driver STEP=3 TRACK_CPP_PARSER_FULL |
+
+**Enqueue payload (Driver STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_PARSER_FULL.md
+
+STEP=3: parser/to_source.mlc — AST to source via trivia; lexer roundtrip tests. build_tests gate.
+```
+
+### Turn 2026-06-24 (Driver STEP=1 idempotent — gate re-verify)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 (idempotent) |
+| track | TRACK_CPP_PARSER_FULL |
+| done | STEP=1 already closed; TRACK table synced; gate re-verified |
+| verify | `build_tests` **1145/0**; `build_bin` ok; `mlcc2 --check-only` ok |
+| next | ROLE=Driver STEP=2 (no re-enqueue STEP=1) |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-a8024e69-45df-4f18-9fed-5ab8324f544f
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_PARSER_FULL.md
+
+STEP=2: CppToken trivia model (leading/trailing); lexer comments/#pragma. build_tests gate.
+```
+
+### Turn 2026-06-24 (Driver STEP=1 — CPP_PARSER_FULL build_bin)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_CPP_PARSER_FULL |
+| done | codegen `end` fixes (`cpp_decls`, `symbols`, `lsp_protocol`, `cpp_parser`, `header_import`); `build_bin` mlcc2 green |
+| verify | `build_tests` **1145/0**; `build_bin` ok; `mlcc2 --check-only compiler/main.mlc` ok |
+| next | ROLE=Driver STEP=2 TRACK_CPP_PARSER_FULL |
+
+**Enqueue payload (Driver STEP=2):**
+```
+AGENT_TOKEN=cr-agent-ee5dbf9f-ef47-47c0-b154-64c661189ca2
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_PARSER_FULL.md
+
+STEP=2: CppToken trivia model (leading/trailing); lexer comments/#pragma. build_tests gate.
+```
 
 ### Turn 2026-06-24 (Driver recovery — LSP STEP=4 diagnostics)
 
