@@ -10,7 +10,7 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
          CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
-         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam } from '../cpp/cpp_ast'
+         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp/cpp_ast'
 
 fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')
@@ -280,6 +280,59 @@ export fn cpp_printer_tests() -> [TestResult] = do
       'identity',
       ['T value']))),
     'template<typename T>\nT identity(T value) noexcept;\n'))
+
+  const identity_prototype = CppFunctionPrototype {
+    template_prefix: "",
+    return_type: Shared.new(CppTypeName("T")),
+    name: "identity",
+    parameters: [Shared.new(CppParam { name: "value", parameter_type: Shared.new(CppTypeName("T")) })],
+    modifiers: cpp_fn_modifiers_none(),
+  }
+  results.push(assert_eq_str('print_decl CppTemplateDeclaration fn',
+    print_decl(Shared.new(CppTemplateDeclaration(
+      "typename T",
+      Shared.new(CppFunctionPrototypeDecl(identity_prototype))))),
+    'template<typename T>\nT identity(T value) noexcept;\n'))
+
+  results.push(assert_eq_str('print_decl CppTypedefDeclaration',
+    print_decl(Shared.new(CppTypedefDeclaration("size_t", Shared.new(CppTypeName("unsigned long"))))),
+    'typedef unsigned long size_t;\n'))
+
+  const string_type = Shared.new(CppTypeName("std::string"))
+  const string_reference = Shared.new(CppTypeRef(Shared.new(CppTypeConst(string_type))))
+  const method_modifiers = CppFnModifiers {
+    is_const: true,
+    is_virtual: true,
+    is_override: false,
+    is_static: false,
+    is_explicit: false,
+    is_noexcept: false,
+    is_deleted: false,
+    is_defaulted: false,
+    is_pure_virtual: false,
+  }
+  const method_prototype = Shared.new(CppFunctionPrototype {
+    template_prefix: "",
+    return_type: integer_type(),
+    name: "method",
+    parameters: [Shared.new(CppParam { name: "argument", parameter_type: string_reference })],
+    modifiers: method_modifiers,
+  })
+  results.push(assert_eq_str('print_decl CppClassDeclaration',
+    print_decl(Shared.new(CppClassDeclaration(CppClassDefinition {
+      is_struct: false,
+      template_prefix: "",
+      name: "Foo",
+      base_classes: [CppBaseClass { access: CppPublic, name: "Bar" }],
+      members: [
+        CppClassMemberAccess(CppPublic),
+        CppClassMemberField(integer_type(), "value", "100"),
+        CppClassMemberFunction(method_prototype),
+        CppClassMemberAccess(CppPrivate),
+        CppClassMemberField(integer_type(), "value_", ""),
+      ],
+    }))),
+    "class Foo : public Bar {\n  public:\n  int value = 100;\n  virtual int method(const std::string& argument) const noexcept;\n  private:\n  int value_;\n};\n"))
 
   results.push(assert_eq_str('print_decl CppFnDef',
     print_decl(Shared.new(CppFnDef('', 'int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))], 1))),

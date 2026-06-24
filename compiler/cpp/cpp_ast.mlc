@@ -70,6 +70,57 @@ export type CppFields = [Shared<CppField>]
 
 export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
 
+export type CppFnModifiers = CppFnModifiers {
+  is_const: bool,
+  is_virtual: bool,
+  is_override: bool,
+  is_static: bool,
+  is_explicit: bool,
+  is_noexcept: bool,
+  is_deleted: bool,
+  is_defaulted: bool,
+  is_pure_virtual: bool,
+}
+
+export fn cpp_fn_modifiers_none() -> CppFnModifiers =
+  CppFnModifiers {
+    is_const: false,
+    is_virtual: false,
+    is_override: false,
+    is_static: false,
+    is_explicit: false,
+    is_noexcept: false,
+    is_deleted: false,
+    is_defaulted: false,
+    is_pure_virtual: false,
+  }
+
+export type CppAccessLevel = CppPublic | CppProtected | CppPrivate
+
+export type CppBaseClass = CppBaseClass { access: CppAccessLevel, name: string }
+
+export type CppFunctionPrototype = CppFunctionPrototype {
+  template_prefix: string,
+  return_type: Shared<CppType>,
+  name: string,
+  parameters: [Shared<CppParam>],
+  modifiers: CppFnModifiers,
+}
+
+export type CppClassMember =
+  | CppClassMemberField(Shared<CppType>, string, string)
+  | CppClassMemberFunction(Shared<CppFunctionPrototype>)
+  | CppClassMemberAccess(CppAccessLevel)
+  | CppClassMemberTypeAlias(string, Shared<CppType>)
+
+export type CppClassDefinition = CppClassDefinition {
+  is_struct: bool,
+  template_prefix: string,
+  name: string,
+  base_classes: [CppBaseClass],
+  members: [CppClassMember],
+}
+
 export type CppDeclaration =
   | CppInclude(bool, string)
   | CppIfndef(string)
@@ -93,6 +144,10 @@ export type CppDeclaration =
   | CppDeclarationEmpty
   | CppBlankLine
   | CppHostEntryMain(string)
+  | CppClassDeclaration(CppClassDefinition)
+  | CppTypedefDeclaration(string, Shared<CppType>)
+  | CppTemplateDeclaration(string, Shared<CppDeclaration>)
+  | CppFunctionPrototypeDecl(CppFunctionPrototype)
   | CppDeclarationFragment(string)
 
 export type CppFile = CppFile { header: [Shared<CppDeclaration>], source: [Shared<CppDeclaration>] }
@@ -481,6 +536,84 @@ fn print_struct_field_line(field_entry: Shared<CppField>) -> string =
 fn print_struct_fields(fields: [Shared<CppField>]) -> string =
   fields.map(field_entry => print_struct_field_line(field_entry)).join(`\n`)
 
+fn print_access_specifier_for_base(access: CppAccessLevel) -> string =
+  match access { CppPublic => "public", CppProtected => "protected", CppPrivate => "private" }
+
+fn print_access_label(access: CppAccessLevel) -> string =
+  match access { CppPublic => "public:", CppProtected => "protected:", CppPrivate => "private:" }
+
+fn print_base_class_entry(base_class: CppBaseClass) -> string =
+  print_access_specifier_for_base(base_class.access) + " " + base_class.name
+
+fn print_base_class_list(base_classes: [CppBaseClass]) -> string =
+  if base_classes.length() == 0 then "" else " : " + base_classes.map(base_class => print_base_class_entry(base_class)).join(", ") end
+
+fn print_function_modifiers_prefix(modifiers: CppFnModifiers) -> string = do
+  let parts: [string] = []
+  if modifiers.is_static then parts.push("static") end
+  if modifiers.is_virtual then parts.push("virtual") end
+  if modifiers.is_explicit then parts.push("explicit") end
+  if parts.length() == 0 then "" else parts.join(" ") + " " end
+end
+
+fn print_function_modifiers_suffix(modifiers: CppFnModifiers) -> string = do
+  if modifiers.is_pure_virtual then " = 0"
+  else if modifiers.is_deleted then " = delete"
+  else if modifiers.is_defaulted then " = default"
+  else do
+    const const_part = if modifiers.is_const then " const" else "" end
+    const override_part = if modifiers.is_override then " override" else "" end
+    const_part + override_part
+  end
+  end
+end
+
+fn print_function_prototype_core(prototype: Shared<CppFunctionPrototype>, indent_depth: i32) -> string = do
+  const modifiers_prefix = print_function_modifiers_prefix(prototype.modifiers)
+  const return_type_code = print_type(prototype.return_type)
+  const parameters_code = print_parameter_list(prototype.parameters)
+  const modifiers_suffix = print_function_modifiers_suffix(prototype.modifiers)
+  indent_text(indent_depth) + modifiers_prefix + return_type_code + " " + prototype.name + "(" + parameters_code + ")" + modifiers_suffix + " noexcept;"
+end
+
+fn print_function_prototype_line(prototype: Shared<CppFunctionPrototype>) -> string =
+  prototype.template_prefix + print_function_prototype_core(prototype, 0) + "\n"
+
+fn print_member_field_line(field_type: Shared<CppType>, field_name: string, default_value: string) -> string =
+  if default_value != "" then
+    indent_text(1) + print_type(field_type) + " " + field_name + " = " + default_value + ";"
+  else
+    indent_text(1) + print_type(field_type) + " " + field_name + ";"
+  end
+
+fn print_class_member_line(member: CppClassMember) -> string =
+  match member {
+    CppClassMemberAccess(access) => indent_text(1) + print_access_label(access),
+    CppClassMemberField(field_type, field_name, default_value) => print_member_field_line(field_type, field_name, default_value),
+    CppClassMemberTypeAlias(alias, type_node) => indent_text(1) + "using " + alias + " = " + print_type(type_node) + ";",
+    CppClassMemberFunction(prototype) => print_function_prototype_core(prototype, 1),
+  }
+
+fn print_class_body_members(members: [CppClassMember]) -> string =
+  members.map(member => print_class_member_line(member)).join("\n")
+
+fn print_class_definition(definition: CppClassDefinition) -> string = do
+  const kind_word = if definition.is_struct then "struct" else "class" end
+  const bases = print_base_class_list(definition.base_classes)
+  const body = print_class_body_members(definition.members)
+  if body.length() == 0 then
+    definition.template_prefix + kind_word + " " + definition.name + bases + " {};\n"
+  else
+    definition.template_prefix + kind_word + " " + definition.name + bases + " {\n" + body + "\n};\n"
+  end
+end
+
+fn typedef_declaration(name: string, type_code: string) -> string =
+  `typedef ${type_code} ${name};\n`
+
+fn print_template_declaration(template_parameters: string, inner: Shared<CppDeclaration>) -> string =
+  `template<${template_parameters}>\n` + print_decl_node(inner)
+
 fn variant_arm_type_strings(arm: Shared<CppVariantArm>) -> [string] = do
   const types = cpp_variant_arm_types(arm)
   if types.length() == 0 then [cpp_variant_arm_name(arm)]
@@ -581,6 +714,10 @@ fn print_decl_node(declaration: Shared<CppDeclaration>) -> string =
     CppDeclarationEmpty => '',
     CppBlankLine => `\n`,
     CppHostEntryMain(qualified_namespace) => host_entry_main_epilogue(qualified_namespace),
+    CppClassDeclaration(definition) => print_class_definition(definition),
+    CppTypedefDeclaration(name, type_node) => typedef_declaration(name, print_type(type_node)),
+    CppTemplateDeclaration(template_parameters, inner) => print_template_declaration(template_parameters, inner),
+    CppFunctionPrototypeDecl(prototype) => print_function_prototype_line(Shared.new(prototype)),
     CppDeclarationFragment(code) => code
   }
 

@@ -3,7 +3,10 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppTypeTemplate, CppTypeRef,
          CppTypePtr, CppTypeConst, CppTypeRRef, CppForwardDecl,
-         CppExpression, CppBool, CppTernary, CppInitList, CppCast, CppCastStatic, CppInt, CppIdent } from '../cpp/cpp_ast'
+         CppExpression, CppBool, CppTernary, CppInitList, CppCast, CppCastStatic, CppInt, CppIdent,
+         CppAccessLevel, CppPublic, CppClassMember, CppClassMemberAccess, CppClassDefinition, CppClassDeclaration,
+         CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl, CppFunctionPrototype,
+         cpp_fn_modifiers_none, CppParam } from '../cpp/cpp_ast'
 
 export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -78,6 +81,53 @@ export fn cpp_ast_tests() -> [TestResult] = do
         const target_ok = match target_type { CppTypeName(name) => name == "int", _ => false }
         const operand_ok = match operand { CppIdent(name) => name == "value", _ => false }
         kind_ok && target_ok && operand_ok
+      end,
+      _ => false
+    }))
+
+  const class_member: CppClassMember = CppClassMemberAccess(CppPublic)
+  results.push(assert_true("CppClassMemberAccess",
+    match class_member { CppClassMemberAccess(access) => match access { CppPublic => true, _ => false }, _ => false }))
+
+  results.push(assert_true("CppClassDeclaration",
+    match Shared.new(CppClassDeclaration(CppClassDefinition {
+      is_struct: true,
+      template_prefix: "",
+      name: "Point",
+      base_classes: [],
+      members: [CppClassMemberAccess(CppPublic), CppClassMemberField(Shared.new(CppTypeName("float")), "x", "")],
+    })) {
+      CppClassDeclaration(definition) => definition.name == "Point" && definition.is_struct,
+      _ => false
+    }))
+
+  const typedef_declaration = Shared.new(CppTypedefDeclaration("size_t", Shared.new(CppTypeName("unsigned long"))))
+  results.push(assert_true("CppTypedefDeclaration",
+    match typedef_declaration {
+      CppTypedefDeclaration(name, type_node) => do
+        const name_ok = name == "size_t"
+        const type_ok = match type_node { CppTypeName(type_name) => type_name == "unsigned long", _ => false }
+        name_ok && type_ok
+      end,
+      _ => false
+    }))
+
+  const template_declaration = Shared.new(CppTemplateDeclaration("typename T", Shared.new(CppFunctionPrototypeDecl(CppFunctionPrototype {
+    template_prefix: "",
+    return_type: Shared.new(CppTypeName("T")),
+    name: "identity",
+    parameters: [Shared.new(CppParam { name: "value", parameter_type: Shared.new(CppTypeName("T")) })],
+    modifiers: cpp_fn_modifiers_none(),
+  }))))
+  results.push(assert_true("CppTemplateDeclaration",
+    match template_declaration {
+      CppTemplateDeclaration(parameters, inner) => do
+        const parameters_ok = parameters == "typename T"
+        const inner_ok = match inner {
+          CppFunctionPrototypeDecl(prototype) => prototype.name == "identity",
+          _ => false
+        }
+        parameters_ok && inner_ok
       end,
       _ => false
     }))
