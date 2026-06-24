@@ -310,6 +310,7 @@ end
 export fn resolve_definition_span(symbol_table: Map<string, Span>, identifier_name: string) -> Span =
   if identifier_name.length() > 0 && symbol_table.has(identifier_name) then symbol_table.get(identifier_name)
   else span_unknown()
+  end
 
 export fn resolve_definition_in_source(
   source_text: string,

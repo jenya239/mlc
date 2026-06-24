@@ -28,37 +28,37 @@ fn lsp_read_quoted_field_value(message_body: string, value_start: i32) -> string
 export fn lsp_extract_json_string_field(message_body: string, field_name: string) -> string = do
   const quoted_field = "\"" + field_name + "\"" + ":"
   const spaced_field = "\"" + field_name + "\"" + ": "
-  let mut start_index = message_body.index_of(quoted_field)
-  let mut field_prefix_length = quoted_field.length()
-  if start_index < 0 then do
-    start_index = message_body.index_of(spaced_field)
-    field_prefix_length = spaced_field.length()
+  const quoted_start = message_body.index_of(quoted_field)
+  const spaced_start = message_body.index_of(spaced_field)
+  if quoted_start >= 0 then
+    lsp_read_quoted_field_value(message_body, quoted_start + quoted_field.length())
+  else if spaced_start >= 0 then
+    lsp_read_quoted_field_value(message_body, spaced_start + spaced_field.length())
+  else ""
   end
-  if start_index < 0 then ""
-  else lsp_read_quoted_field_value(message_body, start_index + field_prefix_length)
+end
+
+fn lsp_scan_json_number_at(message_body: string, value_start: i32) -> i32 = do
+  let mut scan_index = value_start
+  while scan_index < message_body.length() do
+    const character = message_body.char_at(scan_index)
+    if character == "," || character == "}" then break end
+    scan_index = scan_index + 1
   end
+  message_body.substring(value_start, scan_index - value_start).trim().to_i()
 end
 
 export fn lsp_extract_json_number_field(message_body: string, field_name: string) -> i32 = do
   const quoted_field = "\"" + field_name + "\"" + ":"
   const spaced_field = "\"" + field_name + "\"" + ": "
-  let mut start_index = message_body.index_of(quoted_field)
-  let mut field_prefix_length = quoted_field.length()
-  if start_index < 0 then do
-    start_index = message_body.index_of(spaced_field)
-    field_prefix_length = spaced_field.length()
-  end
-  if start_index < 0 then -1
-  else do
-    const value_start = start_index + field_prefix_length
-    let mut scan_index = value_start
-    while scan_index < message_body.length() do
-      const character = message_body.char_at(scan_index)
-      if character == "," || character == "}" then break end
-      scan_index = scan_index + 1
+  const quoted_start = message_body.index_of(quoted_field)
+  if quoted_start >= 0 then
+    lsp_scan_json_number_at(message_body, quoted_start + quoted_field.length())
+  else
+    const spaced_start = message_body.index_of(spaced_field)
+    if spaced_start < 0 then -1
+    else lsp_scan_json_number_at(message_body, spaced_start + spaced_field.length())
     end
-    message_body.substring(value_start, scan_index - value_start).trim().to_i()
-  end
   end
 end
 
@@ -93,10 +93,19 @@ export fn lsp_format_outgoing_message(message_body: string) -> string =
 
 fn lsp_diagnostic_severity_number(severity: string) -> i32 =
   if severity == "warning" then 2 else 1
+  end
+
+fn lsp_line_zero_based(line: i32) -> i32 =
+  if line > 0 then line - 1 else 0
+  end
+
+fn lsp_column_zero_based(column: i32) -> i32 =
+  if column > 0 then column - 1 else 0
+  end
 
 export fn lsp_build_single_diagnostic_json(diagnostic: Diagnostic) -> string = do
-  const start_line = if diagnostic.span.line > 0 then diagnostic.span.line - 1 else 0
-  const start_character = if diagnostic.span.column > 0 then diagnostic.span.column - 1 else 0
+  const start_line = lsp_line_zero_based(diagnostic.span.line)
+  const start_character = lsp_column_zero_based(diagnostic.span.column)
   const end_character = start_character + 1
   '{"range":{"start":{"line":' + start_line.to_string() + ',"character":' + start_character.to_string() + '},"end":{"line":' + start_line.to_string() + ',"character":' + end_character.to_string() + '}},"severity":' + lsp_diagnostic_severity_number(diagnostic.severity).to_string() + ',"message":"' + diagnostic.message + '"}'
 end

@@ -108,7 +108,7 @@ fn cpp_declaration_to_mlc_decls(declaration: Shared<CppDeclaration>) -> [Shared<
     CppVariant(_, enum_name, arms) =>
       [Shared.new(DeclType(enum_name, [], cpp_enum_arms_to_variants(arms), [], span_unknown()))],
     CppNamespace(_, inner_declarations) => cpp_declarations_to_mlc_decls_list(inner_declarations),
-    _ => []
+    _ => do let empty_decls: [Shared<Decl>] = []; empty_decls end
   }
 
 fn cpp_declarations_to_mlc_decls_list(declarations: [Shared<CppDeclaration>]) -> [Shared<Decl>] = do

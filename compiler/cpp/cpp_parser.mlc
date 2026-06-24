@@ -19,8 +19,10 @@ export fn cpp_parse(tokens: [CppToken]) -> CppParseResult = do
     if parse_result.error_message != "" then errors.push(parse_result.error_message) end
     if cpp_is_skip_declaration(parse_result.declaration) && parse_result.position == position then
       position = position + 1
+    else if !cpp_is_skip_declaration(parse_result.declaration) then
+      declarations.push(parse_result.declaration)
+      position = parse_result.position
     else
-      if !cpp_is_skip_declaration(parse_result.declaration) then declarations.push(parse_result.declaration) end
       position = parse_result.position
     end
   end
