@@ -18,7 +18,29 @@ export type CppTokenKind =
   | COp(string)
   | CEof
 
-export type CppToken = CppToken { kind: CppTokenKind, line: i32, column: i32 }
+export type CppToken = CppToken {
+  kind: CppTokenKind,
+  line: i32,
+  column: i32,
+  leading_trivia: string,
+  trailing_trivia: string
+}
+
+export fn cpp_token_make(kind: CppTokenKind, line: i32, column: i32) -> CppToken =
+  CppToken { kind: kind, line: line, column: column, leading_trivia: "", trailing_trivia: "" }
+
+export fn cpp_token_with_trivia(
+  token: CppToken,
+  leading_trivia: string,
+  trailing_trivia: string
+) -> CppToken =
+  CppToken {
+    kind: token.kind,
+    line: token.line,
+    column: token.column,
+    leading_trivia: leading_trivia,
+    trailing_trivia: trailing_trivia,
+  }
 
 export fn is_cpp_reserved_keyword(word: string) -> bool =
   match word
@@ -206,15 +228,18 @@ export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
 fn cpp_token_kind_is_eof(kind: CppTokenKind) -> bool =
   match kind { CEof => true, _ => false }
 
+export fn cpp_token_to_source(token: CppToken) -> string =
+  token.leading_trivia + cpp_token_lexeme(token.kind) + token.trailing_trivia
+
 export fn cpp_tokens_to_source(tokens: [CppToken]) -> string = do
   let parts: [string] = []
   let mut index = 0
   while index < tokens.length() do
-    const kind = tokens[index].kind
-    if !cpp_token_kind_is_eof(kind) then parts.push(cpp_token_lexeme(kind)) end
+    const token = tokens[index]
+    if !cpp_token_kind_is_eof(token.kind) then parts.push(cpp_token_to_source(token)) end
     index = index + 1
   end
-  parts.join(" ")
+  parts.join("")
 end
 
 export fn cpp_token_kinds_equal(first: [CppToken], second: [CppToken]) -> bool = do

@@ -1,8 +1,9 @@
 // C++ lexer: source string → [CppToken]
 
-import { LexState, is_alpha, is_digit, is_alnum, map_escape, skip_whitespace } from '../frontend/lexer'
+import { LexState, is_alpha, is_digit, is_alnum, map_escape } from '../frontend/lexer'
 import { CppToken, CppTokenKind, CHash, CEof, CLInt, CLStr, CLParen, CRParen, CLBrace, CRBrace, CLBracket, CRBracket,
-         COp, CArrow, CScope, CEq, CNe, CLe, CGe, CAnd, COr, CInc, CDec, CLShift, CRShift, CLAngle, CRAngle } from './cpp_tokens'
+         COp, CArrow, CScope, CEq, CNe, CLe, CGe, CAnd, COr, CInc, CDec, CLShift, CRShift, CLAngle, CRAngle,
+         cpp_token_make, cpp_token_with_trivia } from './cpp_tokens'
 import * as cpp_tokens_module from './cpp_tokens'
 
 export type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
@@ -11,6 +12,121 @@ type CppScanIdR  = { state: LexState, token: CppToken }
 type CppScanIntR = { state: LexState, token: CppToken }
 type CppScanStrR = { state: LexState, token: CppToken, error: string }
 type CppScanOpR  = { state: LexState, token: CppToken }
+type CppTriviaScan = { state: LexState, trivia: string, error: string }
+
+fn cpp_is_horizontal_whitespace(character: string) -> bool =
+  character == " " || character == "\t"
+
+fn cpp_append_range(source_text: string, start: i32, end_position: i32, accumulated: string) -> string =
+  if end_position > start then accumulated + source_text.substring(start, end_position - start) else accumulated end
+
+fn cpp_lexer_is_pragma_after_hash(state: LexState) -> bool = do
+  const source_text = state.source
+  let mut scan = state.lex_advance()
+  while !scan.eof() && cpp_is_horizontal_whitespace(scan.current()) do scan = scan.lex_advance() end
+  const word_start = scan.position
+  while !scan.eof() && is_alnum(scan.current()) do scan = scan.lex_advance() end
+  const word = source_text.substring(word_start, scan.position - word_start)
+  word == "pragma"
+end
+
+fn cpp_lexer_pragma_line_starts(state: LexState) -> bool =
+  if state.current() != "#" then false else cpp_lexer_is_pragma_after_hash(state) end
+
+fn cpp_scan_line_through_newline(state: LexState, trivia: string) -> CppTriviaScan = do
+  const source_text = state.source
+  let mut current = state
+  const start = current.position
+  while !current.eof() && current.current() != "\n" do current = current.lex_advance() end
+  if !current.eof() then current = current.lex_advance() end
+  CppTriviaScan {
+    state: current,
+    trivia: cpp_append_range(source_text, start, current.position, trivia),
+    error: "",
+  }
+end
+
+fn cpp_scan_line_comment(state: LexState, trivia: string) -> CppTriviaScan = do
+  const source_text = state.source
+  const start = state.position
+  let mut current = state.lex_advance_by(2)
+  while !current.eof() && current.current() != "\n" do current = current.lex_advance() end
+  if !current.eof() then current = current.lex_advance() end
+  CppTriviaScan {
+    state: current,
+    trivia: cpp_append_range(source_text, start, current.position, trivia),
+    error: "",
+  }
+end
+
+fn cpp_scan_block_comment(state: LexState, trivia: string) -> CppTriviaScan = do
+  const source_text = state.source
+  const start = state.position
+  let mut current = state.lex_advance_by(2)
+  let mut error = ""
+  let mut closed = false
+  while !current.eof() do
+    if current.current() == "*" && current.peek(1) == "/" then
+      current = current.lex_advance_by(2)
+      closed = true
+      break
+    end
+    current = current.lex_advance()
+  end
+  if !closed then error = "unterminated block comment" end
+  CppTriviaScan {
+    state: current,
+    trivia: cpp_append_range(source_text, start, current.position, trivia),
+    error: error,
+  }
+end
+
+fn cpp_collect_leading_trivia(state: LexState) -> CppTriviaScan = do
+  const source_text = state.source
+  let mut current = state
+  let mut trivia = ""
+  let mut error = ""
+  while !current.eof() do
+    const character = current.current()
+    if character == "\n" then
+      trivia = trivia + "\n"
+      current = current.lex_advance()
+    else if cpp_is_horizontal_whitespace(character) then
+      const start = current.position
+      while !current.eof() && cpp_is_horizontal_whitespace(current.current()) do
+        current = current.lex_advance()
+      end
+      trivia = cpp_append_range(source_text, start, current.position, trivia)
+    else if character == "/" && current.peek(1) == "/" then
+      const scan = cpp_scan_line_comment(current, trivia)
+      current = scan.state
+      trivia = scan.trivia
+      if scan.error != "" then error = scan.error end
+    else if character == "/" && current.peek(1) == "*" then
+      const scan = cpp_scan_block_comment(current, trivia)
+      current = scan.state
+      trivia = scan.trivia
+      if scan.error != "" then error = scan.error end
+    else if character == "#" && cpp_lexer_pragma_line_starts(current) then
+      const scan = cpp_scan_line_through_newline(current, trivia)
+      current = scan.state
+      trivia = scan.trivia
+    else
+      break
+    end
+  end
+  CppTriviaScan { state: current, trivia: trivia, error: error }
+end
+
+fn cpp_collect_trailing_trivia(state: LexState) -> CppTriviaScan = do
+  let mut current = state
+  let mut trivia = ""
+  while !current.eof() && cpp_is_horizontal_whitespace(current.current()) do
+    trivia = trivia + current.current()
+    current = current.lex_advance()
+  end
+  CppTriviaScan { state: current, trivia: trivia, error: "" }
+end
 
 fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
   const start = state.position
@@ -20,7 +136,10 @@ fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
   let mut current = state
   while !current.eof() && is_alnum(current.current()) do current = current.lex_advance() end
   const word = input_text.substring(start, current.position - start)
-  CppScanIdR { state: current, token: CppToken { kind: cpp_tokens_module.cpp_keyword_kind(word), line: line, column: token_column } }
+  CppScanIdR {
+    state: current,
+    token: cpp_token_make(cpp_tokens_module.cpp_keyword_kind(word), line, token_column),
+  }
 end
 
 fn cpp_scan_int(state: LexState) -> CppScanIntR = do
@@ -32,7 +151,7 @@ fn cpp_scan_int(state: LexState) -> CppScanIntR = do
     value = value * 10 + current.current().to_i()
     current = current.lex_advance()
   end
-  CppScanIntR { state: current, token: CppToken { kind: CLInt(value), line: line, column: token_column } }
+  CppScanIntR { state: current, token: cpp_token_make(CLInt(value), line, token_column) }
 end
 
 fn cpp_scan_string(state: LexState) -> CppScanStrR = do
@@ -58,31 +177,35 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
   if current.eof() then error = "unterminated string"
   else current = current.lex_advance()
   end
-  CppScanStrR { state: current, token: CppToken { kind: CLStr(parts.join("")), line: line, column: token_column }, error: error }
+  CppScanStrR {
+    state: current,
+    token: cpp_token_make(CLStr(parts.join("")), line, token_column),
+    error: error,
+  }
 end
 
 fn cpp_scan_op_single(state: LexState, character: string, line: i32, column: i32) -> CppScanOpR =
   match character
-  | "(" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLParen, line: line, column: column } }
-  | ")" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRParen, line: line, column: column } }
-  | "{" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLBrace, line: line, column: column } }
-  | "}" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRBrace, line: line, column: column } }
-  | "[" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLBracket, line: line, column: column } }
-  | "]" => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRBracket, line: line, column: column } }
-  | _   => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: COp(character), line: line, column: column } }
+  | "(" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLParen, line, column) }
+  | ")" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRParen, line, column) }
+  | "{" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBrace, line, column) }
+  | "}" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBrace, line, column) }
+  | "[" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBracket, line, column) }
+  | "]" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBracket, line, column) }
+  | _   => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(COp(character), line, column) }
   end
 
 fn cpp_scan_op_two_character(state: LexState, character: string, next_char: string, line: i32, column: i32) -> CppScanOpR =
   match character
-  | "-" => match next_char | ">" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CArrow, line: line, column: column } } | "-" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CDec, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | ":" => match next_char | ":" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CScope, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "=" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CEq, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "!" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CNe, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "<" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CLe, line: line, column: column } } | "<" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CLShift, line: line, column: column } } | _ => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CLAngle, line: line, column: column } } end
-  | ">" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CGe, line: line, column: column } } | ">" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CRShift, line: line, column: column } } | _ => CppScanOpR { state: state.lex_advance(), token: CppToken { kind: CRAngle, line: line, column: column } } end
-  | "&" => match next_char | "&" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CAnd, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "|" => match next_char | "|" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: COr, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "+" => match next_char | "+" => CppScanOpR { state: state.lex_advance_by(2), token: CppToken { kind: CInc, line: line, column: column } } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "-" => match next_char | ">" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CArrow, line, column) } | "-" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CDec, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | ":" => match next_char | ":" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CScope, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "=" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CEq, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "!" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CNe, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "<" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLe, line, column) } | "<" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLShift, line, column) } | _ => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLAngle, line, column) } end
+  | ">" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CGe, line, column) } | ">" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CRShift, line, column) } | _ => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRAngle, line, column) } end
+  | "&" => match next_char | "&" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CAnd, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "|" => match next_char | "|" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(COr, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
+  | "+" => match next_char | "+" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CInc, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
   | _   => cpp_scan_op_single(state, character, line, column)
   end
 
@@ -94,34 +217,41 @@ fn cpp_scan_op(state: LexState) -> CppScanOpR = do
   cpp_scan_op_two_character(state, character, next_char, line, token_column)
 end
 
-fn push_ident_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+fn cpp_push_token_with_trivia(
+  mut tokens: [CppToken],
+  token: CppToken,
+  leading_trivia: string,
+  lexer_state: LexState
+) -> LexState = do
+  const trailing_scan = cpp_collect_trailing_trivia(lexer_state)
+  tokens.push(cpp_token_with_trivia(token, leading_trivia, trailing_scan.trivia))
+  trailing_scan.state
+end
+
+fn push_ident_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
   const scan_result = cpp_scan_ident(state)
-  tokens.push(scan_result.token)
-  scan_result.state
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
 end
 
-fn push_int_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+fn push_int_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
   const scan_result = cpp_scan_int(state)
-  tokens.push(scan_result.token)
-  scan_result.state
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
 end
 
-fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string]) -> LexState = do
+fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string], leading_trivia: string) -> LexState = do
   const scan_result = cpp_scan_string(state)
-  tokens.push(scan_result.token)
   if scan_result.error != "" then errors.push(scan_result.error) end
-  scan_result.state
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
 end
 
-fn push_hash_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
-  tokens.push(CppToken { kind: CHash, line: state.line, column: state.column })
-  state.lex_advance()
+fn push_hash_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
+  const token = cpp_token_make(CHash, state.line, state.column)
+  cpp_push_token_with_trivia(tokens, token, leading_trivia, state.lex_advance())
 end
 
-fn push_operator_scan(state: LexState, mut tokens: [CppToken]) -> LexState = do
+fn push_operator_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
   const scan_result = cpp_scan_op(state)
-  tokens.push(scan_result.token)
-  scan_result.state
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
 end
 
 export fn cpp_tokenize(input_text: string) -> CppLexOut = do
@@ -129,24 +259,33 @@ export fn cpp_tokenize(input_text: string) -> CppLexOut = do
   let mut tokens: [CppToken] = []
   let mut errors: [string] = []
   let mut lexer_state = state
+  let mut pending_leading = ""
   while !lexer_state.eof() do
-    let { after } = skip_whitespace(lexer_state)
-    lexer_state = after
+    const leading_scan = cpp_collect_leading_trivia(lexer_state)
+    lexer_state = leading_scan.state
+    pending_leading = pending_leading + leading_scan.trivia
+    if leading_scan.error != "" then errors.push(leading_scan.error) end
     if lexer_state.eof() then break end
     const character = lexer_state.current()
+    const leading_trivia = pending_leading
+    pending_leading = ""
     if is_alpha(character) then
-      lexer_state = push_ident_scan(lexer_state, tokens)
+      lexer_state = push_ident_scan(lexer_state, tokens, leading_trivia)
     else if is_digit(character) then
-      lexer_state = push_int_scan(lexer_state, tokens)
+      lexer_state = push_int_scan(lexer_state, tokens, leading_trivia)
     else if character == "\"" then
-      lexer_state = push_string_scan(lexer_state, tokens, errors)
+      lexer_state = push_string_scan(lexer_state, tokens, errors, leading_trivia)
     else if character == "#" then
-      lexer_state = push_hash_scan(lexer_state, tokens)
+      lexer_state = push_hash_scan(lexer_state, tokens, leading_trivia)
     else
-      lexer_state = push_operator_scan(lexer_state, tokens)
+      lexer_state = push_operator_scan(lexer_state, tokens, leading_trivia)
     end
   end
-  tokens.push(CppToken { kind: CEof, line: lexer_state.line, column: lexer_state.column })
+  tokens.push(cpp_token_with_trivia(
+    cpp_token_make(CEof, lexer_state.line, lexer_state.column),
+    pending_leading,
+    "",
+  ))
   CppLexOut { tokens: tokens, errors: errors }
 end
 
@@ -156,3 +295,6 @@ export fn cpp_lex_roundtrip_preserves_kinds(source_text: string) -> bool = do
   const second_tokens = cpp_tokenize(rebuilt_source).tokens
   cpp_tokens_module.cpp_token_kinds_equal(first_tokens, second_tokens)
 end
+
+export fn cpp_lex_roundtrip_preserves_source(source_text: string) -> bool =
+  cpp_tokens_module.cpp_tokens_to_source(cpp_tokenize(source_text).tokens) == source_text
