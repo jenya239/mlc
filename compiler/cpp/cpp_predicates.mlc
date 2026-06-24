@@ -1,8 +1,9 @@
 // Token kind predicates. Use in conditions instead of match to avoid parse issues.
 
-import { CppToken, CppTokenKind, CIdent, CLStr, COp, CHash, CLAngle, CRAngle, CScope,
-         CLParen, CRParen, CLBrace, CRBrace, CKUsing, CKStruct, CKClass, CKEnum, CKNamespace,
-         CKVoid, CKInt, CKBool, CKChar, CEof } from './cpp_tokens'
+import { CppToken, CppTokenKind, CIdent, CLStr, CLInt, CLChar, CLFloat, CLHex, COp, CHash, CLAngle, CRAngle, CScope,
+         CLParen, CRParen, CLBrace, CRBrace, CLBracket, CRBracket, CKUsing, CKStruct, CKClass, CKEnum, CKNamespace,
+         CKVoid, CKInt, CKBool, CKChar, CKTrue, CKFalse, CKNullptr, CArrow, CEq, CNe, CLe, CGe, CAnd, COr,
+         CLShift, CRShift, CEof } from './cpp_tokens'
 
 export fn cpp_token_kind_at(tokens: [CppToken], position: i32) -> CppTokenKind =
   if position < tokens.length() then tokens[position].kind else CEof end
@@ -18,6 +19,81 @@ export fn cpp_get_string(kind: CppTokenKind) -> string =
 
 export fn cpp_get_operator(kind: CppTokenKind) -> string =
   match kind { COp(symbol) => symbol, _ => "" }
+
+export fn cpp_get_integer(kind: CppTokenKind) -> i32 =
+  match kind { CLInt(value) => value, _ => 0 }
+
+export fn cpp_get_char_literal(kind: CppTokenKind) -> string =
+  match kind { CLChar(value) => value, _ => "" }
+
+export fn cpp_get_float_literal(kind: CppTokenKind) -> string =
+  match kind { CLFloat(value) => value, _ => "" }
+
+export fn cpp_get_hex_literal(kind: CppTokenKind) -> string =
+  match kind { CLHex(value) => value, _ => "" }
+
+export fn cpp_is_integer_literal(kind: CppTokenKind) -> bool =
+  match kind { CLInt(_) => true, _ => false }
+
+export fn cpp_is_char_literal(kind: CppTokenKind) -> bool =
+  match kind { CLChar(_) => true, _ => false }
+
+export fn cpp_is_float_literal(kind: CppTokenKind) -> bool =
+  match kind { CLFloat(_) => true, _ => false }
+
+export fn cpp_is_hex_literal(kind: CppTokenKind) -> bool =
+  match kind { CLHex(_) => true, _ => false }
+
+export fn cpp_is_true_keyword(kind: CppTokenKind) -> bool =
+  match kind { CKTrue => true, _ => false }
+
+export fn cpp_is_false_keyword(kind: CppTokenKind) -> bool =
+  match kind { CKFalse => true, _ => false }
+
+export fn cpp_is_nullptr_keyword(kind: CppTokenKind) -> bool =
+  match kind { CKNullptr => true, _ => false }
+
+export fn cpp_is_arrow(kind: CppTokenKind) -> bool =
+  match kind { CArrow => true, _ => false }
+
+export fn cpp_is_or_operator(kind: CppTokenKind) -> bool =
+  match kind { COr => true, _ => false }
+
+export fn cpp_is_and_operator(kind: CppTokenKind) -> bool =
+  match kind { CAnd => true, _ => false }
+
+export fn cpp_is_equals_operator(kind: CppTokenKind) -> bool =
+  match kind { CEq => true, _ => false }
+
+export fn cpp_is_not_equals_operator(kind: CppTokenKind) -> bool =
+  match kind { CNe => true, _ => false }
+
+export fn cpp_is_less_equals_operator(kind: CppTokenKind) -> bool =
+  match kind { CLe => true, _ => false }
+
+export fn cpp_is_greater_equals_operator(kind: CppTokenKind) -> bool =
+  match kind { CGe => true, _ => false }
+
+export fn cpp_is_left_shift_operator(kind: CppTokenKind) -> bool =
+  match kind { CLShift => true, _ => false }
+
+export fn cpp_is_right_shift_operator(kind: CppTokenKind) -> bool =
+  match kind { CRShift => true, _ => false }
+
+export fn cpp_is_question(kind: CppTokenKind) -> bool =
+  match kind { COp(symbol) => symbol == "?", _ => false }
+
+export fn cpp_is_colon(kind: CppTokenKind) -> bool =
+  match kind { COp(symbol) => symbol == ":", _ => false }
+
+export fn cpp_is_dot(kind: CppTokenKind) -> bool =
+  match kind { COp(symbol) => symbol == ".", _ => false }
+
+export fn cpp_is_left_bracket(kind: CppTokenKind) -> bool =
+  match kind { CLBracket => true, _ => false }
+
+export fn cpp_is_right_bracket(kind: CppTokenKind) -> bool =
+  match kind { CRBracket => true, _ => false }
 
 export fn cpp_is_hash(kind: CppTokenKind) -> bool =
   match kind { CHash => true, _ => false }

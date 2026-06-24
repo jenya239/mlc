@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
 import { cpp_tokenize, cpp_lex_roundtrip_preserves_kinds, cpp_lex_roundtrip_preserves_source } from '../cpp/cpp_lexer'
-import { CppTokenKind, CIdent, CLStr, CLInt, CHash, CKClass, CKEnum, CKExtern, cpp_tokens_to_source } from '../cpp/cpp_tokens'
+import { CppTokenKind, CIdent, CLStr, CLInt, CLChar, CLFloat, CLHex, CHash, CKClass, CKEnum, CKExtern, cpp_tokens_to_source } from '../cpp/cpp_tokens'
 
 fn cpp_tok_count(source_text: string) -> i32 =
   cpp_tokenize(source_text).tokens.length()
@@ -215,6 +215,21 @@ export fn cpp_lexer_tests() -> [TestResult] = do
 
   results.push(assert_true('roundtrip source - pragma once',
     cpp_lex_roundtrip_preserves_source('#pragma once\nint x')))
+
+  results.push(assert_true('char literal - CLChar',
+    match cpp_first_kind("'a'") { CLChar(character) => character == "a", _ => false }))
+
+  results.push(assert_true('float literal - CLFloat',
+    match cpp_first_kind("3.14f") { CLFloat(text) => text == "3.14f", _ => false }))
+
+  results.push(assert_true('hex literal - CLHex',
+    match cpp_first_kind("0xFF") { CLHex(text) => text == "0xFF", _ => false }))
+
+  results.push(assert_true('roundtrip source - char literal',
+    cpp_lex_roundtrip_preserves_source("'a'")))
+
+  results.push(assert_true('roundtrip source - hex literal',
+    cpp_lex_roundtrip_preserves_source("0xFF")))
 
   results
 end

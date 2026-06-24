@@ -9,7 +9,7 @@ export type CppTokenKind =
   | CKLong | CKShort | CKFloat | CKDouble
   | CKVirtual | CKOverride | CKFinal | CKPublic | CKPrivate | CKProtected
   | CKExplicit | CKMutable | CKVolatile | CKFriend
-  | CIdent(string) | CLInt(i32) | CLStr(string)
+  | CIdent(string) | CLInt(i32) | CLStr(string) | CLChar(string) | CLFloat(string) | CLHex(string)
   | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
   | CLShift | CRShift
   | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
@@ -148,6 +148,19 @@ export fn reserved_cpp_keyword_kind(word: string) -> CppTokenKind =
 export fn cpp_keyword_kind(word: string) -> CppTokenKind =
   if is_cpp_reserved_keyword(word) then reserved_cpp_keyword_kind(word) else CIdent(word) end
 
+fn cpp_char_literal_lexeme(character: string) -> string = do
+  const escaped =
+    if character == "\\" then "\\\\"
+    else if character == "'" then "\\'"
+    else if character == "\n" then "\\n"
+    else if character == "\r" then "\\r"
+    else if character == "\t" then "\\t"
+    else if character == "\0" then "\\0"
+    else character
+    end
+  "'" + escaped + "'"
+end
+
 export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
   match kind
   | CKAuto       => "auto"
@@ -200,6 +213,9 @@ export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
   | CIdent(name) => name
   | CLInt(value) => value.to_string()
   | CLStr(value) => `"` + value + `"`
+  | CLChar(value) => cpp_char_literal_lexeme(value)
+  | CLFloat(value) => value
+  | CLHex(value) => value
   | CArrow       => "->"
   | CScope       => "::"
   | CEq          => "=="

@@ -1,7 +1,7 @@
 // C++ lexer: source string → [CppToken]
 
 import { LexState, is_alpha, is_digit, is_alnum, map_escape } from '../frontend/lexer'
-import { CppToken, CppTokenKind, CHash, CEof, CLInt, CLStr, CLParen, CRParen, CLBrace, CRBrace, CLBracket, CRBracket,
+import { CppToken, CppTokenKind, CHash, CEof, CLInt, CLStr, CLChar, CLFloat, CLHex, CLParen, CRParen, CLBrace, CRBrace, CLBracket, CRBracket,
          COp, CArrow, CScope, CEq, CNe, CLe, CGe, CAnd, COr, CInc, CDec, CLShift, CRShift, CLAngle, CRAngle,
          cpp_token_make, cpp_token_with_trivia } from './cpp_tokens'
 import * as cpp_tokens_module from './cpp_tokens'
@@ -11,6 +11,8 @@ export type CppLexOut = CppLexOut { tokens: [CppToken], errors: [string] }
 type CppScanIdR  = { state: LexState, token: CppToken }
 type CppScanIntR = { state: LexState, token: CppToken }
 type CppScanStrR = { state: LexState, token: CppToken, error: string }
+type CppScanCharR = { state: LexState, token: CppToken, error: string }
+type CppScanNumberR = { state: LexState, token: CppToken }
 type CppScanOpR  = { state: LexState, token: CppToken }
 type CppTriviaScan = { state: LexState, trivia: string, error: string }
 
@@ -142,6 +144,120 @@ fn cpp_scan_ident(state: LexState) -> CppScanIdR = do
   }
 end
 
+fn cpp_is_hex_digit(character: string) -> bool =
+  is_digit(character) || character == "a" || character == "A" || character == "b" || character == "B"
+  || character == "c" || character == "C" || character == "d" || character == "D"
+  || character == "e" || character == "E" || character == "f" || character == "F"
+
+fn cpp_is_number_suffix(character: string) -> bool =
+  character == "u" || character == "U" || character == "l" || character == "L"
+  || character == "f" || character == "F"
+
+fn cpp_scan_exponent(state: LexState) -> LexState = do
+  let mut current = state
+  if current.current() == "e" || current.current() == "E" then
+    current = current.lex_advance()
+    if current.current() == "+" || current.current() == "-" then current = current.lex_advance() end
+    while !current.eof() && is_digit(current.current()) do current = current.lex_advance() end
+  end
+  current
+end
+
+fn cpp_scan_number_suffixes(state: LexState) -> LexState = do
+  let mut current = state
+  while !current.eof() && cpp_is_number_suffix(current.current()) do
+    current = current.lex_advance()
+  end
+  current
+end
+
+fn cpp_parse_decimal_integer(source_text: string, start: i32, end_position: i32) -> i32 = do
+  let mut value = 0
+  let mut index = start
+  while index < end_position do
+    value = value * 10 + source_text.char_at(index).to_i()
+    index = index + 1
+  end
+  value
+end
+
+fn cpp_scan_number(state: LexState) -> CppScanNumberR = do
+  const source_text = state.source
+  const start = state.position
+  const line = state.line
+  const token_column = state.column
+  let mut current = state
+  if current.current() == "." && is_digit(current.peek(1)) then
+    current = current.lex_advance()
+    while !current.eof() && is_digit(current.current()) do current = current.lex_advance() end
+    current = cpp_scan_exponent(current)
+    current = cpp_scan_number_suffixes(current)
+    const lexeme = source_text.substring(start, current.position - start)
+    CppScanNumberR { state: current, token: cpp_token_make(CLFloat(lexeme), line, token_column) }
+  else
+    while !current.eof() && is_digit(current.current()) do current = current.lex_advance() end
+    if source_text.char_at(start) == "0" && !current.eof()
+       && (current.current() == "x" || current.current() == "X") then
+      current = current.lex_advance()
+      while !current.eof() && cpp_is_hex_digit(current.current()) do current = current.lex_advance() end
+      current = cpp_scan_number_suffixes(current)
+      const hex_lexeme = source_text.substring(start, current.position - start)
+      CppScanNumberR { state: current, token: cpp_token_make(CLHex(hex_lexeme), line, token_column) }
+    else if !current.eof() && current.current() == "." then
+      current = current.lex_advance()
+      while !current.eof() && is_digit(current.current()) do current = current.lex_advance() end
+      current = cpp_scan_exponent(current)
+      current = cpp_scan_number_suffixes(current)
+      const float_lexeme = source_text.substring(start, current.position - start)
+      CppScanNumberR { state: current, token: cpp_token_make(CLFloat(float_lexeme), line, token_column) }
+    else if !current.eof() && (current.current() == "e" || current.current() == "E") then
+      current = cpp_scan_exponent(current)
+      current = cpp_scan_number_suffixes(current)
+      const exponent_lexeme = source_text.substring(start, current.position - start)
+      CppScanNumberR { state: current, token: cpp_token_make(CLFloat(exponent_lexeme), line, token_column) }
+    else
+      current = cpp_scan_number_suffixes(current)
+      const integer_value = cpp_parse_decimal_integer(source_text, start, current.position)
+      CppScanNumberR { state: current, token: cpp_token_make(CLInt(integer_value), line, token_column) }
+    end
+  end
+end
+
+fn cpp_scan_char(state: LexState) -> CppScanCharR = do
+  let line = state.line
+  const token_column = state.column
+  let mut current = state.lex_advance()
+  let mut character_value = ""
+  let mut error = ""
+  if current.eof() then
+    error = "unterminated character literal"
+  else if current.current() == "'" then
+    error = "empty character literal"
+    current = current.lex_advance()
+  else if current.current() == "\\" then
+    current = current.lex_advance()
+    if current.eof() then error = "unterminated character literal"
+    else
+      const mapped = map_escape(current.current())
+      character_value = if mapped != "" then mapped else current.current() end
+      current = current.lex_advance()
+    end
+  else
+    character_value = current.current()
+    current = current.lex_advance()
+  end
+  if error == "" && !current.eof() && current.current() == "'" then
+    current = current.lex_advance()
+  else if error == "" then
+    error = "unterminated character literal"
+  end
+  CppScanCharR {
+    state: current,
+    token: cpp_token_make(CLChar(character_value), line, token_column),
+    error: error,
+  }
+end
+
 fn cpp_scan_int(state: LexState) -> CppScanIntR = do
   let line = state.line
   const token_column = state.column
@@ -244,6 +360,17 @@ fn push_string_scan(state: LexState, mut tokens: [CppToken], mut errors: [string
   cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
 end
 
+fn push_number_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
+  const scan_result = cpp_scan_number(state)
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
+end
+
+fn push_char_scan(state: LexState, mut tokens: [CppToken], mut errors: [string], leading_trivia: string) -> LexState = do
+  const scan_result = cpp_scan_char(state)
+  if scan_result.error != "" then errors.push(scan_result.error) end
+  cpp_push_token_with_trivia(tokens, scan_result.token, leading_trivia, scan_result.state)
+end
+
 fn push_hash_scan(state: LexState, mut tokens: [CppToken], leading_trivia: string) -> LexState = do
   const token = cpp_token_make(CHash, state.line, state.column)
   cpp_push_token_with_trivia(tokens, token, leading_trivia, state.lex_advance())
@@ -272,9 +399,13 @@ export fn cpp_tokenize(input_text: string) -> CppLexOut = do
     if is_alpha(character) then
       lexer_state = push_ident_scan(lexer_state, tokens, leading_trivia)
     else if is_digit(character) then
-      lexer_state = push_int_scan(lexer_state, tokens, leading_trivia)
+      lexer_state = push_number_scan(lexer_state, tokens, leading_trivia)
+    else if character == "." && is_digit(lexer_state.peek(1)) then
+      lexer_state = push_number_scan(lexer_state, tokens, leading_trivia)
     else if character == "\"" then
       lexer_state = push_string_scan(lexer_state, tokens, errors, leading_trivia)
+    else if character == "'" then
+      lexer_state = push_char_scan(lexer_state, tokens, errors, leading_trivia)
     else if character == "#" then
       lexer_state = push_hash_scan(lexer_state, tokens, leading_trivia)
     else

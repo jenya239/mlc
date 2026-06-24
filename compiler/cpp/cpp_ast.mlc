@@ -36,6 +36,8 @@ export type CppStatement =
 export type CppExpression =
   | CppInt(i32)
   | CppStr(string)
+  | CppCharLiteral(string)
+  | CppFloatLiteral(string)
   | CppBool(bool)
   | CppIdent(string)
   | CppCall(Shared<CppExpression>, [Shared<CppExpression>])
@@ -799,6 +801,8 @@ export fn print_expr(expression: Shared<CppExpression>) -> string =
   match expression {
     CppInt(integer_value) => print_integer_literal(integer_value),
     CppStr(string_value) => print_string_literal(string_value),
+    CppCharLiteral(character_value) => "'" + escape_cpp_character(character_value) + "'",
+    CppFloatLiteral(float_text) => float_text,
     CppBool(boolean_value) => print_boolean_literal(boolean_value),
     CppIdent(name) => print_identifier(name),
     CppCall(callee, arguments) =>
