@@ -1,0 +1,49 @@
+// Unit tests for C++ to_source (trivia roundtrip + canonical print).
+
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { cpp_tokenize, cpp_lex_roundtrip_preserves_source } from '../cpp/cpp_lexer'
+import { cpp_program_to_source, cpp_program_from_tokens_preserving_trivia, cpp_source_roundtrip_preserving_trivia, cpp_parse_to_source_canonical, cpp_tokens_span_to_source } from '../cpp/parser/to_source'
+import { cpp_parse } from '../cpp/cpp_parser'
+import { CppDeclarationFragment } from '../cpp/cpp_ast'
+
+export fn cpp_to_source_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_str('tokens span - include',
+    cpp_tokens_span_to_source(cpp_tokenize('#include <vector>').tokens, 0, 5),
+    '#include <vector>'))
+
+  results.push(assert_true('trivia roundtrip - include',
+    cpp_source_roundtrip_preserving_trivia('#include <vector>')))
+
+  results.push(assert_true('trivia roundtrip - line comment',
+    cpp_source_roundtrip_preserving_trivia('// header\n#include <vector>')))
+
+  results.push(assert_true('trivia roundtrip - pragma once',
+    cpp_source_roundtrip_preserving_trivia('#pragma once\nstruct S { int x; };')))
+
+  results.push(assert_true('trivia roundtrip - using',
+    cpp_source_roundtrip_preserving_trivia('using X = int;')))
+
+  results.push(assert_true('trivia roundtrip - fn proto',
+    cpp_source_roundtrip_preserving_trivia('int add(int a, int b);')))
+
+  results.push(assert_true('lexer roundtrip - comment',
+    cpp_lex_roundtrip_preserves_source('// c\nint x')))
+
+  results.push(assert_eq_str('canonical parse to_source - include',
+    cpp_parse_to_source_canonical('#include <string>'),
+    '#include <string>\n'))
+
+  results.push(assert_true('fragment program roundtrip',
+    cpp_program_to_source(cpp_program_from_tokens_preserving_trivia(cpp_tokenize('int x;').tokens))
+      == 'int x;'))
+
+  results.push(assert_true('fragment decl kind',
+    match cpp_parse(cpp_tokenize('int x;').tokens).program.declarations[0] {
+      CppDeclarationFragment(code) => code == 'int x;',
+      _ => false
+    }))
+
+  results
+end
