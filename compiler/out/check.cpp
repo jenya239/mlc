@@ -35,6 +35,8 @@ using namespace ast_tokens;
 
 struct Check_fn_locals_fold_state {mlc::Array<mlc::String> locals;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;};
 
+struct Program_check_gathered {mlc::Array<ast::Diagnostic> diagnostics;registry::TypeRegistry registry;};
+
 bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
 
 bool default_expr_mvp_ok(std::shared_ptr<ast::Expr> expression) noexcept;
@@ -73,7 +75,11 @@ mlc::Array<ast::Diagnostic> type_alias_cycle_diagnostics(ast::Program program, r
 
 check::Check_fn_locals_fold_state check_fn_locals_parameter_fold_step(check::Check_fn_locals_fold_state state, std::shared_ptr<ast::Param> parameter, registry::TypeRegistry registry) noexcept;
 
+check::Program_check_gathered gather_program_check(ast::Program entry, ast::Program full_program) noexcept;
+
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept;
+
+mlc::Array<ast::Diagnostic> program_diagnostics(ast::Program program) noexcept;
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
@@ -207,6 +213,7 @@ names.set(mlc::String("exit"), true);
 names.set(mlc::String("print"), true);
 names.set(mlc::String("println"), true);
 names.set(mlc::String("args"), true);
+names.set(mlc::String("read_line"), true);
 names.set(mlc::String("File"), true);
 names.set(mlc::String("Profile"), true);
 names.set(mlc::String("Shared"), true);
@@ -253,7 +260,7 @@ type_environment.set(parameter_name, registry::type_from_annotation_with_registr
 return check::Check_fn_locals_fold_state{state.locals.concat(mlc::Array<mlc::String>{parameter_name}), type_environment};
 }
 
-ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
+check::Program_check_gathered gather_program_check(ast::Program entry, ast::Program full_program) noexcept{
 mlc::Array<ast::Diagnostic> all_diagnostics = trait_param_expand::trait_and_type_name_conflict_diagnostics(full_program);
 ast::Program destructured_full_program = param_destructure_expand::expand_parameter_destructuring_in_program(full_program);
 all_diagnostics = ast::diagnostics_append(all_diagnostics, param_destructure_expand::extern_parameter_destructure_diagnostics(full_program));
@@ -309,8 +316,15 @@ std::visit(overloaded{
 declaration_index = declaration_index + 1;
 }
 }
-return all_diagnostics.size() > 0 ? ast::Result<check::CheckOut, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(ast::diagnostics_to_strings(all_diagnostics))) : ast::Result<check::CheckOut, mlc::Array<mlc::String>>(ast::Ok<check::CheckOut>(check::CheckOut{{}, registry}));
+return check::Program_check_gathered{all_diagnostics, registry};
 }
+
+ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_program_against_full(ast::Program entry, ast::Program full_program) noexcept{
+check::Program_check_gathered gathered = gather_program_check(entry, full_program);
+return gathered.diagnostics.size() > 0 ? ast::Result<check::CheckOut, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(ast::diagnostics_to_strings(gathered.diagnostics))) : ast::Result<check::CheckOut, mlc::Array<mlc::String>>(ast::Ok<check::CheckOut>(check::CheckOut{{}, gathered.registry}));
+}
+
+mlc::Array<ast::Diagnostic> program_diagnostics(ast::Program program) noexcept{return gather_program_check(program, program).diagnostics;}
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept{return check_program_against_full(entry, full);}
 

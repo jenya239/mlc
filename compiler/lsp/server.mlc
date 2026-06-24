@@ -1,0 +1,201 @@
+// LSP server skeleton: stdio JSON-RPC loop (initialize / shutdown / definition).
+
+import { Diagnostic } from '../frontend/ast'
+import { lsp_parse_content_length_header, lsp_extract_json_string_field, lsp_extract_json_number_field, lsp_build_jsonrpc_result, lsp_build_initialize_result, lsp_format_outgoing_message, lsp_build_location, lsp_build_hover_result, lsp_build_publish_diagnostics_notification, lsp_string_starts_with } from './lsp_protocol'
+import { resolve_definition_in_source } from './symbols'
+import { resolve_hover_type_in_source } from './hover'
+import { collect_diagnostics_in_source } from './diagnostics'
+
+export type LspServerState = LspServerState { open_documents: Map<string, string> }
+
+export type LspDispatchOutcome = LspDispatchOutcome { continue_loop: bool, mark_shutdown: bool }
+
+export fn lsp_uri_to_file_path(document_uri: string) -> string = do
+  if lsp_string_starts_with(document_uri, "file://") then
+    document_uri.substring(7, document_uri.length() - 7)
+  else
+    document_uri
+  end
+end
+
+export fn lsp_read_message_body() -> string = do
+  let mut content_length = -1
+  while true do
+    const header_line = read_line()
+    if header_line == "" then break end
+    const parsed_length = lsp_parse_content_length_header(header_line)
+    if parsed_length >= 0 then content_length = parsed_length end
+  end
+  if content_length < 0 then ""
+  else read_line()
+  end
+end
+
+export fn lsp_write_message(message_body: string) -> unit = do
+  let _write_result = print(lsp_format_outgoing_message(message_body))
+end
+
+export fn lsp_handle_initialize(message_body: string) -> unit =
+  lsp_write_message(lsp_response_initialize(message_body))
+
+fn lsp_response_initialize(message_body: string) -> string =
+  lsp_build_jsonrpc_result(lsp_extract_json_number_field(message_body, "id"), lsp_build_initialize_result())
+
+export fn lsp_handle_shutdown(message_body: string) -> unit =
+  lsp_write_message(lsp_response_shutdown(message_body))
+
+fn lsp_response_shutdown(message_body: string) -> string =
+  lsp_build_jsonrpc_result(lsp_extract_json_number_field(message_body, "id"), "null")
+
+export fn lsp_handle_text_document_did_open(message_body: string, state: ref mut LspServerState) -> unit = do
+  const document_uri = lsp_extract_json_string_field(message_body, "uri")
+  const document_text = lsp_extract_json_string_field(message_body, "text")
+  lsp_store_open_document(state, document_uri, document_text)
+  lsp_publish_diagnostics_for_document(document_uri, document_text)
+end
+
+fn lsp_store_open_document(state: ref mut LspServerState, document_uri: string, document_text: string) -> unit = do
+  if document_uri.length() > 0 && document_text.length() > 0 then
+    state.open_documents.set(document_uri, document_text)
+  end
+end
+
+fn lsp_document_open_diagnostics(document_uri: string, document_text: string) -> [string] =
+  [lsp_response_publish_diagnostics(
+    document_uri,
+    collect_diagnostics_in_source(document_text, lsp_uri_to_file_path(document_uri)))]
+
+fn lsp_publish_diagnostics_for_document(document_uri: string, document_text: string) -> unit = do
+  if document_uri.length() > 0 && document_text.length() > 0 then
+    lsp_write_message(
+      lsp_response_publish_diagnostics(
+        document_uri,
+        collect_diagnostics_in_source(document_text, lsp_uri_to_file_path(document_uri))))
+  end
+end
+
+fn lsp_response_publish_diagnostics(document_uri: string, document_diagnostics: [Diagnostic]) -> string =
+  lsp_build_publish_diagnostics_notification(document_uri, document_diagnostics)
+
+export fn lsp_read_document_source(state: LspServerState, document_uri: string, source_file: string) -> string =
+  if state.open_documents.has(document_uri) then state.open_documents.get(document_uri)
+  else File.read(source_file)
+  end
+
+export fn lsp_handle_hover(message_body: string, state: LspServerState) -> unit =
+  lsp_write_message(lsp_response_hover(message_body, state))
+
+fn lsp_response_hover(message_body: string, state: LspServerState) -> string = do
+  const response_id = lsp_extract_json_number_field(message_body, "id")
+  const document_uri = lsp_extract_json_string_field(message_body, "uri")
+  const position_line = lsp_extract_json_number_field(message_body, "line")
+  const position_character = lsp_extract_json_number_field(message_body, "character")
+  const source_file = lsp_uri_to_file_path(document_uri)
+  const source_text = lsp_read_document_source(state, document_uri, source_file)
+  const hover_type = resolve_hover_type_in_source(source_text, source_file, position_line, position_character)
+  lsp_build_jsonrpc_result(response_id, lsp_build_hover_result(hover_type))
+end
+
+export fn lsp_handle_definition(message_body: string, state: LspServerState) -> unit =
+  lsp_write_message(lsp_response_definition(message_body, state))
+
+fn lsp_response_definition(message_body: string, state: LspServerState) -> string = do
+  const response_id = lsp_extract_json_number_field(message_body, "id")
+  const document_uri = lsp_extract_json_string_field(message_body, "uri")
+  const position_line = lsp_extract_json_number_field(message_body, "line")
+  const position_character = lsp_extract_json_number_field(message_body, "character")
+  const source_file = lsp_uri_to_file_path(document_uri)
+  const source_text = lsp_read_document_source(state, document_uri, source_file)
+  const definition_span = resolve_definition_in_source(source_text, source_file, position_line, position_character)
+  lsp_build_jsonrpc_result(response_id, lsp_build_location(document_uri, definition_span))
+end
+
+fn lsp_responses_did_open(message_body: string, state: ref mut LspServerState) -> [string] = do
+  const document_uri = lsp_extract_json_string_field(message_body, "uri")
+  const document_text = lsp_extract_json_string_field(message_body, "text")
+  lsp_store_open_document(state, document_uri, document_text)
+  if document_uri.length() > 0 && document_text.length() > 0 then
+    lsp_document_open_diagnostics(document_uri, document_text)
+  else [] end
+end
+
+export fn lsp_process_messages_for_test(messages: [string]) -> [string] = do
+  let mut state = LspServerState { open_documents: Map.new() }
+  let mut outgoing: [string] = []
+  let mut index = 0
+  while index < messages.length() do
+    const message_body = messages[index]
+    const method_name = lsp_extract_json_string_field(message_body, "method")
+    if method_name == "initialize" then
+      outgoing.push(lsp_format_outgoing_message(lsp_response_initialize(message_body)))
+    else if method_name == "textDocument/didOpen" then
+      const document_uri = lsp_extract_json_string_field(message_body, "uri")
+      const document_text = lsp_extract_json_string_field(message_body, "text")
+      lsp_store_open_document(state, document_uri, document_text)
+      if document_uri.length() > 0 && document_text.length() > 0 then
+        outgoing.push(lsp_format_outgoing_message(
+          lsp_response_publish_diagnostics(
+            document_uri,
+            collect_diagnostics_in_source(document_text, lsp_uri_to_file_path(document_uri)))))
+      end
+    else if method_name == "textDocument/definition" then
+      outgoing.push(lsp_format_outgoing_message(lsp_response_definition(message_body, state)))
+    else if method_name == "textDocument/hover" then
+      outgoing.push(lsp_format_outgoing_message(lsp_response_hover(message_body, state)))
+    else if method_name == "shutdown" then
+      outgoing.push(lsp_format_outgoing_message(lsp_response_shutdown(message_body)))
+    else if method_name == "exit" then
+      index = messages.length()
+    else do end
+    index = index + 1
+  end
+  outgoing
+end
+
+export fn lsp_dispatch_message(
+  message_body: string,
+  state: ref mut LspServerState
+) -> LspDispatchOutcome = do
+  const method_name = lsp_extract_json_string_field(message_body, "method")
+  if method_name == "initialize" then do
+    lsp_handle_initialize(message_body)
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  end
+  else if method_name == "initialized" then
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  else if method_name == "textDocument/didOpen" then do
+    lsp_handle_text_document_did_open(message_body, state)
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  end
+  else if method_name == "textDocument/definition" then do
+    lsp_handle_definition(message_body, state)
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  end
+  else if method_name == "textDocument/hover" then do
+    lsp_handle_hover(message_body, state)
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  end
+  else if method_name == "shutdown" then do
+    lsp_handle_shutdown(message_body)
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: true }
+  end
+  else if method_name == "exit" then
+    LspDispatchOutcome { continue_loop: false, mark_shutdown: false }
+  else
+    LspDispatchOutcome { continue_loop: true, mark_shutdown: false }
+  end
+end
+
+export fn run_lsp_server() -> i32 = do
+  let mut state = LspServerState { open_documents: Map.new() }
+  let mut shutdown_flag = false
+  while true do
+    const message_body = lsp_read_message_body()
+    if message_body == "" then break end
+    const outcome = lsp_dispatch_message(message_body, state)
+    if outcome.mark_shutdown then shutdown_flag = true end
+    if !outcome.continue_loop then break end
+    if shutdown_flag && lsp_extract_json_string_field(message_body, "method") == "exit" then break end
+  end
+  0
+end

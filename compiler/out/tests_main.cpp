@@ -20,6 +20,8 @@
 #include "test_cpp_ast.hpp"
 #include "test_cpp_parser.hpp"
 #include "test_cpp_types.hpp"
+#include "test_cpp_header_import.hpp"
+#include "test_lsp_server.hpp"
 #include "test_formatter.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"
@@ -43,6 +45,8 @@ using namespace test_cpp_lexer;
 using namespace test_cpp_ast;
 using namespace test_cpp_parser;
 using namespace test_cpp_types;
+using namespace test_cpp_header_import;
+using namespace test_lsp_server;
 using namespace test_formatter;
 using namespace test_fuzz;
 using namespace test_runner;
@@ -187,6 +191,22 @@ index = 0;
 while (index < suite_cpp_types.size()){
 {
 all.push_back(suite_cpp_types[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_cpp_header_import = test_cpp_header_import::cpp_header_import_tests();
+index = 0;
+while (index < suite_cpp_header_import.size()){
+{
+all.push_back(suite_cpp_header_import[index]);
+index = index + 1;
+}
+}
+mlc::Array<test_runner::TestResult> suite_lsp = test_lsp_server::lsp_server_tests();
+index = 0;
+while (index < suite_lsp.size()){
+{
+all.push_back(suite_lsp[index]);
 index = index + 1;
 }
 }

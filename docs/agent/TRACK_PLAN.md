@@ -123,7 +123,7 @@ Strict order; each track depends on previous unless noted.
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **closed** (2026-05-19) |
-| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | planned |
+| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | **open** STEP=2b |
 | 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **open** STEP=5 |
 | 8 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
 
@@ -136,7 +136,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) STEP=5 — `import "header.h"` wiring + registry; close track. Gate from TRACK.
+> **Immediate:** [TRACK_LSP](TRACK_LSP.md) **STEP=2b** — fix `lsp_protocol.mlc` char/string; gate green. (Guard: do not re-enqueue `Driver:2`; use STEP=2b.)  
+> Then: [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) STEP=5 when LSP STEP=2 closed.
 
 ## Next step (Planner)
 

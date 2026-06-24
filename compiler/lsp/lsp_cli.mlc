@@ -1,0 +1,9 @@
+// CLI: `mlcc lsp` — Language Server over stdio JSON-RPC.
+
+import { run_lsp_server } from './server'
+
+export fn lsp_usage_message() -> string =
+  'Usage: mlcc lsp\n       Language Server (stdio JSON-RPC)'
+
+export fn run_lsp_command() -> i32 =
+  run_lsp_server()

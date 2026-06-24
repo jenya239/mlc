@@ -200,11 +200,13 @@ builtin_function_types.set(mlc::String("print"), std::make_shared<registry::Type
 builtin_function_types.set(mlc::String("println"), std::make_shared<registry::Type>(registry::TFn(mlc::Array<std::shared_ptr<registry::Type>>{std::make_shared<registry::Type>((registry::TString{}))}, std::make_shared<registry::Type>((registry::TUnit{})))));
 builtin_function_types.set(mlc::String("exit"), std::make_shared<registry::Type>(registry::TFn(mlc::Array<std::shared_ptr<registry::Type>>{std::make_shared<registry::Type>((registry::TI32{}))}, std::make_shared<registry::Type>((registry::TUnit{})))));
 builtin_function_types.set(mlc::String("args"), std::make_shared<registry::Type>(registry::TFn({}, std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>((registry::TString{})))))));
+builtin_function_types.set(mlc::String("read_line"), std::make_shared<registry::Type>(registry::TFn({}, std::make_shared<registry::Type>((registry::TString{})))));
 mlc::HashMap<mlc::String, int> builtin_required_arity = mlc::HashMap<mlc::String, int>();
 builtin_required_arity.set(mlc::String("print"), 1);
 builtin_required_arity.set(mlc::String("println"), 1);
 builtin_required_arity.set(mlc::String("exit"), 1);
 builtin_required_arity.set(mlc::String("args"), 0);
+builtin_required_arity.set(mlc::String("read_line"), 0);
 mlc::HashMap<mlc::String, bool> empty_private_constructors = mlc::HashMap<mlc::String, bool>();
 return registry::TypeRegistry{registry::FunctionIndex{builtin_function_types, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<int>>(), builtin_required_arity, mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>>()}, registry::AdtIndex{constructor_types_map, constructor_parameters_map, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), empty_private_constructors, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>()}, registry::RecordIndex{mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<ast::Expr>>>()}, mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};
 }

@@ -1,0 +1,31 @@
+// Tests for C++ header import wiring and registry registration.
+
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { is_cpp_header_path, parse_cpp_header_source, load_cpp_header_decls, registry_from_cpp_header_source } from '../cpp/header_import'
+import { build_registry } from '../checker/registry'
+import { Program } from '../frontend/ast'
+
+export fn cpp_header_import_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('is_cpp_header_path .h', is_cpp_header_path('foo.h')))
+  results.push(assert_true('is_cpp_header_path .hpp', is_cpp_header_path('bar.hpp')))
+  results.push(assert_true('is_cpp_header_path rejects .mlc', !is_cpp_header_path('mod.mlc')))
+
+  const header_source = 'int add(int left, int right);\nstruct Point { int x; int y; };'
+  const parsed = parse_cpp_header_source(header_source)
+  results.push(assert_eq_int('parse_cpp_header_source decl count', parsed.declarations.length(), 2))
+
+  const registry = registry_from_cpp_header_source(header_source)
+  results.push(assert_true('registry has add from header', registry.has_fn('add')))
+  results.push(assert_true('registry has Point from header',
+    registry.record_index.record_field_names_ordered.has('Point')))
+
+  const fixture_path = 'compiler/tests/fixtures/sample_header.h'
+  const loaded = load_cpp_header_decls(fixture_path)
+  results.push(assert_eq_int('load_cpp_header_decls fixture', loaded.declarations.length(), 2))
+  results.push(assert_true('fixture registry has add',
+    build_registry(Program { decls: loaded.declarations }).has_fn('add')))
+
+  results
+end

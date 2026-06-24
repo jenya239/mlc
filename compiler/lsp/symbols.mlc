@@ -1,0 +1,324 @@
+// LSP symbol index: definition spans for single-file go-to-definition.
+
+import { Program, Decl, Stmt, Expr, Pattern, MatchArm, RecordLitPart, Span, span_unknown, stmt_span, pattern_span, expr_span } from '../frontend/ast'
+import { Token } from '../frontend/ast_tokens'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+
+fn span_with_file(source_file: string, source_span: Span) -> Span =
+  Span { file: source_file, line: source_span.line, column: source_span.column }
+
+fn symbol_table_set(table: ref mut Map<string, Span>, name: string, source_file: string, source_span: Span) -> unit = do
+  if name.length() > 0 && source_span.line > 0 then
+    table.set(name, span_with_file(source_file, source_span))
+  end
+end
+
+fn symbol_table_set_pattern_rest_name(
+  table: ref mut Map<string, Span>,
+  rest_name: string,
+  source_file: string,
+  pattern: Shared<Pattern>
+) -> unit = do
+  if rest_name.length() > 0 && rest_name != "_" then
+    symbol_table_set(table, rest_name, source_file, pattern_span(pattern))
+  end
+end
+
+fn collect_first_pattern_alternative(alternatives: [Shared<Pattern>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  if alternatives.length() > 0 then
+    collect_pattern_definition_spans(alternatives[0], source_file, table)
+  end
+end
+
+fn collect_pattern_definition_spans(pattern: Shared<Pattern>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  match pattern {
+    PatternIdent(name, pattern_source_span) => do
+      symbol_table_set(table, name, source_file, pattern_source_span)
+    end,
+    PatternCtor(_, sub_patterns, _) => do
+      let mut index = 0
+      while index < sub_patterns.length() do
+        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    PatternRecord(_, field_patterns, _) => do
+      let mut index = 0
+      while index < field_patterns.length() do
+        collect_pattern_definition_spans(field_patterns[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    PatternTuple(sub_patterns, _) => do
+      let mut index = 0
+      while index < sub_patterns.length() do
+        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    PatternArray(sub_patterns, rest_name, _) => do
+      let mut index = 0
+      while index < sub_patterns.length() do
+        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
+        index = index + 1
+      end
+      symbol_table_set_pattern_rest_name(table, rest_name, source_file, pattern)
+    end,
+    PatternOr(alternatives, _) => do
+      collect_first_pattern_alternative(alternatives, source_file, table)
+    end,
+    _ => do end,
+  }
+end
+
+fn collect_statement_definition_spans(statement: Shared<Stmt>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  match statement {
+    StmtLet(name, _, _, value, statement_span) => do
+      symbol_table_set(table, name, source_file, statement_span)
+      collect_expression_definition_spans(value, source_file, table)
+    end,
+    StmtLetPattern(pattern, _, _, value, has_else, else_body, _) => do
+      collect_expression_definition_spans(value, source_file, table)
+      collect_pattern_definition_spans(pattern, source_file, table)
+      if has_else then collect_expression_definition_spans(else_body, source_file, table) end
+    end,
+    StmtLetConst(name, _, value, statement_span) => do
+      symbol_table_set(table, name, source_file, statement_span)
+      collect_expression_definition_spans(value, source_file, table)
+    end,
+    StmtExpr(expression, _) => do
+      collect_expression_definition_spans(expression, source_file, table)
+    end,
+    StmtReturn(expression, _) => do
+      collect_expression_definition_spans(expression, source_file, table)
+    end,
+    StmtBreak(_) => (),
+    StmtContinue(_) => (),
+  }
+end
+
+fn collect_statements_definition_spans(statements: [Shared<Stmt>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut index = 0
+  while index < statements.length() do
+    collect_statement_definition_spans(statements[index], source_file, table)
+    index = index + 1
+  end
+end
+
+fn collect_match_arm_definition_spans(arm: Shared<MatchArm>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  collect_pattern_definition_spans(arm.pattern, source_file, table)
+  collect_expression_definition_spans(arm.body, source_file, table)
+end
+
+fn collect_expression_definition_spans(expression: Shared<Expr>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  match expression {
+    ExprBlock(statements, result_expression, _) => do
+      collect_statements_definition_spans(statements, source_file, table)
+      collect_expression_definition_spans(result_expression, source_file, table)
+    end,
+    ExprLambda(parameter_names, body_expression, lambda_span) => do
+      let mut index = 0
+      while index < parameter_names.length() do
+        symbol_table_set(table, parameter_names[index], source_file, lambda_span)
+        index = index + 1
+      end
+      collect_expression_definition_spans(body_expression, source_file, table)
+    end,
+    ExprFor(loop_variable, iterable, body_statements, loop_span) => do
+      symbol_table_set(table, loop_variable, source_file, loop_span)
+      collect_expression_definition_spans(iterable, source_file, table)
+      collect_statements_definition_spans(body_statements, source_file, table)
+    end,
+    ExprWhile(condition, body_statements, _) => do
+      collect_expression_definition_spans(condition, source_file, table)
+      collect_statements_definition_spans(body_statements, source_file, table)
+    end,
+    ExprIf(condition, then_branch, else_branch, _) => do
+      collect_expression_definition_spans(condition, source_file, table)
+      collect_expression_definition_spans(then_branch, source_file, table)
+      collect_expression_definition_spans(else_branch, source_file, table)
+    end,
+    ExprMatch(scrutinee, arms, _) => do
+      collect_expression_definition_spans(scrutinee, source_file, table)
+      let mut index = 0
+      while index < arms.length() do
+        collect_match_arm_definition_spans(arms[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprWith(resource_expression, binder_name, body_statements, with_span) => do
+      collect_expression_definition_spans(resource_expression, source_file, table)
+      symbol_table_set(table, binder_name, source_file, with_span)
+      collect_statements_definition_spans(body_statements, source_file, table)
+    end,
+    ExprBin(_, left_expression, right_expression, _) => do
+      collect_expression_definition_spans(left_expression, source_file, table)
+      collect_expression_definition_spans(right_expression, source_file, table)
+    end,
+    ExprUn(_, inner_expression, _) => do
+      collect_expression_definition_spans(inner_expression, source_file, table)
+    end,
+    ExprCall(callee, arguments, _) => do
+      collect_expression_definition_spans(callee, source_file, table)
+      let mut index = 0
+      while index < arguments.length() do
+        collect_expression_definition_spans(arguments[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprMethod(receiver, _, arguments, _) => do
+      collect_expression_definition_spans(receiver, source_file, table)
+      let mut index = 0
+      while index < arguments.length() do
+        collect_expression_definition_spans(arguments[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprField(object, _, _) => do
+      collect_expression_definition_spans(object, source_file, table)
+    end,
+    ExprIndex(object, index_expression, _) => do
+      collect_expression_definition_spans(object, source_file, table)
+      collect_expression_definition_spans(index_expression, source_file, table)
+    end,
+    ExprRecord(_, parts, _) => do
+      let mut index = 0
+      while index < parts.length() do
+        match parts[index] {
+          RecordLitFields(field_values) => do
+            let mut field_index = 0
+            while field_index < field_values.length() do
+              collect_expression_definition_spans(field_values[field_index].value, source_file, table)
+              field_index = field_index + 1
+            end
+          end,
+          RecordLitSpread(spread_expression) => do
+            collect_expression_definition_spans(spread_expression, source_file, table)
+          end,
+        }
+        index = index + 1
+      end
+    end,
+    ExprRecordUpdate(_, base_record, field_values, _) => do
+      collect_expression_definition_spans(base_record, source_file, table)
+      let mut index = 0
+      while index < field_values.length() do
+        collect_expression_definition_spans(field_values[index].value, source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprArray(elements, _) => do
+      let mut index = 0
+      while index < elements.length() do
+        collect_expression_definition_spans(elements[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprTuple(elements, _) => do
+      let mut index = 0
+      while index < elements.length() do
+        collect_expression_definition_spans(elements[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    ExprQuestion(inner_expression, _) => do
+      collect_expression_definition_spans(inner_expression, source_file, table)
+    end,
+    ExprNamedArg(_, argument_expression, _) => do
+      collect_expression_definition_spans(argument_expression, source_file, table)
+    end,
+    _ => do end,
+  }
+end
+
+fn collect_declaration_definition_spans(declaration: Shared<Decl>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  match declaration {
+    DeclFn(function_name, _, _, parameters, _, body_expression, _) => do
+      symbol_table_set(table, function_name, source_file, expr_span(body_expression))
+      let mut index = 0
+      while index < parameters.length() do
+        symbol_table_set(table, parameters[index].name, source_file, expr_span(body_expression))
+        index = index + 1
+      end
+      collect_expression_definition_spans(body_expression, source_file, table)
+    end,
+    DeclType(type_name, _, _, _, name_span) => do
+      symbol_table_set(table, type_name, source_file, name_span)
+    end,
+    DeclTypeAlias(alias_name, _, _, name_span) => do
+      symbol_table_set(table, alias_name, source_file, name_span)
+    end,
+    DeclTrait(trait_name, _, members, name_span) => do
+      symbol_table_set(table, trait_name, source_file, name_span)
+      let mut index = 0
+      while index < members.length() do
+        collect_declaration_definition_spans(members[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    DeclExtend(_, _, members, _) => do
+      let mut index = 0
+      while index < members.length() do
+        collect_declaration_definition_spans(members[index], source_file, table)
+        index = index + 1
+      end
+    end,
+    DeclExported(inner_declaration) => do
+      collect_declaration_definition_spans(inner_declaration, source_file, table)
+    end,
+    _ => do end,
+  }
+end
+
+export fn build_symbol_table(program: Program, source_file: string) -> Map<string, Span> = do
+  let mut table: Map<string, Span> = Map.new()
+  let mut index = 0
+  while index < program.decls.length() do
+    collect_declaration_definition_spans(program.decls[index], source_file, table)
+    index = index + 1
+  end
+  table
+end
+
+fn token_identifier_name(token: Token) -> string =
+  match token.kind_value() { Ident(name) => name, _ => '' }
+
+export fn find_identifier_at_position(source_text: string, line_zero_based: i32, column_zero_based: i32) -> string = do
+  const lex_output = tokenize(source_text)
+  let mut index = 0
+  let mut found_name = ""
+  const target_line = line_zero_based + 1
+  const target_column = column_zero_based + 1
+  while index < lex_output.tokens.length() do
+    const token = lex_output.tokens[index]
+    const identifier_name = token_identifier_name(token)
+    if identifier_name.length() > 0 then
+      found_name = if token.line_number() == target_line
+        && token.column() <= target_column
+        && target_column < token.column() + identifier_name.length() then
+        identifier_name
+      else
+        found_name
+      end
+    end
+    index = index + 1
+  end
+  found_name
+end
+
+export fn resolve_definition_span(symbol_table: Map<string, Span>, identifier_name: string) -> Span =
+  if identifier_name.length() > 0 && symbol_table.has(identifier_name) then symbol_table.get(identifier_name)
+  else span_unknown()
+
+export fn resolve_definition_in_source(
+  source_text: string,
+  source_file: string,
+  line_zero_based: i32,
+  column_zero_based: i32
+) -> Span = do
+  const program = parse_program(tokenize(source_text).tokens)
+  const symbol_table = build_symbol_table(program, source_file)
+  const identifier_name = find_identifier_at_position(source_text, line_zero_based, column_zero_based)
+  resolve_definition_span(symbol_table, identifier_name)
+end

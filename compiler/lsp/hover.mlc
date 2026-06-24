@@ -1,0 +1,94 @@
+// LSP hover: type at cursor via checker inference (single-file).
+
+import { Program, Decl, Expr, Stmt, Param, decl_inner, stmt_span, param_name, param_type_value, ExprBlock, StmtLet } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { build_registry, type_from_annotation_with_registry, TypeRegistry } from '../checker/registry'
+import { expand_parameter_destructuring_in_program } from '../checker/transform/param_destructure_expand'
+import { partial_application_desugar_expr } from '../checker/transform/partial_application_desugar'
+import { check_context_new } from '../checker/check/check_context'
+import { infer_expr } from '../checker/infer/infer'
+import { infer_expr_identifier } from '../checker/infer/infer_expr_ident'
+import { type_description } from '../checker/semantic_type_structure'
+import { find_identifier_at_position } from './symbols'
+
+fn hover_function_parameter_environment(parameters: [Shared<Param>], registry: TypeRegistry) -> Map<string, Shared<Type>> = do
+  let mut type_environment: Map<string, Shared<Type>> = Map.new()
+  let mut index = 0
+  while index < parameters.length() do
+    const parameter = parameters[index]
+    type_environment.set(
+      param_name(parameter),
+      type_from_annotation_with_registry(param_type_value(parameter), registry))
+    index = index + 1
+  end
+  type_environment
+end
+
+fn hover_type_for_identifier_in_program(
+  program: Program,
+  registry: TypeRegistry,
+  identifier_name: string,
+  target_line_one_based: i32
+) -> string = do
+  if registry.has_fn(identifier_name) then type_description(registry.fn_type(identifier_name))
+  else if registry.has_ctor(identifier_name) then type_description(registry.ctor_type(identifier_name))
+  else do
+    let mut index = 0
+    let mut found_type = ""
+    while index < program.decls.length() && found_type.length() == 0 do
+      match decl_inner(program.decls[index]) {
+        DeclFn(_, _, _, parameters, _, function_body, _) => do
+          let mut type_environment = hover_function_parameter_environment(parameters, registry)
+          const desugared_body = partial_application_desugar_expr(function_body)
+          match desugared_body {
+            ExprBlock(statements, _, _) => do
+              let mut statement_index = 0
+              while statement_index < statements.length() do
+                match statements[statement_index] {
+                  StmtLet(name, _, _, value, statement_span) => do
+                    if statement_span.line <= target_line_one_based then
+                      const inference_context = check_context_new(type_environment, registry)
+                      type_environment.set(name, infer_expr(value, inference_context).inferred_type)
+                    end
+                    while false do end
+                  end,
+                  StmtExpr(expression, _) => do
+                    if stmt_span(statements[statement_index]).line <= target_line_one_based then
+                      infer_expr(expression, check_context_new(type_environment, registry))
+                    end
+                    while false do end
+                  end,
+                  _ => do end,
+                }
+                statement_index = statement_index + 1
+              end
+            end,
+            _ => do end,
+          }
+          const inference_context = check_context_new(type_environment, registry)
+          const inferred = infer_expr_identifier(identifier_name, inference_context)
+          found_type = type_description(inferred.inferred_type)
+        end,
+        _ => do end,
+      }
+      index = index + 1
+    end
+    found_type
+  end
+  end
+end
+
+export fn resolve_hover_type_in_source(
+  source_text: string,
+  source_file: string,
+  line_zero_based: i32,
+  column_zero_based: i32
+) -> string = do
+  const expanded_program = expand_parameter_destructuring_in_program(parse_program(tokenize(source_text).tokens))
+  const registry = build_registry(expanded_program)
+  const identifier_name = find_identifier_at_position(source_text, line_zero_based, column_zero_based)
+  if identifier_name.length() == 0 then ""
+  else hover_type_for_identifier_in_program(expanded_program, registry, identifier_name, line_zero_based + 1)
+  end
+end

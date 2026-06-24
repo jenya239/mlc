@@ -36,5 +36,8 @@ bash "$COMPILER_DIR/tests/fuzz/run_negative_corpus.sh" "$COMPILER_DIR/out/mlcc"
 echo "[compiler tests] phase 5/6: fuzz differential (mlcc vs Ruby checker)" >&2
 bash "$COMPILER_DIR/tests/fuzz/run_fuzz_differential.sh" "$COMPILER_DIR/out/mlcc"
 
-echo "[compiler tests] phase 6/6: compile_commands smoke (mlcc --emit-compile-commands)" >&2
+echo "[compiler tests] phase 6/7: compile_commands smoke (mlcc --emit-compile-commands)" >&2
 bash "$COMPILER_DIR/tests/run_compile_commands_smoke.sh" "$COMPILER_DIR/out/mlcc"
+
+echo "[compiler tests] phase 7/7: lsp smoke (mlcc lsp stdio)" >&2
+bash "$COMPILER_DIR/tests/run_lsp_smoke.sh" "$COMPILER_DIR/out/mlcc"

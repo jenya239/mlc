@@ -4,11 +4,86 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-9f4eab4b-7bd5-49cf-8b37-f0629f8a0e65` |
-| driver_turns_since_plan | 0|
-| step_last | plan-refresh|
-| active_track | TRACK_CPP_HEADER_IMPORT STEP=5 pending |
+| instructions_rev | `2026-05-28-cleaner`|
+| agent_token_last | `cr-agent-06c19d89-504d-4ef2-8d61-0554ebda2d24` |
+| driver_turns_since_plan | 4|
+| step_last | 5|
+| active_track | TRACK_LSP STEP=5 pending |
+
+### Turn 2026-06-24 (Driver recovery — LSP STEP=4 diagnostics)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery (closed STEP=4) |
+| track | TRACK_LSP |
+| done | STEP=4: `program_diagnostics`, `diagnostics.mlc`, publish on `didOpen`, tests +3 → **1142/0** |
+| verify | `build_tests` **1142/0**; `mlcc -o .tmp_selfhost/p1 compiler/main.mlc` ok; `build.sh`/`build_bin` mlcc2 **fail** (`cpp_decls` — CPP_HEADER_IMPORT) |
+| issues | stuck `Driver:4:LSP`; guard — no re-enqueue STEP=4 |
+| next | ROLE=Driver STEP=5 TRACK_LSP |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-06c19d89-504d-4ef2-8d61-0554ebda2d24
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_LSP.md
+
+STEP=5: `mlcc lsp` CLI + integration test; close TRACK_LSP. build_tests gate.
+```
+
+### Turn 2026-06-22 (Driver STEP=3 — LSP hover + stability)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_LSP |
+| done | STEP=2b/2c/2/3: `lsp_protocol`, `symbols` (`ref mut Map`), `hover`, `server`; `test_lsp_server` 1139/0 |
+| verify | `build_tests` **1139/0**; `mlcc -o .tmp_selfhost/p1 compiler/main.mlc` ok; `build_bin` mlcc2 **fail** (`cpp_decls` — CPP_HEADER_IMPORT) |
+| issues | full TRACK gate blocked by unrelated `cpp_decls` codegen |
+| next | ROLE=Driver STEP=4 TRACK_LSP (diagnostics) |
+
+**Enqueue payload (Driver STEP=4; MCP token not in vscdb — register from mlc-chat):**
+```
+AGENT_TOKEN=cr-agent-bac194c3-4a2c-45ef-b362-1f7a7a80c4ef
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_LSP.md
+
+STEP=4: LSP diagnostics — publishDiagnostics from checker; stability. build_tests gate. cpp_decls blocks mlcc2 gate.
+```
+
+### Turn 2026-06-21 (Planner plan-refresh — LSP STEP=2 stuck)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_LSP |
+| done | STEP=2 split → 2a done / 2b pending; blocker char/string in `lsp_protocol.mlc`; TRACK_PLAN priority LSP 2b |
+| verify | parse ok (`server`, `symbols`); build_tests **fail** (char/string) |
+| issues | guard `Driver:2:LSP` ×3; MCP enqueue fail (token not in vscdb) |
+| next | ROLE=Driver STEP=2b TRACK_LSP |
+
+**Enqueue payload (Driver STEP=2b):**
+```
+AGENT_TOKEN=cr-agent-7fb5c721-149c-4c89-a4cf-e8fb0830d21c
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2b
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_LSP.md
+
+STEP=2b: fix lsp_protocol char/string; build_tests + gate from TRACK. No record field assign. Close STEP=2 when green.
+```
 
 ### Turn 2026-06-21 (Planner plan-refresh — CPP_HEADER_IMPORT STEP=5)
 

@@ -304,7 +304,7 @@ fn global_names_merge_single_declaration_into_map(
 fn collect_globals(program: Program) -> Map<string, bool> = do
   let names: Map<string, bool> = Map.new()
   names.set('true', true); names.set('false', true); names.set('exit', true)
-  names.set('print', true); names.set('println', true); names.set('args', true)
+  names.set('print', true); names.set('println', true); names.set('args', true); names.set('read_line', true)
   names.set('File', true); names.set('Profile', true); names.set('Shared', true); names.set('Map', true)
   names.set('Ok', true); names.set('Err', true); names.set('Result', true)
   program.decls.fold(
@@ -425,7 +425,9 @@ fn check_fn_locals_parameter_fold_step(
   }
 end
 
-fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
+type Program_check_gathered = Program_check_gathered { diagnostics: [Diagnostic], registry: TypeRegistry }
+
+fn gather_program_check(entry: Program, full_program: Program) -> Program_check_gathered = do
   let mut all_diagnostics: [Diagnostic] = trait_and_type_name_conflict_diagnostics(full_program)
   const destructured_full_program = expand_parameter_destructuring_in_program(full_program)
   all_diagnostics = diagnostics_append(all_diagnostics, extern_parameter_destructure_diagnostics(full_program))
@@ -505,10 +507,18 @@ fn check_program_against_full(entry: Program, full_program: Program) -> Result<C
     }
     declaration_index = declaration_index + 1
   end
-  if all_diagnostics.length() > 0 then Err(diagnostics_to_strings(all_diagnostics))
-  else Ok(CheckOut { errors: [], registry: registry })
+  Program_check_gathered { diagnostics: all_diagnostics, registry: registry }
+end
+
+fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
+  const gathered = gather_program_check(entry, full_program)
+  if gathered.diagnostics.length() > 0 then Err(diagnostics_to_strings(gathered.diagnostics))
+  else Ok(CheckOut { errors: [], registry: gathered.registry })
   end
 end
+
+export fn program_diagnostics(program: Program) -> [Diagnostic] =
+  gather_program_check(program, program).diagnostics
 
 export fn check_with_context(entry: Program, full: Program) -> Result<CheckOut, [string]> =
   check_program_against_full(entry, full)

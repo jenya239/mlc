@@ -1,0 +1,115 @@
+// LSP JSON-RPC helpers (string-based; no full JSON parser).
+
+import { Span, Diagnostic } from '../frontend/ast'
+
+export fn lsp_string_starts_with(text: string, prefix: string) -> bool =
+  text.length() >= prefix.length() && text.substring(0, prefix.length()) == prefix
+
+export fn lsp_parse_content_length_header(header_line: string) -> i32 = do
+  const prefix = "Content-Length:"
+  if !lsp_string_starts_with(header_line, prefix) then -1
+  else header_line.substring(prefix.length(), header_line.length() - prefix.length()).trim().to_i()
+  end
+end
+
+fn lsp_scan_quoted_json_value(message_body: string, value_start: i32) -> string = do
+  let mut scan_index = value_start
+  while scan_index < message_body.length() && message_body.char_at(scan_index) != "\"" do
+    scan_index = scan_index + 1
+  end
+  message_body.substring(value_start, scan_index - value_start)
+end
+
+fn lsp_read_quoted_field_value(message_body: string, value_start: i32) -> string =
+  if value_start >= message_body.length() || message_body.char_at(value_start) != "\"" then ""
+  else lsp_scan_quoted_json_value(message_body, value_start + 1)
+  end
+
+export fn lsp_extract_json_string_field(message_body: string, field_name: string) -> string = do
+  const quoted_field = "\"" + field_name + "\"" + ":"
+  const spaced_field = "\"" + field_name + "\"" + ": "
+  let mut start_index = message_body.index_of(quoted_field)
+  let mut field_prefix_length = quoted_field.length()
+  if start_index < 0 then do
+    start_index = message_body.index_of(spaced_field)
+    field_prefix_length = spaced_field.length()
+  end
+  if start_index < 0 then ""
+  else lsp_read_quoted_field_value(message_body, start_index + field_prefix_length)
+  end
+end
+
+export fn lsp_extract_json_number_field(message_body: string, field_name: string) -> i32 = do
+  const quoted_field = "\"" + field_name + "\"" + ":"
+  const spaced_field = "\"" + field_name + "\"" + ": "
+  let mut start_index = message_body.index_of(quoted_field)
+  let mut field_prefix_length = quoted_field.length()
+  if start_index < 0 then do
+    start_index = message_body.index_of(spaced_field)
+    field_prefix_length = spaced_field.length()
+  end
+  if start_index < 0 then -1
+  else do
+    const value_start = start_index + field_prefix_length
+    let mut scan_index = value_start
+    while scan_index < message_body.length() do
+      const character = message_body.char_at(scan_index)
+      if character == "," || character == "}" then break end
+      scan_index = scan_index + 1
+    end
+    message_body.substring(value_start, scan_index - value_start).trim().to_i()
+  end
+  end
+end
+
+export fn lsp_has_json_field(message_body: string, field_name: string) -> bool =
+  lsp_extract_json_string_field(message_body, field_name) != "" || message_body.index_of("\"" + field_name + "\"" + ":") >= 0
+
+export fn lsp_build_jsonrpc_result(response_id: i32, result_json: string) -> string =
+  '{"jsonrpc":"2.0","id":' + response_id.to_string() + ',"result":' + result_json + "}"
+
+export fn lsp_build_initialize_result() -> string =
+  '{"capabilities":{"definitionProvider":true,"hoverProvider":true},"serverInfo":{"name":"mlcc","version":"0.1"}}'
+
+export fn lsp_build_hover_result(type_text: string) -> string =
+  if type_text.length() == 0 then "null"
+  else '{"contents":[{"language":"mlc","value":"' + type_text + '"}]}'
+  end
+
+export fn lsp_build_location(document_uri: string, definition_span: Span) -> string = do
+  if definition_span.line <= 0 then "null"
+  else do
+    const start_line = definition_span.line - 1
+    const start_character = definition_span.column - 1
+    const end_character = start_character + 1
+    const location_json = '{"uri":"' + document_uri + '","range":{"start":{"line":' + start_line.to_string() + ',"character":' + start_character.to_string() + '},"end":{"line":' + start_line.to_string() + ',"character":' + end_character.to_string() + '}}}'
+    location_json
+  end
+  end
+end
+
+export fn lsp_format_outgoing_message(message_body: string) -> string =
+  'Content-Length: ' + message_body.length().to_string() + '\r\n\r\n' + message_body
+
+fn lsp_diagnostic_severity_number(severity: string) -> i32 =
+  if severity == "warning" then 2 else 1
+
+export fn lsp_build_single_diagnostic_json(diagnostic: Diagnostic) -> string = do
+  const start_line = if diagnostic.span.line > 0 then diagnostic.span.line - 1 else 0
+  const start_character = if diagnostic.span.column > 0 then diagnostic.span.column - 1 else 0
+  const end_character = start_character + 1
+  '{"range":{"start":{"line":' + start_line.to_string() + ',"character":' + start_character.to_string() + '},"end":{"line":' + start_line.to_string() + ',"character":' + end_character.to_string() + '}},"severity":' + lsp_diagnostic_severity_number(diagnostic.severity).to_string() + ',"message":"' + diagnostic.message + '"}'
+end
+
+export fn lsp_build_diagnostics_json_array(diagnostics: [Diagnostic]) -> string = do
+  let mut parts: [string] = []
+  let mut index = 0
+  while index < diagnostics.length() do
+    parts.push(lsp_build_single_diagnostic_json(diagnostics[index]))
+    index = index + 1
+  end
+  parts.join(",")
+end
+
+export fn lsp_build_publish_diagnostics_notification(document_uri: string, diagnostics: [Diagnostic]) -> string =
+  '{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"' + document_uri + '","diagnostics":[' + lsp_build_diagnostics_json_array(diagnostics) + ']}}'

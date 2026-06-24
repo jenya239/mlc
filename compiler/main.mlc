@@ -8,7 +8,9 @@ import { Program, Decl, DeclImport, DeclExported, Result, errs_append } from './
 import { run_modular_compiler_pipeline, ModularCompileInput } from './pipeline'
 import { parse_compile_options, compile_usage_message } from './compile_options'
 import { format_source_file, format_usage_message } from './fmt/format_cli'
+import { run_lsp_command, lsp_usage_message } from './lsp/lsp_cli'
 import { profile_reset_if_enabled, profile_maybe_begin, profile_maybe_end, profile_finish } from './profile'
+import { is_cpp_header_path, load_cpp_header_decls } from './cpp/header_import'
 
 fn dirname(path: string) -> string = do
   let mut last_slash_index = -1
@@ -49,8 +51,9 @@ fn resolve_import_path(base_path: string, import_path: string) -> string = do
     then import_path.substring(2, import_path.length() - 2)
     else import_path
     end
-  const with_extension = if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == '.mlc'
-    then rest
+  const with_extension =
+    if is_cpp_header_path(rest) then rest
+    else if rest.length() >= 4 && rest.substring(rest.length() - 4, 4) == '.mlc' then rest
     else `${rest}.mlc`
     end
   const combined_before_normalization = if base_dir == '' then with_extension else `${base_dir}/${with_extension}` end
@@ -74,6 +77,25 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
   if cache.has(norm_path) then cache.get(norm_path)
   else if loaded.has(norm_path) then
     LoadResult { items: [], errors: [`circular: ${norm_path}`] }
+  else if is_cpp_header_path(norm_path) then do
+    loaded.set(norm_path, true)
+    profile_maybe_begin(profile_enabled, 'load_io')
+    const header_loaded = load_cpp_header_decls(norm_path)
+    profile_maybe_end(profile_enabled, 'load_io')
+    if header_loaded.errors.length() > 0 then
+      LoadResult { items: [], errors: header_loaded.errors }
+    else
+      const header_items: [LoadItem] = [LoadItem {
+        path: norm_path,
+        decls: header_loaded.declarations,
+        imports: [],
+        namespace_import_aliases: []
+      }]
+      const load_parsed = LoadResult { items: header_items, errors: [] }
+      cache.set(norm_path, load_parsed)
+      load_parsed
+    end
+  end
   else
   loaded.set(norm_path, true)
   profile_maybe_begin(profile_enabled, 'load_io')
@@ -254,13 +276,22 @@ fn format_errors(label: string, errors: [string]) -> string =
 fn is_format_subcommand(argument: string) -> bool =
   match argument | 'fmt' => true | _ => false end
 
+fn is_lsp_subcommand(argument: string) -> bool =
+  match argument | 'lsp' => true | _ => false end
+
 fn main() -> i32 = do
   const command_line_arguments = args()
   if command_line_arguments.length() == 0 then
     println(compile_usage_message())
     exit(1)
   end
-  if is_format_subcommand(command_line_arguments[0]) then
+  if is_lsp_subcommand(command_line_arguments[0]) then
+    if command_line_arguments.length() > 1 then
+      println(lsp_usage_message())
+      exit(1)
+    end
+    run_lsp_command()
+  else if is_format_subcommand(command_line_arguments[0]) then
     if command_line_arguments.length() < 2 then
       println(format_usage_message())
       exit(1)

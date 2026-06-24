@@ -32,6 +32,8 @@ struct CheckOut {mlc::Array<mlc::String> errors;registry::TypeRegistry registry;
 
 bool CheckOut_has_errors(check::CheckOut self) noexcept;
 
+mlc::Array<ast::Diagnostic> program_diagnostics(ast::Program program) noexcept;
+
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check_with_context(ast::Program entry, ast::Program full) noexcept;
 
 ast::Result<check::CheckOut, mlc::Array<mlc::String>> check(ast::Program program) noexcept;

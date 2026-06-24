@@ -1,0 +1,88 @@
+// Unit tests for LSP protocol helpers and message builders.
+
+import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
+import { lsp_extract_json_string_field, lsp_extract_json_number_field, lsp_build_jsonrpc_result, lsp_build_initialize_result, lsp_format_outgoing_message, lsp_parse_content_length_header, lsp_build_location, lsp_build_hover_result, lsp_build_publish_diagnostics_notification } from '../lsp/lsp_protocol'
+import { resolve_definition_in_source } from '../lsp/symbols'
+import { resolve_hover_type_in_source } from '../lsp/hover'
+import { collect_diagnostics_in_source } from '../lsp/diagnostics'
+import { lsp_process_messages_for_test } from '../lsp/server'
+import { lsp_usage_message } from '../lsp/lsp_cli'
+
+export fn lsp_server_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const initialize_request =
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null}}'
+
+  results.push(assert_eq_str('lsp_extract_json_string_field method',
+    lsp_extract_json_string_field(initialize_request, "method"), "initialize"))
+
+  results.push(assert_eq_int('lsp_extract_json_number_field id',
+    lsp_extract_json_number_field(initialize_request, "id"), 1))
+
+  results.push(assert_true('lsp_build_initialize_result has serverInfo',
+    lsp_build_initialize_result().contains('"serverInfo"')))
+
+  const response_body = lsp_build_jsonrpc_result(1, lsp_build_initialize_result())
+  results.push(assert_true('lsp_build_jsonrpc_result has jsonrpc',
+    response_body.contains('"jsonrpc":"2.0"')))
+
+  const framed = lsp_format_outgoing_message(response_body)
+  results.push(assert_true('lsp_format_outgoing_message Content-Length header',
+    framed.contains("Content-Length:")))
+  results.push(assert_true('lsp_format_outgoing_message body suffix',
+    framed.contains(response_body)))
+
+  results.push(assert_eq_int('lsp_parse_content_length_header',
+    lsp_parse_content_length_header("Content-Length: 42"), 42))
+
+  results.push(assert_true('lsp_build_initialize_result definitionProvider',
+    lsp_build_initialize_result().contains('"definitionProvider":true')))
+
+  results.push(assert_true('lsp_build_initialize_result hoverProvider',
+    lsp_build_initialize_result().contains('"hoverProvider":true')))
+
+  const sample_source = 'fn greet() -> i32 = do\n  let answer = 42\n  answer\nend\n'
+  const definition_span = resolve_definition_in_source(sample_source, 'sample.mlc', 1, 6)
+  results.push(assert_eq_int('resolve_definition_in_source let binding line',
+    definition_span.line, 2))
+  results.push(assert_eq_str('resolve_definition_in_source let binding file',
+    definition_span.file, 'sample.mlc'))
+
+  const location_json = lsp_build_location('file:///tmp/sample.mlc', definition_span)
+  results.push(assert_true('lsp_build_location has uri',
+    location_json.contains('file:///tmp/sample.mlc')))
+
+  results.push(assert_eq_str('resolve_hover_type_in_source let binding',
+    resolve_hover_type_in_source(sample_source, 'sample.mlc', 1, 6), 'i32'))
+
+  const hover_json = lsp_build_hover_result('i32')
+  results.push(assert_true('lsp_build_hover_result has type',
+    hover_json.contains('"value":"i32"')))
+
+  const bad_source = 'fn bad() -> i32 = "x"\n'
+  const diagnostics = collect_diagnostics_in_source(bad_source, 'bad.mlc')
+  results.push(assert_true('collect_diagnostics_in_source has errors',
+    diagnostics.length() > 0))
+
+  const publish_json = lsp_build_publish_diagnostics_notification('file:///bad.mlc', diagnostics)
+  results.push(assert_true('publishDiagnostics has method',
+    publish_json.contains('"textDocument/publishDiagnostics"')))
+  results.push(assert_true('publishDiagnostics has error severity',
+    publish_json.contains('"severity":1')))
+
+  results.push(assert_true('lsp_usage_message mentions lsp',
+    lsp_usage_message().contains('mlcc lsp')))
+
+  const open_message =
+    '{"method":"textDocument/didOpen","params":{"uri":"file:///sample.mlc","text":"fn greet() -> i32 = 42\\n"}}'
+  const definition_message =
+    '{"jsonrpc":"2.0","id":3,"method":"textDocument/definition","params":{"textDocument":{"uri":"file:///sample.mlc"},"position":{"line":0,"character":3}}}'
+  const integration_outputs = lsp_process_messages_for_test([open_message, definition_message])
+  results.push(assert_true('lsp integration didOpen+definition produces output',
+    integration_outputs.length() > 0))
+  results.push(assert_true('lsp integration definition response has result',
+    integration_outputs[integration_outputs.length() - 1].contains('"result":')))
+
+  results
+end

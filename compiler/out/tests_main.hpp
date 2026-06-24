@@ -21,6 +21,8 @@
 #include "test_cpp_ast.hpp"
 #include "test_cpp_parser.hpp"
 #include "test_cpp_types.hpp"
+#include "test_cpp_header_import.hpp"
+#include "test_lsp_server.hpp"
 #include "test_formatter.hpp"
 #include "test_fuzz.hpp"
 #include "test_runner.hpp"

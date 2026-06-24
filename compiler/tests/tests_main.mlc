@@ -18,6 +18,8 @@ import { cpp_lexer_tests } from './test_cpp_lexer'
 import { cpp_ast_tests } from './test_cpp_ast'
 import { cpp_parser_tests } from './test_cpp_parser'
 import { cpp_type_parser_tests } from './test_cpp_types'
+import { cpp_header_import_tests } from './test_cpp_header_import'
+import { lsp_server_tests } from './test_lsp_server'
 import { formatter_tests } from './test_formatter'
 import { fuzz_tests } from './test_fuzz'
 import { TestResult, run_all } from './test_runner'
@@ -76,6 +78,12 @@ fn all_tests() -> [TestResult] = do
 
   const suite_cpp_types = cpp_type_parser_tests()
   index = 0; while index < suite_cpp_types.length() do all.push(suite_cpp_types[index]); index = index + 1 end
+
+  const suite_cpp_header_import = cpp_header_import_tests()
+  index = 0; while index < suite_cpp_header_import.length() do all.push(suite_cpp_header_import[index]); index = index + 1 end
+
+  const suite_lsp = lsp_server_tests()
+  index = 0; while index < suite_lsp.length() do all.push(suite_lsp[index]); index = index + 1 end
 
   const suite_formatter = formatter_tests()
   index = 0; while index < suite_formatter.length() do all.push(suite_formatter[index]); index = index + 1 end

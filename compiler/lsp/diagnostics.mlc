@@ -1,0 +1,9 @@
+// LSP diagnostics: checker errors for a single open document.
+
+import { Diagnostic } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_source_path } from '../frontend/parser/decls'
+import { program_diagnostics } from '../checker/check/check'
+
+export fn collect_diagnostics_in_source(source_text: string, source_file: string) -> [Diagnostic] =
+  program_diagnostics(parse_program_with_source_path(tokenize(source_text).tokens, source_file))
