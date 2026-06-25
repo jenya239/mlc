@@ -1,0 +1,36 @@
+# One-off mlcc build smoke: cold Ruby bootstrap, check-only, upload binary.
+# Trigger: Actions ? Build mlcc once ? Run workflow.
+name: Build mlcc once
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      MLC_CXX: ccache clang++
+      MLC_JOBS: 4
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install C++ toolchain (clang, ccache, mold)
+        run: sudo apt-get update && sudo apt-get install -y clang ccache mold g++
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Build mlcc (cold via Ruby)
+        run: |
+          /usr/bin/time -f 'build_sec=%e' MLCC_FORCE_RUBY=1 compiler/build.sh
+
+      - name: Smoke check-only
+        run: compiler/out/mlcc --check-only compiler/main.mlc
+
+      - name: Upload mlcc binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlcc-linux-x64
+          path: compiler/out/mlcc
+          retention-days: 7
