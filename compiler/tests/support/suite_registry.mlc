@@ -14,6 +14,7 @@ import { pass_manager_tests } from '../test_pass_manager'
 import { program_to_semantic_tests } from '../test_program_to_semantic'
 import { dump_flags_tests } from '../test_dump_flags'
 import { core_ir_tests } from '../test_core_ir'
+import { mir_types_tests } from '../test_mir_types'
 import { driver_tests } from '../test_driver'
 import { verify_ir_tests } from '../test_verify_ir'
 import { compile_commands_tests } from '../test_compile_commands'
@@ -101,6 +102,7 @@ export fn integration_suite_results() -> [TestResult] = do
   results = append_suite_results(results, codegen_tests())
   results = append_suite_results(results, decl_gen_tests())
   results = append_suite_results(results, core_ir_tests())
+  results = append_suite_results(results, mir_types_tests())
   results = append_suite_results(results, driver_tests())
   results = append_suite_results(results, expr_visitor_tests())
   results = append_suite_results(results, visitor_pass_parity_tests())

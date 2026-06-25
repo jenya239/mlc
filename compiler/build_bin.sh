@@ -6,6 +6,7 @@
 # MLCC_OBJ_CLEAN=1 wipes obj/<tag>/ before compile.
 # MLCC_DEV=1 → compile with -O0 -g (obj tag: dev).
 # MLCC_OPT=<n> → compile with -On (default 2; obj tag: On).
+# MLCC_PCH=0 → disable precompiled mlcc_precompiled.hpp (default: on).
 set -e
 
 CPP_DIR="$1"
@@ -63,6 +64,40 @@ object_path_for_source() {
 INC_FLAGS=(-I "$CPP_DIR" -I "$RT_INC")
 [ -n "$EXTRA_INC" ] && INC_FLAGS+=(-I "$EXTRA_INC")
 
+COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRECOMPILED_SOURCE="$COMPILER_DIR/mlcc_precompiled.hpp"
+
+cxx_is_clang() {
+  if [[ "${CXX_CMD[*]}" == *clang* ]]; then
+    return 0
+  fi
+  "${CXX_CMD[@]}" --version 2>&1 | grep -qi clang
+}
+
+PCH_FLAGS=()
+if [ "${MLCC_PCH:-1}" != "0" ] && [ -f "$PRECOMPILED_SOURCE" ]; then
+  PRECOMPILED_HEADER="$OBJ_DIR/mlcc_precompiled.hpp"
+  if [ ! -f "$PRECOMPILED_HEADER" ] || [ "$PRECOMPILED_SOURCE" -nt "$PRECOMPILED_HEADER" ]; then
+    cp "$PRECOMPILED_SOURCE" "$PRECOMPILED_HEADER"
+  fi
+  if cxx_is_clang; then
+    PRECOMPILED_OUTPUT="$OBJ_DIR/mlcc_precompiled.pch"
+  else
+    PRECOMPILED_OUTPUT="$PRECOMPILED_HEADER.gch"
+  fi
+  if [ ! -f "$PRECOMPILED_OUTPUT" ] \
+    || [ "$PRECOMPILED_HEADER" -nt "$PRECOMPILED_OUTPUT" ] \
+    || [ "$RT_INC/mlc.hpp" -nt "$PRECOMPILED_OUTPUT" ]; then
+    "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${INC_FLAGS[@]}" \
+      -x c++-header "$PRECOMPILED_HEADER" -o "$PRECOMPILED_OUTPUT"
+  fi
+  if cxx_is_clang; then
+    PCH_FLAGS=(-include-pch "$PRECOMPILED_OUTPUT")
+  else
+    PCH_FLAGS=(-include "$PRECOMPILED_HEADER")
+  fi
+fi
+
 GENERATED_CPP=()
 shopt -s nullglob
 for candidate_cpp in "$CPP_DIR"/*.cpp; do
@@ -88,7 +123,7 @@ for cpp in "${ALL_CPP[@]}"; do
   if [ -f "$object_path" ] && [ ! "$cpp" -nt "$object_path" ]; then
     continue
   fi
-  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${INC_FLAGS[@]}" -c "$cpp" -o "$object_path" &
+  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -c "$cpp" -o "$object_path" &
   PIDS+=($!)
   if [ ${#PIDS[@]} -ge "$JOBS" ]; then
     for pid in "${PIDS[@]}"; do
@@ -108,6 +143,12 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
 fi
 
 LINK_FLAGS=()
-command -v ld.lld &>/dev/null && LINK_FLAGS+=(-fuse-ld=lld)
+if command -v mold &>/dev/null || command -v ld.mold &>/dev/null; then
+  LINK_FLAGS+=(-fuse-ld=mold)
+elif command -v ld.lld &>/dev/null; then
+  LINK_FLAGS+=(-fuse-ld=lld)
+elif command -v ld.gold &>/dev/null; then
+  LINK_FLAGS+=(-fuse-ld=gold)
+fi
 
 "${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}"

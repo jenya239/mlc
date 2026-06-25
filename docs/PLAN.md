@@ -5,7 +5,7 @@
 ### Архитектура mlcc (self-hosted)
 
 ```
-Source → Lexer → Tokens → Parser → AST → Checker → SemanticIR → Codegen → C++ source
+Source → Lexer → Tokens → Parser → AST → Checker → SemanticIR → MIR → CppAST → emit → C++ source
 ```
 
 Codegen строит **CppAST** (`compiler/cpp/cpp_ast.mlc`) и печатает через `cpp_printer.mlc`. String-шаблоны в `codegen/expr/expr.mlc` и `expr_fragment_codegen` остаются только для bootstrap edge cases (stmt/decl bridges). Tracks [TRACK_CPPEXPR.md](agent/TRACK_CPPEXPR.md) + [TRACK_CPPGEN.md](agent/TRACK_CPPGEN.md) **closed** (2026-05).
@@ -47,20 +47,20 @@ Source
   → Lexer → [Tokens]
   → Parser → [AST]                     # уже есть
   → Checker → [SemanticIR]             # уже есть, типизированный AST
-  → Lowering → [MLC IR]                # NEW: flat, explicit, control-flow граф
+  → Lowering → [MLC MIR]               # in progress: `compiler/mir/` (TRACK_MIR)
   → C++ Backend → [CppAST]             # NEW: типизированное представление C++
   → Printer → C++ source               # простой pretty-printer
 ```
 
-### MLC IR (приоритет после стабилизации)
+### MLC MIR (TRACK_MIR — active)
 
-Простой flat IR, вдохновлённый Rust MIR:
+Простой flat IR, вдохновлённый Rust MIR (`compiler/mir/`):
 - Explicit временные переменные вместо вложенных выражений
 - Явные блоки (`BasicBlock`) с терминаторами (`Jump`, `CondJump`, `Return`)
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Это не обязательно для Phase 1. Делается после стабилизации.
+STEP 1 done: типы, dump, structural verifier, tests. Lowering и `--dump-mir` — TRACK_MIR steps 3–4. Legacy `ir/core.mlc` → migrate, не два IR.
 
 ### C++ AST (приоритет: Phase 2)
 

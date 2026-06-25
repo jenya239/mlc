@@ -1,0 +1,111 @@
+// Structural invariants for MLC MIR (compiler bugs, not user errors).
+
+import {
+  MirProgram, MirModule, MirFunction, MirBlock, MirLocal, MirParam,
+  MirTerminator, LocalId, BlockId, mir_id_is_valid, mir_function_name_is_safe, mir_block_label_is_safe
+} from '../mir/mir_types'
+
+fn verify_mir_append(accumulator: [string], more: [string]) -> [string] = do
+  let mut combined = accumulator
+  let mut index = 0
+  while index < more.length() do
+    combined.push(more[index])
+    index = index + 1
+  end
+  combined
+end
+
+fn verify_mir_local_id(label: string, local_id: LocalId) -> [string] =
+  if mir_id_is_valid(local_id.index) then [] else [`${label}: invalid local id ${local_id.index}`]
+
+fn verify_mir_block_id(label: string, block_id: BlockId) -> [string] =
+  if mir_id_is_valid(block_id.index) then [] else [`${label}: invalid block id ${block_id.index}`]
+
+fn verify_mir_block_exists(blocks: [MirBlock], block_id: BlockId) -> bool = do
+  let mut index = 0
+  while index < blocks.length() do
+    if blocks[index].id.index == block_id.index then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn verify_mir_terminator(function: MirFunction, block: MirBlock) -> [string] = do
+  let mut errors: [string] = []
+  match block.term {
+    MirReturn(_) => errors,
+    MirJump(target) => do
+      if verify_mir_block_exists(function.blocks, target) then errors
+      else verify_mir_append(errors, [`mir jump: unknown block ${target.index}`])
+      end
+    end,
+    MirCondJump(cond, then_block, else_block) => do
+      if !verify_mir_block_exists(function.blocks, then_block) then
+        errors = verify_mir_append(errors, [`mir cond jump: unknown then block ${then_block.index}`])
+      end
+      if !verify_mir_block_exists(function.blocks, else_block) then
+        errors = verify_mir_append(errors, [`mir cond jump: unknown else block ${else_block.index}`])
+      end
+      errors
+    end,
+    MirUnreachable => errors
+  }
+end
+
+fn verify_mir_block(function: MirFunction, block: MirBlock) -> [string] = do
+  let mut errors: [string] = []
+  if !mir_block_label_is_safe(block.label) then
+    errors.push('mir block: unsafe label')
+  end
+  errors = verify_mir_append(errors, verify_mir_block_id('mir block', block.id))
+  verify_mir_append(errors, verify_mir_terminator(function, block))
+end
+
+export fn verify_mir_function(function: MirFunction) -> [string] = do
+  let mut errors: [string] = []
+  if !mir_function_name_is_safe(function.name) then
+    errors.push('mir function: unsafe name')
+  end
+  if function.blocks.length() == 0 then
+    errors.push('mir function: no blocks')
+  end
+  let mut param_index = 0
+  while param_index < function.params.length() do
+    param_index = param_index + 1
+  end
+  let mut local_index = 0
+  while local_index < function.locals.length() do
+    const local = function.locals[local_index]
+    errors = verify_mir_append(errors, verify_mir_local_id('mir local', local.id))
+    local_index = local_index + 1
+  end
+  if function.blocks.length() > 0 && !verify_mir_block_exists(function.blocks, function.blocks[0].id) then
+    errors.push('mir function: entry block missing from block list')
+  end
+  let mut block_index = 0
+  while block_index < function.blocks.length() do
+    errors = verify_mir_append(errors, verify_mir_block(function, function.blocks[block_index]))
+    block_index = block_index + 1
+  end
+  errors
+end
+
+export fn verify_mir_module(mir_module: MirModule) -> [string] = do
+  let mut errors: [string] = []
+  let mut index = 0
+  while index < mir_module.functions.length() do
+    errors = verify_mir_append(errors, verify_mir_function(mir_module.functions[index]))
+    index = index + 1
+  end
+  errors
+end
+
+export fn verify_mir_program(program: MirProgram) -> [string] = do
+  let mut errors: [string] = []
+  let mut index = 0
+  while index < program.modules.length() do
+    errors = verify_mir_append(errors, verify_mir_module(program.modules[index]))
+    index = index + 1
+  end
+  errors
+end

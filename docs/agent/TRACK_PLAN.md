@@ -129,9 +129,10 @@ Strict order; each track depends on previous unless noted.
 | 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **closed** (minimal subset) |
 | 8 | [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) | 3.6 | **closed** (2026-06-24; **1234/0**) |
 | 9 | [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) | 2.8 | **closed** (2026-05-19; **1290/0**) |
-| 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **open** STEP=1 |
-| 11 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
-| 12 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | planned |
+| 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **open** STEP=3 |
+| 11 | [TRACK_MIR](TRACK_MIR.md) | 2.8 | **open** STEP=2 |
+| 12 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
+| 13 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | planned |
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
@@ -143,7 +144,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) **STEP=1** (persistent `out/obj/`).  
+> **Immediate:** [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) **STEP=3** (mold/lld docs).  
+> **Parallel:** [TRACK_MIR](TRACK_MIR.md) **STEP=2** (CompilerDb sketch).  
 > **Then:** REDDIT_DEMO per queue.
 
 **Baseline (2026-05-19):** `build_tests` **1290/0**; TRACK_CLEAN_ARCHITECTURE closed.

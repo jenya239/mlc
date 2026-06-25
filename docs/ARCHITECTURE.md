@@ -14,7 +14,7 @@ source
   ? AST                       frontend/ast, parser/
   ? HIR / resolved AST        checker/names, registry  (today: ???????? ? check)
   ? Typed IR                  SemanticIR + TypeRegistry checker/infer, transform/
-  ? CoreIR                    NEW: lowered expr/stmt/cfg, ??? ??????????????? ??????
+  ? MLC MIR                     mir/ — flat CFG between SemanticIR and CppAST (TRACK_MIR)
   ? CppAST                    cpp/cpp_ast, codegen/
   ? C++ text                  cpp printer / emit
 ```
@@ -29,7 +29,7 @@ source
 | resolve/names | ??? unresolved idents ? scope |
 | typecheck | ? ??????? expr ???? ??? ??? ????? error |
 | transform ? SemanticIR | ??? sugar, trait/destugar ???????? |
-| CoreIR | ????? control flow, ??? nested expr side effects |
+| mir | explicit control flow, no nested expr side effects |
 | CppAST | well-formed C++ AST nodes |
 | emit | golden/diff ???????? |
 
@@ -41,12 +41,12 @@ source
 main.mlc          driver + loader + imports + fmt + lsp + cpp headers  ? ???????
 pipeline.mlc      check ? transform ? codegen                         ? 3 ????, ok
 CompilerPass      trait ????????, ?? wired
-SemanticIR        typed AST ??? codegen                               ? HIR/Typed, ??? CoreIR
+SemanticIR        typed AST — codegen today; target: MIR then CppAST
 codegen/module    ????????? transform + build_registry              ? ?????????
 checker/check     ????? ??? codegen (record_defaults acceptable_for_codegen)
 ```
 
-AST ? SemanticIR ? CppAST � ??? ????????? ??????. ??? CoreIR, verifiers, pass manager, stable IDs.
+AST ? SemanticIR ? MirProgram ? CppAST — target pipeline. MIR step 1 done; legacy `ir/core.mlc` to migrate.
 
 ---
 
@@ -150,7 +150,8 @@ pass ?????? ?????????? singleton
 |-------|------------|
 | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) | verifiers, pass manager, driver split, tests, dumps |
 | Phase 2.7 | opaque IDs, `?`/guard |
-| Future: TRACK_CORE_IR | CoreIR + lowering from SemanticIR |
+| [TRACK_MIR](agent/TRACK_MIR.md) | MLC MIR types, verifier, lowering center |
+| Future: TRACK_CORE_IR | deprecated — superseded by TRACK_MIR |
 | Future: TRACK_QUERY_ENGINE | demand-driven queries — see [QUERY_ENGINE.md](QUERY_ENGINE.md) |
 | Future: TRACK_INCREMENTAL | persistent CST / stable node ids |
 

@@ -130,3 +130,15 @@
 {"ts":"2026-06-25T05:48:18.225Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
 {"ts":"2026-06-25T05:53:21.924Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
 {"ts":"2026-06-25T05:58:25.571Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T13:13:43.873Z","event":"sent","role":"Driver","step":"3","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-13d0642b-aa65-42d9-a079-b06dbcf9020b","why":"guard nudge","page_title":"mlc - Cursor","model":"Auto","usage_pct":17}
+{"ts":"2026-06-25T13:29:16.801Z","event":"turn_done","role":"Driver","step":"3","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:3:BUILD_SPEED","db_status":"completed","model":"Auto","usage_pct":29}
+{"ts":"2026-06-25T13:30:30.994Z","event":"sent","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-094fa408-68dd-487f-ba76-44107ac73d0c","why":"guard nudge","page_title":"mlc - Cursor","model":"Auto","usage_pct":29}
+{"ts":"2026-06-25T13:45:37.145Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:4:BUILD_SPEED","db_status":"aborted","model":"Auto","usage_pct":35}
+{"ts":"2026-06-25T13:46:50.804Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-568e4843-fb83-4434-af03-f26c87a51d2a","why":"stuck Driver:4:BUILD_SPEED after assistant","page_title":"mlc - Cursor","model":"Auto","usage_pct":35}
+{"ts":"2026-06-25T14:07:53.010Z","event":"turn_aborted","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"aborted","model":"Auto","usage_pct":36}
+{"ts":"2026-06-25T14:11:07.693Z","event":"sent","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-599486ff-5667-47b8-8807-e47caefff808","why":"guard nudge","page_title":"mlc - Cursor","model":"Auto","usage_pct":36}
+{"ts":"2026-06-25T14:26:32.998Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:4:BUILD_SPEED","db_status":"aborted","model":"Auto","usage_pct":35}
+{"ts":"2026-06-25T14:28:37.174Z","event":"sent","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-0d030eb2-f4f5-42f6-9135-1d29f2f1a0fb","why":"guard nudge","page_title":"mlc - Cursor","model":"Auto","usage_pct":35}
+{"ts":"2026-06-25T14:43:59.584Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:4:BUILD_SPEED","db_status":"aborted","model":"Auto","usage_pct":36}
+{"ts":"2026-06-25T14:45:28.732Z","event":"sent","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-3b7a9265-1430-400d-916d-7a4da5dd68eb","why":"guard nudge","page_title":"mlc - Cursor","model":"Auto","usage_pct":36}
+{"ts":"2026-06-25T15:01:05.491Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:4:BUILD_SPEED","db_status":"aborted","model":"Auto","usage_pct":39}

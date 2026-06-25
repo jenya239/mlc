@@ -5,10 +5,38 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-edb37d23-5e14-49b2-8685-962098809719` |
+| agent_token_last | `cr-agent-13d0642b-aa65-42d9-a079-b06dbcf9020b` |
 | driver_turns_since_plan | 4|
-| step_last | 3|
-| active_track | TRACK_BUILD_SPEED STEP=2 done; STEP=3 pending |
+| step_last | 4|
+| active_track | TRACK_BUILD_SPEED STEP=3 done; STEP=4 pending |
+
+### Turn 2026-06-25 (Driver BUILD_SPEED STEP=3 — linker chain)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_BUILD_SPEED |
+| started | 2026-06-25 13:11 |
+| elapsed | ~8 min |
+| done | `build_bin.sh`: linker mold → lld → gold; README build notes |
+| result | warm `link_sec≈1.98s`; `build_tests` **1297/0** |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_BUILD_SPEED |
+
+**Enqueue payload (Driver BUILD_SPEED STEP=4):**
+```
+AGENT_TOKEN=cr-agent-13d0642b-aa65-42d9-a079-b06dbcf9020b
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+STEP=4: PCH or bundled include for hot headers (mlc.hpp, json); measure before/after. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
 
 ### Turn 2026-05-19 (Driver BUILD_SPEED STEP=2 — MLCC_DEV / MLCC_OPT)
 

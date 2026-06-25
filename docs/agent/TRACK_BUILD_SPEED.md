@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.9; baseline: mlcc codegen ~2s, g++ link 90�200s
 
-## Status: **open** STEP=2 done
+## Status: **open** STEP=4 done
 
 **Depends on:** none (infra-only; parallel with other tracks).
 
@@ -11,6 +11,10 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.9; baseline: mlcc codegen ~2s, g++ l
 **STEP=1 note (2026-05-19):** persistent `$CPP_DIR/obj/`; mtime skip; `MLCC_OBJ_CLEAN=1`; exclude `tests_main.cpp`. Warm `link_sec≈0.67s`. Gate **1290/0**.
 
 **STEP=2 note (2026-05-19):** `MLCC_DEV=1` → `-O0 -g` (`obj/dev/`); `MLCC_OPT` default `2` → `-O2` (`obj/O2/`). Gate **1290/0**; release warm `link_sec≈1.5s`.
+
+**STEP=3 note (2026-06-25):** linker mold → lld → gold in `build_bin.sh`; README. Warm `link_sec≈1.98s`; gate **1297/0**.
+
+**STEP=4 note (2026-06-25):** `mlcc_precompiled.hpp` PCH in `build_bin.sh` (`MLCC_PCH=0` off); clang `-include-pch`, g++ `.gch`. `decls.cpp`: 25.7s → 20.1s; pch build 7s. Gate TBD.
 
 **Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast � optimize C++ compile/link + incremental artifacts.
 
@@ -30,8 +34,8 @@ Record `link_sec` in SESSION; must not regress vs baseline after each step.
 |------|------|--------|
 | 1 | Persistent `out/obj/` in `build_bin.sh` (drop `mktemp`); ccache-friendly | done |
 | 2 | `MLCC_DEV=1` → `-O0 -g`; `MLCC_OPT=2` default `-O2` for release | done |
-| 3 | Linker: prefer `mold`, then `lld`, then gold; document in README | pending |
-| 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) � measure before/after | pending |
+| 3 | Linker: prefer `mold`, then `lld`, then gold; document in README | done |
+| 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) � measure before/after | done |
 | 5 | `build.sh`: optional skip `find -delete out/*.cpp` when `MLCC_INCREMENTAL=1` + module stamp | pending |
 | 6 | CI: install `clang`, `ccache`, `mold`; `MLC_CXX="ccache clang++"` | pending |
 | 7 | Benchmark script `compiler/scripts/bench_build.sh`; close track | pending |

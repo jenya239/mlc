@@ -41,6 +41,8 @@ g++ -std=c++20 -I runtime/include \
     -o my_program && ./my_program
 ```
 
+`build_bin.sh` (внутри `build.sh`): линкер **mold → lld → gold** по наличию в PATH; компилятор — `MLC_CXX` или `ccache clang++` → `g++`. PCH `mlcc_precompiled.hpp` (`mlc.hpp`) по умолчанию; `MLCC_PCH=0` — выключить. `MLCC_DEV=1` — `-O0 -g`; `MLCC_OPT=2` — release (default). Dev: `apt install clang ccache mold`.
+
 ## Синтаксис
 
 ```mlc

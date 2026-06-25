@@ -14,6 +14,7 @@
 #include "test_program_to_semantic.hpp"
 #include "test_dump_flags.hpp"
 #include "test_core_ir.hpp"
+#include "test_mir_types.hpp"
 #include "test_driver.hpp"
 #include "test_verify_ir.hpp"
 #include "test_compile_commands.hpp"
@@ -51,6 +52,7 @@ using namespace test_pass_manager;
 using namespace test_program_to_semantic;
 using namespace test_dump_flags;
 using namespace test_core_ir;
+using namespace test_mir_types;
 using namespace test_driver;
 using namespace test_verify_ir;
 using namespace test_compile_commands;
@@ -148,6 +150,7 @@ mlc::Array<test_runner::TestResult> results = {};
 results = append_suite_results(results, test_codegen::codegen_tests());
 results = append_suite_results(results, test_decl_gen::decl_gen_tests());
 results = append_suite_results(results, test_core_ir::core_ir_tests());
+results = append_suite_results(results, test_mir_types::mir_types_tests());
 results = append_suite_results(results, test_driver::driver_tests());
 results = append_suite_results(results, test_expr_visitor::expr_visitor_tests());
 results = append_suite_results(results, test_visitor_pass_parity::visitor_pass_parity_tests());

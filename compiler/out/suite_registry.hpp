@@ -18,6 +18,7 @@
 #include "test_program_to_semantic.hpp"
 #include "test_dump_flags.hpp"
 #include "test_core_ir.hpp"
+#include "test_mir_types.hpp"
 #include "test_driver.hpp"
 #include "test_verify_ir.hpp"
 #include "test_compile_commands.hpp"

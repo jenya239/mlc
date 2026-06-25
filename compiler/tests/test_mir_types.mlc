@@ -1,0 +1,59 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import {
+  mir_program_empty, mir_block_id, mir_id_is_valid,
+  mir_function_name_is_safe,
+  MirFunction, MirBlock, MirModule, MirProgram, MirJump, MirReturn, MirOperandConstInt
+} from '../mir/mir_types'
+import { verify_mir_program } from '../verify/verify_mir'
+import { print_mir_program } from '../mir/mir_dump'
+import { TUnit } from '../checker/registry'
+
+export fn mir_types_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const unit_type = Shared.new(TUnit)
+
+  results.push(assert_true('mir_id_is_valid accepts zero', mir_id_is_valid(0)))
+  results.push(assert_true('mir_id_is_valid rejects negative', !mir_id_is_valid(-1)))
+  results.push(assert_true('mir_function_name_is_safe accepts main', mir_function_name_is_safe('main')))
+  results.push(assert_true('mir_function_name_is_safe rejects slash', !mir_function_name_is_safe('foo/bar')))
+
+  const entry = MirBlock {
+    id: mir_block_id(0),
+    label: 'entry',
+    stmts: [],
+    term: MirReturn(MirOperandConstInt(0))
+  }
+  const valid_fn = MirFunction {
+    name: 'main',
+    params: [],
+    locals: [],
+    blocks: [entry],
+    return_type: unit_type
+  }
+  const program = MirProgram {
+    modules: [MirModule { functions: [valid_fn] }]
+  }
+
+  results.push(assert_eq_int('verify_mir_program valid', verify_mir_program(program).length(), 0))
+
+  const bad_jump = MirBlock {
+    id: mir_block_id(0),
+    label: 'entry',
+    stmts: [],
+    term: MirJump(mir_block_id(99))
+  }
+  const bad_fn = MirFunction {
+    name: 'main',
+    params: [],
+    locals: [],
+    blocks: [bad_jump],
+    return_type: unit_type
+  }
+  results.push(assert_true('verify_mir rejects bad jump target',
+    verify_mir_program(MirProgram { modules: [MirModule { functions: [bad_fn] }] }).length() > 0))
+
+  const summary = print_mir_program(mir_program_empty())
+  results.push(assert_true('print_mir_program mentions modules', summary.contains('modules=')))
+
+  results
+end

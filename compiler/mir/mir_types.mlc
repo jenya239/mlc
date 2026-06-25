@@ -1,0 +1,90 @@
+// MLC MIR: flat CFG IR between SemanticIR and CppIR.
+// Center of lowering; C++ backend should consume MIR, not raw SemanticIR expr trees.
+
+import { Type } from '../checker/registry'
+
+export type LocalId = LocalId { index: i32 }
+export type BlockId = BlockId { index: i32 }
+
+export fn mir_local_id(index: i32) -> LocalId = LocalId { index: index }
+export fn mir_block_id(index: i32) -> BlockId = BlockId { index: index }
+
+export fn mir_id_is_valid(index: i32) -> bool =
+  index >= 0 && index < 1048576
+
+export type MirParam = MirParam { name: string, type_value: Shared<Type> }
+export type MirLocal = MirLocal { id: LocalId, name: string, type_value: Shared<Type> }
+
+export type MirOperand =
+  | MirOperandLocal(LocalId)
+  | MirOperandConstInt(i32)
+  | MirOperandConstBool(bool)
+  | MirOperandUnit
+
+export type MirRvalue =
+  | MirRvalueUse(MirOperand)
+  | MirRvalueBinary(string, MirOperand, MirOperand)
+
+export type MirStmt =
+  | MirAssign(LocalId, MirRvalue)
+  | MirCallAssign(LocalId, string, [MirOperand])
+
+export type MirTerminator =
+  | MirReturn(MirOperand)
+  | MirJump(BlockId)
+  | MirCondJump(MirOperand, BlockId, BlockId)
+  | MirUnreachable
+
+export type MirBlock = MirBlock {
+  id: BlockId,
+  label: string,
+  stmts: [MirStmt],
+  term: MirTerminator
+}
+
+export type MirFunction = MirFunction {
+  name: string,
+  params: [MirParam],
+  locals: [MirLocal],
+  blocks: [MirBlock],
+  return_type: Shared<Type>
+}
+
+export type MirModule = MirModule { functions: [MirFunction] }
+
+export type MirProgram = MirProgram { modules: [MirModule] }
+
+export fn mir_program_empty() -> MirProgram =
+  MirProgram { modules: [] }
+
+fn mir_name_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+
+export fn mir_function_name_is_safe(name: string) -> bool = do
+  if name == "" || name.length() > 128 then
+    false
+  else
+    let mut index = 0
+    while index < name.length() do
+      if !mir_name_character_is_safe(name.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
+
+export fn mir_block_label_is_safe(label: string) -> bool = do
+  if label == "" || label.length() > 64 then
+    false
+  else
+    let mut index = 0
+    while index < label.length() do
+      if !mir_name_character_is_safe(label.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
