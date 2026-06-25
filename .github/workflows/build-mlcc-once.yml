@@ -23,7 +23,7 @@ jobs:
 
       - name: Build mlcc (cold via Ruby)
         run: |
-          /usr/bin/time -f 'build_sec=%e' MLCC_FORCE_RUBY=1 compiler/build.sh
+          /usr/bin/time -f 'build_sec=%e' env MLCC_FORCE_RUBY=1 compiler/build.sh
 
       - name: Smoke check-only
         run: compiler/out/mlcc --check-only compiler/main.mlc
