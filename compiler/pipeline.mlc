@@ -2,16 +2,21 @@
 
 import { Program, Result } from './frontend/ast'
 import { check_with_context } from './checker/check/check'
-import { TypeRegistry } from './checker/registry'
+import { TypeRegistry, empty_registry } from './checker/registry'
 import { build_trait_nominal_maps } from './checker/transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './checker/transform/param_destructure_expand'
 import { transform_load_items } from './checker/transform/transform_decl'
 import { SemanticLoadItem } from './ir/semantic_ir'
-import { LoadItem } from './codegen/decl/decl_index'
+import { LoadItem } from './ir/load_item'
 import { PrecomputedCtx, precompute, gen_module } from './codegen/module'
 import { path_to_module_base } from './codegen/cpp_naming'
-import { profile_maybe_begin, profile_maybe_end } from './profile'
+import { profile_maybe_begin, profile_maybe_end, profile_reset_if_enabled, profile_finish } from './profile'
 import { write_compile_commands_file } from './compile_commands'
+import { verify_ast_program } from './verify/verify_ast'
+import { verify_semantic_ir_load_items } from './verify/verify_semantic_ir'
+import { PreservedAnalyses, preserved_analyses_empty } from './preserved_analyses'
+import { PassManager, PassDescriptor, build_compiler_pass_manager, pass_manager_validate_descriptor, pass_manager_apply_preserved, context_mark_keys } from './pass_manager'
+import { emit_dump_semantic_items } from './dump_flags'
 
 export type ModularCompileInput = ModularCompileInput {
   load_items: [LoadItem],
@@ -20,15 +25,30 @@ export type ModularCompileInput = ModularCompileInput {
   output_directory: string,
   profile_enabled: bool,
   check_only: bool,
-  emit_compile_commands: bool
+  emit_compile_commands: bool,
+  verify_each_pass: bool,
+  dump_ast: bool,
+  dump_sem: bool,
+  time_passes: bool
 }
+
+fn pipeline_wants_timing(input: ModularCompileInput) -> bool =
+  input.profile_enabled || input.time_passes
+
+fn modular_input_entry_label(input: ModularCompileInput) -> string = do
+  if input.load_items.length() > 0
+    then input.load_items[input.load_items.length() - 1].path
+    else 'program'
+  end
+end
 
 export type CheckedCompileState = CheckedCompileState {
   load_items: [LoadItem],
   full_program: Program,
   registry: TypeRegistry,
   output_directory: string,
-  profile_enabled: bool
+  profile_enabled: bool,
+  verify_each_pass: bool
 }
 
 export type TransformedCompileState = TransformedCompileState {
@@ -40,16 +60,66 @@ export type TransformedCompileState = TransformedCompileState {
   profile_enabled: bool
 }
 
+fn empty_precomputed_context() -> PrecomputedCtx =
+  PrecomputedCtx {
+    field_orders: [],
+    variant_types: Map.new(),
+    item_index: Map.new(),
+    ctor_type_infos: [],
+    generic_variants: [],
+    method_owners: Map.new(),
+    field_order_index: Map.new(),
+    ctor_type_info_index: Map.new(),
+    type_alias_annotations: Map.new()
+  }
+
+export type PipelineContext = PipelineContext {
+  modular_input: ModularCompileInput,
+  has_checked: bool,
+  checked_state: CheckedCompileState,
+  has_transformed: bool,
+  transformed_state: TransformedCompileState,
+  produced_keys: [string],
+  preserved: PreservedAnalyses
+}
+
+export fn pipeline_context_new(input: ModularCompileInput) -> PipelineContext =
+  PipelineContext {
+    modular_input: input,
+    has_checked: false,
+    checked_state: CheckedCompileState {
+      load_items: input.load_items,
+      full_program: input.full_program,
+      registry: empty_registry(),
+      output_directory: input.output_directory,
+      profile_enabled: pipeline_wants_timing(input),
+      verify_each_pass: input.verify_each_pass
+    },
+    has_transformed: false,
+    transformed_state: TransformedCompileState {
+      load_items: input.load_items,
+      transformed_items: [],
+      expanded_program: input.full_program,
+      precomputed: empty_precomputed_context(),
+      output_directory: input.output_directory,
+      profile_enabled: pipeline_wants_timing(input)
+    },
+    produced_keys: ['modular_input'],
+    preserved: preserved_analyses_empty()
+  }
+
 export fn run_checker_pass(input: ModularCompileInput) -> Result<CheckedCompileState, [string]> = do
-  profile_maybe_begin(input.profile_enabled, 'check')
+  const timing_enabled = pipeline_wants_timing(input)
+  profile_maybe_begin(timing_enabled, 'check')
   const check_output = check_with_context(input.entry_program, input.full_program)?
-  profile_maybe_end(input.profile_enabled, 'check')
+  profile_maybe_end(timing_enabled, 'check')
   Ok(CheckedCompileState {
     load_items: input.load_items,
     full_program: input.full_program,
     registry: check_output.registry,
     output_directory: input.output_directory,
-    profile_enabled: input.profile_enabled
+    profile_enabled: timing_enabled,
+    verify_each_pass: input.verify_each_pass
   })
 end
 
@@ -61,6 +131,10 @@ export fn run_transform_pass(checked_state: CheckedCompileState) -> Result<Trans
   profile_maybe_begin(checked_state.profile_enabled, 'transform')
   const transformed_items = transform_load_items(checked_state.load_items, checked_state.registry, trait_maps)
   profile_maybe_end(checked_state.profile_enabled, 'transform')
+  if checked_state.verify_each_pass then
+    const semantic_errors = verify_semantic_ir_load_items(transformed_items)
+    if semantic_errors.length() > 0 then return Err(semantic_errors) end
+  end
   profile_maybe_begin(checked_state.profile_enabled, 'precompute')
   const precomputed = precompute(expanded_program, checked_state.load_items)
   profile_maybe_end(checked_state.profile_enabled, 'precompute')
@@ -106,7 +180,122 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
 end
 
 export fn run_modular_compiler_pipeline(input: ModularCompileInput) -> Result<string, [string]> = do
-  const checked_state = run_checker_pass(input)?
-  const transformed_state = run_transform_pass(checked_state)?
-  if input.check_only then Ok('') else run_codegen_pass(transformed_state, input.emit_compile_commands) end
+  match build_compiler_pass_manager() {
+    Err(errors) => Err(errors),
+    Ok(manager) => run_modular_compiler_pipeline_with_manager(manager, input)
+  }
+end
+
+fn maybe_emit_dump_semantic(input: ModularCompileInput, context: PipelineContext) -> unit = do
+  if input.dump_sem && context.has_transformed then
+    emit_dump_semantic_items(
+      context.transformed_state.transformed_items,
+      modular_input_entry_label(input))
+  end
+end
+
+export fn run_modular_compiler_pipeline_with_manager(manager: PassManager, input: ModularCompileInput) -> Result<string, [string]> = do
+  if input.time_passes && !input.profile_enabled then profile_reset_if_enabled(true) end
+  const stepped = run_pass_manager_descriptors(manager, pipeline_context_new(input), 0)
+  match stepped {
+    Err(errors) => Err(errors),
+    Ok(final_context) => do
+      maybe_emit_dump_semantic(input, final_context)
+      if input.time_passes && !input.profile_enabled then profile_finish(true) end
+      Ok('')
+    end
+  }
+end
+
+fn run_pass_manager_descriptors(manager: PassManager, context: PipelineContext, pass_index: i32) -> Result<PipelineContext, [string]> = do
+  if pass_index >= manager.descriptors.length() then return Ok(context) end
+  const descriptor = manager.descriptors[pass_index]
+  const advanced = advance_pipeline_context(manager, descriptor, context)
+  match advanced {
+    Err(errors) => Err(errors),
+    Ok(next) => run_pass_manager_descriptors(manager, next, pass_index + 1)
+  }
+end
+
+fn advance_pipeline_context(manager: PassManager, descriptor: PassDescriptor, context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  const validation = pass_manager_validate_descriptor(manager, descriptor, context.produced_keys)
+  match validation {
+    Err(errors) => Err(errors),
+    Ok(_) => do
+      const timing = pipeline_wants_timing(context.modular_input)
+      profile_maybe_begin(timing, descriptor.name)
+      const stepped_output = run_pipeline_pass(descriptor, context)
+      profile_maybe_end(timing, descriptor.name)
+      match stepped_output {
+        Err(errors) => Err(errors),
+        Ok(stepped) => Ok(PipelineContext {
+          modular_input: stepped.modular_input,
+          has_checked: stepped.has_checked,
+          checked_state: stepped.checked_state,
+          has_transformed: stepped.has_transformed,
+          transformed_state: stepped.transformed_state,
+          produced_keys: context_mark_keys(stepped.produced_keys, descriptor.produced_keys),
+          preserved: pass_manager_apply_preserved(stepped.preserved, descriptor)
+        })
+      }
+    end
+  }
+end
+
+fn run_pipeline_pass(descriptor: PassDescriptor, context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  if descriptor.name == 'verify_ast' then
+    run_verify_ast_pass(context)
+  else if descriptor.name == 'checker' then
+    run_checker_pipeline_pass(context)
+  else if descriptor.name == 'transform' then
+    run_transform_pipeline_pass(context)
+  else if descriptor.name == 'codegen' then
+    run_codegen_pipeline_pass(context)
+  else
+    Err([`pipeline: unknown pass ${descriptor.name}`])
+  end
+end
+
+fn run_verify_ast_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  if !context.modular_input.verify_each_pass then return Ok(context) end
+  const ast_errors = verify_ast_program(context.modular_input.full_program)
+  if ast_errors.length() > 0 then return Err(ast_errors) end
+  Ok(context)
+end
+
+fn run_checker_pipeline_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  const checked_state = run_checker_pass(context.modular_input)?
+  Ok(PipelineContext {
+    modular_input: context.modular_input,
+    has_checked: true,
+    checked_state: checked_state,
+    has_transformed: context.has_transformed,
+    transformed_state: context.transformed_state,
+    produced_keys: context.produced_keys,
+    preserved: context.preserved
+  })
+end
+
+fn run_transform_pipeline_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  if !context.has_checked then return Err(['pipeline: checker pass required before transform']) end
+  const transformed_state = run_transform_pass(context.checked_state)?
+  Ok(PipelineContext {
+    modular_input: context.modular_input,
+    has_checked: context.has_checked,
+    checked_state: context.checked_state,
+    has_transformed: true,
+    transformed_state: transformed_state,
+    produced_keys: context.produced_keys,
+    preserved: context.preserved
+  })
+end
+
+fn run_codegen_pipeline_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
+  if context.modular_input.check_only then return Ok(context) end
+  if !context.has_transformed then return Err(['pipeline: transform pass required before codegen']) end
+  const codegen_result = run_codegen_pass(context.transformed_state, context.modular_input.emit_compile_commands)
+  match codegen_result {
+    Err(errors) => Err(errors),
+    Ok(_) => Ok(context)
+  }
 end

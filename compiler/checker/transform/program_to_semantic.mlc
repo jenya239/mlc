@@ -1,0 +1,56 @@
+// Program → SemanticLoadItem (transform path for tests and tooling; not codegen).
+
+import { Program, Result } from '../../frontend/ast'
+import { SemanticLoadItem } from '../../ir/semantic_ir'
+import { LoadItem } from '../../ir/load_item'
+import { build_registry } from '../registry'
+import { transform_load_items } from './transform_decl'
+import { build_trait_nominal_maps } from './trait_param_expand'
+
+fn module_path_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+  || character == "/"
+  || character == "."
+
+fn module_path_contains_parent_segment(module_path: string) -> bool = do
+  let mut index = 0
+  while index + 1 < module_path.length() do
+    if module_path.char_at(index) == "." && module_path.char_at(index + 1) == "." then return true end
+    index = index + 1
+  end
+  false
+end
+
+export fn module_path_is_safe(module_path: string) -> bool = do
+  if module_path == "" || module_path.length() > 128 then
+    false
+  else if module_path_contains_parent_segment(module_path) then
+    false
+  else
+    let mut index = 0
+    while index < module_path.length() do
+      if !module_path_character_is_safe(module_path.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
+
+export fn program_to_semantic_load_item(program: Program, module_path: string) -> Result<SemanticLoadItem, [string]> = do
+  if !module_path_is_safe(module_path) then
+    return Err(['program_to_semantic: unsafe module path'])
+  end
+  const registry = build_registry(program)
+  const load_item = LoadItem {
+    path: module_path,
+    decls: program.decls,
+    imports: [],
+    namespace_import_aliases: []
+  }
+  const trait_maps = build_trait_nominal_maps(program)
+  const semantic_items = transform_load_items([load_item], registry, trait_maps)
+  Ok(semantic_items[0])
+end

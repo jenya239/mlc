@@ -7,7 +7,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "cpp_ast.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"

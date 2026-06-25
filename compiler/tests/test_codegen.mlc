@@ -12,7 +12,7 @@ import {
 } from '../codegen/expr/expr'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
-import { gen_program } from '../codegen/module'
+import { gen_program } from './codegen_harness'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatternInt, PatternWild, PatternOr, PatternCtor, PatternIdent, PatternTuple, PatternArray, PatternRecord, PatternStringLit, span_unknown, PatternUnit } from '../frontend/ast'

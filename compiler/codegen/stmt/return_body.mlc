@@ -3,8 +3,8 @@
 
 import { Type } from '../../checker/registry'
 import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticMatchArm, Span } from '../../ir/semantic_ir'
-import { CppExpression, CppStatement, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression, CppStatement, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'

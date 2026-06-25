@@ -6,7 +6,7 @@
 
 #include "semantic_ir.hpp"
 #include "context.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "stmt_eval.hpp"
 #include "expr_visitor_cpp.hpp"
 #include "stmt_cpp.hpp"

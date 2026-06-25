@@ -1,16 +1,9 @@
 // Module item loading, field order registry, method owner index, and variant builders.
 
 import { Program, Decl, TypeVariant, FieldDef, decl_inner } from '../../frontend/ast'
+import { LoadItem, NamespaceImportAlias } from '../../ir/load_item'
 import { path_to_module_base } from '../cpp_naming'
 
-export type NamespaceImportAlias = NamespaceImportAlias { alias: string, module_path: string }
-
-export type LoadItem = LoadItem {
-  path: string,
-  decls: [Shared<Decl>],
-  imports: [string],
-  namespace_import_aliases: [NamespaceImportAlias]
-}
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
 fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
@@ -160,4 +153,3 @@ export fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem
   end
   item_index
 end
-

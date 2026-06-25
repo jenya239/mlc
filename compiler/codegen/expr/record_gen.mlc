@@ -3,8 +3,8 @@
 
 import { SemanticExpression, SemanticStatement, SemanticFieldVal, SemanticExpressionField, sexpr_span } from '../../ir/semantic_ir'
 import { Type, TUnknown } from '../../checker/registry'
-import { CppExpression, CppAggregateInit, CppInvokedBlock } from '../../cpp/cpp_ast'
-import { print_expr } from '../../cpp/cpp_ast'
+import { CppExpression, CppAggregateInit, CppInvokedBlock } from '../../cpp_ir/cpp_ast'
+import {print_expr} from '../../cpp_emit/print'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'

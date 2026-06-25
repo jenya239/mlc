@@ -950,4 +950,3 @@ export fn transform_expr(expression: Shared<Expr>, transform_context: TransformC
   const expression_partial_application = partial_application_desugar_expr(expression)
   dispatch_transform_pass(transform_pass_new(transform_context), expression_partial_application, stmts_fn)
 end
-

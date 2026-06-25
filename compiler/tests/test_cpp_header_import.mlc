@@ -1,7 +1,7 @@
 // Tests for C++ header import wiring and registry registration.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { is_cpp_header_path, parse_cpp_header_source, load_cpp_header_decls, registry_from_cpp_header_source } from '../cpp/header_import'
+import { is_cpp_header_path, parse_cpp_header_source, load_cpp_header_decls, registry_from_cpp_header_source } from '../cpp_parse/header_import'
 import { build_registry } from '../checker/registry'
 import { Program } from '../frontend/ast'
 
@@ -14,18 +14,32 @@ export fn cpp_header_import_tests() -> [TestResult] = do
 
   const header_source = 'int add(int left, int right);\nstruct Point { int x; int y; };'
   const parsed = parse_cpp_header_source(header_source)
-  results.push(assert_eq_int('parse_cpp_header_source decl count', parsed.declarations.length(), 2))
+  results.push(assert_eq_int('header import decl count', parsed.declarations.length(), 2))
 
   const registry = registry_from_cpp_header_source(header_source)
   results.push(assert_true('registry has add from header', registry.has_fn('add')))
   results.push(assert_true('registry has Point from header',
     registry.record_index.record_field_names_ordered.has('Point')))
 
-  const fixture_path = 'compiler/tests/fixtures/sample_header.h'
+  const fixture_path = 'compiler/tests/fixtures/cpp_parser/sample_header.h'
   const loaded = load_cpp_header_decls(fixture_path)
   results.push(assert_eq_int('load_cpp_header_decls fixture', loaded.declarations.length(), 2))
   results.push(assert_true('fixture registry has add',
     build_registry(Program { decls: loaded.declarations }).has_fn('add')))
+
+  const full_fixture_path = 'compiler/tests/fixtures/header_import/header_import.h'
+  const full_header_source = File.read(full_fixture_path)
+  const full_parsed = parse_cpp_header_source(full_header_source)
+  results.push(assert_eq_int('full parser header import decl count', full_parsed.declarations.length(), 4))
+  const full_registry = registry_from_cpp_header_source(full_header_source)
+  results.push(assert_true('full registry has identity', full_registry.has_fn('identity')))
+  results.push(assert_true('full registry has c_entry', full_registry.has_fn('c_entry')))
+  results.push(assert_true('full registry has size_t alias', full_registry.has_type_alias('size_t')))
+  results.push(assert_true('full registry has Widget',
+    full_registry.record_index.record_field_names_ordered.has('Widget')))
+
+  const full_loaded = load_cpp_header_decls(full_fixture_path)
+  results.push(assert_eq_int('load_cpp_header_decls full fixture', full_loaded.declarations.length(), 4))
 
   results
 end

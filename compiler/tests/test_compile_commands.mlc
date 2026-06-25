@@ -2,7 +2,7 @@ import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { build_compile_commands_json, compile_command_arguments, runtime_include_directory } from '../compile_commands'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { LoadItem } from '../codegen/decl/decl_index'
+import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
 fn compile_commands_pipeline_input(source: string, output_directory: string) -> ModularCompileInput = do
@@ -20,7 +20,11 @@ fn compile_commands_pipeline_input(source: string, output_directory: string) -> 
     output_directory: output_directory,
     profile_enabled: false,
     check_only: false,
-    emit_compile_commands: true
+    emit_compile_commands: true,
+    verify_each_pass: false,
+    dump_ast: false,
+    dump_sem: false,
+    time_passes: false
   }
 end
 

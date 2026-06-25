@@ -1,10 +1,10 @@
 // Unit tests for C++ expression parser.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { cpp_tokenize } from '../cpp/cpp_lexer'
-import { parse_cpp_expression } from '../cpp/parser/cpp_exprs'
+import { cpp_tokenize } from '../cpp_parse/cpp_lexer'
+import { parse_cpp_expression } from '../cpp_parse/parser/cpp_exprs'
 import { CppExpression, CppInt, CppStr, CppCharLiteral, CppFloatLiteral, CppBool, CppIdent,
-         CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppTernary } from '../cpp/cpp_ast'
+         CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppTernary } from '../cpp_ir/cpp_ast'
 
 fn cpp_expr_parse(source_text: string) -> Shared<CppExpression> =
   parse_cpp_expression(cpp_tokenize(source_text).tokens, 0).expression

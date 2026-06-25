@@ -10,7 +10,7 @@
 #include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 
 namespace let_pat_cpp {
 
@@ -24,7 +24,7 @@ using namespace decl_index;
 using namespace type_gen;
 using namespace cpp_naming;
 using namespace match_analysis;
-using namespace cpp_ast;
+using namespace print;
 using namespace ast_tokens;
 
 mlc::String print_statements_as_fragment(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept;
@@ -61,7 +61,7 @@ std::shared_ptr<cpp_ast::CppStatement> let_pattern_block(mlc::Array<std::shared_
 
 let_pat_cpp::GenLetPatternCppResult gen_let_pattern_cpp_statement(std::shared_ptr<ast::Pattern> pattern, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, bool has_else, std::shared_ptr<semantic_ir::SemanticExpression> else_body, context::CodegenContext context, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> expression_codegen) noexcept;
 
-mlc::String print_statements_as_fragment(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept{return statements.map([](std::shared_ptr<cpp_ast::CppStatement> statement) mutable { return cpp_ast::print_statement(statement) + mlc::String("\n"); }).join(mlc::String(""));}
+mlc::String print_statements_as_fragment(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept{return statements.map([](std::shared_ptr<cpp_ast::CppStatement> statement) mutable { return print::print_statement(statement) + mlc::String("\n"); }).join(mlc::String(""));}
 
 std::shared_ptr<cpp_ast::CppExpression> member_access(mlc::String object_name, mlc::String field_name) noexcept{return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppMember(emit_helpers::make_identifier_cpp_expression(object_name), field_name, false));}
 

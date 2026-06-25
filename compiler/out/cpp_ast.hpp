@@ -38,6 +38,8 @@ struct CppStatement {std::variant<CppAutoDecl, CppVarDecl, CppConstDecl, CppCons
 
 struct CppInt {int field0;};
 struct CppStr {mlc::String field0;};
+struct CppCharLiteral {mlc::String field0;};
+struct CppFloatLiteral {mlc::String field0;};
 struct CppBool {bool field0;};
 struct CppIdent {mlc::String field0;};
 struct CppCall {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> field1;};
@@ -62,7 +64,7 @@ struct CppInvokedBlock {mlc::String field0;};
 struct CppInvokedBlockWithReturn {mlc::String field0;mlc::String field1;};
 struct CppQuestionTry {std::shared_ptr<cpp_ast::CppExpression> field0;};
 struct CppWithBlock {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::String field1;mlc::String field2;};
-struct CppExpression {std::variant<CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock> _;};
+struct CppExpression {std::variant<CppInt, CppStr, CppCharLiteral, CppFloatLiteral, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock> _;};
 
 
 struct CppField {mlc::String type_value;mlc::String name;};
@@ -77,11 +79,25 @@ using CppFields = mlc::Array<std::shared_ptr<cpp_ast::CppField>>;
 
 struct CppVariantArm {mlc::String name;mlc::Array<std::shared_ptr<cpp_ast::CppType>> types;};
 
-struct CppInclude;struct CppIfndef;struct CppDefineMacro;struct CppEndif;struct CppUndef;struct CppNamespaceBegin;struct CppNamespaceEnd;struct CppUsing;struct CppUsingNamespace;struct CppStruct;struct CppForwardDecl;struct CppFnProto;struct CppFnDef;struct CppNamespace;struct CppVariant;struct CppConceptRequires;struct CppStaticAssert;struct CppStdHashSpecialization;struct CppDeclarationSequence;struct CppDeclarationEmpty;struct CppBlankLine;struct CppHostEntryMain;struct CppDeclarationFragment;using CppDeclaration = std::variant<CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppStruct, CppForwardDecl, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine, CppHostEntryMain, CppDeclarationFragment>;struct CppInclude {bool field0;mlc::String field1;};struct CppIfndef {mlc::String field0;};struct CppDefineMacro {mlc::String field0;mlc::String field1;};struct CppEndif {mlc::String field0;};struct CppUndef {mlc::String field0;};struct CppNamespaceBegin {mlc::String field0;};struct CppNamespaceEnd {mlc::String field0;};struct CppUsing {mlc::String field0;mlc::String field1;};struct CppUsingNamespace {mlc::String field0;};struct CppStruct {mlc::String field0;mlc::String field1;cpp_ast::CppFields field2;bool field3;};struct CppForwardDecl {mlc::String field0;mlc::String field1;};struct CppFnProto {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;};struct CppFnDef {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;cpp_ast::CppStatements field4;int field5;};struct CppNamespace {mlc::String field0;mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> field1;};struct CppVariant {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> field2;};struct CppConceptRequires {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;};struct CppStaticAssert {mlc::String field0;mlc::Array<mlc::String> field1;mlc::String field2;};struct CppStdHashSpecialization {mlc::String field0;cpp_ast::CppStatements field1;};struct CppDeclarationSequence {mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> field0;};struct CppDeclarationEmpty {};struct CppBlankLine {};struct CppHostEntryMain {mlc::String field0;};struct CppDeclarationFragment {mlc::String field0;};
+struct CppFnModifiers {bool is_const;bool is_virtual;bool is_override;bool is_static;bool is_explicit;bool is_noexcept;bool is_deleted;bool is_defaulted;bool is_pure_virtual;};
+
+struct CppPublic {};struct CppProtected {};struct CppPrivate {};using CppAccessLevel = std::variant<CppPublic, CppProtected, CppPrivate>;
+
+struct CppBaseClass {cpp_ast::CppAccessLevel access;mlc::String name;};
+
+struct CppFunctionPrototype {mlc::String template_prefix;std::shared_ptr<cpp_ast::CppType> return_type;mlc::String name;mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters;cpp_ast::CppFnModifiers modifiers;};
+
+struct CppClassMemberField {std::shared_ptr<cpp_ast::CppType> field0;mlc::String field1;mlc::String field2;};struct CppClassMemberFunction {std::shared_ptr<cpp_ast::CppFunctionPrototype> field0;};struct CppClassMemberAccess {cpp_ast::CppAccessLevel field0;};struct CppClassMemberTypeAlias {mlc::String field0;std::shared_ptr<cpp_ast::CppType> field1;};using CppClassMember = std::variant<CppClassMemberField, CppClassMemberFunction, CppClassMemberAccess, CppClassMemberTypeAlias>;
+
+struct CppClassDefinition {bool is_struct;mlc::String template_prefix;mlc::String name;mlc::Array<cpp_ast::CppBaseClass> base_classes;mlc::Array<cpp_ast::CppClassMember> members;};
+
+struct CppInclude;struct CppIfndef;struct CppDefineMacro;struct CppEndif;struct CppUndef;struct CppNamespaceBegin;struct CppNamespaceEnd;struct CppUsing;struct CppUsingNamespace;struct CppStruct;struct CppForwardDecl;struct CppFnProto;struct CppFnDef;struct CppNamespace;struct CppVariant;struct CppConceptRequires;struct CppStaticAssert;struct CppStdHashSpecialization;struct CppDeclarationSequence;struct CppDeclarationEmpty;struct CppBlankLine;struct CppHostEntryMain;struct CppClassDeclaration;struct CppTypedefDeclaration;struct CppTemplateDeclaration;struct CppFunctionPrototypeDecl;struct CppExternBlock;struct CppDeclarationFragment;using CppDeclaration = std::variant<CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppUndef, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppStruct, CppForwardDecl, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppConceptRequires, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine, CppHostEntryMain, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl, CppExternBlock, CppDeclarationFragment>;struct CppInclude {bool field0;mlc::String field1;};struct CppIfndef {mlc::String field0;};struct CppDefineMacro {mlc::String field0;mlc::String field1;};struct CppEndif {mlc::String field0;};struct CppUndef {mlc::String field0;};struct CppNamespaceBegin {mlc::String field0;};struct CppNamespaceEnd {mlc::String field0;};struct CppUsing {mlc::String field0;mlc::String field1;};struct CppUsingNamespace {mlc::String field0;};struct CppStruct {mlc::String field0;mlc::String field1;cpp_ast::CppFields field2;bool field3;};struct CppForwardDecl {mlc::String field0;mlc::String field1;};struct CppFnProto {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;};struct CppFnDef {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;cpp_ast::CppStatements field4;int field5;};struct CppNamespace {mlc::String field0;mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> field1;};struct CppVariant {mlc::String field0;mlc::String field1;mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> field2;};struct CppConceptRequires {mlc::String field0;mlc::String field1;mlc::String field2;mlc::Array<mlc::String> field3;};struct CppStaticAssert {mlc::String field0;mlc::Array<mlc::String> field1;mlc::String field2;};struct CppStdHashSpecialization {mlc::String field0;cpp_ast::CppStatements field1;};struct CppDeclarationSequence {mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> field0;};struct CppDeclarationEmpty {};struct CppBlankLine {};struct CppHostEntryMain {mlc::String field0;};struct CppClassDeclaration {cpp_ast::CppClassDefinition field0;};struct CppTypedefDeclaration {mlc::String field0;std::shared_ptr<cpp_ast::CppType> field1;};struct CppTemplateDeclaration {mlc::String field0;std::shared_ptr<cpp_ast::CppDeclaration> field1;};struct CppFunctionPrototypeDecl {cpp_ast::CppFunctionPrototype field0;};struct CppExternBlock {mlc::String field0;mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> field1;};struct CppDeclarationFragment {mlc::String field0;};
 
 struct CppFile {mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> header;mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> source;};
 
 struct CppProgram {mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations;};
+
+cpp_ast::CppFnModifiers cpp_fn_modifiers_none() noexcept;
 
 mlc::String cpp_capture_name(std::shared_ptr<cpp_ast::CppCapture> capture) noexcept;
 
@@ -102,24 +118,6 @@ mlc::Array<std::shared_ptr<cpp_ast::CppType>> cpp_variant_arm_types(std::shared_
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_header(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_file_source(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
-
-mlc::String print_cpp_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
-
-mlc::String print_integer_literal(int integer_value) noexcept;
-
-mlc::String print_string_literal(mlc::String string_value) noexcept;
-
-mlc::String print_boolean_literal(bool boolean_value) noexcept;
-
-mlc::String print_identifier(mlc::String name) noexcept;
-
-mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpression> expression) noexcept;
-
-mlc::String print_statement(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept;
-
-mlc::String print_decl(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept;
-
-mlc::String print_file(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
 
 } // namespace cpp_ast
 

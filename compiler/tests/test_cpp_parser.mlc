@@ -1,9 +1,11 @@
 // Unit tests for C++ parser.
 
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
-import { cpp_tokenize } from '../cpp/cpp_lexer'
-import { cpp_parse } from '../cpp/cpp_parser'
-import { CppDeclaration, CppInclude, CppUsing, CppStruct, CppForwardDecl, CppFnProto, CppVariant, CppNamespace } from '../cpp/cpp_ast'
+import { cpp_tokenize } from '../cpp_parse/cpp_lexer'
+import { cpp_parse } from '../cpp_parse/cpp_parser'
+import { CppDeclaration, CppInclude, CppUsing, CppForwardDecl, CppFnProto, CppVariant, CppNamespace,
+         CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppExternBlock,
+         CppClassMember, CppClassMemberAccess, CppClassMemberField, CppPublic } from '../cpp_ir/cpp_ast'
 
 fn cpp_parse_decl_count(source_text: string) -> i32 =
   cpp_parse(cpp_tokenize(source_text).tokens).program.declarations.length()
@@ -15,6 +17,54 @@ end
 
 fn cpp_parse_error_count(source_text: string) -> i32 =
   cpp_parse(cpp_tokenize(source_text).tokens).errors.length()
+
+fn cpp_parse_is_class_named(declaration: Shared<CppDeclaration>, expected_name: string) -> bool = do
+  match declaration {
+    CppClassDeclaration(definition) => definition.name == expected_name,
+    _ => false
+  }
+end
+
+fn cpp_parse_member_is_public_access(member: CppClassMember) -> bool =
+  match member { CppClassMemberAccess(CppPublic) => true, _ => false }
+
+fn cpp_parse_member_is_field_named(member: CppClassMember, expected_name: string) -> bool =
+  match member { CppClassMemberField(_, field_name, _) => field_name == expected_name, _ => false }
+
+fn cpp_parse_class_has_public_field(declaration: Shared<CppDeclaration>) -> bool = do
+  match declaration {
+    CppClassDeclaration(definition) =>
+      definition.members.length() >= 2
+      && cpp_parse_member_is_public_access(definition.members[0])
+      && cpp_parse_member_is_field_named(definition.members[1], "x"),
+    _ => false
+  }
+end
+
+fn cpp_parse_is_typedef_size_t(declaration: Shared<CppDeclaration>) -> bool = do
+  match declaration {
+    CppTypedefDeclaration(name, type_node) => name == "size_t",
+    _ => false
+  }
+end
+
+fn cpp_parse_is_template_identity(declaration: Shared<CppDeclaration>) -> bool = do
+  match declaration {
+    CppTemplateDeclaration(parameters, inner) =>
+      parameters == "typename T" && cpp_parse_inner_is_identity_fn_proto(inner),
+    _ => false
+  }
+end
+
+fn cpp_parse_inner_is_identity_fn_proto(declaration: Shared<CppDeclaration>) -> bool =
+  match declaration { CppFnProto(_, _, name, _) => name == "identity", _ => false }
+
+fn cpp_parse_is_extern_block(declaration: Shared<CppDeclaration>) -> bool = do
+  match declaration {
+    CppExternBlock(linkage, inner) => linkage == `"C"` && inner.length() == 1,
+    _ => false
+  }
+end
 
 export fn cpp_parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -40,8 +90,8 @@ export fn cpp_parser_tests() -> [TestResult] = do
   results.push(assert_eq_int('struct S { int x; }; - 1 decl',
     cpp_parse_decl_count('struct S { int x; };'), 1))
 
-  results.push(assert_true('struct S { int x; }; - CppStruct',
-    match cpp_parse_first('struct S { int x; };') { CppStruct(_, name, _, _) => name == "S", _ => false }))
+  results.push(assert_true('struct S { int x; }; - CppClassDeclaration',
+    cpp_parse_is_class_named(cpp_parse_first('struct S { int x; };'), "S")))
 
   results.push(assert_true('class Widget; - CppForwardDecl',
     match cpp_parse_first('class Widget;') { CppForwardDecl(kind, name) => kind == "class" && name == "Widget", _ => false }))
@@ -67,6 +117,21 @@ export fn cpp_parser_tests() -> [TestResult] = do
       CppNamespace(name, inner) => name == "foo" && inner.length() == 1,
       _ => false
     }))
+
+  results.push(assert_true('typedef unsigned long size_t; - CppTypedefDeclaration',
+    cpp_parse_is_typedef_size_t(cpp_parse_first('typedef unsigned long size_t;'))))
+
+  results.push(assert_true('template<typename T> T identity(T value); - CppTemplateDeclaration',
+    cpp_parse_is_template_identity(cpp_parse_first('template<typename T> T identity(T value);'))))
+
+  results.push(assert_true('class Foo { public: int x; }; - access and field',
+    cpp_parse_class_has_public_field(cpp_parse_first('class Foo { public: int x; };'))))
+
+  results.push(assert_true('[[nodiscard]] int fn(); - attribute skipped',
+    cpp_parse_decl_count('[[nodiscard]] int fn();') == 1))
+
+  results.push(assert_true('extern "C" { int x; } - CppExternBlock',
+    cpp_parse_is_extern_block(cpp_parse_first('extern "C" { int x; }'))))
 
   results.push(assert_true('error recovery - garbage then ok',
     cpp_parse_error_count('??? garbage; int ok();') > 0 && cpp_parse_decl_count('??? garbage; int ok();') == 1))

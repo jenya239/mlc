@@ -1,0 +1,103 @@
+// CppAST structural verifier + identifier/include path security.
+
+import { CppProgram, CppDeclaration, CppInclude, CppStruct, CppForwardDecl,
+         CppUsing, CppNamespace, CppClassDeclaration, CppFnProto, CppFnDef,
+         CppNamespaceBegin, CppTypedefDeclaration, CppFunctionPrototypeDecl, CppExternBlock } from '../cpp_ir/cpp_ast'
+
+export fn cpp_identifier_is_safe(name: string) -> bool = do
+  if name == "" || name.length() > 256 then
+    false
+  else
+    let mut index = 0
+    while index < name.length() do
+      const character = name.char_at(index)
+      if character == ";" || character == "\n" || character == "\r" || character == "\"" || character == "'" then
+        return false
+      end
+      index = index + 1
+    end
+    true
+  end
+end
+
+export fn cpp_include_path_is_safe(path: string) -> bool = do
+  if path == "" || path.length() > 512 then
+    false
+  else if path.contains("..") then
+    false
+  else
+    let mut index = 0
+    while index < path.length() do
+      const character = path.char_at(index)
+      if character == ";" || character == "\n" || character == "\r" || character == "\"" then
+        return false
+      end
+      index = index + 1
+    end
+    true
+  end
+end
+
+fn verify_cpp_append_errors(accumulator: [string], more: [string]) -> [string] = do
+  let mut combined = accumulator
+  let mut index = 0
+  while index < more.length() do
+    combined.push(more[index])
+    index = index + 1
+  end
+  combined
+end
+
+fn verify_cpp_declaration(declaration: Shared<CppDeclaration>) -> [string] = do
+  let mut errors: [string] = []
+  match declaration {
+    CppInclude(_, path) =>
+      if !cpp_include_path_is_safe(path) then [`cpp include: unsafe path ${path}`] else [] end,
+    CppStruct(_, name, _, _) =>
+      if !cpp_identifier_is_safe(name) then [`cpp struct: unsafe name ${name}`] else [] end,
+    CppForwardDecl(_, name) =>
+      if !cpp_identifier_is_safe(name) then [`cpp forward decl: unsafe name ${name}`] else [] end,
+    CppUsing(alias, _) =>
+      if !cpp_identifier_is_safe(alias) then [`cpp using: unsafe alias ${alias}`] else [] end,
+    CppNamespace(name, inner) => do
+      if !cpp_identifier_is_safe(name) then errors.push(`cpp namespace: unsafe name ${name}`) end
+      let mut index = 0
+      while index < inner.length() do
+        errors = verify_cpp_append_errors(errors, verify_cpp_declaration(inner[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    CppNamespaceBegin(name) =>
+      if !cpp_identifier_is_safe(name) then [`cpp namespace begin: unsafe name ${name}`] else [] end,
+    CppFnProto(_, name, _, _) =>
+      if !cpp_identifier_is_safe(name) then [`cpp fn proto: unsafe name ${name}`] else [] end,
+    CppFnDef(_, name, _, _, _, _) =>
+      if !cpp_identifier_is_safe(name) then [`cpp fn def: unsafe name ${name}`] else [] end,
+    CppClassDeclaration(definition) =>
+      if !cpp_identifier_is_safe(definition.name) then [`cpp class: unsafe name ${definition.name}`] else [] end,
+    CppTypedefDeclaration(alias, _) =>
+      if !cpp_identifier_is_safe(alias) then [`cpp typedef: unsafe alias ${alias}`] else [] end,
+    CppFunctionPrototypeDecl(prototype) =>
+      if !cpp_identifier_is_safe(prototype.name) then [`cpp fn prototype: unsafe name ${prototype.name}`] else [] end,
+    CppExternBlock(_, inner) => do
+      let mut index = 0
+      while index < inner.length() do
+        errors = verify_cpp_append_errors(errors, verify_cpp_declaration(inner[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    _ => errors
+  }
+end
+
+export fn verify_cpp_program(program: CppProgram) -> [string] = do
+  let mut errors: [string] = []
+  let mut index = 0
+  while index < program.declarations.length() do
+    errors = verify_cpp_append_errors(errors, verify_cpp_declaration(program.declarations[index]))
+    index = index + 1
+  end
+  errors
+end

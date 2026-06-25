@@ -1,0 +1,16 @@
+// Print top-level C++ declaration count for a header file (argv[1]).
+
+import { cpp_tokenize } from '../../cpp_parse/cpp_lexer'
+import { cpp_parse } from '../../cpp_parse/cpp_parser'
+
+fn main() -> i32 = do
+  const command_line_arguments = args()
+  if command_line_arguments.length() < 1 then 1
+  else
+    const source_text = File.read(command_line_arguments[0])
+    const declaration_count =
+      cpp_parse(cpp_tokenize(source_text).tokens).program.declarations.length()
+    print(declaration_count.to_string())
+    0
+  end
+end

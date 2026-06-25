@@ -1,14 +1,18 @@
 # Track: Build speed (C++ backend + link)
 
-Parent: [../PLAN.md](../PLAN.md) §Phase 2.9; baseline: mlcc codegen ~2s, g++ link 90–200s
+Parent: [../PLAN.md](../PLAN.md) ï¿½Phase 2.9; baseline: mlcc codegen ~2s, g++ link 90ï¿½200s
 
-## Status: **open** STEP=1
+## Status: **open** STEP=2 done
 
 **Depends on:** none (infra-only; parallel with other tracks).
 
-**Baseline:** `build_bin.sh` — parallel compile, `ccache clang++` preferred, `lld`; obj in `mktemp` (no reuse); `build.sh` wipes `out/*.cpp` each rebuild; 132 generated TU.
+**Baseline:** `build_bin.sh` ï¿½ parallel compile, `ccache clang++` preferred, `lld`; obj in `mktemp` (no reuse); `build.sh` wipes `out/*.cpp` each rebuild; 132 generated TU.
 
-**Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast — optimize C++ compile/link + incremental artifacts.
+**STEP=1 note (2026-05-19):** persistent `$CPP_DIR/obj/`; mtime skip; `MLCC_OBJ_CLEAN=1`; exclude `tests_main.cpp`. Warm `link_secâ‰ˆ0.67s`. Gate **1290/0**.
+
+**STEP=2 note (2026-05-19):** `MLCC_DEV=1` â†’ `-O0 -g` (`obj/dev/`); `MLCC_OPT` default `2` â†’ `-O2` (`obj/O2/`). Gate **1290/0**; release warm `link_secâ‰ˆ1.5s`.
+
+**Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast ï¿½ optimize C++ compile/link + incremental artifacts.
 
 ## Verify gate (every step)
 
@@ -24,20 +28,20 @@ Record `link_sec` in SESSION; must not regress vs baseline after each step.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Persistent `out/obj/` in `build_bin.sh` (drop `mktemp`); ccache-friendly | pending |
-| 2 | `MLCC_DEV=1` ? `-O0 -g`; `MLCC_OPT=2` default `-O2` for release | pending |
+| 1 | Persistent `out/obj/` in `build_bin.sh` (drop `mktemp`); ccache-friendly | done |
+| 2 | `MLCC_DEV=1` â†’ `-O0 -g`; `MLCC_OPT=2` default `-O2` for release | done |
 | 3 | Linker: prefer `mold`, then `lld`, then gold; document in README | pending |
-| 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) — measure before/after | pending |
+| 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) ï¿½ measure before/after | pending |
 | 5 | `build.sh`: optional skip `find -delete out/*.cpp` when `MLCC_INCREMENTAL=1` + module stamp | pending |
 | 6 | CI: install `clang`, `ccache`, `mold`; `MLC_CXX="ccache clang++"` | pending |
 | 7 | Benchmark script `compiler/scripts/bench_build.sh`; close track | pending |
 
-### Clang — ????? ???
+### Clang ï¿½ ????? ???
 
 | | clang++ | g++ |
 |--|---------|-----|
 | **??????????** | ??? | fallback ? `build_bin.sh` |
-| **????????????** | ?? | — |
+| **????????????** | ?? | ï¿½ |
 | **??????** | ??????? compile ?? ??????? TU, ????? diagnostics, `-fuse-ld=lld/mold` | ?????? ???? ? CI |
 
 Default chain (already): `MLC_CXX` ? `ccache clang++` ? `clang++` ? `ccache g++` ? `g++`.
@@ -55,7 +59,7 @@ Default chain (already): `MLC_CXX` ? `ccache clang++` ? `clang++` ? `ccache g++`
 ## Per-turn template
 
 ```
-| step | <1–7> |
+| step | <1ï¿½7> |
 | done | <one line> |
-| verify | link_sec=…; build_tests N/0 |
+| verify | link_sec=ï¿½; build_tests N/0 |
 ```

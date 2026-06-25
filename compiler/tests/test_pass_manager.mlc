@@ -1,0 +1,77 @@
+import { TestResult, assert_true, assert_eq_str, assert_eq_int } from './test_runner'
+import { PassDescriptor, pass_manager_new, pass_manager_register, pass_manager_validate_descriptor, pass_name_is_safe, build_compiler_pass_manager, pass_manager_pass_names, pass_manager_apply_preserved } from '../pass_manager'
+import { preserved_analyses_empty, preserved_analyses_mark, preserved_analyses_contains } from '../preserved_analyses'
+
+export fn pass_manager_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('pass_name_is_safe accepts checker', pass_name_is_safe('checker')))
+  results.push(assert_true('pass_name_is_safe rejects empty', !pass_name_is_safe('')))
+  results.push(assert_true('pass_name_is_safe rejects slash', !pass_name_is_safe('check/er')))
+  results.push(assert_true('pass_name_is_safe rejects semicolon', !pass_name_is_safe('check;er')))
+
+  const registered_first = pass_manager_register(pass_manager_new(true), PassDescriptor {
+    name: 'first',
+    required_keys: [],
+    produced_keys: ['first'],
+    preserves_analyses: ['facts'],
+    invalidates_analyses: false
+  })
+  const manager = match registered_first {
+    Ok(value) => value,
+    Err(_) => pass_manager_new(true)
+  }
+  const duplicate = pass_manager_register(manager, PassDescriptor {
+    name: 'first',
+    required_keys: [],
+    produced_keys: [],
+    preserves_analyses: [],
+    invalidates_analyses: false
+  })
+  results.push(assert_true('pass_manager_register rejects duplicate',
+    match duplicate { Err(_) => true, Ok(_) => false }))
+
+  const missing_keys = pass_manager_validate_descriptor(manager, PassDescriptor {
+    name: 'needs_input',
+    required_keys: ['modular_input'],
+    produced_keys: [],
+    preserves_analyses: [],
+    invalidates_analyses: false
+  }, [])
+  results.push(assert_true('pass_manager_validate_descriptor rejects missing keys',
+    match missing_keys { Err(_) => true, Ok(_) => false }))
+
+  const ok_keys = pass_manager_validate_descriptor(manager, PassDescriptor {
+    name: 'needs_input',
+    required_keys: ['first'],
+    produced_keys: [],
+    preserves_analyses: [],
+    invalidates_analyses: false
+  }, ['first'])
+  results.push(assert_true('pass_manager_validate_descriptor accepts produced keys',
+    match ok_keys { Ok(_) => true, Err(_) => false }))
+
+  let mut preserved = preserved_analyses_empty()
+  preserved = preserved_analyses_mark(preserved, 'type_registry')
+  results.push(assert_true('preserved_analyses_mark', preserved_analyses_contains(preserved, 'type_registry')))
+  preserved = pass_manager_apply_preserved(preserved, PassDescriptor {
+    name: 'transform',
+    required_keys: [],
+    produced_keys: [],
+    preserves_analyses: [],
+    invalidates_analyses: true
+  })
+  results.push(assert_true('pass_manager_apply_preserved invalidates', !preserved_analyses_contains(preserved, 'type_registry')))
+
+  match build_compiler_pass_manager() {
+    Ok(built) => do
+      const names = pass_manager_pass_names(built)
+      results.push(assert_eq_int('build_compiler_pass_manager pass count', names.length(), 4))
+      results.push(assert_eq_str('build_compiler_pass_manager first pass', names[0], 'verify_ast'))
+      results.push(assert_eq_str('build_compiler_pass_manager has codegen', names[3], 'codegen'))
+    end,
+    Err(_) => results.push(assert_true('build_compiler_pass_manager failed', false))
+  }
+
+  results
+end

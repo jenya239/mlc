@@ -65,7 +65,7 @@ mlc::String lsp_read_message_body() noexcept{
 int content_length = -1;
 while (true){
 {
-mlc::String header_line = mlc::io::read_line();
+mlc::String header_line = mlc::io::read_line().trim();
 if (header_line == mlc::String("")){
 {
 break;

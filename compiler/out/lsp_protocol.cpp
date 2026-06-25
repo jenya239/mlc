@@ -17,6 +17,8 @@ mlc::String lsp_read_quoted_field_value(mlc::String message_body, int value_star
 
 mlc::String lsp_extract_json_string_field(mlc::String message_body, mlc::String field_name) noexcept;
 
+int lsp_scan_json_number_at(mlc::String message_body, int value_start) noexcept;
+
 int lsp_extract_json_number_field(mlc::String message_body, mlc::String field_name) noexcept;
 
 bool lsp_has_json_field(mlc::String message_body, mlc::String field_name) noexcept;
@@ -32,6 +34,10 @@ mlc::String lsp_build_location(mlc::String document_uri, ast::Span definition_sp
 mlc::String lsp_format_outgoing_message(mlc::String message_body) noexcept;
 
 int lsp_diagnostic_severity_number(mlc::String severity) noexcept;
+
+int lsp_line_zero_based(int line) noexcept;
+
+int lsp_column_zero_based(int column) noexcept;
 
 mlc::String lsp_build_single_diagnostic_json(ast::Diagnostic diagnostic) noexcept;
 
@@ -61,32 +67,14 @@ mlc::String lsp_read_quoted_field_value(mlc::String message_body, int value_star
 mlc::String lsp_extract_json_string_field(mlc::String message_body, mlc::String field_name) noexcept{
 mlc::String quoted_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(":");
 mlc::String spaced_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(": ");
-int start_index = message_body.index_of(quoted_field);
-int field_prefix_length = quoted_field.length();
-if (start_index < 0){
-{
-start_index = message_body.index_of(spaced_field);
-field_prefix_length = spaced_field.length();
-}
-}
-return start_index < 0 ? mlc::String("") : lsp_read_quoted_field_value(message_body, start_index + field_prefix_length);
+int quoted_start = message_body.index_of(quoted_field);
+int spaced_start = message_body.index_of(spaced_field);
+return quoted_start >= 0 ? lsp_read_quoted_field_value(message_body, quoted_start + quoted_field.length()) : spaced_start >= 0 ? lsp_read_quoted_field_value(message_body, spaced_start + spaced_field.length()) : mlc::String("");
 }
 
-int lsp_extract_json_number_field(mlc::String message_body, mlc::String field_name) noexcept{
-mlc::String quoted_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(":");
-mlc::String spaced_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(": ");
-int start_index = message_body.index_of(quoted_field);
-int field_prefix_length = quoted_field.length();
-if (start_index < 0){
-{
-start_index = message_body.index_of(spaced_field);
-field_prefix_length = spaced_field.length();
-}
-}
-return start_index < 0 ? -1 : [&]() -> int { 
-  int value_start = start_index + field_prefix_length;
-  int scan_index = value_start;
-  while (scan_index < message_body.length()){
+int lsp_scan_json_number_at(mlc::String message_body, int value_start) noexcept{
+int scan_index = value_start;
+while (scan_index < message_body.length()){
 {
 mlc::String character = message_body.char_at(scan_index);
 if (character == mlc::String(",") || character == mlc::String("}")){
@@ -97,7 +85,16 @@ break;
 scan_index = scan_index + 1;
 }
 }
-  return message_body.substring(value_start, scan_index - value_start).trim().to_i();
+return message_body.substring(value_start, scan_index - value_start).trim().to_i();
+}
+
+int lsp_extract_json_number_field(mlc::String message_body, mlc::String field_name) noexcept{
+mlc::String quoted_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(":");
+mlc::String spaced_field = mlc::String("\"") + field_name + mlc::String("\"") + mlc::String(": ");
+int quoted_start = message_body.index_of(quoted_field);
+return quoted_start >= 0 ? lsp_scan_json_number_at(message_body, quoted_start + quoted_field.length()) : [&]() -> int { 
+  int spaced_start = message_body.index_of(spaced_field);
+  return spaced_start < 0 ? -1 : lsp_scan_json_number_at(message_body, spaced_start + spaced_field.length());
  }();
 }
 
@@ -123,9 +120,13 @@ mlc::String lsp_format_outgoing_message(mlc::String message_body) noexcept{retur
 
 int lsp_diagnostic_severity_number(mlc::String severity) noexcept{return severity == mlc::String("warning") ? 2 : 1;}
 
+int lsp_line_zero_based(int line) noexcept{return line > 0 ? line - 1 : 0;}
+
+int lsp_column_zero_based(int column) noexcept{return column > 0 ? column - 1 : 0;}
+
 mlc::String lsp_build_single_diagnostic_json(ast::Diagnostic diagnostic) noexcept{
-int start_line = diagnostic.span.line > 0 ? diagnostic.span.line - 1 : 0;
-int start_character = diagnostic.span.column > 0 ? diagnostic.span.column - 1 : 0;
+int start_line = lsp_line_zero_based(diagnostic.span.line);
+int start_character = lsp_column_zero_based(diagnostic.span.column);
 int end_character = start_character + 1;
 return mlc::String("{\"range\":{\"start\":{\"line\":") + mlc::to_string(start_line) + mlc::String(",\"character\":") + mlc::to_string(start_character) + mlc::String("},\"end\":{\"line\":") + mlc::to_string(start_line) + mlc::String(",\"character\":") + mlc::to_string(end_character) + mlc::String("}},\"severity\":") + mlc::to_string(lsp_diagnostic_severity_number(diagnostic.severity)) + mlc::String(",\"message\":\"") + diagnostic.message + mlc::String("\"}");
 }

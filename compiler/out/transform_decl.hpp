@@ -9,7 +9,7 @@
 #include "param_destructure_expand.hpp"
 #include "registry.hpp"
 #include "semantic_ir.hpp"
-#include "decl_index.hpp"
+#include "load_item.hpp"
 #include "transform.hpp"
 #include "transform_stmts.hpp"
 
@@ -24,7 +24,7 @@ struct CppExpression;
 
 semantic_ir::SemanticProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
 
-mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
+mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<load_item::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
 
 } // namespace transform_decl
 

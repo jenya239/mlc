@@ -1,0 +1,51 @@
+// Driver CLI: fmt, lsp, compile subcommands.
+
+import { parse_compile_options, compile_usage_message } from '../compile_options'
+import { format_source_file, format_usage_message } from '../fmt/format_cli'
+import { run_lsp_command, lsp_usage_message } from '../lsp/lsp_cli'
+import { compile_modular } from './compile_driver'
+
+fn format_errors(label: string, errors: [string]) -> string =
+  errors.map(message_line => `${label}: ${message_line}\n`).join('')
+
+fn is_format_subcommand(argument: string) -> bool =
+  match argument | 'fmt' => true | _ => false end
+
+fn is_lsp_subcommand(argument: string) -> bool =
+  match argument | 'lsp' => true | _ => false end
+
+export fn run_compiler_cli() -> i32 = do
+  const command_line_arguments = args()
+  if command_line_arguments.length() == 0 then
+    println(compile_usage_message())
+    exit(1)
+  end
+  if is_lsp_subcommand(command_line_arguments[0]) then
+    if command_line_arguments.length() > 1 then
+      println(lsp_usage_message())
+      exit(1)
+    end
+    run_lsp_command()
+  else if is_format_subcommand(command_line_arguments[0]) then
+    if command_line_arguments.length() < 2 then
+      println(format_usage_message())
+      exit(1)
+    end
+    match format_source_file(command_line_arguments[1]) {
+      Ok(formatted_source) => do print(formatted_source); 0 end,
+      Err(errors) => do print(format_errors('error', errors)); exit(1); 0 end
+    }
+  else do
+  const options = parse_compile_options(command_line_arguments)
+  if options.entry_path.length() == 0 then
+    println(compile_usage_message())
+    exit(1)
+  end
+  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands, options.verify_each_pass, options.dump_ast, options.dump_sem, options.time_passes) {
+    Ok(_) => 0,
+    Err(errors) =>
+      do print(format_errors('error', errors)); exit(1); 0 end
+  }
+  end
+  end
+end

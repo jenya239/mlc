@@ -12,7 +12,7 @@
 #include "literals.hpp"
 #include "cpp_ast.hpp"
 #include "emit_helpers.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "literals.hpp"
 
 namespace match_gen {
@@ -29,7 +29,7 @@ using namespace type_gen;
 using namespace literals;
 using namespace cpp_ast;
 using namespace emit_helpers;
-using namespace cpp_ast;
+using namespace print;
 using namespace literals;
 using namespace ast_tokens;
 
@@ -279,7 +279,7 @@ mlc::String body_source = mlc::String("");
 int statement_index = 0;
 while (statement_index < statements.size()){
 {
-body_source = body_source + cpp_ast::print_statement(statements[statement_index]) + mlc::String("\n");
+body_source = body_source + print::print_statement(statements[statement_index]) + mlc::String("\n");
 statement_index = statement_index + 1;
 }
 }
@@ -316,7 +316,7 @@ return mlc::String("[&]() -> ") + return_cpp + mlc::String(" {\n") + inner_body 
 
 std::shared_ptr<cpp_ast::CppExpression> gen_match_guarded_expression_cpp(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn) noexcept{
 mlc::String return_cpp = type_gen::sem_type_to_cpp(context, match_result_type);
-mlc::String inner_body = gen_match_guarded_body(subject, expanded_arms, context, gen_stmts, [eval_expr_cpp_fn](std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext eval_context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts_fn) mutable { return cpp_ast::print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)); });
+mlc::String inner_body = gen_match_guarded_body(subject, expanded_arms, context, gen_stmts, [eval_expr_cpp_fn](std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext eval_context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts_fn) mutable { return print::print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)); });
 return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppInvokedBlockWithReturn(return_cpp, inner_body));
 }
 

@@ -1,0 +1,59 @@
+// C++ AST → source text (trivia-aware via token spans).
+
+import { CppProgram, CppDeclaration, CppDeclarationFragment, CppInclude } from '../../cpp_ir/cpp_ast'
+import { print_decl } from '../../cpp_emit/print'
+import { CppToken, cpp_token_to_source } from '../cpp_tokens'
+import { cpp_tokenize } from '../cpp_lexer'
+import { cpp_parse } from '../cpp_parser'
+import { parse_cpp_declaration } from './cpp_decls'
+import * as cpp_predicates from '../cpp_predicates'
+
+export fn cpp_tokens_span_to_source(tokens: [CppToken], start: i32, end_position: i32) -> string = do
+  let parts: [string] = []
+  let mut index = start
+  while index < end_position && index < tokens.length() do
+    parts.push(cpp_token_to_source(tokens[index]))
+    index = index + 1
+  end
+  parts.join("")
+end
+
+fn cpp_to_source_is_skip(declaration: Shared<CppDeclaration>) -> bool =
+  match declaration { CppInclude(is_angle, path) => is_angle && path == "__skip__", _ => false }
+
+export fn cpp_declaration_to_source(declaration: Shared<CppDeclaration>) -> string =
+  match declaration {
+    CppDeclarationFragment(code) => code,
+    _ => print_decl(declaration)
+  }
+
+export fn cpp_program_to_source(program: CppProgram) -> string =
+  program.declarations.map(declaration => cpp_declaration_to_source(declaration)).join("")
+
+export fn cpp_program_from_tokens_preserving_trivia(tokens: [CppToken]) -> CppProgram = do
+  let mut declarations: [Shared<CppDeclaration>] = []
+  let mut position = 0
+  while !cpp_predicates.cpp_at_end(tokens, position) do
+    const span_start = position
+    const parse_result = parse_cpp_declaration(tokens, position)
+    if !cpp_to_source_is_skip(parse_result.declaration) then
+      const fragment = cpp_tokens_span_to_source(tokens, span_start, parse_result.position)
+      if fragment != "" then declarations.push(Shared.new(CppDeclarationFragment(fragment))) end
+    end
+    if cpp_to_source_is_skip(parse_result.declaration) && parse_result.position == position then
+      position = position + 1
+    else
+      position = parse_result.position
+    end
+  end
+  CppProgram { declarations: declarations }
+end
+
+export fn cpp_source_roundtrip_preserving_trivia(source_text: string) -> bool = do
+  const tokens = cpp_tokenize(source_text).tokens
+  const program = cpp_program_from_tokens_preserving_trivia(tokens)
+  cpp_program_to_source(program) == source_text
+end
+
+export fn cpp_parse_to_source_canonical(source_text: string) -> string =
+  cpp_program_to_source(cpp_parse(cpp_tokenize(source_text).tokens).program)

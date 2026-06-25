@@ -25,6 +25,56 @@ mlc::String cpp_get_string(cpp_tokens::CppTokenKind kind) noexcept;
 
 mlc::String cpp_get_operator(cpp_tokens::CppTokenKind kind) noexcept;
 
+int cpp_get_integer(cpp_tokens::CppTokenKind kind) noexcept;
+
+mlc::String cpp_get_char_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+mlc::String cpp_get_float_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+mlc::String cpp_get_hex_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_integer_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_char_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_float_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_hex_literal(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_true_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_false_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_nullptr_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_arrow(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_or_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_and_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_equals_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_not_equals_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_less_equals_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_greater_equals_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_left_shift_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_right_shift_operator(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_question(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_colon(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_dot(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_left_bracket(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_right_bracket(cpp_tokens::CppTokenKind kind) noexcept;
+
 bool cpp_is_hash(cpp_tokens::CppTokenKind kind) noexcept;
 
 bool cpp_is_identifier(cpp_tokens::CppTokenKind kind) noexcept;
@@ -60,6 +110,30 @@ bool cpp_is_class_keyword(cpp_tokens::CppTokenKind kind) noexcept;
 bool cpp_is_enum_keyword(cpp_tokens::CppTokenKind kind) noexcept;
 
 bool cpp_is_namespace_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_template_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_typedef_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_extern_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_public_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_protected_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_private_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_virtual_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_static_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_override_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_explicit_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_const_keyword(cpp_tokens::CppTokenKind kind) noexcept;
+
+bool cpp_is_typename_keyword(cpp_tokens::CppTokenKind kind) noexcept;
 
 bool cpp_is_comma(cpp_tokens::CppTokenKind kind) noexcept;
 

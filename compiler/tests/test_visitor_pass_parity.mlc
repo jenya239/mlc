@@ -11,7 +11,7 @@ import { gen_expr, gen_stmts_str } from '../codegen/eval'
 import { create_codegen_context, CodegenContext } from '../codegen/context'
 import { Type, TI32, TUnknown } from '../checker/registry'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
-import { print_expr } from '../cpp/cpp_ast'
+import {print_expr} from '../cpp_emit/print'
 import {
   empty_program, integer_expr, identifier_expr, binary_expr, block_expr,
   let_statement, let_mut_statement

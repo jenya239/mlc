@@ -4,7 +4,7 @@
 #include "compile_commands.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "decl_index.hpp"
+#include "load_item.hpp"
 #include "pipeline.hpp"
 
 namespace test_compile_commands {
@@ -13,7 +13,7 @@ using namespace test_runner;
 using namespace compile_commands;
 using namespace lexer;
 using namespace decls;
-using namespace decl_index;
+using namespace load_item;
 using namespace pipeline;
 
 pipeline::ModularCompileInput compile_commands_pipeline_input(mlc::String source, mlc::String output_directory) noexcept;
@@ -28,8 +28,8 @@ mlc::Array<test_runner::TestResult> compile_commands_tests() noexcept;
 
 pipeline::ModularCompileInput compile_commands_pipeline_input(mlc::String source, mlc::String output_directory) noexcept{
 ast::Program program = decls::parse_program(lexer::tokenize(source).tokens);
-decl_index::LoadItem load_item = decl_index::LoadItem{mlc::String("compile_commands_probe.mlc"), program.decls, {}, {}};
-return pipeline::ModularCompileInput{mlc::Array<decl_index::LoadItem>{load_item}, program, program, output_directory, false, false, true};
+load_item::LoadItem load_item = load_item::LoadItem{mlc::String("compile_commands_probe.mlc"), program.decls, {}, {}};
+return pipeline::ModularCompileInput{mlc::Array<load_item::LoadItem>{load_item}, program, program, output_directory, false, false, true, false, false, false, false};
 }
 
 bool compile_commands_json_contents_ok(mlc::String json) noexcept{return json.contains(mlc::String("\"directory\"")) && json.contains(mlc::String("\"file\"")) && json.contains(mlc::String("\"arguments\"")) && json.contains(mlc::String("clang++")) && json.contains(compile_commands::runtime_include_directory()) && json.contains(mlc::String("compile_commands_probe.cpp"));}

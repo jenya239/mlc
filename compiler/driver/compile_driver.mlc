@@ -1,0 +1,81 @@
+// Driver: entry → load/merge → pipeline.
+
+import { Program, Result } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_errors } from '../frontend/parser/decls'
+import { run_modular_compiler_pipeline, ModularCompileInput } from '../pipeline'
+import { profile_reset_if_enabled, profile_maybe_begin, profile_maybe_end, profile_finish } from '../profile'
+import { emit_dump_ast } from '../dump_flags'
+import { driver_source_path_is_safe, resolve_dotdot } from './path_normalize'
+import { merge_program } from './program_merge'
+
+fn prefix_parse_errors(source_path: string, messages: [string]) -> [string] = do
+  let mut prefixed: [string] = []
+  let mut index = 0
+  while index < messages.length() do
+    prefixed.push(`parse ${source_path}: ${messages[index]}`)
+    index = index + 1
+  end
+  prefixed
+end
+
+export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, check_only: bool, emit_compile_commands: bool, verify_each_pass: bool, dump_ast: bool, dump_sem: bool, time_passes: bool) -> Result<string, [string]> = do
+  if !driver_source_path_is_safe(entry_path) then
+    return Err(['driver: unsafe entry path'])
+  end
+  profile_reset_if_enabled(profile_enabled)
+  profile_maybe_begin(profile_enabled, 'total')
+  profile_maybe_begin(profile_enabled, 'load_io')
+  const entry_source = File.read(entry_path)
+  profile_maybe_end(profile_enabled, 'load_io')
+  profile_maybe_begin(profile_enabled, 'lex')
+  const lexer_output = tokenize(entry_source)
+  profile_maybe_end(profile_enabled, 'lex')
+  if lexer_output.has_errors() then
+    profile_maybe_end(profile_enabled, 'total')
+    profile_finish(profile_enabled)
+    Err([`lex: ${lexer_output.errors[0]}`])
+  else
+    const source_path = resolve_dotdot(entry_path)
+    profile_maybe_begin(profile_enabled, 'parse')
+    const parse_parsed = parse_program_with_errors(lexer_output.tokens, source_path)
+    profile_maybe_end(profile_enabled, 'parse')
+    if check_only && parse_parsed.errors.length() > 0 then
+      profile_maybe_end(profile_enabled, 'total')
+      profile_finish(profile_enabled)
+      Err(prefix_parse_errors(source_path, parse_parsed.errors))
+    else
+      profile_maybe_begin(profile_enabled, 'merge')
+      const merged = merge_program(entry_path, parse_parsed.program, profile_enabled)
+      profile_maybe_end(profile_enabled, 'merge')
+      if merged.errors.length() > 0 then
+        profile_maybe_end(profile_enabled, 'total')
+        profile_finish(profile_enabled)
+        Err(merged.errors)
+      else do
+        const merged_item_count = merged.items.length()
+        const entry_load_item = merged.items[merged_item_count - 1]
+        const entry_only_program = Program { decls: entry_load_item.decls }
+        if dump_ast then emit_dump_ast(merged.program, entry_path) end
+        const pipeline_input = ModularCompileInput {
+          load_items: merged.items,
+          full_program: merged.program,
+          entry_program: entry_only_program,
+          output_directory: out_dir,
+          profile_enabled: profile_enabled,
+          check_only: check_only,
+          emit_compile_commands: emit_compile_commands,
+          verify_each_pass: verify_each_pass,
+          dump_ast: dump_ast,
+          dump_sem: dump_sem,
+          time_passes: time_passes
+        }
+        const pipeline_parsed = run_modular_compiler_pipeline(pipeline_input)?
+        profile_maybe_end(profile_enabled, 'total')
+        profile_finish(profile_enabled || time_passes)
+        Ok('')
+      end
+      end
+    end
+  end
+end

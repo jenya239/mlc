@@ -7,7 +7,7 @@ import { CodegenContext } from '../context'
 import { sem_type_to_cpp, type_to_cpp } from './type_gen'
 import { extract_method_name, non_self_parameter_types_cpp } from './decl_extend'
 import { cpp_safe } from '../cpp_naming'
-import { CppDeclaration, CppField, CppStruct } from '../../cpp/cpp_ast'
+import { CppDeclaration, CppField, CppStruct } from '../../cpp_ir/cpp_ast'
 import * as expression_output from '../expr/expr'
 
 export fn trait_method_field_cpp(

@@ -1,4 +1,4 @@
-// Compiler pass abstraction (PLAN.md §3). Trait sketch; modular pipeline uses function slots in pipeline.mlc.
+// Compiler pass abstraction (PLAN.md §3). Pipeline execution: pass_manager.mlc + pipeline.mlc.
 
 import { Program, Result, Diagnostic } from './frontend/ast'
 

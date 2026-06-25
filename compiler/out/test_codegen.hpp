@@ -11,7 +11,7 @@
 #include "expr.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
-#include "module.hpp"
+#include "codegen_harness.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "ast.hpp"

@@ -3,7 +3,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "cpp_ast.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "cpp_naming.hpp"
@@ -17,7 +17,7 @@ namespace stmt_cpp {
 using namespace semantic_ir;
 using namespace registry;
 using namespace cpp_ast;
-using namespace cpp_ast;
+using namespace print;
 using namespace emit_helpers;
 using namespace context;
 using namespace cpp_naming;
@@ -97,7 +97,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> cpp_stmts_from_string_output(
 
 mlc::String print_cpp_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept{return statements.map([](std::shared_ptr<cpp_ast::CppStatement> statement) mutable { return print_cpp_statement_line(statement); }).join(mlc::String(""));}
 
-mlc::String print_cpp_statement_line(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppStatementFragment>((*statement)._)) { auto _v_cppstatementfragment = std::get<cpp_ast::CppStatementFragment>((*statement)._); auto [fragment] = _v_cppstatementfragment; return fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == mlc::String("\n") ? fragment : fragment + mlc::String("\n"); } return cpp_ast::print_statement(statement) + mlc::String("\n"); }();}
+mlc::String print_cpp_statement_line(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppStatementFragment>((*statement)._)) { auto _v_cppstatementfragment = std::get<cpp_ast::CppStatementFragment>((*statement)._); auto [fragment] = _v_cppstatementfragment; return fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == mlc::String("\n") ? fragment : fragment + mlc::String("\n"); } return print::print_statement(statement) + mlc::String("\n"); }();}
 
 std::shared_ptr<cpp_ast::CppStatement> cpp_stmt_fragment_from_string_output(mlc::String output) noexcept{return emit_helpers::make_fragment_cpp_statement(strip_trailing_newline(output));}
 

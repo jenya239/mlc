@@ -3,8 +3,8 @@
 
 import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
-import { CppExpression, CppCall, CppMember, CppInitList } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression, CppCall, CppMember, CppInitList } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
 import { map_method } from '../cpp_naming'
 import { infer_shared_new_type_name,

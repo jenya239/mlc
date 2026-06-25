@@ -3,9 +3,9 @@
 import { TypeVariant, TypeExpr, FieldDef, Decl, Param, TyI32, TyBool, TyString, VarUnit, VarTuple, VarRecord } from '../../frontend/ast'
 import { Type } from '../../checker/registry'
 import {
-  record_field_default_expression_acceptable_for_codegen,
-  record_field_default_expression_cpp_initializer
-} from '../../ir/record_defaults'
+  record_field_default_expression_is_static_initializer
+} from '../../ir/record_field_default_validate'
+import { record_field_default_expression_cpp_initializer } from '../record_field_default_emit'
 import { CodegenContext, CtorTypeInfo } from '../context'
 import { list_contains } from './decl_index'
 import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
@@ -163,7 +163,7 @@ fn field_def_member_declaration(context: CodegenContext, field_definition: Share
   const base = expression_output.struct_named_field_declaration(
     type_to_cpp(context, field_definition.type_value), cpp_safe(field_definition.name))
   if field_definition.has_default_expression &&
-     record_field_default_expression_acceptable_for_codegen(field_definition.default_expression) then
+     record_field_default_expression_is_static_initializer(field_definition.default_expression) then
     base + ' = ' + record_field_default_expression_cpp_initializer(field_definition.default_expression, context)
   else base
   end

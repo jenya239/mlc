@@ -64,7 +64,7 @@ Orchestration items marked done: duplicate-enqueue guard, Driver STEP loop recov
 
 ---
 
-## Многопоточность (будущее, после Phase 4)
+## Многопоточность → [TRACK_CONCURRENCY.md](TRACK_CONCURRENCY.md) (Phase 6, после REDDIT_DEMO)
 
 **Текущее состояние:** single-threaded by design. Runtime имеет `task.hpp` (C++20 coroutines, заготовка) и `net/http.hpp` (внутренние потоки), но языковых примитивов нет.
 

@@ -8,6 +8,7 @@
 #include "cpp_lexer.hpp"
 #include "cpp_types.hpp"
 #include "cpp_ast.hpp"
+#include "print.hpp"
 
 namespace test_cpp_types {
 

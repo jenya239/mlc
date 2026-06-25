@@ -75,12 +75,10 @@ module MLC
 
         def extract_imports(source, from_file:)
           imports = []
-          import_re = /^\s*import\s+(?:\{[^}]*\}|\*\s+as\s+\w+)\s+from\s+["'](\.\.?\/[^"']+)["']/
-          source.each_line do |line|
-            m = line.match(import_re)
-            next unless m
-
-            resolved = self.class.resolve_import_path(m[1], from_file: from_file)
+          import_re = /import\s+(?:\{[^}]*\}|\*\s+as\s+\w+)\s+from\s+["'](\.\.?\/[^"']+)["']/m
+          source.scan(import_re) do |import_path|
+            path = import_path.is_a?(Array) ? import_path[0] : import_path
+            resolved = self.class.resolve_import_path(path, from_file: from_file)
             imports << resolved if resolved && !imports.include?(resolved)
           end
           imports

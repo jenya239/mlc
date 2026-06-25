@@ -14,6 +14,10 @@ int cpp_tok_count(mlc::String source_text) noexcept;
 
 cpp_tokens::CppTokenKind cpp_kind_at(mlc::String source_text, int index) noexcept;
 
+mlc::String cpp_leading_trivia_at(mlc::String source_text, int index) noexcept;
+
+mlc::String cpp_trailing_trivia_at(mlc::String source_text, int index) noexcept;
+
 cpp_tokens::CppTokenKind cpp_first_kind(mlc::String source_text) noexcept;
 
 mlc::String cpp_ident_at(mlc::String source_text, int index) noexcept;
@@ -27,6 +31,10 @@ mlc::Array<test_runner::TestResult> cpp_lexer_tests() noexcept;
 int cpp_tok_count(mlc::String source_text) noexcept{return cpp_lexer::cpp_tokenize(source_text).tokens.size();}
 
 cpp_tokens::CppTokenKind cpp_kind_at(mlc::String source_text, int index) noexcept{return cpp_lexer::cpp_tokenize(source_text).tokens[index].kind;}
+
+mlc::String cpp_leading_trivia_at(mlc::String source_text, int index) noexcept{return cpp_lexer::cpp_tokenize(source_text).tokens[index].leading_trivia;}
+
+mlc::String cpp_trailing_trivia_at(mlc::String source_text, int index) noexcept{return cpp_lexer::cpp_tokenize(source_text).tokens[index].trailing_trivia;}
 
 cpp_tokens::CppTokenKind cpp_first_kind(mlc::String source_text) noexcept{return cpp_kind_at(source_text, 0);}
 
@@ -86,6 +94,18 @@ results.push_back(test_runner::assert_true(mlc::String("roundtrip kinds - int x"
 results.push_back(test_runner::assert_true(mlc::String("roundtrip kinds - std::string"), cpp_lexer::cpp_lex_roundtrip_preserves_kinds(mlc::String("std::string"))));
 results.push_back(test_runner::assert_true(mlc::String("roundtrip kinds - #include <vector>"), cpp_lexer::cpp_lex_roundtrip_preserves_kinds(mlc::String("#include <vector>"))));
 results.push_back(test_runner::assert_eq_str(mlc::String("tokens_to_source - int x"), cpp_tokens::cpp_tokens_to_source(cpp_lexer::cpp_tokenize(mlc::String("int x")).tokens), mlc::String("int x")));
+results.push_back(test_runner::assert_eq_str(mlc::String("line comment leading trivia"), cpp_leading_trivia_at(mlc::String("// comment\nint"), 0), mlc::String("// comment\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("block comment leading trivia"), cpp_leading_trivia_at(mlc::String("/* block */int"), 0), mlc::String("/* block */")));
+results.push_back(test_runner::assert_eq_str(mlc::String("#pragma once leading trivia"), cpp_leading_trivia_at(mlc::String("#pragma once\nint"), 0), mlc::String("#pragma once\n")));
+results.push_back(test_runner::assert_eq_str(mlc::String("space between tokens - trailing on int"), cpp_trailing_trivia_at(mlc::String("int x"), 0), mlc::String(" ")));
+results.push_back(test_runner::assert_true(mlc::String("roundtrip source - int x"), cpp_lexer::cpp_lex_roundtrip_preserves_source(mlc::String("int x"))));
+results.push_back(test_runner::assert_true(mlc::String("roundtrip source - comment"), cpp_lexer::cpp_lex_roundtrip_preserves_source(mlc::String("// comment\nint x"))));
+results.push_back(test_runner::assert_true(mlc::String("roundtrip source - pragma once"), cpp_lexer::cpp_lex_roundtrip_preserves_source(mlc::String("#pragma once\nint x"))));
+results.push_back(test_runner::assert_true(mlc::String("char literal - CLChar"), [&]() { if (std::holds_alternative<cpp_tokens::CLChar>(cpp_first_kind(mlc::String("'a'")))) { auto _v_clchar = std::get<cpp_tokens::CLChar>(cpp_first_kind(mlc::String("'a'"))); auto [character] = _v_clchar; return character == mlc::String("a"); } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("float literal - CLFloat"), [&]() { if (std::holds_alternative<cpp_tokens::CLFloat>(cpp_first_kind(mlc::String("3.14f")))) { auto _v_clfloat = std::get<cpp_tokens::CLFloat>(cpp_first_kind(mlc::String("3.14f"))); auto [text] = _v_clfloat; return text == mlc::String("3.14f"); } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("hex literal - CLHex"), [&]() { if (std::holds_alternative<cpp_tokens::CLHex>(cpp_first_kind(mlc::String("0xFF")))) { auto _v_clhex = std::get<cpp_tokens::CLHex>(cpp_first_kind(mlc::String("0xFF"))); auto [text] = _v_clhex; return text == mlc::String("0xFF"); } return false; }()));
+results.push_back(test_runner::assert_true(mlc::String("roundtrip source - char literal"), cpp_lexer::cpp_lex_roundtrip_preserves_source(mlc::String("'a'"))));
+results.push_back(test_runner::assert_true(mlc::String("roundtrip source - hex literal"), cpp_lexer::cpp_lex_roundtrip_preserves_source(mlc::String("0xFF"))));
 return results;
 }
 

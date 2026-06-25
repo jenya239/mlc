@@ -5,7 +5,7 @@
 #include <variant>
 
 #include "test_runner.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "module_tu_helpers.hpp"
 #include "expr.hpp"
 #include "cpp_ast.hpp"

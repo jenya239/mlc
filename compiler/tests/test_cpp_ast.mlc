@@ -6,7 +6,7 @@ import { CppProgram, CppInclude, CppStruct, CppField, CppType, CppTypeName, CppT
          CppExpression, CppBool, CppTernary, CppInitList, CppCast, CppCastStatic, CppInt, CppIdent,
          CppAccessLevel, CppPublic, CppClassMember, CppClassMemberAccess, CppClassDefinition, CppClassDeclaration,
          CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl, CppFunctionPrototype,
-         cpp_fn_modifiers_none, CppParam } from '../cpp/cpp_ast'
+         cpp_fn_modifiers_none, CppParam } from '../cpp_ir/cpp_ast'
 
 export fn cpp_ast_tests() -> [TestResult] = do
   let results: [TestResult] = []

@@ -1,0 +1,15 @@
+import { TestResult, assert_true } from './test_runner'
+import { record_field_default_expression_is_static_initializer } from '../ir/record_field_default_validate'
+import { ExprInt, ExprCall, ExprIdent, span_unknown } from '../frontend/ast'
+
+export fn record_field_default_validate_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('static initializer accepts literal',
+    record_field_default_expression_is_static_initializer(Shared.new(ExprInt(1, span_unknown())))))
+  results.push(assert_true('static initializer rejects call',
+    !record_field_default_expression_is_static_initializer(Shared.new(ExprCall(
+      Shared.new(ExprIdent("foo", span_unknown())), [], span_unknown())))))
+
+  results
+end

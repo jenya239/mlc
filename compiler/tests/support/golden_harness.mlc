@@ -1,0 +1,36 @@
+// Golden file compare harness with path security guards.
+
+import { Result } from '../frontend/ast'
+import { TestResult, assert_eq_str } from '../test_runner'
+import { test_relative_path_is_safe, resolve_test_fixture_path } from './path_from_root'
+
+export fn golden_relative_path_is_safe(relative_path: string) -> bool = do
+  if !test_relative_path_is_safe(relative_path) then
+    false
+  else if relative_path.length() < 16 then
+    false
+  else if relative_path.substring(0, 16) != "fixtures/golden/" then
+    false
+  else
+    true
+  end
+end
+
+export fn read_golden_fixture(relative_path: string) -> Result<string, string> = do
+  if !golden_relative_path_is_safe(relative_path) then
+    Err("golden harness: unsafe fixture path")
+  else
+    const absolute_path = resolve_test_fixture_path(relative_path)
+    if !File.exists(absolute_path) then
+      Err(`golden harness: missing fixture ${relative_path}`)
+    else
+      Ok(File.read(absolute_path))
+    end
+  end
+end
+
+export fn assert_golden_string(test_name: string, actual: string, golden_relative_path: string) -> TestResult =
+  match read_golden_fixture(golden_relative_path) {
+    Ok(expected) => assert_eq_str(test_name, actual, expected),
+    Err(message) => Fail { name: test_name, message: message }
+  }

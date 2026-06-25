@@ -14,7 +14,7 @@
 #include "type_gen.hpp"
 #include "cpp_naming.hpp"
 #include "match_analysis.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 
 namespace let_pat_cpp {
 

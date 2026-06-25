@@ -4,7 +4,7 @@
 #include "semantic_ir.hpp"
 #include "registry.hpp"
 #include "cpp_ast.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "decl.hpp"
@@ -23,7 +23,7 @@ using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
 using namespace cpp_ast;
-using namespace cpp_ast;
+using namespace print;
 using namespace emit_helpers;
 using namespace context;
 using namespace decl;
@@ -167,7 +167,7 @@ std::shared_ptr<cpp_ast::CppDeclaration> empty_cpp_declaration() noexcept{return
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_decls_from_string_parts(mlc::Array<mlc::String> parts) noexcept{return parts.map([](mlc::String part) mutable { return cpp_decl_from_string_output(part); });}
 
-mlc::String print_cpp_declaration(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept{return cpp_ast::print_decl(declaration);}
+mlc::String print_cpp_declaration(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept{return print::print_decl(declaration);}
 
 mlc::String print_cpp_declarations(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept{return declarations.map([](std::shared_ptr<cpp_ast::CppDeclaration> declaration) mutable { return print_cpp_declaration(declaration); }).join(mlc::String(""));}
 

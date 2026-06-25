@@ -1,16 +1,36 @@
 # Track: Compiler architecture (IR layers + passes)
 
-Parent: [../ARCHITECTURE.md](../ARCHITECTURE.md); [../PLAN.md](../PLAN.md) ùPhase 2.8
+Parent: [../ARCHITECTURE.md](../ARCHITECTURE.md); [../PLAN.md](../PLAN.md) ÔøΩPhase 2.8
 
-## Status: **open** STEP=3
+## Status: **closed** (STEP=12 done ‚Äî 2026-05-19)
 
-**Depends on:** TRACK_LSP closed; TRACK_CPP_PARSER_FULL STEP=1 (self-host green).
+**Depends on:** TRACK_LSP closed; TRACK_CPP_PARSER_FULL closed.
 
-**Baseline:** AST ? SemanticIR ? CppAST pipeline exists; no CoreIR, no verifiers, no pass manager; `CompilerPass` unused; tests flat (1143/2).
+**Baseline:** `build_tests` **1290/0**; architecture lint allowlist from STEP=2.
+
+**STEP=12 note (2026-05-19):** `docs/QUERY_ENGINE.md` stub (security invariants, query surface sketch); track **closed**. Next: **Planner plan-refresh** ‚Üí BUILD_SPEED or REDDIT_DEMO per TRACK_PLAN.
+
+**STEP=11 note (2026-05-19):** `ir/load_item.mlc` (LoadItem out of codegen); `ir/record_field_default_validate.mlc` + `codegen/record_field_default_emit.mlc` (split validate vs emit; `acceptable_for_codegen` ‚Üí 0 in checker/); `test_record_field_default_validate.mlc` (+2); allowlist shrink. Gate **1290/0** + arch_lint ok.
+
+**STEP=10 note (2026-06-24):** `tests/support/` suite_registry (IR levels), golden_harness, path_from_root; thin `tests_main.mlc`; `test_golden_harness.mlc` (+6); security `golden_relative_path_is_safe`, `test_relative_path_is_safe`. Gate **1288/0** + arch_lint ok; while-push in tests_main removed.
+
+**STEP=9 note (2026-06-24):** split `cpp/` ‚Üí `cpp_ir/cpp_ast.mlc`, `cpp_parse/`, `cpp_emit/print.mlc`; `verify_cpp_ast.mlc` (security: `cpp_identifier_is_safe`, `cpp_include_path_is_safe`); `test_verify_cpp_ast.mlc` (+6). IR rename `cpp_ir/ast` ‚Üí `cpp_ir/cpp_ast` (no clash with `frontend/ast`). Gate **1282/0** + arch_lint ok.
+
+**STEP=6 note (2026-06-24):** `--dump-ast`, `--dump-sem`, `--time-passes`; `dump_flags.mlc`, `ast_printer`, `semantic_ir_dump`; pass-level profile labels in PassManager.
+
+**STEP=3 note (2026-06-24 recovery):** verifiers + `--verify-each` wired. Gate **1239/0** + arch_lint ok. mlcc2 C++ on `verify_*.mlc` FAIL (mlcc codegen); Ruby OK.
+
+**STEP=4 note (2026-06-24):** PassManager + preserved-analyses stub; pipeline via `run_pass_manager_descriptors`. Security: `pass_name_is_safe`, duplicate/limit guards. Gate **1251/0** + arch_lint ok. mlcc2 C++ FAIL (verify modules, pre-existing).
+
+**STEP=5 note (2026-06-24):** transform –≤—ã–Ω–µ—Å–µ–Ω –∏–∑ `codegen/module.mlc` ‚Üí `program_to_semantic.mlc` + `tests/codegen_harness.mlc`; allowlist shrink. Security: `module_path_is_safe`, reject `..`. Gate **1256/0** + arch_lint ok.
+
+**STEP=8 note (2026-06-24):** driver split `compiler/driver/` (path_normalize, module_loader, program_merge, compile_driver, cli); thin `main.mlc`. Security: `driver_source_path_is_safe` on entry + load. `test_driver.mlc` (+4). Gate **1276/0** + arch_lint ok. mlcc2 C++ FAIL (pre-STEP=3 codegen).
+
+**STEP=7 note (2026-06-24):** CoreIR sketch `ir/core.mlc`, `verify_core.mlc`, `core_dump.mlc`; security: `core_node_id_is_valid`, name/label guards. No pipeline lowering. Gate **1272/0**.
 
 **Goal:** ??????? IR + verified passes + driver/core split + clean code gates. ?? enterprise CA. ?? ????????????? ? ????.
 
-**Strategy:** strangler. ?????? STEP ù ???? ????????. Gate green ?????? ???.
+**Strategy:** strangler. ?????? STEP ÔøΩ ???? ????????. Gate green ?????? ???.
 
 ## Verify gate (every step)
 
@@ -35,7 +55,7 @@ AST          frontend/ast, parser/
 HIR          checker/names, registry        (partial)
 Typed        SemanticIR + infer/transform
 CoreIR       (future TRACK_CORE_IR)         STEP=7 = sketch only
-CppAST       cpp/cpp_ast, codegen/
+CppAST       cpp_ir/cpp_ast, cpp_emit/print, codegen/
 Emit         printer, File.write (driver)
 ```
 
@@ -43,18 +63,18 @@ Emit         printer, File.write (driver)
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | [ARCHITECTURE.md](../ARCHITECTURE.md) ù IR ladder, invariants, anti-patterns | done |
+| 1 | [ARCHITECTURE.md](../ARCHITECTURE.md) ÔøΩ IR ladder, invariants, anti-patterns | done |
 | 2 | `run_architecture_lint.sh` - IR boundary + code quality gates + allowlist | done |
-| 3 | `verify_ast.mlc`, `verify_semantic_ir.mlc`; `--verify-each` | pending |
-| 4 | PassManager ù wire `CompilerPass`; preserved-analyses stub | pending |
-| 5 | Dedup `codegen/module.mlc` transform path | pending |
-| 6 | Dump flags: `--dump-ast`, `--dump-sem`, `--time-passes` | pending |
-| 7 | CoreIR sketch (`ir/core.mlc`); no full lowering | pending |
-| 8 | Driver split: `driver/` vs core | pending |
-| 9 | Split `cpp/` ? `cpp_ir/`, `cpp_parse/`, `cpp_emit/`; `verify_cpp_ast` | pending |
-| 10 | Test layout by IR level + golden harness | pending |
-| 11 | Remove checker?codegen coupling | pending |
-| 12 | `docs/QUERY_ENGINE.md` stub; close track | pending |
+| 3 | `verify_ast.mlc`, `verify_semantic_ir.mlc`; `--verify-each` | done |
+| 4 | PassManager ÔøΩ wire `CompilerPass`; preserved-analyses stub | done |
+| 5 | Dedup `codegen/module.mlc` transform path | done |
+| 6 | Dump flags: `--dump-ast`, `--dump-sem`, `--time-passes` | done |
+| 7 | CoreIR sketch (`ir/core.mlc`); no full lowering | done |
+| 8 | Driver split: `driver/` vs core | done |
+| 9 | Split `cpp/` ‚Üí `cpp_ir/`, `cpp_parse/`, `cpp_emit/`; `verify_cpp_ast` | done |
+| 10 | Test layout by IR level + golden harness | done |
+| 11 | Remove checker‚Üîcodegen coupling | done |
+| 12 | `docs/QUERY_ENGINE.md` stub; close track | done |
 
 ---
 
@@ -68,7 +88,7 @@ Clean code ??? ?????? perf: ???????? ??????? ? ADT ? cold path, ??????? ?????? ?
 |------|-------|
 | parser/frontend ? codegen | no import |
 | parser/frontend ? cpp emit | no import |
-| checker/check ? codegen | no import (except allowlisted legacy) |
+| checker/check ? codegen | no import |
 | codegen ? transform rerun | no `transform_load_items` in module.mlc after STEP=5 |
 
 ### B. Survivor patterns (grep, warn ? fail when count drops)
@@ -98,7 +118,7 @@ Current allowlist (baseline): `transform.mlc`, `exprs.mlc`, `decl_cpp.mlc`, `inf
 | ~150 lines | hard split candidate |
 | hot path | split only if profile shows benefit |
 
-No automated line-count per fn yet ù STEP=2 documents; optional `scripts/count_fn_lines.sh` later.
+No automated line-count per fn yet ÔøΩ STEP=2 documents; optional `scripts/count_fn_lines.sh` later.
 
 ### E. Formatter
 
@@ -114,7 +134,7 @@ No automated line-count per fn yet ù STEP=2 documents; optional `scripts/count_f
 
 ### Allowlist file
 
-`compiler/tests/architecture_lint_allowlist.txt` ù one rule per line:
+`compiler/tests/architecture_lint_allowlist.txt` ÔøΩ one rule per line:
 
 ```
 # format: RULE:path_or_pattern
@@ -156,7 +176,7 @@ tests/
 
 ## Incremental rules (agent)
 
-1. Move-only commit, then logic ù never both.
+1. Move-only commit, then logic ÔøΩ never both.
 2. Lint must pass (or allowlist shrinks, never grows without Meta review).
 3. New pass ? verifier + test.
 4. Profile before abstracting hot path.
@@ -169,7 +189,7 @@ tests/
 ```
 | turn | <ISO date> |
 | role | Driver |
-| step | <1ù12> |
+| step | <1ÔøΩ12> |
 | done | <one line> |
 | verify | build_tests N/0; architecture_lint; diff_exit |
 | next | ROLE=Driver STEP=<n+1> |

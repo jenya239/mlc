@@ -1,0 +1,304 @@
+// Structural invariants for parsed AST (post-parse verifier).
+
+import { Program, Decl, Expr, Stmt, Pattern, Param, Span,
+         RecordLitPart, RecordLitFields, RecordLitSpread,
+         expr_span, stmt_span, pattern_span } from '../frontend/ast'
+
+fn verify_ast_span_errors(label: string, span: Span) -> [string] = do
+  if span.line < 0 then
+    [label + ': negative source line']
+  else
+    []
+  end
+end
+
+fn verify_ast_append_errors(accumulator: [string], more: [string]) -> [string] = do
+  let mut combined = accumulator
+  let mut index = 0
+  while index < more.length() do
+    combined.push(more[index])
+    index = index + 1
+  end
+  combined
+end
+
+fn verify_ast_pattern(pattern: Shared<Pattern>) -> [string] = do
+  let mut errors = verify_ast_span_errors('pattern', pattern_span(pattern))
+  match pattern {
+    PatternCtor(_, arguments, _) => do
+      let mut index = 0
+      while index < arguments.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(arguments[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    PatternRecord(_, fields, _) => do
+      let mut index = 0
+      while index < fields.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(fields[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    PatternTuple(arguments, _) => do
+      let mut index = 0
+      while index < arguments.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(arguments[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    PatternArray(elements, _, _) => do
+      let mut index = 0
+      while index < elements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(elements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    PatternOr(alternatives, _) => do
+      let mut index = 0
+      while index < alternatives.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(alternatives[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    PatternIdent(name, _) =>
+      if name == "" then verify_ast_append_errors(errors, ['pattern: empty identifier']) else errors,
+    _ => errors
+  }
+end
+
+fn verify_ast_record_lit_part(errors: [string], part: RecordLitPart) -> [string] = do
+  match part {
+    RecordLitFields(fields) => do
+      let mut field_errors = errors
+      let mut field_index = 0
+      while field_index < fields.length() do
+        field_errors = verify_ast_append_errors(field_errors, verify_ast_expression(fields[field_index].value))
+        field_index = field_index + 1
+      end
+      field_errors
+    end,
+    RecordLitSpread(spread_expression) =>
+      verify_ast_append_errors(errors, verify_ast_expression(spread_expression)),
+  }
+end
+
+fn verify_ast_expression(expression: Shared<Expr>) -> [string] = do
+  let mut errors = verify_ast_span_errors('expression', expr_span(expression))
+  match expression {
+    ExprIdent(name, _) =>
+      if name == "" then verify_ast_append_errors(errors, ['expression: empty identifier']) else errors,
+    ExprBin(_, left, right, _) =>
+      verify_ast_append_errors(verify_ast_append_errors(errors, verify_ast_expression(left)), verify_ast_expression(right)),
+    ExprUn(_, operand, _) => verify_ast_append_errors(errors, verify_ast_expression(operand)),
+    ExprCall(callee, arguments, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(callee))
+      let mut index = 0
+      while index < arguments.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_expression(arguments[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprMethod(receiver, _, arguments, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(receiver))
+      let mut index = 0
+      while index < arguments.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_expression(arguments[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprField(receiver, _, _) => verify_ast_append_errors(errors, verify_ast_expression(receiver)),
+    ExprIndex(receiver, index_expression, _) =>
+      verify_ast_append_errors(verify_ast_append_errors(errors, verify_ast_expression(receiver)), verify_ast_expression(index_expression)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      verify_ast_append_errors(
+        verify_ast_append_errors(verify_ast_append_errors(errors, verify_ast_expression(condition)), verify_ast_expression(then_branch)),
+        verify_ast_expression(else_branch)),
+    ExprBlock(statements, result, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(result))
+      let mut index = 0
+      while index < statements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprWhile(condition, statements, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(condition))
+      let mut index = 0
+      while index < statements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprFor(_, iterable, statements, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(iterable))
+      let mut index = 0
+      while index < statements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprMatch(subject, arms, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(subject))
+      let mut index = 0
+      while index < arms.length() do
+        const arm = arms[index]
+        errors = verify_ast_append_errors(errors, verify_ast_pattern(arm.pattern))
+        if arm.has_guard then
+          errors = verify_ast_append_errors(errors, verify_ast_expression(arm.when_condition))
+        end
+        errors = verify_ast_append_errors(errors, verify_ast_expression(arm.body))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprRecord(_, parts, _) => do
+      let mut index = 0
+      while index < parts.length() do
+        errors = verify_ast_record_lit_part(errors, parts[index])
+        index = index + 1
+      end
+      errors
+    end,
+    ExprRecordUpdate(_, base, fields, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(base))
+      let mut index = 0
+      while index < fields.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_expression(fields[index].value))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprArray(elements, _) => do
+      let mut index = 0
+      while index < elements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_expression(elements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprTuple(elements, _) => do
+      let mut index = 0
+      while index < elements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_expression(elements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    ExprQuestion(inner, _) => verify_ast_append_errors(errors, verify_ast_expression(inner)),
+    ExprLambda(_, body, _) => verify_ast_append_errors(errors, verify_ast_expression(body)),
+    ExprNamedArg(_, value, _) => verify_ast_append_errors(errors, verify_ast_expression(value)),
+    ExprWith(subject, _, statements, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_expression(subject))
+      let mut index = 0
+      while index < statements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    _ => errors
+  }
+end
+
+fn verify_ast_statement(statement: Shared<Stmt>) -> [string] = do
+  let mut errors = verify_ast_span_errors('statement', stmt_span(statement))
+  match statement {
+    StmtLet(name, _, _, initializer, _) => do
+      if name == "" then errors = verify_ast_append_errors(errors, ['statement: empty let name']) end
+      verify_ast_append_errors(errors, verify_ast_expression(initializer))
+    end,
+    StmtLetPattern(pattern, _, _, initializer, has_else, else_branch, _) => do
+      errors = verify_ast_append_errors(errors, verify_ast_pattern(pattern))
+      errors = verify_ast_append_errors(errors, verify_ast_expression(initializer))
+      if has_else then verify_ast_append_errors(errors, verify_ast_expression(else_branch)) else errors end
+    end,
+    StmtLetConst(name, _, initializer, _) => do
+      if name == "" then errors = verify_ast_append_errors(errors, ['statement: empty const name']) end
+      verify_ast_append_errors(errors, verify_ast_expression(initializer))
+    end,
+    StmtExpr(expression, _) => verify_ast_append_errors(errors, verify_ast_expression(expression)),
+    StmtReturn(expression, _) => verify_ast_append_errors(errors, verify_ast_expression(expression)),
+    _ => errors
+  }
+end
+
+fn verify_ast_parameter(parameter: Shared<Param>) -> [string] = do
+  if parameter.name == "" then
+    ['parameter: empty name']
+  else
+    []
+  end
+end
+
+fn verify_ast_declaration(declaration: Shared<Decl>) -> [string] = do
+  let mut errors: [string] = []
+  match declaration {
+    DeclFn(name, _, _, parameters, _, body, _) => do
+      if name == "" then errors = verify_ast_append_errors(errors, ['declaration: empty function name']) end
+      let mut index = 0
+      while index < parameters.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_parameter(parameters[index]))
+        index = index + 1
+      end
+      verify_ast_append_errors(errors, verify_ast_expression(body))
+    end,
+    DeclType(name, _, _, _, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if name == "" then verify_ast_append_errors(errors, ['declaration: empty type name']) else errors end
+    end,
+    DeclTypeAlias(name, _, _, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if name == "" then verify_ast_append_errors(errors, ['declaration: empty type alias name']) else errors end
+    end,
+    DeclTrait(name, _, members, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if name == "" then errors = verify_ast_append_errors(errors, ['declaration: empty trait name']) end
+      let mut index = 0
+      while index < members.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_declaration(members[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    DeclExtend(type_name, _, members, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if type_name == "" then errors = verify_ast_append_errors(errors, ['declaration: empty extend type name']) end
+      let mut index = 0
+      while index < members.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_declaration(members[index]))
+        index = index + 1
+      end
+      errors
+    end,
+    DeclExported(inner) => verify_ast_declaration(inner),
+    DeclAssocType(name, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if name == "" then verify_ast_append_errors(errors, ['declaration: empty assoc type name']) else errors end
+    end,
+    DeclAssocBind(name, _, span) => do
+      errors = verify_ast_span_errors('declaration', span)
+      if name == "" then verify_ast_append_errors(errors, ['declaration: empty assoc bind name']) else errors end
+    end,
+    _ => errors
+  }
+end
+
+export fn verify_ast_program(program: Program) -> [string] = do
+  let mut errors: [string] = []
+  let mut index = 0
+  while index < program.decls.length() do
+    errors = verify_ast_append_errors(errors, verify_ast_declaration(program.decls[index]))
+    index = index + 1
+  end
+  errors
+end

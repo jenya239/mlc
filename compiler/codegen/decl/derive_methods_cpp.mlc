@@ -1,9 +1,9 @@
 // Native C++ AST codegen for derive traits (Display, Eq, …).
 
 import { TypeVariant, FieldDef, TypeExpr, TyString, TyI32, TyBool, VarUnit, VarTuple, VarRecord } from '../../frontend/ast'
-import { CppDeclaration, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
-import * as hash_stmt_helpers from '../../cpp/hash_stmt_helpers'
+import { CppDeclaration, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import * as hash_stmt_helpers from '../../cpp_emit/hash_stmt_helpers'
 
 fn make_string_constructor(text: string) -> Shared<CppExpression> =
   Shared.new(CppCall(

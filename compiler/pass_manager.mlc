@@ -1,0 +1,162 @@
+// PassManager: ordered passes, required-key validation, preserved-analyses invalidation.
+
+import { Result } from './frontend/ast'
+import { PreservedAnalyses, preserved_analyses_empty, preserved_analyses_invalidate_all, preserved_analyses_mark } from './preserved_analyses'
+
+export type PassDescriptor = PassDescriptor {
+  name: string,
+  required_keys: [string],
+  produced_keys: [string],
+  preserves_analyses: [string],
+  invalidates_analyses: bool
+}
+
+export type PassManager = PassManager {
+  descriptors: [PassDescriptor],
+  validate_keys: bool,
+  max_pass_count: i32
+}
+
+export fn pass_manager_new(validate_keys: bool) -> PassManager =
+  PassManager {
+    descriptors: [],
+    validate_keys: validate_keys,
+    max_pass_count: 16
+  }
+
+fn pass_name_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+
+export fn pass_name_is_safe(name: string) -> bool = do
+  if name == "" || name.length() > 64 then
+    false
+  else
+    let mut index = 0
+    while index < name.length() do
+      if !pass_name_character_is_safe(name.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
+
+fn descriptor_name_exists(descriptors: [PassDescriptor], name: string) -> bool = do
+  let mut index = 0
+  while index < descriptors.length() do
+    if descriptors[index].name == name then return true end
+    index = index + 1
+  end
+  false
+end
+
+export fn pass_manager_register(manager: PassManager, descriptor: PassDescriptor) -> Result<PassManager, [string]> = do
+  if !pass_name_is_safe(descriptor.name) then
+    return Err(['pass_manager: unsafe pass name'])
+  end
+  if descriptor_name_exists(manager.descriptors, descriptor.name) then
+    return Err([`pass_manager: duplicate pass ${descriptor.name}`])
+  end
+  if manager.descriptors.length() >= manager.max_pass_count then
+    return Err(['pass_manager: pass limit exceeded'])
+  end
+  let mut descriptors = manager.descriptors
+  descriptors.push(descriptor)
+  Ok(PassManager {
+    descriptors: descriptors,
+    validate_keys: manager.validate_keys,
+    max_pass_count: manager.max_pass_count
+  })
+end
+
+export fn context_has_key(produced_keys: [string], key: string) -> bool = do
+  let mut index = 0
+  while index < produced_keys.length() do
+    if produced_keys[index] == key then return true end
+    index = index + 1
+  end
+  false
+end
+
+export fn context_mark_keys(produced_keys: [string], keys: [string]) -> [string] = do
+  let mut merged = produced_keys
+  let mut index = 0
+  while index < keys.length() do
+    if !context_has_key(merged, keys[index]) then merged.push(keys[index]) end
+    index = index + 1
+  end
+  merged
+end
+
+export fn pass_manager_validate_descriptor(manager: PassManager, descriptor: PassDescriptor, produced_keys: [string]) -> Result<string, [string]> = do
+  if !manager.validate_keys then return Ok('') end
+  let mut missing: [string] = []
+  let mut index = 0
+  while index < descriptor.required_keys.length() do
+    const key = descriptor.required_keys[index]
+    if !context_has_key(produced_keys, key) then missing.push(key) end
+    index = index + 1
+  end
+  if missing.length() > 0 then
+    Err([`pass_manager: pass ${descriptor.name} missing keys: ${missing.join(', ')}`])
+  else
+    Ok('')
+  end
+end
+
+export fn pass_manager_apply_preserved(preserved: PreservedAnalyses, descriptor: PassDescriptor) -> PreservedAnalyses = do
+  if descriptor.invalidates_analyses then
+    preserved_analyses_invalidate_all(preserved)
+  else
+    let mut next = preserved
+    let mut index = 0
+    while index < descriptor.preserves_analyses.length() do
+      next = preserved_analyses_mark(next, descriptor.preserves_analyses[index])
+      index = index + 1
+    end
+    next
+  end
+end
+
+export fn build_compiler_pass_manager() -> Result<PassManager, [string]> = do
+  const manager_after_verify = pass_manager_register(pass_manager_new(true), PassDescriptor {
+    name: 'verify_ast',
+    required_keys: ['modular_input'],
+    produced_keys: ['verify_ast'],
+    preserves_analyses: [],
+    invalidates_analyses: false
+  })?
+  const manager_after_checker = pass_manager_register(manager_after_verify, PassDescriptor {
+    name: 'checker',
+    required_keys: ['modular_input'],
+    produced_keys: ['checked'],
+    preserves_analyses: ['type_registry'],
+    invalidates_analyses: false
+  })?
+  const manager_after_transform = pass_manager_register(manager_after_checker, PassDescriptor {
+    name: 'transform',
+    required_keys: ['checked'],
+    produced_keys: ['transformed'],
+    preserves_analyses: [],
+    invalidates_analyses: true
+  })?
+  pass_manager_register(manager_after_transform, PassDescriptor {
+    name: 'codegen',
+    required_keys: ['transformed'],
+    produced_keys: ['codegen'],
+    preserves_analyses: [],
+    invalidates_analyses: true
+  })
+end
+
+export fn pass_manager_pass_names(manager: PassManager) -> [string] = do
+  let mut names: [string] = []
+  let mut index = 0
+  while index < manager.descriptors.length() do
+    names.push(manager.descriptors[index].name)
+    index = index + 1
+  end
+  names
+end

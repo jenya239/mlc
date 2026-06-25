@@ -9,7 +9,7 @@
 #include "decls.hpp"
 #include "check.hpp"
 #include "codegen_test_helpers.hpp"
-#include "module.hpp"
+#include "codegen_harness.hpp"
 
 namespace test_partial_application {
 

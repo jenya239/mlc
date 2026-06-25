@@ -1,0 +1,49 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import { core_module_empty, core_node_id_new, core_node_id_is_valid, core_function_name_is_safe, core_block_label_is_safe, CoreFunction, CoreBasicBlock, CoreModule, CoreTerminatorUnreachable } from '../ir/core'
+import { verify_core_module } from '../verify/verify_core'
+import { print_core_module } from '../ir/core_dump'
+
+export fn core_ir_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('core_node_id_is_valid accepts zero', core_node_id_is_valid(core_node_id_new(0))))
+  results.push(assert_true('core_node_id_is_valid rejects negative', !core_node_id_is_valid(core_node_id_new(-1))))
+  results.push(assert_true('core_function_name_is_safe accepts main', core_function_name_is_safe('main')))
+  results.push(assert_true('core_function_name_is_safe rejects slash', !core_function_name_is_safe('foo/bar')))
+  results.push(assert_true('core_block_label_is_safe rejects semicolon', !core_block_label_is_safe('entry;')))
+
+  results.push(assert_eq_int('verify_core_module empty', verify_core_module(core_module_empty()).length(), 0))
+
+  const valid_function = CoreFunction {
+    name: 'main',
+    parameters: [],
+    blocks: [CoreBasicBlock {
+      identifier: core_node_id_new(0),
+      label: 'entry',
+      statements: [],
+      terminator: CoreTerminatorUnreachable
+    }],
+    entry_block: core_node_id_new(0)
+  }
+  results.push(assert_eq_int('verify_core_module valid function',
+    verify_core_module(CoreModule { functions: [valid_function] }).length(), 0))
+
+  const invalid_entry = CoreFunction {
+    name: 'main',
+    parameters: [],
+    blocks: [CoreBasicBlock {
+      identifier: core_node_id_new(0),
+      label: 'entry',
+      statements: [],
+      terminator: CoreTerminatorUnreachable
+    }],
+    entry_block: core_node_id_new(1)
+  }
+  results.push(assert_true('verify_core_module rejects bad return id',
+    verify_core_module(CoreModule { functions: [invalid_entry] }).length() > 0))
+
+  const summary = print_core_module(core_module_empty())
+  results.push(assert_true('print_core_module mentions functions', summary.contains('functions=')))
+
+  results
+end

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "codebase-memory": {
+      "command": "npx",
+      "args": ["-y", "codebase-memory-mcp"]
+    },
+    "mlc-memory": {
+      "command": "python3",
+      "args": ["tools/mcp/mlc_memory_server.py"],
+      "env": {
+        "SQLITE_DB_PATH": ".cursor/memory.db"
+      }
+    }
+  }
+}

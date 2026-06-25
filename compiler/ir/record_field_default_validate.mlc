@@ -1,0 +1,39 @@
+// Record field default expression validation (checker + codegen predicate; no codegen imports).
+
+import {
+  Expr,
+  ExprInt,
+  ExprStr,
+  ExprBool,
+  ExprUnit,
+  ExprFloat,
+  ExprI64,
+  ExprU8,
+  ExprUsize,
+  ExprChar,
+  ExprIdent,
+  ExprBin,
+  ExprUn
+} from '../frontend/ast'
+
+fn binary_operator_permitted_for_record_field_default_initializer(operation: string) -> bool =
+  operation == "+" ||
+    operation == "-" ||
+    operation == "*" ||
+    operation == "/" ||
+    operation == "%"
+
+export fn record_field_default_expression_is_static_initializer(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) | ExprStr(_, _) | ExprBool(_, _) | ExprUnit(_) => true,
+    ExprFloat(_, _) | ExprI64(_, _) | ExprU8(_, _) | ExprUsize(_, _) | ExprChar(_, _) => true,
+    ExprIdent(_, _) => true,
+    ExprBin(operation, left_expression, right_expression, _) =>
+      binary_operator_permitted_for_record_field_default_initializer(operation) &&
+      record_field_default_expression_is_static_initializer(left_expression) &&
+      record_field_default_expression_is_static_initializer(right_expression),
+    ExprUn(operation, inner_expression, _) =>
+      (operation == "-" || operation == "+") &&
+      record_field_default_expression_is_static_initializer(inner_expression),
+    _ => false
+  }

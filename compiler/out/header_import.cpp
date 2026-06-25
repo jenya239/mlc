@@ -3,6 +3,7 @@
 #include "cpp_lexer.hpp"
 #include "cpp_parser.hpp"
 #include "cpp_ast.hpp"
+#include "print.hpp"
 #include "ast.hpp"
 #include "registry.hpp"
 
@@ -11,6 +12,7 @@ namespace header_import {
 using namespace cpp_lexer;
 using namespace cpp_parser;
 using namespace cpp_ast;
+using namespace print;
 using namespace ast;
 using namespace registry;
 using namespace ast_tokens;
@@ -25,9 +27,19 @@ header_import::CppParameterParts split_cpp_parameter_string(mlc::String paramete
 
 mlc::Array<std::shared_ptr<ast::Param>> cpp_parameter_strings_to_params(mlc::Array<mlc::String> parameter_strings) noexcept;
 
+mlc::Array<std::shared_ptr<ast::Param>> cpp_cpp_parameters_to_mlc_params(mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> cpp_function_prototype_to_mlc_decls(cpp_ast::CppFunctionPrototype prototype) noexcept;
+
 mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_fields_to_field_definitions(mlc::Array<std::shared_ptr<cpp_ast::CppField>> fields) noexcept;
 
 mlc::Array<std::shared_ptr<ast::TypeVariant>> cpp_enum_arms_to_variants(mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> arms) noexcept;
+
+mlc::String cpp_class_member_field_name(cpp_ast::CppClassMember member) noexcept;
+
+std::shared_ptr<cpp_ast::CppType> cpp_class_member_field_type(cpp_ast::CppClassMember member) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_class_members_to_field_definitions(mlc::Array<cpp_ast::CppClassMember> members) noexcept;
 
 mlc::Array<std::shared_ptr<ast::Decl>> cpp_declaration_to_mlc_decls(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept;
 
@@ -73,6 +85,22 @@ index = index + 1;
 return parameters;
 }
 
+mlc::Array<std::shared_ptr<ast::Param>> cpp_cpp_parameters_to_mlc_params(mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters) noexcept{
+mlc::Array<std::shared_ptr<ast::Param>> mlc_parameters = {};
+int index = 0;
+while (index < parameters.size()){
+{
+std::shared_ptr<cpp_ast::CppParam> parameter = parameters[index];
+mlc::String parameter_name = parameter->name == mlc::String("") ? mlc::String("arg") + mlc::to_string(index) : parameter->name;
+mlc_parameters.push_back(std::make_shared<ast::Param>(ast::Param{parameter_name, false, cpp_type_string_to_type_expr(print::print_cpp_type(parameter->parameter_type)), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown())), std::make_shared<ast::Pattern>(ast::PatternWild(ast::span_unknown()))}));
+index = index + 1;
+}
+}
+return mlc_parameters;
+}
+
+mlc::Array<std::shared_ptr<ast::Decl>> cpp_function_prototype_to_mlc_decls(cpp_ast::CppFunctionPrototype prototype) noexcept{return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn(prototype.name, {}, {}, cpp_cpp_parameters_to_mlc_params(prototype.parameters), cpp_type_string_to_type_expr(print::print_cpp_type(prototype.return_type)), std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())), {}))};}
+
 mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_fields_to_field_definitions(mlc::Array<std::shared_ptr<cpp_ast::CppField>> fields) noexcept{
 mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions = {};
 int index = 0;
@@ -98,7 +126,32 @@ index = index + 1;
 return variants;
 }
 
-mlc::Array<std::shared_ptr<ast::Decl>> cpp_declaration_to_mlc_decls(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::Decl>> { if (std::holds_alternative<cpp_ast::CppFnProto>((*declaration))) { auto _v_cppfnproto = std::get<cpp_ast::CppFnProto>((*declaration)); auto [_w0, return_type, function_name, parameter_strings] = _v_cppfnproto; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn(function_name, {}, {}, cpp_parameter_strings_to_params(parameter_strings), cpp_type_string_to_type_expr(return_type), std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())), {}))}; } if (std::holds_alternative<cpp_ast::CppStruct>((*declaration))) { auto _v_cppstruct = std::get<cpp_ast::CppStruct>((*declaration)); auto [_w0, type_name, fields, _w1] = _v_cppstruct; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, cpp_fields_to_field_definitions(fields), false))}, {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppForwardDecl>((*declaration))) { auto _v_cppforwarddecl = std::get<cpp_ast::CppForwardDecl>((*declaration)); auto [_w0, type_name] = _v_cppforwarddecl; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, {}, false))}, {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppUsing>((*declaration))) { auto _v_cppusing = std::get<cpp_ast::CppUsing>((*declaration)); auto [alias, type_string] = _v_cppusing; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclTypeAlias(alias, {}, cpp_type_string_to_type_expr(type_string), ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppVariant>((*declaration))) { auto _v_cppvariant = std::get<cpp_ast::CppVariant>((*declaration)); auto [_w0, enum_name, arms] = _v_cppvariant; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(enum_name, {}, cpp_enum_arms_to_variants(arms), {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppNamespace>((*declaration))) { auto _v_cppnamespace = std::get<cpp_ast::CppNamespace>((*declaration)); auto [_w0, inner_declarations] = _v_cppnamespace; return cpp_declarations_to_mlc_decls_list(inner_declarations); } return {}; }();}
+mlc::String cpp_class_member_field_name(cpp_ast::CppClassMember member) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<cpp_ast::CppClassMemberField>(member)) { auto _v_cppclassmemberfield = std::get<cpp_ast::CppClassMemberField>(member); auto [_w0, field_name, _w1] = _v_cppclassmemberfield; return field_name; } return mlc::String(""); }();}
+
+std::shared_ptr<cpp_ast::CppType> cpp_class_member_field_type(cpp_ast::CppClassMember member) noexcept{return [&]() -> std::shared_ptr<cpp_ast::CppType> { if (std::holds_alternative<cpp_ast::CppClassMemberField>(member)) { auto _v_cppclassmemberfield = std::get<cpp_ast::CppClassMemberField>(member); auto [type_node, _w0, _w1] = _v_cppclassmemberfield; return type_node; } return std::make_shared<cpp_ast::CppType>(cpp_ast::CppTypeName(mlc::String(""))); }();}
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_class_members_to_field_definitions(mlc::Array<cpp_ast::CppClassMember> members) noexcept{
+mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions = {};
+int index = 0;
+while (index < members.size()){
+{
+cpp_ast::CppClassMember member = members[index];
+mlc::String field_name = cpp_class_member_field_name(member);
+if (field_name != mlc::String("")){
+{
+field_definitions.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, cpp_type_string_to_type_expr(print::print_cpp_type(cpp_class_member_field_type(member))), false, std::make_shared<ast::Expr>(ast::ExprUnit(ast::span_unknown()))}));
+}
+}
+index = index + 1;
+}
+}
+return field_definitions;
+}
+
+mlc::Array<std::shared_ptr<ast::Decl>> cpp_declaration_to_mlc_decls(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::Decl>> { if (std::holds_alternative<cpp_ast::CppFnProto>((*declaration))) { auto _v_cppfnproto = std::get<cpp_ast::CppFnProto>((*declaration)); auto [_w0, return_type, function_name, parameter_strings] = _v_cppfnproto; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn(function_name, {}, {}, cpp_parameter_strings_to_params(parameter_strings), cpp_type_string_to_type_expr(return_type), std::make_shared<ast::Expr>(ast::ExprExtern(ast::span_unknown())), {}))}; } if (std::holds_alternative<cpp_ast::CppStruct>((*declaration))) { auto _v_cppstruct = std::get<cpp_ast::CppStruct>((*declaration)); auto [_w0, type_name, fields, _w1] = _v_cppstruct; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, cpp_fields_to_field_definitions(fields), false))}, {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppClassDeclaration>((*declaration))) { auto _v_cppclassdeclaration = std::get<cpp_ast::CppClassDeclaration>((*declaration)); auto [definition] = _v_cppclassdeclaration; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(definition.name, {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(definition.name, cpp_class_members_to_field_definitions(definition.members), false))}, {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppTypedefDeclaration>((*declaration))) { auto _v_cpptypedefdeclaration = std::get<cpp_ast::CppTypedefDeclaration>((*declaration)); auto [alias_name, type_node] = _v_cpptypedefdeclaration; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclTypeAlias(alias_name, {}, cpp_type_string_to_type_expr(print::print_cpp_type(type_node)), ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppTemplateDeclaration>((*declaration))) { auto _v_cpptemplatedeclaration = std::get<cpp_ast::CppTemplateDeclaration>((*declaration)); auto [_w0, inner_declaration] = _v_cpptemplatedeclaration; return cpp_declaration_to_mlc_decls(inner_declaration); } if (std::holds_alternative<cpp_ast::CppExternBlock>((*declaration))) { auto _v_cppexternblock = std::get<cpp_ast::CppExternBlock>((*declaration)); auto [_w0, inner_declarations] = _v_cppexternblock; return cpp_declarations_to_mlc_decls_list(inner_declarations); } if (std::holds_alternative<cpp_ast::CppFunctionPrototypeDecl>((*declaration))) { auto _v_cppfunctionprototypedecl = std::get<cpp_ast::CppFunctionPrototypeDecl>((*declaration)); auto [prototype] = _v_cppfunctionprototypedecl; return cpp_function_prototype_to_mlc_decls(prototype); } if (std::holds_alternative<cpp_ast::CppForwardDecl>((*declaration))) { auto _v_cppforwarddecl = std::get<cpp_ast::CppForwardDecl>((*declaration)); auto [_w0, type_name] = _v_cppforwarddecl; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(type_name, {}, mlc::Array<std::shared_ptr<ast::TypeVariant>>{std::make_shared<ast::TypeVariant>(ast::VarRecord(type_name, {}, false))}, {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppUsing>((*declaration))) { auto _v_cppusing = std::get<cpp_ast::CppUsing>((*declaration)); auto [alias, type_string] = _v_cppusing; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclTypeAlias(alias, {}, cpp_type_string_to_type_expr(type_string), ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppVariant>((*declaration))) { auto _v_cppvariant = std::get<cpp_ast::CppVariant>((*declaration)); auto [_w0, enum_name, arms] = _v_cppvariant; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclType(enum_name, {}, cpp_enum_arms_to_variants(arms), {}, ast::span_unknown()))}; } if (std::holds_alternative<cpp_ast::CppNamespace>((*declaration))) { auto _v_cppnamespace = std::get<cpp_ast::CppNamespace>((*declaration)); auto [_w0, inner_declarations] = _v_cppnamespace; return cpp_declarations_to_mlc_decls_list(inner_declarations); } return [&]() -> mlc::Array<std::shared_ptr<ast::Decl>> { 
+  mlc::Array<std::shared_ptr<ast::Decl>> empty_decls = {};
+  return empty_decls;
+ }(); }();}
 
 mlc::Array<std::shared_ptr<ast::Decl>> cpp_declarations_to_mlc_decls_list(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept{
 mlc::Array<std::shared_ptr<ast::Decl>> mlc_declarations = {};

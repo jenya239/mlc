@@ -16,7 +16,7 @@
 #include "check_context.hpp"
 #include "semantic_type_structure.hpp"
 #include "diagnostic_codes.hpp"
-#include "record_defaults.hpp"
+#include "record_field_default_validate.hpp"
 #include "partial_application_desugar.hpp"
 
 namespace check {

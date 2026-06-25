@@ -13,7 +13,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-struct CompileOptions {mlc::String entry_path;mlc::String out_directory;bool profile_enabled;bool check_only;bool emit_compile_commands;};
+struct CompileOptions {mlc::String entry_path;mlc::String out_directory;bool profile_enabled;bool check_only;bool emit_compile_commands;bool verify_each_pass;bool dump_ast;bool dump_sem;bool time_passes;};
 
 mlc::String compile_usage_message() noexcept;
 

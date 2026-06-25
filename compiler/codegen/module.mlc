@@ -3,9 +3,8 @@
 import { Program, errs_append } from '../frontend/ast'
 import { SemanticLoadItem, SemanticNamespaceImportAlias } from '../ir/semantic_ir'
 import { build_registry } from '../checker/registry'
-import { transform_load_items } from '../checker/transform/transform_decl'
-import { build_trait_nominal_maps } from '../checker/transform/trait_param_expand'
-import { NamespaceImportAlias, build_namespace_alias_prefixes, LoadItem, build_field_order_index, build_qualified, build_item_index } from './decl/decl_index'
+import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
+import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, new_temp_name_counter, build_field_orders, build_variant_types_from_decls,
@@ -17,9 +16,9 @@ import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
 import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations } from './decl_cpp'
-import { CppDeclaration, CppFile } from '../cpp/cpp_ast'
-import * as cpp_ast from '../cpp/cpp_ast'
-import * as module_tu_helpers from '../cpp/module_tu_helpers'
+import { CppDeclaration, CppFile } from '../cpp_ir/cpp_ast'
+import * as cpp_ir from '../cpp_ir/cpp_ast'
+import * as module_tu_helpers from '../cpp_emit/module_tu_helpers'
 import * as expression_output from './expr/expr'
 
 type ModuleGenerationContext = ModuleGenerationContext {
@@ -234,22 +233,12 @@ fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =
 fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   const file = gen_module_cpp_file(parts)
   GenModuleOut {
-    header: print_cpp_declarations(cpp_ast.cpp_file_header(file)),
-    source: print_cpp_declarations(cpp_ast.cpp_file_source(file))
+    header: print_cpp_declarations(cpp_ir.cpp_file_header(file)),
+    source: print_cpp_declarations(cpp_ir.cpp_file_source(file))
   }
 end
 
 export fn gen_module(load_item: SemanticLoadItem, all_items: [LoadItem], full_program: Program, precomputed_context: PrecomputedCtx) -> GenModuleOut = do
   const parts = prepare_module_generation(load_item, all_items, precomputed_context)
   gen_module_output(parts)
-end
-
-export fn gen_program(program: Program) -> string = do
-  const all_items: [LoadItem] = []
-  const precomputed_context = precompute(program, all_items)
-  const registry  = build_registry(program)
-  const single_load_item = LoadItem { path: 'test_main', decls: program.decls, imports: [], namespace_import_aliases: [] }
-  const semantic_load_items = transform_load_items([single_load_item], registry, build_trait_nominal_maps(program))
-  const module_parsed = gen_module(semantic_load_items[0], all_items, program, precomputed_context)
-  module_parsed.header + module_parsed.source
 end

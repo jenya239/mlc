@@ -2,25 +2,42 @@
 
 namespace cpp_tokens {
 
+cpp_tokens::CppToken cpp_token_make(cpp_tokens::CppTokenKind kind, int line, int column) noexcept;
+
+cpp_tokens::CppToken cpp_token_with_trivia(cpp_tokens::CppToken token, mlc::String leading_trivia, mlc::String trailing_trivia) noexcept;
+
 bool is_cpp_reserved_keyword(mlc::String word) noexcept;
 
 cpp_tokens::CppTokenKind reserved_cpp_keyword_kind(mlc::String word) noexcept;
 
 cpp_tokens::CppTokenKind cpp_keyword_kind(mlc::String word) noexcept;
 
+mlc::String cpp_char_literal_lexeme(mlc::String character) noexcept;
+
 mlc::String cpp_token_lexeme(cpp_tokens::CppTokenKind kind) noexcept;
 
 bool cpp_token_kind_is_eof(cpp_tokens::CppTokenKind kind) noexcept;
 
+mlc::String cpp_token_to_source(cpp_tokens::CppToken token) noexcept;
+
 mlc::String cpp_tokens_to_source(mlc::Array<cpp_tokens::CppToken> tokens) noexcept;
 
 bool cpp_token_kinds_equal(mlc::Array<cpp_tokens::CppToken> first, mlc::Array<cpp_tokens::CppToken> second) noexcept;
+
+cpp_tokens::CppToken cpp_token_make(cpp_tokens::CppTokenKind kind, int line, int column) noexcept{return cpp_tokens::CppToken{kind, line, column, mlc::String(""), mlc::String("")};}
+
+cpp_tokens::CppToken cpp_token_with_trivia(cpp_tokens::CppToken token, mlc::String leading_trivia, mlc::String trailing_trivia) noexcept{return cpp_tokens::CppToken{token.kind, token.line, token.column, leading_trivia, trailing_trivia};}
 
 bool is_cpp_reserved_keyword(mlc::String word) noexcept{return [&]() { if (word == mlc::String("auto")) { return true; } if (word == mlc::String("const")) { return true; } if (word == mlc::String("constexpr")) { return true; } if (word == mlc::String("if")) { return true; } if (word == mlc::String("else")) { return true; } if (word == mlc::String("while")) { return true; } if (word == mlc::String("for")) { return true; } if (word == mlc::String("return")) { return true; } if (word == mlc::String("break")) { return true; } if (word == mlc::String("struct")) { return true; } if (word == mlc::String("using")) { return true; } if (word == mlc::String("noexcept")) { return true; } if (word == mlc::String("inline")) { return true; } if (word == mlc::String("static")) { return true; } if (word == mlc::String("void")) { return true; } if (word == mlc::String("int")) { return true; } if (word == mlc::String("bool")) { return true; } if (word == mlc::String("char")) { return true; } if (word == mlc::String("true")) { return true; } if (word == mlc::String("false")) { return true; } if (word == mlc::String("nullptr")) { return true; } if (word == mlc::String("template")) { return true; } if (word == mlc::String("typename")) { return true; } if (word == mlc::String("namespace")) { return true; } if (word == mlc::String("new")) { return true; } if (word == mlc::String("delete")) { return true; } if (word == mlc::String("operator")) { return true; } if (word == mlc::String("class")) { return true; } if (word == mlc::String("enum")) { return true; } if (word == mlc::String("typedef")) { return true; } if (word == mlc::String("extern")) { return true; } if (word == mlc::String("signed")) { return true; } if (word == mlc::String("unsigned")) { return true; } if (word == mlc::String("long")) { return true; } if (word == mlc::String("short")) { return true; } if (word == mlc::String("float")) { return true; } if (word == mlc::String("double")) { return true; } if (word == mlc::String("virtual")) { return true; } if (word == mlc::String("override")) { return true; } if (word == mlc::String("final")) { return true; } if (word == mlc::String("public")) { return true; } if (word == mlc::String("private")) { return true; } if (word == mlc::String("protected")) { return true; } if (word == mlc::String("explicit")) { return true; } if (word == mlc::String("mutable")) { return true; } if (word == mlc::String("volatile")) { return true; } if (word == mlc::String("friend")) { return true; } return false; }();}
 
 cpp_tokens::CppTokenKind reserved_cpp_keyword_kind(mlc::String word) noexcept{return [&]() -> cpp_tokens::CppTokenKind { if (word == mlc::String("auto")) { return (cpp_tokens::CKAuto{}); } if (word == mlc::String("const")) { return (cpp_tokens::CKConst{}); } if (word == mlc::String("constexpr")) { return (cpp_tokens::CKConstexpr{}); } if (word == mlc::String("if")) { return (cpp_tokens::CKIf{}); } if (word == mlc::String("else")) { return (cpp_tokens::CKElse{}); } if (word == mlc::String("while")) { return (cpp_tokens::CKWhile{}); } if (word == mlc::String("for")) { return (cpp_tokens::CKFor{}); } if (word == mlc::String("return")) { return (cpp_tokens::CKReturn{}); } if (word == mlc::String("break")) { return (cpp_tokens::CKBreak{}); } if (word == mlc::String("struct")) { return (cpp_tokens::CKStruct{}); } if (word == mlc::String("using")) { return (cpp_tokens::CKUsing{}); } if (word == mlc::String("noexcept")) { return (cpp_tokens::CKNoexcept{}); } if (word == mlc::String("inline")) { return (cpp_tokens::CKInline{}); } if (word == mlc::String("static")) { return (cpp_tokens::CKStatic{}); } if (word == mlc::String("void")) { return (cpp_tokens::CKVoid{}); } if (word == mlc::String("int")) { return (cpp_tokens::CKInt{}); } if (word == mlc::String("bool")) { return (cpp_tokens::CKBool{}); } if (word == mlc::String("char")) { return (cpp_tokens::CKChar{}); } if (word == mlc::String("true")) { return (cpp_tokens::CKTrue{}); } if (word == mlc::String("false")) { return (cpp_tokens::CKFalse{}); } if (word == mlc::String("nullptr")) { return (cpp_tokens::CKNullptr{}); } if (word == mlc::String("template")) { return (cpp_tokens::CKTemplate{}); } if (word == mlc::String("typename")) { return (cpp_tokens::CKTypename{}); } if (word == mlc::String("namespace")) { return (cpp_tokens::CKNamespace{}); } if (word == mlc::String("new")) { return (cpp_tokens::CKNew{}); } if (word == mlc::String("delete")) { return (cpp_tokens::CKDelete{}); } if (word == mlc::String("operator")) { return (cpp_tokens::CKOperator{}); } if (word == mlc::String("class")) { return (cpp_tokens::CKClass{}); } if (word == mlc::String("enum")) { return (cpp_tokens::CKEnum{}); } if (word == mlc::String("typedef")) { return (cpp_tokens::CKTypedef{}); } if (word == mlc::String("extern")) { return (cpp_tokens::CKExtern{}); } if (word == mlc::String("signed")) { return (cpp_tokens::CKSigned{}); } if (word == mlc::String("unsigned")) { return (cpp_tokens::CKUnsigned{}); } if (word == mlc::String("long")) { return (cpp_tokens::CKLong{}); } if (word == mlc::String("short")) { return (cpp_tokens::CKShort{}); } if (word == mlc::String("float")) { return (cpp_tokens::CKFloat{}); } if (word == mlc::String("double")) { return (cpp_tokens::CKDouble{}); } if (word == mlc::String("virtual")) { return (cpp_tokens::CKVirtual{}); } if (word == mlc::String("override")) { return (cpp_tokens::CKOverride{}); } if (word == mlc::String("final")) { return (cpp_tokens::CKFinal{}); } if (word == mlc::String("public")) { return (cpp_tokens::CKPublic{}); } if (word == mlc::String("private")) { return (cpp_tokens::CKPrivate{}); } if (word == mlc::String("protected")) { return (cpp_tokens::CKProtected{}); } if (word == mlc::String("explicit")) { return (cpp_tokens::CKExplicit{}); } if (word == mlc::String("mutable")) { return (cpp_tokens::CKMutable{}); } if (word == mlc::String("volatile")) { return (cpp_tokens::CKVolatile{}); } if (word == mlc::String("friend")) { return (cpp_tokens::CKFriend{}); } }();}
 
 cpp_tokens::CppTokenKind cpp_keyword_kind(mlc::String word) noexcept{return is_cpp_reserved_keyword(word) ? cpp_tokens::CppTokenKind(reserved_cpp_keyword_kind(word)) : cpp_tokens::CppTokenKind(cpp_tokens::CIdent(word));}
+
+mlc::String cpp_char_literal_lexeme(mlc::String character) noexcept{
+mlc::String escaped = character == mlc::String("\\") ? mlc::String("\\\\") : character == mlc::String("'") ? mlc::String("\\'") : character == mlc::String("\n") ? mlc::String("\\n") : character == mlc::String("\r") ? mlc::String("\\r") : character == mlc::String("\t") ? mlc::String("\\t") : character == mlc::String("\0", 1) ? mlc::String("\\0") : character;
+return mlc::String("'") + escaped + mlc::String("'");
+}
 
 mlc::String cpp_token_lexeme(cpp_tokens::CppTokenKind kind) noexcept{return std::visit(overloaded{
   [&](const CKAuto& ckauto) -> mlc::String { return mlc::String("auto"); },
@@ -73,6 +90,9 @@ mlc::String cpp_token_lexeme(cpp_tokens::CppTokenKind kind) noexcept{return std:
   [&](const CIdent& cident) -> mlc::String { auto [name] = cident; return name; },
   [&](const CLInt& clint) -> mlc::String { auto [value] = clint; return mlc::to_string(value); },
   [&](const CLStr& clstr) -> mlc::String { auto [value] = clstr; return mlc::String("\"") + value + mlc::String("\""); },
+  [&](const CLChar& clchar) -> mlc::String { auto [value] = clchar; return cpp_char_literal_lexeme(value); },
+  [&](const CLFloat& clfloat) -> mlc::String { auto [value] = clfloat; return value; },
+  [&](const CLHex& clhex) -> mlc::String { auto [value] = clhex; return value; },
   [&](const CArrow& carrow) -> mlc::String { return mlc::String("->"); },
   [&](const CScope& cscope) -> mlc::String { return mlc::String("::"); },
   [&](const CEq& ceq) -> mlc::String { return mlc::String("=="); },
@@ -100,21 +120,23 @@ mlc::String cpp_token_lexeme(cpp_tokens::CppTokenKind kind) noexcept{return std:
 
 bool cpp_token_kind_is_eof(cpp_tokens::CppTokenKind kind) noexcept{return [&]() { if (std::holds_alternative<cpp_tokens::CEof>(kind)) {  return true; } return false; }();}
 
+mlc::String cpp_token_to_source(cpp_tokens::CppToken token) noexcept{return token.leading_trivia + cpp_token_lexeme(token.kind) + token.trailing_trivia;}
+
 mlc::String cpp_tokens_to_source(mlc::Array<cpp_tokens::CppToken> tokens) noexcept{
 mlc::Array<mlc::String> parts = {};
 int index = 0;
 while (index < tokens.size()){
 {
-cpp_tokens::CppTokenKind kind = tokens[index].kind;
-if (!cpp_token_kind_is_eof(kind)){
+cpp_tokens::CppToken token = tokens[index];
+if (!cpp_token_kind_is_eof(token.kind)){
 {
-parts.push_back(cpp_token_lexeme(kind));
+parts.push_back(cpp_token_to_source(token));
 }
 }
 index = index + 1;
 }
 }
-return parts.join(mlc::String(" "));
+return parts.join(mlc::String(""));
 }
 
 bool cpp_token_kinds_equal(mlc::Array<cpp_tokens::CppToken> first, mlc::Array<cpp_tokens::CppToken> second) noexcept{

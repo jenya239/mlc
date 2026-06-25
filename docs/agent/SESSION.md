@@ -4,11 +4,560 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-06-01-session-detail`|
-| agent_token_last | `cr-agent-335c8ff3-ebf4-432f-a57e-c2fd21fed704` |
-| driver_turns_since_plan | 5|
-| step_last | 5|
-| active_track | TRACK_CPP_PARSER_FULL STEP=6 pending |
+| instructions_rev | `2026-05-28-cleaner`|
+| agent_token_last | `cr-agent-edb37d23-5e14-49b2-8685-962098809719` |
+| driver_turns_since_plan | 4|
+| step_last | 3|
+| active_track | TRACK_BUILD_SPEED STEP=2 done; STEP=3 pending |
+
+### Turn 2026-05-19 (Driver BUILD_SPEED STEP=2 — MLCC_DEV / MLCC_OPT)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_BUILD_SPEED |
+| done | `build_bin.sh`: `MLCC_DEV=1` → `-O0 -g` (`obj/dev/`); `MLCC_OPT` default `2` → `-O2` (`obj/O2/`) |
+| verify | release warm `link_sec=1.53s`; `build_tests` **1290/0** |
+| next | ROLE=Driver STEP=3 TRACK_BUILD_SPEED |
+
+**Enqueue payload (Driver BUILD_SPEED STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+STEP=3: linker mold/lld/gold preference; README. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-05-19 (Driver BUILD_SPEED STEP=1 — persistent obj/)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_BUILD_SPEED |
+| done | `build_bin.sh`: `$CPP_DIR/obj/` persistent; mtime skip; `MLCC_OBJ_CLEAN=1`; exclude `tests_main.cpp` from mlcc link |
+| verify | warm `link_sec=0.67s`; `build_tests` **1290/0** |
+| next | ROLE=Driver STEP=2 TRACK_BUILD_SPEED |
+
+**Enqueue payload (Driver BUILD_SPEED STEP=2):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+STEP=2: MLCC_DEV=1 -O0 -g; MLCC_OPT=2 default -O2. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-05-19 (Driver CLEAN_ARCHITECTURE STEP=12 — QUERY_ENGINE stub + close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 12 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `docs/QUERY_ENGINE.md` stub (query surface, security invariants); TRACK/PLAN/ARCHITECTURE updated; track **closed** |
+| verify | `build_tests` **1290/0**; arch_lint **0 fail**; `mlcc --check-only main` ok |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+CLEAN_ARCHITECTURE closed (1290/0). Pick next track (BUILD_SPEED STEP=1); enqueue Driver STEP=1.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-05-19 (Driver CLEAN_ARCHITECTURE STEP=11 — checker↔codegen decouple)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 11 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `ir/load_item.mlc`; `ir/record_field_default_validate.mlc` + `codegen/record_field_default_emit.mlc`; `test_record_field_default_validate.mlc` (+2); allowlist cross_import removed; checker/transform imports `ir/load_item` not codegen |
+| verify | `build_tests` **1290/0**; arch_lint **0 fail**; `mlcc --check-only main` ok |
+| next | ROLE=Driver STEP=12 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=12):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=12
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=12: docs/QUERY_ENGINE.md stub; close track. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=10 — test layout + golden harness)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `tests/support/suite_registry.mlc`, `golden_harness.mlc`, `path_from_root.mlc`; thin `tests_main.mlc`; `test_golden_harness.mlc` (+6); security `golden_relative_path_is_safe` |
+| verify | `build_tests` **1288/0**; arch_lint **0 fail**; `mlcc --check-only main` ok |
+| next | ROLE=Driver STEP=11 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=11):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=11
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=11: remove checker↔codegen coupling. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver recovery — STEP=9 close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 (recovery close) |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `cpp_ir/cpp_ast.mlc`, `cpp_parse/`, `cpp_emit/` (print, emit_helpers, …); `verify_cpp_ast.mlc`; `test_verify_cpp_ast.mlc` (+6); security `cpp_identifier_is_safe`, `cpp_include_path_is_safe` |
+| verify | `build_tests` **1282/0**; arch_lint **0 fail**; `mlcc --check-only main` ok |
+| next | ROLE=Driver STEP=10 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=10):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=10
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=10: test layout by IR level + golden harness. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=8 — driver split)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `compiler/driver/` (path_normalize, module_loader, program_merge, compile_driver, cli); thin `main.mlc`; `test_driver.mlc` (+4); security `driver_source_path_is_safe` on entry+load |
+| verify | `build_tests` **1276/0**; arch_lint **0 fail**; `mlcc --check-only main` ok; mlcc2 C++ FAIL (pre-STEP=3 verify_* codegen) |
+| next | ROLE=Driver STEP=9 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=9):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=9
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=9: split cpp/ → cpp_ir/, cpp_parse/, cpp_emit/; verify_cpp_ast. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver STEP=7 idempotent — already done, enqueue STEP=8)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 (skip) |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | idempotent: CoreIR sketch на месте; TRACK table → done |
+| verify | `run_tests` **1272/0**; arch_lint **0 fail** |
+| next | ROLE=Driver STEP=8 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=8):**
+```
+AGENT_TOKEN=cr-agent-09ad54a0-e5f8-4d63-a3af-d56c0d5711aa
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=8: driver split `driver/` vs core. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=7 — CoreIR sketch)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `ir/core.mlc`, `verify/verify_core.mlc`, `ir/core_dump.mlc`, `test_core_ir.mlc` (+9 tests) |
+| verify | `build_tests` **1272/0**; arch_lint **0 fail**; `mlcc --check-only main` ok |
+| next | ROLE=Driver STEP=8 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=8):**
+```
+AGENT_TOKEN=cr-agent-f9882768-b262-452e-99bb-07a7968dc6cf
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=8: driver split `driver/` vs core. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver STEP=5 idempotent — already done, enqueue STEP=6)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 (skip) |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | idempotent: код STEP=5 на месте; TRACK table → done |
+| verify | `run_tests` **1256/0**; arch_lint **0 fail**; `module.mlc` без transform |
+| next | ROLE=Driver STEP=6 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=6):**
+```
+AGENT_TOKEN=cr-agent-11ae8ae1-b015-4b53-91d8-85c02185c926
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=6: dump flags `--dump-ast`, `--dump-sem`, `--time-passes`. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=5 — dedup transform)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | убран `transform_load_items` из `module.mlc`; `program_to_semantic.mlc`, `codegen_harness.mlc`, `test_program_to_semantic.mlc`; allowlist shrink |
+| verify | `build_tests` **1256/0**; arch_lint **0 fail** (no transform in module.mlc); `mlcc --check-only main` ok |
+| next | ROLE=Driver STEP=6 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=6):**
+```
+AGENT_TOKEN=cr-agent-e50b5b3a-ef1b-493b-b03a-906f6f2adc53
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=6: dump flags `--dump-ast`, `--dump-sem`, `--time-passes`. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=4 — gate close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | TRACK table STEP=4 → done; security: `pass_name_is_safe`, max 16 passes, duplicate reject, required-key validation |
+| verify | `run_tests` **1251/0**; arch_lint **0 fail**; `mlcc --check-only main` ok (prior turn); mlcc2 C++ FAIL verify_* (pre-STEP=3) |
+| next | ROLE=Driver STEP=5 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=5):**
+```
+AGENT_TOKEN=cr-agent-a5dcda1a-3522-4f21-b656-fc3a766544a4
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=5: dedup `codegen/module.mlc` transform path. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver CLEAN_ARCHITECTURE STEP=4 — PassManager)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | `pass_manager.mlc`, `preserved_analyses.mlc`, `pipeline.mlc` PassManager loop; `test_pass_manager.mlc`; `module_graph.rb` multiline import fix |
+| verify | `build_tests` **1251/0**; arch_lint **0 fail**; `mlcc --check-only main` ok; mlcc2 C++ FAIL (verify_*, pre-STEP=3) |
+| issues | module `const T: ty =` breaks Ruby parse; `?` as stmt/mut-assign breaks mlcc codegen |
+| next | ROLE=Driver STEP=5 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=5):**
+```
+AGENT_TOKEN=cr-agent-b6e4750c-8dfc-4317-8a37-f0a91b9359d2
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=5: dedup `codegen/module.mlc` transform path. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-24 (Driver recovery — CLEAN_ARCHITECTURE STEP=3 loop drain)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_CLEAN_ARCHITECTURE |
+| done | STEP=3 marked done; verify `do/end` span fix; guard loop drained |
+| verify | `build_tests` **1239/0**; arch_lint **0 fail**; mlcc2 C++ FAIL on verify modules |
+| issues | mlcc codegen on verify match/do; no re-enqueue STEP=3 |
+| next | ROLE=Driver STEP=4 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=4):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=4: PassManager wire CompilerPass; preserved-analyses stub. Gate from TRACK.
+```
+
+### Turn 2026-06-24 (Driver TURN_AUDIT STEP=4 — SESSION done gate, close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_TURN_AUDIT |
+| done | `session_turn_lint.py`, `turn_audit_gate.sh`; CONTINUITY `done` before enqueue; track closed |
+| verify | `turn_audit_gate.sh` pass |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=3: verify_ast.mlc + verify_semantic_ir.mlc; --verify-each. Gate from TRACK.
+```
+
+### Turn 2026-06-24 (Driver MEMORY_MCP STEP=4 — task metrics, close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_MEMORY_MCP |
+| done | `memory_task_metrics.py`, MCP `memory_task_metrics`, `task_metrics` table; gate step; track closed |
+| verify | `memory_gate.sh` pass; `--report` ok |
+| issues | transcript↔turn correlation heuristic (newest N files) |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+plan-refresh: MEMORY_MCP closed; pick next Driver track from queue.
+```
+
+### Turn 2026-06-24 (Driver MEMORY_MCP STEP=3 — obsolete sync)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_MEMORY_MCP |
+| done | `memory_sync_obsolete.py`, MCP `memory_sync_obsolete`; gate step in `memory_gate.sh` |
+| verify | `memory_gate.sh` pass; dry-run candidates=0 |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_MEMORY_MCP |
+
+**Enqueue payload (Driver MEMORY_MCP STEP=4):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MEMORY_MCP.md
+
+STEP=4: metrics files read / tool calls per task. Gate from TRACK.
+```
+
+### Turn 2026-06-24 (Driver MEMORY_MCP STEP=2 — Graphiti optional wiring)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_MEMORY_MCP |
+| done | `memory_gate.sh`, `graphiti_setup.sh`, `memory_export_graphiti.py`, `mcp.graphiti.example.json`; CRLF fix `memory_reindex.sh` |
+| verify | `memory_gate.sh` pass (search_graph total=1603, memory_search=3) |
+| issues | Graphiti Docker not run (optional); no compiler changes |
+| next | ROLE=Driver STEP=3 TRACK_MEMORY_MCP |
+
+**Enqueue payload (Driver MEMORY_MCP STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MEMORY_MCP.md
+
+STEP=3: sync obsolete memories after major refactors. Gate from TRACK.
+```
+
+### Turn 2026-06-24 (Driver LSP STEP=5 — integration + CLI, close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_LSP |
+| done | `mlcc lsp` CLI; `lsp_process_messages_for_test`; `run_lsp_smoke.sh` phase 8; track closed |
+| verify | `build_tests` **1234/0**; lsp smoke ok; `mlcc2 --check-only` ok |
+| issues | none (implementation pre-existing in worktree) |
+| next | ROLE=Driver STEP=3 TRACK_CLEAN_ARCHITECTURE |
+
+**Enqueue payload (Driver CLEAN_ARCHITECTURE STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CLEAN_ARCHITECTURE.md
+
+STEP=3: verify_ast.mlc + verify_semantic_ir.mlc; --verify-each. Gate from TRACK.
+```
+
+### Turn 2026-06-24 (Planner plan-refresh — CPP_PARSER_FULL closed)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| done | TRACK_CPP_PARSER_FULL → closed; TRACK_PLAN queue updated; next LSP STEP=5 |
+| verify | baseline **1234/0** (prior gate) |
+| issues | CPP_PARSER_FULL steps 6–8 uncommitted |
+| next | ROLE=Driver STEP=5 TRACK_LSP |
+
+**Enqueue payload (Driver LSP STEP=5):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_LSP.md
+
+STEP=5: LSP integration test + mlcc lsp CLI; close track. Gate from TRACK_LSP.
+```
+
+### Turn 2026-06-24 (Driver STEP=8 recovery — header_import re-wire, close track)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (recovery) |
+| track | TRACK_CPP_PARSER_FULL |
+| done | `header_import.mlc` full decl wiring; fixture paths; track closed |
+| verify | `build_tests` **1234/0**; differential 8/8; `mlcc2 --check-only` ok |
+| issues | uncommitted worktree (steps 6–8) |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_PLAN.md
+
+TRACK_CPP_PARSER_FULL closed. Pick next open track per closure order. Update TRACK_PLAN baseline.
+```
+
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_CPP_PARSER_FULL |
+| done | `cpp_decls.mlc`: class bodies, template/typedef/extern, `[[...]]`; `header_import` `CppClassDeclaration`; tests (+5) |
+| verify | `build_tests` **1197/0**; `build.sh`; `mlcc2 --check-only` ok |
+| issues | typedef alias + template `>` scan; checker `else if` scope — helpers at module level |
+| next | ROLE=Driver STEP=7 |
+
+**Enqueue payload (Driver STEP=7):**
+```
+AGENT_TOKEN=cr-agent-f47cac24-323b-4f52-a8ad-669417de918b
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CPP_PARSER_FULL.md
+
+STEP=7: structural + roundtrip tests; differential vs Ruby on fixture corpus. Gate from TRACK.
+```
 
 ### Turn 2026-06-24 (Driver STEP=5 — expr parser Pratt)
 

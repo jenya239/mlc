@@ -8,7 +8,7 @@
 #include "random_program.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "decl_index.hpp"
+#include "load_item.hpp"
 #include "pipeline.hpp"
 
 namespace test_fuzz {

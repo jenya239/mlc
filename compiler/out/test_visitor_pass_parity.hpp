@@ -15,7 +15,7 @@
 #include "context.hpp"
 #include "registry.hpp"
 #include "expr_visitor_cpp.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "ast_builders.hpp"
 
 namespace test_visitor_pass_parity {

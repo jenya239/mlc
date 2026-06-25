@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "cpp_ast.hpp"
+#include "print.hpp"
 #include "cpp_tokens.hpp"
 
 namespace cpp_types {

@@ -1,21 +1,23 @@
 #include "decl_index.hpp"
 
 #include "ast.hpp"
+#include "load_item.hpp"
 #include "cpp_naming.hpp"
 
 namespace decl_index {
 
 using namespace ast;
+using namespace load_item;
 using namespace cpp_naming;
 using namespace ast_tokens;
 
 mlc::Array<mlc::String> declaration_export_names(std::shared_ptr<ast::Decl> declaration) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<decl_index::LoadItem> all_items) noexcept;
+mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<load_item::LoadItem> all_items) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<decl_index::NamespaceImportAlias> aliases) noexcept;
+mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<load_item::NamespaceImportAlias> aliases) noexcept;
 
-mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<decl_index::LoadItem> all_items) noexcept;
+mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<load_item::LoadItem> all_items) noexcept;
 
 bool list_contains(mlc::Array<mlc::String> list, mlc::String item) noexcept;
 
@@ -23,7 +25,7 @@ mlc::Array<mlc::String> lookup_fields(mlc::Array<std::shared_ptr<decl_index::Fie
 
 mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_field_order_index(mlc::Array<std::shared_ptr<decl_index::FieldOrder>> orders) noexcept;
 
-mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> build_item_index(mlc::Array<decl_index::LoadItem> all_items) noexcept;
+mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>> build_item_index(mlc::Array<load_item::LoadItem> all_items) noexcept;
 
 mlc::Array<mlc::String> declaration_export_names(std::shared_ptr<ast::Decl> declaration) noexcept{
 mlc::Array<mlc::String> names = {};
@@ -88,12 +90,12 @@ method_index = method_index + 1;
 return names;
 }
 
-mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<decl_index::LoadItem> all_items) noexcept{
+mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<load_item::LoadItem> all_items) noexcept{
 mlc::String prefix = cpp_naming::path_to_module_base(imp_path) + mlc::String("::");
 int item_index = 0;
 while (item_index < all_items.size()){
 {
-decl_index::LoadItem current_item = all_items[item_index];
+load_item::LoadItem current_item = all_items[item_index];
 if (current_item.path == imp_path){
 {
 int declaration_index = 0;
@@ -124,12 +126,12 @@ item_index = item_index + 1;
 return qualified;
 }
 
-mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<decl_index::NamespaceImportAlias> aliases) noexcept{
+mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<load_item::NamespaceImportAlias> aliases) noexcept{
 mlc::HashMap<mlc::String, mlc::String> prefixes = mlc::HashMap<mlc::String, mlc::String>();
 int index = 0;
 while (index < aliases.size()){
 {
-decl_index::NamespaceImportAlias entry = aliases[index];
+load_item::NamespaceImportAlias entry = aliases[index];
 prefixes.set(entry.alias, cpp_naming::path_to_module_base(entry.module_path) + mlc::String("::"));
 index = index + 1;
 }
@@ -137,7 +139,7 @@ index = index + 1;
 return prefixes;
 }
 
-mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<decl_index::LoadItem> all_items) noexcept{
+mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> import_paths, mlc::Array<load_item::LoadItem> all_items) noexcept{
 mlc::HashMap<mlc::String, mlc::String> qualified = mlc::HashMap<mlc::String, mlc::String>();
 int import_index = 0;
 while (import_index < import_paths.size()){
@@ -147,7 +149,7 @@ qualified = add_exports_to_qualified(qualified, import_path, all_items);
 int item_index = 0;
 while (item_index < all_items.size()){
 {
-decl_index::LoadItem current_item = all_items[item_index];
+load_item::LoadItem current_item = all_items[item_index];
 if (current_item.path == import_path){
 {
 int transitive_import_index = 0;
@@ -216,12 +218,12 @@ order_index = order_index + 1;
 return index;
 }
 
-mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> build_item_index(mlc::Array<decl_index::LoadItem> all_items) noexcept{
-mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> item_index = mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>>();
+mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>> build_item_index(mlc::Array<load_item::LoadItem> all_items) noexcept{
+mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>> item_index = mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>>();
 int index = 0;
 while (index < all_items.size()){
 {
-item_index.set(all_items[index].path, std::make_shared<decl_index::LoadItem>(all_items[index]));
+item_index.set(all_items[index].path, std::make_shared<load_item::LoadItem>(all_items[index]));
 index = index + 1;
 }
 }

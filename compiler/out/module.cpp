@@ -3,8 +3,7 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"
-#include "transform_decl.hpp"
-#include "trait_param_expand.hpp"
+#include "load_item.hpp"
 #include "decl_index.hpp"
 #include "ctor_info.hpp"
 #include "context.hpp"
@@ -23,8 +22,7 @@ namespace module {
 using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
-using namespace transform_decl;
-using namespace trait_param_expand;
+using namespace load_item;
 using namespace decl_index;
 using namespace ctor_info;
 using namespace context;
@@ -41,7 +39,7 @@ using namespace ast_tokens;
 
 struct ModuleGenerationContext {mlc::String base;mlc::String guard;mlc::String std_includes;mlc::String module_namespace;bool is_entry;decl_cpp::DeclPartsBundleCpp decl_parts;mlc::String implementation_import_includes;mlc::Array<mlc::String> implementation_import_paths;};
 
-mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SemanticNamespaceImportAlias> items) noexcept;
+mlc::Array<load_item::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SemanticNamespaceImportAlias> items) noexcept;
 
 void push_struct_using_entry(mlc::HashMap<mlc::String, mlc::Array<context::StructUsingEntry>>& entries, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>& lines, mlc::String type_name, context::StructUsingEntry entry) noexcept;
 
@@ -49,9 +47,9 @@ void add_assoc_bind_struct_using(mlc::HashMap<mlc::String, mlc::Array<context::S
 
 context::StructUsingData build_struct_using_data(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context) noexcept;
 
-context::PrecomputedCtx precompute(ast::Program program, mlc::Array<decl_index::LoadItem> all_items) noexcept;
+context::PrecomputedCtx precompute(ast::Program program, mlc::Array<load_item::LoadItem> all_items) noexcept;
 
-module::ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem load_item, mlc::Array<decl_index::LoadItem> all_items, context::PrecomputedCtx precomputed_context) noexcept;
+module::ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, context::PrecomputedCtx precomputed_context) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> assemble_header_cpp_declarations(module::ModuleGenerationContext parts) noexcept;
 
@@ -61,17 +59,15 @@ std::shared_ptr<cpp_ast::CppFile> gen_module_cpp_file(module::ModuleGenerationCo
 
 context::GenModuleOut gen_module_output(module::ModuleGenerationContext parts) noexcept;
 
-context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept;
+context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept;
 
-mlc::String gen_program(ast::Program program) noexcept;
-
-mlc::Array<decl_index::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SemanticNamespaceImportAlias> items) noexcept{
-mlc::Array<decl_index::NamespaceImportAlias> mapped_aliases = {};
+mlc::Array<load_item::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<semantic_ir::SemanticNamespaceImportAlias> items) noexcept{
+mlc::Array<load_item::NamespaceImportAlias> mapped_aliases = {};
 int index = 0;
 while (index < items.size()){
 {
 semantic_ir::SemanticNamespaceImportAlias entry = items[index];
-mapped_aliases.push_back(decl_index::NamespaceImportAlias{entry.alias, entry.module_path});
+mapped_aliases.push_back(load_item::NamespaceImportAlias{entry.alias, entry.module_path});
 index = index + 1;
 }
 }
@@ -132,14 +128,14 @@ declaration_index = declaration_index + 1;
 return context::StructUsingData{entries, lines};
 }
 
-context::PrecomputedCtx precompute(ast::Program program, mlc::Array<decl_index::LoadItem> all_items) noexcept{
+context::PrecomputedCtx precompute(ast::Program program, mlc::Array<load_item::LoadItem> all_items) noexcept{
 mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders = type_index::build_field_orders(program);
 mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos = ctor_info::build_ctor_type_infos_from_decls(program.decls);
 registry::TypeRegistry registry = registry::build_registry(program);
 return context::PrecomputedCtx{field_orders, type_index::build_variant_types_from_decls(program.decls), decl_index::build_item_index(all_items), ctor_type_infos, type_index::build_generic_variants_from_decls(program.decls), type_index::build_method_owners_from_decls(program.decls), decl_index::build_field_order_index(field_orders), ctor_info::build_ctor_type_info_index(ctor_type_infos), registry.type_alias_annotations};
 }
 
-module::ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem load_item, mlc::Array<decl_index::LoadItem> all_items, context::PrecomputedCtx precomputed_context) noexcept{
+module::ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, context::PrecomputedCtx precomputed_context) noexcept{
 mlc::String base = cpp_naming::path_to_module_base(load_item.path);
 mlc::Array<semantic_ir::SemanticNamespaceImportAlias> namespace_aliases = load_item.namespace_import_aliases;
 mlc::HashMap<mlc::String, mlc::String> qualified = decl_index::build_qualified(load_item.imports, all_items);
@@ -196,19 +192,9 @@ std::shared_ptr<cpp_ast::CppFile> file = gen_module_cpp_file(parts);
 return context::GenModuleOut{decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_header(file)), decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_source(file))};
 }
 
-context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<decl_index::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept{
+context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept{
 module::ModuleGenerationContext parts = prepare_module_generation(load_item, all_items, precomputed_context);
 return gen_module_output(parts);
-}
-
-mlc::String gen_program(ast::Program program) noexcept{
-mlc::Array<decl_index::LoadItem> all_items = {};
-context::PrecomputedCtx precomputed_context = precompute(program, all_items);
-registry::TypeRegistry registry = registry::build_registry(program);
-decl_index::LoadItem single_load_item = decl_index::LoadItem{mlc::String("test_main"), program.decls, {}, {}};
-mlc::Array<semantic_ir::SemanticLoadItem> semantic_load_items = transform_decl::transform_load_items(mlc::Array<decl_index::LoadItem>{single_load_item}, registry, trait_param_expand::build_trait_nominal_maps(program));
-context::GenModuleOut module_parsed = gen_module(semantic_load_items[0], all_items, program, precomputed_context);
-return module_parsed.header + module_parsed.source;
 }
 
 } // namespace module

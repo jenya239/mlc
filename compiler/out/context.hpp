@@ -11,6 +11,7 @@
 #include "cpp_naming.hpp"
 #include "decl_index.hpp"
 #include "decl_index.hpp"
+#include "load_item.hpp"
 #include "type_index.hpp"
 #include "ctor_info.hpp"
 #include "param_analysis.hpp"
@@ -40,7 +41,7 @@ struct GenStmtResult {mlc::String output;int next_try;context::CodegenContext co
 
 struct GenModuleOut {mlc::String header;mlc::String source;};
 
-struct PrecomputedCtx {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::HashMap<mlc::String, std::shared_ptr<decl_index::LoadItem>> item_index;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::Array<mlc::String> generic_variants;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> field_order_index;mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_info_index;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;};
+struct PrecomputedCtx {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>> item_index;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::Array<mlc::String> generic_variants;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> field_order_index;mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_info_index;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;};
 
 int new_temp_name_counter() noexcept;
 

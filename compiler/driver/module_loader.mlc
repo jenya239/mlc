@@ -1,0 +1,106 @@
+// Driver: modular import graph loading (lex/parse per file).
+
+import { Program, Decl, DeclImport, DeclExported, errs_append } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_errors } from '../frontend/parser/decls'
+import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
+import { profile_maybe_begin, profile_maybe_end } from '../profile'
+import { is_cpp_header_path, load_cpp_header_decls } from '../cpp_parse/header_import'
+import { resolve_dotdot, resolve_import_path, driver_source_path_is_safe } from './path_normalize'
+
+export type LoadResult = LoadResult { items: [LoadItem], errors: [string] }
+
+fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> LoadResult = do
+  const norm_path = resolve_dotdot(path)
+  if cache.has(norm_path) then cache.get(norm_path)
+  else if loaded.has(norm_path) then
+    LoadResult { items: [], errors: [`circular: ${norm_path}`] }
+  else if is_cpp_header_path(norm_path) then do
+    loaded.set(norm_path, true)
+    profile_maybe_begin(profile_enabled, 'load_io')
+    const header_loaded = load_cpp_header_decls(norm_path)
+    profile_maybe_end(profile_enabled, 'load_io')
+    if header_loaded.errors.length() > 0 then
+      LoadResult { items: [], errors: header_loaded.errors }
+    else
+      const header_items: [LoadItem] = [LoadItem {
+        path: norm_path,
+        decls: header_loaded.declarations,
+        imports: [],
+        namespace_import_aliases: []
+      }]
+      const load_parsed = LoadResult { items: header_items, errors: [] }
+      cache.set(norm_path, load_parsed)
+      load_parsed
+    end
+  end
+  else if !driver_source_path_is_safe(path) then
+    LoadResult { items: [], errors: [`driver: unsafe path ${path}`] }
+  else
+  loaded.set(norm_path, true)
+  profile_maybe_begin(profile_enabled, 'load_io')
+  const source = File.read(path)
+  profile_maybe_end(profile_enabled, 'load_io')
+  if source.length() == 0 && !File.exists(path) then
+    LoadResult { items: [], errors: [`file not found: ${path}`] }
+  else
+  profile_maybe_begin(profile_enabled, 'lex')
+  const lexer_output = tokenize(source)
+  profile_maybe_end(profile_enabled, 'lex')
+  if lexer_output.has_errors() then
+    LoadResult { items: [], errors: [`lex ${path}: ${lexer_output.errors[0]}`] }
+  else
+    profile_maybe_begin(profile_enabled, 'parse')
+    const parse_parsed = parse_program_with_errors(lexer_output.tokens, norm_path)
+    profile_maybe_end(profile_enabled, 'parse')
+    const program = parse_parsed.program
+    let items: [LoadItem] = []
+    let loaded_paths_seen: Map<string, bool> = Map.new()
+    let module_declarations: [Shared<Decl>] = []
+    let my_imports: [string] = []
+    let my_namespace_import_aliases: [NamespaceImportAlias] = []
+    let mut all_errors: [string] = []
+    let mut index = 0
+    while index < program.decls.length() do
+      match program.decls[index] {
+        DeclImport(import_path, symbols) => do
+          const resolved = resolve_dotdot(resolve_import_path(path, import_path))
+          my_imports.push(resolved)
+          if symbols.length() >= 2 && symbols[0] == "*" then
+            my_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
+          end
+          const dependency_parsed = load_module_impl(resolved, loaded, cache, profile_enabled)
+          all_errors = errs_append(all_errors, dependency_parsed.errors)
+          let mut dep_item_index = 0
+          while dep_item_index < dependency_parsed.items.length() do
+            const dependency_item = dependency_parsed.items[dep_item_index]
+            if !loaded_paths_seen.has(dependency_item.path) then
+              loaded_paths_seen.set(dependency_item.path, true)
+              items.push(dependency_item)
+            end
+            dep_item_index = dep_item_index + 1
+          end
+        end,
+        DeclExported(_) => module_declarations.push(program.decls[index]),
+        _ => module_declarations.push(program.decls[index])
+      }
+      index = index + 1
+    end
+    items.push(LoadItem {
+      path: norm_path,
+      decls: module_declarations,
+      imports: my_imports,
+      namespace_import_aliases: my_namespace_import_aliases
+    })
+    const load_parsed = LoadResult { items: items, errors: all_errors }
+    cache.set(norm_path, load_parsed)
+    load_parsed
+  end
+  end
+  end
+end
+
+export fn load_module(path: string, cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> LoadResult = do
+  let mut loaded: Map<string, bool> = Map.new()
+  load_module_impl(path, loaded, cache, profile_enabled)
+end

@@ -1,0 +1,45 @@
+// CLI dump helpers: --dump-ast, --dump-sem (stdout; label validation).
+
+import { Program } from './frontend/ast'
+import { SemanticLoadItem } from './ir/semantic_ir'
+import { print_mlc_program } from './fmt/ast_printer'
+import { print_semantic_load_items } from './ir/semantic_ir_dump'
+
+fn dump_label_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+  || character == "/"
+  || character == "."
+  || character == "-"
+
+export fn dump_label_is_safe(label: string) -> bool = do
+  if label == "" || label.length() > 256 then
+    false
+  else
+    let mut safe = true
+    let mut index = 0
+    while index < label.length() && safe do
+      if !dump_label_character_is_safe(label.char_at(index)) then safe = false end
+      index = index + 1
+    end
+    safe
+  end
+end
+
+export fn emit_dump_ast(program: Program, label: string) -> unit = do
+  if dump_label_is_safe(label) then
+    print(`--- dump-ast: ${label} ---\n`)
+    print(print_mlc_program(program))
+    print('\n')
+  end
+end
+
+export fn emit_dump_semantic_items(items: [SemanticLoadItem], label: string) -> unit = do
+  if dump_label_is_safe(label) then
+    print(`--- dump-sem: ${label} ---\n`)
+    print(print_semantic_load_items(items))
+    print('\n')
+  end
+end

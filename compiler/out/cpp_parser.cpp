@@ -37,11 +37,11 @@ position = position + 1;
 } else {
 {
 if (!cpp_is_skip_declaration(parse_result.declaration)){
-{
 declarations.push_back(parse_result.declaration);
-}
-}
 position = parse_result.position;
+} else {
+position = parse_result.position;
+}
 }
 }
 }

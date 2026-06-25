@@ -1,8 +1,8 @@
 // Unit tests for the C++ lexer (cpp_tokenize).
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
-import { cpp_tokenize, cpp_lex_roundtrip_preserves_kinds, cpp_lex_roundtrip_preserves_source } from '../cpp/cpp_lexer'
-import { CppTokenKind, CIdent, CLStr, CLInt, CLChar, CLFloat, CLHex, CHash, CKClass, CKEnum, CKExtern, cpp_tokens_to_source } from '../cpp/cpp_tokens'
+import { cpp_tokenize, cpp_lex_roundtrip_preserves_kinds, cpp_lex_roundtrip_preserves_source } from '../cpp_parse/cpp_lexer'
+import { CppTokenKind, CIdent, CLStr, CLInt, CLChar, CLFloat, CLHex, CHash, CKClass, CKEnum, CKExtern, cpp_tokens_to_source } from '../cpp_parse/cpp_tokens'
 
 fn cpp_tok_count(source_text: string) -> i32 =
   cpp_tokenize(source_text).tokens.length()

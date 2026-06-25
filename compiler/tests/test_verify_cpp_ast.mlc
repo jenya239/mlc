@@ -1,0 +1,26 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import { cpp_identifier_is_safe, cpp_include_path_is_safe, verify_cpp_program } from '../verify/verify_cpp_ast'
+import { CppProgram, CppInclude, CppStruct, CppField } from '../cpp_ir/cpp_ast'
+
+export fn verify_cpp_ast_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('cpp_identifier_is_safe accepts Widget', cpp_identifier_is_safe('Widget')))
+  results.push(assert_true('cpp_identifier_is_safe rejects semicolon', !cpp_identifier_is_safe('foo;bar')))
+  results.push(assert_true('cpp_include_path_is_safe accepts string header', cpp_include_path_is_safe('string')))
+  results.push(assert_true('cpp_include_path_is_safe rejects parent segment', !cpp_include_path_is_safe('../evil.h')))
+
+  const valid_program = CppProgram {
+    declarations: [
+      Shared.new(CppInclude(true, 'vector')),
+      Shared.new(CppStruct('', 'Point', [Shared.new(CppField { type_value: "int", name: "x" })], false))
+    ]
+  }
+  results.push(assert_eq_int('verify_cpp_program valid', verify_cpp_program(valid_program).length(), 0))
+
+  const unsafe_include = CppProgram { declarations: [Shared.new(CppInclude(false, '../bad.h'))] }
+  results.push(assert_true('verify_cpp_program rejects unsafe include',
+    verify_cpp_program(unsafe_include).length() > 0))
+
+  results
+end

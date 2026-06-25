@@ -15,7 +15,7 @@ import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
 import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076, diagnostic_code_e081 } from '../diagnostic_codes'
-import { record_field_default_expression_acceptable_for_codegen } from '../../ir/record_defaults'
+import { record_field_default_expression_is_static_initializer } from '../../ir/record_field_default_validate'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
@@ -70,7 +70,7 @@ fn accumulate_diagnostics_after_literal_record_default_checks(
         (diagnostic_list_so_far_under_fields, record_field_under_literal_definition) =>
           if !record_field_under_literal_definition.has_default_expression then
             diagnostic_list_so_far_under_fields
-          else if !record_field_default_expression_acceptable_for_codegen(
+          else if !record_field_default_expression_is_static_initializer(
             record_field_under_literal_definition.default_expression) then
             diagnostic_list_so_far_under_fields.concat([diagnostic_error_with_code(
               'record field default expression cannot be lowered to a C++ member initializer (literals, identifiers, + - * / %)',

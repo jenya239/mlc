@@ -1,9 +1,10 @@
 // Unit tests for C++ type parser (cpp/parser/cpp_types.mlc).
 
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
-import { cpp_tokenize } from '../cpp/cpp_lexer'
-import { parse_cpp_type, parse_cpp_type_to_string } from '../cpp/parser/cpp_types'
-import { print_cpp_type, CppType, CppTypeName, CppTypeTemplate, CppTypePtr, CppTypeConst, CppTypeRef, CppTypeRRef } from '../cpp/cpp_ast'
+import { cpp_tokenize } from '../cpp_parse/cpp_lexer'
+import { parse_cpp_type, parse_cpp_type_to_string } from '../cpp_parse/parser/cpp_types'
+import {CppType, CppTypeName, CppTypeTemplate, CppTypePtr, CppTypeConst, CppTypeRef, CppTypeRRef} from '../cpp_ir/cpp_ast'
+import {print_cpp_type} from '../cpp_emit/print'
 
 fn cpp_type_string(source_text: string) -> string =
   parse_cpp_type_to_string(cpp_tokenize(source_text).tokens, 0).type_string

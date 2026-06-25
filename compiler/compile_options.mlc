@@ -3,11 +3,15 @@ export type CompileOptions = CompileOptions {
   out_directory: string,
   profile_enabled: bool,
   check_only: bool,
-  emit_compile_commands: bool
+  emit_compile_commands: bool,
+  verify_each_pass: bool,
+  dump_ast: bool,
+  dump_sem: bool,
+  time_passes: bool
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
+  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
 
 fn is_output_directory_flag(argument: string) -> bool =
   match argument | '-o' => true | _ => false end
@@ -21,6 +25,18 @@ fn is_check_only_flag(argument: string) -> bool =
 fn is_emit_compile_commands_flag(argument: string) -> bool =
   match argument | '--emit-compile-commands' => true | _ => false end
 
+fn is_verify_each_pass_flag(argument: string) -> bool =
+  match argument | '--verify-each' => true | _ => false end
+
+fn is_dump_ast_flag(argument: string) -> bool =
+  match argument | '--dump-ast' => true | _ => false end
+
+fn is_dump_sem_flag(argument: string) -> bool =
+  match argument | '--dump-sem' => true | _ => false end
+
+fn is_time_passes_flag(argument: string) -> bool =
+  match argument | '--time-passes' => true | _ => false end
+
 fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool, out_directory: string) -> string =
   if check_only && !out_directory_explicit then ''
   else if out_directory_explicit then out_directory
@@ -31,6 +47,10 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
   let mut profile_enabled = false
   let mut check_only = false
   let mut emit_compile_commands = false
+  let mut verify_each_pass = false
+  let mut dump_ast = false
+  let mut dump_sem = false
+  let mut time_passes = false
   let mut out_directory = ''
   let mut out_directory_explicit = false
   let mut entry_path = ''
@@ -43,6 +63,14 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
       check_only = true
     else if is_emit_compile_commands_flag(argument) then
       emit_compile_commands = true
+    else if is_verify_each_pass_flag(argument) then
+      verify_each_pass = true
+    else if is_dump_ast_flag(argument) then
+      dump_ast = true
+    else if is_dump_sem_flag(argument) then
+      dump_sem = true
+    else if is_time_passes_flag(argument) then
+      time_passes = true
     else if is_output_directory_flag(argument) && index + 1 < arguments.length() then
       out_directory = arguments[index + 1]
       out_directory_explicit = true
@@ -57,6 +85,10 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
     out_directory: resolve_default_out_directory(check_only, out_directory_explicit, out_directory),
     profile_enabled: profile_enabled,
     check_only: check_only,
-    emit_compile_commands: emit_compile_commands
+    emit_compile_commands: emit_compile_commands,
+    verify_each_pass: verify_each_pass,
+    dump_ast: dump_ast,
+    dump_sem: dump_sem,
+    time_passes: time_passes
   }
 end

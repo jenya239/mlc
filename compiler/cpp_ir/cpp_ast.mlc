@@ -1,0 +1,169 @@
+// C++ AST IR types (CppAST layer).
+
+
+export type CppType =
+  | CppTypeName(string)
+  | CppTypeTemplate(string, [Shared<CppType>])
+  | CppTypeRef(Shared<CppType>)
+  | CppTypeRRef(Shared<CppType>)
+  | CppTypePtr(Shared<CppType>)
+  | CppTypeConst(Shared<CppType>)
+
+export type CppCastKind =
+  | CppCastStatic
+  | CppCastDynamic
+  | CppCastReinterpret
+  | CppCastConst
+
+export type CppCapture = CppCapture { name: string, by_reference: bool }
+
+export type CppParam = CppParam { name: string, parameter_type: Shared<CppType> }
+
+export type CppStatement =
+  | CppAutoDecl(string, Shared<CppExpression>)
+  | CppVarDecl(string, Shared<CppType>, Shared<CppExpression>)
+  | CppConstDecl(string, Shared<CppType>, Shared<CppExpression>)
+  | CppConstexprAutoDecl(string, Shared<CppExpression>)
+  | CppReturn(Shared<CppExpression>)
+  | CppExpressionStatement(Shared<CppExpression>)
+  | CppBlock([Shared<CppStatement>])
+  | CppIf(Shared<CppExpression>, Shared<CppStatement>, Shared<CppStatement>)
+  | CppWhile(Shared<CppExpression>, Shared<CppStatement>)
+  | CppFor(string, Shared<CppExpression>, [Shared<CppStatement>])
+  | CppStructuredBinding([string], Shared<CppExpression>)
+  | CppStatementFragment(string)
+
+export type CppExpression =
+  | CppInt(i32)
+  | CppStr(string)
+  | CppCharLiteral(string)
+  | CppFloatLiteral(string)
+  | CppBool(bool)
+  | CppIdent(string)
+  | CppCall(Shared<CppExpression>, [Shared<CppExpression>])
+  | CppMember(Shared<CppExpression>, string, bool)
+  | CppIndex(Shared<CppExpression>, Shared<CppExpression>)
+  | CppBinary(string, Shared<CppExpression>, Shared<CppExpression>)
+  | CppUnary(string, Shared<CppExpression>)
+  | CppTernary(Shared<CppExpression>, Shared<CppExpression>, Shared<CppExpression>)
+  | CppLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppType>, [Shared<CppStatement>])
+  | CppMutableLambda([Shared<CppCapture>], [Shared<CppParam>], Shared<CppExpression>)
+  | CppInitList([Shared<CppExpression>])
+  | CppAggregateInit(string, [Shared<CppExpression>])
+  | CppStdVisit(Shared<CppExpression>, [Shared<CppExpression>])
+  | CppVisitArmWild(bool, Shared<CppExpression>)
+  | CppVisitArmBinding(string, bool, Shared<CppExpression>)
+  | CppVisitArmConstructed(string, string, bool, Shared<CppExpression>)
+  | CppVisitArmConstructedGeneric(string, string, string, bool, Shared<CppExpression>)
+  | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpression>)
+  | CppInvokedWhile(Shared<CppExpression>, string)
+  | CppInvokedFor(string, Shared<CppExpression>, string)
+  | CppInvokedBlock(string)
+  | CppInvokedBlockWithReturn(string, string)
+  | CppQuestionTry(Shared<CppExpression>)
+  | CppWithBlock(Shared<CppExpression>, string, string)
+
+export type CppField = CppField { type_value: string, name: string }
+
+export type CppExpressions = [Shared<CppExpression>]
+export type CppStatements = [Shared<CppStatement>]
+export type CppParameters = [Shared<CppParam>]
+export type CppFields = [Shared<CppField>]
+
+export type CppVariantArm = CppVariantArm { name: string, types: [Shared<CppType>] }
+
+export type CppFnModifiers = CppFnModifiers {
+  is_const: bool,
+  is_virtual: bool,
+  is_override: bool,
+  is_static: bool,
+  is_explicit: bool,
+  is_noexcept: bool,
+  is_deleted: bool,
+  is_defaulted: bool,
+  is_pure_virtual: bool,
+}
+
+export fn cpp_fn_modifiers_none() -> CppFnModifiers =
+  CppFnModifiers {
+    is_const: false,
+    is_virtual: false,
+    is_override: false,
+    is_static: false,
+    is_explicit: false,
+    is_noexcept: false,
+    is_deleted: false,
+    is_defaulted: false,
+    is_pure_virtual: false,
+  }
+
+export type CppAccessLevel = CppPublic | CppProtected | CppPrivate
+
+export type CppBaseClass = CppBaseClass { access: CppAccessLevel, name: string }
+
+export type CppFunctionPrototype = CppFunctionPrototype {
+  template_prefix: string,
+  return_type: Shared<CppType>,
+  name: string,
+  parameters: [Shared<CppParam>],
+  modifiers: CppFnModifiers,
+}
+
+export type CppClassMember =
+  | CppClassMemberField(Shared<CppType>, string, string)
+  | CppClassMemberFunction(Shared<CppFunctionPrototype>)
+  | CppClassMemberAccess(CppAccessLevel)
+  | CppClassMemberTypeAlias(string, Shared<CppType>)
+
+export type CppClassDefinition = CppClassDefinition {
+  is_struct: bool,
+  template_prefix: string,
+  name: string,
+  base_classes: [CppBaseClass],
+  members: [CppClassMember],
+}
+
+export type CppDeclaration =
+  | CppInclude(bool, string)
+  | CppIfndef(string)
+  | CppDefineMacro(string, string)
+  | CppEndif(string)
+  | CppUndef(string)
+  | CppNamespaceBegin(string)
+  | CppNamespaceEnd(string)
+  | CppUsing(string, string)
+  | CppUsingNamespace(string)
+  | CppStruct(string, string, CppFields, bool)
+  | CppForwardDecl(string, string)
+  | CppFnProto(string, string, string, [string])
+  | CppFnDef(string, string, string, [string], CppStatements, i32)
+  | CppNamespace(string, [Shared<CppDeclaration>])
+  | CppVariant(string, string, [Shared<CppVariantArm>])
+  | CppConceptRequires(string, string, string, [string])
+  | CppStaticAssert(string, [string], string)
+  | CppStdHashSpecialization(string, CppStatements)
+  | CppDeclarationSequence([Shared<CppDeclaration>])
+  | CppDeclarationEmpty
+  | CppBlankLine
+  | CppHostEntryMain(string)
+  | CppClassDeclaration(CppClassDefinition)
+  | CppTypedefDeclaration(string, Shared<CppType>)
+  | CppTemplateDeclaration(string, Shared<CppDeclaration>)
+  | CppFunctionPrototypeDecl(CppFunctionPrototype)
+  | CppExternBlock(string, [Shared<CppDeclaration>])
+  | CppDeclarationFragment(string)
+
+export type CppFile = CppFile { header: [Shared<CppDeclaration>], source: [Shared<CppDeclaration>] }
+
+export type CppProgram = CppProgram { declarations: [Shared<CppDeclaration>] }
+
+export fn cpp_capture_name(capture: Shared<CppCapture>) -> string = capture.name
+export fn cpp_capture_by_reference(capture: Shared<CppCapture>) -> bool = capture.by_reference
+export fn cpp_param_name(parameter: Shared<CppParam>) -> string = parameter.name
+export fn cpp_param_type(parameter: Shared<CppParam>) -> Shared<CppType> = parameter.parameter_type
+export fn cpp_field_type(field: Shared<CppField>) -> string = field.type_value
+export fn cpp_field_name(field: Shared<CppField>) -> string = field.name
+export fn cpp_variant_arm_name(arm: Shared<CppVariantArm>) -> string = arm.name
+export fn cpp_variant_arm_types(arm: Shared<CppVariantArm>) -> [Shared<CppType>] = arm.types
+export fn cpp_file_header(file: Shared<CppFile>) -> [Shared<CppDeclaration>] = file.header
+export fn cpp_file_source(file: Shared<CppFile>) -> [Shared<CppDeclaration>] = file.source

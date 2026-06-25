@@ -2,7 +2,7 @@ import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_ru
 import { fuzz_random_program, fuzz_mix, fuzz_variant_count, fuzz_program_kind } from './fuzz/random_program'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { LoadItem } from '../codegen/decl/decl_index'
+import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
 fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
@@ -20,7 +20,11 @@ fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
     output_directory: '',
     profile_enabled: false,
     check_only: true,
-    emit_compile_commands: false
+    emit_compile_commands: false,
+    verify_each_pass: false,
+    dump_ast: false,
+    dump_sem: false,
+    time_passes: false
   }
 end
 

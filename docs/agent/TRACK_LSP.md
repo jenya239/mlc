@@ -2,11 +2,11 @@
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3 п.2; follows [TRACK_SELF_HOST_BOOTSTRAP.md](TRACK_SELF_HOST_BOOTSTRAP.md)
 
-## Status: **open** STEP=5 pending (STEP=4 done)
+## Status: **closed** (STEP=1-5 done)
 
 **Depends on:** TRACK_SELF_HOST_BOOTSTRAP closed; TRACK_FORMATTER done.
 
-**Baseline:** `build_tests` **1142/0**; `mlcc -o .tmp_selfhost/p1 compiler/main.mlc` ok; `build_bin` mlcc2 **fail** (`cpp_decls` codegen — TRACK_CPP_HEADER_IMPORT, not LSP).
+**Baseline:** `build_tests` **1234/0**; `build_bin` mlcc2 ok; `mlcc2 --check-only compiler/main.mlc` ok; `run_lsp_smoke.sh` ok.
 
 **Goal:** minimal Language Server: go-to-definition, hover types, publish diagnostics.
 
@@ -31,7 +31,14 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 | 2c | `server.mlc` definition handler wired | done |
 | 3 | Hover — type at cursor from checker/infer snapshot | done |
 | 4 | Diagnostics — map checker errors → LSP `publishDiagnostics` | done |
-| 5 | Integration test + `mlcc lsp` CLI; close track | pending |
+| 5 | Integration test + `mlcc lsp` CLI; close track | done |
+
+### STEP=5 notes (2026-06-24)
+
+- `lsp_cli.mlc` + `main.mlc` `mlcc lsp` (stdio JSON-RPC).
+- `server.mlc`: `lsp_process_messages_for_test` (didOpen, definition, hover, diagnostics).
+- `test_lsp_server.mlc`: integration didOpen+definition; `run_lsp_smoke.sh` (initialize/shutdown/exit).
+- `build_tests.sh` phase 8/8: lsp smoke. Gate: **1234/0**; track **closed**.
 
 ### STEP=4 notes (2026-06-24)
 

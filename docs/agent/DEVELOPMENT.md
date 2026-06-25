@@ -31,7 +31,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Current priority
 
-**TRACK_CPP_HEADER_IMPORT** STEP=5 — `import "header.h"` wiring + registry; close track.
+**TRACK_CLEAN_ARCHITECTURE** STEP=3 — `verify_ast.mlc`, `verify_semantic_ir.mlc`; `--verify-each`.
 
 ## Step sizing (good vs bad)
 
@@ -59,4 +59,6 @@ Token-only — [CONTINUITY.md](CONTINUITY.md).
 | Stuck queue / modal | `npm run watchdog:start` в `cr` (см. CONTINUITY) |
 | UI / ручная отладка | `npm run dev` в `cr` → http://127.0.0.1:3847 |
 
-**mlc-memory:** blockers (`known_limitations`), Planner/Backlog notes (`notes`).
+**mlc-memory:** `memory_search` / `memory_write` (`project_memories`) — decisions, bugs, conventions, failed_attempts. Legacy: `known_limitations`, `notes`. Не дублировать TURNLOG.
+
+**codebase-memory:** перед чтением многих файлов — `search_graph`, `query_graph`, impact/callers. Reindex: `bash scripts/memory_reindex.sh`.

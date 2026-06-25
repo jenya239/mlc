@@ -1,0 +1,132 @@
+{"ts":"2026-06-24T14:43:27.397Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_CPP_PARSER_FULL","target":"mlc","prompt_key":"Driver:8:CPP_PARSER_FULL","db_status":"aborted","model":"Composer 2.5","usage_pct":46}
+{"ts":"2026-06-24T14:43:43.791Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-dfbfd31d-a58d-4856-874e-dc34fe8ab012","why":"stuck Driver:8:CPP_PARSER_FULL after assistant","page_title":"cpp_decls.mlc - mlc - Cursor","model":"Composer 2.5","usage_pct":46}
+{"ts":"2026-06-24T14:58:54.705Z","event":"turn_done","role":"Planner","step":"plan-refresh","track":"TRACK_PLAN","target":"mlc","prompt_key":"Planner:plan-refresh:PLAN","db_status":"completed","model":"Composer 2.5","usage_pct":59}
+{"ts":"2026-06-24T14:58:54.720Z","event":"guard_skip","target":"mlc","why":"duplicate enqueue (Driver:5:LSP)","model":"Composer 2.5","usage_pct":59}
+{"ts":"2026-06-24T15:09:08.933Z","event":"turn_done","role":"Driver","step":"5","track":"TRACK_LSP","target":"mlc","prompt_key":"Driver:5:LSP","db_status":"completed","model":"Composer 2.5","usage_pct":64}
+{"ts":"2026-06-24T15:09:08.944Z","event":"guard_skip","target":"mlc","why":"duplicate enqueue (Driver:3:CLEAN_ARCHITECTURE)","model":"Composer 2.5","usage_pct":64}
+{"ts":"2026-06-24T15:24:20.693Z","event":"turn_aborted","role":"Driver","step":"3","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:3:CLEAN_ARCHITECTURE","db_status":"aborted","model":"Composer 2.5","usage_pct":84}
+{"ts":"2026-06-24T15:40:20.940Z","event":"sent","role":"Driver","step":"2","track":"TRACK_MEMORY_MCP.md","target":"mlc","token":"cr-agent-82467ff6-c111-4373-9b58-42be74679068","why":"guard nudge","page_title":"cpp_decls.mlc - mlc - Cursor","model":"Composer 2.5","usage_pct":88}
+{"ts":"2026-06-24T15:55:46.892Z","event":"turn_done","role":"Driver","step":"2","track":"TRACK_MEMORY_MCP","target":"mlc","prompt_key":"Driver:2:MEMORY_MCP","db_status":"completed","model":"Composer 2.5","usage_pct":26}
+{"ts":"2026-06-24T15:56:21.508Z","event":"sent","role":"Driver","step":"3","track":"TRACK_MEMORY_MCP.md","target":"mlc","token":"cr-agent-a42f293d-5609-4b24-a177-569208f90f13","why":"guard nudge","page_title":"cpp_decls.mlc - mlc - Cursor","model":"Composer 2.5","usage_pct":26}
+{"ts":"2026-06-24T16:11:33.297Z","event":"turn_done","role":"Driver","step":"3","track":"TRACK_MEMORY_MCP","target":"mlc","prompt_key":"Driver:3:MEMORY_MCP","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T16:11:51.285Z","event":"sent","role":"Driver","step":"4","track":"TRACK_MEMORY_MCP.md","target":"mlc","token":"cr-agent-8a9fc705-8e1c-400e-9029-f99a9933d34c","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T16:27:03.390Z","event":"turn_done","role":"Driver","step":"4","track":"TRACK_MEMORY_MCP","target":"mlc","prompt_key":"Driver:4:MEMORY_MCP","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T16:27:19.904Z","event":"sent","role":"Driver","step":"4","track":"TRACK_TURN_AUDIT.md","target":"mlc","token":"cr-agent-1ccf4e62-927a-424f-9e69-e10619e2fddd","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T16:42:28.570Z","event":"turn_done","role":"Driver","step":"4","track":"TRACK_TURN_AUDIT","target":"mlc","prompt_key":"Driver:4:TURN_AUDIT","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T16:42:44.190Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-af3d4fea-5027-4780-8915-f0e7fef78e2b","why":"step Driver:3:CLEAN_ARCHITECTURE loop","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T16:57:57.094Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T16:58:12.986Z","event":"sent","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-485849cc-360c-440f-bdb6-3f5c80e1f62a","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T17:13:23.305Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:4:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T17:13:39.249Z","event":"sent","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-b8c46a7c-76dd-497a-b0cc-529b4643ad64","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T17:28:54.299Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:4:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T17:29:15.027Z","event":"sent","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-b6e4750c-8dfc-4317-8a37-f0a91b9359d2","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T17:44:29.262Z","event":"turn_aborted","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:4:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T17:44:45.570Z","event":"sent","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-a5dcda1a-3522-4f21-b656-fc3a766544a4","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T17:59:54.435Z","event":"turn_done","role":"Driver","step":"4","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:4:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T18:00:10.397Z","event":"sent","role":"Driver","step":"5","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-e50b5b3a-ef1b-493b-b03a-906f6f2adc53","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T18:15:19.748Z","event":"turn_done","role":"Driver","step":"5","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:5:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T18:15:35.673Z","event":"sent","role":"Driver","step":"5","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-11ae8ae1-b015-4b53-91d8-85c02185c926","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T18:30:53.730Z","event":"turn_done","role":"Driver","step":"5","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:5:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T18:42:17.119Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:6:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T18:42:48.444Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-8f6c2963-4655-4c2d-bd62-09462f24671e","why":"stuck Driver:6:CLEAN_ARCHITECTURE after assistant","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T18:59:19.497Z","event":"turn_aborted","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T19:11:14.156Z","event":"turn_aborted","role":"Driver","step":"7","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:7:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T19:31:36.334Z","event":"sent","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-6f1bab0e-8c92-4d77-b715-515cbc4d362e","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T19:47:02.149Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:8:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T19:48:10.461Z","event":"sent","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-6a473251-aed7-48d5-8134-042d462b4d31","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T20:03:20.563Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:8:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T20:03:36.484Z","event":"sent","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-2400a9ce-64cd-46b8-9ac2-1be680096e3f","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T20:18:46.482Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:8:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T20:19:02.994Z","event":"sent","role":"Driver","step":"9","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-fb64d049-0c3e-47c0-a0ce-2f3f5d2ffa95","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T20:34:16.723Z","event":"turn_aborted","role":"Driver","step":"9","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:9:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T20:34:32.972Z","event":"sent","role":"Driver","step":"9","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-b95219f6-bab1-4e84-9d0c-864d84c658b7","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T20:49:48.324Z","event":"turn_aborted","role":"Driver","step":"9","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:9:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T20:50:04.908Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-ce8bc27f-0417-420a-94ab-c2df1e1f6cb0","why":"stuck Driver:9:CLEAN_ARCHITECTURE after assistant","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T21:05:13.616Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T21:05:30.160Z","event":"sent","role":"Driver","step":"10","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-3f6ce9ef-a107-49d0-8cf8-ce61724f0365","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T21:20:40.087Z","event":"turn_done","role":"Driver","step":"10","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:10:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T21:20:56.532Z","event":"sent","role":"Driver","step":"11","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-401ce5e7-c94e-4324-bb34-fc518ac25939","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T21:36:16.975Z","event":"turn_aborted","role":"Driver","step":"11","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:11:CLEAN_ARCHITECTURE","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T21:36:33.549Z","event":"sent","role":"Driver","step":"11","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-15ee6967-ae55-4887-b7db-a024be110ccd","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T21:51:43.309Z","event":"turn_done","role":"Driver","step":"11","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:11:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T21:51:59.836Z","event":"sent","role":"Driver","step":"12","track":"TRACK_CLEAN_ARCHITECTURE.md","target":"mlc","token":"cr-agent-b62a4c4c-6956-47fb-9ee4-72b73b740f14","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T22:07:08.586Z","event":"turn_done","role":"Driver","step":"12","track":"TRACK_CLEAN_ARCHITECTURE","target":"mlc","prompt_key":"Driver:12:CLEAN_ARCHITECTURE","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T22:07:25.145Z","event":"sent","role":"Driver","step":"1","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-02501135-e408-4c6d-b161-734f8f2cca9b","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T22:22:36.675Z","event":"turn_aborted","role":"Driver","step":"1","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:1:BUILD_SPEED","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T22:22:53.443Z","event":"sent","role":"Driver","step":"1","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-f4e3e19a-ad89-4eca-91eb-cbe20086b51d","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T22:38:06.636Z","event":"turn_done","role":"Driver","step":"1","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:1:BUILD_SPEED","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-24T22:38:23.351Z","event":"sent","role":"Driver","step":"2","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-edb37d23-5e14-49b2-8685-962098809719","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T23:43:37.940Z","event":"turn_aborted","role":"Driver","step":"2","track":"TRACK_BUILD_SPEED","target":"mlc","prompt_key":"Driver:2:BUILD_SPEED","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-24T23:43:55.009Z","event":"sent","role":"Driver","step":"3","track":"TRACK_BUILD_SPEED.md","target":"mlc","token":"cr-agent-fc6680ac-6bcf-47b6-a20b-b15b91601a93","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-24T23:59:03.757Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:04:07.463Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:09:11.143Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:14:14.797Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:19:18.500Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:24:22.221Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:29:25.838Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:34:29.606Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:39:33.289Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:44:37.002Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:49:40.700Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:54:44.411Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T00:59:48.095Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:04:51.741Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:09:55.424Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:14:59.095Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:20:02.731Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:25:06.444Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:30:10.140Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:35:13.828Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:40:17.505Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:45:21.226Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:50:24.892Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T01:55:28.621Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:00:32.310Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:05:35.989Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:10:39.650Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:15:43.360Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:20:47.020Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:25:50.718Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:30:54.452Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:35:58.145Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:41:01.806Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:46:05.543Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:51:09.251Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T02:56:12.923Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:01:16.584Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:06:20.235Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:11:24.007Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:16:27.684Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:21:31.339Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:26:34.990Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:31:38.672Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:36:42.397Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:41:46.199Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:46:49.807Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:51:53.442Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T03:56:57.075Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:02:00.735Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:07:04.373Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:12:08.169Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:17:11.961Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:22:15.709Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:27:19.336Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:32:22.974Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:37:26.646Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:42:30.357Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:47:34.018Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:52:37.721Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T04:57:41.411Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:02:45.066Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:07:48.892Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:12:52.571Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:17:56.195Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:22:59.895Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:28:03.601Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:33:07.273Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:38:10.883Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:43:14.556Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:48:18.225Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:53:21.924Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}
+{"ts":"2026-06-25T05:58:25.571Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","usage_pct":null}

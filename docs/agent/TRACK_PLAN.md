@@ -46,6 +46,8 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **CppExpr backend:** [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md) — closed (`96df4e0`)
 - **CppAST cleanup:** [TRACK_CPPGEN.md](TRACK_CPPGEN.md) — closed (`005c65b`)
 - **Phase 1 stabilization:** [TRACK_PHASE1.md](TRACK_PHASE1.md) — **closed** (`fd42eab`)
+- **C++ header import (minimal):** [TRACK_CPP_HEADER_IMPORT.md](TRACK_CPP_HEADER_IMPORT.md) — **closed** (`1125/0`)
+- **Full C++ header parser:** [TRACK_CPP_PARSER_FULL.md](TRACK_CPP_PARSER_FULL.md) — **closed** (2026-06-24; **1234/0**; uncommitted steps 6–8)
 - **Safety / fuzz hardening:** [TRACK_SAFETY.md](TRACK_SAFETY.md) — **closed** (`32f8335`)
 - **Performance:** [TRACK_PERFORMANCE.md](TRACK_PERFORMANCE.md) — **closed** (`0671422`)
 - **Security / fuzz depth:** [TRACK_SECURITY.md](TRACK_SECURITY.md) — **closed** (`a035c3d`)
@@ -123,29 +125,40 @@ Strict order; each track depends on previous unless noted.
 | 3 | [TRACK_FORMATTER](TRACK_FORMATTER.md) | 3 | **closed** |
 | 4 | [TRACK_PHASE26_REMAINING](TRACK_PHASE26_REMAINING.md) | 2.6 | **closed** (STEP=5, 2026-05-19) |
 | 5 | [TRACK_SELF_HOST_BOOTSTRAP](TRACK_SELF_HOST_BOOTSTRAP.md) | 4 | **closed** (2026-05-19) |
-| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | **open** STEP=5 |
+| 6 | [TRACK_LSP](TRACK_LSP.md) | 3 | **closed** (2026-06-24) |
 | 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **closed** (minimal subset) |
-| 8 | [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) | 3.6 | **open** STEP=1 |
-| 9 | [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) | 2.8 | **open** STEP=3 |
+| 8 | [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) | 3.6 | **closed** (2026-06-24; **1234/0**) |
+| 9 | [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) | 2.8 | **closed** (2026-05-19; **1290/0**) |
 | 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **open** STEP=1 |
 | 11 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
+| 12 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | planned |
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT (minimal)
-  → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO
+  → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO → CONCURRENCY
 ```
 
 **Deferred:** parser `ref mut` (TRACK_PLAN step 15); MLC IR; package manager.
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_LSP](TRACK_LSP.md) **STEP=5**.  
-> Then: [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) STEP=1 → [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) STEP=1.
+> **Immediate:** [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) **STEP=1** (persistent `out/obj/`).  
+> **Then:** REDDIT_DEMO per queue.
+
+**Baseline (2026-05-19):** `build_tests` **1290/0**; TRACK_CLEAN_ARCHITECTURE closed.
 
 ## Next step (Planner)
 
-> plan-refresh after CPP_HEADER_IMPORT close or every ~8 driver turns.
+> plan-refresh after track close or every ~8 driver turns.
+
+## Planner checklist (2026-06-24 plan-refresh — CPP_PARSER_FULL closed)
+
+- [x] TRACK_CPP_PARSER_FULL closed (steps 1–8; gate **1234/0**; differential 8/8)
+- [x] Closure order: LSP STEP=5 → CLEAN_ARCHITECTURE STEP=3 → BUILD_SPEED STEP=1
+- [x] LSP baseline stale (1142/0) — Driver STEP=5 refreshes on close
+- [ ] Uncommitted CPP_PARSER_FULL batch (steps 6–8) — commit on user command
+- [x] Driver enqueued TRACK_LSP STEP=5
 
 ## Planner checklist (2026-06-21 plan-refresh — CPP_HEADER_IMPORT STEP=5)
 

@@ -1,0 +1,58 @@
+// Driver: merge entry program with imported modules.
+
+import { Program, Decl, DeclImport, DeclExported, errs_append } from '../frontend/ast'
+import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
+import { resolve_dotdot, resolve_import_path } from './path_normalize'
+import { load_module, LoadResult } from './module_loader'
+
+export type MergeResult = MergeResult { program: Program, errors: [string], items: [LoadItem] }
+
+export fn merge_program(entry_path: string, program: Program, profile_enabled: bool) -> MergeResult = do
+  let merged_declarations: [Shared<Decl>] = []
+  let mut all_errors: [string] = []
+  let seen_paths: Map<string, bool> = Map.new()
+  let items_ordered: [LoadItem] = []
+  let entry_decls: [Shared<Decl>] = []
+  let entry_imports: [string] = []
+  let entry_namespace_import_aliases: [NamespaceImportAlias] = []
+  let cache: Map<string, LoadResult> = Map.new()
+  let mut index = 0
+  while index < program.decls.length() do
+    match program.decls[index] {
+      DeclImport(path, symbols) => do
+        const resolved = resolve_dotdot(resolve_import_path(entry_path, path))
+        entry_imports.push(resolved)
+        if symbols.length() >= 2 && symbols[0] == "*" then
+          entry_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
+        end
+        const dependency_parsed = load_module(resolved, cache, profile_enabled)
+        all_errors = errs_append(all_errors, dependency_parsed.errors)
+        let mut dep_item_index = 0
+        while dep_item_index < dependency_parsed.items.length() do
+          const dependency_item = dependency_parsed.items[dep_item_index]
+          if !seen_paths.has(dependency_item.path) then
+            seen_paths.set(dependency_item.path, true)
+            items_ordered.push(dependency_item)
+            let mut decl_inner_index = 0
+            while decl_inner_index < dependency_item.decls.length() do
+              merged_declarations.push(dependency_item.decls[decl_inner_index])
+              decl_inner_index = decl_inner_index + 1
+            end
+          end
+          dep_item_index = dep_item_index + 1
+        end
+      end,
+      DeclExported(exported_declaration) => do entry_decls.push(exported_declaration); merged_declarations.push(exported_declaration) end,
+      _ => do entry_decls.push(program.decls[index]); merged_declarations.push(program.decls[index]) end
+    }
+    index = index + 1
+  end
+  const norm_entry = resolve_dotdot(entry_path)
+  items_ordered.push(LoadItem {
+    path: norm_entry,
+    decls: entry_decls,
+    imports: entry_imports,
+    namespace_import_aliases: entry_namespace_import_aliases
+  })
+  MergeResult { program: Program { decls: merged_declarations }, errors: all_errors, items: items_ordered }
+end

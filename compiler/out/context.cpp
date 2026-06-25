@@ -7,6 +7,7 @@
 #include "cpp_naming.hpp"
 #include "decl_index.hpp"
 #include "decl_index.hpp"
+#include "load_item.hpp"
 #include "type_index.hpp"
 #include "ctor_info.hpp"
 #include "param_analysis.hpp"
@@ -20,6 +21,7 @@ using namespace registry;
 using namespace cpp_naming;
 using namespace decl_index;
 using namespace decl_index;
+using namespace load_item;
 using namespace type_index;
 using namespace ctor_info;
 using namespace param_analysis;

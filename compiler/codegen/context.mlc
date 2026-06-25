@@ -6,7 +6,8 @@ import { SemanticStatement } from '../ir/semantic_ir'
 import { Type, TShared, TArray } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
-import { FieldOrder, LoadItem, NamespaceImportAlias } from './decl/decl_index'
+import { FieldOrder } from './decl/decl_index'
+import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
 import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, add_method_owners_from_decls } from './decl/type_index'
 import { CtorTypeInfo, build_ctor_type_infos_from_decls, build_ctor_type_info_index, lookup_ctor_type_info, lookup_ctor_type_info_indexed } from './decl/ctor_info'
 import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from './decl/param_analysis'
@@ -289,4 +290,3 @@ export fn context_with_namespace_alias_prefixes(
   namespace_alias_prefixes: Map<string, string>
 ) -> CodegenContext =
   base.with_namespace_alias_prefixes(namespace_alias_prefixes)
-

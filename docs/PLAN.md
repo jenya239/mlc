@@ -377,17 +377,18 @@ compiler/
 | **3** Инструментарий | **planned** | Formatter → [TRACK_FORMATTER](agent/TRACK_FORMATTER.md); LSP → [TRACK_LSP](agent/TRACK_LSP.md) |
 | **3.5** C++ header import (minimal) | **done** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md) — subset для `import "foo.h"` |
 | **3.6** Full C++ header parser | **planned** | [TRACK_CPP_PARSER_FULL](agent/TRACK_CPP_PARSER_FULL.md) |
-| **2.8** Compiler architecture | **planned** | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers |
+| **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
 | **2.9** Build speed | **planned** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) — clang/ccache/mold, persistent obj, dev -O0 |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **planned** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) |
+| **6** Concurrency | **planned** | [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT (minimal)
-  → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO
+  → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO → CONCURRENCY
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
@@ -445,17 +446,17 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 **Не входит:** C++20 modules/coroutines, вычисление `#ifdef`/`#define`.
 
-### Phase 2.8: Compiler architecture (IR + passes) — **planned**
+### Phase 2.8: Compiler architecture (IR + passes) — **done**
 
 **Цель:** границы IR (AST → Typed → CoreIR → CppAST), verified passes, pass manager, driver/core split, dump/trace, test pyramid. Не enterprise-слои.
 
-Документ: [ARCHITECTURE.md](ARCHITECTURE.md). Трек: [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md).
+Документ: [ARCHITECTURE.md](ARCHITECTURE.md). Трек: [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — **closed** (2026-05-19).
 
 **Зависит от:** CPP_PARSER_FULL STEP=1, LSP closed.
 
 **Язык:** Phase 2.7 opaque IDs (`NodeId`, `TypeId`) — параллельно, до CoreIR sketch.
 
-**Future:** TRACK_CORE_IR, TRACK_QUERY_ENGINE, TRACK_INCREMENTAL.
+**Future:** TRACK_CORE_IR, [QUERY_ENGINE.md](QUERY_ENGINE.md) / TRACK_QUERY_ENGINE, TRACK_INCREMENTAL.
 
 ### Phase 2.9: Build speed — **planned**
 
@@ -470,6 +471,16 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 ### Phase 5: Reddit / Community — **planned**
 
 Трек: [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md). После self-host bootstrap + форматтер.
+
+### Phase 6: Concurrency — **planned**
+
+**Цель:** базовая многопоточность через message passing — `Channel<T>`, `spawn`/`Task<T>`, `Arc<T>`, scoped `Mutex<T>`.
+
+**Модель:** Go/Rust-style — копии между потоками, без shared mutable state. Не async/await, не глобальные mutex.
+
+**Зависит от:** REDDIT_DEMO (или defer); STEP=1 — fix/audit COW detach (сейчас sharing `Array`/`Map` между потоками unsafe).
+
+Трек: [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md). Research: [RESEARCH.md](agent/RESEARCH.md) §Многопоточность.
 
 **Качество кода (после 2.5):** [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) — **closed** (`36a6e8cc`): деструктуризация, HOF, or-patterns, string-match, audit.
 

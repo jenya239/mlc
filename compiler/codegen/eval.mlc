@@ -3,7 +3,7 @@
 
 import { SemanticExpression, SemanticStatement } from '../ir/semantic_ir'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
-import { print_expr } from '../cpp/cpp_ast'
+import {print_expr} from '../cpp_emit/print'
 import * as stmt_eval from './stmt/stmt_eval'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 import { gen_stmts_cpp, print_cpp_statements } from './stmt_cpp'

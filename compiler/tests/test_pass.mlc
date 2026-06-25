@@ -2,22 +2,22 @@ import { TestResult, assert_eq_str, assert_true } from './test_runner'
 import { parse_compile_options } from '../compile_options'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { LoadItem } from '../codegen/decl/decl_index'
+import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
 fn pipeline_check_only_ok(source: string) -> bool =
-  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true)) {
+  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true, false)) {
     Ok(_) => true,
     Err(_) => false
   }
 
 fn pipeline_check_only_error_count(source: string) -> i32 =
-  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true)) {
+  match run_modular_compiler_pipeline(pipeline_input_for_source(source, true, false)) {
     Ok(_) => 0,
     Err(errors) => errors.length()
   }
 
-fn pipeline_input_for_source(source: string, check_only: bool) -> ModularCompileInput = do
+fn pipeline_input_for_source(source: string, check_only: bool, verify_each_pass: bool) -> ModularCompileInput = do
   const program = parse_program(tokenize(source).tokens)
   const load_item = LoadItem {
     path: 'check_only_probe.mlc',
@@ -32,7 +32,11 @@ fn pipeline_input_for_source(source: string, check_only: bool) -> ModularCompile
     output_directory: '',
     profile_enabled: false,
     check_only: check_only,
-    emit_compile_commands: false
+    emit_compile_commands: false,
+    verify_each_pass: verify_each_pass,
+    dump_ast: false,
+    dump_sem: false,
+    time_passes: false
   }
 end
 
@@ -80,6 +84,16 @@ export fn pass_type_tests() -> [TestResult] = do
 
   results.push(assert_true('check_only pipeline writes no header file',
     check_only_writes_no_header('fn f() -> i32 = 42')))
+
+  const verify_each_parsed = parse_compile_options(['--verify-each', '--check-only', 'entry.mlc'])
+  results.push(assert_true('parse_compile_options --verify-each flag',
+    verify_each_parsed.verify_each_pass))
+
+  results.push(assert_true('check_only pipeline with --verify-each valid program',
+    match run_modular_compiler_pipeline(pipeline_input_for_source('fn f() -> i32 = 42', true, true)) {
+      Ok(_) => true,
+      Err(_) => false
+    }))
 
   results
 end

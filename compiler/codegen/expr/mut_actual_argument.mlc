@@ -2,8 +2,8 @@
 // before the call (same idea as Ruby lower_call_with_cpp_mutable_actual_argument_holders).
 
 import { SemanticExpression, SemanticStatement, sexpr_type, SemanticExpressionIdent, SemanticExpressionField, SemanticExpressionIndex } from '../../ir/semantic_ir'
-import { CppExpression, CppCall, CppLambda, CppCapture, CppType, CppTypeName, CppStatement } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression, CppCall, CppLambda, CppCapture, CppType, CppTypeName, CppStatement } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 

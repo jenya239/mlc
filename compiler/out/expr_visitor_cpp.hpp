@@ -7,7 +7,7 @@
 #include "registry.hpp"
 #include "semantic_ir.hpp"
 #include "cpp_ast.hpp"
-#include "cpp_ast.hpp"
+#include "print.hpp"
 #include "emit_helpers.hpp"
 #include "semantic_type_structure.hpp"
 #include "literals.hpp"

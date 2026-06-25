@@ -4,7 +4,7 @@
 #include "random_program.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
-#include "decl_index.hpp"
+#include "load_item.hpp"
 #include "pipeline.hpp"
 
 namespace test_fuzz {
@@ -13,7 +13,7 @@ using namespace test_runner;
 using namespace random_program;
 using namespace lexer;
 using namespace decls;
-using namespace decl_index;
+using namespace load_item;
 using namespace pipeline;
 
 pipeline::ModularCompileInput fuzz_pipeline_input_for_source(mlc::String source) noexcept;
@@ -34,8 +34,8 @@ mlc::Array<test_runner::TestResult> fuzz_tests() noexcept;
 
 pipeline::ModularCompileInput fuzz_pipeline_input_for_source(mlc::String source) noexcept{
 ast::Program program = decls::parse_program(lexer::tokenize(source).tokens);
-decl_index::LoadItem load_item = decl_index::LoadItem{mlc::String("fuzz_probe.mlc"), program.decls, {}, {}};
-return pipeline::ModularCompileInput{mlc::Array<decl_index::LoadItem>{load_item}, program, program, mlc::String(""), false, true, false};
+load_item::LoadItem load_item = load_item::LoadItem{mlc::String("fuzz_probe.mlc"), program.decls, {}, {}};
+return pipeline::ModularCompileInput{mlc::Array<load_item::LoadItem>{load_item}, program, program, mlc::String(""), false, true, false, false, false, false, false};
 }
 
 pipeline::ModularCompileInput fuzz_pipeline_input(int seed) noexcept{return fuzz_pipeline_input_for_source(random_program::fuzz_random_program(seed));}

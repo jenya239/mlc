@@ -1,0 +1,39 @@
+// Safe relative paths under compiler/tests/ (fixtures, golden files).
+
+export fn test_relative_path_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+  || character == "/"
+  || character == "."
+  || character == "-"
+
+fn test_relative_path_contains_parent_segment(relative_path: string) -> bool = do
+  let mut index = 0
+  while index + 1 < relative_path.length() do
+    if relative_path.char_at(index) == "." && relative_path.char_at(index + 1) == "." then return true end
+    index = index + 1
+  end
+  false
+end
+
+export fn test_relative_path_is_safe(relative_path: string) -> bool = do
+  if relative_path == "" || relative_path.length() > 512 then
+    false
+  else if test_relative_path_contains_parent_segment(relative_path) then
+    false
+  else if relative_path.char_at(0) == "/" then
+    false
+  else
+    let mut index = 0
+    while index < relative_path.length() do
+      if !test_relative_path_character_is_safe(relative_path.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
+
+export fn resolve_test_fixture_path(relative_path: string) -> string =
+  `compiler/tests/${relative_path}`

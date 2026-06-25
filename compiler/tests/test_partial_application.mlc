@@ -5,7 +5,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { assert_code_contains } from './codegen_test_helpers'
-import { gen_program } from '../codegen/module'
+import { gen_program } from './codegen_harness'
 
 fn check_error_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {

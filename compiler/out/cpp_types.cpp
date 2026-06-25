@@ -1,11 +1,13 @@
 #include "cpp_types.hpp"
 
 #include "cpp_ast.hpp"
+#include "print.hpp"
 #include "cpp_tokens.hpp"
 
 namespace cpp_types {
 
 using namespace cpp_ast;
+using namespace print;
 using namespace cpp_tokens;
 
 struct CppTypeQualifierScan {bool has_const;mlc::String name_prefix;int position;};
@@ -262,7 +264,7 @@ return cpp_type_parse_suffixes(tokens, base_parsed.position, with_const);
 
 cpp_types::CppTypeStringResult parse_cpp_type_to_string(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
 cpp_types::CppTypedParseResult parsed = parse_cpp_type(tokens, position);
-return cpp_types::CppTypeStringResult{cpp_ast::print_cpp_type(parsed.type_node), parsed.position};
+return cpp_types::CppTypeStringResult{print::print_cpp_type(parsed.type_node), parsed.position};
 }
 
 } // namespace cpp_types

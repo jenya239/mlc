@@ -1,0 +1,39 @@
+// Minimal SemanticIR text dump for --dump-sem (summary lines, not full expr trees).
+
+import { SemanticLoadItem, SemanticDeclaration } from './semantic_ir'
+
+fn semantic_declaration_label(declaration: Shared<SemanticDeclaration>) -> string =
+  match declaration {
+    SemanticDeclarationFn(name, _, _, _, _, _, _, _) => `fn ${name}`,
+    SemanticDeclarationType(name, _, _, _, _) => `type ${name}`,
+    SemanticDeclarationTypeAlias(name, _, _, _) => `type ${name}`,
+    SemanticDeclarationTrait(name, _, _, _) => `trait ${name}`,
+    SemanticDeclarationExtend(type_name, _, _, _) => `extend ${type_name}`,
+    SemanticDeclarationImport(path, _) => `import ${path}`,
+    SemanticDeclarationExported(inner) => semantic_declaration_label(inner),
+    SemanticDeclarationAssocBind(name, _, _) => `assoc ${name}`
+  }
+
+export fn print_semantic_load_item(item: SemanticLoadItem) -> string = do
+  let mut result = `sem module ${item.path} decls=${item.decls.length()}`
+  let mut index = 0
+  while index < item.decls.length() && index < 256 do
+    result = result + `\n  ${semantic_declaration_label(item.decls[index])}`
+    index = index + 1
+  end
+  if item.decls.length() > 256 then
+    result = result + `\n  ... truncated (${item.decls.length()} total)`
+  end
+  result
+end
+
+export fn print_semantic_load_items(items: [SemanticLoadItem]) -> string = do
+  let mut result = ''
+  let mut index = 0
+  while index < items.length() do
+    if index > 0 then result = result + `\n\n` end
+    result = result + print_semantic_load_item(items[index])
+    index = index + 1
+  end
+  result
+end

@@ -1,0 +1,272 @@
+// C++ token kinds, lexeme spelling, and source reconstruction.
+
+export type CppTokenKind =
+  | CKAuto | CKConst | CKConstexpr | CKIf | CKElse | CKWhile | CKFor
+  | CKReturn | CKBreak | CKStruct | CKUsing | CKNoexcept | CKInline | CKStatic
+  | CKVoid | CKInt | CKBool | CKChar | CKTrue | CKFalse | CKNullptr
+  | CKTemplate | CKTypename | CKNamespace | CKNew | CKDelete | CKOperator
+  | CKClass | CKEnum | CKTypedef | CKExtern | CKSigned | CKUnsigned
+  | CKLong | CKShort | CKFloat | CKDouble
+  | CKVirtual | CKOverride | CKFinal | CKPublic | CKPrivate | CKProtected
+  | CKExplicit | CKMutable | CKVolatile | CKFriend
+  | CIdent(string) | CLInt(i32) | CLStr(string) | CLChar(string) | CLFloat(string) | CLHex(string)
+  | CArrow | CScope | CEq | CNe | CLe | CGe | CAnd | COr | CInc | CDec
+  | CLShift | CRShift
+  | CLParen | CRParen | CLBrace | CRBrace | CLBracket | CRBracket
+  | CLAngle | CRAngle
+  | CHash
+  | COp(string)
+  | CEof
+
+export type CppToken = CppToken {
+  kind: CppTokenKind,
+  line: i32,
+  column: i32,
+  leading_trivia: string,
+  trailing_trivia: string
+}
+
+export fn cpp_token_make(kind: CppTokenKind, line: i32, column: i32) -> CppToken =
+  CppToken { kind: kind, line: line, column: column, leading_trivia: "", trailing_trivia: "" }
+
+export fn cpp_token_with_trivia(
+  token: CppToken,
+  leading_trivia: string,
+  trailing_trivia: string
+) -> CppToken =
+  CppToken {
+    kind: token.kind,
+    line: token.line,
+    column: token.column,
+    leading_trivia: leading_trivia,
+    trailing_trivia: trailing_trivia,
+  }
+
+export fn is_cpp_reserved_keyword(word: string) -> bool =
+  match word
+  | 'auto'       => true
+  | 'const'      => true
+  | 'constexpr'  => true
+  | 'if'         => true
+  | 'else'       => true
+  | 'while'      => true
+  | 'for'        => true
+  | 'return'     => true
+  | 'break'      => true
+  | 'struct'     => true
+  | 'using'      => true
+  | 'noexcept'   => true
+  | 'inline'     => true
+  | 'static'     => true
+  | 'void'       => true
+  | 'int'        => true
+  | 'bool'       => true
+  | 'char'       => true
+  | 'true'       => true
+  | 'false'      => true
+  | 'nullptr'    => true
+  | 'template'   => true
+  | 'typename'   => true
+  | 'namespace'  => true
+  | 'new'        => true
+  | 'delete'     => true
+  | 'operator'   => true
+  | 'class'      => true
+  | 'enum'       => true
+  | 'typedef'    => true
+  | 'extern'     => true
+  | 'signed'     => true
+  | 'unsigned'   => true
+  | 'long'       => true
+  | 'short'      => true
+  | 'float'      => true
+  | 'double'     => true
+  | 'virtual'    => true
+  | 'override'   => true
+  | 'final'      => true
+  | 'public'     => true
+  | 'private'    => true
+  | 'protected'  => true
+  | 'explicit'   => true
+  | 'mutable'    => true
+  | 'volatile'   => true
+  | 'friend'     => true
+  | _            => false
+  end
+
+export fn reserved_cpp_keyword_kind(word: string) -> CppTokenKind =
+  match word
+  | 'auto'       => CKAuto
+  | 'const'      => CKConst
+  | 'constexpr'  => CKConstexpr
+  | 'if'         => CKIf
+  | 'else'       => CKElse
+  | 'while'      => CKWhile
+  | 'for'        => CKFor
+  | 'return'     => CKReturn
+  | 'break'      => CKBreak
+  | 'struct'     => CKStruct
+  | 'using'      => CKUsing
+  | 'noexcept'   => CKNoexcept
+  | 'inline'     => CKInline
+  | 'static'     => CKStatic
+  | 'void'       => CKVoid
+  | 'int'        => CKInt
+  | 'bool'       => CKBool
+  | 'char'       => CKChar
+  | 'true'       => CKTrue
+  | 'false'      => CKFalse
+  | 'nullptr'    => CKNullptr
+  | 'template'   => CKTemplate
+  | 'typename'   => CKTypename
+  | 'namespace'  => CKNamespace
+  | 'new'        => CKNew
+  | 'delete'     => CKDelete
+  | 'operator'   => CKOperator
+  | 'class'      => CKClass
+  | 'enum'       => CKEnum
+  | 'typedef'    => CKTypedef
+  | 'extern'     => CKExtern
+  | 'signed'     => CKSigned
+  | 'unsigned'   => CKUnsigned
+  | 'long'       => CKLong
+  | 'short'      => CKShort
+  | 'float'      => CKFloat
+  | 'double'     => CKDouble
+  | 'virtual'    => CKVirtual
+  | 'override'   => CKOverride
+  | 'final'      => CKFinal
+  | 'public'     => CKPublic
+  | 'private'    => CKPrivate
+  | 'protected'  => CKProtected
+  | 'explicit'   => CKExplicit
+  | 'mutable'    => CKMutable
+  | 'volatile'   => CKVolatile
+  | 'friend'     => CKFriend
+  end
+
+export fn cpp_keyword_kind(word: string) -> CppTokenKind =
+  if is_cpp_reserved_keyword(word) then reserved_cpp_keyword_kind(word) else CIdent(word) end
+
+fn cpp_char_literal_lexeme(character: string) -> string = do
+  const escaped =
+    if character == "\\" then "\\\\"
+    else if character == "'" then "\\'"
+    else if character == "\n" then "\\n"
+    else if character == "\r" then "\\r"
+    else if character == "\t" then "\\t"
+    else if character == "\0" then "\\0"
+    else character
+    end
+  "'" + escaped + "'"
+end
+
+export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
+  match kind
+  | CKAuto       => "auto"
+  | CKConst      => "const"
+  | CKConstexpr  => "constexpr"
+  | CKIf         => "if"
+  | CKElse       => "else"
+  | CKWhile      => "while"
+  | CKFor        => "for"
+  | CKReturn     => "return"
+  | CKBreak      => "break"
+  | CKStruct     => "struct"
+  | CKUsing      => "using"
+  | CKNoexcept   => "noexcept"
+  | CKInline     => "inline"
+  | CKStatic     => "static"
+  | CKVoid       => "void"
+  | CKInt        => "int"
+  | CKBool       => "bool"
+  | CKChar       => "char"
+  | CKTrue       => "true"
+  | CKFalse      => "false"
+  | CKNullptr    => "nullptr"
+  | CKTemplate   => "template"
+  | CKTypename   => "typename"
+  | CKNamespace  => "namespace"
+  | CKNew        => "new"
+  | CKDelete     => "delete"
+  | CKOperator   => "operator"
+  | CKClass      => "class"
+  | CKEnum       => "enum"
+  | CKTypedef    => "typedef"
+  | CKExtern     => "extern"
+  | CKSigned     => "signed"
+  | CKUnsigned   => "unsigned"
+  | CKLong       => "long"
+  | CKShort      => "short"
+  | CKFloat      => "float"
+  | CKDouble     => "double"
+  | CKVirtual    => "virtual"
+  | CKOverride   => "override"
+  | CKFinal      => "final"
+  | CKPublic     => "public"
+  | CKPrivate    => "private"
+  | CKProtected  => "protected"
+  | CKExplicit   => "explicit"
+  | CKMutable    => "mutable"
+  | CKVolatile   => "volatile"
+  | CKFriend     => "friend"
+  | CIdent(name) => name
+  | CLInt(value) => value.to_string()
+  | CLStr(value) => `"` + value + `"`
+  | CLChar(value) => cpp_char_literal_lexeme(value)
+  | CLFloat(value) => value
+  | CLHex(value) => value
+  | CArrow       => "->"
+  | CScope       => "::"
+  | CEq          => "=="
+  | CNe          => "!="
+  | CLe          => "<="
+  | CGe          => ">="
+  | CAnd         => "&&"
+  | COr          => "||"
+  | CInc         => "++"
+  | CDec         => "--"
+  | CLShift      => "<<"
+  | CRShift      => ">>"
+  | CLParen      => "("
+  | CRParen      => ")"
+  | CLBrace      => "{"
+  | CRBrace      => "}"
+  | CLBracket    => "["
+  | CRBracket    => "]"
+  | CLAngle      => "<"
+  | CRAngle      => ">"
+  | CHash        => "#"
+  | COp(symbol)  => symbol
+  | CEof         => ""
+  end
+
+fn cpp_token_kind_is_eof(kind: CppTokenKind) -> bool =
+  match kind { CEof => true, _ => false }
+
+export fn cpp_token_to_source(token: CppToken) -> string =
+  token.leading_trivia + cpp_token_lexeme(token.kind) + token.trailing_trivia
+
+export fn cpp_tokens_to_source(tokens: [CppToken]) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < tokens.length() do
+    const token = tokens[index]
+    if !cpp_token_kind_is_eof(token.kind) then parts.push(cpp_token_to_source(token)) end
+    index = index + 1
+  end
+  parts.join("")
+end
+
+export fn cpp_token_kinds_equal(first: [CppToken], second: [CppToken]) -> bool = do
+  if first.length() != second.length() then false
+  else
+    let mut index = 0
+    let mut equal = true
+    while index < first.length() && equal do
+      if cpp_token_lexeme(first[index].kind) != cpp_token_lexeme(second[index].kind) then equal = false end
+      index = index + 1
+    end
+    equal
+  end
+end

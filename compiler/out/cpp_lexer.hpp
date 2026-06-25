@@ -23,6 +23,8 @@ cpp_lexer::CppLexOut cpp_tokenize(mlc::String input_text) noexcept;
 
 bool cpp_lex_roundtrip_preserves_kinds(mlc::String source_text) noexcept;
 
+bool cpp_lex_roundtrip_preserves_source(mlc::String source_text) noexcept;
+
 } // namespace cpp_lexer
 
 #endif // CPP_LEXER_HPP

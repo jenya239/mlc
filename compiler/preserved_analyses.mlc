@@ -1,0 +1,31 @@
+// LLVM-style preserved-analyses stub (invalidation only; no analysis cache yet).
+
+export type PreservedAnalyses = PreservedAnalyses {
+  analysis_names: [string]
+}
+
+export fn preserved_analyses_empty() -> PreservedAnalyses =
+  PreservedAnalyses { analysis_names: [] }
+
+export fn preserved_analyses_mark(preserved: PreservedAnalyses, analysis_name: string) -> PreservedAnalyses = do
+  let mut names = preserved.analysis_names
+  let mut index = 0
+  while index < names.length() do
+    if names[index] == analysis_name then return preserved end
+    index = index + 1
+  end
+  names.push(analysis_name)
+  PreservedAnalyses { analysis_names: names }
+end
+
+export fn preserved_analyses_invalidate_all(_preserved: PreservedAnalyses) -> PreservedAnalyses =
+  preserved_analyses_empty()
+
+export fn preserved_analyses_contains(preserved: PreservedAnalyses, analysis_name: string) -> bool = do
+  let mut index = 0
+  while index < preserved.analysis_names.length() do
+    if preserved.analysis_names[index] == analysis_name then return true end
+    index = index + 1
+  end
+  false
+end

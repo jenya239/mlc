@@ -1,0 +1,31 @@
+import { TestResult, assert_true } from './test_runner'
+import { parse_compile_options } from '../compile_options'
+import { dump_label_is_safe } from '../dump_flags'
+import { print_semantic_load_item } from '../ir/semantic_ir_dump'
+import { program_to_semantic_load_item } from '../checker/transform/program_to_semantic'
+import { parse_program } from '../frontend/parser/decls'
+import { tokenize } from '../frontend/lexer'
+
+export fn dump_flags_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true('dump_label_is_safe accepts entry.mlc', dump_label_is_safe('entry.mlc')))
+  results.push(assert_true('dump_label_is_safe rejects semicolon', !dump_label_is_safe('bad;path')))
+  results.push(assert_true('dump_label_is_safe rejects empty', !dump_label_is_safe('')))
+
+  const parsed = parse_compile_options(['--dump-ast', '--dump-sem', '--time-passes', '--check-only', 'entry.mlc'])
+  results.push(assert_true('parse_compile_options --dump-ast', parsed.dump_ast))
+  results.push(assert_true('parse_compile_options --dump-sem', parsed.dump_sem))
+  results.push(assert_true('parse_compile_options --time-passes', parsed.time_passes))
+
+  const program = parse_program(tokenize('fn main() -> i32 = 0').tokens)
+  match program_to_semantic_load_item(program, 'probe.mlc') {
+    Ok(item) => do
+      const summary = print_semantic_load_item(item)
+      results.push(assert_true('print_semantic_load_item mentions fn main', summary.contains('fn main')))
+    end,
+    Err(_) => results.push(assert_true('program_to_semantic_load_item for dump test', false))
+  }
+
+  results
+end

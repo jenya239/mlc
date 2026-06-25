@@ -1,0 +1,1 @@
+namespace nested { int item; }

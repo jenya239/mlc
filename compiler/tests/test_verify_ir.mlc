@@ -1,0 +1,27 @@
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { verify_ast_program } from '../verify/verify_ast'
+import { semantic_type_is_resolved } from '../verify/verify_semantic_ir'
+import { TUnknown } from '../checker/registry'
+import { span_unknown } from '../frontend/ast'
+import { SemanticExpressionIdent, sexpr_type } from '../ir/semantic_ir'
+
+export fn verify_ir_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const valid_source = 'fn answer() -> i32 = 42'
+  const valid_program = parse_program(tokenize(valid_source).tokens)
+  results.push(assert_eq_int('verify_ast_program valid source',
+    verify_ast_program(valid_program).length(), 0))
+
+  results.push(assert_true('semantic_type_is_resolved rejects TUnknown',
+    !semantic_type_is_resolved(Shared.new(TUnknown))))
+
+  const unresolved_expression =
+    Shared.new(SemanticExpressionIdent('value', Shared.new(TUnknown), span_unknown()))
+  results.push(assert_true('semantic expression with TUnknown is unresolved',
+    !semantic_type_is_resolved(sexpr_type(unresolved_expression))))
+
+  results
+end

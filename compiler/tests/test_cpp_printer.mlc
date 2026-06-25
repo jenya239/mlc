@@ -1,8 +1,8 @@
 // Golden tests for Cpp AST printer (compiler/cpp/cpp_ast.mlc).
 
 import { TestResult, assert_eq_str } from './test_runner'
-import { print_expr, print_statement, print_decl, print_file } from '../cpp/cpp_ast'
-import * as module_tu_helpers from '../cpp/module_tu_helpers'
+import {print_expr, print_statement, print_decl, print_file} from '../cpp_emit/print'
+import * as module_tu_helpers from '../cpp_emit/module_tu_helpers'
 import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
@@ -10,7 +10,7 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
          CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
-         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp/cpp_ast'
+         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp_ir/cpp_ast'
 
 fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')

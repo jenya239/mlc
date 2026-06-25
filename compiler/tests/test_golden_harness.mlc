@@ -1,0 +1,27 @@
+import { TestResult, assert_true } from './test_runner'
+import { golden_relative_path_is_safe, read_golden_fixture, assert_golden_string } from './support/golden_harness'
+import { test_relative_path_is_safe } from './support/path_from_root'
+
+export fn golden_harness_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_true("test_relative_path_is_safe accepts fixtures/golden/sample_expected.txt",
+    test_relative_path_is_safe("fixtures/golden/sample_expected.txt")))
+  results.push(assert_true("golden_relative_path_is_safe rejects parent segment",
+    !golden_relative_path_is_safe("fixtures/golden/../evil.txt")))
+  results.push(assert_true("golden_relative_path_is_safe rejects outside golden prefix",
+    !golden_relative_path_is_safe("fixtures/cpp_parser/sample_header.h")))
+
+  const read_result = read_golden_fixture("fixtures/golden/sample_expected.txt")
+  results.push(assert_true("read_golden_fixture loads sample",
+    match read_result { Ok(content) => content.contains("hello golden"), Err(_) => false }))
+
+  const unsafe_read = read_golden_fixture("fixtures/golden/../../main.mlc")
+  results.push(assert_true("read_golden_fixture rejects unsafe path",
+    match unsafe_read { Err(_) => true, Ok(_) => false }))
+
+  const sample_content = match read_result { Ok(content) => content, Err(_) => "" }
+  results.push(assert_golden_string("assert_golden_string sample", sample_content, "fixtures/golden/sample_expected.txt"))
+
+  results
+end

@@ -5,7 +5,7 @@
 #include "param_destructure_expand.hpp"
 #include "registry.hpp"
 #include "semantic_ir.hpp"
-#include "decl_index.hpp"
+#include "load_item.hpp"
 #include "transform.hpp"
 #include "transform_stmts.hpp"
 
@@ -16,7 +16,7 @@ using namespace trait_param_expand;
 using namespace param_destructure_expand;
 using namespace registry;
 using namespace semantic_ir;
-using namespace decl_index;
+using namespace load_item;
 using namespace transform;
 using namespace transform_stmts;
 using namespace ast_tokens;
@@ -27,9 +27,9 @@ mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> transform_decls(ml
 
 semantic_ir::SemanticProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept;
 
-mlc::Array<semantic_ir::SemanticNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<decl_index::NamespaceImportAlias> items) noexcept;
+mlc::Array<semantic_ir::SemanticNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<load_item::NamespaceImportAlias> items) noexcept;
 
-mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
+mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<load_item::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept;
 
 std::shared_ptr<semantic_ir::SemanticDeclaration> transform_decl(std::shared_ptr<ast::Decl> declaration, registry::TypeRegistry registry) noexcept{return std::visit(overloaded{
   [&](const DeclFn& declfn) -> std::shared_ptr<semantic_ir::SemanticDeclaration> { auto [name, type_params, trait_bounds, params, return_type_expr, body, where_clause_bounds_entries] = declfn; return [&]() -> std::shared_ptr<semantic_ir::SemanticDeclaration> { 
@@ -70,15 +70,15 @@ mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> transform_decls(ml
 
 semantic_ir::SemanticProgram transform_program(ast::Program program, registry::TypeRegistry registry) noexcept{return semantic_ir::SemanticProgram{transform_decls(program.decls, registry)};}
 
-mlc::Array<semantic_ir::SemanticNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<decl_index::NamespaceImportAlias> items) noexcept{return items.fold([&]() -> mlc::Array<semantic_ir::SemanticNamespaceImportAlias> { 
+mlc::Array<semantic_ir::SemanticNamespaceImportAlias> to_semantic_namespace_aliases(mlc::Array<load_item::NamespaceImportAlias> items) noexcept{return items.fold([&]() -> mlc::Array<semantic_ir::SemanticNamespaceImportAlias> { 
   mlc::Array<semantic_ir::SemanticNamespaceImportAlias> empty_aliases = {};
   return empty_aliases;
- }(), [](mlc::Array<semantic_ir::SemanticNamespaceImportAlias> result, decl_index::NamespaceImportAlias entry) mutable { return result.concat(mlc::Array<semantic_ir::SemanticNamespaceImportAlias>{semantic_ir::SemanticNamespaceImportAlias{entry.alias, entry.module_path}}); });}
+ }(), [](mlc::Array<semantic_ir::SemanticNamespaceImportAlias> result, load_item::NamespaceImportAlias entry) mutable { return result.concat(mlc::Array<semantic_ir::SemanticNamespaceImportAlias>{semantic_ir::SemanticNamespaceImportAlias{entry.alias, entry.module_path}}); });}
 
-mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<decl_index::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept{return items.fold([&]() -> mlc::Array<semantic_ir::SemanticLoadItem> { 
+mlc::Array<semantic_ir::SemanticLoadItem> transform_load_items(mlc::Array<load_item::LoadItem> items, registry::TypeRegistry registry, trait_param_expand::TraitNominalMaps trait_maps) noexcept{return items.fold([&]() -> mlc::Array<semantic_ir::SemanticLoadItem> { 
   mlc::Array<semantic_ir::SemanticLoadItem> empty_items = {};
   return empty_items;
- }(), [trait_maps, registry](mlc::Array<semantic_ir::SemanticLoadItem> result, decl_index::LoadItem item) mutable { return [&]() -> mlc::Array<semantic_ir::SemanticLoadItem> { 
+ }(), [trait_maps, registry](mlc::Array<semantic_ir::SemanticLoadItem> result, load_item::LoadItem item) mutable { return [&]() -> mlc::Array<semantic_ir::SemanticLoadItem> { 
   mlc::Array<std::shared_ptr<ast::Decl>> destructured_entry_declarations = param_destructure_expand::expand_parameter_destructuring_in_program(ast::Program{item.decls}).decls;
   mlc::Array<std::shared_ptr<ast::Decl>> expanded_declarations = trait_param_expand::expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps);
   mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> typed_declarations = transform_decls(expanded_declarations, registry);

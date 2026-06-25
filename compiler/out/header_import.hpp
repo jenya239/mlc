@@ -7,6 +7,7 @@
 #include "cpp_lexer.hpp"
 #include "cpp_parser.hpp"
 #include "cpp_ast.hpp"
+#include "print.hpp"
 #include "ast.hpp"
 #include "registry.hpp"
 

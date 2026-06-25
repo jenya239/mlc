@@ -1,0 +1,199 @@
+// Structural tests for C++ declaration parser (AST shape).
+
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { cpp_tokenize } from '../cpp_parse/cpp_lexer'
+import { cpp_parse } from '../cpp_parse/cpp_parser'
+import { CppDeclaration, CppFnProto, CppVariant, CppNamespace, CppClassDeclaration, CppTypedefDeclaration,
+         CppTemplateDeclaration, CppExternBlock, CppForwardDecl, CppUsing, CppVariantArm,
+         CppClassMember, CppClassMemberField, CppClassMemberAccess, CppPublic, CppProtected, CppPrivate } from '../cpp_ir/cpp_ast'
+
+fn cpp_structural_parse_count(source_text: string) -> i32 =
+  cpp_parse(cpp_tokenize(source_text).tokens).program.declarations.length()
+
+fn cpp_structural_parse_first(source_text: string) -> Shared<CppDeclaration> = do
+  const program = cpp_parse(cpp_tokenize(source_text).tokens).program
+  if program.declarations.length() > 0 then program.declarations[0] else Shared.new(CppForwardDecl("struct", "")) end
+end
+
+fn cpp_structural_member_is_public(member: CppClassMember) -> bool =
+  match member { CppClassMemberAccess(CppPublic) => true, _ => false }
+
+fn cpp_structural_member_is_protected(member: CppClassMember) -> bool =
+  match member { CppClassMemberAccess(CppProtected) => true, _ => false }
+
+fn cpp_structural_member_is_private(member: CppClassMember) -> bool =
+  match member { CppClassMemberAccess(CppPrivate) => true, _ => false }
+
+fn cpp_structural_class_members(declaration: Shared<CppDeclaration>) -> [CppClassMember] = do
+  let empty_members: [CppClassMember] = []
+  match declaration { CppClassDeclaration(definition) => definition.members, _ => empty_members }
+end
+
+fn cpp_structural_has_public_access(declaration: Shared<CppDeclaration>) -> bool = do
+  const members = cpp_structural_class_members(declaration)
+  let mut index = 0
+  let mut found = false
+  while index < members.length() && !found do
+    if cpp_structural_member_is_public(members[index]) then found = true end
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_structural_has_protected_access(declaration: Shared<CppDeclaration>) -> bool = do
+  const members = cpp_structural_class_members(declaration)
+  let mut index = 0
+  let mut found = false
+  while index < members.length() && !found do
+    if cpp_structural_member_is_protected(members[index]) then found = true end
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_structural_has_private_access(declaration: Shared<CppDeclaration>) -> bool = do
+  const members = cpp_structural_class_members(declaration)
+  let mut index = 0
+  let mut found = false
+  while index < members.length() && !found do
+    if cpp_structural_member_is_private(members[index]) then found = true end
+    index = index + 1
+  end
+  found
+end
+
+fn cpp_structural_is_member_field(member: CppClassMember) -> bool =
+  match member { CppClassMemberField(_, _, _) => true, _ => false }
+
+fn cpp_structural_field_count(declaration: Shared<CppDeclaration>) -> i32 = do
+  const members = cpp_structural_class_members(declaration)
+  let mut count = 0
+  let mut index = 0
+  while index < members.length() do
+    if cpp_structural_is_member_field(members[index]) then count = count + 1 end
+    index = index + 1
+  end
+  count
+end
+
+fn cpp_structural_is_struct(declaration: Shared<CppDeclaration>) -> bool =
+  match declaration { CppClassDeclaration(definition) => definition.is_struct, _ => false }
+
+fn cpp_structural_template_inner_is_identity(declaration: Shared<CppDeclaration>) -> bool =
+  match declaration {
+    CppTemplateDeclaration(_, inner) => cpp_structural_is_identity_fn_proto(inner),
+    _ => false
+  }
+
+fn cpp_structural_is_identity_fn_proto(declaration: Shared<CppDeclaration>) -> bool =
+  match declaration { CppFnProto(_, _, name, _) => name == "identity", _ => false }
+
+fn cpp_structural_enum_arm_count(declaration: Shared<CppDeclaration>) -> i32 = do
+  let empty_arms: [Shared<CppVariantArm>] = []
+  const arms = match declaration { CppVariant(_, _, arms) => arms, _ => empty_arms }
+  arms.length()
+end
+
+fn cpp_structural_namespace_inner_count(declaration: Shared<CppDeclaration>) -> i32 = do
+  let empty_declarations: [Shared<CppDeclaration>] = []
+  const inner = match declaration { CppNamespace(_, inner) => inner, _ => empty_declarations }
+  inner.length()
+end
+
+fn cpp_structural_extern_inner_count(declaration: Shared<CppDeclaration>) -> i32 = do
+  let empty_declarations: [Shared<CppDeclaration>] = []
+  const inner = match declaration { CppExternBlock(_, inner) => inner, _ => empty_declarations }
+  inner.length()
+end
+
+export fn cpp_parser_structural_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int('struct two fields',
+    cpp_structural_field_count(cpp_structural_parse_first('struct Pair { int left; int right; };')), 2))
+
+  results.push(assert_eq_int('class one field',
+    cpp_structural_field_count(cpp_structural_parse_first('class Cell { int value; };')), 1))
+
+  results.push(assert_true('struct is_struct flag',
+    cpp_structural_is_struct(cpp_structural_parse_first('struct Box { int value; };'))))
+
+  results.push(assert_true('class is_struct false',
+    !cpp_structural_is_struct(cpp_structural_parse_first('class Box { int value; };'))))
+
+  results.push(assert_true('class public access',
+    cpp_structural_has_public_access(cpp_structural_parse_first('class A { public: int x; };'))))
+
+  results.push(assert_true('class protected access',
+    cpp_structural_has_protected_access(cpp_structural_parse_first('class A { protected: int x; };'))))
+
+  results.push(assert_true('class private access',
+    cpp_structural_has_private_access(cpp_structural_parse_first('class A { private: int x; };'))))
+
+  results.push(assert_eq_int('enum three arms',
+    cpp_structural_enum_arm_count(cpp_structural_parse_first('enum RGB { Red, Green, Blue };')), 3))
+
+  results.push(assert_eq_int('namespace inner decl count',
+    cpp_structural_namespace_inner_count(cpp_structural_parse_first('namespace box { int item; int other; }')), 2))
+
+  results.push(assert_eq_int('triple decl file',
+    cpp_structural_parse_count('int a(); struct B { int y; }; enum E { X };'), 3))
+
+  results.push(assert_true('typedef alias name',
+    match cpp_structural_parse_first('typedef unsigned long size_t;') {
+      CppTypedefDeclaration(name, _) => name == "size_t",
+      _ => false
+    }))
+
+  results.push(assert_true('template parameters string',
+    match cpp_structural_parse_first('template<typename T> T identity(T value);') {
+      CppTemplateDeclaration(parameters, _) => parameters == "typename T",
+      _ => false
+    }))
+
+  results.push(assert_true('template inner fn proto',
+    cpp_structural_template_inner_is_identity(
+      cpp_structural_parse_first('template<typename T> T identity(T value);'))))
+
+  results.push(assert_eq_int('extern block inner count',
+    cpp_structural_extern_inner_count(cpp_structural_parse_first('extern "C" { int x; void f(); }')), 2))
+
+  results.push(assert_true('forward enum',
+    match cpp_structural_parse_first('enum State;') {
+      CppForwardDecl(kind, name) => kind == "enum" && name == "State",
+      _ => false
+    }))
+
+  results.push(assert_true('forward struct',
+    match cpp_structural_parse_first('struct Pending;') {
+      CppForwardDecl(kind, name) => kind == "struct" && name == "Pending",
+      _ => false
+    }))
+
+  results.push(assert_true('fn proto zero parameters',
+    match cpp_structural_parse_first('void reset();') {
+      CppFnProto(_, return_type, name, parameters) =>
+        return_type == "void" && name == "reset" && parameters.length() == 0,
+      _ => false
+    }))
+
+  results.push(assert_true('fn proto three parameters',
+    match cpp_structural_parse_first('int mix(int a, int b, int c);') {
+      CppFnProto(_, _, name, parameters) => name == "mix" && parameters.length() == 3,
+      _ => false
+    }))
+
+  results.push(assert_true('using alias type',
+    match cpp_structural_parse_first('using Counter = int;') {
+      CppUsing(alias, type_string) => alias == "Counter" && type_string == "int",
+      _ => false
+    }))
+
+  results.push(assert_eq_int('two template decls',
+    cpp_structural_parse_count('template<typename T> T one(T value); template<typename U> U two(U value);'), 2))
+
+  results.push(assert_eq_int('garbage recovery keeps good decl',
+    cpp_structural_parse_count('??? bad; int good();'), 1))
+
+  results
+end

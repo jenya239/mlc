@@ -1,0 +1,125 @@
+// Test suite registry grouped by IR level (STEP=10 layout).
+
+import { TestResult } from '../test_runner'
+import { lexer_tests } from '../test_lexer'
+import { parser_tests } from '../test_parser'
+import { checker_tests } from '../test_checker'
+import { codegen_tests } from '../test_codegen'
+import { pipe_and_record_update_tests } from '../test_pipe_and_record_update'
+import { decl_gen_tests } from '../test_decl_gen'
+import { partial_application_tests } from '../test_partial_application'
+import { merge_import_tests } from '../test_merge_imports'
+import { pass_type_tests } from '../test_pass'
+import { pass_manager_tests } from '../test_pass_manager'
+import { program_to_semantic_tests } from '../test_program_to_semantic'
+import { dump_flags_tests } from '../test_dump_flags'
+import { core_ir_tests } from '../test_core_ir'
+import { driver_tests } from '../test_driver'
+import { verify_ir_tests } from '../test_verify_ir'
+import { compile_commands_tests } from '../test_compile_commands'
+import { expr_visitor_tests } from '../test_expr_visitor'
+import { visitor_pass_parity_tests } from '../test_visitor_pass_parity'
+import { cpp_printer_tests } from '../test_cpp_printer'
+import { cpp_lexer_tests } from '../test_cpp_lexer'
+import { cpp_ast_tests } from '../test_cpp_ast'
+import { verify_cpp_ast_tests } from '../test_verify_cpp_ast'
+import { cpp_parser_tests } from '../test_cpp_parser'
+import { cpp_parser_structural_tests } from '../test_cpp_parser_structural'
+import { cpp_type_parser_tests } from '../test_cpp_types'
+import { cpp_header_import_tests } from '../test_cpp_header_import'
+import { cpp_to_source_tests } from '../test_cpp_to_source'
+import { cpp_expr_parser_tests } from '../test_cpp_exprs'
+import { lsp_server_tests } from '../test_lsp_server'
+import { formatter_tests } from '../test_formatter'
+import { fuzz_tests } from '../test_fuzz'
+import { golden_harness_tests } from '../test_golden_harness'
+import { record_field_default_validate_tests } from '../test_record_field_default_validate'
+
+export type TestIrLevel =
+  | TestIrSyntax
+  | TestIrHir
+  | TestIrTypes
+  | TestIrCpp
+  | TestIrIntegration
+  | TestIrTooling
+
+export fn append_suite_results(mut accumulator: [TestResult], suite: [TestResult]) -> [TestResult] = do
+  let mut index = 0
+  while index < suite.length() do
+    accumulator.push(suite[index])
+    index = index + 1
+  end
+  accumulator
+end
+
+export fn syntax_suite_results() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, lexer_tests())
+  results = append_suite_results(results, parser_tests())
+  results = append_suite_results(results, verify_ir_tests())
+  results = append_suite_results(results, dump_flags_tests())
+  results = append_suite_results(results, formatter_tests())
+  results = append_suite_results(results, golden_harness_tests())
+  results
+end
+
+export fn hir_suite_results() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, program_to_semantic_tests())
+  results = append_suite_results(results, merge_import_tests())
+  results = append_suite_results(results, partial_application_tests())
+  results
+end
+
+export fn types_suite_results() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, checker_tests())
+  results = append_suite_results(results, pipe_and_record_update_tests())
+  results = append_suite_results(results, pass_type_tests())
+  results = append_suite_results(results, pass_manager_tests())
+  results = append_suite_results(results, record_field_default_validate_tests())
+  results
+end
+
+export fn cpp_suite_results() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, cpp_printer_tests())
+  results = append_suite_results(results, cpp_lexer_tests())
+  results = append_suite_results(results, cpp_ast_tests())
+  results = append_suite_results(results, verify_cpp_ast_tests())
+  results = append_suite_results(results, cpp_parser_tests())
+  results = append_suite_results(results, cpp_parser_structural_tests())
+  results = append_suite_results(results, cpp_type_parser_tests())
+  results = append_suite_results(results, cpp_header_import_tests())
+  results = append_suite_results(results, cpp_to_source_tests())
+  results = append_suite_results(results, cpp_expr_parser_tests())
+  results
+end
+
+export fn integration_suite_results() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, codegen_tests())
+  results = append_suite_results(results, decl_gen_tests())
+  results = append_suite_results(results, core_ir_tests())
+  results = append_suite_results(results, driver_tests())
+  results = append_suite_results(results, expr_visitor_tests())
+  results = append_suite_results(results, visitor_pass_parity_tests())
+  results = append_suite_results(results, compile_commands_tests())
+  results = append_suite_results(results, fuzz_tests())
+  results
+end
+
+export fn tooling_suite_results() -> [TestResult] = do
+  lsp_server_tests()
+end
+
+export fn all_test_suites() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  results = append_suite_results(results, syntax_suite_results())
+  results = append_suite_results(results, hir_suite_results())
+  results = append_suite_results(results, types_suite_results())
+  results = append_suite_results(results, cpp_suite_results())
+  results = append_suite_results(results, integration_suite_results())
+  results = append_suite_results(results, tooling_suite_results())
+  results
+end

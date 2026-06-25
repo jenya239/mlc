@@ -6,7 +6,8 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
-#include "record_defaults.hpp"
+#include "record_field_default_validate.hpp"
+#include "record_field_default_emit.hpp"
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"

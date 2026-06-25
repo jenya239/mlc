@@ -22,9 +22,9 @@ import {
   CppVisitArmConstructed,
   CppVisitArmConstructedGeneric,
   CppInvokedBlockWithReturn
-} from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
-import { print_expr, print_statement } from '../../cpp/cpp_ast'
+} from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import {print_expr, print_statement} from '../../cpp_emit/print'
 import { gen_string_literal_cpp } from './literals'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {

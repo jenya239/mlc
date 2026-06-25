@@ -3,14 +3,14 @@
 import { Pattern, PatternIdent, PatternTuple, PatternRecord, PatternArray, PatternCtor } from '../../frontend/ast'
 import { SemanticExpression } from '../../ir/semantic_ir'
 import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
-import { CppExpression, CppStatement, CppMember, CppIndex, CppCall, CppIdent, CppUnary, CppBinary, CppTypeName, CppTypeRef, CppConstDecl } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression, CppStatement, CppMember, CppIndex, CppCall, CppIdent, CppUnary, CppBinary, CppTypeName, CppTypeRef, CppConstDecl } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext, lookup_fields_for_context, take_temp_name } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pattern_binding_name_list } from '../expr/match_analysis'
-import { print_statement } from '../../cpp/cpp_ast'
+import {print_statement} from '../../cpp_emit/print'
 
 export type GenLetPatternCppResult = GenLetPatternCppResult { statement: Shared<CppStatement>, codegen_context: CodegenContext }
 

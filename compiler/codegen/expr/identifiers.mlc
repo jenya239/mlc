@@ -1,5 +1,5 @@
-import { CppExpression } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'

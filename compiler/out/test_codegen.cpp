@@ -7,7 +7,7 @@
 #include "expr.hpp"
 #include "context.hpp"
 #include "type_gen.hpp"
-#include "module.hpp"
+#include "codegen_harness.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
 #include "ast.hpp"
@@ -27,7 +27,7 @@ using namespace expression_support;
 using namespace expr;
 using namespace context;
 using namespace type_gen;
-using namespace module;
+using namespace codegen_harness;
 using namespace lexer;
 using namespace decls;
 using namespace ast;
@@ -130,7 +130,7 @@ results.push_back(test_runner::assert_eq_str(mlc::String("ExprLambda two params 
 mlc::Array<mlc::String> zero_params = {};
 results.push_back(test_runner::assert_eq_str(mlc::String("ExprLambda zero params - '[]() mutable { return ... }'"), eval::gen_expr(std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionLambda(zero_params, si(42), unk_t(), ast::span_unknown())), context), mlc::String("[]() mutable { return 42; }")));
 mlc::String stored_lambda_program = mlc::String("fn make_checker(allowed: [string]) -> i32 = do\n  const checker = fn word => if allowed.contains(word) then 1 else 0 end\n  checker(\"fn\")\nend\nfn main() -> i32 = make_checker([\"fn\"])\n");
-mlc::String stored_lambda_cpp = module::gen_program(decls::parse_program(lexer::tokenize(stored_lambda_program).tokens));
+mlc::String stored_lambda_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(stored_lambda_program).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("stored lambda make_checker uses value capture"), stored_lambda_cpp, mlc::String("[=](auto word)")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("stored lambda make_checker avoids reference capture"), stored_lambda_cpp, mlc::String("[&](auto word)")));
 mlc::Array<mlc::String> three_lambda_parameters = mlc::Array<mlc::String>{mlc::String("first_parameter"), mlc::String("second_parameter"), mlc::String("third_parameter")};
@@ -196,7 +196,7 @@ results.push_back(test_runner::assert_eq_str(mlc::String("string match avoids st
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("string match emits if/else if chain"), string_match_out, mlc::String("else if")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("string match compares subject to literal"), string_match_out, mlc::String("__match_subject ==")));
 mlc::String string_match_program = mlc::String("fn f(word: string) -> i32 = match word | \"fn\" => 1 | \"type\" => 2 | _ => 0 end\nfn main() -> i32 = f(\"fn\")\n");
-mlc::String string_match_program_cpp = module::gen_program(decls::parse_program(lexer::tokenize(string_match_program).tokens));
+mlc::String string_match_program_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(string_match_program).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("program string match avoids std::visit"), string_match_program_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("program string match has else if"), string_match_program_cpp, mlc::String("else if")));
 mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> or_match_arms = mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>>{smatch_arm(std::make_shared<ast::Pattern>(ast::PatternOr(mlc::Array<std::shared_ptr<ast::Pattern>>{std::make_shared<ast::Pattern>(ast::PatternCtor(mlc::String("Circle"), mlc::Array<std::shared_ptr<ast::Pattern>>{std::make_shared<ast::Pattern>(ast::PatternWild(ast::span_unknown()))}, ast::span_unknown())), std::make_shared<ast::Pattern>(ast::PatternCtor(mlc::String("Square"), mlc::Array<std::shared_ptr<ast::Pattern>>{std::make_shared<ast::Pattern>(ast::PatternWild(ast::span_unknown()))}, ast::span_unknown()))}, ast::span_unknown())), ss(mlc::String("r")))};
@@ -204,17 +204,17 @@ mlc::String or_match_out = eval::gen_expr(std::make_shared<semantic_ir::Semantic
 results.push_back(test_runner::assert_eq_str(mlc::String("PatternOr expanded: Circle lambda present"), or_match_out.contains(mlc::String("Circle")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("PatternOr expanded: Square lambda present"), or_match_out.contains(mlc::String("Square")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::String guarded_primitive_program = mlc::String("fn main() -> i32 = match 5 { n if n > 0 => 1, else => 0 }\n");
-mlc::String guarded_primitive_cpp = module::gen_program(decls::parse_program(lexer::tokenize(guarded_primitive_program).tokens));
+mlc::String guarded_primitive_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(guarded_primitive_program).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("match guard on primitive avoids std::visit"), guarded_primitive_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("match guard emits typed IIFE"), guarded_primitive_cpp, mlc::String("[&]() -> int")));
 mlc::String plain_sum_program = mlc::String("type T = A(i32) | B\nfn f(x: T) -> i32 = match x | A(n) => n | B => 0 end\nfn main() -> i32 = f(A(1))\n");
-mlc::String plain_sum_cpp = module::gen_program(decls::parse_program(lexer::tokenize(plain_sum_program).tokens));
+mlc::String plain_sum_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(plain_sum_program).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("match sum without guard keeps std::visit"), plain_sum_cpp.contains(mlc::String("std::visit")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::String guarded_sum_program = mlc::String("type U = A(i32) | B\nfn g(x: U) -> i32 = match x | A(n) if n > 0 => n | A(_) => 0 | B => -1 end\nfn main() -> i32 = g(A(3))\n");
-mlc::String guarded_sum_cpp = module::gen_program(decls::parse_program(lexer::tokenize(guarded_sum_program).tokens));
+mlc::String guarded_sum_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(guarded_sum_program).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("match sum with guard avoids std::visit"), guarded_sum_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
 mlc::String mixed_guard_program = mlc::String("type V = A(i32) | B\nfn h(x: V) -> i32 = match x | A(n) => n | B if true => 0 end\nfn main() -> i32 = h(B)\n");
-mlc::String mixed_guard_cpp = module::gen_program(decls::parse_program(lexer::tokenize(mixed_guard_program).tokens));
+mlc::String mixed_guard_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(mixed_guard_program).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("match mixed arms use guarded lowering when any guard present"), mixed_guard_cpp.contains(mlc::String("std::visit")) ? mlc::String("has_visit") : mlc::String("no_visit"), mlc::String("no_visit")));
 mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> while_body = mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementExpr(si(0), ast::span_unknown()))};
 mlc::String while_out = eval::gen_expr(std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionWhile(sb(true), while_body, unit_t(), ast::span_unknown())), context);
@@ -245,31 +245,31 @@ mlc::Array<std::shared_ptr<ast::Param>> fn_param = mlc::Array<std::shared_ptr<as
 std::shared_ptr<ast::Expr> fn_body = std::make_shared<ast::Expr>(ast::ExprBin(mlc::String("*"), std::make_shared<ast::Expr>(ast::ExprIdent(mlc::String("n"), ast::span_unknown())), std::make_shared<ast::Expr>(ast::ExprInt(2, ast::span_unknown())), ast::span_unknown()));
 ast::Decl fn_decl = ast::DeclFn(mlc::String("double_it"), {}, {}, fn_param, std::make_shared<ast::TypeExpr>((ast::TyI32{})), fn_body, {});
 ast::Program fn_prog = ast::Program{mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclExported(std::make_shared<ast::Decl>(fn_decl)))}};
-mlc::String fn_prog_out = module::gen_program(fn_prog);
+mlc::String fn_prog_out = codegen_harness::gen_program(fn_prog);
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: signature in output"), fn_prog_out.contains(mlc::String("double_it")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: param type in output"), fn_prog_out.contains(mlc::String("int n")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 results.push_back(test_runner::assert_eq_str(mlc::String("DeclFn: body in output"), fn_prog_out.contains(mlc::String("return (n * 2)")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::String type_alias_return_source = mlc::String("type Words = [string]\nexport fn main() -> Words = []");
-mlc::String type_alias_return_output = module::gen_program(decls::parse_program(lexer::tokenize(type_alias_return_source).tokens));
+mlc::String type_alias_return_output = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(type_alias_return_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("type alias: return uses underlying array type"), type_alias_return_output, mlc::String("mlc::Array<mlc::String>")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("type alias: no struct decl for alias name"), type_alias_return_output, mlc::String("struct Words")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("type alias: no using decl for alias name"), type_alias_return_output, mlc::String("using Words")));
 mlc::String type_alias_parameter_source = mlc::String("type Count = i32\nexport fn double_count(value: Count) -> Count = value * 2");
-mlc::String type_alias_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(type_alias_parameter_source).tokens));
+mlc::String type_alias_parameter_output = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(type_alias_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("type alias: parameter uses underlying int type"), type_alias_parameter_output, mlc::String("int value")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("type alias parameter: no struct for alias name"), type_alias_parameter_output, mlc::String("struct Count")));
 mlc::String d3_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()");
-mlc::String d3_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_trait_parameter_source).tokens));
+mlc::String d3_trait_parameter_output = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(d3_trait_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: concept Display"), d3_trait_parameter_output, mlc::String("concept Display")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: requires in trait concept"), d3_trait_parameter_output, mlc::String("requires")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: parameter uses Display constraint"), d3_trait_parameter_output, mlc::String("requires Display<")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: expanded trait param type"), d3_trait_parameter_output, mlc::String("__trait_param_0")));
 mlc::String d3_two_trait_parameter_source = mlc::String("type Display { fn to_string(self: Self) -> string }\nfn g(first: Display, second: Display) -> unit = ()");
-mlc::String d3_two_trait_parameter_output = module::gen_program(decls::parse_program(lexer::tokenize(d3_two_trait_parameter_source).tokens));
+mlc::String d3_two_trait_parameter_output = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(d3_two_trait_parameter_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: first Display parameter"), d3_two_trait_parameter_output, mlc::String("Display<__trait_param_0>")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D3 gen_program: second Display parameter"), d3_two_trait_parameter_output, mlc::String("Display<__trait_param_1>")));
 mlc::String d4_where_trait_bounds_source = mlc::String("type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()");
-mlc::String d4_where_trait_bounds_output = module::gen_program(decls::parse_program(lexer::tokenize(d4_where_trait_bounds_source).tokens));
+mlc::String d4_where_trait_bounds_output = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(d4_where_trait_bounds_source).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D4 gen_program: requires Display"), d4_where_trait_bounds_output, mlc::String("Display")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("D4 gen_program: requires EqCompare"), d4_where_trait_bounds_output, mlc::String("EqCompare")));
 mlc::Array<mlc::String> result_type_params = mlc::Array<mlc::String>{mlc::String("T"), mlc::String("E")};
@@ -354,22 +354,22 @@ results.push_back(test_runner::assert_eq_str(mlc::String("c5: SemanticExpression
 std::shared_ptr<registry::Type> assoc_t = std::make_shared<registry::Type>(registry::TAssoc(mlc::String("I"), mlc::String("Item")));
 results.push_back(test_runner::assert_eq_str(mlc::String("d1: sem_type_to_cpp TAssoc"), type_gen::sem_type_to_cpp(context, assoc_t), mlc::String("typename I::Item")));
 mlc::String assoc_prog_src = mlc::String("type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }");
-mlc::String assoc_prog_out = module::gen_program(decls::parse_program(lexer::tokenize(assoc_prog_src).tokens));
+mlc::String assoc_prog_out = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(assoc_prog_src).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("d1: gen_program struct contains using Item ="), assoc_prog_out.contains(mlc::String("using Item =")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::String op_prog_src = mlc::String("type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0");
-mlc::String op_prog_out = module::gen_program(decls::parse_program(lexer::tokenize(op_prog_src).tokens));
+mlc::String op_prog_out = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(op_prog_src).tokens));
 results.push_back(test_runner::assert_eq_str(mlc::String("d2: gen_program Vec2 + Vec2 desugars to Vec2_add"), op_prog_out.contains(mlc::String("Vec2_add(")) ? mlc::String("yes") : mlc::String("no"), mlc::String("yes")));
 mlc::String codegen_invariant_tail_after_else_if_chain = mlc::String("export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == \"a\" then\n    accumulator = 1\n  else if kind == \"b\" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain(\"a\", 100)");
-mlc::String codegen_tail_chain_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_tail_after_else_if_chain).tokens));
+mlc::String codegen_tail_chain_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_tail_after_else_if_chain).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: else-if chain keeps trailing tail expr"), codegen_tail_chain_cpp, mlc::String("accumulator + extra")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: else-if chain emits return of tail"), codegen_tail_chain_cpp, mlc::String("return")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("gen_program: else-if chain has no stray export marker"), codegen_tail_chain_cpp, mlc::String("export_;")));
 mlc::String codegen_invariant_twin_if_zip_join_style = mlc::String("export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == \"zip\" then\n      diagnostics_weight = 1\n    end\n    if kind == \"join\" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch(\"zip\", true)");
-mlc::String codegen_twin_if_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_twin_if_zip_join_style).tokens));
+mlc::String codegen_twin_if_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_twin_if_zip_join_style).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: twin if emits final accumulator tail"), codegen_twin_if_cpp, mlc::String("diagnostics_weight + 50")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("gen_program: twin if has no stray export marker"), codegen_twin_if_cpp, mlc::String("export_;")));
 mlc::String codegen_invariant_if_else_flattened = mlc::String("fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)");
-mlc::String codegen_if_else_flat_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_if_else_flattened).tokens));
+mlc::String codegen_if_else_flat_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(codegen_invariant_if_else_flattened).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: flattened else branch references helper"), codegen_if_else_flat_cpp, mlc::String("merge_unknown_inner")));
 results.push_back(codegen_test_helpers::assert_code_not_contains(mlc::String("gen_program: flattened if/else has no stray export marker"), codegen_if_else_flat_cpp, mlc::String("export_;")));
 ast::Program point_type = decls::parse_program(lexer::tokenize(mlc::String("type Point = Point(i32, Shared<i32>)")).tokens);
@@ -390,11 +390,11 @@ std::shared_ptr<ctor_info::CtorTypeInfo> node_info = ctor_info::lookup_ctor_type
 results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_pos — 1"), node_info->shared_pos.size(), 1));
 results.push_back(test_runner::assert_eq_int(mlc::String("ctor_info: Node shared_arr_pos — 1"), node_info->shared_arr_pos.size(), 1));
 mlc::String codegen_large_function_body = mlc::String("export fn large_body(seed: i32) -> i32 = do\n  let mut accumulator = seed\n  accumulator = accumulator + 1\n  accumulator = accumulator + 2\n  accumulator = accumulator + 3\n  if accumulator > 10 then\n    accumulator = accumulator - 1\n  end\n  if accumulator > 20 then\n    accumulator = accumulator - 2\n  else\n    accumulator = accumulator + 4\n  end\n  let mut counter = 0\n  while counter < 5 do\n    accumulator = accumulator + counter\n    counter = counter + 1\n  end\n  match accumulator {\n    0 => 0,\n    _ => accumulator\n  }\nend\n\nexport fn main() -> i32 = large_body(0)");
-mlc::String codegen_large_body_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_large_function_body).tokens));
+mlc::String codegen_large_body_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(codegen_large_function_body).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: large fn body keeps accumulator updates"), codegen_large_body_cpp, mlc::String("accumulator")));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: large fn body emits while loop"), codegen_large_body_cpp, mlc::String("while")));
 mlc::String codegen_extend_method = mlc::String("type Widget = { value: i32 }\nextend Widget { fn doubled(self: Widget) -> i32 = self.value * 2 }\nexport fn main() -> i32 = do\n  let widget = Widget { value: 3 }\n  widget.doubled()\nend");
-mlc::String codegen_extend_method_cpp = module::gen_program(decls::parse_program(lexer::tokenize(codegen_extend_method).tokens));
+mlc::String codegen_extend_method_cpp = codegen_harness::gen_program(decls::parse_program(lexer::tokenize(codegen_extend_method).tokens));
 results.push_back(codegen_test_helpers::assert_code_contains(mlc::String("gen_program: extend method call mangles owner"), codegen_extend_method_cpp, mlc::String("Widget_doubled")));
 return results;
 }

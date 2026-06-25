@@ -1,10 +1,10 @@
 // Unit tests for C++ to_source (trivia roundtrip + canonical print).
 
 import { TestResult, assert_eq_str, assert_true } from './test_runner'
-import { cpp_tokenize, cpp_lex_roundtrip_preserves_source } from '../cpp/cpp_lexer'
-import { cpp_program_to_source, cpp_program_from_tokens_preserving_trivia, cpp_source_roundtrip_preserving_trivia, cpp_parse_to_source_canonical, cpp_tokens_span_to_source } from '../cpp/parser/to_source'
-import { cpp_parse } from '../cpp/cpp_parser'
-import { CppDeclarationFragment } from '../cpp/cpp_ast'
+import { cpp_tokenize, cpp_lex_roundtrip_preserves_source } from '../cpp_parse/cpp_lexer'
+import { cpp_program_to_source, cpp_program_from_tokens_preserving_trivia, cpp_source_roundtrip_preserving_trivia, cpp_parse_to_source_canonical, cpp_tokens_span_to_source } from '../cpp_parse/parser/to_source'
+import { cpp_parse } from '../cpp_parse/cpp_parser'
+import { CppDeclarationFragment } from '../cpp_ir/cpp_ast'
 
 export fn cpp_to_source_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -44,6 +44,36 @@ export fn cpp_to_source_tests() -> [TestResult] = do
       CppDeclarationFragment(code) => code == 'int x;',
       _ => false
     }))
+
+  results.push(assert_true('trivia roundtrip - fn proto',
+    cpp_source_roundtrip_preserving_trivia('int add(int a, int b);')))
+
+  results.push(assert_true('trivia roundtrip - typedef',
+    cpp_source_roundtrip_preserving_trivia('typedef unsigned long size_t;')))
+
+  results.push(assert_true('trivia roundtrip - template decl',
+    cpp_source_roundtrip_preserving_trivia('template<typename T> T identity(T value);')))
+
+  results.push(assert_true('trivia roundtrip - extern block',
+    cpp_source_roundtrip_preserving_trivia('extern "C" { int x; }')))
+
+  results.push(assert_true('trivia roundtrip - attribute decl',
+    cpp_source_roundtrip_preserving_trivia('[[nodiscard]] int fn();')))
+
+  results.push(assert_true('trivia roundtrip - class access',
+    cpp_source_roundtrip_preserving_trivia('class Foo { public: int x; };')))
+
+  results.push(assert_true('trivia roundtrip - enum',
+    cpp_source_roundtrip_preserving_trivia('enum Color { Red, Green };')))
+
+  results.push(assert_true('trivia roundtrip - namespace',
+    cpp_source_roundtrip_preserving_trivia('namespace box { int item; }')))
+
+  results.push(assert_true('trivia roundtrip - struct two fields',
+    cpp_source_roundtrip_preserving_trivia('struct Pair { int left; int right; };')))
+
+  results.push(assert_true('trivia roundtrip - block comment',
+    cpp_source_roundtrip_preserving_trivia('/* header */\nusing Alias = int;')))
 
   results
 end

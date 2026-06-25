@@ -1,9 +1,5 @@
-# architecture lint allowlist — shrink over time, do not grow without Meta review
+# architecture lint allowlist â€” shrink over time, do not grow without Meta review
 # format: RULE:path[:detail]
-
-# cross-layer (remove in STEP=11)
-cross_import:checker/check/check.mlc:record_field_default_expression_acceptable_for_codegen
-cross_import:codegen/module.mlc:transform_load_items
 
 # god files >800 lines (split candidates)
 file_size:checker/transform/transform.mlc
@@ -13,7 +9,8 @@ file_size:codegen/decl_cpp.mlc
 file_size:checker/infer/infer.mlc
 file_size:checker/registry.mlc
 file_size:codegen/expr/match_gen.mlc
-file_size:cpp/cpp_ast.mlc
+file_size:cpp_ir/cpp_ast.mlc
+file_size:cpp_emit/print.mlc
 file_size:expr_visitor_cpp.mlc
 
 # test files exempt from file_size hard limit

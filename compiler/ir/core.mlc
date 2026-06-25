@@ -1,0 +1,78 @@
+// CoreIR sketch: lowered CFG-shaped IR between SemanticIR and CppAST.
+// STEP=7: types + verifier only; no pipeline lowering yet.
+
+import { Type } from '../checker/registry'
+
+export type CoreNodeId = CoreNodeId { value: i32 }
+
+export fn core_node_id_new(value: i32) -> CoreNodeId =
+  CoreNodeId { value: value }
+
+export fn core_node_id_is_valid(identifier: CoreNodeId) -> bool =
+  identifier.value >= 0 && identifier.value < 1048576
+
+export type CoreTerminator =
+  | CoreTerminatorReturn(CoreNodeId)
+  | CoreTerminatorUnreachable
+
+export type CoreExpression =
+  | CoreExpressionLiteralInt(i32, Shared<Type>)
+  | CoreExpressionLocal(string, Shared<Type>)
+  | CoreExpressionCall(string, [CoreNodeId], Shared<Type>)
+
+export type CoreStatement =
+  | CoreStatementLocalBind(string, CoreExpression)
+  | CoreStatementExpression(CoreExpression)
+
+export type CoreBasicBlock = CoreBasicBlock {
+  identifier: CoreNodeId,
+  label: string,
+  statements: [CoreStatement],
+  terminator: CoreTerminator
+}
+
+export type CoreFunction = CoreFunction {
+  name: string,
+  parameters: [string],
+  blocks: [CoreBasicBlock],
+  entry_block: CoreNodeId
+}
+
+export type CoreModule = CoreModule {
+  functions: [CoreFunction]
+}
+
+export fn core_module_empty() -> CoreModule =
+  CoreModule { functions: [] }
+
+fn core_name_character_is_safe(character: string) -> bool =
+  (character >= "a" && character <= "z")
+  || (character >= "A" && character <= "Z")
+  || (character >= "0" && character <= "9")
+  || character == "_"
+
+export fn core_function_name_is_safe(name: string) -> bool = do
+  if name == "" || name.length() > 128 then
+    false
+  else
+    let mut index = 0
+    while index < name.length() do
+      if !core_name_character_is_safe(name.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end
+
+export fn core_block_label_is_safe(label: string) -> bool = do
+  if label == "" || label.length() > 64 then
+    false
+  else
+    let mut index = 0
+    while index < label.length() do
+      if !core_name_character_is_safe(label.char_at(index)) then return false end
+      index = index + 1
+    end
+    true
+  end
+end

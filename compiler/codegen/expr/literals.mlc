@@ -1,7 +1,7 @@
 // C++ fragments for literal expressions (no dependency on gen_expr).
 
-import { CppExpression } from '../../cpp/cpp_ast'
-import * as emit_helpers from '../../cpp/emit_helpers'
+import { CppExpression } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { escape_str } from '../cpp_naming'
 
 export fn gen_integer_literal(integer_value: i32) -> string =
