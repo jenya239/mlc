@@ -112,3 +112,88 @@ curl -s -o /dev/null -w "%{http_code}" https://izkaregn.com/mlc-blog/posts/FILEN
 ## После публикации
 
 Enqueue Driver next pending step как обычно.
+
+---
+
+## Reddit draft — self-hosted MLC compiler (STEP=4, 2026-06-26)
+
+Target: r/ProgrammingLanguages, r/rust. Media: [REDDIT_DEMO_MEDIA.md](REDDIT_DEMO_MEDIA.md). Baseline: [reddit_demo_baseline.txt](reddit_demo_baseline.txt).
+
+### Title (pick one)
+
+- MLC: a self-hosted compiler that lowers to C++20 (~23k lines of MLC)
+- Self-hosting update: mlcc compiles itself in ~2s, deterministic codegen
+
+### Problem
+
+Most hobby compilers stall before self-hosting, or ship a transpiler without a real checker and test suite. I wanted a small language with algebraic types and pattern matching that compiles to readable C++20, with a compiler written in the same language.
+
+### Solution
+
+MLC is an experimental self-hosted compiler:
+
+- Source in `compiler/` (~23k lines MLC) → C++20 via checker + codegen
+- Bootstrap path: Ruby reference compiler builds the first `mlcc`; then `mlcc` drives day-to-day work
+- Sum types, inference, `Result`/`?`, traits, `Shared<T>`, COW arrays/maps in the runtime
+- Deterministic self-host: two codegen passes of `compiler/main.mlc` produce identical output (`diff_exit=0`)
+
+### Demo (copy/paste)
+
+```bash
+git clone <repo-url> && cd mlc
+
+# Build mlcc (Ruby bootstrap → C++)
+compiler/build.sh
+
+# Measurements + test summary
+scripts/reddit_demo.sh --run
+
+# Record baseline (codegen p1/p2 + diff)
+scripts/reddit_demo.sh --record-baseline
+
+# E2E: compile, link, run sample programs
+compiler/tests/e2e/run_e2e.sh compiler/out/mlcc
+```
+
+### Numbers (baseline 2026-06-26)
+
+| Metric | Value |
+|--------|-------|
+| Self-host codegen pass 1 | 1.92 s |
+| Self-host codegen pass 2 | 2.05 s |
+| Codegen determinism (`diff -rq`) | exit 0 |
+| Generated C++ modules | 136 |
+| Compiler unit tests (`run_tests`) | 1362 passed, 0 failed |
+| E2E programs | 6 passed, 0 failed |
+
+### Code snippet (language)
+
+```mlc
+type Shape = Circle { radius: i32 } | Rect { width: i32, height: i32 }
+
+fn area(shape: Shared<Shape>) -> i32 =
+  match shape {
+    Circle { radius } => radius * radius,
+    Rect { width, height } => width * height
+  }
+```
+
+Lowers to `std::variant` + `std::visit` (see root `README.md`).
+
+### Honest limits (do not oversell)
+
+- No LSP, package manager, or language spec site yet
+- Minimal stdlib; playground not hosted
+- Full `MLCC_BOOTSTRAP=1` g++ link of fresh emit is a known rough edge; day-to-day `mlcc` binary + codegen determinism check works
+
+### Media placeholders
+
+- Screenshot: after `scripts/reddit_demo.sh --run` (checklist in REDDIT_DEMO_MEDIA.md)
+- Asciinema: `asciinema rec reddit_demo.cast` — URL: _TBD after manual upload_
+
+### Links
+
+- Repo: _add public URL_
+- Demo script: `scripts/reddit_demo.sh`
+- Plan / roadmap: `docs/PLAN.md` §Phase 5
+

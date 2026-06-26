@@ -21,7 +21,27 @@ export fn gen_float_literal(v: string) -> string = v
 export fn gen_i64_literal(v: string) -> string = v
 export fn gen_u8_literal(v: string) -> string = 'static_cast<uint8_t>(' + v + `)`
 export fn gen_usize_literal(v: string) -> string = 'static_cast<size_t>(' + v + `)`
-export fn gen_char_literal(v: string) -> string = 'static_cast<char32_t>(' + v + `)`
+
+fn char_literal_printable_codepoint(character: string) -> string = do
+  const printable = " !\"#$%&'()*+,-./0123456789:;"
+    + "<" + "=" + ">" + "?" + "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+    + "`" + "abcdefghijklmnopqrstuvwxyz{|}~"
+  const found_index = printable.index_of(character)
+  if found_index >= 0 then return (32 + found_index).to_string() end
+  "0"
+end
+
+export fn gen_char_literal(v: string) -> string = do
+  const codepoint =
+    if v == "\n" then "10"
+    else if v == "\t" then "9"
+    else if v == "\r" then "13"
+    else if v == "\0" then "0"
+    else if v.length() == 1 then char_literal_printable_codepoint(v)
+    else "0"
+    end
+  'static_cast<char32_t>(' + codepoint + `)`
+end
 
 export fn gen_integer_literal_cpp(integer_value: i32) -> Shared<CppExpression> =
   emit_helpers.make_integer_cpp_expression(integer_value)

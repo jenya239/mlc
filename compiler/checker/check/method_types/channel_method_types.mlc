@@ -1,0 +1,18 @@
+// Channel method names and result types.
+
+import { Type, TUnknown, TGeneric, TBool, TUnit } from '../../registry'
+import { channel_element_type_from_channel_type } from '../../semantic_type_structure'
+
+export fn is_channel_method(method_name: string) -> bool =
+  method_name == 'send' || method_name == 'recv'
+
+export fn channel_method_result_type(
+  channel_type: Shared<Type>,
+  method_name: string
+) -> Shared<Type> = do
+  const element_type = channel_element_type_from_channel_type(channel_type)
+  if method_name == 'send' then Shared.new(TBool)
+  else if method_name == 'recv' then Shared.new(TGeneric('Option', [element_type]))
+  else Shared.new(TUnit)
+  end
+end

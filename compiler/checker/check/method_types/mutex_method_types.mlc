@@ -1,0 +1,4 @@
+// Mutex method names (TRACK_CONCURRENCY STEP=6).
+
+export fn is_mutex_method(method_name: string) -> bool =
+  method_name == 'lock'

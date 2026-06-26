@@ -1,0 +1,5 @@
+# VM --run vs C++ exit-code parity (TRACK_MIR_VM STEP=7).
+# One program path per line (repo-relative). Blank lines and # comments ignored.
+misc/examples/minimal.mlc
+misc/examples/vm_hello.mlc
+misc/examples/vm_collections.mlc

@@ -134,6 +134,8 @@ fn collect_expression_definition_spans(expression: Shared<Expr>, source_file: st
       collect_expression_definition_spans(condition, source_file, table)
       collect_statements_definition_spans(body_statements, source_file, table)
     end,
+    ExprSpawn(body_statements, _) =>
+      collect_statements_definition_spans(body_statements, source_file, table),
     ExprIf(condition, then_branch, else_branch, _) => do
       collect_expression_definition_spans(condition, source_file, table)
       collect_expression_definition_spans(then_branch, source_file, table)

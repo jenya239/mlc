@@ -75,7 +75,7 @@ mlc::io::exit(1);
   mlc::io::exit(1);
   return 0;
  }(); }
-}, compile_driver::compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands, options.verify_each_pass, options.dump_ast, options.dump_sem, options.time_passes));
+}, compile_driver::compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands, options.verify_each_pass, options.dump_ast, options.dump_sem, options.dump_mir, options.mir_bootstrap_report, options.time_passes, options.run_interpreter, options.trace_vm));
  }();
 }
 

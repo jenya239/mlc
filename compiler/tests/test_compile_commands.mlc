@@ -24,7 +24,11 @@ fn compile_commands_pipeline_input(source: string, output_directory: string) -> 
     verify_each_pass: false,
     dump_ast: false,
     dump_sem: false,
-    time_passes: false
+    dump_mir: false,
+    mir_bootstrap_report: false,
+    time_passes: false,
+    run_interpreter: false,
+    trace_vm: false
   }
 end
 

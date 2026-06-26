@@ -7,11 +7,15 @@ export type CompileOptions = CompileOptions {
   verify_each_pass: bool,
   dump_ast: bool,
   dump_sem: bool,
-  time_passes: bool
+  dump_mir: bool,
+  mir_bootstrap_report: bool,
+  time_passes: bool,
+  run_interpreter: bool,
+  trace_vm: bool
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
+  'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
 
 fn is_output_directory_flag(argument: string) -> bool =
   match argument | '-o' => true | _ => false end
@@ -34,8 +38,20 @@ fn is_dump_ast_flag(argument: string) -> bool =
 fn is_dump_sem_flag(argument: string) -> bool =
   match argument | '--dump-sem' => true | _ => false end
 
+fn is_dump_mir_flag(argument: string) -> bool =
+  match argument | '--dump-mir' => true | _ => false end
+
+fn is_mir_bootstrap_report_flag(argument: string) -> bool =
+  match argument | '--mir-bootstrap-report' => true | _ => false end
+
 fn is_time_passes_flag(argument: string) -> bool =
   match argument | '--time-passes' => true | _ => false end
+
+fn is_run_interpreter_flag(argument: string) -> bool =
+  match argument | '--run' => true | '--interpret' => true | _ => false end
+
+fn is_trace_vm_flag(argument: string) -> bool =
+  match argument | '--trace-vm' => true | _ => false end
 
 fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool, out_directory: string) -> string =
   if check_only && !out_directory_explicit then ''
@@ -50,7 +66,11 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
   let mut verify_each_pass = false
   let mut dump_ast = false
   let mut dump_sem = false
+  let mut dump_mir = false
+  let mut mir_bootstrap_report = false
   let mut time_passes = false
+  let mut run_interpreter = false
+  let mut trace_vm = false
   let mut out_directory = ''
   let mut out_directory_explicit = false
   let mut entry_path = ''
@@ -69,8 +89,16 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
       dump_ast = true
     else if is_dump_sem_flag(argument) then
       dump_sem = true
+    else if is_dump_mir_flag(argument) then
+      dump_mir = true
+    else if is_mir_bootstrap_report_flag(argument) then
+      mir_bootstrap_report = true
     else if is_time_passes_flag(argument) then
       time_passes = true
+    else if is_run_interpreter_flag(argument) then
+      run_interpreter = true
+    else if is_trace_vm_flag(argument) then
+      trace_vm = true
     else if is_output_directory_flag(argument) && index + 1 < arguments.length() then
       out_directory = arguments[index + 1]
       out_directory_explicit = true
@@ -89,6 +117,10 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
     verify_each_pass: verify_each_pass,
     dump_ast: dump_ast,
     dump_sem: dump_sem,
-    time_passes: time_passes
+    dump_mir: dump_mir,
+    mir_bootstrap_report: mir_bootstrap_report,
+    time_passes: time_passes,
+    run_interpreter: run_interpreter,
+    trace_vm: trace_vm
   }
 end

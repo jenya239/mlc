@@ -88,7 +88,7 @@ return parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? [&]
 mlc::String gen_fn_decl(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{
 mlc::String prefix = cpp_naming::template_prefix(type_parameters) + type_gen::requires_clause(type_parameters, type_bounds);
 mlc::String safe_name = context::CodegenContext_resolve(context, name);
-context::CodegenContext body_context = compute_fn_body_context(name, parameters, context);
+context::CodegenContext body_context = context::CodegenContext_with_enclosing_function_return_type(compute_fn_body_context(name, parameters, context), return_type);
 context::CodegenContext prototype_context = parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? body_context : context;
 return name == mlc::String("main") && parameters.size() == 0 ? [&]() -> mlc::String { 
   mlc::String preamble = expr::user_main_arguments_copy_into_runtime_statement();

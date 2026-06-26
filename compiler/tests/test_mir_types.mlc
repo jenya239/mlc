@@ -4,6 +4,10 @@ import {
   mir_function_name_is_safe,
   MirFunction, MirBlock, MirModule, MirProgram, MirJump, MirReturn, MirOperandConstInt
 } from '../mir/mir_types'
+import {
+  mir_id_pool_new, mir_id_pool_allocate_local, mir_id_pool_allocate_block,
+  mir_local_id_equals, mir_block_id_equals, mir_local_id_index, mir_block_id_index
+} from '../mir/mir_ids'
 import { verify_mir_program } from '../verify/verify_mir'
 import { print_mir_program } from '../mir/mir_dump'
 import { TUnit } from '../checker/registry'
@@ -54,6 +58,14 @@ export fn mir_types_tests() -> [TestResult] = do
 
   const summary = print_mir_program(mir_program_empty())
   results.push(assert_true('print_mir_program mentions modules', summary.contains('modules=')))
+
+  const pool = mir_id_pool_new()
+  const local_step = mir_id_pool_allocate_local(pool)
+  const block_step = mir_id_pool_allocate_block(local_step.pool)
+  results.push(assert_eq_int('mir_id_pool_allocate_local', mir_local_id_index(local_step.local_id), 0))
+  results.push(assert_eq_int('mir_id_pool_allocate_block', mir_block_id_index(block_step.block_id), 1))
+  results.push(assert_true('mir_local_id_equals', mir_local_id_equals(local_step.local_id, local_step.local_id)))
+  results.push(assert_true('mir_block_id_equals', mir_block_id_equals(block_step.block_id, block_step.block_id)))
 
   results
 end

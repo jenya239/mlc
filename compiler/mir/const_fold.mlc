@@ -1,0 +1,122 @@
+// MIR const_fold pass: fold constant operands and binary rvalues (TRACK_MIR STEP=6).
+
+import {
+  MirFunction, MirBlock, MirStmt, MirRvalue, MirOperand, MirTerminator,
+  MirAssign, MirCallAssign,
+  MirReturn, MirCondJump,
+  MirRvalueUse, MirRvalueBinary,
+  MirOperandConstInt, MirOperandConstBool, MirOperandUnit, MirOperandLocal,
+  BlockId
+} from './mir_types'
+
+fn const_fold_operand(operand: MirOperand) -> MirOperand = operand
+
+fn const_fold_binary_int(operation: string, left: i32, right: i32) -> MirOperand = do
+  if operation == "+" then return MirOperandConstInt(left + right) end
+  if operation == "-" then return MirOperandConstInt(left - right) end
+  if operation == "*" then return MirOperandConstInt(left * right) end
+  if operation == "/" && right != 0 then return MirOperandConstInt(left / right) end
+  if operation == "%" && right != 0 then return MirOperandConstInt(left % right) end
+  if operation == ">" then return MirOperandConstBool(left > right) end
+  if operation == "<" then return MirOperandConstBool(left < right) end
+  if operation == ">=" then return MirOperandConstBool(left >= right) end
+  if operation == "<=" then return MirOperandConstBool(left <= right) end
+  if operation == "==" then return MirOperandConstBool(left == right) end
+  if operation == "!=" then return MirOperandConstBool(left != right) end
+  MirOperandConstInt(0)
+end
+
+fn mir_operand_is_const_int(operand: MirOperand) -> bool =
+  match operand {
+    MirOperandConstInt(_) => true,
+    _ => false
+  }
+
+fn mir_operand_const_int_value(operand: MirOperand) -> i32 =
+  match operand {
+    MirOperandConstInt(value) => value,
+    _ => 0
+  }
+
+fn const_fold_int_pair(operation: string, left_value: i32, right_value: i32) -> MirRvalue =
+  MirRvalueUse(const_fold_binary_int(operation, left_value, right_value))
+
+fn const_fold_rvalue_binary(operation: string, left: MirOperand, right: MirOperand) -> MirRvalue = do
+  const folded_left = const_fold_operand(left)
+  const folded_right = const_fold_operand(right)
+  if mir_operand_is_const_int(folded_left) && mir_operand_is_const_int(folded_right) then
+    return const_fold_int_pair(
+      operation,
+      mir_operand_const_int_value(folded_left),
+      mir_operand_const_int_value(folded_right))
+  end
+  MirRvalueBinary(operation, folded_left, folded_right)
+end
+
+fn const_fold_rvalue(rvalue: MirRvalue) -> MirRvalue =
+  match rvalue {
+    MirRvalueUse(operand) => MirRvalueUse(const_fold_operand(operand)),
+    MirRvalueBinary(operation, left, right) => const_fold_rvalue_binary(operation, left, right)
+  }
+
+fn const_fold_call_operands(operands: [MirOperand]) -> [MirOperand] = do
+  let mut folded: [MirOperand] = []
+  let mut index = 0
+  while index < operands.length() do
+    folded.push(const_fold_operand(operands[index]))
+    index = index + 1
+  end
+  folded
+end
+
+fn const_fold_statement(statement: MirStmt) -> MirStmt =
+  match statement {
+    MirAssign(local_id, rvalue) => MirAssign(local_id, const_fold_rvalue(rvalue)),
+    MirCallAssign(local_id, callee_name, arguments) =>
+      MirCallAssign(local_id, callee_name, const_fold_call_operands(arguments))
+  }
+
+fn const_fold_block_statements(statements: [MirStmt]) -> [MirStmt] = do
+  let mut folded: [MirStmt] = []
+  let mut index = 0
+  while index < statements.length() do
+    folded.push(const_fold_statement(statements[index]))
+    index = index + 1
+  end
+  folded
+end
+
+fn const_fold_terminator(terminator: MirTerminator) -> MirTerminator =
+  match terminator {
+    MirReturn(operand) => MirReturn(const_fold_operand(operand)),
+    MirCondJump(operand, then_block, else_block) =>
+      MirCondJump(const_fold_operand(operand), then_block, else_block),
+    _ => terminator
+  }
+
+fn const_fold_block(block: MirBlock) -> MirBlock =
+  MirBlock {
+    id: block.id,
+    label: block.label,
+    stmts: const_fold_block_statements(block.stmts),
+    term: const_fold_terminator(block.term)
+  }
+
+fn const_fold_blocks(blocks: [MirBlock]) -> [MirBlock] = do
+  let mut folded: [MirBlock] = []
+  let mut index = 0
+  while index < blocks.length() do
+    folded.push(const_fold_block(blocks[index]))
+    index = index + 1
+  end
+  folded
+end
+
+export fn const_fold_mir_function(function: MirFunction) -> MirFunction =
+  MirFunction {
+    name: function.name,
+    params: function.params,
+    locals: function.locals,
+    blocks: const_fold_blocks(function.blocks),
+    return_type: function.return_type
+  }

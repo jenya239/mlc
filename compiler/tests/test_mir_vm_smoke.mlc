@@ -1,0 +1,92 @@
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import { parse_program } from '../frontend/parser/decls'
+import { tokenize } from '../frontend/lexer'
+import { program_to_semantic_load_item } from '../checker/transform/program_to_semantic'
+import { run_mir_program_from_semantic_items } from '../vm/interpreter'
+
+fn vm_smoke_interpret(source: string, label: string) -> Result<i32, [string]> = do
+  const program = parse_program(tokenize(source).tokens)
+  match program_to_semantic_load_item(program, label) {
+    Ok(item) => run_mir_program_from_semantic_items([item], false),
+    Err(errors) => Err(errors)
+  }
+end
+
+export fn mir_vm_smoke_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  match vm_smoke_interpret('fn main() -> i32 = 42', 'minimal.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke minimal exit', code, 42)),
+    Err(_) => results.push(assert_true('vm smoke minimal exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  println("vm ok")\n  7\nend',
+    'vm_hello.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke println exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke println exit', false))
+  }
+
+  match vm_smoke_interpret('fn main() -> i32 = if 1 > 0 then 5 else 9', 'vm_if.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke if exit', code, 5)),
+    Err(_) => results.push(assert_true('vm smoke if exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut n = 0\n  while n < 3 do\n    n = n + 1\n  end\n  n\nend',
+    'vm_while.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke while exit', code, 3)),
+    Err(_) => results.push(assert_true('vm smoke while exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  match 1 {\n    1 => 10\n    _ => 0\n  }\nend',
+    'vm_match_int.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match int exit', code, 10)),
+    Err(_) => results.push(assert_true('vm smoke match int exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  match false {\n    true => 1\n    _ => 2\n  }\nend',
+    'vm_match_bool.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match bool exit', code, 2)),
+    Err(_) => results.push(assert_true('vm smoke match bool exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  const values = [10, 20, 30]\n  values[1]\nend',
+    'vm_array_index.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke array index exit', code, 20)),
+    Err(_) => results.push(assert_true('vm smoke array index exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut items = [1, 2, 3]\n  items.push(4)\n  items.length()\nend',
+    'vm_array_push.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke array push length exit', code, 4)),
+    Err(_) => results.push(assert_true('vm smoke array push length exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut table = Map.new()\n  table.set("k", 7)\n  table.get("k")\nend',
+    'vm_map_get.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke map get exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke map get exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  const text = "ab" + "cd"\n  text.length()\nend',
+    'vm_string_concat.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke string concat length exit', code, 4)),
+    Err(_) => results.push(assert_true('vm smoke string concat length exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Option = Some(i32) | None\nfn main() -> i32 = match Some(1) {\n  Some(x) => x\n  None => 0\n}',
+    'vm_match_variant.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match variant exit', code, 1)),
+    Err(_) => results.push(assert_true('vm smoke match variant exit', false))
+  }
+
+  results
+end

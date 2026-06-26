@@ -361,6 +361,7 @@ fn native_fn_decl_cpp(
   body_statement_depth: i32
 ) -> Shared<CppDeclaration> = do
   const body_context = compute_fn_body_context(name, params, context)
+    .with_enclosing_function_return_type(return_type)
   const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else context end
   const safe_name = context.resolve(name)
   const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)

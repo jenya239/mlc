@@ -13,11 +13,13 @@
 #include <utility>
 #include <unordered_map>
 #include <type_traits>
+#include "mlc/core/cow_detach.hpp"
 
 namespace mlc {
 
 // COW (Copy-on-Write) Array over std::vector<T>.
 // Copying is O(1) via shared_ptr. Mutation triggers detach only when shared.
+// See cow_detach.hpp for thread-safety limits.
 template<typename T>
 class Array {
     std::shared_ptr<std::vector<T>> data_;
@@ -27,10 +29,7 @@ public:
 
 private:
 
-    void detach() {
-        if (data_.use_count() > 1)
-            data_ = std::make_shared<std::vector<T>>(*data_);
-    }
+    void detach() { cow::detach_shared_buffer(data_); }
 
 public:
     Array() : data_(std::make_shared<std::vector<T>>()) {}

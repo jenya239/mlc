@@ -1,0 +1,43 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import {
+  compiler_db_new, parse_module, typecheck_module,
+  compiler_db_has_parse_cache, compiler_db_has_check_cache, file_store_read
+} from '../driver/compiler_db'
+
+export fn compiler_db_tests() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  let mut database = compiler_db_new()
+
+  const unsafe_parse = parse_module(database, '../escape.mlc', false)
+  results.push(assert_true('parse_module rejects unsafe path',
+    match unsafe_parse { Err(_) => true, Ok(_) => false }))
+
+  const entry_path = 'compiler/main.mlc'
+  const first_parse = parse_module(database, entry_path, false)
+  results.push(assert_true('parse_module main.mlc ok',
+    match first_parse { Ok(_) => true, Err(_) => false }))
+  results.push(assert_true('parse_module caches result',
+    compiler_db_has_parse_cache(database, entry_path)))
+
+  const second_parse = parse_module(database, entry_path, false)
+  results.push(assert_true('parse_module cache hit ok',
+    match second_parse { Ok(output) => output.load_items.length() > 0, Err(_) => false }))
+
+  const first_check = typecheck_module(database, entry_path, false)
+  results.push(assert_true('typecheck_module main.mlc ok',
+    match first_check { Ok(_) => true, Err(_) => false }))
+  results.push(assert_true('typecheck_module caches result',
+    compiler_db_has_check_cache(database, entry_path)))
+
+  match first_check {
+    Ok(checked) => results.push(assert_eq_int('semantic_items match load_items',
+      checked.semantic_items.length(), checked.parse_output.load_items.length())),
+    Err(_) => results.push(assert_true('semantic_items skipped on check fail', true))
+  }
+
+  const first_read = file_store_read(database.file_store, entry_path)
+  results.push(assert_true('file_store_read returns source', first_read.length() > 0))
+  results.push(assert_true('file_store caches source', database.file_store.sources.has('compiler/main.mlc')))
+
+  results
+end

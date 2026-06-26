@@ -17,6 +17,7 @@
 #include "preserved_analyses.hpp"
 #include "pass_manager.hpp"
 #include "dump_flags.hpp"
+#include "interpreter.hpp"
 
 namespace pipeline {
 
@@ -37,7 +38,10 @@ using namespace verify_semantic_ir;
 using namespace preserved_analyses;
 using namespace pass_manager;
 using namespace dump_flags;
+using namespace interpreter;
 using namespace ast_tokens;
+
+void write_text_if_changed(mlc::String path, mlc::String content) noexcept;
 
 bool pipeline_wants_timing(pipeline::ModularCompileInput input) noexcept;
 
@@ -57,6 +61,12 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> run_modular_compiler_pipeline(
 
 void maybe_emit_dump_semantic(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept;
 
+void maybe_emit_dump_mir(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept;
+
+void maybe_emit_mir_bootstrap_report(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept;
+
+ast::Result<mlc::String, mlc::Array<mlc::String>> maybe_run_interpreter(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept;
+
 ast::Result<mlc::String, mlc::Array<mlc::String>> run_modular_compiler_pipeline_with_manager(pass_manager::PassManager manager, pipeline::ModularCompileInput input) noexcept;
 
 ast::Result<pipeline::PipelineContext, mlc::Array<mlc::String>> run_pass_manager_descriptors(pass_manager::PassManager manager, pipeline::PipelineContext context, int pass_index) noexcept;
@@ -72,6 +82,12 @@ ast::Result<pipeline::PipelineContext, mlc::Array<mlc::String>> run_checker_pipe
 ast::Result<pipeline::PipelineContext, mlc::Array<mlc::String>> run_transform_pipeline_pass(pipeline::PipelineContext context) noexcept;
 
 ast::Result<pipeline::PipelineContext, mlc::Array<mlc::String>> run_codegen_pipeline_pass(pipeline::PipelineContext context) noexcept;
+
+void write_text_if_changed(mlc::String path, mlc::String content) noexcept{
+if (!(mlc::file::exists(path) && mlc::file::read_to_string(path) == content)){
+mlc::file::write_string(path, content);
+}
+}
 
 bool pipeline_wants_timing(pipeline::ModularCompileInput input) noexcept{return input.profile_enabled || input.time_passes;}
 
@@ -125,10 +141,11 @@ while (index < transformed_state.transformed_items.size()){
 semantic_ir::SemanticLoadItem transformed_load_item = transformed_state.transformed_items[index];
 context::GenModuleOut generated_output = module::gen_module(transformed_load_item, transformed_state.load_items, transformed_state.expanded_program, transformed_state.precomputed);
 mlc::String module_base = cpp_naming::path_to_module_base(transformed_load_item.path);
-mlc::String header_path = transformed_state.output_directory.length() > 0 ? transformed_state.output_directory + mlc::String("/") + module_base + mlc::String(".hpp") : module_base + mlc::String(".hpp");
-mlc::String implementation_path = transformed_state.output_directory.length() > 0 ? transformed_state.output_directory + mlc::String("/") + module_base + mlc::String(".cpp") : module_base + mlc::String(".cpp");
-mlc::file::write_string(header_path, generated_output.header);
-mlc::file::write_string(implementation_path, generated_output.source);
+mlc::String output_directory_prefix = transformed_state.output_directory.length() > 0 ? transformed_state.output_directory + mlc::String("/") : mlc::String("");
+mlc::String header_path = output_directory_prefix + module_base + mlc::String(".hpp");
+mlc::String implementation_path = output_directory_prefix + module_base + mlc::String(".cpp");
+write_text_if_changed(header_path, generated_output.header);
+write_text_if_changed(implementation_path, generated_output.source);
 implementation_paths.push_back(implementation_path);
 index = index + 1;
 }
@@ -155,6 +172,38 @@ dump_flags::emit_dump_semantic_items(context.transformed_state.transformed_items
 }
 }
 
+void maybe_emit_dump_mir(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept{
+if (input.dump_mir && context.has_transformed){
+dump_flags::emit_dump_mir_from_semantic_items(context.transformed_state.transformed_items, modular_input_entry_label(input));
+}
+}
+
+void maybe_emit_mir_bootstrap_report(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept{
+if (input.mir_bootstrap_report && context.has_transformed){
+dump_flags::emit_mir_bootstrap_report_from_semantic_items(context.transformed_state.transformed_items, modular_input_entry_label(input));
+}
+}
+
+ast::Result<mlc::String, mlc::Array<mlc::String>> maybe_run_interpreter(pipeline::ModularCompileInput input, pipeline::PipelineContext context) noexcept{
+if (!input.run_interpreter){
+{
+return ast::Ok<mlc::String>(mlc::String(""));
+}
+}
+if (!context.has_transformed){
+{
+return ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("pipeline: --run requires transform pass")});
+}
+}
+return std::visit(overloaded{
+  [&](const ast::Ok<int>& ok) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [exit_code] = ok; return [&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
+  mlc::io::exit(exit_code);
+  return ast::Ok<mlc::String>(mlc::String(""));
+ }(); },
+  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>(errors); }
+}, interpreter::run_mir_program_from_semantic_items(context.transformed_state.transformed_items, input.trace_vm));
+}
+
 ast::Result<mlc::String, mlc::Array<mlc::String>> run_modular_compiler_pipeline_with_manager(pass_manager::PassManager manager, pipeline::ModularCompileInput input) noexcept{
 if (input.time_passes && !input.profile_enabled){
 {
@@ -166,12 +215,19 @@ return std::visit(overloaded{
   [&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>(errors); },
   [&](const ast::Ok<pipeline::PipelineContext>& ok) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [final_context] = ok; return [&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   maybe_emit_dump_semantic(input, final_context);
+  maybe_emit_dump_mir(input, final_context);
+  maybe_emit_mir_bootstrap_report(input, final_context);
+  return std::visit(overloaded{
+  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>(errors); },
+  [&](const ast::Ok<mlc::String>& ok) -> ast::Result<mlc::String, mlc::Array<mlc::String>> { auto [message] = ok; return [&]() -> ast::Result<mlc::String, mlc::Array<mlc::String>> { 
   if (input.time_passes && !input.profile_enabled){
 {
 profile::profile_finish(true);
 }
 }
-  return ast::Ok<mlc::String>(mlc::String(""));
+  return ast::Ok<mlc::String>(message);
+ }(); }
+}, maybe_run_interpreter(input, final_context));
  }(); }
 }, stepped);
 }

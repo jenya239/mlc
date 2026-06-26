@@ -166,6 +166,8 @@ mlc::String diagnostic_code_e080() noexcept;
 
 mlc::String diagnostic_code_e081() noexcept;
 
+mlc::String diagnostic_code_e082() noexcept;
+
 int diagnostic_code_catalog_count() noexcept{return 81;}
 
 mlc::String diagnostic_code_e001() noexcept{return mlc::String("E001");}
@@ -329,5 +331,7 @@ mlc::String diagnostic_code_e079() noexcept{return mlc::String("E079");}
 mlc::String diagnostic_code_e080() noexcept{return mlc::String("E080");}
 
 mlc::String diagnostic_code_e081() noexcept{return mlc::String("E081");}
+
+mlc::String diagnostic_code_e082() noexcept{return mlc::String("E082");}
 
 } // namespace diagnostic_codes

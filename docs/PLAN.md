@@ -380,8 +380,8 @@ compiler/
 | **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
 | **2.9** Build speed | **planned** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) — clang/ccache/mold, persistent obj, dev -O0 |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) |
-| **5** Reddit / demo | **planned** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) |
-| **6** Concurrency | **planned** | [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
+| **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) — closed |
+| **6** Concurrency | **done** | [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -464,23 +464,15 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 Трек: [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md). **clang++ рекомендован, g++ — fallback.**
 
-### Phase 4: Self-hosting completeness — **done**
+### Phase 4: Self-hosting completeness — **done** (bootstrap link regression → [TRACK_BOOTSTRAP_LINK](agent/TRACK_BOOTSTRAP_LINK.md))
 
-**Цель:** `compiler/build.sh` без Ruby. Трек: [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md).
+**Цель:** `compiler/build.sh` без Ruby. Трек: [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md). **Regression (2026-06-26):** `MLCC_BOOTSTRAP=1` fresh emit fails g++ link — stability track open.
 
-### Phase 5: Reddit / Community — **planned**
+### Phase 5: Reddit / Community — **done** ([TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) closed)
 
-Трек: [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md). После self-host bootstrap + форматтер.
+Трек закрыт: demo script, baseline, media checklist, BLOG draft. Публикация поста — manual (REDDIT_DEMO_MEDIA.md).
 
-### Phase 6: Concurrency — **planned**
-
-**Цель:** базовая многопоточность через message passing — `Channel<T>`, `spawn`/`Task<T>`, `Arc<T>`, scoped `Mutex<T>`.
-
-**Модель:** Go/Rust-style — копии между потоками, без shared mutable state. Не async/await, не глобальные mutex.
-
-**Зависит от:** REDDIT_DEMO (или defer); STEP=1 — fix/audit COW detach (сейчас sharing `Array`/`Map` между потоками unsafe).
-
-Трек: [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md). Research: [RESEARCH.md](agent/RESEARCH.md) §Многопоточность.
+### Phase 6: Concurrency — **done** ([TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) closed)
 
 **Качество кода (после 2.5):** [TRACK_CODE_QUALITY](agent/TRACK_CODE_QUALITY.md) — **closed** (`36a6e8cc`): деструктуризация, HOF, or-patterns, string-match, audit.
 

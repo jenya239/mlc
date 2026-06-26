@@ -59,9 +59,10 @@ struct ExprTuple {mlc::Array<std::shared_ptr<ast::Expr>> field0;ast::Span field1
 struct ExprQuestion {std::shared_ptr<ast::Expr> field0;ast::Span field1;};
 struct ExprExtern {ast::Span field0;};
 struct ExprLambda {mlc::Array<mlc::String> field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
+struct ExprSpawn {mlc::Array<std::shared_ptr<ast::Stmt>> field0;ast::Span field1;};
 struct ExprNamedArg {mlc::String field0;std::shared_ptr<ast::Expr> field1;ast::Span field2;};
 struct ExprWith {std::shared_ptr<ast::Expr> field0;mlc::String field1;mlc::Array<std::shared_ptr<ast::Stmt>> field2;ast::Span field3;};
-struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprNamedArg, ExprWith> _;};
+struct Expr {std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprSpawn, ExprNamedArg, ExprWith> _;};
 
 
 struct StmtLet {mlc::String field0;bool field1;std::shared_ptr<ast::TypeExpr> field2;std::shared_ptr<ast::Expr> field3;ast::Span field4;};
@@ -110,6 +111,8 @@ mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> desti
 mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<ast::Diagnostic> diagnostics) noexcept;
 
 ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept;
+
+std::shared_ptr<ast::Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 
 ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept;
 

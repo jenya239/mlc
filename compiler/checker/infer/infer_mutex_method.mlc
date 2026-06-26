@@ -1,0 +1,116 @@
+// Mutex.new and lock inference (TRACK_CONCURRENCY STEP=6).
+
+import { Expr, ExprIdent, ExprLambda, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_span } from '../../frontend/ast'
+import { Type, TGeneric, TUnknown } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import {
+  type_is_unknown, type_description, type_is_mutex, mutex_inner_type_from_mutex_type,
+  function_return_type
+} from '../semantic_type_structure'
+import { is_mutex_method } from '../check/method_types/mutex_method_types'
+import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
+import { infer_lambda_with_param_types } from './infer_lambda_context'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+export fn is_mutex_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'Mutex' && method_name == 'new',
+    _ => false
+  }
+
+export fn infer_mutex_static_new_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const receiver_errors: [Diagnostic] = []
+  const arity_errors = method_arity_after_receiver(
+    receiver_errors, 'new', method_arguments.length(), method_span)
+  if method_arguments.length() != 1 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    let mut errors = diagnostics_append(object_parsed.errors, arity_errors)
+    errors = diagnostics_append(errors, argument_parsed.errors)
+    InferResult {
+      inferred_type: Shared.new(TGeneric('Mutex', [argument_parsed.inferred_type])),
+      errors: errors
+    }
+  end
+end
+
+fn infer_expr_maybe_lambda(
+  expression: Shared<Expr>,
+  expected_param_types: [Shared<Type>],
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult =
+  match expression {
+    ExprLambda(parameter_names, body, _) =>
+      infer_lambda_with_param_types(parameter_names, expected_param_types, body, inference_context, infer_expr_fn),
+    _ => infer_expr_fn(expression, inference_context)
+  }
+
+fn mutex_lock_lambda_errors(
+  callback_expression: Shared<Expr>,
+  method_span: Span
+) -> [Diagnostic] =
+  match callback_expression {
+    ExprLambda(parameter_names, _, _) =>
+      if parameter_names.length() != 1 then
+        [diagnostic_error_with_code(
+          'mutex.lock expects a callback with one parameter',
+          expr_span(callback_expression),
+          diagnostic_code_e082())]
+      else
+        let empty_diagnostics: [Diagnostic] = []
+        empty_diagnostics
+      end,
+    _ =>
+      [diagnostic_error_with_code(
+        'mutex.lock expects a lambda callback',
+        expr_span(callback_expression),
+        diagnostic_code_e082())]
+  }
+
+fn mutex_lock_receiver_error(mutex_type: Shared<Type>, method_span: Span) -> [Diagnostic] =
+  if !type_is_unknown(mutex_type) && !type_is_mutex(mutex_type) then
+    [diagnostic_error_with_code(
+      'method lock expects a Mutex receiver, got ' + type_description(mutex_type),
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+export fn infer_mutex_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const mutex_type = object_parsed.inferred_type
+  const receiver_errors = mutex_lock_receiver_error(mutex_type, method_span)
+  const arity_errors = method_arity_after_receiver(
+    receiver_errors, method_name, method_arguments.length(), method_span)
+  let mut errors = diagnostics_append(object_parsed.errors, arity_errors)
+  const inner_type = mutex_inner_type_from_mutex_type(mutex_type)
+
+  if method_name == 'lock' && method_arguments.length() == 1 then
+    errors = diagnostics_append(errors, mutex_lock_lambda_errors(method_arguments[0], method_span))
+    const callback_parsed = infer_expr_maybe_lambda(
+      method_arguments[0], [inner_type], inference_context, infer_expr_fn)
+    errors = diagnostics_append(errors, callback_parsed.errors)
+    InferResult {
+      inferred_type: function_return_type(callback_parsed.inferred_type),
+      errors: errors
+    }
+  else
+    InferResult { inferred_type: Shared.new(TUnknown), errors: errors }
+  end
+end

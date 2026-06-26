@@ -53,10 +53,10 @@ struct CppMutableLambda {mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> field0
 struct CppInitList {mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> field0;};
 struct CppAggregateInit {mlc::String field0;mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> field1;};
 struct CppStdVisit {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> field1;};
-struct CppVisitArmWild {bool field0;std::shared_ptr<cpp_ast::CppExpression> field1;};
-struct CppVisitArmBinding {mlc::String field0;bool field1;std::shared_ptr<cpp_ast::CppExpression> field2;};
-struct CppVisitArmConstructed {mlc::String field0;mlc::String field1;bool field2;std::shared_ptr<cpp_ast::CppExpression> field3;};
-struct CppVisitArmConstructedGeneric {mlc::String field0;mlc::String field1;mlc::String field2;bool field3;std::shared_ptr<cpp_ast::CppExpression> field4;};
+struct CppVisitArmWild {bool field0;mlc::String field1;std::shared_ptr<cpp_ast::CppExpression> field2;};
+struct CppVisitArmBinding {mlc::String field0;bool field1;mlc::String field2;std::shared_ptr<cpp_ast::CppExpression> field3;};
+struct CppVisitArmConstructed {mlc::String field0;mlc::String field1;bool field2;mlc::String field3;std::shared_ptr<cpp_ast::CppExpression> field4;};
+struct CppVisitArmConstructedGeneric {mlc::String field0;mlc::String field1;mlc::String field2;bool field3;mlc::String field4;std::shared_ptr<cpp_ast::CppExpression> field5;};
 struct CppCast {cpp_ast::CppCastKind field0;std::shared_ptr<cpp_ast::CppType> field1;std::shared_ptr<cpp_ast::CppExpression> field2;};
 struct CppInvokedWhile {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::String field1;};
 struct CppInvokedFor {mlc::String field0;std::shared_ptr<cpp_ast::CppExpression> field1;mlc::String field2;};

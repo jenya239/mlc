@@ -1,17 +1,20 @@
 // Method call code generation.
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
-import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, sexpr_type } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, SemanticExpressionLambda, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
-import { CppExpression, CppCall, CppMember, CppInitList } from '../../cpp_ir/cpp_ast'
+import { CppExpression, CppCall, CppMember, CppInitList, CppMutableLambda, CppCapture, CppParam, CppTypeName } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
-import { map_method } from '../cpp_naming'
+import { map_method, cpp_safe } from '../cpp_naming'
 import { infer_shared_new_type_name,
+         semantic_type_to_cpp_type_name,
          cpp_function_name_for_file_method,
          cpp_function_name_for_profile_method } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
 import * as expression_output from './expr'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { type_is_mutex, mutex_inner_type_from_mutex_type } from '../../checker/semantic_type_structure'
 
 fn gen_method_file_using_trailing_argument_fragments(
   method_name: string,
@@ -50,6 +53,28 @@ fn gen_method_shared_new(
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const type_name = infer_shared_new_type_name(argument, context)
   expression_output.make_shared_call(type_name, argument_code)
+end
+
+fn gen_method_arc_new(
+  argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> string = do
+  const argument_code = eval_expr_fn(argument, context, gen_stmts)
+  const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
+  `mlc::concurrency::Arc<${element_type}>(${argument_code})`
+end
+
+fn gen_method_mutex_new(
+  argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+) -> string = do
+  const argument_code = eval_expr_fn(argument, context, gen_stmts)
+  const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
+  `mlc::concurrency::Mutex<${element_type}>(${argument_code})`
 end
 
 fn type_method_owner_key(type_name: string, method_name: string) -> string =
@@ -198,6 +223,30 @@ fn gen_method_expr_after_object_using_fragments(
     | 'new' =>
       if argument_count == 1 then
         gen_method_shared_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
+      else
+        gen_method_expr_fallback_using_fragments(
+          receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_using_fragments(
+        receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+    end
+  | 'Arc' =>
+    match method_name
+    | 'new' =>
+      if argument_count == 1 then
+        gen_method_arc_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
+      else
+        gen_method_expr_fallback_using_fragments(
+          receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_using_fragments(
+        receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
+    end
+  | 'Mutex' =>
+    match method_name
+    | 'new' =>
+      if argument_count == 1 then
+        gen_method_mutex_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
       else
         gen_method_expr_fallback_using_fragments(
           receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
@@ -355,6 +404,65 @@ fn gen_method_shared_new_cpp(
   make_callee_call_cpp(`std::make_shared<${element_type}>`, [argument_expression])
 end
 
+fn gen_method_arc_new_cpp(
+  argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const argument_expression = evaluate_expression(argument, context, gen_stmts)
+  const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
+  make_callee_call_cpp(`mlc::concurrency::Arc<${element_type}>`, [argument_expression])
+end
+
+fn gen_method_mutex_new_cpp(
+  argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const argument_expression = evaluate_expression(argument, context, gen_stmts)
+  const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
+  make_callee_call_cpp(`mlc::concurrency::Mutex<${element_type}>`, [argument_expression])
+end
+
+fn gen_method_mutex_lock_cpp(
+  receiver_expression: Shared<CppExpression>,
+  callback_argument: Shared<SemanticExpression>,
+  mutex_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const inner_type = mutex_inner_type_from_mutex_type(mutex_type)
+  const inner_type_cpp = sem_type_to_cpp(context, inner_type)
+  match callback_argument {
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      if parameter_names.length() == 1 then
+        const parameter_name = cpp_safe(parameter_names[0])
+        const body_expression = evaluate_expression(body, context, gen_stmts)
+        const lock_callback = Shared.new(CppMutableLambda(
+          [Shared.new(CppCapture { name: '', by_reference: true })],
+          [Shared.new(CppParam {
+            name: parameter_name,
+            parameter_type: Shared.new(CppTypeName(`${inner_type_cpp}&`))
+          })],
+          body_expression))
+        Shared.new(CppCall(
+          Shared.new(CppMember(receiver_expression, 'lock', false)),
+          [lock_callback]))
+      else
+        Shared.new(CppCall(
+          Shared.new(CppMember(receiver_expression, 'lock', false)),
+          [evaluate_expression(callback_argument, context, gen_stmts)]))
+      end,
+    _ =>
+      Shared.new(CppCall(
+        Shared.new(CppMember(receiver_expression, 'lock', false)),
+        [evaluate_expression(callback_argument, context, gen_stmts)]))
+  }
+end
+
 fn gen_method_owner_call_cpp(
   receiver_expression: Shared<CppExpression>,
   type_name: string,
@@ -414,6 +522,30 @@ fn gen_method_expr_after_object_cpp(
     | 'new' =>
       if argument_count == 1 then
         gen_method_shared_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
+      else
+        gen_method_expr_fallback_cpp(
+          receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_cpp(
+        receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+    end
+  | 'Arc' =>
+    match method_name
+    | 'new' =>
+      if argument_count == 1 then
+        gen_method_arc_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
+      else
+        gen_method_expr_fallback_cpp(
+          receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+      end
+    | _ => gen_method_expr_fallback_cpp(
+        receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+    end
+  | 'Mutex' =>
+    match method_name
+    | 'new' =>
+      if argument_count == 1 then
+        gen_method_mutex_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
       else
         gen_method_expr_fallback_cpp(
           receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
@@ -510,6 +642,12 @@ export fn gen_method_expr_cpp(
     trailing_argument_expressions.push(materialization_outcome.materialized_argument_expressions[tail_index])
     tail_index = tail_index + 1
   end
+  if method_name == 'lock' && type_is_mutex(object_type) && arguments.length() == 1 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_mutex_lock_cpp(
+        receiver_expression, arguments[0], object_type, context, gen_stmts, evaluate_expression))
+  else
   const result_or_option_code = match object_type {
     TGeneric(generic_name, _) =>
       match generic_name
@@ -537,4 +675,5 @@ export fn gen_method_expr_cpp(
   mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
     materialization_outcome.prelude_statements,
     result_or_option_code)
+  end
 end

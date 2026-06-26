@@ -15,6 +15,11 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   match type_name
   | 'Map'    => 'mlc::HashMap'
   | 'Shared' => 'std::shared_ptr'
+  | 'Task'   => 'mlc::Task'
+  | 'Future' => 'mlc::Task'
+  | 'Channel' => 'mlc::concurrency::Channel'
+  | 'Arc'     => 'mlc::concurrency::Arc'
+  | 'Mutex'   => 'mlc::concurrency::Mutex'
   | _        => context.resolve(type_name)
   end
 
@@ -99,10 +104,7 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
       if name == 'ref' && type_arguments.length() == 1 then
         expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
       else
-        const safe = if name == 'Map' then 'mlc::HashMap'
-                     else if name == 'Shared' then 'std::shared_ptr'
-                     else context.resolve(name)
-                     end
+        const safe = cpp_generic_base_name(context, name)
         if type_arguments.length() == 0 then safe
         else if type_arguments.length() == 1 then
           expression_output.cpp_template_single_type_argument(safe, type_to_cpp(context, type_arguments[0]))

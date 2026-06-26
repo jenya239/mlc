@@ -1,0 +1,163 @@
+// MIR bootstrap report: per-function MIR summary vs CppIR signature (TRACK_MIR STEP=8).
+
+import { SemanticLoadItem } from '../ir/semantic_ir'
+import { CppDeclaration, CppFnDef } from '../cpp_ir/cpp_ast'
+import { MirProgram, MirFunction } from './mir_types'
+import { build_mir_program_from_semantic_items } from './lower_program'
+import { mir_function_is_simple, mir_function_to_cpp_declaration } from '../cpp_ir/mir_to_cpp'
+
+export type MirBootstrapFunctionEntry = MirBootstrapFunctionEntry {
+  function_name: string,
+  mir_block_count: i32,
+  cpp_ok: bool,
+  cpp_signature: string
+}
+
+export type MirBootstrapReport = MirBootstrapReport {
+  mir_function_count: i32,
+  simple_function_count: i32,
+  cpp_ok_count: i32,
+  cpp_skip_count: i32,
+  entries: [MirBootstrapFunctionEntry]
+}
+
+fn mir_bootstrap_cpp_signature_from_declaration(declaration: Shared<CppDeclaration>) -> string =
+  match declaration {
+    CppFnDef(_, return_type, name, _, _, _) =>
+      `${return_type} ${name}()`,
+    _ => ""
+  }
+
+fn mir_bootstrap_block_count(function: MirFunction) -> i32 = do
+  let mut block_count = 0
+  let mut block_index = 0
+  while block_index < function.blocks.length() do
+    block_count = block_count + 1
+    block_index = block_index + 1
+  end
+  block_count
+end
+
+fn mir_bootstrap_entry_for_complex_function(function: MirFunction) -> MirBootstrapFunctionEntry =
+  MirBootstrapFunctionEntry {
+    function_name: function.name,
+    mir_block_count: mir_bootstrap_block_count(function),
+    cpp_ok: false,
+    cpp_signature: ''
+  }
+
+fn mir_bootstrap_cpp_signature_for_function(function: MirFunction) -> string =
+  match mir_function_to_cpp_declaration(function) {
+    Ok(declaration) => mir_bootstrap_cpp_signature_from_declaration(declaration),
+    Err(_) => ''
+  }
+
+fn mir_bootstrap_entry_for_simple_function(function: MirFunction) -> MirBootstrapFunctionEntry = do
+  const signature = mir_bootstrap_cpp_signature_for_function(function)
+  MirBootstrapFunctionEntry {
+    function_name: function.name,
+    mir_block_count: mir_bootstrap_block_count(function),
+    cpp_ok: signature != '',
+    cpp_signature: signature
+  }
+end
+
+fn mir_bootstrap_entry_for_function(function: MirFunction) -> MirBootstrapFunctionEntry =
+  match mir_function_is_simple(function) {
+    true => mir_bootstrap_entry_for_simple_function(function),
+    false => mir_bootstrap_entry_for_complex_function(function),
+  }
+
+fn mir_bootstrap_append_function_entries(
+  entries: [MirBootstrapFunctionEntry],
+  functions: [MirFunction],
+  index: i32
+) -> [MirBootstrapFunctionEntry] = do
+  if index >= functions.length() then return entries end
+  let mut next_entries = entries
+  next_entries.push(mir_bootstrap_entry_for_function(functions[index]))
+  mir_bootstrap_append_function_entries(next_entries, functions, index + 1)
+end
+
+fn mir_bootstrap_count_cpp_ok(entries: [MirBootstrapFunctionEntry], index: i32, count: i32) -> i32 = do
+  if index >= entries.length() then return count end
+  const entry = entries[index]
+  const next_count = if entry.cpp_ok then count + 1 else count end
+  mir_bootstrap_count_cpp_ok(entries, index + 1, next_count)
+end
+
+fn mir_bootstrap_count_simple_functions(functions: [MirFunction], index: i32, count: i32) -> i32 = do
+  if index >= functions.length() then return count end
+  const next_count = if mir_function_is_simple(functions[index]) then count + 1 else count end
+  mir_bootstrap_count_simple_functions(functions, index + 1, next_count)
+end
+
+fn mir_bootstrap_array_length_i32(items: [MirFunction]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < items.length() do
+    count = count + 1
+    index = index + 1
+  end
+  count
+end
+
+export fn build_mir_bootstrap_report(program: MirProgram) -> MirBootstrapReport = do
+  const functions = program.modules[0].functions
+  const entries = mir_bootstrap_append_function_entries([], functions, 0)
+  const cpp_ok_count = mir_bootstrap_count_cpp_ok(entries, 0, 0)
+  MirBootstrapReport {
+    mir_function_count: mir_bootstrap_array_length_i32(functions),
+    simple_function_count: mir_bootstrap_count_simple_functions(functions, 0, 0),
+    cpp_ok_count: cpp_ok_count,
+    cpp_skip_count: mir_bootstrap_array_length_i32(functions) - cpp_ok_count,
+    entries: entries
+  }
+end
+
+export fn build_mir_bootstrap_report_from_semantic_items(items: [SemanticLoadItem]) -> MirBootstrapReport =
+  build_mir_bootstrap_report(build_mir_program_from_semantic_items(items))
+
+fn mir_bootstrap_append_entry_lines(lines: [string], entries: [MirBootstrapFunctionEntry], index: i32) -> [string] =
+  if index >= entries.length() then lines
+  else do
+    const entry = entries[index]
+    let mut next_lines = lines
+    if entry.cpp_ok then
+      next_lines.push(
+        `  fn ${entry.function_name} blocks=${entry.mir_block_count} cpp_ok signature=${entry.cpp_signature}`)
+    else
+      next_lines.push(
+        `  fn ${entry.function_name} blocks=${entry.mir_block_count} cpp_skip`)
+    end
+    mir_bootstrap_append_entry_lines(next_lines, entries, index + 1)
+  end
+
+fn mir_bootstrap_join_lines(lines: [string]) -> string = do
+  if lines.length() == 0 then return "" end
+  let mut result = lines[0]
+  let mut index = 1
+  while index < lines.length() do
+    result = result + "\n" + lines[index]
+    index = index + 1
+  end
+  result
+end
+
+export fn print_mir_bootstrap_report(report: MirBootstrapReport) -> string = do
+  let mut lines: [string] = [
+    `mir_functions=${report.mir_function_count} simple=${report.simple_function_count} cpp_ok=${report.cpp_ok_count} cpp_skip=${report.cpp_skip_count}`
+  ]
+  lines = mir_bootstrap_append_entry_lines(lines, report.entries, 0)
+  mir_bootstrap_join_lines(lines)
+end
+
+export fn mir_bootstrap_report_cpp_matches_mir(report: MirBootstrapReport) -> bool = do
+  let mut index = 0
+  while index < report.entries.length() do
+    const entry = report.entries[index]
+    if entry.cpp_ok && !entry.cpp_signature.contains(entry.function_name) then return false end
+    index = index + 1
+  end
+  true
+end

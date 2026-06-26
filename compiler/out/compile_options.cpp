@@ -18,13 +18,21 @@ bool is_dump_ast_flag(mlc::String argument) noexcept;
 
 bool is_dump_sem_flag(mlc::String argument) noexcept;
 
+bool is_dump_mir_flag(mlc::String argument) noexcept;
+
+bool is_mir_bootstrap_report_flag(mlc::String argument) noexcept;
+
 bool is_time_passes_flag(mlc::String argument) noexcept;
+
+bool is_run_interpreter_flag(mlc::String argument) noexcept;
+
+bool is_trace_vm_flag(mlc::String argument) noexcept;
 
 mlc::String resolve_default_out_directory(bool check_only, bool out_directory_explicit, mlc::String out_directory) noexcept;
 
 compile_options::CompileOptions parse_compile_options(mlc::Array<mlc::String> arguments) noexcept;
 
-mlc::String compile_usage_message() noexcept{return mlc::String("Usage: mlcc [--check-only] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp");}
+mlc::String compile_usage_message() noexcept{return mlc::String("Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp");}
 
 bool is_output_directory_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("-o")) { return true; } return false; }();}
 
@@ -40,7 +48,15 @@ bool is_dump_ast_flag(mlc::String argument) noexcept{return [&]() { if (argument
 
 bool is_dump_sem_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--dump-sem")) { return true; } return false; }();}
 
+bool is_dump_mir_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--dump-mir")) { return true; } return false; }();}
+
+bool is_mir_bootstrap_report_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--mir-bootstrap-report")) { return true; } return false; }();}
+
 bool is_time_passes_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--time-passes")) { return true; } return false; }();}
+
+bool is_run_interpreter_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--run")) { return true; } if (argument == mlc::String("--interpret")) { return true; } return false; }();}
+
+bool is_trace_vm_flag(mlc::String argument) noexcept{return [&]() { if (argument == mlc::String("--trace-vm")) { return true; } return false; }();}
 
 mlc::String resolve_default_out_directory(bool check_only, bool out_directory_explicit, mlc::String out_directory) noexcept{return check_only && !out_directory_explicit ? mlc::String("") : out_directory_explicit ? out_directory : mlc::file::make_temp_directory(mlc::String("mlcc_"));}
 
@@ -51,7 +67,11 @@ bool emit_compile_commands = false;
 bool verify_each_pass = false;
 bool dump_ast = false;
 bool dump_sem = false;
+bool dump_mir = false;
+bool mir_bootstrap_report = false;
 bool time_passes = false;
+bool run_interpreter = false;
+bool trace_vm = false;
 mlc::String out_directory = mlc::String("");
 bool out_directory_explicit = false;
 mlc::String entry_path = mlc::String("");
@@ -80,8 +100,20 @@ dump_ast = true;
 if (is_dump_sem_flag(argument)){
 dump_sem = true;
 } else {
+if (is_dump_mir_flag(argument)){
+dump_mir = true;
+} else {
+if (is_mir_bootstrap_report_flag(argument)){
+mir_bootstrap_report = true;
+} else {
 if (is_time_passes_flag(argument)){
 time_passes = true;
+} else {
+if (is_run_interpreter_flag(argument)){
+run_interpreter = true;
+} else {
+if (is_trace_vm_flag(argument)){
+trace_vm = true;
 } else {
 if (is_output_directory_flag(argument) && index + 1 < arguments.size()){
 out_directory = arguments[index + 1];
@@ -100,10 +132,14 @@ entry_path = argument;
 }
 }
 }
+}
+}
+}
+}
 index = index + 1;
 }
 }
-return compile_options::CompileOptions{entry_path, resolve_default_out_directory(check_only, out_directory_explicit, out_directory), profile_enabled, check_only, emit_compile_commands, verify_each_pass, dump_ast, dump_sem, time_passes};
+return compile_options::CompileOptions{entry_path, resolve_default_out_directory(check_only, out_directory_explicit, out_directory), profile_enabled, check_only, emit_compile_commands, verify_each_pass, dump_ast, dump_sem, dump_mir, mir_bootstrap_report, time_passes, run_interpreter, trace_vm};
 }
 
 } // namespace compile_options

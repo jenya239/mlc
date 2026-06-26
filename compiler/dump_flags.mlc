@@ -4,6 +4,13 @@ import { Program } from './frontend/ast'
 import { SemanticLoadItem } from './ir/semantic_ir'
 import { print_mlc_program } from './fmt/ast_printer'
 import { print_semantic_load_items } from './ir/semantic_ir_dump'
+import { print_mir_program } from './mir/mir_dump'
+import { build_mir_program_from_semantic_items } from './mir/lower_program'
+import { MirProgram } from './mir/mir_types'
+import {
+  build_mir_bootstrap_report_from_semantic_items,
+  print_mir_bootstrap_report
+} from './mir/mir_bootstrap_report'
 
 fn dump_label_character_is_safe(character: string) -> bool =
   (character >= "a" && character <= "z")
@@ -32,7 +39,7 @@ export fn emit_dump_ast(program: Program, label: string) -> unit = do
   if dump_label_is_safe(label) then
     print(`--- dump-ast: ${label} ---\n`)
     print(print_mlc_program(program))
-    print('\n')
+    print("\n")
   end
 end
 
@@ -40,6 +47,25 @@ export fn emit_dump_semantic_items(items: [SemanticLoadItem], label: string) -> 
   if dump_label_is_safe(label) then
     print(`--- dump-sem: ${label} ---\n`)
     print(print_semantic_load_items(items))
-    print('\n')
+    print("\n")
+  end
+end
+
+export fn emit_dump_mir_program(program: MirProgram, label: string) -> unit = do
+  if dump_label_is_safe(label) then
+    print(`--- dump-mir: ${label} ---\n`)
+    print(print_mir_program(program))
+    print("\n")
+  end
+end
+
+export fn emit_dump_mir_from_semantic_items(items: [SemanticLoadItem], label: string) -> unit =
+  emit_dump_mir_program(build_mir_program_from_semantic_items(items), label)
+
+export fn emit_mir_bootstrap_report_from_semantic_items(items: [SemanticLoadItem], label: string) -> unit = do
+  if dump_label_is_safe(label) then
+    print(`--- mir-bootstrap-report: ${label} ---\n`)
+    print(print_mir_bootstrap_report(build_mir_bootstrap_report_from_semantic_items(items)))
+    print("\n")
   end
 end

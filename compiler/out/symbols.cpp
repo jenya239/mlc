@@ -167,7 +167,7 @@ index = index + 1;
  }(); } if (std::holds_alternative<ast::ExprWhile>((*expression)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expression)._); auto [condition, body_statements, _w0] = _v_exprwhile; return [&]() { 
   collect_expression_definition_spans(condition, source_file, table);
   return collect_statements_definition_spans(body_statements, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [condition, then_branch, else_branch, _w0] = _v_exprif; return [&]() { 
+ }(); } if (std::holds_alternative<ast::ExprSpawn>((*expression)._)) { auto _v_exprspawn = std::get<ast::ExprSpawn>((*expression)._); auto [body_statements, _w0] = _v_exprspawn; return collect_statements_definition_spans(body_statements, source_file, table); } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [condition, then_branch, else_branch, _w0] = _v_exprif; return [&]() { 
   collect_expression_definition_spans(condition, source_file, table);
   collect_expression_definition_spans(then_branch, source_file, table);
   return collect_expression_definition_spans(else_branch, source_file, table);

@@ -112,7 +112,8 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **ParseResult migration:** [TRACK_PARSE_RESULT.md](TRACK_PARSE_RESULT.md) — **closed** (`bf6c46e8`)
 - **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (`bf6c46e8`)
 - **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (`bf6c46e8`)
-- **ParseProgramResult cleanup:** [TRACK_PARSE_PROGRAM_RESULT.md](TRACK_PARSE_PROGRAM_RESULT.md) — **closed** (2026-06-19)
+- **MIR lowering:** [TRACK_MIR.md](TRACK_MIR.md) — **closed** (STEP=10, 2026-06-26)
+- **Bootstrap link (fresh emit):** [TRACK_BOOTSTRAP_LINK.md](TRACK_BOOTSTRAP_LINK.md) — **open** STEP=2 wip / **STEP=3** next (stability; `MLCC_BOOTSTRAP=1` regressed)
 
 ## Priority queue (2026-06-19 full-replan)
 
@@ -129,10 +130,12 @@ Strict order; each track depends on previous unless noted.
 | 7 | [TRACK_CPP_HEADER_IMPORT](TRACK_CPP_HEADER_IMPORT.md) | 3.5 | **closed** (minimal subset) |
 | 8 | [TRACK_CPP_PARSER_FULL](TRACK_CPP_PARSER_FULL.md) | 3.6 | **closed** (2026-06-24; **1234/0**) |
 | 9 | [TRACK_CLEAN_ARCHITECTURE](TRACK_CLEAN_ARCHITECTURE.md) | 2.8 | **closed** (2026-05-19; **1290/0**) |
-| 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **open** STEP=3 |
-| 11 | [TRACK_MIR](TRACK_MIR.md) | 2.8 | **open** STEP=2 |
-| 12 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | planned |
-| 13 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | planned |
+| 10 | [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) | 2.9 | **closed** (STEP=7) |
+| 11 | [TRACK_MIR](TRACK_MIR.md) | 2.8 | **closed** (STEP=10) |
+| 12 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | **closed** (STEP=5) |
+| 13 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | **closed** (STEP=7) |
+| 14 | [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) | 4/stability | **open** STEP=2 wip → STEP=3 |
+| 15 | [TRACK_MIR_VM](TRACK_MIR_VM.md) | 2.10/dev-run | **open** STEP=1 (after bootstrap emit green or parallel MVP-1) |
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
@@ -144,17 +147,23 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_BUILD_SPEED](TRACK_BUILD_SPEED.md) **STEP=3** (mold/lld docs).  
-> **Parallel:** [TRACK_MIR](TRACK_MIR.md) **STEP=2** (CompilerDb sketch).  
-> **Then:** REDDIT_DEMO per queue.
+> **Immediate:** [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) **STEP=3** — MIR emit (`const_fold`, `dump_flags`, `mir_passes`). STEP=2 wip — do not re-enqueue until visit return-type fix committed.
 
-**Baseline (2026-05-19):** `build_tests` **1290/0**; TRACK_CLEAN_ARCHITECTURE closed.
+**Baseline (2026-06-26):** `build_tests` **1362/0** (approx); codegen self-host `diff_exit=0`; bootstrap link **FAIL**.
 
 ## Next step (Planner)
 
 > plan-refresh after track close or every ~8 driver turns.
 
-## Planner checklist (2026-06-24 plan-refresh — CPP_PARSER_FULL closed)
+## Planner checklist (2026-06-26 plan-refresh — REDDIT_DEMO + CONCURRENCY closed)
+
+- [x] TRACK_REDDIT_DEMO closed (STEP=5)
+- [x] TRACK_CONCURRENCY closed (STEP=7)
+- [x] TRACK_MIR closed (steps 1–10 complete)
+- [x] Priority **stability** > security > performance — bootstrap link regression is P0
+- [x] Opened **TRACK_BOOTSTRAP_LINK** STEP=1 (fresh emit g++ link)
+- [ ] Security: no open track — defer until bootstrap link green
+- [ ] Performance: TRACK_BUILD_SPEED closed — **TRACK_MIR_VM** queued (MIR interpreter, `--run`; no g++ in dev loop)
 
 - [x] TRACK_CPP_PARSER_FULL closed (steps 1–8; gate **1234/0**; differential 8/8)
 - [x] Closure order: LSP STEP=5 → CLEAN_ARCHITECTURE STEP=3 → BUILD_SPEED STEP=1
@@ -1151,7 +1160,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.5 + §Phase 2.6
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
 
-## Status: **open** STEP=5 (steps 1–4 done; wiring pending)
+## Status: **closed** (TRACK_CPP_HEADER_IMPORT closed; wiring done)
 
 Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
 
@@ -1165,7 +1174,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 3.5
 | D | Парсер деклараций `cpp/parser/cpp_decls.mlc` | TRACK_CPP_HEADER_IMPORT | done |
 | E | Парсер выражений | TRACK_CPP_HEADER_IMPORT | deferred |
 | F | Тесты `test_cpp_parser.mlc` | TRACK_CPP_HEADER_IMPORT | partial |
-| G | Интеграция `import "foo.h"` + registry | TRACK_CPP_HEADER_IMPORT | **STEP=5 pending** |
+| G | Интеграция `import "foo.h"` + registry | TRACK_CPP_HEADER_IMPORT | done |
 
 ---
 

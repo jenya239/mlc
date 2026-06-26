@@ -177,6 +177,8 @@ mlc::String diagnostic_code_e080() noexcept;
 
 mlc::String diagnostic_code_e081() noexcept;
 
+mlc::String diagnostic_code_e082() noexcept;
+
 } // namespace diagnostic_codes
 
 #endif // DIAGNOSTIC_CODES_HPP

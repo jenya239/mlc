@@ -15,13 +15,19 @@ mlc::Array<mlc::String> verify_semantic_append_errors(mlc::Array<mlc::String> ac
 
 bool semantic_type_is_resolved(std::shared_ptr<registry::Type> type_value) noexcept;
 
+mlc::Array<mlc::String> verify_semantic_empty_name_errors(mlc::String name, mlc::String message) noexcept;
+
+mlc::Array<mlc::String> verify_semantic_errors_if(bool condition, mlc::Array<mlc::String> errors) noexcept;
+
 mlc::Array<mlc::String> verify_semantic_span_errors(mlc::String label, ast::Span span) noexcept;
 
 mlc::Array<mlc::String> verify_semantic_type_errors(mlc::String label, std::shared_ptr<registry::Type> type_value) noexcept;
 
 mlc::Array<mlc::String> verify_semantic_expression(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
 
-mlc::Array<mlc::String> verify_semantic_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement) noexcept;
+mlc::Array<mlc::String> verify_semantic_statement(std::shared_ptr<semantic_ir::SemanticStatement> semantic_statement) noexcept;
+
+mlc::Array<mlc::String> verify_semantic_declaration_members(mlc::Array<mlc::String> errors, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> members) noexcept;
 
 mlc::Array<mlc::String> verify_semantic_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
 
@@ -40,6 +46,10 @@ return combined;
 }
 
 bool semantic_type_is_resolved(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*type_value))) {  return false; } return true; }();}
+
+mlc::Array<mlc::String> verify_semantic_empty_name_errors(mlc::String name, mlc::String message) noexcept{return name == mlc::String("") ? mlc::Array<mlc::String>{message} : mlc::Array<mlc::String>{};}
+
+mlc::Array<mlc::String> verify_semantic_errors_if(bool condition, mlc::Array<mlc::String> errors) noexcept{return condition ? errors : mlc::Array<mlc::String>{};}
 
 mlc::Array<mlc::String> verify_semantic_span_errors(mlc::String label, ast::Span span) noexcept{
 return span.line < 0 ? mlc::Array<mlc::String>{label + mlc::String(": negative source line")} : mlc::Array<mlc::String>{};
@@ -168,100 +178,29 @@ index = index + 1;
  }(); } if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*expression)._)) { auto _v_semanticexpressionident = std::get<semantic_ir::SemanticExpressionIdent>((*expression)._); auto [name, _w0, _w1] = _v_semanticexpressionident; return name == mlc::String("") ? verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic expression: empty identifier")}) : errors; } return errors; }();
 }
 
-mlc::Array<mlc::String> verify_semantic_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement) noexcept{
-mlc::Array<mlc::String> errors = verify_semantic_span_errors(mlc::String("semantic statement"), ast::span_unknown());
-return std::visit(overloaded{
-  [&](const SemanticStatementLet& semanticstatementlet) -> mlc::Array<mlc::String> { auto [name, _w0, initializer, type_value, span] = semanticstatementlet; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic statement"), span));
-  errors = verify_semantic_append_errors(errors, verify_semantic_type_errors(mlc::String("semantic statement let"), type_value));
-  if (name == mlc::String("")){
-{
-errors = verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic statement: empty let name")});
-}
-}
-  return verify_semantic_append_errors(errors, verify_semantic_expression(initializer));
- }(); },
-  [&](const SemanticStatementLetPattern& semanticstatementletpattern) -> mlc::Array<mlc::String> { auto [_w0, _w1, initializer, type_value, has_else, else_branch, span] = semanticstatementletpattern; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic statement"), span));
-  errors = verify_semantic_append_errors(errors, verify_semantic_type_errors(mlc::String("semantic statement let pattern"), type_value));
-  errors = verify_semantic_append_errors(errors, verify_semantic_expression(initializer));
-  return has_else ? verify_semantic_append_errors(errors, verify_semantic_expression(else_branch)) : errors;
- }(); },
-  [&](const SemanticStatementLetConst& semanticstatementletconst) -> mlc::Array<mlc::String> { auto [name, initializer, type_value, span] = semanticstatementletconst; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic statement"), span));
-  errors = verify_semantic_append_errors(errors, verify_semantic_type_errors(mlc::String("semantic statement const"), type_value));
-  if (name == mlc::String("")){
-{
-errors = verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic statement: empty const name")});
-}
-}
-  return verify_semantic_append_errors(errors, verify_semantic_expression(initializer));
- }(); },
-  [&](const SemanticStatementExpr& semanticstatementexpr) -> mlc::Array<mlc::String> { auto [expression, span] = semanticstatementexpr; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic statement"), span));
-  return verify_semantic_append_errors(errors, verify_semantic_expression(expression));
- }(); },
-  [&](const SemanticStatementReturn& semanticstatementreturn) -> mlc::Array<mlc::String> { auto [expression, span] = semanticstatementreturn; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic statement"), span));
-  return verify_semantic_append_errors(errors, verify_semantic_expression(expression));
- }(); },
+mlc::Array<mlc::String> verify_semantic_statement(std::shared_ptr<semantic_ir::SemanticStatement> semantic_statement) noexcept{return std::visit(overloaded{
+  [&](const SemanticStatementLet& semanticstatementlet) -> mlc::Array<mlc::String> { auto [name, _w0, initializer, type_value, span] = semanticstatementlet; return verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic statement"), span), verify_semantic_type_errors(mlc::String("semantic statement let"), type_value)), verify_semantic_empty_name_errors(name, mlc::String("semantic statement: empty let name"))), verify_semantic_expression(initializer)); },
+  [&](const SemanticStatementLetPattern& semanticstatementletpattern) -> mlc::Array<mlc::String> { auto [_w0, _w1, initializer, type_value, has_else, else_branch, span] = semanticstatementletpattern; return verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic statement"), span), verify_semantic_type_errors(mlc::String("semantic statement let pattern"), type_value)), verify_semantic_expression(initializer)), verify_semantic_errors_if(has_else, verify_semantic_expression(else_branch))); },
+  [&](const SemanticStatementLetConst& semanticstatementletconst) -> mlc::Array<mlc::String> { auto [name, initializer, type_value, span] = semanticstatementletconst; return verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic statement"), span), verify_semantic_type_errors(mlc::String("semantic statement const"), type_value)), verify_semantic_empty_name_errors(name, mlc::String("semantic statement: empty const name"))), verify_semantic_expression(initializer)); },
+  [&](const SemanticStatementExpr& semanticstatementexpr) -> mlc::Array<mlc::String> { auto [expression, span] = semanticstatementexpr; return verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic statement"), span), verify_semantic_expression(expression)); },
+  [&](const SemanticStatementReturn& semanticstatementreturn) -> mlc::Array<mlc::String> { auto [expression, span] = semanticstatementreturn; return verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic statement"), span), verify_semantic_expression(expression)); },
   [&](const SemanticStatementBreak& semanticstatementbreak) -> mlc::Array<mlc::String> { auto [span] = semanticstatementbreak; return verify_semantic_span_errors(mlc::String("semantic statement"), span); },
   [&](const SemanticStatementContinue& semanticstatementcontinue) -> mlc::Array<mlc::String> { auto [span] = semanticstatementcontinue; return verify_semantic_span_errors(mlc::String("semantic statement"), span); }
-}, (*statement)._);
+}, (*semantic_statement)._);}
+
+mlc::Array<mlc::String> verify_semantic_declaration_members(mlc::Array<mlc::String> errors, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> members) noexcept{
+mlc::Array<mlc::String> accumulated = errors;
+int index = 0;
+while (index < members.size()){
+{
+accumulated = verify_semantic_append_errors(accumulated, verify_semantic_declaration(members[index]));
+index = index + 1;
+}
+}
+return accumulated;
 }
 
-mlc::Array<mlc::String> verify_semantic_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{
-mlc::Array<mlc::String> errors = verify_semantic_span_errors(mlc::String("semantic declaration"), semantic_ir::sdecl_span(declaration));
-return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*declaration))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*declaration)); auto [name, _w0, _w1, _w2, return_type, body, _w3, _w4] = _v_semanticdeclarationfn; return [&]() -> mlc::Array<mlc::String> { 
-  if (name == mlc::String("")){
-{
-errors = verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty function name")});
-}
-}
-  errors = verify_semantic_append_errors(errors, verify_semantic_type_errors(mlc::String("semantic function return"), return_type));
-  return verify_semantic_append_errors(errors, verify_semantic_expression(body));
- }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*declaration))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*declaration)); auto [name, _w0, _w1, _w2, span] = _v_semanticdeclarationtype; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic declaration"), span));
-  return name == mlc::String("") ? verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty type name")}) : errors;
- }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTypeAlias>((*declaration))) { auto _v_semanticdeclarationtypealias = std::get<semantic_ir::SemanticDeclarationTypeAlias>((*declaration)); auto [name, _w0, _w1, span] = _v_semanticdeclarationtypealias; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic declaration"), span));
-  return name == mlc::String("") ? verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty type alias name")}) : errors;
- }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*declaration))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*declaration)); auto [name, _w0, members, span] = _v_semanticdeclarationtrait; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic declaration"), span));
-  if (name == mlc::String("")){
-{
-errors = verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty trait name")});
-}
-}
-  int index = 0;
-  while (index < members.size()){
-{
-errors = verify_semantic_append_errors(errors, verify_semantic_declaration(members[index]));
-index = index + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*declaration))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*declaration)); auto [type_name, _w0, members, span] = _v_semanticdeclarationextend; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic declaration"), span));
-  if (type_name == mlc::String("")){
-{
-errors = verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty extend type name")});
-}
-}
-  int index = 0;
-  while (index < members.size()){
-{
-errors = verify_semantic_append_errors(errors, verify_semantic_declaration(members[index]));
-index = index + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner] = _v_semanticdeclarationexported; return verify_semantic_declaration(inner); } if (std::holds_alternative<semantic_ir::SemanticDeclarationAssocBind>((*declaration))) { auto _v_semanticdeclarationassocbind = std::get<semantic_ir::SemanticDeclarationAssocBind>((*declaration)); auto [name, type_value, span] = _v_semanticdeclarationassocbind; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_semantic_append_errors(errors, verify_semantic_span_errors(mlc::String("semantic declaration"), span));
-  errors = verify_semantic_append_errors(errors, verify_semantic_type_errors(mlc::String("semantic assoc bind"), type_value));
-  return name == mlc::String("") ? verify_semantic_append_errors(errors, mlc::Array<mlc::String>{mlc::String("semantic declaration: empty assoc bind name")}) : errors;
- }(); } return errors; }();
-}
+mlc::Array<mlc::String> verify_semantic_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*declaration))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*declaration)); auto [name, _w0, _w1, _w2, return_type, body, _w3, _w4] = _v_semanticdeclarationfn; return verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), semantic_ir::sdecl_span(declaration)), verify_semantic_empty_name_errors(name, mlc::String("semantic declaration: empty function name"))), verify_semantic_type_errors(mlc::String("semantic function return"), return_type)), verify_semantic_expression(body)); } if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*declaration))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*declaration)); auto [name, _w0, _w1, _w2, span] = _v_semanticdeclarationtype; return verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), span), verify_semantic_empty_name_errors(name, mlc::String("semantic declaration: empty type name"))); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTypeAlias>((*declaration))) { auto _v_semanticdeclarationtypealias = std::get<semantic_ir::SemanticDeclarationTypeAlias>((*declaration)); auto [name, _w0, _w1, span] = _v_semanticdeclarationtypealias; return verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), span), verify_semantic_empty_name_errors(name, mlc::String("semantic declaration: empty type alias name"))); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*declaration))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*declaration)); auto [name, _w0, members, span] = _v_semanticdeclarationtrait; return verify_semantic_declaration_members(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), span), verify_semantic_empty_name_errors(name, mlc::String("semantic declaration: empty trait name"))), members); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*declaration))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*declaration)); auto [type_name, _w0, members, span] = _v_semanticdeclarationextend; return verify_semantic_declaration_members(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), span), verify_semantic_empty_name_errors(type_name, mlc::String("semantic declaration: empty extend type name"))), members); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner] = _v_semanticdeclarationexported; return verify_semantic_declaration(inner); } if (std::holds_alternative<semantic_ir::SemanticDeclarationAssocBind>((*declaration))) { auto _v_semanticdeclarationassocbind = std::get<semantic_ir::SemanticDeclarationAssocBind>((*declaration)); auto [name, type_value, span] = _v_semanticdeclarationassocbind; return verify_semantic_append_errors(verify_semantic_append_errors(verify_semantic_span_errors(mlc::String("semantic declaration"), span), verify_semantic_type_errors(mlc::String("semantic assoc bind"), type_value)), verify_semantic_empty_name_errors(name, mlc::String("semantic declaration: empty assoc bind name"))); } return verify_semantic_span_errors(mlc::String("semantic declaration"), semantic_ir::sdecl_span(declaration)); }();}
 
 mlc::Array<mlc::String> verify_semantic_ir_load_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
 mlc::Array<mlc::String> errors = {};

@@ -83,6 +83,8 @@ bool TokenKind_is_for(ast_tokens::TokenKind self) noexcept;
 
 bool TokenKind_is_with(ast_tokens::TokenKind self) noexcept;
 
+bool TokenKind_is_spawn(ast_tokens::TokenKind self) noexcept;
+
 bool TokenKind_is_match(ast_tokens::TokenKind self) noexcept;
 
 bool TokenKind_is_return(ast_tokens::TokenKind self) noexcept;
@@ -276,6 +278,8 @@ bool TokenKind_is_while(ast_tokens::TokenKind self) noexcept{return [&]() { if (
 bool TokenKind_is_for(ast_tokens::TokenKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KFor>(self)) {  return true; } return false; }();}
 
 bool TokenKind_is_with(ast_tokens::TokenKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KWith>(self)) {  return true; } return false; }();}
+
+bool TokenKind_is_spawn(ast_tokens::TokenKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KSpawn>(self)) {  return true; } return false; }();}
 
 bool TokenKind_is_match(ast_tokens::TokenKind self) noexcept{return [&]() { if (std::holds_alternative<ast_tokens::KMatch>(self)) {  return true; } return false; }();}
 

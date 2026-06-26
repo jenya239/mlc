@@ -7,6 +7,7 @@
 #include <functional>
 #include <utility>
 #include <memory>
+#include "mlc/core/cow_detach.hpp"
 #include "mlc/core/string.hpp"
 #include "mlc/core/array.hpp"
 
@@ -14,14 +15,12 @@ namespace mlc {
 
 // COW (Copy-on-Write) HashMap over std::unordered_map<K,V>.
 // Copying is O(1) via shared_ptr. Mutation triggers detach only when shared.
+// See cow_detach.hpp for thread-safety limits.
 template<typename K, typename V>
 class HashMap {
     std::shared_ptr<std::unordered_map<K, V>> data_;
 
-    void detach() {
-        if (data_.use_count() > 1)
-            data_ = std::make_shared<std::unordered_map<K, V>>(*data_);
-    }
+    void detach() { cow::detach_shared_buffer(data_); }
 
 public:
     HashMap() : data_(std::make_shared<std::unordered_map<K, V>>()) {}

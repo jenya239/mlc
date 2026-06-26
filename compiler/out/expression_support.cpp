@@ -27,6 +27,8 @@ mlc::String resolve_object_code_in_self_context(mlc::String object_name, context
 
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SemanticExpression> argument, context::CodegenContext context) noexcept;
 
+mlc::String semantic_type_to_cpp_type_name(std::shared_ptr<registry::Type> type_value, context::CodegenContext context) noexcept;
+
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
 
 mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept;
@@ -80,6 +82,8 @@ mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SemanticExpr
 mlc::String type_name = [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*semantic_ir::sexpr_type(argument)))) { auto _v_tnamed = std::get<registry::TNamed>((*semantic_ir::sexpr_type(argument))); auto [name] = _v_tnamed; return name; } if (std::holds_alternative<registry::TShared>((*semantic_ir::sexpr_type(argument)))) { auto _v_tshared = std::get<registry::TShared>((*semantic_ir::sexpr_type(argument))); auto [inner] = _v_tshared; return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*inner))) { auto _v_tnamed = std::get<registry::TNamed>((*inner)); auto [name] = _v_tnamed; return name; } return mlc::String(""); }(); } return mlc::String(""); }();
 return type_name.length() > 0 ? context::CodegenContext_resolve(context, type_name) : mlc::String("auto");
 }
+
+mlc::String semantic_type_to_cpp_type_name(std::shared_ptr<registry::Type> type_value, context::CodegenContext context) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TI32>((*type_value))) {  return mlc::String("int"); } if (std::holds_alternative<registry::TString>((*type_value))) {  return mlc::String("mlc::String"); } if (std::holds_alternative<registry::TBool>((*type_value))) {  return mlc::String("bool"); } if (std::holds_alternative<registry::TUnit>((*type_value))) {  return mlc::String("void"); } if (std::holds_alternative<registry::TI64>((*type_value))) {  return mlc::String("int64_t"); } if (std::holds_alternative<registry::TF64>((*type_value))) {  return mlc::String("double"); } if (std::holds_alternative<registry::TU8>((*type_value))) {  return mlc::String("uint8_t"); } if (std::holds_alternative<registry::TUsize>((*type_value))) {  return mlc::String("size_t"); } if (std::holds_alternative<registry::TChar>((*type_value))) {  return mlc::String("char32_t"); } if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return context::CodegenContext_resolve(context, name); } if (std::holds_alternative<registry::TShared>((*type_value))) { auto _v_tshared = std::get<registry::TShared>((*type_value)); auto [inner] = _v_tshared; return semantic_type_to_cpp_type_name(inner, context); } return mlc::String("auto"); }();}
 
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept{return [&]() -> mlc::String { if (method_name == mlc::String("read")) { return mlc::String("mlc::file::read_to_string"); } if (method_name == mlc::String("write")) { return mlc::String("mlc::file::write_string"); } if (method_name == mlc::String("make_temp_directory")) { return mlc::String("mlc::file::make_temp_directory"); } if (method_name == mlc::String("temp_directory_base")) { return mlc::String("mlc::file::temp_directory_base"); } return mlc::String("mlc::file::") + method_name; }();}
 

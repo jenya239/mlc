@@ -50,6 +50,7 @@ export fn map_method(method_name: string) -> string =
   match method_name
   | 'length' | 'len'              => 'length'
   | 'push'                        => 'push_back'
+  | 'recv'                        => 'receive'
   | 'to_string'                   => 'to_string'
   | 'to_int' | 'to_i'             => 'to_i'
   | 'upper' | 'to_upper'          => 'upper'
@@ -64,6 +65,10 @@ export fn map_builtin(name: string) -> string =
   | 'exit'    => 'mlc::io::exit'
   | 'args'    => 'mlc::io::args'
   | 'read_line' => 'mlc::io::read_line'
+  | 'spawn_task' => 'mlc::concurrency::spawn_task'
+  | 'make_channel' => 'mlc::concurrency::make_channel'
+  | 'is_ready' => 'mlc::is_ready'
+  | 'block_on' => 'mlc::block_on'
   | _         => name
   end
 

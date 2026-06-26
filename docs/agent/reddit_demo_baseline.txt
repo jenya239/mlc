@@ -1,0 +1,7 @@
+# reddit demo baseline 2026-06-26T02:22:38Z
+# recorded_by=scripts/reddit_demo.sh --record-baseline
+compiler_tests=101362 passed, 0 failed
+mlcc_p1_sec=1.92
+mlcc_p2_sec=2.05
+diff_exit=0
+generated_cpp=136

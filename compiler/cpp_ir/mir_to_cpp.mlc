@@ -1,0 +1,218 @@
+// MirFunction → CppAST for simple functions (TRACK_MIR STEP=5).
+
+import { Result } from '../frontend/ast'
+import { Type, TI32, TBool, TUnit, TUnknown } from '../checker/registry'
+import {
+  MirFunction, MirBlock, MirLocal, MirStmt, MirRvalue, MirOperand, MirTerminator,
+  LocalId, BlockId,
+  MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
+  MirRvalueUse, MirRvalueBinary,
+  MirAssign, MirCallAssign,
+  MirReturn, MirCondJump
+} from '../mir/mir_types'
+import { mir_local_id_index, mir_block_id_index } from '../mir/mir_ids'
+import {
+  CppDeclaration, CppFnDef, CppExpression, CppBinary, CppCall, CppType, CppTypeName
+} from './cpp_ast'
+import * as emit_helpers from '../cpp_emit/emit_helpers'
+
+fn mir_to_cpp_unknown_type() -> Shared<Type> = Shared.new(TUnknown)
+
+fn mir_cpp_safe_name(name: string) -> string =
+  if name == '' then '__mir_tmp' else name end
+
+fn mir_temp_local_name(local_id: LocalId) -> string = `__mir_local_${mir_local_id_index(local_id)}`
+
+fn mir_type_to_cpp_string(type_value: Shared<Type>) -> string =
+  match type_value {
+    TI32 => 'int',
+    TBool => 'bool',
+    TUnit => 'void',
+    _ => 'auto'
+  }
+
+fn mir_find_local(function: MirFunction, local_id: LocalId) -> MirLocal = do
+  let mut index = 0
+  while index < function.locals.length() do
+    if mir_local_id_index(function.locals[index].id) == mir_local_id_index(local_id) then return function.locals[index] end
+    index = index + 1
+  end
+  MirLocal { id: local_id, name: '', type_value: mir_to_cpp_unknown_type() }
+end
+
+fn mir_block_by_id(function: MirFunction, block_id: BlockId) -> MirBlock = do
+  let mut index = 0
+  while index < function.blocks.length() do
+    if mir_block_id_index(function.blocks[index].id) == mir_block_id_index(block_id) then return function.blocks[index] end
+    index = index + 1
+  end
+  function.blocks[0]
+end
+
+fn mir_local_cpp_name(function: MirFunction, local_id: LocalId) -> string = do
+  const local = mir_find_local(function, local_id)
+  if local.name == '' then mir_temp_local_name(local_id)
+  else mir_cpp_safe_name(local.name)
+  end
+end
+
+fn mir_operand_to_cpp_expression(function: MirFunction, operand: MirOperand) -> Shared<CppExpression> =
+  match operand {
+    MirOperandConstInt(value) => emit_helpers.make_integer_cpp_expression(value),
+    MirOperandConstBool(value) => emit_helpers.make_boolean_cpp_expression(value),
+    MirOperandConstStr(value) => emit_helpers.make_string_cpp_expression(value),
+    MirOperandUnit => emit_helpers.make_integer_cpp_expression(0),
+    MirOperandLocal(local_id) =>
+      emit_helpers.make_identifier_cpp_expression(mir_local_cpp_name(function, local_id))
+  }
+
+fn mir_rvalue_to_cpp_expression(function: MirFunction, rvalue: MirRvalue) -> Shared<CppExpression> =
+  match rvalue {
+    MirRvalueUse(operand) => mir_operand_to_cpp_expression(function, operand),
+    MirRvalueBinary(operation, left, right) =>
+      Shared.new(CppBinary(
+        operation,
+        mir_operand_to_cpp_expression(function, left),
+        mir_operand_to_cpp_expression(function, right)))
+  }
+
+fn mir_call_operands_to_cpp_expressions(function: MirFunction, operands: [MirOperand]) -> [Shared<CppExpression>] = do
+  let mut expressions: [Shared<CppExpression>] = []
+  let mut index = 0
+  while index < operands.length() do
+    expressions.push(mir_operand_to_cpp_expression(function, operands[index]))
+    index = index + 1
+  end
+  expressions
+end
+
+fn mir_stmt_to_cpp_statement(function: MirFunction, statement: MirStmt) -> Shared<CppStatement> =
+  match statement {
+    MirAssign(local_id, rvalue) => do
+      const local = mir_find_local(function, local_id)
+      const initializer = mir_rvalue_to_cpp_expression(function, rvalue)
+      if local.name == '' then
+        emit_helpers.make_auto_cpp_statement(mir_temp_local_name(local_id), initializer)
+      else
+        emit_helpers.make_variable_cpp_statement(
+          mir_cpp_safe_name(local.name),
+          Shared.new(CppTypeName(mir_type_to_cpp_string(local.type_value))),
+          initializer)
+      end
+    end,
+    MirCallAssign(local_id, callee_name, arguments) => do
+      const call_expression = Shared.new(CppCall(
+        emit_helpers.make_identifier_cpp_expression(callee_name),
+        mir_call_operands_to_cpp_expressions(function, arguments)))
+      emit_helpers.make_auto_cpp_statement(mir_local_cpp_name(function, local_id), call_expression)
+    end
+  }
+
+fn mir_stmts_to_cpp_statements(function: MirFunction, statements: [MirStmt]) -> [Shared<CppStatement>] = do
+  let mut output: [Shared<CppStatement>] = []
+  let mut index = 0
+  while index < statements.length() do
+    output.push(mir_stmt_to_cpp_statement(function, statements[index]))
+    index = index + 1
+  end
+  output
+end
+
+fn mir_return_to_cpp_statement(function: MirFunction, operand: MirOperand) -> Shared<CppStatement> =
+  match operand {
+    MirOperandUnit => emit_helpers.make_fragment_cpp_statement('return;'),
+    _ => emit_helpers.make_return_cpp_statement(mir_operand_to_cpp_expression(function, operand))
+  }
+
+fn mir_block_to_cpp_statements(function: MirFunction, block: MirBlock) -> [Shared<CppStatement>] =
+  match block.term {
+    MirReturn(operand) => do
+      let mut statements = mir_stmts_to_cpp_statements(function, block.stmts)
+      statements.push(mir_return_to_cpp_statement(function, operand))
+      statements
+    end,
+    _ => mir_stmts_to_cpp_statements(function, block.stmts)
+  }
+
+fn mir_function_is_single_block_simple(function: MirFunction) -> bool = do
+  if function.blocks.length() != 1 then false
+  else
+    match function.blocks[0].term {
+      MirReturn(_) => true,
+      _ => false
+    }
+  end
+end
+
+fn mir_function_is_conditional_simple(function: MirFunction) -> bool = do
+  if function.blocks.length() != 3 then false
+  else
+    match function.blocks[0].term {
+      MirCondJump(_, then_block, else_block) =>
+        match mir_block_by_id(function, then_block).term {
+          MirReturn(_) =>
+            match mir_block_by_id(function, else_block).term {
+              MirReturn(_) => true,
+              _ => false
+            },
+          _ => false
+        },
+      _ => false
+    }
+  end
+end
+
+export fn mir_function_is_simple(function: MirFunction) -> bool =
+  mir_function_is_single_block_simple(function) || mir_function_is_conditional_simple(function)
+
+fn mir_function_single_block_to_cpp_statements(function: MirFunction) -> [Shared<CppStatement>] =
+  mir_block_to_cpp_statements(function, function.blocks[0])
+
+fn mir_function_conditional_to_cpp_statements(function: MirFunction) -> [Shared<CppStatement>] = do
+  const entry_block = function.blocks[0]
+  match entry_block.term {
+    MirCondJump(condition_operand, then_block_id, else_block_id) => do
+      const then_statements = mir_block_to_cpp_statements(function, mir_block_by_id(function, then_block_id))
+      const else_statements = mir_block_to_cpp_statements(function, mir_block_by_id(function, else_block_id))
+      let statements: [Shared<CppStatement>] = []
+      statements.push(emit_helpers.make_if_cpp_statement(
+        mir_operand_to_cpp_expression(function, condition_operand),
+        emit_helpers.make_block_cpp_statement(then_statements),
+        emit_helpers.make_block_cpp_statement(else_statements)))
+      statements
+    end,
+    MirReturn(_) => [],
+    MirJump(_) => [],
+    MirUnreachable => [],
+  }
+end
+
+fn mir_function_to_cpp_statements(function: MirFunction) -> [Shared<CppStatement>] =
+  if mir_function_is_single_block_simple(function) then
+    mir_function_single_block_to_cpp_statements(function)
+  else
+    mir_function_conditional_to_cpp_statements(function)
+  end
+
+fn mir_function_parameter_strings(function: MirFunction) -> [string] = do
+  let mut parameters: [string] = []
+  let mut index = 0
+  while index < function.params.length() do
+    const parameter = function.params[index]
+    parameters.push(`${mir_type_to_cpp_string(parameter.type_value)} ${mir_cpp_safe_name(parameter.name)}`)
+    index = index + 1
+  end
+  parameters
+end
+
+export fn mir_function_to_cpp_declaration(function: MirFunction) -> Result<Shared<CppDeclaration>, [string]> =
+  if !mir_function_is_simple(function) then
+    Err(['mir to cpp: function is not simple'])
+  else
+    Ok(Shared.new(CppFnDef(
+      '',
+      mir_type_to_cpp_string(function.return_type),
+      mir_cpp_safe_name(function.name),
+      mir_function_parameter_strings(function),
+      mir_function_to_cpp_statements(function),
+      1)))

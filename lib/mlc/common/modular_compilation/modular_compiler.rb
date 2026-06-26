@@ -63,8 +63,8 @@ module MLC
             result = generator.generate(mod[:ir], all_modules: all_modules)
             hpp_path = File.join(@out_dir, "#{base}.hpp")
             cpp_path = File.join(@out_dir, "#{base}.cpp")
-            File.write(hpp_path, result[:header])
-            File.write(cpp_path, result[:implementation])
+            write_if_changed(hpp_path, result[:header])
+            write_if_changed(cpp_path, result[:implementation])
             hpp_files << hpp_path
             cpp_files << cpp_path
           end
@@ -74,71 +74,36 @@ module MLC
 
         def build
           result = compile
-          runtime_dir = find_runtime_dir
-          runtime_include = File.join(runtime_dir, "include")
-          runtime_cpp = [
-            File.join(runtime_dir, "src/core/string.cpp"),
-            File.join(runtime_dir, "src/core/profile.cpp"),
-            File.join(runtime_dir, "src/io/io.cpp")
-          ].select { |p| File.exist?(p) }
-
           entry_base = File.basename(@entry_path, ".mlc")
           main_cpp = File.join(@out_dir, "#{entry_base}.cpp")
-          main_content = File.read(main_cpp)
-          wrapped = wrap_main(main_content)
+          wrapped = wrap_main(File.read(main_cpp))
           build_progress("wrap entry: #{entry_base}.cpp")
-          File.write(main_cpp, wrapped)
-
-          obj_dir = File.join(@out_dir, "obj")
-          FileUtils.mkdir_p(obj_dir)
-
-          extra_flags = (ENV["MLC_CXX_FLAGS"] || "").split
-          cxx = ENV["MLC_CXX"] || begin
-            has_ccache = system("which ccache > /dev/null 2>&1")
-            has_clang  = system("which clang++ > /dev/null 2>&1")
-            if has_ccache && has_clang then "ccache clang++"
-            elsif has_clang            then "clang++"
-            elsif has_ccache           then "ccache g++"
-            else                            "g++"
-            end
-          end
-          cxx_cmd = cxx.split
-
-          all_units = result[:cpp_files].map { |cpp|
-            { cpp: cpp, obj: File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o"),
-              cmd: [*cxx_cmd, "-std=c++20", "-O2", *extra_flags, "-I", @out_dir, "-I", runtime_include, "-c", cpp, "-o", File.join(obj_dir, "#{File.basename(cpp, ".cpp")}.o")] }
-          } + runtime_cpp.map { |rcpp|
-            { cpp: rcpp, obj: File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o"),
-              cmd: [*cxx_cmd, "-std=c++20", "-O2", *extra_flags, "-I", runtime_include, "-c", rcpp, "-o", File.join(obj_dir, "runtime_#{File.basename(rcpp, ".cpp")}.o")] }
-          }
-
-          build_progress("compile: #{all_units.size} translation unit(s) (#{PARALLEL_JOBS} jobs)")
-          errors = Mutex.new
-          compile_errors = []
-
-          all_units.each_slice(PARALLEL_JOBS) do |slice|
-            threads = slice.map do |unit|
-              Thread.new do
-                unless system(*unit[:cmd])
-                  errors.synchronize { compile_errors << "g++ failed: #{unit[:cmd].join(' ')}" }
-                end
-              end
-            end
-            threads.each(&:join)
-            raise compile_errors.first if compile_errors.any?
-          end
-
-          objs = all_units.map { |u| u[:obj] }
+          write_if_changed(main_cpp, wrapped)
 
           bin_path = File.join(@out_dir, @binary_name)
-          build_progress("link: #{File.basename(bin_path)}")
-          cmd = ["g++", "-std=c++20", *extra_flags, "-o", bin_path, *objs]
-          system(*cmd) || raise("g++ link failed: #{cmd.join(' ')}")
+          build_progress("link via build_bin.sh: #{File.basename(bin_path)}")
+          build_bin = find_build_bin_script
+          env = { "MLCC_ENTRY_BASENAME" => entry_base }
+          ok = system(env, build_bin, @out_dir, bin_path)
+          raise("build_bin.sh failed: #{build_bin} #{@out_dir} #{bin_path}") unless ok
 
           { binary: bin_path, cpp_files: result[:cpp_files], hpp_files: result[:hpp_files] }
         end
 
         private
+
+        def write_if_changed(path, content)
+          return if File.exist?(path) && File.read(path) == content
+
+          File.write(path, content)
+        end
+
+        def find_build_bin_script
+          script = File.join(File.dirname(find_runtime_dir), "compiler", "build_bin.sh")
+          raise("build_bin.sh not found: #{script}") unless File.executable?(script)
+
+          script
+        end
 
         # Progress lines go to stderr so stdout stays suitable for piping (e.g. tee).
         # Enable with MLCC_BUILD_VERBOSE=1 (or true/yes; disable with 0/false/no).

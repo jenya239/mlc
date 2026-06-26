@@ -1,0 +1,1064 @@
+// Lower typed function bodies to MLC MIR (TRACK_MIR STEP=3).
+
+import { Param, Result, Pattern, PatternWild, PatternIdent, PatternInt, PatternBool, PatternCtor, PatternUnit, PatternOr } from '../frontend/ast'
+import {
+  SemanticDeclaration, SemanticDeclarationFn,
+  SemanticExpression, SemanticStatement, SemanticMatchArm,
+  SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionStr, SemanticExpressionUnit,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionCall,
+  SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
+  SemanticExpressionArray,
+  SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
+  SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
+  SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
+  SemanticStatementReturn
+} from '../ir/semantic_ir'
+import { Type, TUnknown } from '../checker/registry'
+import {
+  MirFunction, MirParam, MirLocal, MirBlock, MirStmt, MirRvalue, MirOperand,
+  MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirTerminator,
+  MirRvalueUse, MirRvalueBinary,
+  MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
+  LocalId, BlockId, mir_local_id, mir_block_id
+} from './mir_types'
+import {
+  MirIdPool, mir_id_pool_new, mir_id_pool_locals_reserved,
+  mir_id_pool_allocate_local, mir_id_pool_allocate_block
+} from './mir_ids'
+
+type MirLowerState = MirLowerState {
+  name_environment: Map<string, LocalId>,
+  locals: [MirLocal],
+  finished_blocks: [MirBlock],
+  current_block_id: BlockId,
+  current_label: string,
+  current_stmts: [MirStmt],
+  id_pool: MirIdPool
+}
+
+type MirLowerBlockStep = MirLowerBlockStep { state: MirLowerState, block_id: BlockId }
+type MirLowerLocalStep = MirLowerLocalStep { state: MirLowerState, local_id: LocalId }
+
+fn mir_lower_unknown_type() -> Shared<Type> = Shared.new(TUnknown)
+
+fn mir_lower_is_assign_operation(operation: string) -> bool = operation == "="
+
+fn mir_lower_state_new() -> MirLowerState = MirLowerState {
+  name_environment: Map.new(),
+  locals: [],
+  finished_blocks: [],
+  current_block_id: mir_block_id(0),
+  current_label: 'entry',
+  current_stmts: [],
+  id_pool: mir_id_pool_new()
+}
+
+fn mir_lower_allocate_block_index(state: MirLowerState) -> MirLowerBlockStep = do
+  const block_step = mir_id_pool_allocate_block(state.id_pool)
+  MirLowerBlockStep {
+    state: MirLowerState { ...state, id_pool: block_step.pool },
+    block_id: block_step.block_id
+  }
+end
+
+fn mir_lower_finish_current_block(state: MirLowerState, terminator: MirTerminator) -> MirLowerState = do
+  let mut finished_blocks = state.finished_blocks
+  finished_blocks.push(MirBlock {
+    id: state.current_block_id,
+    label: state.current_label,
+    stmts: state.current_stmts,
+    term: terminator
+  })
+  MirLowerState { ...state, finished_blocks: finished_blocks, current_stmts: [] }
+end
+
+fn mir_lower_start_block(state: MirLowerState, block_id: BlockId, label: string) -> MirLowerState =
+  MirLowerState { ...state, current_block_id: block_id, current_label: label, current_stmts: [] }
+
+fn mir_lower_bind_params(state: MirLowerState, params: [Shared<Param>]) -> MirLowerState = do
+  let mut environment = state.name_environment
+  let mut index = 0
+  while index < params.length() do
+    environment.set(params[index].name, mir_local_id(index))
+    index = index + 1
+  end
+  MirLowerState { ...state, name_environment: environment, id_pool: mir_id_pool_locals_reserved(state.id_pool, index) }
+end
+
+fn mir_lower_allocate_local(state: MirLowerState, name: string, type_value: Shared<Type>) -> MirLowerLocalStep = do
+  const local_step = mir_id_pool_allocate_local(state.id_pool)
+  let mut locals = state.locals
+  locals.push(MirLocal { id: local_step.local_id, name: name, type_value: type_value })
+  MirLowerLocalStep {
+    state: MirLowerState { ...state, locals: locals, id_pool: local_step.pool },
+    local_id: local_step.local_id
+  }
+end
+
+fn mir_lower_bind_name(state: MirLowerState, name: string, local_id: LocalId) -> MirLowerState = do
+  let mut environment = state.name_environment
+  environment.set(name, local_id)
+  MirLowerState { ...state, name_environment: environment }
+end
+
+fn mir_lower_lookup_local(state: MirLowerState, name: string) -> Result<LocalId, [string]> = do
+  if state.name_environment.has(name) then Ok(state.name_environment.get(name))
+  else Err([`mir lower: unknown local ${name}`])
+  end
+end
+
+fn mir_lower_emit_assign(state: MirLowerState, local_id: LocalId, rvalue: MirRvalue) -> MirLowerState = do
+  let mut statements = state.current_stmts
+  statements.push(MirAssign(local_id, rvalue))
+  MirLowerState { ...state, current_stmts: statements }
+end
+
+fn mir_lower_emit_call_assign(
+  state: MirLowerState,
+  local_id: LocalId,
+  callee_name: string,
+  arguments: [MirOperand]
+) -> MirLowerState = do
+  let mut statements = state.current_stmts
+  statements.push(MirCallAssign(local_id, callee_name, arguments))
+  MirLowerState { ...state, current_stmts: statements }
+end
+
+fn mir_lower_call_target_name(expression: Shared<SemanticExpression>) -> Result<string, [string]> =
+  match expression {
+    SemanticExpressionIdent(name, _, _) => Ok(name),
+    SemanticExpressionField(receiver, field_name, _, _) =>
+      match receiver {
+        SemanticExpressionIdent(type_name, _, _) =>
+          if type_name == 'Map' && field_name == 'new' then Ok('__mir_map_empty')
+          else Err(['mir lower: unsupported static field call']),
+        _ => Err(['mir lower: call target must be identifier'])
+      },
+    _ => Err(['mir lower: call target must be identifier'])
+  }
+
+fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]> =
+  if method_name == 'push' then Ok('__mir_array_push')
+  else if method_name == 'get' then Ok('__mir_map_get')
+  else if method_name == 'set' then Ok('__mir_map_set')
+  else if method_name == 'length' then Ok('__mir_length')
+  else Err([`mir lower: unsupported method ${method_name}`])
+
+fn mir_lower_is_mutating_method(method_name: string) -> bool =
+  method_name == 'push' || method_name == 'set'
+
+fn mir_lower_array_push_elements(
+  state: MirLowerState,
+  array_local_id: LocalId,
+  elements: [Shared<SemanticExpression>],
+  index: i32
+) -> Result<MirLowerLocalStep, [string]> =
+  if index >= elements.length() then
+    Ok(MirLowerLocalStep { state: state, local_id: array_local_id })
+  else
+    match mir_lower_operand_from_expression(state, elements[index]) {
+      Err(errors) => Err(errors),
+      Ok(element_step) => do
+        const push_result_step = mir_lower_allocate_local(element_step.state, '', mir_lower_unknown_type())
+        const push_state = mir_lower_emit_call_assign(
+          push_result_step.state,
+          push_result_step.local_id,
+          '__mir_array_push',
+          [MirOperandLocal(array_local_id), element_step.operand])
+        mir_lower_array_push_elements(push_state, push_result_step.local_id, elements, index + 1)
+      end
+    }
+  end
+
+fn mir_lower_array_literal_to_local(
+  state: MirLowerState,
+  elements: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> = do
+  const empty_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  const empty_state = mir_lower_emit_call_assign(
+    empty_step.state, empty_step.local_id, '__mir_array_empty', [])
+  mir_lower_array_push_elements(empty_state, empty_step.local_id, elements, 0)
+end
+
+fn mir_lower_index_to_local(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  index_expression: Shared<SemanticExpression>
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_operand_from_expression(state, object) {
+    Err(errors) => Err(errors),
+    Ok(object_step) =>
+      match mir_lower_operand_from_expression(object_step.state, index_expression) {
+        Err(errors) => Err(errors),
+        Ok(index_step) => do
+          const local_step = mir_lower_allocate_local(index_step.state, '', mir_lower_unknown_type())
+          Ok(MirLowerLocalStep {
+            state: mir_lower_emit_call_assign(
+              local_step.state,
+              local_step.local_id,
+              '__mir_array_get',
+              [object_step.operand, index_step.operand]),
+            local_id: local_step.local_id
+          })
+        end
+      }
+  }
+
+fn mir_lower_map_new_local(state: MirLowerState) -> Result<MirLowerLocalStep, [string]> = do
+  const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  Ok(MirLowerLocalStep {
+    state: mir_lower_emit_call_assign(local_step.state, local_step.local_id, '__mir_map_empty', []),
+    local_id: local_step.local_id
+  })
+end
+
+fn mir_lower_method_to_local(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match object {
+    SemanticExpressionIdent(type_name, _, _) =>
+      if type_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
+        mir_lower_map_new_local(state)
+      else
+        mir_lower_method_call_on_operand(state, object, method_name, arguments)
+      end,
+    _ => mir_lower_method_call_on_operand(state, object, method_name, arguments)
+  }
+
+fn mir_lower_method_call_on_operand(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_method_native_name(method_name) {
+    Err(errors) => Err(errors),
+    Ok(native_name) =>
+      match mir_lower_operand_from_expression(state, object) {
+        Err(errors) => Err(errors),
+        Ok(object_step) =>
+          match mir_lower_method_operands_with_receiver(
+            object_step.state, object_step.operand, arguments) {
+            Err(errors) => Err(errors),
+            Ok(operands_step) => do
+              const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+              Ok(MirLowerLocalStep {
+                state: mir_lower_emit_call_assign(
+                  local_step.state, local_step.local_id, native_name, operands_step.operands),
+                local_id: local_step.local_id
+              })
+            end
+          }
+      }
+  }
+
+type MirLowerMethodOperandsStep = MirLowerMethodOperandsStep {
+  state: MirLowerState,
+  operands: [MirOperand]
+}
+
+fn mir_lower_collect_method_operands(
+  state: MirLowerState,
+  object_operand: MirOperand,
+  arguments: [Shared<SemanticExpression>],
+  index: i32,
+  operands: [MirOperand]
+) -> Result<MirLowerMethodOperandsStep, [string]> =
+  if index >= arguments.length() then
+    Ok(MirLowerMethodOperandsStep { state: state, operands: operands })
+  else
+    match mir_lower_operand_from_expression(state, arguments[index]) {
+      Err(errors) => Err(errors),
+      Ok(argument_step) => do
+        let mut next_operands = operands
+        next_operands.push(argument_step.operand)
+        mir_lower_collect_method_operands(
+          argument_step.state, object_operand, arguments, index + 1, next_operands)
+      end
+    }
+  end
+
+fn mir_lower_method_operands_with_receiver(
+  state: MirLowerState,
+  object_operand: MirOperand,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerMethodOperandsStep, [string]> = do
+  let mut operands: [MirOperand] = [object_operand]
+  mir_lower_collect_method_operands(state, object_operand, arguments, 0, operands)
+end
+
+fn mir_lower_mutating_method_statement(
+  state: MirLowerState,
+  local_id: LocalId,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_method_native_name(method_name) {
+    Err(errors) => Err(errors),
+    Ok(native_name) =>
+      match mir_lower_method_operands_with_receiver(
+        state, MirOperandLocal(local_id), arguments) {
+        Err(errors) => Err(errors),
+        Ok(operands_step) => do
+          const result_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+          const call_state = mir_lower_emit_call_assign(
+            result_step.state, result_step.local_id, native_name, operands_step.operands)
+          Ok(mir_lower_emit_assign(
+            call_state, local_id, MirRvalueUse(MirOperandLocal(result_step.local_id))))
+        end
+      }
+  }
+
+type MirLowerCallOperandsStep = MirLowerCallOperandsStep { state: MirLowerState, operands: [MirOperand] }
+
+fn mir_lower_collect_operands(
+  state: MirLowerState,
+  arguments: [Shared<SemanticExpression>],
+  index: i32,
+  operands: [MirOperand]
+) -> Result<MirLowerCallOperandsStep, [string]> =
+  if index >= arguments.length() then
+    Ok(MirLowerCallOperandsStep { state: state, operands: operands })
+  else
+    match mir_lower_operand_from_expression(state, arguments[index]) {
+      Err(errors) => Err(errors),
+      Ok(step) => do
+        let mut next_operands = operands
+        next_operands.push(step.operand)
+        mir_lower_collect_operands(step.state, arguments, index + 1, next_operands)
+      end
+    }
+  end
+
+fn mir_lower_operands_from_arguments(
+  state: MirLowerState,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerCallOperandsStep, [string]> =
+  mir_lower_collect_operands(state, arguments, 0, [])
+
+type MirLowerOperandStep = MirLowerOperandStep { state: MirLowerState, operand: MirOperand }
+
+fn mir_lower_temp_operand_from_rvalue(state: MirLowerState, rvalue: MirRvalue) -> MirLowerOperandStep = do
+  const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  const assigned_state = mir_lower_emit_assign(local_step.state, local_step.local_id, rvalue)
+  MirLowerOperandStep { state: assigned_state, operand: MirOperandLocal(local_step.local_id) }
+end
+
+fn mir_lower_operand_equals_const_int(
+  state: MirLowerState,
+  left_operand: MirOperand,
+  right_value: i32
+) -> Result<MirLowerOperandStep, [string]> =
+  Ok(mir_lower_temp_operand_from_rvalue(
+    state,
+    MirRvalueBinary("==", left_operand, MirOperandConstInt(right_value))))
+
+fn mir_lower_operand_equals_const_bool(
+  state: MirLowerState,
+  left_operand: MirOperand,
+  right_value: bool
+) -> Result<MirLowerOperandStep, [string]> =
+  Ok(mir_lower_temp_operand_from_rvalue(
+    state,
+    MirRvalueBinary("==", left_operand, MirOperandConstBool(right_value))))
+
+fn mir_lower_operand_from_expression(
+  state: MirLowerState,
+  expression: Shared<SemanticExpression>
+) -> Result<MirLowerOperandStep, [string]> = do
+  match expression {
+    SemanticExpressionInt(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstInt(value) }),
+    SemanticExpressionBool(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstBool(value) }),
+    SemanticExpressionStr(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
+    SemanticExpressionUnit(_, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandUnit }),
+    SemanticExpressionIdent(name, _, _) =>
+      match mir_lower_lookup_local(state, name) {
+        Ok(local_id) => Ok(MirLowerOperandStep { state: state, operand: MirOperandLocal(local_id) }),
+        Err(errors) => Err(errors)
+      },
+    SemanticExpressionBin(operation, _, _, _, _) =>
+      if mir_lower_is_assign_operation(operation) then
+        Err(['mir lower: assignment expression is not an operand'])
+      else
+        match mir_lower_rvalue_from_expression(state, expression) {
+          Err(errors) => Err(errors),
+          Ok(rvalue_step) => Ok(mir_lower_temp_operand_from_rvalue(rvalue_step.state, rvalue_step.rvalue))
+        }
+      end,
+    SemanticExpressionCall(function, arguments, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionArray(_, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionIndex(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionMethod(_, _, _, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    _ => Err(['mir lower: unsupported expression in operand context'])
+  }
+end
+
+type MirLowerRvalueStep = MirLowerRvalueStep { state: MirLowerState, rvalue: MirRvalue }
+
+fn mir_lower_rvalue_from_expression(
+  state: MirLowerState,
+  expression: Shared<SemanticExpression>
+) -> Result<MirLowerRvalueStep, [string]> = do
+  match expression {
+    SemanticExpressionInt(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstInt(value)) }),
+    SemanticExpressionBool(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstBool(value)) }),
+    SemanticExpressionStr(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
+    SemanticExpressionUnit(_, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandUnit) }),
+    SemanticExpressionIdent(name, _, _) =>
+      match mir_lower_lookup_local(state, name) {
+        Ok(local_id) =>
+          Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandLocal(local_id)) }),
+        Err(errors) => Err(errors)
+      },
+    SemanticExpressionBin(operation, left, right, _, _) =>
+      if mir_lower_is_assign_operation(operation) then
+        Err(['mir lower: assignment is not an rvalue'])
+      else
+        match mir_lower_operand_from_expression(state, left) {
+          Err(errors) => Err(errors),
+          Ok(left_step) =>
+            match mir_lower_operand_from_expression(left_step.state, right) {
+              Err(errors) => Err(errors),
+              Ok(right_step) =>
+                Ok(MirLowerRvalueStep {
+                  state: right_step.state,
+                  rvalue: MirRvalueBinary(operation, left_step.operand, right_step.operand)
+                })
+            }
+        }
+      end,
+    SemanticExpressionCall(function, arguments, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionArray(_, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionIndex(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionMethod(_, _, _, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    _ => Err(['mir lower: unsupported expression in rvalue context'])
+  }
+end
+
+fn mir_lower_finish_return(state: MirLowerState, operand: MirOperand) -> MirLowerState =
+  mir_lower_finish_current_block(state, MirReturn(operand))
+
+fn mir_lower_return_expression(state: MirLowerState, expression: Shared<SemanticExpression>) -> Result<MirLowerState, [string]> = do
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) => do
+      match mir_lower_statements(state, statements) {
+        Err(errors) => Err(errors),
+        Ok(statement_state) => mir_lower_return_expression(statement_state, result_expression)
+      }
+    end,
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+      match mir_lower_operand_from_expression(state, condition) {
+        Err(errors) => Err(errors),
+        Ok(condition_step) => do
+          const then_block_step = mir_lower_allocate_block_index(condition_step.state)
+          const else_block_step = mir_lower_allocate_block_index(then_block_step.state)
+          let mut branch_state = mir_lower_finish_current_block(
+            then_block_step.state,
+            MirCondJump(condition_step.operand, then_block_step.block_id, else_block_step.block_id))
+          branch_state = mir_lower_start_block(branch_state, then_block_step.block_id, 'then')
+          match mir_lower_return_expression(branch_state, then_expression) {
+            Err(errors) => Err(errors),
+            Ok(then_state) => do
+              let mut else_state = mir_lower_start_block(then_state, else_block_step.block_id, 'else')
+              mir_lower_return_expression(else_state, else_expression)
+            end
+          }
+        end
+      },
+    SemanticExpressionUnit(_, _) => Ok(mir_lower_finish_return(state, MirOperandUnit)),
+    SemanticExpressionMatch(subject, arms, _, _) => mir_lower_match_return(state, subject, arms),
+    SemanticExpressionQuestion(inner, _, _) => mir_lower_question_return(state, inner),
+    _ =>
+      match mir_lower_operand_from_expression(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(operand_step) => Ok(mir_lower_finish_return(operand_step.state, operand_step.operand))
+      }
+  }
+end
+
+fn mir_lower_emit_call_to_local(
+  state: MirLowerState,
+  callee_name: string,
+  arguments: [MirOperand]
+) -> Result<MirLowerLocalStep, [string]> = do
+  const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  Ok(MirLowerLocalStep {
+    state: mir_lower_emit_call_assign(local_step.state, local_step.local_id, callee_name, arguments),
+    local_id: local_step.local_id
+  })
+end
+
+fn mir_lower_operand_and(
+  state: MirLowerState,
+  left_operand: MirOperand,
+  right_operand: MirOperand
+) -> Result<MirLowerOperandStep, [string]> =
+  Ok(mir_lower_temp_operand_from_rvalue(
+    state,
+    MirRvalueBinary('&&', left_operand, right_operand)))
+
+fn mir_lower_operand_variant_is(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  tag: string
+) -> Result<MirLowerOperandStep, [string]> =
+  match mir_lower_emit_call_to_local(
+    state, '__mir_variant_is', [scrutinee, MirOperandConstStr(tag)]) {
+    Err(errors) => Err(errors),
+    Ok(local_step) =>
+      Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+  }
+
+fn mir_lower_ctor_subpattern_tests(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  sub_patterns: [Shared<Pattern>],
+  accumulated: MirOperand,
+  index: i32
+) -> Result<MirLowerOperandStep, [string]> =
+  if index >= sub_patterns.length() then
+    Ok(MirLowerOperandStep { state: state, operand: accumulated })
+  else
+    match sub_patterns[index] {
+      PatternInt(value, _) =>
+        match mir_lower_emit_call_to_local(
+          state, '__mir_variant_field', [scrutinee, MirOperandConstInt(index)]) {
+          Err(errors) => Err(errors),
+          Ok(field_step) =>
+            match mir_lower_operand_equals_const_int(
+              field_step.state, MirOperandLocal(field_step.local_id), value) {
+              Err(errors) => Err(errors),
+              Ok(eq_step) =>
+                match mir_lower_operand_and(eq_step.state, accumulated, eq_step.operand) {
+                  Err(errors) => Err(errors),
+                  Ok(and_step) =>
+                    mir_lower_ctor_subpattern_tests(
+                      and_step.state, scrutinee, sub_patterns, and_step.operand, index + 1)
+                }
+            }
+        },
+      PatternBool(value, _) =>
+        match mir_lower_emit_call_to_local(
+          state, '__mir_variant_field', [scrutinee, MirOperandConstInt(index)]) {
+          Err(errors) => Err(errors),
+          Ok(field_step) =>
+            match mir_lower_operand_equals_const_bool(
+              field_step.state, MirOperandLocal(field_step.local_id), value) {
+              Err(errors) => Err(errors),
+              Ok(eq_step) =>
+                match mir_lower_operand_and(eq_step.state, accumulated, eq_step.operand) {
+                  Err(errors) => Err(errors),
+                  Ok(and_step) =>
+                    mir_lower_ctor_subpattern_tests(
+                      and_step.state, scrutinee, sub_patterns, and_step.operand, index + 1)
+                }
+            }
+        },
+      PatternWild(_) | PatternIdent(_, _) | PatternUnit(_) =>
+        mir_lower_ctor_subpattern_tests(state, scrutinee, sub_patterns, accumulated, index + 1),
+      _ => Err(['mir lower: unsupported variant subpattern in match test'])
+    }
+  end
+
+fn mir_lower_bind_ctor_subpattern(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  field_index: i32,
+  pattern: Shared<Pattern>
+) -> Result<MirLowerState, [string]> =
+  match pattern {
+    PatternWild(_) | PatternUnit(_) | PatternInt(_, _) | PatternBool(_, _) => Ok(state),
+    PatternIdent(name, _) =>
+      match mir_lower_emit_call_to_local(
+        state, '__mir_variant_field', [scrutinee, MirOperandConstInt(field_index)]) {
+        Err(errors) => Err(errors),
+        Ok(field_step) => Ok(mir_lower_bind_name(field_step.state, name, field_step.local_id))
+      },
+    _ => Err(['mir lower: unsupported variant subpattern binding'])
+  }
+
+fn mir_lower_bind_ctor_subpatterns(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  sub_patterns: [Shared<Pattern>],
+  index: i32
+) -> Result<MirLowerState, [string]> =
+  if index >= sub_patterns.length() then Ok(state)
+  else
+    match mir_lower_bind_ctor_subpattern(state, scrutinee, index, sub_patterns[index]) {
+      Err(errors) => Err(errors),
+      Ok(bound_state) => mir_lower_bind_ctor_subpatterns(bound_state, scrutinee, sub_patterns, index + 1)
+    }
+  end
+
+fn mir_lower_pattern_needs_conditional_test(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternInt(_, _) => true,
+    PatternBool(_, _) => true,
+    PatternCtor(_, _, _) => true,
+    _ => false
+  }
+
+fn mir_lower_pattern_matches_operand(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  pattern: Shared<Pattern>
+) -> Result<MirLowerOperandStep, [string]> =
+  match pattern {
+    PatternInt(value, _) => mir_lower_operand_equals_const_int(state, scrutinee, value),
+    PatternBool(value, _) => mir_lower_operand_equals_const_bool(state, scrutinee, value),
+    PatternCtor(tag, sub_patterns, _) =>
+      match mir_lower_operand_variant_is(state, scrutinee, tag) {
+        Err(errors) => Err(errors),
+        Ok(is_step) =>
+          mir_lower_ctor_subpattern_tests(
+            is_step.state, scrutinee, sub_patterns, is_step.operand, 0)
+      },
+    _ => Err(['mir lower: staged match supports int, bool, and variant ctor patterns'])
+  }
+
+fn mir_lower_match_arm_body_with_binding(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  arm: Shared<SemanticMatchArm>
+) -> Result<MirLowerState, [string]> =
+  if arm.has_guard then Err(['mir lower: match guards not supported in staged lowering'])
+  else
+    match arm.pattern {
+      PatternIdent(name, _) => do
+        const local_step = mir_lower_allocate_local(state, name, mir_lower_unknown_type())
+        let mut bound_state = mir_lower_emit_assign(
+          local_step.state, local_step.local_id, MirRvalueUse(scrutinee))
+        bound_state = mir_lower_bind_name(bound_state, name, local_step.local_id)
+        mir_lower_return_expression(bound_state, arm.body)
+      end,
+      PatternCtor(_, sub_patterns, _) =>
+        match mir_lower_bind_ctor_subpatterns(state, scrutinee, sub_patterns, 0) {
+          Err(errors) => Err(errors),
+          Ok(bound_state) => mir_lower_return_expression(bound_state, arm.body)
+        },
+      _ => mir_lower_return_expression(state, arm.body)
+    }
+  end
+
+fn mir_lower_match_arms_return(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  arms: [Shared<SemanticMatchArm>],
+  index: i32
+) -> Result<MirLowerState, [string]> =
+  if index >= arms.length() then Err(['mir lower: empty match'])
+  else if index == arms.length() - 1 then
+    mir_lower_match_arm_body_with_binding(state, scrutinee, arms[index])
+  else if !mir_lower_pattern_needs_conditional_test(arms[index].pattern) then
+    mir_lower_match_arm_body_with_binding(state, scrutinee, arms[index])
+  else
+    match mir_lower_pattern_matches_operand(state, scrutinee, arms[index].pattern) {
+      Err(errors) => Err(errors),
+      Ok(condition_step) => do
+        const arm_block_step = mir_lower_allocate_block_index(condition_step.state)
+        const next_test_step = mir_lower_allocate_block_index(arm_block_step.state)
+        let mut branch_state = mir_lower_finish_current_block(
+          next_test_step.state,
+          MirCondJump(
+            condition_step.operand, arm_block_step.block_id, next_test_step.block_id))
+        branch_state = mir_lower_start_block(branch_state, arm_block_step.block_id, 'match_arm')
+        match mir_lower_match_arm_body_with_binding(branch_state, scrutinee, arms[index]) {
+          Err(errors) => Err(errors),
+          Ok(arm_done_state) =>
+            mir_lower_match_arms_return(
+              mir_lower_start_block(arm_done_state, next_test_step.block_id, 'match_test'),
+              scrutinee,
+              arms,
+              index + 1)
+        }
+      end
+    }
+  end
+
+fn mir_lower_match_arm_with_pattern(
+  arm: Shared<SemanticMatchArm>,
+  pattern: Shared<Pattern>
+) -> Shared<SemanticMatchArm> =
+  Shared.new(SemanticMatchArm {
+    pattern: pattern,
+    has_guard: arm.has_guard,
+    when_condition: arm.when_condition,
+    body: arm.body
+  })
+
+fn mir_lower_split_or_arm(arm: Shared<SemanticMatchArm>) -> [Shared<SemanticMatchArm>] =
+  match arm.pattern {
+    PatternOr(alternatives, _) =>
+      alternatives.map(alternative => mir_lower_match_arm_with_pattern(arm, alternative)),
+    _ => [arm]
+  }
+
+fn mir_lower_expand_or_arms(arms: [Shared<SemanticMatchArm>]) -> [Shared<SemanticMatchArm>] =
+  arms.flat_map(arm => mir_lower_split_or_arm(arm))
+
+fn mir_lower_match_return(
+  state: MirLowerState,
+  subject: Shared<SemanticExpression>,
+  arms: [Shared<SemanticMatchArm>]
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_operand_from_expression(state, subject) {
+    Err(errors) => Err(errors),
+    Ok(subject_step) =>
+      mir_lower_match_arms_return(
+        subject_step.state, subject_step.operand, mir_lower_expand_or_arms(arms), 0)
+  }
+
+fn mir_lower_bind_lambda_parameters_from_index(
+  state: MirLowerState,
+  parameter_names: [string],
+  argument_operands: [MirOperand],
+  index: i32,
+  body: Shared<SemanticExpression>,
+  result_local_id: LocalId
+) -> Result<MirLowerState, [string]> =
+  if index >= parameter_names.length() then
+    match mir_lower_rvalue_from_expression(state, body) {
+      Err(errors) => Err(errors),
+      Ok(rvalue_step) => Ok(mir_lower_emit_assign(rvalue_step.state, result_local_id, rvalue_step.rvalue))
+    }
+  else do
+    const local_step = mir_lower_allocate_local(state, parameter_names[index], mir_lower_unknown_type())
+    let mut bound_state = mir_lower_emit_assign(
+      local_step.state,
+      local_step.local_id,
+      MirRvalueUse(argument_operands[index]))
+    bound_state = mir_lower_bind_name(bound_state, parameter_names[index], local_step.local_id)
+    mir_lower_bind_lambda_parameters_from_index(
+      bound_state, parameter_names, argument_operands, index + 1, body, result_local_id)
+  end
+
+fn mir_lower_lambda_inline_body(
+  state: MirLowerState,
+  parameter_names: [string],
+  body: Shared<SemanticExpression>,
+  argument_operands: [MirOperand],
+  result_local_id: LocalId
+) -> Result<MirLowerState, [string]> =
+  if parameter_names.length() != argument_operands.length() then
+    Err(['mir lower: lambda argument count mismatch'])
+  else
+    mir_lower_bind_lambda_parameters_from_index(
+      state, parameter_names, argument_operands, 0, body, result_local_id)
+  end
+
+fn mir_lower_expression_to_local(
+  state: MirLowerState,
+  expression: Shared<SemanticExpression>
+) -> Result<MirLowerLocalStep, [string]> =
+  match expression {
+    SemanticExpressionArray(elements, _, _) =>
+      mir_lower_array_literal_to_local(state, elements),
+    SemanticExpressionIndex(object, index_expression, _, _) =>
+      mir_lower_index_to_local(state, object, index_expression),
+    SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>
+      mir_lower_method_to_local(state, object, method_name, arguments),
+    SemanticExpressionCall(function, arguments, _, _, _) =>
+      match function {
+        SemanticExpressionLambda(parameter_names, body, _, _) =>
+          match mir_lower_operands_from_arguments(state, arguments) {
+            Err(errors) => Err(errors),
+            Ok(operands_step) => do
+              const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+              match mir_lower_lambda_inline_body(
+                local_step.state,
+                parameter_names,
+                body,
+                operands_step.operands,
+                local_step.local_id) {
+                Err(errors) => Err(errors),
+                Ok(done_state) => Ok(MirLowerLocalStep { state: done_state, local_id: local_step.local_id })
+              }
+            end
+          },
+        _ =>
+          match mir_lower_operands_from_arguments(state, arguments) {
+            Err(errors) => Err(errors),
+            Ok(operands_step) =>
+              match mir_lower_call_target_name(function) {
+                Err(errors) => Err(errors),
+                Ok(callee_name) => do
+                  const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+                  Ok(MirLowerLocalStep {
+                    state: mir_lower_emit_call_assign(
+                      local_step.state, local_step.local_id, callee_name, operands_step.operands),
+                    local_id: local_step.local_id
+                  })
+                end
+              }
+          }
+      },
+    _ =>
+      match mir_lower_rvalue_from_expression(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(rvalue_step) => do
+          const local_step = mir_lower_allocate_local(rvalue_step.state, '', mir_lower_unknown_type())
+          Ok(MirLowerLocalStep {
+            state: mir_lower_emit_assign(local_step.state, local_step.local_id, rvalue_step.rvalue),
+            local_id: local_step.local_id
+          })
+        end
+      }
+  }
+
+fn mir_lower_question_return(
+  state: MirLowerState,
+  inner: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_expression_to_local(state, inner) {
+    Err(errors) => Err(errors),
+    Ok(result_step) => do
+      const is_error_step = mir_lower_allocate_local(result_step.state, '', mir_lower_unknown_type())
+      let mut branch_state = mir_lower_emit_call_assign(
+        is_error_step.state,
+        is_error_step.local_id,
+        '__mir_result_is_err',
+        [MirOperandLocal(result_step.local_id)])
+      const error_block_step = mir_lower_allocate_block_index(branch_state)
+      const ok_block_step = mir_lower_allocate_block_index(error_block_step.state)
+      branch_state = mir_lower_finish_current_block(
+        ok_block_step.state,
+        MirCondJump(
+          MirOperandLocal(is_error_step.local_id),
+          error_block_step.block_id,
+          ok_block_step.block_id))
+      branch_state = mir_lower_start_block(branch_state, error_block_step.block_id, 'question_err')
+      const error_value_step = mir_lower_allocate_local(branch_state, '', mir_lower_unknown_type())
+      branch_state = mir_lower_emit_call_assign(
+        error_value_step.state,
+        error_value_step.local_id,
+        '__mir_result_err_value',
+        [MirOperandLocal(result_step.local_id)])
+      branch_state = mir_lower_finish_return(branch_state, MirOperandLocal(error_value_step.local_id))
+      branch_state = mir_lower_start_block(branch_state, ok_block_step.block_id, 'question_ok')
+      const ok_value_step = mir_lower_allocate_local(branch_state, '', mir_lower_unknown_type())
+      branch_state = mir_lower_emit_call_assign(
+        ok_value_step.state,
+        ok_value_step.local_id,
+        '__mir_result_ok_value',
+        [MirOperandLocal(result_step.local_id)])
+      Ok(mir_lower_finish_return(branch_state, MirOperandLocal(ok_value_step.local_id)))
+    end
+  }
+
+fn mir_lower_while_statement(
+  state: MirLowerState,
+  condition: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>]
+) -> Result<MirLowerState, [string]> = do
+  const loop_header_step = mir_lower_allocate_block_index(state)
+  const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
+  const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
+  let mut loop_state = mir_lower_finish_current_block(loop_header_step.state, MirJump(loop_header_step.block_id))
+  loop_state = mir_lower_start_block(loop_state, loop_header_step.block_id, 'loop')
+  match mir_lower_operand_from_expression(loop_state, condition) {
+    Err(errors) => Err(errors),
+    Ok(condition_step) => do
+      loop_state = mir_lower_finish_current_block(
+        condition_step.state,
+        MirCondJump(condition_step.operand, body_block_step.block_id, exit_block_step.block_id))
+      loop_state = mir_lower_start_block(loop_state, body_block_step.block_id, 'loop_body')
+      match mir_lower_statements(loop_state, body_statements) {
+        Err(errors) => Err(errors),
+        Ok(body_state) => do
+          let mut exit_state = mir_lower_finish_current_block(body_state, MirJump(loop_header_step.block_id))
+          Ok(mir_lower_start_block(exit_state, exit_block_step.block_id, 'loop_exit'))
+        end
+      }
+    end
+  }
+end
+
+fn mir_lower_assign_identifier(
+  state: MirLowerState,
+  name: string,
+  right: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_lookup_local(state, name) {
+    Err(errors) => Err(errors),
+    Ok(local_id) =>
+      match mir_lower_rvalue_from_expression(state, right) {
+        Err(errors) => Err(errors),
+        Ok(rvalue_step) => Ok(mir_lower_emit_assign(rvalue_step.state, local_id, rvalue_step.rvalue))
+      }
+  }
+
+fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement>) -> Result<MirLowerState, [string]> = do
+  match statement {
+    SemanticStatementLet(name, _, value, type_value, _) =>
+      match mir_lower_rvalue_from_expression(state, value) {
+        Err(errors) => Err(errors),
+        Ok(rvalue_step) => do
+          const local_step = mir_lower_allocate_local(rvalue_step.state, name, type_value)
+          let mut next_state = mir_lower_bind_name(local_step.state, name, local_step.local_id)
+          Ok(mir_lower_emit_assign(next_state, local_step.local_id, rvalue_step.rvalue))
+        end
+      },
+    SemanticStatementLetConst(name, value, type_value, _) =>
+      match mir_lower_rvalue_from_expression(state, value) {
+        Err(errors) => Err(errors),
+        Ok(rvalue_step) => do
+          const local_step = mir_lower_allocate_local(rvalue_step.state, name, type_value)
+          let mut next_state = mir_lower_bind_name(local_step.state, name, local_step.local_id)
+          Ok(mir_lower_emit_assign(next_state, local_step.local_id, rvalue_step.rvalue))
+        end
+      },
+    SemanticStatementReturn(expression, _) =>
+      mir_lower_return_expression(state, expression),
+    SemanticStatementExpr(expression, _) =>
+      match expression {
+        SemanticExpressionBin(operation, left, right, _, _) =>
+          if mir_lower_is_assign_operation(operation) then
+            match left {
+              SemanticExpressionIdent(name, _, _) => mir_lower_assign_identifier(state, name, right),
+              _ => Err(['mir lower: assignment target must be identifier'])
+            }
+          else
+            match mir_lower_operand_from_expression(state, expression) {
+              Err(errors) => Err(errors),
+              Ok(operand_step) => Ok(operand_step.state)
+            }
+          end,
+        SemanticExpressionWhile(condition, body_statements, _, _) =>
+          mir_lower_while_statement(state, condition, body_statements),
+        SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>
+          if mir_lower_is_mutating_method(method_name) then
+            match object {
+              SemanticExpressionIdent(name, _, _) =>
+                match mir_lower_lookup_local(state, name) {
+                  Err(errors) => Err(errors),
+                  Ok(local_id) =>
+                    mir_lower_mutating_method_statement(state, local_id, method_name, arguments)
+                },
+              _ => Err(['mir lower: mutating method requires identifier receiver'])
+            }
+          else
+            match mir_lower_method_to_local(state, object, method_name, arguments) {
+              Err(errors) => Err(errors),
+              Ok(local_step) => Ok(local_step.state)
+            }
+          end,
+        SemanticExpressionIf(_, _, _, _, _) =>
+          Err(['mir lower: if expression statement requires return context']),
+        _ =>
+          match mir_lower_operand_from_expression(state, expression) {
+            Err(errors) => Err(errors),
+            Ok(operand_step) => Ok(operand_step.state)
+          }
+      },
+    _ => Err(['mir lower: unsupported statement'])
+  }
+end
+
+fn mir_lower_statements_from_index(
+  state: MirLowerState,
+  statements: [Shared<SemanticStatement>],
+  index: i32
+) -> Result<MirLowerState, [string]> =
+  if index >= statements.length() then Ok(state)
+  else
+    match mir_lower_statement(state, statements[index]) {
+      Err(errors) => Err(errors),
+      Ok(next_state) => mir_lower_statements_from_index(next_state, statements, index + 1)
+    }
+  end
+
+fn mir_lower_statements(state: MirLowerState, statements: [Shared<SemanticStatement>]) -> Result<MirLowerState, [string]> =
+  mir_lower_statements_from_index(state, statements, 0)
+
+fn mir_lower_build_params(params: [Shared<Param>]) -> [MirParam] = do
+  let mut mir_params: [MirParam] = []
+  let mut index = 0
+  while index < params.length() do
+    mir_params.push(MirParam { name: params[index].name, type_value: mir_lower_unknown_type() })
+    index = index + 1
+  end
+  mir_params
+end
+
+export fn lower_semantic_function(declaration: Shared<SemanticDeclaration>) -> Result<MirFunction, [string]> = do
+  match declaration {
+    SemanticDeclarationFn(name, _, _, params, return_type, body, _, _) => do
+      let mut state = mir_lower_bind_params(mir_lower_state_new(), params)
+      match mir_lower_return_expression(state, body) {
+        Err(errors) => Err(errors),
+        Ok(lowered_state) => Ok(MirFunction {
+          name: name,
+          params: mir_lower_build_params(params),
+          locals: lowered_state.locals,
+          blocks: lowered_state.finished_blocks,
+          return_type: return_type
+        })
+      }
+    end,
+    _ => Err(['mir lower: expected function declaration'])
+  }
+end

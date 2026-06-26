@@ -1,0 +1,117 @@
+// MIR simplify_cfg pass: resolve constant branches, drop unreachable blocks (TRACK_MIR STEP=6).
+
+import {
+  MirFunction, MirBlock, MirTerminator,
+  MirJump, MirCondJump, MirReturn,
+  MirOperand, MirOperandConstBool,
+  BlockId
+} from './mir_types'
+import { mir_block_id_equals } from './mir_ids'
+
+fn mir_block_ids_contains(block_ids: [BlockId], block_id: BlockId) -> bool = do
+  let mut index = 0
+  while index < block_ids.length() do
+    if mir_block_id_equals(block_ids[index], block_id) then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn mir_append_block_id(block_ids: [BlockId], block_id: BlockId) -> [BlockId] = do
+  if mir_block_ids_contains(block_ids, block_id) then return block_ids end
+  let mut next_ids = block_ids
+  next_ids.push(block_id)
+  next_ids
+end
+
+fn mir_terminator_target_block_ids(terminator: MirTerminator) -> [BlockId] =
+  match terminator {
+    MirJump(target) => [target],
+    MirCondJump(_, then_block, else_block) => [then_block, else_block],
+    MirReturn(_) => [],
+    MirUnreachable => [],
+  }
+
+fn mir_block_by_id(blocks: [MirBlock], block_id: BlockId) -> MirBlock = do
+  let mut index = 0
+  while index < blocks.length() do
+    if mir_block_id_equals(blocks[index].id, block_id) then return blocks[index] end
+    index = index + 1
+  end
+  blocks[0]
+end
+
+fn mir_collect_reachable_block_ids(blocks: [MirBlock]) -> [BlockId] = do
+  if blocks.length() == 0 then return [] end
+  let mut reachable: [BlockId] = [blocks[0].id]
+  let mut queue_index = 0
+  while queue_index < reachable.length() do
+    const current_block = mir_block_by_id(blocks, reachable[queue_index])
+    const targets = mir_terminator_target_block_ids(current_block.term)
+    let mut target_index = 0
+    while target_index < targets.length() do
+      reachable = mir_append_block_id(reachable, targets[target_index])
+      target_index = target_index + 1
+    end
+    queue_index = queue_index + 1
+  end
+  reachable
+end
+
+fn mir_resolve_cond_jump_operand(
+  operand: MirOperand, then_block: BlockId, else_block: BlockId
+) -> MirTerminator =
+  match operand {
+    MirOperandConstBool(condition_value) =>
+      if condition_value then MirJump(then_block) else MirJump(else_block),
+    _ => MirCondJump(operand, then_block, else_block)
+  }
+
+fn mir_resolve_conditional_terminator(terminator: MirTerminator) -> MirTerminator =
+  match terminator {
+    MirCondJump(condition_operand, then_block, else_block) =>
+      mir_resolve_cond_jump_operand(condition_operand, then_block, else_block),
+    _ => terminator
+  }
+
+fn mir_simplify_cfg_block(block: MirBlock) -> MirBlock =
+  MirBlock {
+    id: block.id,
+    label: block.label,
+    stmts: block.stmts,
+    term: mir_resolve_conditional_terminator(block.term)
+  }
+
+fn mir_simplify_cfg_blocks(blocks: [MirBlock]) -> [MirBlock] = do
+  let mut simplified: [MirBlock] = []
+  let mut index = 0
+  while index < blocks.length() do
+    simplified.push(mir_simplify_cfg_block(blocks[index]))
+    index = index + 1
+  end
+  simplified
+end
+
+fn mir_filter_reachable_blocks(blocks: [MirBlock], reachable_ids: [BlockId]) -> [MirBlock] = do
+  let mut kept: [MirBlock] = []
+  let mut index = 0
+  while index < blocks.length() do
+    if mir_block_ids_contains(reachable_ids, blocks[index].id) then
+      kept.push(blocks[index])
+    end
+    index = index + 1
+  end
+  kept
+end
+
+export fn simplify_cfg_mir_function(function: MirFunction) -> MirFunction = do
+  const simplified_blocks = mir_simplify_cfg_blocks(function.blocks)
+  const reachable_ids = mir_collect_reachable_block_ids(simplified_blocks)
+  MirFunction {
+    name: function.name,
+    params: function.params,
+    locals: function.locals,
+    blocks: mir_filter_reachable_blocks(simplified_blocks, reachable_ids),
+    return_type: function.return_type
+  }
+end

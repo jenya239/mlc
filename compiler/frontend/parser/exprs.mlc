@@ -37,6 +37,26 @@ fn parse_statements_until_end_or_eof(parser: Parser) -> StmtsResult = do
   statements_parse_result(stmts, closing_parser)
 end
 
+fn parser_at_toplevel_declaration_start(parser: Parser) -> bool = do
+  const kind = parser.kind()
+  if kind.is_fn() || kind.is_type() || kind.is_extend() || kind.is_import() then return true end
+  if kind.is_extern() && parser.advance().kind().is_fn() then return true end
+  if kind.is_ident() && (kind.ident() == 'export' || kind.ident() == 'trait') then return true end
+  false
+end
+
+fn parse_statements_until_end_eof_or_toplevel_decl(parser: Parser) -> StmtsResult = do
+  const stmts: [Shared<Stmt>] = []
+  let mut state = parser
+  while !state.kind().is_end() && !state.at_eof() && !parser_at_toplevel_declaration_start(state) do
+    const parsed = parse_statement(state)
+    stmts.push(parsed.value)
+    state = parsed.parser.skip_semi()
+  end
+  const closing_parser = if state.kind().is_end() then state.advance() else state end
+  statements_parse_result(stmts, closing_parser)
+end
+
 export fn parse_statements_until_else_end(parser: Parser) -> StmtsResult = do
   const stmts: [Shared<Stmt>] = []
   let mut state = parser
@@ -655,6 +675,21 @@ fn parse_primary_for_loop(parser: Parser) -> ExprResult = do
   parse_for_expr(parser.advance(), header_span)
 end
 
+fn parse_spawn_expr(parser: Parser, header_span: Span) -> ExprResult = do
+  if parser.kind().is_do() then do
+    const body_parsed = parse_statements_until_end(parser.advance())
+    expression_parse_result(Shared.new(ExprSpawn(body_parsed.value, header_span)), body_parsed.parser)
+  end
+  else
+    expression_parse_result(Shared.new(ExprUnit(header_span)), parser.record_parse_error('spawn: expected do'))
+  end
+end
+
+fn parse_primary_spawn(parser: Parser) -> ExprResult = do
+  const header_span = parser.span_at_cursor()
+  parse_spawn_expr(parser.advance(), header_span)
+end
+
 fn parse_primary_match(parser: Parser) -> ExprResult = do
   const header_span = parser.span_at_cursor()
   parse_match_expr(parser.advance(), header_span)
@@ -730,6 +765,7 @@ fn parse_primary(parser: Parser) -> ExprResult = do
     parse_with_expr(parser.advance(), header_span)
   end
   else if kind.is_match() then parse_primary_match(parser)
+  else if kind.is_spawn() then parse_primary_spawn(parser)
   else if kind.is_return() then parse_primary_return_as_block(parser)
   else if kind.is_ident() then parse_primary_identifier(parser, kind.ident())
   else parse_primary_unit_fallback(parser)
@@ -826,11 +862,20 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
       const after_block = if else_block_parsed.parser.kind().is_end() then else_block_parsed.parser.advance() else else_block_parsed.parser end
       expression_parse_result(Shared.new(ExprIf(condition, then_expr, expression, header_span)), after_block)
     else
-      const else_span = after_else.span_at_cursor()
-      const else_stmts_parsed = parse_statements_until_end_or_eof(after_else)
-      expression_parse_result(
-        Shared.new(ExprIf(condition, then_expr, statements_result_to_block_expr(else_stmts_parsed, else_span), header_span)),
-        else_stmts_parsed.parser)
+      const else_keyword_line = after_else.prev_line()
+      const else_body_start_line = after_else.span_at_cursor().line
+      if else_body_start_line > else_keyword_line then
+        const else_span = after_else.span_at_cursor()
+        const else_stmts_parsed = parse_statements_until_end_eof_or_toplevel_decl(after_else)
+        expression_parse_result(
+          Shared.new(ExprIf(condition, then_expr, statements_result_to_block_expr(else_stmts_parsed, else_span), header_span)),
+          else_stmts_parsed.parser)
+      else
+        const else_parsed = parse_expr(after_else)
+        expression_parse_result(
+          Shared.new(ExprIf(condition, then_expr, else_parsed.value, header_span)),
+          else_parsed.parser)
+      end
     end
   else
     expression_parse_result(

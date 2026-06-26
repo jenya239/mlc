@@ -1,0 +1,3 @@
+[
+  {"directory": "", "file": "compile_commands_probe.cpp", "arguments": ["clang++", "-std=c++20", "-O2", "-I", "", "-I", "runtime/include", "-c", "compile_commands_probe.cpp"]}
+]

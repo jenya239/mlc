@@ -1,0 +1,75 @@
+// Type inference for Channel send/recv (TRACK_CONCURRENCY STEP=4).
+
+import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_span } from '../../frontend/ast'
+import { Type, TypeRegistry } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import { type_is_unknown, types_structurally_equal, type_description, type_is_channel,
+         channel_element_type_from_channel_type } from '../semantic_type_structure'
+import { is_channel_method, channel_method_result_type } from '../check/method_types/channel_method_types'
+import { type_is_send_safe } from '../send_safe'
+import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+fn channel_method_receiver_error(channel_type: Shared<Type>, method_name: string, method_span: Span) -> [Diagnostic] =
+  if !type_is_unknown(channel_type) && !type_is_channel(channel_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects a Channel receiver, got ${type_description(channel_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+fn channel_send_argument_errors(
+  element_type: Shared<Type>,
+  argument_type: Shared<Type>,
+  argument_span: Span,
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  let mut errors: [Diagnostic] = []
+  if !type_is_unknown(argument_type) && !type_is_send_safe(argument_type, registry) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      'channel send requires a Send-safe value, got ' + type_description(argument_type),
+      argument_span,
+      diagnostic_code_e082())])
+  end
+  if !type_is_unknown(element_type) && !type_is_unknown(argument_type)
+    && !types_structurally_equal(element_type, argument_type) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      'channel send expected ' + type_description(element_type) + ', got ' + type_description(argument_type),
+      argument_span,
+      diagnostic_code_e082())])
+  end
+  errors
+end
+
+export fn infer_channel_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const channel_type = object_parsed.inferred_type
+  const receiver_errors = channel_method_receiver_error(channel_type, method_name, method_span)
+  const arity_errors = method_arity_after_receiver(
+    receiver_errors, method_name, method_arguments.length(), method_span)
+  let mut merged = object_parsed
+  let mut errors = arity_errors
+  const element_type = channel_element_type_from_channel_type(channel_type)
+
+  if method_name == 'send' && method_arguments.length() == 1 then
+    const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    const argument_type = argument_parsed.inferred_type
+    merged = merged.absorb(argument_parsed)
+    errors = diagnostics_append(errors, channel_send_argument_errors(
+      element_type, argument_type, expr_span(method_arguments[0]), inference_context.registry))
+  end
+
+  InferResult {
+    inferred_type: channel_method_result_type(channel_type, method_name),
+    errors: diagnostics_append(merged.errors, errors)
+  }
+end

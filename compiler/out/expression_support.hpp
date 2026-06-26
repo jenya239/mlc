@@ -30,6 +30,8 @@ mlc::String resolve_object_code_in_self_context(mlc::String object_name, context
 
 mlc::String infer_shared_new_type_name(std::shared_ptr<semantic_ir::SemanticExpression> argument, context::CodegenContext context) noexcept;
 
+mlc::String semantic_type_to_cpp_type_name(std::shared_ptr<registry::Type> type_value, context::CodegenContext context) noexcept;
+
 mlc::String cpp_function_name_for_file_method(mlc::String method_name) noexcept;
 
 mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexcept;

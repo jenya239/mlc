@@ -141,7 +141,7 @@ mlc::String requires_clause_bound_part(mlc::Array<mlc::String> type_parameters, 
 
 mlc::String requires_clause(mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds) noexcept;
 
-mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String type_name) noexcept{return [&]() -> mlc::String { if (type_name == mlc::String("Map")) { return mlc::String("mlc::HashMap"); } if (type_name == mlc::String("Shared")) { return mlc::String("std::shared_ptr"); } return context::CodegenContext_resolve(context, type_name); }();}
+mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String type_name) noexcept{return [&]() -> mlc::String { if (type_name == mlc::String("Map")) { return mlc::String("mlc::HashMap"); } if (type_name == mlc::String("Shared")) { return mlc::String("std::shared_ptr"); } if (type_name == mlc::String("Task")) { return mlc::String("mlc::Task"); } if (type_name == mlc::String("Future")) { return mlc::String("mlc::Task"); } if (type_name == mlc::String("Channel")) { return mlc::String("mlc::concurrency::Channel"); } if (type_name == mlc::String("Arc")) { return mlc::String("mlc::concurrency::Arc"); } if (type_name == mlc::String("Mutex")) { return mlc::String("mlc::concurrency::Mutex"); } return context::CodegenContext_resolve(context, type_name); }();}
 
 mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept{return std::visit(overloaded{
   [&](const TI32& ti32) -> mlc::String { return mlc::String("int"); },
@@ -180,7 +180,7 @@ mlc::String type_to_cpp(context::CodegenContext context, std::shared_ptr<ast::Ty
   [&](const TyArray& tyarray) -> mlc::String { auto [inner] = tyarray; return expr::cpp_array_type_element(type_to_cpp(context, inner)); },
   [&](const TyShared& tyshared) -> mlc::String { auto [inner] = tyshared; return expr::cpp_shared_pointer_type(type_to_cpp(context, inner)); },
   [&](const TyGeneric& tygeneric) -> mlc::String { auto [name, type_arguments] = tygeneric; return name == mlc::String("ref") && type_arguments.size() == 1 ? expr::cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0])) : [&]() -> mlc::String { 
-  mlc::String safe = name == mlc::String("Map") ? mlc::String("mlc::HashMap") : name == mlc::String("Shared") ? mlc::String("std::shared_ptr") : context::CodegenContext_resolve(context, name);
+  mlc::String safe = cpp_generic_base_name(context, name);
   return type_arguments.size() == 0 ? safe : type_arguments.size() == 1 ? expr::cpp_template_single_type_argument(safe, type_to_cpp(context, type_arguments[0])) : expr::cpp_template_two_type_arguments(safe, type_to_cpp(context, type_arguments[0]), type_to_cpp(context, type_arguments[1]));
  }(); },
   [&](const TyFn& tyfn) -> mlc::String { auto [parameter_types, return_type_expression] = tyfn; return expr::cpp_std_function_type(type_to_cpp(context, return_type_expression), parameter_types.map([context](std::shared_ptr<ast::TypeExpr> parameter_type) mutable { return type_to_cpp(context, parameter_type); }).join(mlc::String(", "))); },

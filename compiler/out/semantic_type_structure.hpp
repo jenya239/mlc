@@ -19,6 +19,14 @@ bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
 
+bool type_is_channel(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> channel_element_type_from_channel_type(std::shared_ptr<registry::Type> channel_type) noexcept;
+
+bool type_is_mutex(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> mutex_inner_type_from_mutex_type(std::shared_ptr<registry::Type> mutex_type) noexcept;
+
 bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 
 std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;

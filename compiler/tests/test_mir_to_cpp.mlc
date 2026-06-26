@@ -1,0 +1,104 @@
+import { TestResult, assert_true, assert_eq_int, assert_eq_str } from './test_runner'
+import { Param, TyI32, ExprUnit, PatternUnit, span_unknown, WhereClauseBound } from '../frontend/ast'
+import {
+  SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionInt,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionIf,
+  SemanticExpressionBlock, SemanticExpressionWhile, SemanticStatementLet,
+  SemanticStatementExpr
+} from '../ir/semantic_ir'
+import { Type, TI32 } from '../checker/registry'
+import { lower_semantic_function } from '../mir/lower_fn'
+import { mir_function_is_simple, mir_function_to_cpp_declaration } from '../cpp_ir/mir_to_cpp'
+import { print_decl } from '../cpp_emit/print'
+
+fn ti32() -> Shared<Type> = Shared.new(TI32)
+
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param {
+  name: name,
+  is_mut: false,
+  type_value: Shared.new(TyI32),
+  has_default: false,
+  default: Shared.new(ExprUnit(span_unknown())),
+  param_pattern: Shared.new(PatternUnit(span_unknown()))
+})
+
+fn make_int(value: i32) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionInt(value, ti32(), span_unknown()))
+
+fn make_ident(name: string) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionIdent(name, ti32(), span_unknown()))
+
+fn make_bin(operation: string, left: Shared<SemanticExpression>, right: Shared<SemanticExpression>) ->
+  Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionBin(operation, left, right, ti32(), span_unknown()))
+
+fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) ->
+  Shared<SemanticDeclaration> = do
+  const where_clause_bounds: [WhereClauseBound] = []
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+end
+
+export fn mir_to_cpp_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  match lower_semantic_function(fn_decl('answer', [], ti32(), make_int(7))) {
+    Ok(function) => do
+      results.push(assert_true('mir_function_is_simple literal', mir_function_is_simple(function)))
+      match mir_function_to_cpp_declaration(function) {
+        Ok(declaration) =>
+          results.push(assert_eq_str(
+            'mir_function_to_cpp literal',
+            print_decl(declaration),
+            'int answer() noexcept{\n  return 7;\n}\n')),
+        Err(_) => results.push(assert_true('mir_function_to_cpp literal ok', false))
+      }
+    end,
+    Err(_) => results.push(assert_true('lower literal for mir_to_cpp', false))
+  }
+
+  const add_body = Shared.new(SemanticExpressionBlock(
+    [
+      Shared.new(SemanticStatementLet('sum', false, make_bin("+", make_ident('left'), make_ident('right')), ti32(), span_unknown()))
+    ],
+    make_ident('sum'),
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('add', [iparam('left'), iparam('right')], ti32(), add_body)) {
+    Ok(function) => do
+      results.push(assert_true('mir_function_is_simple add', mir_function_is_simple(function)))
+      match mir_function_to_cpp_declaration(function) {
+        Ok(declaration) =>
+          results.push(assert_true('mir_function_to_cpp add mentions sum',
+            print_decl(declaration).contains('sum'))),
+        Err(_) => results.push(assert_true('mir_function_to_cpp add ok', false))
+      }
+    end,
+    Err(_) => results.push(assert_true('lower add for mir_to_cpp', false))
+  }
+
+  const while_body = Shared.new(SemanticExpressionBlock(
+    [
+      Shared.new(SemanticStatementLet('counter', false, make_int(0), ti32(), span_unknown())),
+      Shared.new(SemanticStatementExpr(
+        Shared.new(SemanticExpressionWhile(
+          make_bin("<", make_ident('counter'), make_int(2)),
+          [
+            Shared.new(SemanticStatementExpr(
+              make_bin("=", make_ident('counter'), make_bin("+", make_ident('counter'), make_int(1))),
+              span_unknown()))
+          ],
+          ti32(),
+          span_unknown())),
+        span_unknown()))
+    ],
+    make_ident('counter'),
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('count', [], ti32(), while_body)) {
+    Ok(function) =>
+      results.push(assert_true('mir_function_is_simple rejects while', !mir_function_is_simple(function))),
+    Err(_) => results.push(assert_true('lower while for mir_to_cpp', false))
+  }
+
+  results
+end

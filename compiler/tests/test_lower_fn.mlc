@@ -1,0 +1,211 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import { Param, TyI32, TyBool, TyUnit, ExprUnit, PatternUnit, PatternWild, PatternInt, span_unknown, WhereClauseBound } from '../frontend/ast'
+import {
+  SemanticDeclaration, SemanticDeclarationFn, SemanticDeclarationImport,
+  SemanticExpression, SemanticStatement, SemanticMatchArm,
+  SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionUnit,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionCall,
+  SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
+  SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
+  SemanticStatementLet, SemanticStatementExpr
+} from '../ir/semantic_ir'
+import { Type, TI32, TBool, TUnit } from '../checker/registry'
+import { MirJump, MirReturn, MirCondJump, MirOperandConstInt, MirOperandLocal, mir_block_id } from '../mir/mir_types'
+import { lower_semantic_function } from '../mir/lower_fn'
+import { verify_mir_function } from '../verify/verify_mir'
+
+fn ti32() -> Shared<Type> = Shared.new(TI32)
+fn tbool() -> Shared<Type> = Shared.new(TBool)
+fn tunit() -> Shared<Type> = Shared.new(TUnit)
+
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param {
+  name: name,
+  is_mut: false,
+  type_value: Shared.new(TyI32),
+  has_default: false,
+  default: Shared.new(ExprUnit(span_unknown())),
+  param_pattern: Shared.new(PatternUnit(span_unknown()))
+})
+
+fn make_int(value: i32) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionInt(value, ti32(), span_unknown()))
+
+fn make_ident(name: string) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionIdent(name, ti32(), span_unknown()))
+
+fn make_bin(operation: string, left: Shared<SemanticExpression>, right: Shared<SemanticExpression>) ->
+  Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionBin(operation, left, right, ti32(), span_unknown()))
+
+fn make_call(name: string, arguments: [Shared<SemanticExpression>]) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionCall(
+    Shared.new(SemanticExpressionIdent(name, ti32(), span_unknown())),
+    arguments,
+    [],
+    ti32(),
+    span_unknown()))
+
+fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) ->
+  Shared<SemanticDeclaration> = do
+  const where_clause_bounds: [WhereClauseBound] = []
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+end
+
+export fn lower_fn_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const literal_body = make_int(7)
+  match lower_semantic_function(fn_decl('literal_fn', [], ti32(), literal_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower literal return verify', verify_mir_function(function).length(), 0))
+      results.push(assert_eq_int('lower literal one block', function.blocks.length(), 1))
+      match function.blocks[0].term {
+        MirReturn(operand) =>
+          match operand {
+            MirOperandConstInt(value) => results.push(assert_eq_int('lower literal return value', value, 7)),
+            _ => results.push(assert_true('lower literal return value', false))
+          },
+        _ => results.push(assert_true('lower literal return term', false))
+      }
+    end,
+    Err(_) => results.push(assert_true('lower literal fn ok', false))
+  }
+
+  const add_body = Shared.new(SemanticExpressionBlock(
+    [
+      Shared.new(SemanticStatementLet('sum', false, make_bin("+", make_ident('left'), make_ident('right')), ti32(), span_unknown()))
+    ],
+    make_ident('sum'),
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('add', [iparam('left'), iparam('right')], ti32(), add_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower add verify', verify_mir_function(function).length(), 0))
+      results.push(assert_eq_int('lower add locals', function.locals.length(), 1))
+      results.push(assert_eq_int('lower add stmts', function.blocks[0].stmts.length(), 1))
+    end,
+    Err(_) => results.push(assert_true('lower add fn ok', false))
+  }
+
+  const if_body = Shared.new(SemanticExpressionIf(
+    make_bin(">", make_ident('value'), make_int(0)),
+    make_int(1),
+    make_int(0),
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('sign', [iparam('value')], ti32(), if_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower if verify', verify_mir_function(function).length(), 0))
+      results.push(assert_true('lower if has cond jump',
+        match function.blocks[0].term {
+          MirCondJump(_, then_block, else_block) =>
+            then_block.index == 1 && else_block.index == 2,
+          _ => false
+        }))
+      results.push(assert_eq_int('lower if block count', function.blocks.length(), 3))
+    end,
+    Err(_) => results.push(assert_true('lower if fn ok', false))
+  }
+
+  const while_body = Shared.new(SemanticExpressionBlock(
+    [
+      Shared.new(SemanticStatementLet('counter', false, make_int(0), ti32(), span_unknown())),
+      Shared.new(SemanticStatementExpr(
+        Shared.new(SemanticExpressionWhile(
+          make_bin("<", make_ident('counter'), make_int(2)),
+          [
+            Shared.new(SemanticStatementExpr(
+              make_bin("=", make_ident('counter'), make_bin("+", make_ident('counter'), make_int(1))),
+              span_unknown()))
+          ],
+          tunit(),
+          span_unknown())),
+        span_unknown())),
+    ],
+    make_ident('counter'),
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('count', [], ti32(), while_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower while verify', verify_mir_function(function).length(), 0))
+      results.push(assert_true('lower while entry jumps to loop',
+        match function.blocks[0].term {
+          MirJump(target) => target.index == 1,
+          _ => false
+        }))
+    end,
+    Err(_) => results.push(assert_true('lower while fn ok', false))
+  }
+
+  const call_body = make_call('helper', [make_int(3), make_int(4)])
+  match lower_semantic_function(fn_decl('caller', [], ti32(), call_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower call verify', verify_mir_function(function).length(), 0))
+      results.push(assert_eq_int('lower call temp local', function.locals.length(), 1))
+      results.push(assert_eq_int('lower call assign stmt', function.blocks[0].stmts.length(), 1))
+    end,
+    Err(_) => results.push(assert_true('lower call fn ok', false))
+  }
+
+  match lower_semantic_function(Shared.new(SemanticDeclarationImport('other', []))) {
+    Ok(_) => results.push(assert_true('lower rejects non fn decl', false)),
+    Err(_) => results.push(assert_true('lower rejects non fn decl', true))
+  }
+
+  const match_arms: [Shared<SemanticMatchArm>] = [
+    Shared.new(SemanticMatchArm {
+      pattern: Shared.new(PatternInt(1, span_unknown())),
+      has_guard: false,
+      when_condition: Shared.new(SemanticExpressionUnit(tunit(), span_unknown())),
+      body: make_int(10)
+    }),
+    Shared.new(SemanticMatchArm {
+      pattern: Shared.new(PatternWild(span_unknown())),
+      has_guard: false,
+      when_condition: Shared.new(SemanticExpressionUnit(tunit(), span_unknown())),
+      body: make_int(0)
+    })
+  ]
+  const match_body = Shared.new(SemanticExpressionMatch(
+    make_ident('value'), match_arms, ti32(), span_unknown()))
+  match lower_semantic_function(fn_decl('match_fn', [iparam('value')], ti32(), match_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower match verify', verify_mir_function(function).length(), 0))
+      results.push(assert_true('lower match has cond jump',
+        match function.blocks[0].term {
+          MirCondJump(_, _, _) => true,
+          _ => false
+        }))
+    end,
+    Err(_) => results.push(assert_true('lower match fn ok', false))
+  }
+
+  const question_body = Shared.new(SemanticExpressionQuestion(make_call('load', []), ti32(), span_unknown()))
+  match lower_semantic_function(fn_decl('question_fn', [], ti32(), question_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower question verify', verify_mir_function(function).length(), 0))
+      results.push(assert_eq_int('lower question blocks', function.blocks.length(), 3))
+    end,
+    Err(_) => results.push(assert_true('lower question fn ok', false))
+  }
+
+  const lambda_body = Shared.new(SemanticExpressionCall(
+    Shared.new(SemanticExpressionLambda(
+      ['value'],
+      make_bin("+", make_ident('value'), make_int(1)),
+      ti32(),
+      span_unknown())),
+    [make_int(5)],
+    [],
+    ti32(),
+    span_unknown()))
+  match lower_semantic_function(fn_decl('lambda_fn', [], ti32(), lambda_body)) {
+    Ok(function) => do
+      results.push(assert_eq_int('lower lambda verify', verify_mir_function(function).length(), 0))
+      results.push(assert_eq_int('lower lambda locals', function.locals.length(), 2))
+    end,
+    Err(_) => results.push(assert_true('lower lambda fn ok', false))
+  }
+
+  results
+end

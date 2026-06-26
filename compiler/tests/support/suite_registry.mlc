@@ -13,8 +13,18 @@ import { pass_type_tests } from '../test_pass'
 import { pass_manager_tests } from '../test_pass_manager'
 import { program_to_semantic_tests } from '../test_program_to_semantic'
 import { dump_flags_tests } from '../test_dump_flags'
-import { core_ir_tests } from '../test_core_ir'
 import { mir_types_tests } from '../test_mir_types'
+import { lower_fn_tests } from '../test_lower_fn'
+import { mir_to_cpp_tests } from '../test_mir_to_cpp'
+import { mir_passes_tests } from '../test_mir_passes'
+import { mir_bootstrap_report_tests } from '../test_mir_bootstrap_report'
+import { mir_interpreter_tests } from '../test_mir_interpreter'
+import { mir_vm_smoke_tests } from '../test_mir_vm_smoke'
+import { spawn_tests } from '../test_spawn'
+import { channel_syntax_tests } from '../test_channel_syntax'
+import { arc_syntax_tests } from '../test_arc_syntax'
+import { mutex_syntax_tests } from '../test_mutex_syntax'
+import { compiler_db_tests } from '../test_compiler_db'
 import { driver_tests } from '../test_driver'
 import { verify_ir_tests } from '../test_verify_ir'
 import { compile_commands_tests } from '../test_compile_commands'
@@ -101,8 +111,18 @@ export fn integration_suite_results() -> [TestResult] = do
   let mut results: [TestResult] = []
   results = append_suite_results(results, codegen_tests())
   results = append_suite_results(results, decl_gen_tests())
-  results = append_suite_results(results, core_ir_tests())
   results = append_suite_results(results, mir_types_tests())
+  results = append_suite_results(results, lower_fn_tests())
+  results = append_suite_results(results, mir_to_cpp_tests())
+  results = append_suite_results(results, mir_passes_tests())
+  results = append_suite_results(results, mir_bootstrap_report_tests())
+  results = append_suite_results(results, mir_interpreter_tests())
+  results = append_suite_results(results, mir_vm_smoke_tests())
+  results = append_suite_results(results, spawn_tests())
+  results = append_suite_results(results, channel_syntax_tests())
+  results = append_suite_results(results, arc_syntax_tests())
+  results = append_suite_results(results, mutex_syntax_tests())
+  results = append_suite_results(results, compiler_db_tests())
   results = append_suite_results(results, driver_tests())
   results = append_suite_results(results, expr_visitor_tests())
   results = append_suite_results(results, visitor_pass_parity_tests())

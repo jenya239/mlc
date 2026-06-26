@@ -354,7 +354,7 @@ return std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppFnProto(function_de
 }
 
 std::shared_ptr<cpp_ast::CppDeclaration> native_fn_decl_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context, int body_statement_depth) noexcept{
-context::CodegenContext body_context = decl::compute_fn_body_context(name, params, context);
+context::CodegenContext body_context = context::CodegenContext_with_enclosing_function_return_type(decl::compute_fn_body_context(name, params, context), return_type);
 context::CodegenContext prototype_context = params.size() > 0 && params[0]->name == mlc::String("self") ? body_context : context;
 mlc::String safe_name = context::CodegenContext_resolve(context, name);
 mlc::String return_type_cpp = type_gen::sem_type_to_cpp(prototype_context, return_type);

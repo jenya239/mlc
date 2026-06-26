@@ -2,7 +2,7 @@
 // Mirrors infer_expr but produces typed Shared<SemanticExpression> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
+import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread, expr_spawn_body_result } from '../../frontend/ast'
 import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from '../registry'
 import {
   binary_operation_result_type,
@@ -575,6 +575,8 @@ fn dispatch_transform_pass(
       transform_pass.visit_named_arg(inner_expression, stmts_fn),
     ExprWith(resource, binder, statements, source_span) =>
       transform_pass.visit_with(resource, binder, statements, source_span, stmts_fn),
+    ExprSpawn(statements, source_span) =>
+      transform_pass.visit_spawn(statements, source_span, stmts_fn),
     _ =>
       transform_pass.visit_unsupported(expression, stmts_fn)
   }
@@ -775,6 +777,26 @@ extend TransformPass {
     const typed_condition = dispatch_transform_pass(self, condition, stmts_fn)
     const statements_parsed = stmts_fn(statements, self.transform_context)
     Shared.new(SemanticExpressionWhile(typed_condition, statements_parsed.statements, Shared.new(TUnit), source_span))
+  end
+  fn visit_spawn(
+    self: TransformPass,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const statements_parsed = stmts_fn(statements, self.transform_context)
+    const result_parsed = dispatch_transform_pass(self, expr_spawn_body_result(statements), stmts_fn)
+    const result_type = sexpr_type(result_parsed)
+    const block = Shared.new(SemanticExpressionBlock(
+      statements_parsed.statements, result_parsed, result_type, source_span))
+    const lambda_type = Shared.new(TFn([], result_type))
+    const lambda = Shared.new(SemanticExpressionLambda([], block, lambda_type, source_span))
+    const spawn_callee = Shared.new(SemanticExpressionIdent('spawn_task', Shared.new(TUnknown), source_span))
+    Shared.new(SemanticExpressionCall(
+      spawn_callee,
+      [lambda],
+      [0],
+      Shared.new(TGeneric('Task', [result_type])),
+      source_span))
   end
   fn visit_for(
     self: TransformPass,

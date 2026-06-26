@@ -9,7 +9,7 @@ export fn driver_tests() -> [TestResult] = do
   results.push(assert_true('driver_source_path_is_safe rejects parent segment', !driver_source_path_is_safe('../entry.mlc')))
   results.push(assert_true('driver_source_path_is_safe rejects semicolon', !driver_source_path_is_safe('foo;bar.mlc')))
 
-  const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false)
+  const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false, false, false, false, false)
   results.push(assert_true('compile_modular rejects unsafe entry path',
     match unsafe_compile { Err(_) => true, Ok(_) => false }))
 

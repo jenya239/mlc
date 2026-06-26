@@ -3,7 +3,7 @@
 import { Program, Pattern, TypeExpr } from '../frontend/ast'
 import { build_registry } from '../checker/registry'
 import { SemanticStatement } from '../ir/semantic_ir'
-import { Type, TShared, TArray } from '../checker/registry'
+import { Type, TShared, TArray, TUnknown } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
 import { FieldOrder } from './decl/decl_index'
@@ -40,7 +40,8 @@ export type CodegenContext = CodegenContext {
   struct_using_entries: Map<string, [StructUsingEntry]>,
   struct_using_lines: Map<string, [string]>,
   type_alias_annotations: Map<string, Shared<TypeExpr>>,
-  temp_name_counter: i32
+  temp_name_counter: i32,
+  enclosing_function_return_type: Shared<Type>
 }
 
 export fn new_temp_name_counter() -> i32 = 0
@@ -178,6 +179,9 @@ extend CodegenContext {
   fn with_namespace_alias_prefixes(self: CodegenContext, prefixes: Map<string, string>) -> CodegenContext =
     CodegenContext { ...self, namespace_alias_prefixes: prefixes }
 
+  fn with_enclosing_function_return_type(self: CodegenContext, return_type: Shared<Type>) -> CodegenContext =
+    CodegenContext { ...self, enclosing_function_return_type: return_type }
+
   fn update_from_statement(self: CodegenContext, statement: Shared<SemanticStatement>) -> CodegenContext =
     match statement {
       SemanticStatementLetConst(binding_name, _, _, _) => self.add_value(binding_name),
@@ -269,7 +273,8 @@ export fn create_codegen_context(program: Program) -> CodegenContext = do
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     type_alias_annotations: registry.type_alias_annotations,
-    temp_name_counter: new_temp_name_counter()
+    temp_name_counter: new_temp_name_counter(),
+    enclosing_function_return_type: Shared.new(TUnknown)
   }
 end
 

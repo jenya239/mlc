@@ -1,0 +1,6 @@
+fn main() -> i32 = do
+  match 1 {
+    1 => 10
+    _ => 0
+  }
+end

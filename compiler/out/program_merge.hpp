@@ -20,6 +20,8 @@ struct CppExpression;
 
 struct MergeResult {ast::Program program;mlc::Array<mlc::String> errors;mlc::Array<load_item::LoadItem> items;};
 
+program_merge::MergeResult merge_program_with_cache(mlc::String entry_path, ast::Program program, mlc::HashMap<mlc::String, module_loader::LoadResult>& load_cache, bool profile_enabled) noexcept;
+
 program_merge::MergeResult merge_program(mlc::String entry_path, ast::Program program, bool profile_enabled) noexcept;
 
 } // namespace program_merge

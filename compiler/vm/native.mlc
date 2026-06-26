@@ -1,0 +1,270 @@
+// MIR VM native calls (println, collection helpers).
+
+import { Result, Ok, Err } from '../frontend/ast'
+import {
+  VmValue, VmI32, VmBool, VmString, VmArrayValue, VmMapValue, VmVariantValue, VmUnit,
+  vm_value_unit, vm_value_int_or_zero
+} from './value'
+
+export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if name == 'println' then vm_native_println(arguments)
+  else if name == '__mir_array_empty' then vm_native_array_empty(arguments)
+  else if name == '__mir_array_push' then vm_native_array_push(arguments)
+  else if name == '__mir_array_length' then vm_native_array_length(arguments)
+  else if name == '__mir_array_get' then vm_native_array_get(arguments)
+  else if name == '__mir_map_empty' then vm_native_map_empty(arguments)
+  else if name == '__mir_map_set' then vm_native_map_set(arguments)
+  else if name == '__mir_map_get' then vm_native_map_get(arguments)
+  else if name == '__mir_map_length' then vm_native_map_length(arguments)
+  else if name == '__mir_string_length' then vm_native_string_length(arguments)
+  else if name == '__mir_length' then vm_native_collection_length(arguments)
+  else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
+  else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
+  else Err([`vm: unknown native ${name}`])
+
+export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> VmValue = do
+  let mut integer_fields: [i32] = []
+  let mut index = 0
+  while index < arguments.length() do
+    integer_fields.push(vm_value_int_or_zero(arguments[index]))
+    index = index + 1
+  end
+  VmVariant(VmVariantValue { tag: tag, integer_fields: integer_fields })
+end
+
+fn vm_native_println(arguments: [VmValue]) -> Result<VmValue, [string]> = do
+  let mut index = 0
+  while index < arguments.length() do
+    match arguments[index] {
+      VmI32(integer) => println(`${integer}`),
+      VmBool(flag) => println(if flag then 'true' else 'false'),
+      VmString(text) => println(text),
+      VmArray(_) => println('<array>'),
+      VmMap(_) => println('<map>'),
+      VmVariant(variant) => println(`<variant ${variant.tag}>`),
+      VmUnit => println('()')
+    }
+    index = index + 1
+  end
+  Ok(vm_value_unit())
+end
+
+fn vm_native_array_empty(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() == 0 then Ok(VmArray(VmArrayValue { integer_elements: [] }))
+  else Err(['vm: __mir_array_empty expects no arguments'])
+
+fn vm_native_value_as_i32(value: VmValue) -> Result<i32, [string]> =
+  match value {
+    VmI32(number) => Ok(number),
+    _ => Err(['vm: expected i32 value'])
+  }
+
+fn vm_native_array_push(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_array_push expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmArray(array) =>
+        match vm_native_value_as_i32(arguments[1]) {
+          Err(errors) => Err(errors),
+          Ok(element) => do
+            let mut integer_elements = array.integer_elements
+            integer_elements.push(element)
+            Ok(VmArray(VmArrayValue { integer_elements: integer_elements }))
+          end
+        },
+      _ => Err(['vm: __mir_array_push expects array'])
+    }
+  end
+
+fn vm_native_array_length(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_array_length expects 1 argument'])
+  else
+    match arguments[0] {
+      VmArray(array) => Ok(VmI32(array.integer_elements.length())),
+      _ => Err(['vm: __mir_array_length expects array'])
+    }
+  end
+
+fn vm_native_array_at(array: VmArrayValue, index: i32) -> Result<VmValue, [string]> =
+  if index >= 0 && index < array.integer_elements.length() then
+    Ok(VmI32(array.integer_elements[index]))
+  else
+    Err(['vm: array index out of bounds'])
+  end
+
+fn vm_native_array_get(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_array_get expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmArray(array) =>
+        match vm_native_value_as_i32(arguments[1]) {
+          Err(errors) => Err(errors),
+          Ok(index) => vm_native_array_at(array, index)
+        },
+      _ => Err(['vm: __mir_array_get expects array'])
+    }
+  end
+
+fn vm_native_map_empty(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() == 0 then
+    Ok(VmMap(VmMapValue { keys: [], integer_values: [], entry_count: 0 }))
+  else
+    Err(['vm: __mir_map_empty expects no arguments'])
+  end
+
+fn vm_native_map_find_key_index(keys: [string], key: string) -> i32 = do
+  let mut index = 0
+  while index < keys.length() do
+    if keys[index] == key then return index end
+    index = index + 1
+  end
+  -1
+end
+
+fn vm_native_map_replace_value(integer_values: [i32], index: i32, value: i32) -> [i32] = do
+  let mut rebuilt: [i32] = []
+  let mut position = 0
+  while position < integer_values.length() do
+    if position == index then
+      rebuilt.push(value)
+    else
+      rebuilt.push(integer_values[position])
+    end
+    position = position + 1
+  end
+  rebuilt
+end
+
+fn vm_native_map_lookup(map_value: VmMapValue, key: string) -> VmValue = do
+  const existing_index = vm_native_map_find_key_index(map_value.keys, key)
+  if existing_index >= 0 then
+    VmI32(map_value.integer_values[existing_index])
+  else
+    VmI32(0)
+  end
+end
+
+fn vm_native_map_insert_value(map_value: VmMapValue, key: string, integer_value: i32) -> VmValue = do
+  let mut keys = map_value.keys
+  let mut integer_values = map_value.integer_values
+  keys.push(key)
+  integer_values.push(integer_value)
+  VmMap(VmMapValue {
+    keys: keys,
+    integer_values: integer_values,
+    entry_count: map_value.entry_count + 1
+  })
+end
+
+fn vm_native_map_update_value(map_value: VmMapValue, key: string, integer_value: i32) -> VmValue = do
+  const existing_index = vm_native_map_find_key_index(map_value.keys, key)
+  VmMap(VmMapValue {
+    keys: map_value.keys,
+    integer_values: vm_native_map_replace_value(map_value.integer_values, existing_index, integer_value),
+    entry_count: map_value.entry_count
+  })
+end
+
+fn vm_native_map_set(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 3 then Err(['vm: __mir_map_set expects 3 arguments'])
+  else
+    match arguments[0] {
+      VmMap(map_value) =>
+        match arguments[1] {
+          VmString(key) =>
+            match vm_native_value_as_i32(arguments[2]) {
+              Err(errors) => Err(errors),
+              Ok(integer_value) =>
+                if vm_native_map_find_key_index(map_value.keys, key) >= 0 then
+                  Ok(vm_native_map_update_value(map_value, key, integer_value))
+                else
+                  Ok(vm_native_map_insert_value(map_value, key, integer_value))
+                end
+            },
+          _ => Err(['vm: __mir_map_set expects string key'])
+        },
+      _ => Err(['vm: __mir_map_set expects map'])
+    }
+  end
+
+fn vm_native_map_get(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_map_get expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmMap(map_value) =>
+        match arguments[1] {
+          VmString(key) => Ok(vm_native_map_lookup(map_value, key)),
+          _ => Err(['vm: __mir_map_get expects string key'])
+        },
+      _ => Err(['vm: __mir_map_get expects map'])
+    }
+  end
+
+fn vm_native_map_length(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_array_length expects 1 argument'])
+  else
+    match arguments[0] {
+      VmMap(map) => Ok(VmI32(map.entry_count)),
+      _ => Err(['vm: __mir_map_length expects map'])
+    }
+  end
+
+fn vm_native_string_length(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_string_length expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(text) => Ok(VmI32(text.length())),
+      _ => Err(['vm: __mir_string_length expects string'])
+    }
+  end
+
+fn vm_native_variant_value(arguments: [VmValue]) -> Result<VmVariantValue, [string]> =
+  if arguments.length() == 0 then Err(['vm: variant native expects value argument'])
+  else
+    match arguments[0] {
+      VmVariant(variant) => Ok(variant),
+      _ => Err(['vm: expected variant value'])
+    }
+  end
+
+fn vm_native_variant_is(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_variant_is expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmVariant(variant) =>
+        match arguments[1] {
+          VmString(expected_tag) => Ok(VmBool(variant.tag == expected_tag)),
+          _ => Err(['vm: __mir_variant_is expects string tag'])
+        },
+      _ => Err(['vm: __mir_variant_is expects variant'])
+    }
+  end
+
+fn vm_native_variant_field(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_variant_field expects 2 arguments'])
+  else
+    match vm_native_variant_value(arguments) {
+      Err(errors) => Err(errors),
+      Ok(variant) =>
+        match vm_native_value_as_i32(arguments[1]) {
+          Err(errors) => Err(errors),
+          Ok(field_index) =>
+            if field_index >= 0 && field_index < variant.integer_fields.length() then
+              Ok(VmI32(variant.integer_fields[field_index]))
+            else
+              Err(['vm: variant field index out of bounds'])
+            end
+        }
+    }
+  end
+
+fn vm_native_collection_length(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_length expects 1 argument'])
+  else
+    match arguments[0] {
+      VmArray(array) => Ok(VmI32(array.integer_elements.length())),
+      VmMap(map) => Ok(VmI32(map.entry_count)),
+      VmString(text) => Ok(VmI32(text.length())),
+      _ => Err(['vm: __mir_length expects array, map, or string'])
+    }
+  end

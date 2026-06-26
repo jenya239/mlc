@@ -1,0 +1,43 @@
+// MIR interpreter runtime values (TRACK_MIR_VM STEP=1).
+
+import { Result, Ok, Err } from '../frontend/ast'
+
+export type VmArrayValue = VmArrayValue { integer_elements: [i32] }
+export type VmMapValue = VmMapValue {
+  keys: [string],
+  integer_values: [i32],
+  entry_count: i32
+}
+
+export type VmVariantValue = VmVariantValue { tag: string, integer_fields: [i32] }
+
+export type VmValue =
+  | VmI32(i32)
+  | VmBool(bool)
+  | VmString(string)
+  | VmArray(VmArrayValue)
+  | VmMap(VmMapValue)
+  | VmVariant(VmVariantValue)
+  | VmUnit
+
+export fn vm_value_unit() -> VmValue = VmUnit
+
+export fn vm_value_is_truthy(value: VmValue) -> bool =
+  match value {
+    VmI32(number) => number != 0,
+    VmBool(flag) => flag,
+    VmString(text) => text.length() > 0,
+    VmArray(array) => array.integer_elements.length() > 0,
+    VmMap(map) => map.entry_count > 0,
+    VmVariant(_) => true,
+    VmUnit => false
+  }
+
+export fn vm_value_as_i32(value: VmValue) -> Result<i32, [string]> =
+  match value {
+    VmI32(number) => Ok(number),
+    _ => Err(['vm: expected i32'])
+  }
+
+export fn vm_value_int_or_zero(value: VmValue) -> i32 =
+  match value { VmI32(number) => number, _ => 0 }

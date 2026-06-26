@@ -1,0 +1,50 @@
+import { TestResult, assert_eq_int } from './test_runner'
+import { assert_code_contains, assert_type_generates } from './codegen_test_helpers'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { gen_expr } from '../codegen/eval'
+import { create_codegen_context } from '../codegen/context'
+import { empty_program } from './ast_builders'
+import {
+  SemanticExpressionCall, SemanticExpressionIdent, SemanticExpressionLambda,
+  SemanticExpressionBlock, SemanticExpressionInt
+} from '../ir/semantic_ir'
+import { span_unknown, TyI32, TyGeneric } from '../frontend/ast'
+import { TI32, TUnit, TFn, TGeneric } from '../checker/registry'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn integer_type() -> Shared<Type> = Shared.new(TI32)
+fn unit_type() -> Shared<Type> = Shared.new(TUnit)
+
+export fn spawn_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int('spawn do return checks',
+    check_error_count('fn main() -> Task<i32> = spawn do return 7 end'), 0))
+
+  const return_value = Shared.new(SemanticExpressionInt(7, integer_type(), span_unknown()))
+  const block = Shared.new(SemanticExpressionBlock([], return_value, integer_type(), span_unknown()))
+  const lambda = Shared.new(SemanticExpressionLambda(
+    [], block, Shared.new(TFn([], integer_type())), span_unknown()))
+  const spawn_call = Shared.new(SemanticExpressionCall(
+    Shared.new(SemanticExpressionIdent('spawn_task', Shared.new(TUnit), span_unknown())),
+    [lambda],
+    [0],
+    Shared.new(TGeneric('Task', [integer_type()])),
+    span_unknown()))
+  const context = create_codegen_context(empty_program())
+  const generated = gen_expr(spawn_call, context)
+  results.push(assert_code_contains('spawn_task in cpp', generated.to_string(), 'spawn_task'))
+  results.push(assert_type_generates(
+    'Task type in cpp', context,
+    Shared.new(TyGeneric('Task', [Shared.new(TyI32)])),
+    'mlc::Task<int>'))
+
+  results
+end

@@ -1,7 +1,7 @@
 // Structural invariants for SemanticIR (post-transform verifier).
 
 import { Type, TUnknown } from '../checker/registry'
-import { Pattern } from '../frontend/ast'
+import { Pattern, Span } from '../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticDeclaration, SemanticLoadItem, SemanticMatchArm,
          sexpr_type, sexpr_span, sdecl_span } from '../ir/semantic_ir'
 
@@ -17,6 +17,12 @@ end
 
 export fn semantic_type_is_resolved(type_value: Shared<Type>) -> bool =
   match type_value { TUnknown => false, _ => true }
+
+fn verify_semantic_empty_name_errors(name: string, message: string) -> [string] =
+  if name == "" then [message] else [] end
+
+fn verify_semantic_errors_if(condition: bool, errors: [string]) -> [string] =
+  if condition then errors else [] end
 
 fn verify_semantic_span_errors(label: string, span: Span) -> [string] = do
   if span.line < 0 then
@@ -156,85 +162,95 @@ fn verify_semantic_expression(expression: Shared<SemanticExpression>) -> [string
   }
 end
 
-fn verify_semantic_statement(statement: Shared<SemanticStatement>) -> [string] = do
-  let mut errors = verify_semantic_span_errors('semantic statement', span_unknown())
-  match statement {
-    SemanticStatementLet(name, _, initializer, type_value, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic statement', span))
-      errors = verify_semantic_append_errors(errors, verify_semantic_type_errors('semantic statement let', type_value))
-      if name == "" then errors = verify_semantic_append_errors(errors, ['semantic statement: empty let name']) end
-      verify_semantic_append_errors(errors, verify_semantic_expression(initializer))
-    end,
-    SemanticStatementLetPattern(_, _, initializer, type_value, has_else, else_branch, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic statement', span))
-      errors = verify_semantic_append_errors(errors, verify_semantic_type_errors('semantic statement let pattern', type_value))
-      errors = verify_semantic_append_errors(errors, verify_semantic_expression(initializer))
-      if has_else then verify_semantic_append_errors(errors, verify_semantic_expression(else_branch)) else errors end
-    end,
-    SemanticStatementLetConst(name, initializer, type_value, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic statement', span))
-      errors = verify_semantic_append_errors(errors, verify_semantic_type_errors('semantic statement const', type_value))
-      if name == "" then errors = verify_semantic_append_errors(errors, ['semantic statement: empty const name']) end
-      verify_semantic_append_errors(errors, verify_semantic_expression(initializer))
-    end,
-    SemanticStatementExpr(expression, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic statement', span))
-      verify_semantic_append_errors(errors, verify_semantic_expression(expression))
-    end,
-    SemanticStatementReturn(expression, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic statement', span))
-      verify_semantic_append_errors(errors, verify_semantic_expression(expression))
-    end,
-    SemanticStatementBreak(span) => verify_semantic_span_errors('semantic statement', span),
-    SemanticStatementContinue(span) => verify_semantic_span_errors('semantic statement', span),
+fn verify_semantic_statement(semantic_statement: Shared<SemanticStatement>) -> [string] =
+  match semantic_statement {
+    SemanticStatementLet(name, _, initializer, type_value, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_append_errors(
+          verify_semantic_append_errors(
+            verify_semantic_span_errors('semantic statement', span),
+            verify_semantic_type_errors('semantic statement let', type_value)),
+          verify_semantic_empty_name_errors(name, 'semantic statement: empty let name')),
+        verify_semantic_expression(initializer)),
+    SemanticStatementLetPattern(_, _, initializer, type_value, has_else, else_branch, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_append_errors(
+          verify_semantic_append_errors(
+            verify_semantic_span_errors('semantic statement', span),
+            verify_semantic_type_errors('semantic statement let pattern', type_value)),
+          verify_semantic_expression(initializer)),
+        verify_semantic_errors_if(has_else, verify_semantic_expression(else_branch))),
+    SemanticStatementLetConst(name, initializer, type_value, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_append_errors(
+          verify_semantic_append_errors(
+            verify_semantic_span_errors('semantic statement', span),
+            verify_semantic_type_errors('semantic statement const', type_value)),
+          verify_semantic_empty_name_errors(name, 'semantic statement: empty const name')),
+        verify_semantic_expression(initializer)),
+    SemanticStatementExpr(expression, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_span_errors('semantic statement', span),
+        verify_semantic_expression(expression)),
+    SemanticStatementReturn(expression, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_span_errors('semantic statement', span),
+        verify_semantic_expression(expression)),
+    SemanticStatementBreak(span) =>
+      verify_semantic_span_errors('semantic statement', span),
+    SemanticStatementContinue(span) =>
+      verify_semantic_span_errors('semantic statement', span),
   }
+
+fn verify_semantic_declaration_members(errors: [string], members: [Shared<SemanticDeclaration>]) -> [string] = do
+  let mut accumulated = errors
+  let mut index = 0
+  while index < members.length() do
+    accumulated = verify_semantic_append_errors(accumulated, verify_semantic_declaration(members[index]))
+    index = index + 1
+  end
+  accumulated
 end
 
-fn verify_semantic_declaration(declaration: Shared<SemanticDeclaration>) -> [string] = do
-  let mut errors = verify_semantic_span_errors('semantic declaration', sdecl_span(declaration))
+fn verify_semantic_declaration(declaration: Shared<SemanticDeclaration>) -> [string] =
   match declaration {
-    SemanticDeclarationFn(name, _, _, _, return_type, body, _, _) => do
-      if name == "" then errors = verify_semantic_append_errors(errors, ['semantic declaration: empty function name']) end
-      errors = verify_semantic_append_errors(errors, verify_semantic_type_errors('semantic function return', return_type))
-      verify_semantic_append_errors(errors, verify_semantic_expression(body))
-    end,
-    SemanticDeclarationType(name, _, _, _, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic declaration', span))
-      if name == "" then verify_semantic_append_errors(errors, ['semantic declaration: empty type name']) else errors end
-    end,
-    SemanticDeclarationTypeAlias(name, _, _, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic declaration', span))
-      if name == "" then verify_semantic_append_errors(errors, ['semantic declaration: empty type alias name']) else errors end
-    end,
-    SemanticDeclarationTrait(name, _, members, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic declaration', span))
-      if name == "" then errors = verify_semantic_append_errors(errors, ['semantic declaration: empty trait name']) end
-      let mut index = 0
-      while index < members.length() do
-        errors = verify_semantic_append_errors(errors, verify_semantic_declaration(members[index]))
-        index = index + 1
-      end
-      errors
-    end,
-    SemanticDeclarationExtend(type_name, _, members, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic declaration', span))
-      if type_name == "" then errors = verify_semantic_append_errors(errors, ['semantic declaration: empty extend type name']) end
-      let mut index = 0
-      while index < members.length() do
-        errors = verify_semantic_append_errors(errors, verify_semantic_declaration(members[index]))
-        index = index + 1
-      end
-      errors
-    end,
+    SemanticDeclarationFn(name, _, _, _, return_type, body, _, _) =>
+      verify_semantic_append_errors(
+        verify_semantic_append_errors(
+          verify_semantic_append_errors(
+            verify_semantic_span_errors('semantic declaration', sdecl_span(declaration)),
+            verify_semantic_empty_name_errors(name, 'semantic declaration: empty function name')),
+          verify_semantic_type_errors('semantic function return', return_type)),
+        verify_semantic_expression(body)),
+    SemanticDeclarationType(name, _, _, _, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_span_errors('semantic declaration', span),
+        verify_semantic_empty_name_errors(name, 'semantic declaration: empty type name')),
+    SemanticDeclarationTypeAlias(name, _, _, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_span_errors('semantic declaration', span),
+        verify_semantic_empty_name_errors(name, 'semantic declaration: empty type alias name')),
+    SemanticDeclarationTrait(name, _, members, span) =>
+      verify_semantic_declaration_members(
+        verify_semantic_append_errors(
+          verify_semantic_span_errors('semantic declaration', span),
+          verify_semantic_empty_name_errors(name, 'semantic declaration: empty trait name')),
+        members),
+    SemanticDeclarationExtend(type_name, _, members, span) =>
+      verify_semantic_declaration_members(
+        verify_semantic_append_errors(
+          verify_semantic_span_errors('semantic declaration', span),
+          verify_semantic_empty_name_errors(type_name, 'semantic declaration: empty extend type name')),
+        members),
     SemanticDeclarationExported(inner) => verify_semantic_declaration(inner),
-    SemanticDeclarationAssocBind(name, type_value, span) => do
-      errors = verify_semantic_append_errors(errors, verify_semantic_span_errors('semantic declaration', span))
-      errors = verify_semantic_append_errors(errors, verify_semantic_type_errors('semantic assoc bind', type_value))
-      if name == "" then verify_semantic_append_errors(errors, ['semantic declaration: empty assoc bind name']) else errors end
-    end,
-    _ => errors
+    SemanticDeclarationAssocBind(name, type_value, span) =>
+      verify_semantic_append_errors(
+        verify_semantic_append_errors(
+          verify_semantic_span_errors('semantic declaration', span),
+          verify_semantic_type_errors('semantic assoc bind', type_value)),
+        verify_semantic_empty_name_errors(name, 'semantic declaration: empty assoc bind name')),
+    _ => verify_semantic_span_errors('semantic declaration', sdecl_span(declaration))
   }
-end
 
 export fn verify_semantic_ir_load_items(items: [SemanticLoadItem]) -> [string] = do
   let mut errors: [string] = []

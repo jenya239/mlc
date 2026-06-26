@@ -19,7 +19,7 @@ fn prefix_parse_errors(source_path: string, messages: [string]) -> [string] = do
   prefixed
 end
 
-export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, check_only: bool, emit_compile_commands: bool, verify_each_pass: bool, dump_ast: bool, dump_sem: bool, time_passes: bool) -> Result<string, [string]> = do
+export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: bool, check_only: bool, emit_compile_commands: bool, verify_each_pass: bool, dump_ast: bool, dump_sem: bool, dump_mir: bool, mir_bootstrap_report: bool, time_passes: bool, run_interpreter: bool, trace_vm: bool) -> Result<string, [string]> = do
   if !driver_source_path_is_safe(entry_path) then
     return Err(['driver: unsafe entry path'])
   end
@@ -63,12 +63,16 @@ export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: 
           entry_program: entry_only_program,
           output_directory: out_dir,
           profile_enabled: profile_enabled,
-          check_only: check_only,
+          check_only: check_only || run_interpreter,
           emit_compile_commands: emit_compile_commands,
           verify_each_pass: verify_each_pass,
           dump_ast: dump_ast,
           dump_sem: dump_sem,
-          time_passes: time_passes
+          dump_mir: dump_mir,
+          mir_bootstrap_report: mir_bootstrap_report,
+          time_passes: time_passes,
+          run_interpreter: run_interpreter,
+          trace_vm: trace_vm
         }
         const pipeline_parsed = run_modular_compiler_pipeline(pipeline_input)?
         profile_maybe_end(profile_enabled, 'total')

@@ -33,6 +33,8 @@ partial_application_desugar::PartialPair partial_application_leaf_partial_pair(s
 
 bool expr_is_placeholder(std::shared_ptr<ast::Expr> expression) noexcept;
 
+bool expr_is_named_arg_with_placeholder(std::shared_ptr<ast::Expr> argument) noexcept;
+
 int partial_placeholder_delta_for_argument(std::shared_ptr<ast::Expr> argument) noexcept;
 
 partial_application_desugar::PartialNamesAllocation partial_allocate_parameter_names(int hole_count, int serial_start) noexcept;
@@ -57,6 +59,8 @@ partial_application_desugar::ArgumentsPartialPair partial_application_map_argume
 
 partial_application_desugar::ArgumentsPartialPair partial_application_map_arguments(mlc::Array<std::shared_ptr<ast::Expr>> arguments, int serial) noexcept;
 
+partial_application_desugar::RecordLitPartsFoldState partial_application_desugar_record_lit_part(partial_application_desugar::RecordLitPartsFoldState state, ast::RecordLitPart part_under_scan) noexcept;
+
 partial_application_desugar::RecordLitPartsPartialPair partial_application_desugar_record_lit_parts(mlc::Array<ast::RecordLitPart> parts, int serial) noexcept;
 
 partial_application_desugar::StatementsPartialPair partial_application_desugar_statements_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, int serial) noexcept;
@@ -73,7 +77,21 @@ partial_application_desugar::PartialPair partial_application_leaf_partial_pair(s
 
 bool expr_is_placeholder(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() { if (std::holds_alternative<ast::ExprIdent>((*expression)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*expression)._); auto [name, _w0] = _v_exprident; return name == mlc::String("_"); } return false; }();}
 
-int partial_placeholder_delta_for_argument(std::shared_ptr<ast::Expr> argument) noexcept{return [&]() { if (std::holds_alternative<ast::ExprNamedArg>((*argument)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*argument)._); auto [_w0, inner_expression, _w1] = _v_exprnamedarg; return expr_is_placeholder(inner_expression) ? 1 : 0; } if (std::holds_alternative<ast::ExprIdent>((*argument)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*argument)._); auto [name, _w0] = _v_exprident; return name == mlc::String("_") ? 1 : 0; } return 0; }();}
+bool expr_is_named_arg_with_placeholder(std::shared_ptr<ast::Expr> argument) noexcept{return [&]() { if (std::holds_alternative<ast::ExprNamedArg>((*argument)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*argument)._); auto [_w0, inner_expression, _w1] = _v_exprnamedarg; return expr_is_placeholder(inner_expression); } return false; }();}
+
+int partial_placeholder_delta_for_argument(std::shared_ptr<ast::Expr> argument) noexcept{
+if (expr_is_named_arg_with_placeholder(argument)){
+{
+return 1;
+}
+}
+if (expr_is_placeholder(argument)){
+{
+return 1;
+}
+}
+return 0;
+}
 
 partial_application_desugar::PartialNamesAllocation partial_allocate_parameter_names(int hole_count, int serial_start) noexcept{return partial_allocate_parameter_names_loop([&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> empty_names = {};
@@ -130,11 +148,7 @@ partial_application_desugar::ArgumentsPartialPair partial_application_map_argume
 
 partial_application_desugar::ArgumentsPartialPair partial_application_map_arguments(mlc::Array<std::shared_ptr<ast::Expr>> arguments, int serial) noexcept{return partial_application_map_arguments_at(arguments, 0, serial, {});}
 
-partial_application_desugar::RecordLitPartsPartialPair partial_application_desugar_record_lit_parts(mlc::Array<ast::RecordLitPart> parts, int serial) noexcept{
-partial_application_desugar::RecordLitPartsFoldState final_state = parts.fold(partial_application_desugar::RecordLitPartsFoldState{[&]() -> mlc::Array<ast::RecordLitPart> { 
-  mlc::Array<ast::RecordLitPart> empty_parts = {};
-  return empty_parts;
- }(), serial}, [](partial_application_desugar::RecordLitPartsFoldState state, ast::RecordLitPart part_under_scan) mutable { return std::visit(overloaded{
+partial_application_desugar::RecordLitPartsFoldState partial_application_desugar_record_lit_part(partial_application_desugar::RecordLitPartsFoldState state, ast::RecordLitPart part_under_scan) noexcept{return std::visit(overloaded{
   [&](const RecordLitFields& recordlitfields) -> partial_application_desugar::RecordLitPartsFoldState { auto [field_values_under_part] = recordlitfields; return [&]() -> partial_application_desugar::RecordLitPartsFoldState { 
   partial_application_desugar::FieldValuesAccumulator fields_accumulator = partial_application_desugar_field_values_sequence(field_values_under_part, state.next_serial);
   return partial_application_desugar::RecordLitPartsFoldState{state.output_parts.concat(mlc::Array<ast::RecordLitPart>{ast::RecordLitFields(fields_accumulator.mapped_field_values)}), fields_accumulator.next_serial};
@@ -143,7 +157,13 @@ partial_application_desugar::RecordLitPartsFoldState final_state = parts.fold(pa
   partial_application_desugar::PartialPair spread_partial = partial_application_desugar_inner(spread_expression_under_part, state.next_serial);
   return partial_application_desugar::RecordLitPartsFoldState{state.output_parts.concat(mlc::Array<ast::RecordLitPart>{ast::RecordLitSpread(spread_partial.expression)}), spread_partial.next_serial};
  }(); }
-}, part_under_scan); });
+}, part_under_scan);}
+
+partial_application_desugar::RecordLitPartsPartialPair partial_application_desugar_record_lit_parts(mlc::Array<ast::RecordLitPart> parts, int serial) noexcept{
+partial_application_desugar::RecordLitPartsFoldState final_state = parts.fold(partial_application_desugar::RecordLitPartsFoldState{[&]() -> mlc::Array<ast::RecordLitPart> { 
+  mlc::Array<ast::RecordLitPart> empty_parts = {};
+  return empty_parts;
+ }(), serial}, [](partial_application_desugar::RecordLitPartsFoldState state, ast::RecordLitPart part_under_scan) mutable { return partial_application_desugar_record_lit_part(state, part_under_scan); });
 return partial_application_desugar::RecordLitPartsPartialPair{final_state.output_parts, final_state.next_serial};
 }
 
@@ -242,6 +262,10 @@ partial_application_desugar::PartialPair partial_application_desugar_inner(std::
   partial_application_desugar::PartialPair condition_pair = partial_application_desugar_inner(condition, serial);
   partial_application_desugar::StatementsPartialPair stmts_pair = partial_application_desugar_statements_block(statements, condition_pair.next_serial);
   return partial_application_desugar::PartialPair{std::make_shared<ast::Expr>(ast::ExprWhile(condition_pair.expression, stmts_pair.statements, span_while)), stmts_pair.next_serial};
+ }(); },
+  [&](const ExprSpawn& exprspawn) -> partial_application_desugar::PartialPair { auto [statements, span_spawn] = exprspawn; return [&]() -> partial_application_desugar::PartialPair { 
+  partial_application_desugar::StatementsPartialPair stmts_pair = partial_application_desugar_statements_block(statements, serial);
+  return partial_application_desugar::PartialPair{std::make_shared<ast::Expr>(ast::ExprSpawn(stmts_pair.statements, span_spawn)), stmts_pair.next_serial};
  }(); },
   [&](const ExprFor& exprfor) -> partial_application_desugar::PartialPair { auto [variable_name, iterator_expression, statements, span_for] = exprfor; return [&]() -> partial_application_desugar::PartialPair { 
   partial_application_desugar::PartialPair iterator_pair = partial_application_desugar_inner(iterator_expression, serial);

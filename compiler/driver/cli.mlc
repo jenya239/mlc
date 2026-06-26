@@ -41,7 +41,7 @@ export fn run_compiler_cli() -> i32 = do
     println(compile_usage_message())
     exit(1)
   end
-  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands, options.verify_each_pass, options.dump_ast, options.dump_sem, options.time_passes) {
+  match compile_modular(options.entry_path, options.out_directory, options.profile_enabled, options.check_only, options.emit_compile_commands, options.verify_each_pass, options.dump_ast, options.dump_sem, options.dump_mir, options.mir_bootstrap_report, options.time_passes, options.run_interpreter, options.trace_vm) {
     Ok(_) => 0,
     Err(errors) =>
       do print(format_errors('error', errors)); exit(1); 0 end

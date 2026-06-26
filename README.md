@@ -41,7 +41,7 @@ g++ -std=c++20 -I runtime/include \
     -o my_program && ./my_program
 ```
 
-`build_bin.sh` (внутри `build.sh`): линкер **mold → lld → gold** по наличию в PATH; компилятор — `MLC_CXX` или `ccache clang++` → `g++`. PCH `mlcc_precompiled.hpp` (`mlc.hpp`) по умолчанию; `MLCC_PCH=0` — выключить. `MLCC_DEV=1` — `-O0 -g`; `MLCC_OPT=2` — release (default). Dev: `apt install clang ccache mold`.
+`build_bin.sh` (внутри `build.sh`): линкер **mold → lld → gold**; PCH (`MLCC_PCH=0` off); **`MLCC_INCREMENTAL=1` default** (stamp → skip mlcc codegen); тесты в `out/tests/`. `MLCC_INCREMENTAL=0` — cold. `compiler/scripts/bench_build.sh`. `MLCC_DEV=1` / `MLCC_OPT=2`. Dev: `clang ccache mold`.
 
 ## Синтаксис
 
@@ -168,3 +168,9 @@ diff -rq "$TMPDIR/mlc_p1" "$TMPDIR/mlc_p2"   # должно быть пусто
 ## Roadmap
 
 `docs/PLAN.md` — архитектурный план, целевая структура файлов, паттерны, Reddit-презентация.
+
+## Community demo
+
+Reproducible commands: `scripts/reddit_demo.sh` (`--run`, `--record-baseline`).
+
+Media checklist (screenshot / asciinema): [docs/agent/REDDIT_DEMO_MEDIA.md](docs/agent/REDDIT_DEMO_MEDIA.md). Baseline numbers: [docs/agent/reddit_demo_baseline.txt](docs/agent/reddit_demo_baseline.txt).

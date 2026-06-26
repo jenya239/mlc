@@ -6,7 +6,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 - **One sub-step per prompt** — one concern; bisect-friendly.
 - **One layer per sub-step** — `compiler/` XOR `lib/mlc/`, not both (except tiny import fix).
-- **Verify before next queue:** tests green, then self-host if `compiler/**` changed.
+- **Verify before next queue:** Tier A green every turn; Tier B before commit / TRACK close (see ladder).
 - **Plans:** [PLAN.md](../PLAN.md) north star; [TRACK_*.md](.) active work; **Planner** extends TRACK, **Driver** executes.
 
 ## Roles (see CONTINUITY)
@@ -17,7 +17,14 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 
 ## Verification ladder (compiler changes)
 
-1. `compiler/tests/build_tests.sh` → `run_tests` (expect 473+). Abort if > 10 min silent.
+**Tier A — every Driver turn (target &lt;5 min warm):**
+```bash
+bash scripts/dev_gate_fast.sh
+```
+`run_tests` (reuse `compiler/out/tests/run_tests` if tests unchanged) + `mlcc --check-only main.mlc` if `out/mlcc` exists + arch lint. No fuzz / LSP / differential.
+
+**Tier B — before commit, TRACK close, or after `compiler/**` / fuzz / LSP edits:**
+1. `compiler/tests/build_tests.sh` → full gate (~30 min cold). Abort if &gt; 10 min silent.
 2. If **`lib/mlc/**` touched:** `bundle exec rake test_mlc`.
 3. If **`compiler/**` touched:** `compiler/build.sh` → self-host diff:
    ```bash
@@ -29,9 +36,11 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
    Use `build_bin.sh`, not bare `g++` — parallel + ccache.
 4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
 
+**Tier C — CI / release:** `.github/workflows/build-mlcc-once.yml` or manual full Tier B on clean tree.
+
 ## Current priority
 
-**TRACK_CLEAN_ARCHITECTURE** STEP=3 — `verify_ast.mlc`, `verify_semantic_ir.mlc`; `--verify-each`.
+**TRACK_BOOTSTRAP_LINK** STEP=1 — fresh bootstrap emit g++ link (`MLCC_BOOTSTRAP=1` regressed). Stability first.
 
 ## Step sizing (good vs bad)
 

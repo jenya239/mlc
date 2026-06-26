@@ -1,0 +1,5 @@
+fn main() -> i32 = do
+  let mut items = [1, 2, 3]
+  items.push(4)
+  items.length()
+end

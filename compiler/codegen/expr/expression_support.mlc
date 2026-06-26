@@ -2,7 +2,7 @@
 
 import { span_unknown } from '../../frontend/ast'
 import { SemanticExpression, SemanticFieldVal, SemanticExpressionUnit, sexpr_type, sexpr_span, SemanticExpressionArray } from '../../ir/semantic_ir'
-import { Type, TArray, TUnit, TShared } from '../../checker/registry'
+import { Type, TArray, TUnit, TShared, TI32, TString, TBool, TI64, TF64, TU8, TUsize, TChar, TNamed } from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
@@ -58,6 +58,22 @@ export fn infer_shared_new_type_name(argument: Shared<SemanticExpression>, conte
   }
   if type_name.length() > 0 then context.resolve(type_name) else 'auto' end
 end
+
+export fn semantic_type_to_cpp_type_name(type_value: Shared<Type>, context: CodegenContext) -> string =
+  match type_value {
+    TI32    => 'int',
+    TString => 'mlc::String',
+    TBool   => 'bool',
+    TUnit   => 'void',
+    TI64    => 'int64_t',
+    TF64    => 'double',
+    TU8     => 'uint8_t',
+    TUsize  => 'size_t',
+    TChar   => 'char32_t',
+    TNamed(name) => context.resolve(name),
+    TShared(inner) => semantic_type_to_cpp_type_name(inner, context),
+    _ => 'auto'
+  }
 
 export fn cpp_function_name_for_file_method(method_name: string) -> string =
   match method_name

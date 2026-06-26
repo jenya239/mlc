@@ -1,0 +1,32 @@
+// MIR pass pipeline (TRACK_MIR STEP=6).
+
+import { MirFunction, MirProgram, MirModule } from './mir_types'
+import { const_fold_mir_function } from './const_fold'
+import { simplify_cfg_mir_function } from './simplify_cfg'
+
+export fn run_mir_passes_on_function(function: MirFunction) -> MirFunction =
+  simplify_cfg_mir_function(const_fold_mir_function(function))
+
+fn run_mir_passes_on_functions(functions: [MirFunction]) -> [MirFunction] = do
+  let mut optimized: [MirFunction] = []
+  let mut index = 0
+  while index < functions.length() do
+    optimized.push(run_mir_passes_on_function(functions[index]))
+    index = index + 1
+  end
+  optimized
+end
+
+fn run_mir_passes_on_modules(modules: [MirModule]) -> [MirModule] = do
+  let mut optimized: [MirModule] = []
+  let mut index = 0
+  while index < modules.length() do
+    const mir_module = modules[index]
+    optimized.push(MirModule { functions: run_mir_passes_on_functions(mir_module.functions) })
+    index = index + 1
+  end
+  optimized
+end
+
+export fn run_mir_passes_on_program(program: MirProgram) -> MirProgram =
+  MirProgram { modules: run_mir_passes_on_modules(program.modules) }

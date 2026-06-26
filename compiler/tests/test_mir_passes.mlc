@@ -1,0 +1,92 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import {
+  MirFunction, MirBlock, MirModule, MirProgram,
+  MirAssign, MirReturn, MirCondJump, MirJump,
+  MirRvalueUse, MirRvalueBinary,
+  MirOperandConstInt, MirOperandConstBool,
+  mir_block_id, mir_local_id
+} from '../mir/mir_types'
+import { Type, TUnit, TI32 } from '../checker/registry'
+import { const_fold_mir_function } from '../mir/const_fold'
+import { simplify_cfg_mir_function } from '../mir/simplify_cfg'
+import { run_mir_passes_on_function } from '../mir/mir_passes'
+import { verify_mir_function } from '../verify/verify_mir'
+
+fn unit_type() -> Shared<Type> = Shared.new(TUnit)
+fn integer_type() -> Shared<Type> = Shared.new(TI32)
+
+fn sample_conditional_function() -> MirFunction = do
+  const then_block = MirBlock {
+    id: mir_block_id(1),
+    label: 'then',
+    stmts: [],
+    term: MirReturn(MirOperandConstInt(1))
+  }
+  const else_block = MirBlock {
+    id: mir_block_id(2),
+    label: 'else',
+    stmts: [],
+    term: MirReturn(MirOperandConstInt(0))
+  }
+  const entry_block = MirBlock {
+    id: mir_block_id(0),
+    label: 'entry',
+    stmts: [],
+    term: MirCondJump(MirOperandConstBool(true), mir_block_id(1), mir_block_id(2))
+  }
+  MirFunction {
+    name: 'branch',
+    params: [],
+    locals: [],
+    blocks: [entry_block, then_block, else_block],
+    return_type: integer_type()
+  }
+end
+
+export fn mir_passes_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const fold_source = MirFunction {
+    name: 'fold',
+    params: [],
+    locals: [],
+    blocks: [MirBlock {
+      id: mir_block_id(0),
+      label: 'entry',
+      stmts: [
+        MirAssign(
+          mir_local_id(0),
+          MirRvalueBinary("+", MirOperandConstInt(1), MirOperandConstInt(2)))
+      ],
+      term: MirReturn(MirOperandLocal(mir_local_id(0)))
+    }],
+    return_type: integer_type()
+  }
+  const folded = const_fold_mir_function(fold_source)
+  match folded.blocks[0].stmts[0] {
+    MirAssign(_, folded_rvalue) =>
+      match folded_rvalue {
+        MirRvalueUse(folded_operand) =>
+          match folded_operand {
+            MirOperandConstInt(folded_value) =>
+              results.push(assert_eq_int('const_fold folds integer add', folded_value, 3)),
+            _ => results.push(assert_true('const_fold folds integer add', false))
+          },
+        _ => results.push(assert_true('const_fold folds integer add', false))
+      },
+    _ => results.push(assert_true('const_fold folds integer add', false))
+  }
+
+  const simplified = simplify_cfg_mir_function(sample_conditional_function())
+  results.push(assert_eq_int('simplify_cfg removes dead else branch', simplified.blocks.length(), 2))
+  match simplified.blocks[0].term {
+    MirJump(target) => results.push(assert_eq_int('simplify_cfg resolves true branch', target.index, 1)),
+    _ => results.push(assert_true('simplify_cfg resolves true branch', false))
+  }
+  results.push(assert_eq_int('simplify_cfg verify', verify_mir_function(simplified).length(), 0))
+
+  const optimized = run_mir_passes_on_function(sample_conditional_function())
+  results.push(assert_eq_int('run_mir_passes block count', optimized.blocks.length(), 2))
+
+  results
+end

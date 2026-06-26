@@ -58,13 +58,13 @@ mlc::String aggregate_initializer_expression(mlc::String type_name, mlc::Array<s
 
 mlc::String std_visit_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept;
 
-mlc::String print_visit_arm_wild(bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_wild(bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
 
-mlc::String print_visit_arm_binding(mlc::String parameter_name, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_binding(mlc::String parameter_name, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
 
-mlc::String print_visit_arm_constructed(mlc::String parameter_declaration, mlc::String binding_prefix, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_constructed(mlc::String parameter_declaration, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
 
-mlc::String print_visit_arm_constructed_generic(mlc::String type_name, mlc::String binding_name, mlc::String binding_prefix, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_constructed_generic(mlc::String type_name, mlc::String binding_name, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
 
 mlc::String cast_expression(mlc::String kind_prefix, mlc::String type_code, mlc::String operand_code) noexcept;
 
@@ -309,13 +309,13 @@ mlc::String aggregate_initializer_expression(mlc::String type_name, mlc::Array<s
 
 mlc::String std_visit_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept{return mlc::String("std::visit(overloaded{") + arm_lambdas + mlc::String("\n}, ") + visit_subject + mlc::String(")");}
 
-mlc::String print_visit_arm_wild(bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](const auto& __v) -> void { ") + print_expr(body) + mlc::String("; }") : mlc::String("[&](const auto& __v) { return ") + print_expr(body) + mlc::String("; }");}
+mlc::String print_visit_arm_wild(bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](const auto& __v) -> void { ") + print_expr(body) + mlc::String("; }") : return_cpp.length() > 0 ? mlc::String("[&](const auto& __v) -> ") + return_cpp + mlc::String(" { return ") + print_expr(body) + mlc::String("; }") : mlc::String("[&](const auto& __v) { return ") + print_expr(body) + mlc::String("; }");}
 
-mlc::String print_visit_arm_binding(mlc::String parameter_name, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](const auto& ") + parameter_name + mlc::String(") -> void { ") + print_expr(body) + mlc::String("; }") : mlc::String("[&](const auto& ") + parameter_name + mlc::String(") { return ") + print_expr(body) + mlc::String("; }");}
+mlc::String print_visit_arm_binding(mlc::String parameter_name, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](const auto& ") + parameter_name + mlc::String(") -> void { ") + print_expr(body) + mlc::String("; }") : return_cpp.length() > 0 ? mlc::String("[&](const auto& ") + parameter_name + mlc::String(") -> ") + return_cpp + mlc::String(" { return ") + print_expr(body) + mlc::String("; }") : mlc::String("[&](const auto& ") + parameter_name + mlc::String(") { return ") + print_expr(body) + mlc::String("; }");}
 
-mlc::String print_visit_arm_constructed(mlc::String parameter_declaration, mlc::String binding_prefix, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](") + parameter_declaration + mlc::String(") -> void { ") + binding_prefix + print_expr(body) + mlc::String("; }") : mlc::String("[&](") + parameter_declaration + mlc::String(") { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }");}
+mlc::String print_visit_arm_constructed(mlc::String parameter_declaration, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&](") + parameter_declaration + mlc::String(") -> void { ") + binding_prefix + print_expr(body) + mlc::String("; }") : return_cpp.length() > 0 ? mlc::String("[&](") + parameter_declaration + mlc::String(") -> ") + return_cpp + mlc::String(" { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }") : mlc::String("[&](") + parameter_declaration + mlc::String(") { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }");}
 
-mlc::String print_visit_arm_constructed_generic(mlc::String type_name, mlc::String binding_name, mlc::String binding_prefix, bool void_return, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&]<typename __mlcT>(const ") + type_name + mlc::String("<__mlcT>& ") + binding_name + mlc::String(") -> void { ") + binding_prefix + print_expr(body) + mlc::String("; }") : mlc::String("[&]<typename __mlcT>(const ") + type_name + mlc::String("<__mlcT>& ") + binding_name + mlc::String(") { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }");}
+mlc::String print_visit_arm_constructed_generic(mlc::String type_name, mlc::String binding_name, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept{return void_return ? mlc::String("[&]<typename __mlcT>(const ") + type_name + mlc::String("<__mlcT>& ") + binding_name + mlc::String(") -> void { ") + binding_prefix + print_expr(body) + mlc::String("; }") : return_cpp.length() > 0 ? mlc::String("[&]<typename __mlcT>(const ") + type_name + mlc::String("<__mlcT>& ") + binding_name + mlc::String(") -> ") + return_cpp + mlc::String(" { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }") : mlc::String("[&]<typename __mlcT>(const ") + type_name + mlc::String("<__mlcT>& ") + binding_name + mlc::String(") { ") + binding_prefix + mlc::String("return ") + print_expr(body) + mlc::String("; }");}
 
 mlc::String cast_expression(mlc::String kind_prefix, mlc::String type_code, mlc::String operand_code) noexcept{return kind_prefix + mlc::String("<") + type_code + mlc::String(">(") + operand_code + mlc::String(")");}
 
@@ -621,10 +621,10 @@ mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpression> expression) noexc
   [&](const CppInitList& cppinitlist) -> mlc::String { auto [elements] = cppinitlist; return init_list_braces(print_comma_separated_expressions(elements)); },
   [&](const CppAggregateInit& cppaggregateinit) -> mlc::String { auto [type_name, elements] = cppaggregateinit; return aggregate_initializer_expression(type_name, elements); },
   [&](const CppStdVisit& cppstdvisit) -> mlc::String { auto [subject, handlers] = cppstdvisit; return std_visit_expression(print_comma_separated_expressions_multiline(handlers), print_expr(subject)); },
-  [&](const CppVisitArmWild& cppvisitarmwild) -> mlc::String { auto [void_return, body] = cppvisitarmwild; return print_visit_arm_wild(void_return, body); },
-  [&](const CppVisitArmBinding& cppvisitarmbinding) -> mlc::String { auto [parameter_name, void_return, body] = cppvisitarmbinding; return print_visit_arm_binding(parameter_name, void_return, body); },
-  [&](const CppVisitArmConstructed& cppvisitarmconstructed) -> mlc::String { auto [parameter_declaration, binding_prefix, void_return, body] = cppvisitarmconstructed; return print_visit_arm_constructed(parameter_declaration, binding_prefix, void_return, body); },
-  [&](const CppVisitArmConstructedGeneric& cppvisitarmconstructedgeneric) -> mlc::String { auto [type_name, binding_name, binding_prefix, void_return, body] = cppvisitarmconstructedgeneric; return print_visit_arm_constructed_generic(type_name, binding_name, binding_prefix, void_return, body); },
+  [&](const CppVisitArmWild& cppvisitarmwild) -> mlc::String { auto [void_return, return_cpp, body] = cppvisitarmwild; return print_visit_arm_wild(void_return, return_cpp, body); },
+  [&](const CppVisitArmBinding& cppvisitarmbinding) -> mlc::String { auto [parameter_name, void_return, return_cpp, body] = cppvisitarmbinding; return print_visit_arm_binding(parameter_name, void_return, return_cpp, body); },
+  [&](const CppVisitArmConstructed& cppvisitarmconstructed) -> mlc::String { auto [parameter_declaration, binding_prefix, void_return, return_cpp, body] = cppvisitarmconstructed; return print_visit_arm_constructed(parameter_declaration, binding_prefix, void_return, return_cpp, body); },
+  [&](const CppVisitArmConstructedGeneric& cppvisitarmconstructedgeneric) -> mlc::String { auto [type_name, binding_name, binding_prefix, void_return, return_cpp, body] = cppvisitarmconstructedgeneric; return print_visit_arm_constructed_generic(type_name, binding_name, binding_prefix, void_return, return_cpp, body); },
   [&](const CppCast& cppcast) -> mlc::String { auto [kind, target_type, operand] = cppcast; return cast_expression(print_cast_kind_prefix(kind), print_type(target_type), print_expr(operand)); },
   [&](const CppLambda& cpplambda) -> mlc::String { auto [captures, parameters, return_type, body] = cpplambda; return print_lambda_expression(captures, parameters, return_type, body); },
   [&](const CppMutableLambda& cppmutablelambda) -> mlc::String { auto [captures, parameters, body] = cppmutablelambda; return print_mutable_lambda_expression(captures, parameters, body); },

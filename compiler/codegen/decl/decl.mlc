@@ -65,6 +65,7 @@ export fn gen_fn_decl(name: string, type_parameters: [string], type_bounds: [[st
   const prefix = template_prefix(type_parameters) + requires_clause(type_parameters, type_bounds)
   const safe_name = context.resolve(name)
   const body_context = compute_fn_body_context(name, parameters, context)
+    .with_enclosing_function_return_type(return_type)
   const prototype_context = if parameters.length() > 0 && parameters[0].name == 'self' then body_context else context end
   if name == 'main' && parameters.length() == 0 then
     const preamble = expression_output.user_main_arguments_copy_into_runtime_statement()

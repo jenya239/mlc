@@ -1,0 +1,151 @@
+// In-memory CompilerDb: FileStore + parse/check caches (TRACK_MIR STEP=2).
+
+import { Program, Result } from '../frontend/ast'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_errors } from '../frontend/parser/decls'
+import { LoadItem } from '../ir/load_item'
+import { SemanticLoadItem } from '../ir/semantic_ir'
+import { check_with_context } from '../checker/check/check'
+import { TypeRegistry } from '../checker/registry'
+import { build_trait_nominal_maps } from '../checker/transform/trait_param_expand'
+import { expand_parameter_destructuring_in_program } from '../checker/transform/param_destructure_expand'
+import { transform_load_items } from '../checker/transform/transform_decl'
+import { profile_maybe_begin, profile_maybe_end } from '../profile'
+import { driver_source_path_is_safe, resolve_dotdot } from './path_normalize'
+import { merge_program_with_cache, MergeResult } from './program_merge'
+import { LoadResult } from './module_loader'
+
+export type FileStore = FileStore { sources: Map<string, string> }
+
+export type ParseModuleOutput = ParseModuleOutput {
+  load_items: [LoadItem],
+  full_program: Program,
+  entry_program: Program
+}
+
+export type TypecheckModuleOutput = TypecheckModuleOutput {
+  parse_output: ParseModuleOutput,
+  registry: TypeRegistry,
+  semantic_items: [SemanticLoadItem]
+}
+
+export type CompilerDb = CompilerDb {
+  file_store: FileStore,
+  load_cache: Map<string, LoadResult>,
+  parse_cache: Map<string, ParseModuleOutput>,
+  check_cache: Map<string, TypecheckModuleOutput>
+}
+
+export fn compiler_db_new() -> CompilerDb =
+  CompilerDb {
+    file_store: FileStore { sources: Map.new() },
+    load_cache: Map.new(),
+    parse_cache: Map.new(),
+    check_cache: Map.new()
+  }
+
+fn file_store_store_source(file_store: ref mut FileStore, normalized_path: string, path: string) -> string = do
+  const source_text = File.read(path)
+  file_store.sources.set(normalized_path, source_text)
+  source_text
+end
+
+export fn file_store_read(file_store: ref mut FileStore, path: string) -> string = do
+  const normalized_path = resolve_dotdot(path)
+  if file_store.sources.has(normalized_path) then
+    file_store.sources.get(normalized_path)
+  else
+    file_store_store_source(file_store, normalized_path, path)
+  end
+end
+
+export fn compiler_db_has_parse_cache(database: CompilerDb, entry_path: string) -> bool =
+  database.parse_cache.has(resolve_dotdot(entry_path))
+
+export fn compiler_db_has_check_cache(database: CompilerDb, entry_path: string) -> bool =
+  database.check_cache.has(resolve_dotdot(entry_path))
+
+fn prefix_parse_errors(source_path: string, messages: [string]) -> [string] = do
+  let mut prefixed: [string] = []
+  let mut index = 0
+  while index < messages.length() do
+    prefixed.push(`parse ${source_path}: ${messages[index]}`)
+    index = index + 1
+  end
+  prefixed
+end
+
+fn parse_module_output_from_merge(database: ref mut CompilerDb, entry_path: string, normalized_path: string, merged: MergeResult) -> Result<ParseModuleOutput, [string]> = do
+  const entry_item_index = merged.items.length() - 1
+  const entry_load_item = merged.items[entry_item_index]
+  const parse_module_output = ParseModuleOutput {
+    load_items: merged.items,
+    full_program: merged.program,
+    entry_program: Program { decls: entry_load_item.decls }
+  }
+  database.parse_cache.set(normalized_path, parse_module_output)
+  Ok(parse_module_output)
+end
+
+fn parse_module_fresh(database: ref mut CompilerDb, entry_path: string, normalized_path: string, profile_enabled: bool) -> Result<ParseModuleOutput, [string]> = do
+  profile_maybe_begin(profile_enabled, 'load_io')
+  const entry_source = file_store_read(database.file_store, entry_path)
+  profile_maybe_end(profile_enabled, 'load_io')
+  profile_maybe_begin(profile_enabled, 'lex')
+  const lexer_output = tokenize(entry_source)
+  profile_maybe_end(profile_enabled, 'lex')
+  if lexer_output.has_errors() then
+    Err([`lex ${normalized_path}: ${lexer_output.errors[0]}`])
+  else
+  profile_maybe_begin(profile_enabled, 'parse')
+  const parse_output = parse_program_with_errors(lexer_output.tokens, normalized_path)
+  profile_maybe_end(profile_enabled, 'parse')
+  if parse_output.errors.length() > 0 then
+    Err(prefix_parse_errors(normalized_path, parse_output.errors))
+  else
+  profile_maybe_begin(profile_enabled, 'merge')
+  const merged = merge_program_with_cache(entry_path, parse_output.program, database.load_cache, profile_enabled)
+  profile_maybe_end(profile_enabled, 'merge')
+  if merged.errors.length() > 0 then
+    Err(merged.errors)
+  else
+    parse_module_output_from_merge(database, entry_path, normalized_path, merged)
+  end
+  end
+  end
+end
+
+export fn parse_module(database: ref mut CompilerDb, entry_path: string, profile_enabled: bool) -> Result<ParseModuleOutput, [string]> = do
+  const normalized_path = resolve_dotdot(entry_path)
+  if database.parse_cache.has(normalized_path) then
+    Ok(database.parse_cache.get(normalized_path))
+  else if !driver_source_path_is_safe(entry_path) then
+    Err(['compiler_db: unsafe entry path'])
+  else
+    parse_module_fresh(database, entry_path, normalized_path, profile_enabled)
+  end
+end
+
+export fn typecheck_module(database: ref mut CompilerDb, entry_path: string, profile_enabled: bool) -> Result<TypecheckModuleOutput, [string]> = do
+  const normalized_path = resolve_dotdot(entry_path)
+  if database.check_cache.has(normalized_path) then
+    Ok(database.check_cache.get(normalized_path))
+  else
+  const parse_output = parse_module(database, entry_path, profile_enabled)?
+  profile_maybe_begin(profile_enabled, 'check')
+  const check_output = check_with_context(parse_output.entry_program, parse_output.full_program)?
+  profile_maybe_end(profile_enabled, 'check')
+  const expanded_program = expand_parameter_destructuring_in_program(parse_output.full_program)
+  const trait_maps = build_trait_nominal_maps(expanded_program)
+  profile_maybe_begin(profile_enabled, 'transform')
+  const semantic_items = transform_load_items(parse_output.load_items, check_output.registry, trait_maps)
+  profile_maybe_end(profile_enabled, 'transform')
+  const typecheck_output = TypecheckModuleOutput {
+    parse_output: parse_output,
+    registry: check_output.registry,
+    semantic_items: semantic_items
+  }
+  database.check_cache.set(normalized_path, typecheck_output)
+  Ok(typecheck_output)
+  end
+end

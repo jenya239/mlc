@@ -118,6 +118,7 @@ export type Expr =
   | ExprQuestion(Shared<Expr>, Span)
   | ExprExtern(Span)
   | ExprLambda([string], Shared<Expr>, Span)
+  | ExprSpawn([Shared<Stmt>], Span)
   | ExprNamedArg(string, Shared<Expr>, Span)
   | ExprWith(Shared<Expr>, string, [Shared<Stmt>], Span)
 
@@ -151,10 +152,21 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
     ExprQuestion(_, source_span)   => source_span,
     ExprExtern(source_span)         => source_span,
     ExprLambda(_, _, source_span)   => source_span,
+    ExprSpawn(_, source_span)       => source_span,
     ExprNamedArg(_, _, source_span) => source_span,
     ExprWith(_, _, _, source_span)  => source_span,
     _                               => span_unknown()
   }
+
+export fn expr_spawn_body_result(statements: [Shared<Stmt>]) -> Shared<Expr> =
+  if statements.length() == 0 then Shared.new(ExprUnit(span_unknown()))
+  else
+    match statements[statements.length() - 1] {
+      StmtReturn(expression, _) => expression,
+      StmtExpr(expression, _) => expression,
+      _ => Shared.new(ExprUnit(span_unknown()))
+    }
+  end
 
 export type Stmt =
   | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>, Span)

@@ -146,6 +146,8 @@ bool TokenKind_is_for(ast_tokens::TokenKind self) noexcept;
 
 bool TokenKind_is_with(ast_tokens::TokenKind self) noexcept;
 
+bool TokenKind_is_spawn(ast_tokens::TokenKind self) noexcept;
+
 bool TokenKind_is_match(ast_tokens::TokenKind self) noexcept;
 
 bool TokenKind_is_return(ast_tokens::TokenKind self) noexcept;

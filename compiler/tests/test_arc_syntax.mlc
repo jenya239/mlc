@@ -1,0 +1,48 @@
+import { TestResult, assert_eq_int } from './test_runner'
+import { assert_code_contains, assert_type_generates } from './codegen_test_helpers'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { gen_expr } from '../codegen/eval'
+import { create_codegen_context } from '../codegen/context'
+import { empty_program } from './ast_builders'
+import { SemanticExpressionMethod, SemanticExpressionIdent, SemanticExpressionInt } from '../ir/semantic_ir'
+import { span_unknown, TyGeneric, TyI32 } from '../frontend/ast'
+import { TI32, TGeneric } from '../checker/registry'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn integer_type() -> Shared<Type> = Shared.new(TI32)
+fn arc_type() -> Shared<Type> = Shared.new(TGeneric('Arc', [integer_type()]))
+
+export fn arc_syntax_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int('Arc.new i32 checks',
+    check_error_count('fn main() -> Arc<i32> = Arc.new(7)'), 0))
+
+  results.push(assert_eq_int('Arc.new rejects array send',
+    check_error_count('fn main() -> Arc<[i32]> = Arc.new([])'), 1))
+
+  const arc_receiver = Shared.new(SemanticExpressionIdent('arc_value', arc_type(), span_unknown()))
+  const arc_new_call = Shared.new(SemanticExpressionMethod(
+    Shared.new(SemanticExpressionIdent('Arc', Shared.new(TI32), span_unknown())),
+    'new',
+    [Shared.new(SemanticExpressionInt(7, integer_type(), span_unknown()))],
+    [0],
+    arc_type(),
+    span_unknown()))
+  const context = create_codegen_context(empty_program())
+  const generated = gen_expr(arc_new_call, context)
+  results.push(assert_code_contains('Arc.new in cpp', generated.to_string(), 'mlc::concurrency::Arc'))
+  results.push(assert_type_generates(
+    'Arc type in cpp', context,
+    Shared.new(TyGeneric('Arc', [Shared.new(TyI32)])),
+    'mlc::concurrency::Arc<int>'))
+
+  results
+end

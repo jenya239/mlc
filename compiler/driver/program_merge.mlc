@@ -7,7 +7,7 @@ import { load_module, LoadResult } from './module_loader'
 
 export type MergeResult = MergeResult { program: Program, errors: [string], items: [LoadItem] }
 
-export fn merge_program(entry_path: string, program: Program, profile_enabled: bool) -> MergeResult = do
+export fn merge_program_with_cache(entry_path: string, program: Program, load_cache: ref mut Map<string, LoadResult>, profile_enabled: bool) -> MergeResult = do
   let merged_declarations: [Shared<Decl>] = []
   let mut all_errors: [string] = []
   let seen_paths: Map<string, bool> = Map.new()
@@ -15,7 +15,6 @@ export fn merge_program(entry_path: string, program: Program, profile_enabled: b
   let entry_decls: [Shared<Decl>] = []
   let entry_imports: [string] = []
   let entry_namespace_import_aliases: [NamespaceImportAlias] = []
-  let cache: Map<string, LoadResult> = Map.new()
   let mut index = 0
   while index < program.decls.length() do
     match program.decls[index] {
@@ -25,7 +24,7 @@ export fn merge_program(entry_path: string, program: Program, profile_enabled: b
         if symbols.length() >= 2 && symbols[0] == "*" then
           entry_namespace_import_aliases.push(NamespaceImportAlias { alias: symbols[1], module_path: resolved })
         end
-        const dependency_parsed = load_module(resolved, cache, profile_enabled)
+        const dependency_parsed = load_module(resolved, load_cache, profile_enabled)
         all_errors = errs_append(all_errors, dependency_parsed.errors)
         let mut dep_item_index = 0
         while dep_item_index < dependency_parsed.items.length() do
@@ -55,4 +54,9 @@ export fn merge_program(entry_path: string, program: Program, profile_enabled: b
     namespace_import_aliases: entry_namespace_import_aliases
   })
   MergeResult { program: Program { decls: merged_declarations }, errors: all_errors, items: items_ordered }
+end
+
+export fn merge_program(entry_path: string, program: Program, profile_enabled: bool) -> MergeResult = do
+  let load_cache: Map<string, LoadResult> = Map.new()
+  merge_program_with_cache(entry_path, program, load_cache, profile_enabled)
 end

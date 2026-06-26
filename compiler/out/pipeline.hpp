@@ -21,6 +21,7 @@
 #include "preserved_analyses.hpp"
 #include "pass_manager.hpp"
 #include "dump_flags.hpp"
+#include "interpreter.hpp"
 
 namespace pipeline {
 
@@ -31,7 +32,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-struct ModularCompileInput {mlc::Array<load_item::LoadItem> load_items;ast::Program full_program;ast::Program entry_program;mlc::String output_directory;bool profile_enabled;bool check_only;bool emit_compile_commands;bool verify_each_pass;bool dump_ast;bool dump_sem;bool time_passes;};
+struct ModularCompileInput {mlc::Array<load_item::LoadItem> load_items;ast::Program full_program;ast::Program entry_program;mlc::String output_directory;bool profile_enabled;bool check_only;bool emit_compile_commands;bool verify_each_pass;bool dump_ast;bool dump_sem;bool dump_mir;bool mir_bootstrap_report;bool time_passes;bool run_interpreter;bool trace_vm;};
 
 struct CheckedCompileState {mlc::Array<load_item::LoadItem> load_items;ast::Program full_program;registry::TypeRegistry registry;mlc::String output_directory;bool profile_enabled;bool verify_each_pass;};
 

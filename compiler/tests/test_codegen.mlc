@@ -714,7 +714,7 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr(Shared.new(SemanticExpressionUsize('100', usize_t, span_unknown())), context), 'static_cast<size_t>(100)'))
 
   results.push(assert_eq_str('c4: char literal codegen',
-    gen_expr(Shared.new(SemanticExpressionChar("a", char_t, span_unknown())), context), 'static_cast<char32_t>(a)'))
+    gen_expr(Shared.new(SemanticExpressionChar("a", char_t, span_unknown())), context), 'static_cast<char32_t>(97)'))
 
   results.push(assert_eq_str('c4: sem_type_to_cpp TI64',
     sem_type_to_cpp(context, i64_t), 'int64_t'))

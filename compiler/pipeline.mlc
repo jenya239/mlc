@@ -16,7 +16,14 @@ import { verify_ast_program } from './verify/verify_ast'
 import { verify_semantic_ir_load_items } from './verify/verify_semantic_ir'
 import { PreservedAnalyses, preserved_analyses_empty } from './preserved_analyses'
 import { PassManager, PassDescriptor, build_compiler_pass_manager, pass_manager_validate_descriptor, pass_manager_apply_preserved, context_mark_keys } from './pass_manager'
-import { emit_dump_semantic_items } from './dump_flags'
+import { emit_dump_semantic_items, emit_dump_mir_from_semantic_items, emit_mir_bootstrap_report_from_semantic_items } from './dump_flags'
+import { run_mir_program_from_semantic_items } from './vm/interpreter'
+
+fn write_text_if_changed(path: string, content: string) -> unit = do
+  if !(File.exists(path) && File.read(path) == content) then
+    File.write(path, content)
+  end
+end
 
 export type ModularCompileInput = ModularCompileInput {
   load_items: [LoadItem],
@@ -29,7 +36,11 @@ export type ModularCompileInput = ModularCompileInput {
   verify_each_pass: bool,
   dump_ast: bool,
   dump_sem: bool,
-  time_passes: bool
+  dump_mir: bool,
+  mir_bootstrap_report: bool,
+  time_passes: bool,
+  run_interpreter: bool,
+  trace_vm: bool
 }
 
 fn pipeline_wants_timing(input: ModularCompileInput) -> bool =
@@ -157,18 +168,14 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
     const generated_output =
       gen_module(transformed_load_item, transformed_state.load_items, transformed_state.expanded_program, transformed_state.precomputed)
     const module_base = path_to_module_base(transformed_load_item.path)
-    const header_path =
+    const output_directory_prefix =
       if transformed_state.output_directory.length() > 0
-        then `${transformed_state.output_directory}/${module_base}.hpp`
-        else `${module_base}.hpp`
-      end
-    const implementation_path =
-      if transformed_state.output_directory.length() > 0
-        then `${transformed_state.output_directory}/${module_base}.cpp`
-        else `${module_base}.cpp`
-      end
-    File.write(header_path, generated_output.header)
-    File.write(implementation_path, generated_output.source)
+      then transformed_state.output_directory + "/"
+      else ""
+    const header_path = output_directory_prefix + module_base + ".hpp"
+    const implementation_path = output_directory_prefix + module_base + ".cpp"
+    write_text_if_changed(header_path, generated_output.header)
+    write_text_if_changed(implementation_path, generated_output.source)
     implementation_paths.push(implementation_path)
     index = index + 1
   end
@@ -194,6 +201,31 @@ fn maybe_emit_dump_semantic(input: ModularCompileInput, context: PipelineContext
   end
 end
 
+fn maybe_emit_dump_mir(input: ModularCompileInput, context: PipelineContext) -> unit = do
+  if input.dump_mir && context.has_transformed then
+    emit_dump_mir_from_semantic_items(
+      context.transformed_state.transformed_items,
+      modular_input_entry_label(input))
+  end
+end
+
+fn maybe_emit_mir_bootstrap_report(input: ModularCompileInput, context: PipelineContext) -> unit = do
+  if input.mir_bootstrap_report && context.has_transformed then
+    emit_mir_bootstrap_report_from_semantic_items(
+      context.transformed_state.transformed_items,
+      modular_input_entry_label(input))
+  end
+end
+
+fn maybe_run_interpreter(input: ModularCompileInput, context: PipelineContext) -> Result<string, [string]> = do
+  if !input.run_interpreter then return Ok('') end
+  if !context.has_transformed then return Err(['pipeline: --run requires transform pass']) end
+  match run_mir_program_from_semantic_items(context.transformed_state.transformed_items, input.trace_vm) {
+    Ok(exit_code) => do exit(exit_code); Ok('') end,
+    Err(errors) => Err(errors)
+  }
+end
+
 export fn run_modular_compiler_pipeline_with_manager(manager: PassManager, input: ModularCompileInput) -> Result<string, [string]> = do
   if input.time_passes && !input.profile_enabled then profile_reset_if_enabled(true) end
   const stepped = run_pass_manager_descriptors(manager, pipeline_context_new(input), 0)
@@ -201,8 +233,15 @@ export fn run_modular_compiler_pipeline_with_manager(manager: PassManager, input
     Err(errors) => Err(errors),
     Ok(final_context) => do
       maybe_emit_dump_semantic(input, final_context)
-      if input.time_passes && !input.profile_enabled then profile_finish(true) end
-      Ok('')
+      maybe_emit_dump_mir(input, final_context)
+      maybe_emit_mir_bootstrap_report(input, final_context)
+      match maybe_run_interpreter(input, final_context) {
+        Err(errors) => Err(errors),
+        Ok(message) => do
+          if input.time_passes && !input.profile_enabled then profile_finish(true) end
+          Ok(message)
+        end
+      }
     end
   }
 end

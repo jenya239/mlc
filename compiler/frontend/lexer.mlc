@@ -82,6 +82,7 @@ fn is_reserved_keyword(word: string) -> bool =
   | 'extern'   => true
   | 'extend'   => true
   | 'where'    => true
+  | 'spawn'    => true
   | 'true'     => true
   | 'false'    => true
   | _          => false
@@ -114,6 +115,7 @@ fn reserved_keyword_kind(word: string) -> TokenKind =
   | 'extern'   => KExtern
   | 'extend'   => KExtend
   | 'where'    => KWhere
+  | 'spawn'    => KSpawn
   | 'true'     => KTrue
   | 'false'    => KFalse
   end

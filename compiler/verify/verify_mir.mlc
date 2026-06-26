@@ -4,6 +4,7 @@ import {
   MirProgram, MirModule, MirFunction, MirBlock, MirLocal, MirParam,
   MirTerminator, LocalId, BlockId, mir_id_is_valid, mir_function_name_is_safe, mir_block_label_is_safe
 } from '../mir/mir_types'
+import { mir_local_id_index, mir_block_id_index } from '../mir/mir_ids'
 
 fn verify_mir_append(accumulator: [string], more: [string]) -> [string] = do
   let mut combined = accumulator
@@ -16,15 +17,15 @@ fn verify_mir_append(accumulator: [string], more: [string]) -> [string] = do
 end
 
 fn verify_mir_local_id(label: string, local_id: LocalId) -> [string] =
-  if mir_id_is_valid(local_id.index) then [] else [`${label}: invalid local id ${local_id.index}`]
+  if mir_id_is_valid(mir_local_id_index(local_id)) then [] else [`${label}: invalid local id ${mir_local_id_index(local_id)}`]
 
 fn verify_mir_block_id(label: string, block_id: BlockId) -> [string] =
-  if mir_id_is_valid(block_id.index) then [] else [`${label}: invalid block id ${block_id.index}`]
+  if mir_id_is_valid(mir_block_id_index(block_id)) then [] else [`${label}: invalid block id ${mir_block_id_index(block_id)}`]
 
 fn verify_mir_block_exists(blocks: [MirBlock], block_id: BlockId) -> bool = do
   let mut index = 0
   while index < blocks.length() do
-    if blocks[index].id.index == block_id.index then return true end
+    if mir_block_id_index(blocks[index].id) == mir_block_id_index(block_id) then return true end
     index = index + 1
   end
   false
@@ -36,15 +37,15 @@ fn verify_mir_terminator(function: MirFunction, block: MirBlock) -> [string] = d
     MirReturn(_) => errors,
     MirJump(target) => do
       if verify_mir_block_exists(function.blocks, target) then errors
-      else verify_mir_append(errors, [`mir jump: unknown block ${target.index}`])
+      else verify_mir_append(errors, [`mir jump: unknown block ${mir_block_id_index(target)}`])
       end
     end,
     MirCondJump(cond, then_block, else_block) => do
       if !verify_mir_block_exists(function.blocks, then_block) then
-        errors = verify_mir_append(errors, [`mir cond jump: unknown then block ${then_block.index}`])
+        errors = verify_mir_append(errors, [`mir cond jump: unknown then block ${mir_block_id_index(then_block)}`])
       end
       if !verify_mir_block_exists(function.blocks, else_block) then
-        errors = verify_mir_append(errors, [`mir cond jump: unknown else block ${else_block.index}`])
+        errors = verify_mir_append(errors, [`mir cond jump: unknown else block ${mir_block_id_index(else_block)}`])
       end
       errors
     end,

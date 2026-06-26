@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) �Phase 2.9; baseline: mlcc codegen ~2s, g++ link 90�200s
 
-## Status: **open** STEP=4 done
+## Status: **closed** (STEP=7 done)
 
 **Depends on:** none (infra-only; parallel with other tracks).
 
@@ -14,7 +14,13 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.9; baseline: mlcc codegen ~2s, g++ l
 
 **STEP=3 note (2026-06-25):** linker mold → lld → gold in `build_bin.sh`; README. Warm `link_sec≈1.98s`; gate **1297/0**.
 
-**STEP=4 note (2026-06-25):** `mlcc_precompiled.hpp` PCH in `build_bin.sh` (`MLCC_PCH=0` off); clang `-include-pch`, g++ `.gch`. `decls.cpp`: 25.7s → 20.1s; pch build 7s. Gate TBD.
+**STEP=4 note (2026-06-25):** `mlcc_precompiled.hpp` PCH in `build_bin.sh` (`MLCC_PCH=0` off); clang `-include-pch`, g++ `.gch`. `decls.cpp`: 25.7s → 20.1s; pch build 7s. Gate **1297/0**.
+
+**STEP=5 note (2026-06-25):** `MLCC_INCREMENTAL=1` + `.mlcc_module_stamp` (module list fingerprint + cpp manifest); skip `find -delete` when stamp matches. Warm `link_sec=0.02s`. Gate **1297/0**.
+
+**STEP=6 note (2026-06-25):** CI `ci.yml` + `triple-bootstrap.yml`: apt `clang ccache mold g++`; job `MLC_CXX=ccache clang++`. Gate **1297/0**.
+
+**STEP=7 note (2026-06-25):** `compiler/scripts/bench_build.sh` (warm skip + link); track **closed**. `build_sh_skip=0.04s`; gate **1297/0**.
 
 **Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast � optimize C++ compile/link + incremental artifacts.
 
@@ -36,9 +42,9 @@ Record `link_sec` in SESSION; must not regress vs baseline after each step.
 | 2 | `MLCC_DEV=1` → `-O0 -g`; `MLCC_OPT=2` default `-O2` for release | done |
 | 3 | Linker: prefer `mold`, then `lld`, then gold; document in README | done |
 | 4 | PCH or bundled include for hot headers (`mlc.hpp`, json) � measure before/after | done |
-| 5 | `build.sh`: optional skip `find -delete out/*.cpp` when `MLCC_INCREMENTAL=1` + module stamp | pending |
-| 6 | CI: install `clang`, `ccache`, `mold`; `MLC_CXX="ccache clang++"` | pending |
-| 7 | Benchmark script `compiler/scripts/bench_build.sh`; close track | pending |
+| 5 | `build.sh`: optional skip `find -delete out/*.cpp` when `MLCC_INCREMENTAL=1` + module stamp | done |
+| 6 | CI: install `clang`, `ccache`, `mold`; `MLC_CXX="ccache clang++"` | done |
+| 7 | Benchmark script `compiler/scripts/bench_build.sh`; close track | done |
 
 ### Clang � ????? ???
 

@@ -1,0 +1,49 @@
+// MIR interpreter call frame (TRACK_MIR_VM STEP=1).
+
+import { MirFunction, BlockId, LocalId } from '../mir/mir_types'
+import { mir_local_id_index } from '../mir/mir_ids'
+import { VmValue, VmUnit, vm_value_unit } from './value'
+import { Result, Ok, Err } from '../frontend/ast'
+
+export type VmFrame = VmFrame {
+  function: MirFunction,
+  block_id: BlockId,
+  statement_index: i32,
+  locals: [VmValue],
+  pending_call_local: i32
+}
+
+export fn vm_frame_new(function: MirFunction, block_id: BlockId, locals: [VmValue]) -> VmFrame =
+  VmFrame {
+    function: function,
+    block_id: block_id,
+    statement_index: 0,
+    locals: locals,
+    pending_call_local: -1
+  }
+
+export fn vm_locals_load(locals: [VmValue], local_id: LocalId) -> Result<VmValue, [string]> = do
+  const index = mir_local_id_index(local_id)
+  if index >= 0 && index < locals.length() then
+    Ok(locals[index])
+  else
+    Err([`vm: unbound local ${index}`])
+  end
+end
+
+export fn vm_locals_store(locals: [VmValue], local_id: LocalId, value: VmValue) -> [VmValue] = do
+  const index = mir_local_id_index(local_id)
+  let mut slots = locals
+  while slots.length() <= index do
+    slots.push(vm_value_unit())
+  end
+  let mut rebuilt: [VmValue] = []
+  let mut position = 0
+  while position < slots.length() do
+    if position == index then rebuilt.push(value)
+    else rebuilt.push(slots[position])
+    end
+    position = position + 1
+  end
+  rebuilt
+end

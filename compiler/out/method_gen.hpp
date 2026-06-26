@@ -13,6 +13,8 @@
 #include "expression_support.hpp"
 #include "mut_actual_argument.hpp"
 #include "expr.hpp"
+#include "type_gen.hpp"
+#include "semantic_type_structure.hpp"
 
 namespace method_gen {
 

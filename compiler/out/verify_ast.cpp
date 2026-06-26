@@ -7,6 +7,10 @@ namespace verify_ast {
 using namespace ast;
 using namespace ast_tokens;
 
+mlc::Array<mlc::String> verify_ast_empty_name_errors(mlc::String name, mlc::String message) noexcept;
+
+mlc::Array<mlc::String> verify_ast_errors_if(bool condition, mlc::Array<mlc::String> errors) noexcept;
+
 mlc::Array<mlc::String> verify_ast_span_errors(mlc::String label, ast::Span span) noexcept;
 
 mlc::Array<mlc::String> verify_ast_append_errors(mlc::Array<mlc::String> accumulator, mlc::Array<mlc::String> more) noexcept;
@@ -21,9 +25,17 @@ mlc::Array<mlc::String> verify_ast_statement(std::shared_ptr<ast::Stmt> statemen
 
 mlc::Array<mlc::String> verify_ast_parameter(std::shared_ptr<ast::Param> parameter) noexcept;
 
+mlc::Array<mlc::String> verify_ast_declaration_members(mlc::Array<mlc::String> errors, mlc::Array<std::shared_ptr<ast::Decl>> members) noexcept;
+
 mlc::Array<mlc::String> verify_ast_declaration(std::shared_ptr<ast::Decl> declaration) noexcept;
 
+mlc::Array<mlc::String> verify_ast_parameters(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
 mlc::Array<mlc::String> verify_ast_program(ast::Program program) noexcept;
+
+mlc::Array<mlc::String> verify_ast_empty_name_errors(mlc::String name, mlc::String message) noexcept{return name == mlc::String("") ? mlc::Array<mlc::String>{message} : mlc::Array<mlc::String>{};}
+
+mlc::Array<mlc::String> verify_ast_errors_if(bool condition, mlc::Array<mlc::String> errors) noexcept{return condition ? errors : mlc::Array<mlc::String>{};}
 
 mlc::Array<mlc::String> verify_ast_span_errors(mlc::String label, ast::Span span) noexcept{
 return span.line < 0 ? mlc::Array<mlc::String>{label + mlc::String(": negative source line")} : mlc::Array<mlc::String>{};
@@ -43,6 +55,7 @@ return combined;
 
 mlc::Array<mlc::String> verify_ast_pattern(std::shared_ptr<ast::Pattern> pattern) noexcept{
 mlc::Array<mlc::String> errors = verify_ast_span_errors(mlc::String("pattern"), ast::pattern_span(pattern));
+errors = verify_ast_append_errors(errors, {});
 return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatternCtor>((*pattern))) { auto _v_patternctor = std::get<ast::PatternCtor>((*pattern)); auto [_w0, arguments, _w1] = _v_patternctor; return [&]() -> mlc::Array<mlc::String> { 
   int index = 0;
   while (index < arguments.size()){
@@ -110,6 +123,7 @@ field_index = field_index + 1;
 
 mlc::Array<mlc::String> verify_ast_expression(std::shared_ptr<ast::Expr> expression) noexcept{
 mlc::Array<mlc::String> errors = verify_ast_span_errors(mlc::String("expression"), ast::expr_span(expression));
+errors = verify_ast_append_errors(errors, {});
 return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::ExprIdent>((*expression)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*expression)._); auto [name, _w0] = _v_exprident; return name == mlc::String("") ? verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("expression: empty identifier")}) : errors; } if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [_w0, left, right, _w1] = _v_exprbin; return verify_ast_append_errors(verify_ast_append_errors(errors, verify_ast_expression(left)), verify_ast_expression(right)); } if (std::holds_alternative<ast::ExprUn>((*expression)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expression)._); auto [_w0, operand, _w1] = _v_exprun; return verify_ast_append_errors(errors, verify_ast_expression(operand)); } if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [callee, arguments, _w0] = _v_exprcall; return [&]() -> mlc::Array<mlc::String> { 
   errors = verify_ast_append_errors(errors, verify_ast_expression(callee));
   int index = 0;
@@ -142,6 +156,15 @@ index = index + 1;
   return errors;
  }(); } if (std::holds_alternative<ast::ExprWhile>((*expression)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expression)._); auto [condition, statements, _w0] = _v_exprwhile; return [&]() -> mlc::Array<mlc::String> { 
   errors = verify_ast_append_errors(errors, verify_ast_expression(condition));
+  int index = 0;
+  while (index < statements.size()){
+{
+errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]));
+index = index + 1;
+}
+}
+  return errors;
+ }(); } if (std::holds_alternative<ast::ExprSpawn>((*expression)._)) { auto _v_exprspawn = std::get<ast::ExprSpawn>((*expression)._); auto [statements, _w0] = _v_exprspawn; return [&]() -> mlc::Array<mlc::String> { 
   int index = 0;
   while (index < statements.size()){
 {
@@ -227,92 +250,36 @@ index = index + 1;
  }(); } return errors; }();
 }
 
-mlc::Array<mlc::String> verify_ast_statement(std::shared_ptr<ast::Stmt> statement) noexcept{
-mlc::Array<mlc::String> errors = verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement));
-return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::StmtLet>((*statement)._)) { auto _v_stmtlet = std::get<ast::StmtLet>((*statement)._); auto [name, _w0, _w1, initializer, _w2] = _v_stmtlet; return [&]() -> mlc::Array<mlc::String> { 
-  if (name == mlc::String("")){
-{
-errors = verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("statement: empty let name")});
-}
-}
-  return verify_ast_append_errors(errors, verify_ast_expression(initializer));
- }(); } if (std::holds_alternative<ast::StmtLetPattern>((*statement)._)) { auto _v_stmtletpattern = std::get<ast::StmtLetPattern>((*statement)._); auto [pattern, _w0, _w1, initializer, has_else, else_branch, _w2] = _v_stmtletpattern; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_append_errors(errors, verify_ast_pattern(pattern));
-  errors = verify_ast_append_errors(errors, verify_ast_expression(initializer));
-  return has_else ? verify_ast_append_errors(errors, verify_ast_expression(else_branch)) : errors;
- }(); } if (std::holds_alternative<ast::StmtLetConst>((*statement)._)) { auto _v_stmtletconst = std::get<ast::StmtLetConst>((*statement)._); auto [name, _w0, initializer, _w1] = _v_stmtletconst; return [&]() -> mlc::Array<mlc::String> { 
-  if (name == mlc::String("")){
-{
-errors = verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("statement: empty const name")});
-}
-}
-  return verify_ast_append_errors(errors, verify_ast_expression(initializer));
- }(); } if (std::holds_alternative<ast::StmtExpr>((*statement)._)) { auto _v_stmtexpr = std::get<ast::StmtExpr>((*statement)._); auto [expression, _w0] = _v_stmtexpr; return verify_ast_append_errors(errors, verify_ast_expression(expression)); } if (std::holds_alternative<ast::StmtReturn>((*statement)._)) { auto _v_stmtreturn = std::get<ast::StmtReturn>((*statement)._); auto [expression, _w0] = _v_stmtreturn; return verify_ast_append_errors(errors, verify_ast_expression(expression)); } return errors; }();
-}
+mlc::Array<mlc::String> verify_ast_statement(std::shared_ptr<ast::Stmt> statement) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::StmtLet>((*statement)._)) { auto _v_stmtlet = std::get<ast::StmtLet>((*statement)._); auto [name, _w0, _w1, initializer, _w2] = _v_stmtlet; return verify_ast_append_errors(verify_ast_append_errors(verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)), verify_ast_empty_name_errors(name, mlc::String("statement: empty let name"))), verify_ast_expression(initializer)); } if (std::holds_alternative<ast::StmtLetPattern>((*statement)._)) { auto _v_stmtletpattern = std::get<ast::StmtLetPattern>((*statement)._); auto [pattern, _w0, _w1, initializer, has_else, else_branch, _w2] = _v_stmtletpattern; return verify_ast_append_errors(verify_ast_append_errors(verify_ast_append_errors(verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)), verify_ast_pattern(pattern)), verify_ast_expression(initializer)), verify_ast_errors_if(has_else, verify_ast_expression(else_branch))); } if (std::holds_alternative<ast::StmtLetConst>((*statement)._)) { auto _v_stmtletconst = std::get<ast::StmtLetConst>((*statement)._); auto [name, _w0, initializer, _w1] = _v_stmtletconst; return verify_ast_append_errors(verify_ast_append_errors(verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)), verify_ast_empty_name_errors(name, mlc::String("statement: empty const name"))), verify_ast_expression(initializer)); } if (std::holds_alternative<ast::StmtExpr>((*statement)._)) { auto _v_stmtexpr = std::get<ast::StmtExpr>((*statement)._); auto [expression, _w0] = _v_stmtexpr; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)), verify_ast_expression(expression)); } if (std::holds_alternative<ast::StmtReturn>((*statement)._)) { auto _v_stmtreturn = std::get<ast::StmtReturn>((*statement)._); auto [expression, _w0] = _v_stmtreturn; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)), verify_ast_expression(expression)); } return verify_ast_span_errors(mlc::String("statement"), ast::stmt_span(statement)); }();}
 
 mlc::Array<mlc::String> verify_ast_parameter(std::shared_ptr<ast::Param> parameter) noexcept{
 return parameter->name == mlc::String("") ? mlc::Array<mlc::String>{mlc::String("parameter: empty name")} : mlc::Array<mlc::String>{};
 }
 
-mlc::Array<mlc::String> verify_ast_declaration(std::shared_ptr<ast::Decl> declaration) noexcept{
-mlc::Array<mlc::String> errors = {};
-return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::DeclFn>((*declaration))) { auto _v_declfn = std::get<ast::DeclFn>((*declaration)); auto [name, _w0, _w1, parameters, _w2, body, _w3] = _v_declfn; return [&]() -> mlc::Array<mlc::String> { 
-  if (name == mlc::String("")){
+mlc::Array<mlc::String> verify_ast_declaration_members(mlc::Array<mlc::String> errors, mlc::Array<std::shared_ptr<ast::Decl>> members) noexcept{
+mlc::Array<mlc::String> accumulated = errors;
+int index = 0;
+while (index < members.size()){
 {
-errors = verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty function name")});
+accumulated = verify_ast_append_errors(accumulated, verify_ast_declaration(members[index]));
+index = index + 1;
 }
 }
-  int index = 0;
-  while (index < parameters.size()){
+return accumulated;
+}
+
+mlc::Array<mlc::String> verify_ast_declaration(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::DeclFn>((*declaration))) { auto _v_declfn = std::get<ast::DeclFn>((*declaration)); auto [name, _w0, _w1, parameters, _w2, body, _w3] = _v_declfn; return verify_ast_append_errors(verify_ast_append_errors(verify_ast_empty_name_errors(name, mlc::String("declaration: empty function name")), verify_ast_parameters(parameters)), verify_ast_expression(body)); } if (std::holds_alternative<ast::DeclType>((*declaration))) { auto _v_decltype = std::get<ast::DeclType>((*declaration)); auto [name, _w0, _w1, _w2, span] = _v_decltype; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(name, mlc::String("declaration: empty type name"))); } if (std::holds_alternative<ast::DeclTypeAlias>((*declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*declaration)); auto [name, _w0, _w1, span] = _v_decltypealias; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(name, mlc::String("declaration: empty type alias name"))); } if (std::holds_alternative<ast::DeclTrait>((*declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*declaration)); auto [name, _w0, members, span] = _v_decltrait; return verify_ast_declaration_members(verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(name, mlc::String("declaration: empty trait name"))), members); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [type_name, _w0, members, span] = _v_declextend; return verify_ast_declaration_members(verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(type_name, mlc::String("declaration: empty extend type name"))), members); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner] = _v_declexported; return verify_ast_declaration(inner); } if (std::holds_alternative<ast::DeclAssocType>((*declaration))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*declaration)); auto [name, span] = _v_declassoctype; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(name, mlc::String("declaration: empty assoc type name"))); } if (std::holds_alternative<ast::DeclAssocBind>((*declaration))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*declaration)); auto [name, _w0, span] = _v_declassocbind; return verify_ast_append_errors(verify_ast_span_errors(mlc::String("declaration"), span), verify_ast_empty_name_errors(name, mlc::String("declaration: empty assoc bind name"))); } return {}; }();}
+
+mlc::Array<mlc::String> verify_ast_parameters(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{
+mlc::Array<mlc::String> errors = {};
+int index = 0;
+while (index < parameters.size()){
 {
 errors = verify_ast_append_errors(errors, verify_ast_parameter(parameters[index]));
 index = index + 1;
 }
 }
-  return verify_ast_append_errors(errors, verify_ast_expression(body));
- }(); } if (std::holds_alternative<ast::DeclType>((*declaration))) { auto _v_decltype = std::get<ast::DeclType>((*declaration)); auto [name, _w0, _w1, _w2, span] = _v_decltype; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  return name == mlc::String("") ? verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty type name")}) : errors;
- }(); } if (std::holds_alternative<ast::DeclTypeAlias>((*declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*declaration)); auto [name, _w0, _w1, span] = _v_decltypealias; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  return name == mlc::String("") ? verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty type alias name")}) : errors;
- }(); } if (std::holds_alternative<ast::DeclTrait>((*declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*declaration)); auto [name, _w0, members, span] = _v_decltrait; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  if (name == mlc::String("")){
-{
-errors = verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty trait name")});
-}
-}
-  int index = 0;
-  while (index < members.size()){
-{
-errors = verify_ast_append_errors(errors, verify_ast_declaration(members[index]));
-index = index + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [type_name, _w0, members, span] = _v_declextend; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  if (type_name == mlc::String("")){
-{
-errors = verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty extend type name")});
-}
-}
-  int index = 0;
-  while (index < members.size()){
-{
-errors = verify_ast_append_errors(errors, verify_ast_declaration(members[index]));
-index = index + 1;
-}
-}
-  return errors;
- }(); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner] = _v_declexported; return verify_ast_declaration(inner); } if (std::holds_alternative<ast::DeclAssocType>((*declaration))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*declaration)); auto [name, span] = _v_declassoctype; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  return name == mlc::String("") ? verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty assoc type name")}) : errors;
- }(); } if (std::holds_alternative<ast::DeclAssocBind>((*declaration))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*declaration)); auto [name, _w0, span] = _v_declassocbind; return [&]() -> mlc::Array<mlc::String> { 
-  errors = verify_ast_span_errors(mlc::String("declaration"), span);
-  return name == mlc::String("") ? verify_ast_append_errors(errors, mlc::Array<mlc::String>{mlc::String("declaration: empty assoc bind name")}) : errors;
- }(); } return errors; }();
+return errors;
 }
 
 mlc::Array<mlc::String> verify_ast_program(ast::Program program) noexcept{

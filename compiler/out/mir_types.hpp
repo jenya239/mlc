@@ -23,7 +23,7 @@ struct MirParam {mlc::String name;std::shared_ptr<registry::Type> type_value;};
 
 struct MirLocal {mir_types::LocalId id;mlc::String name;std::shared_ptr<registry::Type> type_value;};
 
-struct MirOperandLocal {mir_types::LocalId field0;};struct MirOperandConstInt {int field0;};struct MirOperandConstBool {bool field0;};struct MirOperandUnit {};using MirOperand = std::variant<MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandUnit>;
+struct MirOperandLocal {mir_types::LocalId field0;};struct MirOperandConstInt {int field0;};struct MirOperandConstBool {bool field0;};struct MirOperandConstStr {mlc::String field0;};struct MirOperandUnit {};using MirOperand = std::variant<MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit>;
 
 struct MirRvalueUse {mir_types::MirOperand field0;};struct MirRvalueBinary {mlc::String field0;mir_types::MirOperand field1;mir_types::MirOperand field2;};using MirRvalue = std::variant<MirRvalueUse, MirRvalueBinary>;
 

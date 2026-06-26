@@ -73,6 +73,30 @@ fn zipped_suffix_types_structurally_equal(
     zipped_suffix_types_structurally_equal(left_list, right_list, index + 1)
   end
 
+export fn type_is_channel(type_value: Shared<Type>) -> bool =
+  match type_value { TGeneric(type_name, _) => type_name == 'Channel', _ => false }
+
+export fn channel_element_type_from_channel_type(channel_type: Shared<Type>) -> Shared<Type> =
+  match channel_type {
+    TGeneric(type_name, type_arguments) =>
+      if type_name == 'Channel' && type_arguments.length() == 1 then type_arguments[0]
+      else Shared.new(TUnknown)
+      end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn type_is_mutex(type_value: Shared<Type>) -> bool =
+  match type_value { TGeneric(type_name, _) => type_name == 'Mutex', _ => false }
+
+export fn mutex_inner_type_from_mutex_type(mutex_type: Shared<Type>) -> Shared<Type> =
+  match mutex_type {
+    TGeneric(type_name, type_arguments) =>
+      if type_name == 'Mutex' && type_arguments.length() == 1 then type_arguments[0]
+      else Shared.new(TUnknown)
+      end,
+    _ => Shared.new(TUnknown)
+  }
+
 export fn type_is_array(type_value: Shared<Type>) -> bool =
   match type_value { TArray(_) => true, _ => false }
 
@@ -233,6 +257,7 @@ export fn builtin_method_return_type(method_name: string) -> Shared<Type> =
   | 'make_temp_directory' => Shared.new(TString)
   | 'temp_directory_base' => Shared.new(TString)
   | 'has' => Shared.new(TBool)
+  | 'send' => Shared.new(TBool)
   | _ => Shared.new(TUnknown)
   end
 
@@ -255,6 +280,8 @@ export fn builtin_method_expected_argument_count(method_name: string) -> i32 =
   | 'remove' => 1
   | 'keys' => 0
   | 'values' => 0
+  | 'send' => 1
+  | 'recv' => 0
   | _ => -1
   end
 

@@ -2,7 +2,7 @@
 
 import { Program, errs_append } from '../frontend/ast'
 import { SemanticLoadItem, SemanticNamespaceImportAlias } from '../ir/semantic_ir'
-import { build_registry } from '../checker/registry'
+import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
 import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
@@ -157,7 +157,8 @@ fn prepare_module_generation(
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     type_alias_annotations: precomputed_context.type_alias_annotations,
-    temp_name_counter: new_temp_name_counter()
+    temp_name_counter: new_temp_name_counter(),
+    enclosing_function_return_type: Shared.new(TUnknown)
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end

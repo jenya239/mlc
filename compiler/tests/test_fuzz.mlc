@@ -24,7 +24,11 @@ fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
     verify_each_pass: false,
     dump_ast: false,
     dump_sem: false,
-    time_passes: false
+    dump_mir: false,
+    mir_bootstrap_report: false,
+    time_passes: false,
+    run_interpreter: false,
+    trace_vm: false
   }
 end
 

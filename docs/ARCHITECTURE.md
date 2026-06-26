@@ -46,7 +46,7 @@ codegen/module    ????????? transform + build_registry              ? ?????????
 checker/check     ????? ??? codegen (record_defaults acceptable_for_codegen)
 ```
 
-AST ? SemanticIR ? MirProgram ? CppAST — target pipeline. MIR step 1 done; legacy `ir/core.mlc` to migrate.
+AST → SemanticIR → MirProgram → CppAST — target pipeline. Legacy `ir/core.mlc` removed (MIR).
 
 ---
 

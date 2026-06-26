@@ -1,0 +1,44 @@
+// Stable LocalId / BlockId allocation and comparison (TRACK_MIR STEP=10).
+
+import { LocalId, BlockId, mir_local_id, mir_block_id } from './mir_types'
+
+export type MirIdPool = MirIdPool {
+  next_local_index: i32,
+  next_block_index: i32
+}
+
+export fn mir_id_pool_new() -> MirIdPool =
+  MirIdPool { next_local_index: 0, next_block_index: 1 }
+
+export fn mir_id_pool_locals_reserved(pool: MirIdPool, local_count: i32) -> MirIdPool =
+  MirIdPool { next_local_index: local_count, next_block_index: pool.next_block_index }
+
+export fn mir_local_id_equals(left: LocalId, right: LocalId) -> bool =
+  left.index == right.index
+
+export fn mir_block_id_equals(left: BlockId, right: BlockId) -> bool =
+  left.index == right.index
+
+export fn mir_local_id_index(local_id: LocalId) -> i32 = local_id.index
+
+export fn mir_block_id_index(block_id: BlockId) -> i32 = block_id.index
+
+export type MirIdLocalStep = MirIdLocalStep { pool: MirIdPool, local_id: LocalId }
+
+export fn mir_id_pool_allocate_local(pool: MirIdPool) -> MirIdLocalStep = do
+  const local_id = mir_local_id(pool.next_local_index)
+  MirIdLocalStep {
+    pool: MirIdPool { next_local_index: pool.next_local_index + 1, next_block_index: pool.next_block_index },
+    local_id: local_id
+  }
+end
+
+export type MirIdBlockStep = MirIdBlockStep { pool: MirIdPool, block_id: BlockId }
+
+export fn mir_id_pool_allocate_block(pool: MirIdPool) -> MirIdBlockStep = do
+  const block_id = mir_block_id(pool.next_block_index)
+  MirIdBlockStep {
+    pool: MirIdPool { next_local_index: pool.next_local_index, next_block_index: pool.next_block_index + 1 },
+    block_id: block_id
+  }
+end

@@ -8,6 +8,7 @@
 #include "match_analysis.hpp"
 #include "expr.hpp"
 #include "registry.hpp"
+#include "result_option_method_types.hpp"
 #include "type_gen.hpp"
 #include "literals.hpp"
 #include "cpp_ast.hpp"
@@ -25,6 +26,7 @@ using namespace cpp_naming;
 using namespace match_analysis;
 using namespace expr;
 using namespace registry;
+using namespace result_option_method_types;
 using namespace type_gen;
 using namespace literals;
 using namespace cpp_ast;
@@ -63,11 +65,17 @@ mlc::String gen_guarded_literal_arm_fragment(std::shared_ptr<semantic_ir::Semant
 
 mlc::String gen_guarded_identifier_binding_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String binding_name, mlc::String subject_holder_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
-mlc::String gen_guarded_constructor_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::String variant_access_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
+mlc::String generic_variant_type_argument(context::CodegenContext context, mlc::String constructor_name) noexcept;
+
+mlc::String result_ctor_cpp_type_argument(context::CodegenContext context, mlc::String constructor_name, std::shared_ptr<registry::Type> subject_type) noexcept;
+
+mlc::String generic_ctor_type_argument(context::CodegenContext context, mlc::String constructor_name, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept;
+
+mlc::String gen_guarded_constructor_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::String variant_access_expression, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
 mlc::String gen_guarded_record_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pattern>> field_patterns, mlc::String variant_access_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
-mlc::String gen_guarded_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String variant_access_expression, mlc::String subject_holder_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
+mlc::String gen_guarded_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String variant_access_expression, mlc::String subject_holder_name, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
 std::shared_ptr<cpp_ast::CppExpression> string_match_literal_condition_cpp(std::shared_ptr<ast::Pattern> pattern, mlc::String subject_holder) noexcept;
 
@@ -89,6 +97,18 @@ mlc::String gen_match_string_literal_expression(std::shared_ptr<semantic_ir::Sem
 
 std::shared_ptr<cpp_ast::CppExpression> gen_match_string_literal_expression_cpp(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn) noexcept;
 
+mlc::String full_result_cpp_template(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
+
+mlc::String expression_result_cpp_type_for_codegen(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept;
+
+mlc::String match_ok_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::String direct) noexcept;
+
+mlc::String match_err_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept;
+
+mlc::String match_return_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept;
+
+mlc::String match_expression_return_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept;
+
 mlc::String gen_match_guarded_body(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
 mlc::String gen_match_guarded_expression(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
@@ -97,11 +117,13 @@ std::shared_ptr<cpp_ast::CppExpression> gen_match_guarded_expression_cpp(std::sh
 
 mlc::String gen_arm(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn, bool visit_void) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_ctor_cpp(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_ctor_cpp(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_record_pattern_cpp(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pattern>> field_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_record_pattern_cpp(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pattern>> field_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept;
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_cpp(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept;
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_cpp(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept;
+
+mlc::String gen_match_std_visit_string(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn, bool visit_void) noexcept;
 
 mlc::String gen_match(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept;
 
@@ -202,11 +224,20 @@ return arm->has_guard ? [&]() -> mlc::String {
  }() : mlc::String("{\n") + binding_statement + expr::return_line(body_code) + mlc::String("}\n");
 }
 
-mlc::String gen_guarded_constructor_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::String variant_access_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
+mlc::String generic_variant_type_argument(context::CodegenContext context, mlc::String constructor_name) noexcept{return decl_index::list_contains(context.generic_variants, constructor_name) ? mlc::String("<auto>") : mlc::String("");}
+
+mlc::String result_ctor_cpp_type_argument(context::CodegenContext context, mlc::String constructor_name, std::shared_ptr<registry::Type> subject_type) noexcept{return constructor_name == mlc::String("Ok") ? mlc::String("<") + type_gen::sem_type_to_cpp(context, result_option_method_types::result_ok_type(subject_type)) + mlc::String(">") : constructor_name == mlc::String("Err") ? mlc::String("<") + type_gen::sem_type_to_cpp(context, result_option_method_types::result_err_type(subject_type)) + mlc::String(">") : mlc::String("<auto>");}
+
+mlc::String generic_ctor_type_argument(context::CodegenContext context, mlc::String constructor_name, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept{
+std::shared_ptr<registry::Type> subject_type = semantic_ir::sexpr_type(subject);
+return result_option_method_types::is_result_generic(subject_type) ? result_ctor_cpp_type_argument(context, constructor_name, subject_type) : generic_variant_type_argument(context, constructor_name);
+}
+
+mlc::String gen_guarded_constructor_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::String variant_access_expression, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
 mlc::String qualified_name = context::CodegenContext_resolve(context, constructor_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(constructor_name));
 mlc::String binding_prefix = sub_patterns.size() == 0 ? mlc::String("") : expr::tuple_destructure_binding(match_analysis::pattern_bind_names(sub_patterns), lower_name);
-mlc::String type_argument = decl_index::list_contains(context.generic_variants, constructor_name) ? mlc::String("<auto>") : mlc::String("");
+mlc::String type_argument = generic_ctor_type_argument(context, constructor_name, subject);
 context::CodegenContext arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context);
 mlc::String holds_check = mlc::String("std::holds_alternative<") + qualified_name + type_argument + mlc::String(">(") + variant_access_expression + mlc::String(")");
 mlc::String open_block = mlc::String("if (") + holds_check + mlc::String(") {\n") + mlc::String("const ") + qualified_name + type_argument + mlc::String("& ") + lower_name + mlc::String(" = std::get<") + qualified_name + type_argument + mlc::String(">(") + variant_access_expression + mlc::String(");\n") + binding_prefix;
@@ -233,8 +264,8 @@ mlc::String inner = arm->has_guard ? [&]() -> mlc::String {
 return open_block + inner + mlc::String("}\n");
 }
 
-mlc::String gen_guarded_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String variant_access_expression, mlc::String subject_holder_name, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{return std::visit(overloaded{
-  [&](const PatternCtor& patternctor) -> mlc::String { auto [name, sub_patterns, _w0] = patternctor; return gen_guarded_constructor_arm_fragment(arm, name, sub_patterns, variant_access_expression, context, gen_stmts, eval_expr_fn); },
+mlc::String gen_guarded_arm_fragment(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, mlc::String variant_access_expression, mlc::String subject_holder_name, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const PatternCtor& patternctor) -> mlc::String { auto [name, sub_patterns, _w0] = patternctor; return gen_guarded_constructor_arm_fragment(arm, name, sub_patterns, variant_access_expression, subject, context, gen_stmts, eval_expr_fn); },
   [&](const PatternRecord& patternrecord) -> mlc::String { auto [name, field_patterns, _w0] = patternrecord; return gen_guarded_record_arm_fragment(arm, name, field_patterns, variant_access_expression, context, gen_stmts, eval_expr_fn); },
   [&](const PatternWild& patternwild) -> mlc::String { auto [_w0] = patternwild; return gen_guarded_wild_or_unit_arm_fragment(arm, context, gen_stmts, eval_expr_fn); },
   [&](const PatternUnit& patternunit) -> mlc::String { auto [_w0] = patternunit; return gen_guarded_wild_or_unit_arm_fragment(arm, context, gen_stmts, eval_expr_fn); },
@@ -295,27 +326,164 @@ return mlc::String("[&]() -> ") + return_cpp + mlc::String(" {\n") + inner_body 
 }
 
 std::shared_ptr<cpp_ast::CppExpression> gen_match_string_literal_expression_cpp(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn) noexcept{
-mlc::String return_cpp = type_gen::sem_type_to_cpp(context, match_result_type);
+mlc::String return_cpp = match_return_cpp_type(context, match_result_type, subject);
 mlc::String inner_body = string_match_statements_to_source(string_match_statements_cpp(subject, expanded_arms, context, gen_stmts, eval_expr_cpp_fn));
 return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppInvokedBlockWithReturn(return_cpp, inner_body));
+}
+
+mlc::String full_result_cpp_template(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept{
+if (!result_option_method_types::is_result_generic(semantic_type)){
+{
+return mlc::String("");
+}
+}
+mlc::String ok_cpp = type_gen::sem_type_to_cpp(context, result_option_method_types::result_ok_type(semantic_type));
+mlc::String err_cpp = type_gen::sem_type_to_cpp(context, result_option_method_types::result_err_type(semantic_type));
+return ok_cpp != mlc::String("auto") && err_cpp != mlc::String("auto") ? expr::cpp_template_two_type_arguments(mlc::String("ast::Result"), ok_cpp, err_cpp) : mlc::String("");
+}
+
+mlc::String expression_result_cpp_type_for_codegen(context::CodegenContext context, std::shared_ptr<registry::Type> semantic_type) noexcept{
+mlc::String direct = type_gen::sem_type_to_cpp(context, semantic_type);
+if (direct.contains(mlc::String("<"))){
+{
+return direct;
+}
+}
+if (direct != mlc::String("ast::Result")){
+{
+return direct;
+}
+}
+mlc::String from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type);
+if (from_enclosing != mlc::String("")){
+{
+return from_enclosing;
+}
+}
+mlc::String from_type = full_result_cpp_template(context, semantic_type);
+if (from_type != mlc::String("")){
+{
+return from_type;
+}
+}
+return direct;
+}
+
+mlc::String match_ok_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::String direct) noexcept{
+if (result_option_method_types::is_result_generic(match_result_type)){
+{
+mlc::String from_match = type_gen::sem_type_to_cpp(context, result_option_method_types::result_ok_type(match_result_type));
+if (from_match != mlc::String("auto")){
+return from_match;
+}
+}
+}
+if (direct != mlc::String("ast::Result") && direct != mlc::String("void") && direct != mlc::String("auto") && direct.length() > 0){
+{
+return direct;
+}
+}
+std::shared_ptr<registry::Type> subject_type = semantic_ir::sexpr_type(subject);
+return result_option_method_types::is_result_generic(subject_type) ? type_gen::sem_type_to_cpp(context, result_option_method_types::result_ok_type(subject_type)) : mlc::String("auto");
+}
+
+mlc::String match_err_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept{
+if (result_option_method_types::is_result_generic(match_result_type)){
+{
+mlc::String from_match = type_gen::sem_type_to_cpp(context, result_option_method_types::result_err_type(match_result_type));
+if (from_match != mlc::String("auto")){
+return from_match;
+}
+}
+}
+std::shared_ptr<registry::Type> subject_type = semantic_ir::sexpr_type(subject);
+return result_option_method_types::is_result_generic(subject_type) ? type_gen::sem_type_to_cpp(context, result_option_method_types::result_err_type(subject_type)) : mlc::String("auto");
+}
+
+mlc::String match_return_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept{
+mlc::String enclosing_cpp = type_gen::sem_type_to_cpp(context, context.enclosing_function_return_type);
+if (enclosing_cpp != mlc::String("auto") && enclosing_cpp != mlc::String("void") && enclosing_cpp.length() > 0 && !result_option_method_types::is_result_generic(context.enclosing_function_return_type)){
+{
+return enclosing_cpp;
+}
+}
+mlc::String direct = type_gen::sem_type_to_cpp(context, match_result_type);
+if (direct.contains(mlc::String("<"))){
+{
+return direct;
+}
+}
+mlc::String from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type);
+if (direct == mlc::String("ast::Result") && from_enclosing != mlc::String("")){
+{
+return from_enclosing;
+}
+}
+enclosing_cpp = type_gen::sem_type_to_cpp(context, context.enclosing_function_return_type);
+if (enclosing_cpp != mlc::String("auto") && enclosing_cpp != mlc::String("void") && enclosing_cpp.length() > 0 && !result_option_method_types::is_result_generic(context.enclosing_function_return_type) && direct == mlc::String("ast::Result") || result_option_method_types::is_result_generic(match_result_type)){
+{
+return enclosing_cpp;
+}
+}
+mlc::String ok_cpp = match_ok_cpp_type(context, match_result_type, subject, direct);
+mlc::String err_cpp = match_err_cpp_type(context, match_result_type, subject);
+return ok_cpp != mlc::String("auto") && err_cpp != mlc::String("auto") ? expr::cpp_template_two_type_arguments(mlc::String("ast::Result"), ok_cpp, err_cpp) : direct;
+}
+
+mlc::String match_expression_return_cpp_type(context::CodegenContext context, std::shared_ptr<registry::Type> match_result_type, std::shared_ptr<semantic_ir::SemanticExpression> subject) noexcept{
+mlc::String enclosing_cpp = type_gen::sem_type_to_cpp(context, context.enclosing_function_return_type);
+if (enclosing_cpp != mlc::String("auto") && enclosing_cpp != mlc::String("void") && enclosing_cpp.length() > 0 && !result_option_method_types::is_result_generic(context.enclosing_function_return_type)){
+{
+return enclosing_cpp;
+}
+}
+mlc::String direct = type_gen::sem_type_to_cpp(context, match_result_type);
+if (direct.contains(mlc::String("<"))){
+{
+return direct;
+}
+}
+mlc::String from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type);
+if (direct == mlc::String("ast::Result") && from_enclosing != mlc::String("")){
+{
+return from_enclosing;
+}
+}
+enclosing_cpp = type_gen::sem_type_to_cpp(context, context.enclosing_function_return_type);
+if (enclosing_cpp != mlc::String("auto") && enclosing_cpp != mlc::String("void") && enclosing_cpp.length() > 0 && !result_option_method_types::is_result_generic(context.enclosing_function_return_type) && direct == mlc::String("ast::Result") || result_option_method_types::is_result_generic(match_result_type)){
+{
+return enclosing_cpp;
+}
+}
+if (result_option_method_types::is_result_generic(match_result_type)){
+{
+mlc::String ok_cpp = type_gen::sem_type_to_cpp(context, result_option_method_types::result_ok_type(match_result_type));
+mlc::String err_cpp = type_gen::sem_type_to_cpp(context, result_option_method_types::result_err_type(match_result_type));
+if (ok_cpp != mlc::String("auto") && err_cpp != mlc::String("auto")){
+return expr::cpp_template_two_type_arguments(mlc::String("ast::Result"), ok_cpp, err_cpp);
+}
+}
+}
+mlc::String err_cpp = match_err_cpp_type(context, match_result_type, subject);
+return direct != mlc::String("ast::Result") && direct != mlc::String("void") && direct != mlc::String("auto") && direct.length() > 0 && err_cpp != mlc::String("auto") ? expr::cpp_template_two_type_arguments(mlc::String("ast::Result"), direct, err_cpp) : direct;
 }
 
 mlc::String gen_match_guarded_body(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
 mlc::String subject_code = eval_expr_fn(subject, context, gen_stmts);
 bool needs_dereference = expanded_arms.size() > 0 ? match_analysis::first_arm_needs_deref(expanded_arms[0], subject, context) : true;
 mlc::String variant_access = expr::visit_subject_for_match(mlc::String("__match_subject"), needs_dereference);
-mlc::Array<mlc::String> fragment_lines = expanded_arms.map([variant_access, context, gen_stmts, eval_expr_fn](std::shared_ptr<semantic_ir::SemanticMatchArm> arm) mutable { return gen_guarded_arm_fragment(arm, variant_access, mlc::String("__match_subject"), context, gen_stmts, eval_expr_fn); });
+mlc::Array<mlc::String> fragment_lines = expanded_arms.map([variant_access, subject, context, gen_stmts, eval_expr_fn](std::shared_ptr<semantic_ir::SemanticMatchArm> arm) mutable { return gen_guarded_arm_fragment(arm, variant_access, mlc::String("__match_subject"), subject, context, gen_stmts, eval_expr_fn); });
 return mlc::String("auto __match_subject = ") + subject_code + mlc::String(";\n") + fragment_lines.join(mlc::String("")) + mlc::String("std::abort();\n");
 }
 
 mlc::String gen_match_guarded_expression(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
-mlc::String return_cpp = type_gen::sem_type_to_cpp(context, match_result_type);
+mlc::String return_cpp = match_return_cpp_type(context, match_result_type, subject);
 mlc::String inner_body = gen_match_guarded_body(subject, expanded_arms, context, gen_stmts, eval_expr_fn);
 return mlc::String("[&]() -> ") + return_cpp + mlc::String(" {\n") + inner_body + mlc::String("}()");
 }
 
 std::shared_ptr<cpp_ast::CppExpression> gen_match_guarded_expression_cpp(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn) noexcept{
-mlc::String return_cpp = type_gen::sem_type_to_cpp(context, match_result_type);
+mlc::String return_cpp = match_return_cpp_type(context, match_result_type, subject);
 mlc::String inner_body = gen_match_guarded_body(subject, expanded_arms, context, gen_stmts, [eval_expr_cpp_fn](std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext eval_context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts_fn) mutable { return print::print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)); });
 return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppInvokedBlockWithReturn(return_cpp, inner_body));
 }
@@ -335,55 +503,58 @@ mlc::String gen_arm(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, context:
   [&](const PatternOr& patternor) -> mlc::String { auto [_w0, _w1] = patternor; return visit_void ? expr::match_arm_wild_or_unit_statement(eval_expr_fn(arm->body, context, gen_stmts)) : expr::match_arm_wild_or_unit_return(eval_expr_fn(arm->body, context, gen_stmts)); }
 }, (*arm->pattern));}
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_ctor_cpp(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept{
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_ctor_cpp(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept{
 mlc::String qualified_name = context::CodegenContext_resolve(context, constructor_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(constructor_name));
 mlc::String binding = sub_patterns.size() == 0 ? mlc::String("") : expr::tuple_destructure_binding(match_analysis::pattern_bind_names(sub_patterns), lower_name);
-bool is_generic = decl_index::list_contains(context.generic_variants, constructor_name);
+mlc::String type_argument = generic_ctor_type_argument(context, constructor_name, subject);
+bool use_generic_lambda = decl_index::list_contains(context.generic_variants, constructor_name) && type_argument == mlc::String("<auto>");
 context::CodegenContext arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context);
 std::shared_ptr<cpp_ast::CppExpression> body_expression = eval_expr_cpp_fn(arm_body, arm_context, gen_stmts);
-return is_generic ? std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructedGeneric(qualified_name, lower_name, binding, visit_void, body_expression)) : [&]() -> std::shared_ptr<cpp_ast::CppExpression> { 
-  mlc::String parameter = expr::match_lambda_const_reference_parameter(qualified_name, mlc::String(""), lower_name);
-  return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructed(parameter, binding, visit_void, body_expression));
+return use_generic_lambda ? std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructedGeneric(qualified_name, lower_name, binding, visit_void, return_cpp, body_expression)) : [&]() -> std::shared_ptr<cpp_ast::CppExpression> { 
+  mlc::String parameter = expr::match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name);
+  return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructed(parameter, binding, visit_void, return_cpp, body_expression));
  }();
 }
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_record_pattern_cpp(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pattern>> field_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept{
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_record_pattern_cpp(mlc::String record_name, mlc::Array<std::shared_ptr<ast::Pattern>> field_patterns, std::shared_ptr<semantic_ir::SemanticExpression> arm_body, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept{
 mlc::String qualified_name = context::CodegenContext_resolve(context, record_name);
 mlc::String lower_name = cpp_naming::cpp_safe(cpp_naming::lower_first(record_name));
 bool is_generic = decl_index::list_contains(context.generic_variants, record_name);
 match_gen::RecordFieldBindAccum accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context);
 std::shared_ptr<cpp_ast::CppExpression> body_expression = eval_expr_cpp_fn(arm_body, accumulated.arm_context, gen_stmts);
-return is_generic ? std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructedGeneric(qualified_name, lower_name, accumulated.field_bindings, visit_void, body_expression)) : [&]() -> std::shared_ptr<cpp_ast::CppExpression> { 
+return is_generic ? std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructedGeneric(qualified_name, lower_name, accumulated.field_bindings, visit_void, return_cpp, body_expression)) : [&]() -> std::shared_ptr<cpp_ast::CppExpression> { 
   mlc::String parameter = expr::match_lambda_const_reference_parameter(qualified_name, mlc::String(""), lower_name);
-  return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructed(parameter, accumulated.field_bindings, visit_void, body_expression));
+  return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmConstructed(parameter, accumulated.field_bindings, visit_void, return_cpp, body_expression));
  }();
 }
 
-std::shared_ptr<cpp_ast::CppExpression> gen_arm_cpp(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void) noexcept{return std::visit(overloaded{
-  [&](const PatternWild& patternwild) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0] = patternwild; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternUnit& patternunit) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0] = patternunit; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternBool& patternbool) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternbool; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternInt& patternint) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternint; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternStr& patternstr) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternstr; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternStringLit& patternstringlit) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternstringlit; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternIdent& patternident) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, _w0] = patternident; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmBinding(cpp_naming::cpp_safe(name), visit_void, eval_expr_cpp_fn(arm->body, context::CodegenContext_add_value(context, name), gen_stmts))); },
-  [&](const PatternCtor& patternctor) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, sub_patterns, _w0] = patternctor; return gen_arm_ctor_cpp(name, sub_patterns, arm->body, context, gen_stmts, eval_expr_cpp_fn, visit_void); },
-  [&](const PatternRecord& patternrecord) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, field_patterns, _w0] = patternrecord; return gen_arm_record_pattern_cpp(name, field_patterns, arm->body, context, gen_stmts, eval_expr_cpp_fn, visit_void); },
-  [&](const PatternTuple& patterntuple) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patterntuple; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternArray& patternarray) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1, _w2] = patternarray; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
-  [&](const PatternOr& patternor) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternor; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, eval_expr_cpp_fn(arm->body, context, gen_stmts))); }
+std::shared_ptr<cpp_ast::CppExpression> gen_arm_cpp(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, std::shared_ptr<semantic_ir::SemanticExpression> subject, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<std::shared_ptr<cpp_ast::CppExpression>(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_cpp_fn, bool visit_void, mlc::String return_cpp) noexcept{return std::visit(overloaded{
+  [&](const PatternWild& patternwild) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0] = patternwild; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternUnit& patternunit) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0] = patternunit; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternBool& patternbool) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternbool; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternInt& patternint) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternint; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternStr& patternstr) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternstr; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternStringLit& patternstringlit) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternstringlit; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternIdent& patternident) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, _w0] = patternident; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmBinding(cpp_naming::cpp_safe(name), visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context::CodegenContext_add_value(context, name), gen_stmts))); },
+  [&](const PatternCtor& patternctor) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, sub_patterns, _w0] = patternctor; return gen_arm_ctor_cpp(name, sub_patterns, arm->body, subject, context, gen_stmts, eval_expr_cpp_fn, visit_void, return_cpp); },
+  [&](const PatternRecord& patternrecord) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, field_patterns, _w0] = patternrecord; return gen_arm_record_pattern_cpp(name, field_patterns, arm->body, context, gen_stmts, eval_expr_cpp_fn, visit_void, return_cpp); },
+  [&](const PatternTuple& patterntuple) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patterntuple; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternArray& patternarray) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1, _w2] = patternarray; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); },
+  [&](const PatternOr& patternor) -> std::shared_ptr<cpp_ast::CppExpression> { auto [_w0, _w1] = patternor; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppVisitArmWild(visit_void, return_cpp, eval_expr_cpp_fn(arm->body, context, gen_stmts))); }
 }, (*arm->pattern));}
+
+mlc::String gen_match_std_visit_string(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded_arms, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn, bool visit_void) noexcept{
+mlc::Array<mlc::String> arm_lines = expanded_arms.map([context, gen_stmts, eval_expr_fn, visit_void](std::shared_ptr<semantic_ir::SemanticMatchArm> arm) mutable { return gen_arm(arm, context, gen_stmts, eval_expr_fn, visit_void); });
+mlc::String subject_code = eval_expr_fn(subject, context, gen_stmts);
+bool needs_dereference = expanded_arms.size() > 0 ? match_analysis::first_arm_needs_deref(expanded_arms[0], subject, context) : true;
+return expr::std_visit_match_expression(arm_lines.join(mlc::String(",\n")), expr::visit_subject_for_match(subject_code, needs_dereference));
+}
 
 mlc::String gen_match(std::shared_ptr<semantic_ir::SemanticExpression> subject, mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms, std::shared_ptr<registry::Type> match_result_type, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)>)> eval_expr_fn) noexcept{
 mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> expanded = expand_or_arms(arms);
-return expanded_any_guard(expanded) ? gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn) : match_analysis::should_use_string_match_if_chain(subject, expanded) ? gen_match_string_literal_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn) : [&]() -> mlc::String { 
-  bool visit_void = match_visit_uses_void_lambdas(match_result_type);
-  mlc::Array<mlc::String> arm_lines = expanded.map([context, gen_stmts, eval_expr_fn, visit_void](std::shared_ptr<semantic_ir::SemanticMatchArm> arm) mutable { return gen_arm(arm, context, gen_stmts, eval_expr_fn, visit_void); });
-  mlc::String subject_code = eval_expr_fn(subject, context, gen_stmts);
-  bool needs_deref = expanded.size() > 0 ? match_analysis::first_arm_needs_deref(expanded[0], subject, context) : true;
-  return expr::std_visit_match_expression(arm_lines.join(mlc::String(",\n")), expr::visit_subject_for_match(subject_code, needs_deref));
- }();
+bool use_void_visit = match_visit_uses_void_lambdas(match_result_type);
+return expanded_any_guard(expanded) ? gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn) : match_analysis::should_use_string_match_if_chain(subject, expanded) ? gen_match_string_literal_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn) : use_void_visit ? gen_match_std_visit_string(subject, expanded, context, gen_stmts, eval_expr_fn, true) : gen_match_std_visit_string(subject, expanded, context, gen_stmts, eval_expr_fn, false);
 }
 
 } // namespace match_gen

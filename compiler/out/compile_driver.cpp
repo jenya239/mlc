@@ -23,7 +23,7 @@ using namespace ast_tokens;
 
 mlc::Array<mlc::String> prefix_parse_errors(mlc::String source_path, mlc::Array<mlc::String> messages) noexcept;
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands, bool verify_each_pass, bool dump_ast, bool dump_sem, bool time_passes) noexcept;
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands, bool verify_each_pass, bool dump_ast, bool dump_sem, bool dump_mir, bool mir_bootstrap_report, bool time_passes, bool run_interpreter, bool trace_vm) noexcept;
 
 mlc::Array<mlc::String> prefix_parse_errors(mlc::String source_path, mlc::Array<mlc::String> messages) noexcept{
 mlc::Array<mlc::String> prefixed = {};
@@ -37,7 +37,7 @@ index = index + 1;
 return prefixed;
 }
 
-ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands, bool verify_each_pass, bool dump_ast, bool dump_sem, bool time_passes) noexcept{
+ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String entry_path, mlc::String out_dir, bool profile_enabled, bool check_only, bool emit_compile_commands, bool verify_each_pass, bool dump_ast, bool dump_sem, bool dump_mir, bool mir_bootstrap_report, bool time_passes, bool run_interpreter, bool trace_vm) noexcept{
 if (!path_normalize::driver_source_path_is_safe(entry_path)){
 {
 return ast::Err<mlc::Array<mlc::String>>(mlc::Array<mlc::String>{mlc::String("driver: unsafe entry path")});
@@ -81,7 +81,7 @@ return ast_tokens::LexOut_has_errors(lexer_output) ? ast::Result<mlc::String, ml
 dump_flags::emit_dump_ast(merged.program, entry_path);
 }
 }
-  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.program, entry_only_program, out_dir, profile_enabled, check_only, emit_compile_commands, verify_each_pass, dump_ast, dump_sem, time_passes};
+  pipeline::ModularCompileInput pipeline_input = pipeline::ModularCompileInput{merged.items, merged.program, entry_only_program, out_dir, profile_enabled, check_only || run_interpreter, emit_compile_commands, verify_each_pass, dump_ast, dump_sem, dump_mir, mir_bootstrap_report, time_passes, run_interpreter, trace_vm};
   auto __try_pipeline_parsed = pipeline::run_modular_compiler_pipeline(pipeline_input);
   if (std::holds_alternative<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_parsed)) return ast::Result<mlc::String, mlc::Array<mlc::String>>(std::get<ast::Err<mlc::Array<mlc::String>>>(__try_pipeline_parsed));
   mlc::String pipeline_parsed = std::get<ast::Ok<mlc::String>>(__try_pipeline_parsed).field0;

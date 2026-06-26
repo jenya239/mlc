@@ -14,7 +14,8 @@ import {
   expr_span,
   RecordLitPart,
   RecordLitFields,
-  RecordLitSpread
+  RecordLitSpread,
+  expr_spawn_body_result
 } from '../../frontend/ast'
 import {
   Type,
@@ -25,6 +26,7 @@ import {
   TFn,
   TUnit,
   TUnknown,
+  TGeneric,
   field_type_from_object,
   method_return_type_from_object
 } from '../registry'
@@ -41,6 +43,12 @@ import { infer_expr_identifier } from './infer_expr_ident'
 import { infer_expr_match } from './infer_match'
 import { infer_let_pattern_env } from '../transform/let_pattern_infer'
 import { infer_array_hof_method_call } from './infer_array_method'
+import { infer_channel_method_call } from './infer_channel_method'
+import { is_arc_static_new, infer_arc_static_new_call } from './infer_arc_method'
+import { is_mutex_static_new, infer_mutex_static_new_call, infer_mutex_method_call } from './infer_mutex_method'
+import { is_mutex_method } from '../check/method_types/mutex_method_types'
+import { type_is_mutex } from '../semantic_type_structure'
+import { is_channel_method } from '../check/method_types/channel_method_types'
 import { infer_result_option_hof_method_call } from './infer_result_option_method'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver } from '../hof_method_spec'
 import * as record_lit_merge from '../transform/record_lit_merge'
@@ -198,8 +206,20 @@ fn infer_expr_method(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
   const object_parsed = infer_expr_fn(object, inference_context)
-  if is_result_option_hof_method(object_parsed.inferred_type, method_name) then
+  if is_arc_static_new(object, method_name) then
+    infer_arc_static_new_call(
+      object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_mutex_static_new(object, method_name) then
+    infer_mutex_static_new_call(
+      object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_result_option_hof_method(object_parsed.inferred_type, method_name) then
     infer_result_option_hof_method_call(
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_channel_method(method_name) then
+    infer_channel_method_call(
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_mutex_method(method_name) && type_is_mutex(object_parsed.inferred_type) then
+    infer_mutex_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_array_hof_method_on_receiver(object_parsed.inferred_type, method_name) then
     infer_array_hof_method_call(
@@ -250,6 +270,14 @@ fn infer_expr_while_loop(condition: Shared<Expr>, statements: [Shared<Stmt>], in
   const condition_parsed  = infer_expr(condition, inference_context)
   const statements_parsed = infer_statements(statements, inference_context)
   condition_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
+end
+
+fn infer_expr_spawn(statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+  const statements_parsed = infer_statements(statements, inference_context)
+  const body_context = check_context_new(statements_parsed.type_env, inference_context.registry)
+  const result_parsed = infer_expr(expr_spawn_body_result(statements), body_context)
+  result_parsed.absorb_stmt(statements_parsed).with_type(
+    Shared.new(TGeneric('Task', [result_parsed.inferred_type])))
 end
 
 fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
@@ -409,6 +437,8 @@ fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> Infer
       infer_pass.visit_named_arg(inner_expression),
     ExprWith(resource, binder, statements, _) =>
       infer_pass.visit_with(resource, binder, statements),
+    ExprSpawn(statements, _) =>
+      infer_pass.visit_spawn(statements),
     _ =>
       infer_pass.visit_unsupported()
   }
@@ -531,6 +561,8 @@ extend InferPass {
     statements: [Shared<Stmt>]
   ) -> InferResult =
     infer_expr_with(resource, binder, statements, self.inference_context)
+  fn visit_spawn(self: InferPass, statements: [Shared<Stmt>]) -> InferResult =
+    infer_expr_spawn(statements, self.inference_context)
   fn visit_unsupported(self: InferPass) -> InferResult =
     infer_ok(Shared.new(TUnknown))
 }

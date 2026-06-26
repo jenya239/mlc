@@ -28,6 +28,8 @@ mlc::String gen_u8_literal(mlc::String v) noexcept;
 
 mlc::String gen_usize_literal(mlc::String v) noexcept;
 
+mlc::String char_literal_printable_codepoint(mlc::String character) noexcept;
+
 mlc::String gen_char_literal(mlc::String v) noexcept;
 
 std::shared_ptr<cpp_ast::CppExpression> gen_integer_literal_cpp(int integer_value) noexcept;
@@ -68,7 +70,21 @@ mlc::String gen_u8_literal(mlc::String v) noexcept{return mlc::String("static_ca
 
 mlc::String gen_usize_literal(mlc::String v) noexcept{return mlc::String("static_cast<size_t>(") + v + mlc::String(")");}
 
-mlc::String gen_char_literal(mlc::String v) noexcept{return mlc::String("static_cast<char32_t>(") + v + mlc::String(")");}
+mlc::String char_literal_printable_codepoint(mlc::String character) noexcept{
+mlc::String printable = mlc::String(" !\"#$%&'()*+,-./0123456789:;") + mlc::String("<") + mlc::String("=") + mlc::String(">") + mlc::String("?") + mlc::String("@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_") + mlc::String("`") + mlc::String("abcdefghijklmnopqrstuvwxyz{|}~");
+int found_index = printable.index_of(character);
+if (found_index >= 0){
+{
+return mlc::to_string(32 + found_index);
+}
+}
+return mlc::String("0");
+}
+
+mlc::String gen_char_literal(mlc::String v) noexcept{
+mlc::String codepoint = v == mlc::String("\n") ? mlc::String("10") : v == mlc::String("\t") ? mlc::String("9") : v == mlc::String("\r") ? mlc::String("13") : v == mlc::String("\0", 1) ? mlc::String("0") : v.length() == 1 ? char_literal_printable_codepoint(v) : mlc::String("0");
+return mlc::String("static_cast<char32_t>(") + codepoint + mlc::String(")");
+}
 
 std::shared_ptr<cpp_ast::CppExpression> gen_integer_literal_cpp(int integer_value) noexcept{return emit_helpers::make_integer_cpp_expression(integer_value);}
 

@@ -5,10 +5,774 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-13d0642b-aa65-42d9-a079-b06dbcf9020b` |
+| agent_token_last | `cr-agent-5c8cb374-4906-4516-a3ea-e25473d06864` |
 | driver_turns_since_plan | 4|
-| step_last | 4|
-| active_track | TRACK_BUILD_SPEED STEP=3 done; STEP=4 pending |
+| step_last | 5|
+| active_track | TRACK_BOOTSTRAP_LINK **open** STEP=4 done (partial) → STEP=5 |
+
+### Turn 2026-06-26 (Planner plan-refresh — BOOTSTRAP_LINK STEP=4 stuck)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | STEP=4 → done (partial): catalog 14/14 Ruby emit g++ ok; source if-else tail workarounds; TRACK updated; STEP=5 sub-steps (stability P0 mlcc SEGV) |
+| verify | Ruby emit catalog ok; `compiler/out/mlcc` **SEGV** on compile (139); bootstrap gate not run |
+| issues | stuck `Driver:4:BOOTSTRAP_LINK` (5×); mlcc match if-chain missing abort on fn-body path |
+| next | ROLE=Driver STEP=5 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=cr-agent-5c8cb374-4906-4516-a3ea-e25473d06864
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=5 P0: mlcc SEGV (match if-chain abort in fn-body emit); then MLCC_BOOTSTRAP=1 build + parity + self-host diff. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-5c8cb374-4906-4516-a3ea-e25473d06864`)
+
+### Turn 2026-06-25 (Driver TRACK_MIR_VM STEP=5 — match smoke + vm/cpp diff)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_MIR_VM |
+| started | 2026-06-25 |
+| elapsed | ~15 min |
+| done | `test_mir_vm_smoke.mlc` int/bool match cases; `misc/examples/vm_match.mlc`; `compiler/tests/run_vm_cpp_exit_diff.sh` (minimal+vm_hello); TRACK STEP=5 → done |
+| verify | `dev_gate_fast.sh` exit 0; run_tests 1375/1 fail (`c4` pre-existing); `run_vm_cpp_exit_diff.sh` ok; `mlcc --run vm_match.mlc` exit=10 |
+| issues | record/variant not in MIR yet (STEP=6); C++ compile `vm_match.mlc` fails (match codegen visit) — VM uses lowered cond jumps only |
+| next | ROLE=Driver STEP=6 TRACK_MIR_VM |
+
+**Enqueue payload (Driver TRACK_MIR_VM STEP=6):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR_VM.md
+
+STEP=6: arrays/maps/strings natives; e2e subset. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-969901c7-dbfa-4e01-957d-140ac19ba481`)
+
+### Turn 2026-06-26 (Driver TRACK_MIR_VM recovery — STEP=2 close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery (STEP=2 close) |
+| track | TRACK_MIR_VM |
+| started | 2026-06-26 |
+| done | STEP=2 verified: `--run`/`--trace-vm` in `compile_options.mlc`; `maybe_run_interpreter` in `pipeline.mlc`; `vm_value_unit()` fix; dup import removed in `suite_registry.mlc`; cond-jump test `MirOperandConstBool` |
+| verify | `dev_gate_fast.sh` exit 0; run_tests 1366/1 fail (`c4` char literal, pre-existing); arch lint 0 |
+| issues | stuck Driver:2:MIR_VM; guard skip re-enqueue STEP=2 |
+| next | ROLE=Driver STEP=3 TRACK_MIR_VM |
+
+**Enqueue payload (Driver TRACK_MIR_VM STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR_VM.md
+
+STEP=3: native.mlc println; mlcc --run misc/examples/minimal.mlc. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-afeece6d-8a2c-4918-bfc2-64f6a6170396`)
+
+### Turn 2026-06-26 (Driver TRACK_BOOTSTRAP_LINK STEP=3)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_BOOTSTRAP_LINK |
+| started | 2026-06-26 |
+| done | `exprs.mlc` if-else else branch (same-line expr / multiline stmts); `literals.mlc` char `\n` codepoint; `mir_bootstrap_report.mlc` spurious `end`; `dump_flags.mlc` `print("\n")` |
+| verify | fresh mlcc emit: `const_fold`/`dump_flags`/`mir_passes` g++ ok; `build.sh` ok; `build_tests.sh` run_tests **segfault** dump-mir |
+| issues | STEP=2 wip unchanged; run_tests segfault pre-existing |
+| next | ROLE=Driver STEP=4 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=4):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=4: remaining bootstrap compile errors (lower_*, checker emit). Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-a65fc62b-7498-429d-9402-7f0ec50ee123`)
+
+### Turn 2026-06-26 (Planner plan-refresh — STEP=2 stuck, enqueue STEP=3)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| started | 2026-06-26 |
+| done | TRACK STEP=2 → **wip** (match_gen partial uncommitted); STEP=3 sub-steps; TRACK_PLAN immediate → STEP=3; guard: no re-enqueue STEP=2 (3× stuck) |
+| verify | docs-only |
+| issues | STEP=2 blocker: mlcc emit bare `ast::Result` on visit lambdas; Ruby path ok |
+| next | ROLE=Driver STEP=3 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver TRACK_BOOTSTRAP_LINK STEP=3):**
+```
+AGENT_TOKEN=cr-agent-16024fec-0a27-4c71-81d1-d6d7d4799d7c
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=3: fix MIR emit const_fold.cpp, dump_flags.cpp, mir_passes.cpp. STEP=2 wip — do not re-enqueue. Gate: build_tests.sh + incremental build.sh.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-d3b78219-e84c-44a5-ba14-d037bb7b0485`)
+
+### Turn 2026-06-26 (Driver TRACK_BOOTSTRAP_LINK STEP=1)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_BOOTSTRAP_LINK |
+| started | 2026-06-26 |
+| done | `BOOTSTRAP_LINK_CATALOG.md`; `.tmp_verify/bootstrap_link.log`; 19 failing TU cataloged |
+| verify | build_tests ok arch_lint 0 fail; `build.sh` ok; `MLCC_BOOTSTRAP=1` **FAIL** (~437s) |
+| issues | `send_safe.cpp` highest error count (333 lines) — may be cascade |
+| next | ROLE=Driver STEP=2 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver TRACK_BOOTSTRAP_LINK STEP=2):**
+```
+AGENT_TOKEN=cr-agent-1dbf6385-c7bd-4dec-91e0-dad081b906d2
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=2: fix pipeline.cpp Result std::visit codegen. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Planner plan-refresh — bootstrap link)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK (new) |
+| started | 2026-06-26 |
+| done | Closed TRACK_MIR; opened **TRACK_BOOTSTRAP_LINK** (stability P0); synced TRACK_PLAN queue; DEVELOPMENT priority |
+| verify | docs-only; priority stability > security > performance |
+| issues | `MLCC_BOOTSTRAP=1` regressed since TRACK_SELF_HOST_BOOTSTRAP close |
+| next | ROLE=Driver STEP=1 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver TRACK_BOOTSTRAP_LINK STEP=1):**
+```
+AGENT_TOKEN=cr-agent-0b78593b-a286-4b79-b1f2-c804fe44fdf7
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=1
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=1: reproduce + catalog bootstrap g++ errors. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_REDDIT_DEMO STEP=5 — close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_REDDIT_DEMO |
+| started | 2026-06-26 |
+| done | `scripts/reddit_demo.sh --dry-run-gate`; TRACK **closed**; `PLAN.md` Phase 5 **done** |
+| verify | `--dry-run-gate` ok (codegen diff_exit=0); build_tests **101362/0**; e2e **6/0**; bootstrap **FAIL** (known) |
+| issues | bootstrap fresh emit still broken; post publish manual |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-5f916bdb-8076-4d99-8c44-217a4fb319c9
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/RESEARCH.md
+
+TRACK_REDDIT_DEMO closed. Pick next track from PLAN.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_REDDIT_DEMO STEP=4)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_REDDIT_DEMO |
+| started | 2026-06-26 |
+| done | `docs/agent/BLOG.md` §Reddit draft — problem/solution/demo/commands/numbers/honest limits |
+| verify | build_tests **101362/0** arch_lint 0 fail; e2e **6/0**; `MLCC_BOOTSTRAP=1 build.sh` **FAIL** (known) |
+| issues | none |
+| next | ROLE=Driver STEP=5 TRACK_REDDIT_DEMO |
+
+**Enqueue payload (Driver TRACK_REDDIT_DEMO STEP=5):**
+```
+AGENT_TOKEN=cr-agent-ec7a31b8-fcd5-4f59-9338-efc530d0474f
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REDDIT_DEMO.md
+
+STEP=5: dry-run gate + close track. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_REDDIT_DEMO STEP=3)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_REDDIT_DEMO |
+| started | 2026-06-26 |
+| done | `docs/agent/REDDIT_DEMO_MEDIA.md` screenshot/asciinema checklist; `README.md` Community demo link |
+| verify | build_tests **101362/0** arch_lint 0 fail; e2e **6/0**; `MLCC_BOOTSTRAP=1 build.sh` **FAIL** (fresh bootstrap codegen, same as STEP=2) |
+| issues | none (bootstrap known fail from STEP=2) |
+| next | ROLE=Driver STEP=4 TRACK_REDDIT_DEMO |
+
+**Enqueue payload (Driver TRACK_REDDIT_DEMO STEP=4):**
+```
+AGENT_TOKEN=cr-agent-6734397d-4477-489c-8675-e3174186dc30
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REDDIT_DEMO.md
+
+STEP=4: draft post in docs/agent/BLOG.md. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_REDDIT_DEMO STEP=2 — recovery)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 (recovery) |
+| track | TRACK_REDDIT_DEMO |
+| started | 2026-06-26 |
+| done | `scripts/reddit_demo.sh` `--record-baseline`; codegen-only p1/p2 diff; `docs/agent/reddit_demo_baseline.txt` |
+| verify | build_tests **101362/0** arch_lint 0 fail; e2e **6/0**; baseline p1=1.92s p2=2.05s diff_exit=0; `MLCC_BOOTSTRAP=1 build.sh` **FAIL** (fresh bootstrap codegen) |
+| issues | bootstrap g++ link on fresh emit broken (const_fold, pipeline visit); mlcc binary ok |
+| next | ROLE=Driver STEP=3 TRACK_REDDIT_DEMO |
+
+**Enqueue payload (Driver TRACK_REDDIT_DEMO STEP=3):**
+```
+AGENT_TOKEN=cr-agent-c9598b94-7b19-406d-b85f-4a1f8e8c5901
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_REDDIT_DEMO.md
+
+STEP=3: screenshot/asciinema checklist; link in README. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_CONCURRENCY STEP=7 — close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-26 |
+| done | `stress_channel.cpp`; `run_concurrency_smoke.sh`; `MEMORY_MODEL`; `PLAN` §Phase 6 |
+| verify | build_tests **1362/0**; runtime smoke **36**; `MLC_TSAN=1` ok |
+| issues | stress CHECK in threads → atomic send_failed |
+| next | ROLE=Planner plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-8675f2c4-a53f-46e6-8d4d-d4ca93d46f0d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/RESEARCH.md
+
+TRACK_CONCURRENCY closed. Pick next track from PLAN.
+```
+(enqueue blocked: token not in vscdb)
+
+### Turn 2026-06-26 (Driver TRACK_CONCURRENCY STEP=6 — Mutex<T>)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-26 |
+| done | `mutex.hpp`; `infer_mutex_method.mlc`; `Mutex.new`/`lock` codegen; `send_safe` + Mutex; `test_mutex_syntax.mlc`; `test_mutex.cpp` |
+| verify | build_tests **1362/0**; arch_lint 0 fail; mutex runtime **2/2** |
+| issues | none |
+| next | ROLE=Driver STEP=7 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=7):**
+```
+AGENT_TOKEN=cr-agent-88beb54f-5e33-4800-a83d-665ac5e42524
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=7: race-free channel stress; TSAN smoke; docs; close track. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Driver TRACK_CONCURRENCY STEP=5 — Arc<T>)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-26 |
+| done | `arc.hpp`; `infer_arc_method.mlc`; `Arc.new` codegen; `send_safe` + Arc; `test_arc_syntax.mlc`; `test_arc.cpp` |
+| verify | build_tests **1356/0**; arch_lint 0 fail; `build.sh` ok; arc runtime **5/5** |
+| issues | none |
+| next | ROLE=Driver STEP=6 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=6):**
+```
+AGENT_TOKEN=cr-agent-79655e5b-e5d2-4027-89e8-432b3a2c95f8
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=6: Mutex<T> scoped lock syntax. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — retry after register bubble persists)
+
+### Turn 2026-06-26 (Driver TRACK_CONCURRENCY STEP=4 — channel send/recv + Send-safe)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 4 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-26 |
+| done | `send_safe.mlc`; `infer_channel_method.mlc`; `make_channel`; `channel.send`/`recv` codegen; `test_channel_syntax.mlc`; `mlc.hpp` channel/spawn includes |
+| verify | build_tests **1352/0**; arch_lint 0 fail; `build.sh` ok; spawn **2/2**; channel **18/18** |
+| issues | recovery: `send_safe` mutual-recursion codegen fix; test return type `bool` for send |
+| next | ROLE=Driver STEP=5 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=5):**
+```
+AGENT_TOKEN=cr-agent-36d643ea-f9da-4341-b0d2-2a852d4b0097
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=5: Arc<T> explicit thread-safe shared ownership. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Driver TRACK_CONCURRENCY STEP=3 — spawn + Task)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-26 |
+| done | `spawn do … end`; `spawn_task` builtin; `runtime/include/mlc/concurrency/spawn.hpp`; `test_spawn.cpp`; `test_spawn.mlc`; `collect_globals` + `type_gen` `Task`→`mlc::Task` |
+| verify | build_tests **1347/0**; `build.sh` ok; spawn **2/2**; channel **18/18** |
+| issues | none |
+| next | ROLE=Driver STEP=4 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=4):**
+```
+AGENT_TOKEN=cr-agent-9ea159b8-3adf-448f-8147-567fb5e2fe6f
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=4: channel.send / channel.recv syntax; checker Send-safe types. Gate from TRACK.
+```
+
+### Turn 2026-06-25 (Driver TRACK_CONCURRENCY STEP=2 — Channel runtime)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 2 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-25 |
+| elapsed | ~5 min |
+| done | `runtime/include/mlc/concurrency/channel.hpp`; `runtime/test/test_channel.cpp` (bounded, copy in/out, close) |
+| verify | build_tests **1344/0**; arch_lint 0 fail; `build.sh` ok; channel **18/18** |
+| issues | none |
+| next | ROLE=Driver STEP=3 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=3):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=3: spawn + Task<T> wire task.hpp. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_CONCURRENCY STEP=1 — COW detach audit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 1 |
+| track | TRACK_CONCURRENCY |
+| started | 2026-06-25 |
+| elapsed | ~15 min (multi-turn) |
+| done | `cow_detach.hpp`; Array/HashMap detach centralize; MEMORY_MODEL thread table; `test_cow_detach.cpp` |
+| verify | build_tests **1344/0**; arch_lint 0 fail; `build.sh` ok; cow_detach **6/6** |
+| issues | PCH stale after `array.hpp` edit — `rm compiler/out/tests/obj` |
+| next | ROLE=Driver STEP=2 TRACK_CONCURRENCY |
+
+**Enqueue payload (Driver TRACK_CONCURRENCY STEP=2):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_CONCURRENCY.md
+
+STEP=2: Runtime Channel<T> bounded queue. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=10 — stable ID pool)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 10 |
+| track | TRACK_MIR |
+| started | 2026-06-25 |
+| elapsed | ~6 min |
+| done | `mir/mir_ids.mlc` (`MirIdPool`, allocate/compare); `lower_fn` id_pool; simplify_cfg/verify/mir_to_cpp; +4 tests |
+| verify | build_tests **1344/0**; arch_lint 0 fail; `--check-only` ok |
+| issues | none |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+
+Extend TRACK from PLAN; enqueue Driver next pending.
+SESSION. register+enqueue Planner/Driver next step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=9 — remove CoreIR sketch)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 9 |
+| track | TRACK_MIR |
+| started | 2026-06-25 |
+| elapsed | ~4 min |
+| done | removed `ir/core.mlc`, `core_dump.mlc`, `verify_core.mlc`, `test_core_ir.mlc`; `suite_registry` |
+| verify | build_tests **1340/0**; arch_lint 0 fail; `--check-only` ok |
+| issues | none |
+| next | ROLE=Driver STEP=10 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=10):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=10
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=10: Stable IDs (LocalId/BlockId) in hot lowering path. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=8 recovery — bootstrap report)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (recovery close) |
+| track | TRACK_MIR |
+| started | 2026-06-25 recovery |
+| elapsed | ~5 min |
+| done | `mir/mir_bootstrap_report.mlc`; `--mir-bootstrap-report`; `scripts/mir_bootstrap_report.sh`; tests |
+| verify | run_tests **1349/0**; arch_lint 0 fail; `--check-only` ok |
+| issues | prior turn stuck mid build_tests; parse `if then ''` |
+| next | ROLE=Driver STEP=9 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=9):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=9
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=9: Deprecate/remove ir/core.mlc after parity. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=7 — match, question, lambda staged)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_MIR |
+| started | 2026-06-25 |
+| elapsed | ~12 min |
+| done | `lower_fn.mlc` match/`?`/inline lambda; `test_lower_fn` cases |
+| verify | build_tests **1339/0**; arch_lint 0 fail; `--check-only` ok |
+| issues | none |
+| next | ROLE=Driver STEP=8 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=8):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=8: Bootstrap report MIR/CppIR diff + timing. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=6 — MIR passes)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_MIR |
+| started | 2026-06-25 |
+| elapsed | ~15 min |
+| done | `mir/const_fold.mlc`, `mir/simplify_cfg.mlc`, `mir/mir_passes.mlc`; `lower_program` hook; `test_mir_passes.mlc`; suite_registry |
+| verify | build_tests **1333/0**; arch_lint 0 fail; `--check-only` ok |
+| issues | mlcc incremental codegen corrupt until `MLCC_FORCE_RUBY=1` refresh |
+| next | ROLE=Driver STEP=7 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=7):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=7: Lower match, `?`, closures (staged). Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=5 — mir_to_cpp)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_MIR |
+| started | 2026-06-25 |
+| elapsed | ~8 min |
+| done | `cpp_ir/mir_to_cpp.mlc`; `test_mir_to_cpp.mlc`; suite_registry |
+| result | arch_lint 0 fail; build_tests pending |
+| issues | none |
+| next | ROLE=Driver STEP=6 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=6):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=6: MIR passes simplify_cfg, const_fold (minimal). Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver TRACK_MIR STEP=3 — lower fn body, recovery)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 3 |
+| track | TRACK_MIR |
+| started | 2026-06-25 recovery |
+| elapsed | ~10 min |
+| done | `mir/lower_fn.mlc` `lower_semantic_function`; `test_lower_fn.mlc`; suite_registry |
+| result | arch_lint 0 fail; `--check-only` ok; build_tests pending |
+| issues | prior turn stuck mid compile; no re-enqueue STEP=3 |
+| next | ROLE=Driver STEP=4 TRACK_MIR |
+
+**Enqueue payload (Driver TRACK_MIR STEP=4):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_MIR.md
+
+STEP=4: --dump-mir flag; optional pipeline hook. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver BUILD_SPEED STEP=7 — bench + close)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 |
+| track | TRACK_BUILD_SPEED |
+| started | 2026-06-25 20:31 |
+| elapsed | ~4 min |
+| done | `compiler/scripts/bench_build.sh`; TRACK closed; README |
+| result | `build_sh_skip=0.04s`; warm `link_sec=0.05s`; 173 cpp; gate **1297/0** |
+| issues | `build_bin_warm` OOM kill при полной перекомпиляции obj |
+| next | ROLE=Planner STEP=plan-refresh |
+
+**Enqueue payload (Planner plan-refresh):**
+```
+AGENT_TOKEN=cr-agent-886b2d37-f40e-48a2-aa24-ba3978eb50bb
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Planner
+STEP=plan-refresh
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+TRACK_BUILD_SPEED closed. Refresh PLAN/TRACK; enqueue Driver next pending track.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver BUILD_SPEED STEP=6 — CI toolchain)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_BUILD_SPEED |
+| started | 2026-06-25 20:10 |
+| elapsed | ~3 min |
+| done | `ci.yml` + `triple-bootstrap.yml`: apt clang/ccache/mold/g++; job `MLC_CXX=ccache clang++` |
+| result | warm `link_sec=0.01s`; build_tests pending |
+| issues | none |
+| next | ROLE=Driver STEP=7 TRACK_BUILD_SPEED |
+
+**Enqueue payload (Driver BUILD_SPEED STEP=7):**
+```
+AGENT_TOKEN=cr-agent-3e054ea3-a984-4d01-8889-34a452d726bc
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+STEP=7: bench script compiler/scripts/bench_build.sh; close track. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
+
+### Turn 2026-06-25 (Driver BUILD_SPEED STEP=5 — MLCC_INCREMENTAL)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_BUILD_SPEED |
+| started | 2026-06-25 19:50 |
+| elapsed | ~5 min |
+| done | `build.sh`: `.mlcc_module_stamp` + `MLCC_INCREMENTAL=1` skip delete when fingerprint matches; orphan prune |
+| result | warm `link_sec=0.02s`; stamp 121 modules; gate pending |
+| issues | full mlcc rebuild ~815s fails at build_bin (pre-existing PCH path) |
+| next | ROLE=Driver STEP=6 TRACK_BUILD_SPEED |
+
+**Enqueue payload (Driver BUILD_SPEED STEP=6):**
+```
+AGENT_TOKEN=cr-agent-5c2ebdc0-0635-4e97-9539-6931418e78b6
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BUILD_SPEED.md
+
+STEP=6: CI install clang ccache mold; MLC_CXX=ccache clang++. Gate from TRACK.
+SESSION. register+enqueue Driver next pending step.
+```
 
 ### Turn 2026-06-25 (Driver BUILD_SPEED STEP=3 — linker chain)
 

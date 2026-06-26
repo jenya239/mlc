@@ -1,0 +1,80 @@
+import { TestResult, assert_true, assert_eq_int } from './test_runner'
+import { Param, TyI32, ExprUnit, PatternUnit, span_unknown, WhereClauseBound } from '../frontend/ast'
+import {
+  SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionInt,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionIf,
+  SemanticLoadItem
+} from '../ir/semantic_ir'
+import { program_to_semantic_load_item } from '../checker/transform/program_to_semantic'
+import { parse_program } from '../frontend/parser/decls'
+import { tokenize } from '../frontend/lexer'
+import { Type, TI32 } from '../checker/registry'
+import {
+  build_mir_bootstrap_report_from_semantic_items,
+  print_mir_bootstrap_report,
+  mir_bootstrap_report_cpp_matches_mir
+} from '../mir/mir_bootstrap_report'
+import { emit_mir_bootstrap_report_from_semantic_items } from '../dump_flags'
+
+fn ti32() -> Shared<Type> = Shared.new(TI32)
+
+fn iparam(name: string) -> Shared<Param> = Shared.new(Param {
+  name: name,
+  is_mut: false,
+  type_value: Shared.new(TyI32),
+  has_default: false,
+  default: Shared.new(ExprUnit(span_unknown())),
+  param_pattern: Shared.new(PatternUnit(span_unknown()))
+})
+
+fn make_int(value: i32) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionInt(value, ti32(), span_unknown()))
+
+fn make_ident(name: string) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionIdent(name, ti32(), span_unknown()))
+
+fn make_bin(operation: string, left: Shared<SemanticExpression>, right: Shared<SemanticExpression>) ->
+  Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionBin(operation, left, right, ti32(), span_unknown()))
+
+fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) ->
+  Shared<SemanticDeclaration> = do
+  const where_clause_bounds: [WhereClauseBound] = []
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+end
+
+export fn mir_bootstrap_report_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const main_program = parse_program(tokenize('fn main() -> i32 = 0').tokens)
+  match program_to_semantic_load_item(main_program, 'probe.mlc') {
+    Ok(item) => do
+      const report = build_mir_bootstrap_report_from_semantic_items([item])
+      results.push(assert_eq_int('bootstrap probe mir_functions', report.mir_function_count, 1))
+      results.push(assert_eq_int('bootstrap probe cpp_ok', report.cpp_ok_count, 1))
+      results.push(assert_true('bootstrap probe cpp matches', mir_bootstrap_report_cpp_matches_mir(report)))
+      const text = print_mir_bootstrap_report(report)
+      results.push(assert_true('bootstrap probe print mentions main', text.contains('fn main')))
+      results.push(assert_true('bootstrap probe print cpp_ok line', text.contains('cpp_ok=1')))
+      emit_mir_bootstrap_report_from_semantic_items([item], 'probe.mlc')
+      results.push(assert_true('emit_mir_bootstrap_report ok', true))
+    end,
+    Err(_) => results.push(assert_true('program_to_semantic_load_item bootstrap', false))
+  }
+
+  const if_body = Shared.new(SemanticExpressionIf(
+    make_bin(">", make_ident('value'), make_int(0)),
+    make_int(1),
+    make_int(0),
+    ti32(),
+    span_unknown()))
+  const sign_decl = fn_decl('sign', [iparam('value')], ti32(), if_body)
+  const sign_report = build_mir_bootstrap_report_from_semantic_items([
+    SemanticLoadItem { path: 'sign.mlc', decls: [sign_decl], imports: [], namespace_import_aliases: [] }
+  ])
+  results.push(assert_eq_int('bootstrap sign mir_functions', sign_report.mir_function_count, 1))
+  results.push(assert_eq_int('bootstrap sign cpp_ok', sign_report.cpp_ok_count, 1))
+  results.push(assert_true('bootstrap sign cpp matches', mir_bootstrap_report_cpp_matches_mir(sign_report)))
+
+  results
+end

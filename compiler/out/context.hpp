@@ -29,7 +29,7 @@ struct StructUsingEntry {mlc::String alias;mlc::String type_cpp;};
 
 struct StructUsingData {mlc::HashMap<mlc::String, mlc::Array<context::StructUsingEntry>> entries;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> lines;};
 
-struct CodegenContext {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> field_order_index;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_info_index;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;mlc::Array<mlc::String> match_deref_params;mlc::Array<mlc::String> generic_variants;mlc::HashMap<mlc::String, mlc::Array<context::StructUsingEntry>> struct_using_entries;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;int temp_name_counter;};
+struct CodegenContext {mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> field_order_index;mlc::String namespace_prefix;mlc::HashMap<mlc::String, mlc::String> qualified;mlc::HashMap<mlc::String, mlc::String> namespace_alias_prefixes;mlc::String self_type;mlc::HashMap<mlc::String, mlc::String> method_owners;mlc::Array<mlc::String> shared_params;mlc::Array<mlc::String> shared_array_params;mlc::HashMap<mlc::String, mlc::String> array_elem_types;mlc::Array<mlc::String> shared_map_params;mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_infos;mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> ctor_type_info_index;mlc::HashMap<mlc::String, mlc::String> variant_types;mlc::Array<mlc::String> value_params;mlc::Array<mlc::String> match_deref_params;mlc::Array<mlc::String> generic_variants;mlc::HashMap<mlc::String, mlc::Array<context::StructUsingEntry>> struct_using_entries;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> struct_using_lines;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;int temp_name_counter;std::shared_ptr<registry::Type> enclosing_function_return_type;};
 
 struct TempNameResult {mlc::String name;context::CodegenContext codegen_context;};
 
@@ -100,6 +100,8 @@ context::CodegenContext CodegenContext_with_struct_using_data(context::CodegenCo
 context::CodegenContext CodegenContext_with_struct_using_lines(context::CodegenContext self, mlc::HashMap<mlc::String, mlc::Array<mlc::String>> lines) noexcept;
 
 context::CodegenContext CodegenContext_with_namespace_alias_prefixes(context::CodegenContext self, mlc::HashMap<mlc::String, mlc::String> prefixes) noexcept;
+
+context::CodegenContext CodegenContext_with_enclosing_function_return_type(context::CodegenContext self, std::shared_ptr<registry::Type> return_type) noexcept;
 
 context::CodegenContext CodegenContext_update_from_statement(context::CodegenContext self, std::shared_ptr<semantic_ir::SemanticStatement> statement) noexcept;
 

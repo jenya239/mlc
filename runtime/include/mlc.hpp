@@ -25,6 +25,10 @@
 #include "mlc/core/result.hpp"
 #include "mlc/core/task.hpp"
 #include "mlc/core/profile.hpp"
+#include "mlc/concurrency/channel.hpp"
+#include "mlc/concurrency/spawn.hpp"
+#include "mlc/concurrency/arc.hpp"
+#include "mlc/concurrency/mutex.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

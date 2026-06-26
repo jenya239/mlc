@@ -4,7 +4,7 @@ import {
   Expr, Stmt, MatchArm, FieldVal, RecordLitPart, RecordLitFields, RecordLitSpread,
   ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar,
   ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex,
-  ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
+  ExprIf, ExprBlock, ExprWhile, ExprSpawn, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
   ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
   StmtLet, StmtLetPattern, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   Span
@@ -44,14 +44,17 @@ fn expr_is_placeholder(expression: Shared<Expr>) -> bool =
     _ => false
   }
 
-fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 =
+fn expr_is_named_arg_with_placeholder(argument: Shared<Expr>) -> bool =
   match argument {
-    ExprNamedArg(_, inner_expression, _) =>
-      if expr_is_placeholder(inner_expression) then 1 else 0 end,
-    ExprIdent(name, _) =>
-      if name == "_" then 1 else 0 end,
-    _ => 0
+    ExprNamedArg(_, inner_expression, _) => expr_is_placeholder(inner_expression),
+    _ => false
   }
+
+fn partial_placeholder_delta_for_argument(argument: Shared<Expr>) -> i32 = do
+  if expr_is_named_arg_with_placeholder(argument) then return 1 end
+  if expr_is_placeholder(argument) then return 1 end
+  0
+end
 
 fn partial_allocate_parameter_names(hole_count: i32, serial_start: i32) -> PartialNamesAllocation =
   partial_allocate_parameter_names_loop(
@@ -256,36 +259,40 @@ type RecordLitPartsFoldState = RecordLitPartsFoldState {
   next_serial: i32,
 }
 
+fn partial_application_desugar_record_lit_part(
+  state: RecordLitPartsFoldState,
+  part_under_scan: RecordLitPart
+) -> RecordLitPartsFoldState =
+  match part_under_scan {
+    RecordLitFields(field_values_under_part) => do
+      const fields_accumulator = partial_application_desugar_field_values_sequence(
+        field_values_under_part,
+        state.next_serial)
+      RecordLitPartsFoldState {
+        output_parts: state.output_parts.concat([
+          RecordLitFields(fields_accumulator.mapped_field_values)]),
+        next_serial: fields_accumulator.next_serial,
+      }
+    end,
+    RecordLitSpread(spread_expression_under_part) => do
+      const spread_partial = partial_application_desugar_inner(
+        spread_expression_under_part,
+        state.next_serial)
+      RecordLitPartsFoldState {
+        output_parts: state.output_parts.concat([
+          RecordLitSpread(spread_partial.expression)]),
+        next_serial: spread_partial.next_serial,
+      }
+    end
+  }
+
 fn partial_application_desugar_record_lit_parts(parts: [RecordLitPart], serial: i32) -> RecordLitPartsPartialPair = do
   const final_state = parts.fold(
     RecordLitPartsFoldState {
       output_parts: do let empty_parts: [RecordLitPart] = []; empty_parts end,
       next_serial: serial,
     },
-    (state, part_under_scan) => do
-      match part_under_scan {
-        RecordLitFields(field_values_under_part) => do
-          const fields_accumulator = partial_application_desugar_field_values_sequence(
-            field_values_under_part,
-            state.next_serial)
-          RecordLitPartsFoldState {
-            output_parts: state.output_parts.concat([
-              RecordLitFields(fields_accumulator.mapped_field_values)]),
-            next_serial: fields_accumulator.next_serial,
-          }
-        end,
-        RecordLitSpread(spread_expression_under_part) => do
-          const spread_partial = partial_application_desugar_inner(
-            spread_expression_under_part,
-            state.next_serial)
-          RecordLitPartsFoldState {
-            output_parts: state.output_parts.concat([
-              RecordLitSpread(spread_partial.expression)]),
-            next_serial: spread_partial.next_serial,
-          }
-        end
-      }
-    end
+    (state, part_under_scan) => partial_application_desugar_record_lit_part(state, part_under_scan)
   )
   RecordLitPartsPartialPair { parts: final_state.output_parts, next_serial: final_state.next_serial }
 end
@@ -454,6 +461,13 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
       const stmts_pair = partial_application_desugar_statements_block(statements, condition_pair.next_serial)
       PartialPair {
         expression: Shared.new(ExprWhile(condition_pair.expression, stmts_pair.statements, span_while)),
+        next_serial: stmts_pair.next_serial
+      }
+    end,
+    ExprSpawn(statements, span_spawn) => do
+      const stmts_pair = partial_application_desugar_statements_block(statements, serial)
+      PartialPair {
+        expression: Shared.new(ExprSpawn(stmts_pair.statements, span_spawn)),
         next_serial: stmts_pair.next_serial
       }
     end,

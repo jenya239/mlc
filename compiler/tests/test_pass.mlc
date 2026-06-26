@@ -36,7 +36,11 @@ fn pipeline_input_for_source(source: string, check_only: bool, verify_each_pass:
     verify_each_pass: verify_each_pass,
     dump_ast: false,
     dump_sem: false,
-    time_passes: false
+    dump_mir: false,
+    mir_bootstrap_report: false,
+    time_passes: false,
+    run_interpreter: false,
+    trace_vm: false
   }
 end
 

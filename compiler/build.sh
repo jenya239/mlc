@@ -7,6 +7,8 @@ set -e
 # Default: mlcc-only (skip when fresh, rebuild via mlcc + build_bin.sh when stale).
 # Cold start (no mlcc): MLCC_FORCE_RUBY=1 compiler/build.sh
 # Bootstrap: MLCC_BOOTSTRAP=1 compiler/build.sh
+# Incremental codegen (default on): MLCC_INCREMENTAL=0 forces full wipe + mlcc emit.
+# When module stamp matches: skip mlcc codegen; build_bin.sh only.
 
 COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
@@ -29,6 +31,59 @@ mlcc_binary_is_fresh() {
   ! find "$COMPILER_DIR" -name '*.mlc' -newer "$BIN_OUT" -print -quit | grep -q .
 }
 
+MODULE_STAMP="$OUT_DIR/.mlcc_module_stamp"
+
+incremental_enabled() {
+  [ "${MLCC_INCREMENTAL:-1}" != "0" ]
+}
+
+compute_module_fingerprint() {
+  find "$COMPILER_DIR" -name '*.mlc' -printf '%P\n' 2>/dev/null | LC_ALL=C sort | sha256sum | awk '{print $1}'
+}
+
+module_stamp_matches() {
+  [ -f "$MODULE_STAMP" ] || return 1
+  [ "$(head -1 "$MODULE_STAMP")" = "$(compute_module_fingerprint)" ]
+}
+
+write_module_stamp() {
+  {
+    compute_module_fingerprint
+    find "$OUT_DIR" -maxdepth 1 -name '*.cpp' -printf '%f\n' 2>/dev/null | LC_ALL=C sort
+  } > "$MODULE_STAMP"
+}
+
+clear_generated_sources() {
+  find "$OUT_DIR" -maxdepth 1 \( -name '*.cpp' -o -name '*.hpp' \) -delete
+}
+
+prune_orphan_generated_sources() {
+  local stamp_file="$1"
+  local expected_list
+  expected_list="$(mktemp)"
+  tail -n +2 "$stamp_file" > "$expected_list"
+  local base_name
+  while IFS= read -r base_name; do
+    [ -n "$base_name" ] || continue
+    if ! grep -qxF "$base_name" "$expected_list"; then
+      rm -f "$OUT_DIR/$base_name" "$OUT_DIR/${base_name%.cpp}.hpp"
+    fi
+  done < <(find "$OUT_DIR" -maxdepth 1 -name '*.cpp' -printf '%f\n' 2>/dev/null)
+  rm -f "$expected_list"
+}
+
+should_skip_codegen() {
+  incremental_enabled && module_stamp_matches
+}
+
+prepare_codegen_output() {
+  if should_skip_codegen; then
+    echo "[mlcc build] incremental codegen (keep existing sources)" >&2
+    return
+  fi
+  clear_generated_sources
+}
+
 build_via_ruby() {
   echo "[mlcc build] Ruby ModularCompiler" >&2
   bundle exec ruby -I"$ROOT_DIR/lib" -e '
@@ -48,8 +103,16 @@ puts "Built: #{result[:binary]}"
 
 build_via_mlcc() {
   echo "[mlcc build] mlcc codegen + build_bin.sh" >&2
-  find "$OUT_DIR" -maxdepth 1 \( -name '*.cpp' -o -name '*.hpp' \) -delete
-  "$BIN_OUT" "$MAIN" -o "$OUT_DIR"
+  if should_skip_codegen; then
+    echo "[mlcc build] skip mlcc codegen (module stamp)" >&2
+  else
+    prepare_codegen_output
+    "$BIN_OUT" "$MAIN" -o "$OUT_DIR"
+    write_module_stamp
+    if incremental_enabled; then
+      prune_orphan_generated_sources "$MODULE_STAMP"
+    fi
+  fi
   "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$BIN_OUT"
 }
 

@@ -1,0 +1,133 @@
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
+import {
+  MirProgram, MirModule, MirFunction, MirBlock, MirReturn, MirOperandConstInt,
+  mir_block_id, MirCondJump, MirAssign, MirCallAssign, MirRvalueUse, MirRvalueBinary,
+  MirOperandLocal, LocalId, MirOperandConstBool
+} from '../mir/mir_types'
+import { TUnit, TI32 } from '../checker/registry'
+import { interpret_mir_program } from '../vm/interpreter'
+import { vm_native_call } from '../vm/native'
+import { VmI32 } from '../vm/value'
+
+fn mir_main_return_program(return_value: i32) -> MirProgram = do
+  const return_type = Shared.new(TI32)
+  MirProgram {
+    modules: [MirModule {
+      functions: [MirFunction {
+        name: 'main',
+        params: [],
+        locals: [],
+        blocks: [MirBlock {
+          id: mir_block_id(0),
+          label: 'entry',
+          stmts: [],
+          term: MirReturn(MirOperandConstInt(return_value))
+        }],
+        return_type: return_type
+      }]
+    }]
+  }
+end
+
+export fn mir_interpreter_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  match interpret_mir_program(mir_main_return_program(42), false) {
+    Ok(code) => results.push(assert_eq_int('interpret main return 42', code, 42)),
+    Err(_) => results.push(assert_true('interpret main return 42', false))
+  }
+
+  const unit_type = Shared.new(TUnit)
+  const entry = MirBlock {
+    id: mir_block_id(0),
+    label: 'entry',
+    stmts: [MirAssign(LocalId { index: 0 }, MirRvalueBinary("+", MirOperandConstInt(20), MirOperandConstInt(22)))],
+    term: MirReturn(MirOperandLocal(LocalId { index: 0 }))
+  }
+  const add_program = MirProgram {
+    modules: [MirModule {
+      functions: [MirFunction {
+        name: 'main',
+        params: [],
+        locals: [],
+        blocks: [entry],
+        return_type: Shared.new(TI32)
+      }]
+    }]
+  }
+  match interpret_mir_program(add_program, false) {
+    Ok(code) => results.push(assert_eq_int('interpret assign add', code, 42)),
+    Err(_) => results.push(assert_true('interpret assign add', false))
+  }
+
+  const then_block = MirBlock {
+    id: mir_block_id(1),
+    label: 'then',
+    stmts: [],
+    term: MirReturn(MirOperandConstInt(1))
+  }
+  const else_block = MirBlock {
+    id: mir_block_id(2),
+    label: 'else',
+    stmts: [],
+    term: MirReturn(MirOperandConstInt(0))
+  }
+  const if_program = MirProgram {
+    modules: [MirModule {
+      functions: [MirFunction {
+        name: 'main',
+        params: [],
+        locals: [],
+        blocks: [
+          MirBlock {
+            id: mir_block_id(0),
+            label: 'entry',
+            stmts: [],
+            term: MirCondJump(MirOperandConstBool(true), mir_block_id(1), mir_block_id(2))
+          },
+          then_block,
+          else_block
+        ],
+        return_type: unit_type
+      }]
+    }]
+  }
+  match interpret_mir_program(if_program, false) {
+    Ok(code) => results.push(assert_eq_int('interpret cond jump true', code, 1)),
+    Err(_) => results.push(assert_true('interpret cond jump true', false))
+  }
+
+  match vm_native_call('println', [VmI32(7)]) {
+    Ok(_) => results.push(assert_true('vm_native_call println', true)),
+    Err(_) => results.push(assert_true('vm_native_call println', false))
+  }
+  match vm_native_call('unknown', []) {
+    Ok(_) => results.push(assert_true('vm_native_call rejects unknown', false)),
+    Err(_) => results.push(assert_true('vm_native_call rejects unknown', true))
+  }
+
+  const println_program = MirProgram {
+    modules: [MirModule {
+      functions: [MirFunction {
+        name: 'main',
+        params: [],
+        locals: [],
+        blocks: [MirBlock {
+          id: mir_block_id(0),
+          label: 'entry',
+          stmts: [
+            MirCallAssign(LocalId { index: 0 }, 'println', [MirOperandConstInt(7)])
+          ],
+          term: MirReturn(MirOperandConstInt(0))
+        }],
+        return_type: Shared.new(TI32)
+      }]
+    }]
+  }
+  match interpret_mir_program(println_program, false) {
+    Ok(code) => results.push(assert_eq_int('interpret println call', code, 0)),
+    Err(_) => results.push(assert_true('interpret println call', false))
+  }
+
+  results
+end

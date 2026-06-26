@@ -22,6 +22,7 @@ RT_SRC=(
 )
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
+ENTRY_BASENAME="${MLCC_ENTRY_BASENAME:-main}"
 
 if [ -n "$MLC_CXX" ]; then
   CXX_CMD=($MLC_CXX)
@@ -98,12 +99,30 @@ if [ "${MLCC_PCH:-1}" != "0" ] && [ -f "$PRECOMPILED_SOURCE" ]; then
   fi
 fi
 
+mlcc_only_skip_source() {
+  local base_name="$1"
+  case "$base_name" in
+    tests_main.cpp|suite_registry.cpp|codegen_test_helpers.cpp|golden_harness.cpp)
+      return 0
+      ;;
+    test_*.cpp)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 GENERATED_CPP=()
 shopt -s nullglob
 for candidate_cpp in "$CPP_DIR"/*.cpp; do
   case "$(basename "$candidate_cpp")" in
-    tests_main.cpp) continue ;;
+    tests_main.cpp)
+      [ "$ENTRY_BASENAME" = "tests_main" ] || continue
+      ;;
   esac
+  if [ "$ENTRY_BASENAME" = "main" ] && mlcc_only_skip_source "$(basename "$candidate_cpp")"; then
+    continue
+  fi
   GENERATED_CPP+=("$candidate_cpp")
 done
 shopt -u nullglob

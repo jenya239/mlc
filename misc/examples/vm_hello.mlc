@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  println("vm ok")
+  7
+end
