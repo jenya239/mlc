@@ -113,7 +113,9 @@ Source: PLAN.md §4 «Порядок миграции» + §Phase 1.
 - **ExprResult migration:** [TRACK_EXPR_RESULT.md](TRACK_EXPR_RESULT.md) — **closed** (`bf6c46e8`)
 - **TypeParamsResult migration:** [TRACK_TYPE_PARAMS_RESULT.md](TRACK_TYPE_PARAMS_RESULT.md) — **closed** (`bf6c46e8`)
 - **MIR lowering:** [TRACK_MIR.md](TRACK_MIR.md) — **closed** (STEP=10, 2026-06-26)
-- **Bootstrap link (fresh emit):** [TRACK_BOOTSTRAP_LINK.md](TRACK_BOOTSTRAP_LINK.md) — **open** STEP=2 wip / **STEP=3** next (stability; `MLCC_BOOTSTRAP=1` regressed)
+- **Bootstrap link (fresh emit):** [TRACK_BOOTSTRAP_LINK.md](TRACK_BOOTSTRAP_LINK.md) — **open** STEP=8-P8d (31 fail / 113 ok; gate pending)
+- **MIR VM (`--run`):** [TRACK_MIR_VM.md](TRACK_MIR_VM.md) — **closed** (MVP STEP=7; 2026-06-26)
+- **MIR VM full (self-host, architecture):** [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) — **planned** STEP=0 (performance; after bootstrap gate)
 
 ## Priority queue (2026-06-19 full-replan)
 
@@ -134,8 +136,9 @@ Strict order; each track depends on previous unless noted.
 | 11 | [TRACK_MIR](TRACK_MIR.md) | 2.8 | **closed** (STEP=10) |
 | 12 | [TRACK_REDDIT_DEMO](TRACK_REDDIT_DEMO.md) | 5 | **closed** (STEP=5) |
 | 13 | [TRACK_CONCURRENCY](TRACK_CONCURRENCY.md) | 6 | **closed** (STEP=7) |
-| 14 | [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) | 4/stability | **open** STEP=2 wip → STEP=3 |
-| 15 | [TRACK_MIR_VM](TRACK_MIR_VM.md) | 2.10/dev-run | **open** STEP=1 (after bootstrap emit green or parallel MVP-1) |
+| 14 | [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) | 4/stability | **open** STEP=8-P8d (31 fail; P8a–P8c done) |
+| 15 | [TRACK_MIR_VM](TRACK_MIR_VM.md) | 2.10/dev-run | **closed** (MVP STEP=7) |
+| 16 | [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md) | 2.10/perf | **planned** STEP=0 (after bootstrap gate) |
 
 ```
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
@@ -147,13 +150,79 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
 
 ## Next step (Driver)
 
-> **Immediate:** [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) **STEP=3** — MIR emit (`const_fold`, `dump_flags`, `mir_passes`). STEP=2 wip — do not re-enqueue until visit return-type fix committed.
+> **Immediate:** [TRACK_BOOTSTRAP_LINK](TRACK_BOOTSTRAP_LINK.md) **`STEP=8-P8d0`** — commit split (78 uncommitted, ≤15/commit); then **`STEP=8-P8d1`** `match_gen`+`method_gen`. **Do not re-enqueue `Driver:8:BOOTSTRAP_LINK`** (4× stuck).
 
-**Baseline (2026-06-26):** `build_tests` **1362/0** (approx); codegen self-host `diff_exit=0`; bootstrap link **FAIL**.
+> **PAUSE (2026-06-28 → 2026-07-05):** loop guard globally paused — no auto-enqueue; resume manually after week.
+
+**Baseline (2026-06-28):** g++ sweep **113 ok / 31 fail**; `build_tests.sh` ok; emit ~2.3s; P8a–P8c green; gate FAIL.
 
 ## Next step (Planner)
 
 > plan-refresh after track close or every ~8 driver turns.
+
+## Planner checklist (2026-06-28 plan-refresh #2 — Driver:8 stuck 2×)
+
+- [x] P8d0 commit #1 scoped to 8 checker `.mlc` (explicit list in TRACK)
+- [x] Guard: no `Driver:8`; enqueue **`STEP=8-P8d0`** only
+- [x] Priority stability — commit before P8d1 codegen
+- [x] Driver enqueued **`STEP=8-P8d0`**
+
+## Planner checklist (2026-06-28 plan-refresh — Driver:8 stuck 4×)
+
+- [x] Guard: skip re-enqueue `Driver:8:BOOTSTRAP_LINK`; use `STEP=8-P8d0`…`8-P8e`
+- [x] P8d split into 7 batches (commit split + codegen/infer/vm/residual/recount)
+- [x] Priority **stability** > security > performance — commit split before codegen batch
+- [x] `instructions_rev` synced → `2026-06-01-session-detail`
+- [x] Driver enqueued **`STEP=8-P8d0`** (not STEP=8)
+
+## Planner checklist (2026-06-27 plan-refresh #3 — loop 3× recovery)
+
+- [x] Guard: skip re-enqueue `Driver:6:BOOTSTRAP_LINK` (stuck 3×+; recovery turn)
+- [x] STEP=6-gate P2 scoped: P2a `array_method_types` done; P2b decl/decl_extend/decl_cpp next
+- [x] Priority stability > security > performance — MIR_VM_FULL deferred until bootstrap gate
+- [x] `instructions_rev` synced → `2026-06-01-session-detail`
+- [x] Driver enqueued STEP=6-gate P2b (not STEP=6)
+
+## Planner checklist (2026-06-27 plan-refresh #2 — loop 3×)
+
+- [x] Guard: skip re-enqueue `Driver:6:BOOTSTRAP_LINK` (stuck 3×)
+- [x] STEP=6-gate P0 unchanged: `check.mlc`/`check_mutations.mlc` → `check.cpp`
+- [x] `cursor-agent-loop` down (exit 137) — enqueue via mlc-chat register+bind
+- [x] Driver enqueued STEP=6-gate
+
+## Planner checklist (2026-06-27 plan-refresh — STEP=6 close, STEP=6-gate)
+
+- [x] STEP=6 → done (partial): 7/7 emit TUs; extend-method codegen (`method_owners`, qualify)
+- [x] Guard: skip re-enqueue `Driver:6:BOOTSTRAP_LINK` (stuck 5× in chat)
+- [x] STEP=6-gate scoped: P0 `check.cpp`/`check_mutations.cpp` (if-tail binding); P1 `context.cpp`; then bootstrap link + parity + self-host
+- [x] Priority stability > security > performance — MIR_VM_FULL still deferred
+- [x] `instructions_rev` → `2026-06-01-session-detail`
+- [x] Driver enqueued STEP=6-gate (not STEP=6)
+
+## Planner checklist (2026-06-26 plan-refresh #3 — STEP=5 partial close, STEP=6)
+
+- [x] STEP=5 → done (partial): P0 mlcc; `types.cpp` + `infer_call.cpp` g++ ok
+- [x] Guard: skip re-enqueue `Driver:5:BOOTSTRAP_LINK` (stuck 2×)
+- [x] STEP=6 opened: exprs/decls/infer_question/expr_visitor + bootstrap gate
+- [x] Priority stability > security > performance unchanged
+- [x] Driver enqueued STEP=6 BOOTSTRAP_LINK
+
+## Planner checklist (2026-06-26 plan-refresh #2 — BOOTSTRAP only)
+
+- [x] Open tracks scanned: **BOOTSTRAP_LINK** only (stability); MIR_VM_FULL STEP=0 plan-only
+- [x] Priority **stability** > security > performance — no new track; finish BOOTSTRAP STEP=5
+- [x] Security/performance closed — MIR_VM_FULL deferred until `MLCC_BOOTSTRAP=1` green
+- [ ] STEP=5 sub-step 2: parser+infer if-else tail workarounds
+- [x] Driver enqueued STEP=5 BOOTSTRAP_LINK
+
+## Planner checklist (2026-06-26 plan-refresh — MIR_VM closed, BOOTSTRAP_LINK STEP=5)
+
+- [x] TRACK_MIR_VM closed (MVP STEP=7; `run_vm_cpp_exit_diff.sh`; dev_gate ok)
+- [x] TRACK_BOOTSTRAP_LINK STEP=5 partial — P0 mlcc ok; bootstrap g++ **FAIL**
+- [x] Priority **stability** > security > performance — no new track until bootstrap link green
+- [x] Security/performance tracks closed — defer new perf until bootstrap gate
+- [ ] STEP=5 sub-step 2: parser+infer if-else tail → `do`/early `return`/`match`
+- [x] Driver enqueued STEP=5 BOOTSTRAP_LINK
 
 ## Planner checklist (2026-06-26 plan-refresh — REDDIT_DEMO + CONCURRENCY closed)
 
