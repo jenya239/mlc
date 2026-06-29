@@ -70,6 +70,8 @@ cpp_decls::CppEnumArmsParse cpp_decl_parse_enum_arms(mlc::Array<cpp_tokens::CppT
 
 cpp_decls::CppDeclarationParseResult parse_cpp_enum_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept;
 
+int cpp_decl_next_scan_after_parse(mlc::Array<cpp_tokens::CppToken> tokens, int scan_position, cpp_decls::CppDeclarationParseResult parsed) noexcept;
+
 cpp_decls::CppDeclarationsBlockParse parse_cpp_declarations_until_right_brace(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept;
 
 cpp_decls::CppDeclarationParseResult parse_cpp_namespace_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept;
@@ -136,19 +138,11 @@ scan_position = scan_position + 1;
 
 int cpp_decl_skip_attributes(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
 int scan_position = position;
-bool continue_loop = true;
-while (continue_loop){
-{
 int next_position = cpp_decl_skip_one_attribute(tokens, scan_position);
-if (next_position == scan_position){
-{
-continue_loop = false;
-}
-} else {
+while (next_position != scan_position){
 {
 scan_position = next_position;
-}
-}
+next_position = cpp_decl_skip_one_attribute(tokens, scan_position);
 }
 }
 return scan_position;
@@ -415,6 +409,8 @@ scan_position = scan_position + 1;
  }() : cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, after_name)) ? cpp_decls::CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppForwardDecl(mlc::String("enum"), enum_name)), after_name + 1, mlc::String("")} : cpp_decl_empty_result(after_name);
 }
 
+int cpp_decl_next_scan_after_parse(mlc::Array<cpp_tokens::CppToken> tokens, int scan_position, cpp_decls::CppDeclarationParseResult parsed) noexcept{return parsed.position == scan_position ? cpp_decl_skip_token(tokens, scan_position) : parsed.position;}
+
 cpp_decls::CppDeclarationsBlockParse parse_cpp_declarations_until_right_brace(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations = {};
 mlc::Array<mlc::String> errors = {};
@@ -433,15 +429,7 @@ if (!cpp_decl_is_skip(parsed.declaration)){
 declarations.push_back(parsed.declaration);
 }
 }
-if (parsed.position == scan_position){
-{
-scan_position = cpp_decl_skip_token(tokens, scan_position);
-}
-} else {
-{
-scan_position = parsed.position;
-}
-}
+scan_position = cpp_decl_next_scan_after_parse(tokens, scan_position, parsed);
 }
 }
 return cpp_decls::CppDeclarationsBlockParse{declarations, scan_position, errors};

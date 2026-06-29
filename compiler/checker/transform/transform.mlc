@@ -75,32 +75,391 @@ fn instance_method_receiver_and_parameters_mutability_pattern(
   end
 end
 
+fn extend_method_mangled_name(
+  registry: TypeRegistry,
+  receiver_semantic_type: Shared<Type>,
+  method_name: string
+) -> string = do
+  const receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type)
+  if receiver_key == '' then ''
+  else
+    const mangled = receiver_key + "_" + method_name
+    if registry.has_fn(mangled) then mangled else '' end
+  end
+end
+
+fn transform_extend_method_as_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  typed_arguments: [Shared<SemanticExpression>],
+  receiver_type: Shared<Type>,
+  result_type: Shared<Type>,
+  source_span: Span
+) -> Shared<SemanticExpression> = do
+  const mangled = extend_method_mangled_name(registry, receiver_type, method_name)
+  let call_arguments: [Shared<SemanticExpression>] = []
+  call_arguments.push(typed_object)
+  let mut argument_index = 0
+  while argument_index < typed_arguments.length() do
+    call_arguments.push(typed_arguments[argument_index])
+    argument_index = argument_index + 1
+  end
+  const callee = Shared.new(SemanticExpressionIdent(mangled, registry.fn_type(mangled), source_span))
+  const call_parameter_mutability_flags =
+    instance_method_receiver_and_parameters_mutability_pattern(
+      registry, receiver_type, method_name, typed_arguments.length())
+  Shared.new(SemanticExpressionCall(
+    callee, call_arguments, call_parameter_mutability_flags, result_type, source_span))
+end
+
+fn semantic_type_is_tarray(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TArray(_) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TShared(_) => false,
+    TNamed(_) => false,
+    TGeneric(_, _) => false,
+    TPair(_, _) => false,
+    TTuple(_) => false,
+    TFn(_, _) => false,
+    TAssoc(_, _) => false,
+    TUnknown => false
+  }
+
+fn array_element_type_from_semantic_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TArray(inner) => inner,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TShared(_) => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_) => Shared.new(TUnknown),
+    TFn(_, _) => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
+
+fn generic_type_name(type_value: Shared<Type>) -> string =
+  match type_value {
+    TGeneric(name, _) => name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TNamed(_) => '',
+    TArray(_) => '',
+    TPair(_, _) => '',
+    TTuple(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
+fn callee_semantic_type_is_function(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TFn(_, _) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TShared(_) => false,
+    TNamed(_) => false,
+    TGeneric(_, _) => false,
+    TArray(_) => false,
+    TPair(_, _) => false,
+    TTuple(_) => false,
+    TAssoc(_, _) => false,
+    TUnknown => false
+  }
+
+fn function_parameter_types_from_callee_type(type_value: Shared<Type>) -> [Shared<Type>] =
+  match type_value {
+    TFn(parameter_types, _) => parameter_types,
+    TI32 => do const empty: [Shared<Type>] = []; empty end,
+    TString => do const empty: [Shared<Type>] = []; empty end,
+    TBool => do const empty: [Shared<Type>] = []; empty end,
+    TUnit => do const empty: [Shared<Type>] = []; empty end,
+    TI64 => do const empty: [Shared<Type>] = []; empty end,
+    TF64 => do const empty: [Shared<Type>] = []; empty end,
+    TU8 => do const empty: [Shared<Type>] = []; empty end,
+    TUsize => do const empty: [Shared<Type>] = []; empty end,
+    TChar => do const empty: [Shared<Type>] = []; empty end,
+    TShared(_) => do const empty: [Shared<Type>] = []; empty end,
+    TNamed(_) => do const empty: [Shared<Type>] = []; empty end,
+    TGeneric(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TArray(_) => do const empty: [Shared<Type>] = []; empty end,
+    TPair(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TTuple(_) => do const empty: [Shared<Type>] = []; empty end,
+    TAssoc(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TUnknown => do const empty: [Shared<Type>] = []; empty end
+  }
+
+fn call_callee_ident_name(function: Shared<Expr>) -> string =
+  match function {
+    ExprIdent(name, _) => name,
+    ExprInt(_, _) => '',
+    ExprStr(_, _) => '',
+    ExprBool(_, _) => '',
+    ExprUnit(_) => '',
+    ExprFloat(_, _) => '',
+    ExprI64(_, _) => '',
+    ExprU8(_, _) => '',
+    ExprUsize(_, _) => '',
+    ExprChar(_, _) => '',
+    ExprBin(_, _, _, _) => '',
+    ExprUn(_, _, _) => '',
+    ExprCall(_, _, _) => '',
+    ExprMethod(_, _, _, _) => '',
+    ExprField(_, _, _) => '',
+    ExprIndex(_, _, _) => '',
+    ExprIf(_, _, _, _) => '',
+    ExprBlock(_, _, _) => '',
+    ExprWhile(_, _, _) => '',
+    ExprFor(_, _, _, _) => '',
+    ExprMatch(_, _, _) => '',
+    ExprRecord(_, _, _) => '',
+    ExprRecordUpdate(_, _, _, _) => '',
+    ExprArray(_, _) => '',
+    ExprTuple(_, _) => '',
+    ExprQuestion(_, _) => '',
+    ExprExtern(_) => '',
+    ExprLambda(_, _, _) => '',
+    ExprSpawn(_, _) => '',
+    ExprNamedArg(_, _, _) => '',
+    ExprWith(_, _, _, _) => ''
+  }
+
+fn call_argument_is_lambda(argument_expression: Shared<Expr>) -> bool =
+  match argument_expression {
+    ExprLambda(_, _, _) => true,
+    ExprInt(_, _) => false,
+    ExprStr(_, _) => false,
+    ExprBool(_, _) => false,
+    ExprUnit(_) => false,
+    ExprFloat(_, _) => false,
+    ExprI64(_, _) => false,
+    ExprU8(_, _) => false,
+    ExprUsize(_, _) => false,
+    ExprChar(_, _) => false,
+    ExprIdent(_, _) => false,
+    ExprBin(_, _, _, _) => false,
+    ExprUn(_, _, _) => false,
+    ExprCall(_, _, _) => false,
+    ExprMethod(_, _, _, _) => false,
+    ExprField(_, _, _) => false,
+    ExprIndex(_, _, _) => false,
+    ExprIf(_, _, _, _) => false,
+    ExprBlock(_, _, _) => false,
+    ExprWhile(_, _, _) => false,
+    ExprFor(_, _, _, _) => false,
+    ExprMatch(_, _, _) => false,
+    ExprRecord(_, _, _) => false,
+    ExprRecordUpdate(_, _, _, _) => false,
+    ExprArray(_, _) => false,
+    ExprTuple(_, _) => false,
+    ExprQuestion(_, _) => false,
+    ExprExtern(_) => false,
+    ExprSpawn(_, _) => false,
+    ExprNamedArg(_, _, _) => false,
+    ExprWith(_, _, _, _) => false
+  }
+
+fn binary_result_type_for_operator(
+  registry: TypeRegistry,
+  left_type: Shared<Type>,
+  operation: string,
+  method: string
+) -> Shared<Type> = do
+  const from_registry = method_return_type_from_object(left_type, method, registry)
+  if type_is_unknown(from_registry) then binary_operation_result_type(operation, left_type) else from_registry end
+end
+
+fn method_result_type_for_dispatch(
+  receiver_type: Shared<Type>,
+  method_name: string,
+  registry: TypeRegistry
+) -> Shared<Type> = do
+  const builtin_type = builtin_method_return_type(method_name)
+  if type_is_unknown(builtin_type) then
+    method_return_type_from_object(receiver_type, method_name, registry)
+  else builtin_type end
+end
+
+fn merge_conditional_expression_types(
+  typed_then: Shared<SemanticExpression>,
+  typed_else: Shared<SemanticExpression>
+) -> Shared<Type> = do
+  const then_type = sexpr_type(typed_then)
+  const else_type = sexpr_type(typed_else)
+  if semantic_type_is_tarray(then_type) then
+    if semantic_type_is_tarray(else_type) then
+      const then_element_type = array_element_type_from_semantic_type(then_type)
+      const else_element_type = array_element_type_from_semantic_type(else_type)
+      if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
+      else Shared.new(TArray(then_element_type)) end
+    else then_type end
+  else then_type end
+end
+
+fn array_element_type_from_semantic_expression(
+  typed_expression: Shared<SemanticExpression>
+) -> Shared<Type> = do
+  const expression_type = sexpr_type(typed_expression)
+  if semantic_type_is_tarray(expression_type) then
+    array_element_type_from_semantic_type(expression_type)
+  else Shared.new(TUnknown) end
+end
+
+fn type_arguments_from_generic_type(type_value: Shared<Type>) -> [Shared<Type>] =
+  match type_value {
+    TGeneric(_, type_arguments) => type_arguments,
+    TI32 => do const empty: [Shared<Type>] = []; empty end,
+    TString => do const empty: [Shared<Type>] = []; empty end,
+    TBool => do const empty: [Shared<Type>] = []; empty end,
+    TUnit => do const empty: [Shared<Type>] = []; empty end,
+    TI64 => do const empty: [Shared<Type>] = []; empty end,
+    TF64 => do const empty: [Shared<Type>] = []; empty end,
+    TU8 => do const empty: [Shared<Type>] = []; empty end,
+    TUsize => do const empty: [Shared<Type>] = []; empty end,
+    TChar => do const empty: [Shared<Type>] = []; empty end,
+    TShared(_) => do const empty: [Shared<Type>] = []; empty end,
+    TNamed(_) => do const empty: [Shared<Type>] = []; empty end,
+    TArray(_) => do const empty: [Shared<Type>] = []; empty end,
+    TPair(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TTuple(_) => do const empty: [Shared<Type>] = []; empty end,
+    TFn(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TAssoc(_, _) => do const empty: [Shared<Type>] = []; empty end,
+    TUnknown => do const empty: [Shared<Type>] = []; empty end
+  }
+
+fn question_unwrapped_type_from_inner(inner_expression_type: Shared<Type>) -> Shared<Type> = do
+  const type_arguments = type_arguments_from_generic_type(inner_expression_type)
+  if type_arguments.length() > 0 then type_arguments[0] else Shared.new(TUnknown) end
+end
+
+fn transform_result_option_hof_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
+  const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+  const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+  const method_parameter_mutability_flags =
+    instance_method_receiver_and_parameters_mutability_pattern(
+      registry, receiver_type, method_name, typed_arguments.length())
+  Shared.new(SemanticExpressionMethod(
+    typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+end
+
+fn transform_array_hof_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_array_hof_method_arguments(
+    typed_object, method_name, method_arguments, transform_context, stmts_fn)
+  const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+  const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+  const method_parameter_mutability_flags =
+    instance_method_receiver_and_parameters_mutability_pattern(
+      registry, receiver_type, method_name, typed_arguments.length())
+  Shared.new(SemanticExpressionMethod(
+    typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+end
+
+fn transform_regular_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
+  const result_type = method_result_type_for_dispatch(receiver_type, method_name, registry)
+  const mangled = extend_method_mangled_name(registry, receiver_type, method_name)
+  if mangled != '' then
+    transform_extend_method_as_call(
+      registry, typed_object, method_name, typed_arguments, receiver_type, result_type, source_span)
+  else
+    const method_parameter_mutability_flags =
+      instance_method_receiver_and_parameters_mutability_pattern(
+        registry, receiver_type, method_name, typed_arguments.length())
+    Shared.new(SemanticExpressionMethod(
+      typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+  end
+end
+
 fn coerce_unknown_else_array_when_then_known_inner(
   elements: [Shared<SemanticExpression>],
   span_else: Span,
   then_element_type: Shared<Type>,
   typed_else: Shared<SemanticExpression>
-) -> Shared<SemanticExpression> =
-  match sexpr_type(typed_else) {
-    TArray(else_element_type) =>
-      if type_is_unknown(else_element_type) then
-        Shared.new(SemanticExpressionArray(elements, Shared.new(TArray(then_element_type)), span_else))
-      else typed_else
-      end,
-    _ => typed_else
-  }
+) -> Shared<SemanticExpression> = do
+  const else_type = sexpr_type(typed_else)
+  if semantic_type_is_tarray(else_type) &&
+     type_is_unknown(array_element_type_from_semantic_type(else_type)) then
+    Shared.new(SemanticExpressionArray(elements, Shared.new(TArray(then_element_type)), span_else))
+  else typed_else end
+end
 
 fn conditional_else_coerce_empty_array_using_then_type(
   typed_then: Shared<SemanticExpression>,
   elements: [Shared<SemanticExpression>],
   span_else: Span,
   typed_else: Shared<SemanticExpression>
-) -> Shared<SemanticExpression> =
-  match sexpr_type(typed_then) {
-    TArray(then_element_type) =>
-      coerce_unknown_else_array_when_then_known_inner(elements, span_else, then_element_type, typed_else),
-    _ => typed_else
-  }
+) -> Shared<SemanticExpression> = do
+  const then_type = sexpr_type(typed_then)
+  if semantic_type_is_tarray(then_type) then
+    coerce_unknown_else_array_when_then_known_inner(
+      elements,
+      span_else,
+      array_element_type_from_semantic_type(then_type),
+      typed_else)
+  else typed_else end
+end
 
 fn array_literal_else_maybe_coerce(
   typed_then: Shared<SemanticExpression>,
@@ -119,7 +478,34 @@ fn conditional_else_empty_unknown_array_coerced_to_then_array_element(
   match typed_else {
     SemanticExpressionArray(elements, _, span_else) =>
       array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else),
-    _ => typed_else
+    SemanticExpressionInt(_, _, _) => typed_else,
+    SemanticExpressionStr(_, _, _) => typed_else,
+    SemanticExpressionFloat(_, _, _) => typed_else,
+    SemanticExpressionI64(_, _, _) => typed_else,
+    SemanticExpressionU8(_, _, _) => typed_else,
+    SemanticExpressionUsize(_, _, _) => typed_else,
+    SemanticExpressionChar(_, _, _) => typed_else,
+    SemanticExpressionBool(_, _, _) => typed_else,
+    SemanticExpressionUnit(_, _) => typed_else,
+    SemanticExpressionExtern(_, _) => typed_else,
+    SemanticExpressionIdent(_, _, _) => typed_else,
+    SemanticExpressionBin(_, _, _, _, _) => typed_else,
+    SemanticExpressionUn(_, _, _, _) => typed_else,
+    SemanticExpressionCall(_, _, _, _, _) => typed_else,
+    SemanticExpressionMethod(_, _, _, _, _, _) => typed_else,
+    SemanticExpressionField(_, _, _, _) => typed_else,
+    SemanticExpressionIndex(_, _, _, _) => typed_else,
+    SemanticExpressionIf(_, _, _, _, _) => typed_else,
+    SemanticExpressionBlock(_, _, _, _) => typed_else,
+    SemanticExpressionWhile(_, _, _, _) => typed_else,
+    SemanticExpressionFor(_, _, _, _, _) => typed_else,
+    SemanticExpressionMatch(_, _, _, _) => typed_else,
+    SemanticExpressionRecord(_, _, _, _) => typed_else,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => typed_else,
+    SemanticExpressionTuple(_, _, _) => typed_else,
+    SemanticExpressionQuestion(_, _, _) => typed_else,
+    SemanticExpressionLambda(_, _, _, _) => typed_else,
+    SemanticExpressionWith(_, _, _, _, _) => typed_else
   }
 
 // --- Context ----------------------------------------------------------------
@@ -153,44 +539,100 @@ fn transform_context_with_lambda_parameter_types(
     lambda_parameter_types: lambda_parameter_types,
   }
 
+fn coerce_array_semantic_expression_to_type(
+  elements: [Shared<SemanticExpression>],
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  if elements.length() == 0 then Shared.new(SemanticExpressionArray(elements, target_type, source_span))
+  else expression end
+
+fn coerce_record_semantic_expression_to_type(
+  type_name: string,
+  fields: [Shared<SemanticFieldVal>],
+  expr_type: Shared<Type>,
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  const target_generic_name = generic_type_name(target_type)
+  const expression_generic_name = generic_type_name(expr_type)
+  if target_generic_name != '' && target_generic_name == expression_generic_name then
+    Shared.new(SemanticExpressionRecord(type_name, fields, target_type, source_span))
+  else expression end
+end
+
+fn coerce_block_semantic_expression_to_type(
+  statements: [Shared<SemanticStatement>],
+  result_expression: Shared<SemanticExpression>,
+  span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  if semantic_type_is_tarray(target_type) then do
+    const coerced_result = coerce_expr_to_type(result_expression, target_type)
+    Shared.new(SemanticExpressionBlock(statements, coerced_result, sexpr_type(coerced_result), span))
+  end
+  else expression end
+end
+
+fn coerce_if_semantic_expression_to_type(
+  condition: Shared<SemanticExpression>,
+  then_branch: Shared<SemanticExpression>,
+  else_branch: Shared<SemanticExpression>,
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  if semantic_type_is_tarray(target_type) then
+    Shared.new(SemanticExpressionIf(
+      condition,
+      coerce_expr_to_type(then_branch, target_type),
+      coerce_expr_to_type(else_branch, target_type),
+      target_type,
+      source_span))
+  else expression end
+end
+
 // Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_type: Shared<Type>) -> Shared<SemanticExpression> =
   match expression {
     SemanticExpressionArray(elements, _, source_span) =>
-      if elements.length() == 0 then Shared.new(SemanticExpressionArray(elements, target_type, source_span))
-      else expression end,
+      coerce_array_semantic_expression_to_type(elements, source_span, target_type, expression),
     SemanticExpressionRecord(type_name, fields, expr_type, source_span) =>
-      match target_type {
-        TGeneric(tgt_name, _) =>
-          match expr_type {
-            TGeneric(exp_name, _) =>
-              if tgt_name == exp_name then Shared.new(SemanticExpressionRecord(type_name, fields, target_type, source_span))
-              else expression end,
-            _ => expression
-          },
-        _ => expression
-      },
+      coerce_record_semantic_expression_to_type(type_name, fields, expr_type, source_span, target_type, expression),
     SemanticExpressionBlock(statements, result_expression, _, span) =>
-      match target_type {
-        TArray(_) => do
-          const coerced_result = coerce_expr_to_type(result_expression, target_type)
-          Shared.new(SemanticExpressionBlock(statements, coerced_result, sexpr_type(coerced_result), span))
-        end,
-        _ => expression
-      },
+      coerce_block_semantic_expression_to_type(statements, result_expression, span, target_type, expression),
     SemanticExpressionIf(condition, then_branch, else_branch, _, source_span) =>
-      match target_type {
-        TArray(_) =>
-          Shared.new(SemanticExpressionIf(
-            condition,
-            coerce_expr_to_type(then_branch, target_type),
-            coerce_expr_to_type(else_branch, target_type),
-            target_type,
-            source_span)),
-        _ => expression
-      },
-    _ => expression
+      coerce_if_semantic_expression_to_type(
+        condition, then_branch, else_branch, source_span, target_type, expression),
+    SemanticExpressionInt(_, _, _) => expression,
+    SemanticExpressionStr(_, _, _) => expression,
+    SemanticExpressionFloat(_, _, _) => expression,
+    SemanticExpressionI64(_, _, _) => expression,
+    SemanticExpressionU8(_, _, _) => expression,
+    SemanticExpressionUsize(_, _, _) => expression,
+    SemanticExpressionChar(_, _, _) => expression,
+    SemanticExpressionBool(_, _, _) => expression,
+    SemanticExpressionUnit(_, _) => expression,
+    SemanticExpressionExtern(_, _) => expression,
+    SemanticExpressionIdent(_, _, _) => expression,
+    SemanticExpressionBin(_, _, _, _, _) => expression,
+    SemanticExpressionUn(_, _, _, _) => expression,
+    SemanticExpressionCall(_, _, _, _, _) => expression,
+    SemanticExpressionMethod(_, _, _, _, _, _) => expression,
+    SemanticExpressionField(_, _, _, _) => expression,
+    SemanticExpressionIndex(_, _, _, _) => expression,
+    SemanticExpressionWhile(_, _, _, _) => expression,
+    SemanticExpressionFor(_, _, _, _, _) => expression,
+    SemanticExpressionMatch(_, _, _, _) => expression,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => expression,
+    SemanticExpressionTuple(_, _, _) => expression,
+    SemanticExpressionQuestion(_, _, _) => expression,
+    SemanticExpressionLambda(_, _, _, _) => expression,
+    SemanticExpressionWith(_, _, _, _, _) => expression
   }
 
 // --- Statement list result --------------------------------------------------
@@ -210,6 +652,34 @@ fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformCont
     expression_under_transform =>
       transform_expr(expression_under_transform, transform_context, stmts_fn))
 
+fn expected_call_argument_type_at_index(
+  argument_index: i32,
+  expected_formal_parameter_types: [Shared<Type>]
+) -> Shared<Type> =
+  if argument_index < expected_formal_parameter_types.length() then
+    expected_formal_parameter_types[argument_index]
+  else standalone_unknown_cell() end
+
+fn transform_lambda_call_argument(
+  parameter_names: [string],
+  lambda_body: Shared<Expr>,
+  lambda_span: Span,
+  expected_formal_parameter_type: Shared<Type>,
+  argument_expression_shared: Shared<Expr>,
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  if callee_semantic_type_is_function(expected_formal_parameter_type) then
+    transform_expr_lambda_with_param_types(
+      parameter_names,
+      function_parameter_types_from_callee_type(expected_formal_parameter_type),
+      lambda_body,
+      lambda_span,
+      transform_context,
+      stmts_fn)
+  else transform_expr(argument_expression_shared, transform_context, stmts_fn) end
+end
+
 fn transform_one_call_argument_using_optional_expected_type(
   argument_expression_shared: Shared<Expr>,
   expected_formal_parameter_type: Shared<Type>,
@@ -217,25 +687,143 @@ fn transform_one_call_argument_using_optional_expected_type(
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
 ) -> Shared<SemanticExpression> = do
   const argument_partially_desugared_shared_expression = partial_application_desugar_expr(argument_expression_shared)
-  match argument_partially_desugared_shared_expression {
-    ExprLambda(parameter_names, lambda_body, lambda_span) =>
-      match expected_formal_parameter_type {
-        TFn(expected_lambda_parameter_semantic_types, _) =>
-          transform_expr_lambda_with_param_types(
-            parameter_names,
-            expected_lambda_parameter_semantic_types,
-            lambda_body,
-            lambda_span,
-            transform_context,
-            stmts_fn),
-        _ =>
-          transform_expr(argument_expression_shared, transform_context, stmts_fn)
-      },
-    _ =>
-      coerce_expr_to_type(
-        transform_expr(argument_expression_shared, transform_context, stmts_fn),
-        expected_formal_parameter_type)
-  }
+  if call_argument_is_lambda(argument_partially_desugared_shared_expression) then
+    match argument_partially_desugared_shared_expression {
+      ExprLambda(parameter_names, lambda_body, lambda_span) =>
+        transform_lambda_call_argument(
+          parameter_names,
+          lambda_body,
+          lambda_span,
+          expected_formal_parameter_type,
+          argument_expression_shared,
+          transform_context,
+          stmts_fn),
+      ExprInt(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprStr(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprBool(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprUnit(_) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprFloat(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprI64(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprU8(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprUsize(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprChar(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprIdent(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprBin(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprUn(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprCall(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprMethod(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprField(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprIndex(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprIf(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprBlock(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprWhile(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprFor(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprMatch(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprRecord(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprRecordUpdate(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprArray(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprTuple(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprQuestion(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprExtern(_) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprSpawn(_, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprNamedArg(_, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type),
+      ExprWith(_, _, _, _) =>
+        coerce_expr_to_type(
+          transform_expr(argument_expression_shared, transform_context, stmts_fn),
+          expected_formal_parameter_type)
+    }
+  else
+    coerce_expr_to_type(
+      transform_expr(argument_expression_shared, transform_context, stmts_fn),
+      expected_formal_parameter_type)
+  end
 end
 
 type Transform_call_arguments_fold_state = Transform_call_arguments_fold_state {
@@ -243,28 +831,44 @@ type Transform_call_arguments_fold_state = Transform_call_arguments_fold_state {
   next_argument_index:   i32,
 }
 
+fn function_return_type_from_callee_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TFn(_, return_type) => return_type,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TShared(_) => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TArray(_) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_) => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
+
 fn transform_call_arguments_fold_step(
   state: Transform_call_arguments_fold_state,
   argument_expression: Shared<Expr>,
   expected_formal_parameter_types: [Shared<Type>],
   transform_context: TransformContext,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
-) -> Transform_call_arguments_fold_state = do
-  const expected_placeholder_type =
-    if state.next_argument_index < expected_formal_parameter_types.length()
-    then expected_formal_parameter_types[state.next_argument_index]
-    else standalone_unknown_cell()
-    end
+) -> Transform_call_arguments_fold_state =
   Transform_call_arguments_fold_state {
     transformed_arguments: state.transformed_arguments.concat([
       transform_one_call_argument_using_optional_expected_type(
         argument_expression,
-        expected_placeholder_type,
+        expected_call_argument_type_at_index(state.next_argument_index, expected_formal_parameter_types),
         transform_context,
         stmts_fn)]),
     next_argument_index: state.next_argument_index + 1,
   }
-end
 
 fn transform_call_arguments_using_callee_semantic_type(
   callee_semantic_expression: Shared<SemanticExpression>,
@@ -272,25 +876,23 @@ fn transform_call_arguments_using_callee_semantic_type(
   transform_context: TransformContext,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
 ) -> [Shared<SemanticExpression>] = do
-  match sexpr_type(callee_semantic_expression) {
-    TFn(expected_formal_parameter_types, _) =>
-      argument_expressions_under_call
-        .fold(
-          Transform_call_arguments_fold_state {
-            transformed_arguments: [],
-            next_argument_index:   0,
-          },
-          (state, argument_expression) =>
-            transform_call_arguments_fold_step(
-              state,
-              argument_expression,
-              expected_formal_parameter_types,
-              transform_context,
-              stmts_fn))
-        .transformed_arguments,
-    _ =>
-      transform_exprs(argument_expressions_under_call, transform_context, stmts_fn)
-  }
+  const callee_type = sexpr_type(callee_semantic_expression)
+  if callee_semantic_type_is_function(callee_type) then
+    argument_expressions_under_call
+      .fold(
+        Transform_call_arguments_fold_state {
+          transformed_arguments: [],
+          next_argument_index:   0,
+        },
+        (state, argument_expression) =>
+          transform_call_arguments_fold_step(
+            state,
+            argument_expression,
+            function_parameter_types_from_callee_type(callee_type),
+            transform_context,
+            stmts_fn))
+      .transformed_arguments
+  else transform_exprs(argument_expressions_under_call, transform_context, stmts_fn) end
 end
 
 fn semantic_field_val_from_source_field_after_transform(
@@ -623,10 +1225,8 @@ extend TransformPass {
     const left_type   = sexpr_type(typed_left)
     const method      = operator_method_for(operation)
     const result_type = if method != '' then
-      const from_reg = method_return_type_from_object(left_type, method, self.transform_context.registry)
-      if type_is_unknown(from_reg) then binary_operation_result_type(operation, left_type) else from_reg end
-    else binary_operation_result_type(operation, left_type)
-    end
+      binary_result_type_for_operator(self.transform_context.registry, left_type, operation, method)
+    else binary_operation_result_type(operation, left_type) end
     Shared.new(SemanticExpressionBin(operation, typed_left, typed_right, result_type, source_span))
   end
   fn visit_un(
@@ -645,7 +1245,7 @@ extend TransformPass {
     call_arguments: [Shared<Expr>],
     source_span: Span
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
-    const callee_name = match function { ExprIdent(name, _) => name, _ => '' }
+    const callee_name = call_callee_ident_name(function)
     const resolved_call_args =
       named_args.resolve_named_call_arguments_for_transform(
         call_arguments, callee_name, self.transform_context.registry)
@@ -657,7 +1257,7 @@ extend TransformPass {
       if callee_name != '' && self.transform_context.registry.has_ctor(callee_name) then
         self.transform_context.registry.ctor_type(callee_name)
       else
-        match sexpr_type(typed_function) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
+        function_return_type_from_callee_type(sexpr_type(typed_function))
       end
     const call_parameter_mutability_flags =
       direct_call_parameter_mutability_flags(
@@ -675,37 +1275,35 @@ extend TransformPass {
     const typed_object = dispatch_transform_pass(self, object, stmts_fn)
     const receiver_type = sexpr_type(typed_object)
     if is_result_option_hof_method(receiver_type, method_name) then
-      const typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn)
-      const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
-      const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
-      const method_parameter_mutability_flags =
-        instance_method_receiver_and_parameters_mutability_pattern(
-          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
-      Shared.new(SemanticExpressionMethod(
-        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+      transform_result_option_hof_method_call(
+        self.transform_context.registry,
+        typed_object,
+        method_name,
+        method_arguments,
+        receiver_type,
+        self.transform_context,
+        source_span,
+        stmts_fn)
     else if is_array_hof_method_on_receiver(receiver_type, method_name) then
-      const typed_arguments = transform_array_hof_method_arguments(
-        typed_object, method_name, method_arguments, self.transform_context, stmts_fn)
-      const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
-      const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
-      const method_parameter_mutability_flags =
-        instance_method_receiver_and_parameters_mutability_pattern(
-          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
-      Shared.new(SemanticExpressionMethod(
-        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+      transform_array_hof_method_call(
+        self.transform_context.registry,
+        typed_object,
+        method_name,
+        method_arguments,
+        receiver_type,
+        self.transform_context,
+        source_span,
+        stmts_fn)
     else
-      const typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn)
-      const builtin_type = builtin_method_return_type(method_name)
-      const result_type =
-        if type_is_unknown(builtin_type) then
-          method_return_type_from_object(receiver_type, method_name, self.transform_context.registry)
-        else builtin_type
-        end
-      const method_parameter_mutability_flags =
-        instance_method_receiver_and_parameters_mutability_pattern(
-          self.transform_context.registry, receiver_type, method_name, typed_arguments.length())
-      Shared.new(SemanticExpressionMethod(
-        typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+      transform_regular_method_call(
+        self.transform_context.registry,
+        typed_object,
+        method_name,
+        method_arguments,
+        receiver_type,
+        self.transform_context,
+        source_span,
+        stmts_fn)
     end
   end
   fn visit_field(
@@ -726,7 +1324,7 @@ extend TransformPass {
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const typed_object = dispatch_transform_pass(self, object, stmts_fn)
     const typed_index  = dispatch_transform_pass(self, index_expression, stmts_fn)
-    const element_type = match sexpr_type(typed_object) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
+    const element_type = array_element_type_from_semantic_expression(typed_object)
     Shared.new(SemanticExpressionIndex(typed_object, typed_index, element_type, source_span))
   end
   fn visit_if(
@@ -741,18 +1339,7 @@ extend TransformPass {
     const typed_else_raw  = dispatch_transform_pass(self, else_expression, stmts_fn)
     const typed_else      =
       conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw)
-    const merged_conditional_type =
-      match sexpr_type(typed_then) {
-        TArray(then_element_type) =>
-          match sexpr_type(typed_else) {
-            TArray(else_element_type) =>
-              if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
-              else Shared.new(TArray(then_element_type))
-              end,
-            _ => sexpr_type(typed_then),
-          },
-        _ => sexpr_type(typed_then),
-      }
+    const merged_conditional_type = merge_conditional_expression_types(typed_then, typed_else)
     Shared.new(SemanticExpressionIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span))
   end
   fn visit_block(
@@ -806,7 +1393,7 @@ extend TransformPass {
     source_span: Span
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const typed_iterator = dispatch_transform_pass(self, iterator, stmts_fn)
-    const element_type   = match sexpr_type(typed_iterator) { TArray(element_type_value) => element_type_value, _ => Shared.new(TUnknown) }
+    const element_type = array_element_type_from_semantic_expression(typed_iterator)
     let loop_body_environment = self.transform_context.type_env
     loop_body_environment.set(variable_name, element_type)
     const loop_context   = transform_context_with_env(self.transform_context, loop_body_environment)
@@ -908,10 +1495,7 @@ extend TransformPass {
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const typed_inner  = dispatch_transform_pass(self, inner_expression, stmts_fn)
     const inner_expression_type = sexpr_type(typed_inner)
-    const unwrapped_type = match inner_expression_type {
-      TGeneric(_, type_args) => if type_args.length() > 0 then type_args[0] else Shared.new(TUnknown) end,
-      _ => Shared.new(TUnknown)
-    }
+    const unwrapped_type = question_unwrapped_type_from_inner(inner_expression_type)
     Shared.new(SemanticExpressionQuestion(typed_inner, unwrapped_type, source_span))
   end
   fn visit_lambda(

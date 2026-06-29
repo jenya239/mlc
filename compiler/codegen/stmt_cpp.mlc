@@ -1,13 +1,33 @@
 // CppStatement dual path for statement codegen (Phase 2 step 16).
 
-import { SemanticExpression, SemanticStatement, SemanticExpressionQuestion, SemanticExpressionArray, SemanticExpressionMethod, SemanticExpressionIdent, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionUnit } from '../ir/semantic_ir'
-import { Type, TGeneric, TUnit } from '../checker/registry'
-import { CppExpression, CppStatement, CppCall } from '../cpp_ir/cpp_ast'
+import {
+  SemanticExpression, SemanticStatement,
+  SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionFloat,
+  SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar,
+  SemanticExpressionBool, SemanticExpressionUnit, SemanticExpressionExtern,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn,
+  SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex,
+  SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionFor,
+  SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
+  SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion,
+  SemanticExpressionLambda, SemanticExpressionWith
+} from '../ir/semantic_ir'
+import {
+  Type, TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
+  TArray, TShared, TNamed, TGeneric, TPair, TTuple, TFn, TAssoc, TUnknown
+} from '../checker/registry'
+import {
+  CppExpression, CppStatement, CppCall,
+  CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl,
+  CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor,
+  CppStructuredBinding, CppStatementFragment
+} from '../cpp_ir/cpp_ast'
 import {print_statement} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import { sem_type_to_cpp } from './decl/type_gen'
+import * as semantic_type_structure from '../checker/semantic_type_structure'
 import * as let_pat_cpp from './stmt/let_pat_cpp'
 import { stmts_final_ctx } from './stmt/statement_context'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
@@ -69,13 +89,27 @@ export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStatement>]
 export fn print_cpp_statements(statements: [Shared<CppStatement>]) -> string =
   statements.map(statement => print_cpp_statement_line(statement)).join('')
 
+fn print_cpp_statement_fragment_line(fragment: string) -> string =
+  if fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == "\n" then fragment
+  else fragment + `\n`
+
+fn print_cpp_statement_default_line(statement: Shared<CppStatement>) -> string =
+  print_statement(statement) + `\n`
+
 fn print_cpp_statement_line(statement: Shared<CppStatement>) -> string =
   match statement {
-    CppStatementFragment(fragment) =>
-      if fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == "\n" then fragment
-      else fragment + `\n`
-    end,
-    _ => print_statement(statement) + `\n`
+    CppStatementFragment(fragment) => print_cpp_statement_fragment_line(fragment),
+    CppAutoDecl(_, _) => print_cpp_statement_default_line(statement),
+    CppVarDecl(_, _, _) => print_cpp_statement_default_line(statement),
+    CppConstDecl(_, _, _) => print_cpp_statement_default_line(statement),
+    CppConstexprAutoDecl(_, _) => print_cpp_statement_default_line(statement),
+    CppReturn(_) => print_cpp_statement_default_line(statement),
+    CppExpressionStatement(_) => print_cpp_statement_default_line(statement),
+    CppBlock(_) => print_cpp_statement_default_line(statement),
+    CppIf(_, _, _) => print_cpp_statement_default_line(statement),
+    CppWhile(_, _) => print_cpp_statement_default_line(statement),
+    CppFor(_, _, _) => print_cpp_statement_default_line(statement),
+    CppStructuredBinding(_, _) => print_cpp_statement_default_line(statement)
   }
 
 fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStatement> =
@@ -92,21 +126,44 @@ fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) ->
     emit_helpers.make_identifier_cpp_expression(`mlc::HashMap<${key_type_cpp}, ${value_type_cpp}>`),
     []))
 
+fn map_generic_type_arguments(value_type: Shared<Type>) -> [Shared<Type>] =
+  match value_type {
+    TGeneric(_, type_arguments) => type_arguments,
+    TI32 => semantic_type_structure.empty_type_parameter_list(),
+    TString => semantic_type_structure.empty_type_parameter_list(),
+    TBool => semantic_type_structure.empty_type_parameter_list(),
+    TUnit => semantic_type_structure.empty_type_parameter_list(),
+    TI64 => semantic_type_structure.empty_type_parameter_list(),
+    TF64 => semantic_type_structure.empty_type_parameter_list(),
+    TU8 => semantic_type_structure.empty_type_parameter_list(),
+    TUsize => semantic_type_structure.empty_type_parameter_list(),
+    TChar => semantic_type_structure.empty_type_parameter_list(),
+    TShared(_) => semantic_type_structure.empty_type_parameter_list(),
+    TNamed(_) => semantic_type_structure.empty_type_parameter_list(),
+    TArray(_) => semantic_type_structure.empty_type_parameter_list(),
+    TPair(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TTuple(_) => semantic_type_structure.empty_type_parameter_list(),
+    TFn(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TAssoc(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TUnknown => semantic_type_structure.empty_type_parameter_list()
+  }
+
 fn gen_map_new_let_value_cpp(
   value_type: Shared<Type>,
   context: CodegenContext,
   fallback: Shared<CppExpression>
-) -> Shared<CppExpression> =
-  match value_type {
-    TGeneric(type_name, type_args) =>
-      if type_name == 'Map' && type_args.length() == 2 then
-        gen_typed_hash_map_empty_cpp(
-          sem_type_to_cpp(context, type_args[0]),
-          sem_type_to_cpp(context, type_args[1]))
-      else fallback
-      end,
-    _ => fallback
-  }
+) -> Shared<CppExpression> = do
+  if semantic_type_structure.receiver_type_is_map(value_type) then
+    const type_arguments = map_generic_type_arguments(value_type)
+    if type_arguments.length() == 2 then
+      gen_typed_hash_map_empty_cpp(
+        sem_type_to_cpp(context, type_arguments[0]),
+        sem_type_to_cpp(context, type_arguments[1]))
+    else fallback
+    end
+  else fallback
+  end
+end
 
 fn gen_for_statement_cpp(
   variable_name: string,
@@ -229,6 +286,266 @@ fn gen_unit_if_statement_cpp(
   }
 end
 
+fn ident_name_from_semantic_expression(expression: Shared<SemanticExpression>) -> string =
+  match expression {
+    SemanticExpressionIdent(name, _, _) => name,
+    SemanticExpressionInt(_, _, _) => '',
+    SemanticExpressionStr(_, _, _) => '',
+    SemanticExpressionFloat(_, _, _) => '',
+    SemanticExpressionI64(_, _, _) => '',
+    SemanticExpressionU8(_, _, _) => '',
+    SemanticExpressionUsize(_, _, _) => '',
+    SemanticExpressionChar(_, _, _) => '',
+    SemanticExpressionBool(_, _, _) => '',
+    SemanticExpressionUnit(_, _) => '',
+    SemanticExpressionExtern(_, _) => '',
+    SemanticExpressionBin(_, _, _, _, _) => '',
+    SemanticExpressionUn(_, _, _, _) => '',
+    SemanticExpressionCall(_, _, _, _, _) => '',
+    SemanticExpressionMethod(_, _, _, _, _, _) => '',
+    SemanticExpressionField(_, _, _, _) => '',
+    SemanticExpressionIndex(_, _, _, _) => '',
+    SemanticExpressionIf(_, _, _, _, _) => '',
+    SemanticExpressionBlock(_, _, _, _) => '',
+    SemanticExpressionWhile(_, _, _, _) => '',
+    SemanticExpressionFor(_, _, _, _, _) => '',
+    SemanticExpressionMatch(_, _, _, _) => '',
+    SemanticExpressionRecord(_, _, _, _) => '',
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => '',
+    SemanticExpressionArray(_, _, _) => '',
+    SemanticExpressionTuple(_, _, _) => '',
+    SemanticExpressionQuestion(_, _, _) => '',
+    SemanticExpressionLambda(_, _, _, _) => '',
+    SemanticExpressionWith(_, _, _, _, _) => ''
+  }
+
+fn semantic_type_is_unit(semantic_type: Shared<Type>) -> bool =
+  match semantic_type { TUnit => true, _ => false }
+
+fn gen_auto_let_stmt_cpp_result(
+  name: string,
+  value: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  GenStmtCppResult {
+    statement: emit_helpers.make_auto_cpp_statement(
+      cpp_safe(name),
+      gen_expr_cpp_for_stmt_codegen(value, context)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_map_new_let_stmt_cpp_result(
+  name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  GenStmtCppResult {
+    statement: emit_helpers.make_auto_cpp_statement(
+      cpp_safe(name),
+      gen_map_new_let_value_cpp(
+        value_type,
+        context,
+        gen_expr_cpp_for_stmt_codegen(value, context))),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_let_method_stmt_cpp(
+  name: string,
+  map_object: Shared<SemanticExpression>,
+  method_name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  if method_name == 'new' && ident_name_from_semantic_expression(map_object) == 'Map' then
+    gen_map_new_let_stmt_cpp_result(name, value, value_type, context, try_counter)
+  else
+    gen_auto_let_stmt_cpp_result(name, value, context, try_counter)
+  end
+
+fn gen_let_stmt_cpp(
+  name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  match value {
+    SemanticExpressionQuestion(_, _, _) =>
+      GenStmtCppResult {
+        statement: emit_helpers.make_auto_cpp_statement(
+          cpp_safe(name),
+          gen_expr_cpp_for_stmt_codegen(value, context)),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionMethod(map_object, method_name, _, _, _, _) =>
+      gen_let_method_stmt_cpp(name, map_object, method_name, value, value_type, context, try_counter),
+    SemanticExpressionInt(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionStr(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionFloat(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionI64(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionU8(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionUsize(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionChar(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionBool(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionUnit(_, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionExtern(_, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionIdent(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionBin(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionUn(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionCall(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionField(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionIndex(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionIf(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionBlock(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionWhile(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionFor(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionMatch(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionRecord(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionArray(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionTuple(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionLambda(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionWith(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter)
+  }
+
+fn gen_return_stmt_cpp_default(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  GenStmtCppResult {
+    statement: emit_helpers.make_return_cpp_statement(
+      gen_expr_cpp_for_stmt_codegen(expression, context)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_return_stmt_cpp(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  match expression {
+    SemanticExpressionQuestion(_, _, _) =>
+      GenStmtCppResult {
+        statement: emit_helpers.make_return_cpp_statement(
+          gen_expr_cpp_for_stmt_codegen(expression, context)),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionInt(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionStr(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionFloat(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionI64(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionU8(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUsize(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionChar(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBool(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUnit(_, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionExtern(_, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionIdent(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBin(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUn(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionCall(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionField(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionIndex(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionIf(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBlock(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionWhile(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionFor(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionMatch(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionRecord(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionArray(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionTuple(_, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionLambda(_, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionWith(_, _, _, _, _) => gen_return_stmt_cpp_default(expression, context, try_counter)
+  }
+
+fn gen_expr_stmt_cpp_default(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  GenStmtCppResult {
+    statement: emit_helpers.make_expression_cpp_statement(
+      gen_expr_cpp_for_stmt_codegen(expression, context)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_if_expr_stmt_cpp(
+  condition: Shared<SemanticExpression>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>,
+  semantic_type: Shared<Type>,
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  if if_statement_has_unit_else(else_expression) || semantic_type_is_unit(semantic_type) then
+    gen_unit_if_statement_cpp(
+      condition, then_expression, else_expression, semantic_type, context, try_counter)
+  else
+    gen_expr_stmt_cpp_default(expression, context, try_counter)
+  end
+
+fn gen_expr_stmt_cpp(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  match expression {
+    SemanticExpressionQuestion(_, _, _) =>
+      GenStmtCppResult {
+        statement: emit_helpers.make_expression_cpp_statement(
+          gen_expr_cpp_for_stmt_codegen(expression, context)),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionWhile(condition, body_statements, _, _) =>
+      gen_while_statement_cpp(condition, body_statements, context, try_counter),
+    SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
+      gen_for_statement_cpp(variable_name, iterator, body_statements, context, try_counter),
+    SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
+      gen_if_expr_stmt_cpp(
+        condition, then_expression, else_expression, semantic_type, expression, context, try_counter),
+    SemanticExpressionInt(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionStr(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionFloat(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionI64(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionU8(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUsize(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionChar(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBool(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUnit(_, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionExtern(_, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionIdent(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBin(_, _, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionUn(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionCall(_, _, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionField(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionIndex(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionBlock(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionMatch(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionRecord(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionArray(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionTuple(_, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionLambda(_, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter),
+    SemanticExpressionWith(_, _, _, _, _) => gen_expr_stmt_cpp_default(expression, context, try_counter)
+  }
+
 fn eval_stmt_cpp(
   statement: Shared<SemanticStatement>,
   context: CodegenContext,
@@ -239,71 +556,9 @@ fn eval_stmt_cpp(
       GenStmtCppResult { statement: emit_helpers.make_break_cpp_statement(), next_try: try_counter, codegen_context: context },
     SemanticStatementContinue(_) =>
       GenStmtCppResult { statement: emit_helpers.make_continue_cpp_statement(), next_try: try_counter, codegen_context: context },
-    SemanticStatementReturn(expression, _) => match expression {
-      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
-        statement: emit_helpers.make_return_cpp_statement(
-          gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
-      _ => GenStmtCppResult {
-        statement: emit_helpers.make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter,
-        codegen_context: context
-      }
-    },
-    SemanticStatementLet(name, _, value, value_type, _) => match value {
-      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
-        statement: emit_helpers.make_auto_cpp_statement(
-          cpp_safe(name),
-          gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
-      SemanticExpressionArray(_, _, _) => GenStmtCppResult {
-        statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter,
-        codegen_context: context
-      },
-      SemanticExpressionMethod(map_object, method_name, _, _, _, _) =>
-        if method_name == 'new' then match map_object {
-          SemanticExpressionIdent(object_name, _, _) =>
-            if object_name == 'Map' then GenStmtCppResult {
-              statement: emit_helpers.make_auto_cpp_statement(
-                cpp_safe(name),
-                gen_map_new_let_value_cpp(
-                  value_type,
-                  context,
-                  gen_expr_cpp_for_stmt_codegen(value, context))),
-              next_try: try_counter,
-              codegen_context: context
-            }
-            else GenStmtCppResult {
-              statement: emit_helpers.make_auto_cpp_statement(
-                cpp_safe(name),
-                gen_expr_cpp_for_stmt_codegen(value, context)),
-              next_try: try_counter,
-              codegen_context: context
-            }
-            end,
-          _ => GenStmtCppResult {
-            statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-            next_try: try_counter,
-            codegen_context: context
-          }
-        }
-        else GenStmtCppResult {
-          statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-          next_try: try_counter,
-          codegen_context: context
-        }
-        end,
-      _ => GenStmtCppResult {
-        statement: emit_helpers.make_auto_cpp_statement(cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)),
-        next_try: try_counter,
-        codegen_context: context
-      }
-    },
+    SemanticStatementReturn(expression, _) => gen_return_stmt_cpp(expression, context, try_counter),
+    SemanticStatementLet(name, _, value, value_type, _) =>
+      gen_let_stmt_cpp(name, value, value_type, context, try_counter),
     SemanticStatementLetPattern(pat, _, value, value_type, has_else, else_body, _) => do
       const pattern_parsed = let_pat_cpp.gen_let_pattern_cpp_statement(
         pat, value, value_type, has_else, else_body, context, gen_expr_cpp_for_stmt_codegen)
@@ -321,40 +576,7 @@ fn eval_stmt_cpp(
         next_try: try_counter,
         codegen_context: context
       },
-    SemanticStatementExpr(expression, _) => match expression {
-      SemanticExpressionQuestion(_, _, _) => GenStmtCppResult {
-        statement: emit_helpers.make_expression_cpp_statement(
-          gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
-      SemanticExpressionWhile(condition, body_statements, _, _) =>
-        gen_while_statement_cpp(condition, body_statements, context, try_counter),
-      SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
-        gen_for_statement_cpp(variable_name, iterator, body_statements, context, try_counter),
-      SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
-        if if_statement_has_unit_else(else_expression) then
-          gen_unit_if_statement_cpp(
-            condition, then_expression, else_expression, semantic_type, context, try_counter)
-        else
-          match semantic_type {
-            TUnit => gen_unit_if_statement_cpp(
-              condition, then_expression, else_expression, semantic_type, context, try_counter),
-            _ => GenStmtCppResult {
-              statement: emit_helpers.make_expression_cpp_statement(
-                gen_expr_cpp_for_stmt_codegen(expression, context)),
-              next_try: try_counter,
-              codegen_context: context
-            }
-          }
-        end,
-      _ => GenStmtCppResult {
-        statement: emit_helpers.make_expression_cpp_statement(
-          gen_expr_cpp_for_stmt_codegen(expression, context)),
-        next_try: try_counter,
-        codegen_context: context
-      }
-    }
+    SemanticStatementExpr(expression, _) => gen_expr_stmt_cpp(expression, context, try_counter)
   }
 
 fn eval_stmts_cpp_with_try(statements: [Shared<SemanticStatement>], context: CodegenContext, try_counter: i32) -> StmtsCppAccumState = do

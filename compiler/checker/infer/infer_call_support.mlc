@@ -9,6 +9,41 @@ import { constructor_arity_diagnostics, call_arity_diagnostics, call_arity_range
 import * as semantic_type_structure from '../semantic_type_structure'
 import { diagnostic_code_e002, diagnostic_code_e065 } from '../diagnostic_codes'
 
+fn owner_name_from_constructor_type(constructor_type: Shared<Type>) -> string =
+  match constructor_type {
+    TNamed(type_name) => type_name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TUnknown => '',
+    TArray(inner) => '',
+    TShared(inner) => '',
+    TGeneric(type_name, type_arguments) => '',
+    TPair(left, right) => '',
+    TTuple(types) => '',
+    TFn(param_types, return_type) => '',
+    TAssoc(param, assoc) => ''
+  }
+
+fn callee_min_arity(registry: TypeRegistry, callee_name: string, max_arity: i32) -> i32 =
+  if callee_name != '' && registry.has_fn(callee_name) then
+    const required_arity = registry.required_arity_for_fn(callee_name)
+    if required_arity >= 0 then required_arity else max_arity end
+  else max_arity
+  end
+
+fn return_type_from_inferred_function_type(inferred_type: Shared<Type>) -> Shared<Type> =
+  if semantic_type_structure.type_is_function(inferred_type) then
+    semantic_type_structure.function_return_type(inferred_type)
+  else Shared.new(TUnknown)
+  end
+
 export fn infer_expr_call_for_constructor_name(
   constructor_name: string,
   with_arguments: InferResult,
@@ -22,7 +57,7 @@ export fn infer_expr_call_for_constructor_name(
     call_arguments.length(),
     call_source_span)
   const constructor_type = inference_context.registry.ctor_type(constructor_name)
-  const owner_name = match constructor_type { TNamed(type_name) => type_name, _ => '' }
+  const owner_name = owner_name_from_constructor_type(constructor_type)
   const private_errors: [Diagnostic] =
     if inference_context.registry.is_private_ctor(constructor_name) &&
        inference_context.current_extend_type != owner_name then
@@ -48,13 +83,7 @@ export fn infer_expr_call_non_constructor_arity_only(
 ) -> InferResult = do
   const parameter_types = semantic_type_structure.function_parameter_list(function_parsed.inferred_type)
   const max_arity = parameter_types.length()
-  const min_arity =
-    if callee_name != '' && registry.has_fn(callee_name) then
-      const required_arity = registry.required_arity_for_fn(callee_name)
-      if required_arity >= 0 then required_arity else max_arity end
-    else
-      max_arity
-    end
+  const min_arity = callee_min_arity(registry, callee_name, max_arity)
   const arity_errors =
     if min_arity == max_arity then
       call_arity_diagnostics(max_arity, call_arguments.length(), call_source_span)
@@ -93,7 +122,7 @@ export fn infer_expr_call_non_constructor(
   registry: TypeRegistry,
   callee_name: string
 ) -> InferResult = do
-  const return_type = match function_parsed.inferred_type { TFn(_, return_ty) => return_ty, _ => Shared.new(TUnknown) }
+  const return_type = return_type_from_inferred_function_type(function_parsed.inferred_type)
   const base = InferResult { inferred_type: return_type, errors: with_arguments.errors }
   if semantic_type_structure.type_is_function(function_parsed.inferred_type) then
     infer_expr_call_non_constructor_arity_only(

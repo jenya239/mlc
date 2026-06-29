@@ -21,7 +21,7 @@ export fn array_hof_call_result_type(
   element_type: Shared<Type>,
   method_name: string,
   argument_inferred_types: [Shared<Type>]
-) -> Shared<Type> = do
+) -> Shared<Type> =
   if method_name == 'map' then
     if argument_inferred_types.length() > 0 then
       Shared.new(TArray(function_return_type(argument_inferred_types[0])))
@@ -76,4 +76,3 @@ export fn array_hof_call_result_type(
     }
   else Shared.new(TUnknown)
   end
-end

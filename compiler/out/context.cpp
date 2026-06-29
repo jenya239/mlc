@@ -79,6 +79,14 @@ context::CodegenContext context_add_match_deref(context::CodegenContext context,
 
 context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext context) noexcept;
 
+void push_pattern_bind_names_to_value_params(std::shared_ptr<ast::Pattern> pattern, context::CodegenContext& context) noexcept;
+
+void mutate_context_for_let_const(mlc::String binding_name, context::CodegenContext& context) noexcept;
+
+void mutate_context_for_let(mlc::String binding_name, std::shared_ptr<registry::Type> value_type, context::CodegenContext& context) noexcept;
+
+void mutate_context_noop() noexcept;
+
 void mutate_context_from_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext& context) noexcept;
 
 mlc::Array<mlc::String> lookup_fields_for_context(context::CodegenContext context, mlc::String name) noexcept;
@@ -107,12 +115,13 @@ return context::GenStmtsResult{parts, statement_parsed.next_try};
 
 mlc::String GenStmtsResult_joined_code(context::GenStmtsResult self) noexcept{return self.parts.join(mlc::String(""));}
 
-mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_naming::cpp_safe(name) : cpp_naming::cpp_safe(name);}
+mlc::String context_resolve(context::CodegenContext context, mlc::String name) noexcept{return context.method_owners.has(name) ? cpp_naming::cpp_safe(name) : context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : context.namespace_prefix.length() > 0 ? context.namespace_prefix + cpp_naming::cpp_safe(name) : cpp_naming::cpp_safe(name);}
 
 mlc::String type_method_namespace_prefix(mlc::String mangled_name, context::CodegenContext context) noexcept{
-int underscore = -1;
-int index = 0;
-while (index < mangled_name.length() && underscore < 0){
+return context.method_owners.has(mangled_name) ? mlc::String("") : [&]() -> mlc::String { 
+  int underscore = -1;
+  int index = 0;
+  while (index < mangled_name.length() && underscore < 0){
 {
 if (mangled_name.char_at(index) == mlc::String("_")){
 {
@@ -122,10 +131,11 @@ underscore = index;
 index = index + 1;
 }
 }
-return underscore <= 0 ? mlc::String("") : context.qualified.has(mangled_name.substring(0, underscore)) ? context.qualified.get(mangled_name.substring(0, underscore)) : mlc::String("");
+  return underscore <= 0 ? mlc::String("") : context.qualified.has(mangled_name.substring(0, underscore)) ? context.qualified.get(mangled_name.substring(0, underscore)) : mlc::String("");
+ }();
 }
 
-mlc::String qualify_function_callee(mlc::String name, context::CodegenContext context) noexcept{return context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : type_method_namespace_prefix(name, context) + cpp_naming::cpp_safe(name);}
+mlc::String qualify_function_callee(mlc::String name, context::CodegenContext context) noexcept{return context.method_owners.has(name) ? cpp_naming::cpp_safe(name) : context.qualified.has(name) ? context.qualified.get(name) + cpp_naming::cpp_safe(name) : type_method_namespace_prefix(name, context) + cpp_naming::cpp_safe(name);}
 
 mlc::Array<mlc::String> collect_pattern_bind_names_for_context(std::shared_ptr<ast::Pattern> pattern, mlc::Array<mlc::String>& accumulator) noexcept{
 return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<ast::PatternIdent>((*pattern))) { auto _v_patternident = std::get<ast::PatternIdent>((*pattern)); auto [binding_name, _w0] = _v_patternident; return [&]() -> mlc::Array<mlc::String> { 
@@ -166,10 +176,12 @@ accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumu
 index = index + 1;
 }
 }
-  return rest != mlc::String("") && rest != mlc::String("_") ? [&]() -> mlc::Array<mlc::String> { 
-  accumulator.push_back(rest);
+  if (rest != mlc::String("") && rest != mlc::String("_")){
+{
+accumulator.push_back(rest);
+}
+}
   return accumulator;
- }() : accumulator;
  }(); } return accumulator; }();
 }
 
@@ -236,11 +248,10 @@ context::CodegenContext context_add_match_deref(context::CodegenContext context,
 
 context::CodegenContext update_context_from_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext context) noexcept{return CodegenContext_update_from_statement(context, statement);}
 
-void mutate_context_from_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext& context) noexcept{
-return [&]() -> void { if (std::holds_alternative<semantic_ir::SemanticStatementLetConst>((*statement)._)) { auto _v_semanticstatementletconst = std::get<semantic_ir::SemanticStatementLetConst>((*statement)._); auto [binding_name, _w0, _w1, _w2] = _v_semanticstatementletconst; return context.value_params.push_back(binding_name); } if (std::holds_alternative<semantic_ir::SemanticStatementLet>((*statement)._)) { auto _v_semanticstatementlet = std::get<semantic_ir::SemanticStatementLet>((*statement)._); auto [binding_name, _w0, _w1, value_type, _w2] = _v_semanticstatementlet; return [&]() -> void { if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [_w0] = _v_tshared; return context.shared_params.push_back(binding_name); } if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [inner] = _v_tarray; return [&]() -> void { if (std::holds_alternative<registry::TShared>((*inner))) { auto _v_tshared = std::get<registry::TShared>((*inner)); auto [_w0] = _v_tshared; return context.shared_array_params.push_back(binding_name); } return context.value_params.push_back(binding_name); }(); } return context.value_params.push_back(binding_name); }(); } if (std::holds_alternative<semantic_ir::SemanticStatementLetPattern>((*statement)._)) { auto _v_semanticstatementletpattern = std::get<semantic_ir::SemanticStatementLetPattern>((*statement)._); auto [pattern, _w0, _w1, _w2, _w3, _w4, _w5] = _v_semanticstatementletpattern; return [&]() { 
-  mlc::Array<mlc::String> names = [&]() { mlc::Array<mlc::String> __tmp_10 = {}; return collect_pattern_bind_names_for_context(pattern, __tmp_10); }();
-  int name_index = 0;
-  return [&]() { 
+void push_pattern_bind_names_to_value_params(std::shared_ptr<ast::Pattern> pattern, context::CodegenContext& context) noexcept{
+mlc::Array<mlc::String> names = [&]() { mlc::Array<mlc::String> __tmp_10 = {}; return collect_pattern_bind_names_for_context(pattern, __tmp_10); }();
+int name_index = 0;
+return [&]() { 
   while (name_index < names.size()){
 {
 context.value_params.push_back(names[name_index]);
@@ -248,7 +259,29 @@ name_index = name_index + 1;
 }
 }
  }();
- }(); } return; }();
+}
+
+void mutate_context_for_let_const(mlc::String binding_name, context::CodegenContext& context) noexcept{
+return context.value_params.push_back(binding_name);
+}
+
+void mutate_context_for_let(mlc::String binding_name, std::shared_ptr<registry::Type> value_type, context::CodegenContext& context) noexcept{
+return [&]() -> void { if (std::holds_alternative<registry::TShared>((*value_type))) { auto _v_tshared = std::get<registry::TShared>((*value_type)); auto [_w0] = _v_tshared; return context.shared_params.push_back(binding_name); } if (std::holds_alternative<registry::TArray>((*value_type))) { auto _v_tarray = std::get<registry::TArray>((*value_type)); auto [inner] = _v_tarray; return [&]() -> void { if (std::holds_alternative<registry::TShared>((*inner))) { auto _v_tshared = std::get<registry::TShared>((*inner)); auto [_w0] = _v_tshared; return context.shared_array_params.push_back(binding_name); } return context.value_params.push_back(binding_name); }(); } return context.value_params.push_back(binding_name); }();
+}
+
+void mutate_context_noop() noexcept{
+}
+
+void mutate_context_from_statement(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext& context) noexcept{
+return std::visit(overloaded{
+  [&](const SemanticStatementLetConst& semanticstatementletconst) -> void { auto [binding_name, _w0, _w1, _w2] = semanticstatementletconst; mutate_context_for_let_const(binding_name, context); },
+  [&](const SemanticStatementLet& semanticstatementlet) -> void { auto [binding_name, _w0, _w1, value_type, _w2] = semanticstatementlet; mutate_context_for_let(binding_name, value_type, context); },
+  [&](const SemanticStatementLetPattern& semanticstatementletpattern) -> void { auto [pattern, _w0, _w1, _w2, _w3, _w4, _w5] = semanticstatementletpattern; push_pattern_bind_names_to_value_params(pattern, context); },
+  [&](const SemanticStatementExpr& semanticstatementexpr) -> void { auto [_w0, _w1] = semanticstatementexpr; mutate_context_noop(); },
+  [&](const SemanticStatementReturn& semanticstatementreturn) -> void { auto [_w0, _w1] = semanticstatementreturn; mutate_context_noop(); },
+  [&](const SemanticStatementBreak& semanticstatementbreak) -> void { auto [_w0] = semanticstatementbreak; mutate_context_noop(); },
+  [&](const SemanticStatementContinue& semanticstatementcontinue) -> void { auto [_w0] = semanticstatementcontinue; mutate_context_noop(); }
+}, (*statement)._);
 }
 
 mlc::Array<mlc::String> lookup_fields_for_context(context::CodegenContext context, mlc::String name) noexcept{return context.field_order_index.has(name) ? context.field_order_index.get(name) : decl_index::lookup_fields(context.field_orders, name);}

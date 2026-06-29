@@ -26,6 +26,10 @@ struct CppExpression;
 
 struct DeclPartsBundle {mlc::Array<mlc::String> type_fwds;mlc::Array<mlc::String> type_defs;mlc::Array<mlc::String> fn_protos;mlc::Array<mlc::String> fn_defs;};
 
+context::CodegenContext prototype_context_for_self_parameter(context::CodegenContext context, std::shared_ptr<ast::Param> first_parameter) noexcept;
+
+context::CodegenContext prototype_context_for_function(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
 mlc::String gen_fn_proto(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept;
 
 context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext context) noexcept;

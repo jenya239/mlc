@@ -153,16 +153,29 @@ fn derive_display_variant_return_expression(variant: Shared<TypeVariant>) -> Sha
       derive_display_variant_record_return_expression(name, field_definitions)
   }
 
-fn display_to_string_if_statement(variant: Shared<TypeVariant>) -> Shared<CppStatement> = do
-  const variant_name = match variant {
+fn type_variant_constructor_name(variant: Shared<TypeVariant>) -> string =
+  match variant {
     VarUnit(name, _) => name,
     VarTuple(name, _, _) => name,
     VarRecord(name, _, _) => name
   }
+
+fn display_to_string_if_statement(variant: Shared<TypeVariant>) -> Shared<CppStatement> =
   emit_helpers.make_if_cpp_statement(
-    make_holds_alternative_expression(variant_name),
+    make_holds_alternative_expression(type_variant_constructor_name(variant)),
     emit_helpers.make_return_cpp_statement(derive_display_variant_return_expression(variant)),
     emit_helpers.make_block_cpp_statement([]))
+
+fn derive_record_field_definitions(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] =
+  match variants[0] {
+    VarRecord(_, field_definitions, _) => field_definitions,
+    VarUnit(_, _) => empty_derive_field_definitions(),
+    VarTuple(_, _, _) => empty_derive_field_definitions()
+  }
+
+fn empty_derive_field_definitions() -> [Shared<FieldDef>] = do
+  const empty: [Shared<FieldDef>] = []
+  empty
 end
 
 fn derive_display_sum_body_statements(variants: [Shared<TypeVariant>]) -> [Shared<CppStatement>] = do
@@ -201,11 +214,6 @@ fn variants_is_single_record(variants: [Shared<TypeVariant>]) -> bool =
   if variants.length() != 1 then false
   else match variants[0] { VarRecord(_, _, _) => true, _ => false }
   end
-
-fn derive_record_field_definitions(variants: [Shared<TypeVariant>]) -> [Shared<FieldDef>] = do
-  const empty: [Shared<FieldDef>] = []
-  match variants[0] { VarRecord(_, field_definitions, _) => field_definitions, _ => empty }
-end
 
 export fn gen_derive_display_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
@@ -397,13 +405,6 @@ fn derive_hash_record_body_statements(field_definitions: [Shared<FieldDef>]) -> 
     statements.push(make_hash_return_h_statement())
     statements
   end
-
-fn type_variant_constructor_name(variant: Shared<TypeVariant>) -> string =
-  match variant {
-    VarUnit(name, _) => name,
-    VarTuple(name, _, _) => name,
-    VarRecord(name, _, _) => name
-  }
 
 fn derive_hash_discriminant_combine_statement(discriminant_index: i32) -> Shared<CppStatement> =
   make_hash_combine_statement('size_t', emit_helpers.make_integer_cpp_expression(discriminant_index))

@@ -12,6 +12,7 @@
 #include "context.hpp"
 #include "cpp_naming.hpp"
 #include "type_gen.hpp"
+#include "semantic_type_structure.hpp"
 #include "let_pat_cpp.hpp"
 #include "statement_context.hpp"
 #include "expr_visitor_cpp.hpp"

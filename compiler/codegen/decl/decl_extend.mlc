@@ -31,41 +31,41 @@ fn default_expr_to_cpp(expression: Shared<Expr>) -> string = match expression {
   _                => 0.to_string()
 }
 
+fn generic_parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>, generic_type_name: string) -> string =
+  if generic_type_name == 'ref' then type_to_cpp(context, parameter.type_value)
+  else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+  else type_to_cpp(context, parameter.type_value)
+  end
+
+fn non_generic_parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
+  if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+  else type_to_cpp(context, parameter.type_value)
+  end
+
 fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
   match parameter.type_value {
-    TyGeneric(type_name, _) =>
-      if type_name == 'ref' then type_to_cpp(context, parameter.type_value)
-      else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
-      else type_to_cpp(context, parameter.type_value)
-      end,
-    _ =>
-      if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
-      else type_to_cpp(context, parameter.type_value)
-      end
+    TyGeneric(generic_type_name, _) => generic_parameter_type_cpp(context, parameter, generic_type_name),
+    _ => non_generic_parameter_type_cpp(context, parameter)
   }
 
 fn param_item_def(context: CodegenContext, parameter: Shared<Param>) -> string =
   expression_output.parameter_declaration_item(parameter_type_cpp(context, parameter), cpp_safe(parameter.name))
 
-fn param_item_proto(context: CodegenContext, parameter: Shared<Param>) -> string = do
-  const base = param_item_def(context, parameter)
+fn param_item_proto(context: CodegenContext, parameter: Shared<Param>) -> string =
   if parameter.has_default then
-    base + ' = ' + default_expr_to_cpp(parameter.default)
+    param_item_def(context, parameter) + ' = ' + default_expr_to_cpp(parameter.default)
   else
-    base
+    param_item_def(context, parameter)
   end
-end
 
-export fn gen_params_proto(context: CodegenContext, parameters: [Shared<Param>]) -> string = do
+export fn gen_params_proto(context: CodegenContext, parameters: [Shared<Param>]) -> string =
   gen_parameter_proto_items(context, parameters).join(', ')
-end
 
 export fn gen_parameter_proto_items(context: CodegenContext, parameters: [Shared<Param>]) -> [string] =
   parameters.map(parameter => param_item_proto(context, parameter))
 
-export fn gen_params_def(context: CodegenContext, parameters: [Shared<Param>]) -> string = do
+export fn gen_params_def(context: CodegenContext, parameters: [Shared<Param>]) -> string =
   gen_parameter_def_items(context, parameters).join(', ')
-end
 
 export fn gen_parameter_def_items(context: CodegenContext, parameters: [Shared<Param>]) -> [string] =
   parameters.map(parameter => param_item_def(context, parameter))
@@ -82,23 +82,17 @@ export fn concept_declval_arguments_for_params(context: CodegenContext, paramete
     .map(type_code => expression_output.std_declval_expression(type_code))
     .join(', ')
 
-fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SemanticDeclaration>]) -> string = do
-  let mut result = 'void'
-  let mut method_index = 0
-  while method_index < methods.length() do
-    match methods[method_index] {
-      SemanticDeclarationFn(_, _, _, _, return_type, _, _, _) =>
-        do result = sem_type_to_cpp(extend_context, return_type) end,
-      _ => do end
-    }
-    if result != 'void' then
-      method_index = methods.length()
-    else
-      method_index = method_index + 1
-    end
-  end
-  result
-end
+fn extend_method_return_type_from_declaration(extend_context: CodegenContext, method: Shared<SemanticDeclaration>) -> string =
+  match method {
+    SemanticDeclarationFn(_, _, _, _, return_type, _, _, _) => sem_type_to_cpp(extend_context, return_type),
+    _ => 'void'
+  }
+
+fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SemanticDeclaration>]) -> string =
+  methods.fold('void', (accumulated, method) =>
+    if accumulated != 'void' then accumulated
+    else extend_method_return_type_from_declaration(extend_context, method)
+    end)
 
 fn generic_trait_static_assert_line(
   trait_name: string,
@@ -106,20 +100,17 @@ fn generic_trait_static_assert_line(
   methods: [Shared<SemanticDeclaration>],
   extend_context: CodegenContext,
   implementor_type_cpp: string
-) -> string = do
-  const trait_safe = cpp_safe(trait_name)
-  const message = type_name + ' does not implement ' + trait_name
+) -> string =
   if trait_name == 'ExprVisitor' then
-    const result_type_cpp = extend_method_return_type_cpp(extend_context, methods)
     expression_output.static_assert_concept_for_result_and_implementor_line(
-      trait_safe,
-      result_type_cpp,
+      cpp_safe(trait_name),
+      extend_method_return_type_cpp(extend_context, methods),
       implementor_type_cpp,
-      message)
+      type_name + ' does not implement ' + trait_name)
   else
-    expression_output.static_assert_concept_for_type_line(trait_safe, implementor_type_cpp, message)
+    expression_output.static_assert_concept_for_type_line(
+      cpp_safe(trait_name), implementor_type_cpp, type_name + ' does not implement ' + trait_name)
   end
-end
 
 fn trait_struct_field_line_for_method(
   trait_context: CodegenContext,

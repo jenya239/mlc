@@ -2,20 +2,120 @@
 // break the import cycle with eval.mlc. Private helpers thread gen_expr_fn
 // through; recursive eval_stmts_str calls go directly (same module).
 
-import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionIf, SemanticExpressionBlock } from '../../ir/semantic_ir'
+import {
+  SemanticExpression, SemanticStatement,
+  SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionFloat,
+  SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar,
+  SemanticExpressionBool, SemanticExpressionUnit, SemanticExpressionExtern,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn,
+  SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex,
+  SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionFor,
+  SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
+  SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion,
+  SemanticExpressionLambda, SemanticExpressionWith
+} from '../../ir/semantic_ir'
 import { gen_let_pattern_statement } from '../expr/let_pat'
-import { Type, TArray, TGeneric, TNamed } from '../../checker/registry'
+import {
+  Type, TArray, TGeneric, TNamed, TI32, TString, TBool, TUnit, TI64, TF64,
+  TU8, TUsize, TChar, TShared, TPair, TTuple, TFn, TAssoc, TUnknown
+} from '../../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
          mutate_context_from_statement } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { generate_conditional_else_with_empty_array_coercion } from '../expr/expression_support'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
+import * as semantic_type_structure from '../../checker/semantic_type_structure'
 import * as expression_output from '../expr/expr'
 
 // --- Try unwrap helper -------------------------------------------------------
 
-fn constexpr_binding_value_code(
+fn constexpr_named_type_cpp(binding_semantic_type: Shared<Type>, context: CodegenContext) -> string =
+  match binding_semantic_type {
+    TNamed(type_name) => context.resolve(type_name),
+    TGeneric(_, _) => '',
+    TArray(_) => '',
+    TTuple(_) => '',
+    TPair(_, _) => '',
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
+fn constexpr_if_binding_value_code(
+  if_value: Shared<SemanticExpression>,
+  binding_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  match if_value {
+    SemanticExpressionIf(condition, then_branch, else_branch, _, _) => do
+      const cond_code = gen_expr_fn(condition, context)
+      const then_code = gen_expr_fn(then_branch, context)
+      const else_code = generate_conditional_else_with_empty_array_coercion(
+        then_branch, else_branch, binding_semantic_type, context, gen_expr_fn)
+      const named_type_cpp = constexpr_named_type_cpp(binding_semantic_type, context)
+      if named_type_cpp != '' && named_type_cpp != 'auto' then
+        `[&]() -> ${named_type_cpp} {\nif (${cond_code}) {\nreturn ${then_code};\n} else {\nreturn ${else_code};\n}\n}()`
+      else
+        expression_output.ternary_conditional(cond_code, then_code, else_code)
+      end
+    end,
+    _ => constexpr_binding_default_code(if_value, context, gen_expr_fn)
+  }
+
+fn constexpr_binding_default_code(
+  value: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  gen_expr_fn(value, context)
+
+fn semantic_expression_is_if(expression: Shared<SemanticExpression>) -> bool =
+  match expression { SemanticExpressionIf(_, _, _, _, _) => true, _ => false }
+
+fn semantic_expression_is_block(expression: Shared<SemanticExpression>) -> bool =
+  match expression { SemanticExpressionBlock(_, _, _, _) => true, _ => false }
+
+fn semantic_expression_is_unit(expression: Shared<SemanticExpression>) -> bool =
+  match expression { SemanticExpressionUnit(_, _) => true, _ => false }
+
+fn semantic_expression_is_array(expression: Shared<SemanticExpression>) -> bool =
+  match expression { SemanticExpressionArray(_, _, _) => true, _ => false }
+
+fn map_generic_type_arguments(value_type: Shared<Type>) -> [Shared<Type>] =
+  match value_type {
+    TGeneric(_, type_arguments) => type_arguments,
+    TI32 => semantic_type_structure.empty_type_parameter_list(),
+    TString => semantic_type_structure.empty_type_parameter_list(),
+    TBool => semantic_type_structure.empty_type_parameter_list(),
+    TUnit => semantic_type_structure.empty_type_parameter_list(),
+    TI64 => semantic_type_structure.empty_type_parameter_list(),
+    TF64 => semantic_type_structure.empty_type_parameter_list(),
+    TU8 => semantic_type_structure.empty_type_parameter_list(),
+    TUsize => semantic_type_structure.empty_type_parameter_list(),
+    TChar => semantic_type_structure.empty_type_parameter_list(),
+    TShared(_) => semantic_type_structure.empty_type_parameter_list(),
+    TNamed(_) => semantic_type_structure.empty_type_parameter_list(),
+    TArray(_) => semantic_type_structure.empty_type_parameter_list(),
+    TPair(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TTuple(_) => semantic_type_structure.empty_type_parameter_list(),
+    TFn(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TAssoc(_, _) => semantic_type_structure.empty_type_parameter_list(),
+    TUnknown => semantic_type_structure.empty_type_parameter_list()
+  }
+
+fn constexpr_block_binding_value_code(
   value: Shared<SemanticExpression>,
   binding_semantic_type: Shared<Type>,
   context: CodegenContext,
@@ -25,54 +125,118 @@ fn constexpr_binding_value_code(
     SemanticExpressionBlock(inner_statements, result_expression, _, _) =>
       if inner_statements.length() == 0 then
         constexpr_binding_value_code(result_expression, binding_semantic_type, context, gen_expr_fn)
-      else gen_expr_fn(value, context)
+      else
+        constexpr_binding_default_code(value, context, gen_expr_fn)
       end,
-    SemanticExpressionIf(condition, then_branch, else_branch, _, _) => do
-      const cond_code = gen_expr_fn(condition, context)
-      const then_code = gen_expr_fn(then_branch, context)
-      const else_code = generate_conditional_else_with_empty_array_coercion(
-        then_branch, else_branch, binding_semantic_type, context, gen_expr_fn)
-      match binding_semantic_type {
-        TNamed(type_name) => do
-          const type_cpp = context.resolve(type_name)
-          if type_cpp == 'auto' then
-            expression_output.ternary_conditional(cond_code, then_code, else_code)
-          else
-            `[&]() -> ${type_cpp} {\nif (${cond_code}) {\nreturn ${then_code};\n} else {\nreturn ${else_code};\n}\n}()`
-          end
-        end,
-        _ => expression_output.ternary_conditional(cond_code, then_code, else_code)
-      }
-    end,
-    _ => gen_expr_fn(value, context)
+    SemanticExpressionInt(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionStr(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionFloat(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionI64(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionU8(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionUsize(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionChar(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionBool(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionUnit(_, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionExtern(_, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionIdent(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionBin(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionUn(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionCall(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionMethod(_, _, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionField(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionIndex(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionIf(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionWhile(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionFor(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionMatch(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionRecord(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionArray(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionTuple(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionQuestion(_, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionLambda(_, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn),
+    SemanticExpressionWith(_, _, _, _, _) => constexpr_binding_default_code(value, context, gen_expr_fn)
   }
+
+fn constexpr_binding_value_code(
+  value: Shared<SemanticExpression>,
+  binding_semantic_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  if semantic_expression_is_if(value) then
+    constexpr_if_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)
+  else if semantic_expression_is_block(value) then
+    constexpr_block_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)
+  else
+    constexpr_binding_default_code(value, context, gen_expr_fn)
+  end
 
 export fn eval_try_unwrap(inner_expression: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string = do
   const inner_code = gen_expr_fn(inner_expression, context)
   expression_output.try_unwrap_result_block(try_identifier, inner_code, success_line)
 end
 
-// --- Statement generation ----------------------------------------------------
+fn empty_unit_block_expression(expression: Shared<SemanticExpression>) -> bool =
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) =>
+      statements.length() == 0 && semantic_expression_is_unit(result_expression),
+    SemanticExpressionInt(_, _, _) => false,
+    SemanticExpressionStr(_, _, _) => false,
+    SemanticExpressionFloat(_, _, _) => false,
+    SemanticExpressionI64(_, _, _) => false,
+    SemanticExpressionU8(_, _, _) => false,
+    SemanticExpressionUsize(_, _, _) => false,
+    SemanticExpressionChar(_, _, _) => false,
+    SemanticExpressionBool(_, _, _) => false,
+    SemanticExpressionUnit(_, _) => false,
+    SemanticExpressionExtern(_, _) => false,
+    SemanticExpressionIdent(_, _, _) => false,
+    SemanticExpressionBin(_, _, _, _, _) => false,
+    SemanticExpressionUn(_, _, _, _) => false,
+    SemanticExpressionCall(_, _, _, _, _) => false,
+    SemanticExpressionMethod(_, _, _, _, _, _) => false,
+    SemanticExpressionField(_, _, _, _) => false,
+    SemanticExpressionIndex(_, _, _, _) => false,
+    SemanticExpressionIf(_, _, _, _, _) => false,
+    SemanticExpressionWhile(_, _, _, _) => false,
+    SemanticExpressionFor(_, _, _, _, _) => false,
+    SemanticExpressionMatch(_, _, _, _) => false,
+    SemanticExpressionRecord(_, _, _, _) => false,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => false,
+    SemanticExpressionArray(_, _, _) => false,
+    SemanticExpressionTuple(_, _, _) => false,
+    SemanticExpressionQuestion(_, _, _) => false,
+    SemanticExpressionLambda(_, _, _, _) => false,
+    SemanticExpressionWith(_, _, _, _, _) => false
+  }
 
-fn eval_stmt_if_else_suffix(
-  else_expression: Shared<SemanticExpression>,
-  context: CodegenContext,
+// --- Statement generation ----------------------------------------------------
+fn block_result_trailing_code(
+  statements_code: string,
+  result_expression: Shared<SemanticExpression>,
+  final_context: CodegenContext,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> string =
-  match else_expression {
-    SemanticExpressionUnit(_, _) => '',
-    SemanticExpressionBlock(statements, result_expression, _, _) =>
-      if statements.length() == 0 then
-        match result_expression {
-          SemanticExpressionUnit(_, _) => '',
-          _ => expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
-        }
-      else expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
-      end,
-    SemanticExpressionIf(_, _, _, _, _) =>
-      expression_output.else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn)),
-    _ => expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
-  }
+  if semantic_expression_is_if(result_expression) then
+    statements_code + eval_stmt_if_nested(result_expression, final_context, gen_expr_fn)
+  else if semantic_expression_is_unit(result_expression) then
+    statements_code
+  else
+    block_result_expression_trailing_code(statements_code, result_expression, final_context, gen_expr_fn)
+  end
+
+fn block_result_expression_trailing_code(
+  statements_code: string,
+  result_expression: Shared<SemanticExpression>,
+  final_context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string = do
+  const result_code = gen_expr_fn(result_expression, final_context)
+  if result_code == gen_unit_literal() then statements_code
+  else expression_output.append_trailing_expression_statement(statements_code, result_code)
+  end
+end
 
 fn eval_stmt_if_nested(if_expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   match if_expression {
@@ -80,32 +244,90 @@ fn eval_stmt_if_nested(if_expression: Shared<SemanticExpression>, context: Codeg
       const opening = expression_output.if_brace_block(
         gen_expr_fn(condition_expression, context),
         eval_block_body(then_expression, context, gen_expr_fn))
-      const else_suffix = eval_stmt_if_else_suffix(else_expression, context, gen_expr_fn)
+      const else_suffix =
+        if semantic_expression_is_unit(else_expression) then ''
+        else if semantic_expression_is_if(else_expression) then
+          expression_output.else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn))
+        else if semantic_expression_is_block(else_expression) && empty_unit_block_expression(else_expression) then ''
+        else
+          expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
+        end
       expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(opening, else_suffix))
     end,
     _ => expression_output.if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn))
   }
 
 fn eval_block_body(expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
+  if semantic_expression_is_block(expression) then
+    eval_semantic_block_body(expression, context, gen_expr_fn)
+  else if semantic_expression_is_if(expression) then
+    eval_stmt_if_nested(expression, context, gen_expr_fn)
+  else
+    expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+  end
+
+fn eval_semantic_block_body(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
   match expression {
     SemanticExpressionBlock(statements, result_expression, _, _) => do
       const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
       const statements_code = statements_with_context.statements_parsed.joined_code()
-      const final_context   = statements_with_context.codegen_context
-      match result_expression {
-        SemanticExpressionIf(_, _, _, _, _) => statements_code + eval_stmt_if_nested(result_expression, final_context, gen_expr_fn),
-        SemanticExpressionUnit(_, _)        => statements_code,
-        _ => do
-          const result_code = gen_expr_fn(result_expression, final_context)
-          if result_code == gen_unit_literal() then statements_code
-          else expression_output.append_trailing_expression_statement(statements_code, result_code)
-          end
-        end
-      }
+      const final_context = statements_with_context.codegen_context
+      block_result_trailing_code(statements_code, result_expression, final_context, gen_expr_fn)
     end,
-    SemanticExpressionIf(_, _, _, _, _) => eval_stmt_if_nested(expression, context, gen_expr_fn),
-    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+    SemanticExpressionInt(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionStr(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionFloat(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionI64(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionU8(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUsize(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionChar(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionBool(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUnit(_, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionExtern(_, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIdent(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionBin(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUn(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionCall(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionMethod(_, _, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionField(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIndex(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIf(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionWhile(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionFor(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionMatch(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionRecord(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionArray(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionTuple(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionQuestion(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionLambda(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionWith(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
   }
+
+fn eval_stmt_expr_default_suffix(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+
+fn eval_stmt_expr_block(
+  statements: [Shared<SemanticStatement>],
+  result_expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string = do
+  const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
+  const statements_code = statements_with_context.statements_parsed.joined_code()
+  const result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context)
+  if result_code == gen_unit_literal() then statements_code
+  else expression_output.append_trailing_expression_statement(statements_code, result_code)
+  end
+end
 
 fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   match expression {
@@ -134,94 +356,402 @@ fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContex
         gen_expr_fn(resource, context),
         cpp_safe(binder),
         eval_stmts_str(with_statements, context, gen_expr_fn)),
-    SemanticExpressionBlock(statements, result_expression, _, _) => do
-      const statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn)
-      const statements_code = statements_with_context.statements_parsed.joined_code()
-      const result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context)
-      if result_code == gen_unit_literal() then statements_code
-      else expression_output.append_trailing_expression_statement(statements_code, result_code)
-      end
-    end,
-    _ => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+    SemanticExpressionBlock(statements, result_expression, _, _) =>
+      eval_stmt_expr_block(statements, result_expression, context, gen_expr_fn),
+    SemanticExpressionInt(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionStr(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionFloat(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionI64(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionU8(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionUsize(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionChar(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionBool(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionUnit(_, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionExtern(_, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionIdent(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionUn(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionCall(_, _, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionMethod(_, _, _, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionField(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionIndex(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionMatch(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionRecord(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionArray(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionTuple(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionQuestion(_, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn),
+    SemanticExpressionLambda(_, _, _, _) => eval_stmt_expr_default_suffix(expression, context, gen_expr_fn)
   }
 
 fn eval_elements_code(elements: [Shared<SemanticExpression>], context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   elements.map(element => gen_expr_fn(element, context)).join(', ')
 
+fn gen_let_array_value_from_tarray(
+  elements: [Shared<SemanticExpression>],
+  inner_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string = do
+  const element_cpp = sem_type_to_cpp(context, inner_type)
+  if elements.length() == 0 then
+    expression_output.typed_array_empty_or_untyped_empty(element_cpp)
+  else if element_cpp == 'auto' then
+    expression_output.array_literal(eval_elements_code(elements, context, gen_expr_fn))
+  else
+    expression_output.typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
+  end
+end
+
+fn gen_let_array_value_fallback(
+  elements: [Shared<SemanticExpression>],
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  if elements.length() == 0 then expression_output.array_string_fallback_empty()
+  else expression_output.constructor_call_braces('mlc::Array', eval_elements_code(elements, context, gen_expr_fn))
+  end
+
+fn gen_let_array_value_code(
+  elements: [Shared<SemanticExpression>],
+  array_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  if semantic_type_structure.type_is_array(array_type) then
+    gen_let_array_value_from_tarray(
+      elements,
+      semantic_type_structure.array_element_type_from_array_type(array_type),
+      context,
+      gen_expr_fn)
+  else
+    gen_let_array_value_fallback(elements, context, gen_expr_fn)
+  end
+
+fn gen_let_map_new_value_code(
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string = do
+  const type_arguments = map_generic_type_arguments(value_type)
+  if semantic_type_structure.receiver_type_is_map(value_type) && type_arguments.length() == 2 then
+    expression_output.hash_map_empty_instantiation(
+      sem_type_to_cpp(context, type_arguments[0]),
+      sem_type_to_cpp(context, type_arguments[1]))
+  else
+    gen_expr_fn(value, context)
+  end
+end
+
+fn gen_let_array_value_from_expression(
+  value: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  match value {
+    SemanticExpressionArray(elements, array_type, _) =>
+      gen_let_array_value_code(elements, array_type, context, gen_expr_fn),
+    SemanticExpressionInt(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionStr(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionFloat(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionI64(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionU8(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionUsize(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionChar(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionBool(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionUnit(_, _) => gen_expr_fn(value, context),
+    SemanticExpressionExtern(_, _) => gen_expr_fn(value, context),
+    SemanticExpressionIdent(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionBin(_, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionUn(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionCall(_, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionField(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionIndex(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionIf(_, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionBlock(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionWhile(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionFor(_, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionMatch(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionRecord(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionTuple(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionQuestion(_, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionLambda(_, _, _, _) => gen_expr_fn(value, context),
+    SemanticExpressionWith(_, _, _, _, _) => gen_expr_fn(value, context)
+  }
+
+fn gen_let_value_code(
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> string =
+  if semantic_expression_is_array(value) then
+    gen_let_array_value_from_expression(value, context, gen_expr_fn)
+  else if semantic_expression_is_method_map_new(value) then
+    gen_let_map_new_value_code(value, value_type, context, gen_expr_fn)
+  else
+    gen_expr_fn(value, context)
+  end
+
+fn semantic_expression_ident_name(expression: Shared<SemanticExpression>) -> string =
+  match expression {
+    SemanticExpressionIdent(name, _, _) => name,
+    SemanticExpressionInt(_, _, _) => '',
+    SemanticExpressionStr(_, _, _) => '',
+    SemanticExpressionFloat(_, _, _) => '',
+    SemanticExpressionI64(_, _, _) => '',
+    SemanticExpressionU8(_, _, _) => '',
+    SemanticExpressionUsize(_, _, _) => '',
+    SemanticExpressionChar(_, _, _) => '',
+    SemanticExpressionBool(_, _, _) => '',
+    SemanticExpressionUnit(_, _) => '',
+    SemanticExpressionExtern(_, _) => '',
+    SemanticExpressionBin(_, _, _, _, _) => '',
+    SemanticExpressionUn(_, _, _, _) => '',
+    SemanticExpressionCall(_, _, _, _, _) => '',
+    SemanticExpressionMethod(_, _, _, _, _, _) => '',
+    SemanticExpressionField(_, _, _, _) => '',
+    SemanticExpressionIndex(_, _, _, _) => '',
+    SemanticExpressionIf(_, _, _, _, _) => '',
+    SemanticExpressionBlock(_, _, _, _) => '',
+    SemanticExpressionWhile(_, _, _, _) => '',
+    SemanticExpressionFor(_, _, _, _, _) => '',
+    SemanticExpressionMatch(_, _, _, _) => '',
+    SemanticExpressionRecord(_, _, _, _) => '',
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => '',
+    SemanticExpressionArray(_, _, _) => '',
+    SemanticExpressionTuple(_, _, _) => '',
+    SemanticExpressionQuestion(_, _, _) => '',
+    SemanticExpressionLambda(_, _, _, _) => '',
+    SemanticExpressionWith(_, _, _, _, _) => ''
+  }
+
+fn semantic_expression_is_method_map_new(expression: Shared<SemanticExpression>) -> bool =
+  match expression {
+    SemanticExpressionMethod(map_object, method_name, _, _, _, _) =>
+      method_name == 'new' && semantic_expression_ident_name(map_object) == 'Map',
+    SemanticExpressionInt(_, _, _) => false,
+    SemanticExpressionStr(_, _, _) => false,
+    SemanticExpressionFloat(_, _, _) => false,
+    SemanticExpressionI64(_, _, _) => false,
+    SemanticExpressionU8(_, _, _) => false,
+    SemanticExpressionUsize(_, _, _) => false,
+    SemanticExpressionChar(_, _, _) => false,
+    SemanticExpressionBool(_, _, _) => false,
+    SemanticExpressionUnit(_, _) => false,
+    SemanticExpressionExtern(_, _) => false,
+    SemanticExpressionIdent(_, _, _) => false,
+    SemanticExpressionBin(_, _, _, _, _) => false,
+    SemanticExpressionUn(_, _, _, _) => false,
+    SemanticExpressionCall(_, _, _, _, _) => false,
+    SemanticExpressionField(_, _, _, _) => false,
+    SemanticExpressionIndex(_, _, _, _) => false,
+    SemanticExpressionIf(_, _, _, _, _) => false,
+    SemanticExpressionBlock(_, _, _, _) => false,
+    SemanticExpressionWhile(_, _, _, _) => false,
+    SemanticExpressionFor(_, _, _, _, _) => false,
+    SemanticExpressionMatch(_, _, _, _) => false,
+    SemanticExpressionRecord(_, _, _, _) => false,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => false,
+    SemanticExpressionArray(_, _, _) => false,
+    SemanticExpressionTuple(_, _, _) => false,
+    SemanticExpressionQuestion(_, _, _) => false,
+    SemanticExpressionLambda(_, _, _, _) => false,
+    SemanticExpressionWith(_, _, _, _, _) => false
+  }
+
+fn gen_let_stmt_result_default(
+  name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  GenStmtResult {
+    output: expression_output.auto_binding_statement(
+      cpp_safe(name),
+      gen_let_value_code(value, value_type, context, gen_expr_fn)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_let_stmt_result(
+  name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  match value {
+    SemanticExpressionQuestion(inner_expression, _, _) =>
+      GenStmtResult {
+        output: eval_try_unwrap(
+          inner_expression,
+          context,
+          `__try_${try_counter.to_string()}`,
+          expression_output.let_from_try_ok_field0(cpp_safe(name), `__try_${try_counter.to_string()}`),
+          gen_expr_fn),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionInt(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionStr(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionFloat(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionI64(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionU8(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionUsize(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionChar(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionBool(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionUnit(_, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionExtern(_, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionIdent(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionBin(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionUn(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionCall(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionField(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionIndex(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionIf(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionBlock(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionWhile(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionFor(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionMatch(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecord(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionArray(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionTuple(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionLambda(_, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
+    SemanticExpressionWith(_, _, _, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn)
+  }
+
+fn gen_expr_stmt_result_default(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  GenStmtResult {
+    output: eval_stmt_expr(expression, context, gen_expr_fn),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_expr_stmt_result(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  match expression {
+    SemanticExpressionQuestion(inner_expression, _, _) =>
+      GenStmtResult {
+        output: eval_try_unwrap(
+          inner_expression,
+          context,
+          `__try_${try_counter.to_string()}`,
+          expression_output.discard_try_ok_field0_statement(`__try_${try_counter.to_string()}`),
+          gen_expr_fn),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionInt(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionStr(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionFloat(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionI64(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionU8(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUsize(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionChar(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBool(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUnit(_, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionExtern(_, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIdent(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBin(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUn(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionCall(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionField(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIndex(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIf(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBlock(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionWhile(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionFor(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionMatch(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecord(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionArray(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionTuple(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionLambda(_, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionWith(_, _, _, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn)
+  }
+
+fn gen_return_stmt_result_default(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  GenStmtResult {
+    output: expression_output.return_line(gen_expr_fn(expression, context)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_return_stmt_result(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  try_counter: i32,
+  gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenStmtResult =
+  match expression {
+    SemanticExpressionQuestion(inner_expression, _, _) =>
+      GenStmtResult {
+        output: eval_try_unwrap(
+          inner_expression,
+          context,
+          `__try_ret_${try_counter.to_string()}`,
+          expression_output.return_try_ok_field0_statement(`__try_ret_${try_counter.to_string()}`),
+          gen_expr_fn),
+        next_try: try_counter + 1,
+        codegen_context: context
+      },
+    SemanticExpressionInt(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionStr(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionFloat(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionI64(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionU8(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUsize(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionChar(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBool(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUnit(_, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionExtern(_, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIdent(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBin(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionUn(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionCall(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionMethod(_, _, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionField(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIndex(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionIf(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionBlock(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionWhile(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionFor(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionMatch(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecord(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionArray(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionTuple(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionLambda(_, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
+    SemanticExpressionWith(_, _, _, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn)
+  }
+
 export fn eval_stmt_with_try(statement: Shared<SemanticStatement>, context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> GenStmtResult =
   match statement {
-    SemanticStatementLet(name, _, value, value_type, _) => do
-      const try_identifier = `__try_${try_counter.to_string()}`
-      const next_counter = try_counter + 1
-      const statement_parsed = match value {
-        SemanticExpressionQuestion(inner_expression, _, _) =>
-          GenStmtResult {
-            output: eval_try_unwrap(
-              inner_expression,
-              context,
-              try_identifier,
-              expression_output.let_from_try_ok_field0(cpp_safe(name), try_identifier),
-              gen_expr_fn),
-            next_try: next_counter,
-            codegen_context: context
-          },
-        SemanticExpressionArray(elements, array_type, _) => do
-          const value_code = match array_type {
-            TArray(inner_type) => do
-              const element_cpp = sem_type_to_cpp(context, inner_type)
-              if elements.length() == 0 then
-                expression_output.typed_array_empty_or_untyped_empty(element_cpp)
-              else if element_cpp == 'auto' then
-                expression_output.array_literal(eval_elements_code(elements, context, gen_expr_fn))
-              else
-                expression_output.typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
-              end
-            end,
-            _ => if elements.length() == 0 then expression_output.array_string_fallback_empty()
-                 else expression_output.constructor_call_braces('mlc::Array', eval_elements_code(elements, context, gen_expr_fn))
-                 end
-          }
-          GenStmtResult {
-            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
-            next_try: try_counter,
-            codegen_context: context
-          }
-        end,
-        SemanticExpressionMethod(map_object, method_name, _, _, _, _) => do
-          const value_code = if method_name == 'new' then
-            match map_object {
-              SemanticExpressionIdent(object_name, _, _) =>
-                if object_name == 'Map' then
-                  match value_type {
-                    TGeneric(type_name, type_args) =>
-                      if type_name == 'Map' && type_args.length() == 2 then
-                        expression_output.hash_map_empty_instantiation(
-                          sem_type_to_cpp(context, type_args[0]),
-                          sem_type_to_cpp(context, type_args[1]))
-                      else gen_expr_fn(value, context)
-                      end,
-                    _ => gen_expr_fn(value, context)
-                  }
-                else gen_expr_fn(value, context)
-                end,
-              _ => gen_expr_fn(value, context)
-            }
-          else gen_expr_fn(value, context)
-          end
-          GenStmtResult {
-            output: expression_output.auto_binding_statement(cpp_safe(name), value_code),
-            next_try: try_counter,
-            codegen_context: context
-          }
-        end,
-        _ => GenStmtResult {
-          output: expression_output.auto_binding_statement(cpp_safe(name), gen_expr_fn(value, context)),
-          next_try: try_counter,
-          codegen_context: context
-        }
-      }
-      statement_parsed
-    end,
+    SemanticStatementLet(name, _, value, value_type, _) =>
+      gen_let_stmt_result(name, value, value_type, context, try_counter, gen_expr_fn),
     SemanticStatementLetPattern(pattern, _, value, value_type, has_else, else_body, _) => do
       const pattern_parsed = gen_let_pattern_statement(pattern, value, value_type, has_else, else_body, context, gen_expr_fn)
       GenStmtResult {
@@ -238,48 +768,12 @@ export fn eval_stmt_with_try(statement: Shared<SemanticStatement>, context: Code
         next_try: try_counter,
         codegen_context: context
       },
-    SemanticStatementExpr(expression, _) => match expression {
-      SemanticExpressionQuestion(inner_expression, _, _) => do
-        const try_identifier = `__try_${try_counter.to_string()}`
-        GenStmtResult {
-          output: eval_try_unwrap(
-            inner_expression,
-            context,
-            try_identifier,
-            expression_output.discard_try_ok_field0_statement(try_identifier),
-            gen_expr_fn),
-          next_try: try_counter + 1,
-          codegen_context: context
-        }
-      end,
-      _ => GenStmtResult {
-        output: eval_stmt_expr(expression, context, gen_expr_fn),
-        next_try: try_counter,
-        codegen_context: context
-      }
-    },
+    SemanticStatementExpr(expression, _) =>
+      gen_expr_stmt_result(expression, context, try_counter, gen_expr_fn),
     SemanticStatementBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter, codegen_context: context },
     SemanticStatementContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter, codegen_context: context },
-    SemanticStatementReturn(expression, _) => match expression {
-      SemanticExpressionQuestion(inner_expression, _, _) => do
-        const try_identifier = `__try_ret_${try_counter.to_string()}`
-        GenStmtResult {
-          output: eval_try_unwrap(
-            inner_expression,
-            context,
-            try_identifier,
-            expression_output.return_try_ok_field0_statement(try_identifier),
-            gen_expr_fn),
-          next_try: try_counter + 1,
-          codegen_context: context
-        }
-      end,
-      _ => GenStmtResult {
-        output: expression_output.return_line(gen_expr_fn(expression, context)),
-        next_try: try_counter,
-        codegen_context: context
-      }
-    }
+    SemanticStatementReturn(expression, _) =>
+      gen_return_stmt_result(expression, context, try_counter, gen_expr_fn)
   }
 
 export fn eval_stmts_str_with_try(statements: [Shared<SemanticStatement>], context: CodegenContext, try_counter: i32, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> GenStmtsWithContext = do

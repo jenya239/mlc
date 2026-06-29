@@ -1,0 +1,125 @@
+// MIR operand/rvalue evaluation (TRACK_MIR_VM_FULL STEP A).
+
+import { Result, Ok, Err } from '../frontend/ast'
+import {
+  MirRvalue, MirOperand, MirRvalueUse, MirRvalueBinary,
+  MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit
+} from '../mir/mir_types'
+import { VmValue, VmI32, VmBool, VmString, VmArray, VmMap, VmVariant, VmUnit, vm_value_is_truthy, vm_value_unit } from './value'
+import { VmFrame, vm_locals_load } from './frame'
+
+export fn vm_eval_operand(frame: VmFrame, operand: MirOperand) -> Result<VmValue, [string]> =
+  match operand {
+    MirOperandLocal(local_id) => vm_locals_load(frame.locals, local_id),
+    MirOperandConstInt(value) => Ok(VmI32(value)),
+    MirOperandConstBool(value) => Ok(VmBool(value)),
+    MirOperandConstStr(value) => Ok(VmString(value)),
+    MirOperandUnit => Ok(vm_value_unit())
+  }
+
+fn vm_values_equal(left: VmValue, right: VmValue) -> bool =
+  match left {
+    VmI32(left_number) =>
+      match right { VmI32(right_number) => left_number == right_number, _ => false },
+    VmBool(left_flag) =>
+      match right { VmBool(right_flag) => left_flag == right_flag, _ => false },
+    VmString(left_text) =>
+      match right { VmString(right_text) => left_text == right_text, _ => false },
+    VmArray(left_array) =>
+      match right {
+        VmArray(right_array) =>
+          left_array.integer_elements.length() == right_array.integer_elements.length(),
+        _ => false
+      },
+    VmMap(_) => false,
+    VmVariant(_) => false,
+    VmUnit => match right { VmUnit => true, _ => false }
+  }
+
+fn vm_eval_binary_i32(operation: string, left: i32, right: i32) -> Result<VmValue, [string]> =
+  if operation == "+" then Ok(VmI32(left + right))
+  else if operation == "-" then Ok(VmI32(left - right))
+  else if operation == "*" then Ok(VmI32(left * right))
+  else if operation == "/" && right != 0 then Ok(VmI32(left / right))
+  else if operation == "/" then Err(["vm: division by zero"])
+  else if operation == "%" && right != 0 then Ok(VmI32(left % right))
+  else if operation == "%" then Err(["vm: modulo by zero"])
+  else if operation == ">" then Ok(VmBool(left > right))
+  else if operation == "<" then Ok(VmBool(left < right))
+  else if operation == ">=" then Ok(VmBool(left >= right))
+  else if operation == "<=" then Ok(VmBool(left <= right))
+  else if operation == "==" then Ok(VmBool(left == right))
+  else if operation == "!=" then Ok(VmBool(left != right))
+  else Err([`vm: unknown int binary ${operation}`])
+
+fn vm_eval_binary(operation: string, left: VmValue, right: VmValue) -> Result<VmValue, [string]> =
+  if operation == "&&" then
+    Ok(VmBool(vm_value_is_truthy(left) && vm_value_is_truthy(right)))
+  else if operation == "||" then
+    Ok(VmBool(vm_value_is_truthy(left) || vm_value_is_truthy(right)))
+  else if operation == "==" then
+    Ok(VmBool(vm_values_equal(left, right)))
+  else if operation == "!=" then
+    Ok(VmBool(!vm_values_equal(left, right)))
+  else if operation == "+" then
+    match left {
+      VmString(left_text) =>
+        match right {
+          VmString(right_text) => Ok(VmString(left_text + right_text)),
+          _ => Err(['vm: string concat requires string operand'])
+        },
+      VmI32(left_number) =>
+        match right {
+          VmI32(right_number) => vm_eval_binary_i32(operation, left_number, right_number),
+          _ => Err(['vm: binary i32 operation on non-i32 operand'])
+        },
+      _ => Err(['vm: unsupported binary + operand'])
+    }
+  else
+    match left {
+      VmI32(left_number) =>
+        match right {
+          VmI32(right_number) => vm_eval_binary_i32(operation, left_number, right_number),
+          _ => Err(['vm: binary i32 operation on non-i32 operand'])
+        },
+      _ => Err([`vm: unsupported binary ${operation}`])
+    }
+  end
+
+export fn vm_eval_rvalue(frame: VmFrame, rvalue: MirRvalue) -> Result<VmValue, [string]> =
+  match rvalue {
+    MirRvalueUse(operand) => vm_eval_operand(frame, operand),
+    MirRvalueBinary(operation, left_operand, right_operand) =>
+      match vm_eval_operand(frame, left_operand) {
+        Err(errors) => Err(errors),
+        Ok(left_value) =>
+          match vm_eval_operand(frame, right_operand) {
+            Err(errors) => Err(errors),
+            Ok(right_value) => vm_eval_binary(operation, left_value, right_value)
+          }
+      }
+  }
+
+fn vm_eval_operands_loop(
+  frame: VmFrame,
+  operands: [MirOperand],
+  index: i32,
+  values: [VmValue]
+) -> Result<[VmValue], [string]> =
+  if index >= operands.length() then Ok(values)
+  else
+    match vm_eval_operand(frame, operands[index]) {
+      Err(errors) => Err(errors),
+      Ok(value) =>
+        vm_eval_operands_loop(frame, operands, index + 1, vm_values_push(values, value))
+    }
+  end
+
+fn vm_values_push(values: [VmValue], value: VmValue) -> [VmValue] = do
+  let mut next_values = values
+  next_values.push(value)
+  next_values
+end
+
+export fn vm_eval_operands(frame: VmFrame, operands: [MirOperand]) -> Result<[VmValue], [string]> =
+  vm_eval_operands_loop(frame, operands, 0, [])

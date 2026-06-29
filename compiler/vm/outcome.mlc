@@ -1,0 +1,9 @@
+// VM execution outcome (TRACK_MIR_VM_FULL STEP A).
+
+import { VmValue } from './value'
+import { VmFrame } from './frame'
+
+export type VmRunOutcome =
+  | VmRunContinue([VmFrame])
+  | VmRunReturn(VmValue)
+  | VmRunFailed([string])

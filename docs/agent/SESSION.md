@@ -5,10 +5,981 @@
 | Field | Value |
 |-------|-------|
 | instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-5c8cb374-4906-4516-a3ea-e25473d06864` |
+| agent_token_last | `cr-agent-53cfc707-03a9-414f-8d25-965579df3daf` |
 | driver_turns_since_plan | 4|
-| step_last | 5|
-| active_track | TRACK_BOOTSTRAP_LINK **open** STEP=4 done (partial) → STEP=5 |
+| step_last | 8|
+| active_track | TRACK_BOOTSTRAP_LINK **open** STEP=8-P8e |
+| test_gate | ok |
+
+### Turn 2026-06-28 (Planner plan-refresh — P8e gate next)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | plan: P8d catalog **closed** (incremental 144/0); stop verify-only Driver turns; next **P8e** bootstrap gate |
+| verify | `build_tests.sh` **ok** (~124s); incremental sweep **144/0**; bare `STEP=8` loop guard |
+| next | ROLE=Driver STEP=8-P8e — `MLCC_BOOTSTRAP=1` + parity + self-host |
+
+**Enqueue payload (Driver STEP=8-P8e):**
+```
+AGENT_TOKEN=cr-agent-53cfc707-03a9-414f-8d25-965579df3daf
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8e
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8e: TMPDIR in repo; MLCC_BOOTSTRAP=1 compiler/build.sh 2>&1 | tee .tmp_bootstrap_gate/build.log; run_mlcc_bootstrap_parity.sh; self-host diff. No source edits unless bootstrap fails. Do NOT enqueue STEP=8 or P8d6.
+```
+
+### Turn 2026-06-28 (Driver recovery #2 — stability gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | stability verify only; no source edits |
+| verify | `build_tests.sh` **ok**; sample TU (`stmt_eval`,`mir_eval`,`infer_match`,`lexer`,`transform`) **0 err**; `mlcc` **ok**; `MLCC_BOOTSTRAP=1` **pending** |
+| next | ROLE=Driver STEP=8-P8d6 — bootstrap build + parity gate (not bare STEP=8) |
+
+**Enqueue payload (Driver STEP=8-P8d6):**
+```
+AGENT_TOKEN=cr-agent-135ba694-40a5-450c-a449-c4779882d099
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8-P8d6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d6: MLCC_BOOTSTRAP=1 compiler/build.sh → log; run_mlcc_bootstrap_parity.sh; self-host diff. Stability first. Do NOT enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver recovery — unstuck STEP=8 loop)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | verify P8d4+P8d5 sample TUs (no source edits); unstuck after interrupted enqueue |
+| verify | P8d4 3/3 **0 err**; P8d5 sample 4/4 **0 err**; `build_tests.sh` **ok**; emit **~4.0s**; full g++ sweep **running**; `MLCC_BOOTSTRAP=1` **pending** |
+| next | ROLE=Driver STEP=8-P8d6 — full sweep recount + bootstrap gate |
+
+**Enqueue payload (Driver STEP=8-P8d6):**
+```
+AGENT_TOKEN=cr-agent-756bebfd-d6b9-4b36-a400-6a965f2536af
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8-P8d6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d6: full compiler/out g++ sweep → log fail count; then MLCC_BOOTSTRAP=1 + parity + self-host diff gate. Do NOT re-enqueue STEP=8 or P8d4.
+```
+
+### Turn 2026-06-28 (Driver STEP=8-P8d3 verify — infer cluster green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8-P8d3 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | verify only — infer TUs already emit-clean (no source edits) |
+| verify | `infer_match`+`infer_lambda_context`+`infer_operand_combine` **0 err**; P8d2 4/4 **0 err**; sample 9 TU **0 fail**; emit **~7.0s**; `build_tests.sh` **ok**; full bootstrap sweep **running** |
+| next | ROLE=Driver STEP=8-P8d4 — mir_eval/execute/eval + perf; then P8d6 recount / bootstrap gate |
+
+**Enqueue payload (Driver STEP=8-P8d4):**
+```
+AGENT_TOKEN=cr-agent-bb01653f-0ddf-4638-9047-5a6717ad7369
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8-P8d4
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d4: mir_eval.mlc, execute.mlc, eval.mlc — g++ verify + emit perf (~7s regressed). Then P8d6 sweep or MLCC_BOOTSTRAP=1 gate. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=8-P8d2b — stmt_eval green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8-P8d2b |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `stmt_eval.mlc`: exhaustive match on gen_let/gen_expr/gen_return stmt results; `eval_stmt_expr_block` helper; `gen_let_array_value_code` via `type_is_array` if-chain; removed unused `semantic_expression_is_question` |
+| verify | P8d2: `stmt_eval`+`stmt_cpp`+`let_pat`+`let_pat_cpp` **0 err**; emit **~4.9s**; `build_tests.sh` **ok**; full bootstrap gate **pending** |
+| next | ROLE=Driver STEP=8-P8d3 — infer_match/infer_lambda_context/infer_operand_combine |
+
+**Enqueue payload (Driver STEP=8-P8d3):**
+```
+AGENT_TOKEN=cr-agent-39e2612c-67a9-4601-b3d6-58b5ae67ce95
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8-P8d3
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d3: infer_match.mlc, infer_lambda_context.mlc, infer_operand_combine.mlc — codegen emit fix pattern. Verify g++ on emitted .cpp; emit timing. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=8-P8d2 partial)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8-P8d2 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `stmt_cpp.mlc` helpers; `let_pat.mlc`+`let_pat_cpp.mlc` pattern dispatch; `stmt_eval.mlc` constexpr/if-chain partial |
+| verify | bootstrap: `stmt_cpp`+`let_pat`+`let_pat_cpp` **0 err**; `stmt_eval` **578 err**; emit **~2.9s**; `build.sh` **FAIL** (stmt_eval); gate **FAIL** |
+| next | ROLE=Driver STEP=8-P8d2b — finish `stmt_eval.mlc` only |
+
+**Enqueue payload (Driver STEP=8-P8d2b):**
+```
+AGENT_TOKEN=cr-agent-b59492ef-76a6-4527-a7f8-09643415ad56
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d2b
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d2b: stmt_eval.mlc only — gen_let_stmt_result/eval_stmt_expr/gen_let_array if-chain; no `_`/do+match. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=8-P8d1b — match_gen green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8-P8d1b |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `match_gen.mlc` gen_arm_wild_like_body/gen_arm_ident_body/gen_arm_ctor helpers |
+| verify | `match_gen.cpp`+`method_gen.cpp` **0 err**; emit **~3.6s**; `build_tests.sh` **ok**; gate **FAIL** |
+| next | ROLE=Driver STEP=8-P8d2 — stmt_eval/stmt_cpp/let_pat |
+
+**Enqueue payload (Driver STEP=8-P8d2):**
+```
+AGENT_TOKEN=cr-agent-63a7cb9a-052d-47bf-829b-a8d81e5ebfca
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d2
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d2: stmt_eval.mlc, stmt_cpp.mlc, let_pat.mlc. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=8-P8d1 — method_gen green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8-P8d1 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `method_gen.mlc` dispatch helpers; `match_gen.mlc` result-type helpers (partial) |
+| verify | `method_gen.cpp` **0 err**; `match_gen.cpp` **257 err**; emit **~2.7s**; gate **FAIL** |
+| next | ROLE=Driver STEP=8-P8d1b — `match_gen.mlc` gen_arm |
+
+**Enqueue payload (Driver STEP=8-P8d1b):**
+```
+AGENT_TOKEN=cr-agent-0b36635c-8287-4d30-91cd-d53e84e4382b
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d1b
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d1b: match_gen.mlc gen_arm. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Planner STEP=plan-refresh #2 — P8d0 scope)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | P8d0 commit #1: 8 checker `.mlc` explicit in TRACK; guard `Driver:8` |
+| verify | docs-only; 78 uncommitted; 113/31 baseline |
+| next | ROLE=Driver STEP=8-P8d0 — commit #1 + build_tests |
+
+**Enqueue payload (Driver STEP=8-P8d0):**
+```
+AGENT_TOKEN=cr-agent-2ec2b015-8ed7-4408-9834-e9431726d805
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d0
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d0 commit #1: registry, transform, names, semantic_type_structure, type_diagnostics, type_gen, infer_call_support, let_pattern_infer (.mlc). build_tests + build.sh after commit. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=recovery — Driver:8 guard)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | re-sync baseline; no `STEP=8` re-enqueue; rev → `2026-06-01-session-detail` |
+| verify | `build_tests.sh` **ok**; bootstrap **113 ok / 31 fail**; uncommitted **78**; gate **FAIL** |
+| next | ROLE=Driver STEP=8-P8d0 — commit split ≤15 files (checker P8a–c) |
+
+**Enqueue payload (Driver STEP=8-P8d0):**
+```
+AGENT_TOKEN=cr-agent-8479d046-eef8-40ad-89f2-6fb2a72e637d
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d0
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d0: commit split ≤15 files (registry/transform/names/type_diagnostics/type_gen/infer_call/let_pattern). build_tests after commit. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Planner STEP=plan-refresh — P8d split)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | P8d0–P8d6 batches in TRACK; loop guard `Driver:8`→`8-P8dN`; TRACK_PLAN next step |
+| verify | docs-only; baseline 113/31 g++; `build_tests.sh` ok (prior turn) |
+| next | ROLE=Driver STEP=8-P8d0 — commit split ≤15 files |
+
+**Enqueue payload (Driver STEP=8-P8d0):**
+```
+AGENT_TOKEN=cr-agent-0af28bef-779a-4abc-b140-4c7760109fb4
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8-P8d0
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d0: split 78 uncommitted into ≤15-file commits (checker P8a–c first). build_tests after each. Then P8d1 match_gen+method_gen. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=recovery — loop unstuck)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | baseline re-sync; no code edits (stuck `Driver:8` guard) |
+| verify | `build_tests.sh` **ok**; bootstrap g++ sweep **113 ok / 31 fail**; emit **~2.3s**; `MLCC_BOOTSTRAP=1` **FAIL**; uncommitted **78 files** (commit blocked) |
+| next | ROLE=Driver STEP=8-P8d — `match_gen`+`method_gen` batch |
+
+**Enqueue payload (Driver STEP=8-P8d):**
+```
+AGENT_TOKEN=cr-agent-e8c4a6a1-1793-4a73-8601-f702593736dd
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8-P8d
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d batch: match_gen.mlc, method_gen.mlc, stmt_eval.mlc. Target bootstrap 31→0 TU. Commit after verify if ≤15 files. Do NOT re-enqueue STEP=8.
+```
+
+### Turn 2026-06-28 (Driver STEP=8 P8c — infer_call/let_pattern green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8c) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `infer_call_support.mlc`+`let_pattern_infer.mlc` dispatch helpers (no `_`/do+match) |
+| verify | `infer_call_support.cpp`+`let_pattern_infer.cpp` **0 err**; emit **~2.3s**; `build_tests.sh` **ok**; bootstrap **29 TU** (`build_step8b.log`); gate **FAIL** |
+| next | ROLE=Driver STEP=8 P8d — `match_gen`, `method_gen`, VM/MIR emit |
+
+**Enqueue payload (Driver STEP=8):**
+```
+AGENT_TOKEN=cr-agent-072695c9-6ccc-42c5-b5fe-34ed48172d84
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8d: match_gen/method_gen/stmt_eval/mir_eval/execute. Bootstrap 32→?. Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Driver STEP=8 P8b — type_diagnostics/type_gen green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `type_diagnostics.mlc` helpers; `type_gen.mlc` if-chain/`resolved_type_name_cpp` (no `_`/deep else-if) |
+| verify | `type_diagnostics.cpp`+`type_gen.cpp` **0 err**; checker batch green; emit **~2.8s**; bootstrap **32 TU** (`build_step8.log`); gate **FAIL** |
+| next | ROLE=Driver STEP=8 P8c/P8d — `match_gen`, `method_gen`, `infer_call_support`, `let_pattern_infer`, VM/MIR |
+
+**Enqueue payload (Driver STEP=8):**
+```
+AGENT_TOKEN=cr-agent-c3703fe0-4b70-4a2b-ba8e-88e75157918e
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8c/P8d: bootstrap 32 TU → 0. Focus match_gen/method_gen/infer_call_support/let_pattern_infer then execute/mir_eval. Do NOT re-enqueue STEP=7.
+```
+
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `names.mlc` pattern/fold helpers; `semantic_type_structure.mlc` generic/substitute helpers |
+| verify | `transform/registry/names/semantic_type_structure.cpp` **0 err**; `type_diagnostics.cpp` **18 err**; emit **~3.6s**; `build_tests.sh` **ok** |
+| next | ROLE=Driver STEP=8 P8b/P8c — `type_diagnostics`, VM/MIR emit |
+
+**Enqueue payload (Driver STEP=8):**
+```
+AGENT_TOKEN=cr-agent-5c32e820-1e41-4ce0-8cea-a926a49cf783
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8b tail: type_diagnostics.mlc. P8c: execute/stmt_eval/mir_eval. Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Driver STEP=8 P8b — transform.cpp green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `transform.mlc`: `visit_method`/`visit_if`/`visit_index`/`visit_for`/`visit_question` helpers |
+| verify | `transform.cpp` **0 err** (was 18); emit **~2.9s**; `names.cpp` **17 err**; `semantic_type_structure.cpp` **17 err**; `build_tests.sh` **ok** |
+| next | ROLE=Driver STEP=8 P8b — `names.mlc`, `semantic_type_structure.mlc` |
+
+**Enqueue payload (Driver STEP=8 P8b):**
+```
+AGENT_TOKEN=<from register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8b: names + semantic_type_structure emit. transform.cpp green. Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Driver STEP=8 P8b — transform partial)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `transform.mlc`: type helpers, `coerce_expr_to_type` arms, `visit_bin`/`visit_call`, call-arg fold |
+| verify | `transform.cpp` **36→18 err**; emit **~2.9s**; `registry.cpp` **0 err**; `build_tests.sh` **ok** (prior); bootstrap **pending** re-count |
+| next | ROLE=Driver STEP=8 P8b — `visit_method`/`visit_if` emit; `names.cpp`, `semantic_type_structure.cpp` |
+
+**Enqueue payload (Driver STEP=8 P8b):**
+```
+AGENT_TOKEN=cr-agent-6360d33c-26c4-44fe-817f-dfdba128a581
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8b: visit_method/visit_if + names/semantic_type_structure emit. Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Driver STEP=8 P8a — registry.cpp green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 8 (P8a) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `registry.mlc`: dispatch helpers (`register_decl_*_if`), variant/field lookup helpers, `[[string]]` trait_bounds |
+| verify | `registry.cpp` **0 err** (Ruby+mlcc emit); emit **~2.5s**; `build_tests.sh` **ok**; bootstrap **57→35** TU (`.tmp_bootstrap_gate/build3.log`); `MLCC_BOOTSTRAP=1` **FAIL** |
+| next | ROLE=Driver STEP=8 P8b — `transform.cpp`, `names.cpp`, `semantic_type_structure.cpp` |
+
+**Enqueue payload (Driver STEP=8 P8b):**
+```
+AGENT_TOKEN=cr-agent-92e024f4-76ac-419f-8f47-f96ceab5bf75
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8b: transform/names/semantic_type_structure emit. Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Planner plan-refresh — STEP=7 loop guard)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | STEP=7 closed partial; STEP=8 P8a–P8e; guard `Driver:7` |
+| verify | P2 **0 err**; bootstrap **57** TU (`build2.log`); extend protos **done** |
+| next | ROLE=Driver STEP=8 P8a — `registry.cpp` emit |
+
+**Enqueue payload (Driver STEP=8):**
+```
+AGENT_TOKEN=<from register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=8
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P8a: registry.cpp emit (registry:: namespace). Do NOT re-enqueue STEP=7.
+```
+
+### Turn 2026-06-28 (Driver recovery — extend protos, bootstrap 57 TU)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery → 8 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `decl_segment_for_extend` phase-2 `gen_proto` in `decl.mlc`/`decl_cpp.mlc` |
+| verify | P2 **0 err**; bootstrap **71→57** TU; `comma_separated.cpp` **ok**; `MLCC_BOOTSTRAP=1` **FAIL** |
+| next | ROLE=Driver STEP=8 — remaining bootstrap (`execute.cpp`, …) |
+
+### Turn 2026-06-28 (Driver STEP=7 P2e — catalog green, bootstrap FAIL)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 (P2e) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | P2 catalog emit fixes (`decl_cpp`, `check`, `cpp_decls`, `cpp_lexer`, `derive_methods_cpp`) |
+| verify | P2 TUs **0 err** (`.tmp_emit/step7` + `compiler/out/bootstrap`); emit **~2.15–2.31s**; `MLCC_BOOTSTRAP=1` **FAIL** 71 TU; `build_tests.sh` **ok** |
+| next | ROLE=Driver STEP=7 — P2e: `predicates.mlc` extend → hpp codegen; re-bootstrap |
+
+**Enqueue payload (Driver STEP=7):**
+```
+AGENT_TOKEN=cr-agent-54ac2dae-9d21-4fc5-abd8-5abaaa49e091
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2e: predicates extend methods in hpp; MLCC_BOOTSTRAP=1 green; parity+self-host. Do NOT re-enqueue STEP=6.
+```
+
+### Turn 2026-06-27 (Driver STEP=7 P2b — decl.cpp green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 (P2b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `decl.mlc` exhaustive `decl_segment_for_exported`; `extern_body_is_extern` |
+| verify | `decl.cpp`+`decl_extend.cpp` **g++ ok**; `decl_cpp.cpp` 11 err; emit **~6s** |
+| next | ROLE=Driver STEP=7 — `decl_cpp.mlc` |
+
+**Enqueue payload (Driver STEP=7):**
+```
+AGENT_TOKEN=cr-agent-ba4d0594-e4e7-42f4-92de-e129af851726
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2b: decl_cpp.mlc emit. Then P2c–P2e. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked)
+
+### Turn 2026-06-27 (Driver STEP=7 P2b — decl/decl_extend)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 7 (P2b) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `decl.mlc` context/segment helpers; `decl_extend.mlc` param/proto/return-type helpers |
+| verify | `decl_extend.cpp` **g++ ok**; `decl.cpp` 31 err; emit **~3.2s**; `build.sh` **ok** |
+| next | ROLE=Driver STEP=7 — finish `decl.cpp`, `decl_cpp.cpp` |
+
+**Enqueue payload (Driver STEP=7):**
+```
+AGENT_TOKEN=cr-agent-cb94ae91-3ec1-46a6-b4bd-b5543d6bb8ed
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=7
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2b: finish decl.cpp; decl_cpp.cpp. Then P2c–P2e. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-cb94ae91-3ec1-46a6-b4bd-b5543d6bb8ed`)
+
+### Turn 2026-06-27 (Planner plan-refresh #3 — loop guard)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN + TRACK_BOOTSTRAP_LINK |
+| done | reaffirm STEP=6 done (partial); guard `Driver:6` (3×+); P2 split P2a–P2e; baseline P0/P1/array_method_types ok |
+| verify | docs only; enqueue STEP=6-gate P2b |
+| next | ROLE=Driver STEP=6-gate — P2b `decl.mlc`/`decl_cpp.mlc`/`decl_extend.mlc` |
+
+**Enqueue payload (Driver STEP=6-gate P2b):**
+```
+AGENT_TOKEN=cr-agent-727c38fa-bd6b-4017-9922-ef4e9bcfc8a5
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2b: decl.mlc / decl_cpp.mlc / decl_extend.mlc — fix mlcc emit (undeclared bindings, if-tail). Verify g++ on emitted TU. Then P2c–P2e. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-727c38fa-bd6b-4017-9922-ef4e9bcfc8a5`)
+
+### Turn 2026-06-27 (Driver STEP=6-gate P2 — array_method_types)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6-gate (P2; STEP=6 skipped) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `array_method_types.mlc`: `array_hof_call_result_type` — expression if-else без `do` wrapper |
+| verify | mlcc emit `array_method_types.cpp` **g++ ok**; emit **~2.3s**; `MLCC_BOOTSTRAP=1` still FAIL (decl/cpp_decls/…) |
+| next | ROLE=Driver STEP=6-gate — P2 catalog (`decl.cpp`, `cpp_decls.cpp`, …) |
+
+**Enqueue payload (Driver STEP=6-gate P2):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2: bootstrap catalog — decl/cpp_decls next. Then MLCC_BOOTSTRAP=1, parity, self-host diff. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-a79819f6-5c37-4229-a5e3-49d2ff24fa9d`)
+
+### Turn 2026-06-27 (Driver STEP=6-gate P1)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6-gate (P1) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `context.mlc`: `push_pattern_bind_names_to_value_params`, `mutate_context_for_*`, `mutate_context_noop`; void match arms via helper calls |
+| verify | mlcc emit `context.cpp` **g++ ok**; `check.cpp`+`check_mutations.cpp` **ok**; `build_tests.sh` **ok**; `MLCC_BOOTSTRAP=1` running |
+| next | ROLE=Driver STEP=6-gate — P2 `MLCC_BOOTSTRAP=1` + parity + self-host diff |
+
+**Enqueue payload (Driver STEP=6-gate P2):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P2: MLCC_BOOTSTRAP=1 green → run_mlcc_bootstrap_parity.sh → p1/mlcc2/p2 diff. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-479485fc-edcd-491e-8145-48cbfe4d1350`)
+
+### Turn 2026-06-27 (Driver STEP=6-gate P0)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6-gate (P0; STEP=6 skipped — done in TRACK) |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `check.mlc` return-type if-tail; `check_mutations.mlc` `assignment_target_mutation_errors` |
+| verify | mlcc emit `check.cpp` + `check_mutations.cpp` **ok**; emit **~2.2s**; P1 `context.cpp` pending |
+| next | ROLE=Driver STEP=6-gate — P1 `context.mlc` |
+
+**Enqueue payload (Driver STEP=6-gate P1):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P1: context.mlc emit (context.cpp). Then MLCC_BOOTSTRAP=1 + parity + self-host diff.
+```
+(enqueue blocked — register `cr-agent-a4d8c329-2338-4290-9596-1a8fd5c44772`)
+
+### Turn 2026-06-27 (Planner plan-refresh #2 — STEP=6 loop 3×)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN + TRACK_BOOTSTRAP_LINK |
+| done | reaffirm STEP=6 done (partial); guard `Driver:6` (3×); pending STEP=6-gate P0 unchanged |
+| verify | baseline stable (7/7 emit TUs ok per TRACK); `cursor-agent-loop` dead (exit 137) — enqueue needs mlc-chat bind |
+| next | ROLE=Driver STEP=6-gate — P0 `check.mlc`/`check_mutations.mlc` |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=cr-agent-a8c006d6-3e47-4d19-80fc-7e01a85768b0
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P0: check.mlc + check_mutations.mlc — fix if-tail emit (check.cpp undeclared bindings). Then MLCC_BOOTSTRAP=1, parity, self-host diff. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-a8c006d6-3e47-4d19-80fc-7e01a85768b0`; agent-loop exit 137)
+
+### Turn 2026-06-27 (Planner plan-refresh — STEP=6 loop)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_PLAN + TRACK_BOOTSTRAP_LINK |
+| done | STEP=6 marked done (partial); STEP=6-gate P0/P1 scoped in TRACK; `TRACK_PLAN.md` next-step updated; guard `Driver:6` |
+| verify | stable baseline unchanged: 7/7 emit TUs ok; `build_tests.sh` ok; bootstrap FAIL (`check.cpp` undeclared bindings) |
+| next | ROLE=Driver STEP=6-gate — P0 `check.mlc`/`check_mutations.mlc` emit |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+P0: fix checker emit (check.cpp undeclared body_parsed/type_parameters). Then MLCC_BOOTSTRAP=1 + parity + self-host diff. Do NOT re-enqueue STEP=6.
+```
+(enqueue blocked — register `cr-agent-c5e9b4cd-7be0-4085-868a-2d2450176ca8`)
+
+### Turn 2026-06-27 (Driver recovery — STEP loop)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | guard: skip re-enqueue `Driver:6:BOOTSTRAP_LINK`; STEP=6 partial confirmed stable |
+| verify | mlcc emit **7/7** TUs **ok**; emit **~2.8s**; `build_tests.sh` **ok**; `MLCC_BOOTSTRAP=1` **FAIL** (cached log: `check.cpp`, `context.cpp`, `check_mutations.cpp`); parity/self-host diff pending |
+| next | ROLE=Driver STEP=6-gate |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=cr-agent-40b54468-7d2b-4786-82d8-520c367eaf92
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+MLCC_BOOTSTRAP=1 green; parity; p1→mlcc2→p2 diff. Bootstrap: check.cpp, context.cpp, check_mutations.cpp.
+```
+
+### Turn 2026-06-27 (Driver STEP=6 — extend codegen + perf)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `type_index.mlc` ref mut method_owners; `module.mlc` per-module owners + extend qualified; `context.mlc` qualify/resolve; `transform.mlc` extend→call |
+| verify | mlcc emit **7/7** STEP TUs `g++ -fsyntax-only` **ok**; `build_tests.sh` **ok**; mlcc main **~2.4–3.1s**; `MLCC_BOOTSTRAP=1` **FAIL** (`.tmp_bootstrap_gate/build.log`); parity/self-host diff not run |
+| next | ROLE=Driver STEP=6-gate — bootstrap catalog (`check.cpp`, `context.cpp`, …) |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+MLCC_BOOTSTRAP=1 green; parity + self-host diff. Gate from TRACK. Bootstrap log: check.cpp, context.cpp, check_mutations.cpp.
+```
+(enqueue blocked — register `cr-agent-8360288c-775e-4e8a-a881-e1a7b17306a0`)
+
+### Turn 2026-06-27 (Driver STEP=6 — gate verify + perf)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 / gate verify |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | gate commands re-run; TRACK status confirmed |
+| verify | `build_tests.sh` **ok**; mlcc main **2.21s** (warm), **11.05s** (cold); mlcc emit `type_index.cpp` **ok**; mlcc emit `exprs`/`predicates`/`types` **FAIL** (`Parser.kind()` vs `Parser_kind`); `MLCC_BOOTSTRAP=1` **FAIL** (`.tmp_bootstrap_gate/build.log`) |
+| issues | mlcc extend-method lowering → dot call; parity/self-host diff not run |
+| next | ROLE=Driver STEP=6-gate — fix `is_user_defined_method_for_type` / method_owners in mlcc codegen |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=cr-agent-7421daa2-307a-41f4-8646-82037cbeecd3
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+Fix mlcc extend-method lowering (Parser.kind → Parser_kind). MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Driver STEP=6 — gate verify + perf)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 / gate verify |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `type_index.mlc` nested-if refactor verified; gate commands run |
+| verify | `build_tests.sh` **ok**; mlcc main **3.15s**; mlcc emit `type_index.cpp` **ok**; mlcc emit parser TUs **FAIL** (`Parser.kind()` vs `Parser_kind`); `MLCC_BOOTSTRAP=1` **FAIL** |
+| issues | extend-method codegen parity (mlcc → dot call, Ruby → free fn); parity/self-host diff not run |
+| next | ROLE=Driver STEP=6-gate TRACK_BOOTSTRAP_LINK — fix extend method lowering in mlcc codegen |
+
+**Enqueue payload (Driver STEP=6-gate):**
+```
+AGENT_TOKEN=cr-agent-63a6f0ea-b6fe-4aae-9eaa-51bde0b5cab5
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+Fix mlcc extend-method call lowering (Parser.kind → Parser_kind). Then MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Driver STEP=6 — type_index + emit)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 6 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `type_index.mlc` refactor (exhaustive match, no `_ => do`); STEP=6 emit TUs green via mlcc |
+| verify | exprs/decls/infer_question/expr_visitor/type_index `g++ -fsyntax-only` **ok**; `build.sh` **ok**; mlcc main **6.2s**; `MLCC_BOOTSTRAP=1` not re-run |
+| issues | enqueue blocked (token not in vscdb); guard: next is STEP=6-gate not STEP=6 |
+| next | ROLE=Driver STEP=6-gate TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=6-gate):**
+(enqueue blocked — register `cr-agent-12fec706-245d-4b2f-b434-663e2276ca66`)
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Driver recovery — STEP=6 emit green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery / STEP=6 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | if-else tail workarounds: `exprs.mlc`, `decls.mlc`, `infer_question_expression.mlc`, `expr_visitor_cpp.mlc` |
+| verify | fresh emit `g++ -fsyntax-only`: exprs/decls/infer_question/expr_visitor **ok**; `build_tests.sh` **ok**; `MLCC_BOOTSTRAP=1` **FAIL** (`type_index.cpp` + others) |
+| issues | guard: skip re-enqueue `Driver:6:BOOTSTRAP_LINK`; enqueue blocked (token not in vscdb) |
+| next | ROLE=Driver STEP=6-gate TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=6-gate):**
+(enqueue blocked: token not in vscdb — register `cr-agent-825cd61c-a4d6-40a1-b4c8-b948eb5bab26`)
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=6-gate
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+
+### Turn 2026-06-26 (Planner plan-refresh #3 — STEP=5 stuck, STEP=6)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | STEP=5 → done (partial); STEP=6 opened (exprs/decls/infer_question/expr_visitor + bootstrap gate); guard skip Driver:5 |
+| verify | `types.cpp`/`infer_call.cpp` g++ ok; `exprs.cpp` fail |
+| issues | loop guard `Driver:5:BOOTSTRAP_LINK` 2× |
+| next | ROLE=Driver STEP=6 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=6):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=6
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=6: exprs/decls/infer_question/expr_visitor if-else tail workarounds; MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-4963cb72-db8a-4c00-aee2-1ea0559faa28`)
+
+### Turn 2026-06-26 (Driver recovery — types/infer_call emit green)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | recovery / 5-sub2 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | `types.mlc`: `parse_paren_types`, `parse_type_after_ident_name`, `parse_ref_type`, `parse_type_args` — no `const x = if` in `do`; `infer_call.mlc`: `callee_name_from_expr`, `algebraic_type_name_from_ctor`, `registered_function_type_parameter_names_for_callee`; `exprs.mlc`: `parse_statements_until_*`, `parse_statement_let_mutable_body` ident branch |
+| verify | `g++ -fsyntax-only`: `types.cpp` **ok**, `infer_call.cpp` **ok**; `exprs.cpp` **fail** (`parse_if_expr`, `block_result`, `parse_arms_do_delimited`); `MLCC_BOOTSTRAP=1` not run |
+| issues | codegen: `const closing = if …` in `do` eats trailing stmts; guard blocked re-enqueue `STEP=5` |
+| next | ROLE=Driver STEP=5-sub2-remaining TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=5-sub2-remaining):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5-sub2-remaining
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+Fix remaining bootstrap emit: exprs (`parse_if_expr`, `block_result`, `parse_arms_do_delimited`), decls.mlc, infer_question_expression.mlc, expr_visitor_cpp.mlc; then MLCC_BOOTSTRAP=1 + TRACK gate.
+```
+
+### Turn 2026-06-26 (Planner plan-refresh #2 — BOOTSTRAP_LINK only open)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | Confirmed: only open **stability** track BOOTSTRAP_LINK STEP=5 partial; MIR_VM_FULL STEP=0 deferred (performance); security tracks closed |
+| verify | P0 mlcc ok; `MLCC_BOOTSTRAP=1` exit 1 (parser/infer emit splice); no `mlcc_bootstrap` |
+| issues | STEP=5 sub-step 2 pending: `types.mlc`, `decls.mlc`, `exprs.mlc`, `infer_call.mlc` if-else tail |
+| next | ROLE=Driver STEP=5 TRACK_BOOTSTRAP_LINK |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=5 sub-step 2: parser/infer if-else tail workarounds; MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-2bdfbd8e-dc7d-4f42-a3b7-3b66cceb4acc`)
+
+### Turn 2026-06-26 (Planner plan-refresh — MIR_VM close, BOOTSTRAP_LINK)
+
+| field | value |
+|-------|-------|
+| role | Planner |
+| step | plan-refresh |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | TRACK_MIR_VM → **closed** (MVP STEP=7); TRACK_PLAN queue updated; BOOTSTRAP_LINK STEP=5 partial confirmed (P0 mlcc ok; bootstrap g++ FAIL) |
+| verify | open tracks: BOOTSTRAP_LINK only; priority stability > security > performance |
+| issues | bootstrap emit splice (`types.cpp`, `decls.cpp`, `infer_call.cpp`); mlcc2 from p1 blocked |
+| next | ROLE=Driver STEP=5 TRACK_BOOTSTRAP_LINK — parser/infer if-else tail fixes |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-06-01-session-detail
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=5 sub-step 2: parser/infer if-else tail workarounds (types.mlc, decls.mlc, infer_call.mlc); MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-fadcec17-b1fd-48b7-b877-120d7c2728b9`)
+
+### Turn 2026-06-26 (Driver TRACK_BOOTSTRAP_LINK STEP=5 — stability + gate)
+
+| field | value |
+|-------|-------|
+| role | Driver |
+| step | 5 |
+| track | TRACK_BOOTSTRAP_LINK |
+| done | P0 mlcc stability ok (`MLCC_FORCE_RUBY=1 build.sh`; `mlcc -o send_safe.mlc` exit 0; match emit `-> bool`+abort); `build_tests.sh` exit 0; perf `mlcc -o main.mlc` 4.2s |
+| verify | `MLCC_BOOTSTRAP=1 build.sh` **FAIL** (bootstrap g++: types/decls/exprs/infer_call/expr_visitor_cpp); `build_bin.sh p1 mlcc2` **FAIL** (`types.cpp` splice); parity skip |
+| issues | if-else tail codegen in parser+infer modules; track not closable |
+| next | ROLE=Driver STEP=5 TRACK_BOOTSTRAP_LINK — bootstrap parser/infer emit fixes |
+
+**Enqueue payload (Driver STEP=5):**
+```
+AGENT_TOKEN=<register>
+INSTRUCTIONS_REV=2026-05-28-cleaner
+ROLE=Driver
+STEP=5
+@docs/agent/CONTINUITY.md
+@docs/agent/DEVELOPMENT.md
+@docs/agent/TRACK_BOOTSTRAP_LINK.md
+
+STEP=5: bootstrap link — parser/infer if-else tail workarounds (types.mlc, decls.mlc, infer_call.mlc); then MLCC_BOOTSTRAP=1 + parity + self-host diff. Gate from TRACK.
+```
+(enqueue blocked: token not in vscdb — register `cr-agent-4af78463-9c2d-4af7-8e36-90d78888522e`)
 
 ### Turn 2026-06-26 (Planner plan-refresh — BOOTSTRAP_LINK STEP=4 stuck)
 

@@ -459,7 +459,8 @@ if (lexer::LexState_eof(current)){
 {
 error = mlc::String("unterminated string");
 }
-} else {
+}
+if (!lexer::LexState_eof(current)){
 {
 current = lexer::LexState_lex_advance(current);
 }

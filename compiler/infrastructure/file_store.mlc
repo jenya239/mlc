@@ -1,0 +1,21 @@
+// compiler/infrastructure/file_store.mlc
+export type SourceFileId = SourceFileId { index: i32 }
+export fn source_file_id_index(id: SourceFileId) -> i32 = id.index
+export type SourceFileStore = SourceFileStore {
+  paths: [string],
+  sources: [string]
+}
+export fn source_file_store_new() -> SourceFileStore = SourceFileStore { paths: [], sources: [] }
+export fn source_file_store_intern(file_store: ref mut SourceFileStore, path: string, source: string) -> SourceFileId = do
+  let mut index = 0
+  while index < file_store.paths.length() do
+    if file_store.paths[index] == path then return SourceFileId { index: index } end
+    index = index + 1
+  end
+  const new_index = file_store.paths.length()
+  file_store.paths.push(path)
+  file_store.sources.push(source)
+  SourceFileId { index: new_index }
+end
+export fn source_file_store_path(file_store: SourceFileStore, id: SourceFileId) -> string = file_store.paths[id.index]
+export fn source_file_store_source(file_store: SourceFileStore, id: SourceFileId) -> string = file_store.sources[id.index]

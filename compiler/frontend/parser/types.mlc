@@ -5,26 +5,56 @@ import { comma_separated_types_suffix_from_first } from './comma_separated'
 
 export fn parse_type(parser: Parser) -> TypeResult = do
   const base_parsed = parse_base_type(parser)
-  if base_parsed.parser.kind().is_arrow() then
-    const return_type_parsed = parse_type(base_parsed.parser.advance())
-    const params: [Shared<TypeExpr>] = [base_parsed.value]
-    type_parse_result(Shared.new(TyFn(params, return_type_parsed.value)), return_type_parsed.parser)
-  else
-    base_parsed
-  end
+  if !base_parsed.parser.kind().is_arrow() then return base_parsed end
+  const return_type_parsed = parse_type(base_parsed.parser.advance())
+  const params: [Shared<TypeExpr>] = [base_parsed.value]
+  type_parse_result(Shared.new(TyFn(params, return_type_parsed.value)), return_type_parsed.parser)
 end
 
-fn parse_paren_types(parser: Parser) -> TypesResult =
+fn parse_paren_types(parser: Parser) -> TypesResult = do
   if parser.kind().is_rparen() then
     let empty_types: [Shared<TypeExpr>] = []
-    types_parse_result(empty_types, parser.advance())
-  else
-    const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
-    types_parse_result(
-      suffix_parsed.value,
-      if suffix_parsed.parser.kind().is_rparen() then suffix_parsed.parser.advance() else suffix_parsed.parser end
-    )
+    return types_parse_result(empty_types, parser.advance())
   end
+  const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
+  if suffix_parsed.parser.kind().is_rparen() then
+    return types_parse_result(suffix_parsed.value, suffix_parsed.parser.advance())
+  end
+  types_parse_result(suffix_parsed.value, suffix_parsed.parser)
+end
+
+fn parse_ref_type(parser: Parser) -> TypeResult = do
+  let mut state = parser.advance()
+  if state.kind().is_mut() then state = state.advance() end
+  const inner_parsed = parse_type(state)
+  const type_arguments: [Shared<TypeExpr>] = [inner_parsed.value]
+  type_parse_result(Shared.new(TyGeneric('ref', type_arguments)), inner_parsed.parser)
+end
+
+fn parse_type_after_ident_name(parser: Parser, name: string) -> TypeResult = do
+  const after = parser.advance()
+  if after.kind().is_op() && after.kind().op_val() == "<" then
+    const type_args_parsed = parse_type_args(after.advance())
+    if name == 'Shared' && type_args_parsed.value.length() == 1 then
+      return type_parse_result(Shared.new(TyShared(type_args_parsed.value[0])), type_args_parsed.parser)
+    end
+    return type_parse_result(Shared.new(TyGeneric(name, type_args_parsed.value)), type_args_parsed.parser)
+  end
+  if after.kind().is_dot() && after.advance().kind().is_ident() then
+    const assoc_name = after.advance().kind().ident()
+    return type_parse_result(Shared.new(TyAssoc(name, assoc_name)), after.advance_by(2))
+  end
+  type_parse_result(Shared.new(TyNamed(name)), after)
+end
+
+fn parse_base_type_ident(parser: Parser, name: string) -> TypeResult =
+  match name
+  | 'i32'    => type_parse_result(Shared.new(TyI32),    parser.advance())
+  | 'string' => type_parse_result(Shared.new(TyString), parser.advance())
+  | 'bool'   => type_parse_result(Shared.new(TyBool),   parser.advance())
+  | 'unit'   => type_parse_result(Shared.new(TyUnit),   parser.advance())
+  | 'ref'    => parse_ref_type(parser)
+  | _        => parse_type_after_ident_name(parser, name)
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
@@ -32,54 +62,24 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
     const paren_types_parsed = parse_paren_types(parser.advance())
     if paren_types_parsed.parser.kind().is_arrow() then
       const return_type_parsed = parse_type(paren_types_parsed.parser.advance())
-      type_parse_result(Shared.new(TyFn(paren_types_parsed.value, return_type_parsed.value)), return_type_parsed.parser)
-    else
-      type_parse_result(Shared.new(TyUnit), paren_types_parsed.parser)
+      return type_parse_result(
+        Shared.new(TyFn(paren_types_parsed.value, return_type_parsed.value)),
+        return_type_parsed.parser)
     end
-  else if kind.is_lbracket() then
-    const inner_parsed = parse_type(parser.advance())
-    type_parse_result(Shared.new(TyArray(inner_parsed.value)), inner_parsed.parser.advance())
-  else if kind.is_ident() then
-    const name = kind.ident()
-    match name
-    | 'i32'    => type_parse_result(Shared.new(TyI32),    parser.advance())
-    | 'string' => type_parse_result(Shared.new(TyString), parser.advance())
-    | 'bool'   => type_parse_result(Shared.new(TyBool),   parser.advance())
-    | 'unit'   => type_parse_result(Shared.new(TyUnit),   parser.advance())
-    | 'ref' => do
-      const after_ref = if parser.advance().kind().is_mut()
-                        then parser.advance_by(2) else parser.advance() end
-      const inner_parsed = parse_type(after_ref)
-      const type_arguments: [Shared<TypeExpr>] = [inner_parsed.value]
-      type_parse_result(Shared.new(TyGeneric('ref', type_arguments)), inner_parsed.parser)
-    end
-    | _ => do
-      const after = parser.advance()
-      if after.kind().is_op() && after.kind().op_val() == "<" then
-        const type_args_parsed = parse_type_args(after.advance())
-        const type_expression =
-          if name == 'Shared' && type_args_parsed.value.length() == 1 then Shared.new(TyShared(type_args_parsed.value[0]))
-          else Shared.new(TyGeneric(name, type_args_parsed.value))
-          end
-        type_parse_result(type_expression, type_args_parsed.parser)
-      else if after.kind().is_dot() && after.advance().kind().is_ident() then
-        const assoc_name = after.advance().kind().ident()
-        type_parse_result(Shared.new(TyAssoc(name, assoc_name)), after.advance_by(2))
-      else
-        type_parse_result(Shared.new(TyNamed(name)), after)
-      end
-    end
-    end
-  else
-    type_parse_result(Shared.new(TyUnit), parser.advance_by(2))
+    return type_parse_result(Shared.new(TyUnit), paren_types_parsed.parser)
   end
+  if kind.is_lbracket() then
+    const inner_parsed = parse_type(parser.advance())
+    return type_parse_result(Shared.new(TyArray(inner_parsed.value)), inner_parsed.parser.advance())
+  end
+  if kind.is_ident() then return parse_base_type_ident(parser, kind.ident()) end
+  type_parse_result(Shared.new(TyUnit), parser.advance_by(2))
 end
 
 fn parse_type_args(parser: Parser) -> TypesResult = do
   const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
-  const closing_state =
-    if suffix_parsed.parser.kind().is_op() && suffix_parsed.parser.kind().op_val() == ">" then suffix_parsed.parser.advance()
-    else suffix_parsed.parser
-    end
-  types_parse_result(suffix_parsed.value, closing_state)
+  if suffix_parsed.parser.kind().is_op() && suffix_parsed.parser.kind().op_val() == ">" then
+    return types_parse_result(suffix_parsed.value, suffix_parsed.parser.advance())
+  end
+  types_parse_result(suffix_parsed.value, suffix_parsed.parser)
 end

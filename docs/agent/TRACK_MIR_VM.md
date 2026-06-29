@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md); [TRACK_MIR.md](TRACK_MIR.md) (lowering closed)
 
-## Status: **open** STEP=7 done -> TRACK close (MVP)
+## Status: **closed** (MVP; STEP=7 done 2026-06-26)
 
 **Goal:** dev-run without `g++`. C++ backend unchanged; MIR is the fork:
 
@@ -11,7 +11,9 @@ SemanticIR ? MIR ? MirInterpreter   (--run)
                  ? CppAST ? emit     (release / self-host)
 ```
 
-**Not in scope:** JIT, bytecode file format, GC, full self-host via VM.
+**Not in scope (MVP):** JIT, bytecode file format, GC, full self-host via VM.
+
+**Full plan (self-host path, architecture-first):** [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md)
 
 ---
 

@@ -154,7 +154,7 @@ Cross-cutting work: prefer WIP branch (`feat/…`), not large dirty tree on `mai
 
 ## Session stats (`SESSION.md`)
 
-`instructions_rev`, `agent_token_last`, `step_last`, uncommitted_files, verify result, queue ok/fail, tests, self-host diff.
+`instructions_rev`, `agent_token_last`, `step_last`, `test_gate` (`ok`|`fail`), uncommitted_files, verify result, queue ok/fail, tests, self-host diff.
 
 SESSION хранит последние **5 turn**; старые архивируются в блок `### Archive` внизу файла (без удаления).
 
@@ -207,6 +207,7 @@ Read `driver_turns_since_plan` from [SESSION.md](SESSION.md). Full table: [ROLES
 
 | Condition | Next `ROLE=` |
 |-----------|--------------|
+| **`test_gate=fail`** or verify shows **`run_tests` / `build_tests` / `dev_gate` fail** | **`Driver` `STEP=test-fix`** (fix reds before TRACK steps; Planner must not open new work until green) |
 | Every **16** Driver turns | **Orchestrator** (`STEP=roles-review`) |
 | Every **20** Driver turns | **Backlog** (`STEP=backlog-review`) |
 | Every **12** Driver turns | **Meta** — log/supervisor (cr); or process notes |

@@ -290,9 +290,8 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
       current = current.lex_advance()
     end
   end
-  if current.eof() then error = "unterminated string"
-  else current = current.lex_advance()
-  end
+  if current.eof() then error = "unterminated string" end
+  if !current.eof() then current = current.lex_advance() end
   CppScanStrR {
     state: current,
     token: cpp_token_make(CLStr(parts.join("")), line, token_column),

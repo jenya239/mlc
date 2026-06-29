@@ -9,7 +9,7 @@
 | **Auditor** | `doc-audit` | Найти противоречия между доками и реализацией; см. [AUDITOR.md](AUDITOR.md) |
 | **Orchestrator** | `roles-review` | Roles, cadence, ROLES.md |
 | **Driver** | `<n>` | One TRACK sub-step, verify, commit |
-| **Planner** | `plan-refresh` | TRACK from PLAN/RESEARCH |
+| **Planner** | `plan-refresh` | TRACK from PLAN/RESEARCH; **tests red → Driver `test-fix` first** |
 | **Backlog** | `backlog-review` | git vs TRACK hygiene |
 | **Meta** | `meta-review` | overnight log, supervisor |
 | **Researcher** | `research-turn` | Взять тему из RESEARCH.md, исследовать, возможно создать новый трек; см. [RESEARCHER.md](RESEARCHER.md) |

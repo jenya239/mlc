@@ -43,7 +43,13 @@ std::shared_ptr<cpp_ast::CppExpression> derive_display_tuple_return_expression(m
 
 std::shared_ptr<cpp_ast::CppExpression> derive_display_variant_return_expression(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
+mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+
 std::shared_ptr<cpp_ast::CppStatement> display_to_string_if_statement(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_definitions(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> empty_derive_field_definitions() noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> derive_display_sum_body_statements(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
@@ -54,8 +60,6 @@ std::shared_ptr<cpp_ast::CppDeclaration> derive_display_record_cpp(mlc::String t
 std::shared_ptr<cpp_ast::CppDeclaration> derive_display_sum_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
-
-mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_definitions(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_display_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 
@@ -110,8 +114,6 @@ std::shared_ptr<cpp_ast::CppStatement> make_hash_empty_return_statement() noexce
 std::shared_ptr<cpp_ast::CppStatement> make_hash_return_h_statement() noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> derive_hash_record_body_statements(mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
-
-mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
 std::shared_ptr<cpp_ast::CppStatement> derive_hash_discriminant_combine_statement(int discriminant_index) noexcept;
 
@@ -217,13 +219,23 @@ std::shared_ptr<cpp_ast::CppExpression> derive_display_variant_return_expression
   [&](const VarRecord& varrecord) -> std::shared_ptr<cpp_ast::CppExpression> { auto [name, field_definitions, _w0] = varrecord; return derive_display_variant_record_return_expression(name, field_definitions); }
 }, (*variant));}
 
-std::shared_ptr<cpp_ast::CppStatement> display_to_string_if_statement(std::shared_ptr<ast::TypeVariant> variant) noexcept{
-mlc::String variant_name = std::visit(overloaded{
+mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
   [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; },
   [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
   [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0, _w1] = varrecord; return name; }
-}, (*variant));
-return emit_helpers::make_if_cpp_statement(make_holds_alternative_expression(variant_name), emit_helpers::make_return_cpp_statement(derive_display_variant_return_expression(variant)), emit_helpers::make_block_cpp_statement({}));
+}, (*variant));}
+
+std::shared_ptr<cpp_ast::CppStatement> display_to_string_if_statement(std::shared_ptr<ast::TypeVariant> variant) noexcept{return emit_helpers::make_if_cpp_statement(make_holds_alternative_expression(type_variant_constructor_name(variant)), emit_helpers::make_return_cpp_statement(derive_display_variant_return_expression(variant)), emit_helpers::make_block_cpp_statement({}));}
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_definitions(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return std::visit(overloaded{
+  [&](const VarRecord& varrecord) -> mlc::Array<std::shared_ptr<ast::FieldDef>> { auto [_w0, field_definitions, _w1] = varrecord; return field_definitions; },
+  [&](const VarUnit& varunit) -> mlc::Array<std::shared_ptr<ast::FieldDef>> { auto [_w0, _w1] = varunit; return empty_derive_field_definitions(); },
+  [&](const VarTuple& vartuple) -> mlc::Array<std::shared_ptr<ast::FieldDef>> { auto [_w0, _w1, _w2] = vartuple; return empty_derive_field_definitions(); }
+}, (*variants[0]));}
+
+mlc::Array<std::shared_ptr<ast::FieldDef>> empty_derive_field_definitions() noexcept{
+mlc::Array<std::shared_ptr<ast::FieldDef>> empty = {};
+return empty;
 }
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> derive_display_sum_body_statements(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
@@ -246,11 +258,6 @@ std::shared_ptr<cpp_ast::CppDeclaration> derive_display_record_cpp(mlc::String t
 std::shared_ptr<cpp_ast::CppDeclaration> derive_display_sum_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return display_to_string_function_definition(type_name, derive_display_sum_body_statements(variants));}
 
 bool variants_is_single_record(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants.size() != 1 ? false : [&]() { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, _w1, _w2] = _v_varrecord; return true; } return false; }();}
-
-mlc::Array<std::shared_ptr<ast::FieldDef>> derive_record_field_definitions(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-mlc::Array<std::shared_ptr<ast::FieldDef>> empty = {};
-return [&]() -> mlc::Array<std::shared_ptr<ast::FieldDef>> { if (std::holds_alternative<ast::VarRecord>((*variants[0]))) { auto _v_varrecord = std::get<ast::VarRecord>((*variants[0])); auto [_w0, field_definitions, _w1] = _v_varrecord; return field_definitions; } return empty; }();
-}
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_display_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{return variants_is_single_record(variants) ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{derive_display_record_cpp(type_name, derive_record_field_definitions(variants))} : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{derive_display_sum_cpp(type_name, variants)};}
 
@@ -359,12 +366,6 @@ index = index + 1;
   statements.push_back(make_hash_return_h_statement());
   return statements;
  }();}
-
-mlc::String type_variant_constructor_name(std::shared_ptr<ast::TypeVariant> variant) noexcept{return std::visit(overloaded{
-  [&](const VarUnit& varunit) -> mlc::String { auto [name, _w0] = varunit; return name; },
-  [&](const VarTuple& vartuple) -> mlc::String { auto [name, _w0, _w1] = vartuple; return name; },
-  [&](const VarRecord& varrecord) -> mlc::String { auto [name, _w0, _w1] = varrecord; return name; }
-}, (*variant));}
 
 std::shared_ptr<cpp_ast::CppStatement> derive_hash_discriminant_combine_statement(int discriminant_index) noexcept{return make_hash_combine_statement(mlc::String("size_t"), emit_helpers::make_integer_cpp_expression(discriminant_index));}
 

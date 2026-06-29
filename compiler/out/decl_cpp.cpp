@@ -47,8 +47,6 @@ mlc::String print_cpp_declaration(std::shared_ptr<cpp_ast::CppDeclaration> decla
 
 mlc::String print_cpp_declarations(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept;
 
-context::CodegenContext prototype_context_for_function(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
-
 mlc::Array<mlc::String> function_parameter_proto_items(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext prototype_context) noexcept;
 
 mlc::Array<mlc::String> function_parameter_def_items(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext prototype_context) noexcept;
@@ -82,6 +80,8 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_type_body_struct_dec
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_type_decl_body_cpp(context::CodegenContext context, mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits) noexcept;
 
 mlc::String trait_template_header(mlc::Array<mlc::String> type_params) noexcept;
+
+mlc::String trait_requires_expression_for_method(context::CodegenContext trait_context, std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept;
 
 mlc::Array<mlc::String> trait_requires_expressions_cpp(context::CodegenContext context, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods) noexcept;
 
@@ -139,9 +139,31 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_decl_extend_cpp(mlc::St
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_extend_wrapper_protos_cpp(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context) noexcept;
 
+bool extern_body_is_extern(std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_proto_for_fn_method(std::shared_ptr<semantic_ir::SemanticDeclaration> method, context::CodegenContext extend_context, std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_proto_for_method(std::shared_ptr<semantic_ir::SemanticDeclaration> method, context::CodegenContext extend_context) noexcept;
+
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_segment_for_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext codegen_context) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_cpp_forward_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_type_cpp(mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits, context::CodegenContext context, int phase) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_trait_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, int phase) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_fn_phase_two_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_exported_fn_phase_two_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_exported_fn_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context, int phase) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_for_extend_declaration_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context, int phase) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_for_exported_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext context, int phase) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_native_fn_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context, int phase) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context, int phase) noexcept;
 
@@ -157,6 +179,14 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_cpp_declarations(mlc
 
 std::shared_ptr<cpp_ast::CppDeclaration> cpp_decl_from_native_declarations(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept;
 
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_exported_fn_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_extend_cpp(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_for_exported_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext context) noexcept;
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_native_fn_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept;
+
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> collect_fn_defs_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context) noexcept;
@@ -170,11 +200,6 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> cpp_decls_from_string_parts
 mlc::String print_cpp_declaration(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept{return print::print_decl(declaration);}
 
 mlc::String print_cpp_declarations(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept{return declarations.map([](std::shared_ptr<cpp_ast::CppDeclaration> declaration) mutable { return print_cpp_declaration(declaration); }).join(mlc::String(""));}
-
-context::CodegenContext prototype_context_for_function(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> params) noexcept{return params.size() > 0 && params[0]->name == mlc::String("self") ? [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*params[0]->type_value))) { auto _v_tynamed = std::get<ast::TyNamed>((*params[0]->type_value)); auto [type_name] = _v_tynamed; return [&]() -> context::CodegenContext { 
-  mlc::String resolved_type = type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type : type_name;
-  return context::CodegenContext_for_type_body(context, resolved_type);
- }(); } return context; }() : context;}
 
 mlc::Array<mlc::String> function_parameter_proto_items(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext prototype_context) noexcept{return name == mlc::String("main") && params.size() == 0 ? main_program_parameter_items_cpp() : decl_extend::gen_parameter_proto_items(prototype_context, params);}
 
@@ -307,18 +332,20 @@ return result;
 
 mlc::String trait_template_header(mlc::Array<mlc::String> type_params) noexcept{return type_params.size() > 0 ? mlc::String("template<typename ") + type_params[0] + mlc::String(", typename Self>\n") : mlc::String("template<typename Self>\n");}
 
+mlc::String trait_requires_expression_for_method(context::CodegenContext trait_context, std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*method))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*method)); auto [mangled, _w0, _w1, params, return_type, _w2, _w3, _w4] = _v_semanticdeclarationfn; return expr::concept_requires_expression_method_returns_convertible(cpp_naming::cpp_safe(mangled), decl_extend::concept_declval_arguments_for_params(trait_context, params), type_gen::sem_type_to_cpp(trait_context, return_type)); } return mlc::String(""); }();}
+
 mlc::Array<mlc::String> trait_requires_expressions_cpp(context::CodegenContext context, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods) noexcept{
 context::CodegenContext trait_context = context::CodegenContext_for_type_body(context, trait_name);
 mlc::Array<mlc::String> expressions = {};
 int method_index = 0;
 while (method_index < methods.size()){
 {
-[&]() -> void { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*methods[method_index]))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*methods[method_index])); auto [mangled, _w0, _w1, params, return_type, _w2, _w3, _w4] = _v_semanticdeclarationfn; return [&]() { 
-  mlc::String prefixed_callee = cpp_naming::cpp_safe(mangled);
-  mlc::String return_cpp = type_gen::sem_type_to_cpp(trait_context, return_type);
-  mlc::String declval_arguments = decl_extend::concept_declval_arguments_for_params(trait_context, params);
-  return expressions.push_back(expr::concept_requires_expression_method_returns_convertible(prefixed_callee, declval_arguments, return_cpp));
- }(); } return; }();
+mlc::String expression = trait_requires_expression_for_method(trait_context, methods[method_index]);
+if (expression.length() > 0){
+{
+expressions.push_back(expression);
+}
+}
 method_index = method_index + 1;
 }
 }
@@ -346,7 +373,7 @@ return result;
 mlc::String function_declaration_template_prefix(mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds) noexcept{return cpp_naming::template_prefix(type_params) + type_gen::requires_clause(type_params, type_bounds);}
 
 std::shared_ptr<cpp_ast::CppDeclaration> native_fn_proto_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept{
-context::CodegenContext prototype_context = prototype_context_for_function(context, params);
+context::CodegenContext prototype_context = decl::prototype_context_for_function(context, params);
 mlc::String safe_name = context::CodegenContext_resolve(context, name);
 mlc::String return_type_cpp = type_gen::sem_type_to_cpp(prototype_context, return_type);
 mlc::Array<mlc::String> parameters = function_parameter_proto_items(name, params, prototype_context);
@@ -616,25 +643,89 @@ method_index = method_index + 1;
  }();
 }
 
+bool extern_body_is_extern(std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return true; } return false; }();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_proto_for_fn_method(std::shared_ptr<semantic_ir::SemanticDeclaration> method, context::CodegenContext extend_context, std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept{return extern_body_is_extern(body) ? empty_cpp_declarations() : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(method, extend_context)};}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_proto_for_method(std::shared_ptr<semantic_ir::SemanticDeclaration> method, context::CodegenContext extend_context) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4, body, _w5, _w6] = semanticdeclarationfn; return extend_forward_proto_for_fn_method(method, extend_context, body); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [inner_declaration] = semanticdeclarationexported; return extend_forward_proto_for_method(semantic_ir::sdecl_inner(inner_declaration), extend_context); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); }
+}, (*method));}
+
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_segment_for_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext codegen_context) noexcept{
 context::CodegenContext extend_context = context::CodegenContext_for_type_body(codegen_context, type_name);
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> result = gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context);
 int method_index = 0;
 while (method_index < methods.size()){
 {
-[&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*methods[method_index]))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*methods[method_index])); auto [_w0, _w1, _w2, _w3, _w4, body, _w5, _w6] = _v_semanticdeclarationfn; return [&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return std::make_tuple(); } return [&]() -> std::tuple<> { 
-  result.push_back(gen_proto_cpp(methods[method_index], extend_context));
-  return std::make_tuple();
- }(); }(); } return std::make_tuple(); }();
+result = append_cpp_declarations(result, extend_forward_proto_for_method(methods[method_index], extend_context));
 method_index = method_index + 1;
 }
 }
 return result;
 }
 
-mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_cpp_forward_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context) noexcept{return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*declaration))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*declaration)); auto [type_name, trait_name, methods, _w0] = _v_semanticdeclarationextend; return extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner_declaration] = _v_semanticdeclarationexported; return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, trait_name, methods, _w0] = _v_semanticdeclarationextend; return extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context); } return empty_cpp_declarations(); }(); } return empty_cpp_declarations(); }();}
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_cpp_forward_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [inner_declaration] = semanticdeclarationexported; return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return extend_forward_segment_for_extend(type_name, trait_name, methods, codegen_context); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6, _w7] = semanticdeclarationfn; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0] = semanticdeclarationexported; return empty_cpp_declarations(); }
+}, (*semantic_ir::sdecl_inner(inner_declaration))); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6, _w7] = semanticdeclarationfn; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); }
+}, (*declaration));}
 
-mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context, int phase) noexcept{return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*declaration))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*declaration)); auto [type_name, type_params, variants, derive_traits, _w0] = _v_semanticdeclarationtype; return phase == 0 ? gen_type_decl_fwd_cpp(context, type_name, type_params, variants) : phase == 1 ? gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits) : empty_cpp_declarations(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*declaration))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*declaration)); auto [name, type_params, methods, _w0] = _v_semanticdeclarationtrait; return phase == 0 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_trait_decl_cpp(context, name, type_params, methods)} : phase == 4 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{trait_struct_cpp::gen_trait_struct_cpp(context, name, type_params, methods)} : empty_cpp_declarations(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*declaration))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*declaration)); auto [name, type_params, type_bounds, params, return_type, body, _w0, _w1] = _v_semanticdeclarationfn; return phase == 2 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return empty_cpp_declarations(); } return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(declaration, context)}; }() : empty_cpp_declarations(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner_declaration] = _v_semanticdeclarationexported; return phase == 0 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, type_params, variants, _w0, _w1] = _v_semanticdeclarationtype; return gen_type_decl_fwd_cpp(context, type_name, type_params, variants); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [name, type_params, methods, _w0] = _v_semanticdeclarationtrait; return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_trait_decl_cpp(context, name, type_params, methods)}; } return empty_cpp_declarations(); }() : phase == 1 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, type_params, variants, derive_traits, _w0] = _v_semanticdeclarationtype; return gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits); } return empty_cpp_declarations(); }() : phase == 2 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = _v_semanticdeclarationfn; return type_parameters.size() > 0 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(inner_declaration, context)}; } return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)}; }() : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(inner_declaration, context)}; } return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(inner_declaration, context)}; }() : phase == 4 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [name, type_params, methods, _w0] = _v_semanticdeclarationtrait; return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{trait_struct_cpp::gen_trait_struct_cpp(context, name, type_params, methods)}; } return empty_cpp_declarations(); }() : empty_cpp_declarations(); } return empty_cpp_declarations(); }();}
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_type_cpp(mlc::String type_name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits, context::CodegenContext context, int phase) noexcept{return phase == 0 ? gen_type_decl_fwd_cpp(context, type_name, type_params, variants) : phase == 1 ? gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits) : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_trait_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, int phase) noexcept{return phase == 0 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_trait_decl_cpp(context, name, type_params, methods)} : phase == 4 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{trait_struct_cpp::gen_trait_struct_cpp(context, name, type_params, methods)} : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_fn_phase_two_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{return extern_body_is_extern(body) ? empty_cpp_declarations() : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(declaration, context)};}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_exported_fn_phase_two_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{return type_parameters.size() == 0 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(inner_declaration, context)} : extern_body_is_extern(body) ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_proto_cpp(inner_declaration, context)} : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)};}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_exported_fn_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context, int phase) noexcept{return phase == 2 ? decl_segment_exported_fn_phase_two_cpp(inner_declaration, type_parameters, body, context) : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_for_extend_declaration_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context, int phase) noexcept{return phase == 2 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{CodegenContext_gen_proto_cpp(context, declaration)} : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_for_exported_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext context, int phase) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return decl_segment_for_extend_declaration_cpp(inner_declaration, context, phase); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, type_params, variants, derive_traits, _w0] = semanticdeclarationtype; return decl_segment_type_cpp(type_name, type_params, variants, derive_traits, context, phase); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [name, type_params, methods, _w0] = semanticdeclarationtrait; return decl_segment_trait_cpp(name, type_params, methods, context, phase); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [nested_inner] = semanticdeclarationexported; return decl_segment_for_exported_cpp(nested_inner, context, phase); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = semanticdeclarationfn; return decl_segment_exported_fn_segment_cpp(inner_declaration, type_parameters, body, context, phase); }
+}, (*semantic_ir::sdecl_inner(inner_declaration)));}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_native_fn_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context, int phase) noexcept{return phase == 2 ? decl_segment_fn_phase_two_cpp(declaration, body, context) : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context, int phase) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return decl_segment_for_extend_declaration_cpp(declaration, context, phase); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, type_params, variants, derive_traits, _w0] = semanticdeclarationtype; return decl_segment_type_cpp(type_name, type_params, variants, derive_traits, context, phase); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [name, type_params, methods, _w0] = semanticdeclarationtrait; return decl_segment_trait_cpp(name, type_params, methods, context, phase); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [inner_declaration] = semanticdeclarationexported; return decl_segment_for_exported_cpp(inner_declaration, context, phase); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4, body, _w5, _w6] = semanticdeclarationfn; return decl_segment_native_fn_segment_cpp(declaration, body, context, phase); }
+}, (*declaration));}
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> collect_native_decl_segments_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context, int phase) noexcept{
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> output = {};
@@ -674,7 +765,33 @@ return output;
 
 std::shared_ptr<cpp_ast::CppDeclaration> cpp_decl_from_native_declarations(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept{return declarations.size() == 0 ? empty_cpp_declaration() : declarations.size() == 1 ? declarations[0] : std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppDeclarationSequence(declarations));}
 
-mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*declaration))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*declaration)); auto [name, type_params, type_bounds, params, return_type, body, _w0, _w1] = _v_semanticdeclarationfn; return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return empty_cpp_declarations(); } return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)}; }(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*declaration))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*declaration)); auto [type_name, trait_name, methods, _w0] = _v_semanticdeclarationextend; return gen_decl_extend_cpp(type_name, trait_name, methods, context); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner_declaration] = _v_semanticdeclarationexported; return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, _w1, _w2, _w3, _w4] = _v_semanticdeclarationtype; return empty_cpp_declarations(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, _w1, _w2, _w3] = _v_semanticdeclarationtrait; return empty_cpp_declarations(); } if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = _v_semanticdeclarationfn; return type_parameters.size() > 0 ? [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)}; } return empty_cpp_declarations(); }() : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)}; } if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, trait_name, methods, _w0] = _v_semanticdeclarationextend; return gen_decl_extend_cpp(type_name, trait_name, methods, context); } return mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)}; }(); } return empty_cpp_declarations(); }();}
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_exported_fn_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{return type_parameters.size() == 0 ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)} : extern_body_is_extern(body) ? mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_decl_cpp(inner_declaration, context)} : empty_cpp_declarations();}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_extend_cpp(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context) noexcept{return gen_decl_extend_cpp(type_name, trait_name, methods, context);}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_for_exported_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext context) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return decl_fn_def_extend_cpp(type_name, trait_name, methods, context); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = semanticdeclarationfn; return decl_fn_def_exported_fn_cpp(inner_declaration, type_parameters, body, context); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [nested_inner] = semanticdeclarationexported; return decl_fn_def_for_exported_cpp(nested_inner, context); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); }
+}, (*semantic_ir::sdecl_inner(inner_declaration)));}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_native_fn_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{return extern_body_is_extern(body) ? empty_cpp_declarations() : mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context)};}
+
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_cpp(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext context) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [type_name, trait_name, methods, _w0] = semanticdeclarationextend; return decl_fn_def_extend_cpp(type_name, trait_name, methods, context); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [inner_declaration] = semanticdeclarationexported; return decl_fn_def_for_exported_cpp(inner_declaration, context); },
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3, _w4] = semanticdeclarationtype; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtrait; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1] = semanticdeclarationimport; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return empty_cpp_declarations(); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> { auto [name, type_params, type_bounds, params, return_type, body, _w0, _w1] = semanticdeclarationfn; return decl_fn_def_native_fn_cpp(name, type_params, type_bounds, params, return_type, body, context); }
+}, (*declaration));}
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> collect_fn_defs_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context) noexcept{
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> output = {};

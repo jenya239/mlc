@@ -1,0 +1,188 @@
+// MIR block/terminator execution (TRACK_MIR_VM_FULL STEP A).
+
+import { Result, Ok, Err } from '../frontend/ast'
+import {
+  MirProgram, MirFunction, MirBlock, MirStmt, MirTerminator,
+  MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirUnreachable,
+  LocalId, BlockId, mir_block_id
+} from '../mir/mir_types'
+import { VmValue, vm_value_is_truthy } from './value'
+import {
+  VmFrame, vm_frame_new, vm_frame_at, vm_frame_update, vm_frame_advance_statement,
+  vm_frame_set_block, vm_frame_set_locals, vm_locals_store
+} from './frame'
+import { vm_eval_rvalue, vm_eval_operand, vm_eval_operands } from './mir_eval'
+import { vm_resolve_call, vm_dispatch_call, vm_bind_call_arguments, VmCallUser } from './runtime'
+import { VmRunOutcome, VmRunContinue, VmRunReturn, VmRunFailed } from './outcome'
+
+export fn vm_run_function(
+  program: MirProgram,
+  function: MirFunction,
+  arguments: [VmValue],
+  trace_enabled: bool
+) -> VmRunOutcome =
+  vm_run_frames(program, [vm_frame_new(function, mir_block_id(0), vm_bind_call_arguments(function, arguments))], trace_enabled)
+
+export fn vm_run_frames(program: MirProgram, frames: [VmFrame], trace_enabled: bool) -> VmRunOutcome = do
+  if frames.length() == 0 then return VmRunFailed(['vm: empty frame stack']) end
+  const frame_index = frames.length() - 1
+  const frame = vm_frame_at(frames, frame_index)
+  match vm_find_block(frame.function, frame.block_id) {
+    Err(errors) => VmRunFailed(errors),
+    Ok(block) =>
+      if frame.statement_index < block.stmts.length() then
+        match vm_execute_statement(program, frames, frame_index, block.stmts[frame.statement_index], trace_enabled) {
+          VmRunContinue(next_frames) => vm_run_frames(program, next_frames, trace_enabled),
+          VmRunReturn(value) => VmRunReturn(value),
+          VmRunFailed(errors) => VmRunFailed(errors)
+        }
+      else
+        match vm_execute_terminator(program, frames, frame_index, block.term, trace_enabled) {
+          VmRunContinue(next_frames) => vm_run_frames(program, next_frames, trace_enabled),
+          VmRunReturn(value) => VmRunReturn(value),
+          VmRunFailed(errors) => VmRunFailed(errors)
+        }
+      end
+  }
+end
+
+fn vm_find_block(function: MirFunction, block_id: BlockId) -> Result<MirBlock, [string]> = do
+  let mut index = 0
+  while index < function.blocks.length() do
+    const block = function.blocks[index]
+    if block.id.index == block_id.index then return Ok(block) end
+    index = index + 1
+  end
+  Err([`vm: block ${block_id.index} not found`])
+end
+
+fn vm_execute_user_call(
+  program: MirProgram,
+  frames: [VmFrame],
+  frame_index: i32,
+  local_id: LocalId,
+  callee: MirFunction,
+  argument_values: [VmValue],
+  callee_name: string,
+  trace_enabled: bool
+) -> VmRunOutcome = do
+  const caller_frame = VmFrame {
+    ...vm_frame_at(frames, frame_index),
+    pending_call_local: local_id.index
+  }
+  let mut next_frames = vm_frame_update(frames, frame_index, caller_frame)
+  next_frames.push(vm_frame_new(callee, mir_block_id(0), vm_bind_call_arguments(callee, argument_values)))
+  if trace_enabled then println(`vm call ${callee_name}`) end
+  VmRunContinue(next_frames)
+end
+
+fn vm_execute_statement(
+  program: MirProgram,
+  frames: [VmFrame],
+  frame_index: i32,
+  statement: MirStmt,
+  trace_enabled: bool
+) -> VmRunOutcome = do
+  const frame = vm_frame_at(frames, frame_index)
+  match statement {
+    MirAssign(local_id, rvalue) =>
+      match vm_eval_rvalue(frame, rvalue) {
+        Err(errors) => VmRunFailed(errors),
+        Ok(value) =>
+          VmRunContinue(vm_frame_advance_statement(
+            vm_frame_set_locals(frames, frame_index, vm_locals_store(frame.locals, local_id, value)),
+            frame_index))
+      },
+    MirCallAssign(local_id, callee_name, arguments) =>
+      match vm_eval_operands(frame, arguments) {
+        Err(errors) => VmRunFailed(errors),
+        Ok(argument_values) =>
+          match vm_resolve_call(program, callee_name) {
+            Err(errors) => VmRunFailed(errors),
+            Ok(dispatch) =>
+              match dispatch {
+                VmCallUser(callee) =>
+                  vm_execute_user_call(
+                    program, frames, frame_index, local_id, callee, argument_values, callee_name, trace_enabled),
+                VmCallNative(_) | VmCallVariantCtor(_) =>
+                  match vm_dispatch_call(dispatch, callee_name, argument_values) {
+                    Err(errors) => VmRunFailed(errors),
+                    Ok(value) =>
+                      VmRunContinue(vm_frame_advance_statement(
+                        vm_frame_set_locals(
+                          frames, frame_index, vm_locals_store(frame.locals, local_id, value)),
+                        frame_index))
+                  }
+              }
+          }
+      }
+  }
+end
+
+fn vm_execute_terminator(
+  program: MirProgram,
+  frames: [VmFrame],
+  frame_index: i32,
+  terminator: MirTerminator,
+  trace_enabled: bool
+) -> VmRunOutcome = do
+  const frame = vm_frame_at(frames, frame_index)
+  match terminator {
+    MirReturn(operand) =>
+      match vm_eval_operand(frame, operand) {
+        Err(errors) => VmRunFailed(errors),
+        Ok(value) =>
+          if frames.length() == 1 then VmRunReturn(value)
+          else vm_pop_return(program, frames, frame_index, value, trace_enabled)
+          end
+      },
+    MirJump(block_id) =>
+      VmRunContinue(vm_frame_set_block(frames, frame_index, block_id)),
+    MirCondJump(operand, then_block, else_block) =>
+      match vm_eval_operand(frame, operand) {
+        Err(errors) => VmRunFailed(errors),
+        Ok(value) =>
+          if vm_value_is_truthy(value) then
+            VmRunContinue(vm_frame_set_block(frames, frame_index, then_block))
+          else
+            VmRunContinue(vm_frame_set_block(frames, frame_index, else_block))
+          end
+      },
+    MirUnreachable => VmRunFailed(['vm: unreachable block'])
+  }
+end
+
+fn vm_drop_last_frame(frames: [VmFrame]) -> [VmFrame] = do
+  let mut next_frames: [VmFrame] = []
+  let mut index = 0
+  while index < frames.length() - 1 do
+    next_frames.push(frames[index])
+    index = index + 1
+  end
+  next_frames
+end
+
+fn vm_pop_return(
+  program: MirProgram,
+  frames: [VmFrame],
+  frame_index: i32,
+  return_value: VmValue,
+  trace_enabled: bool
+) -> VmRunOutcome = do
+  let mut caller_frames = vm_drop_last_frame(frames)
+  if caller_frames.length() == 0 then return VmRunReturn(return_value) end
+  const caller_index = caller_frames.length() - 1
+  let mut caller_frame = vm_frame_at(caller_frames, caller_index)
+  if caller_frame.pending_call_local >= 0 then
+    caller_frame = VmFrame {
+      ...caller_frame,
+      locals: vm_locals_store(
+        caller_frame.locals,
+        LocalId { index: caller_frame.pending_call_local },
+        return_value),
+      pending_call_local: -1
+    }
+    caller_frames = vm_frame_update(caller_frames, caller_index, caller_frame)
+  end
+  vm_run_frames(program, vm_frame_advance_statement(caller_frames, caller_index), trace_enabled)
+end

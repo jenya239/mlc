@@ -12,15 +12,14 @@ import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
 import * as expression_output from '../expr/expr'
 
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
-  match type_name
-  | 'Map'    => 'mlc::HashMap'
-  | 'Shared' => 'std::shared_ptr'
-  | 'Task'   => 'mlc::Task'
-  | 'Future' => 'mlc::Task'
-  | 'Channel' => 'mlc::concurrency::Channel'
-  | 'Arc'     => 'mlc::concurrency::Arc'
-  | 'Mutex'   => 'mlc::concurrency::Mutex'
-  | _        => context.resolve(type_name)
+  if type_name == 'Map' then 'mlc::HashMap'
+  else if type_name == 'Shared' then 'std::shared_ptr'
+  else if type_name == 'Task' then 'mlc::Task'
+  else if type_name == 'Future' then 'mlc::Task'
+  else if type_name == 'Channel' then 'mlc::concurrency::Channel'
+  else if type_name == 'Arc' then 'mlc::concurrency::Arc'
+  else if type_name == 'Mutex' then 'mlc::concurrency::Mutex'
+  else context.resolve(type_name)
   end
 
 // Converts a semantic Type (from checker/registry) to a C++ type string.
@@ -71,25 +70,32 @@ fn type_alias_annotation_cpp(context: CodegenContext, alias_name: string) -> str
     ''
   end
 
-export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string = do
-  const alias_type_cpp = type_alias_annotation_cpp(context, type_name)
-  if alias_type_cpp != '' then alias_type_cpp
-  else match type_name
-  | 'i32'    => 'int'
-  | 'string' => 'mlc::String'
-  | 'bool'   => 'bool'
-  | 'unit'   => 'void'
-  | 'i64'    => 'int64_t'
-  | 'f64'    => 'double'
-  | 'u8'     => 'uint8_t'
-  | 'usize'  => 'size_t'
-  | 'char'   => 'char32_t'
-  | 'Self' | 'self' =>
-    if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
-  | _ => context.resolve(type_name)
+fn type_name_to_cpp_literal(type_name: string) -> string =
+  if type_name == 'i32' then 'int'
+  else if type_name == 'string' then 'mlc::String'
+  else if type_name == 'bool' then 'bool'
+  else if type_name == 'unit' then 'void'
+  else if type_name == 'i64' then 'int64_t'
+  else if type_name == 'f64' then 'double'
+  else if type_name == 'u8' then 'uint8_t'
+  else if type_name == 'usize' then 'size_t'
+  else if type_name == 'char' then 'char32_t'
+  else ''
   end
+
+fn type_name_to_cpp_self(context: CodegenContext) -> string =
+  if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
+
+fn resolved_type_name_cpp(context: CodegenContext, type_name: string) -> string =
+  context.resolve(type_name)
+
+export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
+  if type_alias_annotation_cpp(context, type_name) != '' then
+    type_alias_annotation_cpp(context, type_name)
+  else if type_name == 'Self' || type_name == 'self' then type_name_to_cpp_self(context)
+  else if type_name_to_cpp_literal(type_name) != '' then type_name_to_cpp_literal(type_name)
+  else resolved_type_name_cpp(context, type_name)
   end
-end
 
 export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> string =
   match type_expr {
@@ -231,12 +237,17 @@ fn variant_forward_decl_line(context: CodegenContext, type_parameters: [string],
   expression_output.struct_forward_declaration_line(template_prefix(used), variant_name)
 end
 
-fn variant_alias_part(context: CodegenContext, type_parameters: [string], phantom: [string], variant: Shared<TypeVariant>) -> string = do
-  const variant_name = context.resolve(variant_ctor_name(variant))
+fn variant_type_argument_suffix(
+  type_parameters: [string],
+  phantom: [string],
+  variant: Shared<TypeVariant>
+) -> string = do
   const used = union_string_lists(variant_used_type_parameters(type_parameters, variant), phantom)
-  const var_type_arguments = if used.length() > 0 then `<${used.join(', ')}>` else '' end
-  variant_name + var_type_arguments
+  if used.length() > 0 then `<${used.join(', ')}>` else '' end
 end
+
+fn variant_alias_part(context: CodegenContext, type_parameters: [string], phantom: [string], variant: Shared<TypeVariant>) -> string =
+  context.resolve(variant_ctor_name(variant)) + variant_type_argument_suffix(type_parameters, phantom, variant)
 
 export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_parameters: [string], variants: [Shared<TypeVariant>]) -> string = do
   const full_prefix = template_prefix(type_parameters)
@@ -284,7 +295,15 @@ export fn gen_type_decl(context: CodegenContext, type_name: string, type_paramet
 fn derive_field_display(field_name: string, field_type: Shared<TypeExpr>) -> string =
   match field_type {
     TyString => `self.${field_name}`,
-    _        => `mlc::to_string(self.${field_name})`
+    TyI32 => `mlc::to_string(self.${field_name})`,
+    TyBool => `mlc::to_string(self.${field_name})`,
+    TyUnit => `mlc::to_string(self.${field_name})`,
+    TyNamed(name) => `mlc::to_string(self.${field_name})`,
+    TyArray(inner) => `mlc::to_string(self.${field_name})`,
+    TyShared(inner) => `mlc::to_string(self.${field_name})`,
+    TyGeneric(name, type_arguments) => `mlc::to_string(self.${field_name})`,
+    TyFn(parameter_types, return_type_expression) => `mlc::to_string(self.${field_name})`,
+    TyAssoc(param, assoc) => `mlc::to_string(self.${field_name})`
   }
 
 fn derive_display_record_fields(type_name: string, field_defs: [Shared<FieldDef>]) -> string =
@@ -381,7 +400,13 @@ fn derive_hash_std_cpp_type(field_type: Shared<TypeExpr>) -> string =
     TyString => 'mlc::String',
     TyI32    => 'int',
     TyBool   => 'bool',
-    _        => ''
+    TyUnit => '',
+    TyNamed(name) => '',
+    TyArray(inner) => '',
+    TyShared(inner) => '',
+    TyGeneric(name, type_arguments) => '',
+    TyFn(parameter_types, return_type_expression) => '',
+    TyAssoc(param, assoc) => ''
   }
 
 fn derive_hash_combine_line(cpp_type: string, access_expr: string) -> string =
@@ -488,22 +513,20 @@ end
 
 fn gen_derive_record_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string = do
   const field_definitions = derive_record_field_defs(variants)
-  match trait_name
-  | 'Display' => derive_display_record(type_name, field_definitions)
-  | 'Eq'      => derive_eq_record(type_name, field_definitions)
-  | 'Ord'     => derive_ord_record(type_name, field_definitions)
-  | 'Hash'    => derive_hash_record(type_name, field_definitions)
-  | _         => ''
+  if trait_name == 'Display' then derive_display_record(type_name, field_definitions)
+  else if trait_name == 'Eq' then derive_eq_record(type_name, field_definitions)
+  else if trait_name == 'Ord' then derive_ord_record(type_name, field_definitions)
+  else if trait_name == 'Hash' then derive_hash_record(type_name, field_definitions)
+  else ''
   end
 end
 
 fn gen_derive_sum_trait(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> string =
-  match trait_name
-  | 'Display' => derive_display_sum(type_name, variants)
-  | 'Eq'      => derive_eq_sum(type_name)
-  | 'Ord'     => derive_ord_sum(type_name)
-  | 'Hash'    => derive_hash_sum(type_name, variants)
-  | _         => ''
+  if trait_name == 'Display' then derive_display_sum(type_name, variants)
+  else if trait_name == 'Eq' then derive_eq_sum(type_name)
+  else if trait_name == 'Ord' then derive_ord_sum(type_name)
+  else if trait_name == 'Hash' then derive_hash_sum(type_name, variants)
+  else ''
   end
 
 export fn gen_derive_methods(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>], derive_traits: [string]) -> string = do

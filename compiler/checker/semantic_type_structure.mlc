@@ -2,8 +2,54 @@
 
 import { Type } from './registry'
 
+fn generic_type_name_from_type(type_value: Shared<Type>) -> string =
+  match type_value {
+    TGeneric(name, _) => name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TNamed(_) => '',
+    TArray(_) => '',
+    TPair(_, _) => '',
+    TTuple(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
+export fn generic_type_arguments_from_type(type_value: Shared<Type>) -> [Shared<Type>] =
+  match type_value {
+    TGeneric(_, type_arguments) => type_arguments,
+    TI32 => empty_type_parameter_list(),
+    TString => empty_type_parameter_list(),
+    TBool => empty_type_parameter_list(),
+    TUnit => empty_type_parameter_list(),
+    TI64 => empty_type_parameter_list(),
+    TF64 => empty_type_parameter_list(),
+    TU8 => empty_type_parameter_list(),
+    TUsize => empty_type_parameter_list(),
+    TChar => empty_type_parameter_list(),
+    TShared(_) => empty_type_parameter_list(),
+    TNamed(_) => empty_type_parameter_list(),
+    TArray(_) => empty_type_parameter_list(),
+    TPair(_, _) => empty_type_parameter_list(),
+    TTuple(_) => empty_type_parameter_list(),
+    TFn(_, _) => empty_type_parameter_list(),
+    TAssoc(_, _) => empty_type_parameter_list(),
+    TUnknown => empty_type_parameter_list()
+  }
+
+export fn empty_type_parameter_list() -> [Shared<Type>] = []
+
 export fn type_is_unknown(type_value: Shared<Type>) -> bool =
-  match type_value { TUnknown => true, _ => false }
+  match type_value { TUnknown => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TGeneric(_, _) => false, TArray(_) => false, TPair(_, _) => false, TTuple(_) => false, TFn(_, _) => false, TAssoc(_, _) => false }
 
 export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> bool =
   if type_is_unknown(left) || type_is_unknown(right) then true
@@ -74,45 +120,77 @@ fn zipped_suffix_types_structurally_equal(
   end
 
 export fn type_is_channel(type_value: Shared<Type>) -> bool =
-  match type_value { TGeneric(type_name, _) => type_name == 'Channel', _ => false }
+  generic_type_name_from_type(type_value) == 'Channel'
 
-export fn channel_element_type_from_channel_type(channel_type: Shared<Type>) -> Shared<Type> =
-  match channel_type {
-    TGeneric(type_name, type_arguments) =>
-      if type_name == 'Channel' && type_arguments.length() == 1 then type_arguments[0]
-      else Shared.new(TUnknown)
-      end,
-    _ => Shared.new(TUnknown)
-  }
+export fn channel_element_type_from_channel_type(channel_type: Shared<Type>) -> Shared<Type> = do
+  if generic_type_name_from_type(channel_type) == 'Channel' then
+    const type_arguments = generic_type_arguments_from_type(channel_type)
+    if type_arguments.length() == 1 then type_arguments[0] else Shared.new(TUnknown) end
+  else Shared.new(TUnknown) end
+end
 
 export fn type_is_mutex(type_value: Shared<Type>) -> bool =
-  match type_value { TGeneric(type_name, _) => type_name == 'Mutex', _ => false }
+  generic_type_name_from_type(type_value) == 'Mutex'
 
-export fn mutex_inner_type_from_mutex_type(mutex_type: Shared<Type>) -> Shared<Type> =
-  match mutex_type {
-    TGeneric(type_name, type_arguments) =>
-      if type_name == 'Mutex' && type_arguments.length() == 1 then type_arguments[0]
-      else Shared.new(TUnknown)
-      end,
-    _ => Shared.new(TUnknown)
-  }
+export fn mutex_inner_type_from_mutex_type(mutex_type: Shared<Type>) -> Shared<Type> = do
+  if generic_type_name_from_type(mutex_type) == 'Mutex' then
+    const type_arguments = generic_type_arguments_from_type(mutex_type)
+    if type_arguments.length() == 1 then type_arguments[0] else Shared.new(TUnknown) end
+  else Shared.new(TUnknown) end
+end
 
 export fn type_is_array(type_value: Shared<Type>) -> bool =
-  match type_value { TArray(_) => true, _ => false }
+  match type_value { TArray(_) => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TGeneric(_, _) => false, TPair(_, _) => false, TTuple(_) => false, TFn(_, _) => false, TAssoc(_, _) => false, TUnknown => false }
 
 export fn array_element_type_from_array_type(array_type: Shared<Type>) -> Shared<Type> =
-  match array_type { TArray(inner) => inner, _ => Shared.new(TUnknown) }
+  match array_type {
+    TArray(inner) => inner,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TShared(_) => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_) => Shared.new(TUnknown),
+    TFn(_, _) => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
 
 export fn type_is_shared_pointer(type_value: Shared<Type>) -> bool =
-  match type_value { TShared(_) => true, _ => false }
+  match type_value { TShared(_) => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TNamed(_) => false, TGeneric(_, _) => false, TArray(_) => false, TPair(_, _) => false, TTuple(_) => false, TFn(_, _) => false, TAssoc(_, _) => false, TUnknown => false }
 
 export fn shared_pointer_inner_type(shared_pointer_type: Shared<Type>) -> Shared<Type> =
-  match shared_pointer_type { TShared(inner) => inner, _ => Shared.new(TUnknown) }
+  match shared_pointer_type {
+    TShared(inner) => inner,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TArray(_) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_) => Shared.new(TUnknown),
+    TFn(_, _) => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
 
 export fn type_is_function(type_value: Shared<Type>) -> bool =
-  match type_value { TFn(_, _) => true, _ => false }
-
-export fn empty_type_parameter_list() -> [Shared<Type>] = []
+  match type_value { TFn(_, _) => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TGeneric(_, _) => false, TArray(_) => false, TPair(_, _) => false, TTuple(_) => false, TAssoc(_, _) => false, TUnknown => false }
 
 export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
   match function_type {
@@ -285,23 +363,68 @@ export fn builtin_method_expected_argument_count(method_name: string) -> i32 =
   | _ => -1
   end
 
+fn substitute_named_type_for_map(
+  name: string,
+  type_value: Shared<Type>,
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  if substitution.has(name) then substitute_type(substitution.get(name), substitution) else type_value end
+
+fn substitute_array_type_for_map(inner: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
+  Shared.new(TArray(substitute_type(inner, substitution)))
+
+fn substitute_shared_type_for_map(inner: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
+  Shared.new(TShared(substitute_type(inner, substitution)))
+
+fn substitute_generic_type_for_map(
+  name: string,
+  type_arguments: [Shared<Type>],
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  Shared.new(TGeneric(name, type_arguments.map(argument => substitute_type(argument, substitution))))
+
+fn substitute_pair_type_for_map(
+  first: Shared<Type>,
+  second: Shared<Type>,
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  Shared.new(TPair(substitute_type(first, substitution), substitute_type(second, substitution)))
+
+fn substitute_tuple_type_for_map(
+  parameter_types: [Shared<Type>],
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  Shared.new(TTuple(parameter_types.map(entry => substitute_type(entry, substitution))))
+
+fn substitute_function_type_for_map(
+  parameter_list: [Shared<Type>],
+  return_type: Shared<Type>,
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  Shared.new(TFn(
+    parameter_list.map(parameter => substitute_type(parameter, substitution)),
+    substitute_type(return_type, substitution)))
+
 export fn substitute_type(type_value: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
   match type_value {
-    TNamed(name) =>
-      if substitution.has(name) then substitute_type(substitution.get(name), substitution) else type_value end,
-    TArray(inner) => Shared.new(TArray(substitute_type(inner, substitution))),
-    TShared(inner) => Shared.new(TShared(substitute_type(inner, substitution))),
-    TGeneric(name, type_arguments) =>
-      Shared.new(TGeneric(name, type_arguments.map(argument => substitute_type(argument, substitution)))),
-    TPair(a, b) =>
-      Shared.new(TPair(substitute_type(a, substitution), substitute_type(b, substitution))),
-    TTuple(parameter_types) =>
-      Shared.new(TTuple(parameter_types.map(entry => substitute_type(entry, substitution)))),
-    TFn(parameter_list, return_type) =>
-      Shared.new(TFn(
-        parameter_list.map(parameter => substitute_type(parameter, substitution)),
-        substitute_type(return_type, substitution))),
-    _ => type_value
+    TNamed(name) => substitute_named_type_for_map(name, type_value, substitution),
+    TArray(inner) => substitute_array_type_for_map(inner, substitution),
+    TShared(inner) => substitute_shared_type_for_map(inner, substitution),
+    TGeneric(name, type_arguments) => substitute_generic_type_for_map(name, type_arguments, substitution),
+    TPair(first, second) => substitute_pair_type_for_map(first, second, substitution),
+    TTuple(parameter_types) => substitute_tuple_type_for_map(parameter_types, substitution),
+    TFn(parameter_list, return_type) => substitute_function_type_for_map(parameter_list, return_type, substitution),
+    TI32 => type_value,
+    TString => type_value,
+    TBool => type_value,
+    TUnit => type_value,
+    TI64 => type_value,
+    TF64 => type_value,
+    TU8 => type_value,
+    TUsize => type_value,
+    TChar => type_value,
+    TAssoc(_, _) => type_value,
+    TUnknown => type_value
   }
 
 export fn operator_method_for(operation: string) -> string =

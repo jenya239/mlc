@@ -1,0 +1,77 @@
+// Call dispatch: natives, variant ctors, user functions (TRACK_MIR_VM_FULL STEP A).
+
+import { Result, Ok, Err } from '../frontend/ast'
+import { MirProgram, MirFunction, LocalId } from '../mir/mir_types'
+import { VmValue } from './value'
+import { vm_locals_store } from './frame'
+import { vm_native_call, vm_variant_ctor } from './native'
+
+export fn vm_find_function(program: MirProgram, name: string) -> Result<MirFunction, [string]> = do
+  let mut module_index = 0
+  while module_index < program.modules.length() do
+    const mir_module = program.modules[module_index]
+    let mut function_index = 0
+    while function_index < mir_module.functions.length() do
+      const function = mir_module.functions[function_index]
+      if function.name == name then return Ok(function) end
+      function_index = function_index + 1
+    end
+    module_index = module_index + 1
+  end
+  Err([`vm: function ${name} not found`])
+end
+
+export fn vm_is_native_callee(name: string) -> bool =
+  name == "println"
+  || name == "__mir_array_empty"
+  || name == "__mir_array_push"
+  || name == "__mir_array_length"
+  || name == "__mir_array_get"
+  || name == "__mir_map_empty"
+  || name == "__mir_map_set"
+  || name == "__mir_map_get"
+  || name == "__mir_map_length"
+  || name == "__mir_string_length"
+  || name == "__mir_length"
+  || name == "__mir_variant_is"
+  || name == "__mir_variant_field"
+
+export fn vm_is_variant_ctor_name(name: string) -> bool =
+  name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
+
+export fn vm_bind_call_arguments(_function: MirFunction, arguments: [VmValue]) -> [VmValue] = do
+  let mut locals: [VmValue] = []
+  let mut index = 0
+  while index < arguments.length() do
+    locals = vm_locals_store(locals, LocalId { index: index }, arguments[index])
+    index = index + 1
+  end
+  locals
+end
+
+export type VmCallDispatch =
+  | VmCallNative(string)
+  | VmCallVariantCtor(string)
+  | VmCallUser(MirFunction)
+
+export fn vm_resolve_call(program: MirProgram, callee_name: string) -> Result<VmCallDispatch, [string]> = do
+  if vm_is_native_callee(callee_name) then Ok(VmCallNative(callee_name))
+  else if vm_is_variant_ctor_name(callee_name) then Ok(VmCallVariantCtor(callee_name))
+  else
+    match vm_find_function(program, callee_name) {
+      Err(errors) => Err(errors),
+      Ok(function) => Ok(VmCallUser(function))
+    }
+  end
+end
+
+export fn vm_dispatch_call(
+  dispatch: VmCallDispatch,
+  callee_name: string,
+  argument_values: [VmValue]
+) -> Result<VmValue, [string]> =
+  match dispatch {
+    VmCallNative(name) => vm_native_call(name, argument_values),
+    VmCallVariantCtor(name) => Ok(vm_variant_ctor(name, argument_values)),
+    VmCallUser(_) => Err([`vm: user call ${callee_name} must enter frame stack`])
+  }

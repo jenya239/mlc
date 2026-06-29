@@ -43,6 +43,42 @@ mlc::Array<int> direct_call_parameter_mutability_flags(registry::TypeRegistry re
 
 mlc::Array<int> instance_method_receiver_and_parameters_mutability_pattern(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name, int method_argument_count) noexcept;
 
+mlc::String extend_method_mangled_name(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_extend_method_as_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments, std::shared_ptr<registry::Type> receiver_type, std::shared_ptr<registry::Type> result_type, ast::Span source_span) noexcept;
+
+bool semantic_type_is_tarray(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> array_element_type_from_semantic_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::String generic_type_name(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_types_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::String call_callee_ident_name(std::shared_ptr<ast::Expr> function) noexcept;
+
+bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noexcept;
+
+std::shared_ptr<registry::Type> binary_result_type_for_operator(registry::TypeRegistry registry, std::shared_ptr<registry::Type> left_type, mlc::String operation, mlc::String method) noexcept;
+
+std::shared_ptr<registry::Type> method_result_type_for_dispatch(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, registry::TypeRegistry registry) noexcept;
+
+std::shared_ptr<registry::Type> merge_conditional_expression_types(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
+
+std::shared_ptr<registry::Type> array_element_type_from_semantic_expression(std::shared_ptr<semantic_ir::SemanticExpression> typed_expression) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> type_arguments_from_generic_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> question_unwrapped_type_from_inner(std::shared_ptr<registry::Type> inner_expression_type) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_result_option_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_array_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_regular_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<registry::Type> then_element_type, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
 
 std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
@@ -59,13 +95,27 @@ transform::TransformContext transform_context_with_env(transform::TransformConte
 
 transform::TransformContext transform_context_with_lambda_parameter_types(transform::TransformContext base, mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types) noexcept;
 
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_array_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_record_semantic_expression_to_type(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> fields, std::shared_ptr<registry::Type> expr_type, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_block_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, ast::Span span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_if_semantic_expression_to_type(std::shared_ptr<semantic_ir::SemanticExpression> condition, std::shared_ptr<semantic_ir::SemanticExpression> then_branch, std::shared_ptr<semantic_ir::SemanticExpression> else_branch, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept;
 
 std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept;
 
 mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
+std::shared_ptr<registry::Type> expected_call_argument_type_at_index(int argument_index, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_lambda_call_argument(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> lambda_body, ast::Span lambda_span, std::shared_ptr<registry::Type> expected_formal_parameter_type, std::shared_ptr<ast::Expr> argument_expression_shared, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
 std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_using_optional_expected_type(std::shared_ptr<ast::Expr> argument_expression_shared, std::shared_ptr<registry::Type> expected_formal_parameter_type, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
+
+std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept;
 
 transform::Transform_call_arguments_fold_state transform_call_arguments_fold_step(transform::Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
@@ -198,13 +248,425 @@ return receiver_key == mlc::String("") ? [&]() -> mlc::Array<int> {
  }();
 }
 
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<registry::Type> then_element_type, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_else)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_else))); auto [else_element_type] = _v_tarray; return semantic_type_structure::type_is_unknown(else_element_type) ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionArray(elements, std::make_shared<registry::Type>(registry::TArray(then_element_type)), span_else)) : typed_else; } return typed_else; }();}
+mlc::String extend_method_mangled_name(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name) noexcept{
+mlc::String receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type);
+return receiver_key == mlc::String("") ? mlc::String("") : [&]() -> mlc::String { 
+  mlc::String mangled = receiver_key + mlc::String("_") + method_name;
+  return registry::TypeRegistry_has_fn(registry, mangled) ? mangled : mlc::String("");
+ }();
+}
 
-std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_then)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_then))); auto [then_element_type] = _v_tarray; return coerce_unknown_else_array_when_then_known_inner(elements, span_else, then_element_type, typed_else); } return typed_else; }();}
+std::shared_ptr<semantic_ir::SemanticExpression> transform_extend_method_as_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments, std::shared_ptr<registry::Type> receiver_type, std::shared_ptr<registry::Type> result_type, ast::Span source_span) noexcept{
+mlc::String mangled = extend_method_mangled_name(registry, receiver_type, method_name);
+mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> call_arguments = {};
+call_arguments.push_back(typed_object);
+int argument_index = 0;
+while (argument_index < typed_arguments.size()){
+{
+call_arguments.push_back(typed_arguments[argument_index]);
+argument_index = argument_index + 1;
+}
+}
+std::shared_ptr<semantic_ir::SemanticExpression> callee = std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIdent(mangled, registry::TypeRegistry_fn_type(registry, mangled), source_span));
+mlc::Array<int> call_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.size());
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionCall(callee, call_arguments, call_parameter_mutability_flags, result_type, source_span));
+}
+
+bool semantic_type_is_tarray(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; },
+  [&](const TUnknown& tunknown) -> bool { return false; }
+}, (*type_value));}
+
+std::shared_ptr<registry::Type> array_element_type_from_semantic_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [inner] = tarray; return inner; },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [_w0] = tshared; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [_w0] = tnamed; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tfn; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
+}, (*type_value));}
+
+mlc::String generic_type_name(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TGeneric& tgeneric) -> mlc::String { auto [name, _w0] = tgeneric; return name; },
+  [&](const TI32& ti32) -> mlc::String { return mlc::String(""); },
+  [&](const TString& tstring) -> mlc::String { return mlc::String(""); },
+  [&](const TBool& tbool) -> mlc::String { return mlc::String(""); },
+  [&](const TUnit& tunit) -> mlc::String { return mlc::String(""); },
+  [&](const TI64& ti64) -> mlc::String { return mlc::String(""); },
+  [&](const TF64& tf64) -> mlc::String { return mlc::String(""); },
+  [&](const TU8& tu8) -> mlc::String { return mlc::String(""); },
+  [&](const TUsize& tusize) -> mlc::String { return mlc::String(""); },
+  [&](const TChar& tchar) -> mlc::String { return mlc::String(""); },
+  [&](const TShared& tshared) -> mlc::String { auto [_w0] = tshared; return mlc::String(""); },
+  [&](const TNamed& tnamed) -> mlc::String { auto [_w0] = tnamed; return mlc::String(""); },
+  [&](const TArray& tarray) -> mlc::String { auto [_w0] = tarray; return mlc::String(""); },
+  [&](const TPair& tpair) -> mlc::String { auto [_w0, _w1] = tpair; return mlc::String(""); },
+  [&](const TTuple& ttuple) -> mlc::String { auto [_w0] = ttuple; return mlc::String(""); },
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String(""); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [_w0, _w1] = tassoc; return mlc::String(""); },
+  [&](const TUnknown& tunknown) -> mlc::String { return mlc::String(""); }
+}, (*type_value));}
+
+bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; },
+  [&](const TUnknown& tunknown) -> bool { return false; }
+}, (*type_value));}
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_types_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [parameter_types, _w0] = tfn; return parameter_types; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TI64& ti64) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TF64& tf64) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TU8& tu8) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUsize& tusize) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TChar& tchar) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tgeneric; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); }
+}, (*type_value));}
+
+mlc::String call_callee_ident_name(std::shared_ptr<ast::Expr> function) noexcept{return std::visit(overloaded{
+  [&](const ExprIdent& exprident) -> mlc::String { auto [name, _w0] = exprident; return name; },
+  [&](const ExprInt& exprint) -> mlc::String { auto [_w0, _w1] = exprint; return mlc::String(""); },
+  [&](const ExprStr& exprstr) -> mlc::String { auto [_w0, _w1] = exprstr; return mlc::String(""); },
+  [&](const ExprBool& exprbool) -> mlc::String { auto [_w0, _w1] = exprbool; return mlc::String(""); },
+  [&](const ExprUnit& exprunit) -> mlc::String { auto [_w0] = exprunit; return mlc::String(""); },
+  [&](const ExprFloat& exprfloat) -> mlc::String { auto [_w0, _w1] = exprfloat; return mlc::String(""); },
+  [&](const ExprI64& expri64) -> mlc::String { auto [_w0, _w1] = expri64; return mlc::String(""); },
+  [&](const ExprU8& expru8) -> mlc::String { auto [_w0, _w1] = expru8; return mlc::String(""); },
+  [&](const ExprUsize& exprusize) -> mlc::String { auto [_w0, _w1] = exprusize; return mlc::String(""); },
+  [&](const ExprChar& exprchar) -> mlc::String { auto [_w0, _w1] = exprchar; return mlc::String(""); },
+  [&](const ExprBin& exprbin) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprbin; return mlc::String(""); },
+  [&](const ExprUn& exprun) -> mlc::String { auto [_w0, _w1, _w2] = exprun; return mlc::String(""); },
+  [&](const ExprCall& exprcall) -> mlc::String { auto [_w0, _w1, _w2] = exprcall; return mlc::String(""); },
+  [&](const ExprMethod& exprmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprmethod; return mlc::String(""); },
+  [&](const ExprField& exprfield) -> mlc::String { auto [_w0, _w1, _w2] = exprfield; return mlc::String(""); },
+  [&](const ExprIndex& exprindex) -> mlc::String { auto [_w0, _w1, _w2] = exprindex; return mlc::String(""); },
+  [&](const ExprIf& exprif) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprif; return mlc::String(""); },
+  [&](const ExprBlock& exprblock) -> mlc::String { auto [_w0, _w1, _w2] = exprblock; return mlc::String(""); },
+  [&](const ExprWhile& exprwhile) -> mlc::String { auto [_w0, _w1, _w2] = exprwhile; return mlc::String(""); },
+  [&](const ExprFor& exprfor) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprfor; return mlc::String(""); },
+  [&](const ExprMatch& exprmatch) -> mlc::String { auto [_w0, _w1, _w2] = exprmatch; return mlc::String(""); },
+  [&](const ExprRecord& exprrecord) -> mlc::String { auto [_w0, _w1, _w2] = exprrecord; return mlc::String(""); },
+  [&](const ExprRecordUpdate& exprrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprrecordupdate; return mlc::String(""); },
+  [&](const ExprArray& exprarray) -> mlc::String { auto [_w0, _w1] = exprarray; return mlc::String(""); },
+  [&](const ExprTuple& exprtuple) -> mlc::String { auto [_w0, _w1] = exprtuple; return mlc::String(""); },
+  [&](const ExprQuestion& exprquestion) -> mlc::String { auto [_w0, _w1] = exprquestion; return mlc::String(""); },
+  [&](const ExprExtern& exprextern) -> mlc::String { auto [_w0] = exprextern; return mlc::String(""); },
+  [&](const ExprLambda& exprlambda) -> mlc::String { auto [_w0, _w1, _w2] = exprlambda; return mlc::String(""); },
+  [&](const ExprSpawn& exprspawn) -> mlc::String { auto [_w0, _w1] = exprspawn; return mlc::String(""); },
+  [&](const ExprNamedArg& exprnamedarg) -> mlc::String { auto [_w0, _w1, _w2] = exprnamedarg; return mlc::String(""); },
+  [&](const ExprWith& exprwith) -> mlc::String { auto [_w0, _w1, _w2, _w3] = exprwith; return mlc::String(""); }
+}, (*function)._);}
+
+bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noexcept{return std::visit(overloaded{
+  [&](const ExprLambda& exprlambda) -> bool { auto [_w0, _w1, _w2] = exprlambda; return true; },
+  [&](const ExprInt& exprint) -> bool { auto [_w0, _w1] = exprint; return false; },
+  [&](const ExprStr& exprstr) -> bool { auto [_w0, _w1] = exprstr; return false; },
+  [&](const ExprBool& exprbool) -> bool { auto [_w0, _w1] = exprbool; return false; },
+  [&](const ExprUnit& exprunit) -> bool { auto [_w0] = exprunit; return false; },
+  [&](const ExprFloat& exprfloat) -> bool { auto [_w0, _w1] = exprfloat; return false; },
+  [&](const ExprI64& expri64) -> bool { auto [_w0, _w1] = expri64; return false; },
+  [&](const ExprU8& expru8) -> bool { auto [_w0, _w1] = expru8; return false; },
+  [&](const ExprUsize& exprusize) -> bool { auto [_w0, _w1] = exprusize; return false; },
+  [&](const ExprChar& exprchar) -> bool { auto [_w0, _w1] = exprchar; return false; },
+  [&](const ExprIdent& exprident) -> bool { auto [_w0, _w1] = exprident; return false; },
+  [&](const ExprBin& exprbin) -> bool { auto [_w0, _w1, _w2, _w3] = exprbin; return false; },
+  [&](const ExprUn& exprun) -> bool { auto [_w0, _w1, _w2] = exprun; return false; },
+  [&](const ExprCall& exprcall) -> bool { auto [_w0, _w1, _w2] = exprcall; return false; },
+  [&](const ExprMethod& exprmethod) -> bool { auto [_w0, _w1, _w2, _w3] = exprmethod; return false; },
+  [&](const ExprField& exprfield) -> bool { auto [_w0, _w1, _w2] = exprfield; return false; },
+  [&](const ExprIndex& exprindex) -> bool { auto [_w0, _w1, _w2] = exprindex; return false; },
+  [&](const ExprIf& exprif) -> bool { auto [_w0, _w1, _w2, _w3] = exprif; return false; },
+  [&](const ExprBlock& exprblock) -> bool { auto [_w0, _w1, _w2] = exprblock; return false; },
+  [&](const ExprWhile& exprwhile) -> bool { auto [_w0, _w1, _w2] = exprwhile; return false; },
+  [&](const ExprFor& exprfor) -> bool { auto [_w0, _w1, _w2, _w3] = exprfor; return false; },
+  [&](const ExprMatch& exprmatch) -> bool { auto [_w0, _w1, _w2] = exprmatch; return false; },
+  [&](const ExprRecord& exprrecord) -> bool { auto [_w0, _w1, _w2] = exprrecord; return false; },
+  [&](const ExprRecordUpdate& exprrecordupdate) -> bool { auto [_w0, _w1, _w2, _w3] = exprrecordupdate; return false; },
+  [&](const ExprArray& exprarray) -> bool { auto [_w0, _w1] = exprarray; return false; },
+  [&](const ExprTuple& exprtuple) -> bool { auto [_w0, _w1] = exprtuple; return false; },
+  [&](const ExprQuestion& exprquestion) -> bool { auto [_w0, _w1] = exprquestion; return false; },
+  [&](const ExprExtern& exprextern) -> bool { auto [_w0] = exprextern; return false; },
+  [&](const ExprSpawn& exprspawn) -> bool { auto [_w0, _w1] = exprspawn; return false; },
+  [&](const ExprNamedArg& exprnamedarg) -> bool { auto [_w0, _w1, _w2] = exprnamedarg; return false; },
+  [&](const ExprWith& exprwith) -> bool { auto [_w0, _w1, _w2, _w3] = exprwith; return false; }
+}, (*argument_expression)._);}
+
+std::shared_ptr<registry::Type> binary_result_type_for_operator(registry::TypeRegistry registry, std::shared_ptr<registry::Type> left_type, mlc::String operation, mlc::String method) noexcept{
+std::shared_ptr<registry::Type> from_registry = registry::method_return_type_from_object(left_type, method, registry);
+return semantic_type_structure::type_is_unknown(from_registry) ? semantic_type_structure::binary_operation_result_type(operation, left_type) : from_registry;
+}
+
+std::shared_ptr<registry::Type> method_result_type_for_dispatch(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, registry::TypeRegistry registry) noexcept{
+std::shared_ptr<registry::Type> builtin_type = semantic_type_structure::builtin_method_return_type(method_name);
+return semantic_type_structure::type_is_unknown(builtin_type) ? registry::method_return_type_from_object(receiver_type, method_name, registry) : builtin_type;
+}
+
+std::shared_ptr<registry::Type> merge_conditional_expression_types(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{
+std::shared_ptr<registry::Type> then_type = semantic_ir::sexpr_type(typed_then);
+std::shared_ptr<registry::Type> else_type = semantic_ir::sexpr_type(typed_else);
+return semantic_type_is_tarray(then_type) ? semantic_type_is_tarray(else_type) ? [&]() -> std::shared_ptr<registry::Type> { 
+  std::shared_ptr<registry::Type> then_element_type = array_element_type_from_semantic_type(then_type);
+  std::shared_ptr<registry::Type> else_element_type = array_element_type_from_semantic_type(else_type);
+  return semantic_type_structure::type_is_unknown(then_element_type) ? std::make_shared<registry::Type>(registry::TArray(else_element_type)) : std::make_shared<registry::Type>(registry::TArray(then_element_type));
+ }() : then_type : then_type;
+}
+
+std::shared_ptr<registry::Type> array_element_type_from_semantic_expression(std::shared_ptr<semantic_ir::SemanticExpression> typed_expression) noexcept{
+std::shared_ptr<registry::Type> expression_type = semantic_ir::sexpr_type(typed_expression);
+return semantic_type_is_tarray(expression_type) ? array_element_type_from_semantic_type(expression_type) : std::make_shared<registry::Type>((registry::TUnknown{}));
+}
+
+mlc::Array<std::shared_ptr<registry::Type>> type_arguments_from_generic_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, type_arguments] = tgeneric; return type_arguments; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TI64& ti64) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TF64& tf64) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TU8& tu8) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUsize& tusize) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TChar& tchar) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tfn; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> { 
+  mlc::Array<std::shared_ptr<registry::Type>> empty = {};
+  return empty;
+ }(); }
+}, (*type_value));}
+
+std::shared_ptr<registry::Type> question_unwrapped_type_from_inner(std::shared_ptr<registry::Type> inner_expression_type) noexcept{
+mlc::Array<std::shared_ptr<registry::Type>> type_arguments = type_arguments_from_generic_type(inner_expression_type);
+return type_arguments.size() > 0 ? type_arguments[0] : std::make_shared<registry::Type>((registry::TUnknown{}));
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_result_option_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn);
+mlc::Array<std::shared_ptr<registry::Type>> argument_types = typed_arguments.map([](std::shared_ptr<semantic_ir::SemanticExpression> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
+std::shared_ptr<registry::Type> result_type = hof_method_spec::hof_call_result_type(receiver_type, method_name, argument_types);
+mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.size());
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_array_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_array_hof_method_arguments(typed_object, method_name, method_arguments, transform_context, stmts_fn);
+mlc::Array<std::shared_ptr<registry::Type>> argument_types = typed_arguments.map([](std::shared_ptr<semantic_ir::SemanticExpression> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
+std::shared_ptr<registry::Type> result_type = hof_method_spec::hof_call_result_type(receiver_type, method_name, argument_types);
+mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.size());
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_regular_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, transform::TransformContext transform_context, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn);
+std::shared_ptr<registry::Type> result_type = method_result_type_for_dispatch(receiver_type, method_name, registry);
+mlc::String mangled = extend_method_mangled_name(registry, receiver_type, method_name);
+return mangled != mlc::String("") ? transform_extend_method_as_call(registry, typed_object, method_name, typed_arguments, receiver_type, result_type, source_span) : [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
+  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.size());
+  return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
+ }();
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<registry::Type> then_element_type, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{
+std::shared_ptr<registry::Type> else_type = semantic_ir::sexpr_type(typed_else);
+return semantic_type_is_tarray(else_type) && semantic_type_structure::type_is_unknown(array_element_type_from_semantic_type(else_type)) ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionArray(elements, std::make_shared<registry::Type>(registry::TArray(then_element_type)), span_else)) : typed_else;
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{
+std::shared_ptr<registry::Type> then_type = semantic_ir::sexpr_type(typed_then);
+return semantic_type_is_tarray(then_type) ? coerce_unknown_else_array_when_then_known_inner(elements, span_else, array_element_type_from_semantic_type(then_type), typed_else) : typed_else;
+}
 
 std::shared_ptr<semantic_ir::SemanticExpression> array_literal_else_maybe_coerce(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{return elements.size() > 0 ? typed_else : conditional_else_coerce_empty_array_using_then_type(typed_then, elements, span_else, typed_else);}
 
-std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_empty_unknown_array_coerced_to_then_array_element(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<semantic_ir::SemanticExpressionArray>((*typed_else)._)) { auto _v_semanticexpressionarray = std::get<semantic_ir::SemanticExpressionArray>((*typed_else)._); auto [elements, _w0, span_else] = _v_semanticexpressionarray; return array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else); } return typed_else; }();}
+std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_empty_unknown_array_coerced_to_then_array_element(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [elements, _w0, span_else] = semanticexpressionarray; return array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionint; return typed_else; },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionstr; return typed_else; },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionfloat; return typed_else; },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressioni64; return typed_else; },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionu8; return typed_else; },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionusize; return typed_else; },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionchar; return typed_else; },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionbool; return typed_else; },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = semanticexpressionunit; return typed_else; },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = semanticexpressionextern; return typed_else; },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionident; return typed_else; },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return typed_else; },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return typed_else; },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return typed_else; },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return typed_else; },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return typed_else; },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return typed_else; },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return typed_else; },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return typed_else; },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return typed_else; },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return typed_else; },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return typed_else; },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return typed_else; },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return typed_else; },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressiontuple; return typed_else; },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionquestion; return typed_else; },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return typed_else; },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return typed_else; }
+}, (*typed_else)._);}
 
 transform::TransformContext transform_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept{return transform::TransformContext{type_env, registry, {}};}
 
@@ -214,27 +676,130 @@ transform::TransformContext transform_context_with_env(transform::TransformConte
 
 transform::TransformContext transform_context_with_lambda_parameter_types(transform::TransformContext base, mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types) noexcept{return transform::TransformContext{base.type_env, base.registry, lambda_parameter_types};}
 
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept{return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<semantic_ir::SemanticExpressionArray>((*expression)._)) { auto _v_semanticexpressionarray = std::get<semantic_ir::SemanticExpressionArray>((*expression)._); auto [elements, _w0, source_span] = _v_semanticexpressionarray; return elements.size() == 0 ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionArray(elements, target_type, source_span)) : expression; } if (std::holds_alternative<semantic_ir::SemanticExpressionRecord>((*expression)._)) { auto _v_semanticexpressionrecord = std::get<semantic_ir::SemanticExpressionRecord>((*expression)._); auto [type_name, fields, expr_type, source_span] = _v_semanticexpressionrecord; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TGeneric>((*target_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*target_type)); auto [tgt_name, _w0] = _v_tgeneric; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TGeneric>((*expr_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expr_type)); auto [exp_name, _w0] = _v_tgeneric; return tgt_name == exp_name ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionRecord(type_name, fields, target_type, source_span)) : expression; } return expression; }(); } return expression; }(); } if (std::holds_alternative<semantic_ir::SemanticExpressionBlock>((*expression)._)) { auto _v_semanticexpressionblock = std::get<semantic_ir::SemanticExpressionBlock>((*expression)._); auto [statements, result_expression, _w0, span] = _v_semanticexpressionblock; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TArray>((*target_type))) { auto _v_tarray = std::get<registry::TArray>((*target_type)); auto [_w0] = _v_tarray; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_array_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return elements.size() == 0 ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionArray(elements, target_type, source_span)) : expression;}
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_record_semantic_expression_to_type(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> fields, std::shared_ptr<registry::Type> expr_type, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
+mlc::String target_generic_name = generic_type_name(target_type);
+mlc::String expression_generic_name = generic_type_name(expr_type);
+return target_generic_name != mlc::String("") && target_generic_name == expression_generic_name ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionRecord(type_name, fields, target_type, source_span)) : expression;
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_block_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, ast::Span span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
+return semantic_type_is_tarray(target_type) ? [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
   std::shared_ptr<semantic_ir::SemanticExpression> coerced_result = coerce_expr_to_type(result_expression, target_type);
   return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock(statements, coerced_result, semantic_ir::sexpr_type(coerced_result), span));
- }(); } return expression; }(); } if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*expression)._)) { auto _v_semanticexpressionif = std::get<semantic_ir::SemanticExpressionIf>((*expression)._); auto [condition, then_branch, else_branch, _w0, source_span] = _v_semanticexpressionif; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TArray>((*target_type))) { auto _v_tarray = std::get<registry::TArray>((*target_type)); auto [_w0] = _v_tarray; return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIf(condition, coerce_expr_to_type(then_branch, target_type), coerce_expr_to_type(else_branch, target_type), target_type, source_span)); } return expression; }(); } return expression; }();}
+ }() : expression;
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_if_semantic_expression_to_type(std::shared_ptr<semantic_ir::SemanticExpression> condition, std::shared_ptr<semantic_ir::SemanticExpression> then_branch, std::shared_ptr<semantic_ir::SemanticExpression> else_branch, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
+return semantic_type_is_tarray(target_type) ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIf(condition, coerce_expr_to_type(then_branch, target_type), coerce_expr_to_type(else_branch, target_type), target_type, source_span)) : expression;
+}
+
+std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [elements, _w0, source_span] = semanticexpressionarray; return coerce_array_semantic_expression_to_type(elements, source_span, target_type, expression); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [type_name, fields, expr_type, source_span] = semanticexpressionrecord; return coerce_record_semantic_expression_to_type(type_name, fields, expr_type, source_span, target_type, expression); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [statements, result_expression, _w0, span] = semanticexpressionblock; return coerce_block_semantic_expression_to_type(statements, result_expression, span, target_type, expression); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [condition, then_branch, else_branch, _w0, source_span] = semanticexpressionif; return coerce_if_semantic_expression_to_type(condition, then_branch, else_branch, source_span, target_type, expression); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionint; return expression; },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionstr; return expression; },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionfloat; return expression; },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressioni64; return expression; },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionu8; return expression; },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionusize; return expression; },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionchar; return expression; },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionbool; return expression; },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = semanticexpressionunit; return expression; },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = semanticexpressionextern; return expression; },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionident; return expression; },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return expression; },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return expression; },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return expression; },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return expression; },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return expression; },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return expression; },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return expression; },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return expression; },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return expression; },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return expression; },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressiontuple; return expression; },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = semanticexpressionquestion; return expression; },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return expression; },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return expression; }
+}, (*expression)._);}
 
 std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept{return std::make_shared<registry::Type>((registry::TUnknown{}));}
 
 mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{return expressions.map([transform_context, stmts_fn](std::shared_ptr<ast::Expr> expression_under_transform) mutable { return transform_expr(expression_under_transform, transform_context, stmts_fn); });}
 
+std::shared_ptr<registry::Type> expected_call_argument_type_at_index(int argument_index, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types) noexcept{return argument_index < expected_formal_parameter_types.size() ? expected_formal_parameter_types[argument_index] : standalone_unknown_cell();}
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_lambda_call_argument(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> lambda_body, ast::Span lambda_span, std::shared_ptr<registry::Type> expected_formal_parameter_type, std::shared_ptr<ast::Expr> argument_expression_shared, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
+return callee_semantic_type_is_function(expected_formal_parameter_type) ? transform_expr_lambda_with_param_types(parameter_names, function_parameter_types_from_callee_type(expected_formal_parameter_type), lambda_body, lambda_span, transform_context, stmts_fn) : transform_expr(argument_expression_shared, transform_context, stmts_fn);
+}
+
 std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_using_optional_expected_type(std::shared_ptr<ast::Expr> argument_expression_shared, std::shared_ptr<registry::Type> expected_formal_parameter_type, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
 std::shared_ptr<ast::Expr> argument_partially_desugared_shared_expression = partial_application_desugar::partial_application_desugar_expr(argument_expression_shared);
-return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<ast::ExprLambda>((*argument_partially_desugared_shared_expression)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*argument_partially_desugared_shared_expression)._); auto [parameter_names, lambda_body, lambda_span] = _v_exprlambda; return [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { if (std::holds_alternative<registry::TFn>((*expected_formal_parameter_type))) { auto _v_tfn = std::get<registry::TFn>((*expected_formal_parameter_type)); auto [expected_lambda_parameter_semantic_types, _w0] = _v_tfn; return transform_expr_lambda_with_param_types(parameter_names, expected_lambda_parameter_semantic_types, lambda_body, lambda_span, transform_context, stmts_fn); } return transform_expr(argument_expression_shared, transform_context, stmts_fn); }(); } return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); }();
+return call_argument_is_lambda(argument_partially_desugared_shared_expression) ? std::visit(overloaded{
+  [&](const ExprLambda& exprlambda) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [parameter_names, lambda_body, lambda_span] = exprlambda; return transform_lambda_call_argument(parameter_names, lambda_body, lambda_span, expected_formal_parameter_type, argument_expression_shared, transform_context, stmts_fn); },
+  [&](const ExprInt& exprint) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprint; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprStr& exprstr) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprstr; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprBool& exprbool) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprbool; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprUnit& exprunit) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0] = exprunit; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprFloat& exprfloat) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprfloat; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprI64& expri64) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = expri64; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprU8& expru8) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = expru8; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprUsize& exprusize) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprusize; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprChar& exprchar) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprchar; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprIdent& exprident) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprident; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprBin& exprbin) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprbin; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprUn& exprun) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprun; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprCall& exprcall) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprcall; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprMethod& exprmethod) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprmethod; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprField& exprfield) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprfield; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprIndex& exprindex) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprindex; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprIf& exprif) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprif; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprBlock& exprblock) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprblock; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprWhile& exprwhile) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprwhile; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprFor& exprfor) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprfor; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprMatch& exprmatch) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprmatch; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprRecord& exprrecord) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprrecord; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprRecordUpdate& exprrecordupdate) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprrecordupdate; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprArray& exprarray) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprarray; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprTuple& exprtuple) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprtuple; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprQuestion& exprquestion) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprquestion; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprExtern& exprextern) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0] = exprextern; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprSpawn& exprspawn) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1] = exprspawn; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprNamedArg& exprnamedarg) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2] = exprnamedarg; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+  [&](const ExprWith& exprwith) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [_w0, _w1, _w2, _w3] = exprwith; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); }
+}, (*argument_partially_desugared_shared_expression)._) : coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type);
 }
 
-transform::Transform_call_arguments_fold_state transform_call_arguments_fold_step(transform::Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
-std::shared_ptr<registry::Type> expected_placeholder_type = state.next_argument_index < expected_formal_parameter_types.size() ? expected_formal_parameter_types[state.next_argument_index] : standalone_unknown_cell();
-return transform::Transform_call_arguments_fold_state{state.transformed_arguments.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>>{transform_one_call_argument_using_optional_expected_type(argument_expression, expected_placeholder_type, transform_context, stmts_fn)}), state.next_argument_index + 1};
-}
+std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [_w0, return_type] = tfn; return return_type; },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [_w0] = tshared; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [_w0] = tnamed; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [_w0] = tarray; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
+}, (*type_value));}
+
+transform::Transform_call_arguments_fold_state transform_call_arguments_fold_step(transform::Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{return transform::Transform_call_arguments_fold_state{state.transformed_arguments.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>>{transform_one_call_argument_using_optional_expected_type(argument_expression, expected_call_argument_type_at_index(state.next_argument_index, expected_formal_parameter_types), transform_context, stmts_fn)}), state.next_argument_index + 1};}
 
 mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_call_arguments_using_callee_semantic_type(std::shared_ptr<semantic_ir::SemanticExpression> callee_semantic_expression, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions_under_call, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
-return [&]() -> mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> { if (std::holds_alternative<registry::TFn>((*semantic_ir::sexpr_type(callee_semantic_expression)))) { auto _v_tfn = std::get<registry::TFn>((*semantic_ir::sexpr_type(callee_semantic_expression))); auto [expected_formal_parameter_types, _w0] = _v_tfn; return argument_expressions_under_call.fold(transform::Transform_call_arguments_fold_state{{}, 0}, [expected_formal_parameter_types, transform_context, stmts_fn](transform::Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression) mutable { return transform_call_arguments_fold_step(state, argument_expression, expected_formal_parameter_types, transform_context, stmts_fn); }).transformed_arguments; } return transform_exprs(argument_expressions_under_call, transform_context, stmts_fn); }();
+std::shared_ptr<registry::Type> callee_type = semantic_ir::sexpr_type(callee_semantic_expression);
+return callee_semantic_type_is_function(callee_type) ? argument_expressions_under_call.fold(transform::Transform_call_arguments_fold_state{{}, 0}, [callee_type, transform_context, stmts_fn](transform::Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression) mutable { return transform_call_arguments_fold_step(state, argument_expression, function_parameter_types_from_callee_type(callee_type), transform_context, stmts_fn); }).transformed_arguments : transform_exprs(argument_expressions_under_call, transform_context, stmts_fn);
 }
 
 std::shared_ptr<semantic_ir::SemanticFieldVal> semantic_field_val_from_source_field_after_transform(std::shared_ptr<ast::FieldVal> field_value_under_transform, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{return std::make_shared<semantic_ir::SemanticFieldVal>(semantic_ir::SemanticFieldVal{field_value_under_transform->name, transform_expr(field_value_under_transform->value, transform_context, stmts_fn)});}
@@ -329,10 +894,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> typed_left = dispatch_transform
 std::shared_ptr<semantic_ir::SemanticExpression> typed_right = dispatch_transform_pass(self, right, stmts_fn);
 std::shared_ptr<registry::Type> left_type = semantic_ir::sexpr_type(typed_left);
 mlc::String method = semantic_type_structure::operator_method_for(operation);
-std::shared_ptr<registry::Type> result_type = method != mlc::String("") ? [&]() -> std::shared_ptr<registry::Type> { 
-  std::shared_ptr<registry::Type> from_reg = registry::method_return_type_from_object(left_type, method, self.transform_context.registry);
-  return semantic_type_structure::type_is_unknown(from_reg) ? semantic_type_structure::binary_operation_result_type(operation, left_type) : from_reg;
- }() : semantic_type_structure::binary_operation_result_type(operation, left_type);
+std::shared_ptr<registry::Type> result_type = method != mlc::String("") ? binary_result_type_for_operator(self.transform_context.registry, left_type, operation, method) : semantic_type_structure::binary_operation_result_type(operation, left_type);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBin(operation, typed_left, typed_right, result_type, source_span));
 }
 
@@ -343,11 +905,11 @@ return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticEx
 }
 
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_call(transform::TransformPass self, std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
-mlc::String callee_name = [&]() -> mlc::String { if (std::holds_alternative<ast::ExprIdent>((*function)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*function)._); auto [name, _w0] = _v_exprident; return name; } return mlc::String(""); }();
+mlc::String callee_name = call_callee_ident_name(function);
 mlc::Array<std::shared_ptr<ast::Expr>> resolved_call_args = named_args::resolve_named_call_arguments_for_transform(call_arguments, callee_name, self.transform_context.registry);
 std::shared_ptr<semantic_ir::SemanticExpression> typed_function = dispatch_transform_pass(self, function, stmts_fn);
 mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_call_arguments_using_callee_semantic_type(typed_function, resolved_call_args, self.transform_context, stmts_fn);
-std::shared_ptr<registry::Type> result_type = callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(self.transform_context.registry, callee_name) ? registry::TypeRegistry_ctor_type(self.transform_context.registry, callee_name) : [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TFn>((*semantic_ir::sexpr_type(typed_function)))) { auto _v_tfn = std::get<registry::TFn>((*semantic_ir::sexpr_type(typed_function))); auto [_w0, return_type] = _v_tfn; return return_type; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+std::shared_ptr<registry::Type> result_type = callee_name != mlc::String("") && registry::TypeRegistry_has_ctor(self.transform_context.registry, callee_name) ? registry::TypeRegistry_ctor_type(self.transform_context.registry, callee_name) : function_return_type_from_callee_type(semantic_ir::sexpr_type(typed_function));
 mlc::Array<int> call_parameter_mutability_flags = direct_call_parameter_mutability_flags(self.transform_context.registry, callee_name, typed_arguments.size());
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionCall(typed_function, typed_arguments, call_parameter_mutability_flags, result_type, source_span));
 }
@@ -355,25 +917,7 @@ return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticEx
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_method(transform::TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
 std::shared_ptr<semantic_ir::SemanticExpression> typed_object = dispatch_transform_pass(self, object, stmts_fn);
 std::shared_ptr<registry::Type> receiver_type = semantic_ir::sexpr_type(typed_object);
-return hof_method_spec::is_result_option_hof_method(receiver_type, method_name) ? [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
-  mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn);
-  mlc::Array<std::shared_ptr<registry::Type>> argument_types = typed_arguments.map([](std::shared_ptr<semantic_ir::SemanticExpression> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
-  std::shared_ptr<registry::Type> result_type = hof_method_spec::hof_call_result_type(receiver_type, method_name, argument_types);
-  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(self.transform_context.registry, receiver_type, method_name, typed_arguments.size());
-  return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
- }() : hof_method_spec::is_array_hof_method_on_receiver(receiver_type, method_name) ? [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
-  mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_array_hof_method_arguments(typed_object, method_name, method_arguments, self.transform_context, stmts_fn);
-  mlc::Array<std::shared_ptr<registry::Type>> argument_types = typed_arguments.map([](std::shared_ptr<semantic_ir::SemanticExpression> typed_argument) mutable { return semantic_ir::sexpr_type(typed_argument); });
-  std::shared_ptr<registry::Type> result_type = hof_method_spec::hof_call_result_type(receiver_type, method_name, argument_types);
-  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(self.transform_context.registry, receiver_type, method_name, typed_arguments.size());
-  return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
- }() : [&]() -> std::shared_ptr<semantic_ir::SemanticExpression> { 
-  mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments = transform_exprs(method_arguments, self.transform_context, stmts_fn);
-  std::shared_ptr<registry::Type> builtin_type = semantic_type_structure::builtin_method_return_type(method_name);
-  std::shared_ptr<registry::Type> result_type = semantic_type_structure::type_is_unknown(builtin_type) ? registry::method_return_type_from_object(receiver_type, method_name, self.transform_context.registry) : builtin_type;
-  mlc::Array<int> method_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(self.transform_context.registry, receiver_type, method_name, typed_arguments.size());
-  return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod(typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span));
- }();
+return hof_method_spec::is_result_option_hof_method(receiver_type, method_name) ? transform_result_option_hof_method_call(self.transform_context.registry, typed_object, method_name, method_arguments, receiver_type, self.transform_context, source_span, stmts_fn) : hof_method_spec::is_array_hof_method_on_receiver(receiver_type, method_name) ? transform_array_hof_method_call(self.transform_context.registry, typed_object, method_name, method_arguments, receiver_type, self.transform_context, source_span, stmts_fn) : transform_regular_method_call(self.transform_context.registry, typed_object, method_name, method_arguments, receiver_type, self.transform_context, source_span, stmts_fn);
 }
 
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_field(transform::TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
@@ -385,7 +929,7 @@ return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticEx
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_index(transform::TransformPass self, std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
 std::shared_ptr<semantic_ir::SemanticExpression> typed_object = dispatch_transform_pass(self, object, stmts_fn);
 std::shared_ptr<semantic_ir::SemanticExpression> typed_index = dispatch_transform_pass(self, index_expression, stmts_fn);
-std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_object)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_object))); auto [element_type_value] = _v_tarray; return element_type_value; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+std::shared_ptr<registry::Type> element_type = array_element_type_from_semantic_expression(typed_object);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIndex(typed_object, typed_index, element_type, source_span));
 }
 
@@ -394,7 +938,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> typed_condition = dispatch_tran
 std::shared_ptr<semantic_ir::SemanticExpression> typed_then = dispatch_transform_pass(self, then_expression, stmts_fn);
 std::shared_ptr<semantic_ir::SemanticExpression> typed_else_raw = dispatch_transform_pass(self, else_expression, stmts_fn);
 std::shared_ptr<semantic_ir::SemanticExpression> typed_else = conditional_else_empty_unknown_array_coerced_to_then_array_element(typed_then, typed_else_raw);
-std::shared_ptr<registry::Type> merged_conditional_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_then)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_then))); auto [then_element_type] = _v_tarray; return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_else)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_else))); auto [else_element_type] = _v_tarray; return semantic_type_structure::type_is_unknown(then_element_type) ? std::make_shared<registry::Type>(registry::TArray(else_element_type)) : std::make_shared<registry::Type>(registry::TArray(then_element_type)); } return semantic_ir::sexpr_type(typed_then); }(); } return semantic_ir::sexpr_type(typed_then); }();
+std::shared_ptr<registry::Type> merged_conditional_type = merge_conditional_expression_types(typed_then, typed_else);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIf(typed_condition, typed_then, typed_else, merged_conditional_type, source_span));
 }
 
@@ -426,7 +970,7 @@ return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticEx
 
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_for(transform::TransformPass self, mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
 std::shared_ptr<semantic_ir::SemanticExpression> typed_iterator = dispatch_transform_pass(self, iterator, stmts_fn);
-std::shared_ptr<registry::Type> element_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*semantic_ir::sexpr_type(typed_iterator)))) { auto _v_tarray = std::get<registry::TArray>((*semantic_ir::sexpr_type(typed_iterator))); auto [element_type_value] = _v_tarray; return element_type_value; } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+std::shared_ptr<registry::Type> element_type = array_element_type_from_semantic_expression(typed_iterator);
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> loop_body_environment = self.transform_context.type_env;
 loop_body_environment.set(variable_name, element_type);
 transform::TransformContext loop_context = transform_context_with_env(self.transform_context, loop_body_environment);
@@ -486,7 +1030,7 @@ return elements.size() < 2 ? std::make_shared<semantic_ir::SemanticExpression>(s
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_question(transform::TransformPass self, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{
 std::shared_ptr<semantic_ir::SemanticExpression> typed_inner = dispatch_transform_pass(self, inner_expression, stmts_fn);
 std::shared_ptr<registry::Type> inner_expression_type = semantic_ir::sexpr_type(typed_inner);
-std::shared_ptr<registry::Type> unwrapped_type = [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TGeneric>((*inner_expression_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_expression_type)); auto [_w0, type_args] = _v_tgeneric; return type_args.size() > 0 ? type_args[0] : std::make_shared<registry::Type>((registry::TUnknown{})); } return std::make_shared<registry::Type>((registry::TUnknown{})); }();
+std::shared_ptr<registry::Type> unwrapped_type = question_unwrapped_type_from_inner(inner_expression_type);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionQuestion(typed_inner, unwrapped_type, source_span));
 }
 

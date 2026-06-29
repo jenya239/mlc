@@ -1,9 +1,179 @@
 // let-pattern: extend type environment from pattern + RHS type (A3).
 
 import { Pattern } from '../../frontend/ast'
-import { Type, TypeRegistry, field_type_from_object, TNamed, TTuple, TPair } from '../registry'
+import { Type, TypeRegistry, field_type_from_object, TNamed, TTuple, TPair, TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar, TUnknown, TArray, TShared, TGeneric, TFn, TAssoc } from '../registry'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
+
+fn pattern_ident_binding_name(pattern: Shared<Pattern>) -> string =
+  match pattern {
+    PatternIdent(binding_name, _) => binding_name,
+    PatternWild(_) => '',
+    PatternInt(_, _) => '',
+    PatternStr(_, _) => '',
+    PatternStringLit(_, _) => '',
+    PatternBool(_, _) => '',
+    PatternUnit(_) => '',
+    PatternCtor(_, _, _) => '',
+    PatternRecord(_, _, _) => '',
+    PatternTuple(_, _) => '',
+    PatternArray(_, _, _) => '',
+    PatternOr(_, _) => ''
+  }
+
+fn value_type_is_tuple_type(value_type: Shared<Type>) -> bool =
+  match value_type {
+    TTuple(_) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TUnknown => false,
+    TArray(inner) => false,
+    TShared(inner) => false,
+    TNamed(type_name) => false,
+    TGeneric(type_name, type_arguments) => false,
+    TPair(left, right) => false,
+    TFn(param_types, return_type) => false,
+    TAssoc(param, assoc) => false
+  }
+
+fn value_type_is_pair_type(value_type: Shared<Type>) -> bool =
+  match value_type {
+    TPair(left, right) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TUnknown => false,
+    TArray(inner) => false,
+    TShared(inner) => false,
+    TNamed(type_name) => false,
+    TGeneric(type_name, type_arguments) => false,
+    TTuple(types) => false,
+    TFn(param_types, return_type) => false,
+    TAssoc(param, assoc) => false
+  }
+
+fn value_type_is_array_type(value_type: Shared<Type>) -> bool =
+  match value_type {
+    TArray(inner) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TUnknown => false,
+    TShared(inner) => false,
+    TNamed(type_name) => false,
+    TGeneric(type_name, type_arguments) => false,
+    TPair(left, right) => false,
+    TTuple(types) => false,
+    TFn(param_types, return_type) => false,
+    TAssoc(param, assoc) => false
+  }
+
+fn tuple_member_types_from_value_type(value_type: Shared<Type>) -> [Shared<Type>] =
+  match value_type {
+    TTuple(types) => types,
+    TI32 => do let empty: [Shared<Type>] = []; empty end,
+    TString => do let empty: [Shared<Type>] = []; empty end,
+    TBool => do let empty: [Shared<Type>] = []; empty end,
+    TUnit => do let empty: [Shared<Type>] = []; empty end,
+    TI64 => do let empty: [Shared<Type>] = []; empty end,
+    TF64 => do let empty: [Shared<Type>] = []; empty end,
+    TU8 => do let empty: [Shared<Type>] = []; empty end,
+    TUsize => do let empty: [Shared<Type>] = []; empty end,
+    TChar => do let empty: [Shared<Type>] = []; empty end,
+    TUnknown => do let empty: [Shared<Type>] = []; empty end,
+    TArray(inner) => do let empty: [Shared<Type>] = []; empty end,
+    TShared(inner) => do let empty: [Shared<Type>] = []; empty end,
+    TNamed(type_name) => do let empty: [Shared<Type>] = []; empty end,
+    TGeneric(type_name, type_arguments) => do let empty: [Shared<Type>] = []; empty end,
+    TPair(left, right) => do let empty: [Shared<Type>] = []; empty end,
+    TFn(param_types, return_type) => do let empty: [Shared<Type>] = []; empty end,
+    TAssoc(param, assoc) => do let empty: [Shared<Type>] = []; empty end
+  }
+
+fn pair_first_member_type(value_type: Shared<Type>) -> Shared<Type> =
+  match value_type {
+    TPair(first_member_type, _) => first_member_type,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown),
+    TArray(inner) => Shared.new(TUnknown),
+    TShared(inner) => Shared.new(TUnknown),
+    TNamed(type_name) => Shared.new(TUnknown),
+    TGeneric(type_name, type_arguments) => Shared.new(TUnknown),
+    TTuple(types) => Shared.new(TUnknown),
+    TFn(param_types, return_type) => Shared.new(TUnknown),
+    TAssoc(param, assoc) => Shared.new(TUnknown)
+  }
+
+fn pair_second_member_type(value_type: Shared<Type>) -> Shared<Type> =
+  match value_type {
+    TPair(_, second_member_type) => second_member_type,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown),
+    TArray(inner) => Shared.new(TUnknown),
+    TShared(inner) => Shared.new(TUnknown),
+    TNamed(type_name) => Shared.new(TUnknown),
+    TGeneric(type_name, type_arguments) => Shared.new(TUnknown),
+    TTuple(types) => Shared.new(TUnknown),
+    TFn(param_types, return_type) => Shared.new(TUnknown),
+    TAssoc(param, assoc) => Shared.new(TUnknown)
+  }
+
+fn array_element_type_from_value_type(value_type: Shared<Type>) -> Shared<Type> =
+  match value_type {
+    TArray(element_type_inside_array) => element_type_inside_array,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown),
+    TShared(inner) => Shared.new(TUnknown),
+    TNamed(type_name) => Shared.new(TUnknown),
+    TGeneric(type_name, type_arguments) => Shared.new(TUnknown),
+    TPair(left, right) => Shared.new(TUnknown),
+    TTuple(types) => Shared.new(TUnknown),
+    TFn(param_types, return_type) => Shared.new(TUnknown),
+    TAssoc(param, assoc) => Shared.new(TUnknown)
+  }
 
 type Tuple_or_slot_pattern_environment_fold_state = Tuple_or_slot_pattern_environment_fold_state {
   pattern_environment:     Map<string, Shared<Type>>,
@@ -42,11 +212,7 @@ fn let_record_literal_field_pattern_fold_step(
   let_rhs_object_type: Shared<Type>,
   registry: TypeRegistry
 ) -> Map<string, Shared<Type>> = do
-  const record_field_binding_name =
-    match field_subpattern {
-      PatternIdent(binding_name_for_field_literal, _) => binding_name_for_field_literal,
-      _ => ''
-    }
+  const record_field_binding_name = pattern_ident_binding_name(field_subpattern)
   if record_field_binding_name != '' then
     const field_object_type_from_registry =
       field_type_from_object(let_rhs_object_type, record_field_binding_name, registry)
@@ -54,6 +220,134 @@ fn let_record_literal_field_pattern_fold_step(
   else field_pattern_environment
   end
 end
+
+fn apply_let_tuple_patterns_with_member_types(
+  tuple_component_patterns: [Shared<Pattern>],
+  tuple_member_types: [Shared<Type>],
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  if tuple_component_patterns.length() != tuple_member_types.length() then base_env
+  else
+    tuple_component_patterns
+      .fold(
+        Tuple_or_slot_pattern_environment_fold_state {
+          pattern_environment: base_env,
+          next_component_index: 0,
+        },
+        (state, tuple_component_pattern) =>
+          let_tuple_environment_fold_step(
+            state,
+            tuple_component_pattern,
+            tuple_member_types,
+            registry))
+      .pattern_environment
+  end
+
+fn apply_let_tuple_patterns_with_pair(
+  tuple_component_patterns: [Shared<Pattern>],
+  first_member_type: Shared<Type>,
+  second_member_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  if tuple_component_patterns.length() != 2 then base_env
+  else
+    const environment_after_first_tuple_component =
+      apply_let_pattern_to_env(tuple_component_patterns[0], first_member_type, base_env, registry)
+    apply_let_pattern_to_env(
+      tuple_component_patterns[1],
+      second_member_type,
+      environment_after_first_tuple_component,
+      registry)
+  end
+
+fn apply_let_tuple_pattern_to_env(
+  tuple_component_patterns: [Shared<Pattern>],
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  if value_type_is_tuple_type(value_type) then
+    apply_let_tuple_patterns_with_member_types(
+      tuple_component_patterns,
+      tuple_member_types_from_value_type(value_type),
+      base_env,
+      registry)
+  else if value_type_is_pair_type(value_type) then
+    apply_let_tuple_patterns_with_pair(
+      tuple_component_patterns,
+      pair_first_member_type(value_type),
+      pair_second_member_type(value_type),
+      base_env,
+      registry)
+  else
+    tuple_pattern_environment_using_ordered_record_fields(
+      tuple_component_patterns, value_type, base_env, registry)
+  end
+
+fn apply_let_array_pattern_to_env(
+  cell_patterns: [Shared<Pattern>],
+  remainder_binding_name: string,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  const element_type_inside_array = array_element_type_from_value_type(value_type)
+  const environment_after_fixed_array_cells =
+    cell_patterns
+      .fold(
+        Tuple_or_slot_pattern_environment_fold_state {
+          pattern_environment: base_env,
+          next_component_index: 0,
+        },
+        (state, cell_pattern) =>
+          let_array_element_patterns_fold_step(
+            state,
+            cell_pattern,
+            element_type_inside_array,
+            registry))
+      .pattern_environment
+  if remainder_binding_name != '' then do
+      let mut remainder_tail_environment = environment_after_fixed_array_cells
+      remainder_tail_environment.set(remainder_binding_name, value_type)
+      remainder_tail_environment
+    end
+  else environment_after_fixed_array_cells
+  end
+end
+
+fn apply_let_record_pattern_to_env(
+  record_heading_name_or_empty: string,
+  literal_field_patterns: [Shared<Pattern>],
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  if record_heading_name_or_empty != '' then base_env
+  else
+    literal_field_patterns.fold(
+      base_env,
+      (field_pattern_environment_so_far, field_subpattern_under_pattern_node) =>
+        let_record_literal_field_pattern_fold_step(
+          field_pattern_environment_so_far,
+          field_subpattern_under_pattern_node,
+          value_type,
+          registry))
+  end
+
+fn apply_let_ctor_pattern_to_env(
+  pattern: Shared<Pattern>,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  env_for_pattern_substituted(
+    base_env,
+    pattern,
+    registry,
+    substitution_from_generic(value_type, registry),
+    value_type)
 
 fn ordered_record_tuple_environment_fold_step(
   state: Tuple_or_slot_pattern_environment_fold_state,
@@ -77,118 +371,76 @@ fn ordered_record_tuple_environment_fold_step(
   }
 end
 
+fn apply_let_ident_pattern_to_env(
+  let_binding_name: string,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>
+) -> Map<string, Shared<Type>> = do
+  let mut environment_where_ident_binding_is_added = base_env
+  environment_where_ident_binding_is_added.set(let_binding_name, value_type)
+  environment_where_ident_binding_is_added
+end
+
+fn apply_let_array_pattern_dispatch(
+  cell_patterns: [Shared<Pattern>],
+  remainder_binding_name: string,
+  value_type: Shared<Type>,
+  base_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  if value_type_is_array_type(value_type) then
+    apply_let_array_pattern_to_env(cell_patterns, remainder_binding_name, value_type, base_env, registry)
+  else base_env
+  end
+
 fn apply_let_pattern_to_env(
   pattern: Shared<Pattern>,
   value_type: Shared<Type>,
   base_env: Map<string, Shared<Type>>,
   registry: TypeRegistry
-) -> Map<string, Shared<Type>> = do
+) -> Map<string, Shared<Type>> =
   match pattern {
     PatternWild(_) => base_env,
-    PatternIdent(let_binding_name, _) => do
-      const environment_where_ident_binding_is_added = base_env
-      environment_where_ident_binding_is_added.set(let_binding_name, value_type)
-      environment_where_ident_binding_is_added
-    end,
-    PatternTuple(tuple_component_patterns, _) => do
-      match value_type {
-        TTuple(tuple_member_types) =>
-          if tuple_component_patterns.length() != tuple_member_types.length()
-          then base_env
-          else
-            tuple_component_patterns
-              .fold(
-                Tuple_or_slot_pattern_environment_fold_state {
-                  pattern_environment: base_env,
-                  next_component_index:                  0,
-                },
-                (state, tuple_component_pattern) =>
-                  let_tuple_environment_fold_step(
-                    state,
-                    tuple_component_pattern,
-                    tuple_member_types,
-                    registry))
-              .pattern_environment
-          end,
-        TPair(first_member_type, second_member_type) =>
-          if tuple_component_patterns.length() != 2
-          then base_env
-          else do
-            const environment_after_first_tuple_component =
-              apply_let_pattern_to_env(tuple_component_patterns[0], first_member_type, base_env, registry)
-            apply_let_pattern_to_env(
-              tuple_component_patterns[1],
-              second_member_type,
-              environment_after_first_tuple_component,
-              registry)
-          end
-          end,
-        _ =>
-          tuple_pattern_environment_using_ordered_record_fields(
-            tuple_component_patterns,
-            value_type,
-            base_env,
-            registry)
-      }
-    end,
-    PatternArray(cell_patterns, remainder_binding_name, _) => do
-      match value_type {
-        TArray(element_type_inside_array) => do
-          const environment_after_fixed_array_cells =
-            cell_patterns
-              .fold(
-                Tuple_or_slot_pattern_environment_fold_state {
-                  pattern_environment: base_env,
-                  next_component_index:                  0,
-                },
-                (state, cell_pattern) =>
-                  let_array_element_patterns_fold_step(
-                    state,
-                    cell_pattern,
-                    element_type_inside_array,
-                    registry))
-              .pattern_environment
-          if remainder_binding_name != '' then do
-              let mut remainder_tail_environment = environment_after_fixed_array_cells
-              remainder_tail_environment.set(remainder_binding_name, value_type)
-              remainder_tail_environment
-            end
-          else environment_after_fixed_array_cells
-          end
-        end,
-        _ => base_env
-      }
-    end,
-    PatternRecord(record_heading_name_or_empty, literal_field_patterns, _) => do
-      if record_heading_name_or_empty != '' then
-        base_env
-      else
-        literal_field_patterns.fold(
-          base_env,
-          (field_pattern_environment_so_far, field_subpattern_under_pattern_node) =>
-            let_record_literal_field_pattern_fold_step(
-              field_pattern_environment_so_far,
-              field_subpattern_under_pattern_node,
-              value_type,
-              registry))
-      end
-    end,
+    PatternIdent(let_binding_name, _) =>
+      apply_let_ident_pattern_to_env(let_binding_name, value_type, base_env),
+    PatternTuple(tuple_component_patterns, _) =>
+      apply_let_tuple_pattern_to_env(tuple_component_patterns, value_type, base_env, registry),
+    PatternArray(cell_patterns, remainder_binding_name, _) =>
+      apply_let_array_pattern_dispatch(
+        cell_patterns, remainder_binding_name, value_type, base_env, registry),
+    PatternRecord(record_heading_name_or_empty, literal_field_patterns, _) =>
+      apply_let_record_pattern_to_env(
+        record_heading_name_or_empty, literal_field_patterns, value_type, base_env, registry),
     PatternCtor(_, _, _) =>
-      env_for_pattern_substituted(
-        base_env,
-        pattern,
-        registry,
-        substitution_from_generic(value_type, registry),
-        value_type),
-    _ => base_env
+      apply_let_ctor_pattern_to_env(pattern, value_type, base_env, registry),
+    PatternInt(_, _) => base_env,
+    PatternStr(_, _) => base_env,
+    PatternStringLit(_, _) => base_env,
+    PatternBool(_, _) => base_env,
+    PatternUnit(_) => base_env,
+    PatternOr(_, _) => base_env
   }
-end
 
 fn record_base_name_for_ordered_tuple_pattern(value_type: Shared<Type>) -> string =
   match value_type {
-    TNamed(record_name_without_parameters)           => record_name_without_parameters,
+    TNamed(record_name_without_parameters) => record_name_without_parameters,
     TGeneric(generic_algebraic_outer_name, _) => generic_algebraic_outer_name,
-    _ => ''
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TUnknown => '',
+    TArray(inner) => '',
+    TShared(inner) => '',
+    TPair(left, right) => '',
+    TTuple(types) => '',
+    TFn(param_types, return_type) => '',
+    TAssoc(param, assoc) => ''
   }
 
 fn tuple_pattern_environment_using_ordered_record_fields(

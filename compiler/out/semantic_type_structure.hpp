@@ -15,6 +15,10 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
+mlc::Array<std::shared_ptr<registry::Type>> generic_type_arguments_from_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
+
 bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
 
 bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
@@ -36,8 +40,6 @@ bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept
 std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept;
 
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
-
-mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
 
 std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept;
 

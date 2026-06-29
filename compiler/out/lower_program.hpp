@@ -4,6 +4,7 @@
 #include "mlc.hpp"
 #include <variant>
 
+#include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "mir_types.hpp"
 #include "lower_fn.hpp"
@@ -19,6 +20,8 @@ struct CppStatement;
 struct CppExpression;
 
 mir_types::MirProgram build_mir_program_from_semantic_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept;
+
+ast::Result<mir_types::MirProgram, mlc::Array<mlc::String>> build_mir_program_from_semantic_items_checked(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept;
 
 } // namespace lower_program
 

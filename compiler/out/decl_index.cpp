@@ -13,6 +13,20 @@ using namespace ast_tokens;
 
 mlc::Array<mlc::String> declaration_export_names(std::shared_ptr<ast::Decl> declaration) noexcept;
 
+mlc::String function_name_from_method_declaration(std::shared_ptr<ast::Decl> method) noexcept;
+
+mlc::String extend_type_name_from_declaration(std::shared_ptr<ast::Decl> declaration) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> methods_from_extend_declaration(std::shared_ptr<ast::Decl> declaration) noexcept;
+
+mlc::String extend_method_mangled_name(mlc::String type_name, mlc::String method_name) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> ast_decls_for_path(mlc::String module_path, mlc::Array<load_item::LoadItem> all_items) noexcept;
+
+mlc::HashMap<mlc::String, mlc::String> extend_qualified_map(mlc::HashMap<mlc::String, mlc::String> base, mlc::Array<load_item::LoadItem> all_items, mlc::String exclude_module_path) noexcept;
+
+mlc::HashMap<mlc::String, mlc::String> build_extend_method_qualified_map(mlc::Array<load_item::LoadItem> all_items) noexcept;
+
 mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<load_item::LoadItem> all_items) noexcept;
 
 mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array<load_item::NamespaceImportAlias> aliases) noexcept;
@@ -89,6 +103,85 @@ method_index = method_index + 1;
  }(); } return std::make_tuple(); }();
 return names;
 }
+
+mlc::String function_name_from_method_declaration(std::shared_ptr<ast::Decl> method) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::DeclFn>((*method))) { auto _v_declfn = std::get<ast::DeclFn>((*method)); auto [function_name, _w0, _w1, _w2, _w3, _w4, _w5] = _v_declfn; return function_name; } return mlc::String(""); }();}
+
+mlc::String extend_type_name_from_declaration(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::DeclExtend>((*ast::decl_inner(declaration)))) { auto _v_declextend = std::get<ast::DeclExtend>((*ast::decl_inner(declaration))); auto [type_name, _w0, _w1, _w2] = _v_declextend; return type_name; } return mlc::String(""); }();}
+
+mlc::Array<std::shared_ptr<ast::Decl>> methods_from_extend_declaration(std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() -> mlc::Array<std::shared_ptr<ast::Decl>> { if (std::holds_alternative<ast::DeclExtend>((*ast::decl_inner(declaration)))) { auto _v_declextend = std::get<ast::DeclExtend>((*ast::decl_inner(declaration))); auto [_w0, _w1, methods, _w2] = _v_declextend; return methods; } return {}; }();}
+
+mlc::String extend_method_mangled_name(mlc::String type_name, mlc::String method_name) noexcept{
+mlc::String prefix = type_name + mlc::String("_");
+return method_name.length() >= prefix.length() && method_name.substring(0, prefix.length()) == prefix ? method_name : type_name + mlc::String("_") + method_name;
+}
+
+mlc::Array<std::shared_ptr<ast::Decl>> ast_decls_for_path(mlc::String module_path, mlc::Array<load_item::LoadItem> all_items) noexcept{
+int item_index = 0;
+while (item_index < all_items.size()){
+{
+if (all_items[item_index].path == module_path){
+{
+return all_items[item_index].decls;
+}
+}
+item_index = item_index + 1;
+}
+}
+return [&]() -> mlc::Array<std::shared_ptr<ast::Decl>> { 
+  mlc::Array<std::shared_ptr<ast::Decl>> empty = {};
+  return empty;
+ }();
+}
+
+mlc::HashMap<mlc::String, mlc::String> extend_qualified_map(mlc::HashMap<mlc::String, mlc::String> base, mlc::Array<load_item::LoadItem> all_items, mlc::String exclude_module_path) noexcept{
+mlc::HashMap<mlc::String, mlc::String> qualified = base;
+int item_index = 0;
+while (item_index < all_items.size()){
+{
+load_item::LoadItem current_item = all_items[item_index];
+if (current_item.path != exclude_module_path){
+{
+mlc::String module_prefix = cpp_naming::path_to_module_base(current_item.path) + mlc::String("::");
+int declaration_index = 0;
+[&]() { 
+  while (declaration_index < current_item.decls.size()){
+{
+mlc::String type_name = extend_type_name_from_declaration(current_item.decls[declaration_index]);
+if (type_name != mlc::String("")){
+{
+mlc::Array<std::shared_ptr<ast::Decl>> methods = methods_from_extend_declaration(current_item.decls[declaration_index]);
+int method_index = 0;
+[&]() { 
+  while (method_index < methods.size()){
+{
+mlc::String method_name = function_name_from_method_declaration(methods[method_index]);
+if (method_name != mlc::String("")){
+{
+mlc::String mangled_name = extend_method_mangled_name(type_name, method_name);
+if (!qualified.has(mangled_name)){
+qualified.set(mangled_name, module_prefix);
+}
+}
+}
+method_index = method_index + 1;
+}
+}
+ }();
+}
+}
+declaration_index = declaration_index + 1;
+}
+}
+ }();
+}
+}
+item_index = item_index + 1;
+}
+}
+return qualified;
+}
+
+mlc::HashMap<mlc::String, mlc::String> build_extend_method_qualified_map(mlc::Array<load_item::LoadItem> all_items) noexcept{return extend_qualified_map(mlc::HashMap<mlc::String, mlc::String>(), all_items, mlc::String(""));}
 
 mlc::HashMap<mlc::String, mlc::String> add_exports_to_qualified(mlc::HashMap<mlc::String, mlc::String> qualified, mlc::String imp_path, mlc::Array<load_item::LoadItem> all_items) noexcept{
 mlc::String prefix = cpp_naming::path_to_module_base(imp_path) + mlc::String("::");

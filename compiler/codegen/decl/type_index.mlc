@@ -1,7 +1,6 @@
 // Type metadata index builders: method owners, variant types, field orders.
-// Operates on the AST declaration list without any codegen dependencies.
 
-import { Program, Decl, decl_inner } from '../../frontend/ast'
+import { Program, Decl, DeclTrait, DeclExtend, DeclFn, DeclType, DeclExported, DeclTypeAlias, DeclImport, DeclAssocType, DeclAssocBind, decl_inner, TypeVariant, VarRecord, VarTuple, VarUnit, FieldDef } from '../../frontend/ast'
 import { FieldOrder } from './decl_index'
 
 fn extract_method_name(fn_name: string, type_name: string) -> string = do
@@ -26,197 +25,286 @@ fn extract_owner_prefix_from_mangled(fn_name: string) -> string = do
   result
 end
 
+fn trait_name_from_decl(declaration: Shared<Decl>) -> string =
+  match decl_inner(declaration) { DeclTrait(trait_name, _, _, _) => trait_name, _ => '' }
+
+fn function_name_from_method_decl(method: Shared<Decl>) -> string =
+  match method { DeclFn(function_name, _, _, _, _, _, _) => function_name, _ => '' }
+
+fn extend_may_register_method_owner(
+  owners: ref mut Map<string, string>,
+  unmangled: string,
+  type_name: string,
+  trait_names: Map<string, bool>
+) -> bool =
+  if !owners.has(unmangled) then true
+  else
+    const existing_prefix = extract_owner_prefix_from_mangled(owners.get(unmangled))
+    existing_prefix == type_name || trait_names.has(existing_prefix)
+  end
+
+fn register_trait_name_from_decl(trait_names: ref mut Map<string, bool>, declaration: Shared<Decl>) -> unit = do
+  const trait_name = trait_name_from_decl(declaration)
+  if trait_name != '' then trait_names.set(trait_name, true) end
+end
+
 fn build_trait_names_from_decls(decls: [Shared<Decl>]) -> Map<string, bool> = do
-  let trait_names: Map<string, bool> = Map.new()
+  let mut trait_names: Map<string, bool> = Map.new()
   let mut index = 0
   while index < decls.length() do
-    match decl_inner(decls[index]) {
-      DeclTrait(trait_name, _, _, _) => trait_names.set(trait_name, true),
-      _ => do end
-    }
+    register_trait_name_from_decl(trait_names, decls[index])
     index = index + 1
   end
   trait_names
 end
 
-fn extend_may_register_method_owner(
-  owners: Map<string, string>,
-  unmangled: string,
-  type_name: string,
-  trait_names: Map<string, bool>
-) -> bool = do
-  if !owners.has(unmangled) then true
-  else do
-    const existing_prefix = extract_owner_prefix_from_mangled(owners.get(unmangled))
-    existing_prefix == type_name || trait_names.has(existing_prefix)
-  end
+fn register_function_method_owner(owners: ref mut Map<string, string>, owner_name: string, method: Shared<Decl>) -> unit = do
+  const function_name = function_name_from_method_decl(method)
+  if function_name != '' then
+    const unmangled = extract_method_name(function_name, owner_name)
+    if !owners.has(unmangled) then owners.set(unmangled, function_name) end
   end
 end
 
-export fn add_method_owners_from_decls(declarations: [Shared<Decl>], owners: Map<string, string>) -> Map<string, string> = do
+fn register_trait_method_owners(owners: ref mut Map<string, string>, trait_name: string, methods: [Shared<Decl>]) -> unit = do
+  let mut method_index = 0
+  while method_index < methods.length() do
+    register_function_method_owner(owners, trait_name, methods[method_index])
+    method_index = method_index + 1
+  end
+end
+
+fn register_extend_function_method_owner(
+  owners: ref mut Map<string, string>,
+  type_name: string,
+  method: Shared<Decl>,
+  trait_names: Map<string, bool>
+) -> unit = do
+  const function_name = function_name_from_method_decl(method)
+  if function_name != '' then
+    const unmangled = extract_method_name(function_name, type_name)
+    const type_owner_key = type_name + "_" + unmangled
+    owners.set(type_owner_key, function_name)
+    if extend_may_register_method_owner(owners, unmangled, type_name, trait_names) then
+      owners.set(unmangled, function_name)
+    end
+  end
+end
+
+fn register_extend_method_owners(
+  owners: ref mut Map<string, string>,
+  type_name: string,
+  methods: [Shared<Decl>],
+  trait_names: Map<string, bool>
+) -> unit = do
+  let mut method_index = 0
+  while method_index < methods.length() do
+    register_extend_function_method_owner(owners, type_name, methods[method_index], trait_names)
+    method_index = method_index + 1
+  end
+end
+
+fn trait_name_and_methods_from_decl(declaration: Shared<Decl>) -> string =
+  match decl_inner(declaration) {
+    DeclTrait(trait_name, _, _, _) => trait_name,
+    _ => ''
+  }
+
+fn extend_type_name_and_methods_from_decl(declaration: Shared<Decl>) -> string =
+  match decl_inner(declaration) {
+    DeclExtend(type_name, _, _, _) => type_name,
+    _ => ''
+  }
+
+fn methods_from_trait_decl(declaration: Shared<Decl>) -> [Shared<Decl>] =
+  match decl_inner(declaration) { DeclTrait(_, _, methods, _) => methods, _ => [] }
+
+fn methods_from_extend_decl(declaration: Shared<Decl>) -> [Shared<Decl>] =
+  match decl_inner(declaration) { DeclExtend(_, _, methods, _) => methods, _ => [] }
+
+fn register_method_owners_from_decl(
+  owners: ref mut Map<string, string>,
+  declaration: Shared<Decl>,
+  trait_names: Map<string, bool>
+) -> unit = do
+  const trait_name = trait_name_and_methods_from_decl(declaration)
+  if trait_name != '' then
+    register_trait_method_owners(owners, trait_name, methods_from_trait_decl(declaration))
+  end
+  const extend_type_name = extend_type_name_and_methods_from_decl(declaration)
+  if extend_type_name != '' then
+    register_extend_method_owners(owners, extend_type_name, methods_from_extend_decl(declaration), trait_names)
+  end
+end
+
+export fn add_method_owners_from_decls(declarations: [Shared<Decl>], owners: ref mut Map<string, string>) -> unit = do
   const trait_names = build_trait_names_from_decls(declarations)
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
-    match decl_inner(declarations[declaration_index]) {
-      DeclTrait(trait_name, _, methods, _) => do
-        let mut method_index = 0
-        while method_index < methods.length() do
-          match methods[method_index] {
-            DeclFn(function_name, _, _, _, _, _, _) => do
-              const unmangled = extract_method_name(function_name, trait_name)
-              if !owners.has(unmangled) then owners.set(unmangled, function_name) end
-            end,
-            _ => do end
-          }
-          method_index = method_index + 1
-        end
-      end,
-      DeclExtend(type_name, _, methods, _) => do
-        let mut method_index = 0
-        while method_index < methods.length() do
-          match methods[method_index] {
-            DeclFn(function_name, _, _, _, _, _, _) => do
-              const unmangled = extract_method_name(function_name, type_name)
-              const type_owner_key = type_name + "_" + unmangled
-              owners.set(type_owner_key, function_name)
-              if extend_may_register_method_owner(owners, unmangled, type_name, trait_names) then
-                owners.set(unmangled, function_name)
-              end
-            end,
-            _ => do end
-          }
-          method_index = method_index + 1
-        end
-      end,
-      _ => do end
-    }
+    register_method_owners_from_decl(owners, declarations[declaration_index], trait_names)
     declaration_index = declaration_index + 1
   end
+end
+
+export fn build_method_owners_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> = do
+  let mut owners: Map<string, string> = Map.new()
+  add_method_owners_from_decls(declarations, owners)
   owners
 end
 
-export fn build_method_owners_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> =
-  add_method_owners_from_decls(declarations, Map.new())
+fn variant_name_from_type_variant(variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarRecord(name, _, _) => name,
+    VarTuple(name, _, _) => name,
+    VarUnit(name, _) => name
+  }
+
+fn generic_variant_entry_name(type_parameters: [string], variant: Shared<TypeVariant>) -> string =
+  if type_parameters.length() > 0 then variant_name_from_type_variant(variant) else '__skip__' end
+
+fn type_parameters_from_type_decl(declaration: Shared<Decl>) -> [string] =
+  match decl_inner(declaration) { DeclType(_, type_parameters, _, _, _) => type_parameters, _ => [] }
+
+fn variants_from_type_decl(declaration: Shared<Decl>) -> [Shared<TypeVariant>] =
+  match decl_inner(declaration) { DeclType(_, _, variants, _, _) => variants, _ => [] }
+
+fn append_generic_variant_names(result: [string], type_parameters: [string], variants: [Shared<TypeVariant>]) -> unit = do
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    result.push(generic_variant_entry_name(type_parameters, variants[variant_index]))
+    variant_index = variant_index + 1
+  end
+end
+
+fn append_generic_variants_from_decl(result: [string], declaration: Shared<Decl>) -> unit = do
+  const type_parameters = type_parameters_from_type_decl(declaration)
+  const variants = variants_from_type_decl(declaration)
+  if variants.length() > 0 then
+    append_generic_variant_names(result, type_parameters, variants)
+  end
+end
 
 export fn build_generic_variants_from_decls(declarations: [Shared<Decl>]) -> [string] = do
   let result: [string] = []
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
-    const inner_declaration = decl_inner(declarations[declaration_index])
-    match inner_declaration {
-      DeclType(_, type_parameters, variants, _, _) => do
-        let mut variant_index = 0
-        while variant_index < variants.length() do
-          let should_add = type_parameters.length() > 0
-          let variant_name = match variants[variant_index] {
-            VarRecord(name, _, _) => name,
-            VarTuple(name, _, _)  => name,
-            VarUnit(name, _)      => name
-          }
-          if should_add then result.push(variant_name) else result.push('__skip__') end
-          variant_index = variant_index + 1
-        end
-      end,
-      _ => do end
-    }
+    append_generic_variants_from_decl(result, declarations[declaration_index])
     declaration_index = declaration_index + 1
   end
   result
+end
+
+fn type_name_from_type_decl(declaration: Shared<Decl>) -> string =
+  match decl_inner(declaration) { DeclType(type_name, _, _, _, _) => type_name, _ => '' }
+
+fn register_variant_type_mapping(variant_map: Map<string, string>, type_name: string, variant: Shared<TypeVariant>) -> unit =
+  variant_map.set(variant_name_from_type_variant(variant), type_name)
+
+fn register_variant_types_for_decl(variant_map: Map<string, string>, declaration: Shared<Decl>) -> unit = do
+  const type_name = type_name_from_type_decl(declaration)
+  const variants = variants_from_type_decl(declaration)
+  if type_name != '' then
+    let mut variant_index = 0
+    while variant_index < variants.length() do
+      register_variant_type_mapping(variant_map, type_name, variants[variant_index])
+      variant_index = variant_index + 1
+    end
+  end
 end
 
 export fn build_variant_types_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> = do
   let variant_map: Map<string, string> = Map.new()
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
-    const inner_declaration = decl_inner(declarations[declaration_index])
-    match inner_declaration {
-      DeclType(type_name, _, variants, _, _) => do
-        let mut variant_index = 0
-        while variant_index < variants.length() do
-          match variants[variant_index] {
-            VarRecord(variant_name, _, _) => variant_map.set(variant_name, type_name),
-            VarTuple(variant_name, _, _)  => variant_map.set(variant_name, type_name),
-            VarUnit(variant_name, _)      => variant_map.set(variant_name, type_name)
-          }
-          variant_index = variant_index + 1
-        end
-      end,
-      _ => do end
-    }
+    register_variant_types_for_decl(variant_map, declarations[declaration_index])
     declaration_index = declaration_index + 1
   end
   variant_map
+end
+
+fn field_names_from_field_definitions(field_definitions: [Shared<FieldDef>]) -> [string] = do
+  const field_names: [string] = []
+  let mut field_index = 0
+  while field_index < field_definitions.length() do
+    field_names.push(field_definitions[field_index].name)
+    field_index = field_index + 1
+  end
+  field_names
+end
+
+fn field_orders_for_record_variant(
+  type_name: string,
+  variant_name: string,
+  field_definitions: [Shared<FieldDef>],
+  variant_count: i32
+) -> [Shared<FieldOrder>] = do
+  const field_names = field_names_from_field_definitions(field_definitions)
+  const result: [Shared<FieldOrder>] = [Shared.new(FieldOrder { type_name: variant_name, fields: field_names })]
+  if variant_count == 1 then
+    result.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
+  end
+  result
+end
+
+fn record_variant_name(variant: Shared<TypeVariant>) -> string =
+  match variant { VarRecord(name, _, _) => name, _ => '' }
+
+fn record_field_definitions(variant: Shared<TypeVariant>) -> [Shared<FieldDef>] =
+  match variant { VarRecord(_, field_definitions, _) => field_definitions, _ => [] }
+
+fn field_orders_for_type_variants(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<FieldOrder>] = do
+  const result: [Shared<FieldOrder>] = []
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    const variant = variants[variant_index]
+    const variant_name = record_variant_name(variant)
+    if variant_name != '' then
+      const new_orders = field_orders_for_record_variant(
+        type_name, variant_name, record_field_definitions(variant), variants.length())
+      let mut order_index = 0
+      while order_index < new_orders.length() do
+        result.push(new_orders[order_index])
+        order_index = order_index + 1
+      end
+    end
+    variant_index = variant_index + 1
+  end
+  result
+end
+
+fn exported_inner_decl(declaration: Shared<Decl>) -> Shared<Decl> =
+  match declaration { DeclExported(inner) => inner, _ => declaration }
+
+fn type_name_from_top_level_decl(declaration: Shared<Decl>) -> string =
+  match exported_inner_decl(declaration) {
+    DeclType(type_name, _, _, _, _) => type_name,
+    _ => ''
+  }
+
+fn variants_from_top_level_decl(declaration: Shared<Decl>) -> [Shared<TypeVariant>] =
+  match exported_inner_decl(declaration) {
+    DeclType(_, _, variants, _, _) => variants,
+    _ => []
+  }
+
+fn field_orders_from_decl(declaration: Shared<Decl>) -> [Shared<FieldOrder>] = do
+  const type_name = type_name_from_top_level_decl(declaration)
+  const variants = variants_from_top_level_decl(declaration)
+  if type_name != '' then field_orders_for_type_variants(type_name, variants)
+  else []
+  end
 end
 
 export fn build_field_orders(program: Program) -> [Shared<FieldOrder>] = do
   const orders: [Shared<FieldOrder>] = []
   let mut declaration_index = 0
   while declaration_index < program.decls.length() do
-    match program.decls[declaration_index] {
-      DeclExported(inner) => match decl_inner(inner) {
-        DeclType(type_name, _, variants, _, _) => do
-          let mut variant_index = 0
-          while variant_index < variants.length() do
-            match variants[variant_index] {
-              VarRecord(variant_name, field_definitions, _) => do
-                const field_names: [string] = []
-                let mut field_index = 0
-                while field_index < field_definitions.length() do
-                  field_names.push(field_definitions[field_index].name)
-                  field_index = field_index + 1
-                end
-                orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
-                if variants.length() == 1 then
-                  orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
-                end
-                do end
-              end,
-              VarTuple(_, _, _) => do end,
-              VarUnit(_, _)     => do end
-            }
-            variant_index = variant_index + 1
-          end
-        end,
-        DeclFn(_, _, _, _, _, _, _) => do end,
-        DeclTrait(_, _, _, _)       => do end,
-        DeclExtend(_, _, _, _)      => do end,
-        DeclImport(_, _)         => do end,
-        DeclExported(_)          => do end,
-        DeclAssocType(_, _)      => do end,
-        DeclAssocBind(_, _, _)   => do end,
-        DeclTypeAlias(_, _, _, _) => do end
-      },
-      DeclType(type_name, _, variants, _, _) => do
-        let mut variant_index = 0
-        while variant_index < variants.length() do
-          match variants[variant_index] {
-            VarRecord(variant_name, field_definitions, _) => do
-              const field_names: [string] = []
-              let mut field_index = 0
-              while field_index < field_definitions.length() do
-                field_names.push(field_definitions[field_index].name)
-                field_index = field_index + 1
-              end
-              orders.push(Shared.new(FieldOrder { type_name: variant_name, fields: field_names }))
-              if variants.length() == 1 then
-                orders.push(Shared.new(FieldOrder { type_name: type_name, fields: field_names }))
-              end
-              do end
-            end,
-            VarTuple(_, _, _) => do end,
-            VarUnit(_, _)     => do end
-          }
-          variant_index = variant_index + 1
-        end
-      end,
-      DeclFn(_, _, _, _, _, _, _) => do end,
-      DeclTrait(_, _, _, _)       => do end,
-      DeclExtend(_, _, _, _)      => do end,
-      DeclImport(_, _)         => do end,
-      DeclAssocType(_, _)      => do end,
-      DeclAssocBind(_, _, _)   => do end,
-      DeclTypeAlias(_, _, _, _) => do end
-    }
+    const decl_orders = field_orders_from_decl(program.decls[declaration_index])
+    let mut order_index = 0
+    while order_index < decl_orders.length() do
+      orders.push(decl_orders[order_index])
+      order_index = order_index + 1
+    end
     declaration_index = declaration_index + 1
   end
   orders

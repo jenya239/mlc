@@ -47,11 +47,12 @@ export fn constructor_arity_diagnostics(expected_length: i32, actual_length: i32
   end
 end
 
+fn builtin_method_expected_argument_count_for_name(method_name: string) -> i32 =
+  if is_array_hof_method(method_name) then array_hof_expected_argument_count(method_name)
+  else semantic_type_structure.builtin_method_expected_argument_count(method_name)
+
 fn infer_builtin_method_arity_diagnostics(method_name: string, argument_count: i32, method_span: Span) -> [Diagnostic] = do
-  const expected =
-    if is_array_hof_method(method_name) then array_hof_expected_argument_count(method_name)
-    else semantic_type_structure.builtin_method_expected_argument_count(method_name)
-  end
+  const expected = builtin_method_expected_argument_count_for_name(method_name)
   if expected < 0 then
     []
   else if argument_count != expected then
@@ -155,13 +156,53 @@ end
 
 // --- Field access diagnostics ------------------------------------------------
 
-export fn infer_expr_field_diagnostics(object_type: Shared<Type>, field_name: string, field_source_span: Span, registry: TypeRegistry) -> [Diagnostic] = do
-  const inner_object_type = match object_type { TShared(inner) => inner, _ => object_type }
-  const type_name = match inner_object_type {
+fn inner_type_from_object_type(object_type: Shared<Type>) -> Shared<Type> =
+  match object_type {
+    TShared(inner) => inner,
+    TI32 => object_type,
+    TString => object_type,
+    TBool => object_type,
+    TUnit => object_type,
+    TI64 => object_type,
+    TF64 => object_type,
+    TU8 => object_type,
+    TUsize => object_type,
+    TChar => object_type,
+    TNamed(_) => object_type,
+    TGeneric(_, _) => object_type,
+    TArray(_) => object_type,
+    TPair(_, _) => object_type,
+    TTuple(_) => object_type,
+    TFn(_, _) => object_type,
+    TAssoc(_, _) => object_type,
+    TUnknown => object_type
+  }
+
+fn field_lookup_type_name_from_type(type_value: Shared<Type>) -> string =
+  match type_value {
     TNamed(name) => name,
     TGeneric(name, _) => name,
-    _ => ''
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TArray(_) => '',
+    TPair(_, _) => '',
+    TTuple(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
   }
+
+export fn infer_expr_field_diagnostics(object_type: Shared<Type>, field_name: string, field_source_span: Span, registry: TypeRegistry) -> [Diagnostic] = do
+  const inner_object_type = inner_type_from_object_type(object_type)
+  const type_name = field_lookup_type_name_from_type(inner_object_type)
   if type_name != '' && registry.has_fields(type_name) then
     if !registry.fields_for(type_name).has(field_name) then
       [diagnostic_error_with_code('undefined field: ' + field_name + ' on ' + type_name, field_source_span, diagnostic_code_e016())]

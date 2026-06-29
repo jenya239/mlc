@@ -12,7 +12,7 @@ Re-read [CONTINUITY.md](CONTINUITY.md) every turn — rules apply without restar
 ## Roles (see CONTINUITY)
 
 - **Driver** — code + verify (most turns).
-- **Planner** — TRACK rows from PLAN; no `compiler/`.
+- **Planner** — TRACK rows from PLAN; **if tests red → enqueue Driver `test-fix` first, no new features**; no `compiler/`.
 - **Backlog** — TRACK vs git hygiene; no `compiler/`.
 
 ## Verification ladder (compiler changes)

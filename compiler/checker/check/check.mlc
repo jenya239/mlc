@@ -7,7 +7,7 @@ import { Program, Decl, Result, decl_inner, decl_span, decl_name_span, param_nam
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import { check_names_expr } from '../names'
 import { check_fn_body_mutations } from './check_mutations'
-import { Type, TypeRegistry, build_registry, type_from_annotation_with_registry, type_alias_has_cycle } from '../registry'
+import { Type, TypeRegistry, build_registry, type_from_annotation_with_registry, type_alias_has_cycle, resolve_nominal_type_name_for_fields } from '../registry'
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from '../transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from '../transform/param_destructure_expand'
 import { derive_clause_diagnostics } from './derive_validation'
@@ -323,7 +323,7 @@ end
 // Returns true only for types that are definitively resolved (not type variables or
 // uninstantiated generics). TNamed is checkable only when the registry knows it as a
 // concrete record/ADT name; otherwise it could be an unresolved type parameter.
-fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+fn type_is_checkable(type_value: Shared<Type>, type_registry: TypeRegistry) -> bool =
   match type_value {
     TI32        => true,
     TString     => true,
@@ -334,15 +334,17 @@ fn type_is_checkable(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
     TU8         => true,
     TUsize      => true,
     TChar       => true,
-    TArray(inner) => type_is_checkable(inner, registry),
-    TPair(a, b)   => type_is_checkable(a, registry) && type_is_checkable(b, registry),
+    TArray(inner) => type_is_checkable(inner, type_registry),
+    TPair(a, b)   => type_is_checkable(a, type_registry) && type_is_checkable(b, type_registry),
     TTuple(type_parameters) =>
-      type_parameters.all(type_parameter => type_is_checkable(type_parameter, registry)),
+      type_parameters.all(type_parameter => type_is_checkable(type_parameter, type_registry)),
     TGeneric(_, type_arguments) =>
-      type_arguments.all(type_argument => type_is_checkable(type_argument, registry)),
+      type_arguments.all(type_argument => type_is_checkable(type_argument, type_registry)),
     TFn(_, _)   => true,
     TShared(_)  => true,
-    TNamed(name) => registry.has_fields(name),
+    TNamed(name) =>
+      type_registry.record_index.field_types.has(
+        resolve_nominal_type_name_for_fields(type_registry, name, [])),
     TAssoc(_, _) => true,
     _           => false
   }
@@ -468,23 +470,20 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         const body_parsed = infer_expr(body_partial_application, inference_context)
         const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const actual_type = body_parsed.inferred_type
-        const return_type_errors: [Diagnostic] =
-          if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
-            [diagnostic_error_with_code(
-              'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
-              expr_span(body),
-              diagnostic_code_e004())]
-          else [] end
-        all_diagnostics = diagnostics_append(
-          diagnostics_append(all_diagnostics, body_parsed.errors),
-          return_type_errors); ()
+        all_diagnostics = diagnostics_append(all_diagnostics, body_parsed.errors)
+        if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
+          all_diagnostics = diagnostics_append(all_diagnostics, [diagnostic_error_with_code(
+            'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
+            expr_span(body),
+            diagnostic_code_e004())])
+        end
+        ()
       end,
       DeclType(_, type_parameters, variants, derive_trait_names, _) => do
-        const declaration_span = decl_span(expanded_entry_program.decls[declaration_index])
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           derive_clause_diagnostics(
-            type_parameters, variants, derive_trait_names, declaration_span))
+            type_parameters, variants, derive_trait_names, decl_span(expanded_entry_program.decls[declaration_index])))
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           record_field_default_value_diagnostics(type_parameters, variants, registry))

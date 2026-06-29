@@ -25,7 +25,19 @@ using namespace decl_extend;
 using namespace decl_index;
 using namespace ast_tokens;
 
+mlc::String resolved_self_type_name(mlc::String type_name, context::CodegenContext context) noexcept;
+
+context::CodegenContext prototype_context_for_self_parameter(context::CodegenContext context, std::shared_ptr<ast::Param> first_parameter) noexcept;
+
+mlc::String body_self_type_for_parameter(context::CodegenContext context, std::shared_ptr<ast::Param> first_parameter) noexcept;
+
+context::CodegenContext prototype_context_for_function(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
 mlc::String gen_fn_proto(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept;
+
+mlc::String body_self_type_for_parameters(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
+context::CodegenContext decl_prototype_context_for_body(mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext body_context, context::CodegenContext context) noexcept;
 
 context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext context) noexcept;
 
@@ -45,7 +57,29 @@ bool decls_have_main(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration
 
 mlc::String extend_cpp_forward_segment(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context) noexcept;
 
+mlc::String decl_segment_for_type(mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::String decl_segment_for_trait(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::String decl_segment_for_function(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::String decl_segment_for_extend(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::String decl_segment_for_import_or_assoc(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept;
+
+bool extern_body_is_extern(std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept;
+
+mlc::String decl_segment_for_exported_function_phase_two(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context) noexcept;
+
+mlc::String decl_segment_for_exported_function_phase_three(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context) noexcept;
+
+mlc::String decl_segment_for_exported_function(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::String decl_segment_for_exported(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept;
+
 mlc::String decl_segment(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept;
+
+mlc::Array<mlc::String> exported_type_name_from_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
 
 mlc::Array<mlc::String> exported_type_names_from_decls(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept;
 
@@ -63,33 +97,32 @@ decl::DeclPartsBundle collect_all_decl_parts(mlc::Array<std::shared_ptr<semantic
 
 mlc::Array<mlc::String> collect_decl_parts(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations, context::CodegenContext context, int phase) noexcept;
 
+mlc::String resolved_self_type_name(mlc::String type_name, context::CodegenContext context) noexcept{return type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type : type_name;}
+
+context::CodegenContext prototype_context_for_self_parameter(context::CodegenContext context, std::shared_ptr<ast::Param> first_parameter) noexcept{return [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*first_parameter->type_value))) { auto _v_tynamed = std::get<ast::TyNamed>((*first_parameter->type_value)); auto [type_name] = _v_tynamed; return context::CodegenContext_for_type_body(context, resolved_self_type_name(type_name, context)); } return context; }();}
+
+mlc::String body_self_type_for_parameter(context::CodegenContext context, std::shared_ptr<ast::Param> first_parameter) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::TyNamed>((*first_parameter->type_value))) { auto _v_tynamed = std::get<ast::TyNamed>((*first_parameter->type_value)); auto [self_type_name] = _v_tynamed; return resolved_self_type_name(self_type_name, context); } return context.self_type; }();}
+
+context::CodegenContext prototype_context_for_function(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? prototype_context_for_self_parameter(context, parameters[0]) : context;}
+
 mlc::String gen_fn_proto(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, context::CodegenContext context) noexcept{
 mlc::String prefix = cpp_naming::template_prefix(type_parameters) + type_gen::requires_clause(type_parameters, type_bounds);
 mlc::String safe_name = context::CodegenContext_resolve(context, name);
-context::CodegenContext prototype_context = parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*parameters[0]->type_value))) { auto _v_tynamed = std::get<ast::TyNamed>((*parameters[0]->type_value)); auto [type_name] = _v_tynamed; return [&]() -> context::CodegenContext { 
-  mlc::String resolved_type = type_name == mlc::String("Self") || type_name == mlc::String("self") ? context.self_type : type_name;
-  return context::CodegenContext_for_type_body(context, resolved_type);
- }(); } return context; }() : context;
+context::CodegenContext prototype_context = prototype_context_for_function(context, parameters);
 return name == mlc::String("main") && parameters.size() == 0 ? prefix + expr::noexcept_function_prototype(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) : prefix + expr::noexcept_function_prototype(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, decl_extend::gen_params_proto(prototype_context, parameters));
 }
 
-context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext context) noexcept{
-mlc::Array<mlc::String> fn_shared_params = param_analysis::collect_shared_params(parameters);
-mlc::Array<mlc::String> fn_shared_array_params = param_analysis::collect_shared_array_params(parameters);
-mlc::HashMap<mlc::String, mlc::String> fn_array_elem_types = param_analysis::collect_array_elem_types(parameters);
-mlc::Array<mlc::String> fn_shared_map_params = param_analysis::collect_shared_map_params(parameters);
-mlc::Array<mlc::String> fn_value_params = param_analysis::collect_value_params(parameters);
-return parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? [&]() -> context::CodegenContext { if (std::holds_alternative<ast::TyNamed>((*parameters[0]->type_value))) { auto _v_tynamed = std::get<ast::TyNamed>((*parameters[0]->type_value)); auto [self_type_name] = _v_tynamed; return [&]() -> context::CodegenContext { 
-  mlc::String resolved_type = self_type_name == mlc::String("Self") || self_type_name == mlc::String("self") ? context.self_type : self_type_name;
-  return context::make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, resolved_type, fn_value_params, {});
- }(); } return context::make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params, {}); }() : context::make_body_context(context, fn_shared_params, fn_shared_array_params, fn_array_elem_types, fn_shared_map_params, context.self_type, fn_value_params, {});
-}
+mlc::String body_self_type_for_parameters(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? body_self_type_for_parameter(context, parameters[0]) : context.self_type;}
+
+context::CodegenContext decl_prototype_context_for_body(mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext body_context, context::CodegenContext context) noexcept{return parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? body_context : context;}
+
+context::CodegenContext compute_fn_body_context(mlc::String name, mlc::Array<std::shared_ptr<ast::Param>> parameters, context::CodegenContext context) noexcept{return context::make_body_context(context, param_analysis::collect_shared_params(parameters), param_analysis::collect_shared_array_params(parameters), param_analysis::collect_array_elem_types(parameters), param_analysis::collect_shared_map_params(parameters), body_self_type_for_parameters(context, parameters), param_analysis::collect_value_params(parameters), {});}
 
 mlc::String gen_fn_decl(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext context) noexcept{
 mlc::String prefix = cpp_naming::template_prefix(type_parameters) + type_gen::requires_clause(type_parameters, type_bounds);
 mlc::String safe_name = context::CodegenContext_resolve(context, name);
 context::CodegenContext body_context = context::CodegenContext_with_enclosing_function_return_type(compute_fn_body_context(name, parameters, context), return_type);
-context::CodegenContext prototype_context = parameters.size() > 0 && parameters[0]->name == mlc::String("self") ? body_context : context;
+context::CodegenContext prototype_context = decl_prototype_context_for_body(parameters, body_context, context);
 return name == mlc::String("main") && parameters.size() == 0 ? [&]() -> mlc::String { 
   mlc::String preamble = expr::user_main_arguments_copy_into_runtime_statement();
   return prefix + expr::noexcept_function_body_open(type_gen::sem_type_to_cpp(prototype_context, return_type), safe_name, expr::main_program_parameter_list()) + preamble + return_body::gen_fn_body(body, body_context) + expr::block_close_newline();
@@ -137,34 +170,55 @@ mlc::String extend_cpp_forward_segment(std::shared_ptr<semantic_ir::SemanticDecl
   return decl_extend::gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context) + methods.map([extend_context](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return gen_proto(method, extend_context); }).join(mlc::String(""));
  }(); } return mlc::String(""); }(); } return mlc::String(""); }();}
 
-mlc::String decl_segment(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return std::visit(overloaded{
-  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [type_name, type_parameters, variants, derive_traits, _w0] = semanticdeclarationtype; return phase == 0 ? type_gen::gen_type_decl_fwd_only(codegen_context, type_name, type_parameters, variants) : phase == 1 ? type_gen::gen_type_decl_body_only(codegen_context, type_name, type_parameters, variants) + type_gen::gen_derive_methods(codegen_context, type_name, variants, derive_traits) : mlc::String(""); },
+mlc::String decl_segment_for_type(mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits, context::CodegenContext codegen_context, int phase) noexcept{return phase == 0 ? type_gen::gen_type_decl_fwd_only(codegen_context, type_name, type_parameters, variants) : phase == 1 ? type_gen::gen_type_decl_body_only(codegen_context, type_name, type_parameters, variants) + type_gen::gen_derive_methods(codegen_context, type_name, variants, derive_traits) : mlc::String("");}
+
+mlc::String decl_segment_for_trait(mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext codegen_context, int phase) noexcept{return phase == 0 ? decl_extend::gen_trait_decl(codegen_context, name, type_parameters, methods) : phase == 4 ? decl_extend::gen_trait_struct(codegen_context, name, type_parameters, methods) : mlc::String("");}
+
+mlc::String decl_segment_for_function(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return phase == 2 ? gen_proto(declaration, codegen_context) : phase == 3 ? gen_decl(declaration, codegen_context) : mlc::String("");}
+
+mlc::String decl_segment_for_extend(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return phase == 2 ? gen_proto(declaration, codegen_context) : phase == 3 ? gen_decl(declaration, codegen_context) : mlc::String("");}
+
+mlc::String decl_segment_for_import_or_assoc(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return phase == 2 ? gen_proto(declaration, codegen_context) : phase == 3 ? gen_decl(declaration, codegen_context) : mlc::String("");}
+
+bool extern_body_is_extern(std::shared_ptr<semantic_ir::SemanticExpression> body) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return true; } return false; }();}
+
+mlc::String decl_segment_for_exported_function_phase_two(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context) noexcept{return type_parameters.size() == 0 ? gen_proto(declaration, codegen_context) : extern_body_is_extern(body) ? gen_proto(declaration, codegen_context) : gen_decl(declaration, codegen_context);}
+
+mlc::String decl_segment_for_exported_function_phase_three(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context) noexcept{return type_parameters.size() == 0 ? gen_decl(declaration, codegen_context) : extern_body_is_extern(body) ? gen_decl(declaration, codegen_context) : mlc::String("");}
+
+mlc::String decl_segment_for_exported_function(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, mlc::Array<mlc::String> type_parameters, std::shared_ptr<semantic_ir::SemanticExpression> body, context::CodegenContext codegen_context, int phase) noexcept{return phase == 2 ? decl_segment_for_exported_function_phase_two(declaration, type_parameters, body, codegen_context) : phase == 3 ? decl_segment_for_exported_function_phase_three(declaration, type_parameters, body, codegen_context) : mlc::String("");}
+
+mlc::String decl_segment_for_exported(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [type_name, type_parameters, variants, derive_traits, _w0] = semanticdeclarationtype; return decl_segment_for_type(type_name, type_parameters, variants, derive_traits, codegen_context, phase); },
   [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return mlc::String(""); },
-  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [name, type_parameters, methods, _w0] = semanticdeclarationtrait; return phase == 0 ? decl_extend::gen_trait_decl(codegen_context, name, type_parameters, methods) : phase == 4 ? decl_extend::gen_trait_struct(codegen_context, name, type_parameters, methods) : mlc::String(""); },
-  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6, _w7] = semanticdeclarationfn; return phase == 2 ? gen_proto(declaration, codegen_context) : phase == 3 ? gen_decl(declaration, codegen_context) : mlc::String(""); },
-  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return phase == 3 ? gen_decl(declaration, codegen_context) : mlc::String(""); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [name, type_parameters, methods, _w0] = semanticdeclarationtrait; return decl_segment_for_trait(name, type_parameters, methods, codegen_context, phase); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = semanticdeclarationfn; return decl_segment_for_exported_function(declaration, type_parameters, body, codegen_context, phase); },
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return decl_segment_for_extend(declaration, codegen_context, phase); },
+  [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::String { auto [_w0, _w1] = semanticdeclarationimport; return decl_segment_for_import_or_assoc(declaration, codegen_context, phase); },
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return decl_segment_for_exported(inner_declaration, codegen_context, phase); },
+  [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::String { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return mlc::String(""); }
+}, (*semantic_ir::sdecl_inner(declaration)));}
+
+mlc::String decl_segment(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration, context::CodegenContext codegen_context, int phase) noexcept{return std::visit(overloaded{
+  [&](const SemanticDeclarationType& semanticdeclarationtype) -> mlc::String { auto [type_name, type_parameters, variants, derive_traits, _w0] = semanticdeclarationtype; return decl_segment_for_type(type_name, type_parameters, variants, derive_traits, codegen_context, phase); },
+  [&](const SemanticDeclarationTypeAlias& semanticdeclarationtypealias) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationtypealias; return mlc::String(""); },
+  [&](const SemanticDeclarationTrait& semanticdeclarationtrait) -> mlc::String { auto [name, type_parameters, methods, _w0] = semanticdeclarationtrait; return decl_segment_for_trait(name, type_parameters, methods, codegen_context, phase); },
+  [&](const SemanticDeclarationFn& semanticdeclarationfn) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6, _w7] = semanticdeclarationfn; return decl_segment_for_function(declaration, codegen_context, phase); },
+  [&](const SemanticDeclarationExtend& semanticdeclarationextend) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticdeclarationextend; return decl_segment_for_extend(declaration, codegen_context, phase); },
   [&](const SemanticDeclarationImport& semanticdeclarationimport) -> mlc::String { auto [_w0, _w1] = semanticdeclarationimport; return mlc::String(""); },
   [&](const SemanticDeclarationAssocBind& semanticdeclarationassocbind) -> mlc::String { auto [_w0, _w1, _w2] = semanticdeclarationassocbind; return mlc::String(""); },
-  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return phase == 0 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, type_parameters, variants, _w0, _w1] = _v_semanticdeclarationtype; return type_gen::gen_type_decl_fwd_only(codegen_context, type_name, type_parameters, variants); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [name, type_parameters, methods, _w0] = _v_semanticdeclarationtrait; return decl_extend::gen_trait_decl(codegen_context, name, type_parameters, methods); } return mlc::String(""); }() : phase == 1 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [type_name, type_parameters, variants, derive_traits, _w0] = _v_semanticdeclarationtype; return type_gen::gen_type_decl_body_only(codegen_context, type_name, type_parameters, variants) + type_gen::gen_derive_methods(codegen_context, type_name, variants, derive_traits); } return mlc::String(""); }() : phase == 2 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = _v_semanticdeclarationfn; return type_parameters.size() > 0 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return gen_proto(inner_declaration, codegen_context); } return gen_decl(inner_declaration, codegen_context); }() : gen_proto(inner_declaration, codegen_context); } return gen_proto(inner_declaration, codegen_context); }() : phase == 3 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, _w1, _w2, _w3, _w4] = _v_semanticdeclarationtype; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, _w1, _w2, _w3] = _v_semanticdeclarationtrait; return mlc::String(""); } if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, type_parameters, _w1, _w2, _w3, body, _w4, _w5] = _v_semanticdeclarationfn; return type_parameters.size() > 0 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*body)._)) { auto _v_semanticexpressionextern = std::get<semantic_ir::SemanticExpressionExtern>((*body)._); auto [_w0, _w1] = _v_semanticexpressionextern; return gen_decl(inner_declaration, codegen_context); } return mlc::String(""); }() : gen_decl(inner_declaration, codegen_context); } if (std::holds_alternative<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationextend = std::get<semantic_ir::SemanticDeclarationExtend>((*semantic_ir::sdecl_inner(inner_declaration))); auto [_w0, _w1, _w2, _w3] = _v_semanticdeclarationextend; return gen_decl(inner_declaration, codegen_context); } return gen_decl(inner_declaration, codegen_context); }() : phase == 4 ? [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration)))) { auto _v_semanticdeclarationtrait = std::get<semantic_ir::SemanticDeclarationTrait>((*semantic_ir::sdecl_inner(inner_declaration))); auto [name, type_parameters, methods, _w0] = _v_semanticdeclarationtrait; return decl_extend::gen_trait_struct(codegen_context, name, type_parameters, methods); } return mlc::String(""); }() : mlc::String(""); }
+  [&](const SemanticDeclarationExported& semanticdeclarationexported) -> mlc::String { auto [inner_declaration] = semanticdeclarationexported; return decl_segment_for_exported(inner_declaration, codegen_context, phase); }
 }, (*declaration));}
 
-mlc::Array<mlc::String> exported_type_names_from_decls(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{
-mlc::Array<mlc::String> names = {};
-int index = 0;
-while (index < declarations.size()){
-{
-[&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declarations[index]))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declarations[index])); auto [inner] = _v_semanticdeclarationexported; return [&]() -> std::tuple<> { 
-  [&]() -> std::tuple<> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner))); auto [type_name, _w0, _w1, _w2, _w3] = _v_semanticdeclarationtype; return [&]() -> std::tuple<> { 
-  names.push_back(type_name);
-  return std::make_tuple();
- }(); } return std::make_tuple(); }();
-  return std::make_tuple();
- }(); } return std::make_tuple(); }();
-index = index + 1;
-}
-}
-return names;
-}
+mlc::Array<mlc::String> exported_type_name_from_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*declaration))) { auto _v_semanticdeclarationexported = std::get<semantic_ir::SemanticDeclarationExported>((*declaration)); auto [inner] = _v_semanticdeclarationexported; return [&]() -> mlc::Array<mlc::String> { if (std::holds_alternative<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner)))) { auto _v_semanticdeclarationtype = std::get<semantic_ir::SemanticDeclarationType>((*semantic_ir::sdecl_inner(inner))); auto [type_name, _w0, _w1, _w2, _w3] = _v_semanticdeclarationtype; return mlc::Array<mlc::String>{type_name}; } return [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> empty = {};
+  return empty;
+ }(); }(); } return [&]() -> mlc::Array<mlc::String> { 
+  mlc::Array<mlc::String> empty = {};
+  return empty;
+ }(); }();}
+
+mlc::Array<mlc::String> exported_type_names_from_decls(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{return mlc::collections::flat_map(declarations, exported_type_name_from_declaration);}
 
 mlc::Array<mlc::String> extend_method_prototypes(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context) noexcept{return methods.map([context](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return gen_proto(method, context); }).filter([](mlc::String prototype) mutable { return prototype.length() > 0; });}
 

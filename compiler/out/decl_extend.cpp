@@ -27,6 +27,10 @@ mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noex
 
 mlc::String default_expr_to_cpp(std::shared_ptr<ast::Expr> expression) noexcept;
 
+mlc::String generic_parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter, mlc::String generic_type_name) noexcept;
+
+mlc::String non_generic_parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept;
+
 mlc::String parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept;
 
 mlc::String param_item_def(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept;
@@ -46,6 +50,8 @@ mlc::Array<mlc::String> non_self_parameter_types_cpp(context::CodegenContext con
 mlc::Array<mlc::String> parameter_call_argument_names(mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
 
 mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept;
+
+mlc::String extend_method_return_type_from_declaration(context::CodegenContext extend_context, std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept;
 
 mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods) noexcept;
 
@@ -94,24 +100,21 @@ return fn_name.length() > prefix.length() && fn_name.substring(0, prefix.length(
 
 mlc::String default_expr_to_cpp(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::ExprInt>((*expression)._)) { auto _v_exprint = std::get<ast::ExprInt>((*expression)._); auto [v, _w0] = _v_exprint; return literals::gen_integer_literal(v); } if (std::holds_alternative<ast::ExprStr>((*expression)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*expression)._); auto [s, _w0] = _v_exprstr; return literals::gen_string_literal(s); } if (std::holds_alternative<ast::ExprBool>((*expression)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*expression)._); auto [b, _w0] = _v_exprbool; return literals::gen_boolean_literal(b); } if (std::holds_alternative<ast::ExprUnit>((*expression)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*expression)._); auto [_w0] = _v_exprunit; return literals::gen_unit_literal(); } if (std::holds_alternative<ast::ExprFloat>((*expression)._)) { auto _v_exprfloat = std::get<ast::ExprFloat>((*expression)._); auto [v, _w0] = _v_exprfloat; return literals::gen_float_literal(v); } if (std::holds_alternative<ast::ExprI64>((*expression)._)) { auto _v_expri64 = std::get<ast::ExprI64>((*expression)._); auto [v, _w0] = _v_expri64; return literals::gen_i64_literal(v); } if (std::holds_alternative<ast::ExprU8>((*expression)._)) { auto _v_expru8 = std::get<ast::ExprU8>((*expression)._); auto [v, _w0] = _v_expru8; return literals::gen_u8_literal(v); } if (std::holds_alternative<ast::ExprUsize>((*expression)._)) { auto _v_exprusize = std::get<ast::ExprUsize>((*expression)._); auto [v, _w0] = _v_exprusize; return literals::gen_usize_literal(v); } if (std::holds_alternative<ast::ExprChar>((*expression)._)) { auto _v_exprchar = std::get<ast::ExprChar>((*expression)._); auto [v, _w0] = _v_exprchar; return literals::gen_char_literal(v); } return mlc::to_string(0); }();}
 
-mlc::String parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::TyGeneric>((*parameter->type_value))) { auto _v_tygeneric = std::get<ast::TyGeneric>((*parameter->type_value)); auto [type_name, _w0] = _v_tygeneric; return type_name == mlc::String("ref") ? type_gen::type_to_cpp(context, parameter->type_value) : parameter->is_mut ? expr::cpp_lvalue_reference_suffix(type_gen::type_to_cpp(context, parameter->type_value)) : type_gen::type_to_cpp(context, parameter->type_value); } return parameter->is_mut ? expr::cpp_lvalue_reference_suffix(type_gen::type_to_cpp(context, parameter->type_value)) : type_gen::type_to_cpp(context, parameter->type_value); }();}
+mlc::String generic_parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter, mlc::String generic_type_name) noexcept{return generic_type_name == mlc::String("ref") ? type_gen::type_to_cpp(context, parameter->type_value) : parameter->is_mut ? expr::cpp_lvalue_reference_suffix(type_gen::type_to_cpp(context, parameter->type_value)) : type_gen::type_to_cpp(context, parameter->type_value);}
+
+mlc::String non_generic_parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{return parameter->is_mut ? expr::cpp_lvalue_reference_suffix(type_gen::type_to_cpp(context, parameter->type_value)) : type_gen::type_to_cpp(context, parameter->type_value);}
+
+mlc::String parameter_type_cpp(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast::TyGeneric>((*parameter->type_value))) { auto _v_tygeneric = std::get<ast::TyGeneric>((*parameter->type_value)); auto [generic_type_name, _w0] = _v_tygeneric; return generic_parameter_type_cpp(context, parameter, generic_type_name); } return non_generic_parameter_type_cpp(context, parameter); }();}
 
 mlc::String param_item_def(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{return expr::parameter_declaration_item(parameter_type_cpp(context, parameter), cpp_naming::cpp_safe(parameter->name));}
 
-mlc::String param_item_proto(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{
-mlc::String base = param_item_def(context, parameter);
-return parameter->has_default ? base + mlc::String(" = ") + default_expr_to_cpp(parameter->default_) : base;
-}
+mlc::String param_item_proto(context::CodegenContext context, std::shared_ptr<ast::Param> parameter) noexcept{return parameter->has_default ? param_item_def(context, parameter) + mlc::String(" = ") + default_expr_to_cpp(parameter->default_) : param_item_def(context, parameter);}
 
-mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{
-return gen_parameter_proto_items(context, parameters).join(mlc::String(", "));
-}
+mlc::String gen_params_proto(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return gen_parameter_proto_items(context, parameters).join(mlc::String(", "));}
 
 mlc::Array<mlc::String> gen_parameter_proto_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return parameters.map([context](std::shared_ptr<ast::Param> parameter) mutable { return param_item_proto(context, parameter); });}
 
-mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{
-return gen_parameter_def_items(context, parameters).join(mlc::String(", "));
-}
+mlc::String gen_params_def(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return gen_parameter_def_items(context, parameters).join(mlc::String(", "));}
 
 mlc::Array<mlc::String> gen_parameter_def_items(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return parameters.map([context](std::shared_ptr<ast::Param> parameter) mutable { return param_item_def(context, parameter); });}
 
@@ -121,45 +124,11 @@ mlc::Array<mlc::String> parameter_call_argument_names(mlc::Array<std::shared_ptr
 
 mlc::String concept_declval_arguments_for_params(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::Param>> parameters) noexcept{return non_self_parameter_types_cpp(context, parameters).map([](mlc::String type_code) mutable { return expr::std_declval_expression(type_code); }).join(mlc::String(", "));}
 
-mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods) noexcept{
-mlc::String result = mlc::String("void");
-int method_index = 0;
-while (method_index < methods.size()){
-{
-std::visit(overloaded{
-  [&](const SemanticDeclarationFn& semanticdeclarationfn) {
-auto [_w0, _w1, _w2, _w3, return_type, _w4, _w5, _w6] = semanticdeclarationfn;
-{
-result = type_gen::sem_type_to_cpp(extend_context, return_type);
-}
-},
-  [&](const auto& _unused) {
-{
-}
-}
-}, (*methods[method_index]));
-if (result != mlc::String("void")){
-{
-method_index = methods.size();
-}
-} else {
-{
-method_index = method_index + 1;
-}
-}
-}
-}
-return result;
-}
+mlc::String extend_method_return_type_from_declaration(context::CodegenContext extend_context, std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*method))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*method)); auto [_w0, _w1, _w2, _w3, return_type, _w4, _w5, _w6] = _v_semanticdeclarationfn; return type_gen::sem_type_to_cpp(extend_context, return_type); } return mlc::String("void"); }();}
 
-mlc::String generic_trait_static_assert_line(mlc::String trait_name, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext extend_context, mlc::String implementor_type_cpp) noexcept{
-mlc::String trait_safe = cpp_naming::cpp_safe(trait_name);
-mlc::String message = type_name + mlc::String(" does not implement ") + trait_name;
-return trait_name == mlc::String("ExprVisitor") ? [&]() -> mlc::String { 
-  mlc::String result_type_cpp = extend_method_return_type_cpp(extend_context, methods);
-  return expr::static_assert_concept_for_result_and_implementor_line(trait_safe, result_type_cpp, implementor_type_cpp, message);
- }() : expr::static_assert_concept_for_type_line(trait_safe, implementor_type_cpp, message);
-}
+mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods) noexcept{return methods.fold(mlc::String("void"), [extend_context](mlc::String accumulated, std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return accumulated != mlc::String("void") ? accumulated : extend_method_return_type_from_declaration(extend_context, method); });}
+
+mlc::String generic_trait_static_assert_line(mlc::String trait_name, mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext extend_context, mlc::String implementor_type_cpp) noexcept{return trait_name == mlc::String("ExprVisitor") ? expr::static_assert_concept_for_result_and_implementor_line(cpp_naming::cpp_safe(trait_name), extend_method_return_type_cpp(extend_context, methods), implementor_type_cpp, type_name + mlc::String(" does not implement ") + trait_name) : expr::static_assert_concept_for_type_line(cpp_naming::cpp_safe(trait_name), implementor_type_cpp, type_name + mlc::String(" does not implement ") + trait_name);}
 
 mlc::String trait_struct_field_line_for_method(context::CodegenContext trait_context, mlc::String trait_name, std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*method))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*method)); auto [mangled, _w0, _w1, parameters, return_type, _w2, _w3, _w4] = _v_semanticdeclarationfn; return trait_method_field_line(trait_context, extract_method_name(mangled, trait_name), parameters, return_type); } return mlc::String(""); }();}
 

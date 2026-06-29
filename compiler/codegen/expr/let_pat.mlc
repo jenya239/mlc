@@ -1,8 +1,12 @@
 // SemanticStatementLetPat: structured let — tuple/record/array/ctor (A3).
 
-import { Pattern, PatternIdent } from '../../frontend/ast'
+import { Pattern, PatternIdent, PatternWild, PatternInt, PatternStr, PatternStringLit, PatternBool, PatternUnit, PatternCtor, PatternRecord, PatternTuple, PatternArray, PatternOr } from '../../frontend/ast'
 import { SemanticExpression } from '../../ir/semantic_ir'
-import { Type, TArray, TTuple, TPair, TNamed, TGeneric } from '../../checker/registry'
+import {
+  Type, TArray, TTuple, TPair, TNamed, TGeneric,
+  TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
+  TShared, TFn, TAssoc, TUnknown
+} from '../../checker/registry'
 import { CodegenContext, lookup_fields_for_context, take_temp_name } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
@@ -14,6 +18,232 @@ export type GenLetPatternResult = GenLetPatternResult { output: string, codegen_
 
 export fn gen_let_array_rest_slice(temporary_name: string, from_index: i32, element_cpp: string) -> string =
   'mlc::Array<' + element_cpp + '>(' + temporary_name + '.cbegin() + ' + from_index.to_string() + ', ' + temporary_name + '.cend())'
+
+fn primitive_tuple_pattern_output(
+  sub_patterns: [Shared<Pattern>],
+  temp_name: string,
+  value_code: string
+) -> string = do
+  const primitive_tuple_binding_names = pattern_bind_names(sub_patterns)
+  'auto ' + temp_name + ' = ' + value_code + ';\n' + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, temp_name) + `\n`
+end
+
+fn record_codegen_name_from_value_type(value_type: Shared<Type>) -> string =
+  match value_type {
+    TNamed(record_nominal_name) => record_nominal_name,
+    TGeneric(record_nominal_name, _) => record_nominal_name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TArray(_) => '',
+    TTuple(_) => '',
+    TPair(_, _) => '',
+    TShared(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
+fn value_type_is_tuple_or_pair(value_type: Shared<Type>) -> bool =
+  match value_type { TTuple(_) => true, TPair(_, _) => true, _ => false }
+
+fn append_tuple_member_ident_binding(
+  fragment: string,
+  sub_pattern: Shared<Pattern>,
+  member_label: string,
+  temp_name: string
+) -> string =
+  match sub_pattern {
+    PatternIdent(binding_member_name, _) =>
+      fragment + expression_output.auto_binding_statement(
+        cpp_safe(binding_member_name),
+        `${temp_name}.${cpp_safe(member_label)}`),
+    PatternWild(_) => fragment,
+    PatternInt(_, _) => fragment,
+    PatternStr(_, _) => fragment,
+    PatternStringLit(_, _) => fragment,
+    PatternBool(_, _) => fragment,
+    PatternUnit(_) => fragment,
+    PatternCtor(_, _, _) => fragment,
+    PatternRecord(_, _, _) => fragment,
+    PatternTuple(_, _) => fragment,
+    PatternArray(_, _, _) => fragment,
+    PatternOr(_, _) => fragment
+  }
+
+fn record_ordered_tuple_pattern_output(
+  sub_patterns: [Shared<Pattern>],
+  record_codegen_name: string,
+  temp_name: string,
+  value_code: string,
+  codegen_context: CodegenContext
+) -> string = do
+  const ordered_member_labels = lookup_fields_for_context(codegen_context, record_codegen_name)
+  if ordered_member_labels.length() == sub_patterns.length() && sub_patterns.length() > 0 then
+    let mut record_ordered_tuple_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
+    let mut member_slot_index = 0
+    while member_slot_index < sub_patterns.length() do
+      record_ordered_tuple_fragment = append_tuple_member_ident_binding(
+        record_ordered_tuple_fragment,
+        sub_patterns[member_slot_index],
+        ordered_member_labels[member_slot_index],
+        temp_name)
+      member_slot_index = member_slot_index + 1
+    end
+    record_ordered_tuple_fragment
+  else
+    primitive_tuple_pattern_output(sub_patterns, temp_name, value_code)
+  end
+end
+
+fn tuple_pattern_output_for_value_type(
+  sub_patterns: [Shared<Pattern>],
+  value_type: Shared<Type>,
+  temp_name: string,
+  value_code: string,
+  codegen_context: CodegenContext
+) -> string =
+  if value_type_is_tuple_or_pair(value_type) then
+    primitive_tuple_pattern_output(sub_patterns, temp_name, value_code)
+  else
+    record_or_fallback_tuple_pattern_output(sub_patterns, value_type, temp_name, value_code, codegen_context)
+  end
+
+fn record_or_fallback_tuple_pattern_output(
+  sub_patterns: [Shared<Pattern>],
+  value_type: Shared<Type>,
+  temp_name: string,
+  value_code: string,
+  codegen_context: CodegenContext
+) -> string = do
+  const record_codegen_name = record_codegen_name_from_value_type(value_type)
+  if record_codegen_name != '' then
+    record_ordered_tuple_pattern_output(sub_patterns, record_codegen_name, temp_name, value_code, codegen_context)
+  else
+    primitive_tuple_pattern_output(sub_patterns, temp_name, value_code)
+  end
+end
+
+fn array_element_cpp_for_value_type(value_type: Shared<Type>, codegen_context: CodegenContext) -> string = do
+  match value_type { TArray(inner) => sem_type_to_cpp(codegen_context, inner), _ => 'auto' }
+end
+
+fn append_array_ident_binding(
+  fragment: string,
+  sub_pattern: Shared<Pattern>,
+  temp_name: string,
+  index: i32
+) -> string =
+  match sub_pattern {
+    PatternIdent(name, _) =>
+      fragment + `auto ${cpp_safe(name)} = ${temp_name}[${index.to_string()}];\n`,
+    PatternWild(_) => fragment,
+    PatternInt(_, _) => fragment,
+    PatternStr(_, _) => fragment,
+    PatternStringLit(_, _) => fragment,
+    PatternBool(_, _) => fragment,
+    PatternUnit(_) => fragment,
+    PatternCtor(_, _, _) => fragment,
+    PatternRecord(_, _, _) => fragment,
+    PatternTuple(_, _) => fragment,
+    PatternArray(_, _, _) => fragment,
+    PatternOr(_, _) => fragment
+  }
+
+fn append_record_field_ident_binding(
+  fragment: string,
+  field_pattern: Shared<Pattern>,
+  temp_name: string
+) -> string =
+  match field_pattern {
+    PatternIdent(field_name, _) =>
+      fragment + expression_output.auto_binding_statement(cpp_safe(field_name), `${temp_name}.${cpp_safe(field_name)}`),
+    PatternWild(_) => fragment,
+    PatternInt(_, _) => fragment,
+    PatternStr(_, _) => fragment,
+    PatternStringLit(_, _) => fragment,
+    PatternBool(_, _) => fragment,
+    PatternUnit(_) => fragment,
+    PatternCtor(_, _, _) => fragment,
+    PatternRecord(_, _, _) => fragment,
+    PatternTuple(_, _) => fragment,
+    PatternArray(_, _, _) => fragment,
+    PatternOr(_, _) => fragment
+  }
+
+fn record_pattern_output(
+  field_patterns: [Shared<Pattern>],
+  temp_name: string,
+  value_code: string
+) -> string = do
+  let mut binding_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
+  let mut index = 0
+  while index < field_patterns.length() do
+    binding_fragment = append_record_field_ident_binding(binding_fragment, field_patterns[index], temp_name)
+    index = index + 1
+  end
+  binding_fragment
+end
+
+fn array_pattern_output(
+  sub_patterns: [Shared<Pattern>],
+  rest: string,
+  value_type: Shared<Type>,
+  temp_name: string,
+  value_code: string,
+  codegen_context: CodegenContext
+) -> string = do
+  const element_cpp = array_element_cpp_for_value_type(value_type, codegen_context)
+  let mut binding_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
+  let mut index = 0
+  while index < sub_patterns.length() do
+    binding_fragment = append_array_ident_binding(binding_fragment, sub_patterns[index], temp_name, index)
+    index = index + 1
+  end
+  if rest != '' then
+    binding_fragment = binding_fragment + 'auto ' + cpp_safe(rest) + ' = ' + gen_let_array_rest_slice(temp_name, sub_patterns.length(), element_cpp) + ';\n'
+  end
+  binding_fragment
+end
+
+fn wild_pattern_output(value_code: string) -> string =
+  expression_output.suffix_semicolon_newline(value_code)
+
+fn ctor_pattern_gen_result(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  temp_name: string,
+  value_code: string,
+  has_else: bool,
+  else_body: Shared<SemanticExpression>,
+  codegen_context: CodegenContext,
+  eval_fn: (Shared<SemanticExpression>, CodegenContext) -> string
+) -> GenLetPatternResult = do
+  const qualified_name = codegen_context.resolve(constructor_name)
+  const second_temp = take_temp_name(codegen_context)
+  const variant_binding_name = second_temp.name
+  let mut updated_codegen_context = second_temp.codegen_context
+  const bind =
+    if sub_patterns.length() == 0 then ''
+    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), variant_binding_name)
+    end
+  const is_generic = list_contains(updated_codegen_context.generic_variants, constructor_name)
+  const type_arguments = if is_generic then '<auto>' else '' end
+  const else_code = if has_else then eval_fn(else_body, updated_codegen_context) else 'std::abort();' end
+  GenLetPatternResult {
+    output: 'auto ' + temp_name + ' = ' + value_code + ';\n' +
+      'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(' + temp_name + ')) { ' + else_code + ' }\n' +
+      'const ' + qualified_name + type_arguments + '& ' + variant_binding_name + ' = std::get<' + qualified_name + type_arguments + '>(' + temp_name + ');\n' +
+      bind + `\n`,
+    codegen_context: updated_codegen_context
+  }
+end
 
 export fn gen_let_pattern_statement(
   pattern: Shared<Pattern>,
@@ -33,101 +263,47 @@ export fn gen_let_pattern_statement(
       output: expression_output.auto_binding_statement(cpp_safe(binding_name), value_code),
       codegen_context: codegen_context
     },
-    PatternTuple(sub_patterns, _) => do
-      const output = match value_type {
-        TTuple(_) | TPair(_, _) => do
-          const primitive_tuple_binding_names = pattern_bind_names(sub_patterns)
-          'auto ' + temp_name + ' = ' + value_code + ';\n' + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, temp_name) + `\n`
-        end,
-        _ => do
-          const record_codegen_name = match value_type {
-            TNamed(record_nominal_name) => record_nominal_name,
-            TGeneric(record_nominal_name, _) => record_nominal_name,
-            _ => ''
-          }
-          if record_codegen_name != '' then
-            const ordered_member_labels = lookup_fields_for_context(codegen_context, record_codegen_name)
-            if ordered_member_labels.length() == sub_patterns.length() && sub_patterns.length() > 0 then
-              let mut record_ordered_tuple_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
-              let mut member_slot_index = 0
-              while member_slot_index < sub_patterns.length() do
-                match sub_patterns[member_slot_index] {
-                  PatternIdent(binding_member_name, _) => do
-                    record_ordered_tuple_fragment = record_ordered_tuple_fragment + expression_output.auto_binding_statement(
-                      cpp_safe(binding_member_name),
-                      `${temp_name}.${cpp_safe(ordered_member_labels[member_slot_index])}`)
-                  end,
-                  _ => do end
-                }
-                member_slot_index = member_slot_index + 1
-              end
-              record_ordered_tuple_fragment
-            else
-              const fallback_binding_names = pattern_bind_names(sub_patterns)
-              'auto ' + temp_name + ' = ' + value_code + ';\n' + expression_output.tuple_destructure_binding(fallback_binding_names, temp_name) + `\n`
-            end
-          else
-            const outer_fallback_binding_names = pattern_bind_names(sub_patterns)
-            'auto ' + temp_name + ' = ' + value_code + ';\n' + expression_output.tuple_destructure_binding(outer_fallback_binding_names, temp_name) + `\n`
-          end
-        end
-      }
-      GenLetPatternResult { output: output, codegen_context: codegen_context }
-    end,
-    PatternRecord(_, field_patterns, _) => do
-      let mut binding_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
-      let mut index = 0
-      while index < field_patterns.length() do
-        match field_patterns[index] {
-          PatternIdent(field_name, _) => do
-            binding_fragment = binding_fragment + expression_output.auto_binding_statement(cpp_safe(field_name), `${temp_name}.${cpp_safe(field_name)}`)
-          end,
-          _ => do end
-        }
-        index = index + 1
-      end
-      GenLetPatternResult { output: binding_fragment, codegen_context: codegen_context }
-    end,
-    PatternArray(sub_patterns, rest, _) => do
-      const element_cpp = match value_type { TArray(inner) => sem_type_to_cpp(codegen_context, inner), _ => 'auto' }
-      let mut binding_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
-      let mut index = 0
-      while index < sub_patterns.length() do
-        match sub_patterns[index] {
-          PatternIdent(name, _) => do
-            binding_fragment = binding_fragment + `auto ${cpp_safe(name)} = ${temp_name}[${index.to_string()}];\n`
-          end,
-          _ => do end
-        }
-        index = index + 1
-      end
-      if rest != '' then
-        binding_fragment = binding_fragment + 'auto ' + cpp_safe(rest) + ' = ' + gen_let_array_rest_slice(temp_name, sub_patterns.length(), element_cpp) + ';\n'
-      end
-      GenLetPatternResult { output: binding_fragment, codegen_context: codegen_context }
-    end,
-    PatternCtor(constructor_name, sub_patterns, _) => do
-      const qualified_name = codegen_context.resolve(constructor_name)
-      const second_temp = take_temp_name(codegen_context)
-      const variant_binding_name = second_temp.name
-      codegen_context = second_temp.codegen_context
-      const bind =
-        if sub_patterns.length() == 0 then ''
-        else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), variant_binding_name)
-        end
-      const is_generic = list_contains(codegen_context.generic_variants, constructor_name)
-      const type_arguments = if is_generic then '<auto>' else '' end
-      const else_code = if has_else then eval_fn(else_body, codegen_context) else 'std::abort();' end
-      GenLetPatternResult {
-        output: 'auto ' + temp_name + ' = ' + value_code + ';\n' +
-          'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(' + temp_name + ')) { ' + else_code + ' }\n' +
-          'const ' + qualified_name + type_arguments + '& ' + variant_binding_name + ' = std::get<' + qualified_name + type_arguments + '>(' + temp_name + ');\n' +
-          bind + `\n`,
-        codegen_context: codegen_context
-      }
-    end,
-    _ => GenLetPatternResult {
-      output: expression_output.suffix_semicolon_newline(value_code),
+    PatternTuple(sub_patterns, _) => GenLetPatternResult {
+      output: tuple_pattern_output_for_value_type(sub_patterns, value_type, temp_name, value_code, codegen_context),
+      codegen_context: codegen_context
+    },
+    PatternRecord(_, field_patterns, _) => GenLetPatternResult {
+      output: record_pattern_output(field_patterns, temp_name, value_code),
+      codegen_context: codegen_context
+    },
+    PatternArray(sub_patterns, rest, _) => GenLetPatternResult {
+      output: array_pattern_output(sub_patterns, rest, value_type, temp_name, value_code, codegen_context),
+      codegen_context: codegen_context
+    },
+    PatternCtor(constructor_name, sub_patterns, _) =>
+      ctor_pattern_gen_result(
+        constructor_name, sub_patterns, temp_name, value_code, has_else, else_body, codegen_context, eval_fn),
+    PatternWild(_) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternInt(_, _) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternStr(_, _) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternStringLit(_, _) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternBool(_, _) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternUnit(_) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
+      codegen_context: codegen_context
+    },
+    PatternOr(_, _) => GenLetPatternResult {
+      output: wild_pattern_output(value_code),
       codegen_context: codegen_context
     }
   }

@@ -1,4 +1,4 @@
-98cac7942b1a7f1f73289a28acab38c64fe13a1640195b6a964528cd64f8bef6
+d042f21903c66120881d374a2fb50c6dc0bba054d42ca527a40dd41b1c8876c1
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -37,6 +37,7 @@ diagnostics.cpp
 dump_flags.cpp
 emit_helpers.cpp
 eval.cpp
+execute.cpp
 expect_close.cpp
 expr.cpp
 expr_visitor.cpp
@@ -85,6 +86,7 @@ method_gen.cpp
 method_receiver_diagnostics.cpp
 mir_bootstrap_report.cpp
 mir_dump.cpp
+mir_eval.cpp
 mir_ids.cpp
 mir_passes.cpp
 mir_to_cpp.cpp
@@ -97,6 +99,7 @@ mutex_method_types.cpp
 named_args.cpp
 names.cpp
 native.cpp
+outcome.cpp
 param_analysis.cpp
 param_destructure_expand.cpp
 partial_application_desugar.cpp
@@ -116,6 +119,7 @@ record_lit_merge.cpp
 registry.cpp
 result_option_method_types.cpp
 return_body.cpp
+runtime.cpp
 semantic_ir.cpp
 semantic_ir_dump.cpp
 semantic_type_structure.cpp

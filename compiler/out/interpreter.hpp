@@ -9,8 +9,9 @@
 #include "lower_program.hpp"
 #include "mir_types.hpp"
 #include "value.hpp"
-#include "frame.hpp"
-#include "native.hpp"
+#include "execute.hpp"
+#include "runtime.hpp"
+#include "outcome.hpp"
 
 namespace interpreter {
 

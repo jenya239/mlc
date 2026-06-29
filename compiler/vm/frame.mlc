@@ -47,3 +47,39 @@ export fn vm_locals_store(locals: [VmValue], local_id: LocalId, value: VmValue) 
   end
   rebuilt
 end
+
+export fn vm_frame_at(frames: [VmFrame], frame_index: i32) -> VmFrame = frames[frame_index]
+
+export fn vm_frame_update(frames: [VmFrame], frame_index: i32, frame: VmFrame) -> [VmFrame] = do
+  let mut rebuilt: [VmFrame] = []
+  let mut index = 0
+  while index < frames.length() do
+    if index == frame_index then rebuilt.push(frame)
+    else rebuilt.push(frames[index])
+    end
+    index = index + 1
+  end
+  rebuilt
+end
+
+export fn vm_frame_advance_statement(frames: [VmFrame], frame_index: i32) -> [VmFrame] = do
+  const frame = vm_frame_at(frames, frame_index)
+  vm_frame_update(frames, frame_index, VmFrame {
+    ...frame,
+    statement_index: frame.statement_index + 1
+  })
+end
+
+export fn vm_frame_set_block(frames: [VmFrame], frame_index: i32, block_id: BlockId) -> [VmFrame] = do
+  const frame = vm_frame_at(frames, frame_index)
+  vm_frame_update(frames, frame_index, VmFrame {
+    ...frame,
+    block_id: block_id,
+    statement_index: 0
+  })
+end
+
+export fn vm_frame_set_locals(frames: [VmFrame], frame_index: i32, locals: [VmValue]) -> [VmFrame] = do
+  const frame = vm_frame_at(frames, frame_index)
+  vm_frame_update(frames, frame_index, VmFrame { ...frame, locals: locals })
+end

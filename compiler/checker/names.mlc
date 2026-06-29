@@ -17,36 +17,42 @@ export fn pattern_bindings(pattern: Shared<Pattern>) -> [string] = do
   collect_pattern_bindings(pattern, empty_pattern_bindings)
 end
 
+fn collect_pattern_bindings_fold_step(accumulator: [string], sub_pattern: Shared<Pattern>) -> [string] =
+  collect_pattern_bindings(sub_pattern, accumulator)
+
+fn collect_pattern_array_bindings(
+  sub_patterns: [Shared<Pattern>],
+  rest: string,
+  bindings_so_far: [string]
+) -> [string] = do
+  const bindings_after_array_elements =
+    sub_patterns.fold(bindings_so_far, collect_pattern_bindings_fold_step)
+  if rest != '' && rest != "_" then bindings_after_array_elements.concat([rest])
+  else bindings_after_array_elements end
+end
+
+fn collect_pattern_or_bindings(alternatives: [Shared<Pattern>], bindings_so_far: [string]) -> [string] =
+  if alternatives.length() > 0 then collect_pattern_bindings(alternatives[0], bindings_so_far)
+  else bindings_so_far end
+
 fn collect_pattern_bindings(pattern: Shared<Pattern>, bindings_so_far: [string]) -> [string] =
   match pattern {
+    PatternWild(_) => bindings_so_far,
     PatternIdent(name, _) => bindings_so_far.concat([name]),
+    PatternInt(_, _) => bindings_so_far,
+    PatternStr(_, _) => bindings_so_far,
+    PatternStringLit(_, _) => bindings_so_far,
+    PatternBool(_, _) => bindings_so_far,
+    PatternUnit(_) => bindings_so_far,
     PatternCtor(_, sub_patterns, _) =>
-      sub_patterns.fold(
-        bindings_so_far,
-        (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator)),
+      sub_patterns.fold(bindings_so_far, collect_pattern_bindings_fold_step),
     PatternRecord(_, field_patterns, _) =>
-      field_patterns.fold(
-        bindings_so_far,
-        (accumulator, field_pattern) => collect_pattern_bindings(field_pattern, accumulator)),
+      field_patterns.fold(bindings_so_far, collect_pattern_bindings_fold_step),
     PatternTuple(sub_patterns, _) =>
-      sub_patterns.fold(
-        bindings_so_far,
-        (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator)),
-    PatternArray(sub_patterns, rest, _) => do
-      const bindings_after_array_elements =
-        sub_patterns.fold(
-          bindings_so_far,
-          (accumulator, sub_pattern) => collect_pattern_bindings(sub_pattern, accumulator))
-      if rest != '' && rest != "_" then bindings_after_array_elements.concat([rest])
-      else bindings_after_array_elements end
-    end,
-    PatternOr(alternatives, _) =>
-      if alternatives.length() > 0 then
-        collect_pattern_bindings(alternatives[0], bindings_so_far)
-      else
-        bindings_so_far
-      end,
-    _ => bindings_so_far,
+      sub_patterns.fold(bindings_so_far, collect_pattern_bindings_fold_step),
+    PatternArray(sub_patterns, rest, _) =>
+      collect_pattern_array_bindings(sub_patterns, rest, bindings_so_far),
+    PatternOr(alternatives, _) => collect_pattern_or_bindings(alternatives, bindings_so_far)
   }
 
 fn check_names_identifier(name: string, locals: [string], globals: Map<string, bool>, source_span: Span) -> [Diagnostic] =
@@ -56,8 +62,11 @@ fn check_names_identifier(name: string, locals: [string], globals: Map<string, b
 
 fn check_names_empty() -> [Diagnostic] = do let empty_list: [Diagnostic] = []; empty_list end
 
+fn append_binding_name_to_scope(accumulated_scope: [string], binding_name: string) -> [string] =
+  accumulated_scope.concat([binding_name])
+
 fn scope_with_bindings(scope: [string], binding_names: [string]) -> [string] =
-  binding_names.fold(scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
+  binding_names.fold(scope, append_binding_name_to_scope)
 
 export type NameCheckResult = NameCheckResult { diagnostics: [Diagnostic], scope: [string] }
 
@@ -151,29 +160,38 @@ fn dispatch_names_pass(names_pass: NamesPass, expression: Shared<SemanticExpress
     SemanticExpressionLambda(parameter_names, body_expression, type_value, _) =>
       names_pass.visit_lambda(parameter_names, body_expression, type_value),
     SemanticExpressionWith(resource, binder, statements, type_value, _) =>
-      names_pass.visit_with(resource, binder, statements, type_value),
-    _ => names_pass.visit_unsupported(expression)
+      names_pass.visit_with(resource, binder, statements, type_value)
   }
 
 fn check_names_semantic_field_values(
   field_values: [Shared<SemanticFieldVal>],
   names_pass: NamesPass
-) -> NameCheckResult =
-  field_values.fold(
-    name_check_ok(names_pass.locals),
-    (accumulator, field_value_under_walk) =>
-      merge_name_check_results(
-        accumulator,
-        dispatch_names_pass(names_pass, field_value_under_walk.value)))
+) -> NameCheckResult = do
+  let mut accumulator = name_check_ok(names_pass.locals)
+  let mut index = 0
+  while index < field_values.length() do
+    accumulator = merge_name_check_results(
+      accumulator,
+      dispatch_names_pass(names_pass, field_values[index].value))
+    index = index + 1
+  end
+  accumulator
+end
 
 fn check_names_semantic_elements(
   elements: [Shared<SemanticExpression>],
   names_pass: NamesPass
-) -> NameCheckResult =
-  elements.fold(
-    name_check_ok(names_pass.locals),
-    (accumulator, element_under_walk) =>
-      merge_name_check_results(accumulator, dispatch_names_pass(names_pass, element_under_walk)))
+) -> NameCheckResult = do
+  let mut accumulator = name_check_ok(names_pass.locals)
+  let mut index = 0
+  while index < elements.length() do
+    accumulator = merge_name_check_results(
+      accumulator,
+      dispatch_names_pass(names_pass, elements[index]))
+    index = index + 1
+  end
+  accumulator
+end
 
 export fn check_names_semantic_statements(
   statements: [Shared<SemanticStatement>],
@@ -401,11 +419,12 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     body_expression: Shared<SemanticExpression>,
     _semantic_type: Shared<Type>
   ) -> NameCheckResult = do
-    const lambda_environment =
-      parameter_names.fold(
-        self.locals,
-        (accumulated, lambda_parameter_name) =>
-          accumulated.concat([lambda_parameter_name]))
+    let mut lambda_environment = self.locals
+    let mut parameter_index = 0
+    while parameter_index < parameter_names.length() do
+      lambda_environment = lambda_environment.concat([parameter_names[parameter_index]])
+      parameter_index = parameter_index + 1
+    end
     dispatch_names_pass(names_pass_new(lambda_environment, self.globals), body_expression)
   end
   fn visit_with(

@@ -245,13 +245,20 @@ fn primitive_type_from_name(name: string) -> Shared<Type> =
   | _       => Shared.new(TNamed(name))
   end
 
+fn type_expression_substitute_for_named(
+  name: string,
+  type_expression: Shared<TypeExpr>,
+  parameter_name: string,
+  argument_expression: Shared<TypeExpr>
+) -> Shared<TypeExpr> =
+  if name == parameter_name then argument_expression else type_expression end
+
 fn type_expression_substitute_named_parameter(
   type_expression: Shared<TypeExpr>,
   parameter_name: string,
   argument_expression: Shared<TypeExpr>
 ) -> Shared<TypeExpr> =
   match type_expression {
-    TyNamed(name) => if name == parameter_name then argument_expression else type_expression end,
     TyArray(inner) =>
       Shared.new(TyArray(type_expression_substitute_named_parameter(inner, parameter_name, argument_expression))),
     TyShared(inner) =>
@@ -266,7 +273,13 @@ fn type_expression_substitute_named_parameter(
         parameters.map(parameter_type =>
           type_expression_substitute_named_parameter(parameter_type, parameter_name, argument_expression)),
         type_expression_substitute_named_parameter(return_type, parameter_name, argument_expression))),
-    _ => type_expression
+    TyNamed(name) =>
+      type_expression_substitute_for_named(name, type_expression, parameter_name, argument_expression),
+    TyI32 => type_expression,
+    TyString => type_expression,
+    TyBool => type_expression,
+    TyUnit => type_expression,
+    TyAssoc(_, _) => type_expression
   }
 
 fn substitute_type_expression_type_parameters(
@@ -346,9 +359,35 @@ fn resolve_named_type_with_registry(
   else Shared.new(TNamed(name))
   end
 
+fn type_from_annotation_generic_with_registry_and_stack(
+  generic_name: string,
+  type_arguments: [Shared<TypeExpr>],
+  type_registry: TypeRegistry,
+  resolution_stack: [string]
+) -> Shared<Type> =
+  if generic_name == 'ref' && type_arguments.length() == 1 then
+    type_from_annotation_with_registry_and_stack(type_arguments[0], type_registry, resolution_stack)
+  else if type_registry.type_alias_annotations.has(generic_name)
+    && type_registry.type_alias_type_parameter_names.has(generic_name) then
+    if resolution_stack_contains_name(resolution_stack, generic_name) then Shared.new(TUnknown)
+    else do
+      const extended_stack = resolution_stack.concat([generic_name])
+      const substituted_expression = substitute_type_expression_type_parameters(
+        type_registry.type_alias_annotations.get(generic_name),
+        type_registry.type_alias_type_parameter_names.get(generic_name),
+        type_arguments)
+      type_from_annotation_with_registry_and_stack(substituted_expression, type_registry, extended_stack)
+    end
+  else
+    Shared.new(TGeneric(
+      generic_name,
+      type_arguments.map(type_argument =>
+        type_from_annotation_with_registry_and_stack(type_argument, type_registry, resolution_stack))))
+  end
+
 fn type_from_annotation_with_registry_and_stack(
   type_expression: Shared<TypeExpr>,
-  registry: TypeRegistry,
+  type_registry: TypeRegistry,
   resolution_stack: [string]
 ) -> Shared<Type> =
   match type_expression {
@@ -356,38 +395,20 @@ fn type_from_annotation_with_registry_and_stack(
     TyString  => Shared.new(TString),
     TyBool    => Shared.new(TBool),
     TyUnit    => Shared.new(TUnit),
-    TyNamed(name) => resolve_named_type_with_registry(name, registry, resolution_stack),
     TyArray(inner) =>
-      Shared.new(TArray(type_from_annotation_with_registry_and_stack(inner, registry, resolution_stack))),
+      Shared.new(TArray(type_from_annotation_with_registry_and_stack(inner, type_registry, resolution_stack))),
     TyShared(inner) =>
-      Shared.new(TShared(type_from_annotation_with_registry_and_stack(inner, registry, resolution_stack))),
-    TyGeneric(generic_name, type_arguments) =>
-      if generic_name == 'ref' && type_arguments.length() == 1 then
-        type_from_annotation_with_registry_and_stack(type_arguments[0], registry, resolution_stack)
-      else if registry.type_alias_annotations.has(generic_name)
-        && registry.type_alias_type_parameter_names.has(generic_name) then
-        if resolution_stack_contains_name(resolution_stack, generic_name) then Shared.new(TUnknown)
-        else do
-          const extended_stack = resolution_stack.concat([generic_name])
-          const substituted_expression = substitute_type_expression_type_parameters(
-            registry.type_alias_annotations.get(generic_name),
-            registry.type_alias_type_parameter_names.get(generic_name),
-            type_arguments)
-          type_from_annotation_with_registry_and_stack(substituted_expression, registry, extended_stack)
-        end
-      else
-        Shared.new(TGeneric(
-          generic_name,
-          type_arguments.map(type_argument =>
-            type_from_annotation_with_registry_and_stack(type_argument, registry, resolution_stack))))
-      end,
+      Shared.new(TShared(type_from_annotation_with_registry_and_stack(inner, type_registry, resolution_stack))),
     TyFn(parameters, return_type) =>
       Shared.new(TFn(
         parameters.map(parameter_type =>
-          type_from_annotation_with_registry_and_stack(parameter_type, registry, resolution_stack)),
-        type_from_annotation_with_registry_and_stack(return_type, registry, resolution_stack))),
+          type_from_annotation_with_registry_and_stack(parameter_type, type_registry, resolution_stack)),
+        type_from_annotation_with_registry_and_stack(return_type, type_registry, resolution_stack))),
     TyAssoc(parameter_name, associated_name) => Shared.new(TAssoc(parameter_name, associated_name)),
-    _ => Shared.new(TUnknown)
+    TyNamed(name) => resolve_named_type_with_registry(name, type_registry, resolution_stack),
+    TyGeneric(generic_name, type_arguments) =>
+      type_from_annotation_generic_with_registry_and_stack(
+        generic_name, type_arguments, type_registry, resolution_stack)
   }
 
 export fn type_from_annotation_with_registry(type_expression: Shared<TypeExpr>, registry: TypeRegistry) -> Shared<Type> =
@@ -411,31 +432,34 @@ fn type_alias_has_cycle_from_name(
 export fn type_alias_has_cycle(registry: TypeRegistry, alias_name: string) -> bool =
   type_alias_has_cycle_from_name(registry, alias_name, [])
 
+fn type_from_named_annotation(name: string) -> Shared<Type> =
+  match name
+  | 'i64'   => Shared.new(TI64)
+  | 'f64'   => Shared.new(TF64)
+  | 'u8'    => Shared.new(TU8)
+  | 'usize' => Shared.new(TUsize)
+  | 'char'  => Shared.new(TChar)
+  | _       => Shared.new(TNamed(name))
+  end
+
+fn type_from_generic_annotation(name: string, type_arguments: [Shared<TypeExpr>]) -> Shared<Type> =
+  if name == 'ref' && type_arguments.length() == 1 then type_from_annotation(type_arguments[0])
+  else Shared.new(TGeneric(name, type_arguments.map(type_argument => type_from_annotation(type_argument))))
+  end
+
 export fn type_from_annotation(type_expr: Shared<TypeExpr>) -> Shared<Type> =
   match type_expr {
     TyI32     => Shared.new(TI32),
     TyString  => Shared.new(TString),
     TyBool    => Shared.new(TBool),
     TyUnit    => Shared.new(TUnit),
-    TyNamed(name) =>
-      match name
-      | 'i64'   => Shared.new(TI64)
-      | 'f64'   => Shared.new(TF64)
-      | 'u8'    => Shared.new(TU8)
-      | 'usize' => Shared.new(TUsize)
-      | 'char'  => Shared.new(TChar)
-      | _       => Shared.new(TNamed(name))
-      end,
     TyArray(inner)  => Shared.new(TArray(type_from_annotation(inner))),
     TyShared(inner) => Shared.new(TShared(type_from_annotation(inner))),
-    TyGeneric(name, type_arguments) =>
-      if name == 'ref' && type_arguments.length() == 1 then type_from_annotation(type_arguments[0])
-      else Shared.new(TGeneric(name, type_arguments.map(type_argument => type_from_annotation(type_argument))))
-      end,
     TyFn(parameters, return_type) =>
       Shared.new(TFn(parameters.map(annotation => type_from_annotation(annotation)), type_from_annotation(return_type))),
     TyAssoc(param, assoc) => Shared.new(TAssoc(param, assoc)),
-    _ => Shared.new(TUnknown)
+    TyNamed(name) => type_from_named_annotation(name),
+    TyGeneric(name, type_arguments) => type_from_generic_annotation(name, type_arguments)
   }
 
 fn required_arity_from_params(params: [Shared<Param>]) -> i32 = do
@@ -464,92 +488,202 @@ fn accumulate_trait_associated_type_name(accumulated_names: [string], method: Sh
     _ => accumulated_names
   }
 
-fn register_decl_into(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> unit = do
+fn trait_associated_type_names_for(registry: TypeRegistry, trait_name: string) -> [string] =
+  if registry.adt_index.trait_assoc_types.has(trait_name) then
+    registry.adt_index.trait_assoc_types.get(trait_name)
+  else do const empty: [string] = []; empty end end
+
+fn trait_method_is_assoc_type_declaration(method: Shared<Decl>) -> bool =
+  match method { DeclAssocType(_, _) => true, _ => false }
+
+fn register_trait_method_into_registry(registry: ref mut TypeRegistry, method: Shared<Decl>) -> unit = do
+  if !trait_method_is_assoc_type_declaration(method) then
+    register_decl_into(registry, method)
+  end
+end
+
+fn register_decl_trait_into_registry(
+  registry: ref mut TypeRegistry,
+  trait_name: string,
+  methods: [Shared<Decl>]
+) -> unit = do
+  let mut index = 0
+  while index < methods.length() do
+    register_trait_method_into_registry(registry, methods[index])
+    index = index + 1
+  end
+  const initial_trait_associated_type_names = trait_associated_type_names_for(registry, trait_name)
+  const trait_associated_type_names =
+    methods.fold(initial_trait_associated_type_names, accumulate_trait_associated_type_name)
+  if true then
+    registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names)
+  end
+end
+
+fn register_decl_extend_into_registry(
+  registry: ref mut TypeRegistry,
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<Decl>]
+) -> unit = do
+  if trait_name.length() > 0 then
+    const trait_implementations =
+      (if registry.adt_index.trait_impls.has(type_name) then registry.adt_index.trait_impls.get(type_name)
+      else do const empty: [string] = []; empty end end).concat([trait_name])
+    registry.adt_index.trait_impls.set(type_name, trait_implementations)
+  end
+  const assoc_binding_key = type_name + '::' + trait_name
+  let mut assoc_type_bindings: Map<string, Shared<Type>> =
+    if registry.adt_index.assoc_type_bindings.has(assoc_binding_key) then
+      registry.adt_index.assoc_type_bindings.get(assoc_binding_key)
+    else do const empty_bindings: Map<string, Shared<Type>> = Map.new(); empty_bindings end end
+  let mut assoc_bindings_dirty = false
+  let mut method_index = 0
+  while method_index < methods.length() do
+    if register_extend_method_into_registry(registry, methods[method_index], assoc_type_bindings) then
+      assoc_bindings_dirty = true
+    end
+    method_index = method_index + 1
+  end
+  if assoc_bindings_dirty then
+    registry.adt_index.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings)
+  end
+end
+
+fn register_decl_fn_into_registry(
+  registry: ref mut TypeRegistry,
+  name: string,
+  type_parameters: [string],
+  trait_bounds: [[string]],
+  parameters: [Shared<Param>],
+  return_type: Shared<TypeExpr>
+) -> unit = do
+  const param_types =
+    parameters.map(parameter => type_from_annotation_with_registry(param_type_value(parameter), registry))
+  const parameter_names = parameters.map(parameter => param_name(parameter))
+  const parameter_mutability_flags =
+    parameters.map(parameter => if param_is_mut(parameter) then 1 else 0 end)
+  registry.function_index.function_types.set(
+    name, Shared.new(TFn(param_types, type_from_annotation_with_registry(return_type, registry))))
+  registry.function_index.function_type_parameter_names.set(name, type_parameters)
+  registry.function_index.function_parameter_names.set(name, parameter_names)
+  registry.function_index.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
+  registry.function_index.function_required_arity.set(name, required_arity_from_params(parameters))
+  if trait_bounds.length() > 0 then
+    registry.function_index.function_trait_bounds.set(name, trait_bounds)
+  end
+end
+
+fn register_decl_type_into_registry(
+  registry: ref mut TypeRegistry,
+  type_name: string,
+  type_parameters: [string],
+  variants: [Shared<TypeVariant>]
+) -> unit = do
+  registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    register_variant_into(registry, type_name, variants[variant_index])
+    variant_index = variant_index + 1
+  end
+  const phantom = compute_phantom_type_params(type_parameters, variants)
+  if true then
+    registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)
+  end
+end
+
+fn register_decl_type_alias_into_registry(
+  registry: ref mut TypeRegistry,
+  alias_name: string,
+  type_parameters: [string],
+  type_expression: Shared<TypeExpr>
+) -> unit = do
+  registry.type_alias_annotations.set(alias_name, type_expression)
+  if type_parameters.length() > 0 then
+    registry.type_alias_type_parameter_names.set(alias_name, type_parameters)
+  end
+end
+
+fn register_extend_method_into_registry(
+  registry: ref mut TypeRegistry,
+  method: Shared<Decl>,
+  assoc_type_bindings: ref mut Map<string, Shared<Type>>
+) -> bool =
+  match method {
+    DeclAssocBind(assoc_name, type_expr, _) => do
+      assoc_type_bindings.set(assoc_name, type_from_annotation_with_registry(type_expr, registry))
+      true
+    end,
+    _ => do
+      register_decl_into(registry, method)
+      false
+    end
+  }
+
+fn register_decl_trait_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
     DeclTrait(trait_name, _, methods, _) => do
-      let mut index = 0
-      while index < methods.length() do
-        const method = methods[index]
-        const is_assoc_type_declaration = match method {
-          DeclAssocType(_, _) => true,
-          _ => false
-        }
-        if !is_assoc_type_declaration then register_decl_into(registry, method) end
-        index = index + 1
-      end
-      const initial_trait_associated_type_names =
-        if registry.adt_index.trait_assoc_types.has(trait_name) then
-          registry.adt_index.trait_assoc_types.get(trait_name)
-        else do const empty: [string] = []; empty end end
-      const trait_associated_type_names =
-        methods.fold(initial_trait_associated_type_names, accumulate_trait_associated_type_name)
-      registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names)
+      register_decl_trait_into_registry(registry, trait_name, methods)
+      true
     end,
-    DeclExtend(type_name, trait_name, methods, _) => do
-      if trait_name.length() > 0 then
-        const trait_implementations =
-          (if registry.adt_index.trait_impls.has(type_name) then registry.adt_index.trait_impls.get(type_name)
-          else do const empty: [string] = []; empty end end).concat([trait_name])
-        registry.adt_index.trait_impls.set(type_name, trait_implementations)
-      end
-      const assoc_binding_key = type_name + '::' + trait_name
-      let mut assoc_type_bindings: Map<string, Shared<Type>> =
-        if registry.adt_index.assoc_type_bindings.has(assoc_binding_key) then
-          registry.adt_index.assoc_type_bindings.get(assoc_binding_key)
-        else do const empty_bindings: Map<string, Shared<Type>> = Map.new(); empty_bindings end end
-      let mut assoc_bindings_dirty = false
-      let mut i = 0
-      while i < methods.length() do
-        match methods[i] {
-          DeclAssocBind(assoc_name, type_expr, _) => do
-            assoc_type_bindings.set(assoc_name, type_from_annotation_with_registry(type_expr, registry))
-            assoc_bindings_dirty = true
-          end,
-          _ => do register_decl_into(registry, methods[i]) end
-        }
-        i = i + 1
-      end
-      if assoc_bindings_dirty then
-        registry.adt_index.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings)
-      end
-    end,
-    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
-      const param_types =
-        parameters.map(parameter => type_from_annotation_with_registry(param_type_value(parameter), registry))
-      const parameter_names = parameters.map(parameter => param_name(parameter))
-      const parameter_mutability_flags =
-        parameters.map(parameter => if param_is_mut(parameter) then 1 else 0 end)
-      registry.function_index.function_types.set(
-        name, Shared.new(TFn(param_types, type_from_annotation_with_registry(return_type, registry))))
-      registry.function_index.function_type_parameter_names.set(name, type_parameters)
-      registry.function_index.function_parameter_names.set(name, parameter_names)
-      registry.function_index.function_parameter_mutability_flags.set(name, parameter_mutability_flags)
-      registry.function_index.function_required_arity.set(name, required_arity_from_params(parameters))
-      if trait_bounds.length() > 0 then
-        registry.function_index.function_trait_bounds.set(name, trait_bounds)
-      end
-    end,
-    DeclType(type_name, type_parameters, variants, _, _) => do
-      registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
-      let mut vi = 0
-      while vi < variants.length() do
-        register_variant_into(registry, type_name, variants[vi])
-        vi = vi + 1
-      end
-      const phantom = compute_phantom_type_params(type_parameters, variants)
-      registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)
-    end,
-    DeclTypeAlias(alias_name, type_parameters, type_expression, _) => do
-      registry.type_alias_annotations.set(alias_name, type_expression)
-      if type_parameters.length() > 0 then
-        registry.type_alias_type_parameter_names.set(alias_name, type_parameters)
-      end
-    end,
-    DeclImport(_, _) => (),
-    DeclExported(exported_declaration) => register_decl_into(registry, exported_declaration),
-    DeclAssocType(_, _) => (),
-    DeclAssocBind(_, _, _) => ()
+    _ => false
   }
+
+fn register_decl_extend_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclExtend(type_name, trait_name, methods, _) => do
+      register_decl_extend_into_registry(registry, type_name, trait_name, methods)
+      true
+    end,
+    _ => false
+  }
+
+fn register_decl_fn_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
+      register_decl_fn_into_registry(registry, name, type_parameters, trait_bounds, parameters, return_type)
+      true
+    end,
+    _ => false
+  }
+
+fn register_decl_type_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclType(type_name, type_parameters, variants, _, _) => do
+      register_decl_type_into_registry(registry, type_name, type_parameters, variants)
+      true
+    end,
+    _ => false
+  }
+
+fn register_decl_type_alias_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclTypeAlias(alias_name, type_parameters, type_expression, _) => do
+      register_decl_type_alias_into_registry(registry, alias_name, type_parameters, type_expression)
+      true
+    end,
+    _ => false
+  }
+
+fn register_decl_exported_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclExported(exported_declaration) => do
+      register_decl_into(registry, exported_declaration)
+      true
+    end,
+    _ => false
+  }
+
+fn registry_decl_noop() -> unit = do end
+
+fn register_decl_into(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> unit = do
+  const handled =
+    register_decl_trait_if(registry, declaration) ||
+    register_decl_extend_if(registry, declaration) ||
+    register_decl_fn_if(registry, declaration) ||
+    register_decl_type_if(registry, declaration) ||
+    register_decl_type_alias_if(registry, declaration) ||
+    register_decl_exported_if(registry, declaration)
 end
 
 fn type_param_in_annotation(param: string, type_expression: Shared<TypeExpr>) -> bool =
@@ -581,53 +715,85 @@ fn compute_phantom_type_params(type_parameters: [string], variants: [Shared<Type
       !type_param_in_annotation_list(type_parameter, all_field_type_expressions))
 end
 
+fn register_variant_unit_into_registry(
+  registry: ref mut TypeRegistry,
+  variant_name: string,
+  result_type: Shared<Type>,
+  is_private: bool
+) -> unit = do
+  registry.adt_index.constructor_types.set(variant_name, result_type)
+  registry.adt_index.constructor_parameters.set(variant_name, [])
+  if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
+end
+
+fn register_variant_tuple_into_registry(
+  registry: ref mut TypeRegistry,
+  variant_name: string,
+  result_type: Shared<Type>,
+  field_types: [Shared<TypeExpr>],
+  is_private: bool
+) -> unit = do
+  const field_type_list =
+    field_types.map(field_type_expression => type_from_annotation_with_registry(field_type_expression, registry))
+  registry.adt_index.constructor_types.set(variant_name, result_type)
+  registry.adt_index.constructor_parameters.set(variant_name, field_type_list)
+  if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
+end
+
+fn register_variant_record_into_registry(
+  registry: ref mut TypeRegistry,
+  type_name: string,
+  variant_name: string,
+  result_type: Shared<Type>,
+  field_defs: [Shared<FieldDef>],
+  is_private: bool
+) -> unit = do
+  const field_map: Map<string, Shared<Type>> = Map.new()
+  const defaults_for_variant: Map<string, Shared<Expr>> = Map.new()
+  const ordered_names = field_defs.map(field_definition => field_definition.name)
+  let mut index = 0
+  while index < field_defs.length() do
+    const field_definition = field_defs[index]
+    field_map.set(
+      field_definition.name,
+      type_from_annotation_with_registry(field_definition.type_value, registry))
+    if field_definition.has_default_expression then
+      defaults_for_variant.set(field_definition.name, field_definition.default_expression)
+    end
+    index = index + 1
+  end
+  registry.adt_index.constructor_types.set(variant_name, result_type)
+  registry.adt_index.constructor_parameters.set(variant_name, [])
+  registry.record_index.field_types.set(variant_name, field_map)
+  registry.record_index.field_types.set(type_name, field_map)
+  registry.record_index.record_field_names_ordered.set(variant_name, ordered_names)
+  registry.record_index.record_field_names_ordered.set(type_name, ordered_names)
+  registry.record_index.record_literal_field_defaults.set(variant_name, defaults_for_variant)
+  registry.record_index.record_literal_field_defaults.set(type_name, defaults_for_variant)
+  if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
+end
+
 fn register_variant_into(registry: ref mut TypeRegistry, type_name: string, variant: Shared<TypeVariant>) -> unit = do
   const result_type = Shared.new(TNamed(type_name))
   match variant {
-    VarUnit(variant_name, is_private) => do
-      registry.adt_index.constructor_types.set(variant_name, result_type)
-      registry.adt_index.constructor_parameters.set(variant_name, [])
-      if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
-    end,
-    VarTuple(variant_name, field_types, is_private) => do
-      const field_type_list =
-        field_types.map(field_type_expression => type_from_annotation_with_registry(field_type_expression, registry))
-      registry.adt_index.constructor_types.set(variant_name, result_type)
-      registry.adt_index.constructor_parameters.set(variant_name, field_type_list)
-      if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
-    end,
-    VarRecord(variant_name, field_defs, is_private) => do
-      const field_map: Map<string, Shared<Type>> = Map.new()
-      const defaults_for_variant: Map<string, Shared<Expr>> = Map.new()
-      const ordered_names = field_defs.map(field_definition => field_definition.name)
-      let mut index = 0
-      while index < field_defs.length() do
-        const field_definition = field_defs[index]
-        field_map.set(
-          field_definition.name,
-          type_from_annotation_with_registry(field_definition.type_value, registry))
-        if field_definition.has_default_expression then
-          defaults_for_variant.set(field_definition.name, field_definition.default_expression)
-        end
-        index = index + 1
-      end
-      registry.adt_index.constructor_types.set(variant_name, result_type)
-      registry.adt_index.constructor_parameters.set(variant_name, [])
-      registry.record_index.field_types.set(variant_name, field_map)
-      registry.record_index.field_types.set(type_name, field_map)
-      registry.record_index.record_field_names_ordered.set(variant_name, ordered_names)
-      registry.record_index.record_field_names_ordered.set(type_name, ordered_names)
-      registry.record_index.record_literal_field_defaults.set(variant_name, defaults_for_variant)
-      registry.record_index.record_literal_field_defaults.set(type_name, defaults_for_variant)
-      if is_private then registry.adt_index.private_constructors.set(variant_name, true) end
-    end
+    VarUnit(variant_name, is_private) =>
+      register_variant_unit_into_registry(registry, variant_name, result_type, is_private),
+    VarTuple(variant_name, field_types, is_private) =>
+      register_variant_tuple_into_registry(registry, variant_name, result_type, field_types, is_private),
+    VarRecord(variant_name, field_defs, is_private) =>
+      register_variant_record_into_registry(registry, type_name, variant_name, result_type, field_defs, is_private)
   }
 end
 
+fn substitute_semantic_type_for_named(
+  name: string,
+  type_value: Shared<Type>,
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  if substitution.has(name) then substitute_semantic_type(substitution.get(name), substitution) else type_value end
+
 fn substitute_semantic_type(type_value: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
   match type_value {
-    TNamed(name) =>
-      if substitution.has(name) then substitute_semantic_type(substitution.get(name), substitution) else type_value end,
     TArray(inner) => Shared.new(TArray(substitute_semantic_type(inner, substitution))),
     TShared(inner) => Shared.new(TShared(substitute_semantic_type(inner, substitution))),
     TGeneric(name, type_arguments) =>
@@ -640,46 +806,66 @@ fn substitute_semantic_type(type_value: Shared<Type>, substitution: Map<string, 
       Shared.new(TFn(
         parameter_list.map(parameter => substitute_semantic_type(parameter, substitution)),
         substitute_semantic_type(return_type, substitution))),
-    _ => type_value
+    TNamed(name) => substitute_semantic_type_for_named(name, type_value, substitution),
+    TI32 => type_value,
+    TString => type_value,
+    TBool => type_value,
+    TUnit => type_value,
+    TI64 => type_value,
+    TF64 => type_value,
+    TU8 => type_value,
+    TUsize => type_value,
+    TChar => type_value,
+    TAssoc(_, _) => type_value,
+    TUnknown => type_value
   }
 
-export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
-  const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
-  const type_name = match inner_type {
+fn unwrap_shared_semantic_type(object_type: Shared<Type>) -> Shared<Type> =
+  match object_type { TShared(inner) => inner, _ => object_type }
+
+fn field_lookup_type_name_from_semantic_type(inner_type: Shared<Type>, registry: TypeRegistry) -> string =
+  match inner_type {
     TNamed(name) => resolve_nominal_type_name_for_fields(registry, name, []),
     TGeneric(name, _) => resolve_nominal_type_name_for_fields(registry, name, []),
     _ => ''
   }
-  const type_arguments = match inner_type {
+
+fn generic_type_arguments_from_semantic_type(inner_type: Shared<Type>) -> [Shared<Type>] =
+  match inner_type {
     TGeneric(_, type_argument_list) => type_argument_list,
     _ => do const empty_type_arguments: [Shared<Type>] = []; empty_type_arguments end
   }
-  if type_name != '' && registry.record_index.field_types.has(type_name) then
-    const field_map = registry.fields_for(type_name)
-    if field_map.has(field_name) then
-      const raw_field_type = field_map.get(field_name)
-      if type_arguments.length() > 0 then
-        const parameter_names = registry.algebraic_decl_type_parameter_names_for(type_name)
-        substitute_semantic_type(
-          raw_field_type,
-          type_parameter_substitution_from_type_arguments(parameter_names, type_arguments))
-      else raw_field_type
-      end
-    else Shared.new(TUnknown)
-    end
-  else Shared.new(TUnknown)
+
+fn method_owner_type_name_from_semantic_type(inner_type: Shared<Type>) -> string =
+  match inner_type { TNamed(name) => name, _ => '' }
+
+export fn field_type_from_object(object_type: Shared<Type>, field_name: string, registry: TypeRegistry) -> Shared<Type> = do
+  const inner_type = unwrap_shared_semantic_type(object_type)
+  const type_name = field_lookup_type_name_from_semantic_type(inner_type, registry)
+  const type_arguments = generic_type_arguments_from_semantic_type(inner_type)
+  if type_name == '' || !registry.record_index.field_types.has(type_name) then
+    return Shared.new(TUnknown)
   end
+  const field_map = registry.fields_for(type_name)
+  if !field_map.has(field_name) then return Shared.new(TUnknown) end
+  const raw_field_type = field_map.get(field_name)
+  if type_arguments.length() > 0 then
+    const parameter_names = registry.algebraic_decl_type_parameter_names_for(type_name)
+    return substitute_semantic_type(
+      raw_field_type,
+      type_parameter_substitution_from_type_arguments(parameter_names, type_arguments))
+  end
+  return raw_field_type
 end
 
 export fn method_return_type_from_object(object_type: Shared<Type>, method_name: string, registry: TypeRegistry) -> Shared<Type> = do
-  const inner_type = match object_type { TShared(inner) => inner, _ => object_type }
-  const type_name = match inner_type { TNamed(name) => name, _ => '' }
-  if type_name == '' then Shared.new(TUnknown)
-  else
-    const mangled = type_name + "_" + method_name
-    if registry.has_fn(mangled) then
-      match registry.fn_type(mangled) { TFn(_, return_type) => return_type, _ => Shared.new(TUnknown) }
-    else Shared.new(TUnknown)
-    end
-  end
+  const inner_type = unwrap_shared_semantic_type(object_type)
+  const type_name = method_owner_type_name_from_semantic_type(inner_type)
+  if type_name == '' then return Shared.new(TUnknown) end
+  const mangled = type_name + "_" + method_name
+  if !registry.has_fn(mangled) then return Shared.new(TUnknown) end
+  match registry.fn_type(mangled) {
+    TFn(_, return_type) => return_type,
+    _ => Shared.new(TUnknown)
+  }
 end

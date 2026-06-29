@@ -4,7 +4,7 @@ import { Program, errs_append } from '../frontend/ast'
 import { SemanticLoadItem, SemanticNamespaceImportAlias } from '../ir/semantic_ir'
 import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
-import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index } from './decl/decl_index'
+import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, new_temp_name_counter, build_field_orders, build_variant_types_from_decls,
@@ -134,7 +134,8 @@ fn prepare_module_generation(
 ) -> ModuleGenerationContext = do
   const base = path_to_module_base(load_item.path)
   const namespace_aliases = load_item.namespace_import_aliases
-  const qualified = build_qualified(load_item.imports, all_items)
+  const module_decls = ast_decls_for_path(load_item.path, all_items)
+  const qualified = extend_qualified_map(build_qualified(load_item.imports, all_items), all_items, load_item.path)
   const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
   const base_context = CodegenContext {
     field_orders: precomputed_context.field_orders,
@@ -143,7 +144,7 @@ fn prepare_module_generation(
     qualified: qualified,
     namespace_alias_prefixes: namespace_alias_prefixes,
     self_type: '',
-    method_owners: precomputed_context.method_owners,
+    method_owners: build_method_owners_from_decls(module_decls),
     shared_params: [],
     shared_array_params: [],
     array_elem_types: Map.new(),

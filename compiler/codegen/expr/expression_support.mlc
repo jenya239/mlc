@@ -37,7 +37,8 @@ end
 
 export fn is_constructor_call(function_expr: Shared<SemanticExpression>) -> bool =
   match function_expr {
-    SemanticExpressionIdent(name, _, _) => name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z",
+    SemanticExpressionIdent(name, _, _) =>
+      name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z" && !name.contains("_"),
     _ => false
   }
 

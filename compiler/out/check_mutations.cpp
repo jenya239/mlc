@@ -37,6 +37,10 @@ check_mutations::MutationsPass mutations_pass_new(mlc::Array<mlc::String> mutabl
 
 mlc::Array<ast::Diagnostic> mutation_check_empty() noexcept;
 
+mlc::Array<ast::Diagnostic> ident_assignment_mutation_errors(mlc::String binding_name, mlc::Array<mlc::String> mutable_locals, ast::Span source_span) noexcept;
+
+mlc::Array<ast::Diagnostic> assignment_target_mutation_errors(std::shared_ptr<semantic_ir::SemanticExpression> left_expression, mlc::Array<mlc::String> mutable_locals) noexcept;
+
 check_mutations::MutationCheckResult mutation_check_ok(mlc::Array<mlc::String> mutable_locals) noexcept;
 
 check_mutations::MutationCheckResult merge_mutation_check_results(check_mutations::MutationCheckResult first, check_mutations::MutationCheckResult second) noexcept;
@@ -134,6 +138,10 @@ mlc::Array<ast::Diagnostic> empty_diagnostics = {};
 return empty_diagnostics;
 }
 
+mlc::Array<ast::Diagnostic> ident_assignment_mutation_errors(mlc::String binding_name, mlc::Array<mlc::String> mutable_locals, ast::Span source_span) noexcept{return !scope_has(mutable_locals, binding_name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("cannot assign to immutable binding: ") + binding_name, source_span, diagnostic_codes::diagnostic_code_e031())} : mutation_check_empty();}
+
+mlc::Array<ast::Diagnostic> assignment_target_mutation_errors(std::shared_ptr<semantic_ir::SemanticExpression> left_expression, mlc::Array<mlc::String> mutable_locals) noexcept{return [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*left_expression)._)) { auto _v_semanticexpressionident = std::get<semantic_ir::SemanticExpressionIdent>((*left_expression)._); auto [name, _w0, _w1] = _v_semanticexpressionident; return ident_assignment_mutation_errors(name, mutable_locals, semantic_ir::sexpr_span(left_expression)); } return mutation_check_empty(); }();}
+
 check_mutations::MutationCheckResult mutation_check_ok(mlc::Array<mlc::String> mutable_locals) noexcept{return check_mutations::MutationCheckResult{mutation_check_empty(), mutable_locals};}
 
 check_mutations::MutationCheckResult merge_mutation_check_results(check_mutations::MutationCheckResult first, check_mutations::MutationCheckResult second) noexcept{return check_mutations::MutationCheckResult{ast::diagnostics_append(first.diagnostics, second.diagnostics), second.mutable_locals};}
@@ -186,7 +194,7 @@ check_mutations::MutationCheckResult MutationsPass_visit_ident(check_mutations::
 check_mutations::MutationCheckResult MutationsPass_visit_bin(check_mutations::MutationsPass self, mlc::String operation, std::shared_ptr<semantic_ir::SemanticExpression> left_expression, std::shared_ptr<semantic_ir::SemanticExpression> right_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{
 check_mutations::MutationCheckResult right_check = dispatch_mutations_pass(self, right_expression);
 return operation == mlc::String("=") ? [&]() -> check_mutations::MutationCheckResult { 
-  mlc::Array<ast::Diagnostic> assignment_errors = [&]() -> mlc::Array<ast::Diagnostic> { if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*left_expression)._)) { auto _v_semanticexpressionident = std::get<semantic_ir::SemanticExpressionIdent>((*left_expression)._); auto [name, _w0, _w1] = _v_semanticexpressionident; return !scope_has(self.mutable_locals, name) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("cannot assign to immutable binding: ") + name, semantic_ir::sexpr_span(left_expression), diagnostic_codes::diagnostic_code_e031())} : mutation_check_empty(); } return mutation_check_empty(); }();
+  mlc::Array<ast::Diagnostic> assignment_errors = assignment_target_mutation_errors(left_expression, self.mutable_locals);
   return check_mutations::MutationCheckResult{ast::diagnostics_append(assignment_errors, right_check.diagnostics), self.mutable_locals};
  }() : merge_mutation_check_results(dispatch_mutations_pass(self, left_expression), right_check);
 }

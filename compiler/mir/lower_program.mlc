@@ -1,5 +1,6 @@
 // Build MirProgram from typed SemanticIR (TRACK_MIR STEP=4 dump hook).
 
+import { Result, Ok, Err } from '../frontend/ast'
 import {
   SemanticLoadItem, SemanticDeclaration, SemanticDeclarationFn,
   sdecl_inner
@@ -8,39 +9,62 @@ import { MirProgram, MirModule, MirFunction } from './mir_types'
 import { lower_semantic_function } from './lower_fn'
 import { run_mir_passes_on_function } from './mir_passes'
 
-fn mir_lower_append_function(functions: [MirFunction], declaration: Shared<SemanticDeclaration>) -> [MirFunction] =
-  match lower_semantic_function(declaration) {
-    Ok(function) => do
-      let mut next_functions = functions
-      next_functions.push(run_mir_passes_on_function(function))
-      next_functions
-    end,
-    Err(_) => functions
-  }
+type MirLowerAccum = MirLowerAccum { functions: [MirFunction], errors: [string] }
 
-fn mir_lower_append_declaration(functions: [MirFunction], declaration: Shared<SemanticDeclaration>) -> [MirFunction] =
-  match sdecl_inner(declaration) {
-    SemanticDeclarationFn(_, _, _, _, _, _, _, _) =>
-      mir_lower_append_function(functions, declaration),
-    _ => functions
-  }
-
-fn mir_lower_declarations(functions: [MirFunction], declarations: [Shared<SemanticDeclaration>]) -> [MirFunction] = do
+fn mir_lower_append_errors(accumulated: [string], errors: [string]) -> [string] = do
+  let mut next = accumulated
   let mut index = 0
-  let mut accumulated = functions
-  while index < declarations.length() do
-    accumulated = mir_lower_append_declaration(accumulated, declarations[index])
+  while index < errors.length() do
+    next.push(errors[index])
     index = index + 1
   end
-  accumulated
+  next
 end
 
-export fn build_mir_program_from_semantic_items(items: [SemanticLoadItem]) -> MirProgram = do
-  let mut functions: [MirFunction] = []
+fn mir_lower_append_function(accum: MirLowerAccum, declaration: Shared<SemanticDeclaration>) -> MirLowerAccum =
+  match lower_semantic_function(declaration) {
+    Ok(function) => do
+      let mut next_functions = accum.functions
+      next_functions.push(run_mir_passes_on_function(function))
+      MirLowerAccum { functions: next_functions, errors: accum.errors }
+    end,
+    Err(errors) =>
+      MirLowerAccum { functions: accum.functions, errors: mir_lower_append_errors(accum.errors, errors) }
+  }
+
+fn mir_lower_append_declaration(accum: MirLowerAccum, declaration: Shared<SemanticDeclaration>) -> MirLowerAccum =
+  match sdecl_inner(declaration) {
+    SemanticDeclarationFn(_, _, _, _, _, _, _, _) =>
+      mir_lower_append_function(accum, declaration),
+    _ => accum
+  }
+
+fn mir_lower_declarations(accum: MirLowerAccum, declarations: [Shared<SemanticDeclaration>]) -> MirLowerAccum = do
   let mut index = 0
-  while index < items.length() do
-    functions = mir_lower_declarations(functions, items[index].decls)
+  let mut next = accum
+  while index < declarations.length() do
+    next = mir_lower_append_declaration(next, declarations[index])
     index = index + 1
   end
-  MirProgram { modules: [MirModule { functions: functions }] }
+  next
+end
+
+fn mir_lower_items(items: [SemanticLoadItem]) -> MirLowerAccum = do
+  let mut index = 0
+  let mut accum = MirLowerAccum { functions: [], errors: [] }
+  while index < items.length() do
+    accum = mir_lower_declarations(accum, items[index].decls)
+    index = index + 1
+  end
+  accum
+end
+
+export fn build_mir_program_from_semantic_items(items: [SemanticLoadItem]) -> MirProgram =
+  MirProgram { modules: [MirModule { functions: mir_lower_items(items).functions }] }
+
+export fn build_mir_program_from_semantic_items_checked(items: [SemanticLoadItem]) -> Result<MirProgram, [string]> = do
+  const accum = mir_lower_items(items)
+  if accum.errors.length() > 0 then Err(accum.errors)
+  else Ok(MirProgram { modules: [MirModule { functions: accum.functions }] })
+  end
 end

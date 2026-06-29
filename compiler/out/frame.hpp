@@ -26,6 +26,16 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_locals_load(mlc::Array<v
 
 mlc::Array<value::VmValue> vm_locals_store(mlc::Array<value::VmValue> locals, mir_types::LocalId local_id, value::VmValue value) noexcept;
 
+frame::VmFrame vm_frame_at(mlc::Array<frame::VmFrame> frames, int frame_index) noexcept;
+
+mlc::Array<frame::VmFrame> vm_frame_update(mlc::Array<frame::VmFrame> frames, int frame_index, frame::VmFrame frame) noexcept;
+
+mlc::Array<frame::VmFrame> vm_frame_advance_statement(mlc::Array<frame::VmFrame> frames, int frame_index) noexcept;
+
+mlc::Array<frame::VmFrame> vm_frame_set_block(mlc::Array<frame::VmFrame> frames, int frame_index, mir_types::BlockId block_id) noexcept;
+
+mlc::Array<frame::VmFrame> vm_frame_set_locals(mlc::Array<frame::VmFrame> frames, int frame_index, mlc::Array<value::VmValue> locals) noexcept;
+
 } // namespace frame
 
 #endif // FRAME_HPP

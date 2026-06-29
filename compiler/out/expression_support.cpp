@@ -70,7 +70,7 @@ index = index + 1;
 return result;
 }
 
-bool is_constructor_call(std::shared_ptr<semantic_ir::SemanticExpression> function_expr) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*function_expr)._)) { auto _v_semanticexpressionident = std::get<semantic_ir::SemanticExpressionIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_semanticexpressionident; return name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z"); } return false; }();}
+bool is_constructor_call(std::shared_ptr<semantic_ir::SemanticExpression> function_expr) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*function_expr)._)) { auto _v_semanticexpressionident = std::get<semantic_ir::SemanticExpressionIdent>((*function_expr)._); auto [name, _w0, _w1] = _v_semanticexpressionident; return name.length() > 0 && name.char_at(0) >= mlc::String("A") && name.char_at(0) <= mlc::String("Z") && !name.contains(mlc::String("_")); } return false; }();}
 
 mlc::String resolve_object_code_in_self_context(mlc::String object_name, context::CodegenContext context) noexcept{
 mlc::Array<mlc::String> self_fields = context::lookup_fields_for_context(context, context.self_type);

@@ -81,12 +81,10 @@ end
 
 fn cpp_decl_skip_attributes(tokens: [CppToken], position: i32) -> i32 = do
   let mut scan_position = position
-  let mut continue_loop = true
-  while continue_loop do
-    const next_position = cpp_decl_skip_one_attribute(tokens, scan_position)
-    if next_position == scan_position then continue_loop = false
-    else scan_position = next_position
-    end
+  let mut next_position = cpp_decl_skip_one_attribute(tokens, scan_position)
+  while next_position != scan_position do
+    scan_position = next_position
+    next_position = cpp_decl_skip_one_attribute(tokens, scan_position)
   end
   scan_position
 end
@@ -362,6 +360,15 @@ fn parse_cpp_enum_decl(tokens: [CppToken], position: i32) -> CppDeclarationParse
   end
 end
 
+fn cpp_decl_next_scan_after_parse(
+  tokens: [CppToken],
+  scan_position: i32,
+  parsed: CppDeclarationParseResult
+) -> i32 =
+  if parsed.position == scan_position then cpp_decl_skip_token(tokens, scan_position)
+  else parsed.position
+  end
+
 fn parse_cpp_declarations_until_right_brace(tokens: [CppToken], position: i32) -> CppDeclarationsBlockParse = do
   let mut declarations: [Shared<CppDeclaration>] = []
   let mut errors: [string] = []
@@ -372,9 +379,7 @@ fn parse_cpp_declarations_until_right_brace(tokens: [CppToken], position: i32) -
     const parsed = parse_cpp_declaration(tokens, scan_position)
     if parsed.error_message != "" then errors.push(parsed.error_message) end
     if !cpp_decl_is_skip(parsed.declaration) then declarations.push(parsed.declaration) end
-    if parsed.position == scan_position then scan_position = cpp_decl_skip_token(tokens, scan_position)
-    else scan_position = parsed.position
-    end
+    scan_position = cpp_decl_next_scan_after_parse(tokens, scan_position, parsed)
   end
   CppDeclarationsBlockParse { declarations: declarations, position: scan_position, errors: errors }
 end

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tier A dev gate - default Driver verify between sub-steps.— default Driver verify between sub-steps.
+# Tier A dev gate - default Driver verify between sub-steps.ï¿½ default Driver verify between sub-steps.
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

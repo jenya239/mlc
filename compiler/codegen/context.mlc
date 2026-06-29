@@ -83,26 +83,31 @@ export type PrecomputedCtx = PrecomputedCtx {
 }
 
 export fn context_resolve(context: CodegenContext, name: string) -> string =
-  if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
+  if context.method_owners.has(name) then cpp_safe(name)
+  else if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
   else if context.namespace_prefix.length() > 0 then context.namespace_prefix + cpp_safe(name)
   else cpp_safe(name)
   end
 
 fn type_method_namespace_prefix(mangled_name: string, context: CodegenContext) -> string = do
-  let mut underscore = -1
-  let mut index = 0
-  while index < mangled_name.length() && underscore < 0 do
-    if mangled_name.char_at(index) == "_" then underscore = index end
-    index = index + 1
-  end
-  if underscore <= 0 then ''
-  else if context.qualified.has(mangled_name.substring(0, underscore)) then context.qualified.get(mangled_name.substring(0, underscore))
-  else ''
+  if context.method_owners.has(mangled_name) then ''
+  else
+    let mut underscore = -1
+    let mut index = 0
+    while index < mangled_name.length() && underscore < 0 do
+      if mangled_name.char_at(index) == "_" then underscore = index end
+      index = index + 1
+    end
+    if underscore <= 0 then ''
+    else if context.qualified.has(mangled_name.substring(0, underscore)) then context.qualified.get(mangled_name.substring(0, underscore))
+    else ''
+    end
   end
 end
 
 export fn qualify_function_callee(name: string, context: CodegenContext) -> string =
-  if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
+  if context.method_owners.has(name) then cpp_safe(name)
+  else if context.qualified.has(name) then context.qualified.get(name) + cpp_safe(name)
   else type_method_namespace_prefix(name, context) + cpp_safe(name)
   end
 
@@ -135,7 +140,8 @@ fn collect_pattern_bind_names_for_context(pattern: Shared<Pattern>, mut accumula
       while index < sub_patterns.length() do
         accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator); index = index + 1
       end
-      if rest != '' && rest != "_" then do accumulator.push(rest); accumulator end else accumulator end
+      if rest != '' && rest != "_" then accumulator.push(rest) end
+      accumulator
     end,
     _ => accumulator
   }
@@ -217,27 +223,44 @@ export fn context_add_match_deref(context: CodegenContext, name: string) -> Code
 export fn update_context_from_statement(statement: Shared<SemanticStatement>, context: CodegenContext) -> CodegenContext =
   context.update_from_statement(statement)
 
+fn push_pattern_bind_names_to_value_params(pattern: Shared<Pattern>, context: ref mut CodegenContext) -> unit = do
+  const names = collect_pattern_bind_names_for_context(pattern, [])
+  let mut name_index = 0
+  while name_index < names.length() do
+    context.value_params.push(names[name_index])
+    name_index = name_index + 1
+  end
+end
+
+fn mutate_context_for_let_const(binding_name: string, context: ref mut CodegenContext) -> unit = do
+  context.value_params.push(binding_name)
+end
+
+fn mutate_context_for_let(binding_name: string, value_type: Shared<Type>, context: ref mut CodegenContext) -> unit = do
+  match value_type {
+    TShared(_) => context.shared_params.push(binding_name),
+    TArray(inner) => match inner {
+      TShared(_) => context.shared_array_params.push(binding_name),
+      _ => context.value_params.push(binding_name)
+    },
+    _ => context.value_params.push(binding_name)
+  }
+end
+
+fn mutate_context_noop() -> unit = do end
+
 export fn mutate_context_from_statement(statement: Shared<SemanticStatement>, context: ref mut CodegenContext) -> unit = do
   match statement {
-    SemanticStatementLetConst(binding_name, _, _, _) => context.value_params.push(binding_name),
+    SemanticStatementLetConst(binding_name, _, _, _) =>
+      mutate_context_for_let_const(binding_name, context),
     SemanticStatementLet(binding_name, _, _, value_type, _) =>
-      match value_type {
-        TShared(_) => context.shared_params.push(binding_name),
-        TArray(inner) => match inner {
-          TShared(_) => context.shared_array_params.push(binding_name),
-          _ => context.value_params.push(binding_name)
-        },
-        _ => context.value_params.push(binding_name)
-      },
-    SemanticStatementLetPattern(pattern, _, _, _, _, _, _) => do
-      const names = collect_pattern_bind_names_for_context(pattern, [])
-      let mut name_index = 0
-      while name_index < names.length() do
-        context.value_params.push(names[name_index])
-        name_index = name_index + 1
-      end
-    end,
-    _ => do end
+      mutate_context_for_let(binding_name, value_type, context),
+    SemanticStatementLetPattern(pattern, _, _, _, _, _, _) =>
+      push_pattern_bind_names_to_value_params(pattern, context),
+    SemanticStatementExpr(_, _) => mutate_context_noop(),
+    SemanticStatementReturn(_, _) => mutate_context_noop(),
+    SemanticStatementBreak(_) => mutate_context_noop(),
+    SemanticStatementContinue(_) => mutate_context_noop()
   }
 end
 

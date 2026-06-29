@@ -12,6 +12,7 @@
 #include "expression_support.hpp"
 #include "type_gen.hpp"
 #include "literals.hpp"
+#include "semantic_type_structure.hpp"
 #include "expr.hpp"
 
 namespace stmt_eval {

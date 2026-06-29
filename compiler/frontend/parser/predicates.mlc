@@ -227,7 +227,8 @@ export extend Parser {
   fn at_eof(self) -> bool =
     if self.position >= self.tokens.length() then true
     else
-      const current_token: Token = self.tokens[self.position]; current_token.kind.is_eof()
+      const current_token: Token = self.tokens[self.position]
+      TokenKind_is_eof(current_token.kind)
     end
   fn skip_semi(self) -> Parser =
     if self.position >= self.tokens.length() then self

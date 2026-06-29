@@ -1,6 +1,6 @@
 // Module item loading, field order registry, method owner index, and variant builders.
 
-import { Program, Decl, TypeVariant, FieldDef, decl_inner } from '../../frontend/ast'
+import { Program, Decl, DeclFn, DeclExtend, TypeVariant, FieldDef, decl_inner } from '../../frontend/ast'
 import { LoadItem, NamespaceImportAlias } from '../../ir/load_item'
 import { path_to_module_base } from '../cpp_naming'
 
@@ -53,6 +53,68 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
   }
   names
 end
+
+fn function_name_from_method_declaration(method: Shared<Decl>) -> string =
+  match method { DeclFn(function_name, _, _, _, _, _, _) => function_name, _ => '' }
+
+fn extend_type_name_from_declaration(declaration: Shared<Decl>) -> string =
+  match decl_inner(declaration) { DeclExtend(type_name, _, _, _) => type_name, _ => '' }
+
+fn methods_from_extend_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] =
+  match decl_inner(declaration) { DeclExtend(_, _, methods, _) => methods, _ => [] }
+
+fn extend_method_mangled_name(type_name: string, method_name: string) -> string = do
+  const prefix = type_name + "_"
+  if method_name.length() >= prefix.length() && method_name.substring(0, prefix.length()) == prefix then method_name
+  else type_name + "_" + method_name
+  end
+end
+
+export fn ast_decls_for_path(module_path: string, all_items: [LoadItem]) -> [Shared<Decl>] = do
+  let mut item_index = 0
+  while item_index < all_items.length() do
+    if all_items[item_index].path == module_path then return all_items[item_index].decls end
+    item_index = item_index + 1
+  end
+  do let empty: [Shared<Decl>] = []; empty end
+end
+
+export fn extend_qualified_map(
+  base: Map<string, string>,
+  all_items: [LoadItem],
+  exclude_module_path: string
+) -> Map<string, string> = do
+  let qualified = base
+  let mut item_index = 0
+  while item_index < all_items.length() do
+    const current_item = all_items[item_index]
+    if current_item.path != exclude_module_path then
+      const module_prefix = path_to_module_base(current_item.path) + '::'
+      let mut declaration_index = 0
+      while declaration_index < current_item.decls.length() do
+        const type_name = extend_type_name_from_declaration(current_item.decls[declaration_index])
+        if type_name != '' then
+          const methods = methods_from_extend_declaration(current_item.decls[declaration_index])
+          let mut method_index = 0
+          while method_index < methods.length() do
+            const method_name = function_name_from_method_declaration(methods[method_index])
+            if method_name != '' then
+              const mangled_name = extend_method_mangled_name(type_name, method_name)
+              if !qualified.has(mangled_name) then qualified.set(mangled_name, module_prefix) end
+            end
+            method_index = method_index + 1
+          end
+        end
+        declaration_index = declaration_index + 1
+      end
+    end
+    item_index = item_index + 1
+  end
+  qualified
+end
+
+export fn build_extend_method_qualified_map(all_items: [LoadItem]) -> Map<string, string> =
+  extend_qualified_map(Map.new(), all_items, '')
 
 fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, all_items: [LoadItem]) -> Map<string, string> = do
   const prefix = path_to_module_base(imp_path) + '::'

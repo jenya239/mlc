@@ -1,7 +1,7 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
 // Separate pass from names.mlc; builds its own mutable-names scope.
 
-import { Expr, Stmt, Param, Pattern, Diagnostic, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
+import { Expr, Stmt, Param, Pattern, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionIdent, SemanticExpressionBin, sexpr_span } from '../../ir/semantic_ir'
 import { Type } from '../registry'
 import { ExprVisitor } from '../../expr_visitor'
@@ -33,6 +33,28 @@ fn mutations_pass_new(mutable_locals: [string]) -> MutationsPass =
   MutationsPass { mutable_locals: mutable_locals, seed: 0 }
 
 fn mutation_check_empty() -> [Diagnostic] = do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end
+
+fn ident_assignment_mutation_errors(
+  binding_name: string,
+  mutable_locals: [string],
+  source_span: Span
+) -> [Diagnostic] =
+  if !scope_has(mutable_locals, binding_name) then
+    [diagnostic_error_with_code(
+      'cannot assign to immutable binding: ' + binding_name,
+      source_span,
+      diagnostic_code_e031())]
+  else mutation_check_empty()
+  end
+
+fn assignment_target_mutation_errors(
+  left_expression: Shared<SemanticExpression>,
+  mutable_locals: [string]
+) -> [Diagnostic] = match left_expression {
+  SemanticExpressionIdent(name, _, _) =>
+    ident_assignment_mutation_errors(name, mutable_locals, sexpr_span(left_expression)),
+  _ => mutation_check_empty()
+}
 
 fn mutation_check_ok(mutable_locals: [string]) -> MutationCheckResult =
   MutationCheckResult { diagnostics: mutation_check_empty(), mutable_locals: mutable_locals }
@@ -201,18 +223,7 @@ extend MutationsPass : ExprVisitor<MutationCheckResult> {
   ) -> MutationCheckResult = do
     const right_check = dispatch_mutations_pass(self, right_expression)
     if operation == "=" then do
-      const assignment_errors = match left_expression {
-        SemanticExpressionIdent(name, _, _) =>
-          if !scope_has(self.mutable_locals, name) then
-            [diagnostic_error_with_code(
-              'cannot assign to immutable binding: ' + name,
-              sexpr_span(left_expression),
-              diagnostic_code_e031())]
-          else
-            mutation_check_empty()
-          end,
-        _ => mutation_check_empty()
-      }
+      const assignment_errors = assignment_target_mutation_errors(left_expression, self.mutable_locals)
       MutationCheckResult {
         diagnostics: diagnostics_append(assignment_errors, right_check.diagnostics),
         mutable_locals: self.mutable_locals

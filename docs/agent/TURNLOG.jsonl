@@ -301,3 +301,435 @@
 {"ts":"2026-06-26T11:54:34.338Z","event":"sent","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-28106c3f-c317-4b38-9a49-275fa0fa0226","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":79}
 {"ts":"2026-06-26T12:10:11.477Z","event":"turn_aborted","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:5:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":29}
 {"ts":"2026-06-26T12:12:33.519Z","event":"sent","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-ebf2fe4b-b224-4987-89c2-cf53b703dcb3","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":29}
+{"ts":"2026-06-26T12:27:52.140Z","event":"turn_aborted","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:5:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":35}
+{"ts":"2026-06-26T12:28:49.368Z","event":"sent","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-1837af6e-36a8-4b7f-b9b0-62c0933beee4","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":35}
+{"ts":"2026-06-26T12:44:12.547Z","event":"turn_aborted","role":"Driver","step":"5","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:5:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":53}
+{"ts":"2026-06-26T12:45:06.607Z","event":"sent","role":"Planner","step":"plan-refresh","track":"TRACK_PLAN.md","target":"mlc","token":"cr-agent-0bbc9432-ae7f-4e35-9989-43432608a891","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":53}
+{"ts":"2026-06-26T13:00:11.950Z","event":"turn_done","role":"Planner","step":"plan-refresh","track":"TRACK_PLAN","target":"mlc","prompt_key":"Planner:plan-refresh:PLAN","db_status":"completed","model":"Auto","usage_pct":68}
+{"ts":"2026-06-26T13:01:05.821Z","event":"sent","role":"Planner","step":"plan-refresh","track":"TRACK_PLAN.md","target":"mlc","token":"cr-agent-f316ef3d-8eb6-4586-8a3b-55ce4a0f5c19","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":68}
+{"ts":"2026-06-26T13:16:10.452Z","event":"turn_done","role":"Planner","step":"plan-refresh","track":"TRACK_PLAN","target":"mlc","prompt_key":"Planner:plan-refresh:PLAN","db_status":"completed","model":"Auto","usage_pct":74}
+{"ts":"2026-06-26T13:17:04.540Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-2e4691df-68ab-47e4-a5f9-7e25c22b10fb","why":"step Planner:plan-refresh:PLAN already ran; enqueue next STEP","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":74}
+{"ts":"2026-06-26T13:32:09.346Z","event":"turn_aborted","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"aborted","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:32:09.368Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:37:11.210Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:42:13.207Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:47:21.681Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:52:30.789Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T13:57:39.989Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:02:47.550Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:07:50.672Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:12:56.922Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:18:07.162Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:23:09.119Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:28:10.876Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:33:12.650Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:38:14.375Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:43:16.125Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:48:17.800Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:53:19.583Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T14:58:21.384Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:03:23.139Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:08:24.902Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:13:26.658Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:18:28.357Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:23:30.146Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:28:31.926Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:33:33.682Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:38:35.805Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:43:37.535Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:48:39.368Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:53:41.123Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T15:58:42.868Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:03:44.649Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:08:46.421Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:13:48.249Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:18:50.090Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:23:51.840Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:28:53.555Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:33:55.281Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:38:57.033Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:43:58.885Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:49:00.649Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:54:02.451Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T16:59:04.213Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:04:05.983Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:09:07.720Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:14:09.542Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:19:11.318Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:24:13.061Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:29:14.824Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:34:16.565Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:39:18.365Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:44:20.178Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:49:21.929Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:54:23.714Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T17:59:25.432Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:04:27.162Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:09:28.964Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:14:30.855Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:19:32.597Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:24:34.535Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:29:36.319Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:34:38.268Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:39:40.093Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:44:41.840Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:49:43.590Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:54:45.360Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T18:59:47.150Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:04:48.972Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:09:50.782Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:14:52.561Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:19:54.320Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:24:56.133Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:29:57.905Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:34:59.644Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:40:01.391Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:45:03.180Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:50:04.944Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T19:55:06.834Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:00:08.603Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:05:10.400Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:10:12.149Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:15:13.878Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:20:15.640Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:25:17.427Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:30:19.204Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:35:21.887Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:40:23.577Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:45:25.369Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:50:27.222Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T20:55:28.927Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:00:30.628Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:05:32.349Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:10:34.106Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:15:36.019Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:20:37.841Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:25:39.577Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:30:41.337Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:35:43.074Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:40:44.870Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:45:46.643Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:50:48.446Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T21:55:50.204Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:00:51.924Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:05:53.676Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:10:55.469Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:15:57.277Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:20:59.178Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:26:00.951Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:31:02.750Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:36:05.117Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:41:06.985Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:46:08.731Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:51:10.516Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T22:56:12.256Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:01:13.978Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:06:15.801Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:11:17.546Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:16:19.283Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:21:21.428Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:26:23.167Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:31:25.058Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:36:26.815Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:41:28.500Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:46:30.308Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:51:32.057Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-26T23:56:33.975Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:01:35.745Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:06:37.784Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:11:39.603Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:16:41.468Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:21:43.250Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:26:45.012Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:31:46.773Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:36:48.609Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:41:50.411Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:46:52.272Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:51:54.017Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T00:56:55.744Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:01:57.568Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:06:59.371Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:12:01.346Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:17:03.291Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:22:05.212Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:27:07.004Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:32:08.997Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:37:10.738Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:42:12.489Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:47:14.284Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:52:16.002Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T01:57:17.756Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:02:19.532Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:07:21.309Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:12:23.193Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:17:24.942Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:22:26.721Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:27:28.502Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:32:30.345Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:37:32.151Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:42:33.933Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:47:35.688Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:52:37.421Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T02:57:39.181Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:02:40.944Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:07:42.702Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:12:44.494Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:17:46.318Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:22:48.105Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:27:49.872Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:32:51.741Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:37:53.485Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:42:55.598Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:47:57.431Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:52:59.200Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T03:58:01.057Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:03:02.999Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:08:05.033Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:13:06.826Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:18:08.629Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:23:10.471Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:28:12.238Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:33:13.972Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:38:15.727Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:43:17.531Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:48:19.484Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:53:21.184Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T04:58:22.923Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:03:24.662Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:08:26.424Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:13:28.242Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:18:30.078Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:23:31.848Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:28:33.670Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:33:35.381Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:38:37.198Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:43:38.996Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:48:41.344Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":28}
+{"ts":"2026-06-27T05:53:47.481Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T05:58:52.401Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T06:03:54.391Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T06:09:08.750Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T06:13:51.825Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-a1fc6fd4-5c16-4b09-8466-a97f24b4ffe7","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T06:16:20.036Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","model":"Auto","usage_pct":78}
+{"ts":"2026-06-27T06:17:16.570Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-6eb81406-93ba-4385-9071-4d10941c404a","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":78}
+{"ts":"2026-06-27T06:34:23.897Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":53}
+{"ts":"2026-06-27T06:35:13.597Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-e4f8f58c-52d3-4eb7-8583-f97c90329bed","why":"stuck Driver:6:BOOTSTRAP_LINK after assistant","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":53}
+{"ts":"2026-06-27T06:50:18.797Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T06:50:18.817Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T06:55:20.599Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:00:22.433Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:05:24.156Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:10:25.906Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:15:27.867Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:20:29.655Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:25:31.440Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:30:33.205Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:35:34.956Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:40:36.719Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:45:38.503Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:50:40.522Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T07:55:42.340Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:00:44.071Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:05:45.835Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:10:47.603Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:15:49.420Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:20:51.195Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:25:52.977Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:30:54.810Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:35:56.592Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:40:58.376Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:46:08.944Z","event":"guard_skip","target":"mlc","why":"step Planner:plan-refresh:PLAN already sent 2x in chat","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T08:49:55.560Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-ece93864-1b16-4da2-9354-2e6a216b6f81","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T09:06:20.455Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":91}
+{"ts":"2026-06-27T09:07:32.172Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-951bc5a2-fd64-4019-b969-e3ec8224a6a8","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":91}
+{"ts":"2026-06-27T09:23:00.913Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":29}
+{"ts":"2026-06-27T09:24:35.122Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-7421daa2-307a-41f4-8646-82037cbeecd3","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":29}
+{"ts":"2026-06-27T09:39:41.738Z","event":"turn_done","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":40}
+{"ts":"2026-06-27T09:40:49.264Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-80c0e97e-c700-459c-aa8a-d478ee261724","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":40}
+{"ts":"2026-06-27T09:55:56.719Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T09:57:05.817Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-268472d1-491d-4ccd-9f5e-18607a1407f8","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":74}
+{"ts":"2026-06-27T10:12:13.282Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":87}
+{"ts":"2026-06-27T10:13:20.800Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-bff33c1b-f49a-463e-bb6a-f4e068e46bfb","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":87}
+{"ts":"2026-06-27T10:28:30.209Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":45}
+{"ts":"2026-06-27T10:29:36.410Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-1ce87d06-3af6-47f8-9efd-65d081a3edf1","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":45}
+{"ts":"2026-06-27T10:44:44.874Z","event":"turn_aborted","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"aborted","model":"Auto","usage_pct":61}
+{"ts":"2026-06-27T10:45:53.126Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-0f01d811-de82-4b45-88fe-dd1731c6b108","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":61}
+{"ts":"2026-06-27T11:00:59.619Z","event":"turn_done","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T11:02:07.870Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-c1e48c05-0ab3-47c4-805b-38363c2a541f","why":"stuck Driver:6:BOOTSTRAP_LINK after assistant","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":66}
+{"ts":"2026-06-27T11:17:14.433Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","model":"Auto","usage_pct":69}
+{"ts":"2026-06-27T11:18:22.506Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-b38e302f-1e7a-4049-9997-4b8e007bc470","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":69}
+{"ts":"2026-06-27T11:33:29.197Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:33:29.239Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:38:31.762Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:43:34.252Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:48:36.728Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:53:39.305Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T11:58:41.900Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:03:44.556Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:08:47.025Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:13:49.555Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:18:52.005Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:23:54.636Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:28:57.179Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:33:59.633Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:39:02.125Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:44:05.163Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:49:26.050Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 4x in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:54:11.855Z","event":"guard_skip","target":"mlc","why":"turn pending in chat","model":"Auto","usage_pct":75}
+{"ts":"2026-06-27T12:56:14.237Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-efd02050-28af-4a9a-81c1-8fb0f2b6c534","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":76}
+{"ts":"2026-06-27T13:14:28.362Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","model":"Auto","usage_pct":79}
+{"ts":"2026-06-27T13:15:03.507Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-a58d9eb5-31c1-4ca2-9bde-0095634cfe1b","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":79}
+{"ts":"2026-06-27T13:30:07.963Z","event":"turn_done","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":87}
+{"ts":"2026-06-27T13:30:18.508Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-724247b0-b354-4238-99e9-95ad695308ec","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":87}
+{"ts":"2026-06-27T13:45:28.598Z","event":"turn_done","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":29}
+{"ts":"2026-06-27T13:45:38.964Z","event":"sent","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-28a72b84-7036-4916-bcc8-4efbbd27c45f","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":29}
+{"ts":"2026-06-27T14:00:43.930Z","event":"turn_done","role":"Driver","step":"6","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:6:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":43}
+{"ts":"2026-06-27T14:00:54.561Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-4ab72a27-210c-4679-aa64-c33828621433","why":"stuck Driver:6:BOOTSTRAP_LINK after assistant","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":43}
+{"ts":"2026-06-27T14:16:00.776Z","event":"turn_aborted","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"aborted","model":"Auto","usage_pct":45}
+{"ts":"2026-06-27T14:16:13.796Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-4ad73458-ea96-41e9-a052-e80ce2074d81","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":45}
+{"ts":"2026-06-27T14:31:19.865Z","event":"turn_aborted","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"aborted","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:31:19.923Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:36:22.491Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:41:25.060Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:46:27.460Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:51:29.893Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T14:56:32.452Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:01:34.990Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:06:37.398Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:11:39.844Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:16:42.406Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:21:44.966Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:26:47.365Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:31:49.819Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:36:52.293Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:41:54.870Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:46:57.339Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:51:59.804Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T15:57:02.454Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:02:05.503Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:07:07.929Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:12:10.394Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:17:13.003Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:22:15.521Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:27:17.909Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:32:20.275Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:37:22.847Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:42:25.402Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:47:27.812Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:52:30.327Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T16:57:32.888Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:02:35.499Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:07:37.898Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:12:40.312Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:17:42.855Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:22:45.474Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:27:47.859Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:32:50.348Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:37:52.858Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:42:55.427Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:47:58.078Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:53:00.509Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T17:58:03.071Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:03:05.696Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:08:08.481Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:13:10.917Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:18:13.372Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:23:15.838Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:28:18.356Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:33:20.781Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:38:23.180Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:43:25.734Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:48:28.427Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:53:30.857Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T18:58:33.231Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:03:35.748Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:08:38.277Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:13:40.680Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:18:43.176Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:23:45.600Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:28:48.239Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:33:50.927Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:38:53.356Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:43:55.778Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:48:58.379Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:54:01.015Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T19:59:03.424Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:04:05.855Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:09:08.377Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:14:10.888Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:19:13.284Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:24:15.749Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:29:18.235Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:34:20.797Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:39:23.211Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:44:25.712Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:49:28.259Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:54:30.895Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T20:59:33.311Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T21:04:35.761Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T21:09:38.293Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T21:14:40.890Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T21:19:43.929Z","event":"guard_skip","target":"mlc","why":"step Driver:6:BOOTSTRAP_LINK already sent 3x in chat","model":"Auto","usage_pct":51}
+{"ts":"2026-06-27T21:23:41.246Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-858df8e8-d225-4437-a701-3545d05f6421","why":"guard nudge","page_title":"test_cpp_lexer.mlc - mlc - Cursor","model":"Auto","usage_pct":51}
+{"ts":"2026-06-28T03:50:00.894Z","event":"turn_done","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"completed","model":"Auto","usage_pct":75}
+{"ts":"2026-06-28T03:50:23.179Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-ba4d0594-e4e7-42f4-92de-e129af851726","why":"guard nudge","page_title":"Customize - mlc - Cursor","model":"Auto","usage_pct":75}
+{"ts":"2026-06-28T03:55:26.430Z","event":"turn_done","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T03:55:36.172Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-bb788174-2d61-4673-99aa-628eaa9c134b","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:05:56.423Z","event":"turn_aborted","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T04:06:25.322Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-1bb09b34-0512-4a86-964d-f5f76aaef843","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:16:41.338Z","event":"turn_aborted","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T04:16:52.791Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-d7075286-1590-4565-9962-678922d24245","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:27:03.049Z","event":"turn_aborted","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T04:27:14.635Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-269cbb49-c8c8-4c66-b4a0-44896777fc41","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:42:27.564Z","event":"turn_aborted","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T04:42:36.878Z","event":"sent","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-0f4aebf3-5671-4dd5-9e0a-57ac2330b516","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:47:39.932Z","event":"turn_done","role":"Driver","step":"7","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:7:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T04:47:49.198Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-bd14834f-c57f-44e9-a915-42d59530bc27","why":"stuck Driver:7:BOOTSTRAP_LINK after assistant","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T04:58:00.601Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T04:58:09.992Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-bd25be7c-93fc-44fd-a131-c886e7d1427e","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:03:13.080Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T05:03:22.269Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-e63548ff-ac66-4bc5-880f-4f4427bf0b91","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:18:34.683Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T05:18:44.053Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-86c1f2d0-5db7-43a7-9901-7e5484d95538","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:23:47.134Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T05:23:56.450Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-a0c7cfa8-cfc2-40b5-aaa6-88d5fdaac9f0","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:28:59.611Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T05:29:10.112Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-03dbef18-49c9-4b84-a573-4fcef2259ea5","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:39:18.847Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T05:39:28.105Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-a524b25e-970c-4861-b14d-38210c88d664","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T05:49:35.504Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T05:49:47.372Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-90b3ba0e-7d85-4357-a10d-ac18e71e3804","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:04:58.937Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T06:05:08.497Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-4a4882e8-c5e7-463c-b8e5-1086e5ded816","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:15:15.107Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:15:24.723Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-f02ed019-e49b-428d-9a77-8525f0292f4a","why":"stuck Driver:8:BOOTSTRAP_LINK after assistant","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:20:27.784Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:20:37.228Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-6b40249a-1e66-472f-8d51-524edbaceddc","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:25:40.337Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:25:49.815Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-9db62616-303c-45ba-b6ce-f32a67f24116","why":"step Driver:8:BOOTSTRAP_LINK already sent 3x in chat","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:30:52.982Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:31:02.460Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-7aeff9a8-3612-4d47-9829-ab9c170add1c","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:36:05.537Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:36:14.845Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-ba61b005-f6b7-463a-8b1b-87ae850596c9","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:41:17.919Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:41:27.424Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-7a5a3f80-b40e-4456-9e6a-fc6df21020c4","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:46:30.560Z","event":"turn_done","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T06:46:40.120Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-c95248ea-7dfc-4b79-9e98-0213d2351f45","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T06:56:50.393Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T06:57:00.884Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-11a81985-94f9-4a81-bdf5-979b1213ba1d","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T07:12:16.900Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T07:12:41.364Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-b59492ef-76a6-4527-a7f8-09643415ad56","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T07:22:48.945Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T07:33:19.878Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-ad5a9a99-2e93-414d-ab3b-dea1baa5e041","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T07:43:33.185Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T07:43:51.732Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-f7d1e843-1411-4d9a-b174-c9807949a031","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T07:54:00.309Z","event":"turn_aborted","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK","target":"mlc","prompt_key":"Driver:8:BOOTSTRAP_LINK","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T07:54:11.984Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-fc038148-1f3d-428b-a023-823538f7d809","why":"stuck Driver:8:BOOTSTRAP_LINK after assistant","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T08:09:30.426Z","event":"turn_aborted","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T08:10:02.151Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-5d44dde0-2a17-4ea1-896b-fd9a8d7b9802","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T08:25:25.314Z","event":"turn_aborted","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"aborted","usage_pct":null}
+{"ts":"2026-06-28T08:25:36.092Z","event":"recovery","role":"Driver","step":"recovery","target":"mlc","token":"cr-agent-1f12e2c8-b95b-45b7-bf9e-e8fb31a2c4c6","why":"step Driver:8:BOOTSTRAP_LINK already sent 4x in chat","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T08:30:39.485Z","event":"turn_done","role":"Driver","step":"recovery","target":"mlc","prompt_key":"Driver:recovery","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T08:30:50.847Z","event":"sent","role":"Planner","step":"plan-refresh","target":"mlc","token":"cr-agent-dccddb90-67da-4eb8-b6b4-63c375ccba56","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
+{"ts":"2026-06-28T08:35:54.235Z","event":"turn_done","role":"Planner","step":"plan-refresh","target":"mlc","prompt_key":"Planner:plan-refresh","db_status":"completed","usage_pct":null}
+{"ts":"2026-06-28T08:36:05.382Z","event":"sent","role":"Driver","step":"8","track":"TRACK_BOOTSTRAP_LINK.md","target":"mlc","token":"cr-agent-d932715f-dda3-4d59-b7b2-df82238a21f5","why":"guard nudge","page_title":"Cursor Settings - mlc - Cursor","usage_pct":null}
