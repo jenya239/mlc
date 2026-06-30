@@ -1,7 +1,7 @@
 // Parser state, result types, and token kind predicates.
 
 import { TokenKind, Token, LexOut } from '../ast_tokens'
-import { TypeExpr, Pattern, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart } from '../ast'
+import { TypeExpr, Pattern, MatchArm, FieldVal, Expr, Stmt, Param, FieldDef, TypeVariant, Decl, Program, Span, WhereClauseBound, RecordLitPart, span_make } from '../ast'
 
 // --- Parser state ---------------------------------------------------------
 
@@ -237,10 +237,10 @@ export extend Parser {
       match current_token.kind { Semicolon => self.advance(), _ => self }
     end
   fn span_at_cursor(self) -> Span =
-    if self.position >= self.tokens.length() then Span { file: self.source_path, line: 0, column: 0 }
+    if self.position >= self.tokens.length() then span_make(self.source_path, 0, 0)
     else do
       const current_token: Token = self.tokens[self.position]
-      Span { file: self.source_path, line: current_token.line, column: current_token.column }
+      span_make(self.source_path, current_token.line, current_token.column)
     end
   fn prev_line(self) -> i32 = do
     if self.position > 0 then

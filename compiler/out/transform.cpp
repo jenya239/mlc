@@ -103,6 +103,10 @@ std::shared_ptr<semantic_ir::SemanticExpression> coerce_block_semantic_expressio
 
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_if_semantic_expression_to_type(std::shared_ptr<semantic_ir::SemanticExpression> condition, std::shared_ptr<semantic_ir::SemanticExpression> then_branch, std::shared_ptr<semantic_ir::SemanticExpression> else_branch, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
 
+std::shared_ptr<semantic_ir::SemanticMatchArm> coerce_match_arm_to_type(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, std::shared_ptr<registry::Type> target_type) noexcept;
+
+mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> coerce_match_arms_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms, std::shared_ptr<registry::Type> target_type) noexcept;
+
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept;
 
 std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept;
@@ -695,6 +699,10 @@ std::shared_ptr<semantic_ir::SemanticExpression> coerce_if_semantic_expression_t
 return semantic_type_is_tarray(target_type) ? std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIf(condition, coerce_expr_to_type(then_branch, target_type), coerce_expr_to_type(else_branch, target_type), target_type, source_span)) : expression;
 }
 
+std::shared_ptr<semantic_ir::SemanticMatchArm> coerce_match_arm_to_type(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, std::shared_ptr<registry::Type> target_type) noexcept{return std::make_shared<semantic_ir::SemanticMatchArm>(semantic_ir::SemanticMatchArm{arm->pattern, arm->has_guard, arm->when_condition, coerce_expr_to_type(arm->body, target_type)});}
+
+mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> coerce_match_arms_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms, std::shared_ptr<registry::Type> target_type) noexcept{return arms.map([target_type](std::shared_ptr<semantic_ir::SemanticMatchArm> arm) mutable { return coerce_match_arm_to_type(arm, target_type); });}
+
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept{return std::visit(overloaded{
   [&](const SemanticExpressionArray& semanticexpressionarray) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [elements, _w0, source_span] = semanticexpressionarray; return coerce_array_semantic_expression_to_type(elements, source_span, target_type, expression); },
   [&](const SemanticExpressionRecord& semanticexpressionrecord) -> std::shared_ptr<semantic_ir::SemanticExpression> { auto [type_name, fields, expr_type, source_span] = semanticexpressionrecord; return coerce_record_semantic_expression_to_type(type_name, fields, expr_type, source_span, target_type, expression); },
@@ -983,7 +991,8 @@ std::shared_ptr<semantic_ir::SemanticExpression> typed_subject = dispatch_transf
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution = substitution::substitution_from_generic(semantic_ir::sexpr_type(typed_subject), self.transform_context.registry);
 mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> typed_arms = transform_match_arms(match_arms, self.transform_context, substitution, semantic_ir::sexpr_type(typed_subject), stmts_fn);
 std::shared_ptr<registry::Type> result_type = typed_arms.size() > 0 ? semantic_ir::sexpr_type(typed_arms[0]->body) : std::make_shared<registry::Type>((registry::TUnknown{}));
-return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMatch(typed_subject, typed_arms, result_type, source_span));
+mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> coerced_arms = coerce_match_arms_to_type(typed_arms, result_type);
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMatch(typed_subject, coerced_arms, result_type, source_span));
 }
 
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_record(transform::TransformPass self, mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, ast::Span source_span, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept{

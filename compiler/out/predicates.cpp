@@ -413,9 +413,9 @@ predicates::Parser Parser_skip_semi(predicates::Parser self) noexcept{return sel
   return [&]() -> predicates::Parser { if (std::holds_alternative<ast_tokens::Semicolon>(current_token.kind)) {  return Parser_advance(self); } return self; }();
  }();}
 
-ast::Span Parser_span_at_cursor(predicates::Parser self) noexcept{return self.position >= self.tokens.size() ? ast::Span{self.source_path, 0, 0} : [&]() -> ast::Span { 
+ast::Span Parser_span_at_cursor(predicates::Parser self) noexcept{return self.position >= self.tokens.size() ? ast::span_make(self.source_path, 0, 0) : [&]() -> ast::Span { 
   ast_tokens::Token current_token = self.tokens[self.position];
-  return ast::Span{self.source_path, current_token.line, current_token.column};
+  return ast::span_make(self.source_path, current_token.line, current_token.column);
  }();}
 
 int Parser_prev_line(predicates::Parser self) noexcept{

@@ -43,7 +43,7 @@ ast::Span resolve_definition_span(mlc::HashMap<mlc::String, ast::Span> symbol_ta
 
 ast::Span resolve_definition_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept;
 
-ast::Span span_with_file(mlc::String source_file, ast::Span source_span) noexcept{return ast::Span{source_file, source_span.line, source_span.column};}
+ast::Span span_with_file(mlc::String source_file, ast::Span source_span) noexcept{return ast::span_make(source_file, source_span.line, source_span.column);}
 
 void symbol_table_set(mlc::HashMap<mlc::String, ast::Span>& table, mlc::String name, mlc::String source_file, ast::Span source_span) noexcept{
 if (name.length() > 0 && source_span.line > 0){

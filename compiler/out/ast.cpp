@@ -8,6 +8,8 @@ using namespace ast_tokens;
 
 ast::Span span_unknown() noexcept;
 
+ast::Span span_make(mlc::String file, int line, int column) noexcept;
+
 std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
 
 ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept;
@@ -48,7 +50,9 @@ ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept;
 
 mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
 
-ast::Span span_unknown() noexcept{return ast::Span{mlc::String(""), 0, 0};}
+ast::Span span_unknown() noexcept{return ast::Span{mlc::String(""), 0, 0, -1, -1};}
+
+ast::Span span_make(mlc::String file, int line, int column) noexcept{return ast::Span{file, line, column, -1, -1};}
 
 std::shared_ptr<ast::Expr> expr_placeholder() noexcept{return std::make_shared<ast::Expr>(ast::ExprUnit(span_unknown()));}
 

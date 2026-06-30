@@ -4,9 +4,12 @@ import { TokenKind, Token, LexOut } from './ast_tokens'
 
 // --- Source spans and diagnostics -----------------------------------------
 
-export type Span = Span { file: string, line: i32, column: i32 }
+export type Span = Span { file: string, line: i32, column: i32, start_offset: i32, end_offset: i32 }
 
-export fn span_unknown() -> Span = Span { file: '', line: 0, column: 0 }
+export fn span_unknown() -> Span = Span { file: '', line: 0, column: 0, start_offset: -1, end_offset: -1 }
+
+export fn span_make(file: string, line: i32, column: i32) -> Span =
+  Span { file: file, line: line, column: column, start_offset: -1, end_offset: -1 }
 
 export fn expr_placeholder() -> Shared<Expr> = Shared.new(ExprUnit(span_unknown()))
 

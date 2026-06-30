@@ -595,6 +595,24 @@ fn coerce_if_semantic_expression_to_type(
   else expression end
 end
 
+fn coerce_match_arm_to_type(arm: Shared<SemanticMatchArm>, target_type: Shared<Type>) -> Shared<SemanticMatchArm> =
+  Shared.new(SemanticMatchArm {
+    pattern: arm.pattern,
+    has_guard: arm.has_guard,
+    when_condition: arm.when_condition,
+    body: coerce_expr_to_type(arm.body, target_type),
+  })
+
+// Every match arm body must share the match's overall result type for codegen
+// (std::visit lambdas deduce their return type per-arm); without this, an
+// empty-array catch-all arm (`_ => []`) keeps an unresolved element type and
+// generates an ambiguous `{}` literal that fails to compile.
+fn coerce_match_arms_to_type(
+  arms: [Shared<SemanticMatchArm>],
+  target_type: Shared<Type>
+) -> [Shared<SemanticMatchArm>] =
+  arms.map(arm => coerce_match_arm_to_type(arm, target_type))
+
 // Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_type: Shared<Type>) -> Shared<SemanticExpression> =
@@ -1411,7 +1429,8 @@ extend TransformPass {
     const typed_arms    = transform_match_arms(
       match_arms, self.transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
     const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
-    Shared.new(SemanticExpressionMatch(typed_subject, typed_arms, result_type, source_span))
+    const coerced_arms   = coerce_match_arms_to_type(typed_arms, result_type)
+    Shared.new(SemanticExpressionMatch(typed_subject, coerced_arms, result_type, source_span))
   end
   fn visit_record(
     self: TransformPass,

@@ -817,5 +817,13 @@ export fn codegen_tests() -> [TestResult] = do
   const codegen_extend_method_cpp = gen_program(parse_program(tokenize(codegen_extend_method).tokens))
   results.push(assert_code_contains('gen_program: extend method call mangles owner',
     codegen_extend_method_cpp, 'Widget_doubled'))
+
+  const codegen_match_empty_array_catch_all =
+    'type Shape = Circle(string) | Square\nfn names(shape: Shape) -> [string] = match shape {\n  Circle(name) => [name],\n  _ => []\n}\nexport fn main() -> i32 = names(Square).length()'
+  const codegen_match_empty_array_cpp = gen_program(parse_program(tokenize(codegen_match_empty_array_catch_all).tokens))
+  results.push(assert_code_contains('gen_program: match catch-all empty array gets explicit element type',
+    codegen_match_empty_array_cpp, 'mlc::Array<mlc::String>{}'))
+  results.push(assert_code_not_contains('gen_program: match catch-all empty array avoids bare auto-deduced {}',
+    codegen_match_empty_array_cpp, 'const auto& __v) { return {}; }'))
   results
 end

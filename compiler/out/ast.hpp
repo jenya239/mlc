@@ -15,7 +15,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-struct Span {mlc::String file;int line;int column;};
+struct Span {mlc::String file;int line;int column;int start_offset;int end_offset;};
 
 struct Diagnostic {mlc::String message;ast::Span span;mlc::String severity;mlc::String code;};
 
@@ -93,6 +93,8 @@ struct Err {E field0;};template<typename T, typename E>
 using Result = std::variant<Ok<T>, Err<E>>;
 
 ast::Span span_unknown() noexcept;
+
+ast::Span span_make(mlc::String file, int line, int column) noexcept;
 
 std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
 

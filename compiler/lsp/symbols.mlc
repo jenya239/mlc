@@ -1,12 +1,12 @@
 // LSP symbol index: definition spans for single-file go-to-definition.
 
-import { Program, Decl, Stmt, Expr, Pattern, MatchArm, RecordLitPart, Span, span_unknown, stmt_span, pattern_span, expr_span } from '../frontend/ast'
+import { Program, Decl, Stmt, Expr, Pattern, MatchArm, RecordLitPart, Span, span_unknown, span_make, stmt_span, pattern_span, expr_span } from '../frontend/ast'
 import { Token } from '../frontend/ast_tokens'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 
 fn span_with_file(source_file: string, source_span: Span) -> Span =
-  Span { file: source_file, line: source_span.line, column: source_span.column }
+  span_make(source_file, source_span.line, source_span.column)
 
 fn symbol_table_set(table: ref mut Map<string, Span>, name: string, source_file: string, source_span: Span) -> unit = do
   if name.length() > 0 && source_span.line > 0 then
