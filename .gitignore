@@ -2,7 +2,13 @@
 vendor/bundle/
 *.gem
 .DS_Store
-flow/*.jsonl
+flow/
+test_output.log
+compile_commands.json
+compile_commands_probe.cpp
+compile_commands_probe.hpp
+compile_demo.rb
+.tmp_*
 coverage/
 *.gch
 # Compiled binaries and object files
@@ -22,7 +28,6 @@ perf.data
 # Scaling probe output (benchmarks/scaling/run_quadratic_probe.rb)
 .tmp_scaling_probe/
 .tmp_profile/
-.tmp_*/
 .out_selfcheck*/
 .tmp_bench*/
 
