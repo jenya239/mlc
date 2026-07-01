@@ -1,0 +1,19 @@
+// compiler/infrastructure/intern.mlc
+export type StringId = StringId { index: i32 }
+export fn string_id_index(id: StringId) -> i32 = id.index
+export type StringInternTable = StringInternTable {
+  strings: [string],
+  lookup: Map<string, i32>
+}
+export fn string_intern_table_new() -> StringInternTable = StringInternTable { strings: [], lookup: Map.new() }
+export fn string_intern(table: ref mut StringInternTable, value: string) -> StringId = do
+  if table.lookup.has(value) then
+    StringId { index: table.lookup.get(value) }
+  else
+    const new_index = table.strings.length()
+    table.strings.push(value)
+    table.lookup.set(value, new_index)
+    StringId { index: new_index }
+  end
+end
+export fn string_intern_resolve(table: StringInternTable, id: StringId) -> string = table.strings[id.index]

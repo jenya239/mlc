@@ -46,6 +46,7 @@ import { fuzz_tests } from '../test_fuzz'
 import { golden_harness_tests } from '../test_golden_harness'
 import { record_field_default_validate_tests } from '../test_record_field_default_validate'
 import { file_store_tests } from '../file_store_test'
+import { intern_tests } from '../intern_test'
 
 export type TestIrLevel =
   | TestIrSyntax
@@ -67,6 +68,7 @@ end
 export fn syntax_suite_results() -> [TestResult] = do
   let mut results: [TestResult] = []
   results = append_suite_results(results, file_store_tests())
+  results = append_suite_results(results, intern_tests())
   results = append_suite_results(results, lexer_tests())
   results = append_suite_results(results, parser_tests())
   results = append_suite_results(results, verify_ir_tests())

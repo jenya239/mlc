@@ -1,0 +1,18 @@
+// Tests for StringInternTable intern/resolve round-trip.
+import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
+import { StringInternTable, StringId, string_intern_table_new, string_intern, string_intern_resolve, string_id_index } from '../infrastructure/intern'
+export fn intern_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  let mut table = string_intern_table_new()
+  const id_a = string_intern(table, 'hello')
+  results.push(assert_eq_int('first intern index', string_id_index(id_a), 0))
+  const id_a_again = string_intern(table, 'hello')
+  results.push(assert_eq_int('dedup same value index', string_id_index(id_a_again), 0))
+  results.push(assert_eq_int('table size after dedup', table.strings.length(), 1))
+  const id_b = string_intern(table, 'world')
+  results.push(assert_eq_int('second intern index', string_id_index(id_b), 1))
+  results.push(assert_true('distinct string ids', string_id_index(id_a) != string_id_index(id_b)))
+  results.push(assert_eq_str('resolve a', string_intern_resolve(table, id_a), 'hello'))
+  results.push(assert_eq_str('resolve b', string_intern_resolve(table, id_b), 'world'))
+  results
+end
