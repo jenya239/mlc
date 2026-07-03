@@ -8,18 +8,13 @@ set -e
 # Cold start (no mlcc): MLCC_FORCE_RUBY=1 compiler/build.sh
 # Bootstrap: MLCC_BOOTSTRAP=1 compiler/build.sh
 # Incremental codegen (default on): MLCC_INCREMENTAL=0 forces full wipe + mlcc emit.
-# Skip decision is by module FILE LIST (names only, not content) - same as before.
-# Rationale (2026-07-01): a content-based skip check is more correct (see
-# TRACK_BUILD_SPEED2.md STEP=1) but is currently BLOCKED by TRACK_BOOTSTRAP_LINK
-# (open, STEP=8-P8e pending): a genuine fresh codegen re-run from current .mlc
-# sources does not yet compile cleanly (verified 2026-07-01: fresh `mlcc -o tmp
-# compiler/main.mlc` + build_bin.sh -> real g++ compile errors, e.g. value.cpp
-# std::visit return-type mismatch). Switching the skip check to content-based
-# right now would make every `compiler/build.sh` call attempt a full regen and
-# fail on unrelated files. Instead: skip decision unchanged (file list), but a
-# loud warning fires when content actually drifted so staleness is never silent.
-# Do not tighten this to content-based skip until TRACK_BOOTSTRAP_LINK STEP=8-P8e
-# is green (fresh `mlcc -o tmp compiler/main.mlc` + build_bin.sh, no errors).
+# Skip decision (both the outer "binary is fresh" gate and the inner codegen
+# skip) is content-based: a sha256 over every compiler/**/*.mlc file's content,
+# not just the file list/mtimes. mtimes are unreliable across git checkout/
+# stash/branch-switch, and a file-list-only fingerprint misses content-only
+# edits to existing files (TRACK_BUILD_SPEED2.md STEP=1, fixed 2026-07-03 once
+# TRACK_BOOTSTRAP_LINK closed - fresh codegen from current .mlc sources now
+# compiles cleanly, so a real regen is always safe to trigger).
 
 COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$COMPILER_DIR/.." && pwd)"
@@ -37,24 +32,15 @@ if [[ -n "${MLCC_BUILD_VERBOSE:-}" ]] && [[ "${_verbose_lowercase}" != "0" ]] &&
 fi
 unset _verbose_lowercase
 
-mlcc_binary_is_fresh() {
-  [ -x "$BIN_OUT" ] || return 1
-  ! find "$COMPILER_DIR" -name '*.mlc' -newer "$BIN_OUT" -print -quit | grep -q .
-}
-
 MODULE_STAMP="$OUT_DIR/.mlcc_module_stamp"
 
 incremental_enabled() {
   [ "${MLCC_INCREMENTAL:-1}" != "0" ]
 }
 
-compute_module_file_list_fingerprint() {
-  # Filenames only: detects added/removed .mlc modules (needs a wipe + orphan prune).
-  find "$COMPILER_DIR" -name '*.mlc' -type f -printf '%P\n' 2>/dev/null | LC_ALL=C sort | sha256sum | awk '{print $1}'
-}
-
 compute_module_content_fingerprint() {
-  # Content hash: catches edits to existing .mlc files (superset of file-list changes).
+  # Content hash over every .mlc file (also changes on add/remove: the file's
+  # own name is part of each `sha256sum` line being hashed).
   find "$COMPILER_DIR" -name '*.mlc' -type f -print0 2>/dev/null \
     | LC_ALL=C sort -z \
     | xargs -0 sha256sum \
@@ -62,27 +48,25 @@ compute_module_content_fingerprint() {
     | awk '{print $1}'
 }
 
-module_file_list_matches() {
-  [ -f "$MODULE_STAMP" ] || return 1
-  [ "$(sed -n '2p' "$MODULE_STAMP")" = "$(compute_module_file_list_fingerprint)" ]
-}
+CONTENT_FINGERPRINT="$(compute_module_content_fingerprint)"
 
 module_content_matches() {
   [ -f "$MODULE_STAMP" ] || return 1
-  [ "$(sed -n '1p' "$MODULE_STAMP")" = "$(compute_module_content_fingerprint)" ]
+  [ "$(sed -n '1p' "$MODULE_STAMP")" = "$CONTENT_FINGERPRINT" ]
 }
 
-warn_if_content_drifted() {
-  module_content_matches && return 0
-  echo "[mlcc build] WARNING: .mlc content changed but codegen skipped (file list unchanged)." >&2
-  echo "[mlcc build] WARNING: ${BIN_OUT} may be stale relative to current .mlc sources." >&2
-  echo "[mlcc build] WARNING: run MLCC_INCREMENTAL=0 compiler/build.sh to force a real regen + verify it compiles." >&2
+content_up_to_date() {
+  incremental_enabled && module_content_matches
+}
+
+mlcc_binary_is_fresh() {
+  [ -x "$BIN_OUT" ] || return 1
+  content_up_to_date
 }
 
 write_module_stamp() {
   {
-    compute_module_content_fingerprint
-    compute_module_file_list_fingerprint
+    echo "$CONTENT_FINGERPRINT"
     find "$OUT_DIR" -maxdepth 1 -name '*.cpp' -printf '%f\n' 2>/dev/null | LC_ALL=C sort
   } > "$MODULE_STAMP"
 }
@@ -95,7 +79,7 @@ prune_orphan_generated_sources() {
   local stamp_file="$1"
   local expected_list
   expected_list="$(mktemp)"
-  tail -n +3 "$stamp_file" > "$expected_list"
+  tail -n +2 "$stamp_file" > "$expected_list"
   local base_name
   while IFS= read -r base_name; do
     [ -n "$base_name" ] || continue
@@ -107,7 +91,7 @@ prune_orphan_generated_sources() {
 }
 
 should_skip_codegen() {
-  incremental_enabled && module_file_list_matches
+  content_up_to_date
 }
 
 prepare_codegen_output() {
@@ -139,7 +123,6 @@ build_via_mlcc() {
   echo "[mlcc build] mlcc codegen + build_bin.sh" >&2
   if should_skip_codegen; then
     echo "[mlcc build] skip mlcc codegen (module stamp)" >&2
-    warn_if_content_drifted
   else
     prepare_codegen_output
     "$BIN_OUT" "$MAIN" -o "$OUT_DIR"
@@ -153,10 +136,6 @@ build_via_mlcc() {
 
 if mlcc_binary_is_fresh; then
   echo "[mlcc build] ${BIN_OUT} up to date (skip)" >&2
-  # mtime-based freshness is unreliable after git checkout/stash/branch-switch
-  # (mtimes get reset, not preserved) - always cross-check against the content
-  # fingerprint too, so staleness is never silently missed.
-  warn_if_content_drifted
 elif [ "${MLCC_FORCE_RUBY:-0}" = "1" ]; then
   build_via_ruby
 elif [ ! -x "$BIN_OUT" ]; then

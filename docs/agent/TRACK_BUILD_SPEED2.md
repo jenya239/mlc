@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §Phase 2.9; previous: [TRACK_BUILD_SPEED.md](T
 
 Related rule: [.cursor/rules/mlcc-self-host-verification.mdc](../../.cursor/rules/mlcc-self-host-verification.mdc) — "всё зелёное, а mlcc устарел" недопустим. This track is triggered by a **live reproduction** of exactly that scenario.
 
-## Status: **open** STEP=5 (1 done modified, 2 done, 3 done, 4 declined)
+## Status: **open** STEP=5 (1 done, 2 done, 3 done, 4 declined)
 
 **Priority class: stability** (not pure performance) — steps 1–2 fix silent staleness, not just speed. Steps 3–4 are performance. Order matters: 1 → 2 → 3 → 4 → 5 → 6 → 7.
 
@@ -38,18 +38,20 @@ diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2   # must be empty
 Plus a **staleness repro check** after steps 1–2 (must now correctly detect the change):
 
 ```bash
-# append a harmless comment to any existing compiler/*.mlc file (no new/removed files)
-touch compiler/codegen/expr/match_gen.mlc   # or real content edit
-rm -f compiler/out/mlcc   # force cold to isolate the fingerprint logic, or use MLCC_FORCE_RUBY=1 once
+# append a harmless comment to any existing compiler/*.mlc file (no new/removed files, no touch needed)
+echo "# probe" >> compiler/codegen/expr/match_gen.mlc
 MLCC_BUILD_VERBOSE=1 compiler/build.sh
-# expected: codegen actually re-runs (not "skip"); compiler/out/*.cpp mtimes bump
+# expected: "mlcc codegen + build_bin.sh" (not "up to date (skip)"); compiler/out/*.cpp mtimes bump
+git checkout compiler/codegen/expr/match_gen.mlc   # revert the probe edit
+MLCC_BUILD_VERBOSE=1 compiler/build.sh   # regenerates back to original content
+MLCC_BUILD_VERBOSE=1 compiler/build.sh   # now "up to date (skip)"
 ```
 
 ---
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `compute_module_fingerprint()` — hash file **content** | **done, but NOT wired to skip-decision** — see "STEP=1 finding" below. `should_skip_codegen()` still uses the file-list-only fingerprint (unchanged behavior); content fingerprint is computed and compared only to emit a loud warning (`warn_if_content_drifted`), replacing the previous silent lie. |
+| 1 | `compute_module_fingerprint()` — hash file **content** | **done (2026-07-03)** — see "STEP=1 finding" below for the resolution. `should_skip_codegen()` and `mlcc_binary_is_fresh()` both now gate on `module_content_matches()`; `module_file_list_matches()`/`warn_if_content_drifted()` removed as dead code (content fingerprint is a strict superset of file-list, and is now the sole source of truth for both skip decisions, so drift can no longer happen silently). |
 | 2 | `build_bin.sh` — `-MMD -MF obj/$TAG/$name.d` per compile; staleness check consults depfiles | **done** — verified live: touched a shared header (`ast.hpp`, ~131 dependent TUs) with no `.cpp` mtime change → 114/147 objects correctly recompiled, rest skipped. Fully-warm no-op rebuild: 4.5s (unchanged). `regression_gate.sh`: 14/14 pass after rebuild. |
 | 3 | ccache+PCH experiment: try `CCACHE_SLOPPINESS=pch_defines,time_macros` (+ `CCACHE_DEPEND=1`) with clang `-include-pch`; measure `ccache -s` delta on 2 consecutive `MLCC_OBJ_CLEAN=1` runs of identical content. If still 0 hits — drop PCH for the ccache-enabled dev path, or switch PCH strategy (`g++` `.gch` `-include`, not `-include-pch`) and re-measure | **done** — root cause was exactly the missing sloppiness (ccache debug log: `"You have to specify time_macros sloppiness when using precompiled headers to get direct hits"`). Wired `export CCACHE_SLOPPINESS=pch_defines,time_macros` in `build_bin.sh` whenever `ccache` is in `CXX_CMD` (2026-07-03). Measured on `compiler/out` (147 TU): before fix, `ccache -s` showed 97.4% "Uncacheable calls", 0% hit rate, cold `MLCC_OBJ_CLEAN=1` rebuild 416s. After fix: run1 (cold, populates cache) 416s, 99.3% cacheable, 0 hits (expected); run2 (`MLCC_OBJ_CLEAN=1` again, unchanged content, same dir) **2.4s**, 148/148 direct hits, binaries byte-identical to run1. **Scope of the win**: only helps repeated builds of the *same* output directory with unchanged content (repeated `compiler/build.sh`/gate re-runs without source edits, or CI with a persisted `~/.cache/ccache` across pushes) — it does *not* collapse the one-shot cross-directory chain (`compiler/out` vs `compiler/out/bootstrap` vs `.tmp_selfhost/p1`/`p2`), since those are legitimately independent `-I` paths (by design, to keep the self-hosting identity check honest); confirmed via a `CCACHE_BASEDIR` experiment that cross-directory reuse does not happen (different `-I` value ⇒ different cache key, expected/correct). CI (`ci.yml`) currently has **no `actions/cache` step for `~/.cache/ccache`**, so this fix currently has zero effect there until that's added (separate follow-up, not yet a track step). |
 | 4 | Flip dev-loop default to `MLCC_DEV=1` (`-O0 -g`) in `build.sh`/`build_bin.sh`; require explicit `MLCC_OPT=2` for CI / self-host bootstrap verification / release builds. Update README + `mlcc-self-host-verification.mdc` example commands | **declined (2026-07-03)** — blast radius too wide for the gain: would silently change the optimization level of the *committed* `compiler/out/mlcc` binary (used as the bootstrap seed, downloaded by CI) unless every one of `ci.yml`/`build-mlcc-once.yml`/`triple-bootstrap.yml` is updated in lockstep to pin `MLCC_OPT=2`, and the `-O2` figure in `mlcc-self-host-verification.mdc`'s perf ориентир would silently stop meaning what it says. `MLCC_DEV=1` already exists as an explicit opt-in for anyone who wants a faster local dev-loop build; that is sufficient without touching the default. Not revisiting unless a fresh measurement shows the opt-in isn't being used / isn't enough. |
@@ -89,19 +91,48 @@ mtime-fresh fast path and the module-stamp fast path). Verified: default
 instead of silently claiming "up to date", while still not blocking normal
 builds.
 
-**Do not** flip `should_skip_codegen()` to content-based until
-TRACK_BOOTSTRAP_LINK STEP=8-P8e is green (fresh `mlcc -o tmp compiler/main.mlc`
-+ `build_bin.sh` on the result, zero `g++` errors). At that point STEP=1 here
-can be finished (few-line change: swap `module_file_list_matches` for
-`module_content_matches` in `should_skip_codegen()`).
+**Resolution (2026-07-03):** `TRACK_BOOTSTRAP_LINK` closed (STEP=8-P8e green —
+fresh `mlcc -o tmp compiler/main.mlc` + `build_bin.sh`, zero errors under g++
+and clang), unblocking this precondition. Flipped both gates in
+`compiler/build.sh` to the content fingerprint:
 
-Secondary finding: `mlcc_binary_is_fresh()` (`compiler/build.sh`, outer gate) is
-mtime-based and therefore unreliable across `git checkout`/`stash`/branch-switch
-(git does not preserve relative mtimes). `warn_if_content_drifted` is now also
-called from that outer "up to date (skip)" branch for this reason, but the
-underlying mtime check itself is unchanged — a future step could replace it with
-the content fingerprint too, gated behind the same TRACK_BOOTSTRAP_LINK
-precondition.
+- `should_skip_codegen()` (inner, controls whether mlcc re-emits `.cpp`) — was
+  `incremental_enabled && module_file_list_matches`, now
+  `incremental_enabled && module_content_matches`.
+- `mlcc_binary_is_fresh()` (outer, controls whether `build.sh` does anything at
+  all) — was a `find -newer` mtime check, now the same content fingerprint.
+  This also fixes the secondary finding below (mtime unreliable across `git
+  checkout`/`stash`/branch-switch) as a side effect, since both gates now share
+  one `CONTENT_FINGERPRINT` computed once per `build.sh` invocation (measured
+  cost: ~40ms for all `compiler/**/*.mlc`, negligible next to the ≥0.3s the
+  rest of the script already takes).
+
+`compute_module_file_list_fingerprint()`, `module_file_list_matches()` and
+`warn_if_content_drifted()` are now dead (nothing can drift silently once the
+skip decision itself is content-based) and were deleted. `MODULE_STAMP` format
+simplified from 2 fingerprint lines to 1 (`prune_orphan_generated_sources`
+updated from `tail -n +3` to `tail -n +2` accordingly).
+
+Verified live: editing `match_gen.mlc` content only (no filename change, no
+`MLCC_INCREMENTAL=0`) now correctly triggers a real regen (`"mlcc codegen +
+build_bin.sh"`, ~10.5s warm-ccache) instead of a silent `"up to date (skip)"`;
+reverting the edit and rebuilding twice reproduces the original committed
+`compiler/out/*.cpp` byte-for-byte and correctly skips on the third run. Full
+verify gate re-run after the fix: `test_compiler_mlc` green, mlcc→mlcc2
+identity diff `IDENTICAL`, `regression_gate.sh` 14/14.
+
+Accepted trade-off vs. goal #2 above: because mlcc has no partial-codegen
+capability (it always re-emits every module in one whole-program pass), any
+real content change now regenerates **all** `.cpp` files, which bumps every
+object's dependency mtime and makes `build_bin.sh`'s depfile-based staleness
+check treat all ~147 TUs as needing recompilation — not just the ones whose
+generated content actually changed. This is mitigated by the STEP=3 ccache fix:
+recompiling unchanged-content TUs is a cache hit (~2.4s total, not minutes), so
+the net effect on a typical single-file dev-loop edit is still fast in
+practice. A byte-for-byte "only touch `.cpp` files whose content actually
+changed" codegen-output diffing step would close this remaining gap but is not
+required to satisfy goal #1 (silent staleness), which is what this step's ask
+covers; left as a possible future refinement, not a new open step here.
 
 ## 2026-07-03 full-chain measurement (8-core, contended: load avg 11–12 from other tenants)
 
