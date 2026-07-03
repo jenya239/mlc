@@ -61,7 +61,7 @@ compiler/tests/build_tests.sh
 | 5 | `compiler/tests/build_tests_self.sh`, `compiler/tests/e2e/run_e2e.sh`, `compiler/tests/test_result_e2e.sh`, `compiler/tests/run_vm_cpp_exit_diff.sh` — hardcoded `g++` → `MLC_CXX` chain | planned |
 | 6 | `runtime/test/run_concurrency_smoke.sh:10` — already `${MLC_CXX:-g++}`; just flip default to prefer clang when present (same one-liner pattern as `build_bin.sh:27-37`, not a bare env-var default) | planned |
 | 7 | `compiler/triple_bootstrap.sh` — 2 stages currently always g++ (comments + `echo` labels) → `MLC_CXX` chain; update comments | planned |
-| 8 | Delete `compiler/mlcc_build.sh` (dead code — zero callers found repo-wide, superseded by `build_bin.sh`) | planned |
+| 8 | Delete `compiler/mlcc_build.sh` (dead code — zero callers found repo-wide, superseded by `build_bin.sh`) | **done** (2026-07-03) — confirmed zero references repo-wide before deletion |
 | 9 | `TRACK_CPPEXPR.md` — append dated closing note: g++ pin verified stale (link to this track's STEP=1 audit result) | planned |
 | 10 | `docs/PLAN.md:381` — row is stale ("planned", doesn't mention `TRACK_BUILD_SPEED2`/this track); update | planned |
 | 11 | Full regression sweep on the converted scripts (verify gate above) + re-run `compiler/tests/e2e/run_e2e.sh` and `build_tests_self.sh` under clang explicitly (`MLC_CXX=` unset, i.e. default chain) to confirm no behavior change vs the previous all-g++ baseline | planned |

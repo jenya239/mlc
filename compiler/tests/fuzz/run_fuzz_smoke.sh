@@ -49,9 +49,13 @@ run_mlcc_expect_no_crash() {
   local path=$1
   local label=$2
   set +e
-  "$MLCC" --check-only "$path" >/dev/null 2>&1
+  timeout 10 "$MLCC" --check-only "$path" >/dev/null 2>&1
   local code=$?
   set -e
+  if [ "$code" -eq 124 ]; then
+    echo "[fuzz smoke] FAIL $label: mlcc timed out (hang?)" >&2
+    exit 1
+  fi
   if [ "$code" -gt 1 ]; then
     echo "[fuzz smoke] FAIL $label: mlcc exit $code (crash?)" >&2
     exit 1
