@@ -36,6 +36,15 @@ else
   CXX_CMD=(g++)
 fi
 
+# clang's -include-pch defeats ccache direct mode unless this sloppiness is set
+# (ccache refuses to hash-match PCH-based invocations otherwise: "You have to
+# specify time_macros sloppiness when using precompiled headers to get direct
+# hits"). Safe: only relaxes __TIME__/__DATE__ + PCH-defines sensitivity, which
+# mlcc-generated sources never rely on.
+if [[ "${CXX_CMD[*]}" == ccache* ]]; then
+  export CCACHE_SLOPPINESS="${CCACHE_SLOPPINESS:-pch_defines,time_macros}"
+fi
+
 if [ "${MLCC_DEV:-0}" = "1" ]; then
   CXX_OPTIMIZE_FLAGS=(-O0 -g)
   OBJECT_STORE_TAG=dev

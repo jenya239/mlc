@@ -21,16 +21,18 @@ alwaysApply: true
 
 ## Проверка идентичности (self-hosting correctness)
 
-После любых изменений codegen или checker: собрать mlcc2 из C++ сгенерированного mlcc, запустить mlcc2 на том же исходнике, убедиться что вывод идентичен:
+После любых изменений codegen или checker: собрать mlcc2 из C++ сгенерированного mlcc, запустить mlcc2 на том же исходнике, убедиться что вывод идентичен. Собирать mlcc2 через **`compiler/build_bin.sh`** (параллельно + PCH + mold-линк), не голым однопоточным `g++ *.cpp` — тот же результат за 2–4× меньшее время (см. `docs/agent/TRACK_BUILD_SPEED2.md`, измерение 2026-07-03: 750–1283s → 328s). `g++` остаётся независимым компилятором для кросс-проверки (`MLC_CXX=g++`), просто не голым вызовом:
 
 ```bash
 compiler/out/mlcc -o /tmp/mlc_p1 compiler/main.mlc
-g++ -std=c++20 -I /tmp/mlc_p1 -I runtime/include /tmp/mlc_p1/*.cpp runtime/src/io/io.cpp runtime/src/core/string.cpp runtime/src/core/profile.cpp -o /tmp/mlcc2
+MLC_CXX=g++ compiler/build_bin.sh /tmp/mlc_p1 /tmp/mlcc2
 /tmp/mlcc2 -o /tmp/mlc_p2 compiler/main.mlc
-diff -r /tmp/mlc_p1 /tmp/mlc_p2  # должно быть IDENTICAL
+diff -r /tmp/mlc_p1 /tmp/mlc_p2 --exclude=obj  # должно быть IDENTICAL
 ```
 
 Если diff не пустой — codegen недетерминирован или mlcc2 работает иначе чем mlcc. Это блокер.
+
+Полный per-TU аудит под clang (`-fsyntax-only` на каждый сгенерированный файл) — через `compiler/tests/clang_audit.sh <dir>` (параллельно, не последовательным `for`; ~5× быстрее на 8 ядрах, тот же результат).
 
 ## Производительность (бенчмарк трансляции MLC→C++)
 

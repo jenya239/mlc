@@ -12,11 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MLC_CXX: ccache clang++
+      CCACHE_MAXSIZE: 500M
     steps:
       - uses: actions/checkout@v4
 
       - name: Install C++ toolchain (clang, ccache, mold)
         run: sudo apt-get update && sudo apt-get install -y clang ccache mold g++
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('compiler/**/*.mlc', 'runtime/**/*.hpp', 'runtime/**/*.cpp') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -41,6 +50,9 @@ jobs:
 
       - name: Bootstrap link smoke (mlcc_bootstrap)
         run: MLCC_BOOTSTRAP=1 MLC_REQUIRE_BOOTSTRAP_LINK=1 compiler/build.sh
+
+      - name: ccache stats
+        run: ccache -s
 
       - name: Profile regression
         run: benchmarks/profile/compare_baseline.sh

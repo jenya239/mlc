@@ -11,11 +11,20 @@ jobs:
     env:
       MLC_CXX: ccache clang++
       MLC_JOBS: 4
+      CCACHE_MAXSIZE: 500M
     steps:
       - uses: actions/checkout@v4
 
       - name: Install C++ toolchain (clang, ccache, mold)
         run: sudo apt-get update && sudo apt-get install -y clang ccache mold g++ libxcb1-dev libcairo2-dev libx11-dev
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('compiler/**/*.mlc', 'runtime/**/*.hpp', 'runtime/**/*.cpp') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
 
       - uses: ruby/setup-ruby@v1
         with:
