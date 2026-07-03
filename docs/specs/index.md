@@ -15,6 +15,7 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md) | parser, cpp, import, roundtrip | C++ header import, `cpp_ast`, trivia |
 | [../BINDINGS_SEMANTICS_MRFC.md](../BINDINGS_SEMANTICS_MRFC.md) | bindings, let, migration, draft | Future `let`/`const` semantics (no compiler change) |
 | [../CODE_REVIEW_2026_06.md](../CODE_REVIEW_2026_06.md) | audit, compiler, structure, debt | Large refactors, folder layout, hotspots |
+| [../LARGE_CONTEXT_TASKS.md](../LARGE_CONTEXT_TASKS.md) | agent, external-model, batch, mlc-support | Deciding between batch LLM request vs iterative TDD for a track |
 
 ## Verification
 
