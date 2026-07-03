@@ -24,17 +24,7 @@ RT_SRC=(
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 ENTRY_BASENAME="${MLCC_ENTRY_BASENAME:-main}"
 
-if [ -n "$MLC_CXX" ]; then
-  CXX_CMD=($MLC_CXX)
-elif command -v ccache &>/dev/null && command -v clang++ &>/dev/null; then
-  CXX_CMD=(ccache clang++)
-elif command -v clang++ &>/dev/null; then
-  CXX_CMD=(clang++)
-elif command -v ccache &>/dev/null; then
-  CXX_CMD=(ccache g++)
-else
-  CXX_CMD=(g++)
-fi
+source "$(dirname "${BASH_SOURCE[0]}")/scripts/select_cxx.sh"
 
 # clang's -include-pch defeats ccache direct mode unless this sloppiness is set
 # (ccache refuses to hash-match PCH-based invocations otherwise: "You have to

@@ -35,7 +35,7 @@ run_one() {
   fi
 
   if ! MLCC_ENTRY_BASENAME="$base" "$COMPILER_DIR/build_bin.sh" "$build_dir" "$build_dir/program" 2>"$build_dir/link.err"; then
-    echo "[vm cpp exit diff] FAIL $program: g++ link failed" >&2
+    echo "[vm cpp exit diff] FAIL $program: link failed" >&2
     head -3 "$build_dir/link.err" >&2 || true
     return 1
   fi

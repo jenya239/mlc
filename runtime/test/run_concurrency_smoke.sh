@@ -7,14 +7,14 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 include="${root}/include"
 test_directory="${root}/test"
-compiler="${MLC_CXX:-g++}"
+source "${root}/../compiler/scripts/select_cxx.sh"
 common_flags=(-std=c++20 -pthread -I"${include}")
 
 run_test() {
   local source_name="$1"
   local extra_flags=("${@:2}")
   local binary="${test_directory}/${source_name}"
-  "${compiler}" "${common_flags[@]}" "${extra_flags[@]}" \
+  "${CXX_CMD[@]}" "${common_flags[@]}" "${extra_flags[@]}" \
     -o "${binary}" "${test_directory}/${source_name}.cpp"
   "${binary}"
 }

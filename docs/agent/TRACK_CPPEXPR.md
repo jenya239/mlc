@@ -115,3 +115,12 @@ Steps 20–21 (cutover + cleanup): self-host diff empty on new backend.
 ## Next step
 
 Track closed. Planner: new TRACK from [PLAN.md](../PLAN.md) §Phase 2 follow-ups or next milestone.
+
+## 2026-07-03 note: g++ pin (line 21) is stale
+
+The `**Self-host link: g++**` constraint above was verified stale by
+[TRACK_CLANG_MIGRATION.md](TRACK_CLANG_MIGRATION.md) STEP=1: a full per-TU
+`clang++ -fsyntax-only` audit of a fresh `compiler/out` regen is 144/144 clean
+(0 errors). No GCC-only `auto`-in-template-args construct remains. `build_bin.sh`
+(which auto-selects `ccache clang++` when available) is the standard self-host
+link path everywhere now; g++ remains an explicit fallback via `MLC_CXX=g++`.

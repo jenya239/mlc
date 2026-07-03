@@ -6,6 +6,7 @@ COMPILER_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 MLCC="${1:-$COMPILER_DIR/out/mlcc}"
 TMP="$(mktemp -d)"
 trap "rm -rf $TMP" EXIT
+source "$COMPILER_DIR/scripts/select_cxx.sh"
 
 echo "=== E2E: Result + ? ==="
 
@@ -13,7 +14,7 @@ echo "=== E2E: Result + ? ==="
 
 # Runtime headers
 RUNTIME="$COMPILER_DIR/../runtime/include"
-g++ -std=c++20 -I"$RUNTIME" -I"$TMP" \
+"${CXX_CMD[@]}" -std=c++20 -I"$RUNTIME" -I"$TMP" \
     "$TMP/test_result_program.cpp" \
     "$COMPILER_DIR/../runtime/src/io/io.cpp" \
     -o "$TMP/test_result_program"

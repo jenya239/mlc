@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # git bisect helper for MLCC_BOOTSTRAP link.
-# exit 0 — Ruby-built mlcc runs, self-emits compiler C++, g++ produces mlcc_bootstrap
+# exit 0 — Ruby-built mlcc runs, self-emits compiler C++, compiler produces mlcc_bootstrap
 # exit 1 — self-compile or link failed (regression)
 # exit 125 — Ruby modular compiler failed to build mlcc (skip commit)
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
+source "$ROOT/compiler/scripts/select_cxx.sh"
 MAIN_CLONE_VENDOR="$ROOT/../mlc/vendor/bundle"
 if [[ -d "$MAIN_CLONE_VENDOR" ]]; then
   export BUNDLE_PATH="$MAIN_CLONE_VENDOR"
@@ -29,12 +30,12 @@ mkdir -p "$OBJ_DIR"
 if (
   for cpp in "$BS"/*.cpp; do
     [[ -f "$cpp" ]] || continue
-    g++ -std=c++20 -O2 -I "$BS" -I "$RT_INC" -c "$cpp" -o "$OBJ_DIR/$(basename "$cpp" .cpp).o"
+    "${CXX_CMD[@]}" -std=c++20 -O2 -I "$BS" -I "$RT_INC" -c "$cpp" -o "$OBJ_DIR/$(basename "$cpp" .cpp).o"
   done
   for rcpp in $RT_CPP; do
-    [[ -f "$rcpp" ]] && g++ -std=c++20 -O2 -I "$RT_INC" -c "$rcpp" -o "$OBJ_DIR/runtime_$(basename "$rcpp" .cpp).o"
+    [[ -f "$rcpp" ]] && "${CXX_CMD[@]}" -std=c++20 -O2 -I "$RT_INC" -c "$rcpp" -o "$OBJ_DIR/runtime_$(basename "$rcpp" .cpp).o"
   done
-  g++ -std=c++20 -O2 -o "$BS/mlcc_bootstrap" "$OBJ_DIR"/*.o
+  "${CXX_CMD[@]}" -std=c++20 -O2 -o "$BS/mlcc_bootstrap" "$OBJ_DIR"/*.o
 ); then
   [[ -x "$BS/mlcc_bootstrap" ]] || exit 1
   exit 0

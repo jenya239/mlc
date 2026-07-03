@@ -4,9 +4,9 @@
 #
 # Usage: triple_bootstrap.sh [mlcc_binary] [work_dir]
 #
-# Steps:
-#   1. mlcc  → /work/bs1/*.cpp → g++ → mlcc2
-#   2. mlcc2 → /work/bs2/*.cpp → g++ → mlcc3
+# Steps (compiler chosen by build_bin.sh: MLC_CXX override > clang++ > g++):
+#   1. mlcc  → /work/bs1/*.cpp → build_bin.sh → mlcc2
+#   2. mlcc2 → /work/bs2/*.cpp → build_bin.sh → mlcc3
 #   3. mlcc3 → /work/bs3/*.cpp
 #   4. diff bs2/ bs3/ — must be empty
 set -e
@@ -41,13 +41,13 @@ build_bin() {
 echo "[1/4] mlcc → bs1 (C++ gen) ..."
 build_gen "$MLCC" "$WORK_DIR/bs1"
 
-echo "[2/4] g++ bs1 → mlcc2 ..."
+echo "[2/4] compile bs1 → mlcc2 ..."
 build_bin "$WORK_DIR/bs1" "$WORK_DIR/mlcc2"
 
 echo "[3/4] mlcc2 → bs2 (C++ gen) ..."
 build_gen "$WORK_DIR/mlcc2" "$WORK_DIR/bs2"
 
-echo "[4/4] g++ bs2 → mlcc3 ..."
+echo "[4/4] compile bs2 → mlcc3 ..."
 build_bin "$WORK_DIR/bs2" "$WORK_DIR/mlcc3"
 
 echo "[5/5] mlcc3 → bs3 (C++ gen) ..."
@@ -55,10 +55,10 @@ build_gen "$WORK_DIR/mlcc3" "$WORK_DIR/bs3"
 
 echo ""
 echo "=== Diff bs2 vs bs3 ==="
-if diff -rq --exclude="*.o" "$WORK_DIR/bs2" "$WORK_DIR/bs3"; then
+if diff -rq --exclude=obj "$WORK_DIR/bs2" "$WORK_DIR/bs3"; then
   echo "PASS: bs2 == bs3, compiler is stable"
 else
   echo "FAIL: bs2 != bs3, compiler is not yet stable"
-  diff -r --exclude="*.o" "$WORK_DIR/bs2" "$WORK_DIR/bs3" | head -40
+  diff -r --exclude=obj "$WORK_DIR/bs2" "$WORK_DIR/bs3" | head -40
   exit 1
 fi

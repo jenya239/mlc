@@ -8,6 +8,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 MLCC="${1:-$ROOT_DIR/compiler/out/mlcc}"
 RT_INC="$ROOT_DIR/runtime/include"
 RT_SRC="$ROOT_DIR/runtime/src/io/io.cpp $ROOT_DIR/runtime/src/core/string.cpp"
+source "$ROOT_DIR/compiler/scripts/select_cxx.sh"
 
 echo "[e2e] mlcc=$MLCC (6 programs: compile, link, run)" >&2
 
@@ -23,8 +24,8 @@ run_test() {
     echo "FAIL $name: mlcc error: $(cat /tmp/e2e_err)"
     FAIL=$((FAIL+1)); rm -rf "$tmpdir"; return
   fi
-  if ! g++ -std=c++20 -I "$tmpdir" -I "$RT_INC" "$tmpdir"/*.cpp $RT_SRC -o "$tmpdir/prog" 2>/tmp/e2e_err; then
-    echo "FAIL $name: g++ error: $(cat /tmp/e2e_err | head -3)"
+  if ! "${CXX_CMD[@]}" -std=c++20 -I "$tmpdir" -I "$RT_INC" "$tmpdir"/*.cpp $RT_SRC -o "$tmpdir/prog" 2>/tmp/e2e_err; then
+    echo "FAIL $name: compile error: $(cat /tmp/e2e_err | head -3)"
     FAIL=$((FAIL+1)); rm -rf "$tmpdir"; return
   fi
   local actual; actual=$("$tmpdir/prog" 2>&1)
