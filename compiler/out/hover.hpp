@@ -3,7 +3,6 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "ast.hpp"
 #include "lexer.hpp"
 #include "decls.hpp"
@@ -15,16 +14,10 @@
 #include "infer_expr_ident.hpp"
 #include "semantic_type_structure.hpp"
 #include "symbols.hpp"
-
 namespace hover {
 
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
-
+mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> hover_function_parameter_environment(mlc::Array<std::shared_ptr<ast::Param>> parameters, registry::TypeRegistry registry) noexcept;
+mlc::String hover_type_for_identifier_in_program(ast::Program program, registry::TypeRegistry registry, mlc::String identifier_name, int target_line_one_based) noexcept;
 mlc::String resolve_hover_type_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept;
 
 } // namespace hover

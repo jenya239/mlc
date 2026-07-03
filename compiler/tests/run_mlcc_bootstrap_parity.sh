@@ -47,7 +47,7 @@ echo "[mlcc bootstrap parity] bootstrap self-host chain …" >&2
 "$COMPILER_DIR/build_bin.sh" "$P1" "$BS2"
 "$BS2" -o "$P2" "$ENTRY"
 
-if ! diff -rq "$P1" "$P2"; then
+if ! diff -rq --exclude=obj "$P1" "$P2"; then
   echo "[mlcc bootstrap parity] FAIL: bootstrap self-host diff" >&2
   exit 1
 fi

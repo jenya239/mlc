@@ -3,34 +3,130 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "cpp_ast.hpp"
-
 namespace print {
 
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
-
+mlc::String printer_indent_unit() noexcept;
+mlc::Array<int> zero_based_indices(int count) noexcept;
+mlc::String indent_text(int depth) noexcept;
+mlc::String escape_cpp_character(mlc::String character) noexcept;
+mlc::String escape_cpp_string_content(mlc::String input) noexcept;
+mlc::String formatted_block(mlc::String statements_code, int depth) noexcept;
+mlc::String print_comma_separated_expressions(mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> expressions) noexcept;
+mlc::String print_comma_separated_types(mlc::Array<std::shared_ptr<cpp_ast::CppType>> types) noexcept;
+mlc::String print_comma_separated_strings(mlc::Array<mlc::String> strings) noexcept;
+mlc::String type_template(mlc::String name, mlc::String arguments_code) noexcept;
+mlc::String type_reference(mlc::String inner_code) noexcept;
+mlc::String type_rvalue_reference(mlc::String inner_code) noexcept;
+mlc::String type_pointer(mlc::String inner_code) noexcept;
+mlc::String type_const_prefix(mlc::String inner_code) noexcept;
 mlc::String print_cpp_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
-
+mlc::String print_type(std::shared_ptr<cpp_ast::CppType> type_node) noexcept;
+mlc::String render_ternary_conditional(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
+mlc::String render_parenthesized_binary(mlc::String left_code, mlc::String operation, mlc::String right_code) noexcept;
+mlc::String render_parenthesized_unary(mlc::String operation, mlc::String inner_code) noexcept;
+mlc::String render_index_subscript(mlc::String object_code, mlc::String index_code) noexcept;
+mlc::String render_function_call_parentheses(mlc::String callee_code, mlc::String argument_list) noexcept;
+mlc::String pointer_field_access(mlc::String object_code, mlc::String field_name) noexcept;
+mlc::String value_field_access(mlc::String object_code, mlc::String field_name) noexcept;
+mlc::String init_list_braces(mlc::String element_list) noexcept;
+mlc::String aggregate_initializer_expression(mlc::String type_name, mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> elements) noexcept;
+mlc::String std_visit_expression(mlc::String arm_lambdas, mlc::String visit_subject) noexcept;
+mlc::String print_visit_arm_wild(bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_binding(mlc::String parameter_name, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_constructed(mlc::String parameter_declaration, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_visit_arm_constructed_generic(mlc::String type_name, mlc::String binding_name, mlc::String binding_prefix, bool void_return, mlc::String return_cpp, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String cast_expression(mlc::String kind_prefix, mlc::String type_code, mlc::String operand_code) noexcept;
+mlc::String print_cast_kind_prefix(cpp_ast::CppCastKind kind) noexcept;
+mlc::String print_comma_separated_expressions_multiline(mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> expressions) noexcept;
+mlc::String print_capture_entry(std::shared_ptr<cpp_ast::CppCapture> capture_entry) noexcept;
+mlc::String print_capture_list(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures) noexcept;
+mlc::String print_parameter_entry(std::shared_ptr<cpp_ast::CppParam> parameter) noexcept;
+mlc::String print_parameter_list(mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters) noexcept;
+mlc::String block_braces(mlc::String body_code) noexcept;
+mlc::String print_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements, int depth) noexcept;
+mlc::String print_statement_at_depth(std::shared_ptr<cpp_ast::CppStatement> statement, int depth) noexcept;
+mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStatement> statement, int depth) noexcept;
+mlc::String if_statement(mlc::String condition_code, mlc::String then_code, mlc::String else_code) noexcept;
+mlc::String while_statement(mlc::String condition_code, mlc::String body_code) noexcept;
+mlc::String range_for_statement(mlc::String variable_name, mlc::String range_code, mlc::String body_code) noexcept;
+mlc::String auto_declaration(mlc::String name, mlc::String initializer_code) noexcept;
+mlc::String structured_binding_declaration(mlc::Array<mlc::String> binding_names, mlc::String initializer_code) noexcept;
+mlc::String constexpr_auto_declaration(mlc::String name, mlc::String initializer_code) noexcept;
+mlc::String const_declaration(mlc::String type_code, mlc::String name, mlc::String initializer_code) noexcept;
+mlc::String variable_declaration(mlc::String type_code, mlc::String name, mlc::String initializer_code) noexcept;
+mlc::String include_angle(mlc::String path) noexcept;
+mlc::String include_quoted(mlc::String path) noexcept;
+mlc::String ifndef_directive(mlc::String macro) noexcept;
+mlc::String define_macro_directive(mlc::String macro, mlc::String value) noexcept;
+mlc::String endif_directive(mlc::String comment) noexcept;
+mlc::String undef_directive(mlc::String macro) noexcept;
+mlc::String namespace_begin_directive(mlc::String name) noexcept;
+mlc::String namespace_end_directive(mlc::String name) noexcept;
+mlc::String using_alias(mlc::String alias, mlc::String type_code) noexcept;
+mlc::String using_namespace_directive(mlc::String namespace_identifier) noexcept;
+mlc::String host_entry_main_epilogue(mlc::String qualified_namespace) noexcept;
+mlc::String struct_forward_declaration(mlc::String template_prefix, mlc::String name) noexcept;
+mlc::String class_forward_declaration(mlc::String name) noexcept;
+mlc::String enum_forward_declaration(mlc::String name) noexcept;
+mlc::String print_forward_declaration(mlc::String kind, mlc::String name) noexcept;
+mlc::String print_struct_empty_definition(mlc::String template_prefix, mlc::String name) noexcept;
+mlc::String struct_definition(mlc::String template_prefix, mlc::String name, mlc::String fields_code, bool forward_only) noexcept;
+mlc::String struct_field_line(mlc::String type_code, mlc::String field_name) noexcept;
+mlc::String function_prototype(mlc::String template_prefix, mlc::String return_type, mlc::String name, mlc::String parameters_code) noexcept;
+mlc::String compact_noexcept_function_definition(mlc::String template_prefix, mlc::String return_type, mlc::String name, mlc::String parameters_code, mlc::String return_expression_code) noexcept;
+mlc::String function_definition(mlc::String template_prefix, mlc::String return_type, mlc::String name, mlc::String parameters_code, mlc::String body_code) noexcept;
+mlc::String print_function_definition(mlc::String template_prefix, mlc::String return_type, mlc::String name, mlc::String parameters_code, mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> body, int body_statement_depth) noexcept;
+mlc::String namespace_block(mlc::String name, mlc::String contents_code) noexcept;
+mlc::String variant_type_alias(mlc::String template_prefix, mlc::String name, mlc::String types_code) noexcept;
+mlc::String concept_requires_definition(mlc::String template_prefix, mlc::String trait_name, mlc::String self_parameter_name, mlc::Array<mlc::String> requires_expressions) noexcept;
+mlc::String static_assert_declaration(mlc::String concept_cpp, mlc::Array<mlc::String> type_arguments, mlc::String message) noexcept;
+mlc::String print_hash_specialization_body(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept;
+mlc::String std_hash_specialization_definition(mlc::String type_name, mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> body_statements) noexcept;
+mlc::String print_struct_field_line(std::shared_ptr<cpp_ast::CppField> field_entry) noexcept;
+mlc::String print_struct_fields(mlc::Array<std::shared_ptr<cpp_ast::CppField>> fields) noexcept;
+mlc::String print_access_specifier_for_base(cpp_ast::CppAccessLevel access) noexcept;
+mlc::String print_access_label(cpp_ast::CppAccessLevel access) noexcept;
+mlc::String print_base_class_entry(cpp_ast::CppBaseClass base_class) noexcept;
+mlc::String print_base_class_list(mlc::Array<cpp_ast::CppBaseClass> base_classes) noexcept;
+mlc::String print_function_modifiers_prefix(cpp_ast::CppFnModifiers modifiers) noexcept;
+mlc::String print_function_modifiers_suffix(cpp_ast::CppFnModifiers modifiers) noexcept;
+mlc::String print_function_prototype_core(std::shared_ptr<cpp_ast::CppFunctionPrototype> prototype, int indent_depth) noexcept;
+mlc::String print_function_prototype_line(std::shared_ptr<cpp_ast::CppFunctionPrototype> prototype) noexcept;
+mlc::String print_member_field_line(std::shared_ptr<cpp_ast::CppType> field_type, mlc::String field_name, mlc::String default_value) noexcept;
+mlc::String print_class_member_line(cpp_ast::CppClassMember member) noexcept;
+mlc::String print_class_body_members(mlc::Array<cpp_ast::CppClassMember> members) noexcept;
+mlc::String print_class_definition(cpp_ast::CppClassDefinition definition) noexcept;
+mlc::String typedef_declaration(mlc::String name, mlc::String type_code) noexcept;
+mlc::String extern_block_declaration(mlc::String linkage, mlc::String body_code) noexcept;
+mlc::String print_template_declaration(mlc::String template_parameters, std::shared_ptr<cpp_ast::CppDeclaration> inner) noexcept;
+mlc::Array<mlc::String> variant_arm_type_strings(std::shared_ptr<cpp_ast::CppVariantArm> arm) noexcept;
+mlc::String print_variant_types(mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> arms) noexcept;
+bool is_empty_cpp_block(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept;
+mlc::String conditional_if_statement(mlc::String condition_code, mlc::String then_code, std::shared_ptr<cpp_ast::CppStatement> else_branch, int depth) noexcept;
+mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStatement> statement, int depth) noexcept;
+mlc::String print_decl_sequence(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept;
+mlc::String print_decl_node(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept;
+mlc::String print_decls(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations) noexcept;
+mlc::String print_file_node(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
+mlc::String invoked_while_expression(std::shared_ptr<cpp_ast::CppExpression> condition, mlc::String body_statements) noexcept;
+mlc::String invoked_for_expression(mlc::String variable_name, std::shared_ptr<cpp_ast::CppExpression> iterator, mlc::String body_statements) noexcept;
+mlc::String invoked_block_expression(mlc::String body_statements) noexcept;
+mlc::String invoked_block_with_return_expression(mlc::String return_type, mlc::String body_statements) noexcept;
+mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpression> inner) noexcept;
+mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpression> resource, mlc::String binder, mlc::String body_statements) noexcept;
+mlc::String lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String return_type_code, mlc::String body_code) noexcept;
+mlc::String print_lambda_expression(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures, mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters, std::shared_ptr<cpp_ast::CppType> return_type, mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> body) noexcept;
+mlc::String mutable_lambda_expression(mlc::String capture_prefix, mlc::String parameters_code, mlc::String body_expression_code) noexcept;
+mlc::String print_mutable_lambda_expression(mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> captures, mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters, std::shared_ptr<cpp_ast::CppExpression> body) noexcept;
+mlc::String print_member_expression(std::shared_ptr<cpp_ast::CppExpression> object, mlc::String member_name, bool is_pointer) noexcept;
 mlc::String print_integer_literal(int integer_value) noexcept;
-
 mlc::String print_string_literal(mlc::String string_value) noexcept;
-
 mlc::String print_boolean_literal(bool boolean_value) noexcept;
-
 mlc::String print_identifier(mlc::String name) noexcept;
-
 mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpression> expression) noexcept;
-
 mlc::String print_statement(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept;
-
 mlc::String print_decl(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept;
-
 mlc::String print_file(std::shared_ptr<cpp_ast::CppFile> file) noexcept;
 
 } // namespace print

@@ -9,7 +9,8 @@ import { operator_method_for, array_element_type_from_array_type, type_is_unknow
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import { field_access_operator, find_field_value, is_constructor_call } from './codegen/expr/expression_support'
-import { first_arm_needs_deref, should_use_string_match_if_chain } from './codegen/expr/match_analysis'
+import { is_result_generic, result_ok_type, result_err_type } from './checker/check/method_types/result_option_method_types'
+import { first_arm_needs_deref, should_use_string_match_if_chain, subject_is_bool_type } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
 import * as mut_actual_argument from './codegen/expr/mut_actual_argument'
 import * as method_gen from './codegen/expr/method_gen'
@@ -72,6 +73,30 @@ fn gen_call_function_cpp_expression(
     end
   }
 
+// `Ok(x)`/`Err(x)` calls infer to a bare `Result` type (registry.ctor_type never
+// resolves the concrete type arguments - see infer_call_support.mlc), so plain
+// `Ok{x}` relies on CTAD to deduce `Ok<decltype(x)>`. That is wrong whenever the
+// enclosing Result's Ok/Err type is a sum type and x is only one concrete
+// alternative of it (e.g. `Ok(VmI32{...})` inside a function returning
+// `Result<VmValue, E>`, where `VmValue` is a variant containing `VmI32`) - C++
+// templates are not covariant, so `Ok<VmI32>` does not convert to `Ok<VmValue>`.
+// Pin the type argument explicitly from the enclosing function's declared
+// Result type whenever it is known, mirroring the same fallback match_gen.mlc
+// already uses for Ok/Err pattern destructuring.
+fn result_wrapper_cpp_type_argument(wrapped_cpp_type: string) -> string =
+  if wrapped_cpp_type == 'auto' || wrapped_cpp_type.length() == 0 then '' else `<${wrapped_cpp_type}>` end
+
+fn result_wrapper_ctor_type_argument(constructor_name: string, context: CodegenContext) -> string = do
+  const enclosing_type = context.enclosing_function_return_type
+  if !is_result_generic(enclosing_type) then ''
+  else if constructor_name == 'Ok' then
+    result_wrapper_cpp_type_argument(sem_type_to_cpp(context, result_ok_type(enclosing_type)))
+  else if constructor_name == 'Err' then
+    result_wrapper_cpp_type_argument(sem_type_to_cpp(context, result_err_type(enclosing_type)))
+  else ''
+  end
+end
+
 fn gen_constructor_call_cpp_expression(
   function_expression: Shared<SemanticExpression>,
   argument_expressions: [Shared<CppExpression>],
@@ -80,7 +105,8 @@ fn gen_constructor_call_cpp_expression(
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
-      const callee_code = qualify_function_callee(map_builtin(name), context)
+      const callee_code =
+        qualify_function_callee(map_builtin(name), context) + result_wrapper_ctor_type_argument(name, context)
       Shared.new(CppAggregateInit(callee_code, argument_expressions))
     end,
     _ => do
@@ -217,18 +243,71 @@ fn cpp_expression_is_inline(expression: Shared<CppExpression>) -> bool =
     _ => true
   }
 
+// A C++ ternary requires both branches to share (or mutually convert to) one
+// common type. That fails whenever `then`/`else` construct different concrete
+// alternatives of the same sum type (e.g. `if n == 1 then LChar{x} else LStr{x}`,
+// both alternatives of a `Literal` variant) - `LChar`/`LStr` are unrelated
+// structs with no common type between them, even though each individually
+// converts to the variant. Detect that by comparing each branch's own inferred
+// C++ type against the if-expression's unified type; when they differ, fall
+// back to an if/else lambda with an explicit return type instead of a ternary,
+// so each `return` implicitly converts into the named variant.
+fn if_branch_type_matches_result(
+  branch_expression: Shared<SemanticExpression>,
+  result_cpp: string,
+  context: CodegenContext
+) -> bool =
+  sem_type_to_cpp(context, sexpr_type(branch_expression)) == result_cpp
+
+// Sum-type constructor calls (e.g. `LChar(x)`, `Ok(x)`) all infer to their
+// *owner* type in the checker (see infer_call_support.mlc), so
+// `if_branch_type_matches_result` alone cannot see the mismatch: `LChar(x)` and
+// `LStr(x)` both report the owner sum type, yet each lowers to its own distinct
+// concrete C++ struct literal (`LChar{x}`/`LStr{x}`) - unrelated types with no
+// common ternary type unless they happen to be the exact same constructor.
+fn if_branch_constructor_name(branch_expression: Shared<SemanticExpression>) -> string =
+  match branch_expression {
+    SemanticExpressionCall(function_expression, _, _, _, _) =>
+      match function_expression {
+        SemanticExpressionIdent(name, _, _) => if is_constructor_call(function_expression) then name else '' end,
+        _ => ''
+      },
+    _ => ''
+  }
+
+fn if_ternary_is_safe(
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>,
+  if_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> bool = do
+  const then_ctor = if_branch_constructor_name(then_expression)
+  const else_ctor = if_branch_constructor_name(else_expression)
+  if (then_ctor.length() > 0 || else_ctor.length() > 0) && then_ctor != else_ctor then false
+  else
+    const result_cpp = match_codegen.expression_result_cpp_type_for_codegen(context, if_semantic_type)
+    if result_cpp == 'auto' || result_cpp.length() == 0 then true
+    else
+      if_branch_type_matches_result(then_expression, result_cpp, context) &&
+      if_branch_type_matches_result(else_expression, result_cpp, context)
+    end
+  end
+end
+
 fn gen_if_non_unit_result_cpp(
   condition_expression: Shared<CppExpression>,
   then_expression_cpp: Shared<CppExpression>,
   else_expression_cpp: Shared<CppExpression>,
-  if_semantic_type: Shared<Type>,
+  ternary_is_safe: bool,
+  result_cpp: string,
   context: CodegenContext
 ) -> Shared<CppExpression> = do
-  if cpp_expression_is_inline(then_expression_cpp) && cpp_expression_is_inline(else_expression_cpp) then
+  if ternary_is_safe && cpp_expression_is_inline(then_expression_cpp) && cpp_expression_is_inline(else_expression_cpp) then
     return Shared.new(CppTernary(condition_expression, then_expression_cpp, else_expression_cpp))
   end
+  const return_type = if result_cpp.length() > 0 then result_cpp else 'auto' end
   invoke_immediate_lambda_cpp(
-    Shared.new(CppTypeName('auto')),
+    Shared.new(CppTypeName(return_type)),
     [emit_helpers.make_if_cpp_statement(
       condition_expression,
       emit_helpers.make_block_cpp_statement([emit_helpers.make_return_cpp_statement(then_expression_cpp)]),
@@ -328,7 +407,12 @@ export fn gen_if_via_cpp_visitor(
       condition, then_expression, else_expression, if_semantic_type, context, gen_stmts)
   end
   gen_if_non_unit_result_cpp(
-    condition_expression, then_expression_cpp, else_expression_cpp, if_semantic_type, context)
+    condition_expression,
+    then_expression_cpp,
+    else_expression_cpp,
+    if_ternary_is_safe(then_expression, else_expression, if_semantic_type, context),
+    match_codegen.expression_result_cpp_type_for_codegen(context, if_semantic_type),
+    context)
 end
 
 export fn gen_block_via_cpp_visitor(
@@ -362,6 +446,10 @@ export fn gen_match_via_cpp_visitor(
     return match_codegen.gen_match_string_literal_expression_cpp(
       subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
   end
+  if match_codegen.expanded_any_wildcard(expanded_arms) || subject_is_bool_type(subject) then
+    return match_codegen.gen_match_guarded_expression_cpp(
+      subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
+  end
   match_codegen.gen_match_std_visit_cpp(
     subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
 end
@@ -386,6 +474,7 @@ fn gen_match_default_block_cpp(
   const inner_body = match_codegen.gen_match_guarded_body(
     subject,
     expanded_arms,
+    match_semantic_type,
     context,
     gen_stmts,
     (expression, eval_context, gen_stmts_fn) =>

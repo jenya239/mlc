@@ -378,7 +378,7 @@ compiler/
 | **3.5** C++ header import (minimal) | **done** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md) — subset для `import "foo.h"` |
 | **3.6** Full C++ header parser | **planned** | [TRACK_CPP_PARSER_FULL](agent/TRACK_CPP_PARSER_FULL.md) |
 | **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
-| **2.9** Build speed | **planned** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) — clang/ccache/mold, persistent obj, dev -O0 |
+| **2.9** Build speed | **open** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) closed; incremental-cache correctness gaps → [TRACK_BUILD_SPEED2](agent/TRACK_BUILD_SPEED2.md); full clang migration → [TRACK_CLANG_MIGRATION](agent/TRACK_CLANG_MIGRATION.md) |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
@@ -464,9 +464,9 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 Трек: [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md). **clang++ рекомендован, g++ — fallback.**
 
-### Phase 4: Self-hosting completeness — **done** (bootstrap link regression → [TRACK_BOOTSTRAP_LINK](agent/TRACK_BOOTSTRAP_LINK.md))
+### Phase 4: Self-hosting completeness — **done** ([TRACK_BOOTSTRAP_LINK](agent/TRACK_BOOTSTRAP_LINK.md) closed 2026-07-03)
 
-**Цель:** `compiler/build.sh` без Ruby. Трек: [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md). **Regression (2026-06-26):** `MLCC_BOOTSTRAP=1` fresh emit fails g++ link — stability track open.
+**Цель:** `compiler/build.sh` без Ruby. Трек: [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md). Bootstrap link regression (open 2026-06-26) closed 2026-07-03: `MLCC_BOOTSTRAP=1` builds, `run_mlcc_bootstrap_parity.sh` green, 144/144 clang `-fsyntax-only`, `mlcc`→`mlcc2` identity diff clean.
 
 ### Phase 5: Reddit / Community — **done** ([TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) closed)
 

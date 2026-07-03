@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "symbols.hpp"
 
 #include "ast.hpp"
@@ -13,341 +14,449 @@ using namespace lexer;
 using namespace decls;
 using namespace ast_tokens;
 
-ast::Span span_with_file(mlc::String source_file, ast::Span source_span) noexcept;
-
-void symbol_table_set(mlc::HashMap<mlc::String, ast::Span>& table, mlc::String name, mlc::String source_file, ast::Span source_span) noexcept;
-
-void symbol_table_set_pattern_rest_name(mlc::HashMap<mlc::String, ast::Span>& table, mlc::String rest_name, mlc::String source_file, std::shared_ptr<ast::Pattern> pattern) noexcept;
-
-void collect_first_pattern_alternative(mlc::Array<std::shared_ptr<ast::Pattern>> alternatives, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_pattern_definition_spans(std::shared_ptr<ast::Pattern> pattern, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_statement_definition_spans(std::shared_ptr<ast::Stmt> statement, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_statements_definition_spans(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_match_arm_definition_spans(std::shared_ptr<ast::MatchArm> arm, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_expression_definition_spans(std::shared_ptr<ast::Expr> expression, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-void collect_declaration_definition_spans(std::shared_ptr<ast::Decl> declaration, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept;
-
-mlc::HashMap<mlc::String, ast::Span> build_symbol_table(ast::Program program, mlc::String source_file) noexcept;
-
-mlc::String token_identifier_name(ast_tokens::Token token) noexcept;
-
-mlc::String find_identifier_at_position(mlc::String source_text, int line_zero_based, int column_zero_based) noexcept;
-
-ast::Span resolve_definition_span(mlc::HashMap<mlc::String, ast::Span> symbol_table, mlc::String identifier_name) noexcept;
-
-ast::Span resolve_definition_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept;
-
-ast::Span span_with_file(mlc::String source_file, ast::Span source_span) noexcept{return ast::span_make(source_file, source_span.line, source_span.column);}
-
+ast::Span span_with_file(mlc::String source_file, ast::Span source_span) noexcept{
+  return ast::span_make(source_file, source_span.line, source_span.column);
+}
 void symbol_table_set(mlc::HashMap<mlc::String, ast::Span>& table, mlc::String name, mlc::String source_file, ast::Span source_span) noexcept{
-if (name.length() > 0 && source_span.line > 0){
-table.set(name, span_with_file(source_file, source_span));
+  if (((name.length() > 0) && (source_span.line > 0)))   {
+    table.set(name, span_with_file(source_file, source_span));
+  }
 }
-}
-
 void symbol_table_set_pattern_rest_name(mlc::HashMap<mlc::String, ast::Span>& table, mlc::String rest_name, mlc::String source_file, std::shared_ptr<ast::Pattern> pattern) noexcept{
-if (rest_name.length() > 0 && rest_name != mlc::String("_")){
-symbol_table_set(table, rest_name, source_file, ast::pattern_span(pattern));
+  if (((rest_name.length() > 0) && (rest_name != mlc::String("_", 1))))   {
+    symbol_table_set(table, rest_name, source_file, ast::pattern_span(pattern));
+  }
 }
-}
-
 void collect_first_pattern_alternative(mlc::Array<std::shared_ptr<ast::Pattern>> alternatives, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-if (alternatives.size() > 0){
-collect_pattern_definition_spans(alternatives[0], source_file, table);
+  if ((alternatives.length() > 0))   {
+    collect_pattern_definition_spans(alternatives[0], source_file, table);
+  }
 }
-}
-
 void collect_pattern_definition_spans(std::shared_ptr<ast::Pattern> pattern, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-return [&]() -> void { if (std::holds_alternative<ast::PatternIdent>((*pattern))) { auto _v_patternident = std::get<ast::PatternIdent>((*pattern)); auto [name, pattern_source_span] = _v_patternident; return symbol_table_set(table, name, source_file, pattern_source_span); } if (std::holds_alternative<ast::PatternCtor>((*pattern))) { auto _v_patternctor = std::get<ast::PatternCtor>((*pattern)); auto [_w0, sub_patterns, _w1] = _v_patternctor; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < sub_patterns.size()){
-{
+  return [&]() {
+auto __match_subject = pattern;
+if (std::holds_alternative<ast::PatternIdent>((*__match_subject))) {
+const ast::PatternIdent& patternIdent = std::get<ast::PatternIdent>((*__match_subject));
+auto [name, pattern_source_span] = patternIdent; symbol_table_set(table, name, source_file, pattern_source_span);
+return;
+}
+if (std::holds_alternative<ast::PatternCtor>((*__match_subject))) {
+const ast::PatternCtor& patternCtor = std::get<ast::PatternCtor>((*__match_subject));
+auto [__0, sub_patterns, __2] = patternCtor; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < sub_patterns.length())) {
 collect_pattern_definition_spans(sub_patterns[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::PatternRecord>((*pattern))) { auto _v_patternrecord = std::get<ast::PatternRecord>((*pattern)); auto [_w0, field_patterns, _w1] = _v_patternrecord; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < field_patterns.size()){
-{
+if (std::holds_alternative<ast::PatternRecord>((*__match_subject))) {
+const ast::PatternRecord& patternRecord = std::get<ast::PatternRecord>((*__match_subject));
+auto [__0, field_patterns, __2] = patternRecord; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < field_patterns.length())) {
 collect_pattern_definition_spans(field_patterns[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::PatternTuple>((*pattern))) { auto _v_patterntuple = std::get<ast::PatternTuple>((*pattern)); auto [sub_patterns, _w0] = _v_patterntuple; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < sub_patterns.size()){
-{
+if (std::holds_alternative<ast::PatternTuple>((*__match_subject))) {
+const ast::PatternTuple& patternTuple = std::get<ast::PatternTuple>((*__match_subject));
+auto [sub_patterns, __1] = patternTuple; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < sub_patterns.length())) {
 collect_pattern_definition_spans(sub_patterns[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::PatternArray>((*pattern))) { auto _v_patternarray = std::get<ast::PatternArray>((*pattern)); auto [sub_patterns, rest_name, _w0] = _v_patternarray; return [&]() { 
-  int index = 0;
-  while (index < sub_patterns.size()){
-{
-collect_pattern_definition_spans(sub_patterns[index], source_file, table);
-index = index + 1;
+if (std::holds_alternative<ast::PatternArray>((*__match_subject))) {
+const ast::PatternArray& patternArray = std::get<ast::PatternArray>((*__match_subject));
+auto [sub_patterns, rest_name, __2] = patternArray; [&]() {
+auto index = 0;
+while ((index < sub_patterns.length())) {
+  collect_pattern_definition_spans(sub_patterns[index], source_file, table);
+  (index = (index + 1));
 }
+return symbol_table_set_pattern_rest_name(table, rest_name, source_file, pattern);
+}();
+return;
 }
-  return symbol_table_set_pattern_rest_name(table, rest_name, source_file, pattern);
- }(); } if (std::holds_alternative<ast::PatternOr>((*pattern))) { auto _v_patternor = std::get<ast::PatternOr>((*pattern)); auto [alternatives, _w0] = _v_patternor; return collect_first_pattern_alternative(alternatives, source_file, table); } return; }();
+if (std::holds_alternative<ast::PatternOr>((*__match_subject))) {
+const ast::PatternOr& patternOr = std::get<ast::PatternOr>((*__match_subject));
+auto [alternatives, __1] = patternOr; collect_first_pattern_alternative(alternatives, source_file, table);
+return;
 }
-
+std::make_tuple();
+return;
+std::abort();
+}();
+}
 void collect_statement_definition_spans(std::shared_ptr<ast::Stmt> statement, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-return std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> void { auto [name, _w0, _w1, value, statement_span] = stmtlet; [&]() { 
-  symbol_table_set(table, name, source_file, statement_span);
-  return collect_expression_definition_spans(value, source_file, table);
- }(); },
-  [&](const StmtLetPattern& stmtletpattern) -> void { auto [pattern, _w0, _w1, value, has_else, else_body, _w2] = stmtletpattern; [&]() { 
-  collect_expression_definition_spans(value, source_file, table);
-  collect_pattern_definition_spans(pattern, source_file, table);
-  if (has_else){
-collect_expression_definition_spans(else_body, source_file, table);
+  return std::visit(overloaded{[&](const ast::StmtLet& stmtLet) -> void { auto [name, __1, __2, value, statement_span] = stmtLet; [&]() {
+symbol_table_set(table, name, source_file, statement_span);
+return collect_expression_definition_spans(value, source_file, table);
+}(); },
+[&](const ast::StmtLetPattern& stmtLetPattern) -> void { auto [pattern, __1, __2, value, has_else, else_body, __6] = stmtLetPattern; [&]() {
+collect_expression_definition_spans(value, source_file, table);
+collect_pattern_definition_spans(pattern, source_file, table);
+if (has_else) {
+  collect_expression_definition_spans(else_body, source_file, table);
 }
- }(); },
-  [&](const StmtLetConst& stmtletconst) -> void { auto [name, _w0, value, statement_span] = stmtletconst; [&]() { 
-  symbol_table_set(table, name, source_file, statement_span);
-  return collect_expression_definition_spans(value, source_file, table);
- }(); },
-  [&](const StmtExpr& stmtexpr) -> void { auto [expression, _w0] = stmtexpr; collect_expression_definition_spans(expression, source_file, table); },
-  [&](const StmtReturn& stmtreturn) -> void { auto [expression, _w0] = stmtreturn; collect_expression_definition_spans(expression, source_file, table); },
-  [&](const StmtBreak& stmtbreak) -> void { auto [_w0] = stmtbreak; std::make_tuple(); },
-  [&](const StmtContinue& stmtcontinue) -> void { auto [_w0] = stmtcontinue; std::make_tuple(); }
-}, (*statement)._);
+return std::make_tuple();
+}(); },
+[&](const ast::StmtLetConst& stmtLetConst) -> void { auto [name, __1, value, statement_span] = stmtLetConst; [&]() {
+symbol_table_set(table, name, source_file, statement_span);
+return collect_expression_definition_spans(value, source_file, table);
+}(); },
+[&](const ast::StmtExpr& stmtExpr) -> void { auto [expression, __1] = stmtExpr; collect_expression_definition_spans(expression, source_file, table); },
+[&](const ast::StmtReturn& stmtReturn) -> void { auto [expression, __1] = stmtReturn; collect_expression_definition_spans(expression, source_file, table); },
+[&](const ast::StmtBreak& stmtBreak) -> void { auto [__0] = stmtBreak; std::make_tuple(); },
+[&](const ast::StmtContinue& stmtContinue) -> void { auto [__0] = stmtContinue; std::make_tuple(); }
+}, (*statement));
 }
-
 void collect_statements_definition_spans(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-int index = 0;
-return [&]() { 
-  while (index < statements.size()){
-{
+  auto index = 0;
+  return [&]() {
+while ((index < statements.length())) {
 collect_statement_definition_spans(statements[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
 }
- }();
-}
-
 void collect_match_arm_definition_spans(std::shared_ptr<ast::MatchArm> arm, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-collect_pattern_definition_spans(arm->pattern, source_file, table);
-return collect_expression_definition_spans(arm->body, source_file, table);
+  collect_pattern_definition_spans(arm->pattern, source_file, table);
+  return collect_expression_definition_spans(arm->body, source_file, table);
 }
-
 void collect_expression_definition_spans(std::shared_ptr<ast::Expr> expression, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-return [&]() -> void { if (std::holds_alternative<ast::ExprBlock>((*expression)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expression)._); auto [statements, result_expression, _w0] = _v_exprblock; return [&]() { 
-  collect_statements_definition_spans(statements, source_file, table);
-  return collect_expression_definition_spans(result_expression, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprLambda>((*expression)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*expression)._); auto [parameter_names, body_expression, lambda_span] = _v_exprlambda; return [&]() { 
-  int index = 0;
-  while (index < parameter_names.size()){
-{
-symbol_table_set(table, parameter_names[index], source_file, lambda_span);
-index = index + 1;
+  return [&]() {
+auto __match_subject = expression;
+if (std::holds_alternative<ast::ExprBlock>((*__match_subject))) {
+const ast::ExprBlock& exprBlock = std::get<ast::ExprBlock>((*__match_subject));
+auto [statements, result_expression, __2] = exprBlock; [&]() {
+collect_statements_definition_spans(statements, source_file, table);
+return collect_expression_definition_spans(result_expression, source_file, table);
+}();
+return;
 }
+if (std::holds_alternative<ast::ExprLambda>((*__match_subject))) {
+const ast::ExprLambda& exprLambda = std::get<ast::ExprLambda>((*__match_subject));
+auto [parameter_names, body_expression, lambda_span] = exprLambda; [&]() {
+auto index = 0;
+while ((index < parameter_names.length())) {
+  symbol_table_set(table, parameter_names[index], source_file, lambda_span);
+  (index = (index + 1));
 }
-  return collect_expression_definition_spans(body_expression, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprFor>((*expression)._)) { auto _v_exprfor = std::get<ast::ExprFor>((*expression)._); auto [loop_variable, iterable, body_statements, loop_span] = _v_exprfor; return [&]() { 
-  symbol_table_set(table, loop_variable, source_file, loop_span);
-  collect_expression_definition_spans(iterable, source_file, table);
-  return collect_statements_definition_spans(body_statements, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprWhile>((*expression)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expression)._); auto [condition, body_statements, _w0] = _v_exprwhile; return [&]() { 
-  collect_expression_definition_spans(condition, source_file, table);
-  return collect_statements_definition_spans(body_statements, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprSpawn>((*expression)._)) { auto _v_exprspawn = std::get<ast::ExprSpawn>((*expression)._); auto [body_statements, _w0] = _v_exprspawn; return collect_statements_definition_spans(body_statements, source_file, table); } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [condition, then_branch, else_branch, _w0] = _v_exprif; return [&]() { 
-  collect_expression_definition_spans(condition, source_file, table);
-  collect_expression_definition_spans(then_branch, source_file, table);
-  return collect_expression_definition_spans(else_branch, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprMatch>((*expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*expression)._); auto [scrutinee, arms, _w0] = _v_exprmatch; return [&]() { 
-  collect_expression_definition_spans(scrutinee, source_file, table);
-  int index = 0;
-  return [&]() { 
-  while (index < arms.size()){
-{
+return collect_expression_definition_spans(body_expression, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprFor>((*__match_subject))) {
+const ast::ExprFor& exprFor = std::get<ast::ExprFor>((*__match_subject));
+auto [loop_variable, iterable, body_statements, loop_span] = exprFor; [&]() {
+symbol_table_set(table, loop_variable, source_file, loop_span);
+collect_expression_definition_spans(iterable, source_file, table);
+return collect_statements_definition_spans(body_statements, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprWhile>((*__match_subject))) {
+const ast::ExprWhile& exprWhile = std::get<ast::ExprWhile>((*__match_subject));
+auto [condition, body_statements, __2] = exprWhile; [&]() {
+collect_expression_definition_spans(condition, source_file, table);
+return collect_statements_definition_spans(body_statements, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprSpawn>((*__match_subject))) {
+const ast::ExprSpawn& exprSpawn = std::get<ast::ExprSpawn>((*__match_subject));
+auto [body_statements, __1] = exprSpawn; collect_statements_definition_spans(body_statements, source_file, table);
+return;
+}
+if (std::holds_alternative<ast::ExprIf>((*__match_subject))) {
+const ast::ExprIf& exprIf = std::get<ast::ExprIf>((*__match_subject));
+auto [condition, then_branch, else_branch, __3] = exprIf; [&]() {
+collect_expression_definition_spans(condition, source_file, table);
+collect_expression_definition_spans(then_branch, source_file, table);
+return collect_expression_definition_spans(else_branch, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprMatch>((*__match_subject))) {
+const ast::ExprMatch& exprMatch = std::get<ast::ExprMatch>((*__match_subject));
+auto [scrutinee, arms, __2] = exprMatch; [&]() {
+collect_expression_definition_spans(scrutinee, source_file, table);
+auto index = 0;
+return [&]() {
+while ((index < arms.length())) {
 collect_match_arm_definition_spans(arms[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprWith>((*expression)._)) { auto _v_exprwith = std::get<ast::ExprWith>((*expression)._); auto [resource_expression, binder_name, body_statements, with_span] = _v_exprwith; return [&]() { 
-  collect_expression_definition_spans(resource_expression, source_file, table);
-  symbol_table_set(table, binder_name, source_file, with_span);
-  return collect_statements_definition_spans(body_statements, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [_w0, left_expression, right_expression, _w1] = _v_exprbin; return [&]() { 
-  collect_expression_definition_spans(left_expression, source_file, table);
-  return collect_expression_definition_spans(right_expression, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprUn>((*expression)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expression)._); auto [_w0, inner_expression, _w1] = _v_exprun; return collect_expression_definition_spans(inner_expression, source_file, table); } if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [callee, arguments, _w0] = _v_exprcall; return [&]() { 
-  collect_expression_definition_spans(callee, source_file, table);
-  int index = 0;
-  return [&]() { 
-  while (index < arguments.size()){
-{
+if (std::holds_alternative<ast::ExprWith>((*__match_subject))) {
+const ast::ExprWith& exprWith = std::get<ast::ExprWith>((*__match_subject));
+auto [resource_expression, binder_name, body_statements, with_span] = exprWith; [&]() {
+collect_expression_definition_spans(resource_expression, source_file, table);
+symbol_table_set(table, binder_name, source_file, with_span);
+return collect_statements_definition_spans(body_statements, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprBin>((*__match_subject))) {
+const ast::ExprBin& exprBin = std::get<ast::ExprBin>((*__match_subject));
+auto [__0, left_expression, right_expression, __3] = exprBin; [&]() {
+collect_expression_definition_spans(left_expression, source_file, table);
+return collect_expression_definition_spans(right_expression, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprUn>((*__match_subject))) {
+const ast::ExprUn& exprUn = std::get<ast::ExprUn>((*__match_subject));
+auto [__0, inner_expression, __2] = exprUn; collect_expression_definition_spans(inner_expression, source_file, table);
+return;
+}
+if (std::holds_alternative<ast::ExprCall>((*__match_subject))) {
+const ast::ExprCall& exprCall = std::get<ast::ExprCall>((*__match_subject));
+auto [callee, arguments, __2] = exprCall; [&]() {
+collect_expression_definition_spans(callee, source_file, table);
+auto index = 0;
+return [&]() {
+while ((index < arguments.length())) {
 collect_expression_definition_spans(arguments[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprMethod>((*expression)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression)._); auto [receiver, _w0, arguments, _w1] = _v_exprmethod; return [&]() { 
-  collect_expression_definition_spans(receiver, source_file, table);
-  int index = 0;
-  return [&]() { 
-  while (index < arguments.size()){
-{
+if (std::holds_alternative<ast::ExprMethod>((*__match_subject))) {
+const ast::ExprMethod& exprMethod = std::get<ast::ExprMethod>((*__match_subject));
+auto [receiver, __1, arguments, __3] = exprMethod; [&]() {
+collect_expression_definition_spans(receiver, source_file, table);
+auto index = 0;
+return [&]() {
+while ((index < arguments.length())) {
 collect_expression_definition_spans(arguments[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprField>((*expression)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expression)._); auto [object, _w0, _w1] = _v_exprfield; return collect_expression_definition_spans(object, source_file, table); } if (std::holds_alternative<ast::ExprIndex>((*expression)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expression)._); auto [object, index_expression, _w0] = _v_exprindex; return [&]() { 
-  collect_expression_definition_spans(object, source_file, table);
-  return collect_expression_definition_spans(index_expression, source_file, table);
- }(); } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [_w0, parts, _w1] = _v_exprrecord; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < parts.size()){
-{
-std::visit(overloaded{
-  [&](const RecordLitFields& recordlitfields) -> void { auto [field_values] = recordlitfields; [&]() { 
-  int field_index = 0;
-  return [&]() { 
-  while (field_index < field_values.size()){
-{
+if (std::holds_alternative<ast::ExprField>((*__match_subject))) {
+const ast::ExprField& exprField = std::get<ast::ExprField>((*__match_subject));
+auto [object, __1, __2] = exprField; collect_expression_definition_spans(object, source_file, table);
+return;
+}
+if (std::holds_alternative<ast::ExprIndex>((*__match_subject))) {
+const ast::ExprIndex& exprIndex = std::get<ast::ExprIndex>((*__match_subject));
+auto [object, index_expression, __2] = exprIndex; [&]() {
+collect_expression_definition_spans(object, source_file, table);
+return collect_expression_definition_spans(index_expression, source_file, table);
+}();
+return;
+}
+if (std::holds_alternative<ast::ExprRecord>((*__match_subject))) {
+const ast::ExprRecord& exprRecord = std::get<ast::ExprRecord>((*__match_subject));
+auto [__0, parts, __2] = exprRecord; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < parts.length())) {
+std::visit(overloaded{[&](const ast::RecordLitFields& recordLitFields) -> void { auto [field_values] = recordLitFields; [&]() {
+auto field_index = 0;
+return [&]() {
+while ((field_index < field_values.length())) {
 collect_expression_definition_spans(field_values[field_index]->value, source_file, table);
-field_index = field_index + 1;
+(field_index = (field_index + 1));
 }
-}
- }();
- }(); },
-  [&](const RecordLitSpread& recordlitspread) -> void { auto [spread_expression] = recordlitspread; collect_expression_definition_spans(spread_expression, source_file, table); }
+}();
+}(); },
+[&](const ast::RecordLitSpread& recordLitSpread) -> void { auto [spread_expression] = recordLitSpread; collect_expression_definition_spans(spread_expression, source_file, table); }
 }, parts[index]);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprRecordUpdate>((*expression)._)) { auto _v_exprrecordupdate = std::get<ast::ExprRecordUpdate>((*expression)._); auto [_w0, base_record, field_values, _w1] = _v_exprrecordupdate; return [&]() { 
-  collect_expression_definition_spans(base_record, source_file, table);
-  int index = 0;
-  return [&]() { 
-  while (index < field_values.size()){
-{
+if (std::holds_alternative<ast::ExprRecordUpdate>((*__match_subject))) {
+const ast::ExprRecordUpdate& exprRecordUpdate = std::get<ast::ExprRecordUpdate>((*__match_subject));
+auto [__0, base_record, field_values, __3] = exprRecordUpdate; [&]() {
+collect_expression_definition_spans(base_record, source_file, table);
+auto index = 0;
+return [&]() {
+while ((index < field_values.length())) {
 collect_expression_definition_spans(field_values[index]->value, source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprArray>((*expression)._)) { auto _v_exprarray = std::get<ast::ExprArray>((*expression)._); auto [elements, _w0] = _v_exprarray; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < elements.size()){
-{
+if (std::holds_alternative<ast::ExprArray>((*__match_subject))) {
+const ast::ExprArray& exprArray = std::get<ast::ExprArray>((*__match_subject));
+auto [elements, __1] = exprArray; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < elements.length())) {
 collect_expression_definition_spans(elements[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprTuple>((*expression)._)) { auto _v_exprtuple = std::get<ast::ExprTuple>((*expression)._); auto [elements, _w0] = _v_exprtuple; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < elements.size()){
-{
+if (std::holds_alternative<ast::ExprTuple>((*__match_subject))) {
+const ast::ExprTuple& exprTuple = std::get<ast::ExprTuple>((*__match_subject));
+auto [elements, __1] = exprTuple; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < elements.length())) {
 collect_expression_definition_spans(elements[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::ExprQuestion>((*expression)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expression)._); auto [inner_expression, _w0] = _v_exprquestion; return collect_expression_definition_spans(inner_expression, source_file, table); } if (std::holds_alternative<ast::ExprNamedArg>((*expression)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*expression)._); auto [_w0, argument_expression, _w1] = _v_exprnamedarg; return collect_expression_definition_spans(argument_expression, source_file, table); } return; }();
+if (std::holds_alternative<ast::ExprQuestion>((*__match_subject))) {
+const ast::ExprQuestion& exprQuestion = std::get<ast::ExprQuestion>((*__match_subject));
+auto [inner_expression, __1] = exprQuestion; collect_expression_definition_spans(inner_expression, source_file, table);
+return;
 }
-
+if (std::holds_alternative<ast::ExprNamedArg>((*__match_subject))) {
+const ast::ExprNamedArg& exprNamedArg = std::get<ast::ExprNamedArg>((*__match_subject));
+auto [__0, argument_expression, __2] = exprNamedArg; collect_expression_definition_spans(argument_expression, source_file, table);
+return;
+}
+std::make_tuple();
+return;
+std::abort();
+}();
+}
 void collect_declaration_definition_spans(std::shared_ptr<ast::Decl> declaration, mlc::String source_file, mlc::HashMap<mlc::String, ast::Span>& table) noexcept{
-return [&]() -> void { if (std::holds_alternative<ast::DeclFn>((*declaration))) { auto _v_declfn = std::get<ast::DeclFn>((*declaration)); auto [function_name, _w0, _w1, parameters, _w2, body_expression, _w3] = _v_declfn; return [&]() { 
-  symbol_table_set(table, function_name, source_file, ast::expr_span(body_expression));
-  int index = 0;
-  while (index < parameters.size()){
-{
-symbol_table_set(table, parameters[index]->name, source_file, ast::expr_span(body_expression));
-index = index + 1;
+  return [&]() {
+auto __match_subject = declaration;
+if (std::holds_alternative<ast::DeclFn>((*__match_subject))) {
+const ast::DeclFn& declFn = std::get<ast::DeclFn>((*__match_subject));
+auto [function_name, __1, __2, parameters, __4, body_expression, __6] = declFn; [&]() {
+symbol_table_set(table, function_name, source_file, ast::expr_span(body_expression));
+auto index = 0;
+while ((index < parameters.length())) {
+  symbol_table_set(table, parameters[index]->name, source_file, ast::expr_span(body_expression));
+  (index = (index + 1));
 }
+return collect_expression_definition_spans(body_expression, source_file, table);
+}();
+return;
 }
-  return collect_expression_definition_spans(body_expression, source_file, table);
- }(); } if (std::holds_alternative<ast::DeclType>((*declaration))) { auto _v_decltype = std::get<ast::DeclType>((*declaration)); auto [type_name, _w0, _w1, _w2, name_span] = _v_decltype; return symbol_table_set(table, type_name, source_file, name_span); } if (std::holds_alternative<ast::DeclTypeAlias>((*declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*declaration)); auto [alias_name, _w0, _w1, name_span] = _v_decltypealias; return symbol_table_set(table, alias_name, source_file, name_span); } if (std::holds_alternative<ast::DeclTrait>((*declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*declaration)); auto [trait_name, _w0, members, name_span] = _v_decltrait; return [&]() { 
-  symbol_table_set(table, trait_name, source_file, name_span);
-  int index = 0;
-  return [&]() { 
-  while (index < members.size()){
-{
+if (std::holds_alternative<ast::DeclType>((*__match_subject))) {
+const ast::DeclType& declType = std::get<ast::DeclType>((*__match_subject));
+auto [type_name, __1, __2, __3, name_span] = declType; symbol_table_set(table, type_name, source_file, name_span);
+return;
+}
+if (std::holds_alternative<ast::DeclTypeAlias>((*__match_subject))) {
+const ast::DeclTypeAlias& declTypeAlias = std::get<ast::DeclTypeAlias>((*__match_subject));
+auto [alias_name, __1, __2, name_span] = declTypeAlias; symbol_table_set(table, alias_name, source_file, name_span);
+return;
+}
+if (std::holds_alternative<ast::DeclTrait>((*__match_subject))) {
+const ast::DeclTrait& declTrait = std::get<ast::DeclTrait>((*__match_subject));
+auto [trait_name, __1, members, name_span] = declTrait; [&]() {
+symbol_table_set(table, trait_name, source_file, name_span);
+auto index = 0;
+return [&]() {
+while ((index < members.length())) {
 collect_declaration_definition_spans(members[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::DeclExtend>((*declaration))) { auto _v_declextend = std::get<ast::DeclExtend>((*declaration)); auto [_w0, _w1, members, _w2] = _v_declextend; return [&]() { 
-  int index = 0;
-  return [&]() { 
-  while (index < members.size()){
-{
+if (std::holds_alternative<ast::DeclExtend>((*__match_subject))) {
+const ast::DeclExtend& declExtend = std::get<ast::DeclExtend>((*__match_subject));
+auto [__0, __1, members, __3] = declExtend; [&]() {
+auto index = 0;
+return [&]() {
+while ((index < members.length())) {
 collect_declaration_definition_spans(members[index], source_file, table);
-index = index + 1;
+(index = (index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } if (std::holds_alternative<ast::DeclExported>((*declaration))) { auto _v_declexported = std::get<ast::DeclExported>((*declaration)); auto [inner_declaration] = _v_declexported; return collect_declaration_definition_spans(inner_declaration, source_file, table); } return; }();
+if (std::holds_alternative<ast::DeclExported>((*__match_subject))) {
+const ast::DeclExported& declExported = std::get<ast::DeclExported>((*__match_subject));
+auto [inner_declaration] = declExported; collect_declaration_definition_spans(inner_declaration, source_file, table);
+return;
 }
-
+std::make_tuple();
+return;
+std::abort();
+}();
+}
 mlc::HashMap<mlc::String, ast::Span> build_symbol_table(ast::Program program, mlc::String source_file) noexcept{
-mlc::HashMap<mlc::String, ast::Span> table = mlc::HashMap<mlc::String, ast::Span>();
-int index = 0;
-while (index < program.decls.size()){
-{
-collect_declaration_definition_spans(program.decls[index], source_file, table);
-index = index + 1;
+  auto table = mlc::HashMap<mlc::String, ast::Span>();
+  auto index = 0;
+  while ((index < program.decls.length()))   {
+    collect_declaration_definition_spans(program.decls[index], source_file, table);
+    (index = (index + 1));
+  }
+  return table;
 }
+mlc::String token_identifier_name(ast_tokens::Token token) noexcept{
+  return [&]() -> mlc::String {
+auto __match_subject = ast_tokens::Token_kind_value(token);
+if (std::holds_alternative<ast_tokens::Ident>(__match_subject)) {
+const ast_tokens::Ident& ident = std::get<ast_tokens::Ident>(__match_subject);
+auto [name] = ident; return name;
 }
-return table;
+return mlc::String("", 0);
+std::abort();
+}();
 }
-
-mlc::String token_identifier_name(ast_tokens::Token token) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<ast_tokens::Ident>(ast_tokens::Token_kind_value(token))) { auto _v_ident = std::get<ast_tokens::Ident>(ast_tokens::Token_kind_value(token)); auto [name] = _v_ident; return name; } return mlc::String(""); }();}
-
 mlc::String find_identifier_at_position(mlc::String source_text, int line_zero_based, int column_zero_based) noexcept{
-ast_tokens::LexOut lex_output = lexer::tokenize(source_text);
-int index = 0;
-mlc::String found_name = mlc::String("");
-int target_line = line_zero_based + 1;
-int target_column = column_zero_based + 1;
-while (index < lex_output.tokens.size()){
-{
-ast_tokens::Token token = lex_output.tokens[index];
-mlc::String identifier_name = token_identifier_name(token);
-if (identifier_name.length() > 0){
-{
-found_name = ast_tokens::Token_line_number(token) == target_line && ast_tokens::Token_column(token) <= target_column && target_column < ast_tokens::Token_column(token) + identifier_name.length() ? identifier_name : found_name;
+  auto lex_output = lexer::tokenize(source_text);
+  auto index = 0;
+  auto found_name = mlc::String("", 0);
+  auto target_line = (line_zero_based + 1);
+  auto target_column = (column_zero_based + 1);
+  while ((index < lex_output.tokens.length()))   {
+    auto token = lex_output.tokens[index];
+    auto identifier_name = token_identifier_name(token);
+    if ((identifier_name.length() > 0))     {
+      (found_name = ((((ast_tokens::Token_line_number(token) == target_line) && (ast_tokens::Token_column(token) <= target_column)) && (target_column < (ast_tokens::Token_column(token) + identifier_name.length()))) ? (identifier_name) : (found_name)));
+    }
+    (index = (index + 1));
+  }
+  return found_name;
 }
+ast::Span resolve_definition_span(mlc::HashMap<mlc::String, ast::Span> symbol_table, mlc::String identifier_name) noexcept{
+  if (((identifier_name.length() > 0) && symbol_table.has(identifier_name)))   {
+    return symbol_table.get(identifier_name);
+  } else   {
+    return ast::span_unknown();
+  }
 }
-index = index + 1;
-}
-}
-return found_name;
-}
-
-ast::Span resolve_definition_span(mlc::HashMap<mlc::String, ast::Span> symbol_table, mlc::String identifier_name) noexcept{return identifier_name.length() > 0 && symbol_table.has(identifier_name) ? symbol_table.get(identifier_name) : ast::span_unknown();}
-
 ast::Span resolve_definition_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept{
-ast::Program program = decls::parse_program(lexer::tokenize(source_text).tokens);
-mlc::HashMap<mlc::String, ast::Span> symbol_table = build_symbol_table(program, source_file);
-mlc::String identifier_name = find_identifier_at_position(source_text, line_zero_based, column_zero_based);
-return resolve_definition_span(symbol_table, identifier_name);
+  auto program = decls::parse_program(lexer::tokenize(source_text).tokens);
+  auto symbol_table = build_symbol_table(program, source_file);
+  auto identifier_name = find_identifier_at_position(source_text, line_zero_based, column_zero_based);
+  return resolve_definition_span(symbol_table, identifier_name);
 }
 
 } // namespace symbols

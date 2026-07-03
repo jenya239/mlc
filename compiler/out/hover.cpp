@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "hover.hpp"
 
 #include "ast.hpp"
@@ -27,95 +28,108 @@ using namespace semantic_type_structure;
 using namespace symbols;
 using namespace ast_tokens;
 
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> hover_function_parameter_environment(mlc::Array<std::shared_ptr<ast::Param>> parameters, registry::TypeRegistry registry) noexcept;
-
-mlc::String hover_type_for_identifier_in_program(ast::Program program, registry::TypeRegistry registry, mlc::String identifier_name, int target_line_one_based) noexcept;
-
-mlc::String resolve_hover_type_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept;
-
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> hover_function_parameter_environment(mlc::Array<std::shared_ptr<ast::Param>> parameters, registry::TypeRegistry registry) noexcept{
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
-int index = 0;
-while (index < parameters.size()){
-{
-std::shared_ptr<ast::Param> parameter = parameters[index];
-type_environment.set(ast::param_name(parameter), registry::type_from_annotation_with_registry(ast::param_type_value(parameter), registry));
-index = index + 1;
+  auto type_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
+  auto index = 0;
+  while ((index < parameters.length()))   {
+    auto parameter = parameters[index];
+    type_environment.set(ast::param_name(parameter), registry::type_from_annotation_with_registry(ast::param_type_value(parameter), registry));
+    (index = (index + 1));
+  }
+  return type_environment;
 }
-}
-return type_environment;
-}
-
 mlc::String hover_type_for_identifier_in_program(ast::Program program, registry::TypeRegistry registry, mlc::String identifier_name, int target_line_one_based) noexcept{
-return registry::TypeRegistry_has_fn(registry, identifier_name) ? semantic_type_structure::type_description(registry::TypeRegistry_fn_type(registry, identifier_name)) : registry::TypeRegistry_has_ctor(registry, identifier_name) ? semantic_type_structure::type_description(registry::TypeRegistry_ctor_type(registry, identifier_name)) : [&]() -> mlc::String { 
-  int index = 0;
-  mlc::String found_type = mlc::String("");
-  while (index < program.decls.size() && found_type.length() == 0){
-{
-std::visit(overloaded{
-  [&](const DeclFn& declfn) {
-auto [_w0, _w1, _w2, parameters, _w3, function_body, _w4] = declfn;
-{
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment = hover_function_parameter_environment(parameters, registry);
-std::shared_ptr<ast::Expr> desugared_body = partial_application_desugar::partial_application_desugar_expr(function_body);
-[&]() -> void { if (std::holds_alternative<ast::ExprBlock>((*desugared_body)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*desugared_body)._); auto [statements, _w0, _w1] = _v_exprblock; return [&]() { 
-  int statement_index = 0;
-  return [&]() { 
-  while (statement_index < statements.size()){
-{
-[&]() -> void { if (std::holds_alternative<ast::StmtLet>((*statements[statement_index])._)) { auto _v_stmtlet = std::get<ast::StmtLet>((*statements[statement_index])._); auto [name, _w0, _w1, value, statement_span] = _v_stmtlet; return [&]() { 
-  if (statement_span.line <= target_line_one_based){
-{
-check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
-type_environment.set(name, infer::infer_expr(value, inference_context).inferred_type);
+  if (registry::TypeRegistry_has_fn(registry, identifier_name))   {
+    return semantic_type_structure::type_description(registry::TypeRegistry_fn_type(registry, identifier_name));
+  } else if (registry::TypeRegistry_has_ctor(registry, identifier_name))   {
+    return semantic_type_structure::type_description(registry::TypeRegistry_ctor_type(registry, identifier_name));
+  } else   {
+    auto index = 0;
+    auto found_type = mlc::String("", 0);
+    while (((index < program.decls.length()) && (found_type.length() == 0)))     {
+      [&]() {
+auto __match_subject = ast::decl_inner(program.decls[index]);
+if (std::holds_alternative<ast::DeclFn>((*__match_subject))) {
+const ast::DeclFn& declFn = std::get<ast::DeclFn>((*__match_subject));
+auto [__0, __1, __2, parameters, __4, function_body, __6] = declFn; [&]() {
+auto type_environment = hover_function_parameter_environment(parameters, registry);
+auto desugared_body = partial_application_desugar::partial_application_desugar_expr(function_body);
+[&]() {
+auto __match_subject = desugared_body;
+if (std::holds_alternative<ast::ExprBlock>((*__match_subject))) {
+const ast::ExprBlock& exprBlock = std::get<ast::ExprBlock>((*__match_subject));
+auto [statements, __1, __2] = exprBlock; [&]() {
+auto statement_index = 0;
+return [&]() {
+while ((statement_index < statements.length())) {
+[&]() {
+auto __match_subject = statements[statement_index];
+if (std::holds_alternative<ast::StmtLet>((*__match_subject))) {
+const ast::StmtLet& stmtLet = std::get<ast::StmtLet>((*__match_subject));
+auto [name, __1, __2, value, statement_span] = stmtLet; [&]() {
+if ((statement_span.line <= target_line_one_based)) {
+  auto inference_context = check_context::check_context_new(type_environment, registry);
+  type_environment.set(name, infer::infer_expr(value, inference_context).inferred_type);
 }
+return [&]() {
+while (false) {
 }
-  return [&]() { 
-  while (false){
-{
+}();
+}();
+return;
 }
+if (std::holds_alternative<ast::StmtExpr>((*__match_subject))) {
+const ast::StmtExpr& stmtExpr = std::get<ast::StmtExpr>((*__match_subject));
+auto [expression, __1] = stmtExpr; [&]() {
+if ((ast::stmt_span(statements[statement_index]).line <= target_line_one_based)) {
+  infer::infer_expr(expression, check_context::check_context_new(type_environment, registry));
 }
- }();
- }(); } if (std::holds_alternative<ast::StmtExpr>((*statements[statement_index])._)) { auto _v_stmtexpr = std::get<ast::StmtExpr>((*statements[statement_index])._); auto [expression, _w0] = _v_stmtexpr; return [&]() { 
-  if (ast::stmt_span(statements[statement_index]).line <= target_line_one_based){
-{
-infer::infer_expr(expression, check_context::check_context_new(type_environment, registry));
+return [&]() {
+while (false) {
 }
+}();
+}();
+return;
 }
-  return [&]() { 
-  while (false){
-{
+std::make_tuple();
+return;
+std::abort();
+}();
+(statement_index = (statement_index + 1));
 }
+}();
+}();
+return;
 }
- }();
- }(); } return; }();
-statement_index = statement_index + 1;
+std::make_tuple();
+return;
+std::abort();
+}();
+auto inference_context = check_context::check_context_new(type_environment, registry);
+auto inferred = infer_expr_ident::infer_expr_identifier(identifier_name, inference_context);
+(found_type = semantic_type_structure::type_description(inferred.inferred_type));
+return std::make_tuple();
+}();
+return;
 }
+std::make_tuple();
+return;
+std::abort();
+}();
+      (index = (index + 1));
+    }
+    return found_type;
+  }
 }
- }();
- }(); } return; }();
-check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
-infer_result::InferResult inferred = infer_expr_ident::infer_expr_identifier(identifier_name, inference_context);
-found_type = semantic_type_structure::type_description(inferred.inferred_type);
-}
-},
-  [&](const auto& _unused) {
-{
-}
-}
-}, (*ast::decl_inner(program.decls[index])));
-index = index + 1;
-}
-}
-  return found_type;
- }();
-}
-
 mlc::String resolve_hover_type_in_source(mlc::String source_text, mlc::String source_file, int line_zero_based, int column_zero_based) noexcept{
-ast::Program expanded_program = param_destructure_expand::expand_parameter_destructuring_in_program(decls::parse_program(lexer::tokenize(source_text).tokens));
-registry::TypeRegistry registry = registry::build_registry(expanded_program);
-mlc::String identifier_name = symbols::find_identifier_at_position(source_text, line_zero_based, column_zero_based);
-return identifier_name.length() == 0 ? mlc::String("") : hover_type_for_identifier_in_program(expanded_program, registry, identifier_name, line_zero_based + 1);
+  auto expanded_program = param_destructure_expand::expand_parameter_destructuring_in_program(decls::parse_program(lexer::tokenize(source_text).tokens));
+  auto registry = registry::build_registry(expanded_program);
+  auto identifier_name = symbols::find_identifier_at_position(source_text, line_zero_based, column_zero_based);
+  if ((identifier_name.length() == 0))   {
+    return mlc::String("", 0);
+  } else   {
+    return hover_type_for_identifier_in_program(expanded_program, registry, identifier_name, (line_zero_based + 1));
+  }
 }
 
 } // namespace hover

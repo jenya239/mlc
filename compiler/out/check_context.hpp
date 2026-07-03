@@ -3,21 +3,15 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "registry.hpp"
-
 namespace check_context {
 
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
-
-struct CheckContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;mlc::String current_extend_type;};
-
-check_context::CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
+struct CheckContext {
+  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;
+  registry::TypeRegistry registry;
+  mlc::String current_extend_type;
+};
+CheckContext check_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
 
 } // namespace check_context
 

@@ -305,8 +305,8 @@ export fn codegen_tests() -> [TestResult] = do
     smatch_arm(Shared.new(PatternWild(span_unknown())), ss('other'))
   ]
   const match_out = gen_expr(Shared.new(SemanticExpressionMatch(sid("n"), pattern_arms, str_t(), span_unknown())), context)
-  results.push(assert_eq_str('ExprMatch contains std::visit',
-    if match_out.contains('std::visit') then 'yes' else 'no' end, 'yes'))
+  results.push(assert_eq_str('ExprMatch wildcard avoids std::visit',
+    if match_out.contains('std::visit') then 'visit' else 'guarded' end, 'guarded'))
   results.push(assert_eq_str('ExprMatch contains one',
     if match_out.contains('"one"') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('ExprMatch contains other',
@@ -825,5 +825,11 @@ export fn codegen_tests() -> [TestResult] = do
     codegen_match_empty_array_cpp, 'mlc::Array<mlc::String>{}'))
   results.push(assert_code_not_contains('gen_program: match catch-all empty array avoids bare auto-deduced {}',
     codegen_match_empty_array_cpp, 'const auto& __v) { return {}; }'))
+
+  const codegen_match_result_return =
+    'type Result<T, E> = Ok(T) | Err(E)\ntype Value = Number(i32) | Text(string)\nfn parse(value: Value) -> Result<i32, [string]> = match value {\n  Number(number) => Ok(number),\n  Text(text) => Err([text])\n}\nexport fn main() -> i32 = 0'
+  const codegen_match_result_cpp = gen_program(parse_program(tokenize(codegen_match_result_return).tokens))
+  results.push(assert_code_contains('gen_program: Result match std::visit uses explicit return type',
+    codegen_match_result_cpp, '-> Result<int, mlc::Array<mlc::String>>'))
   results
 end

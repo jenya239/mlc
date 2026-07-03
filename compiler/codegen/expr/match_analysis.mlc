@@ -1,6 +1,6 @@
 import { Pattern, PatternStringLit, PatternStr, PatternWild, PatternOr } from '../../frontend/ast'
 import { SemanticExpression, SemanticMatchArm, sexpr_type } from '../../ir/semantic_ir'
-import { Type, TString } from '../../checker/registry'
+import { Type, TString, TBool } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe } from '../cpp_naming'
@@ -77,6 +77,13 @@ fn match_arms_use_string_literals(arms: [Shared<SemanticMatchArm>]) -> bool =
 
 export fn subject_is_string_type(subject: Shared<SemanticExpression>) -> bool =
   match sexpr_type(subject) { TString => true, _ => false }
+
+// Bool is not a sum type (no std::variant backs it), so `std::visit` never
+// applies here - `mir_function_is_simple(function)` matched against `true`/`false`
+// must lower to a plain if/else, same as the guarded/if-chain path already used
+// for wildcard and guarded arms.
+export fn subject_is_bool_type(subject: Shared<SemanticExpression>) -> bool =
+  match sexpr_type(subject) { TBool => true, _ => false }
 
 export fn should_use_string_match_if_chain(subject: Shared<SemanticExpression>, arms: [Shared<SemanticMatchArm>]) -> bool =
   if arms.length() == 0 then false

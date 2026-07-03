@@ -62,6 +62,36 @@ object_path_for_source() {
   fi
 }
 
+# Dependency-aware staleness: consult the compiler-generated depfile (-MMD -MF)
+# when present, so edits to a shared header (not just the .cpp itself) force a
+# rebuild. Falls back to plain .cpp-vs-.o mtime when no depfile exists yet
+# (first build for this object).
+dep_file_for_object() {
+  printf '%s.d' "${1%.o}"
+}
+
+parse_dep_file_paths() {
+  sed -e 's/^[^:]*://' -e 's/\\$//' "$1" | tr -s ' \t' '\n' | sed '/^$/d'
+}
+
+object_is_stale() {
+  local source_path="$1"
+  local object_path="$2"
+  [ -f "$object_path" ] || return 0
+  local dep_file
+  dep_file="$(dep_file_for_object "$object_path")"
+  if [ -f "$dep_file" ]; then
+    local dependency_path
+    while IFS= read -r dependency_path; do
+      [ -n "$dependency_path" ] || continue
+      [ -f "$dependency_path" ] || return 0
+      [ "$dependency_path" -nt "$object_path" ] && return 0
+    done < <(parse_dep_file_paths "$dep_file")
+    return 1
+  fi
+  [ "$source_path" -nt "$object_path" ]
+}
+
 INC_FLAGS=(-I "$CPP_DIR" -I "$RT_INC")
 [ -n "$EXTRA_INC" ] && INC_FLAGS+=(-I "$EXTRA_INC")
 
@@ -139,10 +169,11 @@ for cpp in "${ALL_CPP[@]}"; do
   [ -f "$cpp" ] || continue
   object_path="$(object_path_for_source "$cpp")"
   OBJS+=("$object_path")
-  if [ -f "$object_path" ] && [ ! "$cpp" -nt "$object_path" ]; then
+  if ! object_is_stale "$cpp" "$object_path"; then
     continue
   fi
-  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -c "$cpp" -o "$object_path" &
+  dep_file="$(dep_file_for_object "$object_path")"
+  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -MMD -MF "$dep_file" -c "$cpp" -o "$object_path" &
   PIDS+=($!)
   if [ ${#PIDS[@]} -ge "$JOBS" ]; then
     for pid in "${PIDS[@]}"; do
