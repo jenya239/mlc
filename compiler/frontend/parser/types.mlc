@@ -28,14 +28,14 @@ fn parse_ref_type(parser: Parser) -> TypeResult = do
   if state.kind().is_mut() then state = state.advance() end
   const inner_parsed = parse_type(state)
   const type_arguments: [Shared<TypeExpr>] = [inner_parsed.value]
-  type_parse_result(Shared.new(TyGeneric('ref', type_arguments)), inner_parsed.parser)
+  type_parse_result(Shared.new(TyGeneric("ref", type_arguments)), inner_parsed.parser)
 end
 
 fn parse_type_after_ident_name(parser: Parser, name: string) -> TypeResult = do
   const after = parser.advance()
   if after.kind().is_op() && after.kind().op_val() == "<" then
     const type_args_parsed = parse_type_args(after.advance())
-    if name == 'Shared' && type_args_parsed.value.length() == 1 then
+    if name == "Shared" && type_args_parsed.value.length() == 1 then
       return type_parse_result(Shared.new(TyShared(type_args_parsed.value[0])), type_args_parsed.parser)
     end
     return type_parse_result(Shared.new(TyGeneric(name, type_args_parsed.value)), type_args_parsed.parser)
@@ -47,14 +47,14 @@ fn parse_type_after_ident_name(parser: Parser, name: string) -> TypeResult = do
   type_parse_result(Shared.new(TyNamed(name)), after)
 end
 
-fn parse_base_type_ident(parser: Parser, name: string) -> TypeResult =
-  match name
-  | "i32"    => type_parse_result(Shared.new(TyI32),    parser.advance())
-  | "string" => type_parse_result(Shared.new(TyString), parser.advance())
-  | "bool"   => type_parse_result(Shared.new(TyBool),   parser.advance())
-  | "unit"   => type_parse_result(Shared.new(TyUnit),   parser.advance())
-  | "ref"    => parse_ref_type(parser)
-  | _        => parse_type_after_ident_name(parser, name)
+fn parse_base_type_ident(parser: Parser, name: string) -> TypeResult = do
+  if name == "i32" then return type_parse_result(Shared.new(TyI32), parser.advance()) end
+  if name == "string" then return type_parse_result(Shared.new(TyString), parser.advance()) end
+  if name == "bool" then return type_parse_result(Shared.new(TyBool), parser.advance()) end
+  if name == "unit" then return type_parse_result(Shared.new(TyUnit), parser.advance()) end
+  if name == "ref" then return parse_ref_type(parser) end
+  parse_type_after_ident_name(parser, name)
+end
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
