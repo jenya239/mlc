@@ -141,7 +141,7 @@ fn is_alpha_lower(character: string) -> bool = character >= "a" && character <= 
 type SuffixScan = { suffix: string, after: LexState }
 
 fn try_scan_suffix(state: LexState) -> SuffixScan = do
-  const numeric_type_suffixes: [string] = ['i64', 'u8', 'usize', 'f64', 'f32']
+  const numeric_type_suffixes: [string] = ['i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'usize', 'f64', 'f32']
   if !state.eof() && is_alpha_lower(state.current()) then
     const start = state.position
     const orig_line = state.line
@@ -185,6 +185,7 @@ fn scan_int(state: LexState) -> ScanResult = do
   else
     let { suffix, after } = try_scan_suffix(current)
     const token_kind = match suffix
+    | 'i8' | 'i16' | 'i32' | 'u16' | 'u32' | 'u64' => LInt(value)
     | 'i64'   => LI64(value.to_string())
     | 'u8'    => LU8(value.to_string())
     | 'usize' => LUsize(value.to_string())

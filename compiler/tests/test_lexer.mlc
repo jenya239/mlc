@@ -2,7 +2,7 @@
 
 import { TestResult, assert_eq_int, assert_eq_str, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
-import { TokenKind, LStr, LChar, LTemplate } from '../frontend/ast_tokens'
+import { TokenKind, LStr, LChar, LTemplate, LInt } from '../frontend/ast_tokens'
 
 fn lex_token_count(source: string) -> i32 =
   tokenize(source).tokens.length()
@@ -34,6 +34,12 @@ fn lex_template_parts(source: string) -> [string] =
   match tokenize(source).tokens[0].kind {
     LTemplate(parts) => parts,
     _ => do let r: [string] = []; r end
+  }
+
+fn lex_first_int(source: string) -> i32 =
+  match tokenize(source).tokens[0].kind {
+    LInt(value) => value,
+    _ => -1
   }
 
 fn lex_error_count(source: string) -> i32 =
@@ -102,6 +108,12 @@ export fn lexer_tests() -> [TestResult] = do
     lex_error_count('`no closing') > 0))
   results.push(assert_true('unterminated interpolation yields lex error',
     lex_error_count("`a \${b") > 0))
+
+  results.push(assert_eq_int('i32 numeric suffix tokenizes as LInt',
+    lex_first_int('5i32'), 5))
+
+  results.push(assert_eq_int('u32 numeric suffix tokenizes as LInt',
+    lex_first_int('10u32'), 10))
 
   results
 end

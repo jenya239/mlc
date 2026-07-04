@@ -49,11 +49,11 @@ end
 
 fn parse_base_type_ident(parser: Parser, name: string) -> TypeResult =
   match name
-  | 'i32'    => type_parse_result(Shared.new(TyI32),    parser.advance())
-  | 'string' => type_parse_result(Shared.new(TyString), parser.advance())
-  | 'bool'   => type_parse_result(Shared.new(TyBool),   parser.advance())
-  | 'unit'   => type_parse_result(Shared.new(TyUnit),   parser.advance())
-  | 'ref'    => parse_ref_type(parser)
+  | "i32"    => type_parse_result(Shared.new(TyI32),    parser.advance())
+  | "string" => type_parse_result(Shared.new(TyString), parser.advance())
+  | "bool"   => type_parse_result(Shared.new(TyBool),   parser.advance())
+  | "unit"   => type_parse_result(Shared.new(TyUnit),   parser.advance())
+  | "ref"    => parse_ref_type(parser)
   | _        => parse_type_after_ident_name(parser, name)
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
