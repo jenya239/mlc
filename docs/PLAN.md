@@ -378,7 +378,7 @@ compiler/
 | **3.5** C++ header import (minimal) | **done** | [TRACK_CPP_HEADER_IMPORT](agent/TRACK_CPP_HEADER_IMPORT.md) — subset для `import "foo.h"` |
 | **3.6** Full C++ header parser | **planned** | [TRACK_CPP_PARSER_FULL](agent/TRACK_CPP_PARSER_FULL.md) |
 | **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
-| **2.9** Build speed | **open** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) closed; incremental-cache correctness gaps → [TRACK_BUILD_SPEED2](agent/TRACK_BUILD_SPEED2.md); full clang migration → [TRACK_CLANG_MIGRATION](agent/TRACK_CLANG_MIGRATION.md) |
+| **2.9** Build speed | **open** | [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) closed; incremental-cache correctness gaps → [TRACK_BUILD_SPEED2](agent/TRACK_BUILD_SPEED2.md) (STEP=1-4 done, STEP=5-7 remaining); full clang migration → [TRACK_CLANG_MIGRATION](agent/TRACK_CLANG_MIGRATION.md) **closed 2026-07-03** |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](agent/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](agent/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](agent/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
@@ -458,11 +458,11 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 **Future:** TRACK_CORE_IR, [QUERY_ENGINE.md](QUERY_ENGINE.md) / TRACK_QUERY_ENGINE, TRACK_INCREMENTAL.
 
-### Phase 2.9: Build speed — **planned**
+### Phase 2.9: Build speed — **open**
 
 **Цель:** убрать bottleneck g++ link (90–200s): persistent obj, ccache, mold/lld, dev `-O0`. mlcc codegen ~2s — не трогать.
 
-Трек: [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md). **clang++ рекомендован, g++ — fallback.**
+Трек: [TRACK_BUILD_SPEED](agent/TRACK_BUILD_SPEED.md) closed. **clang++ — дефолт везде** (`compiler/scripts/select_cxx.sh`), g++ — fallback (`MLC_CXX=g++`); [TRACK_CLANG_MIGRATION](agent/TRACK_CLANG_MIGRATION.md) закрыт 2026-07-03. Остаток: [TRACK_BUILD_SPEED2](agent/TRACK_BUILD_SPEED2.md) STEP=5 (ninja, опционально) и STEP=6 (повторный `-ftime-trace`, по условию).
 
 ### Phase 4: Self-hosting completeness — **done** ([TRACK_BOOTSTRAP_LINK](agent/TRACK_BOOTSTRAP_LINK.md) closed 2026-07-03)
 

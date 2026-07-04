@@ -24,6 +24,8 @@ Parent: [../PLAN.md](../PLAN.md) �Phase 2.9; baseline: mlcc codegen ~2s, g++ l
 
 **Correction (2026-07-01):** STEP=5's `.mlcc_module_stamp` fingerprint hashes the **list of `.mlc` filenames only**, not content — content-only edits to an existing `.mlc` file leave the fingerprint unchanged, so `should_skip_codegen()` returns true and mlcc codegen is silently skipped, keeping stale `compiler/out/*.cpp`. Live-reproduced 2026-07-01 (see [TRACK_BUILD_SPEED2.md](TRACK_BUILD_SPEED2.md)). Also: `build_bin.sh`'s object-staleness check (`.cpp` mtime vs `.o` mtime) has no header-dependency tracking. Cold rebuild measured **564.9s** (147 TU); `ccache` + clang `-include-pch` gives **0 cache hits** (all uncacheable). Follow-up: [TRACK_BUILD_SPEED2.md](TRACK_BUILD_SPEED2.md).
 
+**Correction fixed (2026-07-03):** [TRACK_BUILD_SPEED2.md](TRACK_BUILD_SPEED2.md) STEP=1 (content-based fingerprint), STEP=2 (depfile-based staleness), STEP=3 (ccache PCH sloppiness) all done — the three gaps above are closed.
+
 **Goal:** dev rebuild ? 30s; CI link acceptable. mlcc codegen already fast � optimize C++ compile/link + incremental artifacts.
 
 ## Verify gate (every step)

@@ -4,7 +4,7 @@
 
 ## Статус (май 2026)
 
-- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем `g++` → `compiler/out/mlcc` (полный прогон ~15 мин в типичной среде).
+- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем сборка (по умолчанию `clang++`, см. `MLC_CXX`) → `compiler/out/mlcc`. Холодный старт с нуля через Ruby (`MLCC_FORCE_RUBY=1`) — ~14 мин; обычный инкрементальный ребилд существующего `mlcc` — секунды (skip при неизменённом содержимом `.mlc`, полная регенерация при правке).
 - **447 тестов** self-hosted компилятора (`rake test_compiler_mlc`): они пересобирают **только** `compiler/out/run_tests` через Ruby; **свежий `mlcc` после правок в `compiler/**` — только `compiler/build.sh`**.
 - **Самосборка**: точка входа `compiler/main.mlc` с импортами — `compiler/out/mlcc -o <dir> compiler/main.mlc`; контроль корректности кодогена: второй проход бинарём, собранным из выхода первого (`mlcc2`), и **`diff -rq` двух каталогов C++** (ожидается пустой diff). При нехватке `/tmp` задать `TMPDIR` внутри репозитория.
 - Ruby-компилятор (`lib/mlc/`): ~1106 unit-тестов — bootstrap и эталон семантики, не удаляется.
