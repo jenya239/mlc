@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
-import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
+import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprUn, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parse_type } from '../frontend/parser/types'
 import { parser_new } from '../frontend/parser/predicates'
@@ -589,6 +589,18 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('right shift parses to ExprBin',
     match parse_expr_source('16 >> 2') {
       ExprBin(binary_operator, _, _, _) => binary_operator == '>>',
+      _ => false
+    }))
+
+  results.push(assert_true('unary bitwise not parses to ExprUn',
+    match parse_expr_source('~5') {
+      ExprUn(unary_operator, _, _) => unary_operator == "~",
+      _ => false
+    }))
+
+  results.push(assert_true('unary plus parses to ExprUn',
+    match parse_expr_source('+3') {
+      ExprUn(unary_operator, _, _) => unary_operator == "+",
       _ => false
     }))
 
