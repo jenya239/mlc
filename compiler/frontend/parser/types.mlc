@@ -76,10 +76,24 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
   type_parse_result(Shared.new(TyUnit), parser.advance_by(2))
 end
 
+export fn parser_at_generic_close(parser: Parser) -> bool = do
+  if !parser.kind().is_op() then false
+  else
+    const operator = parser.kind().op_val()
+    operator == ">" || operator == ">>"
+  end
+end
+
+export fn parser_advance_generic_close(parser: Parser) -> Parser =
+  if !parser.kind().is_op() then parser
+  else if parser.kind().op_val() == ">" then parser.advance()
+  else if parser.kind().op_val() == ">>" then parser.advance_shift_right_as_angle_close()
+  else parser
+
 fn parse_type_args(parser: Parser) -> TypesResult = do
   const suffix_parsed = comma_separated_types_suffix_from_first(parse_type(parser), parse_type)
-  if suffix_parsed.parser.kind().is_op() && suffix_parsed.parser.kind().op_val() == ">" then
-    return types_parse_result(suffix_parsed.value, suffix_parsed.parser.advance())
+  if parser_at_generic_close(suffix_parsed.parser) then
+    return types_parse_result(suffix_parsed.value, parser_advance_generic_close(suffix_parsed.parser))
   end
   types_parse_result(suffix_parsed.value, suffix_parsed.parser)
 end

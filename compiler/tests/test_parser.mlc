@@ -312,6 +312,9 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_eq_int('record type field default expression — parse decl count',
     decl_count('type Line = { offset: i32 = 10 + 20 }\nfn main() -> i32 = 0'), 2))
 
+  results.push(assert_true('record type Map Shared Type closing >> — parse ok',
+    parse_source_errors('type Box = { items: Map<string, Shared<Type>>, names: Map<string, [string]> }').length() == 0))
+
   results.push(assert_true('fn decl is DeclFn',
     match first_decl('fn f() -> i32 = 42') {
       DeclFn(_, _, _, _, _, _, _) => true,

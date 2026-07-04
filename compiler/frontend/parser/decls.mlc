@@ -2,7 +2,7 @@
 
 import { Parser, parser_new_with_source_path, DeclResult, ParamsResult, ParamResult, PatternResult, TypeResult, VariantResult, VariantsResult, FieldDefsResult, TypesResult, ExprResult, TypeParamsResult, TraitBodyResult, BoundsResult, WhereClauseParseResult, ProgramParseValue, bounds_parse_result, parse_result, pattern_parse_result, variant_parse_result, parameters_parse_result, variants_parse_result, types_parse_result, field_definitions_parse_result, declaration_parse_result, where_clause_parse_result, trait_body_parse_result, expression_parse_result, type_params_parse_result, program_parse_result } from './predicates'
 import { Token } from '../ast_tokens'
-import { parse_type } from './types'
+import { parse_type, parser_at_generic_close, parser_advance_generic_close } from './types'
 import { parse_expr, parse_record_pattern_fields } from './exprs'
 import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace } from './expect_close'
@@ -10,7 +10,7 @@ import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, ExprEx
 
 fn parser_expect_generic_close(state: Parser, opened: bool) -> Parser =
   if !opened then state
-  else if state.kind().is_op() && state.kind().op_val() == ">" then state.advance()
+  else if parser_at_generic_close(state) then parser_advance_generic_close(state)
   else state.record_parse_error('parse: unclosed generic parameter list')
   end
 
