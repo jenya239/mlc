@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
-import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprUn, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
+import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprUn, ExprIf, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parse_type } from '../frontend/parser/types'
 import { parser_new } from '../frontend/parser/predicates'
@@ -165,6 +165,24 @@ fn expr_guard_binary_operation(candidate_guard: Shared<Expr>) -> string =
   match candidate_guard {
     ExprBin(binary_operation, _, _, _) => binary_operation,
     _ => ''
+  }
+
+fn postfix_if_wraps_call_in_expr_if(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprIf(_, then_expression, else_expression, _) =>
+      match then_expression {
+        ExprCall(callee, _, _) =>
+          match callee {
+            ExprIdent(name, _) =>
+              match else_expression {
+                ExprUnit(_) => name == "println",
+                _ => false
+              },
+            _ => false
+          },
+        _ => false
+      },
+    _ => false
   }
 
 fn expr_pat_ident_binding_name(pattern: Shared<Pattern>) -> string =
@@ -603,6 +621,9 @@ export fn parser_tests() -> [TestResult] = do
       ExprUn(unary_operator, _, _) => unary_operator == "+",
       _ => false
     }))
+
+  results.push(assert_true('postfix if wraps expression in ExprIf',
+    postfix_if_wraps_call_in_expr_if(parse_expr_source('println("hi") if true'))))
 
   results.push(assert_eq_int('typed lambda - 0 parse errors',
     parse_expr_errors('(x: i32) => x').length(), 0))

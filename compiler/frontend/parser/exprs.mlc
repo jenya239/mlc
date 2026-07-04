@@ -4,7 +4,7 @@ import { Parser, ExprResult, PatternResult, PatternsResult, ExprsResult, ArmsRes
 import { parse_type } from './types'
 import { comma_separated_pats_suffix_from_first, comma_separated_exprs_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace, parser_expect_rparen, parser_expect_rbracket } from './expect_close'
-import { span_unknown, Span, TyUnit, StmtExpr, PatternTuple, PatternArray, PatternRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread } from '../ast'
+import { span_unknown, Span, TyUnit, StmtExpr, PatternTuple, PatternArray, PatternRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread, ExprIf, ExprUn, expr_span } from '../ast'
 import { TokenKind, Eof } from '../ast_tokens'
 import { tokenize } from '../lexer'
 
@@ -574,6 +574,27 @@ fn parse_unary(parser: Parser) -> ExprResult = do
   end
 end
 
+fn parse_postfix_conditional(parser: Parser, expression: Shared<Expr>) -> ExprResult = do
+  const expression_line_number = expr_span(expression).line
+  const kind = parser.kind()
+  if !(kind.is_if() || kind.is_unless()) then
+    return expression_parse_result(expression, parser)
+  end
+  if parser.span_at_cursor().line != expression_line_number then
+    return expression_parse_result(expression, parser)
+  end
+  const header_span = parser.span_at_cursor()
+  const is_negated = kind.is_unless()
+  const condition_parsed = parse_or(parser.advance())
+  const condition =
+    if is_negated then Shared.new(ExprUn("!", condition_parsed.value, span_unknown()))
+    else condition_parsed.value
+    end
+  expression_parse_result(
+    Shared.new(ExprIf(condition, expression, Shared.new(ExprUnit(span_unknown())), header_span)),
+    condition_parsed.parser)
+end
+
 fn parse_postfix(parser: Parser) -> ExprResult = do
   const base = parse_primary(parser)
   let mut expression = base.value
@@ -610,7 +631,7 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
       go = false
     end
   end
-  expression_parse_result(expression, state)
+  parse_postfix_conditional(state, expression)
 end
 
 fn parse_arg_list(parser: Parser) -> ExprsResult = do
