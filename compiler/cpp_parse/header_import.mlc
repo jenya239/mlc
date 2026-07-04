@@ -22,11 +22,10 @@ export fn is_cpp_header_path(path: string) -> bool =
   || (path.length() >= 4 && path.substring(path.length() - 4, 4) == ".hpp")
 
 export fn cpp_type_string_to_type_expr(type_string: string) -> Shared<TypeExpr> =
-  match type_string
-  | "int"  => Shared.new(TyI32)
-  | "bool" => Shared.new(TyBool)
-  | "void" => Shared.new(TyUnit)
-  | _      => Shared.new(TyNamed(type_string))
+  if type_string == "int" then Shared.new(TyI32)
+  else if type_string == "bool" then Shared.new(TyBool)
+  else if type_string == "void" then Shared.new(TyUnit)
+  else Shared.new(TyNamed(type_string))
   end
 
 fn split_cpp_parameter_string(parameter_string: string) -> CppParameterParts = do

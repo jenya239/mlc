@@ -9,9 +9,11 @@ import {
 } from '../diagnostic_codes'
 
 fn derive_trait_name_allowed(trait_name: string) -> bool =
-  match trait_name
-  | 'Display' | 'Eq' | 'Ord' | 'Hash' => true
-  | _ => false
+  if trait_name == "Display" then true
+  else if trait_name == "Eq" then true
+  else if trait_name == "Ord" then true
+  else if trait_name == "Hash" then true
+  else false
   end
 
 fn string_list_contains_derive_trait(haystack: [string], needle: string) -> bool =

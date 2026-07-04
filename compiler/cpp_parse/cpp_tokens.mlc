@@ -127,84 +127,84 @@ fn cpp_char_literal_lexeme(character: string) -> string = do
 end
 
 export fn cpp_token_lexeme(kind: CppTokenKind) -> string =
-  match kind
-  | CKAuto       => "auto"
-  | CKConst      => "const"
-  | CKConstexpr  => "constexpr"
-  | CKIf         => "if"
-  | CKElse       => "else"
-  | CKWhile      => "while"
-  | CKFor        => "for"
-  | CKReturn     => "return"
-  | CKBreak      => "break"
-  | CKStruct     => "struct"
-  | CKUsing      => "using"
-  | CKNoexcept   => "noexcept"
-  | CKInline     => "inline"
-  | CKStatic     => "static"
-  | CKVoid       => "void"
-  | CKInt        => "int"
-  | CKBool       => "bool"
-  | CKChar       => "char"
-  | CKTrue       => "true"
-  | CKFalse      => "false"
-  | CKNullptr    => "nullptr"
-  | CKTemplate   => "template"
-  | CKTypename   => "typename"
-  | CKNamespace  => "namespace"
-  | CKNew        => "new"
-  | CKDelete     => "delete"
-  | CKOperator   => "operator"
-  | CKClass      => "class"
-  | CKEnum       => "enum"
-  | CKTypedef    => "typedef"
-  | CKExtern     => "extern"
-  | CKSigned     => "signed"
-  | CKUnsigned   => "unsigned"
-  | CKLong       => "long"
-  | CKShort      => "short"
-  | CKFloat      => "float"
-  | CKDouble     => "double"
-  | CKVirtual    => "virtual"
-  | CKOverride   => "override"
-  | CKFinal      => "final"
-  | CKPublic     => "public"
-  | CKPrivate    => "private"
-  | CKProtected  => "protected"
-  | CKExplicit   => "explicit"
-  | CKMutable    => "mutable"
-  | CKVolatile   => "volatile"
-  | CKFriend     => "friend"
-  | CIdent(name) => name
-  | CLInt(value) => value.to_string()
-  | CLStr(value) => `"` + value + `"`
-  | CLChar(value) => cpp_char_literal_lexeme(value)
-  | CLFloat(value) => value
-  | CLHex(value) => value
-  | CArrow       => "->"
-  | CScope       => "::"
-  | CEq          => "=="
-  | CNe          => "!="
-  | CLe          => "<="
-  | CGe          => ">="
-  | CAnd         => "&&"
-  | COr          => "||"
-  | CInc         => "++"
-  | CDec         => "--"
-  | CLShift      => "<<"
-  | CRShift      => ">>"
-  | CLParen      => "("
-  | CRParen      => ")"
-  | CLBrace      => "{"
-  | CRBrace      => "}"
-  | CLBracket    => "["
-  | CRBracket    => "]"
-  | CLAngle      => "<"
-  | CRAngle      => ">"
-  | CHash        => "#"
-  | COp(symbol)  => symbol
-  | CEof         => ""
-  end
+  match kind {
+    CKAuto => "auto",
+    CKConst => "const",
+    CKConstexpr => "constexpr",
+    CKIf => "if",
+    CKElse => "else",
+    CKWhile => "while",
+    CKFor => "for",
+    CKReturn => "return",
+    CKBreak => "break",
+    CKStruct => "struct",
+    CKUsing => "using",
+    CKNoexcept => "noexcept",
+    CKInline => "inline",
+    CKStatic => "static",
+    CKVoid => "void",
+    CKInt => "int",
+    CKBool => "bool",
+    CKChar => "char",
+    CKTrue => "true",
+    CKFalse => "false",
+    CKNullptr => "nullptr",
+    CKTemplate => "template",
+    CKTypename => "typename",
+    CKNamespace => "namespace",
+    CKNew => "new",
+    CKDelete => "delete",
+    CKOperator => "operator",
+    CKClass => "class",
+    CKEnum => "enum",
+    CKTypedef => "typedef",
+    CKExtern => "extern",
+    CKSigned => "signed",
+    CKUnsigned => "unsigned",
+    CKLong => "long",
+    CKShort => "short",
+    CKFloat => "float",
+    CKDouble => "double",
+    CKVirtual => "virtual",
+    CKOverride => "override",
+    CKFinal => "final",
+    CKPublic => "public",
+    CKPrivate => "private",
+    CKProtected => "protected",
+    CKExplicit => "explicit",
+    CKMutable => "mutable",
+    CKVolatile => "volatile",
+    CKFriend => "friend",
+    CIdent(name) => name,
+    CLInt(value) => value.to_string(),
+    CLStr(value) => `"` + value + `"`,
+    CLChar(value) => cpp_char_literal_lexeme(value),
+    CLFloat(value) => value,
+    CLHex(value) => value,
+    CArrow => "->",
+    CScope => "::",
+    CEq => "==",
+    CNe => "!=",
+    CLe => "<=",
+    CGe => ">=",
+    CAnd => "&&",
+    COr => "||",
+    CInc => "++",
+    CDec => "--",
+    CLShift => "<<",
+    CRShift => ">>",
+    CLParen => "(",
+    CRParen => ")",
+    CLBrace => "{",
+    CRBrace => "}",
+    CLBracket => "[",
+    CRBracket => "]",
+    CLAngle => "<",
+    CRAngle => ">",
+    CHash => "#",
+    COp(symbol) => symbol,
+    CEof => ""
+  }
 
 fn cpp_token_kind_is_eof(kind: CppTokenKind) -> bool =
   match kind { CEof => true, _ => false }

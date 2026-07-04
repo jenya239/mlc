@@ -148,9 +148,9 @@ fn is_user_defined_method_for_type(method_name: string, type_name: string, conte
 fn trailing_argument_fragments_join(fragments: [string]) -> string = fragments.join(', ')
 
 fn result_option_method_cpp_name(is_option: bool, method_name: string) -> string =
-  match method_name
-  | 'ok' => if is_option then method_name else 'ok_into_optional' end
-  | _    => method_name
+  if method_name == "ok" then
+    if is_option then method_name else "ok_into_optional"
+  else method_name
   end
 
 fn static_receiver_name_from_object_expression(original_object_expression: Shared<SemanticExpression>) -> string =
@@ -375,18 +375,16 @@ export fn gen_method_expr(
   const trailing_arguments_joined = trailing_argument_fragments_join(trailing_argument_fragments)
   const ro_code = match object_type {
     TGeneric(generic_name, _) =>
-      match generic_name
-      | 'Result' => gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
-      | 'Option' => gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
-      | _ => ''
+      if generic_name == "Result" then gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
+      else if generic_name == "Option" then gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
+      else ""
       end,
     TNamed(receiver_named) =>
-      match receiver_named
-      | 'Result' => gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
-      | 'Option' => gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
-      | _ => ''
+      if receiver_named == "Result" then gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
+      else if receiver_named == "Option" then gen_result_option_combinator_call_using_fragments(true, receiver_fragment, method_name, trailing_arguments_joined)
+      else ""
       end,
-    _ => '',
+    _ => "",
   }
   const invoke_expression =
     if ro_code != '' then ro_code
@@ -740,22 +738,18 @@ export fn gen_method_expr_cpp(
   else
   const result_or_option_code = match object_type {
     TGeneric(generic_name, _) =>
-      match generic_name
-      | 'Result' => gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
-      | 'Option' => gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
-      | _ =>
-        gen_method_dispatch_cpp(
-          object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
-          arguments, context, gen_stmts, evaluate_expression)
+      if generic_name == "Result" then gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      else if generic_name == "Option" then gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      else gen_method_dispatch_cpp(
+        object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
+        arguments, context, gen_stmts, evaluate_expression)
       end,
     TNamed(receiver_named) =>
-      match receiver_named
-      | 'Result' => gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
-      | 'Option' => gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
-      | _ =>
-        gen_method_dispatch_cpp(
-          object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
-          arguments, context, gen_stmts, evaluate_expression)
+      if receiver_named == "Result" then gen_result_option_combinator_call_cpp(false, receiver_expression, method_name, trailing_argument_expressions)
+      else if receiver_named == "Option" then gen_result_option_combinator_call_cpp(true, receiver_expression, method_name, trailing_argument_expressions)
+      else gen_method_dispatch_cpp(
+        object, object_type_name, method_name, receiver_expression, trailing_argument_expressions,
+        arguments, context, gen_stmts, evaluate_expression)
       end,
     _ =>
       gen_method_dispatch_cpp(

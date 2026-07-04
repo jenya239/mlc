@@ -19,7 +19,6 @@ import { cpp_safe, map_builtin } from './codegen/cpp_naming'
 import { sem_type_to_cpp } from './codegen/decl/type_gen'
 import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
 import { stmts_final_ctx } from './codegen/stmt/statement_context'
-import { ExprVisitor } from './expr_visitor'
 
 type CodegenPass = CodegenPass {
   context: CodegenContext,
@@ -741,70 +740,7 @@ export fn gen_unary_via_cpp_visitor(
 ) -> Shared<CppExpression> =
   Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
 
-fn dispatch_codegen_pass(codegen_pass: CodegenPass, expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
-  match expression {
-    SemanticExpressionInt(integer_value, type_value, _) =>
-      codegen_pass.visit_int(integer_value, type_value),
-    SemanticExpressionStr(string_value, type_value, _) =>
-      codegen_pass.visit_str(string_value, type_value),
-    SemanticExpressionBool(boolean_value, type_value, _) =>
-      codegen_pass.visit_bool(boolean_value, type_value),
-    SemanticExpressionUnit(type_value, _) =>
-      codegen_pass.visit_unit(type_value),
-    SemanticExpressionFloat(float_value, type_value, _) =>
-      codegen_pass.visit_float(float_value, type_value),
-    SemanticExpressionI64(integer_value, type_value, _) =>
-      codegen_pass.visit_i64(integer_value, type_value),
-    SemanticExpressionU8(byte_value, type_value, _) =>
-      codegen_pass.visit_u8(byte_value, type_value),
-    SemanticExpressionUsize(size_value, type_value, _) =>
-      codegen_pass.visit_usize(size_value, type_value),
-    SemanticExpressionChar(character_value, type_value, _) =>
-      codegen_pass.visit_char(character_value, type_value),
-    SemanticExpressionExtern(type_value, _) =>
-      codegen_pass.visit_extern(type_value),
-    SemanticExpressionIdent(name_value, type_value, _) =>
-      codegen_pass.visit_ident(name_value, type_value),
-    SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
-      codegen_pass.visit_bin(operation, left_expression, right_expression, type_value),
-    SemanticExpressionUn(operation, inner_expression, type_value, _) =>
-      codegen_pass.visit_un(operation, inner_expression, type_value),
-    SemanticExpressionCall(function_expression, arguments, mutability_flags, type_value, _) =>
-      codegen_pass.visit_call(function_expression, arguments, mutability_flags, type_value),
-    SemanticExpressionMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
-      codegen_pass.visit_method(object, method_name, arguments, mutability_flags, type_value),
-    SemanticExpressionField(object, field_name, type_value, _) =>
-      codegen_pass.visit_field(object, field_name, type_value),
-    SemanticExpressionIndex(object, index_expression, type_value, _) =>
-      codegen_pass.visit_index(object, index_expression, type_value),
-    SemanticExpressionIf(condition, then_expression, else_expression, type_value, _) =>
-      codegen_pass.visit_if(condition, then_expression, else_expression, type_value),
-    SemanticExpressionBlock(statements, result_expression, type_value, _) =>
-      codegen_pass.visit_block(statements, result_expression, type_value),
-    SemanticExpressionWhile(condition, statements, type_value, _) =>
-      codegen_pass.visit_while(condition, statements, type_value),
-    SemanticExpressionFor(variable, iterator, statements, type_value, _) =>
-      codegen_pass.visit_for(variable, iterator, statements, type_value),
-    SemanticExpressionMatch(subject, arms, type_value, _) =>
-      codegen_pass.visit_match(subject, arms, type_value),
-    SemanticExpressionRecord(type_name, field_values, type_value, _) =>
-      codegen_pass.visit_record(type_name, field_values, type_value),
-    SemanticExpressionRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
-      codegen_pass.visit_record_update(type_name, base_expression, overrides, type_value),
-    SemanticExpressionArray(elements, type_value, _) =>
-      codegen_pass.visit_array(elements, type_value),
-    SemanticExpressionTuple(elements, type_value, _) =>
-      codegen_pass.visit_tuple(elements, type_value),
-    SemanticExpressionQuestion(inner_expression, type_value, _) =>
-      codegen_pass.visit_question(inner_expression, type_value),
-    SemanticExpressionLambda(parameter_names, body_expression, type_value, _) =>
-      codegen_pass.visit_lambda(parameter_names, body_expression, type_value),
-    SemanticExpressionWith(resource, binder, statements, type_value, _) =>
-      codegen_pass.visit_with(resource, binder, statements, type_value),
-    _ => codegen_pass.visit_unsupported(expression)
-  }
-
-extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
+extend CodegenPass {
   fn visit_int(self: CodegenPass, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_integer_literal_cpp(value)
   fn visit_str(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
@@ -866,6 +802,69 @@ extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
   fn visit_unsupported(self: CodegenPass, _expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
     unsupported_cpp_expression()
 }
+
+fn dispatch_codegen_pass(codegen_pass: CodegenPass, expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
+  match expression {
+    SemanticExpressionInt(integer_value, type_value, _) =>
+      codegen_pass.visit_int(integer_value, type_value),
+    SemanticExpressionStr(string_value, type_value, _) =>
+      codegen_pass.visit_str(string_value, type_value),
+    SemanticExpressionBool(boolean_value, type_value, _) =>
+      codegen_pass.visit_bool(boolean_value, type_value),
+    SemanticExpressionUnit(type_value, _) =>
+      codegen_pass.visit_unit(type_value),
+    SemanticExpressionFloat(float_value, type_value, _) =>
+      codegen_pass.visit_float(float_value, type_value),
+    SemanticExpressionI64(integer_value, type_value, _) =>
+      codegen_pass.visit_i64(integer_value, type_value),
+    SemanticExpressionU8(byte_value, type_value, _) =>
+      codegen_pass.visit_u8(byte_value, type_value),
+    SemanticExpressionUsize(size_value, type_value, _) =>
+      codegen_pass.visit_usize(size_value, type_value),
+    SemanticExpressionChar(character_value, type_value, _) =>
+      codegen_pass.visit_char(character_value, type_value),
+    SemanticExpressionExtern(type_value, _) =>
+      codegen_pass.visit_extern(type_value),
+    SemanticExpressionIdent(name_value, type_value, _) =>
+      codegen_pass.visit_ident(name_value, type_value),
+    SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
+      codegen_pass.visit_bin(operation, left_expression, right_expression, type_value),
+    SemanticExpressionUn(operation, inner_expression, type_value, _) =>
+      codegen_pass.visit_un(operation, inner_expression, type_value),
+    SemanticExpressionCall(function_expression, arguments, mutability_flags, type_value, _) =>
+      codegen_pass.visit_call(function_expression, arguments, mutability_flags, type_value),
+    SemanticExpressionMethod(object, method_name, arguments, mutability_flags, type_value, _) =>
+      codegen_pass.visit_method(object, method_name, arguments, mutability_flags, type_value),
+    SemanticExpressionField(object, field_name, type_value, _) =>
+      codegen_pass.visit_field(object, field_name, type_value),
+    SemanticExpressionIndex(object, index_expression, type_value, _) =>
+      codegen_pass.visit_index(object, index_expression, type_value),
+    SemanticExpressionQuestion(inner_expression, type_value, _) =>
+      codegen_pass.visit_question(inner_expression, type_value),
+    SemanticExpressionLambda(parameter_names, body_expression, type_value, _) =>
+      codegen_pass.visit_lambda(parameter_names, body_expression, type_value),
+    SemanticExpressionWith(resource, binder, statements, type_value, _) =>
+      codegen_pass.visit_with(resource, binder, statements, type_value),
+    SemanticExpressionIf(condition, then_expression, else_expression, type_value, _) =>
+      codegen_pass.visit_if(condition, then_expression, else_expression, type_value),
+    SemanticExpressionBlock(statements, result_expression, type_value, _) =>
+      codegen_pass.visit_block(statements, result_expression, type_value),
+    SemanticExpressionWhile(condition, statements, type_value, _) =>
+      codegen_pass.visit_while(condition, statements, type_value),
+    SemanticExpressionFor(variable, iterator, statements, type_value, _) =>
+      codegen_pass.visit_for(variable, iterator, statements, type_value),
+    SemanticExpressionMatch(subject, arms, type_value, _) =>
+      codegen_pass.visit_match(subject, arms, type_value),
+    SemanticExpressionRecord(type_name, field_values, type_value, _) =>
+      codegen_pass.visit_record(type_name, field_values, type_value),
+    SemanticExpressionRecordUpdate(type_name, base_expression, overrides, type_value, _) =>
+      codegen_pass.visit_record_update(type_name, base_expression, overrides, type_value),
+    SemanticExpressionArray(elements, type_value, _) =>
+      codegen_pass.visit_array(elements, type_value),
+    SemanticExpressionTuple(elements, type_value, _) =>
+      codegen_pass.visit_tuple(elements, type_value),
+    _ => codegen_pass.visit_unsupported(expression)
+  }
 
 export fn eval_expr_with_cpp_visitor(
   expression: Shared<SemanticExpression>,

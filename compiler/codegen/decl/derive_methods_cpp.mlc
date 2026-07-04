@@ -504,12 +504,11 @@ export fn gen_derive_hash_cpp(type_name: string, variants: [Shared<TypeVariant>]
   end
 
 fn gen_derive_trait_cpp(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> [Shared<CppDeclaration>] =
-  match trait_name
-  | 'Display' => gen_derive_display_cpp(type_name, variants)
-  | 'Eq'      => gen_derive_eq_cpp(type_name, variants)
-  | 'Ord'     => gen_derive_ord_cpp(type_name, variants)
-  | 'Hash'    => gen_derive_hash_cpp(type_name, variants)
-  | _         => []
+  if trait_name == "Display" then gen_derive_display_cpp(type_name, variants)
+  else if trait_name == "Eq" then gen_derive_eq_cpp(type_name, variants)
+  else if trait_name == "Ord" then gen_derive_ord_cpp(type_name, variants)
+  else if trait_name == "Hash" then gen_derive_hash_cpp(type_name, variants)
+  else []
   end
 
 export fn gen_derive_methods_cpp(

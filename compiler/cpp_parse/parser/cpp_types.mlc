@@ -61,18 +61,18 @@ fn cpp_type_is_comma(kind: CppTokenKind) -> bool =
   match kind { COp(symbol) => symbol == ",", _ => false }
 
 fn cpp_type_spelling_from_kind(kind: CppTokenKind) -> string =
-  match kind
-  | CKVoid    => "void"
-  | CKInt     => "int"
-  | CKBool    => "bool"
-  | CKChar    => "char"
-  | CKFloat   => "float"
-  | CKDouble  => "double"
-  | CKShort   => "short"
-  | CKLong    => "long"
-  | CIdent(name) => name
-  | _         => ""
-  end
+  match kind {
+    CKVoid => "void",
+    CKInt => "int",
+    CKBool => "bool",
+    CKChar => "char",
+    CKFloat => "float",
+    CKDouble => "double",
+    CKShort => "short",
+    CKLong => "long",
+    CIdent(name) => name,
+    _ => ""
+  }
 
 fn cpp_type_is_specifier_start(kind: CppTokenKind) -> bool =
   cpp_type_spelling_from_kind(kind) != ""

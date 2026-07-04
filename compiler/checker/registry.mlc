@@ -232,17 +232,16 @@ export fn empty_registry() -> TypeRegistry = do
 end
 
 fn primitive_type_from_name(name: string) -> Shared<Type> =
-  match name
-  | 'i64'   => Shared.new(TI64)
-  | 'f64'   => Shared.new(TF64)
-  | 'u8'    => Shared.new(TU8)
-  | 'usize' => Shared.new(TUsize)
-  | 'char'  => Shared.new(TChar)
-  | 'i32'   => Shared.new(TI32)
-  | 'string' => Shared.new(TString)
-  | 'bool'  => Shared.new(TBool)
-  | 'unit'  => Shared.new(TUnit)
-  | _       => Shared.new(TNamed(name))
+  if name == "i64" then Shared.new(TI64)
+  else if name == "f64" then Shared.new(TF64)
+  else if name == "u8" then Shared.new(TU8)
+  else if name == "usize" then Shared.new(TUsize)
+  else if name == "char" then Shared.new(TChar)
+  else if name == "i32" then Shared.new(TI32)
+  else if name == "string" then Shared.new(TString)
+  else if name == "bool" then Shared.new(TBool)
+  else if name == "unit" then Shared.new(TUnit)
+  else Shared.new(TNamed(name))
   end
 
 fn type_expression_substitute_for_named(
@@ -433,13 +432,12 @@ export fn type_alias_has_cycle(registry: TypeRegistry, alias_name: string) -> bo
   type_alias_has_cycle_from_name(registry, alias_name, [])
 
 fn type_from_named_annotation(name: string) -> Shared<Type> =
-  match name
-  | 'i64'   => Shared.new(TI64)
-  | 'f64'   => Shared.new(TF64)
-  | 'u8'    => Shared.new(TU8)
-  | 'usize' => Shared.new(TUsize)
-  | 'char'  => Shared.new(TChar)
-  | _       => Shared.new(TNamed(name))
+  if name == "i64" then Shared.new(TI64)
+  else if name == "f64" then Shared.new(TF64)
+  else if name == "u8" then Shared.new(TU8)
+  else if name == "usize" then Shared.new(TUsize)
+  else if name == "char" then Shared.new(TChar)
+  else Shared.new(TNamed(name))
   end
 
 fn type_from_generic_annotation(name: string, type_arguments: [Shared<TypeExpr>]) -> Shared<Type> =

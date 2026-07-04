@@ -37,14 +37,16 @@ fn take_first_param_types(param_types: [Shared<Type>], positional_argument_count
   param_types.take(positional_argument_count)
 
 fn algebraic_type_name_from_ctor(registry: TypeRegistry, callee_name: string) -> string =
-  match registry.ctor_type(callee_name)
-  | TNamed(parent_name) => parent_name
-  | _ => ''
+  match registry.ctor_type(callee_name) {
+    TNamed(parent_name) => parent_name,
+    _ => ''
+  }
 
 fn callee_name_from_expr(function: Shared<Expr>) -> string =
-  match function
-  | ExprIdent(name, _) => name
-  | _ => ''
+  match function {
+    ExprIdent(name, _) => name,
+    _ => ''
+  }
 
 fn infer_expr_call_constructor_path(
   callee_name: string,
