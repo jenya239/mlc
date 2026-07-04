@@ -411,13 +411,52 @@ fn parse_or(parser: Parser) -> ExprResult = do
 end
 
 fn parse_and(parser: Parser) -> ExprResult = do
-  const left = parse_equality(parser)
+  const left = parse_bitwise_or(parser)
   let mut expression = left.value
   let mut state = left.parser
   while state.kind().is_op() && state.kind().op_val() == '&&' do
     const operator_span = state.span_at_cursor()
-    const right = parse_equality(state.advance())
+    const right = parse_bitwise_or(state.advance())
     expression = Shared.new(ExprBin('&&', expression, right.value, operator_span))
+    state = right.parser
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_bitwise_or(parser: Parser) -> ExprResult = do
+  const left = parse_bitwise_xor(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  while state.kind().is_bar() do
+    const operator_span = state.span_at_cursor()
+    const right = parse_bitwise_xor(state.advance())
+    expression = Shared.new(ExprBin("|", expression, right.value, operator_span))
+    state = right.parser
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_bitwise_xor(parser: Parser) -> ExprResult = do
+  const left = parse_bitwise_and(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  while state.kind().is_op() && state.kind().op_val() == "^" do
+    const operator_span = state.span_at_cursor()
+    const right = parse_bitwise_and(state.advance())
+    expression = Shared.new(ExprBin("^", expression, right.value, operator_span))
+    state = right.parser
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_bitwise_and(parser: Parser) -> ExprResult = do
+  const left = parse_equality(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  while state.kind().is_op() && state.kind().op_val() == "&" do
+    const operator_span = state.span_at_cursor()
+    const right = parse_equality(state.advance())
+    expression = Shared.new(ExprBin("&", expression, right.value, operator_span))
     state = right.parser
   end
   expression_parse_result(expression, state)
@@ -447,13 +486,33 @@ fn is_relational_comparison_operator(operator: string) -> bool =
   operator == "<" || operator == ">" || operator == '<=' || operator == '>='
 
 fn parse_comparison_relational(parser: Parser) -> ExprResult = do
-  const left = parse_add(parser)
+  const left = parse_shift(parser)
   let mut expression = left.value
   let mut state = left.parser
   let mut go = true
   while go do
     const kind = state.kind()
     if kind.is_op() && is_relational_comparison_operator(kind.op_val()) then
+      const operator_span = state.span_at_cursor()
+      const operator_value = kind.op_val()
+      const right = parse_shift(state.advance())
+      expression = Shared.new(ExprBin(operator_value, expression, right.value, operator_span))
+      state = right.parser
+    else
+      go = false
+    end
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_shift(parser: Parser) -> ExprResult = do
+  const left = parse_add(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  let mut go = true
+  while go do
+    const kind = state.kind()
+    if kind.is_op() && (kind.op_val() == '<<' || kind.op_val() == '>>') then
       const operator_span = state.span_at_cursor()
       const operator_value = kind.op_val()
       const right = parse_add(state.advance())

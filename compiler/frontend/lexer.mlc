@@ -442,8 +442,8 @@ fn scan_op_two_character(state: LexState, character: string, next: string) -> Sc
   | "=" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(FatArrow) } | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('==')) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Equal) } end
   | "|" => match next | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Pipe) } | "|" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('||')) } | _ => ScanResult { after: state.lex_advance(), token: state.token(Bar) } end
   | "!" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('!=')) } | _ => scan_op_single(character, state) end
-  | "<" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<=')) } | _ => scan_op_single(character, state) end
-  | ">" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>=')) } | _ => scan_op_single(character, state) end
+  | "<" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<=')) } | "<" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('<<')) } | _ => scan_op_single(character, state) end
+  | ">" => match next | "=" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>=')) } | ">" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('>>')) } | _ => scan_op_single(character, state) end
   | "&" => match next | "&" => ScanResult { after: state.lex_advance_by(2), token: state.token(Op('&&')) } | _ => scan_op_single(character, state) end
   | _   => scan_op_single(character, state)
   end

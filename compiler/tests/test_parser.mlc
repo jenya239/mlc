@@ -562,6 +562,36 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('pipe precedence: pipeline binds tighter than equality on left',
     pipe_case_pipeline_binds_tighter_than_equality_on_left(parse_expr_source('a |> b == c'))))
 
+  results.push(assert_true('bitwise and parses to ExprBin',
+    match parse_expr_source('5 & 3') {
+      ExprBin(binary_operator, _, _, _) => binary_operator == "&",
+      _ => false
+    }))
+
+  results.push(assert_true('bitwise or parses to ExprBin',
+    match parse_expr_source('5 | 2') {
+      ExprBin(binary_operator, _, _, _) => binary_operator == "|",
+      _ => false
+    }))
+
+  results.push(assert_true('bitwise xor parses to ExprBin',
+    match parse_expr_source('5 ^ 1') {
+      ExprBin(binary_operator, _, _, _) => binary_operator == "^",
+      _ => false
+    }))
+
+  results.push(assert_true('left shift parses to ExprBin',
+    match parse_expr_source('1 << 3') {
+      ExprBin(binary_operator, _, _, _) => binary_operator == '<<',
+      _ => false
+    }))
+
+  results.push(assert_true('right shift parses to ExprBin',
+    match parse_expr_source('16 >> 2') {
+      ExprBin(binary_operator, _, _, _) => binary_operator == '>>',
+      _ => false
+    }))
+
   results.push(assert_eq_int('typed lambda - 0 parse errors',
     parse_expr_errors('(x: i32) => x').length(), 0))
 

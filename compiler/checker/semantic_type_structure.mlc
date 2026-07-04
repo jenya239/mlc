@@ -273,6 +273,11 @@ export fn binary_operation_result_type(operation: string, left_type: Shared<Type
   | "*" => arithmetic_binary_result_type(left_type)
   | "/" => arithmetic_binary_result_type(left_type)
   | "%" => arithmetic_binary_result_type(left_type)
+  | "&" => arithmetic_binary_result_type(left_type)
+  | "|" => arithmetic_binary_result_type(left_type)
+  | "^" => arithmetic_binary_result_type(left_type)
+  | "<<" => arithmetic_binary_result_type(left_type)
+  | ">>" => arithmetic_binary_result_type(left_type)
   | "=" => Shared.new(TUnit)
   | _   => Shared.new(TBool)
   end
