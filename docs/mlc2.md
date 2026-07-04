@@ -194,6 +194,96 @@
 
 ---
 
+## H1 — побитовые операторы `&`, `|`, `^`, `<<`, `>>`
+
+**Статус:** исправлено mlcc (`30897587`): лестница `parse_bitwise_or/xor/and`, `parse_shift`; лексер `<<`/`>>`; checker — `i32` для побитовых ops.
+
+### Эталон (Ruby)
+
+- Полная лестница приоритетов в `lib/mlc/source/parser/expression_parser.rb`: `parse_logical_or` → `parse_logical_and` → `parse_bitwise_or` (`|`) → `parse_bitwise_xor` (`^`) → `parse_bitwise_and` (`&`) → `parse_equality` → `parse_pipe` → `parse_comparison` → `parse_shift` (`<<`, `>>`) → `parse_addition`.
+- `5 & 3`, `5 | 2`, `5 ^ 1`, `1 << 3`, `16 >> 2` компилируются.
+
+### Self-hosted (mlcc)
+
+- `compiler/frontend/parser/exprs.mlc`: лестница обрывается на `parse_or` (`||`) → `parse_and` (`&&`) → `parse_equality` → `parse_pipe` → `parse_comparison_relational` → `parse_add` → `parse_mul` → `parse_unary`. Уровней `parse_bitwise_or/xor/and` и `parse_shift` нет.
+- Лексер выдаёт `&`, `|`, `^`, `<<`, `>>` как отдельные операторные токены, но парсер выражений их не потребляет ни на одном уровне.
+- **Проверено на бинаре** (2026-07-04): `5 & 3` и т.п. дают каскад ошибок E008/E005 (misparse), не понятную диагностику отсутствия фичи.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Лестница приоритетов | `compiler/frontend/parser/exprs.mlc` |
+| Лексер (токены уже есть) | `compiler/frontend/lexer.mlc` |
+| Codegen бинарных операторов | `compiler/codegen/expr_eval.mlc` (проверить обработку `&`/`\|`/`^`/`<<`/`>>`) |
+
+---
+
+## H2 — унарные `~` и `+`
+
+**Статус:** исправлено mlcc (`898b4915`): `parse_unary` принимает `~` и `+`.
+
+### Эталон (Ruby)
+
+- `lib/mlc/source/parser/lexer.rb` выдаёт `~` как `OPERATOR("~")`; `parse_unary` в `expression_parser.rb` матчит `!`, `-`, `+`, `~`.
+
+### Self-hosted (mlcc)
+
+- `compiler/frontend/parser/exprs.mlc:507-516` (`parse_unary`): матчит только `!` и `-` (`kind.op_val() == "!" || kind.op_val() == "-"`). Токены `~x` и `+x` проваливаются в `parse_postfix`/`parse_primary` и дают ошибку разбора.
+- **Проверено на бинаре** (2026-07-04): `~5` и `+3` не компилируются mlcc, Ruby — компилирует оба.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| `parse_unary` | `compiler/frontend/parser/exprs.mlc:507` |
+| Codegen унарных операторов | `compiler/codegen/expr_eval.mlc` |
+
+---
+
+## H3 — суффиксы числовых литералов
+
+**Статус:** исправлено mlcc (`65da5390`): полный набор суффиксов Ruby; узкие signed/unsigned → `LInt`; fix `"i32"` в `types.mlc`.
+
+### Эталон (Ruby)
+
+- `lib/mlc/source/parser/lexer.rb` (`NUMERIC_SUFFIXES`): `i8 i16 i32 i64 u8 u16 u32 u64 usize f32 f64` — полный набор.
+
+### Self-hosted (mlcc)
+
+- `compiler/frontend/lexer.mlc:144` (`try_scan_suffix`): `numeric_type_suffixes = ['i64', 'u8', 'usize', 'f64', 'f32']` — отсутствуют `i8`, `i16`, `i32`, `u16`, `u32`, `u64`.
+- **Проверено на бинаре** (2026-07-04): `5i32` в mlcc даёт `error[E001]: undefined: i32` — суффикс не распознан, откатывается к `LInt(5)` + отдельный идентификатор `i32`. Ruby компилирует `5i32` как типизированный литерал.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Список суффиксов | `compiler/frontend/lexer.mlc:144` (`try_scan_suffix`) |
+| Матч по суффиксу → `LI8`/`LI16`/... | `compiler/frontend/lexer.mlc` (ветка `token_kind` после `try_scan_suffix`, см. `compiler/frontend/lexer.mlc:187`) |
+
+---
+
+## H4 — постфиксный `if`/`unless` (statement modifier)
+
+**Статус:** исправлено mlcc (`ae2cb1fb`): `parse_postfix_conditional` после postfix-цепочки, same-line check.
+
+### Эталон (Ruby)
+
+- `lib/mlc/source/parser/expression_parser.rb` (`parse_postfix_conditional`): `expr if cond` и `expr unless cond` на той же строке — валидный синтаксис, инверсия условия для `unless`.
+
+### Self-hosted (mlcc)
+
+- `compiler/frontend/parser/exprs.mlc` (`parse_if_expr`, начиная со строки 854): `if`/`unless` разбираются только в **префиксной** позиции (внутри `parse_primary`), постфиксной обёртки после произвольного выражения нет.
+- **Проверено на бинаре** (2026-07-04): `println("hi") if true` внутри `do…end`-блока не просто не типизируется — ломает разбор последующих деклараций (`fn main` перестаёт распознаваться, каскад "undefined: main"). Ruby даёт чистую (и ожидаемую в этом тесте) семантическую ошибку типов, не затрагивая остальной файл.
+
+### Файлы для правок
+
+| Назначение | Путь |
+|------------|------|
+| Постфиксная форма `if`/`unless` | `compiler/frontend/parser/exprs.mlc` (рядом с `parse_if_expr`, точка встраивания — там же, где в Ruby `parse_postfix_conditional` оборачивает результат `parse_expression`) |
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).
