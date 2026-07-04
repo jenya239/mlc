@@ -18,40 +18,43 @@ export fn compile_usage_message() -> string =
   'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
 
 fn is_output_directory_flag(argument: string) -> bool =
-  match argument | '-o' => true | _ => false end
+  argument == "-o"
 
 fn is_profile_flag(argument: string) -> bool =
-  match argument | '--profile' => true | _ => false end
+  argument == "--profile"
 
 fn is_check_only_flag(argument: string) -> bool =
-  match argument | '--check-only' => true | _ => false end
+  argument == "--check-only"
 
 fn is_emit_compile_commands_flag(argument: string) -> bool =
-  match argument | '--emit-compile-commands' => true | _ => false end
+  argument == "--emit-compile-commands"
 
 fn is_verify_each_pass_flag(argument: string) -> bool =
-  match argument | '--verify-each' => true | _ => false end
+  argument == "--verify-each"
 
 fn is_dump_ast_flag(argument: string) -> bool =
-  match argument | '--dump-ast' => true | _ => false end
+  argument == "--dump-ast"
 
 fn is_dump_sem_flag(argument: string) -> bool =
-  match argument | '--dump-sem' => true | _ => false end
+  argument == "--dump-sem"
 
 fn is_dump_mir_flag(argument: string) -> bool =
-  match argument | '--dump-mir' => true | _ => false end
+  argument == "--dump-mir"
 
 fn is_mir_bootstrap_report_flag(argument: string) -> bool =
-  match argument | '--mir-bootstrap-report' => true | _ => false end
+  argument == "--mir-bootstrap-report"
 
 fn is_time_passes_flag(argument: string) -> bool =
-  match argument | '--time-passes' => true | _ => false end
+  argument == "--time-passes"
 
 fn is_run_interpreter_flag(argument: string) -> bool =
-  match argument | '--run' => true | '--interpret' => true | _ => false end
+  if argument == "--run" then true
+  else if argument == "--interpret" then true
+  else false
+  end
 
 fn is_trace_vm_flag(argument: string) -> bool =
-  match argument | '--trace-vm' => true | _ => false end
+  argument == "--trace-vm"
 
 fn resolve_default_out_directory(check_only: bool, out_directory_explicit: bool, out_directory: string) -> string =
   if check_only && !out_directory_explicit then ''

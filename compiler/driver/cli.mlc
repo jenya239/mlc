@@ -9,10 +9,10 @@ fn format_errors(label: string, errors: [string]) -> string =
   errors.map(message_line => `${label}: ${message_line}\n`).join('')
 
 fn is_format_subcommand(argument: string) -> bool =
-  match argument | 'fmt' => true | _ => false end
+  argument == "fmt"
 
 fn is_lsp_subcommand(argument: string) -> bool =
-  match argument | 'lsp' => true | _ => false end
+  argument == "lsp"
 
 export fn run_compiler_cli() -> i32 = do
   const command_line_arguments = args()

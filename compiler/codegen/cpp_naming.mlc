@@ -15,28 +15,32 @@ export fn path_to_module_base(path: string) -> string = do
   end
 end
 
+fn cpp_reserved_keywords() -> [string] = do
+  const keywords: [string] = [
+    "export", "import", "module", "struct", "class",
+    "template", "typename", "const", "return",
+    "if", "else", "for", "while", "do",
+    "switch", "case", "default", "break", "continue",
+    "try", "catch", "throw", "new", "delete",
+    "virtual", "override", "final", "public", "private",
+    "protected", "friend", "static", "extern", "inline",
+    "using", "namespace", "typedef", "enum", "union",
+    "true", "false", "nullptr", "void", "bool",
+    "int", "long", "short", "char", "float", "double",
+    "signed", "unsigned", "auto", "typeid", "sizeof",
+    "and", "or", "not", "xor", "and_eq", "or_eq",
+    "not_eq", "xor_eq", "bitand", "bitor", "compl",
+    "alignas", "alignof", "asm", "concept", "consteval",
+    "constexpr", "constinit", "const_cast", "decltype",
+    "dynamic_cast", "explicit", "mutable", "noexcept",
+    "operator", "reinterpret_cast", "requires", "static_cast",
+    "this", "thread_local", "volatile", "wchar_t"
+  ]
+  keywords
+end
+
 export fn cpp_keyword(name: string) -> bool =
-  match name
-  | 'export' | 'import' | 'module' | 'struct' | 'class' => true
-  | 'template' | 'typename' | 'const' | 'return' => true
-  | 'if' | 'else' | 'for' | 'while' | 'do' => true
-  | 'switch' | 'case' | 'default' | 'break' | 'continue' => true
-  | 'try' | 'catch' | 'throw' | 'new' | 'delete' => true
-  | 'virtual' | 'override' | 'final' | 'public' | 'private' => true
-  | 'protected' | 'friend' | 'static' | 'extern' | 'inline' => true
-  | 'using' | 'namespace' | 'typedef' | 'enum' | 'union' => true
-  | 'true' | 'false' | 'nullptr' | 'void' | 'bool' => true
-  | 'int' | 'long' | 'short' | 'char' | 'float' | 'double' => true
-  | 'signed' | 'unsigned' | 'auto' | 'typeid' | 'sizeof' => true
-  | 'and' | 'or' | 'not' | 'xor' | 'and_eq' | 'or_eq' => true
-  | 'not_eq' | 'xor_eq' | 'bitand' | 'bitor' | 'compl' => true
-  | 'alignas' | 'alignof' | 'asm' | 'concept' | 'consteval' => true
-  | 'constexpr' | 'constinit' | 'const_cast' | 'decltype' => true
-  | 'dynamic_cast' | 'explicit' | 'mutable' | 'noexcept' => true
-  | 'operator' | 'reinterpret_cast' | 'requires' | 'static_cast' => true
-  | 'this' | 'thread_local' | 'volatile' | 'wchar_t' => true
-  | _ => false
-  end
+  cpp_reserved_keywords().any(keyword => name == keyword)
 
 export fn cpp_safe(name: string) -> string =
   if cpp_keyword(name) then `${name}_` else name end
@@ -47,29 +51,31 @@ export fn lower_first(name: string) -> string =
   end
 
 export fn map_method(method_name: string) -> string =
-  match method_name
-  | 'length' | 'len'              => 'length'
-  | 'push'                        => 'push_back'
-  | 'recv'                        => 'receive'
-  | 'to_string'                   => 'to_string'
-  | 'to_int' | 'to_i'             => 'to_i'
-  | 'upper' | 'to_upper'          => 'upper'
-  | 'lower' | 'to_lower'          => 'lower'
-  | _                             => method_name
+  if method_name == "length" then "length"
+  else if method_name == "len" then "length"
+  else if method_name == "push" then "push_back"
+  else if method_name == "recv" then "receive"
+  else if method_name == "to_string" then "to_string"
+  else if method_name == "to_int" then "to_i"
+  else if method_name == "to_i" then "to_i"
+  else if method_name == "upper" then "upper"
+  else if method_name == "to_upper" then "upper"
+  else if method_name == "lower" then "lower"
+  else if method_name == "to_lower" then "lower"
+  else method_name
   end
 
 export fn map_builtin(name: string) -> string =
-  match name
-  | 'print'   => 'mlc::io::print'
-  | 'println' => 'mlc::io::println'
-  | 'exit'    => 'mlc::io::exit'
-  | 'args'    => 'mlc::io::args'
-  | 'read_line' => 'mlc::io::read_line'
-  | 'spawn_task' => 'mlc::concurrency::spawn_task'
-  | 'make_channel' => 'mlc::concurrency::make_channel'
-  | 'is_ready' => 'mlc::is_ready'
-  | 'block_on' => 'mlc::block_on'
-  | _         => name
+  if name == "print" then "mlc::io::print"
+  else if name == "println" then "mlc::io::println"
+  else if name == "exit" then "mlc::io::exit"
+  else if name == "args" then "mlc::io::args"
+  else if name == "read_line" then "mlc::io::read_line"
+  else if name == "spawn_task" then "mlc::concurrency::spawn_task"
+  else if name == "make_channel" then "mlc::concurrency::make_channel"
+  else if name == "is_ready" then "mlc::is_ready"
+  else if name == "block_on" then "mlc::block_on"
+  else name
   end
 
 // Identifiers named `args` often shadow the CLI helper (match bindings, parameters).

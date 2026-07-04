@@ -42,108 +42,73 @@ export fn cpp_token_with_trivia(
     trailing_trivia: trailing_trivia,
   }
 
-export fn is_cpp_reserved_keyword(word: string) -> bool =
-  match word
-  | 'auto'       => true
-  | 'const'      => true
-  | 'constexpr'  => true
-  | 'if'         => true
-  | 'else'       => true
-  | 'while'      => true
-  | 'for'        => true
-  | 'return'     => true
-  | 'break'      => true
-  | 'struct'     => true
-  | 'using'      => true
-  | 'noexcept'   => true
-  | 'inline'     => true
-  | 'static'     => true
-  | 'void'       => true
-  | 'int'        => true
-  | 'bool'       => true
-  | 'char'       => true
-  | 'true'       => true
-  | 'false'      => true
-  | 'nullptr'    => true
-  | 'template'   => true
-  | 'typename'   => true
-  | 'namespace'  => true
-  | 'new'        => true
-  | 'delete'     => true
-  | 'operator'   => true
-  | 'class'      => true
-  | 'enum'       => true
-  | 'typedef'    => true
-  | 'extern'     => true
-  | 'signed'     => true
-  | 'unsigned'   => true
-  | 'long'       => true
-  | 'short'      => true
-  | 'float'      => true
-  | 'double'     => true
-  | 'virtual'    => true
-  | 'override'   => true
-  | 'final'      => true
-  | 'public'     => true
-  | 'private'    => true
-  | 'protected'  => true
-  | 'explicit'   => true
-  | 'mutable'    => true
-  | 'volatile'   => true
-  | 'friend'     => true
-  | _            => false
-  end
+type CppKeywordEntry = CppKeywordEntry { name: string, kind: CppTokenKind }
 
-export fn reserved_cpp_keyword_kind(word: string) -> CppTokenKind =
-  match word
-  | 'auto'       => CKAuto
-  | 'const'      => CKConst
-  | 'constexpr'  => CKConstexpr
-  | 'if'         => CKIf
-  | 'else'       => CKElse
-  | 'while'      => CKWhile
-  | 'for'        => CKFor
-  | 'return'     => CKReturn
-  | 'break'      => CKBreak
-  | 'struct'     => CKStruct
-  | 'using'      => CKUsing
-  | 'noexcept'   => CKNoexcept
-  | 'inline'     => CKInline
-  | 'static'     => CKStatic
-  | 'void'       => CKVoid
-  | 'int'        => CKInt
-  | 'bool'       => CKBool
-  | 'char'       => CKChar
-  | 'true'       => CKTrue
-  | 'false'      => CKFalse
-  | 'nullptr'    => CKNullptr
-  | 'template'   => CKTemplate
-  | 'typename'   => CKTypename
-  | 'namespace'  => CKNamespace
-  | 'new'        => CKNew
-  | 'delete'     => CKDelete
-  | 'operator'   => CKOperator
-  | 'class'      => CKClass
-  | 'enum'       => CKEnum
-  | 'typedef'    => CKTypedef
-  | 'extern'     => CKExtern
-  | 'signed'     => CKSigned
-  | 'unsigned'   => CKUnsigned
-  | 'long'       => CKLong
-  | 'short'      => CKShort
-  | 'float'      => CKFloat
-  | 'double'     => CKDouble
-  | 'virtual'    => CKVirtual
-  | 'override'   => CKOverride
-  | 'final'      => CKFinal
-  | 'public'     => CKPublic
-  | 'private'    => CKPrivate
-  | 'protected'  => CKProtected
-  | 'explicit'   => CKExplicit
-  | 'mutable'    => CKMutable
-  | 'volatile'   => CKVolatile
-  | 'friend'     => CKFriend
+fn cpp_keyword_entries() -> [CppKeywordEntry] = do
+  const entries: [CppKeywordEntry] = [
+    CppKeywordEntry { name: "auto", kind: CKAuto },
+    CppKeywordEntry { name: "const", kind: CKConst },
+    CppKeywordEntry { name: "constexpr", kind: CKConstexpr },
+    CppKeywordEntry { name: "if", kind: CKIf },
+    CppKeywordEntry { name: "else", kind: CKElse },
+    CppKeywordEntry { name: "while", kind: CKWhile },
+    CppKeywordEntry { name: "for", kind: CKFor },
+    CppKeywordEntry { name: "return", kind: CKReturn },
+    CppKeywordEntry { name: "break", kind: CKBreak },
+    CppKeywordEntry { name: "struct", kind: CKStruct },
+    CppKeywordEntry { name: "using", kind: CKUsing },
+    CppKeywordEntry { name: "noexcept", kind: CKNoexcept },
+    CppKeywordEntry { name: "inline", kind: CKInline },
+    CppKeywordEntry { name: "static", kind: CKStatic },
+    CppKeywordEntry { name: "void", kind: CKVoid },
+    CppKeywordEntry { name: "int", kind: CKInt },
+    CppKeywordEntry { name: "bool", kind: CKBool },
+    CppKeywordEntry { name: "char", kind: CKChar },
+    CppKeywordEntry { name: "true", kind: CKTrue },
+    CppKeywordEntry { name: "false", kind: CKFalse },
+    CppKeywordEntry { name: "nullptr", kind: CKNullptr },
+    CppKeywordEntry { name: "template", kind: CKTemplate },
+    CppKeywordEntry { name: "typename", kind: CKTypename },
+    CppKeywordEntry { name: "namespace", kind: CKNamespace },
+    CppKeywordEntry { name: "new", kind: CKNew },
+    CppKeywordEntry { name: "delete", kind: CKDelete },
+    CppKeywordEntry { name: "operator", kind: CKOperator },
+    CppKeywordEntry { name: "class", kind: CKClass },
+    CppKeywordEntry { name: "enum", kind: CKEnum },
+    CppKeywordEntry { name: "typedef", kind: CKTypedef },
+    CppKeywordEntry { name: "extern", kind: CKExtern },
+    CppKeywordEntry { name: "signed", kind: CKSigned },
+    CppKeywordEntry { name: "unsigned", kind: CKUnsigned },
+    CppKeywordEntry { name: "long", kind: CKLong },
+    CppKeywordEntry { name: "short", kind: CKShort },
+    CppKeywordEntry { name: "float", kind: CKFloat },
+    CppKeywordEntry { name: "double", kind: CKDouble },
+    CppKeywordEntry { name: "virtual", kind: CKVirtual },
+    CppKeywordEntry { name: "override", kind: CKOverride },
+    CppKeywordEntry { name: "final", kind: CKFinal },
+    CppKeywordEntry { name: "public", kind: CKPublic },
+    CppKeywordEntry { name: "private", kind: CKPrivate },
+    CppKeywordEntry { name: "protected", kind: CKProtected },
+    CppKeywordEntry { name: "explicit", kind: CKExplicit },
+    CppKeywordEntry { name: "mutable", kind: CKMutable },
+    CppKeywordEntry { name: "volatile", kind: CKVolatile },
+    CppKeywordEntry { name: "friend", kind: CKFriend }
+  ]
+  entries
+end
+
+export fn is_cpp_reserved_keyword(word: string) -> bool =
+  cpp_keyword_entries().any(entry => entry.name == word)
+
+export fn reserved_cpp_keyword_kind(word: string) -> CppTokenKind = do
+  const entries = cpp_keyword_entries()
+  let mut index = 0
+  while index < entries.length() do
+    if entries[index].name == word then return entries[index].kind end
+    index = index + 1
   end
+  CKAuto
+end
 
 export fn cpp_keyword_kind(word: string) -> CppTokenKind =
   if is_cpp_reserved_keyword(word) then reserved_cpp_keyword_kind(word) else CIdent(word) end

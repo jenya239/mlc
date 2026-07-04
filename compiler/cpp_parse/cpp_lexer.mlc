@@ -300,28 +300,56 @@ fn cpp_scan_string(state: LexState) -> CppScanStrR = do
 end
 
 fn cpp_scan_op_single(state: LexState, character: string, line: i32, column: i32) -> CppScanOpR =
-  match character
-  | "(" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLParen, line, column) }
-  | ")" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRParen, line, column) }
-  | "{" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBrace, line, column) }
-  | "}" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBrace, line, column) }
-  | "[" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBracket, line, column) }
-  | "]" => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBracket, line, column) }
-  | _   => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(COp(character), line, column) }
+  if character == "(" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLParen, line, column) }
+  else if character == ")" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRParen, line, column) }
+  else if character == "{" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBrace, line, column) }
+  else if character == "}" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBrace, line, column) }
+  else if character == "[" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLBracket, line, column) }
+  else if character == "]" then CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRBracket, line, column) }
+  else CppScanOpR { state: state.lex_advance(), token: cpp_token_make(COp(character), line, column) }
   end
 
 fn cpp_scan_op_two_character(state: LexState, character: string, next_char: string, line: i32, column: i32) -> CppScanOpR =
-  match character
-  | "-" => match next_char | ">" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CArrow, line, column) } | "-" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CDec, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | ":" => match next_char | ":" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CScope, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "=" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CEq, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "!" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CNe, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "<" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLe, line, column) } | "<" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLShift, line, column) } | _ => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLAngle, line, column) } end
-  | ">" => match next_char | "=" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CGe, line, column) } | ">" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CRShift, line, column) } | _ => CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRAngle, line, column) } end
-  | "&" => match next_char | "&" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CAnd, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "|" => match next_char | "|" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(COr, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | "+" => match next_char | "+" => CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CInc, line, column) } | _ => cpp_scan_op_single(state, character, line, column) end
-  | _   => cpp_scan_op_single(state, character, line, column)
+  if character == "-" then
+    if next_char == ">" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CArrow, line, column) }
+    else if next_char == "-" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CDec, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == ":" then
+    if next_char == ":" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CScope, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == "=" then
+    if next_char == "=" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CEq, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == "!" then
+    if next_char == "=" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CNe, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == "<" then
+    if next_char == "=" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLe, line, column) }
+    else if next_char == "<" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CLShift, line, column) }
+    else CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CLAngle, line, column) }
+    end
+  else if character == ">" then
+    if next_char == "=" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CGe, line, column) }
+    else if next_char == ">" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CRShift, line, column) }
+    else CppScanOpR { state: state.lex_advance(), token: cpp_token_make(CRAngle, line, column) }
+    end
+  else if character == "&" then
+    if next_char == "&" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CAnd, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == "|" then
+    if next_char == "|" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(COr, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else if character == "+" then
+    if next_char == "+" then CppScanOpR { state: state.lex_advance_by(2), token: cpp_token_make(CInc, line, column) }
+    else cpp_scan_op_single(state, character, line, column)
+    end
+  else cpp_scan_op_single(state, character, line, column)
   end
 
 fn cpp_scan_op(state: LexState) -> CppScanOpR = do
