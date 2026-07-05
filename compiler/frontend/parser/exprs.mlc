@@ -1050,8 +1050,11 @@ fn parse_with_expr(parser: Parser, header_span: Span) -> ExprResult = do
   expression_parse_result(Shared.new(ExprWith(expression, binder, block_statements, header_span)), body_parsed.parser)
 end
 
+fn parse_match_scrutinee(parser: Parser) -> ExprResult =
+  parse_comparison_relational(parser)
+
 fn parse_match_expr(parser: Parser, header_span: Span) -> ExprResult = do
-  const subject_parsed = parse_expr(parser)
+  const subject_parsed = parse_match_scrutinee(parser)
   const expression = subject_parsed.value
   const next = subject_parsed.parser.kind()
   if next.is_lbrace() then

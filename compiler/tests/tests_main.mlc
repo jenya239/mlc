@@ -1,9 +1,32 @@
 // Test entry point. Suite registry grouped by IR level (STEP=10).
 
 import { TestResult, run_all } from './test_runner'
-import { all_test_suites } from './support/suite_registry'
+import {
+  syntax_suite_results,
+  hir_suite_results,
+  types_suite_results,
+  cpp_suite_results,
+  integration_suite_results,
+  tooling_suite_results,
+  append_suite_results
+} from './support/suite_registry'
 
-fn all_tests() -> [TestResult] = all_test_suites()
+fn all_tests() -> [TestResult] = do
+  let mut results: [TestResult] = []
+  print('[compiler tests] suite: syntax\n')
+  results = append_suite_results(results, syntax_suite_results())
+  print('[compiler tests] suite: hir\n')
+  results = append_suite_results(results, hir_suite_results())
+  print('[compiler tests] suite: types\n')
+  results = append_suite_results(results, types_suite_results())
+  print('[compiler tests] suite: cpp\n')
+  results = append_suite_results(results, cpp_suite_results())
+  print('[compiler tests] suite: integration\n')
+  results = append_suite_results(results, integration_suite_results())
+  print('[compiler tests] suite: tooling\n')
+  results = append_suite_results(results, tooling_suite_results())
+  results
+end
 
 fn main() -> i32 = do
   print(run_all(all_tests()))

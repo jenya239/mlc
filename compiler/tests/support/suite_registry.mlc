@@ -67,13 +67,21 @@ end
 
 export fn syntax_suite_results() -> [TestResult] = do
   let mut results: [TestResult] = []
+  print('[compiler tests]   sub: file_store\n')
   results = append_suite_results(results, file_store_tests())
+  print('[compiler tests]   sub: intern\n')
   results = append_suite_results(results, intern_tests())
+  print('[compiler tests]   sub: lexer\n')
   results = append_suite_results(results, lexer_tests())
+  print('[compiler tests]   sub: parser\n')
   results = append_suite_results(results, parser_tests())
+  print('[compiler tests]   sub: verify_ir\n')
   results = append_suite_results(results, verify_ir_tests())
+  print('[compiler tests]   sub: dump_flags\n')
   results = append_suite_results(results, dump_flags_tests())
+  print('[compiler tests]   sub: formatter\n')
   results = append_suite_results(results, formatter_tests())
+  print('[compiler tests]   sub: golden_harness\n')
   results = append_suite_results(results, golden_harness_tests())
   results
 end
