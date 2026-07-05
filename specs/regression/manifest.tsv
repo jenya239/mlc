@@ -3,6 +3,7 @@ fibonacci	expected/fibonacci.txt
 result	expected/result.txt
 sum_types	expected/sum_types.txt
 match_guard	expected/match_guard.txt
+match_pipe_arms	expected/match_pipe_arms.txt
 record_update	expected/record_update.txt
 literals	expected/literals.txt
 conditionals	expected/conditionals.txt

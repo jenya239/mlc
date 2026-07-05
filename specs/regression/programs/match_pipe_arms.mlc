@@ -1,0 +1,10 @@
+type Shape = Circle(i32) | Square(i32)
+
+fn value(shape: Shape) -> i32 =
+  match shape | Circle(number) => number | Square(number) => number * 10
+
+fn main() -> i32 = do
+  println(value(Circle(3)).to_string())
+  println(value(Square(2)).to_string())
+  0
+end

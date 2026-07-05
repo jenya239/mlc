@@ -19,6 +19,7 @@ Ruby bootstrap (`bin/mlc`) is the source of truth for expected stdout.
 | result | Result, `?`, match | e2e |
 | sum_types | sum types, match | e2e |
 | match_guard | match guard | e2e |
+| match_pipe_arms | pipe-style match arms (`match x \| pat => body`) | parser fix 2026-07 |
 | record_update | record, spread, extend | e2e |
 | literals | int, string, bool | derived from `test/mlc/` patterns |
 | conditionals | if/else | derived |
