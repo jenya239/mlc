@@ -933,6 +933,11 @@ export fn checker_tests() -> [TestResult] = do
     'fn f(x: i32, y: i32) -> i32 = x\nfn g() -> i32 = f(x: 1, x: 2)',
     'error[E035]: duplicate named arg: x\n  --> 2:25'))
 
+  results.push(assert_checker_diagnostic(
+    'negative E082: undefined method on record field name',
+    'type R = { name: string }\nfn f(record: R) -> i32 = record.name()',
+    'error[E082]: undefined method: name on R\n  --> 2:32'))
+
   results.push(assert_true('named args: unknown param name — at least 1 error',
     check_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)') > 0))
 

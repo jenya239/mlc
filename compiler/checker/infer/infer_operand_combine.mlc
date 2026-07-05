@@ -5,7 +5,10 @@ import { InferResult } from './infer_result'
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from '../registry'
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from '../semantic_type_structure'
 import { infer_binary_operand_diagnostics } from '../check/diagnostics/binary_diagnostics'
-import { infer_builtin_method_receiver_diagnostics } from '../check/diagnostics/method_receiver_diagnostics'
+import {
+  infer_builtin_method_receiver_diagnostics,
+  infer_undefined_record_method_diagnostics
+} from '../check/diagnostics/method_receiver_diagnostics'
 import {
   unary_minus_diagnostic,
   unary_bang_diagnostic,
@@ -130,8 +133,15 @@ export fn infer_method_from_object_and_arguments(
       method_return_type_from_object(object_result.inferred_type, method_name, registry)
     else builtin_type
     end
+  const missing_method_errors =
+    if type_is_unknown(builtin_type) && type_is_unknown(inferred_type) then
+      infer_undefined_record_method_diagnostics(object_result.inferred_type, method_name, method_span, registry)
+    else []
+    end
   InferResult {
     inferred_type: inferred_type,
-    errors: diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors)
+    errors: diagnostics_append(
+      diagnostics_append(diagnostics_append(with_arguments.errors, receiver_errors), arity_errors),
+      missing_method_errors)
   }
 end

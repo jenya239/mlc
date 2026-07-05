@@ -164,5 +164,5 @@ export fn diagnostic_code_e079() -> string = 'E079'
 export fn diagnostic_code_e080() -> string = 'E080'
 // E081: cyclic type alias
 export fn diagnostic_code_e081() -> string = 'E081'
-
+// E082: undefined method on record type
 export fn diagnostic_code_e082() -> string = 'E082'
