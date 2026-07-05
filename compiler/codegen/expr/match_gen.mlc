@@ -721,6 +721,9 @@ fn cpp_type_string_has_auto_placeholder(type_string: string) -> bool =
 // match nested in a while-loop statement, or inside a .fold()/.map() callback lambda
 // with its own distinct return type; context.enclosing_function_return_type is never
 // updated to reflect those narrower scopes.
+fn is_bare_result_cpp_name(type_string: string) -> bool =
+  type_string == 'ast::Result' || type_string == 'Result'
+
 fn match_return_cpp_type(
   context: CodegenContext,
   match_result_type: Shared<Type>,
@@ -734,8 +737,13 @@ fn match_return_cpp_type(
       && !cpp_type_string_has_auto_placeholder(enclosing_cpp)
       && !is_result_generic(context.enclosing_function_return_type)
   if direct.contains(`<`) && !direct_is_incomplete then direct
-  else if direct == 'ast::Result' && full_result_cpp_template(context, context.enclosing_function_return_type) != '' then
-    full_result_cpp_template(context, context.enclosing_function_return_type)
+  else if is_bare_result_cpp_name(direct) then
+    const from_match = full_result_cpp_template(context, match_result_type)
+    if from_match != '' then from_match
+    else do
+      const from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type)
+      if from_enclosing != '' then from_enclosing else direct end
+    end
   else if direct != 'auto' && direct != '' && !direct_is_incomplete && !is_result_generic(match_result_type) then direct
   else if enclosing_usable && (direct == 'auto' || direct_is_incomplete || direct == 'ast::Result' || is_result_generic(match_result_type)) then
     enclosing_cpp

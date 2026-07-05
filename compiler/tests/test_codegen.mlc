@@ -830,6 +830,6 @@ export fn codegen_tests() -> [TestResult] = do
     'type Result<T, E> = Ok(T) | Err(E)\ntype Value = Number(i32) | Text(string)\nfn parse(value: Value) -> Result<i32, [string]> = match value {\n  Number(number) => Ok(number),\n  Text(text) => Err([text])\n}\nexport fn main() -> i32 = 0'
   const codegen_match_result_cpp = gen_program(parse_program(tokenize(codegen_match_result_return).tokens))
   results.push(assert_code_contains('gen_program: Result match std::visit uses explicit return type',
-    codegen_match_result_cpp, '-> Result<int, mlc::Array<mlc::String>>'))
+    codegen_match_result_cpp, '-> ast::Result<int, mlc::Array<mlc::String>>'))
   results
 end

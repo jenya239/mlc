@@ -1105,6 +1105,11 @@ type MatchArmParseOutcome = ParseResult<Shared<MatchArm>>
 fn match_arm_parse_result(arm: Shared<MatchArm>, parser: Parser) -> MatchArmParseOutcome =
   parse_result(arm, parser)
 
+fn parse_match_arm_body(parser: Parser) -> ExprResult = do
+  const parsed = parse_or_no_pipe(parser)
+  parse_postfix_conditional(parsed.parser, parsed.value)
+end
+
 fn parse_match_arm(pat_parsed: PatternResult) -> MatchArmParseOutcome = do
   let mut after_pattern = pat_parsed.parser
   let mut has_guard = false
@@ -1117,7 +1122,7 @@ fn parse_match_arm(pat_parsed: PatternResult) -> MatchArmParseOutcome = do
     after_pattern = guard_parsed.parser
   end
   const after_fat_arrow = after_pattern.advance()
-  const body_parsed = parse_expr(after_fat_arrow)
+  const body_parsed = parse_match_arm_body(after_fat_arrow)
   const expression = body_parsed.value
   match_arm_parse_result(Shared.new(MatchArm {
       pattern: pat_parsed.value,

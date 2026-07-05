@@ -276,6 +276,9 @@ fn first_decl(source: string) -> Shared<Decl> =
 fn second_decl(source: string) -> Shared<Decl> =
   parse_source(source).decls[1]
 
+fn third_decl(source: string) -> Shared<Decl> =
+  parse_source(source).decls[2]
+
 fn trait_display_decl(program: Program) -> bool =
   match program.decls[0] {
     DeclTrait(name, _, methods, _) => name == 'Display' && methods.length() == 1,
@@ -382,7 +385,7 @@ export fn parser_tests() -> [TestResult] = do
     }))
 
   results.push(assert_true('extend trait generic Shared<T>>: both methods parsed',
-    match second_decl('trait G<Result> { fn alpha(self: G<Result>, value: i32) -> Result\n  fn beta(self: G<Result>) -> Result }\ntype Box = { }\nextend Box : G<Shared<i32>> {\n  fn alpha(self: Box, value: i32) -> Shared<i32> = Shared.new(value)\n  fn beta(self: Box) -> Shared<i32> = Shared.new(7)\n}') {
+    match third_decl('trait G<Result> { fn alpha(self: G<Result>, value: i32) -> Result\n  fn beta(self: G<Result>) -> Result }\ntype Box = { }\nextend Box : G<Shared<i32>> {\n  fn alpha(self: Box, value: i32) -> Shared<i32> = Shared.new(value)\n  fn beta(self: Box) -> Shared<i32> = Shared.new(7)\n}') {
       DeclExtend(_, _, methods, _) =>
         if methods.length() != 2 then false
         else
