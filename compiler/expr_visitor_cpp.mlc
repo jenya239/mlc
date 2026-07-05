@@ -17,6 +17,7 @@ import * as method_gen from './codegen/expr/method_gen'
 import * as record_gen from './codegen/expr/record_gen'
 import { cpp_safe, map_builtin } from './codegen/cpp_naming'
 import { sem_type_to_cpp } from './codegen/decl/type_gen'
+import { ExprVisitor } from './expr_visitor'
 import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
 import { stmts_final_ctx } from './codegen/stmt/statement_context'
 
@@ -740,7 +741,7 @@ export fn gen_unary_via_cpp_visitor(
 ) -> Shared<CppExpression> =
   Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
 
-extend CodegenPass {
+extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
   fn visit_int(self: CodegenPass, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_integer_literal_cpp(value)
   fn visit_str(self: CodegenPass, value: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
