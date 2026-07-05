@@ -30,7 +30,8 @@ fn infer_undefined_record_method_diagnostics_for_named(
   method_span: Span,
   registry: TypeRegistry
 ) -> [Diagnostic] = do
-  if !registry.has_fn(type_name + "_" + method_name)
+  if registry.has_fields(type_name)
+      && !registry.has_fn(type_name + "_" + method_name)
       && semantic_type_structure.type_is_unknown(
         semantic_type_structure.builtin_method_return_type(method_name)) then
     [diagnostic_error_with_code(
