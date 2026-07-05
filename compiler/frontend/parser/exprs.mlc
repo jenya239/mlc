@@ -322,10 +322,15 @@ fn parse_or_pattern(parser: Parser) -> PatternResult = do
   const span = parser.span_at_cursor()
   const alts: [Shared<Pattern>] = [first.value]
   let mut state = first.parser
-  while state.kind().is_bar() && !state.advance().at_eof() && !state.advance().kind().is_fat_arrow() do
-    const next = parse_pattern(state.advance())
-    alts.push(next.value)
-    state = next.parser
+  while state.kind().is_bar() do
+    const after_bar = state.advance()
+    if after_bar.at_eof() || after_bar.kind().is_fat_arrow() then
+      state = after_bar
+    else
+      const next = parse_pattern(after_bar)
+      alts.push(next.value)
+      state = next.parser
+    end
   end
   if alts.length() == 1 then first
   else pattern_parse_result(Shared.new(PatternOr(alts, span)), state)
@@ -418,6 +423,32 @@ fn parse_and(parser: Parser) -> ExprResult = do
     const operator_span = state.span_at_cursor()
     const right = parse_bitwise_or(state.advance())
     expression = Shared.new(ExprBin('&&', expression, right.value, operator_span))
+    state = right.parser
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_and_no_pipe(parser: Parser) -> ExprResult = do
+  const left = parse_bitwise_xor(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  while state.kind().is_op() && state.kind().op_val() == '&&' do
+    const operator_span = state.span_at_cursor()
+    const right = parse_bitwise_xor(state.advance())
+    expression = Shared.new(ExprBin('&&', expression, right.value, operator_span))
+    state = right.parser
+  end
+  expression_parse_result(expression, state)
+end
+
+fn parse_or_no_pipe(parser: Parser) -> ExprResult = do
+  const left = parse_and_no_pipe(parser)
+  let mut expression = left.value
+  let mut state = left.parser
+  while state.kind().is_op() && state.kind().op_val() == '||' do
+    const operator_span = state.span_at_cursor()
+    const right = parse_and_no_pipe(state.advance())
+    expression = Shared.new(ExprBin('||', expression, right.value, operator_span))
     state = right.parser
   end
   expression_parse_result(expression, state)
@@ -1079,7 +1110,7 @@ fn parse_match_arm(pat_parsed: PatternResult) -> MatchArmParseOutcome = do
   let mut has_guard = false
   let mut guard_expression = Shared.new(ExprBool(true, span_unknown()))
   if after_pattern.kind().is_if() then
-    const guard_parsed = parse_expr(after_pattern.advance().with_lambda_shorthand_suppressed(true))
+    const guard_parsed = parse_or_no_pipe(after_pattern.advance().with_lambda_shorthand_suppressed(true))
     const expression = guard_parsed.value
     guard_expression = expression
     has_guard = true

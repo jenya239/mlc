@@ -282,8 +282,13 @@ fn trait_display_decl(program: Program) -> bool =
     _ => false
   }
 
+fn parser_test_progress(label: string) -> unit = do
+  let _ = println("[parser tests] " + label)
+end
+
 export fn parser_tests() -> [TestResult] = do
   let results: [TestResult] = []
+  parser_test_progress("decl basics")
 
   results.push(assert_eq_int('empty source - 0 decls',
     decl_count(''), 0))
@@ -420,6 +425,7 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  parser_test_progress("or-pattern")
   // Or-pattern tests (B2)
   results.push(assert_true('or-pattern brace-style: PatternOr produced',
     match parse_expr_source('match x { A(r) | B(r) => r }') {
@@ -472,23 +478,28 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  parser_test_progress("match guards")
+  const guard_brace = sample_parse_match_guard_brace()
   results.push(assert_true('match arm guard brace-style',
-    expr_match_arm_count(sample_parse_match_guard_brace()) == 1 &&
-    expr_match_arm_has_guard(sample_parse_match_guard_brace(), 0) &&
-    expr_match_arm_pat_ident_name(sample_parse_match_guard_brace(), 0) == "n" &&
-    expr_match_arm_guard_binary_operation(sample_parse_match_guard_brace(), 0) == '>='))
+    expr_match_arm_count(guard_brace) == 1 &&
+    expr_match_arm_has_guard(guard_brace, 0) &&
+    expr_match_arm_pat_ident_name(guard_brace, 0) == "n" &&
+    expr_match_arm_guard_binary_operation(guard_brace, 0) == '>='))
 
+  const guard_pipe = sample_parse_match_guard_pipe()
   results.push(assert_true('match arm guard pipe-style',
-    expr_match_arm_count(sample_parse_match_guard_pipe()) == 1 &&
-    expr_match_arm_has_guard(sample_parse_match_guard_pipe(), 0) &&
-    expr_match_arm_guard_binary_operation(sample_parse_match_guard_pipe(), 0) == ">"))
+    expr_match_arm_count(guard_pipe) == 1 &&
+    expr_match_arm_has_guard(guard_pipe, 0) &&
+    expr_match_arm_guard_binary_operation(guard_pipe, 0) == ">"))
 
+  const guard_or_pattern = sample_parse_match_guard_or_pattern()
   results.push(assert_true('or-pattern with shared guard after alternatives',
-    expr_match_arm_count(sample_parse_match_guard_or_pattern()) == 1 &&
-    expr_match_arm_has_guard(sample_parse_match_guard_or_pattern(), 0) &&
-    expr_match_arm_pat_or_alt_count(sample_parse_match_guard_or_pattern(), 0) == 2 &&
-    expr_match_arm_guard_binary_operation(sample_parse_match_guard_or_pattern(), 0) == ">"))
+    expr_match_arm_count(guard_or_pattern) == 1 &&
+    expr_match_arm_has_guard(guard_or_pattern, 0) &&
+    expr_match_arm_pat_or_alt_count(guard_or_pattern, 0) == 2 &&
+    expr_match_arm_guard_binary_operation(guard_or_pattern, 0) == ">"))
 
+  parser_test_progress("match misc")
   results.push(assert_true('match do delimiter with inner do arm body',
     match parse_expr_source('match x do\n  0 =>\n    do\n      2\n    end\n  _ => 3\nend') {
       ExprMatch(_, arms, _) =>
@@ -589,6 +600,7 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  parser_test_progress("pipe and bitwise")
   results.push(assert_true('pipe precedence: logical or binds looser than pipeline',
     pipe_case_logical_or_over_pipeline(parse_expr_source('a || b |> c'))))
 
@@ -658,6 +670,7 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_eq_int('parse export trait: single top-level decl',
     parse_source('export trait Display { fn to_string(self: Display) -> string }').decls.length(), 1))
 
+  parser_test_progress("parse errors and smoke")
   results.push(assert_true('parse decl: invalid function name yields parse error',
     parse_source_errors('fn @@@() -> i32 = 0').length() >= 1))
 
