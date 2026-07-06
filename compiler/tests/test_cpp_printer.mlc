@@ -376,7 +376,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
     print_decl(Shared.new(CppDeclarationSequence([
       Shared.new(CppUsing('Left', 'int')),
       Shared.new(CppUsing('Right', 'int'))]))),
-    'using Left = int;using Right = int;'))
+    'using Left = int;\nusing Right = int;\n'))
 
   results.push(assert_eq_str('print_decl CppDeclarationEmpty',
     print_decl(Shared.new(CppDeclarationEmpty)), ''))

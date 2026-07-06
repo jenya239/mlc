@@ -248,7 +248,7 @@ fn namespace_end_directive(name: string) -> string =
   `} // namespace ${name}\n`
 
 fn using_alias(alias: string, type_code: string) -> string =
-  `using ${alias} = ${type_code};`
+  `using ${alias} = ${type_code};\n`
 
 fn using_namespace_directive(namespace_identifier: string) -> string =
   `using namespace ${namespace_identifier};\n`
