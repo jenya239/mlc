@@ -155,7 +155,8 @@ module MLC
                         params: func.params,
                         ret_type: func.ret_type,
                         body: func.body,
-                        is_static: !self_receiver?(func)
+                        is_static: !self_receiver?(func),
+                        external: func.external
                       )
 
                       mangled_name = "#{type_name}_#{func.name}"

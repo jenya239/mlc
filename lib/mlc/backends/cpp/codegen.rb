@@ -127,6 +127,13 @@ module MLC
                            lbrace_suffix: "\n",
                            rbrace_prefix: ""
                          )
+                       elsif empty_unit_function_body?(func.body, func.ret_type)
+                         CppAst::Nodes::BlockStatement.new(
+                           statements: [],
+                           statement_trailings: [],
+                           lbrace_suffix: "\n",
+                           rbrace_prefix: ""
+                         )
                        else
                          @container.expected_return_type = func.ret_type
                          if @context.should_lower_as_statement?(func.body)
@@ -250,13 +257,15 @@ module MLC
             result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
           end
 
-          # Phase 0: trait vtable structs (before type defs, so param types can reference them)
+          # Phase 0: trait concepts (C++20) or vtable structs
+          trait_concepts = generate_trait_concept_declarations
+          trait_extend_suffix = generate_trait_extend_concept_suffix
           trait_structs = generate_trait_structs
 
           # Phase 3.5: adapter functions for trait implementations
           trait_adapters = generate_trait_adapters
 
-          all_stmts = include_stmts + trait_structs + sum_preambles + type_defs + func_protos + trait_adapters + func_bodies
+          all_stmts = include_stmts + trait_concepts + trait_extend_suffix + trait_structs + sum_preambles + type_defs + func_protos + trait_adapters + func_bodies
           CppAst::Nodes::Program.new(
             statements: all_stmts,
             statement_trailings: Array.new(all_stmts.size, "\n")
@@ -265,9 +274,43 @@ module MLC
 
         # Generate a forward declaration (prototype) for a function using the same
         # modifiers (constexpr, noexcept) that the actual definition will have.
+        def generate_trait_concept_declarations
+          return [] unless @trait_registry
+
+          lines = @trait_registry.all_traits.flat_map do |trait_info|
+            TraitConceptCodegen.generate_trait_concept_header_lines(trait_info)
+          end
+          lines.map { |code| @context.factory.raw_statement(code: code) }
+        end
+
+        def generate_trait_extend_concept_suffix
+          return [] unless @trait_registry
+
+          type_registry = @context.type_registry
+          header_lines = []
+          implementation_lines = []
+          @trait_registry.all_traits.each do |trait_info|
+            next unless TraitConceptCodegen.concept_trait?(trait_info)
+
+            @trait_registry.implementations_for_trait(trait_info.name).each do |implementation|
+              header_lines.concat(
+                TraitConceptCodegen.generate_extend_trait_suffix_header_lines(
+                  trait_info, implementation, type_registry
+                )
+              )
+              implementation_lines.concat(
+                TraitConceptCodegen.generate_extern_extend_implementation_lines(trait_info, implementation)
+              )
+            end
+          end
+          (header_lines + implementation_lines).map { |code| @context.factory.raw_statement(code: code) }
+        end
+
         def generate_trait_structs
           return [] unless @trait_registry
-          @trait_registry.all_traits.map do |trait_info|
+          @trait_registry.all_traits.filter_map do |trait_info|
+            next if TraitConceptCodegen.concept_trait?(trait_info)
+
             uses_associated_types = trait_info.associated_types&.any?
             associated_type_names = trait_info.associated_types&.map { |entry| entry[:name].to_s }&.to_set
             trait_self_name = "TraitSelf"
@@ -300,6 +343,8 @@ module MLC
             trait_name = trait_info.name
             uses_associated_types = trait_info.associated_types&.any?
             next if Array(trait_info.type_params).map(&:to_s).any?
+            next if TraitConceptCodegen.concept_trait?(trait_info)
+
             @trait_registry.implementations_for_trait(trait_name).each do |impl|
               type_name = impl.type_name
               cpp_type = @context.type_registry&.cpp_name(type_name) || type_name
@@ -1011,6 +1056,14 @@ module MLC
         # Expose sanitize_identifier for compatibility with header_generator
         def sanitize_identifier(name)
           @context.sanitize_identifier(name)
+        end
+
+        def empty_unit_function_body?(body, return_type)
+          return true if body.is_a?(SemanticIR::UnitLiteral)
+          return false unless body.is_a?(SemanticIR::TupleExpr) && body.elements.empty?
+
+          return_type.is_a?(SemanticIR::UnitType) ||
+            (return_type.respond_to?(:name) && return_type.name.to_s == "unit")
         end
 
         # rule_engine no longer exposed - v2 architecture handles rules internally

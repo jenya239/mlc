@@ -130,7 +130,7 @@ module MLC
             ImplInfo = Struct.new(:type_name, :trait_name, :impl_methods, :associated_type_bindings, :implementing_module, keyword_init: true)
 
             # MethodInfo - method/function info
-            MethodInfo = Struct.new(:name, :params, :ret_type, :body, :is_static, keyword_init: true)
+            MethodInfo = Struct.new(:name, :params, :ret_type, :body, :is_static, :external, keyword_init: true)
 
             private
 

@@ -120,6 +120,11 @@ module MLC
             lines << ""
           end
 
+          generate_trait_concept_header_for_module(module_node).each do |code|
+            lines << code
+            lines << ""
+          end
+
           # Generate type definitions and functions
           header_generation_items(items).each do |item|
             case item
@@ -210,6 +215,12 @@ module MLC
 
           # Trait vtable structs for this module (before type defs)
           generate_trait_structs_for_module(module_node).each do |code|
+            lines << code
+            lines << ""
+          end
+
+          # Extern extend method bodies (concept traits)
+          generate_extern_extend_implementations_for_module(module_node).each do |code|
             lines << code
             lines << ""
           end
@@ -353,13 +364,67 @@ module MLC
           TraitCppTypes.ast_type_to_cpp(ast_type, trait_self: trait_self, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names)
         end
 
+        def generate_trait_concept_header_for_module(module_node)
+          return [] unless module_node
+
+          trait_registry = @lowering.container.trait_registry
+          return [] unless trait_registry
+
+          lines = []
+          trait_names_in_module = collect_trait_names_in_module(module_node)
+          trait_registry.all_traits
+                        .select { |trait_definition| trait_names_in_module.include?(trait_definition.name) }
+                        .each do |trait_info|
+            lines.concat(TraitConceptCodegen.generate_trait_concept_header_lines(trait_info))
+          end
+
+          type_registry = @lowering.container.type_registry
+          trait_registry.all_traits.each do |trait_info|
+            next unless TraitConceptCodegen.concept_trait?(trait_info)
+
+            trait_registry.implementations_for_trait(trait_info.name).each do |implementation|
+              next unless implementation.implementing_module == module_node.name
+
+              lines.concat(
+                TraitConceptCodegen.generate_extend_trait_suffix_header_lines(
+                  trait_info, implementation, type_registry
+                )
+              )
+            end
+          end
+          lines
+        end
+
+        def generate_extern_extend_implementations_for_module(module_node)
+          return [] unless module_node
+
+          trait_registry = @lowering.container.trait_registry
+          return [] unless trait_registry
+
+          lines = []
+          trait_registry.all_traits.each do |trait_info|
+            next unless TraitConceptCodegen.concept_trait?(trait_info)
+
+            trait_registry.implementations_for_trait(trait_info.name).each do |implementation|
+              next unless implementation.implementing_module == module_node.name
+
+              lines.concat(
+                TraitConceptCodegen.generate_extern_extend_implementation_lines(trait_info, implementation)
+              )
+            end
+          end
+          lines
+        end
+
         def generate_trait_structs_for_module(module_node)
           return [] unless module_node
           tr = @lowering.container.trait_registry
           return [] unless tr
           trait_names_in_module = collect_trait_names_in_module(module_node)
           return [] if trait_names_in_module.empty?
-          tr.all_traits.select { |trait_definition| trait_names_in_module.include?(trait_definition.name) }.map do |trait_info|
+          tr.all_traits.select { |trait_definition| trait_names_in_module.include?(trait_definition.name) }.filter_map do |trait_info|
+            next if TraitConceptCodegen.concept_trait?(trait_info)
+
             uses_associated_types = trait_info.associated_types&.any?
             type_param_names = Array(trait_info.type_params).map(&:to_s)
             uses_type_params = type_param_names.any?
@@ -398,6 +463,8 @@ module MLC
             uses_associated_types = trait_info.associated_types&.any?
             type_param_names = Array(trait_info.type_params).map(&:to_s)
             next if type_param_names.any?
+            next if TraitConceptCodegen.concept_trait?(trait_info)
+
             tr.implementations_for_trait(trait_name).each do |impl|
               next unless impl.implementing_module == module_node.name
               type_name = impl.type_name

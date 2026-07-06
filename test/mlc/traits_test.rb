@@ -466,6 +466,27 @@ class TraitsTest < Minitest::Test
     assert_match(/main/, cpp)
   end
 
+  def test_trait_as_parameter_with_extend_generates_concept
+    code = <<~MLC
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+
+      extend i32 : Display {
+        fn to_string(self: i32) -> string = extern
+      }
+
+      fn consume(_value: Display) -> unit = ()
+
+      fn main() -> i32 = 0
+    MLC
+
+    cpp = compile_to_cpp(code)
+    assert_match(/concept Display/, cpp)
+    assert_match(/Display_to_string/, cpp)
+    assert_match(/static_assert\(Display<int>/, cpp)
+  end
+
   def test_extend_trait_method_extern_equals_sugar_parses
     code = <<~MLC
       trait Display {
