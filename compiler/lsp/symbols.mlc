@@ -1,6 +1,6 @@
 // LSP symbol index: definition spans for single-file go-to-definition.
 
-import { Program, Decl, Stmt, Expr, Pattern, MatchArm, RecordLitPart, Span, span_unknown, span_make, stmt_span, pattern_span, expr_span } from '../frontend/ast'
+import { Program, Decl, Stmt, Expr, Pattern, MatchArm, RecordLitPart, FieldVal, Span, span_unknown, span_make, stmt_span, pattern_span, expr_span } from '../frontend/ast'
 import { Token } from '../frontend/ast_tokens'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
@@ -31,38 +31,69 @@ fn collect_first_pattern_alternative(alternatives: [Shared<Pattern>], source_fil
   end
 end
 
+fn collect_pattern_list_definition_spans(patterns: [Shared<Pattern>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut pattern_index = 0
+  while pattern_index < patterns.length() do
+    collect_pattern_definition_spans(patterns[pattern_index], source_file, table)
+    pattern_index = pattern_index + 1
+  end
+end
+
+fn collect_expression_list_definition_spans(expressions: [Shared<Expr>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut expression_index = 0
+  while expression_index < expressions.length() do
+    collect_expression_definition_spans(expressions[expression_index], source_file, table)
+    expression_index = expression_index + 1
+  end
+end
+
+fn collect_declaration_list_definition_spans(declarations: [Shared<Decl>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    collect_declaration_definition_spans(declarations[declaration_index], source_file, table)
+    declaration_index = declaration_index + 1
+  end
+end
+
+fn collect_record_parts_definition_spans(parts: [RecordLitPart], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut part_index = 0
+  while part_index < parts.length() do
+    match parts[part_index] {
+      RecordLitFields(field_values) => do
+        let mut field_index = 0
+        while field_index < field_values.length() do
+          collect_expression_definition_spans(field_values[field_index].value, source_file, table)
+          field_index = field_index + 1
+        end
+      end,
+      RecordLitSpread(spread_expression) =>
+        collect_expression_definition_spans(spread_expression, source_file, table),
+    }
+    part_index = part_index + 1
+  end
+end
+
+fn collect_field_values_definition_spans(field_values: [Shared<FieldVal>], source_file: string, table: ref mut Map<string, Span>) -> unit = do
+  let mut field_index = 0
+  while field_index < field_values.length() do
+    collect_expression_definition_spans(field_values[field_index].value, source_file, table)
+    field_index = field_index + 1
+  end
+end
+
 fn collect_pattern_definition_spans(pattern: Shared<Pattern>, source_file: string, table: ref mut Map<string, Span>) -> unit = do
   match pattern {
     PatternIdent(name, pattern_source_span) => do
       symbol_table_set(table, name, source_file, pattern_source_span)
     end,
-    PatternCtor(_, sub_patterns, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
-        index = index + 1
-      end
-    end,
-    PatternRecord(_, field_patterns, _) => do
-      let mut index = 0
-      while index < field_patterns.length() do
-        collect_pattern_definition_spans(field_patterns[index], source_file, table)
-        index = index + 1
-      end
-    end,
-    PatternTuple(sub_patterns, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
-        index = index + 1
-      end
-    end,
+    PatternCtor(_, sub_patterns, _) =>
+      collect_pattern_list_definition_spans(sub_patterns, source_file, table),
+    PatternRecord(_, field_patterns, _) =>
+      collect_pattern_list_definition_spans(field_patterns, source_file, table),
+    PatternTuple(sub_patterns, _) =>
+      collect_pattern_list_definition_spans(sub_patterns, source_file, table),
     PatternArray(sub_patterns, rest_name, _) => do
-      let mut index = 0
-      while index < sub_patterns.length() do
-        collect_pattern_definition_spans(sub_patterns[index], source_file, table)
-        index = index + 1
-      end
+      collect_pattern_list_definition_spans(sub_patterns, source_file, table)
       symbol_table_set_pattern_rest_name(table, rest_name, source_file, pattern)
     end,
     PatternOr(alternatives, _) => do
@@ -163,19 +194,11 @@ fn collect_expression_definition_spans(expression: Shared<Expr>, source_file: st
     end,
     ExprCall(callee, arguments, _) => do
       collect_expression_definition_spans(callee, source_file, table)
-      let mut index = 0
-      while index < arguments.length() do
-        collect_expression_definition_spans(arguments[index], source_file, table)
-        index = index + 1
-      end
+      collect_expression_list_definition_spans(arguments, source_file, table)
     end,
     ExprMethod(receiver, _, arguments, _) => do
       collect_expression_definition_spans(receiver, source_file, table)
-      let mut index = 0
-      while index < arguments.length() do
-        collect_expression_definition_spans(arguments[index], source_file, table)
-        index = index + 1
-      end
+      collect_expression_list_definition_spans(arguments, source_file, table)
     end,
     ExprField(object, _, _) => do
       collect_expression_definition_spans(object, source_file, table)
@@ -184,46 +207,16 @@ fn collect_expression_definition_spans(expression: Shared<Expr>, source_file: st
       collect_expression_definition_spans(object, source_file, table)
       collect_expression_definition_spans(index_expression, source_file, table)
     end,
-    ExprRecord(_, parts, _) => do
-      let mut index = 0
-      while index < parts.length() do
-        match parts[index] {
-          RecordLitFields(field_values) => do
-            let mut field_index = 0
-            while field_index < field_values.length() do
-              collect_expression_definition_spans(field_values[field_index].value, source_file, table)
-              field_index = field_index + 1
-            end
-          end,
-          RecordLitSpread(spread_expression) => do
-            collect_expression_definition_spans(spread_expression, source_file, table)
-          end,
-        }
-        index = index + 1
-      end
-    end,
+    ExprRecord(_, parts, _) =>
+      collect_record_parts_definition_spans(parts, source_file, table),
     ExprRecordUpdate(_, base_record, field_values, _) => do
       collect_expression_definition_spans(base_record, source_file, table)
-      let mut index = 0
-      while index < field_values.length() do
-        collect_expression_definition_spans(field_values[index].value, source_file, table)
-        index = index + 1
-      end
+      collect_field_values_definition_spans(field_values, source_file, table)
     end,
-    ExprArray(elements, _) => do
-      let mut index = 0
-      while index < elements.length() do
-        collect_expression_definition_spans(elements[index], source_file, table)
-        index = index + 1
-      end
-    end,
-    ExprTuple(elements, _) => do
-      let mut index = 0
-      while index < elements.length() do
-        collect_expression_definition_spans(elements[index], source_file, table)
-        index = index + 1
-      end
-    end,
+    ExprArray(elements, _) =>
+      collect_expression_list_definition_spans(elements, source_file, table),
+    ExprTuple(elements, _) =>
+      collect_expression_list_definition_spans(elements, source_file, table),
     ExprQuestion(inner_expression, _) => do
       collect_expression_definition_spans(inner_expression, source_file, table)
     end,
@@ -253,19 +246,10 @@ fn collect_declaration_definition_spans(declaration: Shared<Decl>, source_file: 
     end,
     DeclTrait(trait_name, _, members, name_span) => do
       symbol_table_set(table, trait_name, source_file, name_span)
-      let mut index = 0
-      while index < members.length() do
-        collect_declaration_definition_spans(members[index], source_file, table)
-        index = index + 1
-      end
+      collect_declaration_list_definition_spans(members, source_file, table)
     end,
-    DeclExtend(_, _, members, _) => do
-      let mut index = 0
-      while index < members.length() do
-        collect_declaration_definition_spans(members[index], source_file, table)
-        index = index + 1
-      end
-    end,
+    DeclExtend(_, _, members, _) =>
+      collect_declaration_list_definition_spans(members, source_file, table),
     DeclExported(inner_declaration) => do
       collect_declaration_definition_spans(inner_declaration, source_file, table)
     end,

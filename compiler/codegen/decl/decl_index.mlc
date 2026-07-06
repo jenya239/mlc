@@ -6,8 +6,20 @@ import { path_to_module_base } from '../cpp_naming'
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
+fn append_export_names_from_method_declarations(mut names: [string], methods: [Shared<Decl>]) -> () = do
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      DeclFn(function_name, _, _, _, _, _, _) => do names.push(function_name); () end,
+      _ => do () end
+    }
+    method_index = method_index + 1
+  end
+  ()
+end
+
 fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
-  let names: [string] = []
+  let mut names: [string] = []
   match declaration {
     DeclExported(inner_declaration) => do
       match inner_declaration {
@@ -26,25 +38,10 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
         end,
         DeclTrait(name, _, methods, _) => do
           names.push(name)
-          let mut method_index = 0
-          while method_index < methods.length() do
-            match methods[method_index] {
-              DeclFn(function_name, _, _, _, _, _, _) => do names.push(function_name); () end,
-              _ => do () end
-            }
-            method_index = method_index + 1
-          end
-          ()
+          append_export_names_from_method_declarations(names, methods)
         end,
         DeclExtend(_, _, methods, _) => do
-          let mut method_index = 0
-          while method_index < methods.length() do
-            match methods[method_index] {
-              DeclFn(function_name, _, _, _, _, _, _) => do names.push(function_name); () end,
-              _ => do () end
-            }
-            method_index = method_index + 1
-          end; ()
+          append_export_names_from_method_declarations(names, methods)
         end,
         _ => do () end
       }; ()
