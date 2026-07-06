@@ -646,6 +646,12 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('infer: if branch same type — 0 errors',
     check_error_count('fn f() -> i32 = if true then 1 else 2 end'), 0))
 
+  results.push(assert_true(
+    'infer: if Ok branches different generic instance — E015',
+    first_checker_error_line(
+      'type Foo<T> = { value: T }\ntype Result<T, E> = Ok(T) | Err(E)\nfn f(c: bool, left: Foo<i32>, right: Foo<i64>) -> Result<Foo<i32>, string> = if c then Ok(left) else Ok(right) end'
+    ).contains('if branch types differ')))
+
   // --- match arm type mismatch -----------------------------------------------
 
   results.push(assert_diagnostic_at(
