@@ -9,7 +9,8 @@ import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain } from './match_analysis'
 import * as expression_output from './expr'
-import { Type, TUnit, TNamed } from '../../checker/registry'
+import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
+import { type_is_unknown, generic_type_name_from_type, generic_type_arguments_from_type } from '../../checker/semantic_type_structure'
 import { is_result_generic, result_ok_type, result_err_type } from '../../checker/check/method_types/result_option_method_types'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_boolean_literal, gen_integer_literal, gen_string_literal } from './literals'
@@ -353,6 +354,82 @@ end
 fn generic_variant_type_argument(context: CodegenContext, constructor_name: string) -> string =
   if list_contains(context.generic_variants, constructor_name) then '<auto>' else ''
 
+fn type_parameter_name_index(parameter_names: [string], parameter_name: string) -> i32 = do
+  let mut index = 0
+  while index < parameter_names.length() do
+    if parameter_names[index] == parameter_name then return index end
+    index = index + 1
+  end
+  -1
+end
+
+fn cpp_angle_bracket_type_arguments(type_argument_parts: [string]) -> string =
+  if type_argument_parts.length() == 0 then '' else `<${type_argument_parts.join(', ')}>` end
+
+fn instantiated_variant_type_argument_from_maps(
+  context: CodegenContext,
+  owner_name: string,
+  constructor_name: string,
+  type_arguments: [Shared<Type>]
+) -> string = do
+  const all_parameter_names = context.sum_type_parameter_names.get(owner_name)
+  const used_parameter_names = context.variant_used_type_parameter_names.get(constructor_name)
+  let cpp_argument_parts: [string] = []
+  let mut used_index = 0
+  while used_index < used_parameter_names.length() do
+    const parameter_index =
+      type_parameter_name_index(all_parameter_names, used_parameter_names[used_index])
+    if parameter_index < 0 || parameter_index >= type_arguments.length() then return '' end
+    if type_is_unknown(type_arguments[parameter_index]) then return '' end
+    cpp_argument_parts.push(sem_type_to_cpp(context, type_arguments[parameter_index]))
+    used_index = used_index + 1
+  end
+  cpp_angle_bracket_type_arguments(cpp_argument_parts)
+end
+
+fn generic_subject_type_name(subject_type: Shared<Type>) -> string =
+  generic_type_name_from_type(subject_type)
+
+fn generic_subject_type_arguments(subject_type: Shared<Type>) -> [Shared<Type>] =
+  generic_type_arguments_from_type(subject_type)
+
+fn instantiated_variant_type_argument_from_generic_subject(
+  context: CodegenContext,
+  constructor_name: string,
+  sum_name: string,
+  type_arguments: [Shared<Type>]
+) -> string =
+  if context.variant_types.has(constructor_name)
+      && context.variant_types.get(constructor_name) != sum_name then ''
+  else if context.variant_used_type_parameter_names.has(constructor_name)
+      && context.variant_used_type_parameter_names.get(constructor_name).length() == 0 then ''
+  else if context.variant_used_type_parameter_names.has(constructor_name)
+      && context.sum_type_parameter_names.has(sum_name) then
+    instantiated_variant_type_argument_from_maps(
+      context, sum_name, constructor_name, type_arguments)
+  else if type_arguments.length() == 1 && !type_is_unknown(type_arguments[0])
+      && !(context.variant_used_type_parameter_names.has(constructor_name)
+          && context.variant_used_type_parameter_names.get(constructor_name).length() == 0) then
+    cpp_angle_bracket_type_arguments([sem_type_to_cpp(context, type_arguments[0])])
+  else ''
+  end
+
+fn instantiated_variant_type_argument_from_subject(
+  context: CodegenContext,
+  constructor_name: string,
+  subject_type: Shared<Type>
+) -> string = do
+  const sum_name = generic_subject_type_name(subject_type)
+  if sum_name == '' then ''
+  else
+    instantiated_variant_type_argument_from_generic_subject(
+      context,
+      constructor_name,
+      sum_name,
+      generic_subject_type_arguments(subject_type))
+  end
+end
+
 fn result_ctor_cpp_type_argument(
   context: CodegenContext,
   constructor_name: string,
@@ -369,11 +446,22 @@ fn generic_ctor_type_argument(
   context: CodegenContext,
   constructor_name: string,
   subject: Shared<SemanticExpression>
+) -> string =
+  if is_result_generic(sexpr_type(subject)) then
+    result_ctor_cpp_type_argument(context, constructor_name, sexpr_type(subject))
+  else
+    non_result_ctor_type_argument(context, constructor_name, sexpr_type(subject))
+  end
+
+fn non_result_ctor_type_argument(
+  context: CodegenContext,
+  constructor_name: string,
+  subject_type: Shared<Type>
 ) -> string = do
-  const subject_type = sexpr_type(subject)
-  if is_result_generic(subject_type)
-    then result_ctor_cpp_type_argument(context, constructor_name, subject_type)
-    else generic_variant_type_argument(context, constructor_name)
+  const instantiated =
+    instantiated_variant_type_argument_from_subject(context, constructor_name, subject_type)
+  if instantiated.length() > 0 then instantiated
+  else generic_variant_type_argument(context, constructor_name)
   end
 end
 
@@ -904,8 +992,22 @@ fn gen_arm_ctor_cpp(
     else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_used_type_parameter_names =
+    if context.variant_used_type_parameter_names.has(constructor_name)
+      then context.variant_used_type_parameter_names.get(constructor_name)
+      else do let empty_names: [string] = []; empty_names end
+      end
+  const effective_type_argument =
+    if type_argument == '<auto>' && variant_used_type_parameter_names.length() == 0 then ''
+    else if type_argument.length() > 0
+        && variant_used_type_parameter_names.length() == 0
+        && sub_patterns.length() == 0 then ''
+    else type_argument
+    end
   const use_generic_lambda =
-    list_contains(context.generic_variants, constructor_name) && type_argument == '<auto>'
+    list_contains(context.generic_variants, constructor_name)
+      && variant_used_type_parameter_names.length() > 0
+      && (effective_type_argument == '<auto>' || effective_type_argument == '')
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
   const body_expression = eval_expr_cpp_fn(arm_body, arm_context, gen_stmts)
   if use_generic_lambda then
@@ -913,7 +1015,8 @@ fn gen_arm_ctor_cpp(
       qualified_name, lower_name, binding, visit_void, return_cpp, body_expression))
   else do
     const parameter =
-      expression_output.match_lambda_const_reference_parameter(qualified_name, type_argument, lower_name)
+      expression_output.match_lambda_const_reference_parameter(
+        qualified_name, effective_type_argument, lower_name)
     Shared.new(CppVisitArmConstructed(parameter, binding, visit_void, return_cpp, body_expression))
   end
   end

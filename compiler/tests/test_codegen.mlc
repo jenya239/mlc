@@ -1,6 +1,6 @@
 // Unit tests for the code generator.
 
-import { TestResult, assert_eq_str, assert_eq_int } from './test_runner'
+import { TestResult, assert_eq_str, assert_eq_int, assert_true } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
@@ -13,9 +13,11 @@ import {
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
 import { gen_program } from './codegen_harness'
+import { precompute } from '../codegen/module'
+import { list_contains } from '../codegen/decl/decl_index'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
-import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyGeneric, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatternInt, PatternWild, PatternOr, PatternCtor, PatternIdent, PatternTuple, PatternArray, PatternRecord, PatternStringLit, span_unknown, PatternUnit } from '../frontend/ast'
+import { Program, TypeExpr, TypeVariant, FieldDef, DeclType, DeclFn, DeclExported, Param, VarTuple, VarRecord, VarUnit, TyNamed, TyGeneric, TyI32, TyString, TyBool, TyUnit, TyArray, TyShared, ExprBin, ExprIdent, ExprInt, ExprUnit, PatternInt, PatternWild, PatternOr, PatternCtor, PatternIdent, PatternTuple, PatternArray, PatternRecord, PatternStringLit, span_unknown, PatternUnit, decl_inner } from '../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionBool, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionArray, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionLambda, SemanticExpressionQuestion, SemanticExpressionTuple, SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr, SemanticStatementLetPattern, SemanticStatementBreak, SemanticStatementContinue, SemanticStatementReturn } from '../ir/semantic_ir'
 import { SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar } from '../ir/semantic_ir'
 import { SemanticExpressionWith } from '../ir/semantic_ir'
@@ -52,6 +54,12 @@ fn smatch_arm_guarded(pattern: Shared<Pattern>, when_condition_expression: Share
     when_condition: when_condition_expression,
     body: body_expression
   })
+
+fn type_decl_has_type_parameters(program: Program) -> bool =
+  match decl_inner(program.decls[0]) {
+    DeclType(_, type_parameters, _, _, _) => type_parameters.length() > 0,
+    _ => false
+  }
 
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
@@ -696,6 +704,10 @@ export fn codegen_tests() -> [TestResult] = do
 
   const h11_program_source = "type Opt<T> = Some(T) | None\nfn f() -> Opt<i64> = Some(42)\n"
   const h11_program = parse_program(tokenize(h11_program_source).tokens)
+  results.push(assert_true('Opt decl has type parameters', type_decl_has_type_parameters(h11_program)))
+  const h11_precomputed = precompute(h11_program, [])
+  results.push(assert_true('precompute: Some is generic variant',
+    list_contains(h11_precomputed.generic_variants, 'Some')))
   const h11_context =
     create_codegen_context(h11_program).with_enclosing_function_return_type(
       Shared.new(TGeneric("Opt", [Shared.new(TI64)])))
@@ -710,6 +722,12 @@ export fn codegen_tests() -> [TestResult] = do
 
   results.push(assert_code_contains('generic sum ctor: f() emits Some<int64_t> via pipeline',
     gen_program(h11_program), 'Some<int64_t>{42}'))
+
+  const h11_match_program_source =
+    "type Opt<T> = Some(T) | None\nfn unwrap(value: Opt<i64>) -> i32 = match value { Some(n) => n.to_i32(), None => 0 }\n"
+  const h11_match_program = parse_program(tokenize(h11_match_program_source).tokens)
+  results.push(assert_code_contains('generic sum match: Some<int64_t>& in visit arm',
+    gen_program(h11_match_program), 'Some<int64_t>&'))
 
   // C4: numeric tower
   const f64_t = Shared.new(TF64)

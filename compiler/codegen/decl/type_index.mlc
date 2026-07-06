@@ -168,27 +168,34 @@ fn type_parameters_from_type_decl(declaration: Shared<Decl>) -> [string] =
 fn variants_from_type_decl(declaration: Shared<Decl>) -> [Shared<TypeVariant>] =
   match decl_inner(declaration) { DeclType(_, _, variants, _, _) => variants, _ => [] }
 
-fn append_generic_variant_names(result: [string], type_parameters: [string], variants: [Shared<TypeVariant>]) -> unit = do
+fn append_generic_variant_names(result: [string], type_parameters: [string], variants: [Shared<TypeVariant>]) -> [string] = do
+  let mut accumulated = result
   let mut variant_index = 0
   while variant_index < variants.length() do
-    result.push(generic_variant_entry_name(type_parameters, variants[variant_index]))
+    accumulated.push(generic_variant_entry_name(type_parameters, variants[variant_index]))
     variant_index = variant_index + 1
   end
+  accumulated
 end
 
-fn append_generic_variants_from_decl(result: [string], declaration: Shared<Decl>) -> unit = do
+fn generic_variants_from_decl(declaration: Shared<Decl>) -> [string] = do
   const type_parameters = type_parameters_from_type_decl(declaration)
   const variants = variants_from_type_decl(declaration)
-  if variants.length() > 0 then
-    append_generic_variant_names(result, type_parameters, variants)
+  if variants.length() == 0 then do let empty: [string] = []; empty end
+  else append_generic_variant_names([], type_parameters, variants)
   end
 end
 
 export fn build_generic_variants_from_decls(declarations: [Shared<Decl>]) -> [string] = do
-  let result: [string] = []
+  let mut result: [string] = []
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
-    append_generic_variants_from_decl(result, declarations[declaration_index])
+    const decl_variants = generic_variants_from_decl(declarations[declaration_index])
+    let mut variant_index = 0
+    while variant_index < decl_variants.length() do
+      result.push(decl_variants[variant_index])
+      variant_index = variant_index + 1
+    end
     declaration_index = declaration_index + 1
   end
   result

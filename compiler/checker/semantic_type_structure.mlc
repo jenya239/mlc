@@ -2,7 +2,7 @@
 
 import { Type } from './registry'
 
-fn generic_type_name_from_type(type_value: Shared<Type>) -> string =
+export fn generic_type_name_from_type(type_value: Shared<Type>) -> string =
   match type_value {
     TGeneric(name, _) => name,
     TI32 => '',
