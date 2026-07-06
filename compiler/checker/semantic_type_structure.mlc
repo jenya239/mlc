@@ -286,17 +286,17 @@ export fn types_assignment_compatible(expected_type: Shared<Type>, actual_type: 
           expected_arguments.length() == actual_arguments.length() &&
           zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0),
         _ => false
-      }
+      },
     TArray(expected_element) =>
       match actual_type {
         TArray(actual_element) => types_assignment_compatible(expected_element, actual_element),
         _ => false
-      }
+      },
     TShared(expected_element) =>
       match actual_type {
         TShared(actual_element) => types_assignment_compatible(expected_element, actual_element),
         _ => false
-      }
+      },
     _ => false
   }
 
