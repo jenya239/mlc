@@ -1,0 +1,55 @@
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { expand_trait_as_param_program } from '../checker/transform/trait_param_expand'
+import { Program, DeclFn, decl_inner, param_type_value, TyNamed } from '../frontend/ast'
+
+fn first_function_type_parameter_names(program: Program, function_name: string) -> [string] = do
+  let mut index = 0
+  let mut found: [string] = []
+  while index < program.decls.length() do
+    match decl_inner(program.decls[index]) {
+      DeclFn(name, type_parameters, _, _, _, _, _) =>
+        if name == function_name then found = type_parameters end,
+      _ => ()
+    }
+    index = index + 1
+  end
+  found
+end
+
+fn first_function_parameter_type_name(program: Program, function_name: string) -> string = do
+  let mut index = 0
+  let mut found = ''
+  while index < program.decls.length() do
+    match decl_inner(program.decls[index]) {
+      DeclFn(name, _, _, parameters, _, _, _) =>
+        if name == function_name && parameters.length() > 0 then
+          found = match param_type_value(parameters[0]) {
+            TyNamed(type_name) => type_name,
+            _ => ''
+          }
+        end,
+      _ => ()
+    }
+    index = index + 1
+  end
+  found
+end
+
+fn string_list_contains(haystack: [string], needle: string) -> bool =
+  haystack.any(entry => entry == needle)
+
+export fn trait_param_expand_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const source =
+    'type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'
+  const expanded = expand_trait_as_param_program(parse_program(tokenize(source).tokens))
+  results.push(assert_true(
+    'trait param expand: adds __trait_param_0 to fn type params',
+    string_list_contains(first_function_type_parameter_names(expanded, "f"), '__trait_param_0')))
+  results.push(assert_eq_str(
+    'trait param expand: rewrites parameter type',
+    first_function_parameter_type_name(expanded, "f"), '__trait_param_0'))
+  results
+end

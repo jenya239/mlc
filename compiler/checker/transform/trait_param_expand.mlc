@@ -18,13 +18,6 @@ fn declaration_without_export_wrappers(declaration: Shared<Decl>) -> Shared<Decl
     _ => declaration
   }
 
-fn each_program_declaration_depth_first(program: Program, handle_declaration: (Shared<Decl>) -> unit) -> unit = do
-  let fold_traversal_placeholder = program.decls.fold(
-    0,
-    (_, root_declaration_under_program) =>
-      do handle_declaration(declaration_without_export_wrappers(root_declaration_under_program)); 0 end)
-end
-
 type Trait_name_conflict_fold_state = Trait_name_conflict_fold_state {
   trait_declaration_names: Map<string, bool>,
   nominal_type_declaration_names: Map<string, bool>,
@@ -432,20 +425,58 @@ export type TraitNominalMaps = TraitNominalMaps {
   nominal_type_declaration_names: Map<string, bool>
 }
 
+type Trait_nominal_maps_fold_state = Trait_nominal_maps_fold_state {
+  trait_declaration_names: Map<string, bool>,
+  nominal_type_declaration_names: Map<string, bool>
+}
+
+fn trait_nominal_maps_fold_step(
+  fold_state: Trait_nominal_maps_fold_state,
+  current_declaration: Shared<Decl>
+) -> Trait_nominal_maps_fold_state = do
+  match current_declaration {
+    DeclType(type_name, _, _, _, _) => do
+      let nominal_names = fold_state.nominal_type_declaration_names
+      nominal_names.set(type_name, true)
+      Trait_nominal_maps_fold_state {
+        trait_declaration_names: fold_state.trait_declaration_names,
+        nominal_type_declaration_names: nominal_names
+      }
+    end,
+    DeclTypeAlias(type_name, _, _, _) => do
+      let nominal_names = fold_state.nominal_type_declaration_names
+      nominal_names.set(type_name, true)
+      Trait_nominal_maps_fold_state {
+        trait_declaration_names: fold_state.trait_declaration_names,
+        nominal_type_declaration_names: nominal_names
+      }
+    end,
+    DeclTrait(trait_name, _, _, _) => do
+      let trait_names = fold_state.trait_declaration_names
+      trait_names.set(trait_name, true)
+      Trait_nominal_maps_fold_state {
+        trait_declaration_names: trait_names,
+        nominal_type_declaration_names: fold_state.nominal_type_declaration_names
+      }
+    end,
+    _ => fold_state
+  }
+end
+
 export fn build_trait_nominal_maps(program: Program) -> TraitNominalMaps = do
-  let mut trait_declaration_names: Map<string, bool> = Map.new()
-  let mut nominal_type_declaration_names: Map<string, bool> = Map.new()
-  each_program_declaration_depth_first(program, (current_declaration) => do
-    match current_declaration {
-      DeclType(type_name, _, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
-      DeclTypeAlias(type_name, _, _, _) => do nominal_type_declaration_names.set(type_name, true); () end,
-      DeclTrait(trait_name, _, _, _) => do trait_declaration_names.set(trait_name, true); () end,
-      _ => ()
-    }
-  end)
+  const initial_fold_state = Trait_nominal_maps_fold_state {
+    trait_declaration_names: Map.new(),
+    nominal_type_declaration_names: Map.new()
+  }
+  const final_fold_state = program.decls.fold(
+    initial_fold_state,
+    (fold_state_so_far, root_declaration) =>
+      trait_nominal_maps_fold_step(
+        fold_state_so_far,
+        declaration_without_export_wrappers(root_declaration)))
   TraitNominalMaps {
-    trait_declaration_names: trait_declaration_names,
-    nominal_type_declaration_names: nominal_type_declaration_names
+    trait_declaration_names: final_fold_state.trait_declaration_names,
+    nominal_type_declaration_names: final_fold_state.nominal_type_declaration_names
   }
 end
 

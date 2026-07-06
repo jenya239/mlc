@@ -46,6 +46,7 @@ import { fuzz_tests } from '../test_fuzz'
 import { golden_harness_tests } from '../test_golden_harness'
 import { record_field_default_validate_tests } from '../test_record_field_default_validate'
 import { file_store_tests } from '../file_store_test'
+import { trait_param_expand_tests } from '../test_trait_param_expand'
 import { intern_tests } from '../intern_test'
 
 export type TestIrLevel =
@@ -97,6 +98,7 @@ end
 export fn types_suite_results() -> [TestResult] = do
   let mut results: [TestResult] = []
   results = append_suite_results(results, checker_tests())
+  results = append_suite_results(results, trait_param_expand_tests())
   results = append_suite_results(results, pipe_and_record_update_tests())
   results = append_suite_results(results, pass_type_tests())
   results = append_suite_results(results, pass_manager_tests())
