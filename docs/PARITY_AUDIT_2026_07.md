@@ -347,7 +347,6 @@ Ruby десугарит trait-имя в позиции типа параметр
 ложная для покрытого кейса: повторный проход идемпотентен (`TyNamed("__trait_param_0")`
 не совпадает с trait-именем).
 
-Regression gate (Ruby vs mlcc stdout) для trait-as-param **нет** — Ruby bootstrap
-на любом файле с `type Trait { ... }` эмитит пустой `.cpp` (нет `mlc_user_main`);
-проверено 2026-07-06, не связано с mlcc H12. mlcc e2e: `trait_as_param`,
-`trait_e2e`.
+Regression gate (Ruby vs mlcc stdout) для trait-as-param: `trait_as_param`,
+`trait_e2e` (19 программ в gate, 2026-07-06). Associated-type vtable:
+`std::function` включает `TraitSelf` для методов с `self` (Ruby `f47fdc36+`).

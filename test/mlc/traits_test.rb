@@ -508,6 +508,7 @@ class TraitsTest < Minitest::Test
     assert_match(/template<typename TraitSelf>/, cpp)
     assert_match(/struct Iter/, cpp)
     assert_match(/using Item = int/, cpp)
+    assert_match(/std::function<typename TraitSelf::Item\(TraitSelf\)>/, cpp)
     assert_match(/Counter_as_Iter/, cpp)
   end
 

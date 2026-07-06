@@ -14,6 +14,38 @@ module MLC
           "int" => "int"
         }.freeze
 
+        def trait_method_has_self_receiver?(method_entry)
+          first = Array(method_entry[:params]).first
+          return false unless first
+
+          type_syntax = first.respond_to?(:type) ? first.type : first[:type]
+          type_syntax.is_a?(MLC::Source::AST::Type) && type_syntax.name == "Self"
+        end
+
+        def vtable_std_function_parameter_types(
+          method_entry,
+          trait_self_name:,
+          trait_self_keyword:,
+          associated_type_names:,
+          trait_type_param_names: nil
+        )
+          if trait_self_keyword && trait_method_has_self_receiver?(method_entry)
+            return trait_self_name
+          end
+
+          Array(method_entry[:params])
+            .reject { |parameter| parameter.respond_to?(:name) ? parameter.name == "self" : parameter[:name] == "self" }
+            .map do |parameter|
+              type_syntax = parameter.respond_to?(:type) ? parameter.type : parameter[:type]
+              ast_type_to_cpp(
+                type_syntax,
+                trait_self: trait_self_keyword,
+                associated_type_names: associated_type_names,
+                trait_type_param_names: trait_type_param_names
+              )
+            end.join(", ")
+        end
+
         # @param trait_self [String, nil] when set, Self / associated refs use CRTP-style TraitSelf
         # @param associated_type_names [Set, nil] bare names declared in the trait (`type Item`)
         def ast_type_to_cpp(ast_type, trait_self: nil, associated_type_names: nil, trait_type_param_names: nil)

@@ -318,11 +318,12 @@ module MLC
             fields = trait_info.trait_methods
                                .reject { |m| m[:name] == "self" }
                                .map do |m|
-              params = Array(m[:params]).reject { |p| p.respond_to?(:name) ? p.name == "self" : p[:name] == "self" }
-              param_types = params.map do |p|
-                type_syntax = p.respond_to?(:type) ? p.type : p[:type]
-                TraitCppTypes.ast_type_to_cpp(type_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names)
-              end.join(", ")
+              param_types = TraitCppTypes.vtable_std_function_parameter_types(
+                m,
+                trait_self_name: trait_self_name,
+                trait_self_keyword: trait_self_keyword,
+                associated_type_names: associated_type_names
+              )
               ret_syntax = m[:ret_type]
               ret_type = ret_syntax ? TraitCppTypes.ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names) : "void"
               "  std::function<#{ret_type}(#{param_types})> #{m[:name]};"

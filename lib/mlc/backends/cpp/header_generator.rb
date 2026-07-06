@@ -433,11 +433,13 @@ module MLC
             trait_self_keyword = uses_associated_types ? trait_self_name : nil
             associated_type_names = trait_info.associated_types&.map { |entry| entry[:name].to_s }&.to_set
             fields = trait_info.trait_methods.reject { |method_entry| method_entry[:name] == "self" }.map do |method_entry|
-              params = Array(method_entry[:params]).reject { |parameter| parameter.respond_to?(:name) ? parameter.name == "self" : parameter[:name] == "self" }
-              param_types = params.map do |parameter|
-                type_syntax = parameter.respond_to?(:type) ? parameter.type : parameter[:type]
-                ast_type_to_cpp(type_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names)
-              end.join(", ")
+              param_types = TraitCppTypes.vtable_std_function_parameter_types(
+                method_entry,
+                trait_self_name: trait_self_name,
+                trait_self_keyword: trait_self_keyword,
+                associated_type_names: associated_type_names,
+                trait_type_param_names: trait_type_param_names
+              )
               ret_syntax = method_entry[:ret_type]
               ret_type = ret_syntax ? ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names) : "void"
               "  std::function<#{ret_type}(#{param_types})> #{method_entry[:name]};"
