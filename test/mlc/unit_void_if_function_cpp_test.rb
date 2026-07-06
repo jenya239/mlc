@@ -113,7 +113,7 @@ class UnitVoidIfFunctionCppTest < Minitest::Test
     SRC
     cpp = MLC.to_cpp(mlc)
     refute_match(/make_tuple/, cpp)
-    assert_includes cpp, 'found = {"ok"}'
+    assert_includes cpp, 'found = mlc::Array<mlc::String>{mlc::String("ok")}'
   end
 
   def test_match_arm_unit_push_in_sum_match_emits_push_back
