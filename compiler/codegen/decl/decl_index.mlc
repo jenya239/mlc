@@ -1,22 +1,38 @@
 // Module item loading, field order registry, method owner index, and variant builders.
 
-import { Program, Decl, DeclFn, DeclExtend, TypeVariant, FieldDef, decl_inner } from '../../frontend/ast'
+import { Program, Decl, DeclFn, DeclExtend, TypeVariant, FieldDef, decl_inner, decl_name } from '../../frontend/ast'
 import { LoadItem, NamespaceImportAlias } from '../../ir/load_item'
 import { path_to_module_base } from '../cpp_naming'
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
+fn method_declaration_function_name(method: Shared<Decl>) -> string = do
+  const unwrapped: Shared<Decl> = method
+  match unwrapped {
+    DeclFn(name, _, _, _, _, _, _) => name,
+    DeclType(_, _, _, _, _) => '',
+    DeclTypeAlias(_, _, _, _) => '',
+    DeclTrait(_, _, _, _) => '',
+    DeclExtend(_, _, _, _) => '',
+    DeclImport(_, _) => '',
+    DeclExported(inner) => method_declaration_function_name(inner),
+    DeclAssocType(_, _) => '',
+    DeclAssocBind(_, _, _) => ''
+  }
+end
+
 fn append_export_names_from_method_declarations(mut names: [string], methods: [Shared<Decl>]) -> () = do
   let mut method_index = 0
   while method_index < methods.length() do
-    match methods[method_index] {
-      DeclFn(function_name, _, _, _, _, _, _) => do names.push(function_name); () end,
-      _ => do () end
-    }
+    const function_name = method_declaration_function_name(methods[method_index])
+    if function_name != '' then names.push(function_name) end
     method_index = method_index + 1
   end
   ()
 end
+
+fn methods_from_trait_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] =
+  match decl_inner(declaration) { DeclTrait(_, _, methods, _) => methods, _ => [] }
 
 fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
   let mut names: [string] = []
@@ -36,12 +52,12 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
             variant_index = variant_index + 1
           end; ()
         end,
-        DeclTrait(name, _, methods, _) => do
-          names.push(name)
-          append_export_names_from_method_declarations(names, methods)
+        DeclTrait(_, _, _, _) => do
+          names.push(decl_name(declaration))
+          append_export_names_from_method_declarations(names, methods_from_trait_declaration(declaration))
         end,
-        DeclExtend(_, _, methods, _) => do
-          append_export_names_from_method_declarations(names, methods)
+        DeclExtend(_, _, _, _) => do
+          append_export_names_from_method_declarations(names, methods_from_extend_declaration(declaration))
         end,
         _ => do () end
       }; ()
@@ -52,7 +68,7 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
 end
 
 fn function_name_from_method_declaration(method: Shared<Decl>) -> string =
-  match method { DeclFn(function_name, _, _, _, _, _, _) => function_name, _ => '' }
+  method_declaration_function_name(method)
 
 fn extend_type_name_from_declaration(declaration: Shared<Decl>) -> string =
   match decl_inner(declaration) { DeclExtend(type_name, _, _, _) => type_name, _ => '' }
