@@ -2,11 +2,11 @@
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
 import { Expr, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
-import { Type, TNamed, TypeRegistry } from '../registry'
+import { Type, TNamed, TGeneric, TUnknown, TypeRegistry } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
-import { call_argument_unification_diagnostics } from '../check/call_argument_unify'
+import { build_call_type_substitution, call_argument_unification_diagnostics } from '../check/call_argument_unify'
 import { trait_bound_diagnostics } from './infer_trait_bounds'
 import { type_is_function } from '../semantic_type_structure'
 import * as named_args from '../named_args'
@@ -48,6 +48,36 @@ fn callee_name_from_expr(function: Shared<Expr>) -> string =
     _ => ''
   }
 
+fn generic_type_arguments_from_substitution(
+  type_parameter_names: [string],
+  substitution: Map<string, Shared<Type>>
+) -> [Shared<Type>] = do
+  let type_arguments: [Shared<Type>] = []
+  let mut index = 0
+  while index < type_parameter_names.length() do
+    const parameter_name = type_parameter_names[index]
+    if substitution.has(parameter_name) then
+      type_arguments.push(substitution.get(parameter_name))
+    else
+      type_arguments.push(Shared.new(TUnknown))
+    end
+    index = index + 1
+  end
+  type_arguments
+end
+
+fn instantiated_algebraic_constructor_type(
+  owner_name: string,
+  type_parameter_names: [string],
+  substitution: Map<string, Shared<Type>>
+) -> Shared<Type> =
+  if type_parameter_names.length() == 0 then Shared.new(TNamed(owner_name))
+  else
+    Shared.new(TGeneric(
+      owner_name,
+      generic_type_arguments_from_substitution(type_parameter_names, substitution)))
+  end
+
 fn infer_expr_call_constructor_path(
   callee_name: string,
   with_arguments: InferResult,
@@ -63,8 +93,23 @@ fn infer_expr_call_constructor_path(
   const constructor_type_parameter_names =
     inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
   if constructor_parameter_types.length() != effective_args.length() then return constructor_output end
+  let type_parameter_source_argument_index: Map<string, i32> = Map.new()
+  const substitution = build_call_type_substitution(
+    constructor_parameter_types,
+    argument_inferred_types,
+    constructor_type_parameter_names,
+    type_parameter_source_argument_index,
+    effective_args,
+    call_source_span)
+  const inferred_type =
+    if algebraic_type_name != '' && constructor_type_parameter_names.length() > 0 then
+      instantiated_algebraic_constructor_type(
+        algebraic_type_name, constructor_type_parameter_names, substitution)
+    else
+      constructor_output.inferred_type
+    end
   InferResult {
-    inferred_type: constructor_output.inferred_type,
+    inferred_type: inferred_type,
     errors: diagnostics_append(
       constructor_output.errors,
       call_argument_unification_diagnostics(

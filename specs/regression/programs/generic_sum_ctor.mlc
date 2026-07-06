@@ -1,6 +1,6 @@
 type Opt<T> = Some(T) | None
 
-fn make() -> Opt<i64> = Some(42)
+fn make() -> Opt<i64> = Some(42i64)
 
 fn main() -> i32 = do
   println(match make() {
