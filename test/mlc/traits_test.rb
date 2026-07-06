@@ -448,6 +448,43 @@ class TraitsTest < Minitest::Test
     assert_match(/__trait_param_0/, cpp)
   end
 
+  def test_type_keyword_trait_body_parses_and_codegen
+    code = <<~MLC
+      type Display { fn to_string(self: Self) -> string }
+
+      fn consume(_value: Display) -> unit = ()
+
+      fn main() -> i32 = 0
+    MLC
+
+    ast = parse(code)
+    assert_instance_of MLC::Source::AST::TraitDecl, ast.declarations[0]
+    assert_equal 3, ast.declarations.size
+
+    cpp = compile_to_cpp(code)
+    assert_match(/__trait_param_0/, cpp)
+    assert_match(/main/, cpp)
+  end
+
+  def test_extend_trait_method_extern_equals_sugar_parses
+    code = <<~MLC
+      trait Display {
+        fn to_string(self: Self) -> string
+      }
+
+      extend i32 : Display {
+        fn to_string(self: i32) -> string = extern
+      }
+    MLC
+
+    ast = parse(code)
+    extend = ast.declarations.last
+    assert_instance_of MLC::Source::AST::ExtendDecl, extend
+    method = extend.methods.first
+    assert method.external
+    assert_nil method.body
+  end
+
   def test_trait_as_parameter_two_occurrences_two_type_parameters
     code = <<~MLC
       trait Display {

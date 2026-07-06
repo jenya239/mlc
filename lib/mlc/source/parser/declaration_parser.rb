@@ -31,11 +31,16 @@ module MLC
           where_clause = nil
           where_clause = parse_where_clause if current.type == :WHERE
 
-          # Body is optional for extern functions
+          # Body is optional for extern functions (= extern sugar in extend bodies)
           body = nil
           if current.type == :EQUAL
             consume(:EQUAL)
-            body = parse_expression
+            if current.type == :EXTERN
+              consume(:EXTERN)
+              external = true
+            else
+              body = parse_expression
+            end
           end
 
           with_origin(name_token) do
@@ -501,12 +506,29 @@ module MLC
           name_token = consume(:IDENTIFIER)
           name = name_token.value
 
-          # Parse optional type parameters: type Option<T> = ...
+          # Optional type parameters: type Option<T> = ...
           type_params = []
           if current.type == :OPERATOR && current.value == "<"
             consume(:OPERATOR) # <
             type_params = parse_type_params
             expect_operator(">")
+          end
+
+          # type Name { fn ... } — trait sugar (mlcc parity; same as `trait Name {`)
+          if current.type == :LBRACE
+            consume(:LBRACE)
+            body = parse_trait_body
+            consume(:RBRACE)
+
+            return with_origin(name_token) do
+              MLC::Source::AST::TraitDecl.new(
+                name: name,
+                type_params: type_params,
+                methods: body[:methods],
+                associated_types: body[:associated_types],
+                exported: exported
+              )
+            end
           end
 
           # For opaque types (export type Foo), EQUAL is optional
