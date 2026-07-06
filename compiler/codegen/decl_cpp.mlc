@@ -500,37 +500,71 @@ extend CodegenContext {
     }
 }
 
+fn semantic_expression_is_extern(expression: Shared<SemanticExpression>) -> bool =
+  match expression {
+    SemanticExpressionExtern(_, _) => true,
+    _ => false
+  }
+
+fn semantic_fn_body_is_extern(method: Shared<SemanticDeclaration>) -> bool =
+  match method {
+    SemanticDeclarationFn(_, _, _, _, _, body, _, _) => semantic_expression_is_extern(body),
+    _ => false
+  }
+
+fn extend_forward_protos_for_declaration_cpp(
+  declaration: Shared<SemanticDeclaration>,
+  context: CodegenContext
+) -> [Shared<CppDeclaration>] = do
+  match declaration {
+    SemanticDeclarationExtend(_, _, methods, _) => do
+      let mut result: [Shared<CppDeclaration>] = []
+      let mut method_index = 0
+      while method_index < methods.length() do
+        if !semantic_fn_body_is_extern(methods[method_index]) then
+          result.push(gen_proto_cpp(methods[method_index], context))
+        end
+        method_index = method_index + 1
+      end
+      result
+    end,
+    SemanticDeclarationExported(inner) =>
+      extend_forward_protos_for_declaration_cpp(inner, context),
+    _ => do const empty: [Shared<CppDeclaration>] = []; empty end
+  }
+end
+
 export fn extend_method_forward_segments_cpp(
   declarations: [Shared<SemanticDeclaration>],
   context: CodegenContext
+) -> [Shared<CppDeclaration>] =
+  declarations.flat_map(declaration => extend_forward_protos_for_declaration_cpp(declaration, context))
+
+fn extend_helper_protos_for_declaration_cpp(
+  exported_types: [string],
+  declaration: Shared<SemanticDeclaration>,
+  context: CodegenContext
 ) -> [Shared<CppDeclaration>] = do
-  let mut result: [Shared<CppDeclaration>] = []
-  let mut declaration_index = 0
-  while declaration_index < declarations.length() do
-    match declarations[declaration_index] {
-      SemanticDeclarationExtend(_, _, methods, _) => do
+  match declaration {
+    SemanticDeclarationExtend(type_name, _, methods, _) => do
+      if list_contains(exported_types, type_name) then
+        let mut result: [Shared<CppDeclaration>] = []
         let mut method_index = 0
         while method_index < methods.length() do
-          match methods[method_index] {
-            SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
-              match body {
-                SemanticExpressionExtern(_, _) => (),
-                _ => do
-                  result.push(gen_proto_cpp(methods[method_index], context))
-                  ()
-                end
-              },
-            _ => ()
-          }
+          if !semantic_fn_body_is_extern(methods[method_index]) then
+            result.push(gen_proto_cpp(methods[method_index], context))
+          end
           method_index = method_index + 1
         end
-        ()
-      end,
-      _ => do () end
-    }
-    declaration_index = declaration_index + 1
-  end
-  result
+        result
+      else
+        do const empty: [Shared<CppDeclaration>] = []; empty end
+      end
+    end,
+    SemanticDeclarationExported(inner) =>
+      extend_helper_protos_for_declaration_cpp(exported_types, inner, context),
+    _ => do const empty: [Shared<CppDeclaration>] = []; empty end
+  }
 end
 
 export fn extend_helper_protos_for_exported_types_cpp(
@@ -538,35 +572,8 @@ export fn extend_helper_protos_for_exported_types_cpp(
   context: CodegenContext
 ) -> [Shared<CppDeclaration>] = do
   const exported_types = exported_type_names_from_decls(declarations)
-  let mut result: [Shared<CppDeclaration>] = []
-  let mut declaration_index = 0
-  while declaration_index < declarations.length() do
-    match declarations[declaration_index] {
-      SemanticDeclarationExtend(type_name, _, methods, _) => do
-        if list_contains(exported_types, type_name) then
-          let mut method_index = 0
-          while method_index < methods.length() do
-            match methods[method_index] {
-              SemanticDeclarationFn(_, _, _, _, _, body, _, _) =>
-                match body {
-                  SemanticExpressionExtern(_, _) => (),
-                  _ => do
-                    result.push(gen_proto_cpp(methods[method_index], context))
-                    ()
-                  end
-                },
-              _ => ()
-            }
-            method_index = method_index + 1
-          end
-        end
-        ()
-      end,
-      _ => ()
-    }
-    declaration_index = declaration_index + 1
-  end
-  result
+  declarations.flat_map(declaration =>
+    extend_helper_protos_for_declaration_cpp(exported_types, declaration, context))
 end
 
 fn extend_method_return_type_cpp(extend_context: CodegenContext, methods: [Shared<SemanticDeclaration>]) -> string = do

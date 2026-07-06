@@ -63,6 +63,22 @@ fn push_struct_using_entry(
   lines.set(type_name, existing_lines)
 end
 
+fn semantic_declaration_is_assoc_bind(method: Shared<SemanticDeclaration>) -> bool =
+  match method {
+    SemanticDeclarationAssocBind(_, _, _) => true,
+    _ => false
+  }
+
+fn semantic_declaration_assoc_bind_entry(
+  method: Shared<SemanticDeclaration>,
+  context: CodegenContext
+) -> StructUsingEntry =
+  match method {
+    SemanticDeclarationAssocBind(assoc_name, bound_type, _) =>
+      StructUsingEntry { alias: assoc_name, type_cpp: sem_type_to_cpp(context, bound_type) },
+    _ => StructUsingEntry { alias: '', type_cpp: '' }
+  }
+
 fn add_assoc_bind_struct_using(
   entries: ref mut Map<string, [StructUsingEntry]>,
   lines: ref mut Map<string, [string]>,
@@ -72,16 +88,27 @@ fn add_assoc_bind_struct_using(
 ) -> unit = do
   let mut method_index = 0
   while method_index < methods.length() do
-    match methods[method_index] {
-      SemanticDeclarationAssocBind(assoc_name, bound_type, _) => do
-        const type_cpp = sem_type_to_cpp(context, bound_type)
-        push_struct_using_entry(entries, lines, type_name, StructUsingEntry { alias: assoc_name, type_cpp: type_cpp })
-        ()
-      end,
-      _ => do () end
-    }
+    if semantic_declaration_is_assoc_bind(methods[method_index]) then
+      const entry = semantic_declaration_assoc_bind_entry(methods[method_index], context)
+      push_struct_using_entry(entries, lines, type_name, entry)
+    end
     method_index = method_index + 1
   end
+end
+
+fn add_assoc_binds_from_declaration(
+  entries: ref mut Map<string, [StructUsingEntry]>,
+  lines: ref mut Map<string, [string]>,
+  declaration: Shared<SemanticDeclaration>,
+  context: CodegenContext
+) -> unit = do
+  match declaration {
+    SemanticDeclarationExtend(type_name, _, methods, _) =>
+      add_assoc_bind_struct_using(entries, lines, type_name, methods, context),
+    SemanticDeclarationExported(inner) =>
+      add_assoc_binds_from_declaration(entries, lines, inner, context),
+    _ => do () end
+  }
 end
 
 export fn build_struct_using_data(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> StructUsingData = do
@@ -89,23 +116,7 @@ export fn build_struct_using_data(declarations: [Shared<SemanticDeclaration>], c
   let mut lines: Map<string, [string]> = Map.new()
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
-    match declarations[declaration_index] {
-      SemanticDeclarationExtend(type_name, _, methods, _) => do
-        add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
-        ()
-      end,
-      SemanticDeclarationExported(inner) => do
-        match inner {
-          SemanticDeclarationExtend(type_name, _, methods, _) => do
-            add_assoc_bind_struct_using(entries, lines, type_name, methods, context)
-            ()
-          end,
-          _ => do () end
-        }
-        ()
-      end,
-      _ => do () end
-    }
+    add_assoc_binds_from_declaration(entries, lines, declarations[declaration_index], context)
     declaration_index = declaration_index + 1
   end
   StructUsingData { entries: entries, lines: lines }

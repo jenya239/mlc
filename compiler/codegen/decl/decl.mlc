@@ -296,10 +296,8 @@ export type DeclPartsBundle = DeclPartsBundle {
 
 fn exported_type_name_from_declaration(declaration: Shared<SemanticDeclaration>) -> [string] =
   match declaration {
-    SemanticDeclarationExported(inner) => match sdecl_inner(inner) {
-      SemanticDeclarationType(type_name, _, _, _, _) => [type_name],
-      _ => do const empty: [string] = []; empty end
-    },
+    SemanticDeclarationExported(inner) => exported_type_name_from_declaration(inner),
+    SemanticDeclarationType(type_name, _, _, _, _) => [type_name],
     _ => do const empty: [string] = []; empty end
   }
 
@@ -319,6 +317,8 @@ fn extend_helper_prototypes_for_declaration(
       if list_contains(exported_types, type_name) then extend_method_prototypes(methods, context)
       else do const empty_prototypes: [string] = []; empty_prototypes end
       end,
+    SemanticDeclarationExported(inner) =>
+      extend_helper_prototypes_for_declaration(exported_types, context, inner),
     _ => do const empty_prototypes: [string] = []; empty_prototypes end
   }
 
