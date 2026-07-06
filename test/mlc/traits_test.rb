@@ -487,6 +487,30 @@ class TraitsTest < Minitest::Test
     assert_match(/static_assert\(Display<int>/, cpp)
   end
 
+  def test_associated_type_trait_generates_vtable_struct
+    code = <<~MLC
+      trait Iter {
+        type Item
+        fn next(self: Self) -> Item
+      }
+
+      type Counter = { n: i32 }
+
+      extend Counter : Iter {
+        type Item = i32
+        fn next(self: Counter) -> i32 = self.n
+      }
+
+      fn main() -> i32 = 0
+    MLC
+
+    cpp = compile_to_cpp(code)
+    assert_match(/template<typename TraitSelf>/, cpp)
+    assert_match(/struct Iter/, cpp)
+    assert_match(/using Item = int/, cpp)
+    assert_match(/Counter_as_Iter/, cpp)
+  end
+
   def test_extend_trait_method_extern_equals_sugar_parses
     code = <<~MLC
       trait Display {
