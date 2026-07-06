@@ -255,6 +255,51 @@ export fn receiver_type_is_map(receiver_type: Shared<Type>) -> bool =
 export fn is_numeric_type(type_value: Shared<Type>) -> bool =
   match type_value { TI32 => true, TI64 => true, TF64 => true, TU8 => true, TUsize => true, TChar => true, _ => false }
 
+export fn types_compatible_for_call_argument(
+  expected_type: Shared<Type>,
+  actual_type: Shared<Type>
+) -> bool =
+  if types_structurally_equal(expected_type, actual_type) then true
+  else match expected_type {
+    TI64 => match actual_type { TI32 => true, TChar => true, _ => false },
+    TI32 => match actual_type { TChar => true, _ => false },
+    _ => false
+  }
+
+fn zipped_type_arguments_assignment_compatible(
+  expected_arguments: [Shared<Type>],
+  actual_arguments: [Shared<Type>],
+  index: i32
+) -> bool =
+  if index >= expected_arguments.length() then true
+  else types_assignment_compatible(expected_arguments[index], actual_arguments[index]) &&
+    zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, index + 1)
+
+export fn types_assignment_compatible(expected_type: Shared<Type>, actual_type: Shared<Type>) -> bool =
+  if types_structurally_equal(expected_type, actual_type) then true
+  else if types_compatible_for_call_argument(expected_type, actual_type) then true
+  else match expected_type {
+    TGeneric(expected_name, expected_arguments) =>
+      match actual_type {
+        TGeneric(actual_name, actual_arguments) =>
+          expected_name == actual_name &&
+          expected_arguments.length() == actual_arguments.length() &&
+          zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0),
+        _ => false
+      }
+    TArray(expected_element) =>
+      match actual_type {
+        TArray(actual_element) => types_assignment_compatible(expected_element, actual_element),
+        _ => false
+      }
+    TShared(expected_element) =>
+      match actual_type {
+        TShared(actual_element) => types_assignment_compatible(expected_element, actual_element),
+        _ => false
+      }
+    _ => false
+  }
+
 fn arithmetic_binary_result_type(left_type: Shared<Type>) -> Shared<Type> =
   match left_type {
     TString => Shared.new(TString),

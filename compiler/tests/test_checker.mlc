@@ -372,7 +372,7 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int('generic sum ctor as call argument - 0 errors',
     check_error_count(
-      'type Opt<T> = Some(T) | None\nfn take(value: Opt<i64>) -> i32 = 0\nfn f() -> i32 = take(Some(42i64))'),
+      'type Opt<T> = Some(T) | None\nfn take(value: Opt<i64>) -> i32 = 0\nfn f() -> i32 = take(Some(42))'),
     0))
 
   results.push(assert_checker_diagnostic(

@@ -153,12 +153,20 @@ fn generic_sum_variant_ctor_type_argument(
   if owner_name == '' && context.variant_types.has(constructor_name) then
     owner_name = context.variant_types.get(constructor_name)
   end
-  match context.enclosing_function_return_type {
+  const from_enclosing = match context.enclosing_function_return_type {
     TGeneric(enclosing_name, type_arguments) =>
       generic_sum_variant_ctor_type_argument_for_enclosing(
         owner_name, enclosing_name, type_arguments, constructor_name, context),
     _ => ''
   }
+  if from_enclosing.length() > 0 then from_enclosing
+  else match call_semantic_type {
+    TGeneric(call_owner_name, type_arguments) =>
+      generic_sum_variant_ctor_type_argument_for_enclosing(
+        call_owner_name, call_owner_name, type_arguments, constructor_name, context),
+    _ => ''
+  }
+  end
 end
 
 fn variant_constructor_template_suffix(

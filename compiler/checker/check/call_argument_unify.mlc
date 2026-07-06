@@ -90,6 +90,8 @@ fn unify_expected_and_actual_argument_types(
             empty_diagnostic_list()
           end
         end
+      else if semantic_type_structure.types_compatible_for_call_argument(expected_type, actual_type) then
+        empty_diagnostic_list()
       else if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
         [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
@@ -214,7 +216,9 @@ fn unify_expected_and_actual_argument_types(
           [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       },
     _ =>
-      if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
+      if semantic_type_structure.types_compatible_for_call_argument(expected_type, actual_type) then
+        empty_diagnostic_list()
+      else if semantic_type_structure.types_structurally_equal(expected_type, actual_type) then empty_diagnostic_list()
       else
         [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
       end

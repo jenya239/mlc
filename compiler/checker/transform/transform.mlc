@@ -639,7 +639,12 @@ export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_typ
     SemanticExpressionIdent(_, _, _) => expression,
     SemanticExpressionBin(_, _, _, _, _) => expression,
     SemanticExpressionUn(_, _, _, _) => expression,
-    SemanticExpressionCall(_, _, _, _, _) => expression,
+    SemanticExpressionCall(function, arguments, flags, _, span) =>
+      match target_type {
+        TGeneric(_, _) =>
+          Shared.new(SemanticExpressionCall(function, arguments, flags, target_type, span)),
+        _ => expression
+      },
     SemanticExpressionMethod(_, _, _, _, _, _) => expression,
     SemanticExpressionField(_, _, _, _) => expression,
     SemanticExpressionIndex(_, _, _, _) => expression,

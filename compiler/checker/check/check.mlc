@@ -13,7 +13,7 @@ import { expand_parameter_destructuring_in_program, extern_parameter_destructure
 import { derive_clause_diagnostics } from './derive_validation'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, CheckContext } from './check_context'
-import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
+import { types_structurally_equal, types_assignment_compatible, type_is_unknown, type_description } from '../semantic_type_structure'
 import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076, diagnostic_code_e081 } from '../diagnostic_codes'
 import { record_field_default_expression_is_static_initializer } from '../../ir/record_field_default_validate'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
@@ -471,7 +471,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const actual_type = body_parsed.inferred_type
         all_diagnostics = diagnostics_append(all_diagnostics, body_parsed.errors)
-        if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_structurally_equal(expected_type, actual_type) then
+        if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_assignment_compatible(expected_type, actual_type) then
           all_diagnostics = diagnostics_append(all_diagnostics, [diagnostic_error_with_code(
             'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
             expr_span(body),
