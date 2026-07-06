@@ -6,6 +6,7 @@ import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
 import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
+import { build_sum_type_parameter_names_from_decls, build_variant_used_type_parameter_names_from_decls } from './decl/type_index'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, new_temp_name_counter, build_field_orders, build_variant_types_from_decls,
          build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
@@ -117,6 +118,8 @@ export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx 
   PrecomputedCtx {
     field_orders: field_orders,
     variant_types: build_variant_types_from_decls(program.decls),
+    sum_type_parameter_names: build_sum_type_parameter_names_from_decls(program.decls),
+    variant_used_type_parameter_names: build_variant_used_type_parameter_names_from_decls(program.decls),
     item_index: build_item_index(all_items),
     ctor_type_infos: ctor_type_infos,
     generic_variants: build_generic_variants_from_decls(program.decls),
@@ -152,6 +155,8 @@ fn prepare_module_generation(
     ctor_type_infos: precomputed_context.ctor_type_infos,
     ctor_type_info_index: precomputed_context.ctor_type_info_index,
     variant_types: precomputed_context.variant_types,
+    sum_type_parameter_names: precomputed_context.sum_type_parameter_names,
+    variant_used_type_parameter_names: precomputed_context.variant_used_type_parameter_names,
     value_params: [],
     match_deref_params: [],
     generic_variants: precomputed_context.generic_variants,

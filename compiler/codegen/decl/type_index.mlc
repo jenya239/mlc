@@ -1,6 +1,6 @@
 // Type metadata index builders: method owners, variant types, field orders.
 
-import { Program, Decl, DeclTrait, DeclExtend, DeclFn, DeclType, DeclExported, DeclTypeAlias, DeclImport, DeclAssocType, DeclAssocBind, decl_inner, TypeVariant, VarRecord, VarTuple, VarUnit, FieldDef } from '../../frontend/ast'
+import { Program, Decl, DeclTrait, DeclExtend, DeclFn, DeclType, DeclExported, DeclTypeAlias, DeclImport, DeclAssocType, DeclAssocBind, decl_inner, TypeVariant, VarRecord, VarTuple, VarUnit, FieldDef, TypeExpr, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc } from '../../frontend/ast'
 import { FieldOrder } from './decl_index'
 
 fn extract_method_name(fn_name: string, type_name: string) -> string = do
@@ -308,4 +308,93 @@ export fn build_field_orders(program: Program) -> [Shared<FieldOrder>] = do
     declaration_index = declaration_index + 1
   end
   orders
+end
+
+fn type_param_in_typeexpr_for_index(parameter_name: string, type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyNamed(name) => name == parameter_name,
+    TyArray(inner) => type_param_in_typeexpr_for_index(parameter_name, inner),
+    TyShared(inner) => type_param_in_typeexpr_for_index(parameter_name, inner),
+    TyGeneric(_, type_arguments) => type_param_in_typeexpr_list_for_index(parameter_name, type_arguments),
+    TyFn(parameter_types, return_type_expression) =>
+      type_param_in_typeexpr_list_for_index(parameter_name, parameter_types)
+        || type_param_in_typeexpr_for_index(parameter_name, return_type_expression),
+    TyAssoc(associated_parameter, _) => associated_parameter == parameter_name,
+    _ => false
+  }
+
+fn type_param_in_typeexpr_list_for_index(parameter_name: string, types: [Shared<TypeExpr>]) -> bool =
+  types.any(candidate => type_param_in_typeexpr_for_index(parameter_name, candidate))
+
+fn variant_field_typeexprs_for_index(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
+  match variant {
+    VarTuple(_, field_types, _) => field_types,
+    VarRecord(_, field_definitions, _) => field_definitions.map(field_definition => field_definition.type_value),
+    VarUnit(_, _) => do let empty: [Shared<TypeExpr>] = []; empty end
+  }
+
+fn variant_used_type_parameters_for_index(type_parameters: [string], variant: Shared<TypeVariant>) -> [string] = do
+  const field_types = variant_field_typeexprs_for_index(variant)
+  type_parameters.filter(type_parameter => type_param_in_typeexpr_list_for_index(type_parameter, field_types))
+end
+
+fn register_sum_type_parameter_names(
+  parameter_map: Map<string, [string]>,
+  declaration: Shared<Decl>
+) -> unit = do
+  const type_name = type_name_from_type_decl(declaration)
+  const type_parameters = type_parameters_from_type_decl(declaration)
+  if type_name != '' && type_parameters.length() > 0 then
+    parameter_map.set(type_name, type_parameters)
+  end
+end
+
+export fn build_sum_type_parameter_names_from_decls(declarations: [Shared<Decl>]) -> Map<string, [string]> = do
+  let parameter_map: Map<string, [string]> = Map.new()
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    register_sum_type_parameter_names(parameter_map, declarations[declaration_index])
+    declaration_index = declaration_index + 1
+  end
+  parameter_map
+end
+
+fn register_variant_used_type_parameter_names(
+  used_map: Map<string, [string]>,
+  type_name: string,
+  type_parameters: [string],
+  variant: Shared<TypeVariant>
+) -> unit = do
+  if type_parameters.length() > 0 then
+    used_map.set(
+      variant_name_from_type_variant(variant),
+      variant_used_type_parameters_for_index(type_parameters, variant))
+  end
+end
+
+fn register_variant_used_type_parameter_names_for_decl(
+  used_map: Map<string, [string]>,
+  declaration: Shared<Decl>
+) -> unit = do
+  const type_name = type_name_from_type_decl(declaration)
+  const type_parameters = type_parameters_from_type_decl(declaration)
+  const variants = variants_from_type_decl(declaration)
+  if type_name != '' && type_parameters.length() > 0 then
+    let mut variant_index = 0
+    while variant_index < variants.length() do
+      register_variant_used_type_parameter_names(
+        used_map, type_name, type_parameters, variants[variant_index])
+      variant_index = variant_index + 1
+    end
+  end
+end
+
+export fn build_variant_used_type_parameter_names_from_decls(declarations: [Shared<Decl>]) -> Map<string, [string]> = do
+  let used_map: Map<string, [string]> = Map.new()
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    register_variant_used_type_parameter_names_for_decl(used_map, declarations[declaration_index])
+    declaration_index = declaration_index + 1
+  end
+  used_map
 end

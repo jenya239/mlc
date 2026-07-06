@@ -8,7 +8,7 @@ import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
 import { FieldOrder } from './decl/decl_index'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
-import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, add_method_owners_from_decls } from './decl/type_index'
+import { build_field_orders, build_method_owners_from_decls, build_variant_types_from_decls, build_generic_variants_from_decls, build_sum_type_parameter_names_from_decls, build_variant_used_type_parameter_names_from_decls, add_method_owners_from_decls } from './decl/type_index'
 import { CtorTypeInfo, build_ctor_type_infos_from_decls, build_ctor_type_info_index, lookup_ctor_type_info, lookup_ctor_type_info_indexed } from './decl/ctor_info'
 import { is_shared_type, is_shared_array_type, is_shared_map_type, array_elem_name, collect_shared_params, collect_shared_array_params, collect_array_elem_types, collect_shared_map_params, collect_value_params } from './decl/param_analysis'
 
@@ -34,6 +34,8 @@ export type CodegenContext = CodegenContext {
   ctor_type_infos: [Shared<CtorTypeInfo>],
   ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >,
   variant_types: Map<string, string>,
+  sum_type_parameter_names: Map<string, [string]>,
+  variant_used_type_parameter_names: Map<string, [string]>,
   value_params: [string],
   match_deref_params: [string],
   generic_variants: [string],
@@ -73,6 +75,8 @@ export type GenModuleOut   = GenModuleOut   { header: string, source: string }
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],
   variant_types: Map<string, string>,
+  sum_type_parameter_names: Map<string, [string]>,
+  variant_used_type_parameter_names: Map<string, [string]>,
   item_index: Map<string, Shared<LoadItem>>,
   ctor_type_infos: [Shared<CtorTypeInfo>],
   generic_variants: [string],
@@ -290,6 +294,8 @@ export fn create_codegen_context(program: Program) -> CodegenContext = do
     ctor_type_infos: ctor_type_infos,
     ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
     variant_types: build_variant_types_from_decls(program.decls),
+    sum_type_parameter_names: build_sum_type_parameter_names_from_decls(program.decls),
+    variant_used_type_parameter_names: build_variant_used_type_parameter_names_from_decls(program.decls),
     value_params: [],
     match_deref_params: [],
     generic_variants: build_generic_variants_from_decls(program.decls),

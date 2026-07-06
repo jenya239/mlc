@@ -86,6 +86,92 @@ fn gen_call_function_cpp_expression(
 fn result_wrapper_cpp_type_argument(wrapped_cpp_type: string) -> string =
   if wrapped_cpp_type == 'auto' || wrapped_cpp_type.length() == 0 then '' else `<${wrapped_cpp_type}>` end
 
+fn type_parameter_name_index(parameter_names: [string], parameter_name: string) -> i32 = do
+  let mut index = 0
+  while index < parameter_names.length() do
+    if parameter_names[index] == parameter_name then return index end
+    index = index + 1
+  end
+  -1
+end
+
+fn generic_sum_variant_ctor_type_argument_from_enclosing(
+  owner_name: string,
+  all_parameter_names: [string],
+  used_parameter_names: [string],
+  type_arguments: [Shared<Type>],
+  context: CodegenContext
+) -> string = do
+  let cpp_argument_parts: [string] = []
+  let mut used_index = 0
+  while used_index < used_parameter_names.length() do
+    const parameter_index =
+      type_parameter_name_index(all_parameter_names, used_parameter_names[used_index])
+    if parameter_index < 0 || parameter_index >= type_arguments.length() then return '' end
+    if type_is_unknown(type_arguments[parameter_index]) then return '' end
+    cpp_argument_parts.push(sem_type_to_cpp(context, type_arguments[parameter_index]))
+    used_index = used_index + 1
+  end
+  if cpp_argument_parts.length() == 0 then '' else `<${cpp_argument_parts.join(', ')}>` end
+end
+
+fn owner_type_name_from_semantic_type(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(type_name) => type_name,
+    TGeneric(type_name, _) => type_name,
+    _ => ''
+  }
+
+fn generic_sum_variant_ctor_type_argument_for_enclosing(
+  owner_name: string,
+  enclosing_name: string,
+  type_arguments: [Shared<Type>],
+  constructor_name: string,
+  context: CodegenContext
+) -> string = do
+  if owner_name == '' || enclosing_name != owner_name then ''
+  else if context.variant_used_type_parameter_names.has(constructor_name)
+      && context.sum_type_parameter_names.has(owner_name) then
+    generic_sum_variant_ctor_type_argument_from_enclosing(
+      owner_name,
+      context.sum_type_parameter_names.get(owner_name),
+      context.variant_used_type_parameter_names.get(constructor_name),
+      type_arguments,
+      context)
+  else if type_arguments.length() == 1 && !type_is_unknown(type_arguments[0]) then
+    result_wrapper_cpp_type_argument(sem_type_to_cpp(context, type_arguments[0]))
+  else ''
+  end
+end
+
+fn generic_sum_variant_ctor_type_argument(
+  constructor_name: string,
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  let mut owner_name = owner_type_name_from_semantic_type(call_semantic_type)
+  if owner_name == '' && context.variant_types.has(constructor_name) then
+    owner_name = context.variant_types.get(constructor_name)
+  end
+  match context.enclosing_function_return_type {
+    TGeneric(enclosing_name, type_arguments) =>
+      generic_sum_variant_ctor_type_argument_for_enclosing(
+        owner_name, enclosing_name, type_arguments, constructor_name, context),
+    _ => ''
+  }
+end
+
+fn variant_constructor_template_suffix(
+  constructor_name: string,
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const result_wrapper = result_wrapper_ctor_type_argument(constructor_name, context)
+  if result_wrapper.length() > 0 then result_wrapper
+  else generic_sum_variant_ctor_type_argument(constructor_name, call_semantic_type, context)
+  end
+end
+
 fn result_wrapper_ctor_type_argument(constructor_name: string, context: CodegenContext) -> string = do
   const enclosing_type = context.enclosing_function_return_type
   if !is_result_generic(enclosing_type) then ''
@@ -100,13 +186,15 @@ end
 fn gen_constructor_call_cpp_expression(
   function_expression: Shared<SemanticExpression>,
   argument_expressions: [Shared<CppExpression>],
+  call_semantic_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
       const callee_code =
-        qualify_function_callee(map_builtin(name), context) + result_wrapper_ctor_type_argument(name, context)
+        qualify_function_callee(map_builtin(name), context)
+          + variant_constructor_template_suffix(name, call_semantic_type, context)
       Shared.new(CppAggregateInit(callee_code, argument_expressions))
     end,
     _ => do
@@ -120,6 +208,7 @@ export fn gen_call_via_cpp_visitor(
   function_expression: Shared<SemanticExpression>,
   arguments: [Shared<SemanticExpression>],
   call_parameter_mutability_flags: [i32],
+  call_semantic_type: Shared<Type>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
 ) -> Shared<CppExpression> = do
@@ -135,6 +224,7 @@ export fn gen_call_via_cpp_visitor(
       gen_constructor_call_cpp_expression(
         function_expression,
         materialization_outcome.materialized_argument_expressions,
+        call_semantic_type,
         context,
         gen_stmts)
     else
@@ -768,8 +858,8 @@ extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
     gen_binary_via_cpp_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
   fn visit_un(self: CodegenPass, operation: string, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_unary_via_cpp_visitor(operation, inner_expression, self.context, self.gen_stmts, self.evaluate_expression)
-  fn visit_call(self: CodegenPass, function_expression: Shared<SemanticExpression>, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
-    gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, self.context, self.gen_stmts)
+  fn visit_call(self: CodegenPass, function_expression: Shared<SemanticExpression>, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], semantic_type: Shared<Type>) -> Shared<CppExpression> =
+    gen_call_via_cpp_visitor(function_expression, arguments, mutability_flags, semantic_type, self.context, self.gen_stmts)
   fn visit_method(self: CodegenPass, object: Shared<SemanticExpression>, method_name: string, arguments: [Shared<SemanticExpression>], mutability_flags: [i32], _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_method_via_cpp_visitor(object, method_name, arguments, mutability_flags, self.context, self.gen_stmts)
   fn visit_field(self: CodegenPass, object: Shared<SemanticExpression>, field_name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
