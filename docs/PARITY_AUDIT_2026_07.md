@@ -26,7 +26,7 @@
 | H9 (тут) | пустой `[]` вне coercion-путей | не проверено, узкий гипотетический кейс |
 | H10 (тут) | приоритет пайпа относительно сравнений | ложный сигнал — модель сама себя опровергла, паритет соблюдён |
 | H11 (тут) | generic-аргументы для не-Ok/Err конструкторов | не проверено, гипотеза |
-| H12 (тут) | двойная trait-as-param экспансия, разные счётчики | не проверено, гипотеза (текст повреждён) |
+| H12 (тут) | trait-as-param: пустые trait maps, невалидный C++ | **подтверждено на бинаре** → `docs/mlc2.md` H12 |
 
 Верификация — компиляция минимального MLC-сниппета параллельно через
 `compiler/out/mlcc` и Ruby bootstrap (`ModularCompiler`), сравнение
@@ -347,14 +347,17 @@ Ruby десугарит trait-имя в позиции типа параметр
 
 ### Расхождение
 
-**требует проверки на реальном компиляторе** [текст повреждён стриминг-багом]:
-похоже, trait-param экспандится **дважды** — один раз в `build_registry`
-(`expand_trait_as_param_program`) и снова в чекере/трансформе через
-`expand_trait_as_param_entry_using_full` и в codegen через
-`add_method_owners_from_decls`. Ruby делает это один раз в pipeline. Двойная
-экспансия с монотонным счётчиком `__trait_param_N` в разных проходах может дать
-**разные имена** синтетических параметров между регистрацией сигнатуры и
-lowering тела (счётчик стартует с 0 в каждом проходе, но при разном порядке
-обхода деклараций имена совпадут только если обход детерминирован). Класс —
-potential silent-wrong-codegen при несовпадении имён type-param в прототипе vs
-определении. Гипотеза, требует verify.
+**закрыто** (`2d1d933b`, 2026-07-06). Реальная причина — не «двойная экспансия», а
+`build_trait_nominal_maps`: мутация `Map` внутри closure терялась (захват по
+значению), карты trait/type имён оставались пустыми, `expand_type_expression_for_trait_param`
+не переписывал `Display` → `__trait_param_N`. Исправление: fold с явным
+`Trait_nominal_maps_fold_state`, как в `trait_name_conflict_fold_step`.
+
+Проверено: `fn f(x: Display) -> unit` → `template<typename __trait_param_0> requires Display<__trait_param_0> void f(__trait_param_0 x)`; линковка OK. Unit: `compiler/tests/test_trait_param_expand.mlc`.
+
+Гипотеза про двойную экспансию (`build_registry` + `transform_load_items`) —
+ложная для покрытого кейса: повторный проход идемпотентен (`TyNamed("__trait_param_0")`
+не совпадает с trait-именем).
+
+Regression gate (Ruby vs mlcc stdout) для trait-as-param **нет** — Ruby bootstrap
+на этом сниппете не даёт рабочий C++ (пустой header).

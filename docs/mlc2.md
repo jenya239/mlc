@@ -316,6 +316,35 @@
 
 ---
 
+## H12 — trait-as-param (`fn f(x: Display)`)
+
+**Статус:** закрыто mlcc (`2d1d933b`); unit `compiler/tests/test_trait_param_expand.mlc`. Regression stdout — нет (Ruby на сниппете не линкуется).
+
+### Эталон (Ruby)
+
+- `trait_param_expand_ast.rb`: trait-имя в типе параметра → синтетический `__trait_param_N` + bound; codegen: `template` + `requires Trait<__trait_param_N>`.
+
+### Self-hosted (mlcc)
+
+- **Корень бага:** `build_trait_nominal_maps` — пустые `trait_declaration_names` из‑за side effect в closure; expand не срабатывал.
+- **Исправление:** `trait_nominal_maps_fold_step` + `program.decls.fold` в `trait_param_expand.mlc`.
+- **Codegen:** `decl_cpp.mlc` — `function_declaration_template_prefix` + `sem_type_to_cpp` для `__trait_param_0` (уже было; не хватало expand).
+
+### Ограничения
+
+- Два параметра `Display` → `__trait_param_0`, `__trait_param_1` (покрыто `test_codegen.mlc` D3).
+- Паритет с Ruby bootstrap на compile+link не в regression gate.
+
+### Файлы
+
+| Назначение | Путь |
+|------------|------|
+| Expand trait-as-param | `compiler/checker/transform/trait_param_expand.mlc` |
+| Transform pipeline | `compiler/checker/transform/transform_decl.mlc`, `registry.mlc` |
+| C++ proto/def | `compiler/codegen/decl_cpp.mlc` |
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).
