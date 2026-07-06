@@ -16,3 +16,4 @@ lexer_scan	expected/lexer_scan.txt
 generic_sum_ctor	expected/generic_sum_ctor.txt
 trait_as_param	expected/trait_as_param.txt
 trait_e2e	expected/trait_e2e.txt
+empty_array	expected/empty_array.txt

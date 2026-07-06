@@ -1,0 +1,6 @@
+fn count(items: [i32]) -> i32 = items.length()
+
+fn main() -> i32 = do
+  println(count([]).to_string())
+  0
+end
