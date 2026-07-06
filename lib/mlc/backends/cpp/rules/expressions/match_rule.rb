@@ -119,25 +119,35 @@ module MLC
             end
 
             def void_match_arm_result?(expression)
-              return true if context.checker.unit_literal?(expression)
+              return true if noop_match_arm_result?(expression)
               return true if context.should_lower_as_statement?(expression)
-              return true if expression.is_a?(::MLC::SemanticIR::TupleExpr) && expression.elements.empty?
               return true if expression.respond_to?(:type) &&
                              expression.type.is_a?(::MLC::SemanticIR::UnitType)
 
               false
             end
 
+            def noop_match_arm_result?(expression)
+              return true if context.checker.unit_literal?(expression)
+              return true if expression.is_a?(::MLC::SemanticIR::TupleExpr) && expression.elements.empty?
+
+              false
+            end
+
             def lower_unit_block_expr_as_statement(block_expr)
               parts = block_expr.statements.map { |statement| context.lower_statement(statement).to_source.strip }
-              if block_expr.result && !void_match_arm_result?(block_expr.result)
-                if context.should_lower_as_statement?(block_expr.result)
-                  parts << context.lower_statement(block_expr.result).to_source.strip
-                else
-                  parts << context.lower_expression(block_expr.result).to_source.strip
-                end
+              if block_expr.result && !noop_match_arm_result?(block_expr.result)
+                parts << lower_match_arm_result_statement(block_expr.result)
               end
               parts.reject(&:empty?).join(" ")
+            end
+
+            def lower_match_arm_result_statement(expression)
+              if context.should_lower_as_statement?(expression)
+                context.lower_statement(expression).to_source.strip
+              else
+                context.lower_expression(expression).to_source.strip
+              end
             end
 
             # Replace duplicate "_" wildcards with unique names (_w0, _w1, ...)

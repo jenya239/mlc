@@ -115,4 +115,22 @@ class UnitVoidIfFunctionCppTest < Minitest::Test
     refute_match(/make_tuple/, cpp)
     assert_includes cpp, 'found = {"ok"}'
   end
+
+  def test_match_arm_unit_push_in_sum_match_emits_push_back
+    mlc = <<~SRC
+      type MirJump = { target: i32 }
+      type MirOther = { x: i32 }
+      type MirTerm = MirJump | MirOther
+      fn f(term: MirTerm) -> () = do
+        let mut results: [string] = []
+        match term {
+          MirJump(target) => results.push("a"),
+          _ => results.push("b")
+        }
+      end
+    SRC
+    cpp = MLC.to_cpp(mlc)
+    assert_includes cpp, 'results.push_back(mlc::String("a"))'
+    assert_includes cpp, 'results.push_back(mlc::String("b"))'
+  end
 end
