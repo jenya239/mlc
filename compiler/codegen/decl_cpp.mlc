@@ -466,7 +466,9 @@ extend CodegenContext {
       SemanticDeclarationType(_, _, _, _, _) => empty_cpp_declaration(),
       SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
       SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
-      SemanticDeclarationExtend(type_name, _, methods, _) => do
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+        if trait_has_associated_types(self, trait_name) then empty_cpp_declaration()
+        else do
         const extend_context = self.for_type_body(type_name)
         let mut proto_declarations: [Shared<CppDeclaration>] = []
         let mut method_index = 0
@@ -478,7 +480,7 @@ extend CodegenContext {
           method_index = method_index + 1
         end
         cpp_decl_from_native_declarations(proto_declarations)
-      end,
+        end,
       SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
       SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
       SemanticDeclarationExported(inner_declaration) => self.gen_proto_cpp(sdecl_inner(inner_declaration))
@@ -754,11 +756,20 @@ fn extend_trait_concept_method_suffix_cpp(
 ) -> [Shared<CppDeclaration>] =
   if !is_semantic_declaration_fn(method) then empty_cpp_declarations()
   else match method {
-    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, type_params, type_bounds, params, return_type, body, _, _) => do
+      const extend_context = context.for_type_body(type_name)
+      let mut method_suffix = empty_cpp_declarations()
+      if semantic_expression_is_extern(body) then
+        method_suffix.push(gen_fn_proto_cpp(
+          mangled, type_params, type_bounds, params, return_type, extend_context))
+      end
       append_cpp_declarations(
-        [extend_trait_wrapper_decl_cpp(type_name, mangled, params, return_type, context, context_resolve)],
+        append_cpp_declarations(
+          method_suffix,
+          [extend_trait_wrapper_decl_cpp(type_name, mangled, params, return_type, context, context_resolve)]),
         [extend_trait_concept_adapter_decl_cpp(
-          type_name, trait_name, mangled, params, return_type, context, context_resolve)]),
+          type_name, trait_name, mangled, params, return_type, context, context_resolve)])
+    end,
     _ => empty_cpp_declarations()
   }
 
@@ -848,7 +859,7 @@ fn extend_method_definition_cpp(
     _ => empty_cpp_declarations()
   }
 
-export fn gen_decl_extend_cpp(
+export fn gen_decl_extend_methods_cpp(
   type_name: string,
   trait_name: string,
   methods: [Shared<SemanticDeclaration>],
@@ -865,6 +876,17 @@ export fn gen_decl_extend_cpp(
         methods[method_index], type_name, trait_name, context, extend_context, context_resolve))
     method_index = method_index + 1
   end
+  result
+end
+
+export fn gen_decl_extend_cpp(
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>],
+  context: CodegenContext
+) -> [Shared<CppDeclaration>] = do
+  const context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
+  let mut result = gen_decl_extend_methods_cpp(type_name, trait_name, methods, context)
   if trait_name.length() > 0 then
     result = append_cpp_declarations(
       result,
@@ -967,10 +989,12 @@ fn extend_forward_segment_for_extend(
 ) -> [Shared<CppDeclaration>] = do
   const extend_context = codegen_context.for_type_body(type_name)
   let mut result = gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context)
-  let mut method_index = 0
-  while method_index < methods.length() do
-    result = append_cpp_declarations(result, extend_forward_proto_for_method(methods[method_index], extend_context))
-    method_index = method_index + 1
+  if !trait_has_associated_types(codegen_context, trait_name) then
+    let mut method_index = 0
+    while method_index < methods.length() do
+      result = append_cpp_declarations(result, extend_forward_proto_for_method(methods[method_index], extend_context))
+      method_index = method_index + 1
+    end
   end
   result
 end
@@ -1022,7 +1046,10 @@ fn decl_segment_trait_cpp(
   phase: i32
 ) -> [Shared<CppDeclaration>] =
   if trait_has_associated_types(context, name) then empty_cpp_declarations()
-  else if phase == 0 then [gen_trait_decl_cpp(context, name, type_params, methods)]
+  else if phase == 0 then
+    append_cpp_declarations(
+      trait_concept_dispatch_forward_protos_cpp(context, name, methods),
+      [gen_trait_decl_cpp(context, name, type_params, methods)])
   else if phase == 4 then [gen_trait_struct_cpp(context, name, type_params, methods)]
   else empty_cpp_declarations()
   end
@@ -1128,6 +1155,34 @@ fn collect_native_decl_segments_cpp(
   output
 end
 
+fn extend_trait_suffix_header_for_declaration_cpp(
+  declaration: Shared<SemanticDeclaration>,
+  context: CodegenContext
+) -> [Shared<CppDeclaration>] =
+  match declaration {
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+      if trait_name.length() > 0 && !trait_has_associated_types(context, trait_name) then
+        gen_decl_extend_trait_suffix_cpp(
+          type_name,
+          trait_name,
+          methods,
+          context,
+          (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name))
+      else
+        empty_cpp_declarations()
+      end,
+    SemanticDeclarationExported(inner_declaration) =>
+      extend_trait_suffix_header_for_declaration_cpp(sdecl_inner(inner_declaration), context),
+    _ => empty_cpp_declarations()
+  }
+
+fn collect_extend_trait_suffix_header_cpp(
+  declarations: [Shared<SemanticDeclaration>],
+  context: CodegenContext
+) -> [Shared<CppDeclaration>] =
+  declarations.flat_map(declaration =>
+    extend_trait_suffix_header_for_declaration_cpp(declaration, context))
+
 export fn collect_all_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>], context: CodegenContext) -> DeclPartsBundleCpp = do
   let mut fn_protos = collect_decl_parts_cpp(declarations, context, 2)
   fn_protos = append_cpp_declarations(
@@ -1135,7 +1190,9 @@ export fn collect_all_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>]
     extend_helper_protos_for_exported_types_cpp(declarations, context))
   DeclPartsBundleCpp {
     type_fwds: collect_decl_parts_cpp(declarations, context, 0),
-    type_defs: collect_decl_parts_cpp(declarations, context, 1),
+    type_defs: append_cpp_declarations(
+      collect_decl_parts_cpp(declarations, context, 1),
+      collect_extend_trait_suffix_header_cpp(declarations, context)),
     fn_protos: fn_protos,
     fn_defs: collect_fn_defs_cpp(declarations, context)
   }
@@ -1190,7 +1247,11 @@ fn decl_fn_def_extend_cpp(
   methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
 ) -> [Shared<CppDeclaration>] =
-  gen_decl_extend_cpp(type_name, trait_name, methods, context)
+  if trait_name.length() > 0 && trait_has_associated_types(context, trait_name) then
+    gen_decl_extend_cpp(type_name, trait_name, methods, context)
+  else
+    gen_decl_extend_methods_cpp(type_name, trait_name, methods, context)
+  end
 
 fn decl_fn_def_for_exported_cpp(
   inner_declaration: Shared<SemanticDeclaration>,
