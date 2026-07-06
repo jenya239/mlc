@@ -350,8 +350,9 @@
 Сводка `docs/PARITY_AUDIT_2026_07.md`: H1–H5, H7, H11 — исправлено в mlcc;
 H3, H4, H8, H9, H10, H12 — проверено на бинаре; H6 — ASCII OK, UTF-8+null
 deferred. Regression gate: 16 программ stdout. e2e mlcc: 9 программ
-(compile+link+run). Ruby trait-as-param в regression **нет** (bootstrap не
-линкует).
+(compile+link+run). Ruby: **trait-декларации не кодогенятся** (пустой cpp,
+pre-existing); trait regression в gate **нет**. Следующий трек: Ruby trait
+codegen, не mlcc.
 
 ---
 

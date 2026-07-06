@@ -348,4 +348,6 @@ Ruby десугарит trait-имя в позиции типа параметр
 не совпадает с trait-именем).
 
 Regression gate (Ruby vs mlcc stdout) для trait-as-param **нет** — Ruby bootstrap
-на этом сниппете не даёт рабочий C++ (пустой header).
+на любом файле с `type Trait { ... }` эмитит пустой `.cpp` (нет `mlc_user_main`);
+проверено 2026-07-06, не связано с mlcc H12. mlcc e2e: `trait_as_param`,
+`trait_e2e`.
