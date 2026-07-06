@@ -6,7 +6,7 @@ import { Type } from '../checker/registry'
 import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
-import { CodegenContext, StructUsingEntry } from './context'
+import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './context'
 import { compute_fn_body_context, exported_type_names_from_decls, prototype_context_for_function } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
@@ -316,7 +316,9 @@ export fn gen_trait_decl_cpp(
   trait_name: string,
   type_params: [string],
   methods: [Shared<SemanticDeclaration>]
-) -> Shared<CppDeclaration> = do
+) -> Shared<CppDeclaration> =
+  if trait_has_associated_types(context, trait_name) then empty_cpp_declaration()
+  else do
   const forward_protos =
     trait_concept_dispatch_forward_protos_cpp(context, trait_name, methods)
   const concept_declaration = Shared.new(CppConceptRequires(
@@ -325,7 +327,7 @@ export fn gen_trait_decl_cpp(
     'Self',
     trait_requires_expressions_cpp(context, trait_name, methods)))
   cpp_decl_from_native_declarations(forward_protos.concat([concept_declaration]))
-end
+  end
 
 fn main_set_args_vector_argument_cpp() -> Shared<CppExpression> =
   Shared.new(CppCall(
@@ -697,7 +699,27 @@ fn extend_trait_static_assert_decl_cpp(
   end
 end
 
-export fn gen_decl_extend_trait_suffix_cpp(
+fn gen_decl_extend_trait_wrappers_only_cpp(
+  type_name: string,
+  methods: [Shared<SemanticDeclaration>],
+  context: CodegenContext,
+  context_resolve: (CodegenContext, string) -> string
+) -> [Shared<CppDeclaration>] = do
+  let mut wrapper_only: [Shared<CppDeclaration>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) =>
+        wrapper_only.push(extend_trait_wrapper_decl_cpp(
+          type_name, mangled, params, return_type, context, context_resolve)),
+      _ => ()
+    }
+    method_index = method_index + 1
+  end
+  wrapper_only
+end
+
+fn gen_decl_extend_trait_concept_suffix_cpp(
   type_name: string,
   trait_name: string,
   methods: [Shared<SemanticDeclaration>],
@@ -725,6 +747,19 @@ export fn gen_decl_extend_trait_suffix_cpp(
     trait_name, type_name, methods, extend_context, implementor_type_cpp))
   result
 end
+
+export fn gen_decl_extend_trait_suffix_cpp(
+  type_name: string,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>],
+  context: CodegenContext,
+  context_resolve: (CodegenContext, string) -> string
+) -> [Shared<CppDeclaration>] =
+  if trait_has_associated_types(context, trait_name) then
+    gen_decl_extend_trait_wrappers_only_cpp(type_name, methods, context, context_resolve)
+  else
+    gen_decl_extend_trait_concept_suffix_cpp(type_name, trait_name, methods, context, context_resolve)
+  end
 
 export fn gen_extend_extern_method_cpp(
   mangled: string,
@@ -873,7 +908,7 @@ fn extend_trait_implementation_protos_cpp(
           return_type,
           extend_context))
         ()
-      end
+      end,
       _ => do () end
     }
     method_index = method_index + 1
@@ -946,7 +981,8 @@ fn decl_segment_trait_cpp(
   context: CodegenContext,
   phase: i32
 ) -> [Shared<CppDeclaration>] =
-  if phase == 0 then [gen_trait_decl_cpp(context, name, type_params, methods)]
+  if trait_has_associated_types(context, name) then empty_cpp_declarations()
+  else if phase == 0 then [gen_trait_decl_cpp(context, name, type_params, methods)]
   else if phase == 4 then [gen_trait_struct_cpp(context, name, type_params, methods)]
   else empty_cpp_declarations()
   end
@@ -1000,7 +1036,7 @@ fn decl_segment_for_extend_declaration_cpp(
             empty_cpp_declarations()
           end),
         [context.gen_proto_cpp(declaration)])
-    end
+    end,
     _ => [context.gen_proto_cpp(declaration)]
   }
 

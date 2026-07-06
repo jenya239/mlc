@@ -5,7 +5,7 @@ import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/
 import * as lit from '../expr/literals'
 import { SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionExtern } from '../../ir/semantic_ir'
 import { Type } from '../../checker/registry'
-import { CodegenContext } from '../context'
+import { CodegenContext, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from './type_gen'
 import * as expression_output from '../expr/expr'
@@ -210,7 +210,9 @@ fn trait_method_field_line(context: CodegenContext, method_name: string, paramet
   expression_output.std_function_field_line(return_cpp, parameter_types.join(', '), cpp_safe(method_name))
 end
 
-export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_parameters: [string], methods: [Shared<SemanticDeclaration>]) -> string = do
+export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_parameters: [string], methods: [Shared<SemanticDeclaration>]) -> string =
+  if trait_has_associated_types(context, trait_name) then ''
+  else do
   const trait_context = context.for_type_body(trait_name)
   const template_header = if type_parameters.length() > 0 then
     expression_output.cpp_template_typename_header_line(type_parameters.join(', '))
@@ -224,9 +226,11 @@ export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_par
     template_header,
     expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
     field_lines.join(''))
-end
+  end
 
-export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_parameters: [string], methods: [Shared<SemanticDeclaration>]) -> string = do
+export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_parameters: [string], methods: [Shared<SemanticDeclaration>]) -> string =
+  if trait_has_associated_types(context, trait_name) then ''
+  else do
   const trait_context = context.for_type_body(trait_name)
   const template_header = if type_parameters.length() > 0 then
     'template<typename ' + type_parameters[0] + ', typename Self>\n'
@@ -241,7 +245,7 @@ export fn gen_trait_decl(context: CodegenContext, trait_name: string, type_param
     cpp_safe(trait_name),
     'Self',
     req_body)
-end
+  end
 
 export fn gen_extend_wrapper_protos(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext) -> string =
   if trait_name.length() == 0 then ''
@@ -327,13 +331,16 @@ export fn gen_decl_extend_trait_suffix(
   methods: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string
-) -> string = do
+) -> string =
+  if trait_has_associated_types(context, trait_name) then
+    gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn)
+  else do
   const extend_context = context.for_type_body(type_name)
   const cpp_type = type_name_to_cpp(context, type_name)
   gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) +
   gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn) +
   generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type)
-end
+  end
 
 export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string) -> string = do
   const extend_context = context.for_type_body(type_name)

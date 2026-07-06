@@ -126,7 +126,8 @@ export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx 
     method_owners: build_method_owners_from_decls(program.decls),
     field_order_index: build_field_order_index(field_orders),
     ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
-    type_alias_annotations: registry.type_alias_annotations
+    type_alias_annotations: registry.type_alias_annotations,
+    trait_associated_type_names: registry.adt_index.trait_assoc_types
   }
 end
 
@@ -163,6 +164,7 @@ fn prepare_module_generation(
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     type_alias_annotations: precomputed_context.type_alias_annotations,
+    trait_associated_type_names: precomputed_context.trait_associated_type_names,
     temp_name_counter: new_temp_name_counter(),
     enclosing_function_return_type: Shared.new(TUnknown)
   }

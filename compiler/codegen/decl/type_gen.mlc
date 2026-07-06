@@ -6,7 +6,7 @@ import {
   record_field_default_expression_is_static_initializer
 } from '../../ir/record_field_default_validate'
 import { record_field_default_expression_cpp_initializer } from '../record_field_default_emit'
-import { CodegenContext, CtorTypeInfo } from '../context'
+import { CodegenContext, CtorTypeInfo, trait_has_associated_types } from '../context'
 import { list_contains } from './decl_index'
 import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
 import * as expression_output from '../expr/expr'
@@ -86,6 +86,13 @@ fn type_name_to_cpp_literal(type_name: string) -> string =
 fn type_name_to_cpp_self(context: CodegenContext) -> string =
   if context.self_type.length() > 0 then type_name_to_cpp(context, context.self_type) else 'void' end
 
+fn associated_type_name_cpp(context: CodegenContext, associated_type_name: string) -> string =
+  if trait_has_associated_types(context, context.self_type) then
+    `typename Self::${cpp_safe(associated_type_name)}`
+  else
+    associated_type_name
+  end
+
 fn resolved_type_name_cpp(context: CodegenContext, type_name: string) -> string =
   context.resolve(type_name)
 
@@ -93,6 +100,9 @@ export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string
   if type_alias_annotation_cpp(context, type_name) != '' then
     type_alias_annotation_cpp(context, type_name)
   else if type_name == 'Self' || type_name == 'self' then type_name_to_cpp_self(context)
+  else if trait_has_associated_types(context, context.self_type) &&
+          context.trait_associated_type_names.get(context.self_type).any(entry => entry == type_name) then
+    associated_type_name_cpp(context, type_name)
   else if type_name_to_cpp_literal(type_name) != '' then type_name_to_cpp_literal(type_name)
   else resolved_type_name_cpp(context, type_name)
   end

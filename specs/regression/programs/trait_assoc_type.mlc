@@ -1,0 +1,14 @@
+type Iter { type Item fn Iter_next(self: Self) -> i32 }
+
+type Counter = { value: i32 }
+
+extend Counter : Iter {
+  type Item = i32
+  fn Iter_next(self: Counter) -> i32 = self.value
+}
+
+fn main() -> i32 = do
+  let counter = Counter { value: 42 }
+  println(counter.Iter_next().to_string())
+  0
+end

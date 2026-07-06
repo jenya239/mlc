@@ -42,6 +42,7 @@ export type CodegenContext = CodegenContext {
   struct_using_entries: Map<string, [StructUsingEntry]>,
   struct_using_lines: Map<string, [string]>,
   type_alias_annotations: Map<string, Shared<TypeExpr>>,
+  trait_associated_type_names: Map<string, [string]>,
   temp_name_counter: i32,
   enclosing_function_return_type: Shared<Type>
 }
@@ -83,7 +84,8 @@ export type PrecomputedCtx = PrecomputedCtx {
   method_owners: Map<string, string>,
   field_order_index: Map<string, [string]>,
   ctor_type_info_index: Map<string, Shared<CtorTypeInfo> >,
-  type_alias_annotations: Map<string, Shared<TypeExpr>>
+  type_alias_annotations: Map<string, Shared<TypeExpr>>,
+  trait_associated_type_names: Map<string, [string]>
 }
 
 export fn context_resolve(context: CodegenContext, name: string) -> string =
@@ -213,6 +215,13 @@ extend CodegenContext {
     }
 }
 
+export fn trait_has_associated_types(context: CodegenContext, trait_name: string) -> bool =
+  if context.trait_associated_type_names.has(trait_name) then
+    context.trait_associated_type_names.get(trait_name).length() > 0
+  else
+    false
+  end
+
 export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
   CodegenContext { ...base, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, self_type: self_type, value_params: value_params, match_deref_params: match_deref_params }
 
@@ -302,6 +311,7 @@ export fn create_codegen_context(program: Program) -> CodegenContext = do
     struct_using_entries: Map.new(),
     struct_using_lines: Map.new(),
     type_alias_annotations: registry.type_alias_annotations,
+    trait_associated_type_names: registry.adt_index.trait_assoc_types,
     temp_name_counter: new_temp_name_counter(),
     enclosing_function_return_type: Shared.new(TUnknown)
   }

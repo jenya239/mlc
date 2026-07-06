@@ -83,7 +83,8 @@ fn empty_precomputed_context() -> PrecomputedCtx =
     method_owners: Map.new(),
     field_order_index: Map.new(),
     ctor_type_info_index: Map.new(),
-    type_alias_annotations: Map.new()
+    type_alias_annotations: Map.new(),
+    trait_associated_type_names: Map.new()
   }
 
 export type PipelineContext = PipelineContext {
