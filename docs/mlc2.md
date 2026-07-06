@@ -284,6 +284,38 @@
 
 ---
 
+## H11 — generic sum: конструктор, match, i32→i64
+
+**Статус:** закрыто mlcc (`f5644038`, `e5cfe230`, `bd438e7e`, `de106b45`); regression `specs/regression/programs/generic_sum_ctor.mlc`.
+
+### Эталон (Ruby)
+
+- Вызов вариантного конструктора generic sum-типа: явные template-аргументы `Ctor<Args>{…}` из ожидаемого типа (return, аргумент вызова, подстановка полей варианта).
+- Числовой литерал `42` (i32) в позиции `i64` — допустим при присвоении/аргументе (Ruby codegen эмитит `Some<int64_t>{x}`).
+
+### Self-hosted (mlcc)
+
+- **Checker:** `infer_call.mlc` — `instantiated_algebraic_constructor_type` после `build_call_type_substitution`; `types_assignment_compatible` / `types_compatible_for_call_argument` — i32→i64 для `Opt<i64>` и `take(Some(42))`.
+- **Codegen ctor:** `expr_visitor_cpp.mlc` — `generic_sum_variant_ctor_type_argument` из `enclosing_function_return_type` или из типа вызова после coerce; `transform.mlc` — `SemanticExpressionCall` принимает ожидаемый `TGeneric` у аргумента.
+- **Codegen match:** `match_gen.mlc` — `Some<int64_t>&` / `None` без лишнего шаблона; template args из типа scrutinee.
+- **Registry index:** `type_index.mlc` — `build_generic_variants_from_decls` (накопление массива).
+
+### Ограничения
+
+- Расширение целых: i32→i64 (и char→i32/i64), не полная numeric tower.
+- `variant_used_type_parameter_names` для `Some(T)` может быть пустым — fallback по типу scrutinee / enclosing return / coerce аргумента.
+
+### Файлы
+
+| Назначение | Путь |
+|------------|------|
+| Ctor + template suffix | `compiler/expr_visitor_cpp.mlc` |
+| Match arms | `compiler/codegen/expr/match_gen.mlc` |
+| Checker unify / return | `compiler/checker/semantic_type_structure.mlc`, `call_argument_unify.mlc`, `infer_call.mlc` |
+| Coerce call arg | `compiler/checker/transform/transform.mlc` |
+
+---
+
 ## Прочее
 
 - В импортах MLC **не ставить завершающую запятую** в списке символов в фигурных скобках `{ … }` — Ruby-парсер bootstrap даёт ошибку (`Expected IDENTIFIER, got RBRACE`).

@@ -303,7 +303,9 @@ comparison идентичен. Однако в mlcc `parse_and`/`parse_or` (`&&`
 здесь **паритет соблюдён**, реальное расхождение только в отсутствии
 bitwise/shift (H1).
 
-## H11 — генерик-инстанциация конструкторов Ok/Err в позиции выражения vs Ruby CTAD
+## H11 — generic sum: конструктор, match, i32→i64 (было: Ok/Err CTAD)
+
+**Статус (2026-07-06):** закрыто в mlcc; regression `generic_sum_ctor`, self-host p1→p2.
 
 ### Эталон (Ruby)
 
@@ -316,22 +318,16 @@ bitwise/shift (H1).
 
 ### Self-hosted (mlcc)
 
-`compiler/expr_visitor_cpp.mlc` (`result_wrapper_ctor_type_argument`): для `Ok`/
-`Err` mlcc берёт template-аргумент **только** из `enclosing_function_return_type`
-(если это `Result`), эмитя `Ok<T>{x}`/`Err<E>{x}`. Если это не Result или тип
-не выводится — `''` (пустой), полагаясь на CTAD `Ok{x}`. Другие вариантные
-конструкторы (не Ok/Err) в call-позиции идут через `CppAggregateInit` без
-template-аргументов вообще.
+- `expr_visitor_cpp.mlc`: `generic_sum_variant_ctor_type_argument` — Ok/Err из
+  enclosing `Result`, произвольный generic sum из enclosing return **или** из
+  типа вызова после coerce аргумента (`Opt<i64>` у `take(Some(42))`).
+- `match_gen.mlc`: `Some<T>&` / unit-варианты в match.
+- Checker: инстанцирование `TGeneric(Opt, [TI64])`, widening i32→i64.
 
 ### Расхождение
 
-**silent-wrong-codegen (риск)**: Ruby выводит generic-аргументы для **любого**
-вариантного конструктора и из результата вызова, mlcc — только для Ok/Err и
-только из типа окружающей функции. Кейс: пользовательский generic sum-тип
-`type Opt<T> = Some(T) | None`, вызов `Some(x)` в позиции, где нужен
-`Opt<i64>`, но `x: i32` (после числового коэрса) — Ruby эмитит `Some<int64_t>{x}`,
-mlcc — `Some{x}` (CTAD выведет `Some<int>`), что может дать несовместимый
-`Opt<int64_t>` из `Some<int>`. Требует проверки на реальном компиляторе.
+**нет** для покрытого контура (`Opt<T>`, `Some`/`None`, match, `Some(42)`→`Opt<i64>`).
+Остаётся узкая numeric tower (не все пары целых).
 
 ## H12 — impl trait как тип параметра (trait-as-param) с несколькими use
 
