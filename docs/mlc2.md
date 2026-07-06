@@ -351,7 +351,7 @@
 H3, H4, H8, H9, H10, H12 — проверено на бинаре; H6 — ASCII OK, UTF-8+null
 deferred. Regression gate: 16 программ stdout. e2e mlcc: 9 программ
 (compile+link+run). Ruby: **trait-декларации не кодогенятся** (пустой cpp,
-pre-existing); trait regression в gate **нет**. Следующий трек: Ruby trait
+pre-existing); trait regression в gate: `trait_as_param`, `trait_e2e` (18 программ).
 codegen, не mlcc.
 
 ---

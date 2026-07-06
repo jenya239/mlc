@@ -1,0 +1,12 @@
+type Display { fn to_string(self: Self) -> string }
+
+extend i32 : Display {
+  fn to_string(self: i32) -> string = extern
+}
+
+fn id<T: Display>(x: T) -> T = x
+
+fn main() -> i32 = do
+  println(id(42).to_string())
+  0
+end
