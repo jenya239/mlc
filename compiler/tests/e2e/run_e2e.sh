@@ -10,7 +10,7 @@ RT_INC="$ROOT_DIR/runtime/include"
 RT_SRC="$ROOT_DIR/runtime/src/io/io.cpp $ROOT_DIR/runtime/src/core/string.cpp"
 source "$ROOT_DIR/compiler/scripts/select_cxx.sh"
 
-echo "[e2e] mlcc=$MLCC (8 programs: compile, link, run)" >&2
+echo "[e2e] mlcc=$MLCC (9 programs: compile, link, run)" >&2
 
 PASS=0; FAIL=0
 
@@ -53,6 +53,7 @@ run_test "record_update" "$SCRIPT_DIR/record_update.mlc" "(0, 0)
 (5, 3)"
 run_test "trait_as_param" "$SCRIPT_DIR/trait_as_param.mlc" "ok"
 run_test "trait_e2e" "$SCRIPT_DIR/trait_e2e.mlc" "42"
+run_test "empty_array" "$SCRIPT_DIR/empty_array.mlc" "0"
 
 echo ""
 echo "$PASS passed, $FAIL failed"

@@ -361,6 +361,15 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('array literal return — 0 errors',
     check_error_count('fn f() -> [i32] = [1, 2]'), 0))
 
+  results.push(assert_eq_int('empty array typed return — 0 errors',
+    check_error_count('fn f() -> [i32] = []'), 0))
+
+  results.push(assert_eq_int('empty array literal as call arg — 0 errors',
+    check_error_count('fn g(items: [i32]) -> i32 = items.length()\nfn main() -> i32 = g([])'), 0))
+
+  results.push(assert_true('empty array untyped binary plus — E005',
+    first_checker_error_line('fn f() -> i32 = [] + [1]').contains('incompatible operand')))
+
   results.push(assert_eq_int('Ok/Err/Result as known globals - 0 errors',
     check_error_count('fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend'), 0))
 
