@@ -6,4 +6,7 @@ extend i32 : Display {
 
 fn id<T: Display>(x: T) -> T = x
 
-fn main() -> i32 = id(42)
+fn main() -> i32 = do
+  println(id(42).to_string())
+  0
+end

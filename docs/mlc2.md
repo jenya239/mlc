@@ -318,7 +318,7 @@
 
 ## H12 — trait-as-param (`fn f(x: Display)`)
 
-**Статус:** закрыто mlcc (`2d1d933b`); unit `compiler/tests/test_trait_param_expand.mlc`. Regression stdout — нет (Ruby на сниппете не линкуется).
+**Статус:** закрыто mlcc (`2d1d933b`, `61e3835b`); unit `test_trait_param_expand.mlc`; e2e `trait_as_param.mlc`, `trait_e2e.mlc`.
 
 ### Эталон (Ruby)
 
@@ -328,7 +328,7 @@
 
 - **Корень бага:** `build_trait_nominal_maps` — пустые `trait_declaration_names` из‑за side effect в closure; expand не срабатывал.
 - **Исправление:** `trait_nominal_maps_fold_step` + `program.decls.fold` в `trait_param_expand.mlc`.
-- **Codegen:** `decl_cpp.mlc` — `function_declaration_template_prefix` + `sem_type_to_cpp` для `__trait_param_0` (уже было; не хватало expand).
+- **Codegen:** `decl_cpp.mlc` — trait suffix (`Display_to_string`, static_assert) в header; forward decl перед concept; `f(42)` / `id(42)` линкуются.
 
 ### Ограничения
 
