@@ -1,0 +1,8 @@
+type Display { fn to_string(self: Self) -> string }
+
+fn f(x: Display) -> unit = ()
+
+fn main() -> i32 = do
+  println("ok")
+  0
+end
