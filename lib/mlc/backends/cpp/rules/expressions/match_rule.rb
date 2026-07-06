@@ -89,6 +89,57 @@ module MLC
               end
             end
 
+            # Value arms: `return expr;`. Unit if / void arms: C++ statement (no return).
+            def lower_match_arm_body_return(body)
+              code = if context.checker.block_expr?(body) && void_match_arm_block?(body)
+                       lower_unit_block_expr_as_statement(body)
+                     elsif context.should_lower_as_statement?(body)
+                       context.lower_statement(body).to_source.strip
+                     else
+                       expr = context.lower_expression(body)
+                       src = expr&.to_source
+                       src = ";" if src.nil? || src.empty?
+                       "return #{src};"
+                     end
+              normalize_match_arm_body_code(code)
+            end
+
+            def normalize_match_arm_body_code(code)
+              return code if code.empty?
+              return code if code.start_with?("return ") || code.end_with?(";")
+
+              "#{code};"
+            end
+
+            def void_match_arm_block?(block_expr)
+              return true if block_expr.type.is_a?(::MLC::SemanticIR::UnitType)
+              return false unless block_expr.result
+
+              void_match_arm_result?(block_expr.result)
+            end
+
+            def void_match_arm_result?(expression)
+              return true if context.checker.unit_literal?(expression)
+              return true if context.should_lower_as_statement?(expression)
+              return true if expression.is_a?(::MLC::SemanticIR::TupleExpr) && expression.elements.empty?
+              return true if expression.respond_to?(:type) &&
+                             expression.type.is_a?(::MLC::SemanticIR::UnitType)
+
+              false
+            end
+
+            def lower_unit_block_expr_as_statement(block_expr)
+              parts = block_expr.statements.map { |statement| context.lower_statement(statement).to_source.strip }
+              if block_expr.result && !void_match_arm_result?(block_expr.result)
+                if context.should_lower_as_statement?(block_expr.result)
+                  parts << context.lower_statement(block_expr.result).to_source.strip
+                else
+                  parts << context.lower_expression(block_expr.result).to_source.strip
+                end
+              end
+              parts.reject(&:empty?).join(" ")
+            end
+
             # Replace duplicate "_" wildcards with unique names (_w0, _w1, ...)
             # C++ structured bindings require unique names for each binding.
             def uniquify_wildcard_bindings(bindings)
@@ -231,20 +282,18 @@ module MLC
 
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
-                body = context.lower_expression(arm[:body])
+                arm_body_code = lower_match_arm_body_return(arm[:body])
 
                 case pattern[:kind]
                 when :regex
+                  body = context.lower_expression(arm[:body])
                   statements.concat(build_regex_arm_statements(pattern, body, scrutinee))
 
                 when :wildcard, :var
-                  # Default case - just return
-                  statements << context.factory.return_statement(expression: body)
+                  statements << context.factory.raw_statement(code: arm_body_code)
 
                 else
-                  # Other patterns not yet supported in regex match
-                  # Treat as wildcard for now
-                  statements << context.factory.return_statement(expression: body)
+                  statements << context.factory.raw_statement(code: arm_body_code)
                 end
               end
 
@@ -479,16 +528,14 @@ module MLC
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
                 guard = arm[:guard]
-                body = context.lower_expression(arm[:body])
-                body_src = body&.to_source
-                body_src = ";" if body_src.nil? || body_src.empty?
+                arm_body_code = lower_match_arm_body_return(arm[:body])
 
                 case pattern[:kind]
                 when :constructor
-                  statements << build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type)
+                  statements << build_constructor_guard_arm(pattern, guard, arm_body_code, scrutinee_src, scrutinee_type)
 
                 when :or
-                  statements << build_or_pattern_arm(pattern, guard, body_src, variant_src, scrutinee_type)
+                  statements << build_or_pattern_arm(pattern, guard, arm_body_code, variant_src, scrutinee_type)
 
                 when :literal
                   condition = build_pattern_condition(pattern, scrutinee_src, scrutinee_type)
@@ -496,21 +543,21 @@ module MLC
                     guard_expr = context.lower_expression(guard)
                     guard_src = guard_expr.to_source
                     statements << context.factory.raw_statement(
-                      code: "if (#{condition} && #{guard_src}) { return #{body_src}; }"
+                      code: "if (#{condition} && #{guard_src}) { #{arm_body_code} }"
                     )
                   else
                     statements << context.factory.raw_statement(
-                      code: "if (#{condition}) { return #{body_src}; }"
+                      code: "if (#{condition}) { #{arm_body_code} }"
                     )
                   end
 
                 when :array
                   # Array pattern: check size and elements
-                  statements << build_array_pattern_arm(pattern, guard, body_src, scrutinee_src)
+                  statements << build_array_pattern_arm(pattern, guard, arm_body_code, scrutinee_src)
 
                 when :tuple
                   # Tuple pattern: destructure with std::get<N>
-                  statements << build_tuple_pattern_arm(pattern, guard, body_src, scrutinee_src)
+                  statements << build_tuple_pattern_arm(pattern, guard, arm_body_code, scrutinee_src)
 
                 when :wildcard, :var
                   # Wildcard/var with optional guard
@@ -520,22 +567,18 @@ module MLC
                     guard_expr = context.lower_expression(guard)
                     guard_src = guard_expr.to_source
                     statements << context.factory.raw_statement(
-                      code: "{ #{binding_str}if (#{guard_src}) { return #{body_src}; } }"
+                      code: "{ #{binding_str}if (#{guard_src}) { #{arm_body_code} } }"
                     )
                   else
-                    # Final wildcard/var - declare binding if needed, then return
-                    if binding_str.empty?
-                      statements << context.factory.return_statement(expression: body)
-                    else
-                      statements << context.factory.raw_statement(
-                        code: "{ #{binding_str}return #{body_src}; }"
-                      )
-                    end
+                    statements << context.factory.raw_statement(
+                      code: binding_str.empty? ? arm_body_code : "{ #{binding_str}#{arm_body_code} }"
+                    )
                   end
 
                 else
                   # Unknown pattern kind - treat as wildcard
-                  statements << context.factory.return_statement(expression: body)
+                  arm_body_code = lower_match_arm_body_return(arm[:body])
+                  statements << context.factory.raw_statement(code: arm_body_code)
                 end
               end
 
@@ -564,14 +607,14 @@ module MLC
             end
 
             # Build if statement for constructor pattern with optional guard
-            def build_constructor_guard_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type = nil)
+            def build_constructor_guard_arm(pattern, guard, arm_body_code, scrutinee_src, scrutinee_type = nil)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
 
               # Special handling for Option patterns (Some/None) only if scrutinee is Option<T> (generic)
               # User-defined "type Option = Some(x) | None" should use std::variant handling
               if ["Some", "None"].include?(case_name) && option_type?(scrutinee_type)
-                return build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
+                return build_option_pattern_arm(case_name, bindings, guard, arm_body_code, scrutinee_src)
               end
 
               variant_src = variant_src_for(scrutinee_src, scrutinee_type)
@@ -585,9 +628,9 @@ module MLC
               # Build the inner body with nested checks
               inner_return = if guard
                                guard_src = context.lower_expression(guard).to_source
-                               "if (#{guard_src}) { return #{body_src}; }"
+                               "if (#{guard_src}) { #{arm_body_code} }"
                              else
-                               "return #{body_src};"
+                               arm_body_code
                              end
 
               if nested_checks.any?
@@ -650,10 +693,10 @@ module MLC
             # Build if statement for Option pattern (Some/None) with std::optional
             # Some(x) -> if (opt.has_value()) { auto x = *opt; ... }
             # None -> if (!opt.has_value()) { ... }
-            def build_option_pattern_arm(case_name, bindings, guard, body_src, scrutinee_src)
+            def build_option_pattern_arm(case_name, bindings, guard, arm_body_code, scrutinee_src)
               holds_check = option_holds_check(case_name, scrutinee_src)
               binding_str = option_bindings(case_name, bindings, scrutinee_src)
-              inner_body = option_inner_body(binding_str, guard, body_src)
+              inner_body = option_inner_body(binding_str, guard, arm_body_code)
 
               context.factory.raw_statement(
                 code: "if (#{holds_check}) { #{inner_body} }"
@@ -677,12 +720,12 @@ module MLC
               binding_decls.join(" ")
             end
 
-            def option_inner_body(binding_str, guard, body_src)
+            def option_inner_body(binding_str, guard, arm_body_code)
               guard_src = context.lower_expression(guard).to_source if guard
 
-              return "#{binding_str} return #{body_src};" unless guard_src
+              return "#{binding_str} #{arm_body_code}" unless guard_src
 
-              "#{binding_str} if (#{guard_src}) { return #{body_src}; }"
+              "#{binding_str} if (#{guard_src}) { #{arm_body_code} }"
             end
 
             # Build nested pattern check for nested constructor patterns
@@ -711,7 +754,7 @@ module MLC
               decls
             end
 
-            def build_or_pattern_arm(pattern, guard, body_src, scrutinee_src, scrutinee_type = nil)
+            def build_or_pattern_arm(pattern, guard, arm_body_code, scrutinee_src, scrutinee_type = nil)
               alternatives = pattern[:alternatives] || []
 
               has_payload = alternatives.any? do |alt|
@@ -725,18 +768,18 @@ module MLC
                 or_condition = conditions.join(" || ")
                 inner_body = if guard
                                guard_src = context.lower_expression(guard).to_source
-                               "if (#{guard_src}) { return #{body_src}; }"
+                               "if (#{guard_src}) { #{arm_body_code} }"
                              else
-                               "return #{body_src};"
+                               arm_body_code
                              end
                 return context.factory.raw_statement(code: "if (#{or_condition}) { #{inner_body} }")
               end
 
               inner_return = if guard
                                guard_src = context.lower_expression(guard).to_source
-                               "if (#{guard_src}) { return #{body_src}; }"
+                               "if (#{guard_src}) { #{arm_body_code} }"
                              else
-                               "return #{body_src};"
+                               arm_body_code
                              end
 
               branches = alternatives.map.with_index do |alt, idx|
@@ -755,7 +798,7 @@ module MLC
 
             # Build if statement for array pattern with optional guard
             # Generates: if (array.size() == N) { auto e0 = array[0]; ... return body; }
-            def build_array_pattern_arm(pattern, guard, body_src, scrutinee_src)
+            def build_array_pattern_arm(pattern, guard, arm_body_code, scrutinee_src)
               elements = pattern[:elements] || []
 
               # Build size check condition
@@ -796,9 +839,9 @@ module MLC
               if guard
                 guard_expr = context.lower_expression(guard)
                 guard_src = guard_expr.to_source
-                inner_body = "#{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; }"
+                inner_body = "#{bindings.join(' ')} if (#{guard_src}) { #{arm_body_code} }"
               else
-                inner_body = "#{bindings.join(' ')} return #{body_src};"
+                inner_body = "#{bindings.join(' ')} #{arm_body_code}"
               end
 
               context.factory.raw_statement(
@@ -809,7 +852,7 @@ module MLC
             # Build if statement for tuple pattern with optional guard
             # Generates: { auto x = std::get<0>(tuple); auto y = std::get<1>(tuple); ... return body; }
             # For tuples, there's no runtime check needed - just extract elements
-            def build_tuple_pattern_arm(pattern, guard, body_src, scrutinee_src)
+            def build_tuple_pattern_arm(pattern, guard, arm_body_code, scrutinee_src)
               elements = pattern[:elements] || []
 
               # Build element bindings using std::get<N>
@@ -844,9 +887,9 @@ module MLC
                 if guard
                   guard_expr = context.lower_expression(guard)
                   guard_src = guard_expr.to_source
-                  inner_body = "#{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; }"
+                  inner_body = "#{bindings.join(' ')} if (#{guard_src}) { #{arm_body_code} }"
                 else
-                  inner_body = "#{bindings.join(' ')} return #{body_src};"
+                  inner_body = "#{bindings.join(' ')} #{arm_body_code}"
                 end
                 context.factory.raw_statement(
                   code: "if (#{condition}) { #{inner_body} }"
@@ -856,12 +899,11 @@ module MLC
                 guard_src = guard_expr.to_source
                 # Tuple always matches, just check guard
                 context.factory.raw_statement(
-                  code: "{ #{bindings.join(' ')} if (#{guard_src}) { return #{body_src}; } }"
+                  code: "{ #{bindings.join(' ')} if (#{guard_src}) { #{arm_body_code} } }"
                 )
               else
-                # Tuple always matches and no guard - just return
                 context.factory.raw_statement(
-                  code: "{ #{bindings.join(' ')} return #{body_src}; }"
+                  code: "{ #{bindings.join(' ')} #{arm_body_code} }"
                 )
               end
             end

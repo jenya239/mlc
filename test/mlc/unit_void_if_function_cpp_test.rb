@@ -90,4 +90,29 @@ class UnitVoidIfFunctionCppTest < Minitest::Test
     assert_match(/messages = merge_nonempty\(/m, cpp)
     refute_match(/return\s+merge_nonempty\(/m, cpp)
   end
+
+  def test_match_arm_unit_if_in_while_uses_cpp_if_statement
+    mlc = <<~SRC
+      type DeclFn = { name: string }
+      type DeclOther = { x: i32 }
+      type Decl = DeclFn | DeclOther
+      fn decl_inner(d: Decl) -> Decl = d
+      fn f(program_decls: [Decl]) -> [string] = do
+        let mut index = 0
+        let mut found: [string] = []
+        while index < program_decls.length() do
+          match decl_inner(program_decls[index]) {
+            DeclFn(name, _) =>
+              if name == "f" then found = ["ok"] end,
+            _ => ()
+          }
+          index = index + 1
+        end
+        found
+      end
+    SRC
+    cpp = MLC.to_cpp(mlc)
+    refute_match(/make_tuple/, cpp)
+    assert_includes cpp, 'found = {"ok"}'
+  end
 end
