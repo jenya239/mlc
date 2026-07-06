@@ -1,6 +1,6 @@
 // CppDeclaration dual path for declaration codegen (Phase 2 step 17).
 
-import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
+import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord, param_name } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
 import { Type } from '../checker/registry'
 import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
@@ -278,17 +278,54 @@ fn trait_requires_expressions_cpp(
   expressions
 end
 
+fn trait_concept_dispatch_forward_proto_cpp(
+  mangled: string,
+  return_type_cpp: string
+) -> Shared<CppDeclaration> =
+  Shared.new(CppFnProto(
+    'template<typename Self>\n',
+    return_type_cpp,
+    cpp_safe(mangled),
+    ['const Self& self']))
+
+fn trait_concept_dispatch_forward_protos_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>]
+) -> [Shared<CppDeclaration>] = do
+  const trait_context = context.for_type_body(trait_name)
+  let mut forward_protos: [Shared<CppDeclaration>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
+        if parameters.length() > 0 && param_name(parameters[0]) == 'self' then
+          forward_protos.push(trait_concept_dispatch_forward_proto_cpp(
+            mangled,
+            sem_type_to_cpp(trait_context, return_type)))
+        end,
+      _ => ()
+    }
+    method_index = method_index + 1
+  end
+  forward_protos
+end
+
 export fn gen_trait_decl_cpp(
   context: CodegenContext,
   trait_name: string,
   type_params: [string],
   methods: [Shared<SemanticDeclaration>]
-) -> Shared<CppDeclaration> =
-  Shared.new(CppConceptRequires(
+) -> Shared<CppDeclaration> = do
+  const forward_protos =
+    trait_concept_dispatch_forward_protos_cpp(context, trait_name, methods)
+  const concept_declaration = Shared.new(CppConceptRequires(
     trait_template_header(type_params),
     cpp_safe(trait_name),
     'Self',
     trait_requires_expressions_cpp(context, trait_name, methods)))
+  cpp_decl_from_native_declarations(forward_protos.concat([concept_declaration]))
+end
 
 fn main_set_args_vector_argument_cpp() -> Shared<CppExpression> =
   Shared.new(CppCall(
@@ -751,11 +788,6 @@ export fn gen_decl_extend_cpp(
     }
     method_index = method_index + 1
   end
-  if trait_name.length() > 0 then
-    result = append_cpp_declarations(
-      result,
-      gen_decl_extend_trait_suffix_cpp(type_name, trait_name, methods, context, context_resolve))
-  end
   result
 end
 
@@ -821,6 +853,34 @@ fn extend_forward_proto_for_method(
     SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations()
   }
 
+fn extend_trait_implementation_protos_cpp(
+  type_name: string,
+  methods: [Shared<SemanticDeclaration>],
+  context: CodegenContext,
+  context_resolve: (CodegenContext, string) -> string
+) -> [Shared<CppDeclaration>] = do
+  const extend_context = context.for_type_body(type_name)
+  let mut result: [Shared<CppDeclaration>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    match methods[method_index] {
+      SemanticDeclarationFn(mangled, type_params, type_bounds, params, return_type, _, _, _) => do
+        result.push(gen_fn_proto_cpp(
+          context_resolve(context, mangled),
+          type_params,
+          type_bounds,
+          params,
+          return_type,
+          extend_context))
+        ()
+      end
+      _ => do () end
+    }
+    method_index = method_index + 1
+  end
+  result
+end
+
 fn extend_forward_segment_for_extend(
   type_name: string,
   trait_name: string,
@@ -828,7 +888,10 @@ fn extend_forward_segment_for_extend(
   codegen_context: CodegenContext
 ) -> [Shared<CppDeclaration>] = do
   const extend_context = codegen_context.for_type_body(type_name)
-  let mut result = gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context)
+  let mut result =
+    if trait_name.length() > 0 then empty_cpp_declarations()
+    else gen_extend_wrapper_protos_cpp(type_name, trait_name, methods, codegen_context)
+  end
   let mut method_index = 0
   while method_index < methods.length() do
     result = append_cpp_declarations(result, extend_forward_proto_for_method(methods[method_index], extend_context))
@@ -924,9 +987,22 @@ fn decl_segment_for_extend_declaration_cpp(
   context: CodegenContext,
   phase: i32
 ) -> [Shared<CppDeclaration>] =
-  if phase == 2 then [context.gen_proto_cpp(declaration)]
-  else empty_cpp_declarations()
-  end
+  if phase != 2 then empty_cpp_declarations()
+  else match declaration {
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+      const context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
+      append_cpp_declarations(
+        append_cpp_declarations(
+          extend_trait_implementation_protos_cpp(type_name, methods, context, context_resolve),
+          if trait_name.length() > 0 then
+            gen_decl_extend_trait_suffix_cpp(type_name, trait_name, methods, context, context_resolve)
+          else
+            empty_cpp_declarations()
+          end),
+        [context.gen_proto_cpp(declaration)])
+    end
+    _ => [context.gen_proto_cpp(declaration)]
+  }
 
 fn decl_segment_for_exported_cpp(
   inner_declaration: Shared<SemanticDeclaration>,
