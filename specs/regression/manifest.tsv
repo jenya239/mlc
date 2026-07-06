@@ -14,3 +14,4 @@ array_ops	expected/array_ops.txt
 char_classify	expected/char_classify.txt
 lexer_scan	expected/lexer_scan.txt
 generic_sum_ctor	expected/generic_sum_ctor.txt
+trait_as_param	expected/trait_as_param.txt
