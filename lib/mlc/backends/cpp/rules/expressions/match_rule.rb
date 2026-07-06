@@ -111,6 +111,37 @@ module MLC
               "#{code};"
             end
 
+            def arm_body_for_iife(match_expr, body)
+              code = lower_match_arm_body_return(body)
+              return code unless void_iife_return_type?(match_expr)
+
+              terminate_void_iife_arm(code)
+            end
+
+            def void_iife_return_type?(match_expr)
+              match_iife_return_type(match_expr) == "void"
+            end
+
+            def match_iife_return_type(match_expr)
+              return nil unless match_expr.respond_to?(:type) && match_expr.type
+
+              mapped = context.map_type(match_expr.type)
+              return nil if mapped.nil? || mapped.empty? || mapped == "auto"
+              return nil if %w[int bool float double].include?(mapped)
+              return nil if mapped.include?("function<")
+
+              mapped
+            end
+
+            def terminate_void_iife_arm(code)
+              stripped = code.strip
+              return stripped if stripped.empty?
+              return stripped if stripped.start_with?("return ")
+              return stripped if stripped.end_with?("return;", "return")
+
+              "#{stripped} return;"
+            end
+
             def void_match_arm_block?(block_expr)
               return true if block_expr.type.is_a?(::MLC::SemanticIR::UnitType)
               return false unless block_expr.result
@@ -292,7 +323,7 @@ module MLC
 
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
-                arm_body_code = lower_match_arm_body_return(arm[:body])
+                arm_body_code = arm_body_for_iife(match_expr, arm[:body])
 
                 case pattern[:kind]
                 when :regex
@@ -307,30 +338,7 @@ module MLC
                 end
               end
 
-              # Build body string from statements
-              body_str = statements.map(&:to_source).join(" ")
-
-              # Create IIFE lambda: [&]() -> ReturnType { ... }()
-              ret_type = nil
-              if match_expr.respond_to?(:type) && match_expr.type
-                mapped = context.map_type(match_expr.type)
-                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped == "int" || mapped == "bool" || mapped == "float" || mapped == "double" || mapped.include?("function<")
-              end
-              lambda_expr = context.factory.lambda(
-                capture: "&",
-                parameters: "",
-                specifiers: "",
-                body: body_str,
-                capture_suffix: "",
-                params_suffix: "",
-                return_type: ret_type
-              )
-
-              context.factory.function_call(
-                callee: lambda_expr,
-                arguments: [],
-                argument_separators: []
-              )
+              build_match_iife(match_expr, statements)
             end
 
             # Build if statements for regex arm
@@ -538,7 +546,7 @@ module MLC
               match_expr.arms.each do |arm|
                 pattern = arm[:pattern]
                 guard = arm[:guard]
-                arm_body_code = lower_match_arm_body_return(arm[:body])
+                arm_body_code = arm_body_for_iife(match_expr, arm[:body])
 
                 case pattern[:kind]
                 when :constructor
@@ -587,18 +595,17 @@ module MLC
 
                 else
                   # Unknown pattern kind - treat as wildcard
-                  arm_body_code = lower_match_arm_body_return(arm[:body])
+                  arm_body_code = arm_body_for_iife(match_expr, arm[:body])
                   statements << context.factory.raw_statement(code: arm_body_code)
                 end
               end
 
-              # Build IIFE with explicit return type so `return {}` resolves correctly.
+              build_match_iife(match_expr, statements)
+            end
+
+            def build_match_iife(match_expr, statements)
               body_str = statements.map(&:to_source).join(" ")
-              ret_type = nil
-              if match_expr.respond_to?(:type) && match_expr.type
-                mapped = context.map_type(match_expr.type)
-                ret_type = mapped unless mapped.nil? || mapped.empty? || mapped == "auto" || mapped == "int" || mapped == "bool" || mapped == "float" || mapped == "double" || mapped.include?("function<")
-              end
+              ret_type = match_iife_return_type(match_expr)
               lambda_expr = context.factory.lambda(
                 capture: "&",
                 parameters: "",
