@@ -247,17 +247,13 @@ fn append_covered_constructors(pattern: Shared<Pattern>, covered_so_far: [string
     _ => covered_so_far
   }
 
-fn join_variant_names(variant_names: [string]) -> string = do
-  let mut joined = ''
-  let mut name_index = 0
-  while name_index < variant_names.length() do
-    if name_index == 0 then joined = variant_names[name_index]
-    else joined = joined + ', ' + variant_names[name_index]
-    end
-    name_index = name_index + 1
-  end
-  joined
-end
+fn join_variant_names(variant_names: [string]) -> string =
+  variant_names.fold(
+    '',
+    (joined_so_far, variant_name) =>
+      if joined_so_far == '' then variant_name
+      else joined_so_far + ', ' + variant_name
+      end)
 
 fn match_arm_covers_for_exhaustiveness(match_arm: Shared<MatchArm>) -> bool =
   !match_arm.has_guard

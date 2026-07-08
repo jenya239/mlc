@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 2 |
-| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=verify-gate |
+| driver_turns_since_plan | 5 |
+| step_last | verify-gate |
+| active_track | TRACK_LANG_ARRAY_HOF **open** STEP=1 |
 | test_gate | ok |
+
+### Turn 2026-07-09 03:45 (Driver TRACK_LANG_OR_PATTERNS STEP=verify-gate — close track)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | verify-gate |
+| track   | TRACK_LANG_OR_PATTERNS |
+| started | 2026-07-09 03:18 |
+| elapsed | ~27 min |
+| done    | Fresh `compiler/build.sh`; self-host p1/mlcc2/p2 identical; `regression_gate` 20/0; `dev_gate_fast` 1432/0. Fixed `join_variant_names` in `infer_match.mlc` to `fold` (if-assign → invalid C++). Closed TRACK. |
+| result  | self-host diff empty; regression 20/0; fast 1432/0. Plain: трек or-patterns/guards закрыт после полной проверки. |
+| issues  | First build failed on `joined = …` inside if/else expression codegen; rewritten with fold. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_ARRAY_HOF — inventory Ruby vs mlcc array HOF (`map`/`filter`/`fold`); one layer only |
 
 ### Turn 2026-07-09 03:16 (Driver TRACK_LANG_OR_PATTERNS STEP=2 — guard exhaustiveness E084)
 
