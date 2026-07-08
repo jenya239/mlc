@@ -8,40 +8,17 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §B2, §E2. Source:
 Два независимых, но связанных пробела в `match`, оба уже частично
 специфицированы (`MLC.md` §B2, §E2). Делать двумя шагами.
 
-## STEP=1 — or-patterns с биндингом
+## STEP=1 — or-patterns с биндингом — **done** (2026-07-09)
 
-**Проблема (`MLC.md` §B2):** `A | B => expr` работает только для
-unit-вариантов. `Circle(r) | Square(r) => r * r * PI` не работает.
+**Проблема (`MLC.md` §B2):** `A | B => expr` работал для unit и для
+совпадающих имён биндинга (codegen `expand_or_arms` уже ок: `Circle(3)`→9,
+`Square(4)`→16). Разные имена (`Circle(r) | Square(side)`) молча принимались.
 
-**Файл:** `compiler/checker/names.mlc:34`
-(`collect_pattern_or_bindings(alternatives: [Shared<Pattern>], bindings_so_far:
-[string]) -> [string]`) — сейчас (строка 55) рекурсивно берёт биндинги
-только из `alternatives[0]`, не проверяя совпадение с остальными
-альтернативами.
-
-**Action:** для каждой альтернативы после первой — собрать её биндинги тем
-же способом и сверить множество имён (и, если типы не гарантированы
-идентичными структурой варианта — типы) с `bindings_so_far`. Несовпадение —
-diagnostic error ("all alternatives of an or-pattern must bind the same
-names"), не silent fallback. Codegen — общий блок для всех веток, биндинг
-берётся из того варианта, который фактически совпал (сейчас, вероятно, уже
-работает для унарных вариантов раздельно — проверить, не предполагать).
-
-**Repro:**
-
-```mlc
-type Shape = Circle(f64) | Square(f64) | Triangle(f64, f64)
-
-fn area(s: Shape) -> f64 =
-  match s {
-    Circle(r) | Square(r) => r * r,
-    Triangle(a, b) => a * b / 2.0
-  }
-```
-
-До фикса: parse/checker ошибка на разных именах биндинга между альтернативами
-(или неверный codegen, если типы совпадают — сверить фактическое текущее
-поведение перед фиксом, не предполагать). После: `area(Circle(3.0))` == `9.0`.
+**Fix:** `compiler/checker/names.mlc` —
+`check_pattern_or_binding_consistency` / `check_or_pattern_alternatives_same_bindings`
+в `visit_match`; E083 в `diagnostic_codes.mlc`; тесты в `test_checker.mlc`.
+Совпадающие имена — 0 ошибок; mismatch — `error[E083]: all alternatives of an
+or-pattern must bind the same names`.
 
 ## STEP=2 — guards + корректная exhaustiveness
 

@@ -5,7 +5,7 @@ import { Expr, Stmt, Pattern,
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal } from '../ir/semantic_ir'
 import { Type } from './registry'
 import { ExprVisitor } from '../expr_visitor'
-import { diagnostic_code_e001 } from './diagnostic_codes'
+import { diagnostic_code_e001, diagnostic_code_e083 } from './diagnostic_codes'
 import { transform_expr, empty_transform_context, TransformContext } from './transform/transform'
 import { transform_stmts } from './transform/transform_stmts'
 
@@ -31,9 +31,70 @@ fn collect_pattern_array_bindings(
   else bindings_after_array_elements end
 end
 
+fn binding_name_sets_equal(left: [string], right: [string]) -> bool =
+  left.length() == right.length() &&
+  left.all(left_name => right.any(right_name => right_name == left_name)) &&
+  right.all(right_name => left.any(left_name => left_name == right_name))
+
 fn collect_pattern_or_bindings(alternatives: [Shared<Pattern>], bindings_so_far: [string]) -> [string] =
   if alternatives.length() > 0 then collect_pattern_bindings(alternatives[0], bindings_so_far)
   else bindings_so_far end
+
+fn check_or_pattern_alternatives_same_bindings(
+  alternatives: [Shared<Pattern>],
+  source_span: Span
+) -> [Diagnostic] = do
+  let empty_diagnostics: [Diagnostic] = []
+  if alternatives.length() == 0 then empty_diagnostics
+  else do
+    let empty_bindings: [string] = []
+    const first_bindings = collect_pattern_bindings(alternatives[0], empty_bindings)
+    let mut diagnostics = empty_diagnostics
+    let mut alternative_index = 1
+    while alternative_index < alternatives.length() do
+      const alternative_bindings = collect_pattern_bindings(alternatives[alternative_index], empty_bindings)
+      if !binding_name_sets_equal(first_bindings, alternative_bindings) then
+        diagnostics = diagnostics.concat([
+          diagnostic_error_with_code(
+            'all alternatives of an or-pattern must bind the same names',
+            source_span,
+            diagnostic_code_e083())
+        ])
+      end
+      alternative_index = alternative_index + 1
+    end
+    diagnostics
+  end end
+end
+
+fn check_pattern_or_binding_consistency_fold_step(
+  accumulator: [Diagnostic],
+  sub_pattern: Shared<Pattern>
+) -> [Diagnostic] =
+  diagnostics_append(accumulator, check_pattern_or_binding_consistency(sub_pattern))
+
+export fn check_pattern_or_binding_consistency(pattern: Shared<Pattern>) -> [Diagnostic] =
+  match pattern {
+    PatternWild(_) => check_names_empty(),
+    PatternIdent(_, _) => check_names_empty(),
+    PatternInt(_, _) => check_names_empty(),
+    PatternStr(_, _) => check_names_empty(),
+    PatternStringLit(_, _) => check_names_empty(),
+    PatternBool(_, _) => check_names_empty(),
+    PatternUnit(_) => check_names_empty(),
+    PatternCtor(_, sub_patterns, _) =>
+      sub_patterns.fold(check_names_empty(), check_pattern_or_binding_consistency_fold_step),
+    PatternRecord(_, field_patterns, _) =>
+      field_patterns.fold(check_names_empty(), check_pattern_or_binding_consistency_fold_step),
+    PatternTuple(sub_patterns, _) =>
+      sub_patterns.fold(check_names_empty(), check_pattern_or_binding_consistency_fold_step),
+    PatternArray(sub_patterns, _, _) =>
+      sub_patterns.fold(check_names_empty(), check_pattern_or_binding_consistency_fold_step),
+    PatternOr(alternatives, source_span) => do
+      const mismatch_diagnostics = check_or_pattern_alternatives_same_bindings(alternatives, source_span)
+      alternatives.fold(mismatch_diagnostics, check_pattern_or_binding_consistency_fold_step)
+    end
+  }
 
 fn collect_pattern_bindings(pattern: Shared<Pattern>, bindings_so_far: [string]) -> [string] =
   match pattern {
@@ -368,6 +429,7 @@ extend NamesPass : ExprVisitor<NameCheckResult> {
     let mut arm_index = 0
     while arm_index < arms.length() do
       const arm_under_walk = arms[arm_index]
+      accumulator = accumulator.append_diagnostics(check_pattern_or_binding_consistency(arm_under_walk.pattern))
       const arm_scope = scope_with_bindings(self.locals, pattern_bindings(arm_under_walk.pattern))
       const arm_pass = names_pass_new(arm_scope, self.globals)
       if arm_under_walk.has_guard then

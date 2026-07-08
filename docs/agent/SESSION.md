@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | commit-prep-docs |
-| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=1 |
+| driver_turns_since_plan | 3 |
+| step_last | 1 |
+| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 02:57 (Driver TRACK_LANG_OR_PATTERNS STEP=1 — or-pattern binding E083)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_OR_PATTERNS |
+| started | 2026-07-09 02:21 |
+| elapsed | ~36 min |
+| done    | `names.mlc`: `check_pattern_or_binding_consistency` + `visit_match` call; E083 in `diagnostic_codes.mlc` (catalog 83); tests in `test_checker.mlc` (shared names ok, mismatch E083). Same-name `Circle(r)|Square(r)` already runtime-ok via `expand_or_arms`. |
+| result  | `dev_gate_fast` **1428/0** (CCACHE_DISABLE=1 after stale PCH); mlcc check-only + arch lint 0 fail. Plain: разные имена в or-pattern теперь ошибка E083; одинаковые уже работали. |
+| issues  | ccache served stale `.pch` vs newer `.hpp` (mtime); fixed by `CCACHE_DISABLE=1` + wipe `compiler/out/tests/obj`. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_OR_PATTERNS — match guards + exhaustiveness (guard arms must not cover) |
 
 ### Turn 2026-07-09 02:21 (Driver commit-prep-docs — language audit tracks)
 

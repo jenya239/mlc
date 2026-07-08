@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 81
+export fn diagnostic_code_catalog_count() -> i32 = 83
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -166,3 +166,5 @@ export fn diagnostic_code_e080() -> string = 'E080'
 export fn diagnostic_code_e081() -> string = 'E081'
 // E082: undefined method on record type
 export fn diagnostic_code_e082() -> string = 'E082'
+// E083: or-pattern alternatives must bind the same names
+export fn diagnostic_code_e083() -> string = 'E083'

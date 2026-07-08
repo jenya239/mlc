@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 81))
+    diagnostic_code_catalog_count(), 83))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -701,6 +701,13 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_true('string match duplicate in or-pattern E078',
     first_checker_error_line('fn f(word: string) -> i32 = match word { | "a" | "a" => 1 }').contains('E078')))
+
+  results.push(assert_eq_int('or-pattern shared binding names — 0 errors',
+    check_error_count('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(r) => r * r, _ => 0.0 }'), 0))
+
+  results.push(assert_true('or-pattern binding name mismatch E083',
+    first_checker_error_line('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(side) => r * r, _ => 0.0 }').contains('E083') &&
+    first_checker_error_line('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(side) => r * r, _ => 0.0 }').contains('all alternatives of an or-pattern must bind the same names')))
 
   // --- for loop range type ---------------------------------------------------
 
