@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | commit-prep |
-| active_track | TRACK_LANG_OR_PATTERNS **open** (next after docs commit-prep) |
+| driver_turns_since_plan | 2 |
+| step_last | commit-prep-docs |
+| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=1 |
 | test_gate | ok |
+
+### Turn 2026-07-09 02:21 (Driver commit-prep-docs — language audit tracks)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | commit-prep-docs |
+| track   | docs only (LANGUAGE_AUDIT + TRACK_LANG_*) |
+| started | 2026-07-09 02:20 |
+| elapsed | ~2 min |
+| done    | Added `docs/LANGUAGE_AUDIT_2026_07.md` and open tracks: `TRACK_LANG_{ARRAY_HOF,CLOSURE_ESCAPE,CYCLE_LINT,OR_PATTERNS,ORPHAN_RULE,REGION_ARENA,RESULT_COMBINATORS,WEAK_SUGAR}.md`. No `compiler/`/`lib/mlc/` edits. Left untracked: escape_analyzer WIP + `scripts/fix_trait_suffix_header_order.rb`. |
+| result  | docs-only commit; no test run required. Plain: закоммитили аудит языка и треки; код не трогали. |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_OR_PATTERNS — or-patterns with binding (`names.mlc` collect_pattern_or_bindings) |
 
 ### Turn 2026-07-09 02:19 (Driver commit-prep — trait concept codegen parity)
 
