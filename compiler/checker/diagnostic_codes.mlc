@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 83
+export fn diagnostic_code_catalog_count() -> i32 = 84
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -168,3 +168,5 @@ export fn diagnostic_code_e081() -> string = 'E081'
 export fn diagnostic_code_e082() -> string = 'E082'
 // E083: or-pattern alternatives must bind the same names
 export fn diagnostic_code_e083() -> string = 'E083'
+// E084: non-exhaustive match (missing ADT variants; guarded arms do not cover)
+export fn diagnostic_code_e084() -> string = 'E084'

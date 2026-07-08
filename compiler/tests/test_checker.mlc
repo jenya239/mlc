@@ -45,7 +45,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 83))
+    diagnostic_code_catalog_count(), 84))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -708,6 +708,20 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_true('or-pattern binding name mismatch E083',
     first_checker_error_line('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(side) => r * r, _ => 0.0 }').contains('E083') &&
     first_checker_error_line('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(side) => r * r, _ => 0.0 }').contains('all alternatives of an or-pattern must bind the same names')))
+
+  results.push(assert_true('match guard does not cover exhaustiveness E084',
+    first_checker_error_line('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active if true => "on" }').contains('E084') &&
+    first_checker_error_line('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active if true => "on" }').contains('Inactive')))
+
+  results.push(assert_true('match missing variant without guard E084',
+    first_checker_error_line('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on" }').contains('E084') &&
+    first_checker_error_line('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on" }').contains('Inactive')))
+
+  results.push(assert_eq_int('match all variants covered — 0 errors',
+    check_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on", Inactive => "off" }'), 0))
+
+  results.push(assert_eq_int('match guarded arm plus catch-all — 0 errors',
+    check_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active if true => "on", _ => "off" }'), 0))
 
   // --- for loop range type ---------------------------------------------------
 

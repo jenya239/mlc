@@ -32,6 +32,7 @@ export type AdtIndex = AdtIndex {
   constructor_parameters: Map<string, [Shared<Type>]>,
   algebraic_decl_type_parameter_names: Map<string, [string]>,
   algebraic_decl_phantom_type_params: Map<string, [string]>,
+  algebraic_decl_variant_names: Map<string, [string]>,
   trait_impls: Map<string, [string]>,
   private_constructors: Map<string, bool>,
   trait_assoc_types: Map<string, [string]>,
@@ -92,6 +93,13 @@ export extend TypeRegistry {
       self.adt_index.algebraic_decl_phantom_type_params.get(type_name)
     else
       do const empty_phantom: [string] = []; empty_phantom end
+    end
+
+  fn algebraic_decl_variant_names_for(self, algebraic_type_name: string) -> [string] =
+    if self.adt_index.algebraic_decl_variant_names.has(algebraic_type_name) then
+      self.adt_index.algebraic_decl_variant_names.get(algebraic_type_name)
+    else
+      do const empty_variant_names: [string] = []; empty_variant_names end
     end
 
   fn ctor_type(self, name: string) -> Shared<Type> =
@@ -216,6 +224,7 @@ export fn empty_registry() -> TypeRegistry = do
       constructor_parameters: constructor_parameters_map,
       algebraic_decl_type_parameter_names: Map.new(),
       algebraic_decl_phantom_type_params: Map.new(),
+      algebraic_decl_variant_names: Map.new(),
       trait_impls: Map.new(),
       private_constructors: empty_private_constructors,
       trait_assoc_types: Map.new(),
@@ -572,6 +581,13 @@ fn register_decl_fn_into_registry(
   end
 end
 
+fn variant_name_of(variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarUnit(variant_name, _) => variant_name,
+    VarTuple(variant_name, _, _) => variant_name,
+    VarRecord(variant_name, _, _) => variant_name
+  }
+
 fn register_decl_type_into_registry(
   registry: ref mut TypeRegistry,
   type_name: string,
@@ -579,11 +595,14 @@ fn register_decl_type_into_registry(
   variants: [Shared<TypeVariant>]
 ) -> unit = do
   registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
+  let mut variant_names: [string] = []
   let mut variant_index = 0
   while variant_index < variants.length() do
     register_variant_into(registry, type_name, variants[variant_index])
+    variant_names = variant_names.concat([variant_name_of(variants[variant_index])])
     variant_index = variant_index + 1
   end
+  registry.adt_index.algebraic_decl_variant_names.set(type_name, variant_names)
   const phantom = compute_phantom_type_params(type_parameters, variants)
   if true then
     registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)

@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 1 |
-| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=2 |
+| driver_turns_since_plan | 4 |
+| step_last | 2 |
+| active_track | TRACK_LANG_OR_PATTERNS **open** STEP=verify-gate |
 | test_gate | ok |
+
+### Turn 2026-07-09 03:16 (Driver TRACK_LANG_OR_PATTERNS STEP=2 — guard exhaustiveness E084)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_OR_PATTERNS |
+| started | 2026-07-09 02:58 |
+| elapsed | ~18 min |
+| done    | `registry.mlc` `algebraic_decl_variant_names`; `infer_match.mlc` `match_exhaustiveness_diagnostic` (guarded arms skip cover; `_`/ident catch-all); E084; `test_checker.mlc` 4 cases. Builtin Result not indexed (avoids incomplete Ok matches in compiler). |
+| result  | `dev_gate_fast` **1432/0**; arch lint 0 fail. Plain: guard-only Active больше не считается exhaustive — нужен `_` или Inactive. |
+| issues  | Full Tier B/self-host deferred to STEP=verify-gate before track close. |
+| next    | ROLE=Driver STEP=verify-gate TRACK_LANG_OR_PATTERNS — Tier B + self-host diff + regression_gate; then close track → TRACK_LANG_ARRAY_HOF STEP=1 |
 
 ### Turn 2026-07-09 02:57 (Driver TRACK_LANG_OR_PATTERNS STEP=1 — or-pattern binding E083)
 

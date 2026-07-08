@@ -13,11 +13,14 @@ import {
   PatternStringLit,
   PatternStr,
   PatternWild,
+  PatternIdent,
+  PatternCtor,
+  PatternRecord,
   PatternOr,
   PatternTuple,
   PatternArray
 } from '../../frontend/ast'
-import { Type } from '../registry'
+import { Type, TypeRegistry } from '../registry'
 import { CheckContext, check_context_new } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { match_arm_type_mismatch_diagnostic } from '../check/diagnostics/type_diagnostics'
@@ -29,7 +32,8 @@ import {
   diagnostic_code_e077,
   diagnostic_code_e078,
   diagnostic_code_e079,
-  diagnostic_code_e080
+  diagnostic_code_e080,
+  diagnostic_code_e084
 } from '../diagnostic_codes'
 
 fn pattern_contains_string_literal(pattern: Shared<Pattern>) -> bool =
@@ -219,6 +223,91 @@ fn pattern_guard_unsupported_tuple_or_array_diagnostic(pattern: Shared<Pattern>)
     _                    => do let empty_list: [Diagnostic] = []; empty_list end
   }
 
+fn subject_algebraic_type_name(subject_type: Shared<Type>) -> string =
+  match subject_type {
+    TNamed(type_name) => type_name,
+    TGeneric(type_name, _) => type_name,
+    _ => ''
+  }
+
+fn pattern_is_catch_all(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternWild(_) => true,
+    PatternIdent(_, _) => true,
+    _ => false
+  }
+
+fn append_covered_constructors(pattern: Shared<Pattern>, covered_so_far: [string]) -> [string] =
+  match pattern {
+    PatternCtor(constructor_name, _, _) => covered_so_far.concat([constructor_name]),
+    PatternRecord(record_name, _, _) =>
+      if record_name != '' then covered_so_far.concat([record_name]) else covered_so_far end,
+    PatternOr(alternatives, _) =>
+      alternatives.fold(covered_so_far, (accumulator, alternative) => append_covered_constructors(alternative, accumulator)),
+    _ => covered_so_far
+  }
+
+fn join_variant_names(variant_names: [string]) -> string = do
+  let mut joined = ''
+  let mut name_index = 0
+  while name_index < variant_names.length() do
+    if name_index == 0 then joined = variant_names[name_index]
+    else joined = joined + ', ' + variant_names[name_index]
+    end
+    name_index = name_index + 1
+  end
+  joined
+end
+
+fn match_arm_covers_for_exhaustiveness(match_arm: Shared<MatchArm>) -> bool =
+  !match_arm.has_guard
+
+fn match_exhaustiveness_diagnostic(
+  subject: Shared<Expr>,
+  subject_type: Shared<Type>,
+  match_arms: [Shared<MatchArm>],
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  let empty_diagnostics: [Diagnostic] = []
+  const algebraic_type_name = subject_algebraic_type_name(subject_type)
+  if algebraic_type_name == '' then empty_diagnostics
+  else do
+    const required_variants = registry.algebraic_decl_variant_names_for(algebraic_type_name)
+    if required_variants.length() == 0 then empty_diagnostics
+    else do
+      let mut covered_constructors: [string] = []
+      let mut has_catch_all = false
+      let mut arm_index = 0
+      while arm_index < match_arms.length() do
+        const match_arm = match_arms[arm_index]
+        if match_arm_covers_for_exhaustiveness(match_arm) then
+          if pattern_is_catch_all(match_arm.pattern) then
+            has_catch_all = true
+          else
+            covered_constructors = append_covered_constructors(match_arm.pattern, covered_constructors)
+          end
+        end
+        arm_index = arm_index + 1
+      end
+      if has_catch_all then empty_diagnostics
+      else do
+        const missing_variants =
+          required_variants.filter(
+            variant_name => !covered_constructors.any(covered_name => covered_name == variant_name))
+        if missing_variants.length() == 0 then empty_diagnostics
+        else
+          [
+            diagnostic_error_with_code(
+              'non-exhaustive match: missing patterns for ' + join_variant_names(missing_variants),
+              expr_span(subject),
+              diagnostic_code_e084())
+          ]
+        end
+      end end
+    end end
+  end end
+end
+
 export fn infer_expr_match(
   subject: Shared<Expr>,
   match_arms: [Shared<MatchArm>],
@@ -233,6 +322,13 @@ export fn infer_expr_match(
       diagnostics_append(collected_errors, string_match_subject_type_diagnostic(subject, subject_parsed.inferred_type))
     collected_errors = diagnostics_append(collected_errors, string_match_pattern_diagnostic(match_arms))
   end
+  collected_errors = diagnostics_append(
+    collected_errors,
+    match_exhaustiveness_diagnostic(
+      subject,
+      subject_parsed.inferred_type,
+      match_arms,
+      inference_context.registry))
   let mut arm_type: Shared<Type> = Shared.new(TUnknown)
   let mut arm_index = 0
   while arm_index < match_arms.length() do
