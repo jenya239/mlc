@@ -4,12 +4,28 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-05-28-cleaner`|
-| agent_token_last | `cr-agent-53cfc707-03a9-414f-8d25-965579df3daf` |
-| driver_turns_since_plan | 4|
-| step_last | 8|
-| active_track | TRACK_BOOTSTRAP_LINK **open** STEP=8-P8e |
+| instructions_rev | `2026-07-09-plain-queue` |
+| agent_token_last | — |
+| driver_turns_since_plan | 1 |
+| step_last | commit-prep |
+| active_track | TRACK_LANG_OR_PATTERNS **open** (next after docs commit-prep) |
 | test_gate | ok |
+
+### Turn 2026-07-09 02:19 (Driver commit-prep — trait concept codegen parity)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | commit-prep |
+| track   | TRACK_BOOTSTRAP_LINK (closed) → trait concept / Decl index |
+| started | 2026-07-09 01:32 |
+| elapsed | ~47 min |
+| done    | `decl_index.mlc` exhaustive Decl match (no DeclFn copy); `decl_cpp.mlc`/`decl_extend.mlc` trait dispatch `Trait_method`, suffix after fn_protos, ExprVisitor static_assert `expr_visitor::…`; `decl.mlc` string-path parity; `print.mlc` namespace_block; `test_decl_gen.mlc` ExprVisitor expect. Reverted dangling `const auto&` in match_rule (temp tokenize). |
+| result  | `build_tests_fast` **1426/0**; mlcc `--check-only` ok; arch lint 0 fail. Plain: починили trait/header codegen и Decl index; match_rule const-ref откатили (segfault). |
+| issues  | `const auto&` на `std::get` от временного `tokenize()` → SEGV в `lex_first_string`; не коммитить без lifetime fix. Dirty left: docs TRACK_LANG_*, escape_analyzer WIP, `scripts/fix_trait_suffix_header_order.rb`. |
+| next    | ROLE=Driver STEP=commit-prep-docs — add `docs/LANGUAGE_AUDIT_2026_07.md` + `docs/agent/TRACK_LANG_*.md`; then STEP=1 TRACK_LANG_OR_PATTERNS |
+
+Инструкции обновлены (rev 2026-05-28-cleaner → 2026-07-09-plain-queue): plain Cursor queue, без agent-loop MCP.
 
 ### Turn 2026-06-28 (Planner plan-refresh — P8e gate next)
 

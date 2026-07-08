@@ -422,7 +422,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('extend_trait_static_assert_decl_cpp: ExprVisitor two-arg',
     print_cpp_declaration(expr_visitor_suffix[expr_visitor_static_assert_index]),
     static_assert_concept_for_result_and_implementor_line(
-      'ExprVisitor', 'mlc::String', 'Color', 'Color does not implement ExprVisitor')))
+      'expr_visitor::ExprVisitor', 'mlc::String', 'Color', 'Color does not implement ExprVisitor')))
   results.push(assert_code_contains('gen_decl_extend_trait_suffix_cpp: trait wrapper forward',
     print_cpp_declarations(gen_decl_extend_trait_suffix_cpp(
       'Color', 'Display', [color_to_string], context, extend_context_resolve)),

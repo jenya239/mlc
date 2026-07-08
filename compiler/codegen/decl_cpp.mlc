@@ -8,7 +8,7 @@ import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './context'
 import { compute_fn_body_context, exported_type_names_from_decls, prototype_context_for_function } from './decl/decl'
-import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
+import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, trait_dispatch_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
 import * as expression_output from './expr/expr'
 import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp } from './decl/type_gen'
@@ -251,12 +251,13 @@ fn trait_template_header(type_params: [string]) -> string =
 
 fn trait_requires_expression_for_method(
   trait_context: CodegenContext,
+  trait_name: string,
   method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
     SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _) =>
       expression_output.concept_requires_expression_method_returns_convertible(
-        cpp_safe(mangled),
+        cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
         concept_declval_arguments_for_params(trait_context, params),
         sem_type_to_cpp(trait_context, return_type)),
     _ => ''
@@ -271,7 +272,7 @@ fn trait_requires_expressions_cpp(
   let expressions: [string] = []
   let mut method_index = 0
   while method_index < methods.length() do
-    const expression = trait_requires_expression_for_method(trait_context, methods[method_index])
+    const expression = trait_requires_expression_for_method(trait_context, trait_name, methods[method_index])
     if expression.length() > 0 then expressions.push(expression) end
     method_index = method_index + 1
   end
@@ -279,16 +280,20 @@ fn trait_requires_expressions_cpp(
 end
 
 fn trait_concept_dispatch_forward_proto_cpp(
+  trait_name: string,
   mangled: string,
   return_type_cpp: string
 ) -> Shared<CppDeclaration> =
   Shared.new(CppFnProto(
     'template<typename Self>\n',
     return_type_cpp,
-    cpp_safe(mangled),
+    cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
     ['const Self& self']))
 
-fn trait_concept_dispatch_forward_protos_cpp(
+fn trait_skips_concept_dispatch_forward_protos(trait_name: string) -> bool =
+  trait_name == 'ExprVisitor' || trait_name == 'CompilerPass'
+
+fn trait_concept_dispatch_forward_protos_body(
   context: CodegenContext,
   trait_name: string,
   methods: [Shared<SemanticDeclaration>]
@@ -302,6 +307,7 @@ fn trait_concept_dispatch_forward_protos_cpp(
         SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
           if parameters.length() > 0 && param_name(parameters[0]) == 'self' then
             forward_protos.push(trait_concept_dispatch_forward_proto_cpp(
+              trait_name,
               mangled,
               sem_type_to_cpp(trait_context, return_type)))
           end,
@@ -312,6 +318,14 @@ fn trait_concept_dispatch_forward_protos_cpp(
   end
   forward_protos
 end
+
+fn trait_concept_dispatch_forward_protos_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>]
+) -> [Shared<CppDeclaration>] =
+  if trait_skips_concept_dispatch_forward_protos(trait_name) then empty_cpp_declarations()
+  else trait_concept_dispatch_forward_protos_body(context, trait_name, methods)
 
 export fn gen_trait_decl_cpp(
   context: CodegenContext,
@@ -682,6 +696,12 @@ fn extend_trait_concept_adapter_decl_cpp(
     extend_forward_call_argument_expressions(params))
 end
 
+fn trait_concept_cpp_name_for_static_assert(trait_name: string) -> string =
+  if trait_name == 'ExprVisitor' then 'expr_visitor::ExprVisitor'
+  else if trait_name == 'CompilerPass' then 'pass::CompilerPass'
+  else cpp_safe(trait_name)
+  end
+
 fn extend_trait_static_assert_decl_cpp(
   trait_name: string,
   type_name: string,
@@ -689,7 +709,7 @@ fn extend_trait_static_assert_decl_cpp(
   extend_context: CodegenContext,
   implementor_type_cpp: string
 ) -> Shared<CppDeclaration> = do
-  const trait_safe = cpp_safe(trait_name)
+  const trait_safe = trait_concept_cpp_name_for_static_assert(trait_name)
   const message = type_name + ' does not implement ' + trait_name
   if trait_name == 'ExprVisitor' then
     do
@@ -1188,11 +1208,12 @@ export fn collect_all_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>]
   fn_protos = append_cpp_declarations(
     fn_protos,
     extend_helper_protos_for_exported_types_cpp(declarations, context))
+  fn_protos = append_cpp_declarations(
+    fn_protos,
+    collect_extend_trait_suffix_header_cpp(declarations, context))
   DeclPartsBundleCpp {
     type_fwds: collect_decl_parts_cpp(declarations, context, 0),
-    type_defs: append_cpp_declarations(
-      collect_decl_parts_cpp(declarations, context, 1),
-      collect_extend_trait_suffix_header_cpp(declarations, context)),
+    type_defs: collect_decl_parts_cpp(declarations, context, 1),
     fn_protos: fn_protos,
     fn_defs: collect_fn_defs_cpp(declarations, context)
   }

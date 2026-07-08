@@ -348,7 +348,7 @@ fn print_function_definition(
   end
 
 fn namespace_block(name: string, contents_code: string) -> string =
-  `namespace ${name} {\n${contents_code}\n}`
+  `namespace ${name} {\n${contents_code}}`
 
 fn variant_type_alias(template_prefix: string, name: string, types_code: string) -> string =
   `${template_prefix}using ${name} = std::variant<${types_code}>;\n`

@@ -6,6 +6,19 @@ import { path_to_module_base } from '../cpp_naming'
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
+fn empty_string_list() -> [string] = do let empty: [string] = []; empty end
+
+fn empty_decl_list() -> [Shared<Decl>] = do let empty: [Shared<Decl>] = []; empty end
+
+fn type_variant_export_name(variant: Shared<TypeVariant>) -> string = do
+  const unwrapped: Shared<TypeVariant> = variant
+  match unwrapped {
+    VarUnit(variant_name, _) => variant_name,
+    VarTuple(variant_name, _, _) => variant_name,
+    VarRecord(variant_name, _, _) => variant_name
+  }
+end
+
 fn method_declaration_function_name(method: Shared<Decl>) -> string = do
   const unwrapped: Shared<Decl> = method
   match unwrapped {
@@ -31,56 +44,98 @@ fn append_export_names_from_method_declarations(mut names: [string], methods: [S
   ()
 end
 
-fn methods_from_trait_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] =
-  match decl_inner(declaration) { DeclTrait(_, _, methods, _) => methods, _ => [] }
+fn methods_from_trait_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] = do
+  const unwrapped: Shared<Decl> = decl_inner(declaration)
+  match unwrapped {
+    DeclFn(_, _, _, _, _, _, _) => empty_decl_list(),
+    DeclType(_, _, _, _, _) => empty_decl_list(),
+    DeclTypeAlias(_, _, _, _) => empty_decl_list(),
+    DeclTrait(_, _, methods, _) => methods,
+    DeclExtend(_, _, _, _) => empty_decl_list(),
+    DeclImport(_, _) => empty_decl_list(),
+    DeclExported(inner) => methods_from_trait_declaration(inner),
+    DeclAssocType(_, _) => empty_decl_list(),
+    DeclAssocBind(_, _, _) => empty_decl_list()
+  }
+end
+
+fn methods_from_extend_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] = do
+  const unwrapped: Shared<Decl> = decl_inner(declaration)
+  match unwrapped {
+    DeclFn(_, _, _, _, _, _, _) => empty_decl_list(),
+    DeclType(_, _, _, _, _) => empty_decl_list(),
+    DeclTypeAlias(_, _, _, _) => empty_decl_list(),
+    DeclTrait(_, _, _, _) => empty_decl_list(),
+    DeclExtend(_, _, methods, _) => methods,
+    DeclImport(_, _) => empty_decl_list(),
+    DeclExported(inner) => methods_from_extend_declaration(inner),
+    DeclAssocType(_, _) => empty_decl_list(),
+    DeclAssocBind(_, _, _) => empty_decl_list()
+  }
+end
+
+fn export_names_from_exported_declaration(declaration: Shared<Decl>) -> [string] = do
+  const unwrapped: Shared<Decl> = decl_inner(declaration)
+  match unwrapped {
+    DeclFn(_, _, _, _, _, _, _) => [decl_name(declaration)],
+    DeclTypeAlias(_, _, _, _) => [decl_name(declaration)],
+    DeclType(_, _, variants, _, _) => do
+      let mut names = [decl_name(declaration)]
+      let mut variant_index = 0
+      while variant_index < variants.length() do
+        names.push(type_variant_export_name(variants[variant_index]))
+        variant_index = variant_index + 1
+      end
+      names
+    end,
+    DeclTrait(_, _, _, _) => do
+      let mut names = [decl_name(declaration)]
+      append_export_names_from_method_declarations(names, methods_from_trait_declaration(declaration))
+      names
+    end,
+    DeclExtend(_, _, _, _) => do
+      let mut names = empty_string_list()
+      append_export_names_from_method_declarations(names, methods_from_extend_declaration(declaration))
+      names
+    end,
+    DeclImport(_, _) => empty_string_list(),
+    DeclExported(inner) => export_names_from_exported_declaration(inner),
+    DeclAssocType(_, _) => empty_string_list(),
+    DeclAssocBind(_, _, _) => empty_string_list()
+  }
+end
 
 fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
-  let mut names: [string] = []
-  match declaration {
-    DeclExported(inner_declaration) => do
-      match inner_declaration {
-        DeclFn(name, _, _, _, _, _, _) => do names.push(name); () end,
-        DeclTypeAlias(type_name, _, _, _) => do names.push(type_name); () end,
-        DeclType(type_name, _, variants, _, _) => do
-          names.push(type_name); let mut variant_index = 0
-          while variant_index < variants.length() do
-            match variants[variant_index] {
-              VarRecord(variant_name, _, _) => do names.push(variant_name); () end,
-              VarTuple(variant_name, _, _)  => do names.push(variant_name); () end,
-              VarUnit(variant_name, _)      => do names.push(variant_name); () end
-            }
-            variant_index = variant_index + 1
-          end; ()
-        end,
-        DeclTrait(_, _, _, _) => do
-          names.push(decl_name(declaration))
-          append_export_names_from_method_declarations(names, methods_from_trait_declaration(declaration))
-        end,
-        DeclExtend(_, _, _, _) => do
-          append_export_names_from_method_declarations(names, methods_from_extend_declaration(declaration))
-        end,
-        _ => do () end
-      }; ()
-    end,
-    _ => do () end
+  const unwrapped: Shared<Decl> = declaration
+  match unwrapped {
+    DeclFn(_, _, _, _, _, _, _) => empty_string_list(),
+    DeclType(_, _, _, _, _) => empty_string_list(),
+    DeclTypeAlias(_, _, _, _) => empty_string_list(),
+    DeclTrait(_, _, _, _) => empty_string_list(),
+    DeclExtend(_, _, _, _) => empty_string_list(),
+    DeclImport(_, _) => empty_string_list(),
+    DeclExported(_) => export_names_from_exported_declaration(declaration),
+    DeclAssocType(_, _) => empty_string_list(),
+    DeclAssocBind(_, _, _) => empty_string_list()
   }
-  names
 end
 
 fn function_name_from_method_declaration(method: Shared<Decl>) -> string =
   method_declaration_function_name(method)
 
-fn extend_type_name_from_declaration(declaration: Shared<Decl>) -> string =
-  match decl_inner(declaration) { DeclExtend(type_name, _, _, _) => type_name, _ => '' }
-
-fn methods_from_extend_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] =
-  match decl_inner(declaration) { DeclExtend(_, _, methods, _) => methods, _ => [] }
-
-fn extend_method_mangled_name(type_name: string, method_name: string) -> string = do
-  const prefix = type_name + "_"
-  if method_name.length() >= prefix.length() && method_name.substring(0, prefix.length()) == prefix then method_name
-  else type_name + "_" + method_name
-  end
+fn extend_type_name_from_declaration(declaration: Shared<Decl>) -> string = do
+  const unwrapped: Shared<Decl> = decl_inner(declaration)
+  match unwrapped {
+    DeclFn(_, _, _, _, _, _, _) => '',
+    DeclType(_, _, _, _, _) => '',
+    DeclTypeAlias(_, _, _, _) => '',
+    DeclTrait(_, _, _, _) => '',
+    DeclExtend(type_name, _, _, _) => type_name,
+    DeclImport(_, _) => '',
+    DeclExported(inner) => extend_type_name_from_declaration(inner),
+    DeclAssocType(_, _) => '',
+    DeclAssocBind(_, _, _) => ''
+  }
 end
 
 export fn ast_decls_for_path(module_path: string, all_items: [LoadItem]) -> [Shared<Decl>] = do
@@ -227,4 +282,11 @@ export fn build_item_index(all_items: [LoadItem]) -> Map<string, Shared<LoadItem
     index = index + 1
   end
   item_index
+end
+
+fn extend_method_mangled_name(type_name: string, method_name: string) -> string = do
+  const prefix = type_name + "_"
+  if method_name.length() >= prefix.length() && method_name.substring(0, prefix.length()) == prefix then method_name
+  else type_name + "_" + method_name
+  end
 end

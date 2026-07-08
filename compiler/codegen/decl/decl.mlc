@@ -6,13 +6,13 @@ import { Type } from '../../checker/registry'
 import { CodegenContext,
          make_body_context,
          collect_shared_params, collect_shared_array_params, collect_array_elem_types,
-         collect_shared_map_params, collect_value_params } from '../context'
+         collect_shared_map_params, collect_value_params, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { type_to_cpp, sem_type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
          template_prefix, requires_clause, gen_derive_methods } from './type_gen'
 import { gen_fn_body } from '../stmt/return_body'
 import * as expression_output from '../expr/expr'
-import { gen_params_proto, gen_params_def, gen_trait_decl, gen_trait_struct, gen_extend_wrapper_protos, gen_decl_extend } from './decl_extend'
+import { gen_params_proto, gen_params_def, gen_trait_decl, gen_trait_decl_with_dispatch_forward_protos, gen_trait_struct, gen_extend_wrapper_protos, gen_decl_extend, gen_decl_extend_methods_only, gen_decl_extend_trait_suffix } from './decl_extend'
 import { list_contains } from './decl_index'
 
 fn resolved_self_type_name(type_name: string, context: CodegenContext) -> string =
@@ -191,7 +191,7 @@ fn decl_segment_for_trait(
   codegen_context: CodegenContext,
   phase: i32
 ) -> string =
-  if phase == 0 then gen_trait_decl(codegen_context, name, type_parameters, methods)
+  if phase == 0 then gen_trait_decl_with_dispatch_forward_protos(codegen_context, name, type_parameters, methods)
   else if phase == 4 then gen_trait_struct(codegen_context, name, type_parameters, methods)
   else ''
   end
@@ -204,7 +204,22 @@ fn decl_segment_for_function(declaration: Shared<SemanticDeclaration>, codegen_c
 
 fn decl_segment_for_extend(declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext, phase: i32) -> string =
   if phase == 2 then gen_proto(declaration, codegen_context)
-  else if phase == 3 then gen_decl(declaration, codegen_context)
+  else if phase == 3 then
+    match declaration {
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+        if trait_name.length() > 0 && !trait_has_associated_types(codegen_context, trait_name) then
+          gen_decl_extend_methods_only(
+            type_name,
+            trait_name,
+            methods,
+            codegen_context,
+            (context: CodegenContext, name: string) => context.resolve(name),
+            (inner_declaration: Shared<SemanticDeclaration>, context: CodegenContext) => context.gen_decl(inner_declaration))
+        else
+          gen_decl(declaration, codegen_context)
+        end,
+      _ => gen_decl(declaration, codegen_context)
+    }
   else ''
   end
 
@@ -365,8 +380,37 @@ export fn collect_all_decl_parts(declarations: [Shared<SemanticDeclaration>], co
   end
   const extend_helper_prototypes = extend_helper_protos_for_exported_types(declarations, context)
   fn_protos = fn_protos.concat(extend_helper_prototypes)
+  fn_protos = fn_protos.concat(collect_extend_trait_suffix_header(declarations, context))
   DeclPartsBundle { type_fwds: type_fwds, type_defs: type_defs, fn_protos: fn_protos, fn_defs: fn_defs }
 end
+
+fn extend_trait_suffix_header_for_declaration(
+  declaration: Shared<SemanticDeclaration>,
+  context: CodegenContext
+) -> string =
+  match declaration {
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
+      if trait_name.length() > 0 && !trait_has_associated_types(context, trait_name) then
+        gen_decl_extend_trait_suffix(
+          type_name,
+          trait_name,
+          methods,
+          context,
+          (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name))
+      else
+        ''
+      end,
+    SemanticDeclarationExported(inner_declaration) =>
+      extend_trait_suffix_header_for_declaration(inner_declaration, context),
+    _ => ''
+  }
+
+fn collect_extend_trait_suffix_header(
+  declarations: [Shared<SemanticDeclaration>],
+  context: CodegenContext
+) -> [string] =
+  declarations.map(declaration =>
+    extend_trait_suffix_header_for_declaration(declaration, context)).filter(segment => segment.length() > 0)
 
 export fn collect_decl_parts(declarations: [Shared<SemanticDeclaration>], context: CodegenContext, phase: i32) -> [string] = do
   const extend_forward_segments =
