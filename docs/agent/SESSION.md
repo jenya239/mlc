@@ -7,9 +7,23 @@
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
 | driver_turns_since_plan | 6 |
-| step_last | 1 |
-| active_track | TRACK_LANG_WEAK_SUGAR **open** (ARRAY_HOF closed) |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_WEAK_SUGAR **open** |
 | test_gate | ok |
+
+### Turn 2026-07-09 03:52 (Critic critique-audit — OR_PATTERNS + ARRAY_HOF)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_OR_PATTERNS + TRACK_LANG_ARRAY_HOF (closed) |
+| started | 2026-07-09 03:50 |
+| elapsed | ~2 min |
+| done    | Re-probed: E083/E084 on mlcc; HOF check-only ok; commits `4c9d1035`/`78704342`/`e9be0e07`/`65cc6c14` match TRACK claims. Noted Result exhaustiveness hole (builtin not indexed). Confirmed `Weak<` absent in compiler/runtime. Logged limitation on OR_PATTERNS TRACK. |
+| result  | closes stand; no reopen. Plain: закрытия треков подтверждены; дыра Result без E084 — осознанная. |
+| issues  | Untracked WIP: `escape_analyzer.rb` + test + `fix_trait_suffix_header_order.rb` (not this Critic turn). |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_WEAK_SUGAR — inventory Ruby `Weak`/`weak`/`upgrade` in `lib/mlc/` only (no compiler/) |
 
 ### Turn 2026-07-09 03:50 (Driver TRACK_LANG_ARRAY_HOF STEP=1 — inventory; close track)
 

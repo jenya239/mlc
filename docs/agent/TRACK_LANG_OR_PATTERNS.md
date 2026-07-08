@@ -21,3 +21,9 @@ E084: ADT match exhaustiveness; guarded arms do not cover
 - `dev_gate_fast` **1432/0**
 - `scripts/regression_gate.sh` **20/0**
 - Fix during gate: `join_variant_names` → `fold` (if-assign codegen broke g++)
+
+## Known limitation (Critic 2026-07-09)
+
+Builtin `Result` is **not** in `algebraic_decl_variant_names` (avoids breaking
+incomplete `match Ok` in compiler sources). So `match r { Ok(x) => x }` on
+`Result<…>` still passes without E084. User-declared ADTs are checked.
