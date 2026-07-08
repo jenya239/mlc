@@ -18,7 +18,7 @@ Agent
  ├── codebase-memory-mcp   → structural graph (symbols, callers, impact)
  ├── mlc-memory MCP        → project_memories (decisions, bugs, conventions)
  ├── graphiti-memory (opt) → temporal KG when FalkorDB local
- ├── TURNLOG.jsonl (git)   → turn audit (guard, not MCP)
+ ├── docs/archive/TURNLOG.jsonl (git) → turn audit, archived (cr guard discontinued)
  └── SESSION.md (git)      → human turn summary
 ```
 
@@ -60,7 +60,7 @@ python3 scripts/memory_task_metrics.py --record --limit 5
 
 MCP: `memory_task_metrics` with optional `record: true`.
 
-Counts `Read` tool unique paths and total `tool_use` blocks from agent transcripts; correlates with `TURNLOG.jsonl` `turn_done` rows.
+Counts `Read` tool unique paths and total `tool_use` blocks from agent transcripts; correlates with `docs/archive/TURNLOG.jsonl` `turn_done` rows (historical, cr guard discontinued).
 
 ## Obsolete sync (STEP 3)
 

@@ -55,18 +55,9 @@ bash scripts/dev_gate_fast.sh
 - No abbreviations (`.cursor/rules/no-abbreviations.mdc`).
 - Minimal diff; match surrounding style.
 
-## MCP (`agent-loop`)
+## Orchestration
 
-Token-only — [CONTINUITY.md](CONTINUITY.md).
-
-После изменений в `cr`: `npm run build` в `~/workspaces/current/cr`, Reload MCP в Cursor.
-
-| Check | Command / tool |
-|-------|----------------|
-| CDP | `cursor_cdp_status` → `ok: true` |
-| Composer health | `cursor_session({ token })` |
-| Stuck queue / modal | `npm run watchdog:start` в `cr` (см. CONTINUITY) |
-| UI / ручная отладка | `npm run dev` в `cr` → http://127.0.0.1:3847 |
+Обычная очередь Cursor (без внешнего MCP/сервера) — [CONTINUITY.md](CONTINUITY.md). Старый подход (`agent-loop` MCP, `cr` сервер, токены) архивирован: `docs/archive/`.
 
 **mlc-memory:** `memory_search` / `memory_write` (`project_memories`) — decisions, bugs, conventions, failed_attempts. Legacy: `known_limitations`, `notes`. Не дублировать TURNLOG.
 

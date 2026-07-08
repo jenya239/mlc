@@ -11,12 +11,11 @@
 | **Driver** | `<n>` | One TRACK sub-step, verify, commit |
 | **Planner** | `plan-refresh` | TRACK from PLAN/RESEARCH; **tests red → Driver `test-fix` first** |
 | **Backlog** | `backlog-review` | git vs TRACK hygiene |
-| **Meta** | `meta-review` | overnight log, supervisor |
+| **Meta** | `meta-review` | Recovery from stuck/failed turns, process review |
 | **Researcher** | `research-turn` | Взять тему из RESEARCH.md, исследовать, возможно создать новый трек; см. [RESEARCHER.md](RESEARCHER.md) |
 | **Reviewer** | `history-review` | Просмотреть последние закрытые треки: что упустили, что нужно создать как новый трек; см. [REVIEWER.md](REVIEWER.md) |
 | **Monitor** | `process-monitor` | Проверить системные индикаторы: SESSION обновляется, треки прогрессируют, логи пишутся, ротация работает, планы актуальны; см. [MONITOR.md](MONITOR.md) |
 | **Blogger** | `blog-post` | пост в блог о закрытых треках; см. BLOG.md |
-| **OrchestratorDev** | `orch-dev-N` | Развитие cr/оркестратора: billing, meetings, tmux, DB; берёт шаги из TRACK_ORCH_DEV.md; работает в cr workspace | 
 | **Scribe** | every turn | SESSION, TRACK status |
 
 ## Rotation
@@ -33,7 +32,6 @@
 | 30 | Auditor |
 | 40 | Researcher |
 | 35 | Reviewer |
-| 5 | OrchestratorDev |
 | 18 | Monitor |
 | else | Driver |
 

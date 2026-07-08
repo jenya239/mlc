@@ -20,18 +20,6 @@
 | Benchmark harness ? `benchmarks/` | regression ?? record_baseline |
 | `--emit=mir`-?????? | ?????? work ??? fuzz (rustc `--emit=mir`) |
 
-## Orchestration (cr + mlc agent)
-
-| ???? | ?????? |
-|------|--------|
-| `pickNextAgentStep` � track priority | ? |
-| Guard: CDP send, ?? ????????? enqueue | ? |
-| Usage gate ?? composer token ring | ? `probe:usage`, `CR_USAGE_PAUSE_PCT` |
-| Idempotency / cooldown ?? nudge | ? 15m |
-| Meta recovery: finish WIP + commit, enqueue next STEP (not same Driver STEP) | 2026-06-05 TYPE_ALIASES `Driver:1` loop |
-| Planner ?????? 8 driver turns | CONTINUITY |
-| ????????? research turn (cheap model) | ??? ? ~2 ??????, ??? code |
-
 ## Cursor
 
 - Usage: `.token-ring-progress` ? composer bar ? `npm run probe:usage` (cr).

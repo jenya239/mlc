@@ -536,48 +536,9 @@ fn area(shape: Shape) -> f64 = match shape {
 
 ---
 
-## 9. Orchestrator / Multi-agent System
+## 9. Orchestrator / Multi-agent System (discontinued)
 
-**Параллельный трек** — развивается вместе с MLC, не блокирует язык. Ресурсы: ~20% Driver-ходов (каждый 5-й ход OrchestratorDev, см. ROLES.md).
-
-### Текущее состояние (cr)
-
-- `cr` server: watchdog, CDP, SSE, web UI (progress, tracks, commits, agent turns)
-- Агент работает в Cursor через MCP `user-cr-cursor`
-- Overnight loop: supervisor + guard каждые 5 минут
-- Роли: Driver, Planner, Critic, Cleaner, Backlog, Meta, Orchestrator, Researcher, Reviewer, Blogger
-
-### Pending (трек: TRACK_ORCH_DEV.md)
-
-| # | Item | Status |
-|---|------|--------|
-| 1 | Billing: SQLite `cost_entries` + дашборд в web UI | pending |
-| 2 | Meeting rooms: `docs/agent/meetings/`, MEETING_PROTOCOL.md, render в progress | pending |
-| 3 | Terminal agents: tmux transport (аналог CDP для non-Cursor агентов) | pending |
-| 4 | Multi-agent: общий `AGENT_TARGETS` для Cursor + tmux агентов | pending |
-| 5 | Session DB: SQLite кэш для SESSION.md (быстрый query вместо парсинга) | pending |
-
-### Архитектура
-
-**Транспорт агентов:**
-- Cursor agents → CDP (существующий путь через `user-cr-cursor` MCP)
-- Terminal agents (Claude в терминале, скрипты) → **tmux**: `send-keys` для отправки, `capture-pane` для чтения
-
-**Гибридное хранилище:**
-
-| Слой | Хранилище | Что лежит |
-|------|-----------|-----------|
-| Инструкции, планы, треки | markdown + git | PLAN.md, TRACK_*.md, ROLES.md, SESSION.md — agent-native, история в git |
-| Оперативные данные | **SQLite** (`cr/db/cr.db`, `better-sqlite3`) | turns, cost_entries, agent_states, meetings |
-
-DB можно дропнуть и пересобрать из markdown-файлов — это кэш, не источник истины.
-
-### Роль OrchestratorDev
-
-Выделенная роль для работ по `cr/` и оркестрации.  
-STEP = `orch-dev-N` (берёт шаги из TRACK_ORCH_DEV.md).  
-Частота: каждые 5 Driver-ходов mlc — 1 ход OrchestratorDev.  
-Касается только `cr/` workspace, не `compiler/` / `lib/mlc/`.
+Отдельный `cr` orchestrator (agent-loop MCP, tokens, CDP, watchdog, overnight guard) — заброшен. Текущий подход: обычная очередь сообщений Cursor, без внешнего сервера/MCP-роутинга. Архив: `docs/archive/TRACK_ORCH_DEV.md`, `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`.
 
 ---
 
