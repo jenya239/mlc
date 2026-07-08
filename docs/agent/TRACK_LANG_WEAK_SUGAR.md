@@ -6,70 +6,56 @@ Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 
 ## Status: **open**
 
-**Проблема:** `grep -rn "Weak<" compiler/ runtime/` = 0 — `Weak<T>` документирован
-(`MEMORY_MODEL.md`: *"Циклические структуры требуют `Weak<T>`. Забытый `Weak`
-→ утечка. Компилятор не детектирует."*), но ни разу не использован даже в
-5000+ строках self-hosted компилятора. Гипотеза аудита: нет удобного
-паттерна создания/разыменования — только сахар может это проверить.
+## STEP=1 — inventory Ruby `lib/mlc/` — **done** (2026-07-09)
 
-## Синтаксис
+| Piece | Status |
+|-------|--------|
+| Type `Weak<T>` | Declared in `lib/mlc/common/stdlib/core/memory.mlc`; mapped `Weak`→`std::weak_ptr` in `type_mapper.rb` |
+| Free fns | `shared_downgrade`, `weak_lock`, `weak_null`, `weak_is_valid` in `memory.mlc` + codegen in `call_rule.rb` (`:shared_downgrade`, `:weak_lock`) |
+| Extend API | `Shared.downgrade`, `Weak.lock` / `Weak.null` / `Weak.is_valid` in `memory.mlc` |
+| Auto-import | **No** — `Shared.new` is builtin (`static_method_call_rule`); `shared_downgrade` / import `std/core/memory` failed probe (`Unknown identifier`) |
+| Working path today | Inline `extend Shared/Weak` in program (see `test/integration/smart_pointers_e2e_test.rb`: `Shared.downgrade`, `Weak.lock`) |
+| Sugar `.weak()` / `.upgrade()` | **Missing** — probe: `Unknown member 'weak'/'upgrade' for type Shared` |
+| Instance `.downgrade()` | **Missing** as instance method — e2e uses **static** `Shared.downgrade(shared)` |
 
-```mlc
-let parent_ref = parent.weak()        // Shared<T> -> Weak<T>
+**Conclusion:** Ruby already has Weak codegen + types; ergonomic gap is (1) sugar aliases `.weak()`/`.upgrade()`, (2) reliable stdlib surface without re-declaring extend. Prefer aliases over renaming `downgrade`/`lock` (keep e2e).
 
-match child.parent.upgrade() {        // Weak<T> -> Option<Shared<T>>
-  Some(p) => use(p),
-  None    => handle_dead_parent()
-}
-```
+## STEP=2 — Ruby: `.weak()` / `.upgrade()` sugar (lib/mlc only)
 
-## Реализация
+**Action:**
+- Accept instance methods `weak` on `Shared<T>` → same lowering as `shared_downgrade` / `Shared.downgrade`.
+- Accept instance methods `upgrade` on `Weak<T>` → same as `weak_lock` / `Weak.lock` → `Option<Shared<T>>`.
+- TDD: extend `test/integration/smart_pointers_e2e_test.rb` or add `test/mlc/` case with `.weak()`/`.upgrade()` (no inline extend if possible; else document).
+- Do **not** touch `compiler/` this step.
 
-- `.weak()` → `std::weak_ptr(shared_ptr)`, ноль нового рантайма.
-- `.upgrade()` → `wp.lock()` + проверка на `nullptr`, обёрнуто в `Option`
-  (`Some`/`None`) — единственно корректная сигнатура, совместима с `match`
-  без изменений в pattern-matching коде.
-- Checker: правило в `builtin_method_return_type`
-  (`compiler/checker/semantic_type_structure.mlc:369`) — `.weak()` на
-  `Shared<T>` возвращает `Weak<T>`, `.upgrade()` на `Weak<T>` возвращает
-  `Option<Shared<T>>`.
-- Codegen: найти, где сейчас генерируются встроенные методы на `Shared<T>`
-  (искать в `compiler/codegen/` обработку `TGeneric("Shared", ...)`) — по
-  аналогии добавить `TGeneric("Weak", ...)`.
-- Первым делом — Ruby-эталон (`lib/mlc/`), затем mlcc (конвенция проекта):
-  проверить, есть ли `Weak<T>` вообще в Ruby-пайплайне (`grep -rn "Weak" lib/mlc/`)
-  — если нет, реализация начинается там.
-
-## Repro
+**Repro (after):**
 
 ```mlc
-type Node = { value: i32, parent: Weak<Node> }
-
+type Node = { value: i32 }
 fn main() -> i32 = do
-  let root = Shared.new(Node { value: 1, parent: Weak.none() })
-  let child_parent_ref = root.weak()
-  match child_parent_ref.upgrade() {
+  let root = Shared.new(Node { value: 1 })
+  let weak_ref = root.weak()
+  match weak_ref.upgrade() {
     Some(p) => p.value,
     None => -1
   }
 end
 ```
 
-До фикса: `.weak()`/`.upgrade()` — `E001` (метод не найден). После: exits 0,
-результат `1`.
+## STEP=3 — mlcc parity (compiler/ only)
 
-## Verify gate
+Mirror sugar in checker (`infer` / builtin method types for `Shared`/`Weak`) + codegen. Separate turn.
+
+## STEP=4 — verify-gate + optional compiler AST use of `Weak`
+
+Self-host diff + one real `Weak` use if a cycle site exists.
+
+## Verify gate (track close)
 
 ```bash
-bundle exec rake test_compiler_mlc
+bundle exec rake test_mlc   # after STEP=2
+# after STEP=3:
 compiler/build.sh
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+…
 ```
-
-После реализации — переиспользовать `Weak<T>` хотя бы в одном реальном месте
-self-hosted компилятора, где сейчас потенциальный цикл (например
-parent-указатели в AST, если такие есть) — иначе эргономика снова останется
-непроверенной на практике.

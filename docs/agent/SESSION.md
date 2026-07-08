@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_WEAK_SUGAR **open** |
+| driver_turns_since_plan | 7 |
+| step_last | 1 |
+| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 03:55 (Driver TRACK_LANG_WEAK_SUGAR STEP=1 — Ruby Weak inventory)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_WEAK_SUGAR |
+| started | 2026-07-09 03:51 |
+| elapsed | ~4 min |
+| done    | Inventory `lib/mlc/` only: `memory.mlc` Weak API; `call_rule.rb` downgrade/lock codegen; `type_mapper.rb` Weak→weak_ptr. Probes: `.weak()`/`.upgrade()` fail; `Shared.downgrade` works via inline extend (e2e); stdlib import of `shared_downgrade` fails. TRACK rewritten with STEP=2..4. |
+| result  | docs-only. Plain: Weak в Ruby уже есть как downgrade/lock; сахара weak/upgrade нет. |
+| issues  | `std/core/memory` not auto-available in bare programs — e2e redeclares extend. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_WEAK_SUGAR — Ruby `.weak()`/`.upgrade()` sugar in `lib/mlc/` + test (no compiler/) |
 
 ### Turn 2026-07-09 03:52 (Critic critique-audit — OR_PATTERNS + ARRAY_HOF)
 
