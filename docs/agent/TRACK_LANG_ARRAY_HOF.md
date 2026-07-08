@@ -1,83 +1,37 @@
 # Track: Array HOF (`map`/`filter`/`fold`/...)
 
 Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A1. Source:
-[../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #1 (высший приоритет
-аудита, совпадает с уже существующим приоритетом №1 проекта).
+[../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #1.
 
-## Status: **open**
+## Status: **closed** (2026-07-09) — language feature already shipped
 
-Уже специфицировано в `docs/MLC.md` §A1 (методы, типы, C++-трансляция).
-Этот трек — реализационный, не design-трек: перевести спецификацию в код.
+Аудит/`MLC.md` описывали A1 как будущую работу. Инвентаризация STEP=1
+показала: MVP уже в runtime + checker + codegen (Ruby и mlcc). Repro из
+трека exits **14** на обоих.
 
-**Проблема (подтверждено этим аудитом на реальном коде):** `compiler/` сейчас
-514 `while`-циклов (было 210 на момент записи `MLC.md:60` — цифра там
-устарела, разрыв только увеличился), 30 `extend`. Без HOF self-hosted
-компилятор не может писать себя идиоматично.
+## STEP=1 — inventory Ruby vs mlcc — **done** (2026-07-09)
 
-## Scope (MVP, по `MLC.md` §A1)
+| Layer | Finding |
+|-------|---------|
+| Runtime | `runtime/include/mlc/core/array.hpp`: `map`, `filter`, `fold`, `any`, `all`, `find`, `find_index`, `sort_by`, `take`, `drop`, `flat_map`, `zip`, `enumerate`, `flat`, `group_by`, `sum`, `join` |
+| mlcc checker | `array_method_types.mlc` `is_array_hof_method` + `array_hof_call_result_type`; `infer_array_method.mlc`; tests in `test_checker.mlc` (~818+) |
+| mlcc codegen | method call → `xs.map([=](…){…})` on `mlc::Array` (no separate std::transform wrapper) |
+| Ruby | `call_rule.rb` lowers array HOF (member call or `mlc::collections::*`); same runtime |
+| Repro | `[1,2,3,4].map/filter/fold` → exit **14** (mlcc + Ruby) |
+| All 17 MVP names | `--check-only` OK on mlcc |
 
-Методы: `map`, `filter`, `fold`, `flat_map`, `any`, `all`, `find`,
-`find_index`, `sort_by`, `group_by`, `zip`, `enumerate`, `flat`, `take`,
-`drop`, `sum`, `join`. Не обязательно все сразу одним шагом — `map`/`filter`/
-`fold` первыми (наибольшее покрытие реальных `while`-циклов по названному в
-`MLC.md` анализу: 80%).
+**Not a gap:** `builtin_method_return_type` in `semantic_type_structure.mlc`
+does **not** list HOF — routing is via `infer_array_method` /
+`hof_method_spec`, not that helper. Track file path was stale.
 
-## Файлы
+**Remaining (out of scope for this track):** ~704 `while` in `compiler/**/*.mlc`
+(excl. out/tests) vs ~247 `.map/.filter/.fold` calls — adoption/cleanup, not
+missing language surface. Open a separate TRACK if prioritizing while→HOF
+rewrites in self-hosted sources.
 
-- **Ruby reference (read-only):** искать существующую реализацию array-методов
-  в `lib/mlc/` (COW `Array` — `lib/mlc/backends/cpp/` codegen для методов
-  массива, `lib/mlc/registries/` для сигнатур встроенных методов) — сверить,
-  что Ruby-эталон уже поддерживает `map`/`filter`/`fold` на `[T]` (вероятно да,
-  раз это A1 уже часть языка); если нет — сначала фиксируется в Ruby, потом в
-  mlcc (конвенция проекта).
-- **Checker:** `compiler/checker/semantic_type_structure.mlc:369`
-  (`builtin_method_return_type`) — добавить ветки для новых методов с выводом
-  типа результата из типа лямбды-аргумента (`map<U>` требует вывести `U` из
-  `T -> U`).
-- **Codegen:** найти, где сейчас lowering методов на `[T]` (искать
-  `ArrayType`/`"length"`/`"push"` в `compiler/codegen/` — начать с того же
-  файла/функции, что уже обрабатывает встроенные array-методы) — добавить
-  `map`→`std::transform`, `filter`→`std::copy_if`, `fold`→ ручной
-  accumulate-цикл или `std::accumulate`.
-- **Runtime:** проверить, нужен ли новый метод в `mlc::Array<T>` (реестр
-  runtime — искать в `runtime/include/mlc/`) или лямбда-based codegen
-  достаточно без изменений в runtime-заголовке.
-
-## Repro / verify (шаблон на каждый метод)
-
-```mlc
-fn main() -> i32 = do
-  let xs = [1, 2, 3, 4]
-  let doubled = xs.map(x => x * 2)
-  let evens = xs.filter(x => x % 2 == 0)
-  let total = xs.fold(0, (acc, x) => acc + x)
-  doubled[0] + evens.length() + total
-end
-```
-
-До фикса: `E001`/`E005` (метод не найден / не типизируется). После: exits 0,
-результат `2 + 2 + 10 = 14`.
-
-**Verify gate:**
-
-```bash
-bundle exec rake test_compiler_mlc
-compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
-```
-
-Добавить unit-тесты в `compiler/tests/test_codegen.mlc`/`test_checker.mlc`
-(искать существующий паттерн для встроенных методов массива, мержить в тот же
-стиль, не изобретать новый).
-
-## Per-turn template
+## Verify (STEP=1)
 
 ```
-| method | <map|filter|fold|...> |
-| done | <one line> |
-| verify | test_compiler_mlc N/0; diff_exit=0; repro before=fail after=pass |
-| next | <следующий метод> |
+mlcc --check-only + build_bin repro → exit 14
+Ruby bin/mlc same repro → exit 14
 ```

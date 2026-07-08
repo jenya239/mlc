@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | verify-gate |
-| active_track | TRACK_LANG_ARRAY_HOF **open** STEP=1 |
+| driver_turns_since_plan | 6 |
+| step_last | 1 |
+| active_track | TRACK_LANG_WEAK_SUGAR **open** (ARRAY_HOF closed) |
 | test_gate | ok |
+
+### Turn 2026-07-09 03:50 (Driver TRACK_LANG_ARRAY_HOF STEP=1 — inventory; close track)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_ARRAY_HOF |
+| started | 2026-07-09 03:46 |
+| elapsed | ~4 min |
+| done    | Inventory only (docs): runtime `array.hpp` has full MVP; mlcc `array_method_types`/`infer_array_method` + tests; Ruby `call_rule.rb`; repro exits 14 both compilers. Closed track — A1 already shipped. Stale: `builtin_method_return_type` path in TRACK. |
+| result  | no code change; docs TRACK closed. Plain: map/filter/fold уже работают; трек закрыт как выполненный. |
+| issues  | ~704 while in compiler sources remain — adoption, not missing API. |
+| next    | ROLE=Critic STEP=critique-audit — re-audit recent TRACK_LANG_OR_PATTERNS + ARRAY_HOF closes vs git/tests (driver_turns=6) |
 
 ### Turn 2026-07-09 03:45 (Driver TRACK_LANG_OR_PATTERNS STEP=verify-gate — close track)
 
