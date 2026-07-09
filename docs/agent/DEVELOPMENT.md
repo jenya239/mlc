@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 1 STEP=3 — records (literal, field access, record patterns)
-(STEP=2 done: guards, PatternOr, nested ctors).
+**TRACK_MIR_VM_FULL** Epic 1 STEP=4 — Option/Result/Shared as variants in VM corpus
+(STEP=3 done: VmRecord + record field/match).
 
 ## Step sizing (good vs bad)
 

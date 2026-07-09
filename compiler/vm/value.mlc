@@ -11,6 +11,12 @@ export type VmMapValue = VmMapValue {
 
 export type VmVariantValue = VmVariantValue { tag: string, fields: [VmFieldSlot] }
 
+export type VmRecordValue = VmRecordValue {
+  type_name: string,
+  field_names: [string],
+  fields: [VmFieldSlot]
+}
+
 // Flat tagged field slots — no recursive VmValue (TRACK §5.2).
 // Nested ADTs: Shared indirection, not VmValue-in-VmValue.
 export type VmFieldSlot =
@@ -26,6 +32,7 @@ export type VmValue =
   | VmArray(VmArrayValue)
   | VmMap(VmMapValue)
   | VmVariant(VmVariantValue)
+  | VmRecord(VmRecordValue)
   | VmUnit
 
 export fn vm_value_unit() -> VmValue = VmUnit
@@ -38,6 +45,7 @@ export fn vm_value_is_truthy(value: VmValue) -> bool =
     VmArray(array) => array.integer_elements.length() > 0,
     VmMap(map) => map.entry_count > 0,
     VmVariant(_) => true,
+    VmRecord(_) => true,
     VmUnit => false
   }
 

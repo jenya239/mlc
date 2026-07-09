@@ -5,7 +5,7 @@ import {
   MirRvalue, MirOperand, MirRvalueUse, MirRvalueBinary,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit
 } from '../mir/mir_types'
-import { VmValue, VmI32, VmBool, VmString, VmArray, VmMap, VmVariant, VmUnit, vm_value_is_truthy, vm_value_unit } from './value'
+import { VmValue, VmI32, VmBool, VmString, VmArray, VmMap, VmVariant, VmRecord, VmUnit, vm_value_is_truthy, vm_value_unit } from './value'
 import { VmFrame, vm_locals_load } from './frame'
 
 export fn vm_eval_operand(frame: VmFrame, operand: MirOperand) -> Result<VmValue, [string]> =
@@ -33,6 +33,7 @@ fn vm_values_equal(left: VmValue, right: VmValue) -> bool =
       },
     VmMap(_) => false,
     VmVariant(_) => false,
+    VmRecord(_) => false,
     VmUnit => match right { VmUnit => true, _ => false }
   }
 

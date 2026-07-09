@@ -130,5 +130,19 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke match nested exit', false))
   }
 
+  match vm_smoke_interpret(
+    'type Point = { x: i32, y: i32 }\nfn main() -> i32 = do\n  const point = Point { x: 3, y: 4 }\n  point.x + point.y\nend',
+    'vm_record_fields.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke record fields exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke record fields exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Point = { x: i32, y: i32 }\nfn main() -> i32 = match Point { x: 3, y: 4 } {\n  Point { x, y } => x + y\n}',
+    'vm_record_match.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke record match exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke record match exit', false))
+  }
+
   results
 end

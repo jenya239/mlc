@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 2 |
-| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=3 |
-| test_gate | ok (or=3 guard=1/2 nested=7; vm_cpp_diff 4/0) |
+| driver_turns_since_plan | 10 |
+| step_last | 3 |
+| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=4 |
+| test_gate | ok (record=7 match=7; vm_cpp_diff 4/0) |
+
+### Turn 2026-07-09 22:40 (Driver TRACK_MIR_VM_FULL STEP=3 — records)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 22:26 |
+| elapsed | ~14 min |
+| done    | `VmRecordValue` + `__mir_record_new`/`__mir_record_field`; lower literal/field/match; smoke + examples. |
+| verify  | `--run` REC=7 MATCH=7; dump `__mir_record_*`; `run_vm_cpp_exit_diff` 4/0; build EXIT:0. |
+| result  | STEP=3 done. Plain: records work on MIR VM. |
+| issues  | PatternRecord fields are PatternIdent list (order=decl). Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=4 TRACK_MIR_VM_FULL — Option/Result/Shared as variants in VM corpus |
 
 ### Turn 2026-07-09 22:20 (Driver TRACK_MIR_VM_FULL STEP=2 — full variant match)
 

@@ -41,6 +41,8 @@ export fn vm_is_native_callee(name: string) -> bool =
   || name == "__mir_variant_is"
   || name == "__mir_variant_field"
   || name == "__mir_variant_new"
+  || name == "__mir_record_new"
+  || name == "__mir_record_field"
 
 export fn vm_resolve_call(program: MirProgram, callee_name: string) -> Result<VmCallDispatch, [string]> = do
   if vm_is_native_callee(callee_name) then Ok(VmCallNative(callee_name))

@@ -1,0 +1,4 @@
+type Point = { x: i32, y: i32 }
+fn main() -> i32 = match Point { x: 3, y: 4 } {
+  Point { x, y } => x + y
+}

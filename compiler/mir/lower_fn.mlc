@@ -1,13 +1,13 @@
 // Lower typed function bodies to MLC MIR (TRACK_MIR STEP=3).
 
-import { Param, Result, Pattern, PatternWild, PatternIdent, PatternInt, PatternBool, PatternCtor, PatternUnit, PatternOr } from '../frontend/ast'
+import { Param, Result, Pattern, PatternWild, PatternIdent, PatternInt, PatternBool, PatternCtor, PatternUnit, PatternOr, PatternRecord } from '../frontend/ast'
 import {
   SemanticDeclaration, SemanticDeclarationFn,
-  SemanticExpression, SemanticStatement, SemanticMatchArm,
+  SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal,
   SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionStr, SemanticExpressionUnit,
   SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionCall,
   SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
-  SemanticExpressionArray,
+  SemanticExpressionArray, SemanticExpressionRecord,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
   SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
@@ -355,6 +355,66 @@ fn mir_lower_operands_from_arguments(
 ) -> Result<MirLowerCallOperandsStep, [string]> =
   mir_lower_collect_operands(state, arguments, 0, [])
 
+fn mir_lower_record_new_arguments_from_fields(
+  state: MirLowerState,
+  type_name: string,
+  field_values: [Shared<SemanticFieldVal>],
+  index: i32,
+  arguments: [MirOperand]
+) -> Result<MirLowerCallOperandsStep, [string]> =
+  if index >= field_values.length() then
+    Ok(MirLowerCallOperandsStep { state: state, operands: arguments })
+  else
+    match mir_lower_operand_from_expression(state, field_values[index].value) {
+      Err(errors) => Err(errors),
+      Ok(value_step) => do
+        let mut next_arguments = arguments
+        next_arguments.push(MirOperandConstStr(field_values[index].name))
+        next_arguments.push(value_step.operand)
+        mir_lower_record_new_arguments_from_fields(
+          value_step.state, type_name, field_values, index + 1, next_arguments)
+      end
+    }
+  end
+
+fn mir_lower_record_literal_to_local(
+  state: MirLowerState,
+  type_name: string,
+  field_values: [Shared<SemanticFieldVal>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_record_new_arguments_from_fields(
+    state, type_name, field_values, 0, [MirOperandConstStr(type_name)]) {
+    Err(errors) => Err(errors),
+    Ok(arguments_step) => do
+      const local_step = mir_lower_allocate_local(arguments_step.state, '', mir_lower_unknown_type())
+      Ok(MirLowerLocalStep {
+        state: mir_lower_emit_call_assign(
+          local_step.state, local_step.local_id, '__mir_record_new', arguments_step.operands),
+        local_id: local_step.local_id
+      })
+    end
+  }
+
+fn mir_lower_record_field_to_local(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  field_name: string
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_operand_from_expression(state, object) {
+    Err(errors) => Err(errors),
+    Ok(object_step) => do
+      const local_step = mir_lower_allocate_local(object_step.state, '', mir_lower_unknown_type())
+      Ok(MirLowerLocalStep {
+        state: mir_lower_emit_call_assign(
+          local_step.state,
+          local_step.local_id,
+          '__mir_record_field',
+          [object_step.operand, MirOperandConstStr(field_name)]),
+        local_id: local_step.local_id
+      })
+    end
+  }
+
 type MirLowerOperandStep = MirLowerOperandStep { state: MirLowerState, operand: MirOperand }
 
 fn mir_lower_temp_operand_from_rvalue(state: MirLowerState, rvalue: MirRvalue) -> MirLowerOperandStep = do
@@ -444,6 +504,18 @@ fn mir_lower_operand_from_expression(
         Ok(local_step) =>
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
+    SemanticExpressionRecord(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionField(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
     _ => Err(['mir lower: unsupported expression in operand context'])
   }
 end
@@ -526,6 +598,24 @@ fn mir_lower_rvalue_from_expression(
           })
       },
     SemanticExpressionMethod(_, _, _, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionRecord(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionField(_, _, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
@@ -748,6 +838,32 @@ fn mir_lower_pattern_matches_operand(
     _ => Err(['mir lower: staged match supports int, bool, and variant ctor patterns'])
   }
 
+fn mir_lower_bind_record_field_patterns(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  field_patterns: [Shared<Pattern>],
+  index: i32
+) -> Result<MirLowerState, [string]> =
+  if index >= field_patterns.length() then Ok(state)
+  else
+    match field_patterns[index] {
+      PatternIdent(field_name, _) =>
+        match mir_lower_emit_call_to_local(
+          state, '__mir_record_field', [scrutinee, MirOperandConstStr(field_name)]) {
+          Err(errors) => Err(errors),
+          Ok(field_step) =>
+            mir_lower_bind_record_field_patterns(
+              mir_lower_bind_name(field_step.state, field_name, field_step.local_id),
+              scrutinee,
+              field_patterns,
+              index + 1)
+        },
+      PatternWild(_) =>
+        mir_lower_bind_record_field_patterns(state, scrutinee, field_patterns, index + 1),
+      _ => Err(['mir lower: unsupported record field pattern'])
+    }
+  end
+
 fn mir_lower_bind_match_arm_pattern(
   state: MirLowerState,
   scrutinee: MirOperand,
@@ -763,6 +879,8 @@ fn mir_lower_bind_match_arm_pattern(
     end,
     PatternCtor(_, sub_patterns, _) =>
       mir_lower_bind_ctor_subpatterns(state, scrutinee, sub_patterns, 0),
+    PatternRecord(_, field_patterns, _) =>
+      mir_lower_bind_record_field_patterns(state, scrutinee, field_patterns, 0),
     _ => Ok(state)
   }
 
@@ -932,6 +1050,10 @@ fn mir_lower_expression_to_local(
   match expression {
     SemanticExpressionArray(elements, _, _) =>
       mir_lower_array_literal_to_local(state, elements),
+    SemanticExpressionRecord(type_name, field_values, _, _) =>
+      mir_lower_record_literal_to_local(state, type_name, field_values),
+    SemanticExpressionField(object, field_name, _, _) =>
+      mir_lower_record_field_to_local(state, object, field_name),
     SemanticExpressionIndex(object, index_expression, _, _) =>
       mir_lower_index_to_local(state, object, index_expression),
     SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>

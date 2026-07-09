@@ -1,0 +1,5 @@
+type Point = { x: i32, y: i32 }
+fn main() -> i32 = do
+  const point = Point { x: 3, y: 4 }
+  point.x + point.y
+end
