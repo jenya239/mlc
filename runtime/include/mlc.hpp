@@ -29,6 +29,7 @@
 #include "mlc/concurrency/spawn.hpp"
 #include "mlc/concurrency/arc.hpp"
 #include "mlc/concurrency/mutex.hpp"
+#include "mlc/concurrency/stop.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

@@ -5,10 +5,22 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
 Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
 
-## Status: **open** — STEP=4 done (4a+4b); STEP=5 next
+## Status: **open** — STEP=5 done; STEP=6 next
 
-**Driver 2026-07-09:** STEP=4b — `move` keyword (`KMove`/`ExprUn("move")`),
-E088 use-after-move, `move x` exempts E087 in spawn; codegen `std::move`.
+**Driver 2026-07-09:** STEP=5 — `StopSource`/`StopToken` in `stop.hpp`
+(C++20 `stop_source`/`stop_token` wrapped); `test_stop.cpp` in smoke.
+
+### STEP=5 acceptance (Driver)
+
+**Layer:** `runtime/` only (not `compiler/` / not `lib/mlc/` in the same turn).
+
+- `StopSource` / `StopToken` in `runtime/include/mlc/concurrency/stop.hpp`.
+- Backend: C++20 `std::stop_source` / `std::stop_token` (not in public API).
+- API: `StopSource::token()`, `StopSource::request()`, `StopToken::requested()`.
+- Unit test `runtime/test/test_stop.cpp`; wire in `run_concurrency_smoke.sh`.
+- Include from `runtime/include/mlc.hpp`.
+- Out of scope this turn: wake blocked channel/sleep on cancel; MLC surface syntax.
+- Verify: `runtime/test/run_concurrency_smoke.sh` exit 0.
 
 ### STEP=4 acceptance (Driver)
 
@@ -88,8 +100,8 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 | 2 | Rendezvous channel: `Channel[T].bounded(0)` в `runtime/include/mlc/concurrency/channel.hpp` — сейчас `capacity == 0` кидает `invalid_argument`, нужен синхронный handoff вместо ошибки. | **done** |
 | 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | **done** |
 | 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). **4a+4b done:** E087 + `move`/E088. | **done** |
-| 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | **next** |
-| 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | pending |
+| 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | **done** |
+| 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | **next** |
 
 ## Out of scope (этот трек)
 

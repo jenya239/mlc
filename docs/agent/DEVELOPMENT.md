@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=5 — `StopSource`/`StopToken` runtime
-(`runtime/`). STEP=4 move/E087/E088 done.
+**TRACK_CONCURRENCY_V2** STEP=6 — self-host verify + `MEMORY_MODEL.md`
+update / close or hand off. STEP=5 StopSource/StopToken done.
 
 ## Step sizing (good vs bad)
 

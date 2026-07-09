@@ -48,6 +48,8 @@ echo "[concurrency smoke] test_mutex"
 run_test test_mutex
 echo "[concurrency smoke] test_scheduler"
 run_test test_scheduler
+echo "[concurrency smoke] test_stop"
+run_test test_stop
 
 if [[ -n "${MLC_SANITIZE:-}" ]]; then
   echo "[concurrency smoke] stress_channel (${MLC_SANITIZE})"

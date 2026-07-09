@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4b |
-| active_track | TRACK_CONCURRENCY_V2 STEP=5 |
-| test_gate | ok (mlcc probes; Ruby gate red known) |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_CONCURRENCY_V2 STEP=6 |
+| test_gate | ok |
+
+### Turn 2026-07-09 13:08 (Driver TRACK_CONCURRENCY_V2 STEP=5 — StopSource/StopToken)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 13:06 |
+| elapsed | ~2 min |
+| done    | `stop.hpp` `StopSource`/`StopToken` (wrap `std::stop_source`/`stop_token`); `test_stop.cpp` 9 checks; smoke + `mlc.hpp` include. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_stop 9/9). |
+| result  | STEP=5 done. Plain: cooperative cancel primitive в runtime. |
+| issues  | Channel/sleep wake-on-cancel out of scope. |
+| next    | ROLE=Driver STEP=6 TRACK_CONCURRENCY_V2 — MEMORY_MODEL + self-host / close or handoff |
 
 ### Turn 2026-07-09 13:05 (Driver TRACK_CONCURRENCY_V2 STEP=4b — move + E088)
 
