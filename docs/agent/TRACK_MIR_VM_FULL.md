@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0–2 **done**; Epic 3 STEP=8–9 **done**; Epic 4 STEP=10 next
+**Status:** open, Epic 0–3 **done**; Epic 4 STEP=10 **done**; STEP=11 next
 
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —
@@ -127,9 +127,15 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 
 | Step | Deliverable | Gate |
 |------|-------------|------|
-| 10 | Single-file `--run` (current) stable | Tier B |
-| 11 | Multi-module `--run`: import merge ? one MirProgram | vm on 2-file fixture |
+| 10 | Single-file `--run` (current) stable | **done** (`run_single_file_vm_gate.sh`: 18 `--run` + diff 18/0; Tier B self-host p1≡p2) |
+| 11 | Multi-module `--run`: import merge → one MirProgram | vm on 2-file fixture |
 | 12 | `--run` on `misc/examples/*` subset (automated list) | script gate — **after this: STOP, see gate above, do not open Epic 5** |
+
+### Single-file `--run` stable (STEP=10)
+
+- Gate: `compiler/tests/run_single_file_vm_gate.sh` over `vm_cpp_diff_programs.txt`.
+- Verify: 18 programs `--run` (no `error:`); `run_vm_cpp_exit_diff` 18/0; `mlcc`→`mlcc2`→`diff -rq` empty.
+- Note: Ruby `dev_gate_fast` / `build_tests` still hit pre-existing `MATCH(match)` parse fail — not a STEP=10 blocker.
 
 ### Epic 5 � Compiler-shaped workload (STEP 13�20)
 

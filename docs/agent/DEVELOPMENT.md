@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 4 STEP=10 — single-file `--run` stable (Tier B)
-(STEP=9 done: for-loop + pop + string.contains).
+**TRACK_MIR_VM_FULL** Epic 4 STEP=11 — multi-module `--run` (import merge → one MirProgram)
+(STEP=10 done: `run_single_file_vm_gate.sh` 18+diff; Tier B p1≡p2).
 
 ## Step sizing (good vs bad)
 

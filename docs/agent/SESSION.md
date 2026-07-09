@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 16 |
-| step_last | 9 |
-| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=10 |
-| test_gate | ok (for/pop/contains=7; vm_cpp_diff 18/0; pop VM-only) |
+| driver_turns_since_plan | 17 |
+| step_last | 10 |
+| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=11 |
+| test_gate | ok (single-file gate 18+diff 18/0; Tier B p1≡p2) |
+
+### Turn 2026-07-09 23:58 (Driver TRACK_MIR_VM_FULL STEP=10 — single-file `--run` stable)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:50 |
+| elapsed | ~8 min |
+| done    | `compiler/tests/run_single_file_vm_gate.sh`; Tier B self-host p1≡p2. |
+| verify  | gate GATE:0 (18 `--run` + diff 18/0); P1/MLCC2/P2/DIFF:0; `--check-only` main CHECK:0. |
+| result  | STEP=10 done. Plain: single-file `--run` corpus stable under gate script. |
+| issues  | Ruby `dev_gate_fast`/`build_tests` still MATCH-parse red — not blocker. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=11 TRACK_MIR_VM_FULL — multi-module `--run` (import merge → one MirProgram) |
 
 ### Turn 2026-07-09 23:50 (Driver TRACK_MIR_VM_FULL STEP=9 — for / pop / contains)
 
