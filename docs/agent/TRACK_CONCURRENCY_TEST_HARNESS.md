@@ -5,7 +5,11 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 4 слоя, полная stress-матрица, читать перед началом).
 Смежный трек (не блокер для T1-T4): [TRACK_CONCURRENCY_V2.md](TRACK_CONCURRENCY_V2.md).
 
-## Status: **open** — не начат
+## Status: **open** — STEP=1 (T1) ready for Driver
+
+**Planner 2026-07-09:** Next after `TRACK_LANG_CLOSURE_ESCAPE` closed
+(PLAN priority order). T1-T4 independent of CONCURRENCY_V2. STEP=1 =
+deterministic `TestScheduler` + test doubles for Mutex/Channel.
 
 ## Goal
 
@@ -28,13 +32,32 @@ scripts/concurrency_sanitize_gate.sh
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 (T1) | `runtime/include/mlc/concurrency/testing/scheduler.hpp` — seeded turn-baton планировщик; `testing/mutex.hpp`, `testing/channel.hpp` — тот же публичный API что production, yield в scheduler на lock/unlock/send/recv/wait. Общий тестовый хелпер, чтобы один сценарий гонялся в обоих режимах (реальные потоки vs `TestScheduler`). | pending |
+| 1 (T1) | `runtime/include/mlc/concurrency/testing/scheduler.hpp` — seeded turn-baton планировщик; `testing/mutex.hpp`, `testing/channel.hpp` — тот же публичный API что production, yield в scheduler на lock/unlock/send/recv/wait. Общий тестовый хелпер, чтобы один сценарий гонялся в обоих режимах (реальные потоки vs `TestScheduler`). | **next** |
 | 2 (T2) | Расширить `runtime/test/stress_channel.cpp` до полной матрицы из `CONCURRENCY_TEST_HARNESS.md` Layer 2 (кроме cancel-сценариев): full/empty queue, close during send/recv, sender/receiver destruction, rapid open/close (1000×), 1M messages. | pending |
 | 3 (T3) | Новые `runtime/test/stress_mutex.cpp` (high contention, exception-safety под lock), `stress_arc.cpp` (concurrent clone/drop), `stress_spawn.cpp` (много одновременных spawn, exception внутри spawn не роняет процесс). Добавить в `run_concurrency_smoke.sh`. | pending |
 | 4 (T4) | `scripts/concurrency_sanitize_gate.sh` (asan/ubsan/tsan матрица по всем stress-тестам) + wiring в `.github/workflows/ci.yml` как обязательная job (не опциональный ручной `MLC_TSAN=1`). | pending |
 | 5 (T5) | После `TRACK_CONCURRENCY_V2` STEP=5 (`StopToken`): добавить cancel-during-send/recv в матрицу Layer 2. | TRACK_CONCURRENCY_V2 STEP=5 |
 | 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. | T1, T4 |
 | 7 (T7) | `TestRuntime.new(seed:)` на уровне MLC (тонкая обёртка над `TestScheduler`). | CONCURRENCY_V2.md Фазы 6-8 (Task/TaskScope/Isolate) |
+
+### STEP=1 acceptance (Driver)
+
+**Файлы (только `runtime/`, не `compiler/` / не `lib/mlc/`):**
+- `runtime/include/mlc/concurrency/testing/scheduler.hpp` — `TestScheduler(seed)`:
+  register virtual threads, `yield` / `park` / `unpark`, pick next runnable via
+  seeded PRNG; same seed → same schedule.
+- `runtime/include/mlc/concurrency/testing/mutex.hpp` — `TestMutex<T>` with
+  `lock(callback)` matching `mlc::concurrency::Mutex` API; yield to scheduler
+  around critical section.
+- `runtime/include/mlc/concurrency/testing/channel.hpp` — `TestChannel<T>` with
+  `send`/`recv`/`close`/`size` matching production `Channel` (capacity ≥1);
+  yield on block points.
+- `runtime/test/test_scheduler.cpp` — unit: two virtual threads + mutex or
+  channel; run twice with same seed, assert identical event log / outcome;
+  different seed may differ.
+- Wire `test_scheduler` into `runtime/test/run_concurrency_smoke.sh`.
+
+**Verify:** `runtime/test/run_concurrency_smoke.sh` exit 0 (includes new test).
 
 ## Out of scope (этот трек)
 

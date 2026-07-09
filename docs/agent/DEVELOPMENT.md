@@ -40,9 +40,12 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_CLOSURE_ESCAPE** closed (STEP=4 verify-gate: DIFF_EXIT:0, translate ~4.5s).
+**TRACK_CONCURRENCY_TEST_HARNESS** STEP=1 (T1) — `TestScheduler` + test
+Mutex/Channel doubles under `runtime/include/mlc/concurrency/testing/`.
+PLAN order after CLOSURE_ESCAPE. Layer: `runtime/` only.
 
-Следующий приоритет: открытый TRACK из PLAN / `TRACK_LANG_*` (низкий: `TRACK_LANG_REGION_ARENA`, `TRACK_MIR_VM_FULL`). Ruby `dev_gate_fast` всё ещё red от STEP=1 HOF templates — отдельный fix при необходимости.
+Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
+runtime harness; verify via existing `run_tests` / mlcc when touching compiler.
 
 ## Step sizing (good vs bad)
 

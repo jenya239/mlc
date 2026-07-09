@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 4 |
-| active_track | TRACK_LANG_CLOSURE_ESCAPE closed |
+| driver_turns_since_plan | 0 |
+| step_last | pick-next |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=1 |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:32 (Planner pick-next — CONCURRENCY_TEST_HARNESS T1)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 11:32 |
+| elapsed | ~3 min |
+| done    | PLAN order after CLOSURE_ESCAPE: activated HARNESS STEP=1 (T1). Wrote acceptance: `testing/scheduler.hpp`, `mutex.hpp`, `channel.hpp`, `test_scheduler.cpp`, smoke wire. Updated DEVELOPMENT. |
+| result  | TRACK ready; no compiler/. Plain: следующий Driver делает TestScheduler. |
+| issues  | Ruby `dev_gate_fast` still red (CLOSURE STEP=1) — harness is runtime-only, not blocked. REGION_ARENA blocked on design; MIR_VM Epic C later. |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_TEST_HARNESS — TestScheduler + test Mutex/Channel |
 
 ### Turn 2026-07-09 11:28 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=4 — verify-gate + close)
 
