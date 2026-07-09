@@ -6,10 +6,10 @@ Supervisor later). Predecessor closed:
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md)
 (cancel wake, TaskScope C++, Sync-safe spawn capture).
 
-## Status: **open** — STEP=1 next (ThreadPool)
+## Status: **open** — STEP=1 done; STEP=2 next (Isolate mailbox)
 
-**Driver 2026-07-09:** HARNESS T5 done — Isolate/ThreadPool unblocked.
-FFI_LAYER remains medium priority after this track's STEP=1–2 polish.
+**Driver 2026-07-09:** STEP=1 — `ThreadPool` (workers + bounded Channel queue,
+blocking submit, shutdown/dtor drain+join).
 
 ## Goal
 
@@ -20,8 +20,8 @@ per CONCURRENCY_V2 §16–19. No MLC actor sugar in v1.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `ThreadPool` runtime (workers + bounded queue); unit + smoke | **next** |
-| 2 | `Isolate` mailbox (bounded channel + single owner thread) | pending |
+| 1 | `ThreadPool` runtime (workers + bounded queue); unit + smoke | **done** |
+| 2 | `Isolate` mailbox (bounded channel + single owner thread) | **next** |
 | 3 | Wire cancel/`StopToken` into pool/isolate shutdown | pending |
 | 4 | Docs + self-host / close or hand off to Supervisor | pending |
 

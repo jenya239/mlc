@@ -31,6 +31,7 @@
 #include "mlc/concurrency/mutex.hpp"
 #include "mlc/concurrency/stop.hpp"
 #include "mlc/concurrency/task_scope.hpp"
+#include "mlc/concurrency/thread_pool.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

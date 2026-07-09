@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_ISOLATE** STEP=1 — `ThreadPool` runtime.
-HARNESS T5 done; T6 deferred.
+**TRACK_CONCURRENCY_ISOLATE** STEP=2 — `Isolate` mailbox.
+STEP=1 ThreadPool done.
 
 ## Step sizing (good vs bad)
 

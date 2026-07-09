@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_CONCURRENCY_ISOLATE STEP=1 |
+| driver_turns_since_plan | 6 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_ISOLATE STEP=2 |
 | test_gate | ok (smoke) |
+
+### Turn 2026-07-09 14:23 (Driver TRACK_CONCURRENCY_ISOLATE STEP=1 — ThreadPool)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_ISOLATE |
+| started | 2026-07-09 14:23 |
+| elapsed | ~4 min |
+| done    | `thread_pool.hpp` ThreadPool (Channel queue, submit/shutdown); `test_thread_pool.cpp` 4 cases; smoke + `mlc.hpp` wire. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_thread_pool 70/70). |
+| result  | STEP=1 done. Plain: fixed pool + bounded queue. |
+| issues  | Dirty runtime binaries left uncommitted. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_ISOLATE — Isolate mailbox |
 
 ### Turn 2026-07-09 14:17 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=5 — cancel stress)
 
