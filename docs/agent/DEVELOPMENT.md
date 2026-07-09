@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner** — pick next track after TRACK_MIR_VM_FULL Epic 4 closed (STEP=12 done).
-Do **not** open Epic 5 / STEP=13 without explicit user command.
+**TRACK_TEXT_RENDERING** STEP=1 — design `TEXT_RENDERING.md` §5.1 + §5.3 (no codegen).
+(MIR_VM_FULL Epic 4 closed; Epic 5 unauthorized. SUPERVISOR deferred; REGION blocked.)
 
 ## Step sizing (good vs bad)
 

@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized** — после Epic 4 → Planner, не STEP=13; см. HARD STOP gate 2026-07-09).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. Queue head после Epic 4: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=1).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -383,9 +383,9 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: Planner after [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) Epic 4 closed (STEP=12). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=1. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
-| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — unblocked by FFI_LAYER close; низкий приоритет (личный проект); STEP=0 done, STEP=1 next (design §5) |
+| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — **queue head** after MIR_VM_FULL Epic 4; STEP=0 done, STEP=1 next (design §5.1+§5.3) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 
@@ -420,13 +420,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     Epic 4 STEP=11 (**done** 2026-07-09: `vm_multi` + export unwrap in MIR lower);
     Epic 4 STEP=12 (**done** 2026-07-10: `run_examples_vm_gate.sh` 28 programs; Epic 4 closed);
     **HARD STOP — Epic 5 (STEP 13-20) НЕ авторизован** без явной команды
-    пользователя (2026-07-09); следующий turn = **Planner** из этой очереди,
-    не STEP=13
+    пользователя (2026-07-09); не открывать STEP=13
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
-  → TEXT_RENDERING (unblocked by FFI_LAYER close; низкий приоритет — личный
-    проект; не поднимать выше MIR_VM_FULL без явной команды)
+  → TEXT_RENDERING STEP=1 (**next** — design §5.1 C array view + §5.3 msdfgen shim)
+    → STEP=2–8 (FreeType/HarfBuzz/atlas/GL…)
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 19 |
-| step_last | 12 |
-| active_track | TRACK_MIR_VM_FULL Epic 4 closed — Planner next |
-| test_gate | ok (examples gate 28/0; CHECK:0) |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_RENDERING STEP=1 |
+| test_gate | ok (docs-only Planner; prior examples gate 28/0) |
+
+### Turn 2026-07-10 00:06 (Planner — queue after MIR_VM_FULL Epic 4)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN.md queue |
+| started | 2026-07-10 00:06 |
+| elapsed | ~2 min |
+| done    | Skipped SUPERVISOR (deferred), REGION (design-blocked), MIR Epic 5 (HARD STOP). Opened queue head: TRACK_TEXT_RENDERING STEP=1 (+sub-steps). Synced PLAN/DEVELOPMENT. |
+| verify  | PLAN chain → TEXT_RENDERING STEP=1; TRACK STEP=1 pending with sub-steps; no compiler/ edits. |
+| result  | Plain: next work is text-rendering design §5.1/§5.3. |
+| issues  | STDLIB_NET_SERVER still uncreated (after TEXT_RENDERING in queue). Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_RENDERING — design TEXT_RENDERING.md §5.1 C array view + §5.3 msdfgen shim |
 
 ### Turn 2026-07-10 00:04 (Driver TRACK_MIR_VM_FULL STEP=12 — examples subset `--run`)
 

@@ -9,14 +9,24 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 (STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_MIR_VM_FULL` без
 явной команды.
 
-## Status: **open** — STEP=0 done; STEP=1 next (design §5)
+## Status: **open** — STEP=0 done; STEP=1 **next** (design §5.1 + §5.3)
+
+**Planner 2026-07-10:** After `TRACK_MIR_VM_FULL` Epic 4 closed (STEP=12), queue
+skips SUPERVISOR (deferred) and LANG_REGION_ARENA (design-blocked). Next
+executable track is this one. Epic 5 MIR_VM remains unauthorized.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 0 | Предусловие: `TRACK_FFI_LAYER` closed (STEP=1-6, минимум без concurrency-метаданных STEP=7-8). | **done** (FFI closed 2026-07-09) |
-| 1 | Решить открытые вопросы `TEXT_RENDERING.md` §5.1 (C array view для `hb_buffer_get_glyph_infos`) и §5.3 (msdfgen шим) — design-turn, не кодогенерация. | pending |
+| 1 | Решить открытые вопросы `TEXT_RENDERING.md` §5.1 (C array view для `hb_buffer_get_glyph_infos`) и §5.3 (msdfgen шим) — design-turn, не кодогенерация. | **pending** |
+<!-- sub-steps STEP=1:
+  1) §5.1: выбрать паттерн C array view (RawPointer[T]+length vs copy-to-Array) — записать решение в TEXT_RENDERING.md §5
+  2) §5.3: выбрать шим msdfgen (runtime .cpp C ABI wrapper vs out-of-scope defer) — записать в §5
+  3) §5.2 (glXGetProcAddress) явно отложить до STEP=5; не блокировать FreeType/HarfBuzz
+  4) SESSION/PLAN: после записи решений → Driver STEP=2
+-->
 | 2 | `extern type`/`extern fn` биндинги FreeType (`TEXT_RENDERING.md` §3.1, FreeType-подмножество). Тест: загрузка `.ttf`, `FT_Load_Glyph`+`FT_Render_Glyph` на 1 символе, сравнение bitmap-размера с ожидаемым. | pending |
 | 3 | `extern type`/`extern fn` биндинги HarfBuzz (§3.1, HarfBuzz-подмножество) + `hb_ft_font_create` мост. `TextShaper.shape()` на MLC: строка UTF-8 (включая кириллицу) → `ShapedGlyph[]`. | pending |
 | 4 | `GlyphAtlas` (shelf bin-pack) + `GlyphCache` (LRU) — чистый MLC, без FFI. Юнит-тесты на packing/eviction. | pending |
