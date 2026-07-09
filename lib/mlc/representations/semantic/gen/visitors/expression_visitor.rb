@@ -231,8 +231,16 @@ module MLC
               # Built-in Profile methods
               return true if type_name == "Profile" && %w[reset scope_begin scope_end print_report monotonic_nanos peak_rss_kib].include?(method_name)
 
+              return true if method_name == "from_json" && type_has_json_derive?(type_name)
+
               @services.trait_registry.resolve_static_method(type_name, method_name) ||
                 @services.function_registry.fetch("#{type_name}_#{method_name}")
+            end
+
+            def type_has_json_derive?(type_name)
+              type_info = @services.type_registry.lookup(type_name)
+              return false unless type_info&.ast_node.respond_to?(:derive_traits)
+              Array(type_info.ast_node.derive_traits).include?("Json")
             end
 
             def desugar_pipe(node, extra_context)

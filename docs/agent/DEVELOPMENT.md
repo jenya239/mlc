@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_API_CLIENT** STEP=2 — `JsonError` + `derive { Json }` for records
+**TRACK_API_CLIENT** STEP=3 — `derive { Json }` for sum types (tagged representation)
 (STEP=1 done: JsonNumber f64, JsonObject Map).
 
 ## Step sizing (good vs bad)

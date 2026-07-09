@@ -7,7 +7,7 @@ module MLC
         module Services
           # Validates derive { … } clauses before codegen (E1 / B1).
           module DeriveClauseValidation
-            ALLOWED_DERIVE_TRAITS = %w[Display Eq Ord Hash].freeze
+            ALLOWED_DERIVE_TRAITS = %w[Display Eq Ord Hash Json].freeze
             HASH_ALLOWED_PRIM_NAMES = %w[i32 bool string].freeze
 
             module_function

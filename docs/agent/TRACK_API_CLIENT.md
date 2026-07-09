@@ -8,17 +8,17 @@ Parent: [../PLAN.md](../PLAN.md), [../API_CLIENT.md](../API_CLIENT.md)
 `FFI_LAYER` (JSON/HTTP уже есть, `derive` — существующий языковой механизм).
 Может стартовать независимо от очереди FFI/concurrency.
 
-## Status: **open** — STEP=1 done; STEP=2 next
+## Status: **open** — STEP=2 done; STEP=3 next
 
-**Driver 2026-07-09:** STEP=1 — `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)`,
-`as_number`/`json_number`/`as_object`/`json_object` aligned with C++ `double` + map.
+**Driver 2026-07-09:** STEP=2 — `JsonError` + Ruby `derive { Json }` for records (`to_json`/`from_json`);
+round-trip test with `i64`/`string`/`Option`/`Array`. STEP=1 done earlier.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Исправить рассинхронизацию MLC-типа JSON и C++ runtime (`API_CLIENT.md` §2): `JsonNumber(f32)`→`f64`, `JsonObject(str, JsonValue)`→`JsonObject(Map<str, JsonValue>)` в `lib/mlc/common/stdlib/data/json.mlc`. Ruby-бутстрап первым, self-hosted не отстаёт (там же используется `extern`-декларация, без отдельного codegen). Регрессия: `test/mlc/` на JSON, если есть. | **done** |
-| 2 | `JsonError` тип (`MissingField`/`TypeMismatch`/…) + `derive { Json }` для record-типов в Ruby-бутстрапе: `lib/mlc/registries/` (список derivable traits) + `lib/mlc/backends/cpp/codegen.rb` (генерация `to_json`/`from_json`). Тест: round-trip на типе с `i64`/`string`/`Option<T>`/`Array<T>` полями. | pending |
+| 2 | `JsonError` тип (`MissingField`/`TypeMismatch`/…) + `derive { Json }` для record-типов в Ruby-бутстрапе: `lib/mlc/registries/` (список derivable traits) + `lib/mlc/backends/cpp/codegen.rb` (генерация `to_json`/`from_json`). Тест: round-trip на типе с `i64`/`string`/`Option<T>`/`Array<T>` полями. | **done** |
 | 3 | `derive { Json }` для sum-типов — решить tagged-representation конвенцию (`API_CLIENT.md` §3), реализовать в Ruby. Тест: round-trip на каждом варианте. | pending |
 | 4 | Self-hosted: `derive { Json }` в `compiler/checker/check/derive_validation.mlc` (добавить `"Json"`) + `compiler/codegen/decl.mlc`. Self-host verify gate. | pending |
 | 5 | OpenAPI codegen — Ruby-скрипт (не часть `mlcc`), вход `openapi.yaml`, выход `.mlc` (types + client fns). MVP: `object`/`array`/примитивы + простой `oneOf`. Тест на публичной Petstore-спеке или аналоге. | pending |

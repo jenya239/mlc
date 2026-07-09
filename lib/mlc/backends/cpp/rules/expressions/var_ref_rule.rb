@@ -47,6 +47,8 @@ module MLC
               name = context.sanitize_identifier(node.name)
               return name if context.user_function?(name)
               return name unless name.match?(/\A[A-Z]/) # Constructor convention
+              # Mangled free functions (Type_to_json / Type_from_json), not ADT constructors.
+              return name if name.include?("_")
 
               type = node.respond_to?(:type) && node.type ? node.type : nil
               base_name = if type.is_a?(MLC::SemanticIR::SumType)

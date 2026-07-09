@@ -62,6 +62,9 @@ module MLC
               # Built-in Profile methods
               return true if type_name == "Profile" && PROFILE_METHODS.key?(method_name)
 
+              # derive Json: Type.from_json(value)
+              return true if method_name == "from_json" && type_has_json_derive?(svc, type_name)
+
               # Check if this is a known type with static methods
               static_method_exists?(svc, type_name, method_name)
             end
@@ -86,6 +89,11 @@ module MLC
               # Handle built-in Profile methods
               if type_name == "Profile" && PROFILE_METHODS.key?(method_name)
                 return produce_builtin_profile_method(node, context, svc, method_name)
+              end
+
+              # derive Json: Type.from_json(value) -> Type_from_json(value)
+              if method_name == "from_json" && type_has_json_derive?(svc, type_name)
+                return produce_derive_from_json(node, context, svc, type_name)
               end
 
               # Build mangled function name: Type_method
@@ -226,6 +234,38 @@ module MLC
                 ),
                 args: args_ir,
                 type: ret_type,
+                origin: node
+              )
+            end
+
+
+            def type_has_json_derive?(svc, type_name)
+              type_info = svc.type_registry.lookup(type_name)
+              return false unless type_info&.ast_node.respond_to?(:derive_traits)
+              Array(type_info.ast_node.derive_traits).include?("Json")
+            end
+
+            def produce_derive_from_json(node, context, svc, type_name)
+              args_ir = context[:args_ir]
+              raise MLC::CompileError, "from_json expects exactly one argument" unless args_ir && args_ir.length == 1
+
+              type_info = svc.type_registry.lookup(type_name)
+              object_type = type_info.core_ir_type
+              json_value_type = SemanticIR::Builder.primitive_type("JsonValue")
+              json_error_type = SemanticIR::Builder.primitive_type("JsonError")
+              result_type = SemanticIR::Builder.generic_type(
+                SemanticIR::Builder.primitive_type("Result"),
+                [object_type, json_error_type]
+              )
+              mangled_name = "#{type_name}_from_json"
+              func_type = SemanticIR::Builder.function_type(
+                [{ name: "value", type: json_value_type }],
+                result_type
+              )
+              svc.ir_builder.call(
+                func: svc.ir_builder.var(name: mangled_name, type: func_type, origin: node.callee),
+                args: args_ir,
+                type: result_type,
                 origin: node
               )
             end

@@ -252,6 +252,7 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/profile.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/json/json.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result_combinators.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/optional_combinators.hpp", system: false)
           ]
@@ -601,6 +602,8 @@ module MLC
               stmts << generate_derive_ord(name, type)
             when "Hash"
               stmts << generate_derive_hash(name, type)
+            when "Json"
+              stmts << generate_derive_json(name, type)
             end
           end
           stmts.compact
@@ -706,6 +709,195 @@ module MLC
           code = "bool operator<(const #{name}& a, const #{name}& b) noexcept { #{body} }"
           @context.factory.raw_statement(code: code)
         end
+
+
+        def generate_derive_json(name, type)
+          return nil unless type.is_a?(SemanticIR::RecordType)
+
+          to_json_body = derive_json_to_json_body(type)
+          from_json_body = derive_json_from_json_body(name, type)
+          code = <<~CPP.strip
+            mlc::json::JsonValue #{name}_to_json(const #{name}& self) noexcept {
+              #{to_json_body}
+            }
+            mlc::result::Result<#{name}, mlc::json::JsonError> #{name}_from_json(const mlc::json::JsonValue& value) noexcept {
+              #{from_json_body}
+            }
+          CPP
+          @context.factory.raw_statement(code: code)
+        end
+
+        def derive_json_to_json_body(type)
+          lines = ["mlc::json::JsonValue object = mlc::json::json_object();"]
+          type.fields.each do |field|
+            field_name = field[:name]
+            encoded = derive_json_encode_field("self.#{field_name}", field[:type])
+            lines << "object = mlc::json::json_set(object, mlc::String(\"#{field_name}\"), #{encoded});"
+          end
+          lines << "return object;"
+          lines.join("\n  ")
+        end
+
+        def derive_json_from_json_body(name, type)
+          lines = []
+          lines << "if (!value.is_object()) {"
+          lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"\"), mlc::String(\"object\")));"
+          lines << "}"
+          type.fields.each do |field|
+            field_name = field[:name]
+            lines.concat(derive_json_decode_field(field_name, field[:type]))
+          end
+          field_inits = type.fields.map { |field| ".#{field[:name]} = #{field[:name]}" }.join(", ")
+          lines << "return mlc::result::Ok<#{name}>(#{name}{#{field_inits}});"
+          lines.join("\n  ")
+        end
+
+                def derive_json_encode_field(access, field_type)
+          case field_type
+          when SemanticIR::ArrayType
+            element = field_type.element_type
+            encoded_item = derive_json_encode_field("item", element)
+            "[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(#{access}.size()); for (const auto& item : #{access}) { items.push_back(#{encoded_item}); } return mlc::json::json_array(items); }()"
+          when SemanticIR::GenericType
+            base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
+            if base == "Option"
+              inner = field_type.type_args.first
+              encoded_inner = derive_json_encode_field("(*#{access})", inner)
+              "(#{access}.has_value() ? #{encoded_inner} : mlc::json::json_null())"
+            else
+              "mlc::json::json_null()"
+            end
+          when SemanticIR::Type
+            case field_type.name
+            when "string", "str"
+              "mlc::json::json_string(#{access})"
+            when "bool"
+              "mlc::json::json_bool(#{access})"
+            when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize", "f32", "f64"
+              "mlc::json::json_number(static_cast<double>(#{access}))"
+            else
+              "mlc::json::json_string(mlc::to_string(#{access}))"
+            end
+          else
+            "mlc::json::json_null()"
+          end
+        end
+
+
+        def derive_json_decode_field(field_name, field_type)
+          lines = []
+          if field_type.is_a?(SemanticIR::GenericType)
+            base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
+            if base == "Option"
+              inner = field_type.type_args.first
+              cpp_inner = derive_json_cpp_type(inner)
+              lines << "std::optional<#{cpp_inner}> #{field_name} = std::nullopt;"
+              lines << "{"
+              lines << "  auto __opt_#{field_name} = mlc::json::json_get(value, mlc::String(\"#{field_name}\"));"
+              lines << "  if (__opt_#{field_name}.has_value() && !__opt_#{field_name}->is_null()) {"
+              derive_json_extract_required("__opt_#{field_name}.value()", field_name, inner, "    ").each do |line|
+                lines << "  #{line}"
+              end
+              lines << "    #{field_name} = __decoded_#{field_name};"
+              lines << "  }"
+              lines << "}"
+              return lines
+            end
+          end
+
+          cpp_type = derive_json_cpp_type(field_type)
+          lines << "#{cpp_type} #{field_name};"
+          lines << "{"
+          lines << "  auto __opt_#{field_name} = mlc::json::json_get(value, mlc::String(\"#{field_name}\"));"
+          lines << "  if (!__opt_#{field_name}.has_value()) {"
+          lines << "    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String(\"#{field_name}\")));"
+          lines << "  }"
+          lines.concat(derive_json_extract_required("__opt_#{field_name}.value()", field_name, field_type, "  "))
+          lines << "  #{field_name} = __decoded_#{field_name};"
+          lines << "}"
+          lines
+        end
+
+                def derive_json_extract_required(value_expr, field_name, field_type, indent)
+          lines = []
+          case field_type
+          when SemanticIR::ArrayType
+            element = field_type.element_type
+            cpp_elem = derive_json_cpp_type(element)
+            lines << "#{indent}if (!#{value_expr}.is_array()) {"
+            lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"array\")));"
+            lines << "#{indent}}"
+            lines << "#{indent}mlc::Array<#{cpp_elem}> __decoded_#{field_name};"
+            lines << "#{indent}{"
+            lines << "#{indent}  auto __arr_#{field_name} = *#{value_expr}.as_array();"
+            lines << "#{indent}  for (const auto& __item_#{field_name} : __arr_#{field_name}) {"
+            lines.concat(derive_json_extract_required("__item_#{field_name}", "#{field_name}_item", element, "#{indent}    "))
+            lines << "#{indent}    __decoded_#{field_name}.push_back(__decoded_#{field_name}_item);"
+            lines << "#{indent}  }"
+            lines << "#{indent}}"
+          when SemanticIR::Type
+            case field_type.name
+            when "string", "str"
+              lines << "#{indent}if (!#{value_expr}.is_string()) {"
+              lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"string\")));"
+              lines << "#{indent}}"
+              lines << "#{indent}mlc::String __decoded_#{field_name} = *#{value_expr}.as_string();"
+            when "bool"
+              lines << "#{indent}if (!#{value_expr}.is_bool()) {"
+              lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"bool\")));"
+              lines << "#{indent}}"
+              lines << "#{indent}bool __decoded_#{field_name} = *#{value_expr}.as_bool();"
+            when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize", "f32", "f64"
+              cpp_type = derive_json_cpp_type(field_type)
+              lines << "#{indent}if (!#{value_expr}.is_number()) {"
+              lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"number\")));"
+              lines << "#{indent}}"
+              lines << "#{indent}#{cpp_type} __decoded_#{field_name} = static_cast<#{cpp_type}>(*#{value_expr}.as_number());"
+            else
+              lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
+              lines << "#{indent}#{derive_json_cpp_type(field_type)} __decoded_#{field_name}{};"
+            end
+          else
+            lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
+            lines << "#{indent}#{derive_json_cpp_type(field_type)} __decoded_#{field_name}{};"
+          end
+          lines
+        end
+
+
+                def derive_json_cpp_type(field_type)
+          case field_type
+          when SemanticIR::ArrayType
+            "mlc::Array<#{derive_json_cpp_type(field_type.element_type)}>"
+          when SemanticIR::GenericType
+            base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : "auto"
+            if base == "Option"
+              "std::optional<#{derive_json_cpp_type(field_type.type_args.first)}>"
+            else
+              "#{base}<#{field_type.type_args.map { |argument| derive_json_cpp_type(argument) }.join(', ')}>"
+            end
+          when SemanticIR::Type
+            {
+              "string" => "mlc::String",
+              "str" => "mlc::String",
+              "bool" => "bool",
+              "i8" => "int8_t",
+              "i16" => "int16_t",
+              "i32" => "int",
+              "i64" => "int64_t",
+              "u8" => "uint8_t",
+              "u16" => "uint16_t",
+              "u32" => "uint32_t",
+              "u64" => "uint64_t",
+              "usize" => "size_t",
+              "f32" => "float",
+              "f64" => "double"
+            }.fetch(field_type.name, field_type.name)
+          else
+            "auto"
+          end
+        end
+
 
         HASH_COMBINE_SUFFIX = " + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);"
 

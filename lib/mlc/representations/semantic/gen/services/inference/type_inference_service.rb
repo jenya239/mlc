@@ -365,6 +365,9 @@ return smart_pointer_method if smart_pointer_method
                   if member == "to_string" && type_has_derive?(object_type, "Display")
                     return SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("string"))
                   end
+                  if member == "to_json" && type_has_derive?(object_type, "Json")
+                    return SemanticIR::Builder.function_type([], derive_json_value_type)
+                  end
 
                   type_error("Unknown field '#{member}' for type #{object_type.name}", node: node)
                 end
@@ -390,6 +393,9 @@ return smart_pointer_method if smart_pointer_method
                 # Check derive traits
                 if member == "to_string" && type_has_derive?(object_type, "Display")
                   return SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("string"))
+                end
+                if member == "to_json" && type_has_derive?(object_type, "Json")
+                  return SemanticIR::Builder.function_type([], derive_json_value_type)
                 end
 
                 # Check if this is a trait type (dynamic dispatch via trait object)
@@ -768,6 +774,9 @@ end
                 # Check derive traits
                 if member == "to_string" && args.empty? && @context.send(:type_has_derive?, object_type, "Display")
                   return prim("string")
+                end
+                if member == "to_json" && args.empty? && @context.send(:type_has_derive?, object_type, "Json")
+                  return @context.send(:derive_json_value_type)
                 end
 
                 type_error("Unknown member '#{member}' for type #{describe(object_type)}")
@@ -1547,6 +1556,21 @@ end
             def current_type_params
               @scope_context.current_type_params
             end
+
+              def derive_json_value_type
+                SemanticIR::Builder.primitive_type("JsonValue")
+              end
+
+              def derive_json_error_type
+                SemanticIR::Builder.primitive_type("JsonError")
+              end
+
+              def derive_json_result_type(object_type)
+                SemanticIR::Builder.generic_type(
+                  SemanticIR::Builder.primitive_type("Result"),
+                  [object_type, derive_json_error_type]
+                )
+              end
 
             # Check if a type has a specific derive trait registered.
             def type_has_derive?(object_type, trait)

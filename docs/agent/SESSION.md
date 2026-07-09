@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_API_CLIENT STEP=2 |
-| test_gate | ok (json_value_type_sync_test 2/0) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_API_CLIENT STEP=3 |
+| test_gate | ok (derive_json_test 4/0) |
+
+### Turn 2026-07-09 20:21 (Driver TRACK_API_CLIENT STEP=2 — JsonError + derive Json records)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 19:42 |
+| elapsed | ~40 min |
+| done    | `JsonError` in `json.mlc` + C++ runtime; Ruby `derive { Json }` for records (`to_json`/`from_json`); inference/call/static lowering; fixed `to_nlohmann_json` array string lifetime; test `derive_json_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/derive_json_test.rb` 4 runs 0 fail; `derive_test.rb` 18/0. |
+| result  | STEP=2 done. Plain: record Json derive round-trips Option/Array. |
+| issues  | Dirty `compiler/out/mlcc` left uncommitted; self-hosted Json derive = STEP=4. |
+| next    | ROLE=Driver STEP=3 TRACK_API_CLIENT — derive { Json } for sum types |
 
 ### Turn 2026-07-09 19:40 (Driver TRACK_API_CLIENT STEP=1 — JsonNumber f64, JsonObject Map)
 

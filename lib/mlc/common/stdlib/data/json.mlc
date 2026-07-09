@@ -6,6 +6,11 @@
 // JSON support module
 // Provides JSON parsing and serialization
 
+// Typed decode errors for derive { Json }
+export type JsonError =
+  | MissingField(string)
+  | TypeMismatch(string, string)
+
 // JSON value type - can be any JSON type
 export type JsonValue =
   | JsonNull

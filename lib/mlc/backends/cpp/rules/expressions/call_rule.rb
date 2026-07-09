@@ -139,6 +139,14 @@ module MLC
                 return lower_derive_to_string(node)
               end
 
+              # Check for derive Json to_json call: obj.to_json() on derived type
+              if context.checker.member_expr?(node.callee) &&
+                 node.callee.member == "to_json" &&
+                 node.args.empty? &&
+                 derive_has_trait?(node.callee.object.type, "Json")
+                return lower_derive_to_json(node)
+              end
+
               # Check for numeric method calls
               if context.checker.member_expr?(node.callee) &&
                  node.callee.object.type.respond_to?(:primitive?) &&
@@ -1596,6 +1604,18 @@ module MLC
               obj = lower_expression(node.callee.object)
               context.factory.function_call(
                 callee: context.factory.identifier(name: "#{type_name}_to_string"),
+                arguments: [obj],
+                argument_separators: []
+              )
+            end
+
+            # Generate TypeName_to_json(obj) for derive Json types.
+            def lower_derive_to_json(node)
+              obj_type = node.callee.object.type
+              type_name = obj_type.name
+              obj = lower_expression(node.callee.object)
+              context.factory.function_call(
+                callee: context.factory.identifier(name: "#{type_name}_to_json"),
                 arguments: [obj],
                 argument_separators: []
               )

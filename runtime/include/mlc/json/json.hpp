@@ -105,10 +105,11 @@ inline json to_nlohmann_json(const JsonValue& jv) {
     } else if (jv.is_number()) {
         return json(*jv.as_number());
     } else if (jv.is_string()) {
-        return json(jv.as_string()->c_str());
+        return json(std::string(jv.as_string()->c_str()));
     } else if (jv.is_array()) {
         json arr = json::array();
-        for (const auto& elem : *jv.as_array()) {
+        auto array_value = jv.as_array();
+        for (const auto& elem : *array_value) {
             arr.push_back(to_nlohmann_json(elem));
         }
         return arr;
@@ -154,6 +155,10 @@ inline JsonValue json_bool(bool b) {
 }
 
 inline JsonValue json_number(float n) {
+    return JsonValue(n);
+}
+
+inline JsonValue json_number(double n) {
     return JsonValue(n);
 }
 
@@ -246,6 +251,27 @@ inline JsonValue json_array_push(const JsonValue& arr, const JsonValue& value) {
 
     new_arr.push_back(value);
     return JsonValue(new_arr);
+}
+
+
+// Typed JSON decode errors (derive { Json } / API_CLIENT)
+struct MissingField {
+    mlc::String field0;
+};
+
+struct TypeMismatch {
+    mlc::String field0;
+    mlc::String field1;
+};
+
+using JsonError = std::variant<MissingField, TypeMismatch>;
+
+inline JsonError json_missing_field(const mlc::String& field_name) {
+    return MissingField{field_name};
+}
+
+inline JsonError json_type_mismatch(const mlc::String& field_name, const mlc::String& expected) {
+    return TypeMismatch{field_name, expected};
 }
 
 } // namespace mlc::json
