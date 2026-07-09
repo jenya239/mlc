@@ -27,6 +27,7 @@ module MLC
                 body: func.body,
                 effects: effects,
                 type_params: func.type_params,
+                synthetic_type_params: func.respond_to?(:synthetic_type_params) ? func.synthetic_type_params : [],
                 external: func.external,
                 exported: func.exported,
                 is_async: func.is_async,

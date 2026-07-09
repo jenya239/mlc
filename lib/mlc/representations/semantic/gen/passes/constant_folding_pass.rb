@@ -89,6 +89,7 @@ module MLC
                 body: optimized_body,
                 effects: func.respond_to?(:effects) ? func.effects : [],
                 type_params: func.respond_to?(:type_params) ? func.type_params : [],
+                synthetic_type_params: func.respond_to?(:synthetic_type_params) ? func.synthetic_type_params : [],
                 external: func.respond_to?(:external) ? func.external : false,
                 exported: func.respond_to?(:exported) ? func.exported : false,
                 is_async: func.respond_to?(:is_async) ? func.is_async : false,

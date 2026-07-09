@@ -74,7 +74,11 @@ module MLC
           end
 
           func.params.map do |param|
-            cpp_type = @context.map_type(param.type)
+            cpp_type = if param.respond_to?(:template_type_name) && param.template_type_name
+                         param.template_type_name
+                       else
+                         @context.map_type(param.type)
+                       end
             if param.respond_to?(:mutable) && param.mutable && !param.type.is_a?(SemanticIR::MutRefType)
               cpp_type = "#{cpp_type}&"
             end
@@ -95,11 +99,11 @@ module MLC
           return_type = @context.map_type(func.ret_type)
           name = @context.sanitize_identifier(func.name)
           # Single template definition is the only declaration — keep default values there
-          include_defaults = func.type_params.any?
+          include_defaults = (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?)
           parameters = build_function_parameters_cpp(func, include_default_values: include_defaults)
 
           # Set flag for generic function context
-          @in_generic_function = func.type_params.any?
+          @in_generic_function = (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?)
           @container.instance_variable_set(:@in_generic_function, @in_generic_function)
 
           # For main(), inject argc/argv and set_args preamble
@@ -188,8 +192,8 @@ module MLC
           )
 
           # If function has type parameters, wrap with template declaration
-          if func.type_params.any?
-            generate_template_function(func.type_params, func_decl)
+          if (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?)
+            generate_template_function((func.respond_to?(:all_type_params) ? func.all_type_params : func.type_params), func_decl)
           else
             func_decl
           end
@@ -246,7 +250,7 @@ module MLC
           # Must come after all type definitions so parameter/return types are known.
           # Uses the same modifiers as the actual definition to avoid redeclaration mismatch.
           func_protos = module_node.items.grep(SemanticIR::Func).flat_map do |func|
-            next [] if func.type_params.any?
+            next [] if (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?)
             next [] if func.body.nil? # extern - no forward decl needed
             [function_forward_decl(func)]
           end

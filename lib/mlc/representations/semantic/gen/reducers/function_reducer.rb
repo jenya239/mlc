@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module MLC
   module Representations
     module Semantic
@@ -45,11 +47,11 @@ module MLC
                 type_params = @type_checker.normalize_type_params(func_decl.type_params)
                 @scope_context.with_type_params(type_params) do
                   signature ||= register_signature(func_decl)
-                  params = build_params(func_decl, signature.param_types)
+                  params, synthetic_type_params = build_params(func_decl, signature.param_types)
                   result_func = if func_decl.external
                                   build_external_func(func_decl, params, signature, type_params)
                                 else
-                                  build_function(func_decl, params, signature, type_params)
+                                  build_function(func_decl, params, signature, type_params, synthetic_type_params)
                                 end
                   result_func = apply_function_rules(result_func)
                   update_registry_metadata(func_decl, result_func)
@@ -79,7 +81,10 @@ module MLC
                 )
               end
 
-              func_decl.params.each_with_index.map do |param, index|
+              non_escaping_names = non_escaping_function_typed_param_names(func_decl, param_types)
+
+              synthetic_type_params = []
+              params = func_decl.params.each_with_index.map do |param, index|
                 type = param_types[index]
                 default_ir = nil
                 if param.default
@@ -90,10 +95,29 @@ module MLC
                     node: default_ir
                   )
                 end
+                template_type_name = nil
+                if non_escaping_names.include?(param.name)
+                  template_type_name = "__F#{index}"
+                  synthetic_type_params << MLC::SemanticIR::TypeParam.new(name: template_type_name)
+                end
                 MLC::SemanticIR::Param.new(
-                  name: param.name, type: type, mutable: param.mutable, default: default_ir, origin: param.origin
+                  name: param.name, type: type, mutable: param.mutable, default: default_ir,
+                  template_type_name: template_type_name, origin: param.origin
                 )
               end
+
+              [params, synthetic_type_params]
+            end
+
+            def non_escaping_function_typed_param_names(func_decl, param_types)
+              return Set.new unless @services.respond_to?(:escape_analyzer) && @services.escape_analyzer
+
+              function_typed_names = func_decl.params.each_with_index.filter_map do |param, index|
+                param.name if param_types[index].is_a?(MLC::SemanticIR::FunctionType)
+              end.to_set
+              return Set.new if function_typed_names.empty?
+
+              @services.escape_analyzer.non_escaping_params(func_decl, function_typed_names)
             end
 
             def validate_default_param_ast!(expr, param_name)
@@ -136,7 +160,7 @@ module MLC
               )
             end
 
-            def build_function(func_decl, params, signature, type_params)
+            def build_function(func_decl, params, signature, type_params, synthetic_type_params = [])
               saved_types = @var_type_registry.snapshot
 
               if func_decl.is_async
@@ -172,6 +196,7 @@ module MLC
                 body: body_ir,
                 effects: [],
                 type_params: type_params,
+                synthetic_type_params: synthetic_type_params,
                 external: func_decl.external,
                 exported: func_decl.exported,
                 is_async: func_decl.is_async,

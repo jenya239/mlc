@@ -235,7 +235,7 @@ module MLC
           # Forward declarations for internal functions (used before definition)
           items.each do |item|
             next unless item.is_a?(SemanticIR::Func)
-            next if item.type_params.any?
+            next if (item.respond_to?(:generic?) ? (item.respond_to?(:generic?) ? item.generic? : item.type_params&.any?) : item.type_params.any?)
             next if item.body.nil?
 
             lines << generate_function_declaration(item)
@@ -319,7 +319,7 @@ module MLC
           suffix = effects.include?(:noexcept) ? " noexcept" : ""
 
           lines = []
-          type_params = func.type_params || []
+          type_params = (func.respond_to?(:all_type_params) ? func.all_type_params : func.type_params) || []
 
           lines.concat(build_template_lines(type_params)) unless type_params.empty?
 
@@ -333,7 +333,8 @@ module MLC
             new_effects = effects - [:constexpr]
             f = SemanticIR::Func.new(
               name: func.name, params: func.params, ret_type: func.ret_type, body: func.body,
-              effects: new_effects, type_params: func.type_params, external: func.external,
+              effects: new_effects, type_params: func.type_params,
+              synthetic_type_params: func.synthetic_type_params, external: func.external,
               exported: func.exported, is_async: func.is_async
             )
             @lowering.lower(f).to_source
@@ -526,12 +527,12 @@ module MLC
 
         def module_has_exported_generic_function?(module_node)
           module_node.items.any? do |item|
-            item.is_a?(SemanticIR::Func) && item.exported && item.type_params&.any? && item.body
+            item.is_a?(SemanticIR::Func) && item.exported && (item.respond_to?(:generic?) ? (item.respond_to?(:generic?) ? item.generic? : item.type_params&.any?) : item.type_params.any?) && item.body
           end
         end
 
         def generic_function_in_header?(func, module_node)
-          return false unless func.type_params&.any? && func.body
+          return false unless (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?) && func.body
 
           func.exported || module_has_exported_generic_function?(module_node)
         end

@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 5 |
-| active_track | TRACK_LANG_ORPHAN_RULE **closed**; next TRACK_LANG_CLOSURE_ESCAPE |
+| driver_turns_since_plan | 3 |
+| step_last | 1 |
+| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=1 done; next STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 09:35 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=1 — Ruby escape→template)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_CLOSURE_ESCAPE |
+| started | 2026-07-09 09:10 |
+| elapsed | ~25 min |
+| done    | Wired EscapeAnalyzer: `function_reducer#build_params` → synthetic `__FN`; `Func`/`Param` fields; container; codegen/header; passes preserve synth. Test `closure_escape_analysis_test.rb`. |
+| result  | 7 runs, 0 failures. Plain: non-escaping fn-params → template; escaping → std::function. |
+| issues  | Patched `lib/mlc/representations/` (Zeitwerk). Untracked duplicate `lib/mlc/nxt/` not committed. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_CLOSURE_ESCAPE — self-hosted escape_analysis.mlc |
 
 ### Turn 2026-07-09 09:10 (Driver TRACK_LANG_ORPHAN_RULE STEP=5 — verify-gate + close)
 

@@ -19,6 +19,7 @@ require_relative 'features/loop_service'
 require_relative 'features/match_service'
 require_relative 'features/lambda_service'
 require_relative 'features/capture_analyzer'
+require_relative 'features/escape_analyzer'
 require_relative 'features/list_comprehension_service'
 require_relative 'features/index_access_service'
 require_relative 'features/slice_access_service'
@@ -45,7 +46,7 @@ module MLC
                         :semantic_ir_classifier, :record_literal_builder, :array_literal_builder,
                         :scope_context, :loop_service, :type_unification_service,
                         :match_analyzer, :match_service,
-                        :lambda_service, :list_comprehension_service, :index_access_service, :slice_access_service, :capture_analyzer,
+                        :lambda_service, :list_comprehension_service, :index_access_service, :slice_access_service, :capture_analyzer, :escape_analyzer,
                         :module_context_service, :sum_type_constructor_service,
                         :type_registration_service, :type_builder, :type_declaration_service,
                         :stdlib_registry, :import_service, :metadata_loader,
@@ -156,6 +157,7 @@ module MLC
               @capture_analyzer = Features::CaptureAnalyzer.new(
                 var_type_registry: @var_type_registry
               )
+              @escape_analyzer = Features::EscapeAnalyzer.new
               @lambda_service = LambdaService.new(
                 ir_builder: @ir_builder,
                 type_checker: @type_checker,

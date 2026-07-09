@@ -7,23 +7,12 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md)
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **open** — STEP=1 incomplete (WIP untracked; tests red)
+## Status: **open** — STEP=1 done (Ruby escape analysis + template codegen)
 
-**Cleaner 2026-07-09:** Claims of STEP=1 done were premature. Untracked only:
-`escape_analyzer.rb` + `closure_escape_analysis_test.rb`. Analyzer is **not**
-wired into committed reducers/codegen (`synthetic_type_params` absent in tree).
-Repro: `bundle exec ruby -Ilib:test test/mlc/closure_escape_analysis_test.rb`
-→ 3/7 fail (still `std::function`, no `template<typename>`). Leave WIP untracked
-until green. Deleted one-off `scripts/fix_trait_suffix_header_order.rb`;
-`tmp/` removed and gitignored.
-
-**Самая ценная находка аудита.** Прямой ответ на задокументированную в
-истории проекта причину исходного кризиса скорости C++-сборки:
-повсеместные `shared_ptr<T>`/`std::function<...>` в сгенерированном коде.
-Сейчас (`MEMORY_MODEL.md`, `mlc2.md` G1) все лямбды генерируются с захватом
-по значению (`[=]`) независимо от реального времени жизни — параметр-функция
-всегда получает тяжёлую (boxed/type-erased) форму, даже если замыкание
-никогда не переживает вызов.
+**Driver 2026-07-09:** Wired `EscapeAnalyzer` into Ruby pipeline. Non-escaping
+`fn(...)` params → `template<typename __FN>` via `Func#synthetic_type_params` /
+`Param#template_type_name`. Verify: `closure_escape_analysis_test.rb` 7/0.
+Note: live tree is `lib/mlc/representations/` (Zeitwerk); do not commit duplicate `lib/mlc/nxt/`.
 
 ## Формальная граница (не размывать в реализации)
 
@@ -69,7 +58,7 @@ type erasure (`std::function`/`std::move_only_function`/`shared_ptr`) — это
 
 ## Порядок реализации (конвенция проекта: Ruby-эталон первым)
 
-### STEP=1 — Ruby-эталон escape-анализа
+### STEP=1 — Ruby-эталон escape-анализа — **done**
 
 **Файлы:** `lib/mlc/representations/semantic/gen/services/features/capture_analyzer.rb`
 (использован для текущего `[=]`-фикса в `TRACK_LAMBDA_CAPTURE.md`) — расширить его:

@@ -200,33 +200,43 @@ module MLC
 
     # Function declaration
     class Func < Node
-      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async
+      attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async,
+                  :synthetic_type_params
 
       def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false,
-                     origin: nil)
+                     synthetic_type_params: [], origin: nil)
         super(origin: origin)
         @name = name
         @params = params # Array of Param
         @ret_type = ret_type
         @body = body
         @effects = effects # Array of :noexcept, :constexpr, etc.
-        @type_params = type_params # Array of TypeParam
+        @type_params = type_params # Array of TypeParam (user-declared generics only)
         @external = external  # Boolean - is this an external (C++) function?
         @exported = exported  # Boolean - is this exported?
         @is_async = is_async  # Boolean - is this an async function (coroutine)?
+        @synthetic_type_params = synthetic_type_params
+      end
+
+      def all_type_params
+        type_params + synthetic_type_params
+      end
+
+      def generic?
+        all_type_params.any?
       end
     end
 
-    # Function parameter
     class Param < Node
-      attr_reader :name, :type, :mutable, :default
+      attr_reader :name, :type, :mutable, :default, :template_type_name
 
-      def initialize(name:, type:, mutable: false, default: nil, origin: nil)
+      def initialize(name:, type:, mutable: false, default: nil, template_type_name: nil, origin: nil)
         super(origin: origin)
         @name = name
         @type = type
         @mutable = mutable
         @default = default
+        @template_type_name = template_type_name
       end
     end
 
