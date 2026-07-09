@@ -383,6 +383,7 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 6/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE); [TRACK_LANG_CLOSURE_ESCAPE](agent/TRACK_LANG_CLOSURE_ESCAPE.md) **open** (STEP=3 codegen, приоритет — лекарство от медленной C++-сборки); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **planned** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md) — полные требования + критерий приёмки (production-ready многопоточность); [TRACK_CONCURRENCY_V2](agent/TRACK_CONCURRENCY_V2.md) open, покрывает Фазы 1-4 (`Send` trait, move capture, rendezvous channel, `StopToken`); Фазы 5-11 (`Sync`, `TaskScope`, cancellation propagation, `Isolate`, `ThreadPool`, `Supervisor`, async I/O) — будущие треки. Предыдущий MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
