@@ -40,11 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_BUILD_SPEED3** STEP=4 — PLAN §2.9 docs + close (STEP=3 chose **c**).
-Then return to TRACK_CONCURRENCY_V2 STEP=2.
-
-Debt: Ruby `build_tests.sh` / `dev_gate_fast` still red (HOF templates +
-namespace qualify) — verify checker via mlcc probe / `--check-only`.
+**TRACK_CONCURRENCY_V2** STEP=2 — rendezvous `Channel` capacity 0 (`runtime/`).
+BUILD_SPEED3 closed (c). HARNESS T1–T4 done. V2 STEP=1 Send/Sync done.
 
 ## Step sizing (good vs bad)
 

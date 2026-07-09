@@ -5,16 +5,22 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
 Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
 
-## Status: **open** — STEP=1 done; STEP=2 next
+## Status: **open** — STEP=1 done; BUILD_SPEED3 closed; STEP=2 next
 
 **Driver 2026-07-09:** STEP=1 — `type_is_send` / `type_is_sync` in
 `send_safe.mlc`; `Arc`/`Mutex` Send iff T Send; Sync: Mutex always, Arc iff T Sync.
 
-**Приоритет пользователя (2026-07-09 12:05) — интермедиат после STEP=1:**
-как только STEP=1 verified + committed — **прежде чем начинать STEP=2**,
-выполнить целиком [TRACK_BUILD_SPEED3](TRACK_BUILD_SPEED3.md) (короткий,
-2-4 driver turn, docs/CI/замеры — не пересекается с `compiler/checker/`).
-После закрытия/паузы `TRACK_BUILD_SPEED3` — вернуться сюда на STEP=2.
+**BUILD_SPEED3** closed 2026-07-09 (decision c) — resume STEP=2 (rendezvous channel).
+
+### STEP=2 acceptance (Driver)
+
+**Layer:** `runtime/` only (not `compiler/` / not `lib/mlc/` in the same turn).
+
+- `Channel(0)` / capacity 0 = rendezvous (synchronous handoff), not `invalid_argument`.
+- Blocked `send` waits for a `receive` (and vice versa); close unblocks with fail/nullopt.
+- Unit/stress coverage in `runtime/test/` (extend `test_channel.cpp` and/or
+  `stress_channel.cpp`); wire already in `run_concurrency_smoke.sh`.
+- Verify: `runtime/test/run_concurrency_smoke.sh` exit 0.
 
 ### STEP=1 acceptance (Driver)
 

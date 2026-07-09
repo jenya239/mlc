@@ -378,7 +378,7 @@ compiler/
 | **3.5** C++ header import (minimal) | **done** | [TRACK_CPP_HEADER_IMPORT](archive/tracks/TRACK_CPP_HEADER_IMPORT.md) — subset для `import "foo.h"` |
 | **3.6** Full C++ header parser | **done** | [TRACK_CPP_PARSER_FULL](archive/tracks/TRACK_CPP_PARSER_FULL.md) closed (STEP=1-8) |
 | **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
-| **2.9** Build speed | **partial** | [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md) closed; [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md) closed (STEP=5-6 были deferred до закрытия CLOSURE_ESCAPE — снято); [TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md) closed 2026-07-03; [TRACK_BUILD_SPEED3](agent/TRACK_BUILD_SPEED3.md) **open, приоритет** — ccache CI cache, `-ftime-trace` re-check после CLOSURE_ESCAPE |
+| **2.9** Build speed | **done** | [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md) closed; [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md) closed; [TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md) closed 2026-07-03; [TRACK_BUILD_SPEED3](archive/tracks/TRACK_BUILD_SPEED3.md) **closed** 2026-07-09 (CI ccache; ftime-trace → decision **c**: no extern-template/ninja; residual AST `std::variant` not in-scope). C++20 modules — out of scope. MIR_VM_FULL ≠ build speed. |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
@@ -394,11 +394,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO → CONCURRENCY
   → LANG_CLOSURE_ESCAPE (**closed** 2026-07-09, STEP=4 verify-gate)
   → CONCURRENCY_TEST_HARNESS T1-T4 (**done** 2026-07-09, sanitize CI)
-  → CONCURRENCY_V2 STEP=1 (**active**; trait name `Sync` locked)
-  → BUILD_SPEED3 (**высокий приоритет пользователя** — вставлен между
-    CONCURRENCY_V2 STEP=1 и STEP=2: ccache CI cache, `-ftime-trace` re-check;
-    короткий)
-  → CONCURRENCY_V2 STEP=2-5 (продолжение после BUILD_SPEED3)
+  → CONCURRENCY_V2 STEP=1 (**done** 2026-07-09; trait name `Sync` locked)
+  → BUILD_SPEED3 (**closed** 2026-07-09, decision c)
+  → CONCURRENCY_V2 STEP=2-5 (**active** STEP=2 rendezvous channel)
   → FFI_LAYER STEP=1-6 (**средний приоритет пользователя** — после
     CONCURRENCY_V2 STEP=1-5 закрывается или доходит до устойчивой точки;
     STEP=7 самого FFI_LAYER всё равно ждёт CONCURRENCY_V2 STEP=1, который на
@@ -475,11 +473,18 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 **Future:** TRACK_CORE_IR, [QUERY_ENGINE.md](QUERY_ENGINE.md) / TRACK_QUERY_ENGINE, TRACK_INCREMENTAL.
 
-### Phase 2.9: Build speed — **open**
+### Phase 2.9: Build speed — **done**
 
 **Цель:** убрать bottleneck g++ link (90–200s): persistent obj, ccache, mold/lld, dev `-O0`. mlcc codegen ~2s — не трогать.
 
-Трек: [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md) closed. **clang++ — дефолт везде** (`compiler/scripts/select_cxx.sh`), g++ — fallback (`MLC_CXX=g++`); [TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md) закрыт 2026-07-03. Остаток: [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md) STEP=5 (ninja, опционально) и STEP=6 (повторный `-ftime-trace`, по условию).
+Треки: [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md),
+[TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md),
+[TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md),
+[TRACK_BUILD_SPEED3](archive/tracks/TRACK_BUILD_SPEED3.md) — все **closed**.
+clang++ — дефолт (`compiler/scripts/select_cxx.sh`). BUILD_SPEED3: CI ccache +
+ftime-trace after CLOSURE_ESCAPE → decision **c** (no Shared/Array/`std::function`
+`extern template`; no ninja). **Не путать** с [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md)
+(интерпретация без g++, не скорость *сборки*). C++20 modules — вне скоупа.
 
 ### Phase 4: Self-hosting completeness — **done** ([TRACK_BOOTSTRAP_LINK](archive/tracks/TRACK_BOOTSTRAP_LINK.md) closed 2026-07-03)
 

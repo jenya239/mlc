@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 3 |
-| active_track | TRACK_BUILD_SPEED3 STEP=4 |
+| driver_turns_since_plan | 0 |
+| step_last | 4 |
+| active_track | TRACK_CONCURRENCY_V2 STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:35 (Driver TRACK_BUILD_SPEED3 STEP=4 — close + PLAN)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_BUILD_SPEED3 |
+| started | 2026-07-09 12:34 |
+| elapsed | ~1 min |
+| done    | PLAN §2.9 → done; archived TRACK + ftime-trace under `docs/archive/tracks/`; noted modules/MIR_VM out-of-scope; V2 STEP=2 acceptance written. |
+| verify  | Anti-false-done: STEP=1–3 commits `0e976592`/`5bd39424`/`5c5a381e` present. |
+| result  | BUILD_SPEED3 closed. Plain: очередь снова на rendezvous Channel. |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_V2 — rendezvous Channel capacity 0 |
 
 ### Turn 2026-07-09 12:34 (Driver TRACK_BUILD_SPEED3 STEP=3 — decision c)
 
