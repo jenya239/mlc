@@ -361,7 +361,8 @@ fn infer_expr_question(inner_expression: Shared<Expr>, question_span: Span, infe
   infer_question_from_inner_result(
     infer_expr(inner_expression, inference_context),
     question_span,
-    inference_context.expected_return_type)
+    inference_context.expected_return_type,
+    inference_context.registry)
 
 fn inference_placeholder_unknown_type() -> Shared<Type> =
   Shared.new(TUnknown)

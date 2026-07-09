@@ -4,7 +4,7 @@ import { TypeVariant, TypeExpr, TyGeneric, Param, Expr, ExprInt, ExprStr, ExprBo
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import * as lit from '../expr/literals'
 import { SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionExtern } from '../../ir/semantic_ir'
-import { Type } from '../../checker/registry'
+import { Type, trait_base_name } from '../../checker/registry'
 import { CodegenContext, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from './type_gen'
@@ -393,14 +393,15 @@ export fn gen_decl_extend_trait_suffix(
   context: CodegenContext,
   context_resolve_fn: (CodegenContext, string) -> string
 ) -> string =
-  if trait_has_associated_types(context, trait_name) then
+  if trait_has_associated_types(context, trait_base_name(trait_name)) then
     gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn)
   else do
+  const bare_trait_name = trait_base_name(trait_name)
   const extend_context = context.for_type_body(type_name)
   const cpp_type = type_name_to_cpp(context, type_name)
   gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) +
-  gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn) +
-  generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type)
+  gen_extend_trait_concept_adapters(type_name, bare_trait_name, methods, context, context_resolve_fn) +
+  generic_trait_static_assert_line(bare_trait_name, type_name, methods, extend_context, cpp_type)
   end
 
 export fn gen_decl_extend_methods_only(
@@ -411,16 +412,18 @@ export fn gen_decl_extend_methods_only(
   context_resolve_fn: (CodegenContext, string) -> string,
   gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string
 ) -> string = do
+  const bare_trait_name = trait_base_name(trait_name)
   const extend_context = context.for_type_body(type_name)
   gen_extend_method_parts(
-    type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn).join('')
+    type_name, bare_trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn).join('')
 end
 
 export fn gen_decl_extend(type_name: string, trait_name: string, methods: [Shared<SemanticDeclaration>], context: CodegenContext, context_resolve_fn: (CodegenContext, string) -> string, gen_decl_fn: (Shared<SemanticDeclaration>, CodegenContext) -> string) -> string = do
+  const bare_trait_name = trait_base_name(trait_name)
   const methods_str = gen_decl_extend_methods_only(
-    type_name, trait_name, methods, context, context_resolve_fn, gen_decl_fn)
-  if trait_name.length() > 0 then
-    methods_str + gen_decl_extend_trait_suffix(type_name, trait_name, methods, context, context_resolve_fn)
+    type_name, bare_trait_name, methods, context, context_resolve_fn, gen_decl_fn)
+  if bare_trait_name.length() > 0 then
+    methods_str + gen_decl_extend_trait_suffix(type_name, bare_trait_name, methods, context, context_resolve_fn)
   else
     methods_str
   end

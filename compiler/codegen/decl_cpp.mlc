@@ -2,7 +2,7 @@
 
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord, param_name } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner } from '../ir/semantic_ir'
-import { Type } from '../checker/registry'
+import { Type, trait_base_name } from '../checker/registry'
 import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
@@ -481,7 +481,7 @@ extend CodegenContext {
       SemanticDeclarationTypeAlias(_, _, _, _) => empty_cpp_declaration(),
       SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declaration(),
       SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-        if trait_has_associated_types(self, trait_name) then empty_cpp_declaration()
+        if trait_has_associated_types(self, trait_base_name(trait_name)) then empty_cpp_declaration()
         else do
         const extend_context = self.for_type_body(type_name)
         let mut proto_declarations: [Shared<CppDeclaration>] = []
@@ -822,12 +822,14 @@ export fn gen_decl_extend_trait_suffix_cpp(
   methods: [Shared<SemanticDeclaration>],
   context: CodegenContext,
   context_resolve: (CodegenContext, string) -> string
-) -> [Shared<CppDeclaration>] =
-  if trait_has_associated_types(context, trait_name) then
+) -> [Shared<CppDeclaration>] = do
+  const bare_trait_name = trait_base_name(trait_name)
+  if trait_has_associated_types(context, bare_trait_name) then
     gen_decl_extend_trait_wrappers_only_cpp(type_name, methods, context, context_resolve)
   else
-    gen_decl_extend_trait_concept_suffix_cpp(type_name, trait_name, methods, context, context_resolve)
+    gen_decl_extend_trait_concept_suffix_cpp(type_name, bare_trait_name, methods, context, context_resolve)
   end
+end
 
 export fn gen_extend_extern_method_cpp(
   mangled: string,
@@ -905,12 +907,13 @@ export fn gen_decl_extend_cpp(
   methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
 ) -> [Shared<CppDeclaration>] = do
+  const bare_trait_name = trait_base_name(trait_name)
   const context_resolve = (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name)
-  let mut result = gen_decl_extend_methods_cpp(type_name, trait_name, methods, context)
-  if trait_name.length() > 0 then
+  let mut result = gen_decl_extend_methods_cpp(type_name, bare_trait_name, methods, context)
+  if bare_trait_name.length() > 0 then
     result = append_cpp_declarations(
       result,
-      gen_decl_extend_trait_suffix_cpp(type_name, trait_name, methods, context, context_resolve))
+      gen_decl_extend_trait_suffix_cpp(type_name, bare_trait_name, methods, context, context_resolve))
   end
   result
 end
@@ -1180,17 +1183,19 @@ fn extend_trait_suffix_header_for_declaration_cpp(
   context: CodegenContext
 ) -> [Shared<CppDeclaration>] =
   match declaration {
-    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-      if trait_name.length() > 0 && !trait_has_associated_types(context, trait_name) then
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+      const bare_trait_name = trait_base_name(trait_name)
+      if bare_trait_name.length() > 0 && !trait_has_associated_types(context, bare_trait_name) then
         gen_decl_extend_trait_suffix_cpp(
           type_name,
-          trait_name,
+          bare_trait_name,
           methods,
           context,
           (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name))
       else
         empty_cpp_declarations()
-      end,
+      end
+    end,
     SemanticDeclarationExported(inner_declaration) =>
       extend_trait_suffix_header_for_declaration_cpp(sdecl_inner(inner_declaration), context),
     _ => empty_cpp_declarations()
@@ -1267,12 +1272,14 @@ fn decl_fn_def_extend_cpp(
   trait_name: string,
   methods: [Shared<SemanticDeclaration>],
   context: CodegenContext
-) -> [Shared<CppDeclaration>] =
-  if trait_name.length() > 0 && trait_has_associated_types(context, trait_name) then
-    gen_decl_extend_cpp(type_name, trait_name, methods, context)
+) -> [Shared<CppDeclaration>] = do
+  const bare_trait_name = trait_base_name(trait_name)
+  if bare_trait_name.length() > 0 && trait_has_associated_types(context, bare_trait_name) then
+    gen_decl_extend_cpp(type_name, bare_trait_name, methods, context)
   else
-    gen_decl_extend_methods_cpp(type_name, trait_name, methods, context)
+    gen_decl_extend_methods_cpp(type_name, bare_trait_name, methods, context)
   end
+end
 
 fn decl_fn_def_for_exported_cpp(
   inner_declaration: Shared<SemanticDeclaration>,

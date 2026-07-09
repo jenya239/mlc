@@ -6,7 +6,27 @@ import { parse_type, parse_type_args, parser_at_generic_close, parser_advance_ge
 import { parse_expr, parse_record_pattern_fields } from './exprs'
 import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace } from './expect_close'
-import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TyUnit, FieldDef, TypeVariant, VarRecord } from '../ast'
+import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TypeExpr, TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc, FieldDef, TypeVariant, VarRecord } from '../ast'
+
+fn type_expression_display(type_expression: Shared<TypeExpr>) -> string =
+  match type_expression {
+    TyI32 => 'i32',
+    TyString => 'string',
+    TyBool => 'bool',
+    TyUnit => 'unit',
+    TyNamed(name) => name,
+    TyArray(inner) => "[" + type_expression_display(inner) + "]",
+    TyShared(inner) => "Shared<" + type_expression_display(inner) + ">",
+    TyGeneric(name, type_arguments) =>
+      name + "<" + type_arguments_display(type_arguments) + ">",
+    TyFn(parameters, return_type) =>
+      "(" + type_arguments_display(parameters) + ") -> " + type_expression_display(return_type),
+    TyAssoc(base_name, associated_name) => base_name + "." + associated_name
+  }
+
+fn type_arguments_display(type_arguments: [Shared<TypeExpr>]) -> string =
+  type_arguments.map(type_expression_display).join(', ')
+
 
 fn parser_expect_generic_close(state: Parser, opened: bool) -> Parser =
   if !opened then state
@@ -283,6 +303,7 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
   end
   if state.kind().is_op() && state.kind().op_val() == "<" then
     const trait_type_arguments_parsed = parse_type_args(state.advance())
+    trait_name = trait_name + "<" + type_arguments_display(trait_type_arguments_parsed.value) + ">"
     state = trait_type_arguments_parsed.parser
   end
   let mut methods_state = parser_after_optional_lbrace(state)

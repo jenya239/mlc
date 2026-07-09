@@ -3,7 +3,7 @@
 import { Program, Pattern, TypeExpr } from '../frontend/ast'
 import { build_registry } from '../checker/registry'
 import { SemanticStatement } from '../ir/semantic_ir'
-import { Type, TShared, TArray, TUnknown } from '../checker/registry'
+import { Type, TShared, TArray, TUnknown, trait_base_name } from '../checker/registry'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
 import { FieldOrder } from './decl/decl_index'
@@ -215,12 +215,14 @@ extend CodegenContext {
     }
 }
 
-export fn trait_has_associated_types(context: CodegenContext, trait_name: string) -> bool =
-  if context.trait_associated_type_names.has(trait_name) then
-    context.trait_associated_type_names.get(trait_name).length() > 0
+export fn trait_has_associated_types(context: CodegenContext, trait_name: string) -> bool = do
+  const bare_trait_name = trait_base_name(trait_name)
+  if context.trait_associated_type_names.has(bare_trait_name) then
+    context.trait_associated_type_names.get(bare_trait_name).length() > 0
   else
     false
   end
+end
 
 export fn make_body_context(base: CodegenContext, shared_params: [string], shared_array_params: [string], array_elem_types: Map<string, string>, shared_map_params: [string], self_type: string, value_params: [string], match_deref_params: [string]) -> CodegenContext =
   CodegenContext { ...base, shared_params: shared_params, shared_array_params: shared_array_params, array_elem_types: array_elem_types, shared_map_params: shared_map_params, self_type: self_type, value_params: value_params, match_deref_params: match_deref_params }

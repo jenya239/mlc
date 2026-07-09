@@ -402,6 +402,12 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  results.push(assert_true('extend trait keeps type args in trait name',
+    match second_decl('type AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}') {
+      DeclExtend(_, trait_name, _, _) => trait_name == 'From<ParseError>',
+      _ => false
+    }))
+
   results.push(assert_eq_int('import star-as - 1 decl',
     decl_count('import * as helpers from "./infer_literals.mlc"'), 1))
 

@@ -531,19 +531,36 @@ fn register_decl_trait_into_registry(
   end
 end
 
+// Strip type arguments from extend trait name: "From<ParseError>" -> "From".
+export fn trait_base_name(trait_name: string) -> string = do
+  let mut index = 0
+  while index < trait_name.length() do
+    if trait_name.char_at(index) == "<" then
+      return trait_name.substring(0, index)
+    end
+    index = index + 1
+  end
+  trait_name
+end
+
 fn register_decl_extend_into_registry(
   registry: ref mut TypeRegistry,
   type_name: string,
   trait_name: string,
   methods: [Shared<Decl>]
 ) -> unit = do
+  const bare_trait_name = trait_base_name(trait_name)
   if trait_name.length() > 0 then
-    const trait_implementations =
-      (if registry.adt_index.trait_impls.has(type_name) then registry.adt_index.trait_impls.get(type_name)
-      else do const empty: [string] = []; empty end end).concat([trait_name])
+    let mut trait_implementations =
+      if registry.adt_index.trait_impls.has(type_name) then registry.adt_index.trait_impls.get(type_name)
+      else do const empty: [string] = []; empty end end
+    trait_implementations = trait_implementations.concat([trait_name])
+    if bare_trait_name != trait_name then
+      trait_implementations = trait_implementations.concat([bare_trait_name])
+    end
     registry.adt_index.trait_impls.set(type_name, trait_implementations)
   end
-  const assoc_binding_key = type_name + '::' + trait_name
+  const assoc_binding_key = type_name + '::' + bare_trait_name
   let mut assoc_type_bindings: Map<string, Shared<Type>> =
     if registry.adt_index.assoc_type_bindings.has(assoc_binding_key) then
       registry.adt_index.assoc_type_bindings.get(assoc_binding_key)

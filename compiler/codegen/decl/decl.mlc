@@ -2,7 +2,7 @@
 
 import { TypeVariant, TypeExpr, Param, Decl } from '../../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticExpressionExtern, sdecl_inner } from '../../ir/semantic_ir'
-import { Type } from '../../checker/registry'
+import { Type, trait_base_name } from '../../checker/registry'
 import { CodegenContext,
          make_body_context,
          collect_shared_params, collect_shared_array_params, collect_array_elem_types,
@@ -154,14 +154,16 @@ export fn decls_have_main(declarations: [Shared<SemanticDeclaration>]) -> bool =
 export fn extend_cpp_forward_segment(declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) -> string =
   match declaration {
     SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+      const bare_trait_name = trait_base_name(trait_name)
       const extend_context = codegen_context.for_type_body(type_name)
-      gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context) +
+      gen_extend_wrapper_protos(type_name, bare_trait_name, methods, codegen_context) +
       methods.map(method => gen_proto(method, extend_context)).join('')
     end,
     SemanticDeclarationExported(inner_declaration) => match sdecl_inner(inner_declaration) {
       SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+        const bare_trait_name = trait_base_name(trait_name)
         const extend_context = codegen_context.for_type_body(type_name)
-        gen_extend_wrapper_protos(type_name, trait_name, methods, codegen_context) +
+        gen_extend_wrapper_protos(type_name, bare_trait_name, methods, codegen_context) +
         methods.map(method => gen_proto(method, extend_context)).join('')
       end,
       _ => ''
@@ -206,18 +208,20 @@ fn decl_segment_for_extend(declaration: Shared<SemanticDeclaration>, codegen_con
   if phase == 2 then gen_proto(declaration, codegen_context)
   else if phase == 3 then
     match declaration {
-      SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-        if trait_name.length() > 0 && !trait_has_associated_types(codegen_context, trait_name) then
+      SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+        const bare_trait_name = trait_base_name(trait_name)
+        if bare_trait_name.length() > 0 && !trait_has_associated_types(codegen_context, bare_trait_name) then
           gen_decl_extend_methods_only(
             type_name,
-            trait_name,
+            bare_trait_name,
             methods,
             codegen_context,
             (context: CodegenContext, name: string) => context.resolve(name),
             (inner_declaration: Shared<SemanticDeclaration>, context: CodegenContext) => context.gen_decl(inner_declaration))
         else
           gen_decl(declaration, codegen_context)
-        end,
+        end
+      end,
       _ => gen_decl(declaration, codegen_context)
     }
   else ''
@@ -389,17 +393,19 @@ fn extend_trait_suffix_header_for_declaration(
   context: CodegenContext
 ) -> string =
   match declaration {
-    SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
-      if trait_name.length() > 0 && !trait_has_associated_types(context, trait_name) then
+    SemanticDeclarationExtend(type_name, trait_name, methods, _) => do
+      const bare_trait_name = trait_base_name(trait_name)
+      if bare_trait_name.length() > 0 && !trait_has_associated_types(context, bare_trait_name) then
         gen_decl_extend_trait_suffix(
           type_name,
-          trait_name,
+          bare_trait_name,
           methods,
           context,
           (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name))
       else
         ''
-      end,
+      end
+    end,
     SemanticDeclarationExported(inner_declaration) =>
       extend_trait_suffix_header_for_declaration(inner_declaration, context),
     _ => ''

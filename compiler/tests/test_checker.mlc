@@ -887,6 +887,12 @@ export fn checker_tests() -> [TestResult] = do
     'type Result<T, E> = Ok(T) | Err(E)\ntype ParseError = { message: string }\ntype AppError = { message: string }\nfn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })\nfn run(s: string) -> Result<i32, AppError> = do\n  let value = parse(s)?\n  Ok(value)\nend',
     'error[E085]: ? operator error type mismatch: expected AppError, got ParseError\n  --> 6:23'))
 
+  results.push(assert_eq_int(
+    'question: ? Err mismatch with From impl — 0 errors',
+    check_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\ntrait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\nfn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })\nfn run(s: string) -> Result<i32, AppError> = do\n  let value = parse(s)?\n  Ok(value)\nend'),
+    0))
+
   // --- Result / Option combinators (A2) --------------------------------------
 
   results.push(assert_eq_int('infer: Result map — 0 errors',

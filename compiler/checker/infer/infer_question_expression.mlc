@@ -1,8 +1,9 @@
 // Result unwrap (?): Ok type from Result; check Err vs enclosing function Result E.
+// Skip E085 when expected Err implements From<inner Err>.
 
 import { Span, Diagnostic, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
 import { InferResult } from './infer_result'
-import { Type, TUnknown, TGeneric } from '../registry'
+import { Type, TypeRegistry, TUnknown, TGeneric, TNamed } from '../registry'
 import { type_description, types_structurally_equal, type_is_unknown } from '../semantic_type_structure'
 import { diagnostic_code_e068, diagnostic_code_e085 } from '../diagnostic_codes'
 import { is_result_generic, result_err_type } from '../check/method_types/result_option_method_types'
@@ -21,7 +22,26 @@ fn infer_result_for_non_result_type(inner_parsed: InferResult, question_span: Sp
   }
 end
 
+fn named_or_described_type_name(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(name) => name,
+    _ => type_description(type_value)
+  }
+
+fn from_trait_name_for_error_type(inner_error_type: Shared<Type>) -> string =
+  "From<" + named_or_described_type_name(inner_error_type) + ">"
+
+fn expected_error_implements_from(
+  registry: TypeRegistry,
+  expected_error_type: Shared<Type>,
+  inner_error_type: Shared<Type>
+) -> bool =
+  registry.type_implements_trait(
+    named_or_described_type_name(expected_error_type),
+    from_trait_name_for_error_type(inner_error_type))
+
 fn question_error_type_mismatch_diagnostics(
+  registry: TypeRegistry,
   inner_result_type: Shared<Type>,
   expected_return_type: Shared<Type>,
   question_span: Span
@@ -36,6 +56,9 @@ fn question_error_type_mismatch_diagnostics(
   if types_structurally_equal(inner_error_type, expected_error_type) then
     return do let empty: [Diagnostic] = []; empty end
   end
+  if expected_error_implements_from(registry, expected_error_type, inner_error_type) then
+    return do let empty: [Diagnostic] = []; empty end
+  end
   [diagnostic_error_with_code(
     '? operator error type mismatch: expected ' + type_description(expected_error_type) +
     ', got ' + type_description(inner_error_type),
@@ -46,7 +69,8 @@ end
 export fn infer_question_from_inner_result(
   inner_parsed: InferResult,
   question_span: Span,
-  expected_return_type: Shared<Type>
+  expected_return_type: Shared<Type>,
+  registry: TypeRegistry
 ) -> InferResult =
   match inner_parsed.inferred_type {
     TGeneric(generic_name, type_arguments) => do
@@ -54,7 +78,7 @@ export fn infer_question_from_inner_result(
         return infer_result_for_non_result_type(inner_parsed, question_span)
       end
       const mismatch_diagnostics = question_error_type_mismatch_diagnostics(
-        inner_parsed.inferred_type, expected_return_type, question_span)
+        registry, inner_parsed.inferred_type, expected_return_type, question_span)
       InferResult {
         inferred_type: ok_type_from_type_arguments(type_arguments),
         errors: diagnostics_append(inner_parsed.errors, mismatch_diagnostics)
