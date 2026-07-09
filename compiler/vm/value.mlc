@@ -1,4 +1,4 @@
-// MIR interpreter runtime values (TRACK_MIR_VM STEP=1).
+// MIR interpreter runtime values (TRACK_MIR_VM_FULL Epic 1 STEP=1).
 
 import { Result, Ok, Err } from '../frontend/ast'
 
@@ -9,7 +9,13 @@ export type VmMapValue = VmMapValue {
   entry_count: i32
 }
 
-export type VmVariantValue = VmVariantValue { tag: string, integer_fields: [i32] }
+// Flat tagged field slots — no recursive VmValue (TRACK §5.2).
+export type VmFieldSlot =
+  | VmFieldI32(i32)
+  | VmFieldBool(bool)
+  | VmFieldString(string)
+
+export type VmVariantValue = VmVariantValue { tag: string, fields: [VmFieldSlot] }
 
 export type VmValue =
   | VmI32(i32)
@@ -41,3 +47,18 @@ export fn vm_value_as_i32(value: VmValue) -> Result<i32, [string]> =
 
 export fn vm_value_int_or_zero(value: VmValue) -> i32 =
   match value { VmI32(number) => number, _ => 0 }
+
+export fn vm_field_slot_from_value(value: VmValue) -> Result<VmFieldSlot, [string]> =
+  match value {
+    VmI32(number) => Ok(VmFieldI32(number)),
+    VmBool(flag) => Ok(VmFieldBool(flag)),
+    VmString(text) => Ok(VmFieldString(text)),
+    _ => Err(['vm: variant field must be i32, bool, or string'])
+  }
+
+export fn vm_value_from_field_slot(slot: VmFieldSlot) -> VmValue =
+  match slot {
+    VmFieldI32(number) => VmI32(number),
+    VmFieldBool(flag) => VmBool(flag),
+    VmFieldString(text) => VmString(text)
+  }

@@ -95,5 +95,19 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke match unit variant exit', false))
   }
 
+  match vm_smoke_interpret(
+    'type Flag = Yes(bool) | No\nfn main() -> i32 = match Yes(true) {\n  Yes(flag) => if flag then 1 else 0\n  No => 2\n}',
+    'vm_match_bool_field.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match bool field exit', code, 1)),
+    Err(_) => results.push(assert_true('vm smoke match bool field exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Name = Label(string) | Empty\nfn main() -> i32 = do\n  match Label("ab") {\n    Label(text) => if text == "ab" then 2 else 0\n    Empty => 0\n  }\nend',
+    'vm_match_string_field.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match string field exit', code, 2)),
+    Err(_) => results.push(assert_true('vm smoke match string field exit', false))
+  }
+
   results
 end

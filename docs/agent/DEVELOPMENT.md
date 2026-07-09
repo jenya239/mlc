@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 1 STEP=1 — VmVariant typed fields (i32/bool/string)
-(Epic 0 A–C done 2026-07-09; TEXT_RENDERING remains low-priority).
+**TRACK_MIR_VM_FULL** Epic 1 STEP=2 — full variant match (guards, PatternOr, nested)
+(STEP=1 done: VmFieldI32/Bool/String flat slots).
 
 ## Step sizing (good vs bad)
 

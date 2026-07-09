@@ -3,7 +3,8 @@
 import { Result, Ok, Err } from '../frontend/ast'
 import {
   VmValue, VmI32, VmBool, VmString, VmArrayValue, VmMapValue, VmVariantValue, VmUnit,
-  vm_value_unit, vm_value_int_or_zero
+  VmFieldSlot, vm_value_unit, vm_value_int_or_zero,
+  vm_field_slot_from_value, vm_value_from_field_slot
 } from './value'
 
 export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, [string]> =
@@ -23,14 +24,24 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_variant_new' then vm_native_variant_new(arguments)
   else Err([`vm: unknown native ${name}`])
 
-export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> VmValue = do
-  let mut integer_fields: [i32] = []
+export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> Result<VmValue, [string]> = do
+  let mut fields: [VmFieldSlot] = []
   let mut index = 0
-  while index < arguments.length() do
-    integer_fields.push(vm_value_int_or_zero(arguments[index]))
+  let mut failed = false
+  let mut errors: [string] = []
+  while index < arguments.length() && !failed do
+    match vm_field_slot_from_value(arguments[index]) {
+      Err(slot_errors) => do
+        failed = true
+        errors = slot_errors
+      end,
+      Ok(slot) => fields.push(slot)
+    }
     index = index + 1
   end
-  VmVariant(VmVariantValue { tag: tag, integer_fields: integer_fields })
+  if failed then Err(errors)
+  else Ok(VmVariant(VmVariantValue { tag: tag, fields: fields }))
+  end
 end
 
 fn vm_native_variant_new(arguments: [VmValue]) -> Result<VmValue, [string]> =
@@ -44,7 +55,7 @@ fn vm_native_variant_new(arguments: [VmValue]) -> Result<VmValue, [string]> =
           payload.push(arguments[index])
           index = index + 1
         end
-        Ok(vm_variant_ctor(tag, payload))
+        vm_variant_ctor(tag, payload)
       end,
       _ => Err(['vm: __mir_variant_new expects string tag'])
     }
@@ -267,8 +278,8 @@ fn vm_native_variant_field(arguments: [VmValue]) -> Result<VmValue, [string]> =
         match vm_native_value_as_i32(arguments[1]) {
           Err(errors) => Err(errors),
           Ok(field_index) =>
-            if field_index >= 0 && field_index < variant.integer_fields.length() then
-              Ok(VmI32(variant.integer_fields[field_index]))
+            if field_index >= 0 && field_index < variant.fields.length() then
+              Ok(vm_value_from_field_slot(variant.fields[field_index]))
             else
               Err(['vm: variant field index out of bounds'])
             end

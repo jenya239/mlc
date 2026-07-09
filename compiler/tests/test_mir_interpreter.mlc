@@ -7,7 +7,7 @@ import {
 import { TUnit, TI32 } from '../checker/registry'
 import { interpret_mir_program } from '../vm/interpreter'
 import { vm_native_call } from '../vm/native'
-import { VmI32, VmString, VmVariant } from '../vm/value'
+import { VmI32, VmString, VmBool, VmVariant, VmFieldI32 } from '../vm/value'
 
 fn mir_main_return_program(return_value: i32) -> MirProgram = do
   const return_type = Shared.new(TI32)
@@ -135,10 +135,43 @@ export fn mir_interpreter_tests() -> [TestResult] = do
         VmVariant(variant) =>
           results.push(assert_true(
             'vm_native_call __mir_variant_new',
-            variant.tag == 'Some' && variant.integer_fields.length() == 1 && variant.integer_fields[0] == 1)),
+            variant.tag == 'Some' && variant.fields.length() == 1 && match variant.fields[0] {
+              VmFieldI32(number) => number == 1,
+              _ => false
+            })),
         _ => results.push(assert_true('vm_native_call __mir_variant_new', false))
       },
     Err(_) => results.push(assert_true('vm_native_call __mir_variant_new', false))
+  }
+
+  match vm_native_call('__mir_variant_new', [VmString('Flag'), VmBool(true)]) {
+    Ok(value) =>
+      match value {
+        VmVariant(variant) =>
+          match vm_native_call('__mir_variant_field', [value, VmI32(0)]) {
+            Ok(field) =>
+              match field {
+                VmBool(flag) => results.push(assert_true('vm variant bool field', flag)),
+                _ => results.push(assert_true('vm variant bool field', false))
+              },
+            Err(_) => results.push(assert_true('vm variant bool field', false))
+          },
+        _ => results.push(assert_true('vm variant bool field', false))
+      },
+    Err(_) => results.push(assert_true('vm variant bool field', false))
+  }
+
+  match vm_native_call('__mir_variant_new', [VmString('Name'), VmString('ab')]) {
+    Ok(value) =>
+      match vm_native_call('__mir_variant_field', [value, VmI32(0)]) {
+        Ok(field) =>
+          match field {
+            VmString(text) => results.push(assert_eq_int('vm variant string field length', text.length(), 2)),
+            _ => results.push(assert_true('vm variant string field length', false))
+          },
+        Err(_) => results.push(assert_true('vm variant string field length', false))
+      },
+    Err(_) => results.push(assert_true('vm variant string field length', false))
   }
 
   results
