@@ -72,8 +72,17 @@ export fn expression_operation_statement(operation: string, left_code: string, r
 export fn suffix_semicolon_newline(expression_code: string) -> string =
   `${expression_code};\n`
 
-export fn try_unwrap_result_block(result_variable: string, inner_code: string, success_line: string) -> string =
-  `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return *std::get_if<1>(&${result_variable});\n${success_line}`
+export fn try_unwrap_result_block(
+  result_variable: string,
+  inner_code: string,
+  success_line: string,
+  from_converter_name: string
+) -> string =
+  if from_converter_name.length() > 0 then
+    `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return ${from_converter_name}(*std::get_if<1>(&${result_variable}));\n${success_line}`
+  else
+    `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return *std::get_if<1>(&${result_variable});\n${success_line}`
+  end
 
 export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
   `auto ${binding_cpp_safe} = ${value_code};\n`

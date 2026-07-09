@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 3a |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=3a done; next STEP=3b codegen From) |
+| driver_turns_since_plan | 2 |
+| step_last | 3b |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=3b done; next STEP=4 verify-gate) |
 | test_gate | ok |
+
+### Turn 2026-07-09 07:45 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=3b — codegen From convert)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3b |
+| track   | TRACK_LANG_RESULT_COMBINATORS |
+| started | 2026-07-09 07:22 |
+| elapsed | ~23 min |
+| done    | `question_from_converter_name`; `CppQuestionTry` + converter; `try_unwrap_result_block` / `stmt_eval` / `return_body` / `gen_question_via_cpp_visitor` emit `E2_from(...)` when Err types differ. Tests in test_cpp_printer / test_codegen / test_decl_gen. |
+| result  | `dev_gate_fast` 1452/0. Plain: при разных Err в `?` C++ вызывает `AppError_from` перед return. |
+| issues  | Ruby bootstrap cannot parse `fn from` (keyword); mlcc rebuild deferred to STEP=4. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_RESULT_COMBINATORS — verify-gate (build.sh, self-host diff, regression, build_tests) + close |
 
 ### Turn 2026-07-09 07:21 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=3a — From skips E085)
 

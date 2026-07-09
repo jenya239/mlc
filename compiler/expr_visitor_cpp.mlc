@@ -8,7 +8,7 @@ import * as emit_helpers from './cpp_emit/emit_helpers'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
-import { field_access_operator, find_field_value, is_constructor_call } from './codegen/expr/expression_support'
+import { field_access_operator, find_field_value, is_constructor_call, question_from_converter_name } from './codegen/expr/expression_support'
 import { is_result_generic, result_ok_type, result_err_type } from './checker/check/method_types/result_option_method_types'
 import { first_arm_needs_deref, should_use_string_match_if_chain, subject_is_bool_type } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
@@ -791,7 +791,10 @@ export fn gen_question_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
 ) -> Shared<CppExpression> =
-  Shared.new(CppQuestionTry(eval_expr_cpp(inner_expression, context, gen_stmts)))
+  Shared.new(CppQuestionTry(
+    eval_expr_cpp(inner_expression, context, gen_stmts),
+    question_from_converter_name(context, sexpr_type(inner_expression))))
+
 
 export fn gen_with_via_cpp_visitor(
   resource: Shared<SemanticExpression>,

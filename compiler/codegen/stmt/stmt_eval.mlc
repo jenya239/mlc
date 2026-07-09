@@ -12,7 +12,7 @@ import {
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
   SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion,
-  SemanticExpressionLambda, SemanticExpressionWith
+  SemanticExpressionLambda, SemanticExpressionWith, sexpr_type
 } from '../../ir/semantic_ir'
 import { gen_let_pattern_statement } from '../expr/let_pat'
 import {
@@ -22,7 +22,7 @@ import {
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
          mutate_context_from_statement } from '../context'
 import { cpp_safe } from '../cpp_naming'
-import { generate_conditional_else_with_empty_array_coercion } from '../expr/expression_support'
+import { generate_conditional_else_with_empty_array_coercion, question_from_converter_name } from '../expr/expression_support'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as semantic_type_structure from '../../checker/semantic_type_structure'
@@ -174,7 +174,11 @@ fn constexpr_binding_value_code(
 
 export fn eval_try_unwrap(inner_expression: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string = do
   const inner_code = gen_expr_fn(inner_expression, context)
-  expression_output.try_unwrap_result_block(try_identifier, inner_code, success_line)
+  expression_output.try_unwrap_result_block(
+    try_identifier,
+    inner_code,
+    success_line,
+    question_from_converter_name(context, sexpr_type(inner_expression)))
 end
 
 fn empty_unit_block_expression(expression: Shared<SemanticExpression>) -> bool =

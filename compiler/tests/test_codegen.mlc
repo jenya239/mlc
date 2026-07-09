@@ -436,6 +436,23 @@ export fn codegen_tests() -> [TestResult] = do
         span_unknown()))], context),
     'auto value = ({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
 
+  const parse_error_type = Shared.new(TNamed('ParseError'))
+  const app_error_type = Shared.new(TNamed('AppError'))
+  const inner_result_type = Shared.new(TGeneric('Result', [i32_t(), parse_error_type]))
+  const enclosing_result_type = Shared.new(TGeneric('Result', [i32_t(), app_error_type]))
+  const from_context = context.with_enclosing_function_return_type(enclosing_result_type)
+  const typed_inner = Shared.new(SemanticExpressionInt(7, inner_result_type, span_unknown()))
+  results.push(assert_code_contains(
+    'gen_stmts: ? Err mismatch emits AppError_from',
+    gen_stmts_str([
+      Shared.new(SemanticStatementLet(
+        'value',
+        false,
+        Shared.new(SemanticExpressionQuestion(typed_inner, i32_t(), span_unknown())),
+        i32_t(),
+        span_unknown()))], from_context),
+    'AppError_from'))
+
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const if',
     gen_stmts_str([
       Shared.new(SemanticStatementLetConst(

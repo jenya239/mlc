@@ -2,11 +2,12 @@
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
 import { Type } from '../../checker/registry'
-import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticMatchArm, Span } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticMatchArm, Span, sexpr_type } from '../../ir/semantic_ir'
 import { CppExpression, CppStatement, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
+import { question_from_converter_name } from '../expr/expression_support'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
 import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
@@ -108,13 +109,21 @@ fn gen_try_unwrap_return_statements_cpp(
   const try_identifier = '__try_ret'
   const inner_cpp = gen_expr_for_return_body_cpp(inner_expression, context)
   const error_pointer = try_result_err_pointer_expression(try_identifier)
+  const from_converter_name = question_from_converter_name(context, sexpr_type(inner_expression))
+  const error_return_value =
+    if from_converter_name.length() > 0 then
+      Shared.new(CppCall(
+        Shared.new(CppIdent(from_converter_name)),
+        [Shared.new(CppUnary("*", error_pointer))]))
+    else
+      Shared.new(CppUnary("*", error_pointer))
+    end
   let statements: [Shared<CppStatement>] = []
   statements.push(emit_helpers.make_auto_cpp_statement(try_identifier, inner_cpp))
   statements.push(emit_helpers.make_if_cpp_statement(
     error_pointer,
     emit_helpers.make_block_cpp_statement([
-      emit_helpers.make_return_cpp_statement(
-        Shared.new(CppUnary("*", error_pointer)))]),
+      emit_helpers.make_return_cpp_statement(error_return_value)]),
     emit_helpers.make_block_cpp_statement([])))
   statements.push(emit_helpers.make_return_cpp_statement(
     try_result_ok_field0_expression(try_identifier)))

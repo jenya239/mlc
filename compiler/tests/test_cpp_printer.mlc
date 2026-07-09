@@ -127,8 +127,12 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '[&]() -> int {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('print_expr CppQuestionTry',
-    print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7))))),
+    print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7)), ''))),
     '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'))
+
+  results.push(assert_eq_str('print_expr CppQuestionTry with From converter',
+    print_expr(Shared.new(CppQuestionTry(Shared.new(CppInt(7)), 'AppError_from'))),
+    '({ auto __q = 7; if (std::get_if<1>(&__q)) return AppError_from(*std::get_if<1>(&__q)); std::get<0>(__q).field0; })'))
 
   results.push(assert_eq_str('print_expr CppWithBlock',
     print_expr(Shared.new(CppWithBlock(Shared.new(CppIdent('resource')), 'handle', 'handle.use();\n'))),

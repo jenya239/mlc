@@ -19,7 +19,7 @@ import { main_program_parameter_list, static_assert_concept_for_type_line, stati
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, assert_code_not_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span } from '../ir/semantic_ir'
-import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown } from '../checker/registry'
+import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown, TNamed, TGeneric } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
 
@@ -587,6 +587,18 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_code_contains('gen_return_body_cpp: question native ok return',
     print_cpp_statements(gen_return_body_cpp(question_body, context)),
     'std::get<0>(__try_ret).field0'))
+
+  const from_return_context = context.with_enclosing_function_return_type(
+    Shared.new(TGeneric('Result', [ti32(), Shared.new(TNamed('AppError'))])))
+  const from_question_body = make_question(
+    Shared.new(SemanticExpressionInt(
+      7,
+      Shared.new(TGeneric('Result', [ti32(), Shared.new(TNamed('ParseError'))])),
+      span_unknown())))
+  results.push(assert_code_contains(
+    'gen_return_body_cpp: question From convert AppError_from',
+    print_cpp_statements(gen_return_body_cpp(from_question_body, from_return_context)),
+    'AppError_from'))
 
   const block_return_body = Shared.new(SemanticExpressionBlock(
     [Shared.new(SemanticStatementLet('counter', false, make_int(1), ti32(), span_unknown()))],

@@ -60,7 +60,7 @@ export type CppExpression =
   | CppInvokedFor(string, Shared<CppExpression>, string)
   | CppInvokedBlock(string)
   | CppInvokedBlockWithReturn(string, string)
-  | CppQuestionTry(Shared<CppExpression>)
+  | CppQuestionTry(Shared<CppExpression>, string)
   | CppWithBlock(Shared<CppExpression>, string, string)
 
 export type CppField = CppField { type_value: string, name: string }

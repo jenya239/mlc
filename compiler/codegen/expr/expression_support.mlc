@@ -3,9 +3,34 @@
 import { span_unknown } from '../../frontend/ast'
 import { SemanticExpression, SemanticFieldVal, SemanticExpressionUnit, sexpr_type, sexpr_span, SemanticExpressionArray } from '../../ir/semantic_ir'
 import { Type, TArray, TUnit, TShared, TI32, TString, TBool, TI64, TF64, TU8, TUsize, TChar, TNamed } from '../../checker/registry'
+import { is_result_generic, result_err_type } from '../../checker/check/method_types/result_option_method_types'
+import { types_structurally_equal, type_is_unknown, type_description } from '../../checker/semantic_type_structure'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
+
+fn named_or_described_error_type_name(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(name) => name,
+    _ => type_description(type_value)
+  }
+
+// When ? Err differs from enclosing Result Err, emit TargetErr_from(...).
+export fn question_from_converter_name(
+  context: CodegenContext,
+  inner_result_type: Shared<Type>
+) -> string = do
+  if !is_result_generic(inner_result_type) then return '' end
+  if !is_result_generic(context.enclosing_function_return_type) then return '' end
+  const inner_error_type = result_err_type(inner_result_type)
+  const expected_error_type = result_err_type(context.enclosing_function_return_type)
+  if type_is_unknown(inner_error_type) || type_is_unknown(expected_error_type) then return '' end
+  if types_structurally_equal(inner_error_type, expected_error_type) then return '' end
+  const expected_error_name = named_or_described_error_type_name(expected_error_type)
+  if expected_error_name.length() == 0 then return '' end
+  cpp_safe(expected_error_name + '_from')
+end
+
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
   const capture = if parameters.length() == 0 then '[]' else '[=]' end

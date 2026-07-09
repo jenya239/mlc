@@ -596,8 +596,12 @@ fn invoked_block_expression(body_statements: string) -> string =
 fn invoked_block_with_return_expression(return_type: string, body_statements: string) -> string =
   `[&]() -> ${return_type} {\n${body_statements}}()`
 
-fn question_try_expression(inner: Shared<CppExpression>) -> string =
-  `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
+fn question_try_expression(inner: Shared<CppExpression>, from_converter_name: string) -> string =
+  if from_converter_name.length() > 0 then
+    `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return ${from_converter_name}(*std::get_if<1>(&__q)); std::get<0>(__q).field0; })`
+  else
+    `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
+  end
 
 fn with_block_expression(resource: Shared<CppExpression>, binder: string, body_statements: string) -> string =
   `{\nauto ${binder} = (${print_expr(resource)});\n${body_statements}${binder}.drop();\n}\n`
@@ -692,7 +696,7 @@ export fn print_expr(expression: Shared<CppExpression>) -> string =
     CppInvokedBlock(body_statements) => invoked_block_expression(body_statements),
     CppInvokedBlockWithReturn(return_type, body_statements) =>
       invoked_block_with_return_expression(return_type, body_statements),
-    CppQuestionTry(inner) => question_try_expression(inner),
+    CppQuestionTry(inner, from_converter_name) => question_try_expression(inner, from_converter_name),
     CppWithBlock(resource, binder, body_statements) =>
       with_block_expression(resource, binder, body_statements)
   }
