@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=4 |
+| driver_turns_since_plan | 0 |
+| step_last | 4 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS T1–T4 done |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:54 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=4 — sanitize gate + CI)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 11:45 |
+| elapsed | ~9 min |
+| done    | Added `scripts/concurrency_sanitize_gate.sh` (asan/ubsan/tsan); `MLC_SANITIZE` in smoke; CI job `concurrency-sanitize`. Fixed TSan races: atomic `passed`/`failed` in stress_*. |
+| verify  | `scripts/concurrency_sanitize_gate.sh` exit 0 (address+undefined+thread). |
+| result  | STEP=4 done; T1–T4 MVP complete. Plain: sanitizer gate в CI. |
+| issues  | T5 blocked on CONCURRENCY_V2 StopToken. |
+| next    | ROLE=Planner STEP=pick-next TRACK — PLAN after HARNESS T1–T4 (CONCURRENCY_V2 or HARNESS T6) |
 
 ### Turn 2026-07-09 11:43 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=3 — stress mutex/arc/spawn)
 

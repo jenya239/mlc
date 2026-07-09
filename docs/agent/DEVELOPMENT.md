@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** STEP=4 (T4) — `scripts/concurrency_sanitize_gate.sh`
-+ CI job (asan/ubsan/tsan). STEP=3 done. Layer: `runtime/` + CI scripts.
+**TRACK_CONCURRENCY_TEST_HARNESS** T1–T4 MVP done (sanitize gate + CI).
+T5 blocked on CONCURRENCY_V2 StopToken; T6 optional nightly fuzz.
+Planner: pick next from PLAN (CONCURRENCY_V2 vs HARNESS T6).
 
 Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
 runtime harness; verify via existing `run_tests` / mlcc when touching compiler.

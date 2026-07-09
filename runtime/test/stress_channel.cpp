@@ -11,12 +11,12 @@
 #include <thread>
 #include <vector>
 
-static int passed = 0;
-static int failed = 0;
+static std::atomic<int> passed{0};
+static std::atomic<int> failed{0};
 
 #define CHECK(expression) do { \
-    if (expression) { ++passed; } \
-    else { ++failed; std::cerr << "FAIL: " #expression " at line " << __LINE__ << "\n"; } \
+    if (expression) { passed.fetch_add(1, std::memory_order_relaxed); } \
+    else { failed.fetch_add(1, std::memory_order_relaxed); std::cerr << "FAIL: " #expression " at line " << __LINE__ << "\n"; } \
 } while(0)
 
 void test_single_sender_receiver() {
@@ -301,10 +301,12 @@ int main() {
     test_rapid_open_close();
     test_multi_producer_consumer_stress();
     test_one_million_messages();
-    if (failed == 0) {
-        std::cout << "ALL " << passed << " checks PASSED\n";
+    const int failed_count = failed.load();
+    const int passed_count = passed.load();
+    if (failed_count == 0) {
+        std::cout << "ALL " << passed_count << " checks PASSED\n";
     } else {
-        std::cout << passed << " passed, " << failed << " FAILED\n";
+        std::cout << passed_count << " passed, " << failed_count << " FAILED\n";
     }
-    return failed > 0 ? 1 : 0;
+    return failed_count > 0 ? 1 : 0;
 }

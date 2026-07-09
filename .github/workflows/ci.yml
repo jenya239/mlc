@@ -56,3 +56,16 @@ jobs:
 
       - name: Profile regression
         run: benchmarks/profile/compare_baseline.sh
+
+  concurrency-sanitize:
+    runs-on: ubuntu-latest
+    env:
+      MLC_CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      - name: Concurrency sanitizer gate (asan/ubsan/tsan)
+        run: scripts/concurrency_sanitize_gate.sh
