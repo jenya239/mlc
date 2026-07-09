@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=3 done) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_LANG_CYCLE_LINT **closed**; next TRACK_LANG_RESULT_COMBINATORS |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:14 (Driver TRACK_LANG_CYCLE_LINT STEP=4 — verify-gate; close track)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_CYCLE_LINT |
+| started | 2026-07-09 06:03 |
+| elapsed | ~11 min |
+| done    | Full verify-gate: `build.sh`; self-host p1/mlcc2/p2 `diff` empty; `regression_gate` 20/0; `build_tests.sh` 1445/0 + fuzz/negative/differential/vm ok. TRACK marked **closed**. Discarded incidental `compiler/out/` rebuild noise from commit. |
+| result  | gate ALL OK. Plain: трек cycle lint закрыт после полной проверки. |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_RESULT_COMBINATORS — inventory shipped Result/Option methods vs remaining `?`+`From` gap (`compiler/` only) |
 
 ### Turn 2026-07-09 06:05 (Driver TRACK_LANG_CYCLE_LINT STEP=3 — self-apply clean)
 
