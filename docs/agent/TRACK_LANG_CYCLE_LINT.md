@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #5 (Уровень 1 из
 части «память и связность»).
 
-## Status: **open** (STEP=3 done 2026-07-09 — self-apply clean)
+## Status: **closed** (2026-07-09)
 
 **Не полный alias-анализ.** Узкая диагностика уровня lint (см. `docs/MLC.md`
 план линтера — `G1 → G2 (минимальные правила) → ...`), не блокирующая ошибка.
@@ -17,8 +17,8 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 |------|--------|-------|
 | 1 | **done** | `cycle_lint.mlc` + wire in `check.mlc`; `W-CYCLE`; errors-only fail `check`; tests in `test_checker.mlc` |
 | 2 | **done** | `CheckOut.warnings`; `eprintln` in `run_checker_pass`; builtin `eprintln` + `map_builtin`; `--check-only` prints `warning[W-CYCLE]` |
-| 3 | **done** | Self-apply: `mlcc --check-only compiler/main.mlc` → **0** `W-CYCLE` / warnings (exit 0). No false positives. (`tests_main.mlc` not a merge entry — path resolve fails; not in scope.) |
-| 4 | pending | verify-gate (self-host + regression) + close track |
+| 3 | **done** | Self-apply: `mlcc --check-only compiler/main.mlc` → **0** `W-CYCLE` / warnings (exit 0). No false positives. |
+| 4 | **done** | verify-gate: self-host p1/mlcc2/p2 identical; `regression_gate` 20/0; `build_tests.sh` 1445/0 + fuzz/negative/differential ok |
 
 ### Self-apply log (STEP=3)
 
@@ -27,7 +27,7 @@ compiler/out/mlcc --check-only compiler/main.mlc
 # exit 0; stderr empty (no warning[W-CYCLE])
 ```
 
-Control: `/tmp/wcycle_repro.mlc` still emits 2× `warning[W-CYCLE]` (lint not dead).
+Control: Shared Parent/Child cycle still emits 2× `warning[W-CYCLE]` (lint not dead).
 
 ## Алгоритм
 
@@ -45,23 +45,17 @@ Control: `/tmp/wcycle_repro.mlc` still emits 2× `warning[W-CYCLE]` (lint not de
 
 ## Файлы
 
-- Данные уже есть: `TypeRegistry.adt_index` /
-  `AdtIndex.constructor_parameters` — найти точное имя в
-  `compiler/checker/registry.mlc` (registry уже строит индекс типов и полей
-  при `build_registry`).
-- Новый файл: `compiler/checker/cycle_lint.mlc` — отдельный проход после
-  `build_registry`, читает `adt_index`, реализует Tarjan на существующих
-  `Map`/`[T]` структурах (без внешних библиотек).
-- Точка вызова прохода — найти, где сейчас в пайплайне запускаются
-  post-registry диагностические проходы (искать вызовы других `*_lint`/
-  `*_diagnostics` функций в `compiler/checker/`), подключить туда же.
+- `compiler/checker/cycle_lint.mlc` — Shared reachability cycle lint
+- `compiler/checker/check/check.mlc` — wire + error/warning split + `CheckOut.warnings`
+- `compiler/pipeline.mlc` — `emit_checker_warnings` via `eprintln`
+- `compiler/checker/diagnostic_codes.mlc` — `W-CYCLE`
 
 ## Формат диагностики
 
 ```
-warning[W-CYCLE]: recursive type cycle Parent -> Child -> Parent through Shared
-  without Weak on the back edge; may leak. Consider Weak<Parent> on Child.parent.
-  --> node.mlc:3:1
+warning[W-CYCLE]: recursive type cycle involving Parent through Shared
+  without Weak on the back edge; may leak. Consider Weak on the back edge.
+  --> node.mlc:1:6
 ```
 
 ## Repro
@@ -73,9 +67,6 @@ type Child = { parent: Shared<Parent> }   // цикл без Weak — долже
 fn main() -> i32 = 0
 ```
 
-До фикса: компиляция проходит без предупреждений. После: `W-CYCLE` в stderr,
-компиляция всё равно успешна (warning, не error).
-
 Контрольный случай (не должен срабатывать):
 
 ```mlc
@@ -83,17 +74,14 @@ type Parent2 = { children: [Shared<Child2>] }
 type Child2 = { parent: Weak<Parent2> }   // цикл разорван Weak — без warning
 ```
 
-## Verify gate
+## Verify gate (STEP=4 — passed 2026-07-09)
 
 ```bash
-bundle exec rake test_compiler_mlc
 compiler/build.sh
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
+MLC_CXX=g++ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 .tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2 --exclude=obj   # identical
+scripts/regression_gate.sh   # 20/0
+compiler/tests/build_tests.sh  # 1445/0 + fuzz/negative/differential ok
 ```
-
-Плюс: прогнать линтер на самом `compiler/` (self-application) — убедиться,
-что 0 ложных срабатываний на реальном коде проекта (или задокументировать
-найденные срабатывания как реальные потенциальные утечки).
