@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 8 |
-| active_track | TRACK_API_CLIENT STEP=1 |
-| test_gate | ok (self-host diff identical; regression_gate 20/0) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_API_CLIENT STEP=2 |
+| test_gate | ok (json_value_type_sync_test 2/0) |
+
+### Turn 2026-07-09 19:40 (Driver TRACK_API_CLIENT STEP=1 — JsonNumber f64, JsonObject Map)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 19:37 |
+| elapsed | ~5 min |
+| done    | `json.mlc`: `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)`; `as_number`/`json_number` f64; `as_object`/`json_object`; test `json_value_type_sync_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/json_value_type_sync_test.rb` 2 runs 0 fail. |
+| result  | STEP=1 done. Plain: MLC JsonValue matches C++ double + map. |
+| issues  | Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=2 TRACK_API_CLIENT — JsonError + derive { Json } for records |
 
 ### Turn 2026-07-09 19:35 (Driver TRACK_FFI_LAYER STEP=8 — verify-gate + close)
 

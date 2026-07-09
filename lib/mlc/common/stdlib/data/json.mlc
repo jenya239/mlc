@@ -10,10 +10,10 @@
 export type JsonValue =
   | JsonNull
   | JsonBool(bool)
-  | JsonNumber(f32)
+  | JsonNumber(f64)
   | JsonString(str)
   | JsonArray(JsonValue[])
-  | JsonObject(str, JsonValue)  // TODO: Should be Map<str, JsonValue>
+  | JsonObject(Map<str, JsonValue>)
 
 // Core parsing and serialization
 extern fn parse_json(json_str: str) -> JsonValue
@@ -60,7 +60,7 @@ export fn is_array(value: JsonValue) -> bool =
 
 export fn is_object(value: JsonValue) -> bool =
   match value
-    | JsonObject(_, _) => true
+    | JsonObject(_) => true
     | _ => false
 
 // Value extraction with Option
@@ -70,7 +70,7 @@ export fn as_bool(value: JsonValue) -> Option<bool> =
     | JsonBool(b) => Some(b)
     | _ => None
 
-export fn as_number(value: JsonValue) -> Option<f32> =
+export fn as_number(value: JsonValue) -> Option<f64> =
   match value
     | JsonNumber(n) => Some(n)
     | _ => None
@@ -85,6 +85,11 @@ export fn as_array(value: JsonValue) -> Option<JsonValue[]> =
     | JsonArray(arr) => Some(arr)
     | _ => None
 
+export fn as_object(value: JsonValue) -> Option<Map<str, JsonValue>> =
+  match value
+    | JsonObject(object_map) => Some(object_map)
+    | _ => None
+
 // Helper constructors
 
 export fn json_null() -> JsonValue =
@@ -93,7 +98,7 @@ export fn json_null() -> JsonValue =
 export fn json_bool(b: bool) -> JsonValue =
   JsonBool(b)
 
-export fn json_number(n: f32) -> JsonValue =
+export fn json_number(n: f64) -> JsonValue =
   JsonNumber(n)
 
 export fn json_string(s: str) -> JsonValue =
@@ -101,3 +106,6 @@ export fn json_string(s: str) -> JsonValue =
 
 export fn json_array(arr: JsonValue[]) -> JsonValue =
   JsonArray(arr)
+
+export fn json_object(object_map: Map<str, JsonValue>) -> JsonValue =
+  JsonObject(object_map)

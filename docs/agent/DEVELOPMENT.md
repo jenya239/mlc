@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_API_CLIENT** STEP=1 — `JsonNumber(f32)`→`f64`, `JsonObject`→`Map`
-(`TRACK_FFI_LAYER` **closed** 2026-07-09).
+**TRACK_API_CLIENT** STEP=2 — `JsonError` + `derive { Json }` for records
+(STEP=1 done: JsonNumber f64, JsonObject Map).
 
 ## Step sizing (good vs bad)
 

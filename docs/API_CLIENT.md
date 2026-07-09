@@ -9,24 +9,16 @@ Parent: [PLAN.md](PLAN.md), [STDLIB_BACKEND.md](STDLIB_BACKEND.md) §2 (HTTP
 |-----------|------|-----------|
 | HTTP-клиент | `runtime/include/mlc/net/http.hpp` | libcurl, `fetch`/`fetch_sync`, TLS работает. `fetch()` — псевдо-async (`std::async` + блокирующий `.get()` внутри `Task`) |
 | JSON runtime (C++) | `runtime/include/mlc/json/json.hpp:19-28` | `std::variant<monostate, bool, double, mlc::String, vector<JsonValue>, nlohmann::json>` — числа `double`, объекты — настоящий `nlohmann::json` map |
-| JSON язык (MLC) | `lib/mlc/common/stdlib/data/json.mlc:10-16` | `JsonNumber(f32)`, `JsonObject(str, JsonValue)` — **не совпадает** с C++ backing: `f32` вместо `double` (потеря точности для больших `i64`-id из реальных API), `JsonObject` как одна пара ключ-значение, а не map (TODO в коде строка 16 подтверждает: "Should be Map<str, JsonValue>") |
+| JSON язык (MLC) | `lib/mlc/common/stdlib/data/json.mlc:10-16` | `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)` — **aligned** with C++ `double` + object map (STEP=1, 2026-07-09) |
 | `derive` | `compiler/checker/check/derive_validation.mlc:12-15` | Поддерживает `Display, Eq, Ord, Hash`. Механизм готов, список расширяем — codegen-правило в `compiler/codegen/decl.mlc` |
 | Типизированная (де)сериализация | — | **Нет.** Работа с ответом API — вручную через `json_get`/`as_string`/`as_number` по generic-дереву |
 | OpenAPI codegen | — | Нет |
 
-## 2. Предпосылка: исправить рассинхронизацию JSON-типа
+## 2. Предпосылка: исправить рассинхронизацию JSON-типа — **done** 2026-07-09
 
-Прежде чем строить `derive { Json }` поверх `JsonValue`, устранить два
-несоответствия MLC-уровня и C++ runtime (§1):
-
-1. `JsonNumber(f32)` → `JsonNumber(f64)` — иначе `derive { Json }` для полей
-   `i64` (типичные API id) будет терять точность на числах свыше 2^24.
-2. `JsonObject(str, JsonValue)` → `JsonObject(Map<str, JsonValue>)` — сейчас
-   тип в языке физически не может представить объект с более чем одной
-   парой; `json_get`/`json_has_key`/`json_keys` в `json.mlc:24-27` работают
-   только потому что это `extern fn`, реализованные напрямую на C++
-   `nlohmann::json`, а не через сопоставление с образцом на MLC-уровне
-   variant — то есть баг скрыт, пока никто не матчится на `JsonObject` руками.
+1. `JsonNumber(f32)` → `JsonNumber(f64)` — **done**.
+2. `JsonObject(str, JsonValue)` → `JsonObject(Map<str, JsonValue>)` — **done**
+   (`as_object` / `json_object` helpers added).
 
 ## 3. `derive { Json }` — типизированная (де)сериализация
 
