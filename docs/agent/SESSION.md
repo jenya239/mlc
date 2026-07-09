@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=1 done) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=2 done) |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:01 (Driver TRACK_LANG_CYCLE_LINT STEP=2 — print warnings on stderr)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_CYCLE_LINT |
+| started | 2026-07-09 05:46 |
+| elapsed | ~15 min |
+| done    | `CheckOut.warnings`; fill from warning diagnostics in `check_program_against_full`; `emit_checker_warnings`/`eprintln` in `pipeline.run_checker_pass`; register builtin `eprintln` in `registry.mlc` + `map_builtin`; tests for warning text/count + check_only Ok. |
+| result  | `dev_gate_fast` 1445/0; `--check-only` repro prints 2×`warning[W-CYCLE]` on stderr exit 0; Weak case silent; self-host p1/mlcc2/p2 identical. Plain: warnings теперь видны в CLI, компиляция не падает. |
+| issues  | Stale mlcc codegen left bare `eprintln` (undeclared); fixed via `MLCC_FORCE_RUBY=1` rebuild. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_CYCLE_LINT — self-apply W-CYCLE on `compiler/` (0 false positives or document) |
 
 ### Turn 2026-07-09 05:45 (Driver TRACK_LANG_CYCLE_LINT STEP=1 — W-CYCLE lint pass)
 

@@ -68,6 +68,7 @@ export fn map_method(method_name: string) -> string =
 export fn map_builtin(name: string) -> string =
   if name == "print" then "mlc::io::print"
   else if name == "println" then "mlc::io::println"
+  else if name == "eprintln" then "mlc::io::eprintln"
   else if name == "exit" then "mlc::io::exit"
   else if name == "args" then "mlc::io::args"
   else if name == "read_line" then "mlc::io::read_line"

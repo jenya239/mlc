@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #5 (Уровень 1 из
 части «память и связность»).
 
-## Status: **open** (STEP=1 done 2026-07-09 — lint pass + warning/error split)
+## Status: **open** (STEP=2 done 2026-07-09 — warnings on stderr)
 
 **Не полный alias-анализ.** Узкая диагностика уровня lint (см. `docs/MLC.md`
 план линтера — `G1 → G2 (минимальные правила) → ...`), не блокирующая ошибка.
@@ -16,7 +16,7 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 | Step | Status | Notes |
 |------|--------|-------|
 | 1 | **done** | `cycle_lint.mlc` + wire in `check.mlc`; `W-CYCLE`; errors-only fail `check`; tests in `test_checker.mlc` |
-| 2 | pending | Print warnings on stderr in pipeline/`--check-only` (today silent unless `program_diagnostics`) |
+| 2 | **done** | `CheckOut.warnings`; `eprintln` in `run_checker_pass`; builtin `eprintln` + `map_builtin`; `--check-only` prints `warning[W-CYCLE]` |
 | 3 | pending | Self-apply on `compiler/` — 0 false positives or document hits |
 | 4 | pending | verify-gate (self-host + regression) + close track |
 

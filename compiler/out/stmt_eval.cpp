@@ -1,4 +1,3 @@
-#define main mlc_user_main
 #include "stmt_eval.hpp"
 
 #include "semantic_ir.hpp"
@@ -25,604 +24,552 @@ using namespace literals;
 using namespace semantic_type_structure;
 using namespace expr;
 
-mlc::String constexpr_named_type_cpp(std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context) noexcept{
-  return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return context::CodegenContext_resolve(context, type_name); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return mlc::String("", 0); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return mlc::String("", 0); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return mlc::String("", 0); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return mlc::String("", 0); },
-[&](const registry::TI32& tI32) { return mlc::String("", 0); },
-[&](const registry::TString& tString) { return mlc::String("", 0); },
-[&](const registry::TBool& tBool) { return mlc::String("", 0); },
-[&](const registry::TUnit& tUnit) { return mlc::String("", 0); },
-[&](const registry::TI64& tI64) { return mlc::String("", 0); },
-[&](const registry::TF64& tF64) { return mlc::String("", 0); },
-[&](const registry::TU8& tU8) { return mlc::String("", 0); },
-[&](const registry::TUsize& tUsize) { return mlc::String("", 0); },
-[&](const registry::TChar& tChar) { return mlc::String("", 0); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return mlc::String("", 0); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return mlc::String("", 0); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return mlc::String("", 0); },
-[&](const registry::TUnknown& tUnknown) { return mlc::String("", 0); }
-}, (*binding_semantic_type));
-}
-mlc::String constexpr_if_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> if_value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return [&]() -> mlc::String {
-auto __match_subject = if_value;
-if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*__match_subject))) {
-const semantic_ir::SemanticExpressionIf& semanticExpressionIf = std::get<semantic_ir::SemanticExpressionIf>((*__match_subject));
-auto [condition, then_branch, else_branch, __3, __4] = semanticExpressionIf; return [&]() {
-auto cond_code = gen_expr_fn(condition, context);
-auto then_code = gen_expr_fn(then_branch, context);
-auto else_code = expression_support::generate_conditional_else_with_empty_array_coercion(then_branch, else_branch, binding_semantic_type, context, gen_expr_fn);
-auto named_type_cpp = constexpr_named_type_cpp(binding_semantic_type, context);
-return [&]() -> mlc::String {
-  if (((named_type_cpp != mlc::String("", 0)) && (named_type_cpp != mlc::String("auto", 4))))   {
-    return ((((((((mlc::String("[&]() -> ", 9) + mlc::to_string(named_type_cpp)) + mlc::String(" {\nif (", 7)) + mlc::to_string(cond_code)) + mlc::String(") {\nreturn ", 11)) + mlc::to_string(then_code)) + mlc::String(";\n} else {\nreturn ", 18)) + mlc::to_string(else_code)) + mlc::String(";\n}\n}()", 7));
-  } else   {
-    return expr::ternary_conditional(cond_code, then_code, else_code);
-  }
-}();
-}();
-}
-return constexpr_binding_default_code(if_value, context, gen_expr_fn);
-std::abort();
-}();
-}
-mlc::String constexpr_binding_default_code(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return gen_expr_fn(value, context);
-}
-bool semantic_expression_is_if(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return [&]() -> bool {
-auto __match_subject = expression;
-if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*__match_subject))) {
-const semantic_ir::SemanticExpressionIf& semanticExpressionIf = std::get<semantic_ir::SemanticExpressionIf>((*__match_subject));
-auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return true;
-}
-return false;
-std::abort();
-}();
-}
-bool semantic_expression_is_block(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return [&]() -> bool {
-auto __match_subject = expression;
-if (std::holds_alternative<semantic_ir::SemanticExpressionBlock>((*__match_subject))) {
-const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock = std::get<semantic_ir::SemanticExpressionBlock>((*__match_subject));
-auto [__0, __1, __2, __3] = semanticExpressionBlock; return true;
-}
-return false;
-std::abort();
-}();
-}
-bool semantic_expression_is_unit(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return [&]() -> bool {
-auto __match_subject = expression;
-if (std::holds_alternative<semantic_ir::SemanticExpressionUnit>((*__match_subject))) {
-const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit = std::get<semantic_ir::SemanticExpressionUnit>((*__match_subject));
-auto [__0, __1] = semanticExpressionUnit; return true;
-}
-return false;
-std::abort();
-}();
-}
-bool semantic_expression_is_array(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return [&]() -> bool {
-auto __match_subject = expression;
-if (std::holds_alternative<semantic_ir::SemanticExpressionArray>((*__match_subject))) {
-const semantic_ir::SemanticExpressionArray& semanticExpressionArray = std::get<semantic_ir::SemanticExpressionArray>((*__match_subject));
-auto [__0, __1, __2] = semanticExpressionArray; return true;
-}
-return false;
-std::abort();
-}();
-}
-mlc::Array<std::shared_ptr<registry::Type>> map_generic_type_arguments(std::shared_ptr<registry::Type> value_type) noexcept{
-  return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [__0, type_arguments] = tGeneric; return type_arguments; },
-[&](const registry::TI32& tI32) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TString& tString) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TBool& tBool) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TUnit& tUnit) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TI64& tI64) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TF64& tF64) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TU8& tU8) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TUsize& tUsize) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TChar& tChar) { return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return semantic_type_structure::empty_type_parameter_list(); },
-[&](const registry::TUnknown& tUnknown) { return semantic_type_structure::empty_type_parameter_list(); }
-}, (*value_type));
-}
-mlc::String constexpr_block_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [inner_statements, result_expression, __2, __3] = semanticExpressionBlock; return ((inner_statements.length() == 0) ? (constexpr_binding_value_code(result_expression, binding_semantic_type, context, gen_expr_fn)) : (constexpr_binding_default_code(value, context, gen_expr_fn))); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return constexpr_binding_default_code(value, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return constexpr_binding_default_code(value, context, gen_expr_fn); }
-}, (*value));
-}
-mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if (semantic_expression_is_if(value))   {
-    return constexpr_if_binding_value_code(value, binding_semantic_type, context, gen_expr_fn);
-  } else if (semantic_expression_is_block(value))   {
-    return constexpr_block_binding_value_code(value, binding_semantic_type, context, gen_expr_fn);
-  } else   {
-    return constexpr_binding_default_code(value, context, gen_expr_fn);
-  }
-}
+mlc::String constexpr_named_type_cpp(std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context) noexcept;
+
+mlc::String constexpr_if_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> if_value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String constexpr_binding_default_code(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+bool semantic_expression_is_if(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+bool semantic_expression_is_block(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+bool semantic_expression_is_unit(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+bool semantic_expression_is_array(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> map_generic_type_arguments(std::shared_ptr<registry::Type> value_type) noexcept;
+
+mlc::String constexpr_block_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_try_unwrap(std::shared_ptr<semantic_ir::SemanticExpression> inner_expression, context::CodegenContext context, mlc::String try_identifier, mlc::String success_line, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+bool empty_unit_block_expression(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+mlc::String block_result_trailing_code(mlc::String statements_code, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext final_context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String block_result_expression_trailing_code(mlc::String statements_code, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext final_context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_stmt_if_nested(std::shared_ptr<semantic_ir::SemanticExpression> if_expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_semantic_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_stmt_expr_default_suffix(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_stmt_expr_block(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_array_value_from_tarray(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, std::shared_ptr<registry::Type> inner_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_array_value_fallback(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_array_value_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, std::shared_ptr<registry::Type> array_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_map_new_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_array_value_from_expression(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String gen_let_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String semantic_expression_ident_name(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+bool semantic_expression_is_method_map_new(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
+
+context::GenStmtResult gen_let_stmt_result_default(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult gen_let_stmt_result(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult gen_expr_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult gen_expr_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult gen_return_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult gen_return_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+context::GenStmtsWithContext eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept;
+
+mlc::String constexpr_named_type_cpp(std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context) noexcept{return std::visit(overloaded{
+  [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return context::CodegenContext_resolve(context, type_name); },
+  [&](const TGeneric& tgeneric) -> mlc::String { auto [_w0, _w1] = tgeneric; return mlc::String(""); },
+  [&](const TArray& tarray) -> mlc::String { auto [_w0] = tarray; return mlc::String(""); },
+  [&](const TTuple& ttuple) -> mlc::String { auto [_w0] = ttuple; return mlc::String(""); },
+  [&](const TPair& tpair) -> mlc::String { auto [_w0, _w1] = tpair; return mlc::String(""); },
+  [&](const TI32& ti32) -> mlc::String { return mlc::String(""); },
+  [&](const TString& tstring) -> mlc::String { return mlc::String(""); },
+  [&](const TBool& tbool) -> mlc::String { return mlc::String(""); },
+  [&](const TUnit& tunit) -> mlc::String { return mlc::String(""); },
+  [&](const TI64& ti64) -> mlc::String { return mlc::String(""); },
+  [&](const TF64& tf64) -> mlc::String { return mlc::String(""); },
+  [&](const TU8& tu8) -> mlc::String { return mlc::String(""); },
+  [&](const TUsize& tusize) -> mlc::String { return mlc::String(""); },
+  [&](const TChar& tchar) -> mlc::String { return mlc::String(""); },
+  [&](const TShared& tshared) -> mlc::String { auto [_w0] = tshared; return mlc::String(""); },
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String(""); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [_w0, _w1] = tassoc; return mlc::String(""); },
+  [&](const TUnknown& tunknown) -> mlc::String { return mlc::String(""); }
+}, (*binding_semantic_type));}
+
+mlc::String constexpr_if_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> if_value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*if_value)._)) { auto _v_semanticexpressionif = std::get<semantic_ir::SemanticExpressionIf>((*if_value)._); auto [condition, then_branch, else_branch, _w0, _w1] = _v_semanticexpressionif; return [&]() -> mlc::String { 
+  mlc::String cond_code = gen_expr_fn(condition, context);
+  mlc::String then_code = gen_expr_fn(then_branch, context);
+  mlc::String else_code = expression_support::generate_conditional_else_with_empty_array_coercion(then_branch, else_branch, binding_semantic_type, context, gen_expr_fn);
+  mlc::String named_type_cpp = constexpr_named_type_cpp(binding_semantic_type, context);
+  return named_type_cpp != mlc::String("") && named_type_cpp != mlc::String("auto") ? mlc::String("[&]() -> ") + named_type_cpp + mlc::String(" {\nif (") + cond_code + mlc::String(") {\nreturn ") + then_code + mlc::String(";\n} else {\nreturn ") + else_code + mlc::String(";\n}\n}()") : expr::ternary_conditional(cond_code, then_code, else_code);
+ }(); } return constexpr_binding_default_code(if_value, context, gen_expr_fn); }();}
+
+mlc::String constexpr_binding_default_code(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return gen_expr_fn(value, context);}
+
+bool semantic_expression_is_if(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*expression)._)) { auto _v_semanticexpressionif = std::get<semantic_ir::SemanticExpressionIf>((*expression)._); auto [_w0, _w1, _w2, _w3, _w4] = _v_semanticexpressionif; return true; } return false; }();}
+
+bool semantic_expression_is_block(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionBlock>((*expression)._)) { auto _v_semanticexpressionblock = std::get<semantic_ir::SemanticExpressionBlock>((*expression)._); auto [_w0, _w1, _w2, _w3] = _v_semanticexpressionblock; return true; } return false; }();}
+
+bool semantic_expression_is_unit(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionUnit>((*expression)._)) { auto _v_semanticexpressionunit = std::get<semantic_ir::SemanticExpressionUnit>((*expression)._); auto [_w0, _w1] = _v_semanticexpressionunit; return true; } return false; }();}
+
+bool semantic_expression_is_array(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return [&]() { if (std::holds_alternative<semantic_ir::SemanticExpressionArray>((*expression)._)) { auto _v_semanticexpressionarray = std::get<semantic_ir::SemanticExpressionArray>((*expression)._); auto [_w0, _w1, _w2] = _v_semanticexpressionarray; return true; } return false; }();}
+
+mlc::Array<std::shared_ptr<registry::Type>> map_generic_type_arguments(std::shared_ptr<registry::Type> value_type) noexcept{return std::visit(overloaded{
+  [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, type_arguments] = tgeneric; return type_arguments; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TI64& ti64) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TF64& tf64) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TU8& tu8) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TUsize& tusize) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TChar& tchar) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tfn; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return semantic_type_structure::empty_type_parameter_list(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return semantic_type_structure::empty_type_parameter_list(); }
+}, (*value_type));}
+
+mlc::String constexpr_block_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> mlc::String { auto [inner_statements, result_expression, _w0, _w1] = semanticexpressionblock; return inner_statements.size() == 0 ? constexpr_binding_value_code(result_expression, binding_semantic_type, context, gen_expr_fn) : constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionint; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionstr; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionfloat; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressioni64; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionu8; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionusize; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionchar; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionbool; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> mlc::String { auto [_w0, _w1] = semanticexpressionunit; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> mlc::String { auto [_w0, _w1] = semanticexpressionextern; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionident; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionarray; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressiontuple; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionquestion; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return constexpr_binding_default_code(value, context, gen_expr_fn); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return constexpr_binding_default_code(value, context, gen_expr_fn); }
+}, (*value)._);}
+
+mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> binding_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return semantic_expression_is_if(value) ? constexpr_if_binding_value_code(value, binding_semantic_type, context, gen_expr_fn) : semantic_expression_is_block(value) ? constexpr_block_binding_value_code(value, binding_semantic_type, context, gen_expr_fn) : constexpr_binding_default_code(value, context, gen_expr_fn);}
+
 mlc::String eval_try_unwrap(std::shared_ptr<semantic_ir::SemanticExpression> inner_expression, context::CodegenContext context, mlc::String try_identifier, mlc::String success_line, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto inner_code = gen_expr_fn(inner_expression, context);
-  return expr::try_unwrap_result_block(try_identifier, inner_code, success_line);
+mlc::String inner_code = gen_expr_fn(inner_expression, context);
+return expr::try_unwrap_result_block(try_identifier, inner_code, success_line);
 }
-bool empty_unit_block_expression(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [statements, result_expression, __2, __3] = semanticExpressionBlock; return ((statements.length() == 0) && semantic_expression_is_unit(result_expression)); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return false; },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return false; },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return false; },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return false; },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return false; },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return false; },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return false; },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return false; },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return false; },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return false; },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return false; },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return false; },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return false; },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return false; },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return false; },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return false; },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return false; },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return false; },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return false; },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return false; },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return false; },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return false; },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return false; },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return false; },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return false; },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return false; },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return false; },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return false; }
-}, (*expression));
-}
-mlc::String block_result_trailing_code(mlc::String statements_code, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext final_context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if (semantic_expression_is_if(result_expression))   {
-    return (statements_code + eval_stmt_if_nested(result_expression, final_context, gen_expr_fn));
-  } else if (semantic_expression_is_unit(result_expression))   {
-    return statements_code;
-  } else   {
-    return block_result_expression_trailing_code(statements_code, result_expression, final_context, gen_expr_fn);
-  }
-}
+
+bool empty_unit_block_expression(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> bool { auto [statements, result_expression, _w0, _w1] = semanticexpressionblock; return statements.size() == 0 && semantic_expression_is_unit(result_expression); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> bool { auto [_w0, _w1, _w2] = semanticexpressionint; return false; },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> bool { auto [_w0, _w1, _w2] = semanticexpressionstr; return false; },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> bool { auto [_w0, _w1, _w2] = semanticexpressionfloat; return false; },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> bool { auto [_w0, _w1, _w2] = semanticexpressioni64; return false; },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> bool { auto [_w0, _w1, _w2] = semanticexpressionu8; return false; },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> bool { auto [_w0, _w1, _w2] = semanticexpressionusize; return false; },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> bool { auto [_w0, _w1, _w2] = semanticexpressionchar; return false; },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> bool { auto [_w0, _w1, _w2] = semanticexpressionbool; return false; },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> bool { auto [_w0, _w1] = semanticexpressionunit; return false; },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> bool { auto [_w0, _w1] = semanticexpressionextern; return false; },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> bool { auto [_w0, _w1, _w2] = semanticexpressionident; return false; },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return false; },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return false; },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return false; },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> bool { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return false; },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return false; },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return false; },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return false; },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return false; },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return false; },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return false; },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return false; },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return false; },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> bool { auto [_w0, _w1, _w2] = semanticexpressionarray; return false; },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> bool { auto [_w0, _w1, _w2] = semanticexpressiontuple; return false; },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> bool { auto [_w0, _w1, _w2] = semanticexpressionquestion; return false; },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return false; },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return false; }
+}, (*expression)._);}
+
+mlc::String block_result_trailing_code(mlc::String statements_code, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext final_context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return semantic_expression_is_if(result_expression) ? statements_code + eval_stmt_if_nested(result_expression, final_context, gen_expr_fn) : semantic_expression_is_unit(result_expression) ? statements_code : block_result_expression_trailing_code(statements_code, result_expression, final_context, gen_expr_fn);}
+
 mlc::String block_result_expression_trailing_code(mlc::String statements_code, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext final_context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto result_code = gen_expr_fn(result_expression, final_context);
-  if ((result_code == literals::gen_unit_literal()))   {
-    return statements_code;
-  } else   {
-    return expr::append_trailing_expression_statement(statements_code, result_code);
-  }
+mlc::String result_code = gen_expr_fn(result_expression, final_context);
+return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
 }
-mlc::String eval_stmt_if_nested(std::shared_ptr<semantic_ir::SemanticExpression> if_expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return [&]() -> mlc::String {
-auto __match_subject = if_expression;
-if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*__match_subject))) {
-const semantic_ir::SemanticExpressionIf& semanticExpressionIf = std::get<semantic_ir::SemanticExpressionIf>((*__match_subject));
-auto [condition_expression, then_expression, else_expression, __3, __4] = semanticExpressionIf; return [&]() {
-auto opening = expr::if_brace_block(gen_expr_fn(condition_expression, context), eval_block_body(then_expression, context, gen_expr_fn));
-auto else_suffix = [&]() -> mlc::String {
-  if (semantic_expression_is_unit(else_expression))   {
-    return mlc::String("", 0);
-  } else   {
-    return (semantic_expression_is_if(else_expression) ? (expr::else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn))) : ([&]() -> mlc::String {
-  if ((semantic_expression_is_block(else_expression) && empty_unit_block_expression(else_expression)))   {
-    return mlc::String("", 0);
-  } else   {
-    return expr::else_brace_block(eval_block_body(else_expression, context, gen_expr_fn));
-  }
-}()));
-  }
-}();
-return expr::fragment_with_newline(expr::prefix_with_optional_suffix(opening, else_suffix));
-}();
-}
-return expr::if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn));
-std::abort();
-}();
-}
-mlc::String eval_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if (semantic_expression_is_block(expression))   {
-    return eval_semantic_block_body(expression, context, gen_expr_fn);
-  } else if (semantic_expression_is_if(expression))   {
-    return eval_stmt_if_nested(expression, context, gen_expr_fn);
-  } else   {
-    return expr::suffix_semicolon_newline(gen_expr_fn(expression, context));
-  }
-}
-mlc::String eval_semantic_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [statements, result_expression, __2, __3] = semanticExpressionBlock; return [&]() {
-auto statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
-auto statements_code = context::GenStmtsResult_joined_code(statements_with_context.statements_parsed);
-auto final_context = statements_with_context.codegen_context;
-return block_result_trailing_code(statements_code, result_expression, final_context, gen_expr_fn);
-}(); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); }
-}, (*expression));
-}
-mlc::String eval_stmt_expr_default_suffix(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return expr::suffix_semicolon_newline(gen_expr_fn(expression, context));
-}
+
+mlc::String eval_stmt_if_nested(std::shared_ptr<semantic_ir::SemanticExpression> if_expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*if_expression)._)) { auto _v_semanticexpressionif = std::get<semantic_ir::SemanticExpressionIf>((*if_expression)._); auto [condition_expression, then_expression, else_expression, _w0, _w1] = _v_semanticexpressionif; return [&]() -> mlc::String { 
+  mlc::String opening = expr::if_brace_block(gen_expr_fn(condition_expression, context), eval_block_body(then_expression, context, gen_expr_fn));
+  mlc::String else_suffix = semantic_expression_is_unit(else_expression) ? mlc::String("") : semantic_expression_is_if(else_expression) ? expr::else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn)) : semantic_expression_is_block(else_expression) && empty_unit_block_expression(else_expression) ? mlc::String("") : expr::else_brace_block(eval_block_body(else_expression, context, gen_expr_fn));
+  return expr::fragment_with_newline(expr::prefix_with_optional_suffix(opening, else_suffix));
+ }(); } return expr::if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn)); }();}
+
+mlc::String eval_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return semantic_expression_is_block(expression) ? eval_semantic_block_body(expression, context, gen_expr_fn) : semantic_expression_is_if(expression) ? eval_stmt_if_nested(expression, context, gen_expr_fn) : expr::suffix_semicolon_newline(gen_expr_fn(expression, context));}
+
+mlc::String eval_semantic_block_body(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> mlc::String { auto [statements, result_expression, _w0, _w1] = semanticexpressionblock; return [&]() -> mlc::String { 
+  context::GenStmtsWithContext statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
+  mlc::String statements_code = context::GenStmtsResult_joined_code(statements_with_context.statements_parsed);
+  context::CodegenContext final_context = statements_with_context.codegen_context;
+  return block_result_trailing_code(statements_code, result_expression, final_context, gen_expr_fn);
+ }(); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionint; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionstr; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionfloat; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressioni64; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionu8; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionusize; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionchar; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionbool; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> mlc::String { auto [_w0, _w1] = semanticexpressionunit; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> mlc::String { auto [_w0, _w1] = semanticexpressionextern; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionident; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionarray; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressiontuple; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionquestion; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return expr::suffix_semicolon_newline(gen_expr_fn(expression, context)); }
+}, (*expression)._);}
+
+mlc::String eval_stmt_expr_default_suffix(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return expr::suffix_semicolon_newline(gen_expr_fn(expression, context));}
+
 mlc::String eval_stmt_expr_block(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
-  auto statements_code = context::GenStmtsResult_joined_code(statements_with_context.statements_parsed);
-  auto result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context);
-  if ((result_code == literals::gen_unit_literal()))   {
-    return statements_code;
-  } else   {
-    return expr::append_trailing_expression_statement(statements_code, result_code);
-  }
+context::GenStmtsWithContext statements_with_context = eval_stmts_str_with_try(statements, context, 0, gen_expr_fn);
+mlc::String statements_code = context::GenStmtsResult_joined_code(statements_with_context.statements_parsed);
+mlc::String result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context);
+return result_code == literals::gen_unit_literal() ? statements_code : expr::append_trailing_expression_statement(statements_code, result_code);
 }
-mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [operation, left_expression, right_expression, __3, __4] = semanticExpressionBin; return ((operation == mlc::String("=", 1)) ? (expr::assignment_statement(gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context))) : (expr::expression_operation_statement(operation, gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context)))); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return eval_stmt_if_nested(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [condition, statements, __2, __3] = semanticExpressionWhile; return expr::while_loop_statement(gen_expr_fn(condition, context), eval_stmts_str(statements, context, gen_expr_fn)); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [variable, iterator, statements, __3, __4] = semanticExpressionFor; return expr::for_loop_statement(cpp_naming::cpp_safe(variable), gen_expr_fn(iterator, context), eval_stmts_str(statements, context, gen_expr_fn)); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [resource, binder, with_statements, __3, __4] = semanticExpressionWith; return expr::with_block_statement(gen_expr_fn(resource, context), cpp_naming::cpp_safe(binder), eval_stmts_str(with_statements, context, gen_expr_fn)); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [statements, result_expression, __2, __3] = semanticExpressionBlock; return eval_stmt_expr_block(statements, result_expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); }
-}, (*expression));
-}
-mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return elements.map([=](std::shared_ptr<semantic_ir::SemanticExpression> element) mutable { return gen_expr_fn(element, context); }).join(mlc::String(", ", 2));
-}
+
+mlc::String eval_stmt_expr(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> mlc::String { auto [operation, left_expression, right_expression, _w0, _w1] = semanticexpressionbin; return operation == mlc::String("=") ? expr::assignment_statement(gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context)) : expr::expression_operation_statement(operation, gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context)); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return eval_stmt_if_nested(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> mlc::String { auto [condition, statements, _w0, _w1] = semanticexpressionwhile; return expr::while_loop_statement(gen_expr_fn(condition, context), eval_stmts_str(statements, context, gen_expr_fn)); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> mlc::String { auto [variable, iterator, statements, _w0, _w1] = semanticexpressionfor; return expr::for_loop_statement(cpp_naming::cpp_safe(variable), gen_expr_fn(iterator, context), eval_stmts_str(statements, context, gen_expr_fn)); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> mlc::String { auto [resource, binder, with_statements, _w0, _w1] = semanticexpressionwith; return expr::with_block_statement(gen_expr_fn(resource, context), cpp_naming::cpp_safe(binder), eval_stmts_str(with_statements, context, gen_expr_fn)); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> mlc::String { auto [statements, result_expression, _w0, _w1] = semanticexpressionblock; return eval_stmt_expr_block(statements, result_expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionint; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionstr; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionfloat; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressioni64; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionu8; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionusize; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionchar; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionbool; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> mlc::String { auto [_w0, _w1] = semanticexpressionunit; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> mlc::String { auto [_w0, _w1] = semanticexpressionextern; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionident; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionarray; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressiontuple; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionquestion; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return eval_stmt_expr_default_suffix(expression, context, gen_expr_fn); }
+}, (*expression)._);}
+
+mlc::String eval_elements_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return elements.map([gen_expr_fn, context](std::shared_ptr<semantic_ir::SemanticExpression> element) mutable { return gen_expr_fn(element, context); }).join(mlc::String(", "));}
+
 mlc::String gen_let_array_value_from_tarray(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, std::shared_ptr<registry::Type> inner_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto element_cpp = type_gen::sem_type_to_cpp(context, inner_type);
-  if ((elements.length() == 0))   {
-    return expr::typed_array_empty_or_untyped_empty(element_cpp);
-  } else if ((element_cpp == mlc::String("auto", 4)))   {
-    return expr::array_literal(eval_elements_code(elements, context, gen_expr_fn));
-  } else   {
-    return expr::typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn));
-  }
+mlc::String element_cpp = type_gen::sem_type_to_cpp(context, inner_type);
+return elements.size() == 0 ? expr::typed_array_empty_or_untyped_empty(element_cpp) : element_cpp == mlc::String("auto") ? expr::array_literal(eval_elements_code(elements, context, gen_expr_fn)) : expr::typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn));
 }
-mlc::String gen_let_array_value_fallback(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if ((elements.length() == 0))   {
-    return expr::array_string_fallback_empty();
-  } else   {
-    return expr::constructor_call_braces(mlc::String("mlc::Array", 10), eval_elements_code(elements, context, gen_expr_fn));
-  }
-}
-mlc::String gen_let_array_value_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, std::shared_ptr<registry::Type> array_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if (semantic_type_structure::type_is_array(array_type))   {
-    return gen_let_array_value_from_tarray(elements, semantic_type_structure::array_element_type_from_array_type(array_type), context, gen_expr_fn);
-  } else   {
-    return gen_let_array_value_fallback(elements, context, gen_expr_fn);
-  }
-}
+
+mlc::String gen_let_array_value_fallback(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return elements.size() == 0 ? expr::array_string_fallback_empty() : expr::constructor_call_braces(mlc::String("mlc::Array"), eval_elements_code(elements, context, gen_expr_fn));}
+
+mlc::String gen_let_array_value_code(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, std::shared_ptr<registry::Type> array_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return semantic_type_structure::type_is_array(array_type) ? gen_let_array_value_from_tarray(elements, semantic_type_structure::array_element_type_from_array_type(array_type), context, gen_expr_fn) : gen_let_array_value_fallback(elements, context, gen_expr_fn);}
+
 mlc::String gen_let_map_new_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto type_arguments = map_generic_type_arguments(value_type);
-  if ((semantic_type_structure::receiver_type_is_map(value_type) && (type_arguments.length() == 2)))   {
-    return expr::hash_map_empty_instantiation(type_gen::sem_type_to_cpp(context, type_arguments[0]), type_gen::sem_type_to_cpp(context, type_arguments[1]));
-  } else   {
-    return gen_expr_fn(value, context);
-  }
+mlc::Array<std::shared_ptr<registry::Type>> type_arguments = map_generic_type_arguments(value_type);
+return semantic_type_structure::receiver_type_is_map(value_type) && type_arguments.size() == 2 ? expr::hash_map_empty_instantiation(type_gen::sem_type_to_cpp(context, type_arguments[0]), type_gen::sem_type_to_cpp(context, type_arguments[1])) : gen_expr_fn(value, context);
 }
-mlc::String gen_let_array_value_from_expression(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [elements, array_type, __2] = semanticExpressionArray; return gen_let_array_value_code(elements, array_type, context, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [__0, __1, __2, __3] = semanticExpressionBlock; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return gen_expr_fn(value, context); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return gen_expr_fn(value, context); }
-}, (*value));
-}
-mlc::String gen_let_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  if (semantic_expression_is_array(value))   {
-    return gen_let_array_value_from_expression(value, context, gen_expr_fn);
-  } else if (semantic_expression_is_method_map_new(value))   {
-    return gen_let_map_new_value_code(value, value_type, context, gen_expr_fn);
-  } else   {
-    return gen_expr_fn(value, context);
-  }
-}
-mlc::String semantic_expression_ident_name(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [name, __1, __2] = semanticExpressionIdent; return name; },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [__0, __1, __2, __3] = semanticExpressionBlock; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return mlc::String("", 0); }
-}, (*expression));
-}
-bool semantic_expression_is_method_map_new(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) { auto [map_object, method_name, __2, __3, __4, __5] = semanticExpressionMethod; return ((method_name == mlc::String("new", 3)) && (semantic_expression_ident_name(map_object) == mlc::String("Map", 3))); },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) { auto [__0, __1, __2] = semanticExpressionInt; return false; },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) { auto [__0, __1, __2] = semanticExpressionStr; return false; },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) { auto [__0, __1, __2] = semanticExpressionFloat; return false; },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) { auto [__0, __1, __2] = semanticExpressionI64; return false; },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) { auto [__0, __1, __2] = semanticExpressionU8; return false; },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) { auto [__0, __1, __2] = semanticExpressionUsize; return false; },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return false; },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return false; },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return false; },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return false; },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return false; },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return false; },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return false; },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return false; },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) { auto [__0, __1, __2, __3] = semanticExpressionField; return false; },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) { auto [__0, __1, __2, __3] = semanticExpressionIndex; return false; },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return false; },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) { auto [__0, __1, __2, __3] = semanticExpressionBlock; return false; },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) { auto [__0, __1, __2, __3] = semanticExpressionWhile; return false; },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return false; },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) { auto [__0, __1, __2, __3] = semanticExpressionMatch; return false; },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) { auto [__0, __1, __2, __3] = semanticExpressionRecord; return false; },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return false; },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) { auto [__0, __1, __2] = semanticExpressionArray; return false; },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) { auto [__0, __1, __2] = semanticExpressionTuple; return false; },
-[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) { auto [__0, __1, __2] = semanticExpressionQuestion; return false; },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) { auto [__0, __1, __2, __3] = semanticExpressionLambda; return false; },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return false; }
-}, (*expression));
-}
-context::GenStmtResult gen_let_stmt_result_default(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return context::GenStmtResult{expr::auto_binding_statement(cpp_naming::cpp_safe(name), gen_let_value_code(value, value_type, context, gen_expr_fn)), try_counter, context};
-}
-context::GenStmtResult gen_let_stmt_result(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> context::GenStmtResult { auto [inner_expression, __1, __2] = semanticExpressionQuestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, ((mlc::String("__try_", 6) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0)), expr::let_from_try_ok_field0(cpp_naming::cpp_safe(name), ((mlc::String("__try_", 6) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0))), gen_expr_fn), (try_counter + 1), context}; },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionInt; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionStr; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionFloat; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionI64; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionU8; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionUsize; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionChar; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionBool; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionUnit; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionExtern; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionIdent; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionUn; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionField; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionIndex; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionBlock; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionWhile; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionMatch; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionRecord; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionArray; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionTuple; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionLambda; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); }
-}, (*value));
-}
-context::GenStmtResult gen_expr_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return context::GenStmtResult{eval_stmt_expr(expression, context, gen_expr_fn), try_counter, context};
-}
-context::GenStmtResult gen_expr_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> context::GenStmtResult { auto [inner_expression, __1, __2] = semanticExpressionQuestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, ((mlc::String("__try_", 6) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0)), expr::discard_try_ok_field0_statement(((mlc::String("__try_", 6) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0))), gen_expr_fn), (try_counter + 1), context}; },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionInt; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionStr; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionFloat; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionI64; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionU8; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionUsize; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionChar; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionBool; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionUnit; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionExtern; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionIdent; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionUn; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionField; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionIndex; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionBlock; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionWhile; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionMatch; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionRecord; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionArray; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionTuple; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionLambda; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); }
-}, (*expression));
-}
-context::GenStmtResult gen_return_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return context::GenStmtResult{expr::return_line(gen_expr_fn(expression, context)), try_counter, context};
-}
-context::GenStmtResult gen_return_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> context::GenStmtResult { auto [inner_expression, __1, __2] = semanticExpressionQuestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, ((mlc::String("__try_ret_", 10) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0)), expr::return_try_ok_field0_statement(((mlc::String("__try_ret_", 10) + mlc::to_string(mlc::to_string(try_counter))) + mlc::String("", 0))), gen_expr_fn), (try_counter + 1), context}; },
-[&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionInt; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionStr; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionFloat; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionI64& semanticExpressionI64) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionI64; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionU8& semanticExpressionU8) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionU8; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUsize& semanticExpressionUsize) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionUsize; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionChar; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionBool; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionUnit; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) -> context::GenStmtResult { auto [__0, __1] = semanticExpressionExtern; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionIdent; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionUn; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4, __5] = semanticExpressionMethod; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionField& semanticExpressionField) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionField; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIndex& semanticExpressionIndex) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionIndex; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionIf; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionBlock& semanticExpressionBlock) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionBlock; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionWhile; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionFor; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionMatch& semanticExpressionMatch) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionMatch; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecord& semanticExpressionRecord) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionRecord; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionRecordUpdate& semanticExpressionRecordUpdate) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionRecordUpdate; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionArray& semanticExpressionArray) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionArray; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionTuple& semanticExpressionTuple) -> context::GenStmtResult { auto [__0, __1, __2] = semanticExpressionTuple; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionLambda& semanticExpressionLambda) -> context::GenStmtResult { auto [__0, __1, __2, __3] = semanticExpressionLambda; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticExpressionWith& semanticExpressionWith) -> context::GenStmtResult { auto [__0, __1, __2, __3, __4] = semanticExpressionWith; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); }
-}, (*expression));
-}
-context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticStatementLet& semanticStatementLet) -> context::GenStmtResult { auto [name, __1, value, value_type, __4] = semanticStatementLet; return gen_let_stmt_result(name, value, value_type, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticStatementLetPattern& semanticStatementLetPattern) -> context::GenStmtResult { auto [pattern, __1, value, value_type, has_else, else_body, __6] = semanticStatementLetPattern; return [&]() {
-auto pattern_parsed = let_pat::gen_let_pattern_statement(pattern, value, value_type, has_else, else_body, context, gen_expr_fn);
-return context::GenStmtResult{pattern_parsed.output, try_counter, pattern_parsed.codegen_context};
-}(); },
-[&](const semantic_ir::SemanticStatementLetConst& semanticStatementLetConst) -> context::GenStmtResult { auto [name, value, binding_semantic_type, __3] = semanticStatementLetConst; return context::GenStmtResult{expr::constexpr_auto_binding_statement(cpp_naming::cpp_safe(name), constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)), try_counter, context}; },
-[&](const semantic_ir::SemanticStatementExpr& semanticStatementExpr) -> context::GenStmtResult { auto [expression, __1] = semanticStatementExpr; return gen_expr_stmt_result(expression, context, try_counter, gen_expr_fn); },
-[&](const semantic_ir::SemanticStatementBreak& semanticStatementBreak) -> context::GenStmtResult { auto [__0] = semanticStatementBreak; return context::GenStmtResult{expr::break_line(), try_counter, context}; },
-[&](const semantic_ir::SemanticStatementContinue& semanticStatementContinue) -> context::GenStmtResult { auto [__0] = semanticStatementContinue; return context::GenStmtResult{expr::continue_line(), try_counter, context}; },
-[&](const semantic_ir::SemanticStatementReturn& semanticStatementReturn) -> context::GenStmtResult { auto [expression, __1] = semanticStatementReturn; return gen_return_stmt_result(expression, context, try_counter, gen_expr_fn); }
-}, (*statement));
-}
+
+mlc::String gen_let_array_value_from_expression(std::shared_ptr<semantic_ir::SemanticExpression> value, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> mlc::String { auto [elements, array_type, _w0] = semanticexpressionarray; return gen_let_array_value_code(elements, array_type, context, gen_expr_fn); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionint; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionstr; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionfloat; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressioni64; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionu8; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionusize; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionchar; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionbool; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> mlc::String { auto [_w0, _w1] = semanticexpressionunit; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> mlc::String { auto [_w0, _w1] = semanticexpressionextern; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionident; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressiontuple; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionquestion; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return gen_expr_fn(value, context); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return gen_expr_fn(value, context); }
+}, (*value)._);}
+
+mlc::String gen_let_value_code(std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return semantic_expression_is_array(value) ? gen_let_array_value_from_expression(value, context, gen_expr_fn) : semantic_expression_is_method_map_new(value) ? gen_let_map_new_value_code(value, value_type, context, gen_expr_fn) : gen_expr_fn(value, context);}
+
+mlc::String semantic_expression_ident_name(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> mlc::String { auto [name, _w0, _w1] = semanticexpressionident; return name; },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionint; return mlc::String(""); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionstr; return mlc::String(""); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionfloat; return mlc::String(""); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressioni64; return mlc::String(""); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionu8; return mlc::String(""); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionusize; return mlc::String(""); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionchar; return mlc::String(""); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionbool; return mlc::String(""); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> mlc::String { auto [_w0, _w1] = semanticexpressionunit; return mlc::String(""); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> mlc::String { auto [_w0, _w1] = semanticexpressionextern; return mlc::String(""); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return mlc::String(""); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return mlc::String(""); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return mlc::String(""); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return mlc::String(""); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return mlc::String(""); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return mlc::String(""); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return mlc::String(""); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return mlc::String(""); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return mlc::String(""); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return mlc::String(""); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return mlc::String(""); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return mlc::String(""); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return mlc::String(""); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionarray; return mlc::String(""); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressiontuple; return mlc::String(""); },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> mlc::String { auto [_w0, _w1, _w2] = semanticexpressionquestion; return mlc::String(""); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> mlc::String { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return mlc::String(""); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> mlc::String { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return mlc::String(""); }
+}, (*expression)._);}
+
+bool semantic_expression_is_method_map_new(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> bool { auto [map_object, method_name, _w0, _w1, _w2, _w3] = semanticexpressionmethod; return method_name == mlc::String("new") && semantic_expression_ident_name(map_object) == mlc::String("Map"); },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> bool { auto [_w0, _w1, _w2] = semanticexpressionint; return false; },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> bool { auto [_w0, _w1, _w2] = semanticexpressionstr; return false; },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> bool { auto [_w0, _w1, _w2] = semanticexpressionfloat; return false; },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> bool { auto [_w0, _w1, _w2] = semanticexpressioni64; return false; },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> bool { auto [_w0, _w1, _w2] = semanticexpressionu8; return false; },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> bool { auto [_w0, _w1, _w2] = semanticexpressionusize; return false; },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> bool { auto [_w0, _w1, _w2] = semanticexpressionchar; return false; },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> bool { auto [_w0, _w1, _w2] = semanticexpressionbool; return false; },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> bool { auto [_w0, _w1] = semanticexpressionunit; return false; },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> bool { auto [_w0, _w1] = semanticexpressionextern; return false; },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> bool { auto [_w0, _w1, _w2] = semanticexpressionident; return false; },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return false; },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return false; },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return false; },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return false; },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return false; },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return false; },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return false; },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return false; },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return false; },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return false; },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return false; },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return false; },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> bool { auto [_w0, _w1, _w2] = semanticexpressionarray; return false; },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> bool { auto [_w0, _w1, _w2] = semanticexpressiontuple; return false; },
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> bool { auto [_w0, _w1, _w2] = semanticexpressionquestion; return false; },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> bool { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return false; },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> bool { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return false; }
+}, (*expression)._);}
+
+context::GenStmtResult gen_let_stmt_result_default(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return context::GenStmtResult{expr::auto_binding_statement(cpp_naming::cpp_safe(name), gen_let_value_code(value, value_type, context, gen_expr_fn)), try_counter, context};}
+
+context::GenStmtResult gen_let_stmt_result(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> context::GenStmtResult { auto [inner_expression, _w0, _w1] = semanticexpressionquestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, mlc::String("__try_") + mlc::to_string(try_counter), expr::let_from_try_ok_field0(cpp_naming::cpp_safe(name), mlc::String("__try_") + mlc::to_string(try_counter)), gen_expr_fn), try_counter + 1, context}; },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionint; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionstr; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionfloat; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressioni64; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionu8; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionusize; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionchar; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionbool; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionunit; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionextern; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionident; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionarray; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressiontuple; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn); }
+}, (*value)._);}
+
+context::GenStmtResult gen_expr_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return context::GenStmtResult{eval_stmt_expr(expression, context, gen_expr_fn), try_counter, context};}
+
+context::GenStmtResult gen_expr_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> context::GenStmtResult { auto [inner_expression, _w0, _w1] = semanticexpressionquestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, mlc::String("__try_") + mlc::to_string(try_counter), expr::discard_try_ok_field0_statement(mlc::String("__try_") + mlc::to_string(try_counter)), gen_expr_fn), try_counter + 1, context}; },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionint; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionstr; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionfloat; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressioni64; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionu8; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionusize; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionchar; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionbool; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionunit; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionextern; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionident; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionarray; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressiontuple; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn); }
+}, (*expression)._);}
+
+context::GenStmtResult gen_return_stmt_result_default(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return context::GenStmtResult{expr::return_line(gen_expr_fn(expression, context)), try_counter, context};}
+
+context::GenStmtResult gen_return_stmt_result(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticExpressionQuestion& semanticexpressionquestion) -> context::GenStmtResult { auto [inner_expression, _w0, _w1] = semanticexpressionquestion; return context::GenStmtResult{eval_try_unwrap(inner_expression, context, mlc::String("__try_ret_") + mlc::to_string(try_counter), expr::return_try_ok_field0_statement(mlc::String("__try_ret_") + mlc::to_string(try_counter)), gen_expr_fn), try_counter + 1, context}; },
+  [&](const SemanticExpressionInt& semanticexpressionint) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionint; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionStr& semanticexpressionstr) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionstr; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFloat& semanticexpressionfloat) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionfloat; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionI64& semanticexpressioni64) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressioni64; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionU8& semanticexpressionu8) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionu8; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUsize& semanticexpressionusize) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionusize; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionChar& semanticexpressionchar) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionchar; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBool& semanticexpressionbool) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionbool; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUnit& semanticexpressionunit) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionunit; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionExtern& semanticexpressionextern) -> context::GenStmtResult { auto [_w0, _w1] = semanticexpressionextern; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIdent& semanticexpressionident) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionident; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBin& semanticexpressionbin) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionbin; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionUn& semanticexpressionun) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionun; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionCall& semanticexpressioncall) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressioncall; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMethod& semanticexpressionmethod) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4, _w5] = semanticexpressionmethod; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionField& semanticexpressionfield) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionfield; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIndex& semanticexpressionindex) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionindex; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionIf& semanticexpressionif) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionif; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionBlock& semanticexpressionblock) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionblock; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWhile& semanticexpressionwhile) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionwhile; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionFor& semanticexpressionfor) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionfor; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionMatch& semanticexpressionmatch) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionmatch; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecord& semanticexpressionrecord) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionrecord; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionRecordUpdate& semanticexpressionrecordupdate) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionrecordupdate; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionArray& semanticexpressionarray) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressionarray; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionTuple& semanticexpressiontuple) -> context::GenStmtResult { auto [_w0, _w1, _w2] = semanticexpressiontuple; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionLambda& semanticexpressionlambda) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3] = semanticexpressionlambda; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticExpressionWith& semanticexpressionwith) -> context::GenStmtResult { auto [_w0, _w1, _w2, _w3, _w4] = semanticexpressionwith; return gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn); }
+}, (*expression)._);}
+
+context::GenStmtResult eval_stmt_with_try(std::shared_ptr<semantic_ir::SemanticStatement> statement, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return std::visit(overloaded{
+  [&](const SemanticStatementLet& semanticstatementlet) -> context::GenStmtResult { auto [name, _w0, value, value_type, _w1] = semanticstatementlet; return gen_let_stmt_result(name, value, value_type, context, try_counter, gen_expr_fn); },
+  [&](const SemanticStatementLetPattern& semanticstatementletpattern) -> context::GenStmtResult { auto [pattern, _w0, value, value_type, has_else, else_body, _w1] = semanticstatementletpattern; return [&]() -> context::GenStmtResult { 
+  let_pat::GenLetPatternResult pattern_parsed = let_pat::gen_let_pattern_statement(pattern, value, value_type, has_else, else_body, context, gen_expr_fn);
+  return context::GenStmtResult{pattern_parsed.output, try_counter, pattern_parsed.codegen_context};
+ }(); },
+  [&](const SemanticStatementLetConst& semanticstatementletconst) -> context::GenStmtResult { auto [name, value, binding_semantic_type, _w0] = semanticstatementletconst; return context::GenStmtResult{expr::constexpr_auto_binding_statement(cpp_naming::cpp_safe(name), constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)), try_counter, context}; },
+  [&](const SemanticStatementExpr& semanticstatementexpr) -> context::GenStmtResult { auto [expression, _w0] = semanticstatementexpr; return gen_expr_stmt_result(expression, context, try_counter, gen_expr_fn); },
+  [&](const SemanticStatementBreak& semanticstatementbreak) -> context::GenStmtResult { auto [_w0] = semanticstatementbreak; return context::GenStmtResult{expr::break_line(), try_counter, context}; },
+  [&](const SemanticStatementContinue& semanticstatementcontinue) -> context::GenStmtResult { auto [_w0] = semanticstatementcontinue; return context::GenStmtResult{expr::continue_line(), try_counter, context}; },
+  [&](const SemanticStatementReturn& semanticstatementreturn) -> context::GenStmtResult { auto [expression, _w0] = semanticstatementreturn; return gen_return_stmt_result(expression, context, try_counter, gen_expr_fn); }
+}, (*statement)._);}
+
 context::GenStmtsWithContext eval_stmts_str_with_try(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, int try_counter, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  auto statements_parsed = context::GenStmtsResult{{}, try_counter};
-  auto codegen_context = context;
-  auto index = 0;
-  while ((index < statements.length()))   {
-    auto statement = statements[index];
-    auto statement_parsed = eval_stmt_with_try(statement, codegen_context, statements_parsed.next_try, gen_expr_fn);
-    (statements_parsed = context::GenStmtsResult_append_stmt(statements_parsed, statement_parsed));
-    (codegen_context = statement_parsed.codegen_context);
-    context::mutate_context_from_statement(statement, codegen_context);
-    (index = (index + 1));
-  }
-  return context::GenStmtsWithContext{statements_parsed, codegen_context};
+context::GenStmtsResult statements_parsed = context::GenStmtsResult{{}, try_counter};
+context::CodegenContext codegen_context = std::move(context);
+int index = 0;
+while (index < statements.size()){
+{
+std::shared_ptr<semantic_ir::SemanticStatement> statement = statements[index];
+context::GenStmtResult statement_parsed = eval_stmt_with_try(statement, codegen_context, statements_parsed.next_try, gen_expr_fn);
+statements_parsed = context::GenStmtsResult_append_stmt(statements_parsed, statement_parsed);
+codegen_context = statement_parsed.codegen_context;
+context::mutate_context_from_statement(statement, codegen_context);
+index = index + 1;
 }
-mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
-  return context::GenStmtsResult_joined_code(eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).statements_parsed);
 }
+return context::GenStmtsWithContext{statements_parsed, codegen_context};
+}
+
+mlc::String eval_stmts_str(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{return context::GenStmtsResult_joined_code(eval_stmts_str_with_try(statements, context, 0, gen_expr_fn).statements_parsed);}
 
 } // namespace stmt_eval

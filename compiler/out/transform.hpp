@@ -3,6 +3,7 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
@@ -16,154 +17,27 @@
 #include "partial_application_desugar.hpp"
 #include "named_args.hpp"
 #include "semantic_ir.hpp"
+
 namespace transform {
 
-struct TransformContext {
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;
-  registry::TypeRegistry registry;
-  mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types;
-};
-struct TransformStmtsResult {
-  mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements;
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;
-};
-struct Transform_call_arguments_fold_state {
-  mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transformed_arguments;
-  int next_argument_index;
-};
-struct Transform_lambda_parameter_types_fold_state {
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;
-  mlc::Array<std::shared_ptr<registry::Type>> parameter_type_vector;
-  int next_explicit_type_position;
-};
-struct TransformPass {
-  TransformContext transform_context;
-  int seed;
-};
-mlc::String receiver_type_key_for_method_dispatch(std::shared_ptr<registry::Type> receiver_semantic_type) noexcept;
-mlc::Array<int> direct_call_parameter_mutability_flags(registry::TypeRegistry registry, mlc::String callee_name, int positional_argument_count) noexcept;
-mlc::Array<int> instance_method_receiver_and_parameters_mutability_pattern(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name, int method_argument_count) noexcept;
-mlc::String extend_method_mangled_name(registry::TypeRegistry registry, std::shared_ptr<registry::Type> receiver_semantic_type, mlc::String method_name) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_extend_method_as_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments, std::shared_ptr<registry::Type> receiver_type, std::shared_ptr<registry::Type> result_type, ast::Span source_span) noexcept;
-bool semantic_type_is_tarray(std::shared_ptr<registry::Type> type_value) noexcept;
-std::shared_ptr<registry::Type> array_element_type_from_semantic_type(std::shared_ptr<registry::Type> type_value) noexcept;
-mlc::String generic_type_name(std::shared_ptr<registry::Type> type_value) noexcept;
-bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
-mlc::Array<std::shared_ptr<registry::Type>> function_parameter_types_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept;
-mlc::String call_callee_ident_name(std::shared_ptr<ast::Expr> function) noexcept;
-bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noexcept;
-std::shared_ptr<registry::Type> binary_result_type_for_operator(registry::TypeRegistry registry, std::shared_ptr<registry::Type> left_type, mlc::String operation, mlc::String method) noexcept;
-std::shared_ptr<registry::Type> method_result_type_for_dispatch(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, registry::TypeRegistry registry) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_shared_static_new_call(mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<registry::Type> merge_conditional_expression_types(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
-std::shared_ptr<registry::Type> array_element_type_from_semantic_expression(std::shared_ptr<semantic_ir::SemanticExpression> typed_expression) noexcept;
-mlc::Array<std::shared_ptr<registry::Type>> type_arguments_from_generic_type(std::shared_ptr<registry::Type> type_value) noexcept;
-std::shared_ptr<registry::Type> question_unwrapped_type_from_inner(std::shared_ptr<registry::Type> inner_expression_type) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_result_option_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_array_hof_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_regular_method_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_unknown_else_array_when_then_known_inner(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<registry::Type> then_element_type, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_coerce_empty_array_using_then_type(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> array_literal_else_maybe_coerce(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span span_else, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_empty_unknown_array_coerced_to_then_array_element(std::shared_ptr<semantic_ir::SemanticExpression> typed_then, std::shared_ptr<semantic_ir::SemanticExpression> typed_else) noexcept;
-TransformContext transform_context_new(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env, registry::TypeRegistry registry) noexcept;
-TransformContext empty_transform_context() noexcept;
-TransformContext transform_context_with_env(TransformContext base, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env) noexcept;
-TransformContext transform_context_with_lambda_parameter_types(TransformContext base, mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_array_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> elements, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_record_semantic_expression_to_type(mlc::String type_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> fields, std::shared_ptr<registry::Type> expr_type, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_block_semantic_expression_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, ast::Span span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> coerce_if_semantic_expression_to_type(std::shared_ptr<semantic_ir::SemanticExpression> condition, std::shared_ptr<semantic_ir::SemanticExpression> then_branch, std::shared_ptr<semantic_ir::SemanticExpression> else_branch, ast::Span source_span, std::shared_ptr<registry::Type> target_type, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
-std::shared_ptr<semantic_ir::SemanticMatchArm> coerce_match_arm_to_type(std::shared_ptr<semantic_ir::SemanticMatchArm> arm, std::shared_ptr<registry::Type> target_type) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> coerce_match_arms_to_type(mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> arms, std::shared_ptr<registry::Type> target_type) noexcept;
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
+struct TransformContext {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;registry::TypeRegistry registry;mlc::Array<std::shared_ptr<registry::Type>> lambda_parameter_types;};
+
+struct TransformStmtsResult {mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;};
+
+transform::TransformContext empty_transform_context() noexcept;
+
+transform::TransformContext transform_context_with_env(transform::TransformContext base, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env) noexcept;
+
 std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared_ptr<semantic_ir::SemanticExpression> expression, std::shared_ptr<registry::Type> target_type) noexcept;
-std::shared_ptr<registry::Type> standalone_unknown_cell() noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_exprs(mlc::Array<std::shared_ptr<ast::Expr>> expressions, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<registry::Type> expected_call_argument_type_at_index(int argument_index, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_lambda_call_argument(mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> lambda_body, ast::Span lambda_span, std::shared_ptr<registry::Type> expected_formal_parameter_type, std::shared_ptr<ast::Expr> argument_expression_shared, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_using_optional_expected_type(std::shared_ptr<ast::Expr> argument_expression_shared, std::shared_ptr<registry::Type> expected_formal_parameter_type, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept;
-Transform_call_arguments_fold_state transform_call_arguments_fold_step(Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_call_arguments_using_callee_semantic_type(std::shared_ptr<semantic_ir::SemanticExpression> callee_semantic_expression, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions_under_call, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticFieldVal> semantic_field_val_from_source_field_after_transform(std::shared_ptr<ast::FieldVal> field_value_under_transform, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> transform_field_values(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticMatchArm> transform_single_match_arm(std::shared_ptr<ast::MatchArm> match_arm, TransformContext transform_context, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution, std::shared_ptr<registry::Type> scrutinee_type, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticMatchArm>> transform_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> match_arms, TransformContext transform_context, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution, std::shared_ptr<registry::Type> scrutinee_type, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_environment_assign_unknown_placeholder(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment_map, mlc::String parameter_binding_name) noexcept;
-Transform_lambda_parameter_types_fold_state transform_lambda_parameter_types_environment_fold_step(Transform_lambda_parameter_types_fold_state state, mlc::String parameter_binding_name, mlc::Array<std::shared_ptr<registry::Type>> optional_explicit_parameter_types) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_expr_lambda_with_param_types(mlc::Array<mlc::String> parameter_names, mlc::Array<std::shared_ptr<registry::Type>> parameter_types, std::shared_ptr<ast::Expr> body, ast::Span source_span, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_expr_with_lambda_parameter_types(std::shared_ptr<ast::Expr> expression, mlc::Array<std::shared_ptr<registry::Type>> expected_param_types, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> semantic_expression_list_singleton(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
-mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_array_hof_method_arguments(std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-mlc::Array<std::shared_ptr<registry::Type>> inferred_types_from_record_literal_part_for_merge(ast::RecordLitPart literal_record_part, check_context::CheckContext inference_context_for_spread) noexcept;
-TransformPass transform_pass_new(TransformContext transform_context) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> dispatch_transform_pass(TransformPass transform_pass, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_int(TransformPass self, int value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_str(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bool(TransformPass self, bool value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unit(TransformPass self, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_float(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_i64(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_u8(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_usize(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_char(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bin(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_un(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_call(TransformPass self, std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_method(TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_field(TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_index(TransformPass self, std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_if(TransformPass self, std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_block(TransformPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_while(TransformPass self, std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_spawn(TransformPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_for(TransformPass self, mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_match(TransformPass self, std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> match_arms, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_record(TransformPass self, mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_record_update(TransformPass self, mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_array(TransformPass self, mlc::Array<std::shared_ptr<ast::Expr>> elements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_tuple(TransformPass self, mlc::Array<std::shared_ptr<ast::Expr>> elements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_question(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_lambda(TransformPass self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_named_arg(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_with(TransformPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_method_call_after_object(registry::TypeRegistry registry, std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, TransformPass transform_pass, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> transform_expr(std::shared_ptr<ast::Expr> expression, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_int(TransformPass self, int value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_str(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bool(TransformPass self, bool value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unit(TransformPass self, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_float(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_i64(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_u8(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_usize(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_char(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bin(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_un(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_call(TransformPass self, std::shared_ptr<ast::Expr> function, mlc::Array<std::shared_ptr<ast::Expr>> call_arguments, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_method(TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_field(TransformPass self, std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_index(TransformPass self, std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_if(TransformPass self, std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_block(TransformPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_while(TransformPass self, std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_spawn(TransformPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_for(TransformPass self, mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_match(TransformPass self, std::shared_ptr<ast::Expr> subject, mlc::Array<std::shared_ptr<ast::MatchArm>> match_arms, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_record(TransformPass self, mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_record_update(TransformPass self, mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_array(TransformPass self, mlc::Array<std::shared_ptr<ast::Expr>> elements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_tuple(TransformPass self, mlc::Array<std::shared_ptr<ast::Expr>> elements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_question(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_lambda(TransformPass self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_named_arg(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_with(TransformPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+
+std::shared_ptr<semantic_ir::SemanticExpression> transform_expr(std::shared_ptr<ast::Expr> expression, transform::TransformContext transform_context, std::function<transform::TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, transform::TransformContext)> stmts_fn) noexcept;
 
 } // namespace transform
 

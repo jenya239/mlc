@@ -122,11 +122,20 @@ export fn pipeline_context_new(input: ModularCompileInput) -> PipelineContext =
     preserved: preserved_analyses_empty()
   }
 
+fn emit_checker_warnings(warning_lines: [string]) -> unit = do
+  let mut warning_index = 0
+  while warning_index < warning_lines.length() do
+    eprintln(warning_lines[warning_index])
+    warning_index = warning_index + 1
+  end
+end
+
 export fn run_checker_pass(input: ModularCompileInput) -> Result<CheckedCompileState, [string]> = do
   const timing_enabled = pipeline_wants_timing(input)
   profile_maybe_begin(timing_enabled, 'check')
   const check_output = check_with_context(input.entry_program, input.full_program)?
   profile_maybe_end(timing_enabled, 'check')
+  emit_checker_warnings(check_output.warnings)
   Ok(CheckedCompileState {
     load_items: input.load_items,
     full_program: input.full_program,

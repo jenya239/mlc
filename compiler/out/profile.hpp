@@ -3,11 +3,22 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 namespace profile {
 
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
 void profile_reset_if_enabled(bool enabled) noexcept;
+
 void profile_maybe_begin(bool enabled, mlc::String label) noexcept;
+
 void profile_maybe_end(bool enabled, mlc::String label) noexcept;
+
 void profile_finish(bool enabled) noexcept;
 
 } // namespace profile

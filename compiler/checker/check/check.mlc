@@ -350,10 +350,11 @@ fn type_is_checkable(type_value: Shared<Type>, type_registry: TypeRegistry) -> b
     _           => false
   }
 
-export type CheckOut = CheckOut { errors: [string], registry: TypeRegistry }
+export type CheckOut = CheckOut { errors: [string], warnings: [string], registry: TypeRegistry }
 
 export extend CheckOut {
   fn has_errors(self) -> bool = self.errors.length() > 0
+  fn has_warnings(self) -> bool = self.warnings.length() > 0
 }
 
 fn accumulate_diagnostics_for_single_extend_method(
@@ -519,14 +520,21 @@ end
 fn diagnostic_is_error(diagnostic: Diagnostic) -> bool =
   diagnostic.severity == 'error'
 
+fn diagnostic_is_warning(diagnostic: Diagnostic) -> bool =
+  diagnostic.severity == 'warning'
+
 fn error_diagnostics_only(diagnostics: [Diagnostic]) -> [Diagnostic] =
   diagnostics.filter(diagnostic => diagnostic_is_error(diagnostic))
+
+fn warning_diagnostics_only(diagnostics: [Diagnostic]) -> [Diagnostic] =
+  diagnostics.filter(diagnostic => diagnostic_is_warning(diagnostic))
 
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
   const gathered = gather_program_check(entry, full_program)
   const error_diagnostics = error_diagnostics_only(gathered.diagnostics)
+  const warning_strings = diagnostics_to_strings(warning_diagnostics_only(gathered.diagnostics))
   if error_diagnostics.length() > 0 then Err(diagnostics_to_strings(error_diagnostics))
-  else Ok(CheckOut { errors: [], registry: gathered.registry })
+  else Ok(CheckOut { errors: [], warnings: warning_strings, registry: gathered.registry })
   end
 end
 

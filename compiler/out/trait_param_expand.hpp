@@ -3,62 +3,31 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "ast.hpp"
 #include "diagnostic_codes.hpp"
+
 namespace trait_param_expand {
 
-struct Trait_name_conflict_fold_state {
-  mlc::HashMap<mlc::String, bool> trait_declaration_names;
-  mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;
-  mlc::Array<ast::Diagnostic> conflicts;
-};
-struct TraitExpandChunk {
-  std::shared_ptr<ast::TypeExpr> type_expression;
-  int next_counter;
-  mlc::Array<mlc::String> appended_type_parameter_names;
-  mlc::Array<mlc::Array<mlc::String>> appended_trait_bounds_rows;
-};
-struct TypeArgumentAccumulationForGeneric {
-  int synthetic_counter_under_generic;
-  mlc::Array<std::shared_ptr<ast::TypeExpr>> rebuilt_generic_type_arguments_so_far;
-  mlc::Array<mlc::String> combined_appended_type_parameter_names_so_far;
-  mlc::Array<mlc::Array<mlc::String>> combined_trait_bounds_rows_so_far;
-};
-struct FunctionParameterAccumulationUnderTyFn {
-  int synthetic_counter_under_function_type;
-  mlc::Array<std::shared_ptr<ast::TypeExpr>> rebuilt_function_parameter_types_so_far;
-  mlc::Array<mlc::String> combined_appended_type_parameter_names_under_function_type;
-  mlc::Array<mlc::Array<mlc::String>> combined_trait_bounds_rows_under_function_type;
-};
-struct ExpandedFunctionParametersTraversalState {
-  int synthetic_counter;
-  mlc::Array<mlc::String> expanded_type_parameter_names;
-  mlc::Array<mlc::Array<mlc::String>> expanded_trait_bounds;
-  mlc::Array<std::shared_ptr<ast::Param>> expanded_parameters;
-};
-struct TraitNominalMaps {
-  mlc::HashMap<mlc::String, bool> trait_declaration_names;
-  mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;
-};
-struct Trait_nominal_maps_fold_state {
-  mlc::HashMap<mlc::String, bool> trait_declaration_names;
-  mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;
-};
-std::shared_ptr<ast::Decl> declaration_without_export_wrappers(std::shared_ptr<ast::Decl> declaration) noexcept;
-Trait_name_conflict_fold_state trait_name_conflict_fold_step(Trait_name_conflict_fold_state fold_state, std::shared_ptr<ast::Decl> current_declaration) noexcept;
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
+struct TraitNominalMaps {mlc::HashMap<mlc::String, bool> trait_declaration_names;mlc::HashMap<mlc::String, bool> nominal_type_declaration_names;};
+
 mlc::Array<ast::Diagnostic> trait_and_type_name_conflict_diagnostics(ast::Program program) noexcept;
-mlc::Array<mlc::Array<mlc::String>> align_trait_bounds_matrix(mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows) noexcept;
-TraitExpandChunk expand_type_expression_under_array_or_shared_wrapper(std::shared_ptr<ast::TypeExpr> inner_type_expression_under_wrapper, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter, bool output_outer_is_shared_pointer_type) noexcept;
-TraitExpandChunk expand_type_expression_for_trait_param(std::shared_ptr<ast::TypeExpr> type_expression, mlc::HashMap<mlc::String, bool> explicit_type_parameter_environment, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names, int synthetic_counter) noexcept;
-std::shared_ptr<ast::Decl> expand_decl_fn_trait_parameters(mlc::String function_name, mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type_expression, std::shared_ptr<ast::Expr> body_expression, mlc::Array<ast::WhereClauseBound> where_clause_bounds_entries, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
-mlc::Array<std::shared_ptr<ast::Decl>> expand_extend_methods(mlc::Array<std::shared_ptr<ast::Decl>> methods, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
-std::shared_ptr<ast::Decl> expand_decl_shared(std::shared_ptr<ast::Decl> declaration, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
-mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_and_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, mlc::HashMap<mlc::String, bool> trait_declaration_names, mlc::HashMap<mlc::String, bool> nominal_type_declaration_names) noexcept;
-Trait_nominal_maps_fold_state trait_nominal_maps_fold_step(Trait_nominal_maps_fold_state fold_state, std::shared_ptr<ast::Decl> current_declaration) noexcept;
-TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept;
-mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, TraitNominalMaps maps) noexcept;
+
+trait_param_expand::TraitNominalMaps build_trait_nominal_maps(ast::Program program) noexcept;
+
+mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_nominal_maps(mlc::Array<std::shared_ptr<ast::Decl>> declarations, trait_param_expand::TraitNominalMaps maps) noexcept;
+
 mlc::Array<std::shared_ptr<ast::Decl>> expand_declarations_with_trait_context(mlc::Array<std::shared_ptr<ast::Decl>> declarations, ast::Program program_for_maps) noexcept;
+
 ast::Program expand_trait_as_param_entry_using_full(ast::Program entry, ast::Program full_program) noexcept;
+
 ast::Program expand_trait_as_param_program(ast::Program program) noexcept;
 
 } // namespace trait_param_expand
