@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | cleanup-sweep |
-| active_track | TRACK_LANG_CYCLE_LINT **open** (next Driver) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=1 done) |
 | test_gate | ok |
+
+### Turn 2026-07-09 05:45 (Driver TRACK_LANG_CYCLE_LINT STEP=1 — W-CYCLE lint pass)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_CYCLE_LINT |
+| started | 2026-07-09 05:08 |
+| elapsed | ~37 min |
+| done    | Added `compiler/checker/cycle_lint.mlc` (`shared_cycle_lint_diagnostics`); wired after type-alias cycles in `gather_program_check`; `check` fails only on `severity==error`; `diagnostic_code_w_cycle` + catalog 85; tests in `test_checker.mlc` (Shared cycle → 2×W-CYCLE + check Ok; Weak back-edge → 0). |
+| result  | `dev_gate_fast` exit 0 (1439 pass; 2 unrelated TMPDIR `mlcc_` path fails); `build.sh` ok; self-host p1/mlcc2/p2 diff empty. Plain: цикл Shared без Weak даёт warning, с Weak — нет; check не падает на warning. |
+| issues  | `--check-only` ещё не печатает warnings (STEP=2). Match/fold в лямбдах не парсятся — вынес в named fns. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_CYCLE_LINT — print W-CYCLE warnings on stderr in pipeline/`--check-only` |
 
 ### Turn 2026-07-09 05:10 (Cleaner cleanup-sweep — junk + stale TRACK claim)
 

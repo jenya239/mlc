@@ -17,6 +17,7 @@ import { types_structurally_equal, types_assignment_compatible, type_is_unknown,
 import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagnostic_code_e038, diagnostic_code_e039, diagnostic_code_e040, diagnostic_code_e041, diagnostic_code_e042, diagnostic_code_e043, diagnostic_code_e044, diagnostic_code_e076, diagnostic_code_e081 } from '../diagnostic_codes'
 import { record_field_default_expression_is_static_initializer } from '../../ir/record_field_default_validate'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
+import { shared_cycle_lint_diagnostics } from '../cycle_lint'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -443,6 +444,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   const globals = collect_globals(destructured_full_program)
   let registry = build_registry(destructured_full_program)
   all_diagnostics = diagnostics_append(all_diagnostics, type_alias_cycle_diagnostics(destructured_full_program, registry))
+  all_diagnostics = diagnostics_append(all_diagnostics, shared_cycle_lint_diagnostics(destructured_full_program, registry))
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {
@@ -514,9 +516,16 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   Program_check_gathered { diagnostics: all_diagnostics, registry: registry }
 end
 
+fn diagnostic_is_error(diagnostic: Diagnostic) -> bool =
+  diagnostic.severity == 'error'
+
+fn error_diagnostics_only(diagnostics: [Diagnostic]) -> [Diagnostic] =
+  diagnostics.filter(diagnostic => diagnostic_is_error(diagnostic))
+
 fn check_program_against_full(entry: Program, full_program: Program) -> Result<CheckOut, [string]> = do
   const gathered = gather_program_check(entry, full_program)
-  if gathered.diagnostics.length() > 0 then Err(diagnostics_to_strings(gathered.diagnostics))
+  const error_diagnostics = error_diagnostics_only(gathered.diagnostics)
+  if error_diagnostics.length() > 0 then Err(diagnostics_to_strings(error_diagnostics))
   else Ok(CheckOut { errors: [], registry: gathered.registry })
   end
 end

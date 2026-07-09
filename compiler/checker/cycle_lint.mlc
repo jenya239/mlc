@@ -1,0 +1,268 @@
+// Shared-type cycle lint (TRACK_LANG_CYCLE_LINT STEP=1).
+// Warning when record types form a Shared reachability cycle with no Weak edge.
+
+import {
+  Program, Decl, Diagnostic, diagnostic_new_with_code, diagnostics_append,
+  decl_inner, decl_name_span
+} from '../frontend/ast'
+import {
+  Type, TypeRegistry, TShared, TArray, TGeneric, TNamed, TPair, TTuple,
+  resolve_nominal_type_name_for_fields
+} from './registry'
+import { diagnostic_code_w_cycle } from './diagnostic_codes'
+
+fn empty_name_list() -> [string] = do
+  let empty: [string] = []
+  empty
+end
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty: [Diagnostic] = []
+  empty
+end
+
+fn append_unique_name(names: [string], name: string) -> [string] =
+  if name.length() == 0 then names
+  else if names.contains(name) then names
+  else names.concat([name])
+  end
+
+fn named_targets_through_shared(
+  type_value: Shared<Type>,
+  registry: TypeRegistry
+) -> [string] =
+  match type_value {
+    TShared(inner) => named_targets_inside_shared(inner, registry),
+    TArray(inner) => named_targets_through_shared(inner, registry),
+    TGeneric(generic_name, type_arguments) =>
+      named_targets_from_generic_through_shared(generic_name, type_arguments, registry),
+    TPair(left, right) =>
+      named_targets_through_shared(left, registry).concat(
+        named_targets_through_shared(right, registry)),
+    TTuple(members) => named_targets_from_tuple_through_shared(members, registry),
+    _ => empty_name_list()
+  }
+
+fn named_targets_from_generic_through_shared(
+  generic_name: string,
+  type_arguments: [Shared<Type>],
+  registry: TypeRegistry
+) -> [string] = do
+  if generic_name == 'Weak' then return empty_name_list() end
+  let mut accumulated = empty_name_list()
+  let mut argument_index = 0
+  while argument_index < type_arguments.length() do
+    accumulated = accumulated.concat(
+      named_targets_through_shared(type_arguments[argument_index], registry))
+    argument_index = argument_index + 1
+  end
+  accumulated
+end
+
+fn named_targets_from_tuple_through_shared(
+  members: [Shared<Type>],
+  registry: TypeRegistry
+) -> [string] = do
+  let mut accumulated = empty_name_list()
+  let mut member_index = 0
+  while member_index < members.length() do
+    accumulated = accumulated.concat(
+      named_targets_through_shared(members[member_index], registry))
+    member_index = member_index + 1
+  end
+  accumulated
+end
+
+fn named_targets_inside_shared(
+  type_value: Shared<Type>,
+  registry: TypeRegistry
+) -> [string] =
+  match type_value {
+    TNamed(name) => named_target_from_named(name, registry),
+    TShared(inner) => named_targets_inside_shared(inner, registry),
+    TArray(inner) => named_targets_inside_shared(inner, registry),
+    TGeneric(generic_name, type_arguments) =>
+      named_targets_from_generic_inside_shared(generic_name, type_arguments, registry),
+    TPair(left, right) =>
+      named_targets_inside_shared(left, registry).concat(
+        named_targets_inside_shared(right, registry)),
+    TTuple(members) => named_targets_from_tuple_inside_shared(members, registry),
+    _ => empty_name_list()
+  }
+
+fn named_target_from_named(name: string, registry: TypeRegistry) -> [string] = do
+  const resolved = resolve_nominal_type_name_for_fields(registry, name, [])
+  if registry.has_fields(resolved) then [resolved] else empty_name_list() end
+end
+
+fn named_targets_from_generic_inside_shared(
+  generic_name: string,
+  type_arguments: [Shared<Type>],
+  registry: TypeRegistry
+) -> [string] = do
+  if generic_name == 'Weak' then return empty_name_list() end
+  let mut accumulated = empty_name_list()
+  let mut argument_index = 0
+  while argument_index < type_arguments.length() do
+    accumulated = accumulated.concat(
+      named_targets_inside_shared(type_arguments[argument_index], registry))
+    argument_index = argument_index + 1
+  end
+  accumulated
+end
+
+fn named_targets_from_tuple_inside_shared(
+  members: [Shared<Type>],
+  registry: TypeRegistry
+) -> [string] = do
+  let mut accumulated = empty_name_list()
+  let mut member_index = 0
+  while member_index < members.length() do
+    accumulated = accumulated.concat(
+      named_targets_inside_shared(members[member_index], registry))
+    member_index = member_index + 1
+  end
+  accumulated
+end
+
+fn neighbors_for(
+  adjacency: Map<string, [string]>,
+  type_name: string
+) -> [string] =
+  if adjacency.has(type_name) then adjacency.get(type_name) else empty_name_list()
+
+fn append_record_type_name_if_present(
+  accumulated: [string],
+  declaration: Shared<Decl>,
+  registry: TypeRegistry
+) -> [string] =
+  match decl_inner(declaration) {
+    DeclType(type_name, _, _, _, _) =>
+      if registry.has_fields(type_name) then append_unique_name(accumulated, type_name)
+      else accumulated
+      end,
+    _ => accumulated
+  }
+
+fn record_type_names_from_program(program: Program, registry: TypeRegistry) -> [string] = do
+  let mut accumulated = empty_name_list()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    accumulated = append_record_type_name_if_present(
+      accumulated, program.decls[declaration_index], registry)
+    declaration_index = declaration_index + 1
+  end
+  accumulated
+end
+
+fn build_shared_adjacency(
+  type_names: [string],
+  registry: TypeRegistry
+) -> Map<string, [string]> = do
+  let adjacency: Map<string, [string]> = Map.new()
+  let mut type_index = 0
+  while type_index < type_names.length() do
+    const type_name = type_names[type_index]
+    const field_map = registry.fields_for(type_name)
+    const field_names = registry.record_field_names_ordered_for(type_name)
+    let mut targets: [string] = []
+    let mut field_index = 0
+    while field_index < field_names.length() do
+      const field_name = field_names[field_index]
+      if field_map.has(field_name) then
+        const field_targets = named_targets_through_shared(field_map.get(field_name), registry)
+        let mut target_index = 0
+        while target_index < field_targets.length() do
+          targets = append_unique_name(targets, field_targets[target_index])
+          target_index = target_index + 1
+        end
+      end
+      field_index = field_index + 1
+    end
+    adjacency.set(type_name, targets)
+    type_index = type_index + 1
+  end
+  adjacency
+end
+
+fn can_reach_self(
+  start_name: string,
+  current_name: string,
+  adjacency: Map<string, [string]>,
+  path: [string]
+) -> bool = do
+  const neighbors = neighbors_for(adjacency, current_name)
+  let mut neighbor_index = 0
+  let mut found = false
+  while neighbor_index < neighbors.length() && !found do
+    const neighbor = neighbors[neighbor_index]
+    if neighbor == start_name then found = true
+    else if !path.contains(neighbor) then
+      found = can_reach_self(start_name, neighbor, adjacency, path.concat([neighbor]))
+    end
+    neighbor_index = neighbor_index + 1
+  end
+  found
+end
+
+fn type_participates_in_shared_cycle(
+  type_name: string,
+  adjacency: Map<string, [string]>
+) -> bool =
+  can_reach_self(type_name, type_name, adjacency, [type_name])
+
+fn cycle_warning_message(type_name: string) -> string =
+  'recursive type cycle involving ' + type_name +
+  ' through Shared without Weak on the back edge; may leak. Consider Weak on the back edge.'
+
+fn append_warning_for_matching_type(
+  accumulated: [Diagnostic],
+  declaration: Shared<Decl>,
+  type_name: string
+) -> [Diagnostic] =
+  match decl_inner(declaration) {
+    DeclType(declared_name, _, _, _, _) =>
+      if declared_name == type_name then
+        accumulated.concat([diagnostic_new_with_code(
+          'warning',
+          cycle_warning_message(type_name),
+          decl_name_span(declaration),
+          diagnostic_code_w_cycle())])
+      else accumulated
+      end,
+    _ => accumulated
+  }
+
+fn warning_for_type_declaration(
+  program: Program,
+  type_name: string
+) -> [Diagnostic] = do
+  let mut accumulated = empty_diagnostic_list()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    accumulated = append_warning_for_matching_type(
+      accumulated, program.decls[declaration_index], type_name)
+    declaration_index = declaration_index + 1
+  end
+  accumulated
+end
+
+export fn shared_cycle_lint_diagnostics(
+  program: Program,
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  const type_names = record_type_names_from_program(program, registry)
+  const adjacency = build_shared_adjacency(type_names, registry)
+  let mut diagnostics: [Diagnostic] = []
+  let mut emitted: [string] = []
+  let mut type_index = 0
+  while type_index < type_names.length() do
+    const type_name = type_names[type_index]
+    if type_participates_in_shared_cycle(type_name, adjacency) && !emitted.contains(type_name) then
+      diagnostics = diagnostics_append(diagnostics, warning_for_type_declaration(program, type_name))
+      emitted = emitted.concat([type_name])
+    end
+    type_index = type_index + 1
+  end
+  diagnostics
+end

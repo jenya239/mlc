@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 84
+export fn diagnostic_code_catalog_count() -> i32 = 85
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -170,3 +170,5 @@ export fn diagnostic_code_e082() -> string = 'E082'
 export fn diagnostic_code_e083() -> string = 'E083'
 // E084: non-exhaustive match (missing ADT variants; guarded arms do not cover)
 export fn diagnostic_code_e084() -> string = 'E084'
+// W-CYCLE: Shared type reachability cycle without Weak on a back edge
+export fn diagnostic_code_w_cycle() -> string = 'W-CYCLE'

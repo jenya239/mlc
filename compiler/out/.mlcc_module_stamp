@@ -1,4 +1,4 @@
-fa863638e2b04981753cc14546e1e160508ec5329f86fba6fb51bd8bb777f161
+09b19b9923a32e327ebe84ad5c1e7291725d74018e3ee51e6e985df36c5d8de0
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -25,6 +25,7 @@ cpp_predicates.cpp
 cpp_tokens.cpp
 cpp_types.cpp
 ctor_info.cpp
+cycle_lint.cpp
 decl.cpp
 decl_cpp.cpp
 decl_extend.cpp
@@ -144,3 +145,4 @@ types.cpp
 value.cpp
 verify_ast.cpp
 verify_semantic_ir.cpp
+weak_method_gen.cpp

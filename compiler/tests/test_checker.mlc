@@ -3,8 +3,8 @@
 import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnostic_at, assert_diagnostic_at_with_code } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_source_path } from '../frontend/parser/decls'
-import { check, check_with_context } from '../checker/check/check'
-import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
+import { check, check_with_context, program_diagnostics } from '../checker/check/check'
+import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_w_cycle, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 
 fn check_error_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
@@ -45,13 +45,33 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 84))
+    diagnostic_code_catalog_count(), 85))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
 
   results.push(assert_true('diagnostic code E020 non-empty',
     diagnostic_code_e020().length() == 4))
+
+  results.push(assert_eq_str('diagnostic code W-CYCLE catalog',
+    diagnostic_code_w_cycle(), 'W-CYCLE'))
+
+  results.push(assert_eq_int('Shared cycle without Weak — check Ok (warning only)',
+    check_error_count(
+      'type Parent = { children: [Shared<Child>] }\ntype Child = { parent: Shared<Parent> }\nfn main() -> i32 = 0'),
+    0))
+
+  results.push(assert_eq_int('Shared cycle without Weak — W-CYCLE warnings',
+    program_diagnostics(parse_program(tokenize(
+      'type Parent = { children: [Shared<Child>] }\ntype Child = { parent: Shared<Parent> }\nfn main() -> i32 = 0'
+    ).tokens)).filter(diagnostic => diagnostic.code == diagnostic_code_w_cycle()).length(),
+    2))
+
+  results.push(assert_eq_int('Shared cycle with Weak back edge — no W-CYCLE',
+    program_diagnostics(parse_program(tokenize(
+      'type Parent2 = { children: [Shared<Child2>] }\ntype Child2 = { parent: Weak<Parent2> }\nfn main() -> i32 = 0'
+    ).tokens)).filter(diagnostic => diagnostic.code == diagnostic_code_w_cycle()).length(),
+    0))
 
   results.push(assert_eq_int('type alias resolves in return type - 0 errors',
     check_error_count('type Words = [string]\nfn main() -> Words = []'), 0))

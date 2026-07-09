@@ -6,10 +6,19 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #5 (Уровень 1 из
 части «память и связность»).
 
-## Status: **open** (unblocked — TRACK_LANG_WEAK_SUGAR closed 2026-07-09)
+## Status: **open** (STEP=1 done 2026-07-09 — lint pass + warning/error split)
 
 **Не полный alias-анализ.** Узкая диагностика уровня lint (см. `docs/MLC.md`
 план линтера — `G1 → G2 (минимальные правила) → ...`), не блокирующая ошибка.
+
+### Steps
+
+| Step | Status | Notes |
+|------|--------|-------|
+| 1 | **done** | `cycle_lint.mlc` + wire in `check.mlc`; `W-CYCLE`; errors-only fail `check`; tests in `test_checker.mlc` |
+| 2 | pending | Print warnings on stderr in pipeline/`--check-only` (today silent unless `program_diagnostics`) |
+| 3 | pending | Self-apply on `compiler/` — 0 false positives or document hits |
+| 4 | pending | verify-gate (self-host + regression) + close track |
 
 ## Алгоритм
 
