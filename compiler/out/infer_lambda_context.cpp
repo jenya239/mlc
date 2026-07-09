@@ -26,7 +26,7 @@ mlc::Array<std::shared_ptr<registry::Type>> built_parameter_types = parameter_na
   lambda_environment.set(parameter_name, parameter_type);
   return built_parameter_types_so_far.concat(mlc::Array<std::shared_ptr<registry::Type>>{parameter_type});
  }(); });
-check_context::CheckContext lambda_body_context = check_context::check_context_new(lambda_environment, inference_context.registry);
+check_context::CheckContext lambda_body_context = check_context::check_context_child(inference_context, lambda_environment);
 infer_result::InferResult body_parsed = infer_expr_fn(body, lambda_body_context);
 return infer_result::InferResult{std::make_shared<registry::Type>(registry::TFn(built_parameter_types, body_parsed.inferred_type)), body_parsed.errors};
 }

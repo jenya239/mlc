@@ -191,7 +191,7 @@ infer::Record_literal_spread_inference_fold_state infer_record_literal_fold_spre
 
 infer_result::InferResult infer_expr_record(mlc::String type_name, mlc::Array<ast::RecordLitPart> lit_parts, check_context::CheckContext inference_context, ast::Span span) noexcept;
 
-infer::Statement_sequence_inference_fold_state infer_single_statement_augment_fold_state(infer::Statement_sequence_inference_fold_state accumulator, std::shared_ptr<ast::Stmt> statement_under_inference, registry::TypeRegistry registry) noexcept;
+infer::Statement_sequence_inference_fold_state infer_single_statement_augment_fold_state(infer::Statement_sequence_inference_fold_state accumulator, std::shared_ptr<ast::Stmt> statement_under_inference, check_context::CheckContext inference_context) noexcept;
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 
@@ -244,7 +244,7 @@ infer_result::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> cond
 
 infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, check_context::CheckContext inference_context) noexcept{
 infer_result::StmtInferResult statements_parsed = infer_statements(statements, inference_context);
-infer_result::InferResult result_parsed = infer_expr(result_expression, check_context::check_context_new(statements_parsed.type_env, inference_context.registry));
+infer_result::InferResult result_parsed = infer_expr(result_expression, check_context::check_context_child(inference_context, statements_parsed.type_env));
 return infer_result::InferResult_absorb_stmt(result_parsed, statements_parsed);
 }
 
@@ -252,7 +252,7 @@ infer_result::InferResult infer_expr_with(std::shared_ptr<ast::Expr> resource, m
 infer_result::InferResult resource_parsed = infer_expr(resource, inference_context);
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> with_body_environment = inference_context.type_env;
 with_body_environment.set(binder, resource_parsed.inferred_type);
-infer_result::StmtInferResult statements_parsed = infer_statements(statements, check_context::check_context_new(with_body_environment, inference_context.registry));
+infer_result::StmtInferResult statements_parsed = infer_statements(statements, check_context::check_context_child(inference_context, with_body_environment));
 return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(resource_parsed, statements_parsed), std::make_shared<registry::Type>((registry::TUnit{})));
 }
 
@@ -264,7 +264,7 @@ return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt
 
 infer_result::InferResult infer_expr_spawn(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
 infer_result::StmtInferResult statements_parsed = infer_statements(statements, inference_context);
-check_context::CheckContext body_context = check_context::check_context_new(statements_parsed.type_env, inference_context.registry);
+check_context::CheckContext body_context = check_context::check_context_child(inference_context, statements_parsed.type_env);
 infer_result::InferResult result_parsed = infer_expr(ast::expr_spawn_body_result(statements), body_context);
 return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(result_parsed, statements_parsed), std::make_shared<registry::Type>(registry::TGeneric(mlc::String("Task"), mlc::Array<std::shared_ptr<registry::Type>>{result_parsed.inferred_type})));
 }
@@ -275,7 +275,7 @@ infer_result::InferResult iterator_parsed = infer_for_support::infer_for_iterato
 std::shared_ptr<registry::Type> element_type = infer_for_support::element_type_for_for_iterator(iterator_parsed.inferred_type);
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> inner_environment = inference_context.type_env;
 inner_environment.set(variable_name, element_type);
-check_context::CheckContext loop_context = check_context::check_context_new(inner_environment, inference_context.registry);
+check_context::CheckContext loop_context = check_context::check_context_child(inference_context, inner_environment);
 infer_result::StmtInferResult statements_parsed = infer_statements(statements, loop_context);
 return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(iterator_parsed, statements_parsed), std::make_shared<registry::Type>((registry::TUnit{})));
 }
@@ -302,7 +302,7 @@ std::shared_ptr<registry::Type> first_element_type = elements.size() > 0 ? infer
 return infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TArray(first_element_type))), elements, inference_context);
 }
 
-infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner_expression, ast::Span question_span, check_context::CheckContext inference_context) noexcept{return infer_question_expression::infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span);}
+infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner_expression, ast::Span question_span, check_context::CheckContext inference_context) noexcept{return infer_question_expression::infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span, inference_context.expected_return_type);}
 
 std::shared_ptr<registry::Type> inference_placeholder_unknown_type() noexcept{return std::make_shared<registry::Type>((registry::TUnknown{}));}
 
@@ -315,7 +315,7 @@ infer_result::InferResult infer_expr_lambda(mlc::Array<mlc::String> parameter_na
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_type_environment = inference_context.type_env;
 mlc::Array<std::shared_ptr<registry::Type>> inferred_unknown_parameter_types = parameter_names.map([](mlc::String unused_lambda_parameter_placeholder) mutable { return inference_placeholder_unknown_type(); });
 parameter_names.fold(lambda_type_environment, [](mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment_map, mlc::String parameter_binding_name) mutable { return lambda_inference_environment_assign_unknown_placeholder(environment_map, parameter_binding_name); });
-check_context::CheckContext lambda_inference_context = check_context::check_context_new(lambda_type_environment, inference_context.registry);
+check_context::CheckContext lambda_inference_context = check_context::check_context_child(inference_context, lambda_type_environment);
 infer_result::InferResult body_inference = infer_expr(body, lambda_inference_context);
 return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TFn(inferred_unknown_parameter_types, body_inference.inferred_type)));
 }
@@ -437,15 +437,15 @@ record_inference = infer_result::InferResult{record_inference.inferred_type, ast
  }();
 }
 
-infer::Statement_sequence_inference_fold_state infer_single_statement_augment_fold_state(infer::Statement_sequence_inference_fold_state accumulator, std::shared_ptr<ast::Stmt> statement_under_inference, registry::TypeRegistry registry) noexcept{return std::visit(overloaded{
+infer::Statement_sequence_inference_fold_state infer_single_statement_augment_fold_state(infer::Statement_sequence_inference_fold_state accumulator, std::shared_ptr<ast::Stmt> statement_under_inference, check_context::CheckContext inference_context) noexcept{return std::visit(overloaded{
   [&](const StmtLet& stmtlet) -> infer::Statement_sequence_inference_fold_state { auto [binding_name, _w0, _w1, value_expression, _w2] = stmtlet; return [&]() -> infer::Statement_sequence_inference_fold_state { 
-  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
+  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
   accumulator.type_environment_under_construction.set(binding_name, value_inference.inferred_type);
   return infer::Statement_sequence_inference_fold_state{ast::diagnostics_append(accumulator.diagnostics_collected_so_far, value_inference.errors), accumulator.type_environment_under_construction};
  }(); },
   [&](const StmtLetPattern& stmtletpattern) -> infer::Statement_sequence_inference_fold_state { auto [pattern, _w0, _w1, value_expression, has_else, else_body, source_span] = stmtletpattern; return [&]() -> infer::Statement_sequence_inference_fold_state { 
-  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
-  let_pattern_infer::infer_let_pattern_env(pattern, value_inference.inferred_type, accumulator.type_environment_under_construction, registry);
+  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
+  let_pattern_infer::infer_let_pattern_env(pattern, value_inference.inferred_type, accumulator.type_environment_under_construction, inference_context.registry);
   mlc::Array<ast::Diagnostic> next_diagnostics = ast::diagnostics_append(accumulator.diagnostics_collected_so_far, value_inference.errors);
   bool pattern_is_refutable = [&]() { if (std::holds_alternative<ast::PatternCtor>((*pattern))) { auto _v_patternctor = std::get<ast::PatternCtor>((*pattern)); auto [_w0, _w1, _w2] = _v_patternctor; return true; } return false; }();
   if (pattern_is_refutable && !has_else){
@@ -455,23 +455,23 @@ next_diagnostics = ast::diagnostics_append(next_diagnostics, mlc::Array<ast::Dia
 }
   if (has_else){
 {
-infer_result::InferResult else_branch_inference = infer_expr(else_body, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
+infer_result::InferResult else_branch_inference = infer_expr(else_body, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
 next_diagnostics = ast::diagnostics_append(next_diagnostics, else_branch_inference.errors);
 }
 }
   return infer::Statement_sequence_inference_fold_state{next_diagnostics, accumulator.type_environment_under_construction};
  }(); },
   [&](const StmtLetConst& stmtletconst) -> infer::Statement_sequence_inference_fold_state { auto [binding_name, _w0, value_expression, _w1] = stmtletconst; return [&]() -> infer::Statement_sequence_inference_fold_state { 
-  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
+  infer_result::InferResult value_inference = infer_expr(value_expression, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
   accumulator.type_environment_under_construction.set(binding_name, value_inference.inferred_type);
   return infer::Statement_sequence_inference_fold_state{ast::diagnostics_append(accumulator.diagnostics_collected_so_far, value_inference.errors), accumulator.type_environment_under_construction};
  }(); },
   [&](const StmtExpr& stmtexpr) -> infer::Statement_sequence_inference_fold_state { auto [expression, _w0] = stmtexpr; return [&]() -> infer::Statement_sequence_inference_fold_state { 
-  infer_result::InferResult expression_inference = infer_expr(expression, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
+  infer_result::InferResult expression_inference = infer_expr(expression, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
   return infer::Statement_sequence_inference_fold_state{ast::diagnostics_append(accumulator.diagnostics_collected_so_far, expression_inference.errors), accumulator.type_environment_under_construction};
  }(); },
   [&](const StmtReturn& stmtreturn) -> infer::Statement_sequence_inference_fold_state { auto [return_expression, _w0] = stmtreturn; return [&]() -> infer::Statement_sequence_inference_fold_state { 
-  infer_result::InferResult return_inference = infer_expr(return_expression, check_context::check_context_new(accumulator.type_environment_under_construction, registry));
+  infer_result::InferResult return_inference = infer_expr(return_expression, check_context::check_context_child(inference_context, accumulator.type_environment_under_construction));
   return infer::Statement_sequence_inference_fold_state{ast::diagnostics_append(accumulator.diagnostics_collected_so_far, return_inference.errors), accumulator.type_environment_under_construction};
  }(); },
   [&](const StmtBreak& stmtbreak) -> infer::Statement_sequence_inference_fold_state { auto [_w0] = stmtbreak; return accumulator; },
@@ -479,7 +479,7 @@ next_diagnostics = ast::diagnostics_append(next_diagnostics, else_branch_inferen
 }, (*statement_under_inference)._);}
 
 infer_result::StmtInferResult infer_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
-infer::Statement_sequence_inference_fold_state inference_after_statement_sequence = statements.fold(infer::Statement_sequence_inference_fold_state{{}, inference_context.type_env}, [inference_context](infer::Statement_sequence_inference_fold_state accumulator_fold_state, std::shared_ptr<ast::Stmt> statement_under_inference_within_block) mutable { return infer_single_statement_augment_fold_state(accumulator_fold_state, statement_under_inference_within_block, inference_context.registry); });
+infer::Statement_sequence_inference_fold_state inference_after_statement_sequence = statements.fold(infer::Statement_sequence_inference_fold_state{{}, inference_context.type_env}, [inference_context](infer::Statement_sequence_inference_fold_state accumulator_fold_state, std::shared_ptr<ast::Stmt> statement_under_inference_within_block) mutable { return infer_single_statement_augment_fold_state(accumulator_fold_state, statement_under_inference_within_block, inference_context); });
 return infer_result::StmtInferResult{inference_after_statement_sequence.type_environment_under_construction, inference_after_statement_sequence.diagnostics_collected_so_far};
 }
 

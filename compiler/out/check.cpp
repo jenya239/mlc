@@ -258,7 +258,7 @@ method_environment.set(ast::param_name(parameters[parameter_index]), registry::t
 parameter_index = parameter_index + 1;
 }
 }
-  check_context::CheckContext extend_context = check_context::CheckContext{method_environment, registry, extend_type_name};
+  check_context::CheckContext extend_context = check_context::CheckContext{method_environment, registry, extend_type_name, std::make_shared<registry::Type>((registry::TUnknown{}))};
   infer_result::InferResult method_parsed = infer::infer_expr(method_body, extend_context);
   return ast::diagnostics_append(method_related_diagnostics, method_parsed.errors);
  }(); } return [&]() -> mlc::Array<ast::Diagnostic> { 
@@ -309,9 +309,9 @@ std::visit(overloaded{
   std::shared_ptr<ast::Expr> body_partial_application = partial_application_desugar::partial_application_desugar_expr(body);
   all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body_partial_application, locals, globals));
   all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body_partial_application));
-  check_context::CheckContext inference_context = check_context::check_context_new(type_environment, registry);
-  infer_result::InferResult body_parsed = infer::infer_expr(body_partial_application, inference_context);
   std::shared_ptr<registry::Type> expected_type = registry::type_from_annotation_with_registry(return_type_annotation, registry);
+  check_context::CheckContext inference_context = check_context::check_context_with_expected_return(type_environment, registry, expected_type);
+  infer_result::InferResult body_parsed = infer::infer_expr(body_partial_application, inference_context);
   std::shared_ptr<registry::Type> actual_type = body_parsed.inferred_type;
   all_diagnostics = ast::diagnostics_append(all_diagnostics, body_parsed.errors);
   if (type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !semantic_type_structure::types_assignment_compatible(expected_type, actual_type)){

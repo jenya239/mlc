@@ -14,8 +14,10 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 |------|--------|-------|
 | 1 | **done** | Inventory: A2 combinators **shipped**; gap is `?` + `From` / E-mismatch |
 | 2 | **done** | Hard error E085 when `?` Err ≠ enclosing fn Result Err; `CheckContext.expected_return_type` |
-| 3 | pending | Green: trait `From<E1>` + convert on `?` when E differs (or keep hard error until From exists) |
+| 3 | pending | `From` trait + convert on `?` when E differs (Critic 2026-07-09: hard error works; mlcc binary must stay in sync with sources) |
 | 4 | pending | verify-gate + close |
+
+**Critic notes (2026-07-09):** extend-method check contexts leave `expected_return_type` as `TUnknown` — `?` inside `extend` methods does not get E085 yet.
 
 ## Inventory (STEP=1, `compiler/` only)
 

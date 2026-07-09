@@ -200,7 +200,7 @@ int arm_index = 0;
 while (arm_index < match_arms.size()){
 {
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> arm_environment = pattern_env::env_for_pattern_substituted(inference_context.type_env, match_arms[arm_index]->pattern, inference_context.registry, substitution, subject_parsed.inferred_type);
-check_context::CheckContext arm_context = check_context::check_context_new(arm_environment, inference_context.registry);
+check_context::CheckContext arm_context = check_context::check_context_child(inference_context, arm_environment);
 if (match_arms[arm_index]->has_guard){
 {
 collected_errors = ast::diagnostics_append(collected_errors, pattern_guard_unsupported_tuple_or_array_diagnostic(match_arms[arm_index]->pattern));

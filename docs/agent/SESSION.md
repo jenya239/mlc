@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 2 |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=2 done) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=2 done; next STEP=3) |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:42 (Critic critique-audit — CYCLE_LINT + RESULT STEP1–2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | CYCLE_LINT closed + RESULT_COMBINATORS STEP=1–2 |
+| started | 2026-07-09 06:35 |
+| elapsed | ~7 min |
+| done    | Re-checked claims vs git/tests: CYCLE_LINT closed artifacts present (`cycle_lint.mlc`, W-CYCLE tests, warnings path). RESULT STEP=1 inventory accurate (combinators shipped). STEP=2 E085 in sources + `test_checker` (1447/0). **Fix:** `compiler/out/mlcc` was stale (pre-E085); rebuilt via `MLCC_FORCE_RUBY=1` and committed regenerated out + binary. Fresh mlcc: E-mismatch exit 1 + E085; same-E ok; W-CYCLE still warns. |
+| result  | run_tests 1447/0; mlcc E085 smoke ok. Plain: код ок; бинарь mlcc был устаревшим — обновлён. |
+| issues  | TRACK CYCLE_LINT still says Tarjan; impl is DFS reachability (doc drift, non-blocker). Extend methods still use `expected_return_type=TUnknown` (no `?` E-check in extend bodies). Catalog counts W-CYCLE as 1 of 86 (mixed E/W). |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_RESULT_COMBINATORS — `From` trait + `?` auto-convert (or staged design) |
 
 ### Turn 2026-07-09 06:35 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=2 — E085 ? E-mismatch)
 

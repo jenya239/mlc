@@ -5,6 +5,7 @@
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
 #include "diagnostic_codes.hpp"
+#include "result_option_method_types.hpp"
 
 namespace infer_question_expression {
 
@@ -13,13 +14,16 @@ using namespace infer_result;
 using namespace registry;
 using namespace semantic_type_structure;
 using namespace diagnostic_codes;
+using namespace result_option_method_types;
 using namespace ast_tokens;
 
 std::shared_ptr<registry::Type> ok_type_from_type_arguments(mlc::Array<std::shared_ptr<registry::Type>> type_arguments) noexcept;
 
 infer_result::InferResult infer_result_for_non_result_type(infer_result::InferResult inner_parsed, ast::Span question_span) noexcept;
 
-infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span) noexcept;
+mlc::Array<ast::Diagnostic> question_error_type_mismatch_diagnostics(std::shared_ptr<registry::Type> inner_result_type, std::shared_ptr<registry::Type> expected_return_type, ast::Span question_span) noexcept;
+
+infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type) noexcept;
 
 std::shared_ptr<registry::Type> ok_type_from_type_arguments(mlc::Array<std::shared_ptr<registry::Type>> type_arguments) noexcept{return type_arguments.size() > 0 ? type_arguments[0] : std::make_shared<registry::Type>((registry::TUnknown{}));}
 
@@ -28,6 +32,52 @@ mlc::Array<ast::Diagnostic> error_diagnostics = mlc::Array<ast::Diagnostic>{ast:
 return infer_result::InferResult{std::make_shared<registry::Type>((registry::TUnknown{})), ast::diagnostics_append(inner_parsed.errors, error_diagnostics)};
 }
 
-infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span) noexcept{return [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TGeneric>((*inner_parsed.inferred_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_parsed.inferred_type)); auto [_w0, type_arguments] = _v_tgeneric; return infer_result::InferResult{ok_type_from_type_arguments(type_arguments), inner_parsed.errors}; } if (std::holds_alternative<registry::TUnknown>((*inner_parsed.inferred_type))) {  return inner_parsed; } return infer_result_for_non_result_type(inner_parsed, question_span); }();}
+mlc::Array<ast::Diagnostic> question_error_type_mismatch_diagnostics(std::shared_ptr<registry::Type> inner_result_type, std::shared_ptr<registry::Type> expected_return_type, ast::Span question_span) noexcept{
+if (!result_option_method_types::is_result_generic(inner_result_type)){
+{
+return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }();
+}
+}
+if (!result_option_method_types::is_result_generic(expected_return_type)){
+{
+return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }();
+}
+}
+std::shared_ptr<registry::Type> inner_error_type = result_option_method_types::result_err_type(inner_result_type);
+std::shared_ptr<registry::Type> expected_error_type = result_option_method_types::result_err_type(expected_return_type);
+if (semantic_type_structure::type_is_unknown(inner_error_type) || semantic_type_structure::type_is_unknown(expected_error_type)){
+{
+return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }();
+}
+}
+if (semantic_type_structure::types_structurally_equal(inner_error_type, expected_error_type)){
+{
+return [&]() -> mlc::Array<ast::Diagnostic> { 
+  mlc::Array<ast::Diagnostic> empty = {};
+  return empty;
+ }();
+}
+}
+return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("? operator error type mismatch: expected ") + semantic_type_structure::type_description(expected_error_type) + mlc::String(", got ") + semantic_type_structure::type_description(inner_error_type), question_span, diagnostic_codes::diagnostic_code_e085())};
+}
+
+infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type) noexcept{return [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TGeneric>((*inner_parsed.inferred_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_parsed.inferred_type)); auto [generic_name, type_arguments] = _v_tgeneric; return [&]() -> infer_result::InferResult { 
+  if (generic_name != mlc::String("Result")){
+{
+return infer_result_for_non_result_type(inner_parsed, question_span);
+}
+}
+  mlc::Array<ast::Diagnostic> mismatch_diagnostics = question_error_type_mismatch_diagnostics(inner_parsed.inferred_type, expected_return_type, question_span);
+  return infer_result::InferResult{ok_type_from_type_arguments(type_arguments), ast::diagnostics_append(inner_parsed.errors, mismatch_diagnostics)};
+ }(); } if (std::holds_alternative<registry::TUnknown>((*inner_parsed.inferred_type))) {  return inner_parsed; } return infer_result_for_non_result_type(inner_parsed, question_span); }();}
 
 } // namespace infer_question_expression

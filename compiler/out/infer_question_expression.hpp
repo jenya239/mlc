@@ -9,6 +9,7 @@
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
 #include "diagnostic_codes.hpp"
+#include "result_option_method_types.hpp"
 
 namespace infer_question_expression {
 
@@ -19,7 +20,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span) noexcept;
+infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type) noexcept;
 
 } // namespace infer_question_expression
 
