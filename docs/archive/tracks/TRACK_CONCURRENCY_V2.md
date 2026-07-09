@@ -3,12 +3,15 @@
 Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md) (полные требования, 44 пункта +
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
-Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
+Предыдущий MVP (closed): [TRACK_CONCURRENCY.md](TRACK_CONCURRENCY.md).
 
-## Status: **open** — STEP=5 done; STEP=6 next
+## Status: **closed** — STEP=1–6 done (2026-07-09)
 
-**Driver 2026-07-09:** STEP=5 — `StopSource`/`StopToken` in `stop.hpp`
-(C++20 `stop_source`/`stop_token` wrapped); `test_stop.cpp` in smoke.
+**Closed note:** Phases 1–4 of CONCURRENCY_V2 roadmap delivered (Send/Sync
+predicates, rendezvous + Sender/Receiver, move/E087/E088, StopToken).
+Handoff: [../agent/TRACK_CONCURRENCY_TASKSCOPE.md](../agent/TRACK_CONCURRENCY_TASKSCOPE.md).
+MEMORY_MODEL §thread safety updated with Send/Sync + spawn capture table.
+Self-host: `mlcc` → p1 → `mlcc2` → p2 identical (`diff -rq` exclude obj).
 
 ### STEP=5 acceptance (Driver)
 
@@ -101,7 +104,7 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 | 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | **done** |
 | 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). **4a+4b done:** E087 + `move`/E088. | **done** |
 | 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | **done** |
-| 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | **next** |
+| 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | **done** |
 
 ## Out of scope (этот трек)
 
@@ -111,12 +114,3 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
   (owned / immutable / local mutable / explicitly shared), см. `CONCURRENCY_V2.md` §2.
 - Lock-free channel — mutex+condvar остаётся, пока нет профиля, доказывающего
   необходимость иного.
-
-## Per-turn template
-
-```
-| step | <1-6> |
-| done | <one line> |
-| verify | build_tests N/0; concurrency smoke |
-| next | ROLE=Driver STEP=<n+1> |
-```

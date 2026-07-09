@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_CONCURRENCY_V2 STEP=6 |
+| driver_turns_since_plan | 0 |
+| step_last | 6 |
+| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=1 |
 | test_gate | ok |
+
+### Turn 2026-07-09 13:23 (Driver TRACK_CONCURRENCY_V2 STEP=6 — close + handoff)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 13:10 |
+| elapsed | ~13 min |
+| done    | MEMORY_MODEL Send/Sync+E087/E088/StopToken table; self-host p1/mlcc2/p2 identical; archived TRACK to `docs/archive/tracks/`; handoff `TRACK_CONCURRENCY_TASKSCOPE.md`; PLAN §8 partial. |
+| verify  | `mlcc --check-only main` 0; `diff -rq p1 p2 --exclude=obj` empty; smoke exit 0. |
+| result  | TRACK_CONCURRENCY_V2 closed. Plain: фазы 1–4 сданы; дальше TaskScope/cancel. |
+| issues  | Channel wake-on-cancel still open (TASKSCOPE STEP=1 / HARNESS T5). |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_TASKSCOPE — Channel cancel wake + Cancelled |
 
 ### Turn 2026-07-09 13:08 (Driver TRACK_CONCURRENCY_V2 STEP=5 — StopSource/StopToken)
 

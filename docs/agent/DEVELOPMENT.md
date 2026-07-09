@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=6 — self-host verify + `MEMORY_MODEL.md`
-update / close or hand off. STEP=5 StopSource/StopToken done.
+**TRACK_CONCURRENCY_TASKSCOPE** STEP=1 — Channel cancel wake / `Cancelled`
+(`runtime/`). CONCURRENCY_V2 closed (phases 1–4).
 
 ## Step sizing (good vs bad)
 
