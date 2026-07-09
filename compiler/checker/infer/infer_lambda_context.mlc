@@ -2,7 +2,7 @@
 
 import { Expr } from '../../frontend/ast'
 import { Type, TUnknown, TFn } from '../registry'
-import { CheckContext, check_context_new } from '../check/check_context'
+import { CheckContext, check_context_new, check_context_child } from '../check/check_context'
 import { InferResult } from './infer_result'
 
 export fn infer_lambda_with_param_types(
@@ -22,7 +22,7 @@ export fn infer_lambda_with_param_types(
       lambda_environment.set(parameter_name, parameter_type)
       built_parameter_types_so_far.concat([parameter_type])
     end)
-  const lambda_body_context = check_context_new(lambda_environment, inference_context.registry)
+  const lambda_body_context = check_context_child(inference_context, lambda_environment)
   const body_parsed = infer_expr_fn(body, lambda_body_context)
   InferResult {
     inferred_type: Shared.new(TFn(built_parameter_types, body_parsed.inferred_type)),

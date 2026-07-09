@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 1 |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=1 done) |
+| driver_turns_since_plan | 6 |
+| step_last | 2 |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=2 done) |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:35 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=2 — E085 ? E-mismatch)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_RESULT_COMBINATORS |
+| started | 2026-07-09 06:18 |
+| elapsed | ~17 min |
+| done    | `CheckContext.expected_return_type` + `check_context_child`/`with_expected_return`; `infer_question_expression` emits E085 on Err mismatch; wire in `check.mlc` fn bodies; catalog 86; tests same-E ok + E085 exact. Nested stmt/match/lambda contexts preserve expected return. |
+| result  | `dev_gate_fast` 1447/0. Plain: разные типы ошибки в `?` теперь ошибка компиляции. |
+| issues  | Critic due next (driver_turns=6). |
+| next    | ROLE=Critic STEP=critique-audit — re-audit CYCLE_LINT close + RESULT_COMBINATORS STEP=1–2 vs git/tests (driver_turns=6) |
 
 ### Turn 2026-07-09 06:20 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=1 — inventory)
 

@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 85
+export fn diagnostic_code_catalog_count() -> i32 = 86
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -172,3 +172,5 @@ export fn diagnostic_code_e083() -> string = 'E083'
 export fn diagnostic_code_e084() -> string = 'E084'
 // W-CYCLE: Shared type reachability cycle without Weak on a back edge
 export fn diagnostic_code_w_cycle() -> string = 'W-CYCLE'
+// E085: ? operator Result error type mismatches enclosing function Result error type
+export fn diagnostic_code_e085() -> string = 'E085'

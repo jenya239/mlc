@@ -1,10 +1,11 @@
-// Result unwrap (?): Ok type from Result-like generic in inferred inner type.
+// Result unwrap (?): Ok type from Result; check Err vs enclosing function Result E.
 
 import { Span, Diagnostic, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
 import { InferResult } from './infer_result'
-import { Type, TUnknown } from '../registry'
-import { type_description } from '../semantic_type_structure'
-import { diagnostic_code_e068 } from '../diagnostic_codes'
+import { Type, TUnknown, TGeneric } from '../registry'
+import { type_description, types_structurally_equal, type_is_unknown } from '../semantic_type_structure'
+import { diagnostic_code_e068, diagnostic_code_e085 } from '../diagnostic_codes'
+import { is_result_generic, result_err_type } from '../check/method_types/result_option_method_types'
 
 fn ok_type_from_type_arguments(type_arguments: [Shared<Type>]) -> Shared<Type> =
   if type_arguments.length() > 0 then type_arguments[0] else Shared.new(TUnknown) end
@@ -20,13 +21,45 @@ fn infer_result_for_non_result_type(inner_parsed: InferResult, question_span: Sp
   }
 end
 
-export fn infer_question_from_inner_result(inner_parsed: InferResult, question_span: Span) -> InferResult =
+fn question_error_type_mismatch_diagnostics(
+  inner_result_type: Shared<Type>,
+  expected_return_type: Shared<Type>,
+  question_span: Span
+) -> [Diagnostic] = do
+  if !is_result_generic(inner_result_type) then return do let empty: [Diagnostic] = []; empty end end
+  if !is_result_generic(expected_return_type) then return do let empty: [Diagnostic] = []; empty end end
+  const inner_error_type = result_err_type(inner_result_type)
+  const expected_error_type = result_err_type(expected_return_type)
+  if type_is_unknown(inner_error_type) || type_is_unknown(expected_error_type) then
+    return do let empty: [Diagnostic] = []; empty end
+  end
+  if types_structurally_equal(inner_error_type, expected_error_type) then
+    return do let empty: [Diagnostic] = []; empty end
+  end
+  [diagnostic_error_with_code(
+    '? operator error type mismatch: expected ' + type_description(expected_error_type) +
+    ', got ' + type_description(inner_error_type),
+    question_span,
+    diagnostic_code_e085())]
+end
+
+export fn infer_question_from_inner_result(
+  inner_parsed: InferResult,
+  question_span: Span,
+  expected_return_type: Shared<Type>
+) -> InferResult =
   match inner_parsed.inferred_type {
-    TGeneric(_, type_arguments) =>
+    TGeneric(generic_name, type_arguments) => do
+      if generic_name != 'Result' then
+        return infer_result_for_non_result_type(inner_parsed, question_span)
+      end
+      const mismatch_diagnostics = question_error_type_mismatch_diagnostics(
+        inner_parsed.inferred_type, expected_return_type, question_span)
       InferResult {
         inferred_type: ok_type_from_type_arguments(type_arguments),
-        errors: inner_parsed.errors
-      },
+        errors: diagnostics_append(inner_parsed.errors, mismatch_diagnostics)
+      }
+    end,
     TUnknown => inner_parsed,
     _ => infer_result_for_non_result_type(inner_parsed, question_span)
   }

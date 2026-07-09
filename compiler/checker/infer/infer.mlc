@@ -30,7 +30,7 @@ import {
   field_type_from_object,
   method_return_type_from_object
 } from '../registry'
-import { CheckContext, check_context_new } from '../check/check_context'
+import { CheckContext, check_context_child } from '../check/check_context'
 import { InferResult, StmtInferResult, infer_ok } from './infer_result'
 import * as infer_literal_helpers from './infer_literals'
 import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from './infer_for_support'
@@ -271,7 +271,7 @@ fn infer_expr_conditional(condition: Shared<Expr>, then_expression: Shared<Expr>
 
 fn infer_expr_block(statements: [Shared<Stmt>], result_expression: Shared<Expr>, inference_context: CheckContext) -> InferResult = do
   const statements_parsed = infer_statements(statements, inference_context)
-  const result_parsed  = infer_expr(result_expression, check_context_new(statements_parsed.type_env, inference_context.registry))
+  const result_parsed  = infer_expr(result_expression, check_context_child(inference_context, statements_parsed.type_env))
   result_parsed.absorb_stmt(statements_parsed)
 end
 
@@ -279,7 +279,7 @@ fn infer_expr_with(resource: Shared<Expr>, binder: string, statements: [Shared<S
   const resource_parsed = infer_expr(resource, inference_context)
   const with_body_environment = inference_context.type_env
   with_body_environment.set(binder, resource_parsed.inferred_type)
-  const statements_parsed = infer_statements(statements, check_context_new(with_body_environment, inference_context.registry))
+  const statements_parsed = infer_statements(statements, check_context_child(inference_context, with_body_environment))
   resource_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
 
@@ -291,7 +291,7 @@ end
 
 fn infer_expr_spawn(statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const statements_parsed = infer_statements(statements, inference_context)
-  const body_context = check_context_new(statements_parsed.type_env, inference_context.registry)
+  const body_context = check_context_child(inference_context, statements_parsed.type_env)
   const result_parsed = infer_expr(expr_spawn_body_result(statements), body_context)
   result_parsed.absorb_stmt(statements_parsed).with_type(
     Shared.new(TGeneric('Task', [result_parsed.inferred_type])))
@@ -302,7 +302,7 @@ fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements
   const iterator_parsed = infer_for_iterator_with_range_rules(iterator_base_parsed, iterator)
   const element_type    = element_type_for_for_iterator(iterator_parsed.inferred_type)
   const inner_environment = inference_context.type_env; inner_environment.set(variable_name, element_type)
-  const loop_context    = check_context_new(inner_environment, inference_context.registry)
+  const loop_context    = check_context_child(inference_context, inner_environment)
   const statements_parsed = infer_statements(statements, loop_context)
   iterator_parsed.absorb_stmt(statements_parsed).with_type(Shared.new(TUnit))
 end
@@ -358,7 +358,10 @@ fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckCo
 end
 
 fn infer_expr_question(inner_expression: Shared<Expr>, question_span: Span, inference_context: CheckContext) -> InferResult =
-  infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span)
+  infer_question_from_inner_result(
+    infer_expr(inner_expression, inference_context),
+    question_span,
+    inference_context.expected_return_type)
 
 fn inference_placeholder_unknown_type() -> Shared<Type> =
   Shared.new(TUnknown)
@@ -380,7 +383,7 @@ fn infer_expr_lambda(parameter_names: [string], body: Shared<Expr>, inference_co
     (environment_map, parameter_binding_name) =>
       lambda_inference_environment_assign_unknown_placeholder(environment_map, parameter_binding_name))
   const lambda_inference_context =
-    check_context_new(lambda_type_environment, inference_context.registry)
+    check_context_child(inference_context, lambda_type_environment)
   const body_inference = infer_expr(body, lambda_inference_context)
   infer_ok(Shared.new(TFn(inferred_unknown_parameter_types, body_inference.inferred_type)))
 end
@@ -701,14 +704,14 @@ type Statement_sequence_inference_fold_state = Statement_sequence_inference_fold
 fn infer_single_statement_augment_fold_state(
   accumulator: Statement_sequence_inference_fold_state,
   statement_under_inference: Shared<Stmt>,
-  registry: TypeRegistry
+  inference_context: CheckContext
 ) -> Statement_sequence_inference_fold_state =
   match statement_under_inference {
     StmtLet(binding_name, _, _, value_expression, _) => do
       const value_inference =
         infer_expr(
           value_expression,
-          check_context_new(accumulator.type_environment_under_construction, registry))
+          check_context_child(inference_context, accumulator.type_environment_under_construction))
       accumulator.type_environment_under_construction.set(binding_name, value_inference.inferred_type)
       Statement_sequence_inference_fold_state {
         diagnostics_collected_so_far:
@@ -720,12 +723,12 @@ fn infer_single_statement_augment_fold_state(
       const value_inference =
         infer_expr(
           value_expression,
-          check_context_new(accumulator.type_environment_under_construction, registry))
+          check_context_child(inference_context, accumulator.type_environment_under_construction))
       infer_let_pattern_env(
         pattern,
         value_inference.inferred_type,
         accumulator.type_environment_under_construction,
-        registry)
+        inference_context.registry)
       let mut next_diagnostics =
         diagnostics_append(accumulator.diagnostics_collected_so_far, value_inference.errors)
       const pattern_is_refutable: bool = match pattern { PatternCtor(_, _, _) => true, _ => false }
@@ -739,7 +742,7 @@ fn infer_single_statement_augment_fold_state(
       end
       if has_else then
         const else_branch_inference =
-          infer_expr(else_body, check_context_new(accumulator.type_environment_under_construction, registry))
+          infer_expr(else_body, check_context_child(inference_context, accumulator.type_environment_under_construction))
         next_diagnostics = diagnostics_append(next_diagnostics, else_branch_inference.errors)
       end
       Statement_sequence_inference_fold_state {
@@ -751,7 +754,7 @@ fn infer_single_statement_augment_fold_state(
       const value_inference =
         infer_expr(
           value_expression,
-          check_context_new(accumulator.type_environment_under_construction, registry))
+          check_context_child(inference_context, accumulator.type_environment_under_construction))
       accumulator.type_environment_under_construction.set(binding_name, value_inference.inferred_type)
       Statement_sequence_inference_fold_state {
         diagnostics_collected_so_far:
@@ -763,7 +766,7 @@ fn infer_single_statement_augment_fold_state(
       const expression_inference =
         infer_expr(
           expression,
-          check_context_new(accumulator.type_environment_under_construction, registry))
+          check_context_child(inference_context, accumulator.type_environment_under_construction))
       Statement_sequence_inference_fold_state {
         diagnostics_collected_so_far:
           diagnostics_append(accumulator.diagnostics_collected_so_far, expression_inference.errors),
@@ -774,7 +777,7 @@ fn infer_single_statement_augment_fold_state(
       const return_inference =
         infer_expr(
           return_expression,
-          check_context_new(accumulator.type_environment_under_construction, registry))
+          check_context_child(inference_context, accumulator.type_environment_under_construction))
       Statement_sequence_inference_fold_state {
         diagnostics_collected_so_far:
           diagnostics_append(accumulator.diagnostics_collected_so_far, return_inference.errors),
@@ -796,7 +799,7 @@ export fn infer_statements(statements: [Shared<Stmt>], inference_context: CheckC
         infer_single_statement_augment_fold_state(
           accumulator_fold_state,
           statement_under_inference_within_block,
-          inference_context.registry))
+          inference_context))
   StmtInferResult {
     errors:   inference_after_statement_sequence.diagnostics_collected_so_far,
     type_env: inference_after_statement_sequence.type_environment_under_construction,

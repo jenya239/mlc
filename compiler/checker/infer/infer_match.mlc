@@ -21,7 +21,7 @@ import {
   PatternArray
 } from '../../frontend/ast'
 import { Type, TypeRegistry } from '../registry'
-import { CheckContext, check_context_new } from '../check/check_context'
+import { CheckContext, check_context_new, check_context_child } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { match_arm_type_mismatch_diagnostic } from '../check/diagnostics/type_diagnostics'
 import { env_for_pattern_substituted } from '../transform/pattern_env'
@@ -329,7 +329,7 @@ export fn infer_expr_match(
   let mut arm_index = 0
   while arm_index < match_arms.length() do
     const arm_environment = env_for_pattern_substituted(inference_context.type_env, match_arms[arm_index].pattern, inference_context.registry, substitution, subject_parsed.inferred_type)
-    const arm_context     = check_context_new(arm_environment, inference_context.registry)
+    const arm_context     = check_context_child(inference_context, arm_environment)
     if match_arms[arm_index].has_guard then
       collected_errors = diagnostics_append(collected_errors, pattern_guard_unsupported_tuple_or_array_diagnostic(match_arms[arm_index].pattern))
       const guard_inference = infer_expr_fn(match_arms[arm_index].when_condition, arm_context)

@@ -1,13 +1,42 @@
 // Checker: shared context for type environment and registry during inference.
 // Module basename must differ from codegen/context.mlc (both would emit context.cpp).
 
-import { Type, TypeRegistry } from '../registry'
+import { Type, TypeRegistry, TUnknown } from '../registry'
 
 export type CheckContext = CheckContext {
   type_env: Map<string, Shared<Type>>,
   registry: TypeRegistry,
-  current_extend_type: string
+  current_extend_type: string,
+  expected_return_type: Shared<Type>
 }
 
 export fn check_context_new(type_environment: Map<string, Shared<Type>>, registry: TypeRegistry) -> CheckContext =
-  CheckContext { type_env: type_environment, registry: registry, current_extend_type: '' }
+  CheckContext {
+    type_env: type_environment,
+    registry: registry,
+    current_extend_type: '',
+    expected_return_type: Shared.new(TUnknown)
+  }
+
+export fn check_context_with_expected_return(
+  type_environment: Map<string, Shared<Type>>,
+  registry: TypeRegistry,
+  expected_return_type: Shared<Type>
+) -> CheckContext =
+  CheckContext {
+    type_env: type_environment,
+    registry: registry,
+    current_extend_type: '',
+    expected_return_type: expected_return_type
+  }
+
+export fn check_context_child(
+  parent: CheckContext,
+  type_environment: Map<string, Shared<Type>>
+) -> CheckContext =
+  CheckContext {
+    type_env: type_environment,
+    registry: parent.registry,
+    current_extend_type: parent.current_extend_type,
+    expected_return_type: parent.expected_return_type
+  }

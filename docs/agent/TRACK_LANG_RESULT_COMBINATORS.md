@@ -3,7 +3,7 @@
 Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #3.
 
-## Status: **open** (STEP=1 done 2026-07-09 — inventory)
+## Status: **open** (STEP=2 done 2026-07-09 — E085 on `?` E-mismatch)
 
 Комбинаторы уже специфицированы в `docs/MLC.md` §A2. Аудит добавляет
 **новую** часть — авто-конверсия ошибки в `?` через `From`.
@@ -12,9 +12,9 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 
 | Step | Status | Notes |
 |------|--------|-------|
-| 1 | **done** | Inventory: A2 combinators **shipped** in mlcc; remaining gap is `?` + `From` / E-mismatch |
-| 2 | pending | Red: `?` with `Result<T,E1>` inside `Result<T,E2>` fn must diagnose (today silent + bad C++) |
-| 3 | pending | Green: trait `From<E1>` + convert on `?` when E differs (or staged: hard error first) |
+| 1 | **done** | Inventory: A2 combinators **shipped**; gap is `?` + `From` / E-mismatch |
+| 2 | **done** | Hard error E085 when `?` Err ≠ enclosing fn Result Err; `CheckContext.expected_return_type` |
+| 3 | pending | Green: trait `From<E1>` + convert on `?` when E differs (or keep hard error until From exists) |
 | 4 | pending | verify-gate + close |
 
 ## Inventory (STEP=1, `compiler/` only)
