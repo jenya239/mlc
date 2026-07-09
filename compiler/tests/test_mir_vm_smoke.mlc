@@ -109,5 +109,26 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke match string field exit', false))
   }
 
+  match vm_smoke_interpret(
+    'type Choice = A(i32) | B(i32) | C\nfn main() -> i32 = match A(3) {\n  A(x) | B(x) => x\n  C => 0\n}',
+    'vm_match_or.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match or exit', code, 3)),
+    Err(_) => results.push(assert_true('vm smoke match or exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Choice = A(i32) | B\nfn main() -> i32 = match A(5) {\n  A(x) if x > 3 => 1\n  A(x) => 2\n  B => 0\n}',
+    'vm_match_guard.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match guard exit', code, 1)),
+    Err(_) => results.push(assert_true('vm smoke match guard exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Inner = I(i32) | Z\ntype Outer = Wrap(Inner) | Empty\nfn main() -> i32 = match Wrap(I(7)) {\n  Wrap(I(x)) => x\n  Wrap(Z) => 0\n  Empty => 1\n}',
+    'vm_match_nested.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match nested exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke match nested exit', false))
+  }
+
   results
 end

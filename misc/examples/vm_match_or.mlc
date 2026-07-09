@@ -1,0 +1,5 @@
+type Choice = A(i32) | B(i32) | C
+fn main() -> i32 = match A(3) {
+  A(x) | B(x) => x
+  C => 0
+}

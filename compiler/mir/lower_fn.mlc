@@ -16,7 +16,7 @@ import {
 import { Type, TUnknown } from '../checker/registry'
 import {
   MirFunction, MirParam, MirLocal, MirBlock, MirStmt, MirRvalue, MirOperand,
-  MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirTerminator,
+  MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirUnreachable, MirTerminator,
   MirRvalueUse, MirRvalueBinary,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
   LocalId, BlockId, mir_local_id, mir_block_id
@@ -659,6 +659,23 @@ fn mir_lower_ctor_subpattern_tests(
         },
       PatternWild(_) | PatternIdent(_, _) | PatternUnit(_) =>
         mir_lower_ctor_subpattern_tests(state, scrutinee, sub_patterns, accumulated, index + 1),
+      PatternCtor(_, _, _) =>
+        match mir_lower_emit_call_to_local(
+          state, '__mir_variant_field', [scrutinee, MirOperandConstInt(index)]) {
+          Err(errors) => Err(errors),
+          Ok(field_step) =>
+            match mir_lower_pattern_matches_operand(
+              field_step.state, MirOperandLocal(field_step.local_id), sub_patterns[index]) {
+              Err(errors) => Err(errors),
+              Ok(nested_step) =>
+                match mir_lower_operand_and(nested_step.state, accumulated, nested_step.operand) {
+                  Err(errors) => Err(errors),
+                  Ok(and_step) =>
+                    mir_lower_ctor_subpattern_tests(
+                      and_step.state, scrutinee, sub_patterns, and_step.operand, index + 1)
+                }
+            }
+        },
       _ => Err(['mir lower: unsupported variant subpattern in match test'])
     }
   end
@@ -676,6 +693,17 @@ fn mir_lower_bind_ctor_subpattern(
         state, '__mir_variant_field', [scrutinee, MirOperandConstInt(field_index)]) {
         Err(errors) => Err(errors),
         Ok(field_step) => Ok(mir_lower_bind_name(field_step.state, name, field_step.local_id))
+      },
+    PatternCtor(_, nested_sub_patterns, _) =>
+      match mir_lower_emit_call_to_local(
+        state, '__mir_variant_field', [scrutinee, MirOperandConstInt(field_index)]) {
+        Err(errors) => Err(errors),
+        Ok(field_step) =>
+          mir_lower_bind_ctor_subpatterns(
+            field_step.state,
+            MirOperandLocal(field_step.local_id),
+            nested_sub_patterns,
+            0)
       },
     _ => Err(['mir lower: unsupported variant subpattern binding'])
   }
@@ -720,29 +748,57 @@ fn mir_lower_pattern_matches_operand(
     _ => Err(['mir lower: staged match supports int, bool, and variant ctor patterns'])
   }
 
+fn mir_lower_bind_match_arm_pattern(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  pattern: Shared<Pattern>
+) -> Result<MirLowerState, [string]> =
+  match pattern {
+    PatternIdent(name, _) => do
+      const local_step = mir_lower_allocate_local(state, name, mir_lower_unknown_type())
+      let mut bound_state = mir_lower_emit_assign(
+        local_step.state, local_step.local_id, MirRvalueUse(scrutinee))
+      bound_state = mir_lower_bind_name(bound_state, name, local_step.local_id)
+      Ok(bound_state)
+    end,
+    PatternCtor(_, sub_patterns, _) =>
+      mir_lower_bind_ctor_subpatterns(state, scrutinee, sub_patterns, 0),
+    _ => Ok(state)
+  }
+
+fn mir_lower_match_arm_after_bind(
+  state: MirLowerState,
+  arm: Shared<SemanticMatchArm>,
+  guard_fail_block: BlockId
+) -> Result<MirLowerState, [string]> =
+  if !arm.has_guard then mir_lower_return_expression(state, arm.body)
+  else
+    match mir_lower_operand_from_expression(state, arm.when_condition) {
+      Err(errors) => Err(errors),
+      Ok(guard_step) => do
+        const body_block_step = mir_lower_allocate_block_index(guard_step.state)
+        let mut branch_state = mir_lower_finish_current_block(
+          body_block_step.state,
+          MirCondJump(guard_step.operand, body_block_step.block_id, guard_fail_block))
+        branch_state = mir_lower_start_block(branch_state, body_block_step.block_id, 'match_guard_body')
+        mir_lower_return_expression(branch_state, arm.body)
+      end
+    }
+  end
+
 fn mir_lower_match_arm_body_with_binding(
   state: MirLowerState,
   scrutinee: MirOperand,
-  arm: Shared<SemanticMatchArm>
+  arm: Shared<SemanticMatchArm>,
+  guard_fail_block: BlockId
 ) -> Result<MirLowerState, [string]> =
-  if arm.has_guard then Err(['mir lower: match guards not supported in staged lowering'])
-  else
-    match arm.pattern {
-      PatternIdent(name, _) => do
-        const local_step = mir_lower_allocate_local(state, name, mir_lower_unknown_type())
-        let mut bound_state = mir_lower_emit_assign(
-          local_step.state, local_step.local_id, MirRvalueUse(scrutinee))
-        bound_state = mir_lower_bind_name(bound_state, name, local_step.local_id)
-        mir_lower_return_expression(bound_state, arm.body)
-      end,
-      PatternCtor(_, sub_patterns, _) =>
-        match mir_lower_bind_ctor_subpatterns(state, scrutinee, sub_patterns, 0) {
-          Err(errors) => Err(errors),
-          Ok(bound_state) => mir_lower_return_expression(bound_state, arm.body)
-        },
-      _ => mir_lower_return_expression(state, arm.body)
-    }
-  end
+  match mir_lower_bind_match_arm_pattern(state, scrutinee, arm.pattern) {
+    Err(errors) => Err(errors),
+    Ok(bound_state) => mir_lower_match_arm_after_bind(bound_state, arm, guard_fail_block)
+  }
+
+fn mir_lower_finish_unreachable(state: MirLowerState) -> MirLowerState =
+  mir_lower_finish_current_block(state, MirUnreachable)
 
 fn mir_lower_match_arms_return(
   state: MirLowerState,
@@ -751,11 +807,29 @@ fn mir_lower_match_arms_return(
   index: i32
 ) -> Result<MirLowerState, [string]> =
   if index >= arms.length() then Err(['mir lower: empty match'])
-  else if index == arms.length() - 1 then
-    mir_lower_match_arm_body_with_binding(state, scrutinee, arms[index])
-  else if !mir_lower_pattern_needs_conditional_test(arms[index].pattern) then
-    mir_lower_match_arm_body_with_binding(state, scrutinee, arms[index])
-  else
+  else if index == arms.length() - 1 then do
+    const fail_block_step = mir_lower_allocate_block_index(state)
+    match mir_lower_match_arm_body_with_binding(
+      fail_block_step.state, scrutinee, arms[index], fail_block_step.block_id) {
+      Err(errors) => Err(errors),
+      Ok(arm_state) => do
+        let mut fail_state = mir_lower_start_block(arm_state, fail_block_step.block_id, 'match_guard_fail')
+        Ok(mir_lower_finish_unreachable(fail_state))
+      end
+    }
+  end else if !mir_lower_pattern_needs_conditional_test(arms[index].pattern) then do
+    const next_test_step = mir_lower_allocate_block_index(state)
+    match mir_lower_match_arm_body_with_binding(
+      next_test_step.state, scrutinee, arms[index], next_test_step.block_id) {
+      Err(errors) => Err(errors),
+      Ok(arm_done_state) =>
+        mir_lower_match_arms_return(
+          mir_lower_start_block(arm_done_state, next_test_step.block_id, 'match_test'),
+          scrutinee,
+          arms,
+          index + 1)
+    }
+  end else
     match mir_lower_pattern_matches_operand(state, scrutinee, arms[index].pattern) {
       Err(errors) => Err(errors),
       Ok(condition_step) => do
@@ -766,7 +840,8 @@ fn mir_lower_match_arms_return(
           MirCondJump(
             condition_step.operand, arm_block_step.block_id, next_test_step.block_id))
         branch_state = mir_lower_start_block(branch_state, arm_block_step.block_id, 'match_arm')
-        match mir_lower_match_arm_body_with_binding(branch_state, scrutinee, arms[index]) {
+        match mir_lower_match_arm_body_with_binding(
+          branch_state, scrutinee, arms[index], next_test_step.block_id) {
           Err(errors) => Err(errors),
           Ok(arm_done_state) =>
             mir_lower_match_arms_return(

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 1 |
-| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=2 |
-| test_gate | ok (i32/bool/string field --run; vm_cpp_diff 4/0) |
+| driver_turns_since_plan | 9 |
+| step_last | 2 |
+| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=3 |
+| test_gate | ok (or=3 guard=1/2 nested=7; vm_cpp_diff 4/0) |
+
+### Turn 2026-07-09 22:20 (Driver TRACK_MIR_VM_FULL STEP=2 — full variant match)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 22:15 |
+| elapsed | ~5 min |
+| done    | Nested ctor test/bind; match guards via CondJump; `VmFieldVariant(Shared)`; examples or/guard/nested; smoke asserts. |
+| verify  | `--run` OR=3, guard 1/2, nested=7; `run_vm_cpp_exit_diff` 4/0; build EXIT:0. |
+| result  | STEP=2 done. Plain: guards/OR/nested work on MIR VM. |
+| issues  | Nested needs Shared field slot (not recursive VmValue). Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=3 TRACK_MIR_VM_FULL — records (literal, field access, record patterns) |
 
 ### Turn 2026-07-09 22:14 (Driver TRACK_MIR_VM_FULL STEP=1 — VmVariant typed fields)
 

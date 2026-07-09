@@ -1,4 +1,4 @@
-// MIR interpreter runtime values (TRACK_MIR_VM_FULL Epic 1 STEP=1).
+// MIR interpreter runtime values (TRACK_MIR_VM_FULL Epic 1 STEP=1–2).
 
 import { Result, Ok, Err } from '../frontend/ast'
 
@@ -9,13 +9,15 @@ export type VmMapValue = VmMapValue {
   entry_count: i32
 }
 
+export type VmVariantValue = VmVariantValue { tag: string, fields: [VmFieldSlot] }
+
 // Flat tagged field slots — no recursive VmValue (TRACK §5.2).
+// Nested ADTs: Shared indirection, not VmValue-in-VmValue.
 export type VmFieldSlot =
   | VmFieldI32(i32)
   | VmFieldBool(bool)
   | VmFieldString(string)
-
-export type VmVariantValue = VmVariantValue { tag: string, fields: [VmFieldSlot] }
+  | VmFieldVariant(Shared<VmVariantValue>)
 
 export type VmValue =
   | VmI32(i32)
@@ -53,12 +55,18 @@ export fn vm_field_slot_from_value(value: VmValue) -> Result<VmFieldSlot, [strin
     VmI32(number) => Ok(VmFieldI32(number)),
     VmBool(flag) => Ok(VmFieldBool(flag)),
     VmString(text) => Ok(VmFieldString(text)),
-    _ => Err(['vm: variant field must be i32, bool, or string'])
+    VmVariant(variant) => Ok(VmFieldVariant(Shared.new(variant))),
+    _ => Err(['vm: variant field must be i32, bool, string, or variant'])
   }
 
 export fn vm_value_from_field_slot(slot: VmFieldSlot) -> VmValue =
   match slot {
     VmFieldI32(number) => VmI32(number),
     VmFieldBool(flag) => VmBool(flag),
-    VmFieldString(text) => VmString(text)
+    VmFieldString(text) => VmString(text),
+    VmFieldVariant(variant_shared) =>
+      VmVariant(VmVariantValue {
+        tag: variant_shared.tag,
+        fields: variant_shared.fields
+      })
   }

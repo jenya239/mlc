@@ -1,0 +1,7 @@
+type Inner = I(i32) | Z
+type Outer = Wrap(Inner) | Empty
+fn main() -> i32 = match Wrap(I(7)) {
+  Wrap(I(x)) => x
+  Wrap(Z) => 0
+  Empty => 1
+}

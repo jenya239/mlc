@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 1 STEP=2 — full variant match (guards, PatternOr, nested)
-(STEP=1 done: VmFieldI32/Bool/String flat slots).
+**TRACK_MIR_VM_FULL** Epic 1 STEP=3 — records (literal, field access, record patterns)
+(STEP=2 done: guards, PatternOr, nested ctors).
 
 ## Step sizing (good vs bad)
 
