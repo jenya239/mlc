@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-09-anti-false-done` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-09-plan-sync` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -15,6 +15,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 5. Read `ROLE=`/`STEP=`/`TRACK=` from **`next`** field of the last turn in [SESSION.md](SESSION.md) — the queued prompt text is identical every time, state lives in SESSION, not in the prompt. If `next` is missing/stale, pick role + step (see **Role rotation**).
 6. If TRACK marks that STEP `done` already → move to next pending STEP (idempotent; a stale/duplicate queued message must not redo work).
 7. **Не доверять `done` в TRACK/SESSION слепо.** Если STEP помечен `done`, но `git log --oneline -1 -- <заявленные файлы>` не находит коммит с этими изменениями (например работа осталась uncommitted на границе сессий) — считать STEP **не сделанным**, откатить статус на `open`, переделать и закоммитить заново. Инцидент 2026-07-09: `TRACK_LANG_CLOSURE_ESCAPE` STEP=1 был помечен done без коммита, следующая сессия унаследовала пустое дерево — поймал только Cleaner на STEP=cleanup-sweep, а не Driver на старте следующего turn.
+8. **`compiler/out/mlcc` в рабочем дереве уже modified не тобой** (другой процесс/предыдущий turn ещё не закоммитил свою пересборку) → не трогать, не коммитить, не откатывать; работать поверх, коммитить только свои файлы явным списком в `git add` (не `git add -A`/`git commit -am`).
 
 ## Конец turn (обязательно — не останавливаться)
 
@@ -25,16 +26,18 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-09-anti-false-done
+INSTRUCTIONS_REV=2026-07-09-plan-sync
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status`. Чужой uncommitted diff — не удалять; разобраться (verify+commit, если готово, иначе `issues` в SESSION + откат). Если TRACK/SESSION говорит STEP done, а коммита с этими файлами нет — считать НЕ done, переделать (анти-false-done, правило выше в этом файле).
+Перед работой: `git status`. Чужой uncommitted diff (например `compiler/out/mlcc` без TRACK/SESSION записи под него) — не удалять, не коммитить чужое, работать поверх, `git add` явным списком своих файлов. Если TRACK/SESSION говорит STEP done, а коммита с этими файлами нет — считать НЕ done, переделать (анти-false-done, правило в этом файле).
 
-Выполни один проверяемый sub-step. Обнови SESSION.md (`done`/`verify`/`next` — конкретно, без плейсхолдеров). Commit + push сам, без вопросов пользователю. Не останавливайся — следующая копия этого же промпта уже в очереди и продолжит по `next`.
+Выполни один проверяемый sub-step. Если этим turn менялся status/STEP TRACK (особенно close/open нового) — тем же коммитом обновить соответствующую строку и приоритетную цепочку в `docs/PLAN.md` (не только TRACK-файл — расхождение PLAN.md/TRACK уже было поймано ревью). Если этот turn кладёт `SESSION.md` за ~600 строк — сначала перенести старые turn's в `docs/archive/SESSION_HISTORY.md`, потом писать новую запись. Не коммитить бинарники (`runtime/test/*` без расширения и т.п. build-артефакты — уже в `.gitignore`, не форсить `git add -f`).
+
+Обнови SESSION.md (`done`/`verify`/`next` — конкретно, без плейсхолдеров). Commit + push сам, без вопросов пользователю. Не останавливайся — следующая копия этого же промпта уже в очереди и продолжит по `next`.
 ```
 
 ## Hard limits (stop and fix — do not move to next sub-step)
@@ -48,6 +51,8 @@ INSTRUCTIONS_REV=2026-07-09-anti-false-done
 | **3 verify fails** on same sub-step | Pause; log blocker in mlc-memory + SESSION; `next` = analysis sub-step |
 | SESSION not updated this turn | Update before commit |
 | SESSION `done` empty / placeholder | Fill concrete `done` + verify; run `scripts/session_turn_lint.py` |
+| SESSION.md > **~600 строк** | Архивировать старые turn's в `SESSION_HISTORY.md` **в этом же turn** до записи новой строки — не ждать Cleaner-ротацию (инцидент 2026-07-09: доросло до 928 без вмешательства между Cleaner-турнами) |
+| TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
 
 ## When to stop (only these)
 
@@ -172,7 +177,9 @@ Planner/Backlog **must not** edit `compiler/` or `lib/mlc/` — docs + mlc-memor
 4. Dot-dirs: junk only; keep `.cursor/rules`, MCP, hooks.
 5. TRACK closed and sitting in `docs/agent/` (not the 2-3 currently open ones) → `git mv` to `docs/archive/tracks/`; fix links that pointed at old path.
 6. SESSION.md > ~500 lines → move older turns to `docs/archive/SESSION_HISTORY.md` (append), keep only recent turns live.
-5. Commit `cleanup: …` or docs-only; list paths in SESSION; `next` = Driver.
+7. `runtime/test/*`/`compiler/out/tests/*` compiled binaries (no extension, `file` says ELF) tracked in git → `git rm --cached` + confirm `.gitignore` covers the pattern (`run_concurrency_smoke.sh` recompiles them unconditionally, tracking is always noise).
+8. `docs/PLAN.md` строка/приоритетная цепочка не совпадает с реальным статусом TRACK (closed/STEP number) → синхронизировать.
+9. Commit `cleanup: …` or docs-only; list paths in SESSION; `next` = Driver.
 
 ### Driver turn
 

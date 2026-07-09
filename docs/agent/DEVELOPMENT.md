@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_FFI_LAYER** STEP=3 — self-hosted `extern fn` codegen (`decl_cpp.mlc`).
+**TRACK_FFI_LAYER** STEP=5 — `extern type` + `drop "c_function"` RAII (STEP=1-4 done: `RawPointer[T]`, `extern fn = "c" from "<header>"` codegen, `extern lib` → `-l`).
 Ruby FFI binding slice done.
 
 ## Step sizing (good vs bad)
