@@ -1046,7 +1046,7 @@ end
 
 export fn lower_semantic_function(declaration: Shared<SemanticDeclaration>) -> Result<MirFunction, [string]> = do
   match declaration {
-    SemanticDeclarationFn(name, _, _, params, return_type, body, _, _) => do
+    SemanticDeclarationFn(name, _, _, params, return_type, body, _, _, _) => do
       let mut state = mir_lower_bind_params(mir_lower_state_new(), params)
       match mir_lower_return_expression(state, body) {
         Err(errors) => Err(errors),

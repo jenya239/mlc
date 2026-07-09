@@ -3,44 +3,28 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "ast.hpp"
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
 #include "array_method_types.hpp"
 #include "diagnostic_codes.hpp"
-
 namespace type_diagnostics {
 
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
-
 mlc::Array<ast::Diagnostic> unary_minus_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> unary_bang_diagnostic(mlc::String operation, std::shared_ptr<registry::Type> inner_type, ast::Span source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> constructor_arity_diagnostics(int expected_length, int actual_length, ast::Span call_source_span) noexcept;
-
+int builtin_method_expected_argument_count_for_name(mlc::String method_name) noexcept;
+mlc::Array<ast::Diagnostic> infer_builtin_method_arity_diagnostics(mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
 mlc::Array<ast::Diagnostic> call_arity_diagnostics(int expected_count, int actual_count, ast::Span call_source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> call_arity_range_diagnostics(int min_count, int max_count, int actual_count, ast::Span call_source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> method_arity_after_receiver(mlc::Array<ast::Diagnostic> receiver_errors, mlc::String method_name, int argument_count, ast::Span method_span) noexcept;
-
 mlc::Array<ast::Diagnostic> index_not_array_diagnostic(std::shared_ptr<registry::Type> receiver_type, ast::Span bracket_source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> index_not_i32_diagnostic(std::shared_ptr<registry::Type> index_type, ast::Span bracket_source_span) noexcept;
-
 mlc::Array<ast::Diagnostic> if_branch_mismatch_diagnostic(bool branches_mismatch, std::shared_ptr<registry::Type> then_type, std::shared_ptr<registry::Type> else_type, std::shared_ptr<ast::Expr> else_expression) noexcept;
-
 mlc::Array<ast::Diagnostic> for_loop_range_diagnostic(std::shared_ptr<registry::Type> iterator_type, std::shared_ptr<ast::Expr> iterator) noexcept;
-
 mlc::Array<ast::Diagnostic> match_arm_type_mismatch_diagnostic(int arm_index, std::shared_ptr<registry::Type> first_arm_type, std::shared_ptr<registry::Type> arm_result_type, std::shared_ptr<ast::Expr> arm_body) noexcept;
-
+std::shared_ptr<registry::Type> inner_type_from_object_type(std::shared_ptr<registry::Type> object_type) noexcept;
+mlc::String field_lookup_type_name_from_type(std::shared_ptr<registry::Type> type_value) noexcept;
 mlc::Array<ast::Diagnostic> infer_expr_field_diagnostics(std::shared_ptr<registry::Type> object_type, mlc::String field_name, ast::Span field_source_span, registry::TypeRegistry registry) noexcept;
 
 } // namespace type_diagnostics

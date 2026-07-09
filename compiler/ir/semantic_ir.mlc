@@ -60,10 +60,25 @@ export type SemanticStatement =
 
 // --- Typed declaration ------------------------------------------------------
 
+// Non-escaping fn(...)-typed params → synthetic template type names (__F0, ...).
+export type FnEscapeInfo = FnEscapeInfo {
+  synthetic_type_params: [string],
+  param_template_type_names: Map<string, string>
+}
+
+export fn empty_fn_escape_info() -> FnEscapeInfo = do
+  let empty_names: [string] = []
+  FnEscapeInfo {
+    synthetic_type_params: empty_names,
+    param_template_type_names: Map.new()
+  }
+end
+
+
 // Type and trait declarations stay structurally identical to AST;
 // only function bodies switch to SemanticExpression.
 export type SemanticDeclaration =
-  | SemanticDeclarationFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SemanticExpression>, [WhereClauseBound], Span)
+  | SemanticDeclarationFn(string, [string], [[string]], [Shared<Param>], Shared<Type>, Shared<SemanticExpression>, [WhereClauseBound], FnEscapeInfo, Span)
   | SemanticDeclarationType(string, [string], [Shared<TypeVariant>], [string], Span)
   | SemanticDeclarationTypeAlias(string, [string], Shared<TypeExpr>, Span)
   | SemanticDeclarationTrait(string, [string], [Shared<SemanticDeclaration>], Span)
@@ -160,7 +175,7 @@ export fn sdecl_inner(declaration: Shared<SemanticDeclaration>) -> Shared<Semant
 
 export fn sdecl_span(declaration: Shared<SemanticDeclaration>) -> Span =
   match declaration {
-    SemanticDeclarationFn(_, _, _, _, _, _, _, span) => span,
+    SemanticDeclarationFn(_, _, _, _, _, _, _, _, span) => span,
     SemanticDeclarationType(_, _, _, _, span) => span,
     SemanticDeclarationTypeAlias(_, _, _, span) => span,
     SemanticDeclarationTrait(_, _, _, span) => span,

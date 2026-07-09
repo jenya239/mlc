@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "lower_program.hpp"
 
 #include "ast.hpp"
@@ -15,74 +16,63 @@ using namespace lower_fn;
 using namespace mir_passes;
 using namespace ast_tokens;
 
-struct MirLowerAccum {mlc::Array<mir_types::MirFunction> functions;mlc::Array<mlc::String> errors;};
-
-mlc::Array<mlc::String> mir_lower_append_errors(mlc::Array<mlc::String> accumulated, mlc::Array<mlc::String> errors) noexcept;
-
-lower_program::MirLowerAccum mir_lower_append_function(lower_program::MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
-
-lower_program::MirLowerAccum mir_lower_append_declaration(lower_program::MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
-
-lower_program::MirLowerAccum mir_lower_declarations(lower_program::MirLowerAccum accum, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept;
-
-lower_program::MirLowerAccum mir_lower_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept;
-
-mir_types::MirProgram build_mir_program_from_semantic_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept;
-
-ast::Result<mir_types::MirProgram, mlc::Array<mlc::String>> build_mir_program_from_semantic_items_checked(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept;
-
 mlc::Array<mlc::String> mir_lower_append_errors(mlc::Array<mlc::String> accumulated, mlc::Array<mlc::String> errors) noexcept{
-mlc::Array<mlc::String> next = accumulated;
-int index = 0;
-while (index < errors.size()){
-{
-next.push_back(errors[index]);
-index = index + 1;
+  auto next = accumulated;
+  auto index = 0;
+  while ((index < errors.length()))   {
+    next.push_back(errors[index]);
+    (index = (index + 1));
+  }
+  return next;
 }
+MirLowerAccum mir_lower_append_function(MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{
+  return std::visit(overloaded{[&](const ast::Ok<mir_types::MirFunction>& ok) -> MirLowerAccum { auto [function] = ok; return [&]() {
+auto next_functions = accum.functions;
+next_functions.push_back(mir_passes::run_mir_passes_on_function(function));
+return MirLowerAccum{next_functions, accum.errors};
+}(); },
+[&](const ast::Err<mlc::Array<mlc::String>>& err) -> MirLowerAccum { auto [errors] = err; return MirLowerAccum{accum.functions, mir_lower_append_errors(accum.errors, errors)}; }
+}, lower_fn::lower_semantic_function(declaration));
 }
-return next;
-}
-
-lower_program::MirLowerAccum mir_lower_append_function(lower_program::MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return std::visit(overloaded{
-  [&](const ast::Ok<mir_types::MirFunction>& ok) -> lower_program::MirLowerAccum { auto [function] = ok; return [&]() -> lower_program::MirLowerAccum { 
-  mlc::Array<mir_types::MirFunction> next_functions = accum.functions;
-  next_functions.push_back(mir_passes::run_mir_passes_on_function(function));
-  return lower_program::MirLowerAccum{next_functions, accum.errors};
- }(); },
-  [&](const ast::Err<mlc::Array<mlc::String>>& err) -> lower_program::MirLowerAccum { auto [errors] = err; return lower_program::MirLowerAccum{accum.functions, mir_lower_append_errors(accum.errors, errors)}; }
-}, lower_fn::lower_semantic_function(declaration));}
-
-lower_program::MirLowerAccum mir_lower_append_declaration(lower_program::MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{return [&]() -> lower_program::MirLowerAccum { if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(declaration)))) { auto _v_semanticdeclarationfn = std::get<semantic_ir::SemanticDeclarationFn>((*semantic_ir::sdecl_inner(declaration))); auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6, _w7] = _v_semanticdeclarationfn; return mir_lower_append_function(accum, declaration); } return accum; }();}
-
-lower_program::MirLowerAccum mir_lower_declarations(lower_program::MirLowerAccum accum, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{
-int index = 0;
-lower_program::MirLowerAccum next = std::move(accum);
-while (index < declarations.size()){
-{
-next = mir_lower_append_declaration(next, declarations[index]);
-index = index + 1;
-}
-}
-return next;
-}
-
-lower_program::MirLowerAccum mir_lower_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
-int index = 0;
-lower_program::MirLowerAccum accum = lower_program::MirLowerAccum{{}, {}};
-while (index < items.size()){
-{
-accum = mir_lower_declarations(accum, items[index].decls);
-index = index + 1;
-}
+MirLowerAccum mir_lower_append_declaration(MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{
+  return [&]() -> MirLowerAccum {
+auto __match_subject = semantic_ir::sdecl_inner(declaration);
+if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*__match_subject))) {
+const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn = std::get<semantic_ir::SemanticDeclarationFn>((*__match_subject));
+auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return mir_lower_append_function(accum, declaration);
 }
 return accum;
+std::abort();
+}();
 }
-
-mir_types::MirProgram build_mir_program_from_semantic_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{return mir_types::MirProgram{mlc::Array<mir_types::MirModule>{mir_types::MirModule{mir_lower_items(items).functions}}};}
-
+MirLowerAccum mir_lower_declarations(MirLowerAccum accum, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{
+  auto index = 0;
+  auto next = accum;
+  while ((index < declarations.length()))   {
+    (next = mir_lower_append_declaration(next, declarations[index]));
+    (index = (index + 1));
+  }
+  return next;
+}
+MirLowerAccum mir_lower_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
+  auto index = 0;
+  auto accum = MirLowerAccum{{}, {}};
+  while ((index < items.length()))   {
+    (accum = mir_lower_declarations(accum, items[index].decls));
+    (index = (index + 1));
+  }
+  return accum;
+}
+mir_types::MirProgram build_mir_program_from_semantic_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
+  return mir_types::MirProgram{mlc::Array<mir_types::MirModule>{mir_types::MirModule{mir_lower_items(items).functions}}};
+}
 ast::Result<mir_types::MirProgram, mlc::Array<mlc::String>> build_mir_program_from_semantic_items_checked(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
-lower_program::MirLowerAccum accum = mir_lower_items(items);
-return accum.errors.size() > 0 ? ast::Result<mir_types::MirProgram, mlc::Array<mlc::String>>(ast::Err<mlc::Array<mlc::String>>(accum.errors)) : ast::Result<mir_types::MirProgram, mlc::Array<mlc::String>>(ast::Ok<mir_types::MirProgram>(mir_types::MirProgram{mlc::Array<mir_types::MirModule>{mir_types::MirModule{accum.functions}}}));
+  auto accum = mir_lower_items(items);
+  if ((accum.errors.length() > 0))   {
+    return ast::Err<mlc::Array<mlc::String>>{accum.errors};
+  } else   {
+    return ast::Ok<mir_types::MirProgram>{mir_types::MirProgram{mlc::Array<mir_types::MirModule>{mir_types::MirModule{accum.functions}}}};
+  }
 }
 
 } // namespace lower_program

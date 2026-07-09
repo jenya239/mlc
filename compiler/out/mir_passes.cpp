@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "mir_passes.hpp"
 
 #include "mir_types.hpp"
@@ -10,41 +11,30 @@ using namespace mir_types;
 using namespace const_fold;
 using namespace simplify_cfg;
 
-mir_types::MirFunction run_mir_passes_on_function(mir_types::MirFunction function) noexcept;
-
-mlc::Array<mir_types::MirFunction> run_mir_passes_on_functions(mlc::Array<mir_types::MirFunction> functions) noexcept;
-
-mlc::Array<mir_types::MirModule> run_mir_passes_on_modules(mlc::Array<mir_types::MirModule> modules) noexcept;
-
-mir_types::MirProgram run_mir_passes_on_program(mir_types::MirProgram program) noexcept;
-
-mir_types::MirFunction run_mir_passes_on_function(mir_types::MirFunction function) noexcept{return simplify_cfg::simplify_cfg_mir_function(const_fold::const_fold_mir_function(function));}
-
+mir_types::MirFunction run_mir_passes_on_function(mir_types::MirFunction function) noexcept{
+  return simplify_cfg::simplify_cfg_mir_function(const_fold::const_fold_mir_function(function));
+}
 mlc::Array<mir_types::MirFunction> run_mir_passes_on_functions(mlc::Array<mir_types::MirFunction> functions) noexcept{
-mlc::Array<mir_types::MirFunction> optimized = {};
-int index = 0;
-while (index < functions.size()){
-{
-optimized.push_back(run_mir_passes_on_function(functions[index]));
-index = index + 1;
+  auto optimized = mlc::Array<mir_types::MirFunction>{};
+  auto index = 0;
+  while ((index < functions.length()))   {
+    optimized.push_back(run_mir_passes_on_function(functions[index]));
+    (index = (index + 1));
+  }
+  return optimized;
 }
-}
-return optimized;
-}
-
 mlc::Array<mir_types::MirModule> run_mir_passes_on_modules(mlc::Array<mir_types::MirModule> modules) noexcept{
-mlc::Array<mir_types::MirModule> optimized = {};
-int index = 0;
-while (index < modules.size()){
-{
-mir_types::MirModule mir_module = modules[index];
-optimized.push_back(mir_types::MirModule{run_mir_passes_on_functions(mir_module.functions)});
-index = index + 1;
+  auto optimized = mlc::Array<mir_types::MirModule>{};
+  auto index = 0;
+  while ((index < modules.length()))   {
+    auto mir_module = modules[index];
+    optimized.push_back(mir_types::MirModule{run_mir_passes_on_functions(mir_module.functions)});
+    (index = (index + 1));
+  }
+  return optimized;
 }
+mir_types::MirProgram run_mir_passes_on_program(mir_types::MirProgram program) noexcept{
+  return mir_types::MirProgram{run_mir_passes_on_modules(program.modules)};
 }
-return optimized;
-}
-
-mir_types::MirProgram run_mir_passes_on_program(mir_types::MirProgram program) noexcept{return mir_types::MirProgram{run_mir_passes_on_modules(program.modules)};}
 
 } // namespace mir_passes

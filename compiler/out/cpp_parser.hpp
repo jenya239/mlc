@@ -3,24 +3,18 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "cpp_decls.hpp"
 #include "cpp_ast.hpp"
 #include "cpp_tokens.hpp"
 #include "cpp_predicates.hpp"
-
 namespace cpp_parser {
 
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
-
-struct CppParseResult {cpp_ast::CppProgram program;mlc::Array<mlc::String> errors;};
-
-cpp_parser::CppParseResult cpp_parse(mlc::Array<cpp_tokens::CppToken> tokens) noexcept;
+struct CppParseResult {
+  cpp_ast::CppProgram program;
+  mlc::Array<mlc::String> errors;
+};
+bool cpp_is_skip_declaration(std::shared_ptr<cpp_ast::CppDeclaration> declaration) noexcept;
+CppParseResult cpp_parse(mlc::Array<cpp_tokens::CppToken> tokens) noexcept;
 
 } // namespace cpp_parser
 

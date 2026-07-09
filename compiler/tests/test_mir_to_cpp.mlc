@@ -4,7 +4,7 @@ import {
   SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, SemanticExpressionInt,
   SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionIf,
   SemanticExpressionBlock, SemanticExpressionWhile, SemanticStatementLet,
-  SemanticStatementExpr
+  SemanticStatementExpr, empty_fn_escape_info
 } from '../ir/semantic_ir'
 import { Type, TI32 } from '../checker/registry'
 import { lower_semantic_function } from '../mir/lower_fn'
@@ -35,7 +35,7 @@ fn make_bin(operation: string, left: Shared<SemanticExpression>, right: Shared<S
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) ->
   Shared<SemanticDeclaration> = do
   const where_clause_bounds: [WhereClauseBound] = []
-  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, empty_fn_escape_info(), span_unknown()))
 end
 
 export fn mir_to_cpp_tests() -> [TestResult] = do

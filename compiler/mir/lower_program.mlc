@@ -34,7 +34,7 @@ fn mir_lower_append_function(accum: MirLowerAccum, declaration: Shared<SemanticD
 
 fn mir_lower_append_declaration(accum: MirLowerAccum, declaration: Shared<SemanticDeclaration>) -> MirLowerAccum =
   match sdecl_inner(declaration) {
-    SemanticDeclarationFn(_, _, _, _, _, _, _, _) =>
+    SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) =>
       mir_lower_append_function(accum, declaration),
     _ => accum
   }

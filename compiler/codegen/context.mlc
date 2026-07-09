@@ -44,7 +44,8 @@ export type CodegenContext = CodegenContext {
   type_alias_annotations: Map<string, Shared<TypeExpr>>,
   trait_associated_type_names: Map<string, [string]>,
   temp_name_counter: i32,
-  enclosing_function_return_type: Shared<Type>
+  enclosing_function_return_type: Shared<Type>,
+  param_template_type_names: Map<string, string>
 }
 
 export fn new_temp_name_counter() -> i32 = 0
@@ -194,6 +195,9 @@ extend CodegenContext {
   fn with_enclosing_function_return_type(self: CodegenContext, return_type: Shared<Type>) -> CodegenContext =
     CodegenContext { ...self, enclosing_function_return_type: return_type }
 
+  fn with_param_template_type_names(self: CodegenContext, new_param_template_type_names: Map<string, string>) -> CodegenContext =
+    CodegenContext { ...self, param_template_type_names: new_param_template_type_names }
+
   fn update_from_statement(self: CodegenContext, statement: Shared<SemanticStatement>) -> CodegenContext =
     match statement {
       SemanticStatementLetConst(binding_name, _, _, _) => self.add_value(binding_name),
@@ -315,7 +319,8 @@ export fn create_codegen_context(program: Program) -> CodegenContext = do
     type_alias_annotations: registry.type_alias_annotations,
     trait_associated_type_names: registry.adt_index.trait_assoc_types,
     temp_name_counter: new_temp_name_counter(),
-    enclosing_function_return_type: Shared.new(TUnknown)
+    enclosing_function_return_type: Shared.new(TUnknown),
+    param_template_type_names: Map.new()
   }
 end
 

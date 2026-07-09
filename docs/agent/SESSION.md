@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 2 |
-| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=2 done; next STEP=3 |
+| driver_turns_since_plan | 5 |
+| step_last | 3 |
+| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=3 done; next verify-gate |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:03 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=3 — self-hosted codegen templates)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_CLOSURE_ESCAPE |
+| started | 2026-07-09 10:12 |
+| elapsed | ~50 min |
+| done    | Fixed `with_param_template_type_names` shadowing; `FnEscapeInfo`→codegen `__Fn`; header proto-then-body; skip value-used fns + trait/extend methods. `test_closure_escape_codegen.mlc`. |
+| result  | apply_twice→`__F0`; make_handler→`std::function`; check-only 0; run_tests 1471/0; mlcc main ~2.4s. Plain: non-escaping top-level HOF → template. |
+| issues  | Nested HOF-as-value cannot be templated (std::function); methods skipped. Ruby STEP=1 still breaks FORCE_RUBY bootstrap. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_CLOSURE_ESCAPE — verify-gate (self-host diff + close) |
 
 ### Turn 2026-07-09 09:55 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=2 — self-hosted escape_analysis)
 

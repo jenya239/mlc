@@ -214,7 +214,7 @@ end
 
 fn verify_semantic_declaration(declaration: Shared<SemanticDeclaration>) -> [string] =
   match declaration {
-    SemanticDeclarationFn(name, _, _, _, return_type, body, _, _) =>
+    SemanticDeclarationFn(name, _, _, _, return_type, body, _, _, _) =>
       verify_semantic_append_errors(
         verify_semantic_append_errors(
           verify_semantic_append_errors(

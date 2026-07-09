@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "ast.hpp"
 
 #include "ast_tokens.hpp"
@@ -6,179 +7,338 @@ namespace ast {
 
 using namespace ast_tokens;
 
-ast::Span span_unknown() noexcept;
-
-ast::Span span_make(mlc::String file, int line, int column) noexcept;
-
-std::shared_ptr<ast::Expr> expr_placeholder() noexcept;
-
-ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept;
-
-ast::Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, ast::Span span, mlc::String code) noexcept;
-
-ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept;
-
-ast::Diagnostic diagnostic_error_with_code(mlc::String message, ast::Span span, mlc::String code) noexcept;
-
-mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept;
-
-mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> destination, mlc::Array<ast::Diagnostic> source) noexcept;
-
-mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<ast::Diagnostic> diagnostics) noexcept;
-
-ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept;
-
-std::shared_ptr<ast::Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
-
-ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept;
-
-ast::Span pattern_span(std::shared_ptr<ast::Pattern> pattern) noexcept;
-
-mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept;
-
-std::shared_ptr<ast::TypeExpr> param_type_value(std::shared_ptr<ast::Param> parameter) noexcept;
-
-bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept;
-
-std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept;
-
-mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept;
-
-ast::Span decl_name_span(std::shared_ptr<ast::Decl> decl) noexcept;
-
-ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept;
-
-mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept;
-
-ast::Span span_unknown() noexcept{return ast::Span{mlc::String(""), 0, 0, -1, -1};}
-
-ast::Span span_make(mlc::String file, int line, int column) noexcept{return ast::Span{file, line, column, -1, -1};}
-
-std::shared_ptr<ast::Expr> expr_placeholder() noexcept{return std::make_shared<ast::Expr>(ast::ExprUnit(span_unknown()));}
-
-ast::Diagnostic diagnostic_new(mlc::String severity, mlc::String message, ast::Span span) noexcept{return diagnostic_new_with_code(severity, message, span, mlc::String(""));}
-
-ast::Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, ast::Span span, mlc::String code) noexcept{return ast::Diagnostic{message, span, severity, code};}
-
-ast::Diagnostic diagnostic_error(mlc::String message, ast::Span span) noexcept{return diagnostic_new(mlc::String("error"), message, span);}
-
-ast::Diagnostic diagnostic_error_with_code(mlc::String message, ast::Span span, mlc::String code) noexcept{return diagnostic_new_with_code(mlc::String("error"), message, span, code);}
-
-mlc::String diagnostic_format(ast::Diagnostic diagnostic) noexcept{
-mlc::String message_part = diagnostic.code.length() > 0 ? diagnostic.severity + mlc::String("[") + diagnostic.code + mlc::String("]: ") + diagnostic.message : diagnostic.severity + mlc::String(": ") + diagnostic.message;
-return diagnostic.span.line > 0 ? [&]() -> mlc::String { 
-  mlc::String location_part = diagnostic.span.file.length() > 0 ? diagnostic.span.file + mlc::String(":") + mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column) : mlc::to_string(diagnostic.span.line) + mlc::String(":") + mlc::to_string(diagnostic.span.column);
-  return message_part + mlc::String("\n  --> ") + location_part;
- }() : message_part;
+Span span_unknown() noexcept{
+  return Span{mlc::String("", 0), 0, 0, (-1), (-1)};
 }
-
-mlc::Array<ast::Diagnostic> diagnostics_append(mlc::Array<ast::Diagnostic> destination, mlc::Array<ast::Diagnostic> source) noexcept{
-mlc::Array<ast::Diagnostic> accumulator = destination;
-int index = 0;
-while (index < source.size()){
-{
-accumulator.push_back(source[index]);
-index = index + 1;
+Span span_make(mlc::String file, int line, int column) noexcept{
+  return Span{file, line, column, (-1), (-1)};
 }
+std::shared_ptr<Expr> expr_placeholder() noexcept{
+  return std::make_shared<Expr>(ExprUnit{span_unknown()});
 }
-return accumulator;
+Diagnostic diagnostic_new(mlc::String severity, mlc::String message, Span span) noexcept{
+  return diagnostic_new_with_code(severity, message, span, mlc::String("", 0));
 }
-
-mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<ast::Diagnostic> diagnostics) noexcept{
-mlc::Array<mlc::String> lines = {};
-int index = 0;
-while (index < diagnostics.size()){
-{
-lines.push_back(diagnostic_format(diagnostics[index]));
-index = index + 1;
+Diagnostic diagnostic_new_with_code(mlc::String severity, mlc::String message, Span span, mlc::String code) noexcept{
+  return Diagnostic{message, span, severity, code};
 }
+Diagnostic diagnostic_error(mlc::String message, Span span) noexcept{
+  return diagnostic_new(mlc::String("error", 5), message, span);
 }
-return lines;
+Diagnostic diagnostic_error_with_code(mlc::String message, Span span, mlc::String code) noexcept{
+  return diagnostic_new_with_code(mlc::String("error", 5), message, span, code);
 }
-
-ast::Span expr_span(std::shared_ptr<ast::Expr> expression) noexcept{return [&]() -> ast::Span { if (std::holds_alternative<ast::ExprIdent>((*expression)._)) { auto _v_exprident = std::get<ast::ExprIdent>((*expression)._); auto [_w0, source_span] = _v_exprident; return source_span; } if (std::holds_alternative<ast::ExprInt>((*expression)._)) { auto _v_exprint = std::get<ast::ExprInt>((*expression)._); auto [_w0, source_span] = _v_exprint; return source_span; } if (std::holds_alternative<ast::ExprStr>((*expression)._)) { auto _v_exprstr = std::get<ast::ExprStr>((*expression)._); auto [_w0, source_span] = _v_exprstr; return source_span; } if (std::holds_alternative<ast::ExprBool>((*expression)._)) { auto _v_exprbool = std::get<ast::ExprBool>((*expression)._); auto [_w0, source_span] = _v_exprbool; return source_span; } if (std::holds_alternative<ast::ExprUnit>((*expression)._)) { auto _v_exprunit = std::get<ast::ExprUnit>((*expression)._); auto [source_span] = _v_exprunit; return source_span; } if (std::holds_alternative<ast::ExprFloat>((*expression)._)) { auto _v_exprfloat = std::get<ast::ExprFloat>((*expression)._); auto [_w0, source_span] = _v_exprfloat; return source_span; } if (std::holds_alternative<ast::ExprI64>((*expression)._)) { auto _v_expri64 = std::get<ast::ExprI64>((*expression)._); auto [_w0, source_span] = _v_expri64; return source_span; } if (std::holds_alternative<ast::ExprU8>((*expression)._)) { auto _v_expru8 = std::get<ast::ExprU8>((*expression)._); auto [_w0, source_span] = _v_expru8; return source_span; } if (std::holds_alternative<ast::ExprUsize>((*expression)._)) { auto _v_exprusize = std::get<ast::ExprUsize>((*expression)._); auto [_w0, source_span] = _v_exprusize; return source_span; } if (std::holds_alternative<ast::ExprChar>((*expression)._)) { auto _v_exprchar = std::get<ast::ExprChar>((*expression)._); auto [_w0, source_span] = _v_exprchar; return source_span; } if (std::holds_alternative<ast::ExprBin>((*expression)._)) { auto _v_exprbin = std::get<ast::ExprBin>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprbin; return source_span; } if (std::holds_alternative<ast::ExprUn>((*expression)._)) { auto _v_exprun = std::get<ast::ExprUn>((*expression)._); auto [_w0, _w1, source_span] = _v_exprun; return source_span; } if (std::holds_alternative<ast::ExprCall>((*expression)._)) { auto _v_exprcall = std::get<ast::ExprCall>((*expression)._); auto [_w0, _w1, source_span] = _v_exprcall; return source_span; } if (std::holds_alternative<ast::ExprMethod>((*expression)._)) { auto _v_exprmethod = std::get<ast::ExprMethod>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprmethod; return source_span; } if (std::holds_alternative<ast::ExprField>((*expression)._)) { auto _v_exprfield = std::get<ast::ExprField>((*expression)._); auto [_w0, _w1, source_span] = _v_exprfield; return source_span; } if (std::holds_alternative<ast::ExprIndex>((*expression)._)) { auto _v_exprindex = std::get<ast::ExprIndex>((*expression)._); auto [_w0, _w1, source_span] = _v_exprindex; return source_span; } if (std::holds_alternative<ast::ExprIf>((*expression)._)) { auto _v_exprif = std::get<ast::ExprIf>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprif; return source_span; } if (std::holds_alternative<ast::ExprBlock>((*expression)._)) { auto _v_exprblock = std::get<ast::ExprBlock>((*expression)._); auto [_w0, _w1, source_span] = _v_exprblock; return source_span; } if (std::holds_alternative<ast::ExprWhile>((*expression)._)) { auto _v_exprwhile = std::get<ast::ExprWhile>((*expression)._); auto [_w0, _w1, source_span] = _v_exprwhile; return source_span; } if (std::holds_alternative<ast::ExprFor>((*expression)._)) { auto _v_exprfor = std::get<ast::ExprFor>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprfor; return source_span; } if (std::holds_alternative<ast::ExprMatch>((*expression)._)) { auto _v_exprmatch = std::get<ast::ExprMatch>((*expression)._); auto [_w0, _w1, source_span] = _v_exprmatch; return source_span; } if (std::holds_alternative<ast::ExprRecord>((*expression)._)) { auto _v_exprrecord = std::get<ast::ExprRecord>((*expression)._); auto [_w0, _w1, source_span] = _v_exprrecord; return source_span; } if (std::holds_alternative<ast::ExprRecordUpdate>((*expression)._)) { auto _v_exprrecordupdate = std::get<ast::ExprRecordUpdate>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprrecordupdate; return source_span; } if (std::holds_alternative<ast::ExprArray>((*expression)._)) { auto _v_exprarray = std::get<ast::ExprArray>((*expression)._); auto [_w0, source_span] = _v_exprarray; return source_span; } if (std::holds_alternative<ast::ExprTuple>((*expression)._)) { auto _v_exprtuple = std::get<ast::ExprTuple>((*expression)._); auto [_w0, source_span] = _v_exprtuple; return source_span; } if (std::holds_alternative<ast::ExprQuestion>((*expression)._)) { auto _v_exprquestion = std::get<ast::ExprQuestion>((*expression)._); auto [_w0, source_span] = _v_exprquestion; return source_span; } if (std::holds_alternative<ast::ExprExtern>((*expression)._)) { auto _v_exprextern = std::get<ast::ExprExtern>((*expression)._); auto [source_span] = _v_exprextern; return source_span; } if (std::holds_alternative<ast::ExprLambda>((*expression)._)) { auto _v_exprlambda = std::get<ast::ExprLambda>((*expression)._); auto [_w0, _w1, source_span] = _v_exprlambda; return source_span; } if (std::holds_alternative<ast::ExprSpawn>((*expression)._)) { auto _v_exprspawn = std::get<ast::ExprSpawn>((*expression)._); auto [_w0, source_span] = _v_exprspawn; return source_span; } if (std::holds_alternative<ast::ExprNamedArg>((*expression)._)) { auto _v_exprnamedarg = std::get<ast::ExprNamedArg>((*expression)._); auto [_w0, _w1, source_span] = _v_exprnamedarg; return source_span; } if (std::holds_alternative<ast::ExprWith>((*expression)._)) { auto _v_exprwith = std::get<ast::ExprWith>((*expression)._); auto [_w0, _w1, _w2, source_span] = _v_exprwith; return source_span; } return span_unknown(); }();}
-
-std::shared_ptr<ast::Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept{return statements.size() == 0 ? std::make_shared<ast::Expr>(ast::ExprUnit(span_unknown())) : [&]() -> std::shared_ptr<ast::Expr> { if (std::holds_alternative<ast::StmtReturn>((*statements[statements.size() - 1])._)) { auto _v_stmtreturn = std::get<ast::StmtReturn>((*statements[statements.size() - 1])._); auto [expression, _w0] = _v_stmtreturn; return expression; } if (std::holds_alternative<ast::StmtExpr>((*statements[statements.size() - 1])._)) { auto _v_stmtexpr = std::get<ast::StmtExpr>((*statements[statements.size() - 1])._); auto [expression, _w0] = _v_stmtexpr; return expression; } return std::make_shared<ast::Expr>(ast::ExprUnit(span_unknown())); }();}
-
-ast::Span stmt_span(std::shared_ptr<ast::Stmt> statement) noexcept{return std::visit(overloaded{
-  [&](const StmtLet& stmtlet) -> ast::Span { auto [_w0, _w1, _w2, _w3, source_span] = stmtlet; return source_span; },
-  [&](const StmtLetPattern& stmtletpattern) -> ast::Span { auto [_w0, _w1, _w2, _w3, _w4, _w5, source_span] = stmtletpattern; return source_span; },
-  [&](const StmtLetConst& stmtletconst) -> ast::Span { auto [_w0, _w1, _w2, source_span] = stmtletconst; return source_span; },
-  [&](const StmtExpr& stmtexpr) -> ast::Span { auto [_w0, source_span] = stmtexpr; return source_span; },
-  [&](const StmtBreak& stmtbreak) -> ast::Span { auto [source_span] = stmtbreak; return source_span; },
-  [&](const StmtContinue& stmtcontinue) -> ast::Span { auto [source_span] = stmtcontinue; return source_span; },
-  [&](const StmtReturn& stmtreturn) -> ast::Span { auto [_w0, source_span] = stmtreturn; return source_span; }
-}, (*statement)._);}
-
-ast::Span pattern_span(std::shared_ptr<ast::Pattern> pattern) noexcept{return std::visit(overloaded{
-  [&](const PatternWild& patternwild) -> ast::Span { auto [source_span] = patternwild; return source_span; },
-  [&](const PatternIdent& patternident) -> ast::Span { auto [_w0, source_span] = patternident; return source_span; },
-  [&](const PatternInt& patternint) -> ast::Span { auto [_w0, source_span] = patternint; return source_span; },
-  [&](const PatternStr& patternstr) -> ast::Span { auto [_w0, source_span] = patternstr; return source_span; },
-  [&](const PatternStringLit& patternstringlit) -> ast::Span { auto [_w0, source_span] = patternstringlit; return source_span; },
-  [&](const PatternBool& patternbool) -> ast::Span { auto [_w0, source_span] = patternbool; return source_span; },
-  [&](const PatternUnit& patternunit) -> ast::Span { auto [source_span] = patternunit; return source_span; },
-  [&](const PatternCtor& patternctor) -> ast::Span { auto [_w0, _w1, source_span] = patternctor; return source_span; },
-  [&](const PatternRecord& patternrecord) -> ast::Span { auto [_w0, _w1, source_span] = patternrecord; return source_span; },
-  [&](const PatternTuple& patterntuple) -> ast::Span { auto [_w0, source_span] = patterntuple; return source_span; },
-  [&](const PatternArray& patternarray) -> ast::Span { auto [_w0, _w1, source_span] = patternarray; return source_span; },
-  [&](const PatternOr& patternor) -> ast::Span { auto [_w0, source_span] = patternor; return source_span; }
-}, (*pattern));}
-
-mlc::String param_name(std::shared_ptr<ast::Param> p) noexcept{return p->name;}
-
-std::shared_ptr<ast::TypeExpr> param_type_value(std::shared_ptr<ast::Param> parameter) noexcept{return parameter->type_value;}
-
-bool param_is_mut(std::shared_ptr<ast::Param> p) noexcept{return p->is_mut;}
-
-std::shared_ptr<ast::Decl> decl_inner(std::shared_ptr<ast::Decl> decl) noexcept{
-std::shared_ptr<ast::Decl> unwrapped = decl;
-return std::visit(overloaded{
-  [&](const DeclExported& declexported) -> std::shared_ptr<ast::Decl> { auto [inner] = declexported; return inner; },
-  [&](const DeclFn& declfn) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3, _w4, _w5, _w6] = declfn; return decl; },
-  [&](const DeclType& decltype_) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3, _w4] = decltype_; return decl; },
-  [&](const DeclTypeAlias& decltypealias) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltypealias; return decl; },
-  [&](const DeclTrait& decltrait) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = decltrait; return decl; },
-  [&](const DeclExtend& declextend) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2, _w3] = declextend; return decl; },
-  [&](const DeclImport& declimport) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declimport; return decl; },
-  [&](const DeclAssocType& declassoctype) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1] = declassoctype; return decl; },
-  [&](const DeclAssocBind& declassocbind) -> std::shared_ptr<ast::Decl> { auto [_w0, _w1, _w2] = declassocbind; return decl; }
+mlc::String diagnostic_format(Diagnostic diagnostic) noexcept{
+  auto message_part = ((diagnostic.code.length() > 0) ? (((((diagnostic.severity + mlc::String("[", 1)) + diagnostic.code) + mlc::String("]: ", 3)) + diagnostic.message)) : (((diagnostic.severity + mlc::String(": ", 2)) + diagnostic.message)));
+  if ((diagnostic.span.line > 0))   {
+    auto location_part = ((diagnostic.span.file.length() > 0) ? (((((diagnostic.span.file + mlc::String(":", 1)) + mlc::to_string(diagnostic.span.line)) + mlc::String(":", 1)) + mlc::to_string(diagnostic.span.column))) : (((mlc::to_string(diagnostic.span.line) + mlc::String(":", 1)) + mlc::to_string(diagnostic.span.column))));
+    return ((message_part + mlc::String("\n  --> ", 7)) + location_part);
+  } else   {
+    return message_part;
+  }
+}
+mlc::Array<Diagnostic> diagnostics_append(mlc::Array<Diagnostic> destination, mlc::Array<Diagnostic> source) noexcept{
+  auto accumulator = destination;
+  auto index = 0;
+  while ((index < source.length()))   {
+    accumulator.push_back(source[index]);
+    (index = (index + 1));
+  }
+  return accumulator;
+}
+mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<Diagnostic> diagnostics) noexcept{
+  auto lines = mlc::Array<mlc::String>{};
+  auto index = 0;
+  while ((index < diagnostics.length()))   {
+    lines.push_back(diagnostic_format(diagnostics[index]));
+    (index = (index + 1));
+  }
+  return lines;
+}
+Span expr_span(std::shared_ptr<Expr> expression) noexcept{
+  return [&]() -> Span {
+auto __match_subject = expression;
+if (std::holds_alternative<ExprIdent>((*__match_subject))) {
+const ExprIdent& exprIdent = std::get<ExprIdent>((*__match_subject));
+auto [__0, source_span] = exprIdent; return source_span;
+}
+if (std::holds_alternative<ExprInt>((*__match_subject))) {
+const ExprInt& exprInt = std::get<ExprInt>((*__match_subject));
+auto [__0, source_span] = exprInt; return source_span;
+}
+if (std::holds_alternative<ExprStr>((*__match_subject))) {
+const ExprStr& exprStr = std::get<ExprStr>((*__match_subject));
+auto [__0, source_span] = exprStr; return source_span;
+}
+if (std::holds_alternative<ExprBool>((*__match_subject))) {
+const ExprBool& exprBool = std::get<ExprBool>((*__match_subject));
+auto [__0, source_span] = exprBool; return source_span;
+}
+if (std::holds_alternative<ExprUnit>((*__match_subject))) {
+const ExprUnit& exprUnit = std::get<ExprUnit>((*__match_subject));
+auto [source_span] = exprUnit; return source_span;
+}
+if (std::holds_alternative<ExprFloat>((*__match_subject))) {
+const ExprFloat& exprFloat = std::get<ExprFloat>((*__match_subject));
+auto [__0, source_span] = exprFloat; return source_span;
+}
+if (std::holds_alternative<ExprI64>((*__match_subject))) {
+const ExprI64& exprI64 = std::get<ExprI64>((*__match_subject));
+auto [__0, source_span] = exprI64; return source_span;
+}
+if (std::holds_alternative<ExprU8>((*__match_subject))) {
+const ExprU8& exprU8 = std::get<ExprU8>((*__match_subject));
+auto [__0, source_span] = exprU8; return source_span;
+}
+if (std::holds_alternative<ExprUsize>((*__match_subject))) {
+const ExprUsize& exprUsize = std::get<ExprUsize>((*__match_subject));
+auto [__0, source_span] = exprUsize; return source_span;
+}
+if (std::holds_alternative<ExprChar>((*__match_subject))) {
+const ExprChar& exprChar = std::get<ExprChar>((*__match_subject));
+auto [__0, source_span] = exprChar; return source_span;
+}
+if (std::holds_alternative<ExprBin>((*__match_subject))) {
+const ExprBin& exprBin = std::get<ExprBin>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprBin; return source_span;
+}
+if (std::holds_alternative<ExprUn>((*__match_subject))) {
+const ExprUn& exprUn = std::get<ExprUn>((*__match_subject));
+auto [__0, __1, source_span] = exprUn; return source_span;
+}
+if (std::holds_alternative<ExprCall>((*__match_subject))) {
+const ExprCall& exprCall = std::get<ExprCall>((*__match_subject));
+auto [__0, __1, source_span] = exprCall; return source_span;
+}
+if (std::holds_alternative<ExprMethod>((*__match_subject))) {
+const ExprMethod& exprMethod = std::get<ExprMethod>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprMethod; return source_span;
+}
+if (std::holds_alternative<ExprField>((*__match_subject))) {
+const ExprField& exprField = std::get<ExprField>((*__match_subject));
+auto [__0, __1, source_span] = exprField; return source_span;
+}
+if (std::holds_alternative<ExprIndex>((*__match_subject))) {
+const ExprIndex& exprIndex = std::get<ExprIndex>((*__match_subject));
+auto [__0, __1, source_span] = exprIndex; return source_span;
+}
+if (std::holds_alternative<ExprIf>((*__match_subject))) {
+const ExprIf& exprIf = std::get<ExprIf>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprIf; return source_span;
+}
+if (std::holds_alternative<ExprBlock>((*__match_subject))) {
+const ExprBlock& exprBlock = std::get<ExprBlock>((*__match_subject));
+auto [__0, __1, source_span] = exprBlock; return source_span;
+}
+if (std::holds_alternative<ExprWhile>((*__match_subject))) {
+const ExprWhile& exprWhile = std::get<ExprWhile>((*__match_subject));
+auto [__0, __1, source_span] = exprWhile; return source_span;
+}
+if (std::holds_alternative<ExprFor>((*__match_subject))) {
+const ExprFor& exprFor = std::get<ExprFor>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprFor; return source_span;
+}
+if (std::holds_alternative<ExprMatch>((*__match_subject))) {
+const ExprMatch& exprMatch = std::get<ExprMatch>((*__match_subject));
+auto [__0, __1, source_span] = exprMatch; return source_span;
+}
+if (std::holds_alternative<ExprRecord>((*__match_subject))) {
+const ExprRecord& exprRecord = std::get<ExprRecord>((*__match_subject));
+auto [__0, __1, source_span] = exprRecord; return source_span;
+}
+if (std::holds_alternative<ExprRecordUpdate>((*__match_subject))) {
+const ExprRecordUpdate& exprRecordUpdate = std::get<ExprRecordUpdate>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprRecordUpdate; return source_span;
+}
+if (std::holds_alternative<ExprArray>((*__match_subject))) {
+const ExprArray& exprArray = std::get<ExprArray>((*__match_subject));
+auto [__0, source_span] = exprArray; return source_span;
+}
+if (std::holds_alternative<ExprTuple>((*__match_subject))) {
+const ExprTuple& exprTuple = std::get<ExprTuple>((*__match_subject));
+auto [__0, source_span] = exprTuple; return source_span;
+}
+if (std::holds_alternative<ExprQuestion>((*__match_subject))) {
+const ExprQuestion& exprQuestion = std::get<ExprQuestion>((*__match_subject));
+auto [__0, source_span] = exprQuestion; return source_span;
+}
+if (std::holds_alternative<ExprExtern>((*__match_subject))) {
+const ExprExtern& exprExtern = std::get<ExprExtern>((*__match_subject));
+auto [source_span] = exprExtern; return source_span;
+}
+if (std::holds_alternative<ExprLambda>((*__match_subject))) {
+const ExprLambda& exprLambda = std::get<ExprLambda>((*__match_subject));
+auto [__0, __1, source_span] = exprLambda; return source_span;
+}
+if (std::holds_alternative<ExprSpawn>((*__match_subject))) {
+const ExprSpawn& exprSpawn = std::get<ExprSpawn>((*__match_subject));
+auto [__0, source_span] = exprSpawn; return source_span;
+}
+if (std::holds_alternative<ExprNamedArg>((*__match_subject))) {
+const ExprNamedArg& exprNamedArg = std::get<ExprNamedArg>((*__match_subject));
+auto [__0, __1, source_span] = exprNamedArg; return source_span;
+}
+if (std::holds_alternative<ExprWith>((*__match_subject))) {
+const ExprWith& exprWith = std::get<ExprWith>((*__match_subject));
+auto [__0, __1, __2, source_span] = exprWith; return source_span;
+}
+return span_unknown();
+std::abort();
+}();
+}
+std::shared_ptr<Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept{
+  if ((statements.length() == 0))   {
+    return std::make_shared<Expr>(ExprUnit{span_unknown()});
+  } else   {
+    return [&]() -> std::shared_ptr<Expr> {
+auto __match_subject = statements[(statements.length() - 1)];
+if (std::holds_alternative<StmtReturn>((*__match_subject))) {
+const StmtReturn& stmtReturn = std::get<StmtReturn>((*__match_subject));
+auto [expression, __1] = stmtReturn; return expression;
+}
+if (std::holds_alternative<StmtExpr>((*__match_subject))) {
+const StmtExpr& stmtExpr = std::get<StmtExpr>((*__match_subject));
+auto [expression, __1] = stmtExpr; return expression;
+}
+return std::make_shared<Expr>(ExprUnit{span_unknown()});
+std::abort();
+}();
+  }
+}
+Span stmt_span(std::shared_ptr<Stmt> statement) noexcept{
+  return std::visit(overloaded{[&](const StmtLet& stmtLet) -> Span { auto [__0, __1, __2, __3, source_span] = stmtLet; return source_span; },
+[&](const StmtLetPattern& stmtLetPattern) -> Span { auto [__0, __1, __2, __3, __4, __5, source_span] = stmtLetPattern; return source_span; },
+[&](const StmtLetConst& stmtLetConst) -> Span { auto [__0, __1, __2, source_span] = stmtLetConst; return source_span; },
+[&](const StmtExpr& stmtExpr) -> Span { auto [__0, source_span] = stmtExpr; return source_span; },
+[&](const StmtBreak& stmtBreak) -> Span { auto [source_span] = stmtBreak; return source_span; },
+[&](const StmtContinue& stmtContinue) -> Span { auto [source_span] = stmtContinue; return source_span; },
+[&](const StmtReturn& stmtReturn) -> Span { auto [__0, source_span] = stmtReturn; return source_span; }
+}, (*statement));
+}
+Span pattern_span(std::shared_ptr<Pattern> pattern) noexcept{
+  return std::visit(overloaded{[&](const PatternWild& patternWild) -> Span { auto [source_span] = patternWild; return source_span; },
+[&](const PatternIdent& patternIdent) -> Span { auto [__0, source_span] = patternIdent; return source_span; },
+[&](const PatternInt& patternInt) -> Span { auto [__0, source_span] = patternInt; return source_span; },
+[&](const PatternStr& patternStr) -> Span { auto [__0, source_span] = patternStr; return source_span; },
+[&](const PatternStringLit& patternStringLit) -> Span { auto [__0, source_span] = patternStringLit; return source_span; },
+[&](const PatternBool& patternBool) -> Span { auto [__0, source_span] = patternBool; return source_span; },
+[&](const PatternUnit& patternUnit) -> Span { auto [source_span] = patternUnit; return source_span; },
+[&](const PatternCtor& patternCtor) -> Span { auto [__0, __1, source_span] = patternCtor; return source_span; },
+[&](const PatternRecord& patternRecord) -> Span { auto [__0, __1, source_span] = patternRecord; return source_span; },
+[&](const PatternTuple& patternTuple) -> Span { auto [__0, source_span] = patternTuple; return source_span; },
+[&](const PatternArray& patternArray) -> Span { auto [__0, __1, source_span] = patternArray; return source_span; },
+[&](const PatternOr& patternOr) -> Span { auto [__0, source_span] = patternOr; return source_span; }
+}, (*pattern));
+}
+mlc::String param_name(std::shared_ptr<Param> p) noexcept{
+  return p->name;
+}
+std::shared_ptr<TypeExpr> param_type_value(std::shared_ptr<Param> parameter) noexcept{
+  return parameter->type_value;
+}
+bool param_is_mut(std::shared_ptr<Param> p) noexcept{
+  return p->is_mut;
+}
+std::shared_ptr<Decl> decl_inner(std::shared_ptr<Decl> decl) noexcept{
+  auto unwrapped = decl;
+  return std::visit(overloaded{[&](const DeclExported& declExported) { auto [inner] = declExported; return inner; },
+[&](const DeclFn& declFn) { auto [__0, __1, __2, __3, __4, __5, __6] = declFn; return decl; },
+[&](const DeclType& declType) { auto [__0, __1, __2, __3, __4] = declType; return decl; },
+[&](const DeclTypeAlias& declTypeAlias) { auto [__0, __1, __2, __3] = declTypeAlias; return decl; },
+[&](const DeclTrait& declTrait) { auto [__0, __1, __2, __3] = declTrait; return decl; },
+[&](const DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return decl; },
+[&](const DeclImport& declImport) { auto [__0, __1] = declImport; return decl; },
+[&](const DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return decl; },
+[&](const DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return decl; }
 }, (*unwrapped));
 }
-
-mlc::String decl_name(std::shared_ptr<ast::Decl> decl) noexcept{
-std::shared_ptr<ast::Decl> unwrapped = decl;
-return std::visit(overloaded{
-  [&](const DeclFn& declfn) -> mlc::String { auto [name, _w0, _w1, _w2, _w3, _w4, _w5] = declfn; return name; },
-  [&](const DeclType& decltype_) -> mlc::String { auto [name, _w0, _w1, _w2, _w3] = decltype_; return name; },
-  [&](const DeclTypeAlias& decltypealias) -> mlc::String { auto [name, _w0, _w1, _w2] = decltypealias; return name; },
-  [&](const DeclTrait& decltrait) -> mlc::String { auto [name, _w0, _w1, _w2] = decltrait; return name; },
-  [&](const DeclExtend& declextend) -> mlc::String { auto [type_name, _w0, _w1, _w2] = declextend; return type_name; },
-  [&](const DeclImport& declimport) -> mlc::String { auto [_w0, _w1] = declimport; return mlc::String(""); },
-  [&](const DeclExported& declexported) -> mlc::String { auto [inner] = declexported; return decl_name(inner); },
-  [&](const DeclAssocType& declassoctype) -> mlc::String { auto [name, _w0] = declassoctype; return name; },
-  [&](const DeclAssocBind& declassocbind) -> mlc::String { auto [name, _w0, _w1] = declassocbind; return name; }
+mlc::String decl_name(std::shared_ptr<Decl> decl) noexcept{
+  auto unwrapped = decl;
+  return std::visit(overloaded{[&](const DeclFn& declFn) { auto [name, __1, __2, __3, __4, __5, __6] = declFn; return name; },
+[&](const DeclType& declType) { auto [name, __1, __2, __3, __4] = declType; return name; },
+[&](const DeclTypeAlias& declTypeAlias) { auto [name, __1, __2, __3] = declTypeAlias; return name; },
+[&](const DeclTrait& declTrait) { auto [name, __1, __2, __3] = declTrait; return name; },
+[&](const DeclExtend& declExtend) { auto [type_name, __1, __2, __3] = declExtend; return type_name; },
+[&](const DeclImport& declImport) { auto [__0, __1] = declImport; return mlc::String("", 0); },
+[&](const DeclExported& declExported) { auto [inner] = declExported; return decl_name(inner); },
+[&](const DeclAssocType& declAssocType) { auto [name, __1] = declAssocType; return name; },
+[&](const DeclAssocBind& declAssocBind) { auto [name, __1, __2] = declAssocBind; return name; }
 }, (*unwrapped));
 }
-
-ast::Span decl_name_span(std::shared_ptr<ast::Decl> decl) noexcept{
-std::shared_ptr<ast::Decl> unwrapped = decl;
-return [&]() -> ast::Span { if (std::holds_alternative<ast::DeclType>((*unwrapped))) { auto _v_decltype = std::get<ast::DeclType>((*unwrapped)); auto [_w0, _w1, _w2, _w3, name_span] = _v_decltype; return name_span; } if (std::holds_alternative<ast::DeclTypeAlias>((*unwrapped))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_decltypealias; return name_span; } if (std::holds_alternative<ast::DeclTrait>((*unwrapped))) { auto _v_decltrait = std::get<ast::DeclTrait>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_decltrait; return name_span; } if (std::holds_alternative<ast::DeclExtend>((*unwrapped))) { auto _v_declextend = std::get<ast::DeclExtend>((*unwrapped)); auto [_w0, _w1, _w2, name_span] = _v_declextend; return name_span; } if (std::holds_alternative<ast::DeclExported>((*unwrapped))) { auto _v_declexported = std::get<ast::DeclExported>((*unwrapped)); auto [inner] = _v_declexported; return decl_name_span(inner); } return span_unknown(); }();
+Span decl_name_span(std::shared_ptr<Decl> decl) noexcept{
+  auto unwrapped = decl;
+  return [&]() -> Span {
+auto __match_subject = unwrapped;
+if (std::holds_alternative<DeclType>((*__match_subject))) {
+const DeclType& declType = std::get<DeclType>((*__match_subject));
+auto [__0, __1, __2, __3, name_span] = declType; return name_span;
 }
-
-ast::Span decl_span(std::shared_ptr<ast::Decl> declaration) noexcept{
-return [&]() -> ast::Span { if (std::holds_alternative<ast::DeclFn>((*decl_inner(declaration)))) { auto _v_declfn = std::get<ast::DeclFn>((*decl_inner(declaration))); auto [_w0, _w1, _w2, _w3, _w4, body, _w5] = _v_declfn; return expr_span(body); } if (std::holds_alternative<ast::DeclType>((*decl_inner(declaration)))) { auto _v_decltype = std::get<ast::DeclType>((*decl_inner(declaration))); auto [_w0, _w1, _w2, _w3, name_span] = _v_decltype; return name_span; } if (std::holds_alternative<ast::DeclTypeAlias>((*decl_inner(declaration)))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_decltypealias; return name_span; } if (std::holds_alternative<ast::DeclTrait>((*decl_inner(declaration)))) { auto _v_decltrait = std::get<ast::DeclTrait>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_decltrait; return name_span; } if (std::holds_alternative<ast::DeclExtend>((*decl_inner(declaration)))) { auto _v_declextend = std::get<ast::DeclExtend>((*decl_inner(declaration))); auto [_w0, _w1, _w2, name_span] = _v_declextend; return name_span; } if (std::holds_alternative<ast::DeclAssocBind>((*decl_inner(declaration)))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*decl_inner(declaration))); auto [_w0, _w1, span] = _v_declassocbind; return span; } if (std::holds_alternative<ast::DeclAssocType>((*decl_inner(declaration)))) { auto _v_declassoctype = std::get<ast::DeclAssocType>((*decl_inner(declaration))); auto [_w0, span] = _v_declassoctype; return span; } if (std::holds_alternative<ast::DeclExported>((*decl_inner(declaration)))) { auto _v_declexported = std::get<ast::DeclExported>((*decl_inner(declaration))); auto [inner] = _v_declexported; return decl_span(inner); } return span_unknown(); }();
+if (std::holds_alternative<DeclTypeAlias>((*__match_subject))) {
+const DeclTypeAlias& declTypeAlias = std::get<DeclTypeAlias>((*__match_subject));
+auto [__0, __1, __2, name_span] = declTypeAlias; return name_span;
 }
-
+if (std::holds_alternative<DeclTrait>((*__match_subject))) {
+const DeclTrait& declTrait = std::get<DeclTrait>((*__match_subject));
+auto [__0, __1, __2, name_span] = declTrait; return name_span;
+}
+if (std::holds_alternative<DeclExtend>((*__match_subject))) {
+const DeclExtend& declExtend = std::get<DeclExtend>((*__match_subject));
+auto [__0, __1, __2, name_span] = declExtend; return name_span;
+}
+if (std::holds_alternative<DeclExported>((*__match_subject))) {
+const DeclExported& declExported = std::get<DeclExported>((*__match_subject));
+auto [inner] = declExported; return decl_name_span(inner);
+}
+return span_unknown();
+std::abort();
+}();
+}
+Span decl_span(std::shared_ptr<Decl> declaration) noexcept{
+  return [&]() -> Span {
+auto __match_subject = decl_inner(declaration);
+if (std::holds_alternative<DeclFn>((*__match_subject))) {
+const DeclFn& declFn = std::get<DeclFn>((*__match_subject));
+auto [__0, __1, __2, __3, __4, body, __6] = declFn; return expr_span(body);
+}
+if (std::holds_alternative<DeclType>((*__match_subject))) {
+const DeclType& declType = std::get<DeclType>((*__match_subject));
+auto [__0, __1, __2, __3, name_span] = declType; return name_span;
+}
+if (std::holds_alternative<DeclTypeAlias>((*__match_subject))) {
+const DeclTypeAlias& declTypeAlias = std::get<DeclTypeAlias>((*__match_subject));
+auto [__0, __1, __2, name_span] = declTypeAlias; return name_span;
+}
+if (std::holds_alternative<DeclTrait>((*__match_subject))) {
+const DeclTrait& declTrait = std::get<DeclTrait>((*__match_subject));
+auto [__0, __1, __2, name_span] = declTrait; return name_span;
+}
+if (std::holds_alternative<DeclExtend>((*__match_subject))) {
+const DeclExtend& declExtend = std::get<DeclExtend>((*__match_subject));
+auto [__0, __1, __2, name_span] = declExtend; return name_span;
+}
+if (std::holds_alternative<DeclAssocBind>((*__match_subject))) {
+const DeclAssocBind& declAssocBind = std::get<DeclAssocBind>((*__match_subject));
+auto [__0, __1, span] = declAssocBind; return span;
+}
+if (std::holds_alternative<DeclAssocType>((*__match_subject))) {
+const DeclAssocType& declAssocType = std::get<DeclAssocType>((*__match_subject));
+auto [__0, span] = declAssocType; return span;
+}
+if (std::holds_alternative<DeclExported>((*__match_subject))) {
+const DeclExported& declExported = std::get<DeclExported>((*__match_subject));
+auto [inner] = declExported; return decl_span(inner);
+}
+return span_unknown();
+std::abort();
+}();
+}
 mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc::String> src) noexcept{
-int i = 0;
-while (i < src.size()){
-{
-dst.push_back(src[i]);
-i = i + 1;
-}
-}
-return dst;
+  auto i = 0;
+  while ((i < src.length()))   {
+    dst.push_back(src[i]);
+    (i = (i + 1));
+  }
+  return dst;
 }
 
 } // namespace ast

@@ -177,7 +177,8 @@ fn prepare_module_generation(
     type_alias_annotations: precomputed_context.type_alias_annotations,
     trait_associated_type_names: precomputed_context.trait_associated_type_names,
     temp_name_counter: new_temp_name_counter(),
-    enclosing_function_return_type: Shared.new(TUnknown)
+    enclosing_function_return_type: Shared.new(TUnknown),
+    param_template_type_names: Map.new()
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end

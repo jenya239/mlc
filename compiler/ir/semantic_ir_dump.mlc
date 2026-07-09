@@ -4,7 +4,7 @@ import { SemanticLoadItem, SemanticDeclaration } from './semantic_ir'
 
 fn semantic_declaration_label(declaration: Shared<SemanticDeclaration>) -> string =
   match declaration {
-    SemanticDeclarationFn(name, _, _, _, _, _, _, _) => `fn ${name}`,
+    SemanticDeclarationFn(name, _, _, _, _, _, _, _, _) => `fn ${name}`,
     SemanticDeclarationType(name, _, _, _, _) => `type ${name}`,
     SemanticDeclarationTypeAlias(name, _, _, _) => `type ${name}`,
     SemanticDeclarationTrait(name, _, _, _) => `trait ${name}`,

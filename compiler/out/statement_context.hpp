@@ -3,18 +3,9 @@
 
 #include "mlc.hpp"
 #include <variant>
-
 #include "semantic_ir.hpp"
 #include "context.hpp"
-
 namespace statement_context {
-
-struct Expr;
-struct Stmt;
-struct SemanticExpression;
-struct SemanticStatement;
-struct CppStatement;
-struct CppExpression;
 
 context::CodegenContext stmts_final_ctx(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context) noexcept;
 

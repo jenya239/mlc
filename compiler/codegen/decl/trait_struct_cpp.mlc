@@ -36,7 +36,7 @@ fn trait_struct_field_for_method(
   method: Shared<SemanticDeclaration>
 ) -> [Shared<CppField>] =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) => do
       const method_fields: [Shared<CppField>] = []
       method_fields.push(trait_method_field_cpp(
         trait_context, extract_method_name(mangled, trait_name), parameters, return_type))

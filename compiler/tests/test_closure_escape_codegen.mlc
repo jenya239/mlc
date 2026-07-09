@@ -1,0 +1,96 @@
+// Codegen tests for non-escaping fn params → template (TRACK_LANG_CLOSURE_ESCAPE STEP=3).
+
+import { TestResult, assert_eq_int } from './test_runner'
+import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { transform_program } from '../checker/transform/transform_decl'
+import { create_codegen_context } from '../codegen/context'
+import { gen_decl, gen_proto } from '../codegen/decl/decl'
+import { gen_decl_cpp, gen_proto_cpp, print_cpp_declaration } from '../codegen/decl_cpp'
+import { Program } from '../frontend/ast'
+
+fn generated_fn_cpp(source: string) -> string = do
+  const program = parse_program(tokenize(source).tokens)
+  match check(program) {
+    Ok(checked) => do
+      const semantic = transform_program(program, checked.registry)
+      const context = create_codegen_context(program)
+      if semantic.decls.length() == 0 then
+        ""
+      else
+        print_cpp_declaration(gen_decl_cpp(semantic.decls[semantic.decls.length() - 1], context))
+      end
+    end,
+    Err(_) => "CHECK_FAILED"
+  }
+end
+
+fn generated_fn_string(source: string) -> string = do
+  const program = parse_program(tokenize(source).tokens)
+  match check(program) {
+    Ok(checked) => do
+      const semantic = transform_program(program, checked.registry)
+      const context = create_codegen_context(program)
+      if semantic.decls.length() == 0 then
+        ""
+      else
+        gen_decl(semantic.decls[semantic.decls.length() - 1], context)
+      end
+    end,
+    Err(_) => "CHECK_FAILED"
+  }
+end
+
+export fn closure_escape_codegen_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  const apply_twice =
+    "fn apply_twice(f: (i32) -> i32, x: i32) -> i32 = f(f(x))"
+  const apply_cpp = generated_fn_cpp(apply_twice)
+  const apply_string = generated_fn_string(apply_twice)
+
+  results.push(assert_code_contains(
+    "escape codegen: apply_twice has template",
+    apply_cpp,
+    "template<typename __F0>"))
+  results.push(assert_code_contains(
+    "escape codegen: apply_twice param type __F0",
+    apply_cpp,
+    "__F0 f"))
+  results.push(assert_code_not_contains(
+    "escape codegen: apply_twice no std::function",
+    apply_cpp,
+    "std::function"))
+  results.push(assert_code_contains(
+    "escape codegen string path: apply_twice template",
+    apply_string,
+    "template<typename __F0>"))
+
+  const make_handler =
+    "type Handler = { callback: (i32) -> i32 }\nfn make_handler(f: (i32) -> i32) -> Handler = Handler { callback: f }"
+  const handler_cpp = generated_fn_cpp(make_handler)
+  results.push(assert_code_contains(
+    "escape codegen: make_handler keeps std::function",
+    handler_cpp,
+    "std::function"))
+  results.push(assert_code_not_contains(
+    "escape codegen: make_handler no template __F",
+    handler_cpp,
+    "__F0"))
+
+  const identity_fn =
+    "fn identity_fn(f: (i32) -> i32) -> (i32) -> i32 = f"
+  const identity_cpp = generated_fn_cpp(identity_fn)
+  results.push(assert_code_contains(
+    "escape codegen: returned fn param stays std::function",
+    identity_cpp,
+    "std::function"))
+  results.push(assert_code_not_contains(
+    "escape codegen: returned fn param no __F0",
+    identity_cpp,
+    "__F0"))
+
+  results
+end

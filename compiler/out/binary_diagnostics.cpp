@@ -1,3 +1,4 @@
+#define main mlc_user_main
 #include "binary_diagnostics.hpp"
 
 #include "ast.hpp"
@@ -13,66 +14,111 @@ using namespace semantic_type_structure;
 using namespace diagnostic_codes;
 using namespace ast_tokens;
 
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_addition(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_int_arithmetic(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_equality(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_ordering(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_logical(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_bitwise(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_shift(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_operand_diagnostics(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept;
-
-mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_addition(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{return operation == mlc::String("+") && !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_binary_plus(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("incompatible operand types for +: ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e005())} : mlc::Array<ast::Diagnostic>{};}
-
+mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_addition(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
+  if (((((operation == mlc::String("+", 1)) && (!semantic_type_structure::type_is_unknown(left_type))) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_binary_plus(left_type, right_type))))   {
+    return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("incompatible operand types for +: ", 34) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e005())};
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
+}
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_int_arithmetic(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("-") || operation == mlc::String("*") || operation == mlc::String("/") || operation == mlc::String("%") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("numeric operands required for ") + operation + mlc::String(", got ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e006())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if (((((operation == mlc::String("-", 1)) || (operation == mlc::String("*", 1))) || (operation == mlc::String("/", 1))) || (operation == mlc::String("%", 1))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((((mlc::String("numeric operands required for ", 30) + operation) + mlc::String(", got ", 6)) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e006())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_equality(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("==") || operation == mlc::String("!=") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_structurally_equal(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("incompatible types for ") + operation + mlc::String(": ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e007())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if (((operation == mlc::String("==", 2)) || (operation == mlc::String("!=", 2))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_structurally_equal(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((((mlc::String("incompatible types for ", 23) + operation) + mlc::String(": ", 2)) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e007())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_ordering(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("<") || operation == mlc::String(">") || operation == mlc::String("<=") || operation == mlc::String(">=") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_ordering(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("ordering requires i32 or string operands of the same kind, got ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e008())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if (((((operation == mlc::String("<", 1)) || (operation == mlc::String(">", 1))) || (operation == mlc::String("<=", 2))) || (operation == mlc::String(">=", 2))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_ordering(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("ordering requires i32 or string operands of the same kind, got ", 63) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e008())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_logical(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("&&") || operation == mlc::String("||") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_logical_and_or(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("logical operators require bool operands, got ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e009())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if (((operation == mlc::String("&&", 2)) || (operation == mlc::String("||", 2))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_logical_and_or(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("logical operators require bool operands, got ", 45) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e009())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_bitwise(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("&") || operation == mlc::String("|") || operation == mlc::String("^") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("bitwise ") + operation + mlc::String(" requires i32 operands, got ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e010())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if ((((operation == mlc::String("&", 1)) || (operation == mlc::String("|", 1))) || (operation == mlc::String("^", 1))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((((mlc::String("bitwise ", 8) + operation) + mlc::String(" requires i32 operands, got ", 28)) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e010())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_diagnostic_for_shift(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-return operation == mlc::String("<<") || operation == mlc::String(">>") ? !semantic_type_structure::type_is_unknown(left_type) && !semantic_type_structure::type_is_unknown(right_type) && !semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type) ? mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("shift requires i32 operands, got ") + semantic_type_structure::type_description(left_type) + mlc::String(" and ") + semantic_type_structure::type_description(right_type), source_span, diagnostic_codes::diagnostic_code_e011())} : mlc::Array<ast::Diagnostic>{} : mlc::Array<ast::Diagnostic>{};
+  if (((operation == mlc::String("<<", 2)) || (operation == mlc::String(">>", 2))))   {
+    if ((((!semantic_type_structure::type_is_unknown(left_type)) && (!semantic_type_structure::type_is_unknown(right_type))) && (!semantic_type_structure::types_allowed_for_binary_int_only(left_type, right_type))))     {
+      return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("shift requires i32 operands, got ", 33) + semantic_type_structure::type_description(left_type)) + mlc::String(" and ", 5)) + semantic_type_structure::type_description(right_type)), source_span, diagnostic_codes::diagnostic_code_e011())};
+    } else     {
+      return mlc::Array<ast::Diagnostic>{};
+    }
+  } else   {
+    return mlc::Array<ast::Diagnostic>{};
+  }
 }
-
 mlc::Array<ast::Diagnostic> infer_binary_operand_diagnostics(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type, ast::Span source_span) noexcept{
-mlc::Array<ast::Diagnostic> from_addition = infer_binary_diagnostic_for_addition(operation, left_type, right_type, source_span);
-return from_addition.size() > 0 ? from_addition : [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> from_int_arithmetic = infer_binary_diagnostic_for_int_arithmetic(operation, left_type, right_type, source_span);
-  return from_int_arithmetic.size() > 0 ? from_int_arithmetic : [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> from_equality = infer_binary_diagnostic_for_equality(operation, left_type, right_type, source_span);
-  return from_equality.size() > 0 ? from_equality : [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> from_ordering = infer_binary_diagnostic_for_ordering(operation, left_type, right_type, source_span);
-  return from_ordering.size() > 0 ? from_ordering : [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> from_logical = infer_binary_diagnostic_for_logical(operation, left_type, right_type, source_span);
-  return from_logical.size() > 0 ? from_logical : [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> from_bitwise = infer_binary_diagnostic_for_bitwise(operation, left_type, right_type, source_span);
-  return from_bitwise.size() > 0 ? from_bitwise : infer_binary_diagnostic_for_shift(operation, left_type, right_type, source_span);
- }();
- }();
- }();
- }();
- }();
+  auto from_addition = infer_binary_diagnostic_for_addition(operation, left_type, right_type, source_span);
+  if ((from_addition.length() > 0))   {
+    return from_addition;
+  } else   {
+    auto from_int_arithmetic = infer_binary_diagnostic_for_int_arithmetic(operation, left_type, right_type, source_span);
+    if ((from_int_arithmetic.length() > 0))     {
+      return from_int_arithmetic;
+    } else     {
+      auto from_equality = infer_binary_diagnostic_for_equality(operation, left_type, right_type, source_span);
+      if ((from_equality.length() > 0))       {
+        return from_equality;
+      } else       {
+        auto from_ordering = infer_binary_diagnostic_for_ordering(operation, left_type, right_type, source_span);
+        if ((from_ordering.length() > 0))         {
+          return from_ordering;
+        } else         {
+          auto from_logical = infer_binary_diagnostic_for_logical(operation, left_type, right_type, source_span);
+          if ((from_logical.length() > 0))           {
+            return from_logical;
+          } else           {
+            auto from_bitwise = infer_binary_diagnostic_for_bitwise(operation, left_type, right_type, source_span);
+            if ((from_bitwise.length() > 0))             {
+              return from_bitwise;
+            } else             {
+              return infer_binary_diagnostic_for_shift(operation, left_type, right_type, source_span);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 } // namespace binary_diagnostics

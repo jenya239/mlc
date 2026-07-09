@@ -5,12 +5,57 @@ import { Decl, TypeVariant, Param, Program, Stmt, Span, expr_span } from '../../
 import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
 import { Type, TypeRegistry, type_from_annotation_with_registry } from '../registry'
-import { SemanticDeclaration, SemanticProgram, SemanticLoadItem, SemanticNamespaceImportAlias } from '../../ir/semantic_ir'
+import {
+  SemanticDeclaration, SemanticProgram, SemanticLoadItem, SemanticNamespaceImportAlias,
+  FnEscapeInfo, empty_fn_escape_info
+} from '../../ir/semantic_ir'
 import { LoadItem, NamespaceImportAlias } from '../../ir/load_item'
 import { TransformContext, TransformStmtsResult, transform_expr, coerce_expr_to_type } from './transform'
 import { transform_stmts } from './transform_stmts'
+import { non_escaping_params_for_decl_if_template_safe, function_names_used_as_values } from '../escape_analysis'
 
-fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<SemanticDeclaration> =
+fn string_list_contains(haystack: [string], needle: string) -> bool = do
+  let mut index = 0
+  while index < haystack.length() do
+    if haystack[index] == needle then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn fn_escape_info_for_declaration(declaration: Shared<Decl>, functions_used_as_values: [string], apply_escape_templates: bool) -> FnEscapeInfo = do
+  if !apply_escape_templates then return empty_fn_escape_info() end
+  const non_escaping = non_escaping_params_for_decl_if_template_safe(declaration, functions_used_as_values)
+  if non_escaping.length() == 0 then return empty_fn_escape_info() end
+  match declaration {
+    DeclFn(_, _, _, parameters, _, _, _) => do
+      let mut synthetic_type_params: [string] = []
+      let mut param_template_type_names: Map<string, string> = Map.new()
+      let mut index = 0
+      while index < parameters.length() do
+        const parameter_name = parameters[index].name
+        if string_list_contains(non_escaping, parameter_name) then
+          const template_type_name = "__F" + index.to_string()
+          synthetic_type_params.push(template_type_name)
+          param_template_type_names.set(parameter_name, template_type_name)
+        end
+        index = index + 1
+      end
+      FnEscapeInfo {
+        synthetic_type_params: synthetic_type_params,
+        param_template_type_names: param_template_type_names
+      }
+    end,
+    _ => empty_fn_escape_info()
+  }
+end
+
+fn transform_decl(
+  declaration: Shared<Decl>,
+  registry: TypeRegistry,
+  functions_used_as_values: [string],
+  apply_escape_templates: bool
+) -> Shared<SemanticDeclaration> =
   match declaration {
     DeclFn(name, type_params, trait_bounds, params, return_type_expr, body, where_clause_bounds_entries) => do
       let mut param_env: Map<string, Shared<Type>> = Map.new()
@@ -23,35 +68,42 @@ fn transform_decl(declaration: Shared<Decl>, registry: TypeRegistry) -> Shared<S
       const initial_context  = TransformContext { type_env: param_env, registry: registry, lambda_parameter_types: [] }
       const typed_body       = transform_expr(body, initial_context, (statements: [Shared<Stmt>], transform_context: TransformContext) => transform_stmts(statements, transform_context))
       const coerced_body     = coerce_expr_to_type(typed_body, return_type)
-      Shared.new(SemanticDeclarationFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, expr_span(body)))
+      Shared.new(SemanticDeclarationFn(name, type_params, trait_bounds, params, return_type, coerced_body, where_clause_bounds_entries, fn_escape_info_for_declaration(declaration, functions_used_as_values, apply_escape_templates), expr_span(body)))
     end,
     DeclType(type_name, type_params, variants, derive_traits, name_span) =>
       Shared.new(SemanticDeclarationType(type_name, type_params, variants, derive_traits, name_span)),
     DeclTypeAlias(type_name, type_params, type_expression, name_span) =>
       Shared.new(SemanticDeclarationTypeAlias(type_name, type_params, type_expression, name_span)),
     DeclTrait(trait_name, type_params, methods, name_span) => do
-      const typed_methods = transform_decls(methods, registry)
+      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false)
       Shared.new(SemanticDeclarationTrait(trait_name, type_params, typed_methods, name_span))
     end,
     DeclExtend(type_name, trait_name, methods, name_span) => do
-      const typed_methods = transform_decls(methods, registry)
+      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false)
       Shared.new(SemanticDeclarationExtend(type_name, trait_name, typed_methods, name_span))
     end,
     DeclImport(path, names) => Shared.new(SemanticDeclarationImport(path, names)),
     DeclExported(exported_declaration) =>
-      Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry))),
+      Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry, functions_used_as_values, apply_escape_templates))),
     DeclAssocType(_, _)     => Shared.new(SemanticDeclarationImport('', [])),
     DeclAssocBind(name, type_expr, span) =>
       Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation_with_registry(type_expr, registry), span))
   }
 
-fn transform_decls(declarations: [Shared<Decl>], registry: TypeRegistry) -> [Shared<SemanticDeclaration>] =
+fn transform_decls(
+  declarations: [Shared<Decl>],
+  registry: TypeRegistry,
+  functions_used_as_values: [string],
+  apply_escape_templates: bool
+) -> [Shared<SemanticDeclaration>] =
   declarations.fold(
     do let empty_declarations: [Shared<SemanticDeclaration>] = []; empty_declarations end,
-    (result, declaration) => result.concat([transform_decl(declaration, registry)]))
+    (result, declaration) => result.concat([transform_decl(declaration, registry, functions_used_as_values, apply_escape_templates)]))
 
 export fn transform_program(program: Program, registry: TypeRegistry) -> SemanticProgram =
-  SemanticProgram { decls: transform_decls(program.decls, registry) }
+  SemanticProgram {
+    decls: transform_decls(program.decls, registry, function_names_used_as_values(program), true)
+  }
 
 fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SemanticNamespaceImportAlias] =
   items.fold(
@@ -67,7 +119,9 @@ export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_
         expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
       const expanded_declarations =
         expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
-      const typed_declarations = transform_decls(expanded_declarations, registry)
+      const functions_used_as_values =
+        function_names_used_as_values(Program { decls: expanded_declarations })
+      const typed_declarations = transform_decls(expanded_declarations, registry, functions_used_as_values, true)
       result.concat([SemanticLoadItem {
         path: item.path,
         decls: typed_declarations,

@@ -45,11 +45,16 @@ fn non_generic_parameter_type_cpp(context: CodegenContext, parameter: Shared<Par
   else type_to_cpp(context, parameter.type_value)
   end
 
-fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
-  match parameter.type_value {
-    TyGeneric(generic_type_name, _) => generic_parameter_type_cpp(context, parameter, generic_type_name),
-    _ => non_generic_parameter_type_cpp(context, parameter)
-  }
+fn parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string = do
+  if context.param_template_type_names.has(parameter.name) then
+    context.param_template_type_names.get(parameter.name)
+  else
+    match parameter.type_value {
+      TyGeneric(generic_type_name, _) => generic_parameter_type_cpp(context, parameter, generic_type_name),
+      _ => non_generic_parameter_type_cpp(context, parameter)
+    }
+  end
+end
 
 fn param_item_def(context: CodegenContext, parameter: Shared<Param>) -> string =
   expression_output.parameter_declaration_item(parameter_type_cpp(context, parameter), cpp_safe(parameter.name))
@@ -87,7 +92,7 @@ export fn concept_declval_arguments_for_params(context: CodegenContext, paramete
 
 fn extend_method_return_type_from_declaration(extend_context: CodegenContext, method: Shared<SemanticDeclaration>) -> string =
   match method {
-    SemanticDeclarationFn(_, _, _, _, return_type, _, _, _) => sem_type_to_cpp(extend_context, return_type),
+    SemanticDeclarationFn(_, _, _, _, return_type, _, _, _, _) => sem_type_to_cpp(extend_context, return_type),
     _ => 'void'
   }
 
@@ -129,7 +134,7 @@ fn trait_struct_field_line_for_method(
   method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) => do
       trait_method_field_line(
         trait_context, extract_method_name(mangled, trait_name), parameters, return_type)
     end,
@@ -138,7 +143,7 @@ fn trait_struct_field_line_for_method(
 
 fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Shared<SemanticDeclaration>) -> [string] =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
       do const requirement_parts: [string] = []
       requirement_parts.push(expression_output.concept_requires_expression_method_returns_convertible(
         cpp_safe(trait_dispatch_name(
@@ -153,7 +158,7 @@ fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Share
 
 fn extend_wrapper_proto_line(type_name: string, context: CodegenContext, method: Shared<SemanticDeclaration>) -> string =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
       do const wrapper_context = context.for_type_body(type_name)
       expression_output.noexcept_function_prototype(
         sem_type_to_cpp(wrapper_context, return_type),
@@ -170,7 +175,7 @@ fn extend_trait_wrapper_line(
   method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
       gen_extend_trait_wrapper(type_name, mangled, parameters, return_type, context, context_resolve_fn),
     _ => ''
   }
@@ -183,7 +188,7 @@ fn extend_trait_concept_adapter_line(
   method: Shared<SemanticDeclaration>
 ) -> string =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) => do
       gen_extend_trait_concept_adapter(
         type_name, trait_name, mangled, parameters, return_type, context, context_resolve_fn)
     end,
@@ -200,7 +205,7 @@ fn extend_method_part_strings(
   method: Shared<SemanticDeclaration>
 ) -> [string] =
   match method {
-    SemanticDeclarationFn(mangled, _, _, parameters, return_type, body, _, _) => do
+    SemanticDeclarationFn(mangled, _, _, parameters, return_type, body, _, _, _) => do
       match body {
         SemanticExpressionExtern(_, _) => do
           const generated = gen_extend_extern_method(
@@ -266,7 +271,7 @@ fn trait_concept_dispatch_forward_protos(
     let mut method_index = 0
     while method_index < methods.length() do
       match methods[method_index] {
-        SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _) =>
+        SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
           if parameters.length() > 0 && parameters[0].name == 'self' then
             forward_protos = forward_protos + trait_concept_dispatch_forward_proto_line(
               trait_name,

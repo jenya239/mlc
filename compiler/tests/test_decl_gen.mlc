@@ -18,7 +18,7 @@ import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } f
 import { main_program_parameter_list, static_assert_concept_for_type_line, static_assert_concept_for_result_and_implementor_line } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, assert_code_not_contains, empty_codegen_context } from './codegen_test_helpers'
-import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span } from '../ir/semantic_ir'
+import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, TypeRegistry, TI32, TString, TBool, TUnit, TUnknown, TNamed, TGeneric } from '../checker/registry'
 import { gen_return_body, gen_return_body_cpp } from '../codegen/stmt/return_body'
 import { print_cpp_statements } from '../codegen/stmt_cpp'
@@ -40,7 +40,7 @@ fn make_question(inner: Shared<SemanticExpression>) -> Shared<SemanticExpression
 fn iparam(name: string) -> Shared<Param> = Shared.new(Param { name: name, is_mut: false, type_value: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) -> Shared<SemanticDeclaration> = do
   const where_clause_bounds: [WhereClauseBound] = []
-  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, empty_fn_escape_info(), span_unknown()))
 end
 
 fn generic_param(name: string) -> Shared<Param> =

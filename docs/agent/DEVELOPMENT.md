@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_CLOSURE_ESCAPE** STEP=3 — self-hosted codegen: emit template for non-escaping fn-param (STEP=1 Ruby, STEP=2 self-hosted checker уже done). Приоритет пользователя — прямое лекарство от исходной причины медленной C++-сборки (тяжёлые замыкания по умолчанию).
+**TRACK_LANG_CLOSURE_ESCAPE** STEP=3 done — next STEP=4 verify-gate (self-host p1/mlcc2/p2 diff + close). Timing after STEP=3: `mlcc` translate main ~2.4s (ориентир 4–5s).
 
 Остальные открытые треки (низкий приоритет): `TRACK_LANG_REGION_ARENA` (гипотеза, дорогой прототип), `TRACK_MIR_VM_FULL` (Epic 0 done, Epic C pending).
 

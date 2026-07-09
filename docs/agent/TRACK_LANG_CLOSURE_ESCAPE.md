@@ -7,32 +7,23 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](../archive/tracks/TRACK_LAMBD
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **open** — STEP=2 done (self-hosted escape_analysis.mlc), STEP=3 в процессе (uncommitted, не верифицирован)
+## Status: **open** — STEP=3 done (self-hosted codegen templates); next verify-gate
 
-**Driver 2026-07-09 STEP=2:** `compiler/checker/escape_analysis.mlc` —
-`non_escaping_params` / `non_escaping_params_for_named_fn` (Ruby EscapeAnalyzer
-port). Tests: `compiler/tests/test_escape_analysis.mlc` (7 cases, `(T) -> U`
-syntax). Wired in `suite_registry` types suite. Not yet wired into
-`gather_program_check` (analysis API for STEP=3 codegen). Verify: mlcc smoke
-7/0; `mlcc --check-only main` 0; arch_lint 0. Note: Ruby `dev_gate_fast`
-currently broken by STEP=1 template codegen on HOF callbacks (`TokenKind_is_comma`).
+**Driver 2026-07-09 STEP=3:** Non-escaping top-level fn-params →
+`template<typename __Fn>` + `__Fn` param type; escaping stays `std::function`.
+`FnEscapeInfo` on `SemanticDeclarationFn`; `transform_decl` fills via
+`non_escaping_params_for_decl_if_template_safe` + `function_names_used_as_values`
+(skip functions used as values — not convertible to `std::function`);
+`apply_escape_templates=false` for trait/extend methods. Codegen:
+`with_param_template_type_names` (no field shadowing),
+`parameter_type_cpp` map lookup, proto-then-body in header via
+`collect_template_fn_bodies_cpp`. Tests: `test_closure_escape_codegen.mlc`.
+Smoke: `apply_twice` → `__F0`; `make_handler` → `std::function`.
+`mlcc --check-only main` 0; `run_tests` 1471/0; translate main ~2.4s.
 
-**STEP=3 (2026-07-09, ~09:53–10:10) — НЕ закоммичено, статус неизвестен.**
-Попытка codegen-проводки в `compiler/checker/`, `compiler/codegen/`,
-`compiler/ir/`, `compiler/mir/`, `compiler/tests/` — 15+ файлов изменены,
-`compiler/out/` частично пересобран (317 файлов diff), новый
-`compiler/tests/test_closure_escape_codegen.mlc`. Не верифицировано (не было
-коммита к моменту проверки). Найденная и нерешённая проблема: smoke-тест
-(`escape_smoke_main.mlc`, см. `.tmp_escape_smoke`) на
-`fn apply_twice(f: fn(i32) -> i32, x: i32) -> i32` даёт `watched=0` —
-self-hosted парсер не распознаёт тип параметра как ожидаемый вариант
-(`type_tag` печатает `other`, не `TyFn`); `function_typed_param_names` из
-`escape_analysis.mlc` эту функцию не видит. **Следующий turn:** сначала
-разобраться, как self-hosted `TypeExpr` на самом деле представляет `fn(T) ->
-U` (искать вариант в `compiler/frontend/ast.mlc`, не предполагать `TyFn`),
-затем продолжить STEP=3. Если рабочее дерево пусто/расходится с этим — не
-доверять предположению "уже сделано", смотреть `git status`/`git diff`
-заново (см. правило анти-false-done в CONTINUITY.md).
+**Driver 2026-07-09 STEP=2:** `escape_analysis.mlc` —
+`non_escaping_params` / `non_escaping_params_for_named_fn`. Tests:
+`test_escape_analysis.mlc` (7 cases).
 
 
 ## Формальная граница (не размывать в реализации)
@@ -99,12 +90,11 @@ escaping выше (по одному тесту на правило + один e
 используя уже существующие узлы `ExprSpawn`, `StmtReturn`, типы полей из
 `compiler/checker/registry.mlc`.
 
-### STEP=3 — self-hosted codegen
+### STEP=3 — self-hosted codegen — **done**
 
-**Файлы:** `compiler/codegen/` — точка, где сейчас генерируется сигнатура
-функции с параметром-функцией (искать lowering `FunctionType` в параметрах)
-— эмитить `template<class F>` для non-escaping, текущую форму — для
-escaping.
+**Файлы:** `compiler/codegen/` + `transform_decl` / `escape_analysis` gates —
+`template<typename __Fn>` for non-escaping top-level fn params; escaping /
+value-used / trait-extend methods stay `std::function`.
 
 ## Repro
 

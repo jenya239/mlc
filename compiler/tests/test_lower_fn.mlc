@@ -7,7 +7,7 @@ import {
   SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionCall,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
-  SemanticStatementLet, SemanticStatementExpr
+  SemanticStatementLet, SemanticStatementExpr, empty_fn_escape_info
 } from '../ir/semantic_ir'
 import { Type, TI32, TBool, TUnit } from '../checker/registry'
 import { MirJump, MirReturn, MirCondJump, MirOperandConstInt, MirOperandLocal, mir_block_id } from '../mir/mir_types'
@@ -48,7 +48,7 @@ fn make_call(name: string, arguments: [Shared<SemanticExpression>]) -> Shared<Se
 fn fn_decl(name: string, params: [Shared<Param>], return_type: Shared<Type>, body: Shared<SemanticExpression>) ->
   Shared<SemanticDeclaration> = do
   const where_clause_bounds: [WhereClauseBound] = []
-  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, span_unknown()))
+  Shared.new(SemanticDeclarationFn(name, [], [], params, return_type, body, where_clause_bounds, empty_fn_escape_info(), span_unknown()))
 end
 
 export fn lower_fn_tests() -> [TestResult] = do

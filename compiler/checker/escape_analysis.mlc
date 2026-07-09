@@ -237,3 +237,189 @@ export fn non_escaping_params_for_named_fn(program: Program, function_name: stri
   end
   empty_string_list()
 end
+
+// Names referenced as values (not only as direct callees). Template codegen cannot
+// emit those functions: a templated definition is not convertible to std::function.
+fn collect_idents_used_as_values_in_expr(expression: Shared<Expr>, names: [string]) -> [string] =
+  match expression {
+    ExprIdent(name, _) => string_list_add(names, name),
+    ExprInt(_, _) => names,
+    ExprStr(_, _) => names,
+    ExprBool(_, _) => names,
+    ExprUnit(_) => names,
+    ExprFloat(_, _) => names,
+    ExprI64(_, _) => names,
+    ExprU8(_, _) => names,
+    ExprUsize(_, _) => names,
+    ExprChar(_, _) => names,
+    ExprExtern(_) => names,
+    ExprBin(_, left, right, _) =>
+      collect_idents_used_as_values_in_expr(right, collect_idents_used_as_values_in_expr(left, names)),
+    ExprUn(_, operand, _) => collect_idents_used_as_values_in_expr(operand, names),
+    ExprCall(callee, arguments, _) => do
+      let mut result = match callee {
+        ExprIdent(_, _) => names,
+        _ => collect_idents_used_as_values_in_expr(callee, names)
+      }
+      let mut index = 0
+      while index < arguments.length() do
+        result = collect_idents_used_as_values_in_expr(arguments[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprMethod(receiver, _, arguments, _) => do
+      let mut result = collect_idents_used_as_values_in_expr(receiver, names)
+      let mut index = 0
+      while index < arguments.length() do
+        result = collect_idents_used_as_values_in_expr(arguments[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprField(object, _, _) => collect_idents_used_as_values_in_expr(object, names),
+    ExprIndex(object, index_expression, _) =>
+      collect_idents_used_as_values_in_expr(index_expression, collect_idents_used_as_values_in_expr(object, names)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      collect_idents_used_as_values_in_expr(else_branch,
+        collect_idents_used_as_values_in_expr(then_branch,
+          collect_idents_used_as_values_in_expr(condition, names))),
+    ExprBlock(statements, result_expression, _) =>
+      collect_idents_used_as_values_in_expr(result_expression, collect_idents_used_as_values_in_stmts(statements, names)),
+    ExprWhile(condition, body, _) =>
+      collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(condition, names)),
+    ExprFor(_, iterable, body, _) =>
+      collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(iterable, names)),
+    ExprMatch(scrutinee, arms, _) => do
+      let mut result = collect_idents_used_as_values_in_expr(scrutinee, names)
+      let mut index = 0
+      while index < arms.length() do
+        const arm = arms[index]
+        if arm.has_guard then
+          result = collect_idents_used_as_values_in_expr(arm.when_condition, result)
+        end
+        result = collect_idents_used_as_values_in_expr(arm.body, result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprRecord(_, parts, _) => do
+      let mut result = names
+      let mut index = 0
+      while index < parts.length() do
+        result = match parts[index] {
+          RecordLitFields(field_values) => do
+            let mut field_result = result
+            let mut field_index = 0
+            while field_index < field_values.length() do
+              field_result = collect_idents_used_as_values_in_expr(field_values[field_index].value, field_result)
+              field_index = field_index + 1
+            end
+            field_result
+          end,
+          RecordLitSpread(spread_expression) => collect_idents_used_as_values_in_expr(spread_expression, result)
+        }
+        index = index + 1
+      end
+      result
+    end,
+    ExprRecordUpdate(_, base, field_values, _) => do
+      let mut result = collect_idents_used_as_values_in_expr(base, names)
+      let mut index = 0
+      while index < field_values.length() do
+        result = collect_idents_used_as_values_in_expr(field_values[index].value, result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprArray(elements, _) => do
+      let mut result = names
+      let mut index = 0
+      while index < elements.length() do
+        result = collect_idents_used_as_values_in_expr(elements[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprTuple(elements, _) => do
+      let mut result = names
+      let mut index = 0
+      while index < elements.length() do
+        result = collect_idents_used_as_values_in_expr(elements[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    ExprQuestion(inner, _) => collect_idents_used_as_values_in_expr(inner, names),
+    ExprLambda(_, body, _) => collect_idents_used_as_values_in_expr(body, names),
+    ExprSpawn(body, _) => collect_idents_used_as_values_in_stmts(body, names),
+    ExprNamedArg(_, value, _) => collect_idents_used_as_values_in_expr(value, names),
+    ExprWith(resource, _, body, _) =>
+      collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names))
+  }
+
+fn collect_idents_used_as_values_in_stmts(statements: [Shared<Stmt>], names: [string]) -> [string] = do
+  let mut result = names
+  let mut index = 0
+  while index < statements.length() do
+    result = match statements[index] {
+      StmtLet(_, _, _, value, _) => collect_idents_used_as_values_in_expr(value, result),
+      StmtLetPattern(_, _, _, value, _, else_expression, _) =>
+        collect_idents_used_as_values_in_expr(else_expression, collect_idents_used_as_values_in_expr(value, result)),
+      StmtLetConst(_, _, value, _) => collect_idents_used_as_values_in_expr(value, result),
+      StmtExpr(expression, _) => collect_idents_used_as_values_in_expr(expression, result),
+      StmtBreak(_) => result,
+      StmtContinue(_) => result,
+      StmtReturn(expression, _) => collect_idents_used_as_values_in_expr(expression, result)
+    }
+    index = index + 1
+  end
+  result
+end
+
+fn collect_idents_used_as_values_in_decl(declaration: Shared<Decl>, names: [string]) -> [string] =
+  match decl_inner(declaration) {
+    DeclFn(_, _, _, _, _, body, _) => collect_idents_used_as_values_in_expr(body, names),
+    DeclExtend(_, _, methods, _) => do
+      let mut result = names
+      let mut index = 0
+      while index < methods.length() do
+        result = collect_idents_used_as_values_in_decl(methods[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    DeclTrait(_, _, methods, _) => do
+      let mut result = names
+      let mut index = 0
+      while index < methods.length() do
+        result = collect_idents_used_as_values_in_decl(methods[index], result)
+        index = index + 1
+      end
+      result
+    end,
+    DeclExported(inner) => collect_idents_used_as_values_in_decl(inner, names),
+    _ => names
+  }
+
+export fn function_names_used_as_values(program: Program) -> [string] = do
+  let mut names = empty_string_list()
+  let mut index = 0
+  while index < program.decls.length() do
+    names = collect_idents_used_as_values_in_decl(program.decls[index], names)
+    index = index + 1
+  end
+  names
+end
+
+export fn non_escaping_params_for_decl_if_template_safe(
+  declaration: Shared<Decl>,
+  functions_used_as_values: [string]
+) -> [string] =
+  match decl_inner(declaration) {
+    DeclFn(name, _, _, _, _, _, _) =>
+      if string_list_contains(functions_used_as_values, name) then empty_string_list()
+      else non_escaping_params_for_decl(declaration)
+      end,
+    _ => empty_string_list()
+  }
