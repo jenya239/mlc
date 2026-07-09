@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 4 |
-| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=4 done; next STEP=5 verify-gate) |
+| driver_turns_since_plan | 2 |
+| step_last | 5 |
+| active_track | TRACK_LANG_ORPHAN_RULE **closed**; next TRACK_LANG_CLOSURE_ESCAPE |
 | test_gate | ok |
+
+### Turn 2026-07-09 09:10 (Driver TRACK_LANG_ORPHAN_RULE STEP=5 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_LANG_ORPHAN_RULE |
+| started | 2026-07-09 09:00 |
+| elapsed | ~10 min |
+| done    | Full gate: rebuild mlcc; self-host p1/mlcc2/p2 identical; regression 20/0; build_tests 1471/0. Closed TRACK. |
+| result  | DIFF_EXIT:0 REG_EXIT:0 TESTS_EXIT:0. Plain: orphan rule закрыт, self-host чистый. |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_CLOSURE_ESCAPE — finish escape_analyzer WIP (red→green) |
 
 ### Turn 2026-07-09 08:59 (Driver TRACK_LANG_ORPHAN_RULE STEP=4 — self-check + From tests)
 
