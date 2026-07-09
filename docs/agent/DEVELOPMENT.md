@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** STEP=2 (T2) — expand `stress_channel.cpp`
-Layer 2 matrix (full/empty, close during send/recv, rapid open/close, 1M msgs).
-STEP=1 done. Layer: `runtime/` only.
+**TRACK_CONCURRENCY_TEST_HARNESS** STEP=3 (T3) — `stress_mutex` / `stress_arc` /
+`stress_spawn` + wire into `run_concurrency_smoke.sh`. STEP=2 done. Layer: `runtime/`.
 
 Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
 runtime harness; verify via existing `run_tests` / mlcc when touching compiler.

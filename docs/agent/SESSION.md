@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=2 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:39 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=2 — stress_channel matrix)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 11:38 |
+| elapsed | ~1 min |
+| done    | Expanded `stress_channel.cpp`: single/many senders/receivers, full/empty block, close during send/recv, handle drop, receiver early exit, rapid open/close 1000×, 1M messages; kept MPC stress. Cancel deferred T5. Mode A only. |
+| verify  | `TMPDIR=…/tmp runtime/test/run_concurrency_smoke.sh` exit 0 (stress_channel ~1M checks). |
+| result  | STEP=2 done. Plain: Layer 2 channel matrix в smoke. |
+| issues  | Mode B (TestScheduler) dual-helper not yet; T3 can add. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_TEST_HARNESS — stress_mutex/arc/spawn + smoke wire |
 
 ### Turn 2026-07-09 11:37 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=1 — TestScheduler)
 

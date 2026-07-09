@@ -5,10 +5,10 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 4 слоя, полная stress-матрица, читать перед началом).
 Смежный трек (не блокер для T1-T4): [TRACK_CONCURRENCY_V2.md](TRACK_CONCURRENCY_V2.md).
 
-## Status: **open** — STEP=1 done; STEP=2 (T2) next
+## Status: **open** — STEP=2 done; STEP=3 (T3) next
 
-**Driver 2026-07-09:** STEP=1 — `TestScheduler` + `TestMutex`/`TestChannel` +
-`test_scheduler.cpp` wired into smoke.
+**Driver 2026-07-09:** STEP=2 — `stress_channel.cpp` Layer 2 matrix (mode A;
+cancel deferred to T5).
 
 ## Goal
 
@@ -32,8 +32,8 @@ scripts/concurrency_sanitize_gate.sh
 | Step | Item | Status |
 |------|------|--------|
 | 1 (T1) | `runtime/include/mlc/concurrency/testing/scheduler.hpp` — seeded turn-baton планировщик; `testing/mutex.hpp`, `testing/channel.hpp` — тот же публичный API что production, yield в scheduler на lock/unlock/send/recv/wait. Общий тестовый хелпер, чтобы один сценарий гонялся в обоих режимах (реальные потоки vs `TestScheduler`). | **done** |
-| 2 (T2) | Расширить `runtime/test/stress_channel.cpp` до полной матрицы из `CONCURRENCY_TEST_HARNESS.md` Layer 2 (кроме cancel-сценариев): full/empty queue, close during send/recv, sender/receiver destruction, rapid open/close (1000×), 1M messages. | **next** |
-| 3 (T3) | Новые `runtime/test/stress_mutex.cpp` (high contention, exception-safety под lock), `stress_arc.cpp` (concurrent clone/drop), `stress_spawn.cpp` (много одновременных spawn, exception внутри spawn не роняет процесс). Добавить в `run_concurrency_smoke.sh`. | pending |
+| 2 (T2) | Расширить `runtime/test/stress_channel.cpp` до полной матрицы из `CONCURRENCY_TEST_HARNESS.md` Layer 2 (кроме cancel-сценариев): full/empty queue, close during send/recv, sender/receiver destruction, rapid open/close (1000×), 1M messages. | **done** |
+| 3 (T3) | Новые `runtime/test/stress_mutex.cpp` (high contention, exception-safety под lock), `stress_arc.cpp` (concurrent clone/drop), `stress_spawn.cpp` (много одновременных spawn, exception внутри spawn не роняет процесс). Добавить в `run_concurrency_smoke.sh`. | **next** |
 | 4 (T4) | `scripts/concurrency_sanitize_gate.sh` (asan/ubsan/tsan матрица по всем stress-тестам) + wiring в `.github/workflows/ci.yml` как обязательная job (не опциональный ручной `MLC_TSAN=1`). | pending |
 | 5 (T5) | После `TRACK_CONCURRENCY_V2` STEP=5 (`StopToken`): добавить cancel-during-send/recv в матрицу Layer 2. | TRACK_CONCURRENCY_V2 STEP=5 |
 | 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. | T1, T4 |
