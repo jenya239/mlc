@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 3 |
-| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=3 done; next STEP=4 self-check) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=3 audited; next STEP=4) |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:55 (Critic critique-audit — ORPHAN STEP=1–3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_ORPHAN_RULE STEP=1–3 |
+| started | 2026-07-09 08:49 |
+| elapsed | ~6 min |
+| done    | Re-checked commits 8dd99d6d/572e7543/97ce1bc0 vs sources+tests. Fixed stale TRACK inventory. Rebuilt stale `compiler/out/mlcc`. Smoke: same-module ok; real import `a.mlc`+`b.mlc` → E086 exit 1; `main.mlc` + trait_e2e check-only 0. |
+| result  | Claims STEP=1–3 hold; mlcc now has E086. Plain: код ок; бинарь был устаревшим — обновлён; import-repro работает. |
+| issues  | No unit test for `From<T>` trait_base under E086. STEP=4 still formal self-check. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_ORPHAN_RULE — self-check compiler/ trait-extends + debt notes |
 
 ### Turn 2026-07-09 08:48 (Driver TRACK_LANG_ORPHAN_RULE STEP=3 — E086 orphan diagnostic)
 
