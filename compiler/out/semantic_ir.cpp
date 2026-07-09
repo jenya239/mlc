@@ -116,6 +116,10 @@ if (std::holds_alternative<SemanticDeclarationAssocBind>((*__match_subject))) {
 const SemanticDeclarationAssocBind& semanticDeclarationAssocBind = std::get<SemanticDeclarationAssocBind>((*__match_subject));
 auto [__0, __1, span] = semanticDeclarationAssocBind; return span;
 }
+if (std::holds_alternative<SemanticDeclarationExternLib>((*__match_subject))) {
+const SemanticDeclarationExternLib& semanticDeclarationExternLib = std::get<SemanticDeclarationExternLib>((*__match_subject));
+auto [__0, span] = semanticDeclarationExternLib; return span;
+}
 return ast::span_unknown();
 std::abort();
 }();

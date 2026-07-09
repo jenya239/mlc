@@ -28,6 +28,7 @@ fn method_declaration_function_name(method: Shared<Decl>) -> string = do
     DeclTrait(_, _, _, _) => '',
     DeclExtend(_, _, _, _) => '',
     DeclImport(_, _) => '',
+    DeclExternLib(_, _) => '',
     DeclExported(inner) => method_declaration_function_name(inner),
     DeclAssocType(_, _) => '',
     DeclAssocBind(_, _, _) => ''
@@ -53,6 +54,7 @@ fn methods_from_trait_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] =
     DeclTrait(_, _, methods, _) => methods,
     DeclExtend(_, _, _, _) => empty_decl_list(),
     DeclImport(_, _) => empty_decl_list(),
+    DeclExternLib(_, _) => empty_decl_list(),
     DeclExported(inner) => methods_from_trait_declaration(inner),
     DeclAssocType(_, _) => empty_decl_list(),
     DeclAssocBind(_, _, _) => empty_decl_list()
@@ -68,6 +70,7 @@ fn methods_from_extend_declaration(declaration: Shared<Decl>) -> [Shared<Decl>] 
     DeclTrait(_, _, _, _) => empty_decl_list(),
     DeclExtend(_, _, methods, _) => methods,
     DeclImport(_, _) => empty_decl_list(),
+    DeclExternLib(_, _) => empty_decl_list(),
     DeclExported(inner) => methods_from_extend_declaration(inner),
     DeclAssocType(_, _) => empty_decl_list(),
     DeclAssocBind(_, _, _) => empty_decl_list()
@@ -99,6 +102,7 @@ fn export_names_from_exported_declaration(declaration: Shared<Decl>) -> [string]
       names
     end,
     DeclImport(_, _) => empty_string_list(),
+    DeclExternLib(_, _) => empty_string_list(),
     DeclExported(inner) => export_names_from_exported_declaration(inner),
     DeclAssocType(_, _) => empty_string_list(),
     DeclAssocBind(_, _, _) => empty_string_list()
@@ -114,6 +118,7 @@ fn declaration_export_names(declaration: Shared<Decl>) -> [string] = do
     DeclTrait(_, _, _, _) => empty_string_list(),
     DeclExtend(_, _, _, _) => empty_string_list(),
     DeclImport(_, _) => empty_string_list(),
+    DeclExternLib(_, _) => empty_string_list(),
     DeclExported(_) => export_names_from_exported_declaration(declaration),
     DeclAssocType(_, _) => empty_string_list(),
     DeclAssocBind(_, _, _) => empty_string_list()
@@ -132,6 +137,7 @@ fn extend_type_name_from_declaration(declaration: Shared<Decl>) -> string = do
     DeclTrait(_, _, _, _) => '',
     DeclExtend(type_name, _, _, _) => type_name,
     DeclImport(_, _) => '',
+    DeclExternLib(_, _) => '',
     DeclExported(inner) => extend_type_name_from_declaration(inner),
     DeclAssocType(_, _) => '',
     DeclAssocBind(_, _, _) => ''

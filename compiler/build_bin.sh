@@ -200,4 +200,12 @@ elif command -v ld.gold &>/dev/null; then
   LINK_FLAGS+=(-fuse-ld=gold)
 fi
 
-"${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}"
+EXTERN_LINK_LIBS=()
+if [ -f "$CPP_DIR/mlc_link_libs.txt" ]; then
+  while IFS= read -r library_name || [ -n "$library_name" ]; do
+    [ -n "$library_name" ] || continue
+    EXTERN_LINK_LIBS+=("-l${library_name}")
+  done < "$CPP_DIR/mlc_link_libs.txt"
+fi
+
+"${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}" "${EXTERN_LINK_LIBS[@]}"

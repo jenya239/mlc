@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_FFI_LAYER STEP=4 |
-| test_gate | ok (mlcc FFI probe + check-only main) |
+| step_last | 4 |
+| active_track | TRACK_FFI_LAYER STEP=5 |
+| test_gate | ok (extern lib -lm smoke) |
+
+### Turn 2026-07-09 15:55 (Driver TRACK_FFI_LAYER STEP=4 — extern lib → -l)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 15:32 |
+| elapsed | ~23 min |
+| done    | `DeclExternLib`/`SemanticDeclarationExternLib`; parse `extern lib "name"`; `mlc_link_libs.txt` from pipeline; `build_bin.sh` adds `-l*`. |
+| verify  | probe `extern lib "m"`+`sqrt` → sidecar `m`, link `-lm`, bin exit 0; `mlcc --check-only main` 0. |
+| result  | STEP=4 done. Plain: extern lib → -l at link. |
+| issues  | Dirty runtime binaries / out/mlcc left uncommitted. |
+| next    | ROLE=Driver STEP=5 TRACK_FFI_LAYER — extern type + drop "c_function" RAII |
 
 ### Turn 2026-07-09 15:45 (Driver TRACK_FFI_LAYER STEP=3 — self-hosted extern fn codegen)
 

@@ -139,6 +139,7 @@ std::abort();
 }(); },
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [type_name, trait_name, methods, __3] = semanticDeclarationExtend; return decl_extend::gen_decl_extend(type_name, trait_name, methods, self, [=](context::CodegenContext codegen_context, mlc::String name) mutable { return context::CodegenContext_resolve(codegen_context, name); }, [=](std::shared_ptr<semantic_ir::SemanticDeclaration> inner_declaration, context::CodegenContext codegen_context) mutable { return CodegenContext_gen_decl(codegen_context, inner_declaration); }); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return mlc::String("", 0); },
+[&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return CodegenContext_gen_decl(self, inner_declaration); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return mlc::String("", 0); }
 }, (*declaration));
@@ -161,6 +162,7 @@ auto extend_context = context::CodegenContext_for_type_body(self, type_name);
 return methods.map([=](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return CodegenContext_gen_proto(extend_context, method); }).join(mlc::String("", 0));
 }(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return mlc::String("", 0); },
+[&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return CodegenContext_gen_proto(self, inner_declaration); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return mlc::String("", 0); }
 }, (*declaration));
@@ -323,6 +325,7 @@ mlc::String decl_segment_for_exported(std::shared_ptr<semantic_ir::SemanticDecla
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, type_parameters, __2, __3, __4, body, __6, escape_info, __8] = semanticDeclarationFn; return decl_segment_for_exported_function(declaration, type_parameters, body, escape_info, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [__0, __1, __2, __3] = semanticDeclarationExtend; return decl_segment_for_extend(declaration, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return decl_segment_for_import_or_assoc(declaration, codegen_context, phase); },
+[&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return decl_segment_for_import_or_assoc(declaration, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return decl_segment_for_exported(inner_declaration, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return mlc::String("", 0); }
 }, (*semantic_ir::sdecl_inner(declaration)));
@@ -334,6 +337,7 @@ mlc::String decl_segment(std::shared_ptr<semantic_ir::SemanticDeclaration> decla
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return decl_segment_for_function(declaration, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [__0, __1, __2, __3] = semanticDeclarationExtend; return decl_segment_for_extend(declaration, codegen_context, phase); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return mlc::String("", 0); },
+[&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return decl_segment_for_exported(inner_declaration, codegen_context, phase); }
 }, (*declaration));

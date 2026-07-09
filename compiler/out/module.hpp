@@ -45,6 +45,9 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> assemble_header_cpp_declara
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> assemble_source_cpp_declarations(ModuleGenerationContext parts) noexcept;
 std::shared_ptr<cpp_ast::CppFile> gen_module_cpp_file(ModuleGenerationContext parts) noexcept;
 context::GenModuleOut gen_module_output(ModuleGenerationContext parts) noexcept;
+mlc::Array<mlc::String> collect_extern_lib_names_from_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
+mlc::Array<mlc::String> append_unique_library_name(mlc::Array<mlc::String> names, mlc::String library_name) noexcept;
+mlc::Array<mlc::String> collect_extern_lib_names(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept;
 context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept;
 
 } // namespace module

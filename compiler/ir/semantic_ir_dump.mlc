@@ -10,6 +10,7 @@ fn semantic_declaration_label(declaration: Shared<SemanticDeclaration>) -> strin
     SemanticDeclarationTrait(name, _, _, _) => `trait ${name}`,
     SemanticDeclarationExtend(type_name, _, _, _) => `extend ${type_name}`,
     SemanticDeclarationImport(path, _) => `import ${path}`,
+    SemanticDeclarationExternLib(library_name, _) => `extern lib ${library_name}`,
     SemanticDeclarationExported(inner) => semantic_declaration_label(inner),
     SemanticDeclarationAssocBind(name, _, _) => `assoc ${name}`
   }

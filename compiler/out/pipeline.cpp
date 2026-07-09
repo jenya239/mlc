@@ -102,6 +102,7 @@ ast::Result<TransformedCompileState, mlc::Array<mlc::String>> run_transform_pass
 ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(TransformedCompileState transformed_state, bool emit_compile_commands) noexcept{
   profile::profile_maybe_begin(transformed_state.profile_enabled, mlc::String("codegen", 7));
   auto implementation_paths = mlc::Array<mlc::String>{};
+  auto link_libraries = mlc::Array<mlc::String>{};
   auto index = 0;
   while ((index < transformed_state.transformed_items.length()))   {
     auto transformed_load_item = transformed_state.transformed_items[index];
@@ -113,7 +114,26 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(TransformedCo
     write_text_if_changed(header_path, generated_output.header);
     write_text_if_changed(implementation_path, generated_output.source);
     implementation_paths.push_back(implementation_path);
+    auto library_index = 0;
+    while ((library_index < generated_output.link_libraries.length()))     {
+      auto library_name = generated_output.link_libraries[library_index];
+      auto already_present = false;
+      auto existing_index = 0;
+      while ((existing_index < link_libraries.length()))       {
+        if ((link_libraries[existing_index] == library_name))         {
+          (already_present = true);
+        }
+        (existing_index = (existing_index + 1));
+      }
+      if ((!already_present))       {
+        link_libraries.push_back(library_name);
+      }
+      (library_index = (library_index + 1));
+    }
     (index = (index + 1));
+  }
+  if ((transformed_state.output_directory.length() > 0))   {
+    write_text_if_changed((transformed_state.output_directory + mlc::String("/mlc_link_libs.txt", 18)), link_libraries.map([=](mlc::String library_name) mutable { return (library_name + mlc::String("\n", 1)); }).join(mlc::String("", 0)));
   }
   if (emit_compile_commands)   {
     compile_commands::write_compile_commands_file(transformed_state.output_directory, implementation_paths);

@@ -14,6 +14,7 @@ mlc::String semantic_declaration_label(std::shared_ptr<semantic_ir::SemanticDecl
 [&](const semantic_ir::SemanticDeclarationTrait& semanticDeclarationTrait) { auto [name, __1, __2, __3] = semanticDeclarationTrait; return ((mlc::String("trait ", 6) + mlc::to_string(name)) + mlc::String("", 0)); },
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [type_name, __1, __2, __3] = semanticDeclarationExtend; return ((mlc::String("extend ", 7) + mlc::to_string(type_name)) + mlc::String("", 0)); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [path, __1] = semanticDeclarationImport; return ((mlc::String("import ", 7) + mlc::to_string(path)) + mlc::String("", 0)); },
+[&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [library_name, __1] = semanticDeclarationExternLib; return ((mlc::String("extern lib ", 11) + mlc::to_string(library_name)) + mlc::String("", 0)); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner] = semanticDeclarationExported; return semantic_declaration_label(inner); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [name, __1, __2] = semanticDeclarationAssocBind; return ((mlc::String("assoc ", 6) + mlc::to_string(name)) + mlc::String("", 0)); }
 }, (*declaration));

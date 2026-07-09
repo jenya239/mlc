@@ -196,11 +196,61 @@ std::shared_ptr<cpp_ast::CppFile> gen_module_cpp_file(ModuleGenerationContext pa
 }
 context::GenModuleOut gen_module_output(ModuleGenerationContext parts) noexcept{
   auto file = gen_module_cpp_file(parts);
-  return context::GenModuleOut{decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_header(file)), decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_source(file))};
+  return context::GenModuleOut{decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_header(file)), decl_cpp::print_cpp_declarations(cpp_ast::cpp_file_source(file)), {}};
+}
+mlc::Array<mlc::String> collect_extern_lib_names_from_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{
+  return [&]() -> mlc::Array<mlc::String> {
+auto __match_subject = declaration;
+if (std::holds_alternative<semantic_ir::SemanticDeclarationExternLib>((*__match_subject))) {
+const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib = std::get<semantic_ir::SemanticDeclarationExternLib>((*__match_subject));
+auto [library_name, __1] = semanticDeclarationExternLib; return [&]() {
+auto names = mlc::Array<mlc::String>{};
+if ((library_name.length() > 0)) {
+  names.push_back(library_name);
+}
+return names;
+}();
+}
+if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*__match_subject))) {
+const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported = std::get<semantic_ir::SemanticDeclarationExported>((*__match_subject));
+auto [inner_declaration] = semanticDeclarationExported; return collect_extern_lib_names_from_declaration(semantic_ir::sdecl_inner(inner_declaration));
+}
+return [&]() {
+auto empty = mlc::Array<mlc::String>{};
+return empty;
+}();
+std::abort();
+}();
+}
+mlc::Array<mlc::String> append_unique_library_name(mlc::Array<mlc::String> names, mlc::String library_name) noexcept{
+  auto index = 0;
+  while ((index < names.length()))   {
+    if ((names[index] == library_name))     {
+      return names;
+    }
+    (index = (index + 1));
+  }
+  names.push_back(library_name);
+  return names;
+}
+mlc::Array<mlc::String> collect_extern_lib_names(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{
+  auto names = mlc::Array<mlc::String>{};
+  auto declaration_index = 0;
+  while ((declaration_index < declarations.length()))   {
+    auto found = collect_extern_lib_names_from_declaration(declarations[declaration_index]);
+    auto found_index = 0;
+    while ((found_index < found.length()))     {
+      (names = append_unique_library_name(names, found[found_index]));
+      (found_index = (found_index + 1));
+    }
+    (declaration_index = (declaration_index + 1));
+  }
+  return names;
 }
 context::GenModuleOut gen_module(semantic_ir::SemanticLoadItem load_item, mlc::Array<load_item::LoadItem> all_items, ast::Program full_program, context::PrecomputedCtx precomputed_context) noexcept{
   auto parts = prepare_module_generation(load_item, all_items, precomputed_context);
-  return gen_module_output(parts);
+  auto output = gen_module_output(parts);
+  return context::GenModuleOut{output.header, output.source, collect_extern_lib_names(load_item.decls)};
 }
 
 } // namespace module

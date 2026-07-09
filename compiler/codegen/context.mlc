@@ -73,7 +73,7 @@ extend GenStmtsResult {
   fn joined_code(self) -> string = self.parts.join('')
 }
 
-export type GenModuleOut   = GenModuleOut   { header: string, source: string }
+export type GenModuleOut   = GenModuleOut   { header: string, source: string, link_libraries: [string] }
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],
   variant_types: Map<string, string>,

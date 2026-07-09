@@ -300,6 +300,7 @@ fn global_names_merge_single_declaration_into_map(
     end,
     DeclExtend(_, _, _, _)    => global_names_so_far,
     DeclImport(_, _)       => global_names_so_far,
+    DeclExternLib(_, _)    => global_names_so_far,
     DeclExported(_)        => global_names_so_far,
     DeclAssocType(_, _)    => global_names_so_far,
     DeclAssocBind(_, _, _) => global_names_so_far,
@@ -520,6 +521,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         ()
       end,
       DeclImport(_, _)     => do () end,
+      DeclExternLib(_, _)  => do () end,
       DeclExported(_)      => do () end,
       DeclAssocType(_, _)  => do () end,
       DeclAssocBind(_, _, _) => do () end

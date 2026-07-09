@@ -51,9 +51,10 @@ struct SemanticDeclarationTypeAlias;
 struct SemanticDeclarationTrait;
 struct SemanticDeclarationExtend;
 struct SemanticDeclarationImport;
+struct SemanticDeclarationExternLib;
 struct SemanticDeclarationExported;
 struct SemanticDeclarationAssocBind;
-using SemanticDeclaration = std::variant<SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationImport, SemanticDeclarationExported, SemanticDeclarationAssocBind>;
+using SemanticDeclaration = std::variant<SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExported, SemanticDeclarationAssocBind>;
 struct SemanticMatchArm {
   std::shared_ptr<ast::Pattern> pattern;
   bool has_guard;
@@ -311,6 +312,10 @@ struct SemanticDeclarationExtend {
 struct SemanticDeclarationImport {
   mlc::String field0;
   mlc::Array<mlc::String> field1;
+};
+struct SemanticDeclarationExternLib {
+  mlc::String field0;
+  ast::Span field1;
 };
 struct SemanticDeclarationExported {
   std::shared_ptr<SemanticDeclaration> field0;

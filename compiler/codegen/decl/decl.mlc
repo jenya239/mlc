@@ -164,6 +164,7 @@ extend CodegenContext {
           (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name),
           (inner_declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => codegen_context.gen_decl(inner_declaration)),
       SemanticDeclarationImport(_, _) => '',
+      SemanticDeclarationExternLib(_, _) => '',
       SemanticDeclarationExported(inner_declaration) => self.gen_decl(inner_declaration),
       SemanticDeclarationAssocBind(_, _, _) => ''
     }
@@ -180,6 +181,7 @@ extend CodegenContext {
         methods.map(method => extend_context.gen_proto(method)).join('')
       end,
       SemanticDeclarationImport(_, _) => '',
+      SemanticDeclarationExternLib(_, _) => '',
       SemanticDeclarationExported(inner_declaration) => self.gen_proto(inner_declaration),
       SemanticDeclarationAssocBind(_, _, _) => ''
     }
@@ -343,6 +345,7 @@ fn decl_segment_for_exported(declaration: Shared<SemanticDeclaration>, codegen_c
     SemanticDeclarationExtend(_, _, _, _) =>
       decl_segment_for_extend(declaration, codegen_context, phase),
     SemanticDeclarationImport(_, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
+    SemanticDeclarationExternLib(_, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
     SemanticDeclarationExported(inner_declaration) =>
       decl_segment_for_exported(inner_declaration, codegen_context, phase),
     SemanticDeclarationAssocBind(_, _, _) => ''
@@ -360,6 +363,7 @@ fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: Codeg
     SemanticDeclarationExtend(_, _, _, _) =>
       decl_segment_for_extend(declaration, codegen_context, phase),
     SemanticDeclarationImport(_, _) => '',
+    SemanticDeclarationExternLib(_, _) => '',
     SemanticDeclarationAssocBind(_, _, _) => '',
     SemanticDeclarationExported(inner_declaration) =>
       decl_segment_for_exported(inner_declaration, codegen_context, phase)

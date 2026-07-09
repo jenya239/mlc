@@ -84,6 +84,7 @@ export type SemanticDeclaration =
   | SemanticDeclarationTrait(string, [string], [Shared<SemanticDeclaration>], Span)
   | SemanticDeclarationExtend(string, string, [Shared<SemanticDeclaration>], Span)
   | SemanticDeclarationImport(string, [string])
+  | SemanticDeclarationExternLib(string, Span)
   | SemanticDeclarationExported(Shared<SemanticDeclaration>)
   | SemanticDeclarationAssocBind(string, Shared<Type>, Span)
 
@@ -181,5 +182,6 @@ export fn sdecl_span(declaration: Shared<SemanticDeclaration>) -> Span =
     SemanticDeclarationTrait(_, _, _, span) => span,
     SemanticDeclarationExtend(_, _, _, span) => span,
     SemanticDeclarationAssocBind(_, _, span) => span,
+    SemanticDeclarationExternLib(_, span) => span,
     _ => span_unknown()
   }

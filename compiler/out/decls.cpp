@@ -532,6 +532,8 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_declaration(predicates
     return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExported{inner_parsed.value}), inner_parsed.parser);
   } else if ((predicates::TokenKind_is_ident(kind) && (predicates::TokenKind_ident(kind) == mlc::String("trait", 5))))   {
     return parse_trait_decl(parser);
+  } else if (((predicates::TokenKind_is_extern(kind) && predicates::TokenKind_is_ident(predicates::Parser_kind(predicates::Parser_advance(parser)))) && (predicates::TokenKind_ident(predicates::Parser_kind(predicates::Parser_advance(parser))) == mlc::String("lib", 3))))   {
+    return parse_extern_lib_declaration(parser);
   } else if ((predicates::TokenKind_is_fn(kind) || (predicates::TokenKind_is_extern(kind) && predicates::TokenKind_is_fn(predicates::Parser_kind(predicates::Parser_advance(parser))))))   {
     return parse_function_declaration(parser);
   } else if (predicates::TokenKind_is_type(kind))   {
@@ -544,6 +546,16 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_declaration(predicates
     auto error_parser = predicates::Parser_record_parse_error(parser, mlc::String("parse: unexpected token at declaration", 38));
     return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_advance(error_parser));
   }
+}
+predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_lib_declaration(predicates::Parser parser) noexcept{
+  auto extern_span = predicates::Parser_span_at_cursor(parser);
+  auto after_extern = predicates::Parser_advance(parser);
+  auto after_lib = predicates::Parser_advance(after_extern);
+  if ((!predicates::TokenKind_is_str(predicates::Parser_kind(after_lib))))   {
+    return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(after_lib, mlc::String("parse: expected library name string after extern lib", 52)));
+  }
+  auto library_name = predicates::TokenKind_str_val(predicates::Parser_kind(after_lib));
+  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternLib{library_name, extern_span}), predicates::Parser_advance(after_lib));
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predicates::Parser where_parser, ast::Span extern_keyword_span) noexcept{
   if (predicates::TokenKind_is_equal(predicates::Parser_kind(where_parser)))   {

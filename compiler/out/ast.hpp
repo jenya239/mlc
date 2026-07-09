@@ -83,10 +83,11 @@ struct DeclTypeAlias;
 struct DeclTrait;
 struct DeclExtend;
 struct DeclImport;
+struct DeclExternLib;
 struct DeclExported;
 struct DeclAssocType;
 struct DeclAssocBind;
-using Decl = std::variant<DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, DeclAssocType, DeclAssocBind>;
+using Decl = std::variant<DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExternLib, DeclExported, DeclAssocType, DeclAssocBind>;
 template<typename T>
 struct Ok;
 template<typename E>
@@ -451,6 +452,10 @@ struct DeclExtend {
 struct DeclImport {
   mlc::String field0;
   mlc::Array<mlc::String> field1;
+};
+struct DeclExternLib {
+  mlc::String field0;
+  Span field1;
 };
 struct DeclExported {
   std::shared_ptr<Decl> field0;

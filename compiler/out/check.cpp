@@ -255,6 +255,7 @@ return methods.fold(global_names_so_far, [=](mlc::HashMap<mlc::String, bool> nam
 }(); },
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return global_names_so_far; },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return global_names_so_far; },
+[&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return global_names_so_far; },
 [&](const ast::DeclExported& declExported) { auto [__0] = declExported; return global_names_so_far; },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return global_names_so_far; },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return global_names_so_far; }
@@ -477,6 +478,10 @@ std::make_tuple();
 return std::make_tuple();
 }(); },
 [&](const ast::DeclImport& declImport) -> void { auto [__0, __1] = declImport; [&]() {
+std::make_tuple();
+return std::make_tuple();
+}(); },
+[&](const ast::DeclExternLib& declExternLib) -> void { auto [__0, __1] = declExternLib; [&]() {
 std::make_tuple();
 return std::make_tuple();
 }(); },

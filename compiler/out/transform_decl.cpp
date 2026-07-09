@@ -91,6 +91,7 @@ auto typed_methods = transform_decls(methods, registry, functions_used_as_values
 return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationExtend{type_name, trait_name, typed_methods, name_span});
 }(); },
 [&](const ast::DeclImport& declImport) { auto [path, names] = declImport; return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationImport{path, names}); },
+[&](const ast::DeclExternLib& declExternLib) { auto [library_name, span] = declExternLib; return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationExternLib{library_name, span}); },
 [&](const ast::DeclExported& declExported) { auto [exported_declaration] = declExported; return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationExported{transform_decl(exported_declaration, registry, functions_used_as_values, apply_escape_templates)}); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationImport{mlc::String("", 0), {}}); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [name, type_expr, span] = declAssocBind; return std::make_shared<semantic_ir::SemanticDeclaration>(semantic_ir::SemanticDeclarationAssocBind{name, registry::type_from_annotation_with_registry(type_expr, registry), span}); }

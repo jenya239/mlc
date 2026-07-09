@@ -72,6 +72,7 @@ struct GenStmtResult {
 struct GenModuleOut {
   mlc::String header;
   mlc::String source;
+  mlc::Array<mlc::String> link_libraries;
 };
 struct PrecomputedCtx {
   mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders;

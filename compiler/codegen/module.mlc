@@ -1,7 +1,7 @@
 // Module and program level code generation entry points.
 
 import { Program, errs_append } from '../frontend/ast'
-import { SemanticLoadItem, SemanticNamespaceImportAlias } from '../ir/semantic_ir'
+import { SemanticDeclaration, SemanticLoadItem, SemanticNamespaceImportAlias, SemanticDeclarationAssocBind, SemanticDeclarationExternLib, SemanticDeclarationExported, sdecl_inner } from '../ir/semantic_ir'
 import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
 import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path } from './decl/decl_index'
@@ -256,11 +256,54 @@ fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   const file = gen_module_cpp_file(parts)
   GenModuleOut {
     header: print_cpp_declarations(cpp_ir.cpp_file_header(file)),
-    source: print_cpp_declarations(cpp_ir.cpp_file_source(file))
+    source: print_cpp_declarations(cpp_ir.cpp_file_source(file)),
+    link_libraries: []
   }
+end
+
+fn collect_extern_lib_names_from_declaration(declaration: Shared<SemanticDeclaration>) -> [string] =
+  match declaration {
+    SemanticDeclarationExternLib(library_name, _) => do
+      let mut names: [string] = []
+      if library_name.length() > 0 then names.push(library_name) end
+      names
+    end,
+    SemanticDeclarationExported(inner_declaration) =>
+      collect_extern_lib_names_from_declaration(sdecl_inner(inner_declaration)),
+    _ => do const empty: [string] = []; empty end
+  }
+
+fn append_unique_library_name(names: [string], library_name: string) -> [string] = do
+  let mut index = 0
+  while index < names.length() do
+    if names[index] == library_name then return names end
+    index = index + 1
+  end
+  names.push(library_name)
+  names
+end
+
+export fn collect_extern_lib_names(declarations: [Shared<SemanticDeclaration>]) -> [string] = do
+  let mut names: [string] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    const found = collect_extern_lib_names_from_declaration(declarations[declaration_index])
+    let mut found_index = 0
+    while found_index < found.length() do
+      names = append_unique_library_name(names, found[found_index])
+      found_index = found_index + 1
+    end
+    declaration_index = declaration_index + 1
+  end
+  names
 end
 
 export fn gen_module(load_item: SemanticLoadItem, all_items: [LoadItem], full_program: Program, precomputed_context: PrecomputedCtx) -> GenModuleOut = do
   const parts = prepare_module_generation(load_item, all_items, precomputed_context)
-  gen_module_output(parts)
+  const output = gen_module_output(parts)
+  GenModuleOut {
+    header: output.header,
+    source: output.source,
+    link_libraries: collect_extern_lib_names(load_item.decls)
+  }
 end

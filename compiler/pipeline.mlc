@@ -174,6 +174,7 @@ end
 export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_compile_commands: bool) -> Result<string, [string]> = do
   profile_maybe_begin(transformed_state.profile_enabled, 'codegen')
   let implementation_paths: [string] = []
+  let mut link_libraries: [string] = []
   let mut index = 0
   while index < transformed_state.transformed_items.length() do
     const transformed_load_item = transformed_state.transformed_items[index]
@@ -189,7 +190,24 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
     write_text_if_changed(header_path, generated_output.header)
     write_text_if_changed(implementation_path, generated_output.source)
     implementation_paths.push(implementation_path)
+    let mut library_index = 0
+    while library_index < generated_output.link_libraries.length() do
+      const library_name = generated_output.link_libraries[library_index]
+      let mut already_present = false
+      let mut existing_index = 0
+      while existing_index < link_libraries.length() do
+        if link_libraries[existing_index] == library_name then already_present = true end
+        existing_index = existing_index + 1
+      end
+      if !already_present then link_libraries.push(library_name) end
+      library_index = library_index + 1
+    end
     index = index + 1
+  end
+  if transformed_state.output_directory.length() > 0 then
+    write_text_if_changed(
+      transformed_state.output_directory + "/mlc_link_libs.txt",
+      link_libraries.map(library_name => library_name + "\n").join(""))
   end
   if emit_compile_commands then
     write_compile_commands_file(transformed_state.output_directory, implementation_paths)
