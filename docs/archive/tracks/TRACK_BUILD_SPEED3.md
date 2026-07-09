@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../PLAN.md) §2.9. Продолжение
 [TRACK_BUILD_SPEED2](TRACK_BUILD_SPEED2.md) (closed).
-[TRACK_LANG_CLOSURE_ESCAPE](../../agent/TRACK_LANG_CLOSURE_ESCAPE.md) closed 2026-07-09.
+[TRACK_LANG_CLOSURE_ESCAPE](TRACK_LANG_CLOSURE_ESCAPE.md) closed 2026-07-09.
 
 ## Status: **closed** 2026-07-09 (STEP=1–4; decision **c**)
 

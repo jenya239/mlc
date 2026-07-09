@@ -16,6 +16,13 @@ coverage/
 *.o
 compiler/out/run_tests
 compiler/out/tests/
+
+# run_concurrency_smoke.sh always recompiles these from the adjacent .cpp
+# before running — tracking the binary just causes dirty-diff noise every run.
+runtime/test/stress_*
+!runtime/test/stress_*.cpp
+runtime/test/test_*
+!runtime/test/test_*.cpp
 compiler/out/obj/
 build/obj/
 build/app

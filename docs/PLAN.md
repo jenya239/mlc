@@ -382,9 +382,9 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](agent/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
-| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **planned, средний приоритет** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1 **next**; STEP=7 concurrency-метаданные unblocked (Send/Sync ready) |
+| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **in progress** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-4 done (RawPointer, `extern fn = "c" from "<h>"` codegen, `extern lib` → `-l`); STEP=5 **next** (`extern type` + `drop` RAII); STEP=7 concurrency-метаданные unblocked (Send/Sync ready) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -398,7 +398,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_TASKSCOPE STEP=1–4 (**closed** 2026-07-09)
   → CONCURRENCY_TEST_HARNESS T5 (**done** 2026-07-09); T6 deferred
   → CONCURRENCY_ISOLATE STEP=1–4 (**closed** 2026-07-09)
-  → FFI_LAYER STEP=1 (**next** — RawPointer Ruby bootstrap)
+  → FFI_LAYER STEP=1-4 (**done** 2026-07-09: RawPointer, extern fn codegen,
+    extern lib → -l); STEP=5 (**next** — extern type + drop RAII) → STEP=6-8
   → CONCURRENCY_SUPERVISOR (deferred; after FFI polish / chat-server gate)
   → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
