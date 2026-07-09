@@ -110,7 +110,9 @@ struct SemanticExpressionUnit {
 };
 struct SemanticExpressionExtern {
   std::shared_ptr<registry::Type> field0;
-  ast::Span field1;
+  mlc::String field1;
+  mlc::String field2;
+  ast::Span field3;
 };
 struct SemanticExpressionIdent {
   mlc::String field0;

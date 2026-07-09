@@ -138,7 +138,7 @@ fn record_field_default_value_diagnostics(
 end
 
 fn is_extern_body(expression: Shared<Expr>) -> bool = match expression {
-  ExprExtern(_) => true,
+  ExprExtern(_, _, _) => true,
   _ => false
 }
 
@@ -486,7 +486,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         const body_parsed = infer_expr(body_partial_application, inference_context)
         const actual_type = body_parsed.inferred_type
         all_diagnostics = diagnostics_append(all_diagnostics, body_parsed.errors)
-        if type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_assignment_compatible(expected_type, actual_type) then
+        if !is_extern_body(body) && type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry) && !types_assignment_compatible(expected_type, actual_type) then
           all_diagnostics = diagnostics_append(all_diagnostics, [diagnostic_error_with_code(
             'return type: expected ' + type_description(expected_type) + ', got ' + type_description(actual_type),
             expr_span(body),

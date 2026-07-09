@@ -132,7 +132,7 @@ return std::visit(overloaded{[&](const semantic_ir::SemanticDeclarationType& sem
 auto __match_subject = body;
 if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*__match_subject))) {
 const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern = std::get<semantic_ir::SemanticExpressionExtern>((*__match_subject));
-auto [__0, __1] = semanticExpressionExtern; return mlc::String("", 0);
+auto [__0, __1, __2, __3] = semanticExpressionExtern; return mlc::String("", 0);
 }
 return gen_fn_decl_with_escape(name, type_parameters, type_bounds, parameters, return_type, body, escape_info, self);
 std::abort();
@@ -151,7 +151,7 @@ return std::visit(overloaded{[&](const semantic_ir::SemanticDeclarationType& sem
 auto __match_subject = body;
 if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*__match_subject))) {
 const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern = std::get<semantic_ir::SemanticExpressionExtern>((*__match_subject));
-auto [__0, __1] = semanticExpressionExtern; return mlc::String("", 0);
+auto [__0, __1, __2, __3] = semanticExpressionExtern; return mlc::String("", 0);
 }
 return gen_fn_proto_with_escape(name, type_parameters, type_bounds, parameters, return_type, escape_info, self);
 std::abort();
@@ -285,7 +285,7 @@ bool extern_body_is_extern(std::shared_ptr<semantic_ir::SemanticExpression> body
 auto __match_subject = body;
 if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*__match_subject))) {
 const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern = std::get<semantic_ir::SemanticExpressionExtern>((*__match_subject));
-auto [__0, __1] = semanticExpressionExtern; return true;
+auto [__0, __1, __2, __3] = semanticExpressionExtern; return true;
 }
 return false;
 std::abort();

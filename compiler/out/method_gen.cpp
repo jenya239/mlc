@@ -145,7 +145,7 @@ mlc::String static_receiver_name_from_object_expression(std::shared_ptr<semantic
 [&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return mlc::String("", 0); },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1] = semanticExpressionExtern; return mlc::String("", 0); },
+[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1, __2, __3] = semanticExpressionExtern; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return mlc::String("", 0); },
 [&](const semantic_ir::SemanticExpressionCall& semanticExpressionCall) { auto [__0, __1, __2, __3, __4] = semanticExpressionCall; return mlc::String("", 0); },

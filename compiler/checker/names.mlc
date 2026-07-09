@@ -179,7 +179,7 @@ fn dispatch_names_pass(names_pass: NamesPass, expression: Shared<SemanticExpress
       names_pass.visit_usize(size_value, type_value),
     SemanticExpressionChar(character_value, type_value, _) =>
       names_pass.visit_char(character_value, type_value),
-    SemanticExpressionExtern(type_value, _) =>
+    SemanticExpressionExtern(type_value, _, _, _) =>
       names_pass.visit_extern(type_value),
     SemanticExpressionIdent(name_value, type_value, source_span) =>
       NameCheckResult {

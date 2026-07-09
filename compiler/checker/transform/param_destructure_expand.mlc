@@ -154,7 +154,7 @@ fn extern_parameter_destructure_errors_for_decl_shared(declaration: Shared<Decl>
   match declaration {
     DeclFn(_, _, _, parameters, _, body_expression, _) =>
       match body_expression {
-        ExprExtern(error_span) =>
+        ExprExtern(_, _, error_span) =>
           parameters.fold(
             do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end,
             (scan_errors, parameter) =>

@@ -147,7 +147,7 @@ bool is_extern_body(std::shared_ptr<ast::Expr> expression) noexcept{
 auto __match_subject = expression;
 if (std::holds_alternative<ast::ExprExtern>((*__match_subject))) {
 const ast::ExprExtern& exprExtern = std::get<ast::ExprExtern>((*__match_subject));
-auto [__0] = exprExtern; return true;
+auto [__0, __1, __2] = exprExtern; return true;
 }
 return false;
 std::abort();
@@ -451,7 +451,7 @@ auto inference_context = check_context::check_context_with_expected_return(type_
 auto body_parsed = infer::infer_expr(body_partial_application, inference_context);
 auto actual_type = body_parsed.inferred_type;
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, body_parsed.errors));
-if (((type_is_checkable(expected_type, registry) && type_is_checkable(actual_type, registry)) && (!semantic_type_structure::types_assignment_compatible(expected_type, actual_type)))) {
+if (((((!is_extern_body(body)) && type_is_checkable(expected_type, registry)) && type_is_checkable(actual_type, registry)) && (!semantic_type_structure::types_assignment_compatible(expected_type, actual_type)))) {
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("return type: expected ", 22) + semantic_type_structure::type_description(expected_type)) + mlc::String(", got ", 6)) + semantic_type_structure::type_description(actual_type)), ast::expr_span(body), diagnostic_codes::diagnostic_code_e004())}));
 }
 std::make_tuple();

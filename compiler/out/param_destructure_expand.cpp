@@ -110,7 +110,7 @@ auto [__0, __1, __2, parameters, __4, body_expression, __6] = declFn; return [&]
 auto __match_subject = body_expression;
 if (std::holds_alternative<ast::ExprExtern>((*__match_subject))) {
 const ast::ExprExtern& exprExtern = std::get<ast::ExprExtern>((*__match_subject));
-auto [error_span] = exprExtern; return parameters.fold([&]() {
+auto [__0, __1, error_span] = exprExtern; return parameters.fold([&]() {
 auto empty_diagnostics = mlc::Array<ast::Diagnostic>{};
 return empty_diagnostics;
 }(), [=](mlc::Array<ast::Diagnostic> scan_errors, std::shared_ptr<ast::Param> parameter) mutable { return ((!parameter_pattern_is_plain(parameter)) ? (scan_errors.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("destructuring parameters are not supported on extern functions", 62), error_span, diagnostic_codes::diagnostic_code_e074())})) : (scan_errors)); });

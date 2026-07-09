@@ -16,7 +16,7 @@ import { SemanticDeclaration } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
-import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations } from './decl_cpp'
+import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations, collect_ffi_include_lines } from './decl_cpp'
 import { CppDeclaration, CppFile } from '../cpp_ir/cpp_ast'
 import * as cpp_ir from '../cpp_ir/cpp_ast'
 import * as module_tu_helpers from '../cpp_emit/module_tu_helpers'
@@ -184,6 +184,7 @@ fn prepare_module_generation(
   const module_namespace = if base == 'main' then 'mlc_main' else base end
   const is_entry = decls_have_main(load_item.decls)
   const std_includes = expression_output.standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + `\n`
+  const ffi_includes = collect_ffi_include_lines(load_item.decls)
   const decl_parts = collect_all_decl_parts_cpp(load_item.decls, context)
   const guard = base.upper() + '_HPP'
   ModuleGenerationContext {
@@ -193,7 +194,7 @@ fn prepare_module_generation(
     module_namespace: module_namespace,
     is_entry: is_entry,
     decl_parts: decl_parts,
-    implementation_import_includes: include_lines(load_item.imports),
+    implementation_import_includes: include_lines(load_item.imports) + ffi_includes,
     implementation_import_paths: load_item.imports
   }
 end

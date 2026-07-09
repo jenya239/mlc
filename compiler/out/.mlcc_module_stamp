@@ -1,4 +1,4 @@
-cdd4eb5243c354a9a32e2417bfe4d6b671845a239ce13d9deb683186a9edce43
+a6b8fd96ed47e3b690ca3321ac061ee6f9d09160157d71837da1359a6d5fdce2
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -97,6 +97,7 @@ mir_types.cpp
 module.cpp
 module_loader.cpp
 module_tu_helpers.cpp
+move_check.cpp
 mut_actual_argument.cpp
 mutex_method_types.cpp
 named_args.cpp
@@ -130,6 +131,7 @@ semantic_type_structure.cpp
 send_safe.cpp
 server.cpp
 simplify_cfg.cpp
+spawn_capture.cpp
 statement_context.cpp
 stmt_cpp.cpp
 stmt_eval.cpp

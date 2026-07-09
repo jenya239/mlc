@@ -159,9 +159,10 @@ ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem 
   auto module_namespace = ((base == mlc::String("main", 4)) ? (mlc::String("mlc_main", 8)) : (base));
   auto is_entry = decl::decls_have_main(load_item.decls);
   auto std_includes = ((expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(load_item.imports)) + mlc::String("\n", 1));
+  auto ffi_includes = decl_cpp::collect_ffi_include_lines(load_item.decls);
   auto decl_parts = decl_cpp::collect_all_decl_parts_cpp(load_item.decls, context);
   auto guard = (base.upper() + mlc::String("_HPP", 4));
-  return ModuleGenerationContext{base, guard, std_includes, module_namespace, is_entry, decl_parts, cpp_naming::include_lines(load_item.imports), load_item.imports};
+  return ModuleGenerationContext{base, guard, std_includes, module_namespace, is_entry, decl_parts, (cpp_naming::include_lines(load_item.imports) + ffi_includes), load_item.imports};
 }
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> assemble_header_cpp_declarations(ModuleGenerationContext parts) noexcept{
   auto declarations = mlc::Array{module_tu_helpers::make_include_guard_ifndef_cpp_declaration(parts.guard), module_tu_helpers::make_include_guard_define_cpp_declaration(parts.guard), module_tu_helpers::make_blank_line_cpp_declaration()};

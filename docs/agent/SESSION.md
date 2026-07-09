@@ -8,8 +8,23 @@
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
 | step_last | 3 |
-| active_track | TRACK_FFI_LAYER STEP=3 (self-hosted) |
-| test_gate | ok (extern_ffi_binding_test) |
+| active_track | TRACK_FFI_LAYER STEP=4 |
+| test_gate | ok (mlcc FFI probe + check-only main) |
+
+### Turn 2026-07-09 15:45 (Driver TRACK_FFI_LAYER STEP=3 — self-hosted extern fn codegen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 15:09 |
+| elapsed | ~36 min |
+| done    | `ExprExtern`/`SemanticExpressionExtern` +c_name/header; parse `= "c" from "<h>"` in `decls.mlc`; `decl_cpp` FFI binder + `#include`; skip E004 on extern body; `module.mlc` FFI includes. |
+| verify  | `compiler/build.sh` ok; probe `cabs` → `#include <complex.h>` + `mlc_ffi_bind_cabs` + `&::cabs`; `mlcc --check-only compiler/main.mlc` 0. |
+| result  | STEP=3 done (Ruby+self-hosted). Plain: mlcc emits include + C binder wrapper. |
+| issues  | Dirty runtime binaries / out stamp left uncommitted. Full mlcc2 diff deferred. |
+| next    | ROLE=Driver STEP=4 TRACK_FFI_LAYER — extern lib "name" → -l link flags |
 
 ### Turn 2026-07-09 15:05 (Driver TRACK_FFI_LAYER STEP=3 — extern fn Ruby codegen)
 

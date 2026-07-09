@@ -931,7 +931,7 @@ fn dispatch_codegen_pass(codegen_pass: CodegenPass, expression: Shared<SemanticE
       codegen_pass.visit_usize(size_value, type_value),
     SemanticExpressionChar(character_value, type_value, _) =>
       codegen_pass.visit_char(character_value, type_value),
-    SemanticExpressionExtern(type_value, _) =>
+    SemanticExpressionExtern(type_value, _, _, _) =>
       codegen_pass.visit_extern(type_value),
     SemanticExpressionIdent(name_value, type_value, _) =>
       codegen_pass.visit_ident(name_value, type_value),

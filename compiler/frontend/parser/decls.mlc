@@ -254,7 +254,7 @@ fn parser_record_error_if_eof_expect_equal(state: Parser) -> Parser =
 
 fn parse_trait_method_body(where_parser: Parser) -> ExprResult =
   if where_parser.kind().is_equal() then parse_expr(where_parser.advance())
-  else expression_parse_result(Shared.new(ExprExtern(where_parser.span_at_cursor())), where_parser)
+  else expression_parse_result(Shared.new(ExprExtern("", "", where_parser.span_at_cursor())), where_parser)
   end
 
 fn parse_import_decl(parser: Parser) -> DeclResult = do
@@ -394,7 +394,7 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const after_rparen = rest_parsed.parser.advance()
   const return_type_parsed = parse_type(parser_after_optional_arrow(after_rparen))
   declaration_parse_result(
-    Shared.new(DeclFn(mangled_name, [], [], params, return_type_parsed.value, Shared.new(ExprExtern(extern_span)), [])),
+    Shared.new(DeclFn(mangled_name, [], [], params, return_type_parsed.value, Shared.new(ExprExtern("", "", extern_span)), [])),
     return_type_parsed.parser)
 end
 
@@ -413,11 +413,11 @@ fn is_extern_ident_expr(expression: Shared<Expr>) -> bool =
 
 fn parse_extend_method_body(after_eq: Parser) -> ExprResult = do
   if after_eq.kind().is_extern() then
-    return expression_parse_result(Shared.new(ExprExtern(after_eq.span_at_cursor())), after_eq.advance())
+    return expression_parse_result(Shared.new(ExprExtern("", "", after_eq.span_at_cursor())), after_eq.advance())
   end
   const body_expr_parsed = parse_expr(after_eq)
   if is_extern_ident_expr(body_expr_parsed.value) then
-    return expression_parse_result(Shared.new(ExprExtern(expr_span(body_expr_parsed.value))), body_expr_parsed.parser)
+    return expression_parse_result(Shared.new(ExprExtern("", "", expr_span(body_expr_parsed.value))), body_expr_parsed.parser)
   end
   body_expr_parsed
 end
@@ -486,6 +486,40 @@ export fn parse_declaration(parser: Parser) -> DeclResult = do
   end
 end
 
+fn parse_extern_fn_body(where_parser: Parser, extern_keyword_span: Span) -> ExprResult = do
+  if where_parser.kind().is_equal() then
+    const after_equal = where_parser.advance()
+    if after_equal.kind().is_str() then
+      const extern_c_name = after_equal.kind().str_val()
+      const after_c_name = after_equal.advance()
+      if after_c_name.kind().is_from() then
+        const after_from = after_c_name.advance()
+        if after_from.kind().is_str() then
+          const extern_header = after_from.kind().str_val()
+          return expression_parse_result(
+            Shared.new(ExprExtern(extern_c_name, extern_header, extern_keyword_span)),
+            after_from.advance())
+        else
+          return expression_parse_result(
+            Shared.new(ExprExtern("", "", extern_keyword_span)),
+            after_from.record_parse_error('parse: expected header string after from in extern fn'))
+        end
+      else
+        return expression_parse_result(
+          Shared.new(ExprExtern("", "", extern_keyword_span)),
+          after_c_name.record_parse_error('parse: expected from after C name in extern fn'))
+      end
+    else if after_equal.kind().is_extern() then
+      return expression_parse_result(
+        Shared.new(ExprExtern("", "", after_equal.span_at_cursor())),
+        after_equal.advance())
+    else
+      return parse_expr(after_equal)
+    end
+  end
+  expression_parse_result(Shared.new(ExprExtern("", "", extern_keyword_span)), where_parser)
+end
+
 fn parse_function_declaration(parser: Parser) -> DeclResult = do
   const is_extern       = parser.kind().is_extern()
   const extern_keyword_span = extern_keyword_span_for_parser(parser, is_extern)
@@ -500,9 +534,10 @@ fn parse_function_declaration(parser: Parser) -> DeclResult = do
   const where_parse = parse_where_clause_opt(return_type_parsed.parser)
   const merged_trait_bounds = merge_where_clause_trait_bounds(type_parameters_parsed.value.params, type_bounds, where_parse.value)
   if is_extern then
+    const body_parsed = parse_extern_fn_body(where_parse.parser, extern_keyword_span)
     declaration_parse_result(
-      Shared.new(DeclFn(fn_name, type_parameters_parsed.value.params, merged_trait_bounds, params_parsed.value, return_type_parsed.value, Shared.new(ExprExtern(extern_keyword_span)), where_parse.value)),
-      where_parse.parser)
+      Shared.new(DeclFn(fn_name, type_parameters_parsed.value.params, merged_trait_bounds, params_parsed.value, return_type_parsed.value, body_parsed.value, where_parse.value)),
+      body_parsed.parser)
   else
     const body_parsed = parse_expr(where_parse.parser.advance())
     declaration_parse_result(
@@ -807,7 +842,7 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
         const where_parse_extern = parse_where_clause_opt(return_type_parsed.parser)
         const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.value)
         const extern_method_span = where_parse_extern.parser.span_at_cursor()
-        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, Shared.new(ExprExtern(extern_method_span)), where_parse_extern.value)))
+        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, Shared.new(ExprExtern("", "", extern_method_span)), where_parse_extern.value)))
         state = where_parse_extern.parser
       else
         state = parser_after_extern.record_parse_error('parse: expected fn after extern in trait body')

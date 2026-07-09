@@ -322,7 +322,9 @@ struct ExprQuestion {
   Span field1;
 };
 struct ExprExtern {
-  Span field0;
+  mlc::String field0;
+  mlc::String field1;
+  Span field2;
 };
 struct ExprLambda {
   mlc::Array<mlc::String> field0;

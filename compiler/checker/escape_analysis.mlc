@@ -167,7 +167,7 @@ fn visit_expr(expression: Shared<Expr>, watched: [string], escaping: [string]) -
     ExprU8(_, _) => escaping,
     ExprUsize(_, _) => escaping,
     ExprChar(_, _) => escaping,
-    ExprExtern(_) => escaping,
+    ExprExtern(_, _, _) => escaping,
     ExprBin(_, left, right, _) =>
       visit_expr(right, watched, visit_expr(left, watched, escaping)),
     ExprUn(_, operand, _) => visit_expr(operand, watched, escaping),
@@ -252,7 +252,7 @@ fn collect_idents_used_as_values_in_expr(expression: Shared<Expr>, names: [strin
     ExprU8(_, _) => names,
     ExprUsize(_, _) => names,
     ExprChar(_, _) => names,
-    ExprExtern(_) => names,
+    ExprExtern(_, _, _) => names,
     ExprBin(_, left, right, _) =>
       collect_idents_used_as_values_in_expr(right, collect_idents_used_as_values_in_expr(left, names)),
     ExprUn(_, operand, _) => collect_idents_used_as_values_in_expr(operand, names),

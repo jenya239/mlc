@@ -257,7 +257,7 @@ fn call_callee_ident_name(function: Shared<Expr>) -> string =
     ExprArray(_, _) => '',
     ExprTuple(_, _) => '',
     ExprQuestion(_, _) => '',
-    ExprExtern(_) => '',
+    ExprExtern(_, _, _) => '',
     ExprLambda(_, _, _) => '',
     ExprSpawn(_, _) => '',
     ExprNamedArg(_, _, _) => '',
@@ -293,7 +293,7 @@ fn call_argument_is_lambda(argument_expression: Shared<Expr>) -> bool =
     ExprArray(_, _) => false,
     ExprTuple(_, _) => false,
     ExprQuestion(_, _) => false,
-    ExprExtern(_) => false,
+    ExprExtern(_, _, _) => false,
     ExprSpawn(_, _) => false,
     ExprNamedArg(_, _, _) => false,
     ExprWith(_, _, _, _) => false
@@ -518,7 +518,7 @@ fn conditional_else_empty_unknown_array_coerced_to_then_array_element(
     SemanticExpressionChar(_, _, _) => typed_else,
     SemanticExpressionBool(_, _, _) => typed_else,
     SemanticExpressionUnit(_, _) => typed_else,
-    SemanticExpressionExtern(_, _) => typed_else,
+    SemanticExpressionExtern(_, _, _, _) => typed_else,
     SemanticExpressionIdent(_, _, _) => typed_else,
     SemanticExpressionBin(_, _, _, _, _) => typed_else,
     SemanticExpressionUn(_, _, _, _) => typed_else,
@@ -666,7 +666,7 @@ export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_typ
     SemanticExpressionChar(_, _, _) => expression,
     SemanticExpressionBool(_, _, _) => expression,
     SemanticExpressionUnit(_, _) => expression,
-    SemanticExpressionExtern(_, _) => expression,
+    SemanticExpressionExtern(_, _, _, _) => expression,
     SemanticExpressionIdent(_, _, _) => expression,
     SemanticExpressionBin(_, _, _, _, _) => expression,
     SemanticExpressionUn(_, _, _, _) => expression,
@@ -856,7 +856,7 @@ fn transform_one_call_argument_using_optional_expected_type(
         coerce_expr_to_type(
           transform_expr(argument_expression_shared, transform_context, stmts_fn),
           expected_formal_parameter_type),
-      ExprExtern(_) =>
+      ExprExtern(_, _, _) =>
         coerce_expr_to_type(
           transform_expr(argument_expression_shared, transform_context, stmts_fn),
           expected_formal_parameter_type),
@@ -1189,8 +1189,8 @@ fn dispatch_transform_pass(
       transform_pass.visit_usize(value, source_span, stmts_fn),
     ExprChar(value, source_span) =>
       transform_pass.visit_char(value, source_span, stmts_fn),
-    ExprExtern(source_span) =>
-      transform_pass.visit_extern(source_span, stmts_fn),
+    ExprExtern(extern_c_name, extern_header, source_span) =>
+      transform_pass.visit_extern(extern_c_name, extern_header, source_span, stmts_fn),
     ExprIdent(name, source_span) =>
       transform_pass.visit_ident(name, source_span, stmts_fn),
     ExprBin(operation, left, right, source_span) =>
@@ -1256,8 +1256,8 @@ extend TransformPass {
     Shared.new(SemanticExpressionUsize(value, Shared.new(TUsize), source_span))
   fn visit_char(self: TransformPass, value: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
     Shared.new(SemanticExpressionChar(value, Shared.new(TChar), source_span))
-  fn visit_extern(self: TransformPass, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
-    Shared.new(SemanticExpressionExtern(Shared.new(TUnit), source_span))
+  fn visit_extern(self: TransformPass, extern_c_name: string, extern_header: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    Shared.new(SemanticExpressionExtern(Shared.new(TUnit), extern_c_name, extern_header, source_span))
   fn visit_ident(self: TransformPass, name: string, source_span: Span, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const resolved_type =
       if self.transform_context.type_env.has(name) then self.transform_context.type_env.get(name)

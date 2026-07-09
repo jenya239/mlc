@@ -56,6 +56,7 @@ predicates::Parser extend_method_rest_start(predicates::Parser after_lparen) noe
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extend_method(predicates::Parser parser, mlc::String type_name) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_trait_decl(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_declaration(predicates::Parser parser) noexcept;
+predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predicates::Parser where_parser, ast::Span extern_keyword_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_function_declaration(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Pattern>> parse_tuple_parameter_binding_element(predicates::Parser binding_parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Pattern>> parse_tuple_parameter_pattern(ast::Span tuple_span, predicates::Parser parser_after_open_paren) noexcept;

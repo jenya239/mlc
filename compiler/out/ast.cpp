@@ -164,7 +164,7 @@ auto [__0, source_span] = exprQuestion; return source_span;
 }
 if (std::holds_alternative<ExprExtern>((*__match_subject))) {
 const ExprExtern& exprExtern = std::get<ExprExtern>((*__match_subject));
-auto [source_span] = exprExtern; return source_span;
+auto [__0, __1, source_span] = exprExtern; return source_span;
 }
 if (std::holds_alternative<ExprLambda>((*__match_subject))) {
 const ExprLambda& exprLambda = std::get<ExprLambda>((*__match_subject));

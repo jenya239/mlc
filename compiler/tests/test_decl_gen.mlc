@@ -828,7 +828,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([color_sum, extend_display_for_color], context)),
     extend_helper_protos_for_exported_types([color_sum, extend_display_for_color], context).join('')))
   const extend_display_extern = extend_decl('Color', 'Display',
-    [fn_decl('Color_to_string', [color_self], tstr(), Shared.new(SemanticExpressionExtern(tunit(), span_unknown())))])
+    [fn_decl('Color_to_string', [color_self], tstr(), Shared.new(SemanticExpressionExtern(tunit(), "", "", span_unknown())))])
   results.push(assert_eq_str('extend_helper_protos_for_exported_types_cpp skips extern method',
     print_cpp_declarations(extend_helper_protos_for_exported_types_cpp([exported_color, extend_display_extern], context)),
     extend_helper_protos_for_exported_types([exported_color, extend_display_extern], context).join('')))
@@ -1024,7 +1024,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_proto_cpp SemanticDeclarationAssocBind empty',
     print_cpp_declaration(gen_proto_cpp(Shared.new(SemanticDeclarationAssocBind('Item', ti32(), span_unknown())), context)), ''))
 
-  const extern_fn = fn_decl('external_helper', [], tunit(), Shared.new(SemanticExpressionExtern(tunit(), span_unknown())))
+  const extern_fn = fn_decl('external_helper', [], tunit(), Shared.new(SemanticExpressionExtern(tunit(), "", "", span_unknown())))
   const extern_decl_native = gen_decl_cpp(extern_fn, context)
   results.push(assert_true('gen_decl_cpp SemanticDeclarationFn extern: native CppDeclarationEmpty',
     is_cpp_decl_empty(extern_decl_native)))
