@@ -20,7 +20,7 @@ struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
 
-infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type) noexcept;
+infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type, registry::TypeRegistry registry) noexcept;
 
 } // namespace infer_question_expression
 

@@ -21,6 +21,10 @@ using namespace ast_tokens;
 
 using DeriveResult = predicates::ParseResult<mlc::Array<mlc::String>>;
 
+mlc::String type_expression_display(std::shared_ptr<ast::TypeExpr> type_expression) noexcept;
+
+mlc::String type_arguments_display(mlc::Array<std::shared_ptr<ast::TypeExpr>> type_arguments) noexcept;
+
 predicates::Parser parser_expect_generic_close(predicates::Parser state, bool opened) noexcept;
 
 predicates::Parser parser_expect_ident(predicates::Parser state, mlc::String context) noexcept;
@@ -142,6 +146,21 @@ ast::Program parse_program_with_source_path(mlc::Array<ast_tokens::Token> tokens
 predicates::ProgramParseValue parse_program_with_errors(mlc::Array<ast_tokens::Token> tokens, mlc::String source_path) noexcept;
 
 ast::Program parse_program(mlc::Array<ast_tokens::Token> tokens) noexcept;
+
+mlc::String type_expression_display(std::shared_ptr<ast::TypeExpr> type_expression) noexcept{return std::visit(overloaded{
+  [&](const TyI32& tyi32) -> mlc::String { return mlc::String("i32"); },
+  [&](const TyString& tystring) -> mlc::String { return mlc::String("string"); },
+  [&](const TyBool& tybool) -> mlc::String { return mlc::String("bool"); },
+  [&](const TyUnit& tyunit) -> mlc::String { return mlc::String("unit"); },
+  [&](const TyNamed& tynamed) -> mlc::String { auto [name] = tynamed; return name; },
+  [&](const TyArray& tyarray) -> mlc::String { auto [inner] = tyarray; return mlc::String("[") + type_expression_display(inner) + mlc::String("]"); },
+  [&](const TyShared& tyshared) -> mlc::String { auto [inner] = tyshared; return mlc::String("Shared<") + type_expression_display(inner) + mlc::String(">"); },
+  [&](const TyGeneric& tygeneric) -> mlc::String { auto [name, type_arguments] = tygeneric; return name + mlc::String("<") + type_arguments_display(type_arguments) + mlc::String(">"); },
+  [&](const TyFn& tyfn) -> mlc::String { auto [parameters, return_type] = tyfn; return mlc::String("(") + type_arguments_display(parameters) + mlc::String(") -> ") + type_expression_display(return_type); },
+  [&](const TyAssoc& tyassoc) -> mlc::String { auto [base_name, associated_name] = tyassoc; return base_name + mlc::String(".") + associated_name; }
+}, (*type_expression));}
+
+mlc::String type_arguments_display(mlc::Array<std::shared_ptr<ast::TypeExpr>> type_arguments) noexcept{return type_arguments.map(type_expression_display).join(mlc::String(", "));}
 
 predicates::Parser parser_expect_generic_close(predicates::Parser state, bool opened) noexcept{return !opened ? state : types::parser_at_generic_close(state) ? types::parser_advance_generic_close(state) : predicates::Parser_record_parse_error(state, mlc::String("parse: unclosed generic parameter list"));}
 
@@ -458,6 +477,7 @@ state = predicates::Parser_advance(state);
 if (predicates::TokenKind_is_op(predicates::Parser_kind(state)) && predicates::TokenKind_op_val(predicates::Parser_kind(state)) == mlc::String("<")){
 {
 predicates::TypesResult trait_type_arguments_parsed = types::parse_type_args(predicates::Parser_advance(state));
+trait_name = trait_name + mlc::String("<") + type_arguments_display(trait_type_arguments_parsed.value) + mlc::String(">");
 state = trait_type_arguments_parsed.parser;
 }
 }

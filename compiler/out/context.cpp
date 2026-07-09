@@ -238,7 +238,10 @@ name_index = name_index + 1;
   return codegen_context;
  }(); } return self; }();}
 
-bool trait_has_associated_types(context::CodegenContext context, mlc::String trait_name) noexcept{return context.trait_associated_type_names.has(trait_name) ? context.trait_associated_type_names.get(trait_name).size() > 0 : false;}
+bool trait_has_associated_types(context::CodegenContext context, mlc::String trait_name) noexcept{
+mlc::String bare_trait_name = registry::trait_base_name(trait_name);
+return context.trait_associated_type_names.has(bare_trait_name) ? context.trait_associated_type_names.get(bare_trait_name).size() > 0 : false;
+}
 
 context::CodegenContext make_body_context(context::CodegenContext base, mlc::Array<mlc::String> shared_params, mlc::Array<mlc::String> shared_array_params, mlc::HashMap<mlc::String, mlc::String> array_elem_types, mlc::Array<mlc::String> shared_map_params, mlc::String self_type, mlc::Array<mlc::String> value_params, mlc::Array<mlc::String> match_deref_params) noexcept{return context::CodegenContext{base.field_orders, base.field_order_index, base.namespace_prefix, base.qualified, base.namespace_alias_prefixes, self_type, base.method_owners, shared_params, shared_array_params, array_elem_types, shared_map_params, base.ctor_type_infos, base.ctor_type_info_index, base.variant_types, base.sum_type_parameter_names, base.variant_used_type_parameter_names, value_params, match_deref_params, base.generic_variants, base.struct_using_entries, base.struct_using_lines, base.type_alias_annotations, base.trait_associated_type_names, base.temp_name_counter, base.enclosing_function_return_type};}
 

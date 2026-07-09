@@ -86,6 +86,8 @@ std::shared_ptr<registry::Type> type_from_annotation(std::shared_ptr<ast::TypeEx
 
 registry::TypeRegistry build_registry(ast::Program program) noexcept;
 
+mlc::String trait_base_name(mlc::String trait_name) noexcept;
+
 std::shared_ptr<registry::Type> field_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String field_name, registry::TypeRegistry registry) noexcept;
 
 std::shared_ptr<registry::Type> method_return_type_from_object(std::shared_ptr<registry::Type> object_type, mlc::String method_name, registry::TypeRegistry registry) noexcept;

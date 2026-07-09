@@ -265,20 +265,23 @@ return expr::inline_noexcept_forwarding_call(return_type_cpp, trait_callee, para
 
 mlc::String gen_extend_trait_concept_adapters(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{return methods.map([type_name, trait_name, context, context_resolve_fn](std::shared_ptr<semantic_ir::SemanticDeclaration> method) mutable { return extend_trait_concept_adapter_line(type_name, trait_name, context, context_resolve_fn, method); }).join(mlc::String(""));}
 
-mlc::String gen_decl_extend_trait_suffix(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{return context::trait_has_associated_types(context, trait_name) ? gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) : [&]() -> mlc::String { 
+mlc::String gen_decl_extend_trait_suffix(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn) noexcept{return context::trait_has_associated_types(context, registry::trait_base_name(trait_name)) ? gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) : [&]() -> mlc::String { 
+  mlc::String bare_trait_name = registry::trait_base_name(trait_name);
   context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
   mlc::String cpp_type = type_gen::type_name_to_cpp(context, type_name);
-  return gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) + gen_extend_trait_concept_adapters(type_name, trait_name, methods, context, context_resolve_fn) + generic_trait_static_assert_line(trait_name, type_name, methods, extend_context, cpp_type);
+  return gen_extend_trait_wrappers(type_name, methods, context, context_resolve_fn) + gen_extend_trait_concept_adapters(type_name, bare_trait_name, methods, context, context_resolve_fn) + generic_trait_static_assert_line(bare_trait_name, type_name, methods, extend_context, cpp_type);
  }();}
 
 mlc::String gen_decl_extend_methods_only(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticDeclaration>, context::CodegenContext)> gen_decl_fn) noexcept{
+mlc::String bare_trait_name = registry::trait_base_name(trait_name);
 context::CodegenContext extend_context = context::CodegenContext_for_type_body(context, type_name);
-return gen_extend_method_parts(type_name, trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn).join(mlc::String(""));
+return gen_extend_method_parts(type_name, bare_trait_name, methods, extend_context, context, context_resolve_fn, gen_decl_fn).join(mlc::String(""));
 }
 
 mlc::String gen_decl_extend(mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> methods, context::CodegenContext context, std::function<mlc::String(context::CodegenContext, mlc::String)> context_resolve_fn, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticDeclaration>, context::CodegenContext)> gen_decl_fn) noexcept{
-mlc::String methods_str = gen_decl_extend_methods_only(type_name, trait_name, methods, context, context_resolve_fn, gen_decl_fn);
-return trait_name.length() > 0 ? methods_str + gen_decl_extend_trait_suffix(type_name, trait_name, methods, context, context_resolve_fn) : methods_str;
+mlc::String bare_trait_name = registry::trait_base_name(trait_name);
+mlc::String methods_str = gen_decl_extend_methods_only(type_name, bare_trait_name, methods, context, context_resolve_fn, gen_decl_fn);
+return bare_trait_name.length() > 0 ? methods_str + gen_decl_extend_trait_suffix(type_name, bare_trait_name, methods, context, context_resolve_fn) : methods_str;
 }
 
 } // namespace decl_extend

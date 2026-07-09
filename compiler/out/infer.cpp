@@ -302,7 +302,7 @@ std::shared_ptr<registry::Type> first_element_type = elements.size() > 0 ? infer
 return infer_arguments_errors(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TArray(first_element_type))), elements, inference_context);
 }
 
-infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner_expression, ast::Span question_span, check_context::CheckContext inference_context) noexcept{return infer_question_expression::infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span, inference_context.expected_return_type);}
+infer_result::InferResult infer_expr_question(std::shared_ptr<ast::Expr> inner_expression, ast::Span question_span, check_context::CheckContext inference_context) noexcept{return infer_question_expression::infer_question_from_inner_result(infer_expr(inner_expression, inference_context), question_span, inference_context.expected_return_type, inference_context.registry);}
 
 std::shared_ptr<registry::Type> inference_placeholder_unknown_type() noexcept{return std::make_shared<registry::Type>((registry::TUnknown{}));}
 

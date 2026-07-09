@@ -107,6 +107,8 @@ void register_trait_method_into_registry(registry::TypeRegistry& registry, std::
 
 void register_decl_trait_into_registry(registry::TypeRegistry& registry, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods) noexcept;
 
+mlc::String trait_base_name(mlc::String trait_name) noexcept;
+
 void register_decl_extend_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods) noexcept;
 
 void register_decl_fn_into_registry(registry::TypeRegistry& registry, mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> trait_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type) noexcept;
@@ -446,17 +448,39 @@ registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names
 }
 }
 
+mlc::String trait_base_name(mlc::String trait_name) noexcept{
+int index = 0;
+while (index < trait_name.length()){
+{
+if (trait_name.char_at(index) == mlc::String("<")){
+{
+return trait_name.substring(0, index);
+}
+}
+index = index + 1;
+}
+}
+return trait_name;
+}
+
 void register_decl_extend_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods) noexcept{
+mlc::String bare_trait_name = trait_base_name(trait_name);
 if (trait_name.length() > 0){
 {
 mlc::Array<mlc::String> trait_implementations = registry.adt_index.trait_impls.has(type_name) ? registry.adt_index.trait_impls.get(type_name) : [&]() -> mlc::Array<mlc::String> { 
   mlc::Array<mlc::String> empty = {};
   return empty;
- }().concat(mlc::Array<mlc::String>{trait_name});
+ }();
+trait_implementations = trait_implementations.concat(mlc::Array<mlc::String>{trait_name});
+if (bare_trait_name != trait_name){
+{
+trait_implementations = trait_implementations.concat(mlc::Array<mlc::String>{bare_trait_name});
+}
+}
 registry.adt_index.trait_impls.set(type_name, trait_implementations);
 }
 }
-mlc::String assoc_binding_key = type_name + mlc::String("::") + trait_name;
+mlc::String assoc_binding_key = type_name + mlc::String("::") + bare_trait_name;
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> assoc_type_bindings = registry.adt_index.assoc_type_bindings.has(assoc_binding_key) ? registry.adt_index.assoc_type_bindings.get(assoc_binding_key) : [&]() -> mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> { 
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> empty_bindings = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
   return empty_bindings;
