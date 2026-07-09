@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_API_CLIENT STEP=3 |
-| test_gate | ok (derive_json_test 4/0) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_API_CLIENT STEP=4 |
+| test_gate | ok (derive_json_test 6/0) |
+
+### Turn 2026-07-09 20:30 (Driver TRACK_API_CLIENT STEP=3 — sum derive Json tagged)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 20:23 |
+| elapsed | ~15 min |
+| done    | Sum `derive { Json }`: unit→string, 1-field→`{tag,value}`, N→`{tag,fields}`; convention in `API_CLIENT.md`; tests in `derive_json_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/derive_json_test.rb` 6 runs 0 fail. |
+| result  | STEP=3 done. Plain: sum Json round-trips Active/Inactive/Pair. |
+| issues  | Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=4 TRACK_API_CLIENT — self-hosted derive { Json } |
 
 ### Turn 2026-07-09 20:21 (Driver TRACK_API_CLIENT STEP=2 — JsonError + derive Json records)
 

@@ -112,4 +112,77 @@ class MLCDeriveJsonTest < Minitest::Test
     assert_includes cpp, "User_from_json(User_to_json(user))"
     refute_includes cpp, "mlc::result::User_from_json"
   end
+
+  def test_derive_json_sum_generates_tagged_helpers
+    cpp = MLC.to_cpp(<<~MLC)
+      type Status = Active | Inactive(string) | Pair(i64, string) derive { Json }
+      fn main() -> i32 = 0
+    MLC
+    assert_includes cpp, "Status_to_json"
+    assert_includes cpp, "Status_from_json"
+    assert_includes cpp, 'json_string(mlc::String("Active"))'
+    assert_includes cpp, 'mlc::String("tag")'
+    assert_includes cpp, 'mlc::String("value")'
+    assert_includes cpp, 'mlc::String("fields")'
+  end
+
+  def test_derive_json_sum_round_trip_each_variant
+    cpp = MLC.to_cpp(<<~MLC)
+      type Status = Active | Inactive(string) | Pair(i64, string) derive { Json }
+      fn main() -> i32 = 0
+    MLC
+
+    runtime_dir = File.expand_path("../../runtime", __dir__)
+    work_root = ENV.fetch("TMPDIR", "/tmp")
+    Dir.mktmpdir("mlc_derive_json_sum", work_root) do |work_dir|
+      source_path = File.join(work_dir, "derive_json_sum.cpp")
+      binary_path = File.join(work_dir, "derive_json_sum_bin")
+
+      body = cpp
+        .gsub(/int main\(int argc, char\*\* argv\) noexcept\{return 0;\}\n?/, "")
+        .gsub(/int main\(int argc, char\*\* argv\) noexcept;\n?/, "")
+
+      full_cpp = <<~CPP
+        #{body}
+
+        int main() {
+          {
+            auto encoded = Status_to_json(Active{});
+            auto decoded = Status_from_json(encoded);
+            if (!std::holds_alternative<mlc::result::Ok<Status>>(decoded)) return 1;
+            Status again = std::get<mlc::result::Ok<Status>>(decoded)._0;
+            if (!std::holds_alternative<Active>(again)) return 2;
+          }
+          {
+            auto encoded = Status_to_json(Inactive{mlc::String("paused")});
+            auto decoded = Status_from_json(encoded);
+            if (!std::holds_alternative<mlc::result::Ok<Status>>(decoded)) return 11;
+            Status again = std::get<mlc::result::Ok<Status>>(decoded)._0;
+            if (!std::holds_alternative<Inactive>(again)) return 12;
+            if (std::get<Inactive>(again).field0 != mlc::String("paused")) return 13;
+          }
+          {
+            auto encoded = Status_to_json(Pair{42, mlc::String("x")});
+            auto decoded = Status_from_json(encoded);
+            if (!std::holds_alternative<mlc::result::Ok<Status>>(decoded)) return 21;
+            Status again = std::get<mlc::result::Ok<Status>>(decoded)._0;
+            if (!std::holds_alternative<Pair>(again)) return 22;
+            if (std::get<Pair>(again).field0 != 42) return 23;
+            if (std::get<Pair>(again).field1 != mlc::String("x")) return 24;
+          }
+          return 0;
+        }
+      CPP
+      File.write(source_path, full_cpp)
+
+      compile_cmd = [
+        "g++", "-std=c++20",
+        "-I", File.join(runtime_dir, "include"),
+        "-o", binary_path,
+        source_path
+      ]
+      assert system(*compile_cmd), "g++ failed for derive Json sum round-trip"
+      assert system(binary_path), "sum round-trip binary failed"
+    end
+  end
 end

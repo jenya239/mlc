@@ -42,10 +42,11 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
 - `Option<T>` поле → отсутствующий или `null` JSON-ключ маппится в `None`;
   присутствующий — в `Some(value)`. Не путать "ключ отсутствует" и "ключ
   null" в первой версии (оба → `None`).
-- Sum-типы (`type Status = Active | Inactive(string)`) → tagged representation,
-  конкретный формат (`{"tag": "Active"}` vs `"Active"`) решить перед
-  реализацией — большинство реальных API используют строковые enum без
-  vararg-полей и объект с discriminator-полем для вариантов с данными.
+- Sum-типы (`type Status = Active | Inactive(string) | Pair(i64, string)`) →
+  tagged representation (**зафиксировано** STEP=3, 2026-07-09):
+  - unit-вариант → JSON-строка `"Active"`;
+  - один payload → `{"tag":"Inactive","value":...}`;
+  - несколько payload → `{"tag":"Pair","fields":[...]}`.
 - `JsonError` — новый тип (`MissingField(string) | TypeMismatch(string, string)
   | ...`), не существует сегодня ни в runtime, ни в языке.
 
