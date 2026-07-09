@@ -1040,6 +1040,24 @@ export fn checker_tests() -> [TestResult] = do
       'type Point = { x: i32 }\ntrait Display { fn to_string(self: Display) -> string }\nextend Point : Display {\n  fn to_string(self: Point) -> string = "p"\n}\n'),
     0))
 
+  results.push(assert_eq_int(
+    'orphan: same-module From<T> extend — 0 errors',
+    check_program_error_count(program_from_source_path(
+      'trait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\n',
+      'mod_a.mlc')),
+    0))
+
+  results.push(assert_eq_str(
+    'negative E086: orphan From<T> uses trait_base_name',
+    first_checker_error_for_program(concat_programs(
+      program_from_source_path(
+        'trait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\n',
+        'mod_a.mlc'),
+      program_from_source_path(
+        'extend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\n',
+        'mod_b.mlc'))),
+    'error[E086]: orphan impl: extend AppError : From must be declared in the module defining AppError or From\n  --> mod_b.mlc:1:8'))
+
   // --- Result / Option combinators (A2) --------------------------------------
 
   results.push(assert_eq_int('infer: Result map — 0 errors',

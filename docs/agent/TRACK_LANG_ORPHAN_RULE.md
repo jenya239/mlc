@@ -3,7 +3,7 @@
 Parent: [../PLAN.md](../PLAN.md). Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #7.
 
-## Status: **open** (STEP=3 done 2026-07-09 — E086 orphan diagnostic)
+## Status: **open** (STEP=4 done 2026-07-09 — self-check + From\<T\> tests)
 
 **Проблема:** сейчас `extend T : Trait` разрешён в любом модуле, без
 проверки когерентности.
@@ -20,7 +20,7 @@ Parent: [../PLAN.md](../PLAN.md). Source:
 | 1 | **done** | Inventory: no module maps in TypeRegistry; ownership via Span.file / LoadItem.path |
 | 2 | **done** | `type_defining_path` / `trait_defining_path` + accessors; record from DeclType/Alias/Trait span.file |
 | 3 | **done** | E086 + `orphan_lint.mlc`; wired in `gather_program_check`; tests same-module / orphan / builtin / bare / empty path |
-| 4 | pending | Self-check compiler/ trait-extends under E086; any debt notes |
+| 4 | **done** | Self-check: 6 trait-extends, 0 orphans; main/e2e check-only 0; From\<T\> unit + import smoke |
 | 5 | pending | verify-gate + close |
 
 ## Inventory (STEP=1, `compiler/` only)
@@ -46,10 +46,16 @@ comes from AST spans, not `LoadItem.path`.
 ### Critic notes (2026-07-09)
 
 1. TRACK inventory text above was stale (“no module ownership”) after STEP=2 — fixed.
-2. **`compiler/out/mlcc` was stale** after STEP=2–3 (last binary from RESULT close); rebuilt this audit.
-3. Unit orphan tests use **concat programs** with distinct `source_path`, not real `import` merge. Real driver paths go through `resolve_dotdot` — STEP=4 must self-check `compiler/main.mlc` and a two-file import repro.
-4. No unit test for generic trait name on extend (`From<T>` → `trait_base_name`) under E086.
+2. **`compiler/out/mlcc` was stale** after STEP=2–3; rebuilt in critique-audit.
+3. Unit orphan tests use **concat programs** with distinct `source_path`; import merge covered by mlcc smoke in STEP=4.
+4. ~~No unit test for `From<T>`~~ — added STEP=4 (`same-module From` + orphan `trait_base_name`).
 5. Policy: empty extend path skips E086; both defining paths empty skips; builtin+local trait allowed — covered by tests.
+
+### Self-check (STEP=4, 2026-07-09)
+
+Trait extends in `compiler/` (exclude `out/`): **6**. All allowed (own T or local Trait for builtin i32).  
+`mlcc --check-only`: `compiler/main.mlc`, `trait_e2e`, `trait_as_param` → exit 0.  
+Import orphan smoke (`From` / `Display`) → E086 exit 1. **Debt: none.**
 
 ## Verify gate
 

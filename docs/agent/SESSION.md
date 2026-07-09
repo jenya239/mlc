@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=3 audited; next STEP=4) |
+| driver_turns_since_plan | 1 |
+| step_last | 4 |
+| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=4 done; next STEP=5 verify-gate) |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:59 (Driver TRACK_LANG_ORPHAN_RULE STEP=4 — self-check + From tests)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_ORPHAN_RULE |
+| started | 2026-07-09 08:56 |
+| elapsed | ~3 min |
+| done    | Enumerated 6 trait-extends (0 orphans). mlcc check-only main/e2e ok; import From orphan E086. Unit tests: same-module From + orphan `trait_base_name`. TRACK debt closed. |
+| result  | `dev_gate_fast` 1471/0. Plain: весь compiler/ чист по orphan; From\<T\> тоже покрыт. |
+| issues  | none |
+| next    | ROLE=Driver STEP=5 TRACK_LANG_ORPHAN_RULE — verify-gate + close |
 
 ### Turn 2026-07-09 08:55 (Critic critique-audit — ORPHAN STEP=1–3)
 
