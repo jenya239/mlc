@@ -5,12 +5,32 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
 Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
 
-## Status: **open** — не начат
+## Status: **open** — STEP=1 ready for Driver
 
-**Перед STEP=1:** Planner/Driver должен решить именование трейта из ⚠️ в
-`CONCURRENCY_V2.md` §"Открытый вопрос" (рекомендация — `Sync`, не `Shared`,
-из-за коллизии с существующим типом `Shared<T>`). Без решения — STEP=1
-не начинать.
+**Planner 2026-07-09:** After HARNESS T1–T4 MVP (`62d127ea`). Naming locked:
+trait = **`Sync`** (CONCURRENCY_V2.md recommendation; keep type `Shared<T>`).
+HARNESS T6 deferred (optional nightly); T5 still blocked on this track STEP=5.
+
+### STEP=1 acceptance (Driver)
+
+**Layer:** `compiler/` (checker) — do not touch `lib/mlc/` in the same turn.
+
+**Goal:** reusable `Send` bound from `send_safe.mlc`; split Send vs Sync axes.
+
+- Export `type_is_send(type, registry)` (or keep `type_is_send_safe` as alias) usable
+  beyond `Channel.send` (call sites may stay on channel for now; API must be
+  general for future `spawn_thread` / pool capture).
+- **`Arc<T>` is `Send` iff `T` is `Send`** (today `type_is_send_safe_generic`
+  hard-returns `false` for `Arc` — fix that).
+- **`Mutex<T>` is `Send` iff `T` is `Send`** (same hard-false today).
+- Add `type_is_sync(type, registry)` stub or real predicate: at minimum
+  `Mutex<T>` / `Arc<T>` Sync rules per CONCURRENCY_V2 §3; may be conservative
+  (`false` for Array/Map/Shared) if full table is too large — document in
+  SESSION what is covered.
+- Unit tests in `compiler/tests/` covering: `i32` Send+Sync; `Array` !Send;
+  `Arc<i32>` Send; `Shared<i32>` !Send; channel send still rejects !Send.
+- Verify: `compiler/tests/build_tests.sh` (or targeted test binary) + existing
+  channel send-safe cases green. Self-host if checker emit changes.
 
 ## Goal
 
@@ -38,7 +58,7 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Обобщить `compiler/checker/send_safe.mlc` (`type_is_send_safe`) в переиспользуемый bound `Send[T]`, доступный не только для `Channel.send`, но и для будущих `spawn_thread`/`ThreadPool.submit` capture-проверок. Развести понятия Send/Sync — сейчас предикат конфлирует оба (`Arc<T>` даёт `false`, должен давать `true` для `Send`). | pending |
+| 1 | Обобщить `compiler/checker/send_safe.mlc` (`type_is_send_safe`) в переиспользуемый bound `Send[T]`, доступный не только для `Channel.send`, но и для будущих `spawn_thread`/`ThreadPool.submit` capture-проверок. Развести понятия Send/Sync — сейчас предикат конфлирует оба (`Arc<T>` даёт `false`, должен давать `true` для `Send`). Trait name locked: **`Sync`**. | **next** |
 | 2 | Rendezvous channel: `Channel[T].bounded(0)` в `runtime/include/mlc/concurrency/channel.hpp` — сейчас `capacity == 0` кидает `invalid_argument`, нужен синхронный handoff вместо ошибки. | pending |
 | 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | pending |
 | 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). | pending |

@@ -5,10 +5,10 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 4 слоя, полная stress-матрица, читать перед началом).
 Смежный трек (не блокер для T1-T4): [TRACK_CONCURRENCY_V2.md](TRACK_CONCURRENCY_V2.md).
 
-## Status: **open** — STEP=4 done (T1–T4 MVP); T5 blocked on V2; T6 next optional
+## Status: **open** — T1–T4 MVP done; T5 blocked on V2; T6 deferred (Planner)
 
-**Driver 2026-07-09:** STEP=4 — `scripts/concurrency_sanitize_gate.sh` + CI job
-`concurrency-sanitize`; atomic CHECK counters for TSan-clean stress tests.
+**Planner 2026-07-09:** After T4, next PLAN item is CONCURRENCY_V2 STEP=1 (not T6).
+T6 remains optional when V2 or capacity allows.
 
 ## Goal
 

@@ -7,9 +7,23 @@
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 4 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS T1–T4 done |
+| step_last | pick-next |
+| active_track | TRACK_CONCURRENCY_V2 STEP=1 |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:55 (Planner pick-next — CONCURRENCY_V2 STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 11:54 |
+| elapsed | ~1 min |
+| done    | PLAN order: HARNESS T1–T4 done → activate V2. Locked trait name `Sync`. Wrote STEP=1 acceptance (Send/Sync split, Arc/Mutex Send iff T Send, tests). HARNESS T6 deferred. |
+| result  | TRACK_CONCURRENCY_V2 STEP=1 ready. Plain: следующий Driver чинит send_safe. |
+| issues  | Ruby `dev_gate_fast` still red (HOF templates) — Driver verify via build_tests/mlcc. |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_V2 — Send/Sync predicates in send_safe.mlc |
 
 ### Turn 2026-07-09 11:54 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=4 — sanitize gate + CI)
 

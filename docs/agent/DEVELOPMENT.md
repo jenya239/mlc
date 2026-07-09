@@ -40,12 +40,12 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** T1–T4 MVP done (sanitize gate + CI).
-T5 blocked on CONCURRENCY_V2 StopToken; T6 optional nightly fuzz.
-Planner: pick next from PLAN (CONCURRENCY_V2 vs HARNESS T6).
+**TRACK_CONCURRENCY_V2** STEP=1 — generalize `Send` / add `Sync` predicates in
+`compiler/checker/send_safe.mlc` (`Arc`/`Mutex` Send iff T Send). Trait name:
+`Sync`. HARNESS T1–T4 done; T6 deferred.
 
-Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
-runtime harness; verify via existing `run_tests` / mlcc when touching compiler.
+Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — prefer mlcc
+path / existing `run_tests` when verifying checker.
 
 ## Step sizing (good vs bad)
 
