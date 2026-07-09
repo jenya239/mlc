@@ -16,6 +16,9 @@ module MLC
               "Owned" => "std::unique_ptr"
             }.freeze
 
+            # Raw C pointer: RawPointer<T> -> T* (no ownership wrapper)
+            RAW_POINTER_TYPE = "RawPointer".freeze
+
             # Wrapper types that map to C++ standard library types
             WRAPPER_TYPES = {
               "Option" => "std::optional",
@@ -73,6 +76,12 @@ module MLC
                     map_type(arg, type_map: type_map, type_registry: type_registry)
                   end.join(", ")
                   return "#{cpp_ptr}<#{type_args}>"
+                end
+
+                # RawPointer<T> -> T*
+                if base_name == RAW_POINTER_TYPE
+                  inner = map_type(type.type_args.first, type_map: type_map, type_registry: type_registry)
+                  return "#{inner}*"
                 end
 
                 # Check for wrapper types: Option<T> -> std::optional<T>

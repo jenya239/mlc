@@ -10,7 +10,7 @@ module MLC
           # Uses -> for smart pointer types (Shared, Weak, Owned)
           class MemberRule < ExpressionRule
             # Smart pointer type names that require -> operator
-            SMART_POINTER_TYPES = %w[Shared Weak Owned].freeze
+            SMART_POINTER_TYPES = %w[Shared Weak Owned RawPointer].freeze
 
             def applies?(node)
               context.checker.member_expr?(node)

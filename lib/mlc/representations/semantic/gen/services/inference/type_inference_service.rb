@@ -330,7 +330,7 @@ return smart_pointer_method if smart_pointer_method
 
                 # Auto-deref for smart pointer types: Shared<T>, Weak<T>, Owned<T>
                 # When accessing a member on Shared<Node>, try to resolve it on Node
-                if %w[Shared Weak Owned].include?(base_name) && object_type.type_args&.any?
+                if %w[Shared Weak Owned RawPointer].include?(base_name) && object_type.type_args&.any?
                   inner_type = object_type.type_args.first
                   begin
                     return infer_member_type(inner_type, member, node: node)

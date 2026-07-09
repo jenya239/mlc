@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_FFI_LAYER** STEP=1 — `RawPointer[T]` Ruby bootstrap.
-ISOLATE closed; Supervisor deferred: [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md).
+**TRACK_FFI_LAYER** STEP=2 — `RawPointer[T]` self-hosted checker/codegen.
+STEP=1 Ruby bootstrap done.
 
 ## Step sizing (good vs bad)
 

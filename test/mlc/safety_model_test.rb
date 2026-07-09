@@ -203,6 +203,33 @@ class SafetyModelTest < Minitest::Test
     assert_equal "std::unique_ptr<Buffer>", result
   end
 
+
+  def test_parse_raw_pointer_type
+    source = "fn foo(data: RawPointer<i32>) -> bool = true"
+    ast = @parser.new(source).parse
+
+    func = ast.declarations.first
+    param_type = func.params.first.type
+
+    assert_instance_of MLC::Source::AST::GenericType, param_type
+    assert_equal "RawPointer", param_type.base_type.name
+    assert_equal 1, param_type.type_params.length
+  end
+
+  def test_type_mapper_raw_pointer_to_star
+    type = MLC::SemanticIR::GenericType.new(
+      base_type: MLC::SemanticIR::Type.new(kind: :prim, name: "RawPointer"),
+      type_args: [MLC::SemanticIR::Type.new(kind: :prim, name: "i32")]
+    )
+
+    type_map = { "i32" => "int32_t" }
+    result = MLC::Backends::Cpp::Services::Utils::TypeMapper.map_type(
+      type, type_map: type_map
+    )
+
+    assert_equal "int32_t*", result
+  end
+
   def test_type_mapper_ref_type
     inner = MLC::SemanticIR::Type.new(kind: :prim, name: "i32")
     type = MLC::SemanticIR::RefType.new(inner_type: inner)
@@ -339,6 +366,35 @@ class SafetyModelTest < Minitest::Test
 
     cpp = MLC.compile(source).to_source
     assert_includes cpp, "std::unique_ptr<int>"
+  end
+
+
+  def test_e2e_raw_pointer_type
+    source = <<~MLCORA
+      fn get_raw(data: RawPointer<i32>) -> bool = true
+    MLCORA
+
+    cpp = MLC.compile(source).to_source
+    assert_includes cpp, "int*"
+  end
+
+  def test_e2e_raw_pointer_null_and_is_null
+    source = <<~MLCORA
+      type Node = { value: i32 }
+
+      extend RawPointer<T> {
+        extern fn null() -> RawPointer<T>
+        extern fn is_null(pointer: RawPointer<T>) -> bool
+      }
+
+      fn check() -> bool = do
+        let pointer: RawPointer<Node> = RawPointer.null()
+        RawPointer.is_null(pointer)
+      end
+    MLCORA
+
+    cpp = MLC.compile(source).to_source
+    assert_includes cpp, "nullptr"
   end
 
   # ===========================================

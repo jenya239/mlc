@@ -25,7 +25,7 @@ module MLC
 
               # Non-literal type names (C++20: cannot be constexpr param/return)
               NON_LITERAL_TYPES = %w[string String array map].freeze
-              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet|Shared|Weak|Owned)$/
+              NON_LITERAL_TYPE_PATTERN = /^(Array|Vec|HashMap|HashSet|Shared|Weak|Owned|RawPointer)$/
 
               module_function
 

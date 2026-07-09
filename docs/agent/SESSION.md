@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 4 |
-| active_track | TRACK_FFI_LAYER STEP=1 |
-| test_gate | ok (smoke + check-only) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_FFI_LAYER STEP=2 |
+| test_gate | ok (safety_model raw_pointer) |
+
+### Turn 2026-07-09 14:38 (Driver TRACK_FFI_LAYER STEP=1 — RawPointer Ruby)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 14:38 |
+| elapsed | ~12 min |
+| done    | `memory.mlc` RawPointer opaque + null/is_null; `type_mapper` → T*; call_rule/member_rule; purity/inference; `safety_model_test` 4 cases. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/safety_model_test.rb -n /raw_pointer/` 4 runs 0 fail. |
+| result  | STEP=1 done. Plain: RawPointer → T* в Ruby bootstrap. |
+| issues  | `== null` keyword нет в языке — `is_null`/`null()` как Shared; TRACK `type_registry.rb` = opaque via stdlib (как Shared). |
+| next    | ROLE=Driver STEP=2 TRACK_FFI_LAYER — RawPointer self-hosted checker/codegen |
 
 ### Turn 2026-07-09 14:35 (Driver TRACK_CONCURRENCY_ISOLATE STEP=4 — close + FFI handoff)
 

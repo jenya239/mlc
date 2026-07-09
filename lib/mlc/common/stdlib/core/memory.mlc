@@ -10,10 +10,12 @@
 // Weak<T> - Non-owning reference (std::weak_ptr)
 // Owned<T> - Unique ownership (std::unique_ptr)
 
-// Opaque type declarations - mapped to C++ smart pointers
+// Opaque type declarations - mapped to C++ smart pointers / raw pointers
 export type Shared<T>
 export type Weak<T>
 export type Owned<T>
+// RawPointer<T> - non-owning C pointer (T*); no refcount, no Shared wrapper
+export type RawPointer<T>
 
 // =============================================================================
 // Constructor Functions (use these instead of Type.method())
@@ -46,6 +48,13 @@ export extern fn make_owned<T>(value: T) -> Owned<T>
 // Maps to: std::unique_ptr<T>()
 export extern fn owned_null<T>() -> Owned<T>
 
+// RawPointer constructors / predicates
+// Maps to: static_cast<T*>(nullptr)
+export extern fn raw_pointer_null<T>() -> RawPointer<T>
+
+// Maps to: pointer == nullptr
+export extern fn raw_pointer_is_null<T>(pointer: RawPointer<T>) -> bool
+
 // =============================================================================
 // Static Method Syntax (Type.method())
 // =============================================================================
@@ -65,4 +74,9 @@ extend Weak<T> {
 extend Owned<T> {
   extern fn new(value: T) -> Owned<T>
   extern fn null() -> Owned<T>
+}
+
+extend RawPointer<T> {
+  extern fn null() -> RawPointer<T>
+  extern fn is_null(pointer: RawPointer<T>) -> bool
 }

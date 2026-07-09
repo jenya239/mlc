@@ -44,6 +44,9 @@ module MLC
               # Owned<T> methods
               "Owned_new" => :make_unique,
               "Owned_null" => :owned_null,
+              # RawPointer<T> methods
+              "RawPointer_null" => :raw_pointer_null,
+              "RawPointer_is_null" => :raw_pointer_is_null,
               # Functional style (from stdlib)
               "make_shared" => :make_shared,
               "shared_null" => :shared_null,
@@ -52,7 +55,9 @@ module MLC
               "weak_lock" => :weak_lock,
               "weak_is_valid" => :weak_is_valid,
               "make_owned" => :make_unique,
-              "owned_null" => :owned_null
+              "owned_null" => :owned_null,
+              "raw_pointer_null" => :raw_pointer_null,
+              "raw_pointer_is_null" => :raw_pointer_is_null
             }.freeze
 
             def applies?(node)
@@ -518,6 +523,24 @@ module MLC
               when :owned_null
                 # std::unique_ptr<T>()
                 context.factory.identifier(name: "std::unique_ptr<#{inner_type}>()")
+
+              when :raw_pointer_null
+                # static_cast<T*>(nullptr)
+                context.factory.identifier(name: "static_cast<#{inner_type}*>(nullptr)")
+
+              when :raw_pointer_is_null
+                # pointer == nullptr
+                if args.first
+                  context.factory.binary_expression(
+                    left: args.first,
+                    operator: "==",
+                    right: context.factory.identifier(name: "nullptr"),
+                    operator_prefix: " ",
+                    operator_suffix: " "
+                  )
+                else
+                  context.factory.identifier(name: "true")
+                end
 
               else
                 # Fallback to regular call
