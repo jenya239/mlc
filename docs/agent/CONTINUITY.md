@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-09-plan-sync` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-09-mir-vm-gate` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -53,6 +53,7 @@ INSTRUCTIONS_REV=2026-07-09-plan-sync
 | SESSION `done` empty / placeholder | Fill concrete `done` + verify; run `scripts/session_turn_lint.py` |
 | SESSION.md > **~600 строк** | Архивировать старые turn's в `SESSION_HISTORY.md` **в этом же turn** до записи новой строки — не ждать Cleaner-ротацию (инцидент 2026-07-09: доросло до 928 без вмешательства между Cleaner-турнами) |
 | TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
+| **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
 
 ## When to stop (only these)
 

@@ -4,6 +4,15 @@ Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRAC
 
 **Status:** open, Epic 0–2 **done**; Epic 3 STEP=8–9 **done**; Epic 4 STEP=10 next
 
+**HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
+authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —
+do not start STEP 13 without an explicit new user command in chat. When
+STEP=12 is done, next turn is **not** `ROLE=Driver STEP=13 TRACK_MIR_VM_FULL`
+— instead `ROLE=Planner` picks the next track from `PLAN.md` priority queue
+(this track's own scope estimate for Epic 5 alone is ~80–150 agent-hours,
+explicitly out of proportion to its priority — this is not build-speed work,
+see `PLAN.md` §2.9 note).
+
 | Step | Item | Status |
 |------|------|--------|
 | A | Layer split (`eval` / `execute` / `runtime` / `outcome`) | done |
@@ -120,7 +129,7 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 |------|-------------|------|
 | 10 | Single-file `--run` (current) stable | Tier B |
 | 11 | Multi-module `--run`: import merge ? one MirProgram | vm on 2-file fixture |
-| 12 | `--run` on `misc/examples/*` subset (automated list) | script gate |
+| 12 | `--run` on `misc/examples/*` subset (automated list) | script gate — **after this: STOP, see gate above, do not open Epic 5** |
 
 ### Epic 5 � Compiler-shaped workload (STEP 13�20)
 

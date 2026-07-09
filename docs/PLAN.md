@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–3 STEP=1–9 **done**, Epic 4 STEP=10 next).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–3 STEP=1–9 **done**, Epic 4 STEP=10 next; **HARD STOP перед Epic 5** — не авторизован без явной команды пользователя, см. gate в самом треке, 2026-07-09).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -416,7 +416,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     Epic 2 STEP=7 (**done** 2026-07-09: `?` → `__mir_result_is_err`/`ok_value`);
     Epic 3 STEP=8 (**done** 2026-07-09: collections corpus + map/string/array_index diff);
     Epic 3 STEP=9 (**done** 2026-07-09: for-loop + pop + string.contains);
-    Epic 4 STEP=10 (**next** — single-file `--run` stable); Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
+    Epic 4 STEP=10 (**next** — single-file `--run` stable) → STEP=11-12;
+    **HARD STOP после STEP=12 (закрытие Epic 4) — Epic 5 (STEP 13-20, ~80-150
+    agent-часов) НЕ авторизован без явной команды пользователя** (решение
+    2026-07-09; это НЕ ускорение сборки — интерпретация без g++, 20-80×
+    медленнее исполнения; после STEP=12 → Planner выбирает следующий трек
+    из этой же очереди, не STEP=13)
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
