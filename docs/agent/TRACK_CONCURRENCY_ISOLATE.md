@@ -6,12 +6,10 @@ Supervisor later). Predecessor closed:
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md)
 (cancel wake, TaskScope C++, Sync-safe spawn capture).
 
-## Status: **open** — STEP=1 not started (handoff stub)
+## Status: **open** — STEP=1 next (ThreadPool)
 
-**Driver 2026-07-09:** Created on TASKSCOPE close. Do **not** start until
-[TRACK_CONCURRENCY_TEST_HARNESS](TRACK_CONCURRENCY_TEST_HARNESS.md) T5 (cancel
-stress matrix) is done or Planner reorders. FFI_LAYER remains medium priority
-in PLAN queue after concurrency polish.
+**Driver 2026-07-09:** HARNESS T5 done — Isolate/ThreadPool unblocked.
+FFI_LAYER remains medium priority after this track's STEP=1–2 polish.
 
 ## Goal
 

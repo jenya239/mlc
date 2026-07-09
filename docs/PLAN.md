@@ -396,8 +396,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_TEST_HARNESS T1-T4 (**done** 2026-07-09, sanitize CI)
   → CONCURRENCY_V2 STEP=1–6 (**closed** 2026-07-09)
   → CONCURRENCY_TASKSCOPE STEP=1–4 (**closed** 2026-07-09)
-  → CONCURRENCY_TEST_HARNESS T5 (**next** — cancel stress matrix)
-  → CONCURRENCY_ISOLATE STEP=1 (ThreadPool / Isolate handoff)
+  → CONCURRENCY_TEST_HARNESS T5 (**done** 2026-07-09); T6 deferred
+  → CONCURRENCY_ISOLATE STEP=1 (**next** — ThreadPool runtime)
   → FFI_LAYER STEP=1-6 (**средний приоритет пользователя** — после
     concurrency polish; STEP=7 FFI ждёт Send/Sync — уже готово)
   → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)

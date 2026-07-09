@@ -6,10 +6,10 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 Смежный трек (closed): [../archive/tracks/TRACK_CONCURRENCY_V2.md](../archive/tracks/TRACK_CONCURRENCY_V2.md);
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md).
 
-## Status: **open** — T1–T4 MVP done; T5 next (cancel stress matrix); T6 deferred
+## Status: **open** — T1–T5 done; T6 deferred (optional); T7 later
 
-**Driver 2026-07-09:** Channel `Cancelled` wake shipped in TASKSCOPE STEP=1.
-T5 = extend Layer 2 stress matrix with cancel-during-send/recv.
+**Driver 2026-07-09:** T5 — `stress_channel.cpp` cancel-during-send/recv +
+many blocked receivers (StopToken). Isolate track unblocked.
 
 ## Goal
 

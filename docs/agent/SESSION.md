@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS T5 |
-| test_gate | ok (self-host + smoke) |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_CONCURRENCY_ISOLATE STEP=1 |
+| test_gate | ok (smoke) |
+
+### Turn 2026-07-09 14:17 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=5 — cancel stress)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 14:17 |
+| elapsed | ~3 min |
+| done    | `stress_channel.cpp`: `test_cancel_during_receive_stress` (200×), `test_cancel_during_send_stress` (200×), `test_cancel_many_blocked_receivers` (50×16); TRACK T5 done; PLAN/ISOLATE unblocked. |
+| verify  | `runtime/test/run_concurrency_smoke.sh` exit 0 (stress_channel 1014527 checks). |
+| result  | STEP=5 done. Plain: cancel stress в Layer 2 зелёный. |
+| issues  | Dirty runtime test binaries left uncommitted (rebuild artifacts). |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_ISOLATE — ThreadPool runtime |
 
 ### Turn 2026-07-09 14:14 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=4 — close + Isolate handoff)
 

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** T5 — cancel-during-send/recv stress matrix.
-TASKSCOPE closed; Isolate handoff: [TRACK_CONCURRENCY_ISOLATE.md](TRACK_CONCURRENCY_ISOLATE.md).
+**TRACK_CONCURRENCY_ISOLATE** STEP=1 — `ThreadPool` runtime.
+HARNESS T5 done; T6 deferred.
 
 ## Step sizing (good vs bad)
 

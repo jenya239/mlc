@@ -1,8 +1,9 @@
-// Channel stress matrix Layer 2 (TRACK_CONCURRENCY_TEST_HARNESS STEP=2).
-// Cancel-during-send/recv deferred to T5 (StopToken). Mode A: real threads.
+// Channel stress matrix Layer 2 (TRACK_CONCURRENCY_TEST_HARNESS T2+T5).
+// Mode A: real threads. Cancel-during-send/recv via StopToken (T5).
 // g++ -std=c++20 -pthread -I../include -o stress_channel stress_channel.cpp
 
 #include "mlc/concurrency/channel.hpp"
+#include "mlc/concurrency/stop.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -240,6 +241,69 @@ void test_one_million_messages() {
     CHECK(sum.load() == expected);
 }
 
+void test_cancel_during_receive_stress() {
+    constexpr int iteration_count = 200;
+    for (int iteration = 0; iteration < iteration_count; ++iteration) {
+        mlc::concurrency::Channel<int> channel(1);
+        mlc::concurrency::StopSource stop;
+        mlc::concurrency::ChannelReceiveResult<int> result{
+            mlc::concurrency::ChannelStatus::Ok, std::nullopt};
+        std::thread waiter([&] { result = channel.receive(stop.token()); });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        stop.request();
+        waiter.join();
+        CHECK(result.status == mlc::concurrency::ChannelStatus::Cancelled);
+        CHECK(!result.value.has_value());
+    }
+}
+
+void test_cancel_during_send_stress() {
+    constexpr int iteration_count = 200;
+    for (int iteration = 0; iteration < iteration_count; ++iteration) {
+        mlc::concurrency::Channel<int> channel(1);
+        CHECK(channel.send(1));
+        mlc::concurrency::StopSource stop;
+        std::atomic<int> status_value{-1};
+        std::thread waiter([&] {
+            status_value.store(
+                static_cast<int>(channel.send(2, stop.token())),
+                std::memory_order_release);
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        stop.request();
+        waiter.join();
+        CHECK(status_value.load() ==
+              static_cast<int>(mlc::concurrency::ChannelStatus::Cancelled));
+    }
+}
+
+void test_cancel_many_blocked_receivers() {
+    constexpr int waiter_count = 16;
+    constexpr int round_count = 50;
+    for (int round = 0; round < round_count; ++round) {
+        mlc::concurrency::Channel<int> channel(1);
+        mlc::concurrency::StopSource stop;
+        std::vector<mlc::concurrency::ChannelReceiveResult<int>> results(
+            static_cast<size_t>(waiter_count),
+            mlc::concurrency::ChannelReceiveResult<int>{
+                mlc::concurrency::ChannelStatus::Ok, std::nullopt});
+        std::vector<std::thread> waiters;
+        waiters.reserve(static_cast<size_t>(waiter_count));
+        for (int index = 0; index < waiter_count; ++index) {
+            waiters.emplace_back([&, index] {
+                results[static_cast<size_t>(index)] = channel.receive(stop.token());
+            });
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        stop.request();
+        for (auto& waiter : waiters) waiter.join();
+        for (const auto& result : results) {
+            CHECK(result.status == mlc::concurrency::ChannelStatus::Cancelled);
+            CHECK(!result.value.has_value());
+        }
+    }
+}
+
 void test_multi_producer_consumer_stress() {
     constexpr int producer_count = 4;
     constexpr int consumer_count = 4;
@@ -299,6 +363,9 @@ int main() {
     test_sender_handle_drop();
     test_receiver_exits_early();
     test_rapid_open_close();
+    test_cancel_during_receive_stress();
+    test_cancel_during_send_stress();
+    test_cancel_many_blocked_receivers();
     test_multi_producer_consumer_stress();
     test_one_million_messages();
     const int failed_count = failed.load();
