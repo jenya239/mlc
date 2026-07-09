@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TASKSCOPE** STEP=4 — self-host + docs / close or handoff.
-STEP=3 Sync-safe Mutex/Arc spawn capture done.
+**TRACK_CONCURRENCY_TEST_HARNESS** T5 — cancel-during-send/recv stress matrix.
+TASKSCOPE closed; Isolate handoff: [TRACK_CONCURRENCY_ISOLATE.md](TRACK_CONCURRENCY_ISOLATE.md).
 
 ## Step sizing (good vs bad)
 

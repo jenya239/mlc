@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=4 |
-| test_gate | ok (mlcc probes) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS T5 |
+| test_gate | ok (self-host + smoke) |
+
+### Turn 2026-07-09 14:14 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=4 — close + Isolate handoff)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CONCURRENCY_TASKSCOPE |
+| started | 2026-07-09 14:01 |
+| elapsed | ~13 min |
+| done    | Self-host p1≡p2; MEMORY_MODEL Sync-safe+cancel+TaskScope; PLAN §8; archive TASKSCOPE; handoff `TRACK_CONCURRENCY_ISOLATE.md`; HARNESS T5 unblocked note. |
+| verify  | `mlcc --check-only main` 0; smoke exit 0; `diff -rq p1 p2 --exclude=obj` empty. |
+| result  | TRACK closed. Plain: cancel/TaskScope/Sync-safe сданы; дальше HARNESS T5. |
+| issues  | Dirty `compiler/out/mlcc` + stress binaries left uncommitted (build artifacts). |
+| next    | ROLE=Driver STEP=5 TRACK_CONCURRENCY_TEST_HARNESS — cancel-during-send/recv stress matrix |
 
 ### Turn 2026-07-09 13:55 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=3 — Sync-safe spawn capture)
 
