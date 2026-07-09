@@ -279,6 +279,7 @@ mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
   names.set(mlc::String("Shared", 6), true);
   names.set(mlc::String("Weak", 4), true);
   names.set(mlc::String("Map", 3), true);
+  names.set(mlc::String("RawPointer", 10), true);
   names.set(mlc::String("Ok", 2), true);
   names.set(mlc::String("Err", 3), true);
   names.set(mlc::String("Result", 6), true);

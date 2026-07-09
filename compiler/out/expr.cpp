@@ -221,6 +221,9 @@ mlc::String cpp_array_type_element(mlc::String inner_type_cpp) noexcept{
 mlc::String cpp_shared_pointer_type(mlc::String inner_type_cpp) noexcept{
   return ((mlc::String("std::shared_ptr<", 16) + mlc::to_string(inner_type_cpp)) + mlc::String(">", 1));
 }
+mlc::String cpp_raw_pointer_type(mlc::String inner_type_cpp) noexcept{
+  return ((mlc::String("", 0) + mlc::to_string(inner_type_cpp)) + mlc::String("*", 1));
+}
 mlc::String cpp_template_single_type_argument(mlc::String template_name_cpp, mlc::String type_argument_cpp) noexcept{
   return ((((mlc::String("", 0) + mlc::to_string(template_name_cpp)) + mlc::String("<", 1)) + mlc::to_string(type_argument_cpp)) + mlc::String(">", 1));
 }

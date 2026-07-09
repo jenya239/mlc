@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_FFI_LAYER** STEP=2 — `RawPointer[T]` self-hosted checker/codegen.
-STEP=1 Ruby bootstrap done.
+**TRACK_FFI_LAYER** STEP=3 — `extern fn` real codegen (`= "c_name" from "<header>"`).
+STEP=2 self-hosted RawPointer done.
 
 ## Step sizing (good vs bad)
 

@@ -59,13 +59,19 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
 [&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return context::CodegenContext_resolve(context, type_name); },
 [&](const registry::TTuple& tTuple) { auto [types] = tTuple; return ((mlc::String("std::tuple<", 11) + mlc::to_string(types.map([=](std::shared_ptr<registry::Type> type_value) mutable { return sem_type_to_cpp(context, type_value); }).join(mlc::String(", ", 2)))) + mlc::String(">", 1)); },
 [&](const registry::TPair& tPair) { auto [left, right] = tPair; return ((((mlc::String("std::pair<", 10) + mlc::to_string(sem_type_to_cpp(context, left))) + mlc::String(", ", 2)) + mlc::to_string(sem_type_to_cpp(context, right))) + mlc::String(">", 1)); },
-[&](const registry::TGeneric& tGeneric) { auto [type_name, type_arguments] = tGeneric; return (((type_name == mlc::String("Option", 6)) && (type_arguments.length() == 1)) ? (((mlc::String("std::optional<", 14) + mlc::to_string(sem_type_to_cpp(context, type_arguments[0]))) + mlc::String(">", 1))) : ([&]() -> mlc::String {
+[&](const registry::TGeneric& tGeneric) { auto [type_name, type_arguments] = tGeneric; return [&]() -> mlc::String {
+  if (((type_name == mlc::String("Option", 6)) && (type_arguments.length() == 1)))   {
+    return ((mlc::String("std::optional<", 14) + mlc::to_string(sem_type_to_cpp(context, type_arguments[0]))) + mlc::String(">", 1));
+  } else   {
+    return (((type_name == mlc::String("RawPointer", 10)) && (type_arguments.length() == 1)) ? (expr::cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))) : ([&]() -> mlc::String {
   if ((type_arguments.length() == 0))   {
     return cpp_generic_base_name(context, type_name);
   } else   {
     return ((type_arguments.length() == 1) ? (expr::cpp_template_single_type_argument(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_arguments[0]))) : (expr::cpp_template_two_type_arguments(cpp_generic_base_name(context, type_name), sem_type_to_cpp(context, type_arguments[0]), sem_type_to_cpp(context, type_arguments[1]))));
   }
-}())); },
+}()));
+  }
+}(); },
 [&](const registry::TFn& tFn) { auto [param_types, return_type] = tFn; return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), param_types.map([=](std::shared_ptr<registry::Type> type_value) mutable { return sem_type_to_cpp(context, type_value); }).join(mlc::String(", ", 2))); },
 [&](const registry::TAssoc& tAssoc) { auto [param, assoc] = tAssoc; return ((((mlc::String("typename ", 9) + mlc::to_string(cpp_naming::cpp_safe(param))) + mlc::String("::", 2)) + mlc::to_string(assoc)) + mlc::String("", 0)); }
 }, (*semantic_type));
@@ -138,9 +144,9 @@ mlc::String type_to_cpp(context::CodegenContext context, std::shared_ptr<ast::Ty
 [&](const ast::TyNamed& tyNamed) { auto [name] = tyNamed; return type_name_to_cpp(context, name); },
 [&](const ast::TyArray& tyArray) { auto [inner] = tyArray; return expr::cpp_array_type_element(type_to_cpp(context, inner)); },
 [&](const ast::TyShared& tyShared) { auto [inner] = tyShared; return expr::cpp_shared_pointer_type(type_to_cpp(context, inner)); },
-[&](const ast::TyGeneric& tyGeneric) { auto [name, type_arguments] = tyGeneric; return [&]() -> auto {
-  if (((name == mlc::String("ref", 3)) && (type_arguments.length() == 1)))   {
-    return expr::cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]));
+[&](const ast::TyGeneric& tyGeneric) { auto [name, type_arguments] = tyGeneric; return (((name == mlc::String("ref", 3)) && (type_arguments.length() == 1)) ? (expr::cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))) : ([&]() -> auto {
+  if (((name == mlc::String("RawPointer", 10)) && (type_arguments.length() == 1)))   {
+    return expr::cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]));
   } else   {
     return [&]() {
 auto safe = cpp_generic_base_name(context, name);
@@ -153,7 +159,7 @@ return [&]() -> mlc::String {
 }();
 }();
   }
-}(); },
+}())); },
 [&](const ast::TyFn& tyFn) { auto [parameter_types, return_type_expression] = tyFn; return expr::cpp_std_function_type(type_to_cpp(context, return_type_expression), parameter_types.map([=](std::shared_ptr<ast::TypeExpr> parameter_type) mutable { return type_to_cpp(context, parameter_type); }).join(mlc::String(", ", 2))); },
 [&](const ast::TyAssoc& tyAssoc) { auto [param, assoc] = tyAssoc; return ((((mlc::String("typename ", 9) + mlc::to_string(cpp_naming::cpp_safe(param))) + mlc::String("::", 2)) + mlc::to_string(assoc)) + mlc::String("", 0)); }
 }, (*type_expr));

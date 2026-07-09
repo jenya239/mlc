@@ -71,6 +71,7 @@ mlc::String parameter_declaration_item(mlc::String type_expression_cpp, mlc::Str
 mlc::String block_close_newline() noexcept;
 mlc::String cpp_array_type_element(mlc::String inner_type_cpp) noexcept;
 mlc::String cpp_shared_pointer_type(mlc::String inner_type_cpp) noexcept;
+mlc::String cpp_raw_pointer_type(mlc::String inner_type_cpp) noexcept;
 mlc::String cpp_template_single_type_argument(mlc::String template_name_cpp, mlc::String type_argument_cpp) noexcept;
 mlc::String cpp_template_two_type_arguments(mlc::String template_name_cpp, mlc::String first_type_argument_cpp, mlc::String second_type_argument_cpp) noexcept;
 mlc::String cpp_std_function_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept;

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_FFI_LAYER STEP=2 |
-| test_gate | ok (safety_model raw_pointer) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_FFI_LAYER STEP=3 |
+| test_gate | ok (mlcc RawPointer probe) |
+
+### Turn 2026-07-09 14:52 (Driver TRACK_FFI_LAYER STEP=2 — RawPointer self-hosted)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 14:52 |
+| elapsed | ~12 min |
+| done    | `type_gen.mlc`/`expr.mlc` RawPointer→T*; `check.mlc` collect_globals; `test_raw_pointer_syntax.mlc`; suite_registry wire; out regenerated. |
+| verify  | `compiler/build.sh` ok; `mlcc --check-only main` 0; probe `RawPointer<i32>` → `int*` in .hpp/.cpp. |
+| result  | STEP=2 done. Plain: mlcc знает RawPointer как T*. |
+| issues  | Ruby `rake test_compiler_mlc` still red (pre-existing MATCH/HOF); verified via mlcc probes. |
+| next    | ROLE=Driver STEP=3 TRACK_FFI_LAYER — extern fn real codegen from header |
 
 ### Turn 2026-07-09 14:38 (Driver TRACK_FFI_LAYER STEP=1 — RawPointer Ruby)
 

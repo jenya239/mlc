@@ -1,0 +1,43 @@
+import { TestResult, assert_eq_int, assert_eq_str } from './test_runner'
+import { assert_type_generates } from './codegen_test_helpers'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { create_codegen_context } from '../codegen/context'
+import { empty_program } from './ast_builders'
+import { TyGeneric, TyI32, TyNamed } from '../frontend/ast'
+import { TI32, TGeneric } from '../checker/registry'
+import { sem_type_to_cpp } from '../codegen/decl/type_gen'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+export fn raw_pointer_syntax_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const context = create_codegen_context(empty_program())
+
+  results.push(assert_type_generates(
+    'RawPointer<i32> type_to_cpp',
+    context,
+    Shared.new(TyGeneric('RawPointer', [Shared.new(TyI32)])),
+    'int*'))
+
+  results.push(assert_eq_str(
+    'RawPointer<i32> sem_type_to_cpp',
+    sem_type_to_cpp(context, Shared.new(TGeneric('RawPointer', [Shared.new(TI32)]))),
+    'int*'))
+
+  results.push(assert_type_generates(
+    'RawPointer<Node> type_to_cpp',
+    context,
+    Shared.new(TyGeneric('RawPointer', [Shared.new(TyNamed('Node'))])),
+    'Node*'))
+
+  results.push(assert_eq_int('RawPointer param checks',
+    check_error_count('fn get_raw(data: RawPointer<i32>) -> bool = true\nfn main() -> i32 = 0'), 0))
+
+  results
+end
