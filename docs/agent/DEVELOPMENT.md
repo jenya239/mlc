@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_FFI_LAYER** STEP=3 — `extern fn` real codegen (`= "c_name" from "<header>"`).
-STEP=2 self-hosted RawPointer done.
+**TRACK_FFI_LAYER** STEP=3 — self-hosted `extern fn` codegen (`decl_cpp.mlc`).
+Ruby FFI binding slice done.
 
 ## Step sizing (good vs bad)
 

@@ -113,7 +113,40 @@ module MLC
           end
 
           # Lower function body using new architecture
-          block_body = if func.body.nil?
+          block_body = if func.body.nil? && func.respond_to?(:extern_c_name) && func.extern_c_name
+                         # FFI binding: thin wrapper that calls the C symbol.
+                         # Capture C address before defining the MLC wrapper (avoids recursion when names match).
+                         param_names = func.params.map { |parameter| @context.sanitize_identifier(parameter.name) }
+                         call_arguments = param_names.join(", ")
+                         c_name = func.extern_c_name.to_s
+                         return_mapped = @context.map_type(func.ret_type).to_s
+                         param_types = func.params.map { |parameter| @context.map_type(parameter.type).to_s }
+                         signature_params = param_types.join(", ")
+                         binder_name = "mlc_ffi_bind_#{@context.sanitize_identifier(func.name)}"
+                         binder_code = "static auto const #{binder_name} = "                                        "static_cast<#{return_mapped}(*)(#{signature_params})>(&::#{c_name});"
+                         call_expression = if call_arguments.empty?
+                                             "#{binder_name}()"
+                                           else
+                                             "#{binder_name}(#{call_arguments})"
+                                           end
+                         body_code = if return_mapped == "void" || return_mapped.empty?
+                                       "#{call_expression};"
+                                     else
+                                       "return #{call_expression};"
+                                     end
+                         CppAst::Nodes::BlockStatement.new(
+                           statements: [
+                             @context.factory.raw_statement(code: binder_code),
+                             @context.factory.raw_statement(code: body_code)
+                           ],
+                           statement_trailings: ["
+", "
+"],
+                           lbrace_suffix: "
+",
+                           rbrace_prefix: ""
+                         )
+                       elsif func.body.nil?
                          # External/opaque functions have no body
                          nil
                        elsif func.body.is_a?(SemanticIR::BlockExpr)
@@ -222,6 +255,14 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result_combinators.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/optional_combinators.hpp", system: false)
           ]
+          ffi_headers = module_node.items.grep(SemanticIR::Func).filter_map do |function|
+            next unless function.respond_to?(:extern_header) && function.extern_header
+            header_path = function.extern_header.to_s
+            system_include = header_path.start_with?("<") && header_path.end_with?(">")
+            cleaned = system_include ? header_path[1...-1] : header_path.delete_prefix('"').delete_suffix('"')
+            CppAst::Nodes::IncludeDirective.new(path: cleaned, system: system_include)
+          end.uniq { |directive| [directive.path, directive.system] }
+          include_stmts.concat(ffi_headers)
 
           # Phase 1: emit forward declarations + using aliases for ALL sum types.
           # Record types (like MatchArm, FieldVal) may reference sum types (Expr, Stmt)
@@ -251,7 +292,7 @@ module MLC
           # Uses the same modifiers as the actual definition to avoid redeclaration mismatch.
           func_protos = module_node.items.grep(SemanticIR::Func).flat_map do |func|
             next [] if (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?)
-            next [] if func.body.nil? # extern - no forward decl needed
+            next [] if func.body.nil? && !(func.respond_to?(:extern_c_name) && func.extern_c_name) # bare extern - no forward decl
             [function_forward_decl(func)]
           end
 

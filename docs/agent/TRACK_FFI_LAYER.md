@@ -7,10 +7,10 @@ Parent: [../PLAN.md](../PLAN.md) §10, [../FFI_LAYER.md](../FFI_LAYER.md)
 Приоритет: **средний** — concurrency Isolate/TaskScope closed; **next in PLAN
 queue**. Send/Sync для STEP=7 уже готовы.
 
-## Status: **open** — STEP=2 done; STEP=3 next (extern fn codegen)
+## Status: **open** — STEP=3 Ruby done; STEP=3 self-hosted next
 
-**Driver 2026-07-09:** STEP=2 — self-hosted `RawPointer` → `T*` in `type_gen.mlc` /
-`expr.mlc`; `RawPointer` in `collect_globals`; `test_raw_pointer_syntax.mlc`.
+**Driver 2026-07-09:** STEP=3 Ruby — parse `= "c" from "<h>"`; IR fields;
+codegen `#include` + wrapper via `&::c_name` binder; `extern_ffi_binding_test.rb`.
 
 ## Steps
 
@@ -18,7 +18,7 @@ queue**. Send/Sync для STEP=7 уже готовы.
 |------|------|--------|
 | 1 | `RawPointer[T]` в Ruby-бутстрапе: новый builtin generic type, `lib/mlc/registries/type_registry.rb` + `type_mapper.rb` (codegen → `T*`). Методы: `is_null`, `==`/`!=` на null. Без refcounting, без `Shared<T>`-обёртки. Тесты в `test/mlc/`. | **done** |
 | 2 | `RawPointer[T]` в self-hosted (`compiler/`) — checker (registry entry, `compiler/checker/registry.mlc`) + codegen (`compiler/codegen/decl/type_gen.mlc`). Self-host verify gate. | **done** |
-| 3 | `extern fn name(...) -> Ret = "c_name" from "<header>"` — синтаксис уже намечен в `PLAN.md:564-567`, реализовать реальный codegen: `#include "<header>"` в `.cpp` того модуля, где объявление, плюс настоящий C++ вызов вместо `empty_cpp_declaration()` (`compiler/codegen/decl_cpp.mlc:517,538,1145,1154`). Сначала Ruby, потом self-hosted. Smoke: `extern fn sqrt(x: f64) -> f64 = "sqrt" from "<math.h>"`, вызов, сравнение с ожидаемым значением. | pending |
+| 3 | `extern fn name(...) -> Ret = "c_name" from "<header>"` — синтаксис уже намечен в `PLAN.md:564-567`, реализовать реальный codegen: `#include "<header>"` в `.cpp` того модуля, где объявление, плюс настоящий C++ вызов вместо `empty_cpp_declaration()` (`compiler/codegen/decl_cpp.mlc:517,538,1145,1154`). Сначала Ruby, потом self-hosted. Smoke: `extern fn sqrt(x: f64) -> f64 = "sqrt" from "<math.h>"`, вызов, сравнение с ожидаемым значением. | **Ruby done** / self-hosted **next** |
 | 4 | `extern lib "name"` — декларация на уровне модуля; `build_bin.sh` собирает список по всем импортированным модулям финальной программы, добавляет `-l<name>` в командную строку линковки (не в компиляцию `.o`). Проверить на `-lm` (везде есть, не требует внешней инсталляции) + STEP=3 smoke. | pending |
 | 5 | `extern type Name = "CName" from "<header>"` в self-hosted парсере (сегодня только Ruby: `lib/mlc/source/parser/declaration_parser.rb:534-560`) — `compiler/frontend/parser/decls.mlc` (сейчас `type Name` без `=` уходит в `parse_variants`, `:699-733` — не opaque). Плюс `drop "c_function"` — генерация RAII-обёртки (`std::unique_ptr` + custom deleter) для функций, возвращающих `-> owned RawPointer[T]`. | pending |
 | 6 | `extern fn(Args) -> Return` как тип (C function pointer, не closure) — codegen `Ret(*)(Args...)`; checker запрещает передачу не-top-level/захватывающей функции в такую позицию (переиспользовать `compiler/checker/escape_analysis.mlc`, новая диагностика вместо тихого несоответствия типов). | pending |

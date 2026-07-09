@@ -187,6 +187,19 @@ module MLC
           lines << ""
 
           # Additional includes for implementation
+          ffi_headers = module_node.items.grep(MLC::SemanticIR::Func).filter_map do |function|
+            next unless function.respond_to?(:extern_header) && function.extern_header
+            header_path = function.extern_header.to_s
+            if header_path.start_with?("<") && header_path.end_with?(">")
+              "#include #{header_path}"
+            else
+              cleaned = header_path.delete_prefix('"').delete_suffix('"')
+              "#include \"#{cleaned}\""
+            end
+          end.uniq
+          ffi_headers.each { |line| lines << line }
+          lines << "" unless ffi_headers.empty?
+
           impl_imports = filtered_imports(imports, required_imports)
           impl_imports.each do |import|
             header_name = module_path_to_header(import.path)

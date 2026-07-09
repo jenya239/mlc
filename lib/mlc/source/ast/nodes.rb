@@ -116,10 +116,11 @@ module MLC
 
       # Function declarations
       class FuncDecl < Node
-        attr_reader :name, :params, :ret_type, :body, :type_params, :where_clause, :exported, :external, :is_async
+        attr_reader :name, :params, :ret_type, :body, :type_params, :where_clause, :exported, :external, :is_async,
+                    :extern_c_name, :extern_header
 
         def initialize(name:, params:, ret_type:, body: nil, type_params: [], where_clause: nil, exported: false, external: false,
-                       is_async: false, origin: nil)
+                       is_async: false, extern_c_name: nil, extern_header: nil, origin: nil)
           super(origin: origin)
           @name = name
           @params = params
@@ -130,6 +131,8 @@ module MLC
           @exported = exported        # Boolean - is this exported?
           @external = external        # Boolean - is this an external (C++) function?
           @is_async = is_async        # Boolean - is this an async function (coroutine)?
+          @extern_c_name = extern_c_name  # String or nil — C symbol for FFI binding
+          @extern_header = extern_header  # String or nil — C header path (may include <...>)
         end
       end
 

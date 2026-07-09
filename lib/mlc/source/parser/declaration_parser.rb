@@ -32,12 +32,19 @@ module MLC
           where_clause = parse_where_clause if current.type == :WHERE
 
           # Body is optional for extern functions (= extern sugar in extend bodies)
+          # FFI binding: = "c_name" from "<header>"
           body = nil
+          extern_c_name = nil
+          extern_header = nil
           if current.type == :EQUAL
             consume(:EQUAL)
             if current.type == :EXTERN
               consume(:EXTERN)
               external = true
+            elsif current.type == :STRING_LITERAL && external
+              extern_c_name = consume(:STRING_LITERAL).value
+              consume(:FROM)
+              extern_header = consume(:STRING_LITERAL).value
             else
               body = parse_expression
             end
@@ -53,7 +60,9 @@ module MLC
               where_clause: where_clause,
               external: external,
               exported: exported,
-              is_async: is_async
+              is_async: is_async,
+              extern_c_name: extern_c_name,
+              extern_header: extern_header
             )
           end
         end

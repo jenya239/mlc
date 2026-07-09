@@ -201,10 +201,10 @@ module MLC
     # Function declaration
     class Func < Node
       attr_reader :name, :params, :ret_type, :body, :effects, :type_params, :external, :exported, :is_async,
-                  :synthetic_type_params
+                  :synthetic_type_params, :extern_c_name, :extern_header
 
       def initialize(name:, params:, ret_type:, body: nil, effects: [], type_params: [], external: false, exported: false, is_async: false,
-                     synthetic_type_params: [], origin: nil)
+                     synthetic_type_params: [], extern_c_name: nil, extern_header: nil, origin: nil)
         super(origin: origin)
         @name = name
         @params = params # Array of Param
@@ -216,6 +216,8 @@ module MLC
         @exported = exported  # Boolean - is this exported?
         @is_async = is_async  # Boolean - is this an async function (coroutine)?
         @synthetic_type_params = synthetic_type_params
+        @extern_c_name = extern_c_name
+        @extern_header = extern_header
       end
 
       def all_type_params

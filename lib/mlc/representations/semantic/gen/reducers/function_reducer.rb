@@ -156,6 +156,8 @@ module MLC
                 external: true,
                 exported: func_decl.exported,
                 is_async: func_decl.is_async,
+                extern_c_name: (func_decl.extern_c_name if func_decl.respond_to?(:extern_c_name)),
+                extern_header: (func_decl.extern_header if func_decl.respond_to?(:extern_header)),
                 origin: func_decl.origin
               )
             end

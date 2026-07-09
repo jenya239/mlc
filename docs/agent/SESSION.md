@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_FFI_LAYER STEP=3 |
-| test_gate | ok (mlcc RawPointer probe) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_FFI_LAYER STEP=3 (self-hosted) |
+| test_gate | ok (extern_ffi_binding_test) |
+
+### Turn 2026-07-09 15:05 (Driver TRACK_FFI_LAYER STEP=3 — extern fn Ruby codegen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 15:05 |
+| elapsed | ~4 min |
+| done    | Parse `= "c" from "<h>"`; AST/IR `extern_c_name`/`extern_header`; codegen `#include` + `&::c` binder wrapper; `extern_ffi_binding_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/extern_ffi_binding_test.rb` 2 runs 0 fail. |
+| result  | STEP=3 Ruby slice done. Plain: extern fn → include + C call. |
+| issues  | Self-hosted `decl_cpp.mlc` still empty for extern; f64 literal smoke deferred. |
+| next    | ROLE=Driver STEP=3 TRACK_FFI_LAYER — self-hosted extern fn codegen in decl_cpp.mlc |
 
 ### Turn 2026-07-09 14:52 (Driver TRACK_FFI_LAYER STEP=2 — RawPointer self-hosted)
 
