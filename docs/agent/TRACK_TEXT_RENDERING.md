@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 
 Приоритет: **личный проект пользователя, низкий в общей очереди** —
 разблокирован закрытием [TRACK_FFI_LAYER](../archive/tracks/TRACK_FFI_LAYER.md)
-(STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_API_CLIENT` без
+(STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_MIR_VM_FULL` без
 явной команды.
 
 ## Status: **open** — STEP=0 done; STEP=1 next (design §5)

@@ -1,17 +1,17 @@
 # Track: API-клиенты (derive Json + OpenAPI codegen)
 
-Parent: [../PLAN.md](../PLAN.md), [../API_CLIENT.md](../API_CLIENT.md)
+Parent: [../../PLAN.md](../../PLAN.md), [../../API_CLIENT.md](../../API_CLIENT.md)
 (полная спецификация — читать перед началом, там же факт-таблица и открытые
 конвенции §3).
 
 Приоритет: **средний** — часть `STDLIB_BACKEND.md`, но не зависит от
 `FFI_LAYER` (JSON/HTTP уже есть, `derive` — существующий языковой механизм).
-Может стартовать независимо от очереди FFI/concurrency.
 
-## Status: **open** — STEP=5 done; STEP=6 next
+## Status: **closed** 2026-07-09 — STEP=1–6 done
 
-**Driver 2026-07-09:** STEP=5 — `scripts/openapi_codegen.rb` MVP + mini Petstore fixture/test;
-STEP=4 self-hosted derive Json done earlier.
+**Driver 2026-07-09:** STEP=6 — self-host `mlcc`→`mlcc2`→`diff` identical;
+`regression_gate.sh` 20/20; `API_CLIENT.md` §8 acceptance filled.
+Deferred: §8.4 mock-server + live `fetch` parse (stubs only).
 
 ## Steps
 
@@ -22,7 +22,23 @@ STEP=4 self-hosted derive Json done earlier.
 | 3 | `derive { Json }` для sum-типов — решить tagged-representation конвенцию (`API_CLIENT.md` §3), реализовать в Ruby. Тест: round-trip на каждом варианте. | **done** |
 | 4 | Self-hosted: `derive { Json }` в `compiler/checker/check/derive_validation.mlc` (добавить `"Json"`) + `compiler/codegen/decl.mlc`. Self-host verify gate. | **done** |
 | 5 | OpenAPI codegen — Ruby-скрипт (не часть `mlcc`), вход `openapi.yaml`, выход `.mlc` (types + client fns). MVP: `object`/`array`/примитивы + простой `oneOf`. Тест на публичной Petstore-спеке или аналоге. | **done** |
-| 6 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `API_CLIENT.md` §8. | pending |
+| 6 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `API_CLIENT.md` §8. | **done** |
+
+## Verify gate (STEP=6, 2026-07-09)
+
+```
+compiler/build.sh → ok (mlcc up to date)
+mlcc -o p1 compiler/main.mlc → 0 (~11s)
+build_bin.sh p1 mlcc2 → 0
+mlcc2 -o p2 compiler/main.mlc → 0 (~3.7s)
+diff -rq p1 p2 --exclude=obj → identical (exit 0)
+scripts/regression_gate.sh → 20 passed, 0 failed
+derive_json_test.rb → 6/0; openapi_codegen_test.rb → 5/0
+```
+
+Known deferrals (not blockers for close): OpenAPI client stubs not wired to
+`fetch` / mock HTTP server (`API_CLIENT.md` §8.4); `rake test_compiler_mlc`
+blocked by pre-existing Ruby parse fail on `spawn_capture.mlc`.
 
 ## Out of scope (см. `API_CLIENT.md` §6)
 

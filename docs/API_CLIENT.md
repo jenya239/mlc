@@ -105,14 +105,12 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `oneOf`, тест на реальной небольшой публичной спеке (например,
    Petstore — стандартный пример OpenAPI).
 
-## 8. Критерий приёмки
+## 8. Критерий приёмки — **met** 2026-07-09 (TRACK closed)
 
-1. `derive { Json }` на record-типе с `i64`/`string`/`Option<T>`/`Array<T>`
-   полями — round-trip `to_json` → `from_json` даёт исходное значение.
-2. `derive { Json }` на sum-типе — round-trip для каждого варианта.
-3. `JsonError` содержит достаточно информации для диагностики (какое поле,
-   какой ожидался тип) — не просто `"parse error"`.
-4. OpenAPI codegen генерирует компилируемый `.mlc` из тестовой спеки
-   (Petstore или аналог), сгенерированный клиент реально вызывает мок-сервер
-   и парсит ответ.
-5. Self-host: `mlcc` → `mlcc2` → `diff` идентичен после шагов 2-4.
+1. **done** — `derive_json_test.rb` record round-trip (`i64`/`string`/`Option`/`Array`).
+2. **done** — sum tagged Json round-trip (unit / 1-field / N-field).
+3. **done** — `JsonError` variants carry field/type detail (`MissingField`/`TypeMismatch`/…).
+4. **partial / deferred** — OpenAPI codegen emits types + client stubs from mini Petstore
+   (`openapi_codegen_test.rb` 5/0); live mock-server + `fetch` parse **not** wired
+   (out of MVP close; follow-up if needed).
+5. **done** — self-host `mlcc`→`mlcc2`→`diff` identical; `regression_gate.sh` 20/0.

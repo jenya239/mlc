@@ -9,7 +9,7 @@ Predecessor closed:
 ## Status: **deferred** — do not start until Planner reorders after chat-server gate
 
 **Driver 2026-07-09:** Created on ISOLATE close. `TRACK_FFI_LAYER` closed;
-queue head is [TRACK_API_CLIENT](TRACK_API_CLIENT.md). Supervisor needs Isolate/TaskScope
+queue head is [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md) (API_CLIENT closed). Supervisor needs Isolate/TaskScope
 in production use (CONCURRENCY_V2 phase-9 chat-server gate) before heavy work.
 
 ## Goal

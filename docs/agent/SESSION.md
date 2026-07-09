@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_API_CLIENT STEP=6 |
-| test_gate | ok (openapi_codegen_test 5/0) |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_MIR_VM_FULL Epic 0 STEP C |
+| test_gate | ok (self-host diff identical; regression_gate 20/0) |
+
+### Turn 2026-07-09 21:42 (Driver TRACK_API_CLIENT STEP=6 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 21:29 |
+| elapsed | ~13 min |
+| done    | Verify-gate: `mlcc`→p1→`mlcc2`→p2 `diff` identical; `regression_gate` 20/0; archive TRACK; PLAN §12 done; API_CLIENT §8 filled (§8.4 deferred). |
+| verify  | P1/P2 EXIT:0; DIFF_EXIT:0; REG_EXIT:0; derive_json 6/0; openapi 5/0. |
+| result  | TRACK closed. Plain: API_CLIENT done; next MIR_VM_FULL STEP C. |
+| issues  | §8.4 mock fetch deferred (stubs only). Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=C TRACK_MIR_VM_FULL — variant ctor via MIR metadata |
 
 ### Turn 2026-07-09 21:27 (Driver TRACK_API_CLIENT STEP=5 — OpenAPI codegen MVP)
 

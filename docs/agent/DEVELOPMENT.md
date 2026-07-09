@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_API_CLIENT** STEP=6 — verify-gate + close (`mlcc`→`mlcc2`→`diff`, regression_gate)
-(STEP=5 done: OpenAPI codegen MVP).
+**TRACK_MIR_VM_FULL** Epic 0 STEP C — variant ctor via MIR metadata
+(API_CLIENT closed 2026-07-09; TEXT_RENDERING remains low-priority).
 
 ## Step sizing (good vs bad)
 
