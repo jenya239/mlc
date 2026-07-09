@@ -40,5 +40,11 @@ else
   echo "[concurrency smoke] stress_channel"
 fi
 run_test stress_channel "${tsan_flags[@]}"
+echo "[concurrency smoke] stress_mutex"
+run_test stress_mutex "${tsan_flags[@]}"
+echo "[concurrency smoke] stress_arc"
+run_test stress_arc "${tsan_flags[@]}"
+echo "[concurrency smoke] stress_spawn"
+run_test stress_spawn "${tsan_flags[@]}"
 
 echo "[concurrency smoke] ok"

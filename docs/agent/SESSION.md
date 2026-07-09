@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=3 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=4 |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:43 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=3 — stress mutex/arc/spawn)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 11:39 |
+| elapsed | ~4 min |
+| done    | Added `stress_mutex.cpp`, `stress_arc.cpp`, `stress_spawn.cpp`; wired into smoke. Fixed `spawn.hpp`: eager `std::async` + decay-copy (was dangling capture → all tasks returned last index). |
+| verify  | `TMPDIR=…/tmp runtime/test/run_concurrency_smoke.sh` exit 0 (all stress_* green). |
+| result  | STEP=3 done. Plain: mutex/arc/spawn stress в smoke; spawn_task bugfix. |
+| issues  | — |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_TEST_HARNESS — concurrency_sanitize_gate.sh + CI job |
 
 ### Turn 2026-07-09 11:39 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=2 — stress_channel matrix)
 

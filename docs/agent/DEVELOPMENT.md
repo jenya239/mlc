@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** STEP=3 (T3) — `stress_mutex` / `stress_arc` /
-`stress_spawn` + wire into `run_concurrency_smoke.sh`. STEP=2 done. Layer: `runtime/`.
+**TRACK_CONCURRENCY_TEST_HARNESS** STEP=4 (T4) — `scripts/concurrency_sanitize_gate.sh`
++ CI job (asan/ubsan/tsan). STEP=3 done. Layer: `runtime/` + CI scripts.
 
 Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
 runtime harness; verify via existing `run_tests` / mlcc when touching compiler.
