@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=2 done) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_LANG_CYCLE_LINT **open** (STEP=3 done) |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:05 (Driver TRACK_LANG_CYCLE_LINT STEP=3 — self-apply clean)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_CYCLE_LINT |
+| started | 2026-07-09 06:02 |
+| elapsed | ~3 min |
+| done    | Ran `compiler/out/mlcc --check-only compiler/main.mlc`: exit 0, stderr empty (0×W-CYCLE). Documented in `TRACK_LANG_CYCLE_LINT.md`. Control repro still 2×W-CYCLE. |
+| result  | `dev_gate_fast` 1445/0. Plain: на реальном compiler/ ложных срабатываний нет. |
+| issues  | `tests_main.mlc` as entry fails path resolve (`frontend/ast.mlc`); not the self-apply target. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_CYCLE_LINT — verify-gate (self-host + regression) + close track |
 
 ### Turn 2026-07-09 06:01 (Driver TRACK_LANG_CYCLE_LINT STEP=2 — print warnings on stderr)
 
