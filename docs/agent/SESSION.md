@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 4 |
-| active_track | TRACK_CONCURRENCY_V2 STEP=2 |
+| driver_turns_since_plan | 1 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_V2 STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:36 (Driver TRACK_CONCURRENCY_V2 STEP=2 — rendezvous Channel)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 12:35 |
+| elapsed | ~2 min |
+| done    | `Channel(0)` rendezvous in `channel.hpp`; `TestChannel` capacity-0; `test_channel.cpp` handoff/close/try_send cases. Capacity max still 1048576; 0 allowed. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_channel 27/27). |
+| result  | STEP=2 done. Plain: rendezvous channel работает. |
+| issues  | — |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_V2 — Sender/Receiver split + close semantics |
 
 ### Turn 2026-07-09 12:35 (Driver TRACK_BUILD_SPEED3 STEP=4 — close + PLAN)
 

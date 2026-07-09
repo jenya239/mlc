@@ -4,7 +4,9 @@
 #include "mlc/concurrency/channel.hpp"
 #include "mlc/core/string.hpp"
 #include <atomic>
+#include <chrono>
 #include <iostream>
+#include <optional>
 #include <thread>
 
 static int passed = 0;
@@ -17,8 +19,57 @@ static int failed = 0;
 
 void test_capacity_validation() {
     bool threw = false;
-    try { mlc::concurrency::Channel<int>(0); } catch (const std::invalid_argument&) { threw = true; }
+    try { mlc::concurrency::Channel<int>(1048577); } catch (const std::invalid_argument&) { threw = true; }
     CHECK(threw);
+    mlc::concurrency::Channel<int> rendezvous(0);
+    CHECK(rendezvous.capacity() == 0);
+}
+
+void test_rendezvous_handoff() {
+    mlc::concurrency::Channel<int> channel(0);
+    std::atomic<bool> send_done{false};
+    std::atomic<bool> send_ok{false};
+    std::thread sender([&] {
+        send_ok.store(channel.send(42), std::memory_order_release);
+        send_done.store(true, std::memory_order_release);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    CHECK(!send_done.load(std::memory_order_acquire));
+    auto value = channel.receive();
+    sender.join();
+    CHECK(value.has_value() && *value == 42);
+    CHECK(send_ok.load(std::memory_order_acquire));
+    CHECK(send_done.load(std::memory_order_acquire));
+}
+
+void test_rendezvous_close_unblocks_send() {
+    mlc::concurrency::Channel<int> channel(0);
+    std::atomic<bool> send_finished{false};
+    std::atomic<bool> send_result{true};
+    std::thread sender([&] {
+        send_result.store(channel.send(1), std::memory_order_release);
+        send_finished.store(true, std::memory_order_release);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    CHECK(!send_finished.load(std::memory_order_acquire));
+    channel.close();
+    sender.join();
+    CHECK(!send_result.load(std::memory_order_acquire));
+}
+
+void test_rendezvous_close_unblocks_recv() {
+    mlc::concurrency::Channel<int> channel(0);
+    std::optional<int> received = 0;
+    std::thread receiver([&] { received = channel.receive(); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    channel.close();
+    receiver.join();
+    CHECK(!received.has_value());
+}
+
+void test_rendezvous_try_send_without_receiver() {
+    mlc::concurrency::Channel<int> channel(0);
+    CHECK(!channel.try_send(1));
 }
 
 void test_bounded_try_send() {
@@ -88,6 +139,10 @@ void test_string_copy() {
 
 int main() {
     test_capacity_validation();
+    test_rendezvous_handoff();
+    test_rendezvous_close_unblocks_send();
+    test_rendezvous_close_unblocks_recv();
+    test_rendezvous_try_send_without_receiver();
     test_bounded_try_send();
     test_copy_isolation();
     test_close_blocks_send();

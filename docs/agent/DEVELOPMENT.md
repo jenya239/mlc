@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=2 — rendezvous `Channel` capacity 0 (`runtime/`).
-BUILD_SPEED3 closed (c). HARNESS T1–T4 done. V2 STEP=1 Send/Sync done.
+**TRACK_CONCURRENCY_V2** STEP=3 — `Sender`/`Receiver` split + close semantics
+(`runtime/`). STEP=2 rendezvous done.
 
 ## Step sizing (good vs bad)
 
