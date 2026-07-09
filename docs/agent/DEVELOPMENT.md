@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_API_CLIENT** STEP=5 — OpenAPI codegen script (openapi.yaml → .mlc)
-(STEP=3 done: sum tagged Json derive).
+**TRACK_API_CLIENT** STEP=6 — verify-gate + close (`mlcc`→`mlcc2`→`diff`, regression_gate)
+(STEP=5 done: OpenAPI codegen MVP).
 
 ## Step sizing (good vs bad)
 

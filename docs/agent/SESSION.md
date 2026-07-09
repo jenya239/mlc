@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_API_CLIENT STEP=5 |
-| test_gate | ok (mlcc Json smoke SMOKE:0) |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_API_CLIENT STEP=6 |
+| test_gate | ok (openapi_codegen_test 5/0) |
+
+### Turn 2026-07-09 21:27 (Driver TRACK_API_CLIENT STEP=5 — OpenAPI codegen MVP)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 21:25 |
+| elapsed | ~10 min |
+| done    | `scripts/openapi_codegen.rb`: schemas→`derive { Json }` types + path ops→client stubs; fixture `mini_petstore.yaml`; test `openapi_codegen_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/openapi_codegen_test.rb` 5 runs 0 fail. |
+| result  | STEP=5 done. Plain: OpenAPI YAML → MLC types/fns. |
+| issues  | Client stubs not wired to `fetch` yet (API_CLIENT §8.4 mock call deferred to STEP=6 or follow-up). Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=6 TRACK_API_CLIENT — verify-gate + close |
 
 ### Turn 2026-07-09 21:25 (Driver TRACK_API_CLIENT STEP=4 — self-hosted derive Json)
 

@@ -8,10 +8,10 @@ Parent: [../PLAN.md](../PLAN.md), [../API_CLIENT.md](../API_CLIENT.md)
 `FFI_LAYER` (JSON/HTTP уже есть, `derive` — существующий языковой механизм).
 Может стартовать независимо от очереди FFI/concurrency.
 
-## Status: **open** — STEP=4 done; STEP=5 next
+## Status: **open** — STEP=5 done; STEP=6 next
 
-**Driver 2026-07-09:** STEP=4 — self-hosted `derive { Json }` (validation, codegen, registry, transform/ident);
-STEP=3 sum tagged done earlier.
+**Driver 2026-07-09:** STEP=5 — `scripts/openapi_codegen.rb` MVP + mini Petstore fixture/test;
+STEP=4 self-hosted derive Json done earlier.
 
 ## Steps
 
@@ -21,7 +21,7 @@ STEP=3 sum tagged done earlier.
 | 2 | `JsonError` тип (`MissingField`/`TypeMismatch`/…) + `derive { Json }` для record-типов в Ruby-бутстрапе: `lib/mlc/registries/` (список derivable traits) + `lib/mlc/backends/cpp/codegen.rb` (генерация `to_json`/`from_json`). Тест: round-trip на типе с `i64`/`string`/`Option<T>`/`Array<T>` полями. | **done** |
 | 3 | `derive { Json }` для sum-типов — решить tagged-representation конвенцию (`API_CLIENT.md` §3), реализовать в Ruby. Тест: round-trip на каждом варианте. | **done** |
 | 4 | Self-hosted: `derive { Json }` в `compiler/checker/check/derive_validation.mlc` (добавить `"Json"`) + `compiler/codegen/decl.mlc`. Self-host verify gate. | **done** |
-| 5 | OpenAPI codegen — Ruby-скрипт (не часть `mlcc`), вход `openapi.yaml`, выход `.mlc` (types + client fns). MVP: `object`/`array`/примитивы + простой `oneOf`. Тест на публичной Petstore-спеке или аналоге. | pending |
+| 5 | OpenAPI codegen — Ruby-скрипт (не часть `mlcc`), вход `openapi.yaml`, выход `.mlc` (types + client fns). MVP: `object`/`array`/примитивы + простой `oneOf`. Тест на публичной Petstore-спеке или аналоге. | **done** |
 | 6 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `API_CLIENT.md` §8. | pending |
 
 ## Out of scope (см. `API_CLIENT.md` §6)

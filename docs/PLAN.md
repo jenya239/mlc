@@ -387,7 +387,7 @@ compiler/
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — unblocked by FFI_LAYER close; низкий приоритет (личный проект); STEP=0 done, STEP=1 next (design §5) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
-| **12** API-клиенты (derive Json, OpenAPI codegen) | **in progress** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](agent/TRACK_API_CLIENT.md) open, STEP=4 **done** (self-hosted derive Json); STEP=5 **next** (OpenAPI codegen) |
+| **12** API-клиенты (derive Json, OpenAPI codegen) | **in progress** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](agent/TRACK_API_CLIENT.md) open, STEP=5 **done** (OpenAPI codegen MVP); STEP=6 **next** (verify-gate + close) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -407,7 +407,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     STEP=2 (**done** 2026-07-09: JsonError + record derive Json);
     STEP=3 (**done** 2026-07-09: sum tagged derive Json);
     STEP=4 (**done** 2026-07-09: self-hosted derive Json);
-    STEP=5 (**next** — OpenAPI codegen)
+    STEP=5 (**done** 2026-07-09: OpenAPI codegen MVP);
+    STEP=6 (**next** — verify-gate + close)
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
