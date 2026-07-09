@@ -52,4 +52,4 @@ Non-escaping fn params → `template<class F>` reduced `std::function` cost to n
 
 - (a) `extern template` for Shared/Array/std::function — **not justified** by this table.
 - (b) ninja/bash orchestration — not indicated by single-TU profile (Frontend+Instantiate dominate).
-- (c) or a **separate** follow-up on AST tagged-unions / smaller variants — outside STEP=3 (a)/(b); decide in STEP=3.
+- (c) **chosen (2026-07-09 STEP=3):** no further work in this track without a new measured bottleneck matching (a) or (b). Remaining compile cost is large AST/`TokenKind` `std::variant` — that would be a **separate** design track (tagged unions / smaller IR), not `extern template` and not ninja.

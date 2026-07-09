@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_BUILD_SPEED3** STEP=3 — decide from ftime-trace (variant dominates;
-not Shared/Array/std::function). STEP=2 done. Then STEP=4 docs / back to V2.
+**TRACK_BUILD_SPEED3** STEP=4 — PLAN §2.9 docs + close (STEP=3 chose **c**).
+Then return to TRACK_CONCURRENCY_V2 STEP=2.
 
 Debt: Ruby `build_tests.sh` / `dev_gate_fast` still red (HOF templates +
 namespace qualify) — verify checker via mlcc probe / `--check-only`.

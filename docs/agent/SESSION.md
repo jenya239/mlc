@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 2 |
-| active_track | TRACK_BUILD_SPEED3 STEP=3 |
+| driver_turns_since_plan | 4 |
+| step_last | 3 |
+| active_track | TRACK_BUILD_SPEED3 STEP=4 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:34 (Driver TRACK_BUILD_SPEED3 STEP=3 — decision c)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_BUILD_SPEED3 |
+| started | 2026-07-09 12:33 |
+| elapsed | ~1 min |
+| done    | Chose **(c)** from STEP=2 table: reject (a) extern-template Shared/Array/function; reject (b) ninja. Residual AST `std::variant` = future separate track only if re-measured. Updated ftime-trace note. |
+| verify  | Decision grounded in `BUILD_SPEED3_FTIME_TRACE_2026_07_09.md` (function 89ms; variant dominates). |
+| result  | STEP=3 done (c). Plain: в этом треке дальше не пилим без нового замера. |
+| issues  | — |
+| next    | ROLE=Driver STEP=4 TRACK_BUILD_SPEED3 — PLAN §2.9 docs + close; then V2 STEP=2 |
 
 ### Turn 2026-07-09 12:33 (Driver TRACK_BUILD_SPEED3 STEP=2 — ftime-trace)
 
