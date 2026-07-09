@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | pick-next |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=1 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:37 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=1 — TestScheduler)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-09 11:33 |
+| elapsed | ~4 min |
+| done    | Added `testing/scheduler.hpp` (seeded turn-baton), `mutex.hpp`, `channel.hpp`; `test_scheduler.cpp` (same seed → identical event log); wired into `run_concurrency_smoke.sh`. |
+| verify  | `TMPDIR=…/tmp runtime/test/run_concurrency_smoke.sh` exit 0 (test_scheduler 9/9). |
+| result  | STEP=1 done. Plain: детерминированный TestScheduler в runtime. |
+| issues  | `/tmp` full — need `TMPDIR` in repo for clang. Dual-mode helper (A/B) deferred to T2 stress. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_TEST_HARNESS — expand stress_channel Layer 2 matrix |
 
 ### Turn 2026-07-09 11:32 (Planner pick-next — CONCURRENCY_TEST_HARNESS T1)
 

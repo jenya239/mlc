@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TEST_HARNESS** STEP=1 (T1) — `TestScheduler` + test
-Mutex/Channel doubles under `runtime/include/mlc/concurrency/testing/`.
-PLAN order after CLOSURE_ESCAPE. Layer: `runtime/` only.
+**TRACK_CONCURRENCY_TEST_HARNESS** STEP=2 (T2) — expand `stress_channel.cpp`
+Layer 2 matrix (full/empty, close during send/recv, rapid open/close, 1M msgs).
+STEP=1 done. Layer: `runtime/` only.
 
 Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — do not block
 runtime harness; verify via existing `run_tests` / mlcc when touching compiler.

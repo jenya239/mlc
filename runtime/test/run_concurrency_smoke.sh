@@ -29,6 +29,8 @@ echo "[concurrency smoke] test_arc"
 run_test test_arc
 echo "[concurrency smoke] test_mutex"
 run_test test_mutex
+echo "[concurrency smoke] test_scheduler"
+run_test test_scheduler
 
 tsan_flags=()
 if [[ "${MLC_TSAN:-0}" == 1 ]]; then
