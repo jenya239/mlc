@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 3 STEP=9 — iteration, methods beyond push/get/set/length
-(STEP=8 done: collections corpus + map/string/array_index in diff).
+**TRACK_MIR_VM_FULL** Epic 4 STEP=10 — single-file `--run` stable (Tier B)
+(STEP=9 done: for-loop + pop + string.contains).
 
 ## Step sizing (good vs bad)
 

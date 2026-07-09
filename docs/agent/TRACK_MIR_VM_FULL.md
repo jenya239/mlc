@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0–2 **done**; Epic 3 STEP=8 **done**; STEP=9 next
+**Status:** open, Epic 0–2 **done**; Epic 3 STEP=8–9 **done**; Epic 4 STEP=10 next
 
 | Step | Item | Status |
 |------|------|--------|
@@ -99,13 +99,20 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 | Step | Deliverable | Gate |
 |------|-------------|------|
 | 8 | Array/map/string parity with C++ on corpus file | **done** |
-| 9 | Iteration, methods beyond push/get/set/length | smoke |
+| 9 | Iteration, methods beyond push/get/set/length | **done** |
 
 
 ### Collections corpus (STEP=8)
 
 - Diff corpus: `vm_collections_corpus` (array index/push + typed `Map` get + string concat/length), plus `vm_map` / `vm_string` / `vm_array_index`.
 - C++ gaps deferred: untyped `Map.new()` → `auto table = {}`; `Map.length()` not on `mlc::HashMap` — use typed Map + get only in diff fixtures.
+
+
+### Iteration / extra methods (STEP=9)
+
+- `for x in array`: index walk via `__mir_length` / `__mir_array_get`.
+- `array.pop()`: return last element + `__mir_array_pop` (VM-only in diff; C++ uses `pop_back`).
+- `string.contains(needle)`: `__mir_string_contains`.
 
 ### Epic 4 � Module graph (STEP 10�12)
 

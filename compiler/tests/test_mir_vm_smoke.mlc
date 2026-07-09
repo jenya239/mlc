@@ -221,5 +221,26 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke question err exit', false))
   }
 
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut sum = 0\n  for x in [1, 2, 4] do\n    sum = sum + x\n  end\n  sum\nend',
+    'vm_for.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke for exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke for exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut items = [1, 2, 7]\n  items.pop()\nend',
+    'vm_pop.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke pop exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke pop exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  const text = "hello"\n  if text.contains("ell") then 7 else 0\nend',
+    'vm_contains.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke contains exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke contains exit', false))
+  }
+
   results
 end

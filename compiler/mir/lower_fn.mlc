@@ -13,6 +13,7 @@ import {
   SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
   SemanticExpressionArray, SemanticExpressionRecord,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
+  SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
   SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
   SemanticStatementReturn
@@ -199,13 +200,15 @@ end
 
 fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]> =
   if method_name == 'push' then Ok('__mir_array_push')
+  else if method_name == 'pop' then Ok('__mir_array_pop')
   else if method_name == 'get' then Ok('__mir_map_get')
   else if method_name == 'set' then Ok('__mir_map_set')
   else if method_name == 'length' then Ok('__mir_length')
+  else if method_name == 'contains' then Ok('__mir_string_contains')
   else Err([`mir lower: unsupported method ${method_name}`])
 
 fn mir_lower_is_mutating_method(method_name: string) -> bool =
-  method_name == 'push' || method_name == 'set'
+  method_name == 'push' || method_name == 'set' || method_name == 'pop'
 
 fn mir_lower_array_push_elements(
   state: MirLowerState,
@@ -295,23 +298,67 @@ fn mir_lower_shared_new_to_local(
     }
   end
 
+fn mir_lower_array_pop_expression(
+  state: MirLowerState,
+  array_name: string
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_lookup_local(state, array_name) {
+    Err(errors) => Err(errors),
+    Ok(array_local_id) => do
+      const length_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+      let mut next_state = mir_lower_emit_call_assign(
+        length_step.state,
+        length_step.local_id,
+        '__mir_length',
+        [MirOperandLocal(array_local_id)])
+      const subtract_op = "-"
+      const last_index_step = mir_lower_temp_operand_from_rvalue(
+        next_state,
+        MirRvalueBinary(subtract_op, MirOperandLocal(length_step.local_id), MirOperandConstInt(1)))
+      next_state = last_index_step.state
+      const value_step = mir_lower_allocate_local(next_state, '', mir_lower_unknown_type())
+      next_state = mir_lower_emit_call_assign(
+        value_step.state,
+        value_step.local_id,
+        '__mir_array_get',
+        [MirOperandLocal(array_local_id), last_index_step.operand])
+      const popped_step = mir_lower_allocate_local(next_state, '', mir_lower_unknown_type())
+      next_state = mir_lower_emit_call_assign(
+        popped_step.state,
+        popped_step.local_id,
+        '__mir_array_pop',
+        [MirOperandLocal(array_local_id)])
+      next_state = mir_lower_emit_assign(
+        next_state, array_local_id, MirRvalueUse(MirOperandLocal(popped_step.local_id)))
+      Ok(MirLowerLocalStep { state: next_state, local_id: value_step.local_id })
+    end
+  }
+
 fn mir_lower_method_to_local(
   state: MirLowerState,
   object: Shared<SemanticExpression>,
   method_name: string,
   arguments: [Shared<SemanticExpression>]
 ) -> Result<MirLowerLocalStep, [string]> =
-  match object {
-    SemanticExpressionIdent(type_name, _, _) =>
-      if type_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
-        mir_lower_map_new_local(state)
-      else if type_name == 'Shared' && method_name == 'new' then
-        mir_lower_shared_new_to_local(state, arguments)
-      else
-        mir_lower_method_call_on_operand(state, object, method_name, arguments)
-      end,
-    _ => mir_lower_method_call_on_operand(state, object, method_name, arguments)
-  }
+  if method_name == 'pop' && arguments.length() == 0 then
+    match object {
+      SemanticExpressionIdent(array_name, _, _) =>
+        mir_lower_array_pop_expression(state, array_name),
+      _ => Err(['mir lower: pop requires identifier receiver'])
+    }
+  else
+    match object {
+      SemanticExpressionIdent(type_name, _, _) =>
+        if type_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
+          mir_lower_map_new_local(state)
+        else if type_name == 'Shared' && method_name == 'new' then
+          mir_lower_shared_new_to_local(state, arguments)
+        else
+          mir_lower_method_call_on_operand(state, object, method_name, arguments)
+        end,
+      _ => mir_lower_method_call_on_operand(state, object, method_name, arguments)
+    }
+  end
 
 fn mir_lower_method_call_on_operand(
   state: MirLowerState,
@@ -1345,6 +1392,63 @@ fn mir_lower_while_statement(
   }
 end
 
+// for x in iter { body } → index walk: while index < length(iter) { x = iter[index]; body; index++ }
+fn mir_lower_for_statement(
+  state: MirLowerState,
+  variable_name: string,
+  iterator: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>]
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_expression_to_local(state, iterator) {
+    Err(errors) => Err(errors),
+    Ok(iterator_step) => do
+      const index_step = mir_lower_allocate_local(iterator_step.state, '', mir_lower_unknown_type())
+      let mut prep_state = mir_lower_emit_assign(
+        index_step.state, index_step.local_id, MirRvalueUse(MirOperandConstInt(0)))
+      const loop_header_step = mir_lower_allocate_block_index(prep_state)
+      const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
+      const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
+      prep_state = mir_lower_finish_current_block(loop_header_step.state, MirJump(loop_header_step.block_id))
+      prep_state = mir_lower_start_block(prep_state, loop_header_step.block_id, 'for_loop')
+      const length_step = mir_lower_allocate_local(prep_state, '', mir_lower_unknown_type())
+      prep_state = mir_lower_emit_call_assign(
+        length_step.state,
+        length_step.local_id,
+        '__mir_length',
+        [MirOperandLocal(iterator_step.local_id)])
+      const less_op = "<"
+      const compare_step = mir_lower_temp_operand_from_rvalue(
+        prep_state,
+        MirRvalueBinary(less_op, MirOperandLocal(index_step.local_id), MirOperandLocal(length_step.local_id)))
+      prep_state = mir_lower_finish_current_block(
+        compare_step.state,
+        MirCondJump(compare_step.operand, body_block_step.block_id, exit_block_step.block_id))
+      prep_state = mir_lower_start_block(prep_state, body_block_step.block_id, 'for_body')
+      const element_step = mir_lower_allocate_local(prep_state, variable_name, mir_lower_unknown_type())
+      prep_state = mir_lower_emit_call_assign(
+        element_step.state,
+        element_step.local_id,
+        '__mir_array_get',
+        [MirOperandLocal(iterator_step.local_id), MirOperandLocal(index_step.local_id)])
+      prep_state = mir_lower_bind_name(prep_state, variable_name, element_step.local_id)
+      match mir_lower_statements(prep_state, body_statements) {
+        Err(errors) => Err(errors),
+        Ok(body_state) => do
+          const add_op = "+"
+          const next_index_step = mir_lower_temp_operand_from_rvalue(
+            body_state,
+            MirRvalueBinary(add_op, MirOperandLocal(index_step.local_id), MirOperandConstInt(1)))
+          let mut exit_state = mir_lower_emit_assign(
+            next_index_step.state,
+            index_step.local_id,
+            MirRvalueUse(next_index_step.operand))
+          exit_state = mir_lower_finish_current_block(exit_state, MirJump(loop_header_step.block_id))
+          Ok(mir_lower_start_block(exit_state, exit_block_step.block_id, 'for_exit'))
+        end
+      }
+    end
+  }
+
 fn mir_lower_assign_identifier(
   state: MirLowerState,
   name: string,
@@ -1418,8 +1522,15 @@ fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement
           end,
         SemanticExpressionWhile(condition, body_statements, _, _) =>
           mir_lower_while_statement(state, condition, body_statements),
+        SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
+          mir_lower_for_statement(state, variable_name, iterator, body_statements),
         SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>
-          if mir_lower_is_mutating_method(method_name) then
+          if method_name == 'pop' then
+            match mir_lower_method_to_local(state, object, method_name, arguments) {
+              Err(errors) => Err(errors),
+              Ok(local_step) => Ok(local_step.state)
+            }
+          else if mir_lower_is_mutating_method(method_name) then
             match object {
               SemanticExpressionIdent(name, _, _) =>
                 match mir_lower_lookup_local(state, name) {

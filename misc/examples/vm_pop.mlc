@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  let mut items = [1, 2, 7]
+  items.pop()
+end

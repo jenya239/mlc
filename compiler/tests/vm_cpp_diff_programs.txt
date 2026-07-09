@@ -16,6 +16,9 @@ misc/examples/vm_lambda_capture.mlc
 misc/examples/vm_lambda_immediate.mlc
 misc/examples/vm_mutual.mlc
 misc/examples/vm_default_params.mlc
+misc/examples/vm_for.mlc
+misc/examples/vm_contains.mlc
+# vm_pop.mlc: VM --run only (C++ Array has pop_back, not pop — pre-existing)
 # vm_question*.mlc: VM --run only (C++ Result<> header needs mlc::result::Result — pre-existing)
 # vm_match_variant.mlc: VM --run only (C++ visit on sum ctor temp is pre-existing codegen gap)
 

@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  const text = "hello"
+  if text.contains("ell") then 7 else 0
+end

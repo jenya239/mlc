@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 15 |
-| step_last | 8 |
-| active_track | TRACK_MIR_VM_FULL Epic 3 STEP=9 |
-| test_gate | ok (corpus/map/string=7 index=5; vm_cpp_diff 16/0) |
+| driver_turns_since_plan | 16 |
+| step_last | 9 |
+| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=10 |
+| test_gate | ok (for/pop/contains=7; vm_cpp_diff 18/0; pop VM-only) |
+
+### Turn 2026-07-09 23:50 (Driver TRACK_MIR_VM_FULL STEP=9 — for / pop / contains)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:37 |
+| elapsed | ~13 min |
+| done    | `for`→index walk; `__mir_array_pop` + pop value; `__mir_string_contains`; fixtures. |
+| verify  | `--run` for/pop/contains=7; for/contains C++=7; `run_vm_cpp_exit_diff` (pop VM-only). |
+| result  | STEP=9 done. Plain: for-loops and pop/contains on MIR VM. |
+| issues  | C++ Array has `pop_back` not `pop` — vm_pop not in diff. Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=10 TRACK_MIR_VM_FULL — single-file `--run` stable (Tier B) |
 
 ### Turn 2026-07-09 23:40 (Driver TRACK_MIR_VM_FULL STEP=8 — collections corpus)
 
