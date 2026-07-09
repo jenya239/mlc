@@ -1,14 +1,30 @@
-// Conservative spawn capture check (TRACK_CONCURRENCY_V2 STEP=4 slice):
-// free use of an enclosing `let mut` / mut param inside `spawn` is an error.
+// Spawn capture check (TRACK_CONCURRENCY_V2 STEP=4 + TASKSCOPE STEP=3):
+// free use of enclosing `let mut` / mut param inside `spawn` is an error,
+// unless the binding's type is Sync (Mutex always; Arc iff T Sync).
 // Local bindings inside the spawn body shadow and are allowed.
-// Full `move` tracking is a later sub-step.
+// `move x` exempts the capture (ownership transfer).
 
 import {
-  Expr, Stmt, Param, MatchArm, FieldVal, RecordLitPart, Diagnostic, Span,
-  diagnostic_error_with_code, diagnostics_append
+  Expr, Stmt, Param, MatchArm, FieldVal, RecordLitPart, Diagnostic, Span, TypeExpr,
+  diagnostic_error_with_code, diagnostics_append, TyUnit
 } from '../frontend/ast'
 import { pattern_bindings } from './names'
 import { diagnostic_code_e087 } from './diagnostic_codes'
+import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, type_from_annotation_with_registry } from './registry'
+import { type_is_sync } from './send_safe'
+
+// Sync-safe sharing across spawn: Mutex (always) or Arc<T> when T is Sync.
+// Plain Sync scalars (i32, …) still need `move` for `let mut` capture.
+fn type_is_sync_safe_shared(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+  match type_value {
+    TGeneric(type_name, type_arguments) =>
+      if type_name == 'Mutex' && type_arguments.length() == 1 then true
+      else if type_name == 'Arc' && type_arguments.length() == 1 then
+        type_is_sync(type_arguments[0], registry)
+      else false
+      end,
+    _ => false
+  }
 
 type SpawnCaptureStmtWalkState = SpawnCaptureStmtWalkState {
   diagnostics: [Diagnostic],
@@ -17,7 +33,13 @@ type SpawnCaptureStmtWalkState = SpawnCaptureStmtWalkState {
 
 type SpawnCaptureMutableWalkState = SpawnCaptureMutableWalkState {
   diagnostics: [Diagnostic],
-  scope: [string]
+  scope: [string],
+  type_environment: Map<string, Shared<Type>>
+}
+
+type SpawnCaptureContext = SpawnCaptureContext {
+  registry: TypeRegistry,
+  type_environment: Map<string, Shared<Type>>
 }
 
 fn empty_names() -> [string] = do
@@ -48,11 +70,85 @@ fn mutable_capture_diagnostic(binding_name: string, source_span: Span) -> Diagno
     source_span,
     diagnostic_code_e087())
 
-fn mutable_scope_from_parameters(parameters: [Shared<Param>]) -> [string] =
+fn type_annotation_is_elided(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression { TyUnit => true, _ => false }
+
+fn type_hint_from_value(
+  value: Shared<Expr>,
+  type_environment: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Shared<Type> =
+  match value {
+    ExprIdent(name, _) =>
+      if type_environment.has(name) then type_environment.get(name) else Shared.new(TUnknown) end,
+    ExprInt(_, _) => Shared.new(TI32),
+    ExprArray(_, _) => Shared.new(TArray(Shared.new(TUnknown))),
+    ExprMethod(receiver, method_name, arguments, _) =>
+      if method_name == 'new' then
+        match receiver {
+          ExprIdent(type_name, _) =>
+            if type_name == 'Mutex' then
+              Shared.new(TGeneric('Mutex', [
+                if arguments.length() > 0 then
+                  type_hint_from_value(arguments[0], type_environment, registry)
+                else Shared.new(TUnknown)
+                end]))
+            else if type_name == 'Arc' then
+              Shared.new(TGeneric('Arc', [
+                if arguments.length() > 0 then
+                  type_hint_from_value(arguments[0], type_environment, registry)
+                else Shared.new(TUnknown)
+                end]))
+            else Shared.new(TUnknown)
+            end,
+          _ => Shared.new(TUnknown)
+        }
+      else Shared.new(TUnknown)
+      end,
+    _ => Shared.new(TUnknown)
+  }
+
+fn resolve_binding_type(
+  type_expression: Shared<TypeExpr>,
+  value: Shared<Expr>,
+  type_environment: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> Shared<Type> =
+  if type_annotation_is_elided(type_expression) then
+    type_hint_from_value(value, type_environment, registry)
+  else
+    type_from_annotation_with_registry(type_expression, registry)
+  end
+
+fn mutable_scope_from_parameters(
+  parameters: [Shared<Param>],
+  registry: TypeRegistry
+) -> [string] =
   parameters.fold(
     empty_names(),
-    (scope, parameter) =>
-      if parameter.is_mut then names_add(scope, parameter.name) else scope end)
+    (scope, parameter) => do
+      if !parameter.is_mut then return scope end
+      const parameter_type = type_from_annotation_with_registry(parameter.type_value, registry)
+      if type_is_sync_safe_shared(parameter_type, registry) then scope
+      else names_add(scope, parameter.name)
+      end
+    end)
+
+fn type_environment_from_parameters(
+  parameters: [Shared<Param>],
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  let type_environment: Map<string, Shared<Type>> = Map.new()
+  let mut index = 0
+  while index < parameters.length() do
+    const parameter = parameters[index]
+    type_environment.set(
+      parameter.name,
+      type_from_annotation_with_registry(parameter.type_value, registry))
+    index = index + 1
+  end
+  type_environment
+end
 
 fn free_mutable_capture_in_expr(
   expression: Shared<Expr>,
@@ -227,17 +323,6 @@ fn statement_binding_names(statement: Shared<Stmt>) -> [string] =
     StmtReturn(_, _) => empty_names()
   }
 
-fn statement_introduces_mutable(statement: Shared<Stmt>) -> bool =
-  match statement {
-    StmtLet(_, is_mut, _, _, _) => is_mut,
-    StmtLetPattern(_, is_mut, _, _, _, _, _) => is_mut,
-    StmtLetConst(_, _, _, _) => false,
-    StmtExpr(_, _) => false,
-    StmtBreak(_) => false,
-    StmtContinue(_) => false,
-    StmtReturn(_, _) => false
-  }
-
 fn bindings_after_statements(statements: [Shared<Stmt>], local_bound: [string]) -> [string] =
   statements.fold(
     local_bound,
@@ -273,12 +358,16 @@ fn free_mutable_capture_in_stmts(
       }
     end).diagnostics
 
-fn walk_spawn_sites_in_expr(expression: Shared<Expr>, mutable_scope: [string]) -> [Diagnostic] =
+fn walk_spawn_sites_in_expr(
+  expression: Shared<Expr>,
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
+) -> [Diagnostic] =
   match expression {
     ExprSpawn(body, _) =>
       diagnostics_append(
         free_mutable_capture_in_stmts(body, empty_names(), mutable_scope),
-        walk_spawn_sites_in_stmts(body, mutable_scope)),
+        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context)),
     ExprInt(_, _) => empty_diagnostics(),
     ExprStr(_, _) => empty_diagnostics(),
     ExprBool(_, _) => empty_diagnostics(),
@@ -292,91 +381,100 @@ fn walk_spawn_sites_in_expr(expression: Shared<Expr>, mutable_scope: [string]) -
     ExprIdent(_, _) => empty_diagnostics(),
     ExprBin(_, left, right, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(left, mutable_scope),
-        walk_spawn_sites_in_expr(right, mutable_scope)),
+        walk_spawn_sites_in_expr(left, mutable_scope, capture_context),
+        walk_spawn_sites_in_expr(right, mutable_scope, capture_context)),
     ExprUn(_, operand, _) =>
-      walk_spawn_sites_in_expr(operand, mutable_scope),
+      walk_spawn_sites_in_expr(operand, mutable_scope, capture_context),
     ExprCall(callee, arguments, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(callee, mutable_scope),
-        walk_spawn_sites_in_expr_list(arguments, mutable_scope)),
+        walk_spawn_sites_in_expr(callee, mutable_scope, capture_context),
+        walk_spawn_sites_in_expr_list(arguments, mutable_scope, capture_context)),
     ExprMethod(receiver, _, arguments, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(receiver, mutable_scope),
-        walk_spawn_sites_in_expr_list(arguments, mutable_scope)),
+        walk_spawn_sites_in_expr(receiver, mutable_scope, capture_context),
+        walk_spawn_sites_in_expr_list(arguments, mutable_scope, capture_context)),
     ExprField(object, _, _) =>
-      walk_spawn_sites_in_expr(object, mutable_scope),
+      walk_spawn_sites_in_expr(object, mutable_scope, capture_context),
     ExprIndex(object, index_expression, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(object, mutable_scope),
-        walk_spawn_sites_in_expr(index_expression, mutable_scope)),
+        walk_spawn_sites_in_expr(object, mutable_scope, capture_context),
+        walk_spawn_sites_in_expr(index_expression, mutable_scope, capture_context)),
     ExprIf(condition, then_branch, else_branch, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(condition, mutable_scope),
+        walk_spawn_sites_in_expr(condition, mutable_scope, capture_context),
         diagnostics_append(
-          walk_spawn_sites_in_expr(then_branch, mutable_scope),
-          walk_spawn_sites_in_expr(else_branch, mutable_scope))),
-    ExprBlock(statements, result_expression, _) =>
+          walk_spawn_sites_in_expr(then_branch, mutable_scope, capture_context),
+          walk_spawn_sites_in_expr(else_branch, mutable_scope, capture_context))),
+    ExprBlock(statements, result_expression, _) => do
+      const statements_state = walk_spawn_sites_in_stmts_state(statements, mutable_scope, capture_context)
       diagnostics_append(
-        walk_spawn_sites_in_stmts(statements, mutable_scope),
+        statements_state.diagnostics,
         walk_spawn_sites_in_expr(
           result_expression,
-          mutable_scope_after_statements(statements, mutable_scope))),
+          statements_state.scope,
+          SpawnCaptureContext {
+            registry: capture_context.registry,
+            type_environment: statements_state.type_environment
+          }))
+    end,
     ExprWhile(condition, body, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(condition, mutable_scope),
-        walk_spawn_sites_in_stmts(body, mutable_scope)),
+        walk_spawn_sites_in_expr(condition, mutable_scope, capture_context),
+        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context)),
     ExprFor(_, iterable, body, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(iterable, mutable_scope),
-        walk_spawn_sites_in_stmts(body, mutable_scope)),
+        walk_spawn_sites_in_expr(iterable, mutable_scope, capture_context),
+        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context)),
     ExprMatch(scrutinee, arms, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(scrutinee, mutable_scope),
-        walk_spawn_sites_in_match_arms(arms, mutable_scope)),
+        walk_spawn_sites_in_expr(scrutinee, mutable_scope, capture_context),
+        walk_spawn_sites_in_match_arms(arms, mutable_scope, capture_context)),
     ExprRecord(_, parts, _) =>
-      walk_spawn_sites_in_record_parts(parts, mutable_scope),
+      walk_spawn_sites_in_record_parts(parts, mutable_scope, capture_context),
     ExprRecordUpdate(_, base, field_values, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(base, mutable_scope),
-        walk_spawn_sites_in_field_values(field_values, mutable_scope)),
+        walk_spawn_sites_in_expr(base, mutable_scope, capture_context),
+        walk_spawn_sites_in_field_values(field_values, mutable_scope, capture_context)),
     ExprArray(elements, _) =>
-      walk_spawn_sites_in_expr_list(elements, mutable_scope),
+      walk_spawn_sites_in_expr_list(elements, mutable_scope, capture_context),
     ExprTuple(elements, _) =>
-      walk_spawn_sites_in_expr_list(elements, mutable_scope),
+      walk_spawn_sites_in_expr_list(elements, mutable_scope, capture_context),
     ExprQuestion(inner, _) =>
-      walk_spawn_sites_in_expr(inner, mutable_scope),
+      walk_spawn_sites_in_expr(inner, mutable_scope, capture_context),
     ExprLambda(_, body, _) =>
-      walk_spawn_sites_in_expr(body, empty_names()),
+      walk_spawn_sites_in_expr(body, empty_names(), capture_context),
     ExprNamedArg(_, value, _) =>
-      walk_spawn_sites_in_expr(value, mutable_scope),
+      walk_spawn_sites_in_expr(value, mutable_scope, capture_context),
     ExprWith(resource, _, body, _) =>
       diagnostics_append(
-        walk_spawn_sites_in_expr(resource, mutable_scope),
-        walk_spawn_sites_in_stmts(body, mutable_scope))
+        walk_spawn_sites_in_expr(resource, mutable_scope, capture_context),
+        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context))
   }
 
 fn walk_spawn_sites_in_expr_list(
   expressions: [Shared<Expr>],
-  mutable_scope: [string]
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
 ) -> [Diagnostic] =
   expressions.fold(
     empty_diagnostics(),
     (diagnostics, expression) =>
-      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(expression, mutable_scope)))
+      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(expression, mutable_scope, capture_context)))
 
 fn walk_spawn_sites_in_field_values(
   field_values: [Shared<FieldVal>],
-  mutable_scope: [string]
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
 ) -> [Diagnostic] =
   field_values.fold(
     empty_diagnostics(),
     (diagnostics, field_value) =>
-      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(field_value.value, mutable_scope)))
+      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(field_value.value, mutable_scope, capture_context)))
 
 fn walk_spawn_sites_in_record_parts(
   parts: [RecordLitPart],
-  mutable_scope: [string]
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
 ) -> [Diagnostic] =
   parts.fold(
     empty_diagnostics(),
@@ -385,77 +483,143 @@ fn walk_spawn_sites_in_record_parts(
         RecordLitFields(field_values) =>
           diagnostics_append(
             diagnostics,
-            walk_spawn_sites_in_field_values(field_values, mutable_scope)),
+            walk_spawn_sites_in_field_values(field_values, mutable_scope, capture_context)),
         RecordLitSpread(spread_expression) =>
           diagnostics_append(
             diagnostics,
-            walk_spawn_sites_in_expr(spread_expression, mutable_scope))
+            walk_spawn_sites_in_expr(spread_expression, mutable_scope, capture_context))
       })
 
 fn walk_spawn_sites_in_match_arms(
   arms: [Shared<MatchArm>],
-  mutable_scope: [string]
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
 ) -> [Diagnostic] =
   arms.fold(
     empty_diagnostics(),
     (diagnostics, arm) => do
       const guard_diagnostics =
-        if arm.has_guard then walk_spawn_sites_in_expr(arm.when_condition, mutable_scope)
+        if arm.has_guard then walk_spawn_sites_in_expr(arm.when_condition, mutable_scope, capture_context)
         else empty_diagnostics()
         end
       diagnostics_append(
         diagnostics,
-        diagnostics_append(guard_diagnostics, walk_spawn_sites_in_expr(arm.body, mutable_scope)))
+        diagnostics_append(guard_diagnostics, walk_spawn_sites_in_expr(arm.body, mutable_scope, capture_context)))
     end)
 
-fn mutable_scope_after_statements(
-  statements: [Shared<Stmt>],
-  mutable_scope: [string]
-) -> [string] =
-  statements.fold(
-    mutable_scope,
-    (scope, statement) =>
-      if statement_introduces_mutable(statement) then
-        names_add_all(scope, statement_binding_names(statement))
-      else scope
-      end)
+fn apply_statement_to_mutable_scope(
+  statement: Shared<Stmt>,
+  scope: [string],
+  type_environment: Map<string, Shared<Type>>,
+  registry: TypeRegistry
+) -> SpawnCaptureMutableWalkState =
+  match statement {
+    StmtLet(name, is_mut, type_expression, value, _) => do
+      const binding_type = resolve_binding_type(type_expression, value, type_environment, registry)
+      type_environment.set(name, binding_type)
+      const scope_after =
+        if is_mut && !type_is_sync_safe_shared(binding_type, registry) then names_add(scope, name)
+        else scope
+        end
+      SpawnCaptureMutableWalkState {
+        diagnostics: empty_diagnostics(),
+        scope: scope_after,
+        type_environment: type_environment
+      }
+    end,
+    StmtLetPattern(pattern, is_mut, type_expression, value, _, _, _) => do
+      const binding_type = resolve_binding_type(type_expression, value, type_environment, registry)
+      const bindings = pattern_bindings(pattern)
+      let mut index = 0
+      while index < bindings.length() do
+        type_environment.set(bindings[index], binding_type)
+        index = index + 1
+      end
+      const scope_after =
+        if is_mut && !type_is_sync_safe_shared(binding_type, registry) then names_add_all(scope, bindings)
+        else scope
+        end
+      SpawnCaptureMutableWalkState {
+        diagnostics: empty_diagnostics(),
+        scope: scope_after,
+        type_environment: type_environment
+      }
+    end,
+    StmtLetConst(name, type_expression, value, _) => do
+      const binding_type = resolve_binding_type(type_expression, value, type_environment, registry)
+      type_environment.set(name, binding_type)
+      SpawnCaptureMutableWalkState {
+        diagnostics: empty_diagnostics(),
+        scope: scope,
+        type_environment: type_environment
+      }
+    end,
+    _ => SpawnCaptureMutableWalkState {
+      diagnostics: empty_diagnostics(),
+      scope: scope,
+      type_environment: type_environment
+    }
+  }
 
-fn walk_spawn_sites_in_stmts(
+fn walk_spawn_sites_in_stmts_state(
   statements: [Shared<Stmt>],
-  mutable_scope: [string]
-) -> [Diagnostic] =
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
+) -> SpawnCaptureMutableWalkState =
   statements.fold(
-    SpawnCaptureMutableWalkState { diagnostics: empty_diagnostics(), scope: mutable_scope },
+    SpawnCaptureMutableWalkState {
+      diagnostics: empty_diagnostics(),
+      scope: mutable_scope,
+      type_environment: capture_context.type_environment
+    },
     (state, statement) => do
+      const nested_context = SpawnCaptureContext {
+        registry: capture_context.registry,
+        type_environment: state.type_environment
+      }
       const value_diagnostics = match statement {
         StmtLet(_, _, _, value, _) =>
-          walk_spawn_sites_in_expr(value, state.scope),
+          walk_spawn_sites_in_expr(value, state.scope, nested_context),
         StmtLetPattern(_, _, _, value, _, else_expression, _) =>
           diagnostics_append(
-            walk_spawn_sites_in_expr(value, state.scope),
-            walk_spawn_sites_in_expr(else_expression, state.scope)),
+            walk_spawn_sites_in_expr(value, state.scope, nested_context),
+            walk_spawn_sites_in_expr(else_expression, state.scope, nested_context)),
         StmtLetConst(_, _, value, _) =>
-          walk_spawn_sites_in_expr(value, state.scope),
+          walk_spawn_sites_in_expr(value, state.scope, nested_context),
         StmtExpr(expression, _) =>
-          walk_spawn_sites_in_expr(expression, state.scope),
+          walk_spawn_sites_in_expr(expression, state.scope, nested_context),
         StmtBreak(_) => empty_diagnostics(),
         StmtContinue(_) => empty_diagnostics(),
         StmtReturn(expression, _) =>
-          walk_spawn_sites_in_expr(expression, state.scope)
+          walk_spawn_sites_in_expr(expression, state.scope, nested_context)
       }
-      const scope_after =
-        if statement_introduces_mutable(statement) then
-          names_add_all(state.scope, statement_binding_names(statement))
-        else state.scope
-        end
+      const after = apply_statement_to_mutable_scope(
+        statement, state.scope, state.type_environment, capture_context.registry)
       SpawnCaptureMutableWalkState {
         diagnostics: diagnostics_append(state.diagnostics, value_diagnostics),
-        scope: scope_after
+        scope: after.scope,
+        type_environment: after.type_environment
       }
-    end).diagnostics
+    end)
+
+fn walk_spawn_sites_in_stmts(
+  statements: [Shared<Stmt>],
+  mutable_scope: [string],
+  capture_context: SpawnCaptureContext
+) -> [Diagnostic] =
+  walk_spawn_sites_in_stmts_state(statements, mutable_scope, capture_context).diagnostics
 
 export fn spawn_mutable_capture_diagnostics(
   parameters: [Shared<Param>],
-  body: Shared<Expr>
-) -> [Diagnostic] =
-  walk_spawn_sites_in_expr(body, mutable_scope_from_parameters(parameters))
+  body: Shared<Expr>,
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  const capture_context = SpawnCaptureContext {
+    registry: registry,
+    type_environment: type_environment_from_parameters(parameters, registry)
+  }
+  walk_spawn_sites_in_expr(
+    body,
+    mutable_scope_from_parameters(parameters, registry),
+    capture_context)
+end

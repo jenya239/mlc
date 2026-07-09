@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=3 |
-| test_gate | ok |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=4 |
+| test_gate | ok (mlcc probes) |
+
+### Turn 2026-07-09 13:55 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=3 — Sync-safe spawn capture)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_TASKSCOPE |
+| started | 2026-07-09 13:34 |
+| elapsed | ~21 min |
+| done    | `spawn_capture.mlc` `type_is_sync_safe_shared` (Mutex/Arc); type hints for `Mutex.new`/`Arc.new`; wired registry into capture pass; tests Mutex/Arc ok. |
+| verify  | `compiler/build.sh` ok; `mlcc --check-only main` 0; mutex/arc spawn 0; mut i32 E087 exit 1. |
+| result  | STEP=3 done. Plain: Sync-safe Mutex/Arc можно в spawn без move. |
+| issues  | Ruby `dev_gate_fast` still red (known). |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_TASKSCOPE — self-host + docs / close or handoff |
 
 ### Turn 2026-07-09 13:33 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=2 — TaskScope)
 

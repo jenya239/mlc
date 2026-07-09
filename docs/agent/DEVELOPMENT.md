@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TASKSCOPE** STEP=3 — Sync-safe shared capture without
-`move` (`compiler/`). STEP=2 TaskScope runtime done.
+**TRACK_CONCURRENCY_TASKSCOPE** STEP=4 — self-host + docs / close or handoff.
+STEP=3 Sync-safe Mutex/Arc spawn capture done.
 
 ## Step sizing (good vs bad)
 

@@ -478,7 +478,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         const body_partial_application = partial_application_desugar_expr(body)
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body_partial_application, locals, globals))
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
-        all_diagnostics = diagnostics_append(all_diagnostics, spawn_mutable_capture_diagnostics(parameters, body_partial_application))
+        all_diagnostics = diagnostics_append(all_diagnostics, spawn_mutable_capture_diagnostics(parameters, body_partial_application, registry))
         all_diagnostics = diagnostics_append(all_diagnostics, move_use_after_diagnostics(parameters, body_partial_application))
         const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const inference_context = check_context_with_expected_return(type_environment, registry, expected_type)

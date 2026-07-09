@@ -6,10 +6,20 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; spec:
 [../archive/tracks/TRACK_CONCURRENCY_V2.md](../archive/tracks/TRACK_CONCURRENCY_V2.md)
 (Send/Sync predicates, rendezvous + Sender/Receiver, move/E087/E088, StopToken).
 
-## Status: **open** — STEP=2 done; STEP=3 next
+## Status: **open** — STEP=3 done; STEP=4 next
 
-**Driver 2026-07-09:** STEP=2 — `TaskScope` runtime (`spawn` /
-`spawn_with_token` / `join` / dtor waits + cancel); `test_task_scope.cpp`.
+**Driver 2026-07-09:** STEP=3 — Sync-safe shared capture: `let mut` Mutex /
+`Arc<T>` (T Sync) across `spawn` without `move` (no E087); scalars still E087.
+
+### STEP=3 acceptance (Driver)
+
+**Layer:** `compiler/` only (not `lib/mlc/` / not `runtime/` in the same turn).
+
+- `spawn_capture.mlc`: `type_is_sync_safe_shared` — Mutex always; Arc iff T Sync.
+- Typed/heuristic binding types for untyped `let mut x = Mutex.new(...)`.
+- `let mut` i32 / Array still E087; Sync-safe Mutex/Arc capture OK.
+- Tests in `test_spawn.mlc`; verify via `mlcc --check-only` probes + `main.mlc`.
+- Out of scope: full Sync trait surface; immutable Sync-only table expansion.
 
 ### STEP=2 acceptance (Driver)
 
@@ -41,8 +51,8 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; spec:
 |------|------|--------|
 | 1 | Cancel wake for Channel send/recv + `Cancelled` outcome; unlock HARNESS T5 | **done** |
 | 2 | `TaskScope` / structured spawn ownership | **done** |
-| 3 | Sync-safe shared capture without `move` (checker) | **next** |
-| 4 | Self-host + docs; close or hand off to Isolate/ThreadPool track | pending |
+| 3 | Sync-safe shared capture without `move` (checker) | **done** |
+| 4 | Self-host + docs; close or hand off to Isolate/ThreadPool track | **next** |
 
 ## Out of scope
 

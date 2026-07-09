@@ -60,6 +60,16 @@ export fn spawn_tests() -> [TestResult] = do
       'fn main() -> Task<i32> = do\n  let mut x = 7\n  spawn do return move x end\nend'),
     0))
 
+  results.push(assert_eq_int('spawn Sync Mutex capture ok',
+    check_error_count(
+      'fn main() -> Task<i32> = do\n  let mut guarded = Mutex.new(7)\n  spawn do return guarded.lock(value => value) end\nend'),
+    0))
+
+  results.push(assert_eq_int('spawn Sync Arc capture ok',
+    check_error_count(
+      'fn main() -> Task<unit> = do\n  let mut shared = Arc.new(7)\n  spawn do let _ = shared; return () end\nend'),
+    0))
+
   results.push(assert_eq_int('use after move E088',
     check_error_count(
       'fn main() -> i32 = do\n  let x = 7\n  let y = move x\n  x\nend'),
