@@ -8,7 +8,7 @@
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
 | step_last | 1 |
-| active_track | TRACK_CONCURRENCY_V2 STEP=2 |
+| active_track | TRACK_BUILD_SPEED3 STEP=1 |
 | test_gate | ok |
 
 ### Turn 2026-07-09 12:30 (Driver TRACK_CONCURRENCY_V2 STEP=1 — Send/Sync predicates)
@@ -23,8 +23,8 @@
 | done    | `send_safe.mlc`: `type_is_send` + alias `type_is_send_safe`; `type_is_sync`. Arc/Mutex Send iff T Send; Mutex always Sync; Arc Sync iff T Sync. Tests: `test_send_sync.mlc` wired in suite_registry. |
 | verify  | mlcc probe ALL PASSED; `--check-only` channel ok / rejects Array; Arc.new rejects Array; `mlcc --check-only compiler/main.mlc` 0. |
 | result  | STEP=1 done. Plain: Send/Sync оси разведены. |
-| issues  | Full `build_tests.sh` still red (Ruby HOF/namespace) — not used for verify. |
-| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_V2 — rendezvous Channel capacity 0 |
+| issues  | Full `build_tests.sh` still red (Ruby HOF/namespace) — not used for verify. PLAN inserts BUILD_SPEED3 before V2 STEP=2. |
+| next    | ROLE=Driver STEP=1 TRACK_BUILD_SPEED3 — CI ccache cache in workflows |
 
 ### Turn 2026-07-09 11:55 (Planner pick-next — CONCURRENCY_V2 STEP=1)
 

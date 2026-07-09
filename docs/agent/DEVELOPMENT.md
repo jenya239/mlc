@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=2 — rendezvous `Channel` capacity 0 (runtime).
-STEP=1 done (`type_is_send`/`type_is_sync`). HARNESS T1–T4 done.
+**TRACK_BUILD_SPEED3** STEP=1 — CI ccache cache (PLAN: before V2 STEP=2).
+V2 STEP=1 done. HARNESS T1–T4 done.
 
 Debt: Ruby `build_tests.sh` / `dev_gate_fast` still red (HOF templates +
 namespace qualify) — verify checker via mlcc probe / `--check-only`.

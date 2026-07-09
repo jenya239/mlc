@@ -1,0 +1,223 @@
+# FFI-слой MLC — инфраструктурные требования (2026-07)
+
+Parent: [PLAN.md](PLAN.md) §10 (Nim — C++ interop), Фаза 9 (новая, см. ниже).
+Trigger: обсуждение биндингов к libpq/OpenGL/GTK/ffmpeg — все четыре сегодня
+блокированы одним и тем же набором отсутствующих примитивов языка/stdlib, не
+специфичным для конкретной библиотеки. Этот документ описывает только
+инфраструктуру; сами биндинги — отдельные будущие треки (не создавать раньше
+времени, см. §7).
+
+## 1. Факт: текущее состояние (проверено в коде, не по памяти)
+
+`extern fn` в MLC сегодня — разметка без ABI. Пайплайн:
+
+| Слой | Файл | Факт |
+|------|------|------|
+| Лексер/парсер (mlcc) | `compiler/frontend/lexer.mlc`, `compiler/frontend/parser/decls.mlc:490-504` | `extern fn name(...)` → `DeclFn` с телом `ExprExtern` (пустой маркер) |
+| Ruby парсер | `lib/mlc/source/parser/declaration_parser.rb:10-54,428-432,764-779` | `external: true`, тело опционально |
+| Checker | `compiler/checker/check/check.mlc:138,167-171` | `is_extern_body`; E038 — default-параметры запрещены на extern |
+| Codegen (mlcc) | `compiler/codegen/decl_cpp.mlc:517,538,1145,1154` | extern → `empty_cpp_declaration()` — **никакого C++ не генерируется** |
+| Ruby codegen | `lib/mlc/backends/cpp/codegen.rb:254` | extern (`body.nil?`) → нет forward declaration |
+
+`extern "C"` существует только в парсере C++-заголовков (`compiler/cpp_parse/parser/cpp_decls.mlc`) для *чтения* чужих `.h` — в синтаксисе самого MLC такой конструкции нет.
+
+**Opaque type:** есть только в Ruby-бутстрапе (`export type Window` без `=` →
+`OpaqueType`, `lib/mlc/registries/type_registry.rb:150-153`). В self-hosted
+`mlcc` — нет: `parse_type_decl` без `=` уходит в `parse_variants`
+(`compiler/frontend/parser/decls.mlc:699-733`), не в opaque.
+
+**Импорт `.h`:** `compiler/cpp_parse/header_import.mlc` парсит C++ заголовок и
+регистрирует типы/функции в registry для checker'а — но (а) не эмитит
+`#include` в сгенерированный `.cpp` (`compiler/codegen/cpp_naming.mlc:113`
+берёт `.hpp` только от MLC-модулей), (б) C struct конвертируется в MLC record
+**по значению** (`header_import.mlc:153-160`) — копия полей, не
+layout-совместимый доступ к C-памяти.
+
+**Линковка:** `compiler/build_bin.sh` собирает только
+`runtime/src/{io,core,profile}` (`:18-22`), никаких `-l*`
+(`lib/mlc/common/modular_compilation/modular_compiler.rb:83-88` — та же
+цепочка). Внешнюю библиотеку слинковать штатно нельзя.
+
+**Callback:** `fn(...)` всегда → `std::function<Ret(Args...)>`
+(`compiler/codegen/decl/type_gen.mlc:60-63`, Ruby `type_mapper.rb:126-132`).
+C ABI требует `Ret(*)(Args...)` — моста нет.
+
+**Что уже есть и можно переиспользовать:** `char*`↔`mlc::String`
+(`runtime/include/mlc/core/string.hpp:80-86,127-128`), nullable через
+`mlc::option::from_nullable` для `shared_ptr` (`runtime/include/mlc/core/option.hpp:10-31`),
+синтаксис-заготовка в `PLAN.md:564-567` (`extern fn sqrt(x: f64) -> f64 =
+"sqrt" from "<cmath>"`, `extern type FILE = "FILE" from "<stdio.h>"`) — не
+реализован, но синтаксическое направление верное, этот документ его
+формализует и расширяет.
+
+## 2. Семь инфраструктурных пробелов (общие для любого C/C++ биндинга)
+
+Ни один из четырёх примеров (libpq, OpenGL, GTK, ffmpeg) не заработает без
+всех семи — это не выбор "сделать один, пропустить другой", это один слой.
+
+### 2.1 `RawPointer[T]` — непрозрачный указатель
+
+Нет типа для `PGconn*`, `GtkWidget*`, `AVFrame*`. Без него нет opaque handle.
+
+```mlc
+extern type PGconn = "PGconn" from "<libpq-fe.h>"
+// использование: RawPointer[PGconn]
+```
+
+`RawPointer[T]`: не refcounted, не `Shared<T>`, сравнение на `null`, явный
+`is_null`. Codegen → `T*` напрямую, без обёртки.
+
+### 2.2 `extern fn ... = "c_name" from "<header>"` — реальный codegen
+
+Расширение уже предложенного в `PLAN.md:564-567` синтаксиса: помимо
+`#include`, генерировать настоящий C++ вызов (сегодня — пустая строка).
+
+```mlc
+extern fn PQconnectdb(conninfo: RawPointer[Byte]) -> RawPointer[PGconn]
+  = "PQconnectdb" from "<libpq-fe.h>"
+```
+
+→ `#include <libpq-fe.h>` в сгенерированный `.cpp` того модуля, где объявлена
+функция (не глобально — иначе конфликт имён между модулями с разными C-хедерами).
+
+### 2.3 Линковка внешних библиотек
+
+`extern fn`/`extern type` с `from "<header>"` не знает, из какой библиотеки
+линковать символ — заголовок и библиотека не всегда совпадают по имени
+(`libpq-fe.h` → `-lpq`). Нужна явная декларация на уровне модуля:
+
+```mlc
+extern lib "pq"
+```
+
+→ `build_bin.sh` собирает список `extern lib` по всем импортированным модулям
+программы, добавляет `-l<name>` в финальную линковку (не в каждый `.o`).
+
+### 2.4 `extern fn(Args) -> Return` как тип — C function pointer
+
+Отличный от closure-типа `fn(Args) -> Return` (который всегда `std::function`
+после `TRACK_LANG_CLOSURE_ESCAPE`/template — оба варианта несовместимы с C
+ABI). `extern fn(...)` в позиции типа = `Ret(*)(Args...)`, запрет на capture
+(проверяется как non-escaping template функция, но без generic — конкретный
+raw pointer).
+
+```mlc
+extern fn PQsetNoticeProcessor(
+  conn: RawPointer[PGconn],
+  processor: extern fn(RawPointer[Byte], RawPointer[Byte]) -> Unit,
+  argument: RawPointer[Byte]
+) -> extern fn(RawPointer[Byte], RawPointer[Byte]) -> Unit
+  = "PQsetNoticeProcessor" from "<libpq-fe.h>"
+```
+
+Передаваемая как `processor` MLC-функция обязана быть top-level `fn` без
+захвата (проверяется при вызове, не при объявлении — тот же checker-проход,
+что для non-escaping closures, переиспользовать `compiler/checker/escape_analysis.mlc`).
+
+### 2.5 Владение opaque-хендлом (RAII без общего `defer`)
+
+Общий `defer` (см. `CONCURRENCY_V2.md` п.25) в языке не реализован — не
+делать его прерогативой этого трека. Вместо этого — узкий механизм именно
+для `extern type`: явная функция освобождения в декларации типа.
+
+```mlc
+extern type PGconn = "PGconn" from "<libpq-fe.h>"
+  drop "PQfinish"
+```
+
+`RawPointer[PGconn]`, полученный как **владеющий** результат функции,
+помеченной `-> owned RawPointer[T]` (маркер на уровне сигнатуры, не типа —
+не каждый `RawPointer[PGconn]` владеет, `PQerrorMessage` возвращает
+non-owning `char*`), генерирует RAII-обёртку (`std::unique_ptr` с custom
+deleter `PQfinish`) вместо голого указателя. Без маркера — голый `T*`,
+ответственность на вызывающем (как в C).
+
+### 2.6 Layout-совместимость C struct
+
+Header import сегодня копирует C struct в MLC record по значению
+(`header_import.mlc:153-160`) — непригодно для структур, которые C-код
+мутирует по адресу (`AVFrame`, `PGresult` — впрочем последние два в основном
+opaque, не голый struct, так что для libpq/GTK/OpenGL это не блокер).
+**Для ffmpeg-класса библиотек с "открытыми" struct** нужен отдельный режим
+без refcounting-обёртки поверх record — не проектировать сейчас (нет
+конкретного case), зафиксировать как известный будущий пробел (см. §7).
+
+### 2.7 Concurrency-контракт для extern
+
+Уже описан в `docs/CONCURRENCY_V2.md:369-380` (design only): метаданные
+`thread_safe | blocking | thread_affine` на `extern fn`/`extern type`.
+
+```mlc
+extern fn PQexec(conn: RawPointer[PGconn], query: RawPointer[Byte])
+  -> RawPointer[PGresult]
+  = "PQexec" from "<libpq-fe.h>"
+  blocking
+```
+
+Без чекера, который знает про `blocking`, вызов `PQexec` внутри
+`Isolate`/`async`-контекста (когда они появятся) незаметно завешивает
+воркер — тот самый класс багов, ради которого весь CONCURRENCY_V2 затевался.
+**Зависимость:** реализуется после `TRACK_CONCURRENCY_V2` STEP=1 (`Send`/`Sync`
+предикаты уже существуют как база для checker-инфраструктуры).
+
+## 3. Что явно НЕ входит в этот слой
+
+- Генератор биндингов (аналог `bindgen`/`gir`) — писать после первого
+  ручного биндинга (см. `LANGUAGE_AUDIT`-обсуждение сессии), не раньше: нет
+  данных, какие C-конструкции реально нужно покрывать.
+- Variadic C-функции (`printf`-стиль) — редко нужны для целевых
+  библиотек (libpq/OpenGL/GTK не требуют variadic в горячем пути), отложить
+  до конкретного случая.
+- Layout-совместимый "raw struct" режим (§2.6) — нет прецедента без ffmpeg,
+  не проектировать заранее.
+- Сами биндинги к libpq/OpenGL/GTK/ffmpeg — отдельные треки, создавать только
+  после закрытия этого слоя и только под конкретную задачу (см. §7).
+
+## 4. Порядок реализации (конвенция проекта: Ruby-эталон первым)
+
+1. `RawPointer[T]` — тип в стандартной библиотеке (Ruby, потом self-hosted).
+2. `extern fn ... = "name" from "<header>"` — реальный codegen (`#include` +
+   вызов), сначала для функций без callback-параметров.
+3. `extern lib "name"` — пробрасывание `-l<name>` в `build_bin.sh`.
+4. `extern type Name = "CName" from "<header>"` в self-hosted парсере
+   (сегодня есть только в Ruby) + `drop "c_function"` для владения.
+5. `extern fn(...)` как тип — C function pointer, отдельно от closure типа.
+6. Concurrency-метаданные (`blocking`/`thread_safe`/`thread_affine`) на
+   `extern fn`/`extern type` — после `TRACK_CONCURRENCY_V2` STEP=1.
+
+## 5. Proof-of-concept (не в этом треке, следующий трек после закрытия слоя)
+
+Минимальный сквозной тест слоя — 3-4 функции libpq (`PQconnectdb`, `PQexec`,
+`PQgetvalue` или аналог, `PQfinish`) без callback: покрывает §2.1-2.3, §2.5,
+§2.7 (`blocking`), не требует §2.4 (callback) и §2.6 (raw struct). Именно
+поэтому libpq — правильный первый case, не OpenGL/GTK/ffmpeg (см. предыдущее
+обсуждение в чате: OpenGL/GTK/ffmpeg требуют либо генератор (тысячи
+символов), либо §2.4/§2.6 в полном объёме).
+
+## 6. Критерий приёмки слоя (закрыть трек, когда всё верно)
+
+1. `RawPointer[T]` компилируется, `is_null`/сравнение работают, codegen — `T*`.
+2. `extern fn` с `from "<header>"` эмитит `#include` и настоящий C++ вызов;
+   существующие stdlib `extern fn` (`io`, etc.) не регрессируют.
+3. `extern lib "x"` реально добавляет `-lx` в финальную линковку;
+   собранная программа, вызывающая символ из внешней `.so`, линкуется и
+   запускается (smoke: `-lm`, вызов `extern fn sqrt(...) = "sqrt" from
+   "<math.h>"` — не требует внешней инсталляции пакета, есть везде).
+4. `extern type` с `drop` генерирует RAII-обёртку; утечка/double-free
+   проверена (valgrind/ASan smoke на 1 owned handle).
+5. `extern fn(...)`-тип запрещает capture при передаче не-top-level функции
+   (диагностика, не runtime crash).
+6. Self-host: `mlcc` → `mlcc2` → `diff` идентичен после всех шагов (обычный
+   гейт проекта).
+
+## 7. После закрытия слоя — что дальше (не создавать треки заранее)
+
+- **libpq proof-of-concept** (см. §5) — первый реальный биндинг, валидирует
+  слой end-to-end.
+- **OpenGL** — только после появления генератора биндингов (тысячи функций
+  руками не размечать) — генератор — отдельная задача после первого ручного
+  случая.
+- **GTK/ffmpeg** — не брать без конкретного продукта/задачи, которая их
+  требует (см. обсуждение в чате 2026-07-09): эффорт сопоставим с отдельным
+  крупным подпроектом, отдельно от §2.4 (GObject refcounting ≠ `Shared<T>`,
+  GTK signals) и §2.6 (ffmpeg struct/union/макросы).

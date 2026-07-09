@@ -378,12 +378,13 @@ compiler/
 | **3.5** C++ header import (minimal) | **done** | [TRACK_CPP_HEADER_IMPORT](archive/tracks/TRACK_CPP_HEADER_IMPORT.md) — subset для `import "foo.h"` |
 | **3.6** Full C++ header parser | **done** | [TRACK_CPP_PARSER_FULL](archive/tracks/TRACK_CPP_PARSER_FULL.md) closed (STEP=1-8) |
 | **2.8** Compiler architecture | **done** | [TRACK_CLEAN_ARCHITECTURE](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) — IR layers, passes, verifiers (**1290/0**) |
-| **2.9** Build speed | **done** | [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md) closed; [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md) closed (5-6 deferred сознательно, не нужны); [TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md) closed 2026-07-03 |
+| **2.9** Build speed | **partial** | [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md) closed; [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md) closed (STEP=5-6 были deferred до закрытия CLOSURE_ESCAPE — снято); [TRACK_CLANG_MIGRATION](archive/tracks/TRACK_CLANG_MIGRATION.md) closed 2026-07-03; [TRACK_BUILD_SPEED3](agent/TRACK_BUILD_SPEED3.md) **open, приоритет** — ccache CI cache, `-ftime-trace` re-check после CLOSURE_ESCAPE |
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](agent/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **planned** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md) — полные требования + критерий приёмки (production-ready многопоточность); [TRACK_CONCURRENCY_V2](agent/TRACK_CONCURRENCY_V2.md) open, покрывает Фазы 1-4 (`Send` trait, move capture, rendezvous channel, `StopToken`); Фазы 5-11 (`Sync`, `TaskScope`, cancellation propagation, `Isolate`, `ThreadPool`, `Supervisor`, async I/O) — будущие треки. Тестовый суперстенд (deterministic scheduler, stress-матрица, TSan/ASan/UBSan CI gate): [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md), [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) open, T1-T4 не зависят от Send/Sync — можно начать параллельно. Предыдущий MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **planned, средний приоритет** | [FFI_LAYER.md](FFI_LAYER.md) — инфраструктура для будущих биндингов (libpq/OpenGL/GTK/ffmpeg обсуждались, сами биндинги не в этом треке); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-6 независимы, STEP=7 (concurrency-метаданные) заблокирован на `TRACK_CONCURRENCY_V2` STEP=1 |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -391,10 +392,18 @@ compiler/
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT (minimal)
   → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO → CONCURRENCY
-  → LANG_CLOSURE_ESCAPE (verify-gate + close)
+  → LANG_CLOSURE_ESCAPE (**closed** 2026-07-09, STEP=4 verify-gate)
   → CONCURRENCY_TEST_HARNESS T1-T4 (**done** 2026-07-09, sanitize CI)
-  → CONCURRENCY_V2 STEP=1-5 (**active** STEP=1; trait name `Sync` locked)
-  → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком)
+  → CONCURRENCY_V2 STEP=1 (**active**; trait name `Sync` locked)
+  → BUILD_SPEED3 (**высокий приоритет пользователя** — вставлен между
+    CONCURRENCY_V2 STEP=1 и STEP=2: ccache CI cache, `-ftime-trace` re-check;
+    короткий)
+  → CONCURRENCY_V2 STEP=2-5 (продолжение после BUILD_SPEED3)
+  → FFI_LAYER STEP=1-6 (**средний приоритет пользователя** — после
+    CONCURRENCY_V2 STEP=1-5 закрывается или доходит до устойчивой точки;
+    STEP=7 самого FFI_LAYER всё равно ждёт CONCURRENCY_V2 STEP=1, который на
+    этот момент уже готов)
+  → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
 ```
