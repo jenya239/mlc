@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 4 STEP=11 — multi-module `--run` (import merge → one MirProgram)
-(STEP=10 done: `run_single_file_vm_gate.sh` 18+diff; Tier B p1≡p2).
+**TRACK_MIR_VM_FULL** Epic 4 STEP=12 — `--run` on `misc/examples/*` subset (script gate; then HARD STOP)
+(STEP=11 done: `vm_multi` + MIR lower unwraps `SemanticDeclarationExported`).
 
 ## Step sizing (good vs bad)
 

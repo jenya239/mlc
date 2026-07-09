@@ -32,12 +32,14 @@ fn mir_lower_append_function(accum: MirLowerAccum, declaration: Shared<SemanticD
       MirLowerAccum { functions: accum.functions, errors: mir_lower_append_errors(accum.errors, errors) }
   }
 
-fn mir_lower_append_declaration(accum: MirLowerAccum, declaration: Shared<SemanticDeclaration>) -> MirLowerAccum =
-  match sdecl_inner(declaration) {
+fn mir_lower_append_declaration(accum: MirLowerAccum, declaration: Shared<SemanticDeclaration>) -> MirLowerAccum = do
+  const inner = sdecl_inner(declaration)
+  match inner {
     SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) =>
-      mir_lower_append_function(accum, declaration),
+      mir_lower_append_function(accum, inner),
     _ => accum
   }
+end
 
 fn mir_lower_declarations(accum: MirLowerAccum, declarations: [Shared<SemanticDeclaration>]) -> MirLowerAccum = do
   let mut index = 0

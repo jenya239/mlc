@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 17 |
-| step_last | 10 |
-| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=11 |
-| test_gate | ok (single-file gate 18+diff 18/0; Tier B p1≡p2) |
+| driver_turns_since_plan | 18 |
+| step_last | 11 |
+| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=12 |
+| test_gate | ok (vm_multi=7; multi-module gate; CHECK:0; Tier B p1≡p2) |
+
+### Turn 2026-07-10 00:02 (Driver TRACK_MIR_VM_FULL STEP=11 — multi-module `--run`)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:59 |
+| elapsed | ~3 min |
+| done    | `lower_program.mlc`: lower `sdecl_inner` for export; `misc/examples/vm_multi/*`; `run_multi_module_vm_gate.sh`. |
+| verify  | `--run` vm_multi=7; multi-module GATE:0; CHECK:0; BUILD:0; P1/MLCC2/P2/DIFF:0. |
+| result  | STEP=11 done. Plain: import+export fn merges into one MirProgram for `--run`. |
+| issues  | Dirty `compiler/out/*` left uncommitted. |
+| next    | ROLE=Driver STEP=12 TRACK_MIR_VM_FULL — `--run` misc/examples subset script gate (then HARD STOP) |
 
 ### Turn 2026-07-09 23:58 (Driver TRACK_MIR_VM_FULL STEP=10 — single-file `--run` stable)
 
