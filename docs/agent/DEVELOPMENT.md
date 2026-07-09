@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 2 STEP=6 — mutual recursion, default params desugared
-(STEP=5 done: bound/immediate lambda inline + lexical captures).
+**TRACK_MIR_VM_FULL** Epic 2 STEP=7 — `?` / Result propagation in MIR + VM
+(STEP=6 done: mutual recursion + MirParam literal defaults).
 
 ## Step sizing (good vs bad)
 

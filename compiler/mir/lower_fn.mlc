@@ -1,6 +1,10 @@
 // Lower typed function bodies to MLC MIR (TRACK_MIR STEP=3).
 
-import { Param, Result, Pattern, PatternWild, PatternIdent, PatternInt, PatternBool, PatternCtor, PatternUnit, PatternOr, PatternRecord } from '../frontend/ast'
+import {
+  Param, Result, Pattern, PatternWild, PatternIdent, PatternInt, PatternBool,
+  PatternCtor, PatternUnit, PatternOr, PatternRecord,
+  Expr, ExprInt, ExprBool, ExprStr, ExprUnit
+} from '../frontend/ast'
 import {
   SemanticDeclaration, SemanticDeclarationFn,
   SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal,
@@ -19,6 +23,8 @@ import {
   MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirUnreachable, MirTerminator,
   MirRvalueUse, MirRvalueBinary,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
+  MirParamDefault, MirParamDefaultNone, MirParamDefaultInt, MirParamDefaultBool,
+  MirParamDefaultStr, MirParamDefaultUnit,
   LocalId, BlockId, mir_local_id, mir_block_id
 } from './mir_types'
 import {
@@ -1436,11 +1442,27 @@ fn mir_lower_statements_from_index(
 fn mir_lower_statements(state: MirLowerState, statements: [Shared<SemanticStatement>]) -> Result<MirLowerState, [string]> =
   mir_lower_statements_from_index(state, statements, 0)
 
+fn mir_lower_param_default(parameter: Shared<Param>) -> MirParamDefault =
+  if !parameter.has_default then MirParamDefaultNone
+  else
+    match parameter.default {
+      ExprInt(value, _) => MirParamDefaultInt(value),
+      ExprBool(value, _) => MirParamDefaultBool(value),
+      ExprStr(value, _) => MirParamDefaultStr(value),
+      ExprUnit(_) => MirParamDefaultUnit,
+      _ => MirParamDefaultNone
+    }
+  end
+
 fn mir_lower_build_params(params: [Shared<Param>]) -> [MirParam] = do
   let mut mir_params: [MirParam] = []
   let mut index = 0
   while index < params.length() do
-    mir_params.push(MirParam { name: params[index].name, type_value: mir_lower_unknown_type() })
+    mir_params.push(MirParam {
+      name: params[index].name,
+      type_value: mir_lower_unknown_type(),
+      default_value: mir_lower_param_default(params[index])
+    })
     index = index + 1
   end
   mir_params

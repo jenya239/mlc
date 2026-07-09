@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 12 |
-| step_last | 5 |
-| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=6 |
-| test_gate | ok (lambda/capture/imm=7; vm_cpp_diff 10/0) |
+| driver_turns_since_plan | 13 |
+| step_last | 6 |
+| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=7 |
+| test_gate | ok (mutual/default=7; vm_cpp_diff 12/0) |
+
+### Turn 2026-07-09 23:15 (Driver TRACK_MIR_VM_FULL STEP=6 — mutual recursion / defaults)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:03 |
+| elapsed | ~12 min |
+| done    | `MirParamDefault` + `vm_bind_call_arguments` fill; fixtures vm_mutual/vm_default_params; smoke. |
+| verify  | `--run` mutual=7 default=7; `run_vm_cpp_exit_diff` 12/0; build EXIT:0. |
+| result  | STEP=6 done. Plain: mutual calls + omitted default args work on VM. |
+| issues  | Avoided `return` in match-loop (codegen). Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=7 TRACK_MIR_VM_FULL — `?` / Result propagation in MIR + VM |
 
 ### Turn 2026-07-09 23:05 (Driver TRACK_MIR_VM_FULL STEP=5 — lambda calling convention)
 

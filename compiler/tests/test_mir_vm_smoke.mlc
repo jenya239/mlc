@@ -186,5 +186,19 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke lambda immediate exit', false))
   }
 
+  match vm_smoke_interpret(
+    'fn is_even(n: i32) -> i32 =\n  if n == 0 then 1\n  else is_odd(n - 1)\n\nfn is_odd(n: i32) -> i32 =\n  if n == 0 then 0\n  else is_even(n - 1)\n\nfn main() -> i32 = is_even(4) * 6 + is_odd(3)',
+    'vm_mutual.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke mutual recursion exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke mutual recursion exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn add(x: i32, y: i32 = 1) -> i32 = x + y\nfn main() -> i32 = add(6)',
+    'vm_default_params.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke default params exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke default params exit', false))
+  }
+
   results
 end

@@ -12,7 +12,19 @@ export fn mir_block_id(index: i32) -> BlockId = BlockId { index: index }
 export fn mir_id_is_valid(index: i32) -> bool =
   index >= 0 && index < 1048576
 
-export type MirParam = MirParam { name: string, type_value: Shared<Type> }
+// Literal defaults only (checker MVP). Filled at call bind when arg omitted.
+export type MirParamDefault =
+  | MirParamDefaultNone
+  | MirParamDefaultInt(i32)
+  | MirParamDefaultBool(bool)
+  | MirParamDefaultStr(string)
+  | MirParamDefaultUnit
+
+export type MirParam = MirParam {
+  name: string,
+  type_value: Shared<Type>,
+  default_value: MirParamDefault
+}
 export type MirLocal = MirLocal { id: LocalId, name: string, type_value: Shared<Type> }
 
 export type MirOperand =

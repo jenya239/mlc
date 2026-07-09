@@ -21,7 +21,10 @@ export fn vm_run_function(
   arguments: [VmValue],
   trace_enabled: bool
 ) -> VmRunOutcome =
-  vm_run_frames(program, [vm_frame_new(function, mir_block_id(0), vm_bind_call_arguments(function, arguments))], trace_enabled)
+  match vm_bind_call_arguments(function, arguments) {
+    Err(errors) => VmRunFailed(errors),
+    Ok(locals) => vm_run_frames(program, [vm_frame_new(function, mir_block_id(0), locals)], trace_enabled)
+  }
 
 export fn vm_run_frames(program: MirProgram, frames: [VmFrame], trace_enabled: bool) -> VmRunOutcome = do
   if frames.length() == 0 then return VmRunFailed(['vm: empty frame stack']) end
@@ -71,9 +74,14 @@ fn vm_execute_user_call(
     pending_call_local: local_id.index
   }
   let mut next_frames = vm_frame_update(frames, frame_index, caller_frame)
-  next_frames.push(vm_frame_new(callee, mir_block_id(0), vm_bind_call_arguments(callee, argument_values)))
-  if trace_enabled then println(`vm call ${callee_name}`) end
-  VmRunContinue(next_frames)
+  match vm_bind_call_arguments(callee, argument_values) {
+    Err(errors) => VmRunFailed(errors),
+    Ok(locals) => do
+      next_frames.push(vm_frame_new(callee, mir_block_id(0), locals))
+      if trace_enabled then println(`vm call ${callee_name}`) end
+      VmRunContinue(next_frames)
+    end
+  }
 end
 
 fn vm_execute_statement(

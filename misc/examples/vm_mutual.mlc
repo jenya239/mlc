@@ -1,0 +1,9 @@
+fn is_even(n: i32) -> i32 =
+  if n == 0 then 1
+  else is_odd(n - 1)
+
+fn is_odd(n: i32) -> i32 =
+  if n == 0 then 0
+  else is_even(n - 1)
+
+fn main() -> i32 = is_even(4) * 6 + is_odd(3)
