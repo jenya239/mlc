@@ -119,16 +119,29 @@ function-pointer, полученный runtime-вызовом `glXGetProcAddress
    fontconfig (font matching/fallback) — оба отсутствуют в обоих референсах
    как рабочий код, только в документации одного из них.
 
-## 5. Открытые вопросы (решить перед стартом реализации, не в этом документе)
+## 5. Открытые вопросы — решения (2026-07-10, TRACK_TEXT_RENDERING STEP=1)
 
-1. Паттерн "C array view" для `hb_buffer_get_glyph_infos`-класса функций —
-   расширение `FFI_LAYER.md` или отдельный узкий примитив.
-2. `glXGetProcAddress`-загрузка как экземпляр `extern fn(...)` типа —
-   первый прецедент runtime-полученного C function pointer (все текущие
-   FFI_LAYER примеры — статически линкованные символы).
-3. Шим для `msdfgen` (§3.2, вариант а) — отдельный runtime `.cpp`, требует
-   решения про C++-FFI (не входит в `FFI_LAYER.md`, который специфицирует
-   только C ABI).
+### 5.1 C array view (`hb_buffer_get_glyph_infos` / `positions`) — **decided**
+
+**Решение:** без нового языкового примитива и без расширения `FFI_LAYER.md`.
+
+- FFI: `extern fn hb_buffer_get_glyph_infos(buf: RawPointer[hb_buffer_t], length_out: RawPointer[u32]) -> RawPointer[hb_glyph_info_t]` (и аналог для positions) — уже покрыто `RawPointer` + out-param.
+- Конвенция библиотеки `mlc::text`: пара `(ptr: RawPointer[T], length: u32)` = view на буфер HarfBuzz; **не** копировать в `Array[T]` на каждый доступ к глифу.
+- Граница копирования: один раз в `TextShaper.shape()` — собрать `Array[ShapedGlyph]` (owned MLC) из view; дальше pipeline работает только с `Array`/`ShapedGlyph`.
+- Hot path per frame = повторный `shape` → снова один copy на вызов; внутри shape — только индексный обход view.
+
+### 5.2 `glXGetProcAddress` → runtime `extern fn(...)` — **deferred to STEP=5**
+
+Не блокирует FreeType/HarfBuzz (STEP=2–4). Решение + smoke (`glGenBuffers` или аналог) — на STEP=5 перед OpenGL-биндингом. Предварительно: существующий C function pointer тип + загрузка адреса достаточны; нового примитива не ждать.
+
+### 5.3 Шим `msdfgen` (C++ → C ABI) — **decided**
+
+**Решение:** вариант (а) из §3.2 — узкий `extern "C"` шим в runtime.
+
+- Файл: `runtime/src/text/msdf_shim.cpp` (+ header), линкуется с runtime; экспортирует C-функции (load glyph outline → generate MSDF bitmap + pxRange).
+- MLC: обычный `extern fn` / `extern lib` к шиму (C ABI only; C++ `msdfgen` не торчит в MLC).
+- Реализация шима — **STEP=7**, не раньше; STEP=2–4 (A8 FreeType path) не зависят от MSDF.
+- Вариант (б) (чистый MLC MSDF) — запасной, только если шим окажется непропорционально тяжёлым; не default.
 
 ## 6. Критерий приёмки первого milestone (фаза 1-2, headless)
 

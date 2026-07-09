@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=1 — design `TEXT_RENDERING.md` §5.1 + §5.3 (no codegen).
-(MIR_VM_FULL Epic 4 closed; Epic 5 unauthorized. SUPERVISOR deferred; REGION blocked.)
+**TRACK_TEXT_RENDERING** STEP=2 — FreeType `extern` bindings + one-glyph smoke.
+(STEP=1 done: TEXT_RENDERING.md §5.1/§5.3 decided; §5.2 deferred to STEP=5.)
 
 ## Step sizing (good vs bad)
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_TEXT_RENDERING STEP=1 |
-| test_gate | ok (docs-only Planner; prior examples gate 28/0) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_TEXT_RENDERING STEP=2 |
+| test_gate | ok (docs-only STEP=1 design decisions) |
+
+### Turn 2026-07-10 00:09 (Driver TRACK_TEXT_RENDERING STEP=1 — design §5.1/§5.3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 00:08 |
+| elapsed | ~2 min |
+| done    | `TEXT_RENDERING.md` §5: C array view = RawPointer+length, copy once in shape(); msdfgen = runtime `msdf_shim.cpp` at STEP=7; §5.2 deferred to STEP=5. |
+| verify  | Decisions written under §5.1/§5.3; TRACK STEP=1 done; PLAN/DEVELOPMENT → STEP=2. |
+| result  | STEP=1 done. Plain: FreeType/HarfBuzz unblocked; MSDF shim deferred to STEP=7. |
+| issues  | No codegen this turn (design only). Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_RENDERING — FreeType extern bindings + one-glyph smoke |
 
 ### Turn 2026-07-10 00:06 (Planner — queue after MIR_VM_FULL Epic 4)
 
