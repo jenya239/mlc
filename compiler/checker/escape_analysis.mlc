@@ -1,0 +1,239 @@
+// Escape analysis for fn(...)-typed parameters (TRACK_LANG_CLOSURE_ESCAPE STEP=2).
+// Port of Ruby EscapeAnalyzer: a watched param is non-escaping iff every use is
+// a direct callee (`param(args)`). Used by STEP=3 codegen for template params.
+
+import {
+  Program, Decl, Expr, Stmt, Param, TypeExpr, MatchArm, FieldVal, RecordLitPart,
+  decl_inner, param_name, param_type_value
+} from '../frontend/ast'
+
+fn empty_string_list() -> [string] = do
+  let empty: [string] = []
+  empty
+end
+
+fn string_list_contains(haystack: [string], needle: string) -> bool = do
+  let mut index = 0
+  while index < haystack.length() do
+    if haystack[index] == needle then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn string_list_add(names: [string], name: string) -> [string] =
+  if name.length() == 0 then names
+  else if string_list_contains(names, name) then names
+  else names.concat([name])
+  end
+
+fn string_list_difference(left: [string], right: [string]) -> [string] = do
+  let mut result = empty_string_list()
+  let mut index = 0
+  while index < left.length() do
+    if !string_list_contains(right, left[index]) then
+      result = string_list_add(result, left[index])
+    end
+    index = index + 1
+  end
+  result
+end
+
+fn mark_all_watched(watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < watched.length() do
+    result = string_list_add(result, watched[index])
+    index = index + 1
+  end
+  result
+end
+
+fn type_expr_is_function(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyFn(_, _) => true,
+    _ => false
+  }
+
+export fn function_typed_param_names(parameters: [Shared<Param>]) -> [string] = do
+  let mut names = empty_string_list()
+  let mut index = 0
+  while index < parameters.length() do
+    if type_expr_is_function(param_type_value(parameters[index])) then
+      names = string_list_add(names, param_name(parameters[index]))
+    end
+    index = index + 1
+  end
+  names
+end
+
+fn visit_field_values(field_values: [Shared<FieldVal>], watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < field_values.length() do
+    result = visit_expr(field_values[index].value, watched, result)
+    index = index + 1
+  end
+  result
+end
+
+fn visit_record_parts(parts: [RecordLitPart], watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < parts.length() do
+    result = match parts[index] {
+      RecordLitFields(field_values) => visit_field_values(field_values, watched, result),
+      RecordLitSpread(spread_expression) => visit_expr(spread_expression, watched, result)
+    }
+    index = index + 1
+  end
+  result
+end
+
+fn visit_match_arms(arms: [Shared<MatchArm>], watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < arms.length() do
+    const arm = arms[index]
+    if arm.has_guard then
+      result = visit_expr(arm.when_condition, watched, result)
+    end
+    result = visit_expr(arm.body, watched, result)
+    index = index + 1
+  end
+  result
+end
+
+fn visit_expr_list(expressions: [Shared<Expr>], watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < expressions.length() do
+    result = visit_expr(expressions[index], watched, result)
+    index = index + 1
+  end
+  result
+end
+
+fn visit_stmt_list(statements: [Shared<Stmt>], watched: [string], escaping: [string]) -> [string] = do
+  let mut result = escaping
+  let mut index = 0
+  while index < statements.length() do
+    result = visit_stmt(statements[index], watched, result)
+    index = index + 1
+  end
+  result
+end
+
+fn visit_call_like(
+  callee: Shared<Expr>,
+  arguments: [Shared<Expr>],
+  watched: [string],
+  escaping: [string]
+) -> [string] = do
+  let mut result = match callee {
+    ExprIdent(name, _) =>
+      if string_list_contains(watched, name) then escaping
+      else visit_expr(callee, watched, escaping)
+      end,
+    _ => visit_expr(callee, watched, escaping)
+  }
+  visit_expr_list(arguments, watched, result)
+end
+
+fn visit_stmt(statement: Shared<Stmt>, watched: [string], escaping: [string]) -> [string] =
+  match statement {
+    StmtLet(_, _, _, value, _) => visit_expr(value, watched, escaping),
+    StmtLetPattern(_, _, _, value, _, else_expression, _) =>
+      visit_expr(else_expression, watched, visit_expr(value, watched, escaping)),
+    StmtLetConst(_, _, value, _) => visit_expr(value, watched, escaping),
+    StmtExpr(expression, _) => visit_expr(expression, watched, escaping),
+    StmtBreak(_) => escaping,
+    StmtContinue(_) => escaping,
+    StmtReturn(expression, _) => visit_expr(expression, watched, escaping)
+  }
+
+fn visit_expr(expression: Shared<Expr>, watched: [string], escaping: [string]) -> [string] =
+  match expression {
+    ExprIdent(name, _) =>
+      if string_list_contains(watched, name) then string_list_add(escaping, name)
+      else escaping
+      end,
+    ExprInt(_, _) => escaping,
+    ExprStr(_, _) => escaping,
+    ExprBool(_, _) => escaping,
+    ExprUnit(_) => escaping,
+    ExprFloat(_, _) => escaping,
+    ExprI64(_, _) => escaping,
+    ExprU8(_, _) => escaping,
+    ExprUsize(_, _) => escaping,
+    ExprChar(_, _) => escaping,
+    ExprExtern(_) => escaping,
+    ExprBin(_, left, right, _) =>
+      visit_expr(right, watched, visit_expr(left, watched, escaping)),
+    ExprUn(_, operand, _) => visit_expr(operand, watched, escaping),
+    ExprCall(callee, arguments, _) =>
+      visit_call_like(callee, arguments, watched, escaping),
+    ExprMethod(receiver, _, arguments, _) =>
+      visit_expr_list(arguments, watched, visit_expr(receiver, watched, escaping)),
+    ExprField(object, _, _) => visit_expr(object, watched, escaping),
+    ExprIndex(object, index_expression, _) =>
+      visit_expr(index_expression, watched, visit_expr(object, watched, escaping)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      visit_expr(else_branch, watched,
+        visit_expr(then_branch, watched, visit_expr(condition, watched, escaping))),
+    ExprBlock(statements, result_expression, _) =>
+      visit_expr(result_expression, watched, visit_stmt_list(statements, watched, escaping)),
+    ExprWhile(condition, body, _) =>
+      visit_stmt_list(body, watched, visit_expr(condition, watched, escaping)),
+    ExprFor(_, iterable, body, _) =>
+      visit_stmt_list(body, watched, visit_expr(iterable, watched, escaping)),
+    ExprMatch(scrutinee, arms, _) =>
+      visit_match_arms(arms, watched, visit_expr(scrutinee, watched, escaping)),
+    ExprRecord(_, parts, _) => visit_record_parts(parts, watched, escaping),
+    ExprRecordUpdate(_, base, field_values, _) =>
+      visit_field_values(field_values, watched, visit_expr(base, watched, escaping)),
+    ExprArray(elements, _) => visit_expr_list(elements, watched, escaping),
+    ExprTuple(elements, _) => visit_expr_list(elements, watched, escaping),
+    ExprQuestion(inner, _) => visit_expr(inner, watched, escaping),
+    ExprLambda(_, body, _) => visit_expr(body, watched, escaping),
+    // Rule (4) / Ruby unknown-node conservatism: Spawn outlives the call.
+    ExprSpawn(_, _) => mark_all_watched(watched, escaping),
+    ExprNamedArg(_, value, _) => visit_expr(value, watched, escaping),
+    ExprWith(resource, _, body, _) =>
+      visit_stmt_list(body, watched, visit_expr(resource, watched, escaping))
+  }
+
+export fn non_escaping_params(
+  body: Shared<Expr>,
+  function_typed_names: [string]
+) -> [string] = do
+  if function_typed_names.length() == 0 then return empty_string_list() end
+  const escaping = visit_expr(body, function_typed_names, empty_string_list())
+  string_list_difference(function_typed_names, escaping)
+end
+
+export fn non_escaping_params_for_decl(declaration: Shared<Decl>) -> [string] =
+  match decl_inner(declaration) {
+    DeclFn(_, _, _, parameters, _, body, _) => do
+      const watched = function_typed_param_names(parameters)
+      non_escaping_params(body, watched)
+    end,
+    _ => empty_string_list()
+  }
+
+fn declaration_is_function_named(declaration: Shared<Decl>, function_name: string) -> bool =
+  match decl_inner(declaration) {
+    DeclFn(name, _, _, _, _, _, _) => name == function_name,
+    _ => false
+  }
+
+export fn non_escaping_params_for_named_fn(program: Program, function_name: string) -> [string] = do
+  let mut index = 0
+  while index < program.decls.length() do
+    if declaration_is_function_named(program.decls[index], function_name) then
+      return non_escaping_params_for_decl(program.decls[index])
+    end
+    index = index + 1
+  end
+  empty_string_list()
+end

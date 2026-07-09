@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 1 |
-| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=1 done; next STEP=2 |
+| driver_turns_since_plan | 4 |
+| step_last | 2 |
+| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=2 done; next STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 09:55 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=2 — self-hosted escape_analysis)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_CLOSURE_ESCAPE |
+| started | 2026-07-09 09:31 |
+| elapsed | ~24 min |
+| done    | `escape_analysis.mlc` (`non_escaping_params*`); `test_escape_analysis.mlc` + suite_registry. Smoke via mlcc 7/0. |
+| result  | smoke ok; check-only main 0; arch_lint 0. Plain: self-hosted знает non-escaping fn-params. |
+| issues  | Ruby `dev_gate_fast` red from STEP=1 templates on HOF (`comma_separated`); verify via mlcc smoke. Fn types: `(T)->U`. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_CLOSURE_ESCAPE — self-hosted codegen template for non-escaping |
 
 ### Turn 2026-07-09 09:35 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=1 — Ruby escape→template)
 

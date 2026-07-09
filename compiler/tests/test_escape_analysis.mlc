@@ -1,0 +1,83 @@
+// Unit tests for escape_analysis (TRACK_LANG_CLOSURE_ESCAPE STEP=2).
+// Function types use self-hosted syntax `(T) -> U` (not Ruby `fn(T) -> U`).
+
+import { TestResult, assert_eq_int, assert_eq_str } from './test_runner'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import {
+  non_escaping_params_for_named_fn
+} from '../checker/escape_analysis'
+
+fn non_escaping_joined(source: string, function_name: string) -> string = do
+  const program = parse_program(tokenize(source).tokens)
+  const names = non_escaping_params_for_named_fn(program, function_name)
+  let mut joined = ""
+  let mut index = 0
+  while index < names.length() do
+    if index > 0 then joined = joined + "," end
+    joined = joined + names[index]
+    index = index + 1
+  end
+  joined
+end
+
+fn non_escaping_pair(source: string) -> string =
+  non_escaping_joined(source, "call_other") + "|" + non_escaping_joined(source, "g")
+
+fn non_escaping_count(source: string, function_name: string) -> i32 =
+  non_escaping_params_for_named_fn(
+    parse_program(tokenize(source).tokens),
+    function_name
+  ).length()
+
+export fn escape_analysis_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_str(
+    "escape: direct call only is non-escaping",
+    non_escaping_joined(
+      "fn apply_twice(f: (i32) -> i32, x: i32) -> i32 = f(f(x))",
+      "apply_twice"),
+    "f"))
+
+  results.push(assert_eq_int(
+    "escape: stored in record field is escaping",
+    non_escaping_count(
+      "type Handler = { callback: (i32) -> i32 }\nfn make_handler(f: (i32) -> i32) -> Handler = Handler { callback: f }",
+      "make_handler"),
+    0))
+
+  results.push(assert_eq_int(
+    "escape: returned from function is escaping",
+    non_escaping_count(
+      "fn identity_fn(f: (i32) -> i32) -> (i32) -> i32 = f",
+      "identity_fn"),
+    0))
+
+  results.push(assert_eq_str(
+    "escape: passed as argument is escaping; callee g stays non-escaping",
+    non_escaping_pair(
+      "fn g(f: (i32) -> i32, x: i32) -> i32 = f(x)\nfn call_other(f: (i32) -> i32, x: i32) -> i32 = g(f, x)"),
+    "|f"))
+
+  results.push(assert_eq_int(
+    "escape: aliased by let is escaping",
+    non_escaping_count(
+      "fn schedule(f: (i32) -> i32) -> i32 = do\n  let alias = f;\n  alias(1)\nend",
+      "schedule"),
+    0))
+
+  results.push(assert_eq_str(
+    "escape: direct call inside nested lambda stays non-escaping",
+    non_escaping_joined(
+      "fn schedule(f: (i32) -> i32) -> i32 = do\n  let wrapper = () => f(1);\n  wrapper()\nend",
+      "schedule"),
+    "f"))
+
+  results.push(assert_eq_int(
+    "escape: no fn params yields empty",
+    non_escaping_count("fn add(x: i32, y: i32) -> i32 = x + y", "add"),
+    0))
+
+  results
+end

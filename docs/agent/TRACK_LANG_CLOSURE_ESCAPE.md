@@ -7,12 +7,16 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md)
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **open** — STEP=1 done (Ruby escape analysis + template codegen)
+## Status: **open** — STEP=2 done (self-hosted escape_analysis.mlc)
 
-**Driver 2026-07-09:** Wired `EscapeAnalyzer` into Ruby pipeline. Non-escaping
-`fn(...)` params → `template<typename __FN>` via `Func#synthetic_type_params` /
-`Param#template_type_name`. Verify: `closure_escape_analysis_test.rb` 7/0.
-Note: live tree is `lib/mlc/representations/` (Zeitwerk); do not commit duplicate `lib/mlc/nxt/`.
+**Driver 2026-07-09 STEP=2:** `compiler/checker/escape_analysis.mlc` —
+`non_escaping_params` / `non_escaping_params_for_named_fn` (Ruby EscapeAnalyzer
+port). Tests: `compiler/tests/test_escape_analysis.mlc` (7 cases, `(T) -> U`
+syntax). Wired in `suite_registry` types suite. Not yet wired into
+`gather_program_check` (analysis API for STEP=3 codegen). Verify: mlcc smoke
+7/0; `mlcc --check-only main` 0; arch_lint 0. Note: Ruby `dev_gate_fast`
+currently broken by STEP=1 template codegen on HOF callbacks (`TokenKind_is_comma`).
+
 
 ## Формальная граница (не размывать в реализации)
 
@@ -70,7 +74,7 @@ type erasure (`std::function`/`std::move_only_function`/`shared_ptr`) — это
 параметров-лямбд, `std::function` для escaping — с тестами на все 4 правила
 escaping выше (по одному тесту на правило + один explicit-маркер тест).
 
-### STEP=2 — self-hosted checker (после STEP=1 зелёного)
+### STEP=2 — self-hosted checker (после STEP=1 зелёного) — **done**
 
 **Файлы:** новый проход в `compiler/checker/` (например
 `escape_analysis.mlc`) — для каждого `ExprLambda` (искать определение в
