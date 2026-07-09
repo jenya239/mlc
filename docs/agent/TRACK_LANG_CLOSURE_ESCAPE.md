@@ -7,41 +7,15 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md)
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **STEP=1 done** (Ruby-эталон, зелёные тесты); STEP=2/STEP=3 (self-hosted) не начаты
+## Status: **open** — STEP=1 incomplete (WIP untracked; tests red)
 
-Реализовано (Ruby, `lib/mlc/`):
-- `lib/mlc/representations/semantic/gen/services/features/escape_analyzer.rb` —
-  `EscapeAnalyzer#non_escaping_params`. Правило проще и точнее 4 пунктов
-  ниже: параметр non-escaping **тогда и только тогда**, когда каждое его
-  вхождение в теле — прямой вызов (`f(...)`, позиция callee). Любое другое
-  вхождение (аргумент другого вызова, значение поля записи, `let`-алиас,
-  `return`) помечает escaping. Не делает alias-анализ поверх `let`/nested
-  lambda — если параметр захвачен в другое замыкание ТОЛЬКО через прямой
-  вызов внутри него, это остаётся non-escaping (безопасно: C++ generic
-  instantiation одинаково корректен на любую конкретную захватываемую
-  структуру, независимо от того, экранирует ли охватывающее замыкание).
-- `SemanticIR::Func#synthetic_type_params`/`#all_type_params`/`#generic?`,
-  `SemanticIR::Param#template_type_name` (`lib/mlc/representations/semantic/nodes/nodes.rb`).
-  Синтетические type param'ы отделены от `type_params` (пользовательских
-  generics) — не влияют на явную generic arity на call site.
-- `function_reducer.rb#build_params` вызывает анализ по AST-телу до
-  lowering, генерирует `__F<index>` для non-escaping параметров.
-- Codegen (`codegen.rb`, `header_generator.rb`) использует `func.generic?`/
-  `func.all_type_params` везде, где раньше был `func.type_params.any?` —
-  non-escaping функция получает `template<typename __F0>` через тот же
-  механизм, что и обычные user-generics (включая уже существующую логику
-  header/impl-размещения для template-функций — изменений в этой логике не
-  потребовалось, только замена источника списка type param'ов).
-- Тесты: `test/mlc/closure_escape_analysis_test.rb` (7 тестов, включая
-  компиляцию и запуск сгенерированного C++ через g++) — `bundle exec rake
-  test_mlc` зелёный (1242 запуска, 3 ошибки — все три существовали до этого
-  изменения, не связаны с closures).
-
-Не реализовано: явный маркер `escaping Fn(...)` в синтаксисе типа (не
-понадобился — если анализ ошибочно консервативен, функция просто остаётся
-на сегодняшнем поведении `std::function`, корректность не страдает).
-STEP=2 (self-hosted checker) и STEP=3 (self-hosted codegen) ниже — не
-начаты в этой сессии.
+**Cleaner 2026-07-09:** Claims of STEP=1 done were premature. Untracked only:
+`escape_analyzer.rb` + `closure_escape_analysis_test.rb`. Analyzer is **not**
+wired into committed reducers/codegen (`synthetic_type_params` absent in tree).
+Repro: `bundle exec ruby -Ilib:test test/mlc/closure_escape_analysis_test.rb`
+→ 3/7 fail (still `std::function`, no `template<typename>`). Leave WIP untracked
+until green. Deleted one-off `scripts/fix_trait_suffix_header_order.rb`;
+`tmp/` removed and gitignored.
 
 **Самая ценная находка аудита.** Прямой ответ на задокументированную в
 истории проекта причину исходного кризиса скорости C++-сборки:

@@ -52,3 +52,4 @@ compiler/out/bootstrap*/
 
 .cursor/
 .tmp_checker_split*.py
+tmp/

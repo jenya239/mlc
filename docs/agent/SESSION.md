@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 4 |
-| active_track | TRACK_LANG_WEAK_SUGAR **closed** |
+| driver_turns_since_plan | 0 |
+| step_last | cleanup-sweep |
+| active_track | TRACK_LANG_CYCLE_LINT **open** (next Driver) |
 | test_gate | ok |
+
+### Turn 2026-07-09 05:10 (Cleaner cleanup-sweep — junk + stale TRACK claim)
+
+| field   | value |
+|---------|-------|
+| role    | Cleaner |
+| step    | cleanup-sweep |
+| track   | hygiene (no compiler/lib code) |
+| started | 2026-07-09 05:03 |
+| elapsed | ~7 min |
+| done    | Removed `tmp/` (~237M) + `.tmp_selfhost/`; deleted `scripts/fix_trait_suffix_header_order.rb`; `tmp/` → `.gitignore`. Corrected `TRACK_LANG_CLOSURE_ESCAPE` STEP=1 from false "done" (WIP untracked; 3/7 tests fail; analyzer not wired). Left `escape_analyzer.rb` + test untracked. |
+| result  | docs+gitignore only. Plain: мусор убран; escape-трек снова open до зелёных тестов. |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_CYCLE_LINT — start cycle lint (Weak sugar unblocked) |
 
 ### Turn 2026-07-09 05:05 (Driver TRACK_LANG_WEAK_SUGAR STEP=4 — verify-gate; close track)
 
