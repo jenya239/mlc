@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-09-plain-queue` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-09-anti-false-done` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -25,12 +25,16 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-09-plain-queue
+INSTRUCTIONS_REV=2026-07-09-anti-false-done
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
-Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn. Выполни один проверяемый sub-step, обнови SESSION, закоммить и запушь.
+Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
+
+Перед работой: `git status`. Чужой uncommitted diff — не удалять; разобраться (verify+commit, если готово, иначе `issues` в SESSION + откат). Если TRACK/SESSION говорит STEP done, а коммита с этими файлами нет — считать НЕ done, переделать (анти-false-done, правило выше в этом файле).
+
+Выполни один проверяемый sub-step. Обнови SESSION.md (`done`/`verify`/`next` — конкретно, без плейсхолдеров). Commit + push сам, без вопросов пользователю. Не останавливайся — следующая копия этого же промпта уже в очереди и продолжит по `next`.
 ```
 
 ## Hard limits (stop and fix — do not move to next sub-step)
