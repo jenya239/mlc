@@ -6,9 +6,7 @@ Trigger: два референсных C++ прототипа в `~/workspaces/g
 кода, только архитектура. Цель — эффективный текстовый рендеринг как основа
 будущего media-фреймворка (flash-like) на MLC.
 
-**Жёсткая зависимость: не начинать до закрытия `TRACK_FFI_LAYER`** (нужны
-`RawPointer[T]`, `extern fn = "c" from "<h>"`, `extern lib`, `extern type` +
-`drop`, C function pointer тип).
+**Зависимость: `TRACK_FFI_LAYER` closed 2026-07-09** (`RawPointer`, `extern fn`/`lib`/`type`+`drop`, C fptr, concurrency attrs). Трек text rendering **open**, низкий приоритет.
 
 ## 1. Референсы (факты, не код)
 

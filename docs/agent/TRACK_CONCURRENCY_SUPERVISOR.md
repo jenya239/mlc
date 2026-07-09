@@ -6,10 +6,10 @@ Predecessor closed:
 [../archive/tracks/TRACK_CONCURRENCY_ISOLATE.md](../archive/tracks/TRACK_CONCURRENCY_ISOLATE.md)
 (ThreadPool, Isolate, StopToken shutdown).
 
-## Status: **deferred** — do not start until Planner reorders after FFI
+## Status: **deferred** — do not start until Planner reorders after chat-server gate
 
-**Driver 2026-07-09:** Created on ISOLATE close. Queue priority is
-[TRACK_FFI_LAYER](TRACK_FFI_LAYER.md) STEP=1. Supervisor needs Isolate/TaskScope
+**Driver 2026-07-09:** Created on ISOLATE close. `TRACK_FFI_LAYER` closed;
+queue head is [TRACK_API_CLIENT](TRACK_API_CLIENT.md). Supervisor needs Isolate/TaskScope
 in production use (CONCURRENCY_V2 phase-9 chat-server gate) before heavy work.
 
 ## Goal

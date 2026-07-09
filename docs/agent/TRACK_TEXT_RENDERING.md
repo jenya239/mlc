@@ -5,17 +5,17 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 группам риска, открытые вопросы §5).
 
 Приоритет: **личный проект пользователя, низкий в общей очереди** —
-**жёстко блокирован** закрытием [TRACK_FFI_LAYER](TRACK_FFI_LAYER.md) (нужны
-STEP=1-6 минимум: RawPointer, extern fn codegen, extern lib, extern type +
-drop, C function pointer тип).
+разблокирован закрытием [TRACK_FFI_LAYER](../archive/tracks/TRACK_FFI_LAYER.md)
+(STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_API_CLIENT` без
+явной команды.
 
-## Status: **blocked** — не начинать до `TRACK_FFI_LAYER` close
+## Status: **open** — STEP=0 done; STEP=1 next (design §5)
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 0 | Предусловие: `TRACK_FFI_LAYER` closed (STEP=1-6, минимум без concurrency-метаданных STEP=7-8). | blocked |
+| 0 | Предусловие: `TRACK_FFI_LAYER` closed (STEP=1-6, минимум без concurrency-метаданных STEP=7-8). | **done** (FFI closed 2026-07-09) |
 | 1 | Решить открытые вопросы `TEXT_RENDERING.md` §5.1 (C array view для `hb_buffer_get_glyph_infos`) и §5.3 (msdfgen шим) — design-turn, не кодогенерация. | pending |
 | 2 | `extern type`/`extern fn` биндинги FreeType (`TEXT_RENDERING.md` §3.1, FreeType-подмножество). Тест: загрузка `.ttf`, `FT_Load_Glyph`+`FT_Render_Glyph` на 1 символе, сравнение bitmap-размера с ожидаемым. | pending |
 | 3 | `extern type`/`extern fn` биндинги HarfBuzz (§3.1, HarfBuzz-подмножество) + `hb_ft_font_create` мост. `TextShaper.shape()` на MLC: строка UTF-8 (включая кириллицу) → `ShapedGlyph[]`. | pending |

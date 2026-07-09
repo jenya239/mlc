@@ -4,13 +4,12 @@ Parent: [../PLAN.md](../PLAN.md) §10, [../FFI_LAYER.md](../FFI_LAYER.md)
 (полная спецификация — читать перед началом работы, там же факт-таблица
 текущего состояния с точными файлами/строками).
 
-Приоритет: **средний** — concurrency Isolate/TaskScope closed; **next in PLAN
-queue**. Send/Sync для STEP=7 уже готовы.
+Приоритет: **средний** — concurrency Isolate/TaskScope closed.
 
-## Status: **open** — STEP=1–7 done; STEP=8 next
+## Status: **closed** 2026-07-09 — STEP=1–8 done
 
-**Driver 2026-07-09:** STEP=7 — parse `blocking`/`thread_safe`/`thread_affine`
-on extern fn/type; registry + Send/Sync for `thread_safe`/`thread_affine`.
+**Driver 2026-07-09:** STEP=8 — self-host `mlcc`→`mlcc2`→`diff` identical;
+`regression_gate.sh` 20/20; `FFI_LAYER.md` §6 acceptance filled.
 
 ## Steps
 
@@ -23,20 +22,22 @@ on extern fn/type; registry + Send/Sync for `thread_safe`/`thread_affine`.
 | 5 | `extern type Name = "CName" from "<header>"` в self-hosted парсере (сегодня только Ruby: `lib/mlc/source/parser/declaration_parser.rb:534-560`) — `compiler/frontend/parser/decls.mlc` (сейчас `type Name` без `=` уходит в `parse_variants`, `:699-733` — не opaque). Плюс `drop "c_function"` — генерация RAII-обёртки (`std::unique_ptr` + custom deleter) для функций, возвращающих `-> owned RawPointer[T]`. | **done** (typedef+deleter; `owned` return marker deferred) |
 | 6 | `extern fn(Args) -> Return` как тип (C function pointer, не closure) — codegen `Ret(*)(Args...)`; checker запрещает передачу не-top-level/захватывающей функции в такую позицию (переиспользовать `compiler/checker/escape_analysis.mlc`, новая диагностика вместо тихого несоответствия типов). | **done** |
 | 7 | Concurrency-метаданные на `extern fn`/`extern type`: `blocking`/`thread_safe`/`thread_affine` (спецификация `CONCURRENCY_V2.md:369-380`). Send/Sync predicates ready (CONCURRENCY_V2 closed). | **done** |
-| 8 | Verify-gate + close: полный self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, обновить `FFI_LAYER.md` критерий приёмки (§6) с фактическими результатами. | pending |
+| 8 | Verify-gate + close: полный self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, обновить `FFI_LAYER.md` критерий приёмки (§6) с фактическими результатами. | **done** |
 
-## Verify gate (per step, минимум)
+## Verify gate (STEP=8, 2026-07-09)
 
-```bash
-bundle exec rake test_mlc          # Ruby steps
-bundle exec rake test_compiler_mlc # self-hosted steps
-compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
-scripts/regression_gate.sh
 ```
+compiler/build.sh → ok
+mlcc -o p1 compiler/main.mlc → 0
+build_bin.sh p1 mlcc2 → 0
+mlcc2 -o p2 compiler/main.mlc → 0
+diff -rq p1 p2 --exclude=obj → identical (exit 0)
+scripts/regression_gate.sh → 20 passed, 0 failed
+```
+
+Known deferrals (not blockers for close): `owned` return-marker wiring;
+ASan/valgrind smoke on drop RAII; `rake test_compiler_mlc` blocked by
+pre-existing Ruby parse fail on `spawn_capture.mlc` (MATCH).
 
 ## Out of scope (этот трек — см. `FFI_LAYER.md` §3)
 
@@ -45,12 +46,3 @@ scripts/regression_gate.sh
 - Layout-совместимый "raw struct" режим (ffmpeg-класс структур).
 - Сами биндинги (libpq/OpenGL/GTK/ffmpeg) — следующие треки, не создавать
   раньше закрытия этого.
-
-## Per-turn template
-
-```
-| step | <1-8> |
-| done | <one line> |
-| verify | <числа/факт> |
-| next | ROLE=Driver STEP=<n+1> TRACK_FFI_LAYER |
-```

@@ -12,7 +12,7 @@ Supervisor later). Predecessor closed:
 (serial owner + mailbox, Block overflow); StopToken cancel on both; MEMORY_MODEL
 + PLAN updated; smoke green. Handoff Supervisor:
 [../../agent/TRACK_CONCURRENCY_SUPERVISOR.md](../../agent/TRACK_CONCURRENCY_SUPERVISOR.md)
-(deferred). Queue next: [../../agent/TRACK_FFI_LAYER.md](../../agent/TRACK_FFI_LAYER.md).
+(deferred). Queue next was FFI (now closed): [TRACK_FFI_LAYER](TRACK_FFI_LAYER.md).
 
 ### STEP=4 acceptance (Driver)
 

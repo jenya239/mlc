@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 7 |
-| active_track | TRACK_FFI_LAYER STEP=8 |
-| test_gate | ok (extern attrs + Send/Sync Arc.new probes) |
+| driver_turns_since_plan | 0 |
+| step_last | 8 |
+| active_track | TRACK_API_CLIENT STEP=1 |
+| test_gate | ok (self-host diff identical; regression_gate 20/0) |
+
+### Turn 2026-07-09 19:35 (Driver TRACK_FFI_LAYER STEP=8 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 19:22 |
+| elapsed | ~13 min |
+| done    | Self-host `mlcc`→`mlcc2`→`diff` identical; `regression_gate` 20/0; `FFI_LAYER.md` §6 filled; TRACK archived; PLAN/TEXT_RENDERING/API queue updated. |
+| verify  | BUILD/P1/MLCC2/P2/DIFF exit 0 (empty diff); regression_gate 20 passed 0 failed. |
+| result  | TRACK_FFI_LAYER **closed**. Plain: FFI layer accepted; next API_CLIENT. |
+| issues  | `owned` return-marker + ASan drop smoke deferred; dirty `compiler/out/mlcc` not committed. |
+| next    | ROLE=Driver STEP=1 TRACK_API_CLIENT — JsonNumber f32→f64, JsonObject→Map |
 
 ### Turn 2026-07-09 19:25 (Driver TRACK_FFI_LAYER STEP=7 — concurrency metadata on extern)
 

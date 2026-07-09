@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_FFI_LAYER** STEP=8 — verify-gate + close (STEP=1-7 done: RawPointer, extern fn/lib/type, C fptr, concurrency attrs).
-Ruby FFI binding slice done.
+**TRACK_API_CLIENT** STEP=1 — `JsonNumber(f32)`→`f64`, `JsonObject`→`Map`
+(`TRACK_FFI_LAYER` **closed** 2026-07-09).
 
 ## Step sizing (good vs bad)
 

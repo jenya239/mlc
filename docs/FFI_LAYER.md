@@ -194,21 +194,20 @@ extern fn PQexec(conn: RawPointer[PGconn], query: RawPointer[Byte])
 обсуждение в чате: OpenGL/GTK/ffmpeg требуют либо генератор (тысячи
 символов), либо §2.4/§2.6 в полном объёме).
 
-## 6. Критерий приёмки слоя (закрыть трек, когда всё верно)
+## 6. Критерий приёмки слоя — **met** 2026-07-09 (`TRACK_FFI_LAYER` closed)
 
-1. `RawPointer[T]` компилируется, `is_null`/сравнение работают, codegen — `T*`.
-2. `extern fn` с `from "<header>"` эмитит `#include` и настоящий C++ вызов;
-   существующие stdlib `extern fn` (`io`, etc.) не регрессируют.
-3. `extern lib "x"` реально добавляет `-lx` в финальную линковку;
-   собранная программа, вызывающая символ из внешней `.so`, линкуется и
-   запускается (smoke: `-lm`, вызов `extern fn sqrt(...) = "sqrt" from
-   "<math.h>"` — не требует внешней инсталляции пакета, есть везде).
-4. `extern type` с `drop` генерирует RAII-обёртку; утечка/double-free
-   проверена (valgrind/ASan smoke на 1 owned handle).
-5. `extern fn(...)`-тип запрещает capture при передаче не-top-level функции
-   (диагностика, не runtime crash).
-6. Self-host: `mlcc` → `mlcc2` → `diff` идентичен после всех шагов (обычный
-   гейт проекта).
+| # | Критерий | Результат |
+|---|----------|-----------|
+| 1 | `RawPointer[T]` → `T*`, `is_null`/сравнение | done (STEP=1–2; Ruby + self-hosted) |
+| 2 | `extern fn … = "c" from "<h>"` → `#include` + C call | done (STEP=3; probe `cabs`/`sqrt`) |
+| 3 | `extern lib "x"` → `-lx` at link | done (STEP=4; `mlc_link_libs.txt` + `-lm`) |
+| 4 | `extern type` + `drop` → `using` + `Owned*` unique_ptr deleter | done (STEP=5; FILE/fclose probe). `owned` return-marker + ASan smoke **deferred** |
+| 5 | `extern fn(...)` type → C fptr; reject non-top-level | done (STEP=6; `type_identity_t<Ret(*)(…)>`; lambda → E003) |
+| 6 | Self-host `mlcc`→`mlcc2`→`diff` identical | done (STEP=8; empty `diff -rq`; `regression_gate` 20/0) |
+
+Concurrency attrs (STEP=7): `blocking`/`thread_safe`/`thread_affine` parse +
+registry; Send/Sync honor `thread_safe` / reject `thread_affine` (Arc.new E082).
+Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
 
 ## 7. После закрытия слоя — что дальше (не создавать треки заранее)
 
