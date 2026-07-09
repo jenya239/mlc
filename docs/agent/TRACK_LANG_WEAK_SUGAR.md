@@ -20,27 +20,13 @@ Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 
 **Conclusion:** Ruby already has Weak codegen + types; ergonomic gap is (1) sugar aliases `.weak()`/`.upgrade()`, (2) reliable stdlib surface without re-declaring extend. Prefer aliases over renaming `downgrade`/`lock` (keep e2e).
 
-## STEP=2 — Ruby: `.weak()` / `.upgrade()` sugar (lib/mlc only)
+## STEP=2 — Ruby: `.weak()` / `.upgrade()` sugar (lib/mlc only) — **done** (2026-07-09)
 
-**Action:**
-- Accept instance methods `weak` on `Shared<T>` → same lowering as `shared_downgrade` / `Shared.downgrade`.
-- Accept instance methods `upgrade` on `Weak<T>` → same as `weak_lock` / `Weak.lock` → `Option<Shared<T>>`.
-- TDD: extend `test/integration/smart_pointers_e2e_test.rb` or add `test/mlc/` case with `.weak()`/`.upgrade()` (no inline extend if possible; else document).
-- Do **not** touch `compiler/` this step.
-
-**Repro (after):**
-
-```mlc
-type Node = { value: i32 }
-fn main() -> i32 = do
-  let root = Shared.new(Node { value: 1 })
-  let weak_ref = root.weak()
-  match weak_ref.upgrade() {
-    Some(p) => p.value,
-    None => -1
-  }
-end
-```
+| Piece | Change |
+|-------|--------|
+| Infer | `type_inference_service.rb`: `infer_smart_pointer_method_type` + `resolve_smart_pointer_member` — Shared `weak`/`downgrade` → `Weak<T>`; Weak `upgrade`/`lock` → `Option<Shared<T>>` |
+| Codegen | `call_rule.rb`: `Shared_weak`/`Weak_upgrade` aliases; `lower_smart_pointer_instance_method` before Result/Option dispatch |
+| Test | `smart_pointers_e2e_test.rb` `test_shared_weak_upgrade_sugar` — no inline extend; exit 77 |
 
 ## STEP=3 — mlcc parity (compiler/ only)
 

@@ -35,9 +35,11 @@ module MLC
               "Shared_new" => :make_shared,
               "Shared_null" => :shared_null,
               "Shared_downgrade" => :shared_downgrade,
+              "Shared_weak" => :shared_downgrade,
               # Weak<T> methods
               "Weak_null" => :weak_null,
               "Weak_lock" => :weak_lock,
+              "Weak_upgrade" => :weak_lock,
               "Weak_is_valid" => :weak_is_valid,
               # Owned<T> methods
               "Owned_new" => :make_unique,
@@ -101,6 +103,13 @@ module MLC
               # Check for map method calls
               if context.checker.member_expr?(node.callee) && node.callee.object.type.is_a?(MLC::SemanticIR::MapType)
                 return lower_map_method(node)
+              end
+
+              if context.checker.member_expr?(node.callee) &&
+                 node.callee.object.type.is_a?(MLC::SemanticIR::GenericType) &&
+                 %w[Shared Weak].include?(node.callee.object.type.base_type&.name)
+                smart = lower_smart_pointer_instance_method(node)
+                return smart if smart
               end
 
               if context.checker.member_expr?(node.callee) &&
@@ -371,6 +380,53 @@ module MLC
 
             # Lower smart pointer function calls
             # Maps MLC smart pointer functions to C++ equivalents
+            def lower_smart_pointer_instance_method(call)
+              receiver_type = call.callee.object.type
+              base_name = receiver_type.base_type&.name
+              method_name = call.callee.member
+              receiver = lower_expression(call.callee.object)
+              inner_type = extract_smart_pointer_inner_type(receiver_type) ||
+                           extract_smart_pointer_inner_type(call.type)
+
+              case [base_name, method_name]
+              when ["Shared", "weak"], ["Shared", "downgrade"]
+                context.factory.function_call(
+                  callee: context.factory.identifier(name: "std::weak_ptr<#{inner_type}>"),
+                  arguments: [receiver],
+                  argument_separators: []
+                )
+              when ["Weak", "upgrade"], ["Weak", "lock"]
+                member = context.factory.member_access(
+                  object: receiver,
+                  operator: ".",
+                  member: context.factory.identifier(name: "lock")
+                )
+                lock_call = context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+                context.factory.function_call(
+                  callee: context.factory.identifier(name: "mlc::option::from_nullable"),
+                  arguments: [lock_call],
+                  argument_separators: []
+                )
+              when ["Weak", "is_valid"]
+                member = context.factory.member_access(
+                  object: receiver,
+                  operator: ".",
+                  member: context.factory.identifier(name: "expired")
+                )
+                expired_call = context.factory.function_call(
+                  callee: member,
+                  arguments: [],
+                  argument_separators: []
+                )
+                context.factory.unary_op(operator: "!", operand: expired_call)
+              else
+                nil
+              end
+            end
             def lower_smart_pointer_function(call)
               func_type = SMART_POINTER_FUNCTIONS[call.callee.name]
               args = call.args.map { |arg| lower_expression(arg) }

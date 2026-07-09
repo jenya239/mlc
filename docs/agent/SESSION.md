@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 1 |
-| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=2 |
+| driver_turns_since_plan | 8 |
+| step_last | 2 |
+| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 04:00 (Driver TRACK_LANG_WEAK_SUGAR STEP=2 — Ruby .weak/.upgrade sugar)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_WEAK_SUGAR |
+| started | 2026-07-09 03:55 |
+| elapsed | ~5 min |
+| done    | `type_inference_service.rb`: `infer_smart_pointer_method_type` + `resolve_smart_pointer_member`. `call_rule.rb`: `Shared_weak`/`Weak_upgrade` + `lower_smart_pointer_instance_method`. Test `test_shared_weak_upgrade_sugar` (no inline extend). |
+| result  | `smart_pointers_e2e_test.rb -n test_shared_weak_upgrade_sugar` 1/0. Plain: `.weak()`/`.upgrade()` в Ruby работают без extend. |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_WEAK_SUGAR — mlcc checker+codegen parity for `.weak()`/`.upgrade()` (`compiler/` only) |
 
 ### Turn 2026-07-09 03:55 (Driver TRACK_LANG_WEAK_SUGAR STEP=1 — Ruby Weak inventory)
 

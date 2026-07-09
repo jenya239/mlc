@@ -325,6 +325,9 @@ module MLC
                   end
                 end
 
+smart_pointer_method = infer_smart_pointer_method_type(base_name, object_type, member)
+return smart_pointer_method if smart_pointer_method
+
                 # Auto-deref for smart pointer types: Shared<T>, Weak<T>, Owned<T>
                 # When accessing a member on Shared<Node>, try to resolve it on Node
                 if %w[Shared Weak Owned].include?(base_name) && object_type.type_args&.any?
@@ -406,6 +409,50 @@ module MLC
                 type_error("Unknown member '#{member}' for type #{describe_type(object_type)}", node: node)
               end
             end
+
+
+def infer_smart_pointer_method_type(base_name, object_type, member)
+  inner = object_type.type_args&.first
+  return nil unless inner
+
+  case base_name
+  when "Shared"
+    case member
+    when "weak", "downgrade"
+      SemanticIR::Builder.function_type(
+        [],
+        SemanticIR::Builder.generic_type(
+          SemanticIR::Builder.primitive_type("Weak"),
+          [inner]
+        )
+      )
+    else
+      nil
+    end
+  when "Weak"
+    case member
+    when "upgrade", "lock"
+      SemanticIR::Builder.function_type(
+        [],
+        SemanticIR::Builder.generic_type(
+          SemanticIR::Builder.primitive_type("Option"),
+          [
+            SemanticIR::Builder.generic_type(
+              SemanticIR::Builder.primitive_type("Shared"),
+              [inner]
+            )
+          ]
+        )
+      )
+    when "is_valid"
+      SemanticIR::Builder.function_type([], SemanticIR::Builder.primitive_type("bool"))
+    else
+      nil
+    end
+  else
+    nil
+  end
+end
 
             def result_option_combinator_member_name?(member)
               %w[map map_err and_then or_else unwrap_or unwrap_or_else ok filter ok_or].include?(member)
@@ -692,7 +739,13 @@ module MLC
                   return infer(object_type.inner_type, member, args)
                 end
 
-                return resolve_result_option_combinator(object_type, member, args) if object_type.is_a?(SemanticIR::GenericType) && %w[Result Option].include?(object_type.base_type&.name)
+return resolve_result_option_combinator(object_type, member, args) if object_type.is_a?(SemanticIR::GenericType) && %w[Result Option].include?(object_type.base_type&.name)
+
+if object_type.is_a?(SemanticIR::GenericType) && %w[Shared Weak].include?(object_type.base_type&.name)
+  smart = resolve_smart_pointer_member(object_type, member, args)
+  return smart if smart
+end
+
 
                 return resolve_array_member(object_type, member, args) if object_type.is_a?(SemanticIR::ArrayType)
                 return resolve_map_member(object_type, member, args) if object_type.is_a?(SemanticIR::MapType)
@@ -781,6 +834,47 @@ module MLC
                   type_error("Invalid combinator receiver")
                 end
               end
+
+def resolve_smart_pointer_member(object_type, member, args)
+  base_name = object_type.base_type&.name
+  inner = object_type.type_args&.first
+  return nil unless inner
+
+  case base_name
+  when "Shared"
+    case member
+    when "weak", "downgrade"
+      ensure_args(member, args, 0)
+      SemanticIR::Builder.generic_type(
+        SemanticIR::Builder.primitive_type("Weak"),
+        [inner]
+      )
+    else
+      nil
+    end
+  when "Weak"
+    case member
+    when "upgrade", "lock"
+      ensure_args(member, args, 0)
+      SemanticIR::Builder.generic_type(
+        SemanticIR::Builder.primitive_type("Option"),
+        [
+          SemanticIR::Builder.generic_type(
+            SemanticIR::Builder.primitive_type("Shared"),
+            [inner]
+          )
+        ]
+      )
+    when "is_valid"
+      ensure_args(member, args, 0)
+      prim("bool")
+    else
+      nil
+    end
+  else
+    nil
+  end
+end
 
               def resolve_array_member(object_type, member, args)
                 if (handler = array_method_table[member])

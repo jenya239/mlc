@@ -204,6 +204,24 @@ class SmartPointersE2ETest < Minitest::Test
     end
   end
 
+# Test 8b: instance .weak() / .upgrade() sugar (no inline extend)
+def test_shared_weak_upgrade_sugar
+  run_mlc(<<~MLC) do |_stdout, _stderr, status|
+    type Node = { value: i32 }
+
+    fn main() -> i32 = do
+      let shared = Shared.new(Node { value: 77 })
+      let weak_ref = shared.weak()
+      match weak_ref.upgrade() {
+        Some(locked) => locked.value,
+        None => 0
+      }
+    end
+  MLC
+    assert_equal 77, status.exitstatus
+  end
+end
+
   # Test 9: Weak.lock on null returns None
   def test_weak_lock_none
     run_mlc(<<~MLC) do |_stdout, _stderr, status|
