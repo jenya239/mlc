@@ -82,6 +82,13 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
   }
 
   match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  let mut items = [10, 20]\n  items.push(30)\n  let mut table: Map<string, i32> = Map.new()\n  table.set("a", 1)\n  table.set("b", 2)\n  const text = "ab" + "cd"\n  items[1] + table.get("a") + table.get("b") + text.length() - 20\nend',
+    'vm_collections_corpus.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke collections corpus exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke collections corpus exit', false))
+  }
+
+  match vm_smoke_interpret(
     'type Option = Some(i32) | None\nfn main() -> i32 = match Some(1) {\n  Some(x) => x\n  None => 0\n}',
     'vm_match_variant.mlc') {
     Ok(code) => results.push(assert_eq_int('vm smoke match variant exit', code, 1)),

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 14 |
-| step_last | 7 |
-| active_track | TRACK_MIR_VM_FULL Epic 3 STEP=8 |
-| test_gate | ok (question ok/err=7; vm_cpp_diff 12/0; question VM-only) |
+| driver_turns_since_plan | 15 |
+| step_last | 8 |
+| active_track | TRACK_MIR_VM_FULL Epic 3 STEP=9 |
+| test_gate | ok (corpus/map/string=7 index=5; vm_cpp_diff 16/0) |
+
+### Turn 2026-07-09 23:40 (Driver TRACK_MIR_VM_FULL STEP=8 — collections corpus)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:29 |
+| elapsed | ~11 min |
+| done    | Fixtures vm_collections_corpus/map/string/array_index; smoke; expand diff manifest. |
+| verify  | `--run` corpus/map/string=7 index=5; `run_vm_cpp_exit_diff` 16/0. |
+| result  | STEP=8 done. Plain: array/map/string exit parity on corpus. |
+| issues  | Untyped Map + Map.length() C++ gaps deferred (typed Map + get in fixtures). Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=9 TRACK_MIR_VM_FULL — iteration, methods beyond push/get/set/length |
 
 ### Turn 2026-07-09 23:30 (Driver TRACK_MIR_VM_FULL STEP=7 — ? Result propagation)
 

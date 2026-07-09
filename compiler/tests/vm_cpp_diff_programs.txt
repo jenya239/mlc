@@ -3,6 +3,10 @@
 misc/examples/minimal.mlc
 misc/examples/vm_hello.mlc
 misc/examples/vm_collections.mlc
+misc/examples/vm_collections_corpus.mlc
+misc/examples/vm_map.mlc
+misc/examples/vm_string.mlc
+misc/examples/vm_array_index.mlc
 misc/examples/vm_match.mlc
 misc/examples/vm_option.mlc
 misc/examples/vm_result.mlc

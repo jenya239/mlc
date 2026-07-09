@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  const text = "xy" + "z"
+  text.length() + 4
+end

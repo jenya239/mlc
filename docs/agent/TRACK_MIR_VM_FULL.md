@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0 A–C **done**; Epic 1–2 STEP=1–7 **done**; Epic 3 STEP=8 next
+**Status:** open, Epic 0–2 **done**; Epic 3 STEP=8 **done**; STEP=9 next
 
 | Step | Item | Status |
 |------|------|--------|
@@ -98,8 +98,14 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 
 | Step | Deliverable | Gate |
 |------|-------------|------|
-| 8 | Array/map/string parity with C++ on corpus file | diff |
+| 8 | Array/map/string parity with C++ on corpus file | **done** |
 | 9 | Iteration, methods beyond push/get/set/length | smoke |
+
+
+### Collections corpus (STEP=8)
+
+- Diff corpus: `vm_collections_corpus` (array index/push + typed `Map` get + string concat/length), plus `vm_map` / `vm_string` / `vm_array_index`.
+- C++ gaps deferred: untyped `Map.new()` → `auto table = {}`; `Map.length()` not on `mlc::HashMap` — use typed Map + get only in diff fixtures.
 
 ### Epic 4 � Module graph (STEP 10�12)
 

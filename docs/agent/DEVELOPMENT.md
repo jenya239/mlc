@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 3 STEP=8 — array/map/string parity with C++ on corpus
-(STEP=7 done: `?` Result propagation via `__mir_result_*`).
+**TRACK_MIR_VM_FULL** Epic 3 STEP=9 — iteration, methods beyond push/get/set/length
+(STEP=8 done: collections corpus + map/string/array_index in diff).
 
 ## Step sizing (good vs bad)
 

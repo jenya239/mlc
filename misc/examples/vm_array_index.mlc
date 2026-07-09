@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  const values = [1, 2, 4]
+  values[0] + values[2]
+end

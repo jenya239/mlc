@@ -1,0 +1,9 @@
+fn main() -> i32 = do
+  let mut items = [10, 20]
+  items.push(30)
+  let mut table: Map<string, i32> = Map.new()
+  table.set("a", 1)
+  table.set("b", 2)
+  const text = "ab" + "cd"
+  items[1] + table.get("a") + table.get("b") + text.length() - 20
+end

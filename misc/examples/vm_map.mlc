@@ -1,0 +1,6 @@
+fn main() -> i32 = do
+  let mut table: Map<string, i32> = Map.new()
+  table.set("k", 3)
+  table.set("m", 4)
+  table.get("k") + table.get("m")
+end
