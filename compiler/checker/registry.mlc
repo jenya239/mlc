@@ -1,6 +1,6 @@
 // --- Semantic type --------------------------------------------------------
 
-import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_type_value, param_name, param_is_mut, Expr } from '../frontend/ast'
+import { TypeExpr, Decl, TypeVariant, FieldDef, Program, Param, param_type_value, param_name, param_is_mut, Expr, ExprExtern } from '../frontend/ast'
 import { expand_trait_as_param_program } from './transform/trait_param_expand'
 
 export type Type =
@@ -24,7 +24,9 @@ export type FunctionIndex = FunctionIndex {
   function_parameter_names: Map<string, [string]>,
   function_parameter_mutability_flags: Map<string, [i32]>,
   function_required_arity: Map<string, i32>,
-  function_trait_bounds: Map<string, [[string]]>
+  function_trait_bounds: Map<string, [[string]]>,
+  function_concurrency_attributes: Map<string, [string]>,
+  type_concurrency_attributes: Map<string, [string]>
 }
 
 export type AdtIndex = AdtIndex {
@@ -155,6 +157,28 @@ export extend TypeRegistry {
       self.function_index.function_required_arity.get(fn_name)
     else -1 end
 
+  fn concurrency_attributes_for_function(self, function_name: string) -> [string] =
+    if self.function_index.function_concurrency_attributes.has(function_name) then
+      self.function_index.function_concurrency_attributes.get(function_name)
+    else do const empty_attributes: [string] = []; empty_attributes end end
+
+  fn concurrency_attributes_for_type(self, type_name: string) -> [string] =
+    if self.function_index.type_concurrency_attributes.has(type_name) then
+      self.function_index.type_concurrency_attributes.get(type_name)
+    else do const empty_attributes: [string] = []; empty_attributes end end
+
+  fn function_is_blocking(self, function_name: string) -> bool =
+    self.concurrency_attributes_for_function(function_name).any(attribute => attribute == 'blocking')
+
+  fn type_is_thread_safe(self, type_name: string) -> bool =
+    self.concurrency_attributes_for_type(type_name).any(attribute => attribute == 'thread_safe')
+
+  fn type_is_thread_affine(self, type_name: string) -> bool =
+    self.concurrency_attributes_for_type(type_name).any(
+      attribute =>
+        attribute == 'thread_affine' ||
+        (attribute.length() >= 14 && attribute.substring(0, 14) == 'thread_affine('))
+
   fn is_private_ctor(self, name: string) -> bool =
     self.adt_index.private_constructors.has(name)
 
@@ -231,7 +255,9 @@ export fn empty_registry() -> TypeRegistry = do
       function_parameter_names: Map.new(),
       function_parameter_mutability_flags: Map.new(),
       function_required_arity: builtin_required_arity,
-      function_trait_bounds: Map.new()
+      function_trait_bounds: Map.new(),
+      function_concurrency_attributes: Map.new(),
+      type_concurrency_attributes: Map.new()
     },
     adt_index: AdtIndex {
       constructor_types: constructor_types_map,
@@ -610,7 +636,8 @@ fn register_decl_fn_into_registry(
   type_parameters: [string],
   trait_bounds: [[string]],
   parameters: [Shared<Param>],
-  return_type: Shared<TypeExpr>
+  return_type: Shared<TypeExpr>,
+  concurrency_attributes: [string]
 ) -> unit = do
   const param_types =
     parameters.map(parameter => type_from_annotation_with_registry(param_type_value(parameter), registry))
@@ -625,6 +652,9 @@ fn register_decl_fn_into_registry(
   registry.function_index.function_required_arity.set(name, required_arity_from_params(parameters))
   if trait_bounds.length() > 0 then
     registry.function_index.function_trait_bounds.set(name, trait_bounds)
+  end
+  if concurrency_attributes.length() > 0 then
+    registry.function_index.function_concurrency_attributes.set(name, concurrency_attributes)
   end
 end
 
@@ -708,8 +738,13 @@ fn register_decl_extend_if(registry: ref mut TypeRegistry, declaration: Shared<D
 
 fn register_decl_fn_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, _, _) => do
-      register_decl_fn_into_registry(registry, name, type_parameters, trait_bounds, parameters, return_type)
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, _) => do
+      const concurrency_attributes = match body {
+        ExprExtern(_, _, attributes, _) => attributes,
+        _ => do let empty_attributes: [string] = []; empty_attributes end
+      }
+      register_decl_fn_into_registry(
+        registry, name, type_parameters, trait_bounds, parameters, return_type, concurrency_attributes)
       true
     end,
     _ => false
@@ -747,18 +782,23 @@ fn registry_decl_noop() -> unit = do end
 fn register_decl_extern_type_into_registry(
   registry: ref mut TypeRegistry,
   type_name: string,
-  defining_path: string
+  defining_path: string,
+  concurrency_attributes: [string]
 ) -> unit = do
   registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, [])
   registry.adt_index.algebraic_decl_variant_names.set(type_name, [])
   registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, [])
   record_type_defining_path(registry, type_name, defining_path)
+  if concurrency_attributes.length() > 0 then
+    registry.function_index.type_concurrency_attributes.set(type_name, concurrency_attributes)
+  end
 end
 
 fn register_decl_extern_type_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclExternType(type_name, _, _, _, name_span) => do
-      register_decl_extern_type_into_registry(registry, type_name, name_span.file)
+    DeclExternType(type_name, _, _, _, concurrency_attributes, name_span) => do
+      register_decl_extern_type_into_registry(
+        registry, type_name, name_span.file, concurrency_attributes)
       true
     end,
     _ => false

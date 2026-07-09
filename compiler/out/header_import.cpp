@@ -70,7 +70,7 @@ mlc::Array<std::shared_ptr<ast::Param>> cpp_cpp_parameters_to_mlc_params(mlc::Ar
   return mlc_parameters;
 }
 mlc::Array<std::shared_ptr<ast::Decl>> cpp_function_prototype_to_mlc_decls(cpp_ast::CppFunctionPrototype prototype) noexcept{
-  return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn{prototype.name, {}, {}, cpp_cpp_parameters_to_mlc_params(prototype.parameters), cpp_type_string_to_type_expr(print::print_cpp_type(prototype.return_type)), std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), ast::span_unknown()}), {}})};
+  return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn{prototype.name, {}, {}, cpp_cpp_parameters_to_mlc_params(prototype.parameters), cpp_type_string_to_type_expr(print::print_cpp_type(prototype.return_type)), std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, ast::span_unknown()}), {}})};
 }
 mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_fields_to_field_definitions(mlc::Array<std::shared_ptr<cpp_ast::CppField>> fields) noexcept{
   auto field_definitions = mlc::Array<std::shared_ptr<ast::FieldDef>>{};
@@ -131,7 +131,7 @@ mlc::Array<std::shared_ptr<ast::Decl>> cpp_declaration_to_mlc_decls(std::shared_
 auto __match_subject = declaration;
 if (std::holds_alternative<cpp_ast::CppFnProto>((*__match_subject))) {
 const cpp_ast::CppFnProto& cppFnProto = std::get<cpp_ast::CppFnProto>((*__match_subject));
-auto [__0, return_type, function_name, parameter_strings] = cppFnProto; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn{function_name, {}, {}, cpp_parameter_strings_to_params(parameter_strings), cpp_type_string_to_type_expr(return_type), std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), ast::span_unknown()}), {}})};
+auto [__0, return_type, function_name, parameter_strings] = cppFnProto; return mlc::Array<std::shared_ptr<ast::Decl>>{std::make_shared<ast::Decl>(ast::DeclFn{function_name, {}, {}, cpp_parameter_strings_to_params(parameter_strings), cpp_type_string_to_type_expr(return_type), std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, ast::span_unknown()}), {}})};
 }
 if (std::holds_alternative<cpp_ast::CppStruct>((*__match_subject))) {
 const cpp_ast::CppStruct& cppStruct = std::get<cpp_ast::CppStruct>((*__match_subject));

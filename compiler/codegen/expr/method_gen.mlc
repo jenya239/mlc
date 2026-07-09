@@ -174,7 +174,7 @@ fn static_receiver_name_from_object_expression(original_object_expression: Share
     SemanticExpressionChar(_, _, _) => '',
     SemanticExpressionBool(_, _, _) => '',
     SemanticExpressionUnit(_, _) => '',
-    SemanticExpressionExtern(_, _, _, _) => '',
+    SemanticExpressionExtern(_, _, _, _, _) => '',
     SemanticExpressionBin(_, _, _, _, _) => '',
     SemanticExpressionUn(_, _, _, _) => '',
     SemanticExpressionCall(_, _, _, _, _) => '',

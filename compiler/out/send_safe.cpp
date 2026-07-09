@@ -60,6 +60,15 @@ bool type_is_send_field(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type
   }
 }
 bool type_is_send_named(mlc::String record_name, registry::TypeRegistry registry) noexcept{
+  if (registry::TypeRegistry_type_is_thread_affine(registry, record_name))   {
+    return false;
+  }
+  if (registry::TypeRegistry_type_is_thread_safe(registry, record_name))   {
+    return true;
+  }
+  if (registry::TypeRegistry_concurrency_attributes_for_type(registry, record_name).any([=](mlc::String attribute) mutable { return (attribute == mlc::String("!thread_safe", 12)); }))   {
+    return false;
+  }
   if ((!registry::TypeRegistry_has_fields(registry, record_name)))   {
     return false;
   }
@@ -75,6 +84,15 @@ bool type_is_sync_field(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type
   }
 }
 bool type_is_sync_named(mlc::String record_name, registry::TypeRegistry registry) noexcept{
+  if (registry::TypeRegistry_type_is_thread_affine(registry, record_name))   {
+    return false;
+  }
+  if (registry::TypeRegistry_type_is_thread_safe(registry, record_name))   {
+    return true;
+  }
+  if (registry::TypeRegistry_concurrency_attributes_for_type(registry, record_name).any([=](mlc::String attribute) mutable { return (attribute == mlc::String("!thread_safe", 12)); }))   {
+    return false;
+  }
   if ((!registry::TypeRegistry_has_fields(registry, record_name)))   {
     return false;
   }

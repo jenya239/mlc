@@ -41,7 +41,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_i64(Transfo
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_u8(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_usize(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_char(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, mlc::Array<mlc::String> concurrency_attrs, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bin(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_un(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
@@ -337,7 +337,7 @@ mlc::String call_callee_ident_name(std::shared_ptr<ast::Expr> function) noexcept
 [&](const ast::ExprArray& exprArray) { auto [__0, __1] = exprArray; return mlc::String("", 0); },
 [&](const ast::ExprTuple& exprTuple) { auto [__0, __1] = exprTuple; return mlc::String("", 0); },
 [&](const ast::ExprQuestion& exprQuestion) { auto [__0, __1] = exprQuestion; return mlc::String("", 0); },
-[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2] = exprExtern; return mlc::String("", 0); },
+[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return mlc::String("", 0); },
 [&](const ast::ExprLambda& exprLambda) { auto [__0, __1, __2] = exprLambda; return mlc::String("", 0); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return mlc::String("", 0); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return mlc::String("", 0); },
@@ -372,7 +372,7 @@ bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noe
 [&](const ast::ExprArray& exprArray) { auto [__0, __1] = exprArray; return false; },
 [&](const ast::ExprTuple& exprTuple) { auto [__0, __1] = exprTuple; return false; },
 [&](const ast::ExprQuestion& exprQuestion) { auto [__0, __1] = exprQuestion; return false; },
-[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2] = exprExtern; return false; },
+[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return false; },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return false; },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return false; },
 [&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return false; }
@@ -578,7 +578,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> conditional_else_empty_unknown_
 [&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return typed_else; },
 [&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return typed_else; },
 [&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return typed_else; },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1, __2, __3] = semanticExpressionExtern; return typed_else; },
+[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1, __2, __3, __4] = semanticExpressionExtern; return typed_else; },
 [&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return typed_else; },
 [&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return typed_else; },
 [&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return typed_else; },
@@ -662,7 +662,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> coerce_expr_to_type(std::shared
 [&](const semantic_ir::SemanticExpressionChar& semanticExpressionChar) { auto [__0, __1, __2] = semanticExpressionChar; return expression; },
 [&](const semantic_ir::SemanticExpressionBool& semanticExpressionBool) { auto [__0, __1, __2] = semanticExpressionBool; return expression; },
 [&](const semantic_ir::SemanticExpressionUnit& semanticExpressionUnit) { auto [__0, __1] = semanticExpressionUnit; return expression; },
-[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1, __2, __3] = semanticExpressionExtern; return expression; },
+[&](const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern) { auto [__0, __1, __2, __3, __4] = semanticExpressionExtern; return expression; },
 [&](const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent) { auto [__0, __1, __2] = semanticExpressionIdent; return expression; },
 [&](const semantic_ir::SemanticExpressionBin& semanticExpressionBin) { auto [__0, __1, __2, __3, __4] = semanticExpressionBin; return expression; },
 [&](const semantic_ir::SemanticExpressionUn& semanticExpressionUn) { auto [__0, __1, __2, __3] = semanticExpressionUn; return expression; },
@@ -738,7 +738,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_usi
 [&](const ast::ExprArray& exprArray) { auto [__0, __1] = exprArray; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprTuple& exprTuple) { auto [__0, __1] = exprTuple; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprQuestion& exprQuestion) { auto [__0, __1] = exprQuestion; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
-[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2] = exprExtern; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); }
@@ -903,7 +903,7 @@ auto [value, source_span] = exprChar; return TransformPass_visit_char(transform_
 }
 if (std::holds_alternative<ast::ExprExtern>((*__match_subject))) {
 const ast::ExprExtern& exprExtern = std::get<ast::ExprExtern>((*__match_subject));
-auto [extern_c_name, extern_header, source_span] = exprExtern; return TransformPass_visit_extern(transform_pass, extern_c_name, extern_header, source_span, stmts_fn);
+auto [extern_c_name, extern_header, concurrency_attrs, source_span] = exprExtern; return TransformPass_visit_extern(transform_pass, extern_c_name, extern_header, concurrency_attrs, source_span, stmts_fn);
 }
 if (std::holds_alternative<ast::ExprIdent>((*__match_subject))) {
 const ast::ExprIdent& exprIdent = std::get<ast::ExprIdent>((*__match_subject));
@@ -1002,7 +1002,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_i64(Transfo
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_u8(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_usize(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_char(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, mlc::Array<mlc::String> concurrency_attrs, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bin(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_un(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
@@ -1052,8 +1052,8 @@ return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticEx
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_char(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionChar{value, std::make_shared<registry::Type>(registry::TChar{}), source_span});
 }
-std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
-return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionExtern{std::make_shared<registry::Type>(registry::TUnit{}), extern_c_name, extern_header, source_span});
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(TransformPass self, mlc::String extern_c_name, mlc::String extern_header, mlc::Array<mlc::String> concurrency_attrs, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionExtern{std::make_shared<registry::Type>(registry::TUnit{}), extern_c_name, extern_header, concurrency_attrs, source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
 auto resolved_type = (self.transform_context.type_env.has(name) ? (self.transform_context.type_env.get(name)) : ((registry::TypeRegistry_has_fn(self.transform_context.registry, name) ? (registry::TypeRegistry_fn_type(self.transform_context.registry, name)) : ((registry::TypeRegistry_has_ctor(self.transform_context.registry, name) ? (registry::TypeRegistry_ctor_type(self.transform_context.registry, name)) : (std::make_shared<registry::Type>(registry::TUnknown{})))))));

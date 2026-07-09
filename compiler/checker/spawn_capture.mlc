@@ -180,7 +180,7 @@ fn free_mutable_capture_in_expr(
     ExprU8(_, _) => empty_diagnostics(),
     ExprUsize(_, _) => empty_diagnostics(),
     ExprChar(_, _) => empty_diagnostics(),
-    ExprExtern(_, _, _) => empty_diagnostics(),
+    ExprExtern(_, _, _, _) => empty_diagnostics(),
     ExprBin(_, left, right, _) =>
       diagnostics_append(
         free_mutable_capture_in_expr(left, local_bound, outer_mutable),
@@ -377,7 +377,7 @@ fn walk_spawn_sites_in_expr(
     ExprU8(_, _) => empty_diagnostics(),
     ExprUsize(_, _) => empty_diagnostics(),
     ExprChar(_, _) => empty_diagnostics(),
-    ExprExtern(_, _, _) => empty_diagnostics(),
+    ExprExtern(_, _, _, _) => empty_diagnostics(),
     ExprIdent(_, _) => empty_diagnostics(),
     ExprBin(_, left, right, _) =>
       diagnostics_append(

@@ -158,14 +158,14 @@ extend CodegenContext {
       SemanticDeclarationTypeAlias(_, _, _, _) => '',
       SemanticDeclarationTrait(name, type_parameters, methods, _) => gen_trait_decl(self, name, type_parameters, methods),
       SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, escape_info, _) =>
-        match body { SemanticExpressionExtern(_, _, _, _) => '', _ => gen_fn_decl_with_escape(name, type_parameters, type_bounds, parameters, return_type, body, escape_info, self) },
+        match body { SemanticExpressionExtern(_, _, _, _, _) => '', _ => gen_fn_decl_with_escape(name, type_parameters, type_bounds, parameters, return_type, body, escape_info, self) },
       SemanticDeclarationExtend(type_name, trait_name, methods, _) =>
         gen_decl_extend(type_name, trait_name, methods, self,
           (codegen_context: CodegenContext, name: string) => codegen_context.resolve(name),
           (inner_declaration: Shared<SemanticDeclaration>, codegen_context: CodegenContext) => codegen_context.gen_decl(inner_declaration)),
       SemanticDeclarationImport(_, _) => '',
       SemanticDeclarationExternLib(_, _) => '',
-      SemanticDeclarationExternType(_, _, _, _, _) => '',
+      SemanticDeclarationExternType(_, _, _, _, _, _) => '',
       SemanticDeclarationExported(inner_declaration) => self.gen_decl(inner_declaration),
       SemanticDeclarationAssocBind(_, _, _) => ''
     }
@@ -176,14 +176,14 @@ extend CodegenContext {
       SemanticDeclarationTypeAlias(_, _, _, _) => '',
       SemanticDeclarationTrait(_, _, _, _) => '',
       SemanticDeclarationFn(name, type_parameters, type_bounds, parameters, return_type, body, _, escape_info, _) =>
-        match body { SemanticExpressionExtern(_, _, _, _) => '', _ => gen_fn_proto_with_escape(name, type_parameters, type_bounds, parameters, return_type, escape_info, self) },
+        match body { SemanticExpressionExtern(_, _, _, _, _) => '', _ => gen_fn_proto_with_escape(name, type_parameters, type_bounds, parameters, return_type, escape_info, self) },
       SemanticDeclarationExtend(type_name, _, methods, _) => do
         const extend_context = self.for_type_body(type_name)
         methods.map(method => extend_context.gen_proto(method)).join('')
       end,
       SemanticDeclarationImport(_, _) => '',
       SemanticDeclarationExternLib(_, _) => '',
-      SemanticDeclarationExternType(_, _, _, _, _) => '',
+      SemanticDeclarationExternType(_, _, _, _, _, _) => '',
       SemanticDeclarationExported(inner_declaration) => self.gen_proto(inner_declaration),
       SemanticDeclarationAssocBind(_, _, _) => ''
     }
@@ -297,7 +297,7 @@ fn decl_segment_for_import_or_assoc(declaration: Shared<SemanticDeclaration>, co
   end
 
 fn extern_body_is_extern(body: Shared<SemanticExpression>) -> bool = match body {
-  SemanticExpressionExtern(_, _, _, _) => true,
+  SemanticExpressionExtern(_, _, _, _, _) => true,
   _ => false
 }
 
@@ -348,7 +348,7 @@ fn decl_segment_for_exported(declaration: Shared<SemanticDeclaration>, codegen_c
       decl_segment_for_extend(declaration, codegen_context, phase),
     SemanticDeclarationImport(_, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
     SemanticDeclarationExternLib(_, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
-    SemanticDeclarationExternType(_, _, _, _, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
+    SemanticDeclarationExternType(_, _, _, _, _, _) => decl_segment_for_import_or_assoc(declaration, codegen_context, phase),
     SemanticDeclarationExported(inner_declaration) =>
       decl_segment_for_exported(inner_declaration, codegen_context, phase),
     SemanticDeclarationAssocBind(_, _, _) => ''
@@ -367,7 +367,7 @@ fn decl_segment(declaration: Shared<SemanticDeclaration>, codegen_context: Codeg
       decl_segment_for_extend(declaration, codegen_context, phase),
     SemanticDeclarationImport(_, _) => '',
     SemanticDeclarationExternLib(_, _) => '',
-    SemanticDeclarationExternType(_, _, _, _, _) => '',
+    SemanticDeclarationExternType(_, _, _, _, _, _) => '',
     SemanticDeclarationAssocBind(_, _, _) => '',
     SemanticDeclarationExported(inner_declaration) =>
       decl_segment_for_exported(inner_declaration, codegen_context, phase)

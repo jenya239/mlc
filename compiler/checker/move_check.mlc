@@ -92,7 +92,7 @@ fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkSt
     ExprU8(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
     ExprUsize(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
     ExprChar(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
-    ExprExtern(_, _, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprExtern(_, _, _, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
     ExprBin(_, left, right, _) => do
       const left_state = move_check_expr(left, moved)
       const right_state = move_check_expr(right, left_state.moved)

@@ -26,7 +26,7 @@ export type SemanticExpression =
   | SemanticExpressionChar(string, Shared<Type>, Span)
   | SemanticExpressionBool(bool, Shared<Type>, Span)
   | SemanticExpressionUnit(Shared<Type>, Span)
-  | SemanticExpressionExtern(Shared<Type>, string, string, Span)
+  | SemanticExpressionExtern(Shared<Type>, string, string, [string], Span)
   | SemanticExpressionIdent(string, Shared<Type>, Span)
   | SemanticExpressionBin(string, Shared<SemanticExpression>, Shared<SemanticExpression>, Shared<Type>, Span)
   | SemanticExpressionUn(string, Shared<SemanticExpression>, Shared<Type>, Span)
@@ -85,7 +85,7 @@ export type SemanticDeclaration =
   | SemanticDeclarationExtend(string, string, [Shared<SemanticDeclaration>], Span)
   | SemanticDeclarationImport(string, [string])
   | SemanticDeclarationExternLib(string, Span)
-  | SemanticDeclarationExternType(string, string, string, string, Span)
+  | SemanticDeclarationExternType(string, string, string, string, [string], Span)
   | SemanticDeclarationExported(Shared<SemanticDeclaration>)
   | SemanticDeclarationAssocBind(string, Shared<Type>, Span)
 
@@ -114,7 +114,7 @@ export fn sexpr_type(expression: Shared<SemanticExpression>) -> Shared<Type> =
     SemanticExpressionChar(_, type_value, _)                 => type_value,
     SemanticExpressionBool(_, type_value, _)                 => type_value,
     SemanticExpressionUnit(type_value, _)                    => type_value,
-    SemanticExpressionExtern(type_value, _, _, _)                  => type_value,
+    SemanticExpressionExtern(type_value, _, _, _, _)                  => type_value,
     SemanticExpressionIdent(_, type_value, _)                => type_value,
     SemanticExpressionBin(_, _, _, type_value, _)            => type_value,
     SemanticExpressionUn(_, _, type_value, _)                => type_value,
@@ -147,7 +147,7 @@ export fn sexpr_span(expression: Shared<SemanticExpression>) -> Span =
     SemanticExpressionChar(_, _, span_value)                 => span_value,
     SemanticExpressionBool(_, _, span_value)                 => span_value,
     SemanticExpressionUnit(_, span_value)                    => span_value,
-    SemanticExpressionExtern(_, _, _, span_value)                  => span_value,
+    SemanticExpressionExtern(_, _, _, _, span_value)                  => span_value,
     SemanticExpressionIdent(_, _, span_value)                => span_value,
     SemanticExpressionBin(_, _, _, _, span_value)            => span_value,
     SemanticExpressionUn(_, _, _, span_value)                => span_value,
@@ -184,6 +184,6 @@ export fn sdecl_span(declaration: Shared<SemanticDeclaration>) -> Span =
     SemanticDeclarationExtend(_, _, _, span) => span,
     SemanticDeclarationAssocBind(_, _, span) => span,
     SemanticDeclarationExternLib(_, span) => span,
-    SemanticDeclarationExternType(_, _, _, _, span) => span,
+    SemanticDeclarationExternType(_, _, _, _, _, span) => span,
     _ => span_unknown()
   }

@@ -85,7 +85,7 @@ fn dispatch_mutations_pass(mutations_pass: MutationsPass, expression: Shared<Sem
       mutations_pass.visit_usize(size_value, type_value),
     SemanticExpressionChar(character_value, type_value, _) =>
       mutations_pass.visit_char(character_value, type_value),
-    SemanticExpressionExtern(type_value, _, _, _) =>
+    SemanticExpressionExtern(type_value, _, _, _, _) =>
       mutations_pass.visit_extern(type_value),
     SemanticExpressionIdent(name_value, type_value, _) =>
       mutations_pass.visit_ident(name_value, type_value),

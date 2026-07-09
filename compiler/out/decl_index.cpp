@@ -36,7 +36,7 @@ mlc::String method_declaration_function_name(std::shared_ptr<ast::Decl> method) 
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return mlc::String("", 0); },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return mlc::String("", 0); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return mlc::String("", 0); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return mlc::String("", 0); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return mlc::String("", 0); },
 [&](const ast::DeclExported& declExported) { auto [inner] = declExported; return method_declaration_function_name(inner); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return mlc::String("", 0); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return mlc::String("", 0); }
@@ -62,7 +62,7 @@ mlc::Array<std::shared_ptr<ast::Decl>> methods_from_trait_declaration(std::share
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return empty_decl_list(); },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return empty_decl_list(); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return empty_decl_list(); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return empty_decl_list(); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return empty_decl_list(); },
 [&](const ast::DeclExported& declExported) { auto [inner] = declExported; return methods_from_trait_declaration(inner); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return empty_decl_list(); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return empty_decl_list(); }
@@ -77,7 +77,7 @@ mlc::Array<std::shared_ptr<ast::Decl>> methods_from_extend_declaration(std::shar
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, methods, __3] = declExtend; return methods; },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return empty_decl_list(); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return empty_decl_list(); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return empty_decl_list(); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return empty_decl_list(); },
 [&](const ast::DeclExported& declExported) { auto [inner] = declExported; return methods_from_extend_declaration(inner); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return empty_decl_list(); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return empty_decl_list(); }
@@ -108,7 +108,7 @@ return names;
 }(); },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return empty_string_list(); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return empty_string_list(); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return empty_string_list(); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return empty_string_list(); },
 [&](const ast::DeclExported& declExported) { auto [inner] = declExported; return export_names_from_exported_declaration(inner); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return empty_string_list(); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return empty_string_list(); }
@@ -123,7 +123,7 @@ mlc::Array<mlc::String> declaration_export_names(std::shared_ptr<ast::Decl> decl
 [&](const ast::DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return empty_string_list(); },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return empty_string_list(); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return empty_string_list(); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return empty_string_list(); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return empty_string_list(); },
 [&](const ast::DeclExported& declExported) { auto [__0] = declExported; return export_names_from_exported_declaration(declaration); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return empty_string_list(); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return empty_string_list(); }
@@ -141,7 +141,7 @@ mlc::String extend_type_name_from_declaration(std::shared_ptr<ast::Decl> declara
 [&](const ast::DeclExtend& declExtend) { auto [type_name, __1, __2, __3] = declExtend; return type_name; },
 [&](const ast::DeclImport& declImport) { auto [__0, __1] = declImport; return mlc::String("", 0); },
 [&](const ast::DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return mlc::String("", 0); },
-[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return mlc::String("", 0); },
+[&](const ast::DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4, __5] = declExternType; return mlc::String("", 0); },
 [&](const ast::DeclExported& declExported) { auto [inner] = declExported; return extend_type_name_from_declaration(inner); },
 [&](const ast::DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return mlc::String("", 0); },
 [&](const ast::DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return mlc::String("", 0); }

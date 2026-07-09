@@ -207,7 +207,7 @@ fn extend_method_part_strings(
   match method {
     SemanticDeclarationFn(mangled, _, _, parameters, return_type, body, _, _, _) => do
       match body {
-        SemanticExpressionExtern(_, _, _, _) => do
+        SemanticExpressionExtern(_, _, _, _, _) => do
           const generated = gen_extend_extern_method(
             mangled, type_name, parameters, return_type, trait_name, context, context_resolve_fn)
           if generated.length() > 0 then

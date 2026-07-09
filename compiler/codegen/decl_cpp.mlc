@@ -531,7 +531,7 @@ extend CodegenContext {
           gen_decl_extend_cpp(type_name, trait_name, methods, self)),
       SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
       SemanticDeclarationExternLib(_, _) => empty_cpp_declaration(),
-      SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _) =>
+      SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _, _) =>
         gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name),
       SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
       SemanticDeclarationExported(inner_declaration) => self.gen_decl_cpp(sdecl_inner(inner_declaration))
@@ -564,7 +564,7 @@ extend CodegenContext {
         end,
       SemanticDeclarationImport(_, _) => empty_cpp_declaration(),
       SemanticDeclarationExternLib(_, _) => empty_cpp_declaration(),
-      SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declaration(),
+      SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declaration(),
       SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declaration(),
       SemanticDeclarationExported(inner_declaration) => self.gen_proto_cpp(sdecl_inner(inner_declaration))
     }
@@ -578,19 +578,19 @@ fn is_semantic_declaration_fn(method: Shared<SemanticDeclaration>) -> bool =
 
 fn semantic_expression_is_extern(expression: Shared<SemanticExpression>) -> bool =
   match expression {
-    SemanticExpressionExtern(_, _, _, _) => true,
+    SemanticExpressionExtern(_, _, _, _, _) => true,
     _ => false
   }
 
 fn semantic_extern_ffi_c_name(expression: Shared<SemanticExpression>) -> string =
   match expression {
-    SemanticExpressionExtern(_, extern_c_name, _, _) => extern_c_name,
+    SemanticExpressionExtern(_, extern_c_name, _, _, _) => extern_c_name,
     _ => ''
   }
 
 fn semantic_extern_ffi_header(expression: Shared<SemanticExpression>) -> string =
   match expression {
-    SemanticExpressionExtern(_, _, extern_header, _) => extern_header,
+    SemanticExpressionExtern(_, _, extern_header, _, _) => extern_header,
     _ => ''
   }
 
@@ -618,7 +618,7 @@ fn collect_ffi_include_lines_from_declaration(declaration: Shared<SemanticDeclar
       if semantic_expression_is_ffi_extern(body) then ffi_header_include_line(semantic_extern_ffi_header(body))
       else ''
       end,
-    SemanticDeclarationExternType(_, _, extern_header, drop_function_name, _) => do
+    SemanticDeclarationExternType(_, _, extern_header, drop_function_name, _, _) => do
       let include_text = ffi_header_include_line(extern_header)
       if drop_function_name.length() > 0 then include_text + "#include <memory>\n"
       else include_text
@@ -1197,7 +1197,7 @@ fn extend_forward_proto_for_method(
     SemanticDeclarationExtend(_, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declarations(),
+    SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationExported(inner_declaration) =>
       extend_forward_proto_for_method(sdecl_inner(inner_declaration), extend_context),
     SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations()
@@ -1256,7 +1256,7 @@ export fn extend_cpp_forward_segment_cpp(
       SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) => empty_cpp_declarations(),
       SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
       SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-      SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declarations(),
+      SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declarations(),
       SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations(),
       SemanticDeclarationExported(_) => empty_cpp_declarations()
     },
@@ -1266,7 +1266,7 @@ export fn extend_cpp_forward_segment_cpp(
     SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declarations(),
+    SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations()
   }
 
@@ -1350,7 +1350,7 @@ fn decl_segment_for_exported_cpp(
       decl_segment_trait_cpp(name, type_params, methods, context, phase),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _) =>
+    SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _, _) =>
       if phase == 1 then [gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name)]
       else empty_cpp_declarations()
       end,
@@ -1382,7 +1382,7 @@ export fn decl_segment_cpp(declaration: Shared<SemanticDeclaration>, context: Co
       decl_segment_trait_cpp(name, type_params, methods, context, phase),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _) =>
+    SemanticDeclarationExternType(type_name, c_type_name, _, drop_function_name, _, _) =>
       if phase == 1 then [gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name)]
       else empty_cpp_declarations()
       end,
@@ -1549,7 +1549,7 @@ fn decl_fn_def_for_exported_cpp(
       decl_fn_def_exported_fn_cpp(inner_declaration, type_parameters, body, escape_info, context),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declarations(),
+    SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationExported(nested_inner) =>
       decl_fn_def_for_exported_cpp(nested_inner, context),
     SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations()
@@ -1594,7 +1594,7 @@ fn decl_fn_def_cpp(declaration: Shared<SemanticDeclaration>, context: CodegenCon
     SemanticDeclarationTrait(_, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationImport(_, _) => empty_cpp_declarations(),
     SemanticDeclarationExternLib(_, _) => empty_cpp_declarations(),
-    SemanticDeclarationExternType(_, _, _, _, _) => empty_cpp_declarations(),
+    SemanticDeclarationExternType(_, _, _, _, _, _) => empty_cpp_declarations(),
     SemanticDeclarationAssocBind(_, _, _) => empty_cpp_declarations(),
     SemanticDeclarationFn(name, type_params, type_bounds, params, return_type, body, _, escape_info, _) =>
       decl_fn_def_native_fn_cpp_with_escape(name, type_params, type_bounds, params, return_type, body, escape_info, context)

@@ -206,7 +206,7 @@ PartialPair partial_application_desugar_inner(std::shared_ptr<ast::Expr> express
 [&](const ast::ExprU8& exprU8) -> PartialPair { auto [__0, __1] = exprU8; return partial_application_leaf_partial_pair(expression, serial); },
 [&](const ast::ExprUsize& exprUsize) -> PartialPair { auto [__0, __1] = exprUsize; return partial_application_leaf_partial_pair(expression, serial); },
 [&](const ast::ExprChar& exprChar) -> PartialPair { auto [__0, __1] = exprChar; return partial_application_leaf_partial_pair(expression, serial); },
-[&](const ast::ExprExtern& exprExtern) -> PartialPair { auto [__0, __1, __2] = exprExtern; return partial_application_leaf_partial_pair(expression, serial); },
+[&](const ast::ExprExtern& exprExtern) -> PartialPair { auto [__0, __1, __2, __3] = exprExtern; return partial_application_leaf_partial_pair(expression, serial); },
 [&](const ast::ExprIdent& exprIdent) -> PartialPair { auto [__0, __1] = exprIdent; return partial_application_leaf_partial_pair(expression, serial); },
 [&](const ast::ExprBin& exprBin) -> PartialPair { auto [binary_operation, left, right, span_binary] = exprBin; return [&]() {
 auto left_pair = partial_application_desugar_inner(left, serial);

@@ -12,6 +12,10 @@
 #include "ast.hpp"
 namespace decls {
 
+struct ExternConcurrencyAttrsParse {
+  mlc::Array<mlc::String> attributes;
+  predicates::Parser parser;
+};
 mlc::String type_expression_display(std::shared_ptr<ast::TypeExpr> type_expression) noexcept;
 mlc::String type_arguments_display(mlc::Array<std::shared_ptr<ast::TypeExpr>> type_arguments) noexcept;
 predicates::Parser parser_expect_generic_close(predicates::Parser state, bool opened) noexcept;
@@ -57,6 +61,13 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extend_method(predicat
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_trait_decl(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_declaration(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_lib_declaration(predicates::Parser parser) noexcept;
+mlc::Array<mlc::String> empty_concurrency_attribute_list() noexcept;
+bool is_extern_concurrency_attribute_name(mlc::String name) noexcept;
+ExternConcurrencyAttrsParse parse_one_extern_concurrency_attribute(predicates::Parser parser) noexcept;
+ExternConcurrencyAttrsParse parse_negated_extern_concurrency_attribute(predicates::Parser parser) noexcept;
+ExternConcurrencyAttrsParse parse_plain_extern_concurrency_attribute(predicates::Parser parser) noexcept;
+ExternConcurrencyAttrsParse finish_extern_concurrency_attribute(predicates::Parser after_name, mlc::String attribute_token_start, mlc::String attribute_name) noexcept;
+ExternConcurrencyAttrsParse parse_extern_concurrency_attributes(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_type_declaration(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predicates::Parser where_parser, ast::Span extern_keyword_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_function_declaration(predicates::Parser parser) noexcept;

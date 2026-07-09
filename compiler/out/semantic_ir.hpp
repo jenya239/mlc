@@ -114,7 +114,8 @@ struct SemanticExpressionExtern {
   std::shared_ptr<registry::Type> field0;
   mlc::String field1;
   mlc::String field2;
-  ast::Span field3;
+  mlc::Array<mlc::String> field3;
+  ast::Span field4;
 };
 struct SemanticExpressionIdent {
   mlc::String field0;
@@ -323,7 +324,8 @@ struct SemanticDeclarationExternType {
   mlc::String field1;
   mlc::String field2;
   mlc::String field3;
-  ast::Span field4;
+  mlc::Array<mlc::String> field4;
+  ast::Span field5;
 };
 struct SemanticDeclarationExported {
   std::shared_ptr<SemanticDeclaration> field0;

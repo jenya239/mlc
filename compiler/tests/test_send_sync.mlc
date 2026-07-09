@@ -44,5 +44,20 @@ export fn send_sync_tests() -> [TestResult] = do
   results.push(assert_true('Arc.new still rejects Array payload',
     check_error_count('fn main() -> Arc<[i32]> = Arc.new([])') > 0))
 
+  results.push(assert_true('extern thread_safe allows Arc.new',
+    check_error_count(
+      'extern type SafeHandle = "SafeHandle" from "<stdio.h>" thread_safe\n' +
+      'fn wrap(handle: SafeHandle) -> Arc<SafeHandle> = Arc.new(handle)\n' +
+      'fn main() -> i32 = 0') == 0))
+  results.push(assert_true('extern thread_affine rejects Arc.new',
+    check_error_count(
+      'extern type AffineHandle = "AffineHandle" from "<stdio.h>" thread_affine(MainThread)\n' +
+      'fn wrap(handle: AffineHandle) -> Arc<AffineHandle> = Arc.new(handle)\n' +
+      'fn main() -> i32 = 0') > 0))
+  results.push(assert_true('extern blocking fn parses',
+    check_error_count(
+      'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>" blocking\n' +
+      'fn main() -> i32 = pq_exec(0)') == 0))
+
   results
 end

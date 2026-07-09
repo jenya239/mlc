@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 6 |
-| active_track | TRACK_FFI_LAYER STEP=7 |
-| test_gate | ok (extern fn type → C fptr probe exit 42) |
+| driver_turns_since_plan | 6 |
+| step_last | 7 |
+| active_track | TRACK_FFI_LAYER STEP=8 |
+| test_gate | ok (extern attrs + Send/Sync Arc.new probes) |
+
+### Turn 2026-07-09 19:25 (Driver TRACK_FFI_LAYER STEP=7 — concurrency metadata on extern)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 18:51 |
+| elapsed | ~35 min |
+| done    | Parse `blocking`/`thread_safe`/`!thread_safe`/`thread_affine(Name)` on extern fn/type; AST/IR `[string]` attrs; registry maps; Send/Sync honor thread_safe/affine. |
+| verify  | `thread_safe` Arc.new check 0; `thread_affine` Arc.new E082; `blocking` parse check 0; `mlcc --check-only main` 0. |
+| result  | STEP=7 done. Plain: extern concurrency attrs → registry + Send/Sync. |
+| issues  | `rake test_compiler_mlc` blocked by pre-existing Ruby parse fail on `spawn_capture.mlc` (MATCH); dirty `compiler/out/mlcc` not committed. |
+| next    | ROLE=Driver STEP=8 TRACK_FFI_LAYER — verify-gate + close (mlcc2 diff, regression_gate, FFI_LAYER.md §6) |
 
 ### Turn 2026-07-09 18:50 (Driver TRACK_FFI_LAYER STEP=6 — extern fn type as C function pointer)
 

@@ -285,7 +285,7 @@ auto [__0, __1] = exprChar; return InferPass_visit_char(infer_pass);
 }
 if (std::holds_alternative<ast::ExprExtern>((*__match_subject))) {
 const ast::ExprExtern& exprExtern = std::get<ast::ExprExtern>((*__match_subject));
-auto [__0, __1, __2] = exprExtern; return InferPass_visit_extern(infer_pass);
+auto [__0, __1, __2, __3] = exprExtern; return InferPass_visit_extern(infer_pass);
 }
 if (std::holds_alternative<ast::ExprIdent>((*__match_subject))) {
 const ast::ExprIdent& exprIdent = std::get<ast::ExprIdent>((*__match_subject));

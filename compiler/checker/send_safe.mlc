@@ -46,6 +46,11 @@ fn type_is_send_field(
   if field_map.has(field_name) then type_is_send(field_map.get(field_name), registry) else false
 
 fn type_is_send_named(record_name: string, registry: TypeRegistry) -> bool = do
+  if registry.type_is_thread_affine(record_name) then return false end
+  if registry.type_is_thread_safe(record_name) then return true end
+  if registry.concurrency_attributes_for_type(record_name).any(attribute => attribute == '!thread_safe') then
+    return false
+  end
   if !registry.has_fields(record_name) then return false end
   const field_map = registry.fields_for(record_name)
   const field_names = registry.record_field_names_ordered_for(record_name)
@@ -60,6 +65,11 @@ fn type_is_sync_field(
   if field_map.has(field_name) then type_is_sync(field_map.get(field_name), registry) else false
 
 fn type_is_sync_named(record_name: string, registry: TypeRegistry) -> bool = do
+  if registry.type_is_thread_affine(record_name) then return false end
+  if registry.type_is_thread_safe(record_name) then return true end
+  if registry.concurrency_attributes_for_type(record_name).any(attribute => attribute == '!thread_safe') then
+    return false
+  end
   if !registry.has_fields(record_name) then return false end
   const field_map = registry.fields_for(record_name)
   const field_names = registry.record_field_names_ordered_for(record_name)

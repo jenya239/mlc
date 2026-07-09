@@ -147,7 +147,7 @@ auto [character_value, type_value, __2] = semanticExpressionChar; return Mutatio
 }
 if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*__match_subject))) {
 const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern = std::get<semantic_ir::SemanticExpressionExtern>((*__match_subject));
-auto [type_value, __1, __2, __3] = semanticExpressionExtern; return MutationsPass_visit_extern(mutations_pass, type_value);
+auto [type_value, __1, __2, __3, __4] = semanticExpressionExtern; return MutationsPass_visit_extern(mutations_pass, type_value);
 }
 if (std::holds_alternative<semantic_ir::SemanticExpressionIdent>((*__match_subject))) {
 const semantic_ir::SemanticExpressionIdent& semanticExpressionIdent = std::get<semantic_ir::SemanticExpressionIdent>((*__match_subject));

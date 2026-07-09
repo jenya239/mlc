@@ -7,10 +7,10 @@ Parent: [../PLAN.md](../PLAN.md) §10, [../FFI_LAYER.md](../FFI_LAYER.md)
 Приоритет: **средний** — concurrency Isolate/TaskScope closed; **next in PLAN
 queue**. Send/Sync для STEP=7 уже готовы.
 
-## Status: **open** — STEP=1–6 done; STEP=7 next
+## Status: **open** — STEP=1–7 done; STEP=8 next
 
-**Driver 2026-07-09:** STEP=6 — `extern fn(Args) -> Ret` type →
-`std::type_identity_t<Ret(*)(Args...)>`; top-level-only arg check.
+**Driver 2026-07-09:** STEP=7 — parse `blocking`/`thread_safe`/`thread_affine`
+on extern fn/type; registry + Send/Sync for `thread_safe`/`thread_affine`.
 
 ## Steps
 
@@ -22,7 +22,7 @@ queue**. Send/Sync для STEP=7 уже готовы.
 | 4 | `extern lib "name"` — декларация на уровне модуля; `build_bin.sh` собирает список по всем импортированным модулям финальной программы, добавляет `-l<name>` в командную строку линковки (не в компиляцию `.o`). Проверить на `-lm` (везде есть, не требует внешней инсталляции) + STEP=3 smoke. | **done** |
 | 5 | `extern type Name = "CName" from "<header>"` в self-hosted парсере (сегодня только Ruby: `lib/mlc/source/parser/declaration_parser.rb:534-560`) — `compiler/frontend/parser/decls.mlc` (сейчас `type Name` без `=` уходит в `parse_variants`, `:699-733` — не opaque). Плюс `drop "c_function"` — генерация RAII-обёртки (`std::unique_ptr` + custom deleter) для функций, возвращающих `-> owned RawPointer[T]`. | **done** (typedef+deleter; `owned` return marker deferred) |
 | 6 | `extern fn(Args) -> Return` как тип (C function pointer, не closure) — codegen `Ret(*)(Args...)`; checker запрещает передачу не-top-level/захватывающей функции в такую позицию (переиспользовать `compiler/checker/escape_analysis.mlc`, новая диагностика вместо тихого несоответствия типов). | **done** |
-| 7 | Concurrency-метаданные на `extern fn`/`extern type`: `blocking`/`thread_safe`/`thread_affine` (спецификация `CONCURRENCY_V2.md:369-380`). Send/Sync predicates ready (CONCURRENCY_V2 closed). | pending |
+| 7 | Concurrency-метаданные на `extern fn`/`extern type`: `blocking`/`thread_safe`/`thread_affine` (спецификация `CONCURRENCY_V2.md:369-380`). Send/Sync predicates ready (CONCURRENCY_V2 closed). | **done** |
 | 8 | Verify-gate + close: полный self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, обновить `FFI_LAYER.md` критерий приёмки (§6) с фактическими результатами. | pending |
 
 ## Verify gate (per step, минимум)

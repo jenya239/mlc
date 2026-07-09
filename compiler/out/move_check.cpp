@@ -80,7 +80,7 @@ std::abort();
 [&](const ast::ExprU8& exprU8) -> MoveCheckWalkState { auto [__0, __1] = exprU8; return MoveCheckWalkState{empty_diagnostics(), moved}; },
 [&](const ast::ExprUsize& exprUsize) -> MoveCheckWalkState { auto [__0, __1] = exprUsize; return MoveCheckWalkState{empty_diagnostics(), moved}; },
 [&](const ast::ExprChar& exprChar) -> MoveCheckWalkState { auto [__0, __1] = exprChar; return MoveCheckWalkState{empty_diagnostics(), moved}; },
-[&](const ast::ExprExtern& exprExtern) -> MoveCheckWalkState { auto [__0, __1, __2] = exprExtern; return MoveCheckWalkState{empty_diagnostics(), moved}; },
+[&](const ast::ExprExtern& exprExtern) -> MoveCheckWalkState { auto [__0, __1, __2, __3] = exprExtern; return MoveCheckWalkState{empty_diagnostics(), moved}; },
 [&](const ast::ExprBin& exprBin) -> MoveCheckWalkState { auto [__0, left, right, __3] = exprBin; return [&]() {
 auto left_state = move_check_expr(left, moved);
 auto right_state = move_check_expr(right, left_state.moved);

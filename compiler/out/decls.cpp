@@ -320,7 +320,7 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_trait_method_body(pred
   if (predicates::TokenKind_is_equal(predicates::Parser_kind(where_parser)))   {
     return exprs::parse_expr(predicates::Parser_advance(where_parser));
   } else   {
-    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), predicates::Parser_span_at_cursor(where_parser)}), where_parser);
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, predicates::Parser_span_at_cursor(where_parser)}), where_parser);
   }
 }
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_import_decl(predicates::Parser parser) noexcept{
@@ -457,7 +457,7 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extend_extern_method(p
   }
   auto after_rparen = predicates::Parser_advance(rest_parsed.parser);
   auto return_type_parsed = types::parse_type(parser_after_optional_arrow(after_rparen));
-  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mangled_name, {}, {}, params, return_type_parsed.value, std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), extern_span}), {}}), return_type_parsed.parser);
+  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mangled_name, {}, {}, params, return_type_parsed.value, std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, extern_span}), {}}), return_type_parsed.parser);
 }
 predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Param>>> parse_extend_method_rest_params(predicates::Parser rest_start) noexcept{
   if (predicates::TokenKind_is_rparen(predicates::Parser_kind(rest_start)))   {
@@ -480,11 +480,11 @@ std::abort();
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extend_method_body(predicates::Parser after_eq) noexcept{
   if (predicates::TokenKind_is_extern(predicates::Parser_kind(after_eq)))   {
-    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), predicates::Parser_span_at_cursor(after_eq)}), predicates::Parser_advance(after_eq));
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, predicates::Parser_span_at_cursor(after_eq)}), predicates::Parser_advance(after_eq));
   }
   auto body_expr_parsed = exprs::parse_expr(after_eq);
   if (is_extern_ident_expr(body_expr_parsed.value))   {
-    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), ast::expr_span(body_expr_parsed.value)}), body_expr_parsed.parser);
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, ast::expr_span(body_expr_parsed.value)}), body_expr_parsed.parser);
   }
   return body_expr_parsed;
 }
@@ -559,6 +559,72 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_lib_declaration
   auto library_name = predicates::TokenKind_str_val(predicates::Parser_kind(after_lib));
   return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternLib{library_name, extern_span}), predicates::Parser_advance(after_lib));
 }
+mlc::Array<mlc::String> empty_concurrency_attribute_list() noexcept{
+  auto empty_attributes = mlc::Array<mlc::String>{};
+  return empty_attributes;
+}
+bool is_extern_concurrency_attribute_name(mlc::String name) noexcept{
+  return (((name == mlc::String("blocking", 8)) || (name == mlc::String("thread_safe", 11))) || (name == mlc::String("thread_affine", 13)));
+}
+ExternConcurrencyAttrsParse parse_one_extern_concurrency_attribute(predicates::Parser parser) noexcept{
+  if ((predicates::TokenKind_is_op(predicates::Parser_kind(parser)) && (predicates::TokenKind_op_val(predicates::Parser_kind(parser)) == mlc::String("!", 1))))   {
+    return parse_negated_extern_concurrency_attribute(parser);
+  } else   {
+    return parse_plain_extern_concurrency_attribute(parser);
+  }
+}
+ExternConcurrencyAttrsParse parse_negated_extern_concurrency_attribute(predicates::Parser parser) noexcept{
+  auto after_bang = predicates::Parser_advance(parser);
+  if ((!predicates::TokenKind_is_ident(predicates::Parser_kind(after_bang))))   {
+    return ExternConcurrencyAttrsParse{empty_concurrency_attribute_list(), parser};
+  }
+  auto attribute_name = predicates::TokenKind_ident(predicates::Parser_kind(after_bang));
+  if ((!is_extern_concurrency_attribute_name(attribute_name)))   {
+    return ExternConcurrencyAttrsParse{empty_concurrency_attribute_list(), parser};
+  }
+  return finish_extern_concurrency_attribute(predicates::Parser_advance(after_bang), (mlc::String("!", 1) + attribute_name), attribute_name);
+}
+ExternConcurrencyAttrsParse parse_plain_extern_concurrency_attribute(predicates::Parser parser) noexcept{
+  if ((!predicates::TokenKind_is_ident(predicates::Parser_kind(parser))))   {
+    return ExternConcurrencyAttrsParse{empty_concurrency_attribute_list(), parser};
+  }
+  auto attribute_name = predicates::TokenKind_ident(predicates::Parser_kind(parser));
+  if ((!is_extern_concurrency_attribute_name(attribute_name)))   {
+    return ExternConcurrencyAttrsParse{empty_concurrency_attribute_list(), parser};
+  }
+  return finish_extern_concurrency_attribute(predicates::Parser_advance(parser), attribute_name, attribute_name);
+}
+ExternConcurrencyAttrsParse finish_extern_concurrency_attribute(predicates::Parser after_name, mlc::String attribute_token_start, mlc::String attribute_name) noexcept{
+  auto state = after_name;
+  auto attribute_token = attribute_token_start;
+  if (((attribute_name == mlc::String("thread_affine", 13)) && predicates::TokenKind_is_lparen(predicates::Parser_kind(state))))   {
+    (state = predicates::Parser_advance(state));
+    if (predicates::TokenKind_is_ident(predicates::Parser_kind(state)))     {
+      auto affinity_name = predicates::TokenKind_ident(predicates::Parser_kind(state));
+      (state = predicates::Parser_advance(state));
+      (attribute_token = (((attribute_token + mlc::String("(", 1)) + affinity_name) + mlc::String(")", 1)));
+      if (predicates::TokenKind_is_rparen(predicates::Parser_kind(state)))       {
+        (state = predicates::Parser_advance(state));
+      }
+    }
+  }
+  return ExternConcurrencyAttrsParse{mlc::Array<mlc::String>{attribute_token}, state};
+}
+ExternConcurrencyAttrsParse parse_extern_concurrency_attributes(predicates::Parser parser) noexcept{
+  auto state = parser;
+  auto attributes = empty_concurrency_attribute_list();
+  auto keep_parsing = true;
+  while (keep_parsing)   {
+    auto one_attribute = parse_one_extern_concurrency_attribute(state);
+    if ((one_attribute.attributes.length() == 0))     {
+      (keep_parsing = false);
+    } else     {
+      (attributes = attributes.concat(one_attribute.attributes));
+      (state = one_attribute.parser);
+    }
+  }
+  return ExternConcurrencyAttrsParse{attributes, state};
+}
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_type_declaration(predicates::Parser parser) noexcept{
   auto extern_span = predicates::Parser_span_at_cursor(parser);
   auto after_extern = predicates::Parser_advance(parser);
@@ -594,7 +660,8 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_type_declaratio
       return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected deleter string after drop", 41)));
     }
   }
-  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternType{type_name, c_type_name, extern_header, drop_function_name, extern_span}), state);
+  auto concurrency_attrs_parsed = parse_extern_concurrency_attributes(state);
+  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternType{type_name, c_type_name, extern_header, drop_function_name, concurrency_attrs_parsed.attributes, extern_span}), concurrency_attrs_parsed.parser);
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predicates::Parser where_parser, ast::Span extern_keyword_span) noexcept{
   if (predicates::TokenKind_is_equal(predicates::Parser_kind(where_parser)))   {
@@ -606,20 +673,22 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predica
         auto after_from = predicates::Parser_advance(after_c_name);
         if (predicates::TokenKind_is_str(predicates::Parser_kind(after_from)))         {
           auto extern_header = predicates::TokenKind_str_val(predicates::Parser_kind(after_from));
-          return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{extern_c_name, extern_header, extern_keyword_span}), predicates::Parser_advance(after_from));
+          auto after_header = predicates::Parser_advance(after_from);
+          auto concurrency_attrs_parsed = parse_extern_concurrency_attributes(after_header);
+          return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{extern_c_name, extern_header, concurrency_attrs_parsed.attributes, extern_keyword_span}), concurrency_attrs_parsed.parser);
         } else         {
-          return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), extern_keyword_span}), predicates::Parser_record_parse_error(after_from, mlc::String("parse: expected header string after from in extern fn", 53)));
+          return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, extern_keyword_span}), predicates::Parser_record_parse_error(after_from, mlc::String("parse: expected header string after from in extern fn", 53)));
         }
       } else       {
-        return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), extern_keyword_span}), predicates::Parser_record_parse_error(after_c_name, mlc::String("parse: expected from after C name in extern fn", 46)));
+        return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, extern_keyword_span}), predicates::Parser_record_parse_error(after_c_name, mlc::String("parse: expected from after C name in extern fn", 46)));
       }
     } else if (predicates::TokenKind_is_extern(predicates::Parser_kind(after_equal)))     {
-      return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), predicates::Parser_span_at_cursor(after_equal)}), predicates::Parser_advance(after_equal));
+      return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, predicates::Parser_span_at_cursor(after_equal)}), predicates::Parser_advance(after_equal));
     } else     {
       return exprs::parse_expr(after_equal);
     }
   }
-  return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), extern_keyword_span}), where_parser);
+  return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, extern_keyword_span}), where_parser);
 }
 predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_function_declaration(predicates::Parser parser) noexcept{
   auto is_extern = predicates::TokenKind_is_extern(predicates::Parser_kind(parser));
@@ -899,7 +968,7 @@ predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Decl>>> parse_trait_body
         auto where_parse_extern = parse_where_clause_opt(return_type_parsed.parser);
         auto merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.value);
         auto extern_method_span = predicates::Parser_span_at_cursor(where_parse_extern.parser);
-        methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), extern_method_span}), where_parse_extern.value}));
+        methods.push_back(std::make_shared<ast::Decl>(ast::DeclFn{mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, std::make_shared<ast::Expr>(ast::ExprExtern{mlc::String("", 0), mlc::String("", 0), {}, extern_method_span}), where_parse_extern.value}));
         (state = where_parse_extern.parser);
       } else       {
         (state = predicates::Parser_record_parse_error(parser_after_extern, mlc::String("parse: expected fn after extern in trait body", 45)));

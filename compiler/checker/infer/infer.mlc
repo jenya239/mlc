@@ -416,7 +416,7 @@ fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> Infer
       infer_pass.visit_usize(),
     ExprChar(_, _) =>
       infer_pass.visit_char(),
-    ExprExtern(_, _, _) =>
+    ExprExtern(_, _, _, _) =>
       infer_pass.visit_extern(),
     ExprIdent(name, _) =>
       infer_pass.visit_ident(name),

@@ -395,7 +395,7 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
       partial_application_leaf_partial_pair(expression, serial),
     ExprChar(_, _) =>
       partial_application_leaf_partial_pair(expression, serial),
-    ExprExtern(_, _, _) =>
+    ExprExtern(_, _, _, _) =>
       partial_application_leaf_partial_pair(expression, serial),
     ExprIdent(_, _) =>
       partial_application_leaf_partial_pair(expression, serial),

@@ -31,6 +31,11 @@ bool TypeRegistry_has_fields(TypeRegistry self, mlc::String type_name) noexcept;
 bool TypeRegistry_type_implements_trait(TypeRegistry self, mlc::String type_name, mlc::String trait_name) noexcept;
 mlc::Array<mlc::Array<mlc::String>> TypeRegistry_fn_trait_bounds(TypeRegistry self, mlc::String fn_name) noexcept;
 int TypeRegistry_required_arity_for_fn(TypeRegistry self, mlc::String fn_name) noexcept;
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_function(TypeRegistry self, mlc::String function_name) noexcept;
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_type(TypeRegistry self, mlc::String type_name) noexcept;
+bool TypeRegistry_function_is_blocking(TypeRegistry self, mlc::String function_name) noexcept;
+bool TypeRegistry_type_is_thread_safe(TypeRegistry self, mlc::String type_name) noexcept;
+bool TypeRegistry_type_is_thread_affine(TypeRegistry self, mlc::String type_name) noexcept;
 bool TypeRegistry_is_private_ctor(TypeRegistry self, mlc::String name) noexcept;
 mlc::Array<mlc::String> TypeRegistry_trait_assoc_names(TypeRegistry self, mlc::String trait_name) noexcept;
 std::shared_ptr<Type> TypeRegistry_resolve_assoc(TypeRegistry self, mlc::String type_name, mlc::String trait_name, mlc::String assoc_name) noexcept;
@@ -57,6 +62,11 @@ bool TypeRegistry_has_fields(TypeRegistry self, mlc::String type_name) noexcept;
 bool TypeRegistry_type_implements_trait(TypeRegistry self, mlc::String type_name, mlc::String trait_name) noexcept;
 mlc::Array<mlc::Array<mlc::String>> TypeRegistry_fn_trait_bounds(TypeRegistry self, mlc::String fn_name) noexcept;
 int TypeRegistry_required_arity_for_fn(TypeRegistry self, mlc::String fn_name) noexcept;
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_function(TypeRegistry self, mlc::String function_name) noexcept;
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_type(TypeRegistry self, mlc::String type_name) noexcept;
+bool TypeRegistry_function_is_blocking(TypeRegistry self, mlc::String function_name) noexcept;
+bool TypeRegistry_type_is_thread_safe(TypeRegistry self, mlc::String type_name) noexcept;
+bool TypeRegistry_type_is_thread_affine(TypeRegistry self, mlc::String type_name) noexcept;
 bool TypeRegistry_is_private_ctor(TypeRegistry self, mlc::String name) noexcept;
 mlc::Array<mlc::String> TypeRegistry_trait_assoc_names(TypeRegistry self, mlc::String trait_name) noexcept;
 std::shared_ptr<Type> TypeRegistry_resolve_assoc(TypeRegistry self, mlc::String type_name, mlc::String trait_name, mlc::String assoc_name) noexcept;
@@ -178,6 +188,31 @@ if (self.function_index.function_required_arity.has(fn_name)) {
   return (-1);
 }
 }
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_function(TypeRegistry self, mlc::String function_name) noexcept{
+if (self.function_index.function_concurrency_attributes.has(function_name)) {
+  return self.function_index.function_concurrency_attributes.get(function_name);
+} else {
+  auto empty_attributes = mlc::Array<mlc::String>{};
+  return empty_attributes;
+}
+}
+mlc::Array<mlc::String> TypeRegistry_concurrency_attributes_for_type(TypeRegistry self, mlc::String type_name) noexcept{
+if (self.function_index.type_concurrency_attributes.has(type_name)) {
+  return self.function_index.type_concurrency_attributes.get(type_name);
+} else {
+  auto empty_attributes = mlc::Array<mlc::String>{};
+  return empty_attributes;
+}
+}
+bool TypeRegistry_function_is_blocking(TypeRegistry self, mlc::String function_name) noexcept{
+return TypeRegistry_concurrency_attributes_for_function(self, function_name).any([=](mlc::String attribute) mutable { return (attribute == mlc::String("blocking", 8)); });
+}
+bool TypeRegistry_type_is_thread_safe(TypeRegistry self, mlc::String type_name) noexcept{
+return TypeRegistry_concurrency_attributes_for_type(self, type_name).any([=](mlc::String attribute) mutable { return (attribute == mlc::String("thread_safe", 11)); });
+}
+bool TypeRegistry_type_is_thread_affine(TypeRegistry self, mlc::String type_name) noexcept{
+return TypeRegistry_concurrency_attributes_for_type(self, type_name).any([=](mlc::String attribute) mutable { return ((attribute == mlc::String("thread_affine", 13)) || ((attribute.length() >= 14) && (attribute.substring(0, 14) == mlc::String("thread_affine(", 14)))); });
+}
 bool TypeRegistry_is_private_ctor(TypeRegistry self, mlc::String name) noexcept{
 return self.adt_index.private_constructors.has(name);
 }
@@ -244,7 +279,7 @@ TypeRegistry empty_registry() noexcept{
   builtin_required_arity.set(mlc::String("make_channel", 12), 1);
   builtin_required_arity.set(mlc::String("read_line", 9), 0);
   auto empty_private_constructors = mlc::HashMap<mlc::String, bool>();
-  return TypeRegistry{FunctionIndex{builtin_function_types, {}, {}, {}, builtin_required_arity, {}}, AdtIndex{constructor_types_map, constructor_parameters_map, {}, {}, {}, {}, empty_private_constructors, {}, {}}, RecordIndex{{}, {}, {}}, {}, {}, {}, {}};
+  return TypeRegistry{FunctionIndex{builtin_function_types, {}, {}, {}, builtin_required_arity, {}, {}, {}}, AdtIndex{constructor_types_map, constructor_parameters_map, {}, {}, {}, {}, empty_private_constructors, {}, {}}, RecordIndex{{}, {}, {}}, {}, {}, {}, {}};
 }
 void record_type_defining_path(TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept{
   if ((defining_path.length() > 0))   {
@@ -568,7 +603,7 @@ return empty_bindings;
     registry.adt_index.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings);
   }
 }
-void register_decl_fn_into_registry(TypeRegistry& registry, mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> trait_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type) noexcept{
+void register_decl_fn_into_registry(TypeRegistry& registry, mlc::String name, mlc::Array<mlc::String> type_parameters, mlc::Array<mlc::Array<mlc::String>> trait_bounds, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type, mlc::Array<mlc::String> concurrency_attributes) noexcept{
   auto param_types = parameters.map([=](std::shared_ptr<ast::Param> parameter) mutable { return type_from_annotation_with_registry(ast::param_type_value(parameter), registry); });
   auto parameter_names = parameters.map([=](std::shared_ptr<ast::Param> parameter) mutable { return ast::param_name(parameter); });
   auto parameter_mutability_flags = parameters.map([=](std::shared_ptr<ast::Param> parameter) mutable { return (ast::param_is_mut(parameter) ? (1) : (0)); });
@@ -579,6 +614,9 @@ void register_decl_fn_into_registry(TypeRegistry& registry, mlc::String name, ml
   registry.function_index.function_required_arity.set(name, required_arity_from_params(parameters));
   if ((trait_bounds.length() > 0))   {
     registry.function_index.function_trait_bounds.set(name, trait_bounds);
+  }
+  if ((concurrency_attributes.length() > 0))   {
+    registry.function_index.function_concurrency_attributes.set(name, concurrency_attributes);
   }
 }
 mlc::String variant_name_of(std::shared_ptr<ast::TypeVariant> variant) noexcept{
@@ -660,8 +698,20 @@ bool register_decl_fn_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> decl
 auto __match_subject = declaration;
 if (std::holds_alternative<ast::DeclFn>((*__match_subject))) {
 const ast::DeclFn& declFn = std::get<ast::DeclFn>((*__match_subject));
-auto [name, type_parameters, trait_bounds, parameters, return_type, __5, __6] = declFn; return [&]() {
-register_decl_fn_into_registry(registry, name, type_parameters, trait_bounds, parameters, return_type);
+auto [name, type_parameters, trait_bounds, parameters, return_type, body, __6] = declFn; return [&]() {
+auto concurrency_attributes = [&]() -> mlc::Array<mlc::String> {
+auto __match_subject = body;
+if (std::holds_alternative<ast::ExprExtern>((*__match_subject))) {
+const ast::ExprExtern& exprExtern = std::get<ast::ExprExtern>((*__match_subject));
+auto [__0, __1, attributes, __3] = exprExtern; return attributes;
+}
+return [&]() {
+auto empty_attributes = mlc::Array<mlc::String>{};
+return empty_attributes;
+}();
+std::abort();
+}();
+register_decl_fn_into_registry(registry, name, type_parameters, trait_bounds, parameters, return_type, concurrency_attributes);
 return true;
 }();
 }
@@ -714,19 +764,22 @@ std::abort();
 void registry_decl_noop() noexcept{
 
 }
-void register_decl_extern_type_into_registry(TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept{
+void register_decl_extern_type_into_registry(TypeRegistry& registry, mlc::String type_name, mlc::String defining_path, mlc::Array<mlc::String> concurrency_attributes) noexcept{
   registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, {});
   registry.adt_index.algebraic_decl_variant_names.set(type_name, {});
   registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, {});
-  return record_type_defining_path(registry, type_name, defining_path);
+  record_type_defining_path(registry, type_name, defining_path);
+  if ((concurrency_attributes.length() > 0))   {
+    registry.function_index.type_concurrency_attributes.set(type_name, concurrency_attributes);
+  }
 }
 bool register_decl_extern_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{
   return [&]() -> bool {
 auto __match_subject = declaration;
 if (std::holds_alternative<ast::DeclExternType>((*__match_subject))) {
 const ast::DeclExternType& declExternType = std::get<ast::DeclExternType>((*__match_subject));
-auto [type_name, __1, __2, __3, name_span] = declExternType; return [&]() {
-register_decl_extern_type_into_registry(registry, type_name, name_span.file);
+auto [type_name, __1, __2, __3, concurrency_attributes, name_span] = declExternType; return [&]() {
+register_decl_extern_type_into_registry(registry, type_name, name_span.file, concurrency_attributes);
 return true;
 }();
 }

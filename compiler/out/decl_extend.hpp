@@ -70,7 +70,7 @@ auto [mangled, __1, __2, parameters, return_type, body, __6, __7, __8] = semanti
 auto __match_subject = body;
 if (std::holds_alternative<semantic_ir::SemanticExpressionExtern>((*__match_subject))) {
 const semantic_ir::SemanticExpressionExtern& semanticExpressionExtern = std::get<semantic_ir::SemanticExpressionExtern>((*__match_subject));
-auto [__0, __1, __2, __3] = semanticExpressionExtern; return [&]() {
+auto [__0, __1, __2, __3, __4] = semanticExpressionExtern; return [&]() {
 auto generated = gen_extend_extern_method(mangled, type_name, parameters, return_type, trait_name, context, context_resolve_fn);
 return [&]() -> mlc::Array<mlc::String> {
   if ((generated.length() > 0))   {

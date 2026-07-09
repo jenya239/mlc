@@ -254,7 +254,7 @@ fn parser_record_error_if_eof_expect_equal(state: Parser) -> Parser =
 
 fn parse_trait_method_body(where_parser: Parser) -> ExprResult =
   if where_parser.kind().is_equal() then parse_expr(where_parser.advance())
-  else expression_parse_result(Shared.new(ExprExtern("", "", where_parser.span_at_cursor())), where_parser)
+  else expression_parse_result(Shared.new(ExprExtern("", "", [], where_parser.span_at_cursor())), where_parser)
   end
 
 fn parse_import_decl(parser: Parser) -> DeclResult = do
@@ -394,7 +394,7 @@ fn parse_extend_extern_method(parser: Parser, type_name: string) -> DeclResult =
   const after_rparen = rest_parsed.parser.advance()
   const return_type_parsed = parse_type(parser_after_optional_arrow(after_rparen))
   declaration_parse_result(
-    Shared.new(DeclFn(mangled_name, [], [], params, return_type_parsed.value, Shared.new(ExprExtern("", "", extern_span)), [])),
+    Shared.new(DeclFn(mangled_name, [], [], params, return_type_parsed.value, Shared.new(ExprExtern("", "", [], extern_span)), [])),
     return_type_parsed.parser)
 end
 
@@ -413,11 +413,11 @@ fn is_extern_ident_expr(expression: Shared<Expr>) -> bool =
 
 fn parse_extend_method_body(after_eq: Parser) -> ExprResult = do
   if after_eq.kind().is_extern() then
-    return expression_parse_result(Shared.new(ExprExtern("", "", after_eq.span_at_cursor())), after_eq.advance())
+    return expression_parse_result(Shared.new(ExprExtern("", "", [], after_eq.span_at_cursor())), after_eq.advance())
   end
   const body_expr_parsed = parse_expr(after_eq)
   if is_extern_ident_expr(body_expr_parsed.value) then
-    return expression_parse_result(Shared.new(ExprExtern("", "", expr_span(body_expr_parsed.value))), body_expr_parsed.parser)
+    return expression_parse_result(Shared.new(ExprExtern("", "", [], expr_span(body_expr_parsed.value))), body_expr_parsed.parser)
   end
   body_expr_parsed
 end
@@ -503,6 +503,99 @@ fn parse_extern_lib_declaration(parser: Parser) -> DeclResult = do
   declaration_parse_result(Shared.new(DeclExternLib(library_name, extern_span)), after_lib.advance())
 end
 
+type ExternConcurrencyAttrsParse = ExternConcurrencyAttrsParse {
+  attributes: [string],
+  parser: Parser
+}
+
+fn empty_concurrency_attribute_list() -> [string] = do
+  let empty_attributes: [string] = []
+  empty_attributes
+end
+
+fn is_extern_concurrency_attribute_name(name: string) -> bool =
+  name == 'blocking' || name == 'thread_safe' || name == 'thread_affine'
+
+fn parse_one_extern_concurrency_attribute(parser: Parser) -> ExternConcurrencyAttrsParse =
+  if parser.kind().is_op() && parser.kind().op_val() == "!" then
+    parse_negated_extern_concurrency_attribute(parser)
+  else
+    parse_plain_extern_concurrency_attribute(parser)
+  end
+
+fn parse_negated_extern_concurrency_attribute(parser: Parser) -> ExternConcurrencyAttrsParse = do
+  const after_bang = parser.advance()
+  if !after_bang.kind().is_ident() then
+    return ExternConcurrencyAttrsParse {
+      attributes: empty_concurrency_attribute_list(),
+      parser: parser
+    }
+  end
+  const attribute_name = after_bang.kind().ident()
+  if !is_extern_concurrency_attribute_name(attribute_name) then
+    return ExternConcurrencyAttrsParse {
+      attributes: empty_concurrency_attribute_list(),
+      parser: parser
+    }
+  end
+  finish_extern_concurrency_attribute(after_bang.advance(), "!" + attribute_name, attribute_name)
+end
+
+fn parse_plain_extern_concurrency_attribute(parser: Parser) -> ExternConcurrencyAttrsParse = do
+  if !parser.kind().is_ident() then
+    return ExternConcurrencyAttrsParse {
+      attributes: empty_concurrency_attribute_list(),
+      parser: parser
+    }
+  end
+  const attribute_name = parser.kind().ident()
+  if !is_extern_concurrency_attribute_name(attribute_name) then
+    return ExternConcurrencyAttrsParse {
+      attributes: empty_concurrency_attribute_list(),
+      parser: parser
+    }
+  end
+  finish_extern_concurrency_attribute(parser.advance(), attribute_name, attribute_name)
+end
+
+fn finish_extern_concurrency_attribute(
+  after_name: Parser,
+  attribute_token_start: string,
+  attribute_name: string
+) -> ExternConcurrencyAttrsParse = do
+  let mut state = after_name
+  let mut attribute_token = attribute_token_start
+  if attribute_name == 'thread_affine' && state.kind().is_lparen() then
+    state = state.advance()
+    if state.kind().is_ident() then
+      const affinity_name = state.kind().ident()
+      state = state.advance()
+      attribute_token = attribute_token + "(" + affinity_name + ")"
+      if state.kind().is_rparen() then state = state.advance() end
+    end
+  end
+  ExternConcurrencyAttrsParse {
+    attributes: [attribute_token],
+    parser: state
+  }
+end
+
+fn parse_extern_concurrency_attributes(parser: Parser) -> ExternConcurrencyAttrsParse = do
+  let mut state = parser
+  let mut attributes = empty_concurrency_attribute_list()
+  let mut keep_parsing = true
+  while keep_parsing do
+    const one_attribute = parse_one_extern_concurrency_attribute(state)
+    if one_attribute.attributes.length() == 0 then
+      keep_parsing = false
+    else
+      attributes = attributes.concat(one_attribute.attributes)
+      state = one_attribute.parser
+    end
+  end
+  ExternConcurrencyAttrsParse { attributes: attributes, parser: state }
+end
+
 fn parse_extern_type_declaration(parser: Parser) -> DeclResult = do
   const extern_span = parser.span_at_cursor()
   const after_extern = parser.advance()
@@ -536,7 +629,7 @@ fn parse_extern_type_declaration(parser: Parser) -> DeclResult = do
   end
   const extern_header = state.kind().str_val()
   state = state.advance()
-  let drop_function_name = ''
+  let mut drop_function_name = ''
   if state.kind().is_ident() && state.kind().ident() == 'drop' then
     state = state.advance()
     if state.kind().is_str() then
@@ -548,9 +641,16 @@ fn parse_extern_type_declaration(parser: Parser) -> DeclResult = do
         state.record_parse_error('parse: expected deleter string after drop'))
     end
   end
+  const concurrency_attrs_parsed = parse_extern_concurrency_attributes(state)
   declaration_parse_result(
-    Shared.new(DeclExternType(type_name, c_type_name, extern_header, drop_function_name, extern_span)),
-    state)
+    Shared.new(DeclExternType(
+      type_name,
+      c_type_name,
+      extern_header,
+      drop_function_name,
+      concurrency_attrs_parsed.attributes,
+      extern_span)),
+    concurrency_attrs_parsed.parser)
 end
 
 fn parse_extern_fn_body(where_parser: Parser, extern_keyword_span: Span) -> ExprResult = do
@@ -563,28 +663,34 @@ fn parse_extern_fn_body(where_parser: Parser, extern_keyword_span: Span) -> Expr
         const after_from = after_c_name.advance()
         if after_from.kind().is_str() then
           const extern_header = after_from.kind().str_val()
+          const after_header = after_from.advance()
+          const concurrency_attrs_parsed = parse_extern_concurrency_attributes(after_header)
           return expression_parse_result(
-            Shared.new(ExprExtern(extern_c_name, extern_header, extern_keyword_span)),
-            after_from.advance())
+            Shared.new(ExprExtern(
+              extern_c_name,
+              extern_header,
+              concurrency_attrs_parsed.attributes,
+              extern_keyword_span)),
+            concurrency_attrs_parsed.parser)
         else
           return expression_parse_result(
-            Shared.new(ExprExtern("", "", extern_keyword_span)),
+            Shared.new(ExprExtern("", "", [], extern_keyword_span)),
             after_from.record_parse_error('parse: expected header string after from in extern fn'))
         end
       else
         return expression_parse_result(
-          Shared.new(ExprExtern("", "", extern_keyword_span)),
+          Shared.new(ExprExtern("", "", [], extern_keyword_span)),
           after_c_name.record_parse_error('parse: expected from after C name in extern fn'))
       end
     else if after_equal.kind().is_extern() then
       return expression_parse_result(
-        Shared.new(ExprExtern("", "", after_equal.span_at_cursor())),
+        Shared.new(ExprExtern("", "", [], after_equal.span_at_cursor())),
         after_equal.advance())
     else
       return parse_expr(after_equal)
     end
   end
-  expression_parse_result(Shared.new(ExprExtern("", "", extern_keyword_span)), where_parser)
+  expression_parse_result(Shared.new(ExprExtern("", "", [], extern_keyword_span)), where_parser)
 end
 
 fn parse_function_declaration(parser: Parser) -> DeclResult = do
@@ -909,7 +1015,7 @@ fn parse_trait_body(parser: Parser, trait_name: string, type_params: [string]) -
         const where_parse_extern = parse_where_clause_opt(return_type_parsed.parser)
         const merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.value)
         const extern_method_span = where_parse_extern.parser.span_at_cursor()
-        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, Shared.new(ExprExtern("", "", extern_method_span)), where_parse_extern.value)))
+        methods.push(Shared.new(DeclFn(mangled, type_params, merged_trait_bounds_extern, params_parsed.value, return_type_parsed.value, Shared.new(ExprExtern("", "", [], extern_method_span)), where_parse_extern.value)))
         state = where_parse_extern.parser
       else
         state = parser_after_extern.record_parse_error('parse: expected fn after extern in trait body')

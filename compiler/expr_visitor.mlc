@@ -51,7 +51,7 @@ where Visitor: ExprVisitor
   SemanticExpressionU8(byte_value, type_value, _) => expression_visitor.visit_u8(byte_value, type_value),
   SemanticExpressionUsize(size_value, type_value, _) => expression_visitor.visit_usize(size_value, type_value),
   SemanticExpressionChar(character_value, type_value, _) => expression_visitor.visit_char(character_value, type_value),
-  SemanticExpressionExtern(type_value, _, _, _) => expression_visitor.visit_extern(type_value),
+  SemanticExpressionExtern(type_value, _, _, _, _) => expression_visitor.visit_extern(type_value),
   SemanticExpressionIdent(name_value, type_value, _) => expression_visitor.visit_ident(name_value, type_value),
   SemanticExpressionBin(operation, left_expression, right_expression, type_value, _) =>
     expression_visitor.visit_bin(operation, left_expression, right_expression, type_value),

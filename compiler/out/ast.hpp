@@ -326,7 +326,8 @@ struct ExprQuestion {
 struct ExprExtern {
   mlc::String field0;
   mlc::String field1;
-  Span field2;
+  mlc::Array<mlc::String> field2;
+  Span field3;
 };
 struct ExprLambda {
   mlc::Array<mlc::String> field0;
@@ -463,7 +464,8 @@ struct DeclExternType {
   mlc::String field1;
   mlc::String field2;
   mlc::String field3;
-  Span field4;
+  mlc::Array<mlc::String> field4;
+  Span field5;
 };
 struct DeclExported {
   std::shared_ptr<Decl> field0;

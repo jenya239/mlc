@@ -157,7 +157,7 @@ mlc::Array<mlc::String> visit_expr(std::shared_ptr<ast::Expr> expression, mlc::A
 [&](const ast::ExprU8& exprU8) { auto [__0, __1] = exprU8; return escaping; },
 [&](const ast::ExprUsize& exprUsize) { auto [__0, __1] = exprUsize; return escaping; },
 [&](const ast::ExprChar& exprChar) { auto [__0, __1] = exprChar; return escaping; },
-[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2] = exprExtern; return escaping; },
+[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return escaping; },
 [&](const ast::ExprBin& exprBin) { auto [__0, left, right, __3] = exprBin; return visit_expr(right, watched, visit_expr(left, watched, escaping)); },
 [&](const ast::ExprUn& exprUn) { auto [__0, operand, __2] = exprUn; return visit_expr(operand, watched, escaping); },
 [&](const ast::ExprCall& exprCall) { auto [callee, arguments, __2] = exprCall; return visit_call_like(callee, arguments, watched, escaping); },
@@ -233,7 +233,7 @@ mlc::Array<mlc::String> collect_idents_used_as_values_in_expr(std::shared_ptr<as
 [&](const ast::ExprU8& exprU8) { auto [__0, __1] = exprU8; return names; },
 [&](const ast::ExprUsize& exprUsize) { auto [__0, __1] = exprUsize; return names; },
 [&](const ast::ExprChar& exprChar) { auto [__0, __1] = exprChar; return names; },
-[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2] = exprExtern; return names; },
+[&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return names; },
 [&](const ast::ExprBin& exprBin) { auto [__0, left, right, __3] = exprBin; return collect_idents_used_as_values_in_expr(right, collect_idents_used_as_values_in_expr(left, names)); },
 [&](const ast::ExprUn& exprUn) { auto [__0, operand, __2] = exprUn; return collect_idents_used_as_values_in_expr(operand, names); },
 [&](const ast::ExprCall& exprCall) { auto [callee, arguments, __2] = exprCall; return [&]() {

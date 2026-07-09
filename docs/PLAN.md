@@ -384,7 +384,7 @@ compiler/
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
-| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **in progress** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-6 done (RawPointer, `extern fn`/`extern lib`, `extern type`+`drop`, C function pointer type); STEP=7 **next** (concurrency metadata on extern); STEP=8 verify-gate+close |
+| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **in progress** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-7 done (incl. C fptr + concurrency attrs); STEP=8 **next** (verify-gate+close) |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **blocked** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — личный проект пользователя (media-фреймворк, flash-like), жёстко блокирован закрытием FFI_LAYER (STEP=1-6) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер не блокирован FFI_LAYER (может стартовать после STEP=3); Postgres/crypto — после FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **open** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](agent/TRACK_API_CLIENT.md) open, STEP=1 next (исправить `JsonNumber(f32)`→`f64`, `JsonObject`→`Map`). Не зависит от FFI_LAYER/concurrency — может стартовать сразу |
@@ -401,11 +401,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_TASKSCOPE STEP=1–4 (**closed** 2026-07-09)
   → CONCURRENCY_TEST_HARNESS T5 (**done** 2026-07-09); T6 deferred
   → CONCURRENCY_ISOLATE STEP=1–4 (**closed** 2026-07-09)
-  → FFI_LAYER STEP=1-6 (**done** 2026-07-09: RawPointer, extern fn codegen,
-    extern lib → -l, extern type + drop RAII, C function pointer type); STEP=7 (**next** —
-    concurrency metadata on extern) → STEP=8 verify-gate+close
+  → FFI_LAYER STEP=1-7 (**done** 2026-07-09: RawPointer, extern fn codegen,
+    extern lib → -l, extern type + drop RAII, C function pointer type,
+    concurrency attrs); STEP=8 (**next** — verify-gate+close)
   → API_CLIENT (не блокирован ничем выше — можно брать параллельно/вместо
-    FFI_LAYER STEP=7+ при желании; STEP=1 next — JsonNumber f32→f64,
+    FFI_LAYER STEP=8 при желании; STEP=1 next — JsonNumber f32→f64,
     JsonObject→Map)
   → CONCURRENCY_SUPERVISOR (deferred; after FFI polish / chat-server gate)
   → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
