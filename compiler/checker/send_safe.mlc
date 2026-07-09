@@ -1,49 +1,113 @@
-// Send-safe types for cross-thread channel transfer (TRACK_CONCURRENCY STEP=4).
+// Send / Sync type predicates (TRACK_CONCURRENCY_V2 STEP=1).
+// Send: value may be transferred to another thread.
+// Sync: references may be shared across threads concurrently.
+// Trait name for Sync axis is `Sync` (not `Shared` — that name is the Rc type).
 
 import { Type, TypeRegistry, TUnknown, TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
          TArray, TShared, TFn, TGeneric, TPair, TTuple, TNamed, TAssoc } from './registry'
 
-export fn type_is_send_safe(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+export fn type_is_send(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
   match type_value {
     TUnknown => true,
     TI32 | TString | TBool | TUnit | TI64 | TF64 | TU8 | TUsize | TChar => true,
     TArray(_) | TShared(_) | TFn(_, _) => false,
     TAssoc(_, _) => false,
     TTuple(parameter_types) =>
-      parameter_types.all(entry => type_is_send_safe(entry, registry)),
-    TNamed(record_name) => type_is_send_safe_named(record_name, registry),
+      parameter_types.all(entry => type_is_send(entry, registry)),
+    TNamed(record_name) => type_is_send_named(record_name, registry),
     TGeneric(type_name, type_arguments) =>
-      type_is_send_safe_generic(type_name, type_arguments, registry),
+      type_is_send_generic(type_name, type_arguments, registry),
     TPair(_, _) => false
   }
 
-fn type_is_send_safe_field(
+// Alias for Channel.send / Arc.new call sites (TRACK_CONCURRENCY naming).
+export fn type_is_send_safe(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+  type_is_send(type_value, registry)
+
+export fn type_is_sync(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+  match type_value {
+    TUnknown => true,
+    TI32 | TString | TBool | TUnit | TI64 | TF64 | TU8 | TUsize | TChar => true,
+    TArray(_) | TShared(_) | TFn(_, _) => false,
+    TAssoc(_, _) => false,
+    TTuple(parameter_types) =>
+      parameter_types.all(entry => type_is_sync(entry, registry)),
+    TNamed(record_name) => type_is_sync_named(record_name, registry),
+    TGeneric(type_name, type_arguments) =>
+      type_is_sync_generic(type_name, type_arguments, registry),
+    TPair(_, _) => false
+  }
+
+fn type_is_send_field(
   field_map: Map<string, Shared<Type>>,
   field_name: string,
   registry: TypeRegistry
 ) -> bool =
-  if field_map.has(field_name) then type_is_send_safe(field_map.get(field_name), registry) else false
+  if field_map.has(field_name) then type_is_send(field_map.get(field_name), registry) else false
 
-fn type_is_send_safe_named(record_name: string, registry: TypeRegistry) -> bool = do
+fn type_is_send_named(record_name: string, registry: TypeRegistry) -> bool = do
   if !registry.has_fields(record_name) then return false end
   const field_map = registry.fields_for(record_name)
   const field_names = registry.record_field_names_ordered_for(record_name)
-  field_names.all(field_name => type_is_send_safe_field(field_map, field_name, registry))
+  field_names.all(field_name => type_is_send_field(field_map, field_name, registry))
 end
 
-fn type_is_send_safe_generic(
+fn type_is_sync_field(
+  field_map: Map<string, Shared<Type>>,
+  field_name: string,
+  registry: TypeRegistry
+) -> bool =
+  if field_map.has(field_name) then type_is_sync(field_map.get(field_name), registry) else false
+
+fn type_is_sync_named(record_name: string, registry: TypeRegistry) -> bool = do
+  if !registry.has_fields(record_name) then return false end
+  const field_map = registry.fields_for(record_name)
+  const field_names = registry.record_field_names_ordered_for(record_name)
+  field_names.all(field_name => type_is_sync_field(field_map, field_name, registry))
+end
+
+fn type_is_send_generic(
   type_name: string,
   type_arguments: [Shared<Type>],
   registry: TypeRegistry
 ) -> bool = do
   if type_name == 'Option' && type_arguments.length() == 1 then
-    return type_is_send_safe(type_arguments[0], registry)
+    return type_is_send(type_arguments[0], registry)
   end
   if type_name == 'Result' && type_arguments.length() == 2 then
-    return type_is_send_safe(type_arguments[0], registry) && type_is_send_safe(type_arguments[1], registry)
+    return type_is_send(type_arguments[0], registry) && type_is_send(type_arguments[1], registry)
+  end
+  if type_name == 'Arc' && type_arguments.length() == 1 then
+    return type_is_send(type_arguments[0], registry)
+  end
+  if type_name == 'Mutex' && type_arguments.length() == 1 then
+    return type_is_send(type_arguments[0], registry)
   end
   if type_name == 'Channel' || type_name == 'Task' || type_name == 'Map' || type_name == 'Shared'
-    || type_name == 'Arc' || type_name == 'Mutex' || type_name == 'Future' then return false end
+    || type_name == 'Future' || type_name == 'Weak' then return false end
   if type_arguments.length() == 0 then return false end
-  type_arguments.all(argument => type_is_send_safe(argument, registry))
+  type_arguments.all(argument => type_is_send(argument, registry))
+end
+
+fn type_is_sync_generic(
+  type_name: string,
+  type_arguments: [Shared<Type>],
+  registry: TypeRegistry
+) -> bool = do
+  if type_name == 'Option' && type_arguments.length() == 1 then
+    return type_is_sync(type_arguments[0], registry)
+  end
+  if type_name == 'Result' && type_arguments.length() == 2 then
+    return type_is_sync(type_arguments[0], registry) && type_is_sync(type_arguments[1], registry)
+  end
+  // Mutex is always Sync (interior mutability behind lock).
+  if type_name == 'Mutex' && type_arguments.length() == 1 then return true end
+  // Arc<T> is Sync iff T is Sync.
+  if type_name == 'Arc' && type_arguments.length() == 1 then
+    return type_is_sync(type_arguments[0], registry)
+  end
+  if type_name == 'Channel' || type_name == 'Task' || type_name == 'Map' || type_name == 'Shared'
+    || type_name == 'Future' || type_name == 'Weak' then return false end
+  if type_arguments.length() == 0 then return false end
+  type_arguments.all(argument => type_is_sync(argument, registry))
 end

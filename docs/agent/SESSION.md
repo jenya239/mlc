@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | pick-next |
-| active_track | TRACK_CONCURRENCY_V2 STEP=1 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_V2 STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:30 (Driver TRACK_CONCURRENCY_V2 STEP=1 — Send/Sync predicates)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 11:56 |
+| elapsed | ~34 min |
+| done    | `send_safe.mlc`: `type_is_send` + alias `type_is_send_safe`; `type_is_sync`. Arc/Mutex Send iff T Send; Mutex always Sync; Arc Sync iff T Sync. Tests: `test_send_sync.mlc` wired in suite_registry. |
+| verify  | mlcc probe ALL PASSED; `--check-only` channel ok / rejects Array; Arc.new rejects Array; `mlcc --check-only compiler/main.mlc` 0. |
+| result  | STEP=1 done. Plain: Send/Sync оси разведены. |
+| issues  | Full `build_tests.sh` still red (Ruby HOF/namespace) — not used for verify. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_V2 — rendezvous Channel capacity 0 |
 
 ### Turn 2026-07-09 11:55 (Planner pick-next — CONCURRENCY_V2 STEP=1)
 

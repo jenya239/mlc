@@ -5,6 +5,7 @@ import { lexer_tests } from '../test_lexer'
 import { parser_tests } from '../test_parser'
 import { checker_tests } from '../test_checker'
 import { escape_analysis_tests } from '../test_escape_analysis'
+import { send_sync_tests } from '../test_send_sync'
 import { closure_escape_codegen_tests } from '../test_closure_escape_codegen'
 import { codegen_tests } from '../test_codegen'
 import { pipe_and_record_update_tests } from '../test_pipe_and_record_update'
@@ -103,6 +104,8 @@ export fn types_suite_results() -> [TestResult] = do
   results = append_suite_results(results, checker_tests())
   print('[compiler tests]   sub: escape_analysis\n')
   results = append_suite_results(results, escape_analysis_tests())
+  print('[compiler tests]   sub: send_sync\n')
+  results = append_suite_results(results, send_sync_tests())
   print('[compiler tests]   sub: closure_escape_codegen\n')
   results = append_suite_results(results, closure_escape_codegen_tests())
   results = append_suite_results(results, trait_param_expand_tests())

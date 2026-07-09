@@ -40,12 +40,11 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=1 — generalize `Send` / add `Sync` predicates in
-`compiler/checker/send_safe.mlc` (`Arc`/`Mutex` Send iff T Send). Trait name:
-`Sync`. HARNESS T1–T4 done; T6 deferred.
+**TRACK_CONCURRENCY_V2** STEP=2 — rendezvous `Channel` capacity 0 (runtime).
+STEP=1 done (`type_is_send`/`type_is_sync`). HARNESS T1–T4 done.
 
-Debt: Ruby `dev_gate_fast` red from CLOSURE STEP=1 HOF templates — prefer mlcc
-path / existing `run_tests` when verifying checker.
+Debt: Ruby `build_tests.sh` / `dev_gate_fast` still red (HOF templates +
+namespace qualify) — verify checker via mlcc probe / `--check-only`.
 
 ## Step sizing (good vs bad)
 

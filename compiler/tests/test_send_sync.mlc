@@ -1,0 +1,48 @@
+// Send / Sync predicate unit tests (TRACK_CONCURRENCY_V2 STEP=1).
+
+import { TestResult, assert_true } from './test_runner'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { empty_registry, TI32, TArray, TShared, TGeneric } from '../checker/registry'
+import { type_is_send, type_is_sync, type_is_send_safe } from '../checker/send_safe'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+export fn send_sync_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+  const registry = empty_registry()
+  const integer_type = Shared.new(TI32)
+  const array_type = Shared.new(TArray(integer_type))
+  const shared_type = Shared.new(TShared(integer_type))
+  const arc_type = Shared.new(TGeneric('Arc', [integer_type]))
+  const mutex_type = Shared.new(TGeneric('Mutex', [integer_type]))
+
+  results.push(assert_true('i32 is Send', type_is_send(integer_type, registry)))
+  results.push(assert_true('i32 is Sync', type_is_sync(integer_type, registry)))
+  results.push(assert_true('Array is not Send', !type_is_send(array_type, registry)))
+  results.push(assert_true('Array is not Sync', !type_is_sync(array_type, registry)))
+  results.push(assert_true('Shared is not Send', !type_is_send(shared_type, registry)))
+  results.push(assert_true('Shared is not Sync', !type_is_sync(shared_type, registry)))
+  results.push(assert_true('Arc<i32> is Send', type_is_send(arc_type, registry)))
+  results.push(assert_true('Arc<i32> is Sync', type_is_sync(arc_type, registry)))
+  results.push(assert_true('Mutex<i32> is Send', type_is_send(mutex_type, registry)))
+  results.push(assert_true('Mutex<i32> is Sync', type_is_sync(mutex_type, registry)))
+  results.push(assert_true('type_is_send_safe aliases type_is_send',
+    type_is_send_safe(arc_type, registry) == type_is_send(arc_type, registry)))
+
+  results.push(assert_true('channel send still rejects Array',
+    check_error_count(
+      'fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end') > 0))
+  results.push(assert_true('channel send accepts i32',
+    check_error_count(
+      'fn main() -> bool = do let c = make_channel(4usize); c.send(7) end') == 0))
+  results.push(assert_true('Arc.new still rejects Array payload',
+    check_error_count('fn main() -> Arc<[i32]> = Arc.new([])') > 0))
+
+  results
+end
