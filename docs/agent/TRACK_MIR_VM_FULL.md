@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0 A–C **done**; Epic 1 STEP=1–4 **done**; Epic 2 STEP=5–6 **done**; STEP=7 next
+**Status:** open, Epic 0 A–C **done**; Epic 1–2 STEP=1–7 **done**; Epic 3 STEP=8 next
 
 | Step | Item | Status |
 |------|------|--------|
@@ -71,7 +71,7 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 |------|-------------|------|
 | 5 | Closures / lambda calls (already partial) — formalize calling convention | **done** |
 | 6 | Mutual recursion, default params desugared | **done** |
-| 7 | `?` / Result propagation in MIR + VM | smoke |
+| 7 | `?` / Result propagation in MIR + VM | **done** |
 
 
 ### Lambda calling convention (STEP=5)
@@ -86,6 +86,13 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 
 - Mutual recursion: already works via `MirCallAssign` + user frames (no forward-decl needed in MIR).
 - Defaults: `MirParam.default_value` (literal MVP); `vm_bind_call_arguments` fills omitted trailing args. C++ still uses header defaults.
+
+
+### Question operator / Result propagation (STEP=7)
+
+- `expr?` in rvalue/let: CondJump on `__mir_result_is_err`; Err → `MirReturn` whole Result; Ok → `__mir_result_ok_value` into local.
+- Natives: `__mir_result_is_err`, `__mir_result_ok_value` (tag `Err`/`Ok` on `VmVariant`).
+- Diff harness: `vm_question*.mlc` are VM-only (C++ emit of `Result<>` lacks `mlc::result::` qualify — pre-existing).
 
 ### Epic 3 � Collections & strings (STEP 8�9)
 

@@ -585,6 +585,12 @@ fn mir_lower_operand_from_expression(
         Ok(local_step) =>
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
+    SemanticExpressionQuestion(_, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
     _ => Err(['mir lower: unsupported expression in operand context'])
   }
 end
@@ -685,6 +691,15 @@ fn mir_lower_rvalue_from_expression(
           })
       },
     SemanticExpressionField(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionQuestion(_, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
@@ -1123,6 +1138,8 @@ fn mir_lower_expression_to_local(
       mir_lower_record_literal_to_local(state, type_name, field_values),
     SemanticExpressionField(object, field_name, _, _) =>
       mir_lower_record_field_to_local(state, object, field_name),
+    SemanticExpressionQuestion(inner, _, _) =>
+      mir_lower_question_to_local(state, inner),
     SemanticExpressionIndex(object, index_expression, _, _) =>
       mir_lower_index_to_local(state, object, index_expression),
     SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>
@@ -1256,10 +1273,11 @@ fn mir_lower_expression_to_local(
       }
   }
 
-fn mir_lower_question_return(
+// `expr?`: if Err → MirReturn whole Result; if Ok → local = Ok payload.
+fn mir_lower_question_to_local(
   state: MirLowerState,
   inner: Shared<SemanticExpression>
-) -> Result<MirLowerState, [string]> =
+) -> Result<MirLowerLocalStep, [string]> =
   match mir_lower_expression_to_local(state, inner) {
     Err(errors) => Err(errors),
     Ok(result_step) => do
@@ -1278,13 +1296,7 @@ fn mir_lower_question_return(
           error_block_step.block_id,
           ok_block_step.block_id))
       branch_state = mir_lower_start_block(branch_state, error_block_step.block_id, 'question_err')
-      const error_value_step = mir_lower_allocate_local(branch_state, '', mir_lower_unknown_type())
-      branch_state = mir_lower_emit_call_assign(
-        error_value_step.state,
-        error_value_step.local_id,
-        '__mir_result_err_value',
-        [MirOperandLocal(result_step.local_id)])
-      branch_state = mir_lower_finish_return(branch_state, MirOperandLocal(error_value_step.local_id))
+      branch_state = mir_lower_finish_return(branch_state, MirOperandLocal(result_step.local_id))
       branch_state = mir_lower_start_block(branch_state, ok_block_step.block_id, 'question_ok')
       const ok_value_step = mir_lower_allocate_local(branch_state, '', mir_lower_unknown_type())
       branch_state = mir_lower_emit_call_assign(
@@ -1292,8 +1304,17 @@ fn mir_lower_question_return(
         ok_value_step.local_id,
         '__mir_result_ok_value',
         [MirOperandLocal(result_step.local_id)])
-      Ok(mir_lower_finish_return(branch_state, MirOperandLocal(ok_value_step.local_id)))
+      Ok(MirLowerLocalStep { state: branch_state, local_id: ok_value_step.local_id })
     end
+  }
+
+fn mir_lower_question_return(
+  state: MirLowerState,
+  inner: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_question_to_local(state, inner) {
+    Err(errors) => Err(errors),
+    Ok(local_step) => Ok(mir_lower_finish_return(local_step.state, MirOperandLocal(local_step.local_id)))
   }
 
 fn mir_lower_while_statement(

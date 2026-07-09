@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 2 STEP=7 — `?` / Result propagation in MIR + VM
-(STEP=6 done: mutual recursion + MirParam literal defaults).
+**TRACK_MIR_VM_FULL** Epic 3 STEP=8 — array/map/string parity with C++ on corpus
+(STEP=7 done: `?` Result propagation via `__mir_result_*`).
 
 ## Step sizing (good vs bad)
 

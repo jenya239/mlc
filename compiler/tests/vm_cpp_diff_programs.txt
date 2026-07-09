@@ -12,5 +12,6 @@ misc/examples/vm_lambda_capture.mlc
 misc/examples/vm_lambda_immediate.mlc
 misc/examples/vm_mutual.mlc
 misc/examples/vm_default_params.mlc
+# vm_question*.mlc: VM --run only (C++ Result<> header needs mlc::result::Result — pre-existing)
 # vm_match_variant.mlc: VM --run only (C++ visit on sum ctor temp is pre-existing codegen gap)
 

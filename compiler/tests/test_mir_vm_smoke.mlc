@@ -200,5 +200,19 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke default params exit', false))
   }
 
+  match vm_smoke_interpret(
+    'fn load() -> Result<i32, i32> = Ok(7)\nfn run() -> Result<i32, i32> = do\n  const value = load()?\n  Ok(value)\nend\nfn unwrap(value: Result<i32, i32>) -> i32 = match value {\n  Ok(x) => x\n  Err(_) => 0\n}\nfn main() -> i32 = unwrap(run())',
+    'vm_question.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke question ok exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke question ok exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn load() -> Result<i32, i32> = Err(3)\nfn run() -> Result<i32, i32> = do\n  const value = load()?\n  Ok(value)\nend\nfn unwrap(value: Result<i32, i32>) -> i32 = match value {\n  Ok(_) => 0\n  Err(e) => e + 4\n}\nfn main() -> i32 = unwrap(run())',
+    'vm_question_err.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke question err exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke question err exit', false))
+  }
+
   results
 end

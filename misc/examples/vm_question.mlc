@@ -1,0 +1,13 @@
+fn load() -> Result<i32, i32> = Ok(7)
+
+fn run() -> Result<i32, i32> = do
+  const value = load()?
+  Ok(value)
+end
+
+fn unwrap(value: Result<i32, i32>) -> i32 = match value {
+  Ok(x) => x
+  Err(_) => 0
+}
+
+fn main() -> i32 = unwrap(run())

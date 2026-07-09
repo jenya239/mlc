@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 13 |
-| step_last | 6 |
-| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=7 |
-| test_gate | ok (mutual/default=7; vm_cpp_diff 12/0) |
+| driver_turns_since_plan | 14 |
+| step_last | 7 |
+| active_track | TRACK_MIR_VM_FULL Epic 3 STEP=8 |
+| test_gate | ok (question ok/err=7; vm_cpp_diff 12/0; question VM-only) |
+
+### Turn 2026-07-09 23:30 (Driver TRACK_MIR_VM_FULL STEP=7 — ? Result propagation)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 23:14 |
+| elapsed | ~16 min |
+| done    | `?` rvalue lower + `__mir_result_is_err`/`ok_value`; fixtures vm_question*; smoke. |
+| verify  | `--run` ok/err/chain=7; dump question blocks; `run_vm_cpp_exit_diff` 12/0 (question VM-only). |
+| result  | STEP=7 done. Plain: `expr?` early-returns Err Result on VM. |
+| issues  | C++ `Result<>` needs `mlc::result::` — fixtures not in diff. Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=8 TRACK_MIR_VM_FULL — array/map/string parity with C++ on corpus |
 
 ### Turn 2026-07-09 23:15 (Driver TRACK_MIR_VM_FULL STEP=6 — mutual recursion / defaults)
 

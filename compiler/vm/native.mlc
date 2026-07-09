@@ -3,7 +3,7 @@
 import { Result, Ok, Err } from '../frontend/ast'
 import {
   VmValue, VmI32, VmBool, VmString, VmArrayValue, VmMapValue, VmVariantValue, VmRecordValue, VmUnit,
-  VmFieldSlot, vm_value_unit, vm_value_int_or_zero,
+  VmVariant, VmFieldSlot, vm_value_unit, vm_value_int_or_zero,
   vm_field_slot_from_value, vm_value_from_field_slot
 } from './value'
 
@@ -25,6 +25,8 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_record_new' then vm_native_record_new(arguments)
   else if name == '__mir_record_field' then vm_native_record_field(arguments)
   else if name == '__mir_shared_new' then vm_native_shared_new(arguments)
+  else if name == '__mir_result_is_err' then vm_native_result_is_err(arguments)
+  else if name == '__mir_result_ok_value' then vm_native_result_ok_value(arguments)
   else Err([`vm: unknown native ${name}`])
 
 export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> Result<VmValue, [string]> = do
@@ -51,6 +53,27 @@ end
 fn vm_native_shared_new(arguments: [VmValue]) -> Result<VmValue, [string]> =
   if arguments.length() != 1 then Err(['vm: __mir_shared_new expects 1 argument'])
   else Ok(arguments[0])
+
+fn vm_native_result_is_err(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_result_is_err expects 1 argument'])
+  else
+    match arguments[0] {
+      VmVariant(variant) => Ok(VmBool(variant.tag == 'Err')),
+      _ => Err(['vm: __mir_result_is_err expects Result variant'])
+    }
+  end
+
+fn vm_native_result_ok_value(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_result_ok_value expects 1 argument'])
+  else
+    match arguments[0] {
+      VmVariant(variant) =>
+        if variant.tag != 'Ok' then Err(['vm: __mir_result_ok_value expects Ok'])
+        else if variant.fields.length() == 0 then Ok(VmUnit)
+        else Ok(vm_value_from_field_slot(variant.fields[0])),
+      _ => Err(['vm: __mir_result_ok_value expects Result variant'])
+    }
+  end
 
 fn vm_native_variant_new(arguments: [VmValue]) -> Result<VmValue, [string]> =
   if arguments.length() == 0 then Err(['vm: __mir_variant_new expects tag argument'])
