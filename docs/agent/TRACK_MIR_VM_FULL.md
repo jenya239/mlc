@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0–3 **done**; Epic 4 STEP=10–11 **done**; STEP=12 next
+**Status:** open, Epic 0–4 **done** (STEP=12 closed Epic 4); Epic 5 **NOT authorized** — next turn is Planner, not STEP=13
 
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —
@@ -129,7 +129,7 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 |------|-------------|------|
 | 10 | Single-file `--run` (current) stable | **done** (`run_single_file_vm_gate.sh`: 18 `--run` + diff 18/0; Tier B self-host p1≡p2) |
 | 11 | Multi-module `--run`: import merge → one MirProgram | **done** (`vm_multi` + `run_multi_module_vm_gate.sh`; unwrap `SemanticDeclarationExported` in MIR lower) |
-| 12 | `--run` on `misc/examples/*` subset (automated list) | script gate — **after this: STOP, see gate above, do not open Epic 5** |
+| 12 | `--run` on `misc/examples/*` subset (automated list) | **done** (`run_examples_vm_gate.sh` 28 programs; Epic 4 closed — **STOP, do not open Epic 5**) |
 
 ### Single-file `--run` stable (STEP=10)
 
@@ -142,6 +142,12 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 - Fixture: `misc/examples/vm_multi/{lib,main}.mlc` (`export fn` + import).
 - Fix: `mir_lower_append_declaration` lowers `sdecl_inner(...)` so `SemanticDeclarationExported` reaches `lower_semantic_function`.
 - Gate: `compiler/tests/run_multi_module_vm_gate.sh` (exit 7).
+
+### Examples subset `--run` (STEP=12)
+
+- Manifest: `compiler/tests/vm_examples_run_programs.txt` (28: all green `vm_*` + `minimal` + `vm_multi`).
+- Gate: `compiler/tests/run_examples_vm_gate.sh` (checks `error:` on stdout **and** stderr — `--run` diagnostics go to stdout).
+- Excluded: legacy demos (`to_string`, unit `main`, broken imports) — not VM blockers.
 
 ### Epic 5 � Compiler-shaped workload (STEP 13�20)
 

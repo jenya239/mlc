@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 18 |
-| step_last | 11 |
-| active_track | TRACK_MIR_VM_FULL Epic 4 STEP=12 |
-| test_gate | ok (vm_multi=7; multi-module gate; CHECK:0; Tier B p1≡p2) |
+| driver_turns_since_plan | 19 |
+| step_last | 12 |
+| active_track | TRACK_MIR_VM_FULL Epic 4 closed — Planner next |
+| test_gate | ok (examples gate 28/0; CHECK:0) |
+
+### Turn 2026-07-10 00:04 (Driver TRACK_MIR_VM_FULL STEP=12 — examples subset `--run`)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 12 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-10 00:03 |
+| elapsed | ~1 min |
+| done    | `vm_examples_run_programs.txt` (28); `run_examples_vm_gate.sh` (stdout+stderr `error:`). Epic 4 closed. |
+| verify  | examples GATE:0 (28); `--check-only` main CHECK:0. |
+| result  | STEP=12 done. Plain: misc/examples VM subset gated; HARD STOP before Epic 5. |
+| issues  | Legacy demos excluded (to_string/unit main). Dirty `compiler/out/*` left. |
+| next    | ROLE=Planner — pick next track from PLAN.md queue (NOT TRACK_MIR_VM_FULL STEP=13 / Epic 5) |
 
 ### Turn 2026-07-10 00:02 (Driver TRACK_MIR_VM_FULL STEP=11 — multi-module `--run`)
 

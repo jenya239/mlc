@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 4 STEP=12 — `--run` on `misc/examples/*` subset (script gate; then HARD STOP)
-(STEP=11 done: `vm_multi` + MIR lower unwraps `SemanticDeclarationExported`).
+**Planner** — pick next track after TRACK_MIR_VM_FULL Epic 4 closed (STEP=12 done).
+Do **not** open Epic 5 / STEP=13 without explicit user command.
 
 ## Step sizing (good vs bad)
 

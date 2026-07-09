@@ -1,0 +1,31 @@
+# misc/examples subset for mlcc --run (TRACK_MIR_VM_FULL Epic 4 STEP=12).
+# Only programs that currently succeed without `error:` on --run.
+# Legacy demos (to_string / unit main / etc.) excluded until fixed.
+misc/examples/minimal.mlc
+misc/examples/vm_hello.mlc
+misc/examples/vm_collections.mlc
+misc/examples/vm_collections_corpus.mlc
+misc/examples/vm_map.mlc
+misc/examples/vm_string.mlc
+misc/examples/vm_array_index.mlc
+misc/examples/vm_match.mlc
+misc/examples/vm_match_guard.mlc
+misc/examples/vm_match_nested.mlc
+misc/examples/vm_match_or.mlc
+misc/examples/vm_match_variant.mlc
+misc/examples/vm_option.mlc
+misc/examples/vm_result.mlc
+misc/examples/vm_shared.mlc
+misc/examples/vm_record.mlc
+misc/examples/vm_record_match.mlc
+misc/examples/vm_lambda.mlc
+misc/examples/vm_lambda_capture.mlc
+misc/examples/vm_lambda_immediate.mlc
+misc/examples/vm_mutual.mlc
+misc/examples/vm_default_params.mlc
+misc/examples/vm_for.mlc
+misc/examples/vm_contains.mlc
+misc/examples/vm_pop.mlc
+misc/examples/vm_question.mlc
+misc/examples/vm_question_err.mlc
+misc/examples/vm_multi/main.mlc
