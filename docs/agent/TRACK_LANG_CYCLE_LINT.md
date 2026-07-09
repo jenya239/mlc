@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md). Depends on:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #5 (Уровень 1 из
 части «память и связность»).
 
-## Status: **open** (блокирован TRACK_LANG_WEAK_SUGAR)
+## Status: **open** (unblocked — TRACK_LANG_WEAK_SUGAR closed 2026-07-09)
 
 **Не полный alias-анализ.** Узкая диагностика уровня lint (см. `docs/MLC.md`
 план линтера — `G1 → G2 (минимальные правила) → ...`), не блокирующая ошибка.

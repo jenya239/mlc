@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md), [../MEMORY_MODEL.md](../MEMORY_MODEL.md).
 Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 (Уровень 0 из части «память и связность»).
 
-## Status: **open**
+## Status: **closed** (2026-07-09)
 
 ## STEP=1 — inventory Ruby `lib/mlc/` — **done** (2026-07-09)
 
@@ -15,10 +15,9 @@ Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 | Extend API | `Shared.downgrade`, `Weak.lock` / `Weak.null` / `Weak.is_valid` in `memory.mlc` |
 | Auto-import | **No** — `Shared.new` is builtin (`static_method_call_rule`); `shared_downgrade` / import `std/core/memory` failed probe (`Unknown identifier`) |
 | Working path today | Inline `extend Shared/Weak` in program (see `test/integration/smart_pointers_e2e_test.rb`: `Shared.downgrade`, `Weak.lock`) |
-| Sugar `.weak()` / `.upgrade()` | **Missing** — probe: `Unknown member 'weak'/'upgrade' for type Shared` |
-| Instance `.downgrade()` | **Missing** as instance method — e2e uses **static** `Shared.downgrade(shared)` |
+| Sugar `.weak()` / `.upgrade()` | Shipped in STEP=2 (Ruby) + STEP=3 (mlcc) |
 
-**Conclusion:** Ruby already has Weak codegen + types; ergonomic gap is (1) sugar aliases `.weak()`/`.upgrade()`, (2) reliable stdlib surface without re-declaring extend. Prefer aliases over renaming `downgrade`/`lock` (keep e2e).
+**Conclusion:** Ruby already had Weak codegen + types; ergonomic gap closed via `.weak()`/`.upgrade()` aliases.
 
 ## STEP=2 — Ruby: `.weak()` / `.upgrade()` sugar (lib/mlc only) — **done** (2026-07-09)
 
@@ -37,16 +36,22 @@ Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 | Codegen | `weak_method_gen.mlc` + `method_gen.mlc` dispatch; `type_gen.mlc` Weak→`std::weak_ptr` |
 | Test | `test_weak_sugar.mlc` (check + codegen contains) |
 
-## STEP=4 — verify-gate + optional compiler AST use of `Weak`
+## STEP=4 — verify-gate + optional compiler AST use of `Weak` — **done** (2026-07-09)
 
-Self-host diff + one real `Weak` use if a cycle site exists.
+| Check | Result |
+|-------|--------|
+| `compiler/build.sh` | ok |
+| self-host p1 / mlcc2 / p2 | identical (`diff -rq` empty) |
+| `scripts/regression_gate.sh` | 20/0 |
+| Optional `Weak` in compiler AST | **skipped** — no parent/cycle ownership site in `compiler/**/*.mlc`; adoption deferred to TRACK_LANG_CYCLE_LINT |
 
 ## Verify gate (track close)
 
 ```bash
-bundle exec rake test_mlc   # after STEP=2
-# after STEP=3:
 compiler/build.sh
 compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-…
+MLC_CXX=g++ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
+.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
+diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2 --exclude=obj
+scripts/regression_gate.sh
 ```

@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 3 |
-| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=4 |
+| driver_turns_since_plan | 10 |
+| step_last | 4 |
+| active_track | TRACK_LANG_WEAK_SUGAR **closed** |
 | test_gate | ok |
+
+### Turn 2026-07-09 05:05 (Driver TRACK_LANG_WEAK_SUGAR STEP=4 — verify-gate; close track)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_WEAK_SUGAR |
+| started | 2026-07-09 04:48 |
+| elapsed | ~17 min |
+| done    | Fresh `compiler/build.sh`; self-host p1/mlcc2/p2 identical; `regression_gate` 20/0. Optional compiler `Weak` use skipped (no cycle site). TRACK closed. |
+| result  | self-host diff empty; regression 20/0. Plain: трек weak sugar закрыт после полной проверки. |
+| issues  | none |
+| next    | ROLE=Cleaner STEP=cleanup-sweep — junk/untracked hygiene (driver_turns=10); then Driver TRACK_LANG_CYCLE_LINT STEP=1 |
 
 ### Turn 2026-07-09 04:45 (Driver TRACK_LANG_WEAK_SUGAR STEP=3 — mlcc .weak/.upgrade parity)
 
