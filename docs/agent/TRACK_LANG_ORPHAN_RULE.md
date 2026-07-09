@@ -3,74 +3,105 @@
 Parent: [../PLAN.md](../PLAN.md). Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #7.
 
-## Status: **open**
+## Status: **open** (STEP=1 done 2026-07-09 — inventory)
 
 **Проблема:** сейчас `extend T : Trait` разрешён в любом модуле, без
-проверки когерентности. При росте кодовой базы (self-host уже 5000+ строк,
-30 `extend` по `compiler/`) конфликтующие impl одного и того же `(T, Trait)`
-в разных модулях — трудноуловимый класс ошибок (какая реализация победит на
-линковке/в codegen — недетерминировано без явного правила).
+проверки когерентности.
 
 ## Правило
 
 `extend T : Trait` разрешён только в модуле, где объявлен **`T`** ИЛИ
-**`Trait`** (классический orphan rule, как в Rust/Haskell — не давать
-реализовывать чужой трейт для чужого типа).
+**`Trait`**. Bare `extend T { … }` (без `: Trait`) — вне правила.
 
-## Файлы
+## Steps
 
-- `compiler/checker/registry.mlc:521` (`register_decl_extend_into_registry`),
-  `:605` (`register_extend_method_into_registry`), `:630`
-  (`register_decl_extend_if`) — здесь `extend` регистрируется в
-  `TypeRegistry`/`ImplRegistry`. Нужно: при регистрации знать модуль
-  объявления `T` (искать, откуда типы вообще регистрируются с привязкой к
-  модулю — вероятно `TypeRegistry` уже хранит модуль объявления типа для
-  других целей, например импортов) и модуль объявления `Trait` аналогично,
-  сравнить с модулем текущего `extend`.
-- Если `TypeRegistry`/`TraitRegistry` пока не хранят модуль объявления —
-  это блокер побольше, чем «просто добавить проверку»: сначала завести это
-  поле, обновить конструкторы регистрации. Зафиксировать в этом треке, не
-  делать тихо в рамках другой задачи.
+| Step | Status | Notes |
+|------|--------|-------|
+| 1 | **done** | Inventory: no module maps in TypeRegistry; ownership via Span.file / LoadItem.path |
+| 2 | pending | Add `type_defining_path` + `trait_defining_path` to registry (from Decl span.file); builtins → `""` |
+| 3 | pending | Orphan diagnostic on `DeclExtend` with non-empty trait (E-code TBD); skip bare extend |
+| 4 | pending | Tests: same-module ok; orphan red; builtin+local trait ok; self-check compiler/ |
+| 5 | pending | verify-gate + close |
 
-## Repro
+## Inventory (STEP=1, `compiler/` only)
 
-Файл `a.mlc`:
+### TypeRegistry — **no module ownership today**
+
+`TypeRegistry` / `AdtIndex` / `FunctionIndex` / `RecordIndex` store names only
+(`trait_impls: Map<string, [string]>`, algebraic/record maps, etc.).
+`register_decl_extend_into_registry` / `register_decl_type_into_registry` /
+`register_decl_trait_into_registry` take **no path**.
+
+`build_registry(program)` walks a **flattened** `Program` after merge — path
+association from `LoadItem` is discarded at registry build.
+
+### Where module path *does* exist
+
+| Layer | Fact |
+|-------|------|
+| `LoadItem.path` | Per-module after `merge_program` (`ir/load_item.mlc`) |
+| `ModularCompileInput.load_items` | Driver → pipeline has items |
+| `Span.file` | Set from `Parser.source_path` on DeclType / DeclTrait / DeclExtend |
+| `check` / `gather_program_check` | Sees flat `full_program` only — no LoadItems |
+
+**Chosen approach for STEP=2:** record defining path from `decl_span(…).file`
+when registering `DeclType` / `DeclTypeAlias` / `DeclTrait` (and exported
+wrappers). Orphan check compares `DeclExtend` span.file to
+`type_defining_path[T]` and `trait_defining_path[Trait]` (use
+`trait_base_name`). Prefer this over threading LoadItems into check — spans
+already on AST; unit tests that parse with `source_path=""` need explicit
+paths in orphan tests.
+
+**Not chosen:** scanning LoadItems only in driver — checker unit tests call
+`check`/`program_diagnostics` without merge.
+
+### Self-check snapshot (`compiler/`, exclude `out/`)
+
+Trait extends (`extend T : Trait`): **6** total.
+
+| Site | T | Trait | Same-file T? | Allowed under rule? |
+|------|---|-------|--------------|---------------------|
+| `names.mlc` | NamesPass | ExprVisitor | yes | yes (owns T) |
+| `check_mutations.mlc` | MutationsPass | ExprVisitor | yes | yes |
+| `expr_visitor_cpp.mlc` | CodegenPass | ExprVisitor | yes | yes |
+| `test_expr_visitor.mlc` | TagExprVisitor | ExprVisitor | yes (local type) | yes |
+| `tests/e2e/trait_*.mlc` | i32 | Display | Display local; i32 builtin | yes if builtins treated as “any module may extend with local Trait” |
+
+`ExprVisitor` defined in `expr_visitor.mlc` — cross-file trait is fine when T
+is local. **0** production orphan candidates found among current trait extends.
+
+Bare `extend T` (methods only): many (Shared, Parser, TypeRegistry, …) — **out
+of scope** for orphan rule.
+
+### Policy notes (fix in STEP=2/3)
+
+1. **Builtins** (`i32`, `string`, …): no defining path → orphan allowed iff
+   Trait is defined in the extend module (matches e2e Display).
+2. **Generic trait name** on extend: compare with `trait_base_name` (same as
+   From/`trait_impls`).
+3. **Empty `source_path`**: skip orphan emit or treat as same-module — decide
+   in STEP=3 tests (prefer: no diagnostic when either path empty, so existing
+   string-parse tests stay green).
+
+## Repro (target after STEP=3)
+
 ```mlc
+// a.mlc
 export type Point = { x: i32, y: i32 }
+export trait Display { fn to_string(self: Display) -> string }
+
+// b.mlc
+import { Point, Display } from "./a"
+extend Point : Display { fn to_string(self: Point) -> string = "p" }
 ```
 
-Файл `b.mlc` (другой модуль, не объявляет ни `Point`, ни `Display`):
-```mlc
-import { Point } from './a'
-
-extend Point : Display {   // orphan — ни Point, ни Display не объявлены здесь
-  fn to_string(self: Point) -> string = "point"
-}
-```
-
-До фикса: компилируется без ошибок. После: compile error "orphan impl:
-`extend Point : Display` must be declared in the module defining `Point` or
-`Display`".
-
-Контрольный случай (не должен ломаться) — `extend` в модуле, объявляющем
-сам тип: любой существующий `extend` в `compiler/` (например
-`compiler/checker/names.mlc` — `extend NamesPass : ExprVisitor<...>`, если
-`NamesPass` объявлен в том же файле) должен продолжать компилироваться без
-изменений — это регресс-проверка того, что правило не ловит легитимные
-случаи.
+Expect: orphan error. Control: `extend` in `a.mlc` — ok.
 
 ## Verify gate
 
 ```bash
-bundle exec rake test_compiler_mlc
+scripts/dev_gate_fast.sh
+# before close:
 compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+# self-host p1/mlcc2/p2 + regression_gate + build_tests.sh
 ```
-
-**Важно:** перед merge — прогнать правило на всём `compiler/` и `lib/mlc/`
-(если применимо к Ruby-эталону) как self-check: 0 существующих `extend`
-должны нарушать новое правило. Если что-то нарушает — это уже существующий
-технический долг, зафиксировать отдельно, не менять правило под него молча.

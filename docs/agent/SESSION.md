@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **closed**; next TRACK_LANG_ORPHAN_RULE |
+| driver_turns_since_plan | 4 |
+| step_last | 1 |
+| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=1 done; next STEP=2 registry paths) |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:19 (Driver TRACK_LANG_ORPHAN_RULE STEP=1 — inventory module ownership)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_ORPHAN_RULE |
+| started | 2026-07-09 08:18 |
+| elapsed | ~8 min |
+| done    | Inventoried registry/check/merge: no type/trait module maps; `LoadItem.path` + `Span.file` available; chose span.file → defining_path maps for STEP=2. Self-check: 6 trait-extends, 0 production orphans. Wrote TRACK steps 2–5. |
+| result  | docs-only. Plain: orphan rule нельзя вкрутить без карты «тип→файл»; путь есть в Span/LoadItem. |
+| issues  | Builtins + empty source_path policy deferred to STEP=2/3. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_ORPHAN_RULE — type_defining_path + trait_defining_path in registry |
 
 ### Turn 2026-07-09 08:16 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=4 — verify-gate + close)
 
