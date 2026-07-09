@@ -391,7 +391,12 @@ compiler/
 PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → SELF_HOST_BOOTSTRAP → LSP → CPP_HEADER_IMPORT (minimal)
   → CPP_PARSER_FULL → CLEAN_ARCHITECTURE → REDDIT_DEMO → CONCURRENCY
-  → LANG_CLOSURE_ESCAPE (STEP=3) → LANG_REGION_ARENA (опционально)
+  → LANG_CLOSURE_ESCAPE (verify-gate + close)
+  → CONCURRENCY_TEST_HARNESS T1-T4 (не блокирован, механический C++ runtime)
+  → CONCURRENCY_V2 STEP=1-5 (использовать рекомендацию `Sync` без доп. решения)
+  → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком)
+  → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
+    не начинать реализацию, максимум — отдельный design-turn)
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
