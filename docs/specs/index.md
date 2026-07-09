@@ -22,7 +22,7 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | Document | Tags | Load when |
 |----------|------|-----------|
 | [../../specs/regression/README.md](../../specs/regression/README.md) | regression, gate, verify, stdout | Track close on `compiler/**`, baseline refresh |
-| [../agent/TRACK_LOOP_CONTRACTS.md](../agent/TRACK_LOOP_CONTRACTS.md) | agent, gate, regression, loop | Regression gate setup, agent loop contracts |
+| [../archive/tracks/TRACK_LOOP_CONTRACTS.md](../archive/tracks/TRACK_LOOP_CONTRACTS.md) | agent, gate, regression, loop | Regression gate setup, agent loop contracts (closed, archived) |
 
 ## Tag → track type (quick map)
 

@@ -30,8 +30,9 @@
 
 ## 2. Текущее состояние (на момент хендофа, 2026-07-04)
 
-- Все крупные треки в `docs/agent/TRACK_*.md` закрыты (`grep -n "## Status" docs/agent/TRACK_*.md`
-  — почти везде **closed**). Активной автоматической ROLE-ротации
+- Все крупные треки закрыты и перенесены в архив: `docs/archive/tracks/TRACK_*.md`
+  (`grep -n "## Status" docs/archive/tracks/TRACK_*.md` — почти везде **closed**).
+  Активной автоматической ROLE-ротации
   (`CONTINUITY.md`) сейчас нет причины запускать — это не тот режим
   работы для composer-2.5 (см. §4 «Чего не делать»).
 - Последний крупный milestone: `TRACK_BOOTSTRAP_LINK` (self-host identity
@@ -43,7 +44,7 @@
   на реальном бинаре** 4 расхождения self-hosted парсера с Ruby-эталоном:
   `docs/mlc2.md` секции **H1-H4** (побитовые операторы, унарные `~`/`+`,
   суффиксы числовых литералов, постфиксный `if`/`unless`). Готовый трек с
-  шагами, репро и verify-командами на каждый: **`docs/agent/TRACK_PARSER_GAPS_H1H4.md`**.
+  шагами, репро и verify-командами на каждый: **`docs/archive/tracks/TRACK_PARSER_GAPS_H1H4.md`**.
   Это готовый первый набор задач для composer-2.5 — см. §5.
 - Полный сырой отчёт аудита (12 находок, 4 подтверждены, 8 — гипотезы без
   проверки): `docs/PARITY_AUDIT_2026_07.md`.
@@ -53,7 +54,8 @@
 | Что | Путь |
 |-----|------|
 | План / roadmap | `docs/PLAN.md` |
-| Активные/архивные треки | `docs/agent/TRACK_*.md` |
+| Активные треки | `docs/agent/TRACK_*.md` (обычно 1-3 файла) |
+| Архивные (закрытые) треки | `docs/archive/tracks/TRACK_*.md` |
 | Известные расхождения Ruby⇄mlcc | `docs/mlc2.md` |
 | Самый частый источник багов (найдено этой сессией) | `compiler/frontend/lexer.mlc`, `compiler/frontend/parser/exprs.mlc`, `compiler/checker/`, `compiler/codegen/`, `compiler/expr_visitor_cpp.mlc` |
 | Verify-лестница (Tier A/B) | `docs/agent/DEVELOPMENT.md` §Verification ladder |
@@ -75,7 +77,7 @@
    модель хуже справляется с открытой навигацией по большому дереву.
 3. **Готовый репро** (минимальный `.mlc`-сниппет) с ожидаемым результатом
    "до" и "после" — не "проверь, работает ли". Пример — любой шаг в
-   `docs/agent/TRACK_PARSER_GAPS_H1H4.md`.
+   `docs/archive/tracks/TRACK_PARSER_GAPS_H1H4.md`.
 4. **Явную команду verify** для копипаста, не описание словами:
    ```bash
    bundle exec rake test_compiler_mlc
@@ -180,7 +182,7 @@
 
 ## 5. Рекомендуемая первая задача
 
-`docs/agent/TRACK_PARSER_GAPS_H1H4.md`, **STEP=1** (побитовые операторы) —
+`docs/archive/tracks/TRACK_PARSER_GAPS_H1H4.md`, **STEP=1** (побитовые операторы) —
 самый механический из четырёх, полный репро и точные ссылки на строки уже
 в треке. Порядок: STEP=1 → STEP=2 → STEP=3 → STEP=4 (STEP=4 — сложнее,
 см. §4.3; если после чтения кода не укладывается в один файл/функцию —

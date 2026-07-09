@@ -1,6 +1,6 @@
 # Track: MIR VM � full plan (self-host path)
 
-Parent: [TRACK_MIR_VM.md](TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](TRACK_MIR.md)
+Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
 **Status:** open, Epic 0 STEP A�B done
 

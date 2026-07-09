@@ -3,7 +3,7 @@
 Parent: [../PLAN.md](../PLAN.md), [../MEMORY_MODEL.md](../MEMORY_MODEL.md).
 Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md), Часть
 1b (#2 в приоритизированном списке — наивысшая ценность после Array HOF).
-Related, already closed: [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md)
+Related, already closed: [TRACK_LAMBDA_CAPTURE.md](../archive/tracks/TRACK_LAMBDA_CAPTURE.md)
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
