@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_LANG_CYCLE_LINT **closed**; next TRACK_LANG_RESULT_COMBINATORS |
+| driver_turns_since_plan | 5 |
+| step_last | 1 |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=1 done) |
 | test_gate | ok |
+
+### Turn 2026-07-09 06:20 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=1 — inventory)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_RESULT_COMBINATORS |
+| started | 2026-07-09 06:16 |
+| elapsed | ~4 min |
+| done    | Inventoried `compiler/` only: A2 Result/Option combinators already in `result_option_method_types` / `infer_result_option_method` / `method_gen` / runtime headers. Confirmed TRACK pipeline smoke check-only Ok. Documented gap: `?` does not check E vs fn return; no `From` trait; emit returns raw Err (type-unsafe). Updated TRACK steps 2–4. |
+| result  | docs-only. Plain: комбинаторы уже есть; осталось `?` с разными ошибками и From. |
+| issues  | TRACK scope text was stale (claimed combinators missing). |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_RESULT_COMBINATORS — red test: `?` E-mismatch must error (no From yet) |
 
 ### Turn 2026-07-09 06:14 (Driver TRACK_LANG_CYCLE_LINT STEP=4 — verify-gate; close track)
 
