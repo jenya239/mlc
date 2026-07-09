@@ -13,6 +13,7 @@ fn derive_trait_name_allowed(trait_name: string) -> bool =
   else if trait_name == "Eq" then true
   else if trait_name == "Ord" then true
   else if trait_name == "Hash" then true
+  else if trait_name == "Json" then true
   else false
   end
 

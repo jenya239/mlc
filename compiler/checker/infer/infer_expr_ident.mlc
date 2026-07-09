@@ -2,11 +2,13 @@
 
 import { CheckContext } from '../check/check_context'
 import { InferResult, infer_ok } from './infer_result'
-import { Type, TUnknown } from '../registry'
+import { Type, TUnknown, TNamed } from '../registry'
 
 export fn infer_expr_identifier(name: string, inference_context: CheckContext) -> InferResult =
   if inference_context.type_env.has(name) then infer_ok(inference_context.type_env.get(name))
   else if inference_context.registry.has_fn(name) then infer_ok(inference_context.registry.fn_type(name))
   else if inference_context.registry.has_ctor(name) then infer_ok(inference_context.registry.ctor_type(name))
+  else if inference_context.registry.adt_index.algebraic_decl_type_parameter_names.has(name) then
+    infer_ok(Shared.new(TNamed(name)))
   else infer_ok(Shared.new(TUnknown))
   end

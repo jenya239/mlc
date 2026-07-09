@@ -750,10 +750,41 @@ fn register_decl_fn_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>
     _ => false
   }
 
+fn string_list_contains(haystack: [string], needle: string) -> bool =
+  haystack.any(item => item == needle)
+
+fn register_derive_json_functions(
+  registry: ref mut TypeRegistry,
+  type_name: string
+) -> unit = do
+  const to_json_name = type_name + '_to_json'
+  const from_json_name = type_name + '_from_json'
+  const empty_type_parameters: [string] = []
+  registry.function_index.function_types.set(
+    to_json_name,
+    Shared.new(TFn([Shared.new(TNamed(type_name))], Shared.new(TNamed('JsonValue')))))
+  registry.function_index.function_type_parameter_names.set(to_json_name, empty_type_parameters)
+  registry.function_index.function_parameter_names.set(to_json_name, ['self'])
+  registry.function_index.function_parameter_mutability_flags.set(to_json_name, [0])
+  registry.function_index.function_required_arity.set(to_json_name, 1)
+  registry.function_index.function_types.set(
+    from_json_name,
+    Shared.new(TFn(
+      [Shared.new(TNamed('JsonValue'))],
+      Shared.new(TGeneric('Result', [Shared.new(TNamed(type_name)), Shared.new(TNamed('JsonError'))])))))
+  registry.function_index.function_type_parameter_names.set(from_json_name, empty_type_parameters)
+  registry.function_index.function_parameter_names.set(from_json_name, ['value'])
+  registry.function_index.function_parameter_mutability_flags.set(from_json_name, [0])
+  registry.function_index.function_required_arity.set(from_json_name, 1)
+end
+
 fn register_decl_type_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclType(type_name, type_parameters, variants, _, name_span) => do
+    DeclType(type_name, type_parameters, variants, derive_traits, name_span) => do
       register_decl_type_into_registry(registry, type_name, type_parameters, variants, name_span.file)
+      if string_list_contains(derive_traits, 'Json') then
+        register_derive_json_functions(registry, type_name)
+      end
       true
     end,
     _ => false

@@ -104,8 +104,13 @@ fn transform_extend_method_as_call(
   source_span: Span
 ) -> Shared<SemanticExpression> = do
   const mangled = extend_method_mangled_name(registry, receiver_type, method_name)
+  const required_arity = registry.required_arity_for_fn(mangled)
   let call_arguments: [Shared<SemanticExpression>] = []
-  call_arguments.push(typed_object)
+  // Instance methods: Type_method(self, …). Static methods (e.g. Type.from_json(v)):
+  // arity matches arguments only — do not prepend the type-name receiver.
+  if required_arity == typed_arguments.length() + 1 then
+    call_arguments.push(typed_object)
+  end
   let mut argument_index = 0
   while argument_index < typed_arguments.length() do
     call_arguments.push(typed_arguments[argument_index])
@@ -113,8 +118,12 @@ fn transform_extend_method_as_call(
   end
   const callee = Shared.new(SemanticExpressionIdent(mangled, registry.fn_type(mangled), source_span))
   const call_parameter_mutability_flags =
-    instance_method_receiver_and_parameters_mutability_pattern(
-      registry, receiver_type, method_name, typed_arguments.length())
+    if required_arity == typed_arguments.length() + 1 then
+      instance_method_receiver_and_parameters_mutability_pattern(
+        registry, receiver_type, method_name, typed_arguments.length())
+    else
+      registry.parameter_mutability_flags_for(mangled)
+    end
   Shared.new(SemanticExpressionCall(
     callee, call_arguments, call_parameter_mutability_flags, result_type, source_span))
 end
@@ -1277,6 +1286,8 @@ extend TransformPass {
       if self.transform_context.type_env.has(name) then self.transform_context.type_env.get(name)
       else if self.transform_context.registry.has_fn(name) then self.transform_context.registry.fn_type(name)
       else if self.transform_context.registry.has_ctor(name) then self.transform_context.registry.ctor_type(name)
+      else if self.transform_context.registry.adt_index.algebraic_decl_type_parameter_names.has(name) then
+        Shared.new(TNamed(name))
       else Shared.new(TUnknown)
       end
     Shared.new(SemanticExpressionIdent(name, resolved_type, source_span))

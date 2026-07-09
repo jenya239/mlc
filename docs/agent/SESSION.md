@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_API_CLIENT STEP=4 |
-| test_gate | ok (derive_json_test 6/0) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_API_CLIENT STEP=5 |
+| test_gate | ok (mlcc Json smoke SMOKE:0) |
+
+### Turn 2026-07-09 21:25 (Driver TRACK_API_CLIENT STEP=4 — self-hosted derive Json)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_API_CLIENT |
+| started | 2026-07-09 20:30 |
+| elapsed | ~55 min |
+| done    | Self-hosted `derive { Json }`: validation; `gen_derive_json_cpp`; registry `*_to_json`/`*_from_json`; globals; static `from_json` arity; type-name ident; sum access `self` (alias). |
+| verify  | `compiler/build.sh` EXIT:0; C++ smoke Point+Color round-trip SMOKE:0. |
+| result  | STEP=4 done. Plain: mlcc emits working Point/Color Json derive. |
+| issues  | `rake test_compiler_mlc` blocked by pre-existing Ruby parse fail on `spawn_capture.mlc`; dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=5 TRACK_API_CLIENT — OpenAPI codegen script |
 
 ### Turn 2026-07-09 20:30 (Driver TRACK_API_CLIENT STEP=3 — sum derive Json tagged)
 

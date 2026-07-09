@@ -276,8 +276,12 @@ fn global_names_merge_single_declaration_into_map(
       global_names_so_far.set(name, true)
       global_names_so_far
     end,
-    DeclType(name, _, variants, _, _) => do
+    DeclType(name, _, variants, derive_traits, _) => do
       global_names_so_far.set(name, true)
+      if derive_traits.any(trait_name => trait_name == 'Json') then
+        global_names_so_far.set(name + '_to_json', true)
+        global_names_so_far.set(name + '_from_json', true)
+      end
       variants.fold(
         global_names_so_far,
         (names_after_type_definition, variant_shared_under_scan) =>

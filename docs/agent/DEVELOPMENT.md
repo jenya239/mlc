@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_API_CLIENT** STEP=4 — self-hosted `derive { Json }` (`derive_validation.mlc` + codegen)
+**TRACK_API_CLIENT** STEP=5 — OpenAPI codegen script (openapi.yaml → .mlc)
 (STEP=3 done: sum tagged Json derive).
 
 ## Step sizing (good vs bad)
