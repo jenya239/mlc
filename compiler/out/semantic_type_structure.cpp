@@ -374,8 +374,20 @@ std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<regist
 [&](const registry::TUnknown& tUnknown) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
 }, (*shared_pointer_type));
 }
+bool type_is_extern_fn_generic(std::shared_ptr<registry::Type> type_value) noexcept{
+  return [&]() -> bool {
+auto __match_subject = type_value;
+if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
+const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
+auto [name, __1] = tGeneric; return (name == mlc::String("__ExternFn", 10));
+}
+return false;
+std::abort();
+}();
+}
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return true; },
+[&](const registry::TGeneric& tGeneric) { auto [name, __1] = tGeneric; return (name == mlc::String("__ExternFn", 10)); },
 [&](const registry::TI32& tI32) { return false; },
 [&](const registry::TString& tString) { return false; },
 [&](const registry::TBool& tBool) { return false; },
@@ -387,7 +399,6 @@ bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{
 [&](const registry::TChar& tChar) { return false; },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
@@ -397,6 +408,7 @@ bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{
 }
 std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, return_type] = tFn; return return_type; },
+[&](const registry::TGeneric& tGeneric) { auto [name, type_arguments] = tGeneric; return (((name == mlc::String("__ExternFn", 10)) && (type_arguments.length() >= 1)) ? (type_arguments[0]) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
 [&](const registry::TI32& tI32) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TString& tString) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TBool& tBool) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
@@ -409,7 +421,6 @@ std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::T
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return std::make_shared<registry::Type>(registry::TUnknown{}); },
@@ -418,6 +429,7 @@ std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::T
 }
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [parameters, __1] = tFn; return parameters; },
+[&](const registry::TGeneric& tGeneric) { auto [name, type_arguments] = tGeneric; return ((name == mlc::String("__ExternFn", 10)) ? (type_arguments.drop(1)) : (empty_type_parameter_list())); },
 [&](const registry::TI32& tI32) { return empty_type_parameter_list(); },
 [&](const registry::TString& tString) { return empty_type_parameter_list(); },
 [&](const registry::TBool& tBool) { return empty_type_parameter_list(); },
@@ -430,7 +442,6 @@ mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return empty_type_parameter_list(); },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return empty_type_parameter_list(); },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return empty_type_parameter_list(); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return empty_type_parameter_list(); },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return empty_type_parameter_list(); },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return empty_type_parameter_list(); },
 [&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return empty_type_parameter_list(); },
@@ -562,6 +573,17 @@ bool zipped_type_arguments_assignment_compatible(mlc::Array<std::shared_ptr<regi
     return (types_assignment_compatible(expected_arguments[index], actual_arguments[index]) && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, (index + 1)));
   }
 }
+bool extern_fn_compatible_with_function(mlc::Array<std::shared_ptr<registry::Type>> expected_extern_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_parameters, std::shared_ptr<registry::Type> actual_return_type) noexcept{
+  if ((expected_extern_arguments.length() == 0))   {
+    return false;
+  } else if (((expected_extern_arguments.length() - 1) != actual_parameters.length()))   {
+    return false;
+  } else if ((!types_assignment_compatible(expected_extern_arguments[0], actual_return_type)))   {
+    return false;
+  } else   {
+    return zipped_type_arguments_assignment_compatible(expected_extern_arguments.drop(1), actual_parameters, 0);
+  }
+}
 bool types_assignment_compatible(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept{
   if (types_structurally_equal(expected_type, actual_type))   {
     return true;
@@ -573,6 +595,22 @@ auto __match_subject = expected_type;
 if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
 const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
 auto [expected_name, expected_arguments] = tGeneric; return [&]() -> bool {
+  if ((expected_name == mlc::String("__ExternFn", 10)))   {
+    return [&]() -> bool {
+auto __match_subject = actual_type;
+if (std::holds_alternative<registry::TFn>((*__match_subject))) {
+const registry::TFn& tFn = std::get<registry::TFn>((*__match_subject));
+auto [actual_parameters, actual_return_type] = tFn; return extern_fn_compatible_with_function(expected_arguments, actual_parameters, actual_return_type);
+}
+if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
+const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
+auto [actual_name, actual_arguments] = tGeneric; return (((expected_name == actual_name) && (expected_arguments.length() == actual_arguments.length())) && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0));
+}
+return false;
+std::abort();
+}();
+  } else   {
+    return [&]() -> bool {
 auto __match_subject = actual_type;
 if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
 const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
@@ -580,6 +618,8 @@ auto [actual_name, actual_arguments] = tGeneric; return (((expected_name == actu
 }
 return false;
 std::abort();
+}();
+  }
 }();
 }
 if (std::holds_alternative<registry::TArray>((*__match_subject))) {
@@ -683,7 +723,7 @@ mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcep
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return mlc::String("array", 5); },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return mlc::String("shared", 6); },
 [&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return type_name; },
-[&](const registry::TGeneric& tGeneric) { auto [type_name, __1] = tGeneric; return type_name; },
+[&](const registry::TGeneric& tGeneric) { auto [type_name, __1] = tGeneric; return ((type_name == mlc::String("__ExternFn", 10)) ? (mlc::String("extern fn", 9)) : (type_name)); },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return mlc::String("pair", 4); },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return mlc::String("tuple", 5); },
 [&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return mlc::String("function", 8); },

@@ -262,6 +262,11 @@ export fn cpp_template_two_type_arguments(
 export fn cpp_std_function_type(return_type_cpp: string, parameter_types_csv: string) -> string =
   `std::function<${return_type_cpp}(${parameter_types_csv})>`
 
+// Wrap in type_identity_t so `T name` param syntax is valid C++
+// (`int(*)(int) name` is a parse error; `std::type_identity_t<int(*)(int)> name` is ok).
+export fn cpp_c_function_pointer_type(return_type_cpp: string, parameter_types_csv: string) -> string =
+  `std::type_identity_t<${return_type_cpp}(*)(${parameter_types_csv})>`
+
 export fn cpp_lvalue_reference_suffix(inner_type_cpp: string) -> string =
   `${inner_type_cpp}&`
 

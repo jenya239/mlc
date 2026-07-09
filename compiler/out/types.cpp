@@ -3,11 +3,14 @@
 
 #include "predicates.hpp"
 #include "comma_separated.hpp"
+#include "ast.hpp"
 
 namespace types {
 
 using namespace predicates;
 using namespace comma_separated;
+using namespace ast;
+using namespace ast_tokens;
 
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type(predicates::Parser parser) noexcept{
   auto base_parsed = parse_base_type(parser);
@@ -17,6 +20,29 @@ predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type(predicates::P
   auto return_type_parsed = parse_type(predicates::Parser_advance(base_parsed.parser));
   auto params = mlc::Array<std::shared_ptr<ast::TypeExpr>>{base_parsed.value};
   return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyFn{params, return_type_parsed.value}), return_type_parsed.parser);
+}
+predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_extern_fn_type(predicates::Parser parser) noexcept{
+  auto after_extern = predicates::Parser_advance(parser);
+  if ((!predicates::TokenKind_is_fn(predicates::Parser_kind(after_extern))))   {
+    return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyUnit{}), predicates::Parser_record_parse_error(after_extern, mlc::String("parse: expected fn after extern in type position", 48)));
+  }
+  auto after_fn = predicates::Parser_advance(after_extern);
+  if ((!predicates::TokenKind_is_lparen(predicates::Parser_kind(after_fn))))   {
+    return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyUnit{}), predicates::Parser_record_parse_error(after_fn, mlc::String("parse: expected ( after extern fn in type position", 50)));
+  }
+  auto paren_types_parsed = parse_paren_types(predicates::Parser_advance(after_fn));
+  if ((!predicates::TokenKind_is_arrow(predicates::Parser_kind(paren_types_parsed.parser))))   {
+    return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyUnit{}), predicates::Parser_record_parse_error(paren_types_parsed.parser, mlc::String("parse: expected -> after extern fn parameters", 45)));
+  }
+  auto return_type_parsed = parse_type(predicates::Parser_advance(paren_types_parsed.parser));
+  auto type_arguments = mlc::Array<std::shared_ptr<ast::TypeExpr>>{};
+  type_arguments.push_back(return_type_parsed.value);
+  auto parameter_index = 0;
+  while ((parameter_index < paren_types_parsed.value.length()))   {
+    type_arguments.push_back(paren_types_parsed.value[parameter_index]);
+    (parameter_index = (parameter_index + 1));
+  }
+  return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyGeneric{mlc::String("__ExternFn", 10), type_arguments}), return_type_parsed.parser);
 }
 predicates::ParseResult<mlc::Array<std::shared_ptr<ast::TypeExpr>>> parse_paren_types(predicates::Parser parser) noexcept{
   if (predicates::TokenKind_is_rparen(predicates::Parser_kind(parser)))   {
@@ -73,6 +99,9 @@ predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_base_type_ident(pr
 }
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_base_type(predicates::Parser parser) noexcept{
   auto kind = predicates::Parser_kind(parser);
+  if (predicates::TokenKind_is_extern(kind))   {
+    return parse_extern_fn_type(parser);
+  }
   if (predicates::TokenKind_is_lparen(kind))   {
     auto paren_types_parsed = parse_paren_types(predicates::Parser_advance(parser));
     if (predicates::TokenKind_is_arrow(predicates::Parser_kind(paren_types_parsed.parser)))     {

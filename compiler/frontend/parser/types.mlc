@@ -2,6 +2,7 @@
 
 import { Parser, TypeResult, TypesResult, type_parse_result, types_parse_result } from './predicates'
 import { comma_separated_types_suffix_from_first } from './comma_separated'
+import { TypeExpr, TyFn, TyGeneric, TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyAssoc } from '../ast'
 
 export fn parse_type(parser: Parser) -> TypeResult = do
   const base_parsed = parse_base_type(parser)
@@ -9,6 +10,36 @@ export fn parse_type(parser: Parser) -> TypeResult = do
   const return_type_parsed = parse_type(base_parsed.parser.advance())
   const params: [Shared<TypeExpr>] = [base_parsed.value]
   type_parse_result(Shared.new(TyFn(params, return_type_parsed.value)), return_type_parsed.parser)
+end
+
+fn parse_extern_fn_type(parser: Parser) -> TypeResult = do
+  const after_extern = parser.advance()
+  if !after_extern.kind().is_fn() then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      after_extern.record_parse_error('parse: expected fn after extern in type position'))
+  end
+  const after_fn = after_extern.advance()
+  if !after_fn.kind().is_lparen() then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      after_fn.record_parse_error('parse: expected ( after extern fn in type position'))
+  end
+  const paren_types_parsed = parse_paren_types(after_fn.advance())
+  if !paren_types_parsed.parser.kind().is_arrow() then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      paren_types_parsed.parser.record_parse_error('parse: expected -> after extern fn parameters'))
+  end
+  const return_type_parsed = parse_type(paren_types_parsed.parser.advance())
+  let mut type_arguments: [Shared<TypeExpr>] = []
+  type_arguments.push(return_type_parsed.value)
+  let mut parameter_index = 0
+  while parameter_index < paren_types_parsed.value.length() do
+    type_arguments.push(paren_types_parsed.value[parameter_index])
+    parameter_index = parameter_index + 1
+  end
+  type_parse_result(Shared.new(TyGeneric("__ExternFn", type_arguments)), return_type_parsed.parser)
 end
 
 fn parse_paren_types(parser: Parser) -> TypesResult = do
@@ -58,6 +89,7 @@ end
 
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
+  if kind.is_extern() then return parse_extern_fn_type(parser) end
   if kind.is_lparen() then
     const paren_types_parsed = parse_paren_types(parser.advance())
     if paren_types_parsed.parser.kind().is_arrow() then

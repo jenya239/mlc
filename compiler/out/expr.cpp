@@ -233,6 +233,9 @@ mlc::String cpp_template_two_type_arguments(mlc::String template_name_cpp, mlc::
 mlc::String cpp_std_function_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept{
   return ((((mlc::String("std::function<", 14) + mlc::to_string(return_type_cpp)) + mlc::String("(", 1)) + mlc::to_string(parameter_types_csv)) + mlc::String(")>", 2));
 }
+mlc::String cpp_c_function_pointer_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept{
+  return ((((mlc::String("std::type_identity_t<", 21) + mlc::to_string(return_type_cpp)) + mlc::String("(*)(", 4)) + mlc::to_string(parameter_types_csv)) + mlc::String(")>", 2));
+}
 mlc::String cpp_lvalue_reference_suffix(mlc::String inner_type_cpp) noexcept{
   return ((mlc::String("", 0) + mlc::to_string(inner_type_cpp)) + mlc::String("&", 1));
 }

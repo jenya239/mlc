@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 5 |
-| active_track | TRACK_FFI_LAYER STEP=6 |
-| test_gate | ok (extern type FILE+drop probe) |
+| driver_turns_since_plan | 5 |
+| step_last | 6 |
+| active_track | TRACK_FFI_LAYER STEP=7 |
+| test_gate | ok (extern fn type → C fptr probe exit 42) |
+
+### Turn 2026-07-09 18:50 (Driver TRACK_FFI_LAYER STEP=6 — extern fn type as C function pointer)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 18:20 |
+| elapsed | ~30 min |
+| done    | Parse `extern fn(...)` → `TyGeneric("__ExternFn",…)`; codegen `std::type_identity_t<Ret(*)(Args…)>`; unify TFn→ExternFn; reject non-Ident args; no `__F*` for ExternFn. |
+| verify  | probe `apply_callback(double_value,21)` → `type_identity_t<int(*)(int)>`, link exit 42; lambda arg → E003 top-level; `mlcc --check-only main` 0. |
+| result  | STEP=6 done. Plain: extern fn type → C function pointer. |
+| issues  | Nested Ident (local fn binding) still accepted; dirty `compiler/out/mlcc` not committed. |
+| next    | ROLE=Driver STEP=7 TRACK_FFI_LAYER — concurrency metadata on extern (blocking/thread_safe/thread_affine) |
 
 ### Turn 2026-07-09 18:15 (Driver TRACK_FFI_LAYER STEP=5 — extern type + drop RAII)
 

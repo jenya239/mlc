@@ -49,6 +49,8 @@ fn mark_all_watched(watched: [string], escaping: [string]) -> [string] = do
   result
 end
 
+// Only MLC `fn(...)` params participate in escape→`__F*` templates.
+// `extern fn(...)` is a concrete C function pointer type, not a HOF template.
 fn type_expr_is_function(type_expression: Shared<TypeExpr>) -> bool =
   match type_expression {
     TyFn(_, _) => true,

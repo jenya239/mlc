@@ -48,6 +48,17 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
         `std::optional<${sem_type_to_cpp(context, type_arguments[0])}>`
       else if type_name == 'RawPointer' && type_arguments.length() == 1 then
         expression_output.cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))
+      else if type_name == '__ExternFn' && type_arguments.length() >= 1 then do
+        const return_type_cpp = sem_type_to_cpp(context, type_arguments[0])
+        let mut parameter_types_csv = ''
+        let mut argument_index = 1
+        while argument_index < type_arguments.length() do
+          if argument_index > 1 then parameter_types_csv = parameter_types_csv + ', ' end
+          parameter_types_csv = parameter_types_csv + sem_type_to_cpp(context, type_arguments[argument_index])
+          argument_index = argument_index + 1
+        end
+        expression_output.cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
+      end
       else if type_arguments.length() == 0 then cpp_generic_base_name(context, type_name)
       else if type_arguments.length() == 1 then
         expression_output.cpp_template_single_type_argument(
@@ -124,6 +135,17 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
         expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
       else if name == 'RawPointer' && type_arguments.length() == 1 then
         expression_output.cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]))
+      else if name == '__ExternFn' && type_arguments.length() >= 1 then do
+        const return_type_cpp = type_to_cpp(context, type_arguments[0])
+        let mut parameter_types_csv = ''
+        let mut argument_index = 1
+        while argument_index < type_arguments.length() do
+          if argument_index > 1 then parameter_types_csv = parameter_types_csv + ', ' end
+          parameter_types_csv = parameter_types_csv + type_to_cpp(context, type_arguments[argument_index])
+          argument_index = argument_index + 1
+        end
+        expression_output.cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
+      end
       else
         const safe = cpp_generic_base_name(context, name)
         if type_arguments.length() == 0 then safe

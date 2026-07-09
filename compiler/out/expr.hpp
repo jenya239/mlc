@@ -75,6 +75,7 @@ mlc::String cpp_raw_pointer_type(mlc::String inner_type_cpp) noexcept;
 mlc::String cpp_template_single_type_argument(mlc::String template_name_cpp, mlc::String type_argument_cpp) noexcept;
 mlc::String cpp_template_two_type_arguments(mlc::String template_name_cpp, mlc::String first_type_argument_cpp, mlc::String second_type_argument_cpp) noexcept;
 mlc::String cpp_std_function_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept;
+mlc::String cpp_c_function_pointer_type(mlc::String return_type_cpp, mlc::String parameter_types_csv) noexcept;
 mlc::String cpp_lvalue_reference_suffix(mlc::String inner_type_cpp) noexcept;
 mlc::String struct_empty_definition(mlc::String resolved_struct_name) noexcept;
 mlc::String struct_with_inline_members_definition(mlc::String resolved_struct_name, mlc::String member_declarations_concatenated) noexcept;

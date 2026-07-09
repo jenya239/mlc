@@ -21,6 +21,35 @@ mlc::Array<ast::Diagnostic> empty_diagnostic_list() noexcept{
 ast::Diagnostic argument_type_mismatch_diagnostic(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type, ast::Span diagnostic_span) noexcept{
   return ast::diagnostic_error_with_code((((mlc::String("argument expects ", 17) + semantic_type_structure::type_description(expected_type)) + mlc::String(", got ", 6)) + semantic_type_structure::type_description(actual_type)), diagnostic_span, diagnostic_codes::diagnostic_code_e003());
 }
+bool expected_type_is_extern_fn(std::shared_ptr<registry::Type> expected_type) noexcept{
+  return [&]() -> bool {
+auto __match_subject = expected_type;
+if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
+const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
+auto [name, __1] = tGeneric; return (name == mlc::String("__ExternFn", 10));
+}
+return false;
+std::abort();
+}();
+}
+ast::Diagnostic extern_fn_argument_must_be_top_level_diagnostic(ast::Span diagnostic_span) noexcept{
+  return ast::diagnostic_error_with_code(mlc::String("extern fn argument must be a top-level function (no capture)", 60), diagnostic_span, diagnostic_codes::diagnostic_code_e003());
+}
+mlc::Array<ast::Diagnostic> extern_fn_argument_shape_diagnostics(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<ast::Expr> argument_expression) noexcept{
+  if ((!expected_type_is_extern_fn(expected_type)))   {
+    return empty_diagnostic_list();
+  } else   {
+    return [&]() -> mlc::Array<ast::Diagnostic> {
+auto __match_subject = argument_expression;
+if (std::holds_alternative<ast::ExprIdent>((*__match_subject))) {
+const ast::ExprIdent& exprIdent = std::get<ast::ExprIdent>((*__match_subject));
+auto [__0, __1] = exprIdent; return empty_diagnostic_list();
+}
+return mlc::Array<ast::Diagnostic>{extern_fn_argument_must_be_top_level_diagnostic(ast::expr_span(argument_expression))};
+std::abort();
+}();
+  }
+}
 void record_type_parameter_source_for_argument(mlc::HashMap<mlc::String, int>& type_parameter_source_argument_index, mlc::Array<mlc::String> type_parameter_names, mlc::String type_name, int argument_index) noexcept{
   if (list_contains_string(type_parameter_names, type_name))   {
     return type_parameter_source_argument_index.set(type_name, argument_index);
@@ -80,6 +109,10 @@ return generic_unification_diagnostics;
 }();
   }
 }();
+}
+if (std::holds_alternative<registry::TFn>((*__match_subject))) {
+const registry::TFn& tFn = std::get<registry::TFn>((*__match_subject));
+auto [actual_params, actual_ret] = tFn; return (((expected_name == mlc::String("__ExternFn", 10)) && semantic_type_structure::types_assignment_compatible(expected_type, actual_type)) ? (empty_diagnostic_list()) : (mlc::Array<ast::Diagnostic>{argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)}));
 }
 return mlc::Array<ast::Diagnostic>{argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)};
 std::abort();
@@ -179,6 +212,7 @@ mlc::Array<ast::Diagnostic> call_argument_unification_diagnostics(mlc::Array<std
   auto index = 0;
   while (((index < expected_parameter_types.length()) && (index < actual_argument_types.length())))   {
     (collected = ast::diagnostics_append(collected, unify_expected_and_actual_argument_types(expected_parameter_types[index], actual_argument_types[index], type_parameter_names, substitution, ast::expr_span(argument_expressions[index]), type_parameter_source_argument_index, index)));
+    (collected = ast::diagnostics_append(collected, extern_fn_argument_shape_diagnostics(expected_parameter_types[index], argument_expressions[index])));
     (index = (index + 1));
   }
   return collected;

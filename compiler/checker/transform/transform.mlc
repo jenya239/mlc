@@ -188,6 +188,7 @@ fn generic_type_name(type_value: Shared<Type>) -> string =
 fn callee_semantic_type_is_function(type_value: Shared<Type>) -> bool =
   match type_value {
     TFn(_, _) => true,
+    TGeneric(name, _) => name == '__ExternFn',
     TI32 => false,
     TString => false,
     TBool => false,
@@ -199,7 +200,6 @@ fn callee_semantic_type_is_function(type_value: Shared<Type>) -> bool =
     TChar => false,
     TShared(_) => false,
     TNamed(_) => false,
-    TGeneric(_, _) => false,
     TArray(_) => false,
     TPair(_, _) => false,
     TTuple(_) => false,
@@ -210,6 +210,10 @@ fn callee_semantic_type_is_function(type_value: Shared<Type>) -> bool =
 fn function_parameter_types_from_callee_type(type_value: Shared<Type>) -> [Shared<Type>] =
   match type_value {
     TFn(parameter_types, _) => parameter_types,
+    TGeneric(name, type_arguments) =>
+      if name == '__ExternFn' then type_arguments.drop(1)
+      else do const empty: [Shared<Type>] = []; empty end
+      end,
     TI32 => do const empty: [Shared<Type>] = []; empty end,
     TString => do const empty: [Shared<Type>] = []; empty end,
     TBool => do const empty: [Shared<Type>] = []; empty end,
@@ -221,7 +225,6 @@ fn function_parameter_types_from_callee_type(type_value: Shared<Type>) -> [Share
     TChar => do const empty: [Shared<Type>] = []; empty end,
     TShared(_) => do const empty: [Shared<Type>] = []; empty end,
     TNamed(_) => do const empty: [Shared<Type>] = []; empty end,
-    TGeneric(_, _) => do const empty: [Shared<Type>] = []; empty end,
     TArray(_) => do const empty: [Shared<Type>] = []; empty end,
     TPair(_, _) => do const empty: [Shared<Type>] = []; empty end,
     TTuple(_) => do const empty: [Shared<Type>] = []; empty end,
@@ -888,6 +891,10 @@ type Transform_call_arguments_fold_state = Transform_call_arguments_fold_state {
 fn function_return_type_from_callee_type(type_value: Shared<Type>) -> Shared<Type> =
   match type_value {
     TFn(_, return_type) => return_type,
+    TGeneric(name, type_arguments) =>
+      if name == '__ExternFn' && type_arguments.length() >= 1 then type_arguments[0]
+      else Shared.new(TUnknown)
+      end,
     TI32 => Shared.new(TUnknown),
     TString => Shared.new(TUnknown),
     TBool => Shared.new(TUnknown),
@@ -899,7 +906,6 @@ fn function_return_type_from_callee_type(type_value: Shared<Type>) -> Shared<Typ
     TChar => Shared.new(TUnknown),
     TShared(_) => Shared.new(TUnknown),
     TNamed(_) => Shared.new(TUnknown),
-    TGeneric(_, _) => Shared.new(TUnknown),
     TArray(_) => Shared.new(TUnknown),
     TPair(_, _) => Shared.new(TUnknown),
     TTuple(_) => Shared.new(TUnknown),

@@ -213,6 +213,7 @@ mlc::String generic_type_name(std::shared_ptr<registry::Type> type_value) noexce
 }
 bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return true; },
+[&](const registry::TGeneric& tGeneric) { auto [name, __1] = tGeneric; return (name == mlc::String("__ExternFn", 10)); },
 [&](const registry::TI32& tI32) { return false; },
 [&](const registry::TString& tString) { return false; },
 [&](const registry::TBool& tBool) { return false; },
@@ -224,7 +225,6 @@ bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value
 [&](const registry::TChar& tChar) { return false; },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
@@ -234,6 +234,16 @@ bool callee_semantic_type_is_function(std::shared_ptr<registry::Type> type_value
 }
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_types_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [parameter_types, __1] = tFn; return parameter_types; },
+[&](const registry::TGeneric& tGeneric) { auto [name, type_arguments] = tGeneric; return [&]() -> mlc::Array<std::shared_ptr<registry::Type>> {
+  if ((name == mlc::String("__ExternFn", 10)))   {
+    return type_arguments.drop(1);
+  } else   {
+    return [&]() {
+auto empty = mlc::Array<std::shared_ptr<registry::Type>>{};
+return empty;
+}();
+  }
+}(); },
 [&](const registry::TI32& tI32) { return [&]() {
 auto empty = mlc::Array<std::shared_ptr<registry::Type>>{};
 return empty;
@@ -275,10 +285,6 @@ auto empty = mlc::Array<std::shared_ptr<registry::Type>>{};
 return empty;
 }(); },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return [&]() {
-auto empty = mlc::Array<std::shared_ptr<registry::Type>>{};
-return empty;
-}(); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return [&]() {
 auto empty = mlc::Array<std::shared_ptr<registry::Type>>{};
 return empty;
 }(); },
@@ -743,6 +749,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_usi
 }
 std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::shared_ptr<registry::Type> type_value) noexcept{
   return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, return_type] = tFn; return return_type; },
+[&](const registry::TGeneric& tGeneric) { auto [name, type_arguments] = tGeneric; return (((name == mlc::String("__ExternFn", 10)) && (type_arguments.length() >= 1)) ? (type_arguments[0]) : (std::make_shared<registry::Type>(registry::TUnknown{}))); },
 [&](const registry::TI32& tI32) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TString& tString) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TBool& tBool) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
@@ -754,7 +761,6 @@ std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::share
 [&](const registry::TChar& tChar) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TShared& tShared) { auto [__0] = tShared; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TArray& tArray) { auto [__0] = tArray; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return std::make_shared<registry::Type>(registry::TUnknown{}); },
 [&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return std::make_shared<registry::Type>(registry::TUnknown{}); },

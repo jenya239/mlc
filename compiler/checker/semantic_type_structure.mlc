@@ -189,12 +189,26 @@ export fn shared_pointer_inner_type(shared_pointer_type: Shared<Type>) -> Shared
     TUnknown => Shared.new(TUnknown)
   }
 
+fn type_is_extern_fn_generic(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TGeneric(name, _) => name == '__ExternFn',
+    _ => false
+  }
+
 export fn type_is_function(type_value: Shared<Type>) -> bool =
-  match type_value { TFn(_, _) => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TGeneric(_, _) => false, TArray(_) => false, TPair(_, _) => false, TTuple(_) => false, TAssoc(_, _) => false, TUnknown => false }
+  match type_value {
+    TFn(_, _) => true,
+    TGeneric(name, _) => name == '__ExternFn',
+    TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TArray(_) => false, TPair(_, _) => false, TTuple(_) => false, TAssoc(_, _) => false, TUnknown => false
+  }
 
 export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
   match function_type {
     TFn(_, return_type) => return_type,
+    TGeneric(name, type_arguments) =>
+      if name == '__ExternFn' && type_arguments.length() >= 1 then type_arguments[0]
+      else Shared.new(TUnknown)
+      end,
     TI32 => Shared.new(TUnknown),
     TString => Shared.new(TUnknown),
     TBool => Shared.new(TUnknown),
@@ -207,7 +221,6 @@ export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
     TArray(_) => Shared.new(TUnknown),
     TShared(_) => Shared.new(TUnknown),
     TNamed(_) => Shared.new(TUnknown),
-    TGeneric(_, _) => Shared.new(TUnknown),
     TPair(_, _) => Shared.new(TUnknown),
     TTuple(_)   => Shared.new(TUnknown),
     TAssoc(_, _) => Shared.new(TUnknown),
@@ -217,6 +230,10 @@ export fn function_return_type(function_type: Shared<Type>) -> Shared<Type> =
 export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>] =
   match function_type {
     TFn(parameters, _) => parameters,
+    TGeneric(name, type_arguments) =>
+      if name == '__ExternFn' then type_arguments.drop(1)
+      else empty_type_parameter_list()
+      end,
     TI32 => empty_type_parameter_list(),
     TString => empty_type_parameter_list(),
     TBool => empty_type_parameter_list(),
@@ -229,7 +246,6 @@ export fn function_parameter_list(function_type: Shared<Type>) -> [Shared<Type>]
     TArray(_) => empty_type_parameter_list(),
     TShared(_) => empty_type_parameter_list(),
     TNamed(_) => empty_type_parameter_list(),
-    TGeneric(_, _) => empty_type_parameter_list(),
     TPair(_, _) => empty_type_parameter_list(),
     TTuple(_)   => empty_type_parameter_list(),
     TAssoc(_, _) => empty_type_parameter_list(),
@@ -275,18 +291,41 @@ fn zipped_type_arguments_assignment_compatible(
   else types_assignment_compatible(expected_arguments[index], actual_arguments[index]) &&
     zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, index + 1)
 
+fn extern_fn_compatible_with_function(
+  expected_extern_arguments: [Shared<Type>],
+  actual_parameters: [Shared<Type>],
+  actual_return_type: Shared<Type>
+) -> bool =
+  if expected_extern_arguments.length() == 0 then false
+  else if expected_extern_arguments.length() - 1 != actual_parameters.length() then false
+  else if !types_assignment_compatible(expected_extern_arguments[0], actual_return_type) then false
+  else zipped_type_arguments_assignment_compatible(
+    expected_extern_arguments.drop(1), actual_parameters, 0)
+
 export fn types_assignment_compatible(expected_type: Shared<Type>, actual_type: Shared<Type>) -> bool =
   if types_structurally_equal(expected_type, actual_type) then true
   else if types_compatible_for_call_argument(expected_type, actual_type) then true
   else match expected_type {
     TGeneric(expected_name, expected_arguments) =>
-      match actual_type {
-        TGeneric(actual_name, actual_arguments) =>
-          expected_name == actual_name &&
-          expected_arguments.length() == actual_arguments.length() &&
-          zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0),
-        _ => false
-      },
+      if expected_name == '__ExternFn' then
+        match actual_type {
+          TFn(actual_parameters, actual_return_type) =>
+            extern_fn_compatible_with_function(expected_arguments, actual_parameters, actual_return_type),
+          TGeneric(actual_name, actual_arguments) =>
+            expected_name == actual_name &&
+            expected_arguments.length() == actual_arguments.length() &&
+            zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0),
+          _ => false
+        }
+      else
+        match actual_type {
+          TGeneric(actual_name, actual_arguments) =>
+            expected_name == actual_name &&
+            expected_arguments.length() == actual_arguments.length() &&
+            zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0),
+          _ => false
+        }
+      end,
     TArray(expected_element) =>
       match actual_type {
         TArray(actual_element) => types_assignment_compatible(expected_element, actual_element),
@@ -341,7 +380,10 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TArray(_) => "array",
     TShared(_) => "shared",
     TNamed(type_name) => type_name,
-    TGeneric(type_name, _) => type_name,
+    TGeneric(type_name, _) =>
+      if type_name == '__ExternFn' then "extern fn"
+      else type_name
+      end,
     TPair(_, _) => "pair",
     TTuple(_) => "tuple",
     TFn(_, _) => "function",

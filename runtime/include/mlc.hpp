@@ -11,6 +11,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <type_traits>
 #include <variant>
 #include <vector>
 

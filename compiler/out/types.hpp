@@ -5,9 +5,11 @@
 #include <variant>
 #include "predicates.hpp"
 #include "comma_separated.hpp"
+#include "ast.hpp"
 namespace types {
 
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type(predicates::Parser parser) noexcept;
+predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_extern_fn_type(predicates::Parser parser) noexcept;
 predicates::ParseResult<mlc::Array<std::shared_ptr<ast::TypeExpr>>> parse_paren_types(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_ref_type(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type_after_ident_name(predicates::Parser parser, mlc::String name) noexcept;

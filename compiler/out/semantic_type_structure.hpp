@@ -21,6 +21,7 @@ bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
 std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;
 bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept;
 std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept;
+bool type_is_extern_fn_generic(std::shared_ptr<registry::Type> type_value) noexcept;
 bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
 std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept;
 mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
@@ -31,6 +32,7 @@ bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcep
 bool is_numeric_type(std::shared_ptr<registry::Type> type_value) noexcept;
 bool types_compatible_for_call_argument(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept;
 bool zipped_type_arguments_assignment_compatible(mlc::Array<std::shared_ptr<registry::Type>> expected_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_arguments, int index) noexcept;
+bool extern_fn_compatible_with_function(mlc::Array<std::shared_ptr<registry::Type>> expected_extern_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_parameters, std::shared_ptr<registry::Type> actual_return_type) noexcept;
 bool types_assignment_compatible(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept;
 std::shared_ptr<registry::Type> arithmetic_binary_result_type(std::shared_ptr<registry::Type> left_type) noexcept;
 std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;

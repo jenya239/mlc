@@ -20,6 +20,28 @@ fn argument_type_mismatch_diagnostic(
     diagnostic_span,
     diagnostic_code_e003())
 
+fn expected_type_is_extern_fn(expected_type: Shared<Type>) -> bool =
+  match expected_type {
+    TGeneric(name, _) => name == '__ExternFn',
+    _ => false
+  }
+
+fn extern_fn_argument_must_be_top_level_diagnostic(diagnostic_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'extern fn argument must be a top-level function (no capture)',
+    diagnostic_span,
+    diagnostic_code_e003())
+
+fn extern_fn_argument_shape_diagnostics(
+  expected_type: Shared<Type>,
+  argument_expression: Shared<Expr>
+) -> [Diagnostic] =
+  if !expected_type_is_extern_fn(expected_type) then empty_diagnostic_list()
+  else match argument_expression {
+    ExprIdent(_, _) => empty_diagnostic_list(),
+    _ => [extern_fn_argument_must_be_top_level_diagnostic(expr_span(argument_expression))]
+  }
+
 fn record_type_parameter_source_for_argument(
   type_parameter_source_argument_index: ref mut Map<string, i32>,
   type_parameter_names: [string],
@@ -118,6 +140,13 @@ fn unify_expected_and_actual_argument_types(
               generic_index = generic_index + 1
             end
             generic_unification_diagnostics
+          end,
+        TFn(actual_params, actual_ret) =>
+          if expected_name == '__ExternFn'
+             && semantic_type_structure.types_assignment_compatible(expected_type, actual_type) then
+            empty_diagnostic_list()
+          else
+            [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
           end,
         _ =>
           [argument_type_mismatch_diagnostic(expected_type, actual_type, diagnostic_span)]
@@ -277,6 +306,11 @@ export fn call_argument_unification_diagnostics(
         expr_span(argument_expressions[index]),
         type_parameter_source_argument_index,
         index))
+    collected = diagnostics_append(
+      collected,
+      extern_fn_argument_shape_diagnostics(
+        expected_parameter_types[index],
+        argument_expressions[index]))
     index = index + 1
   end
   collected
