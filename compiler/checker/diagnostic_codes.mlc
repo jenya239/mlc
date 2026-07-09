@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 86
+export fn diagnostic_code_catalog_count() -> i32 = 87
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -174,3 +174,5 @@ export fn diagnostic_code_e084() -> string = 'E084'
 export fn diagnostic_code_w_cycle() -> string = 'W-CYCLE'
 // E085: ? operator Result error type mismatches enclosing function Result error type
 export fn diagnostic_code_e085() -> string = 'E085'
+// E086: orphan extend Type : Trait (neither Type nor Trait defined in this module)
+export fn diagnostic_code_e086() -> string = 'E086'

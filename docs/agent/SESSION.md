@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 2 |
-| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=2 done; next STEP=3 orphan diagnostic) |
+| driver_turns_since_plan | 6 |
+| step_last | 3 |
+| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=3 done; next STEP=4 self-check) |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:48 (Driver TRACK_LANG_ORPHAN_RULE STEP=3 — E086 orphan diagnostic)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_ORPHAN_RULE |
+| started | 2026-07-09 08:34 |
+| elapsed | ~14 min |
+| done    | E086; `orphan_lint.mlc` (`orphan_impl_diagnostics`); wire in `gather_program_check`; catalog 87. Tests: orphan red, same-module/owns-T/owns-Trait/builtin/bare/empty-path ok. |
+| result  | `dev_gate_fast` 1469/0. Plain: чужой `extend Point : Display` теперь ошибка E086. |
+| issues  | Multi-file unit tests via concat programs with distinct source_path (no import merge). |
+| next    | ROLE=Critic STEP=critique-audit — re-audit ORPHAN STEP=1–3 vs git/tests (driver_turns=6) |
 
 ### Turn 2026-07-09 08:33 (Driver TRACK_LANG_ORPHAN_RULE STEP=2 — defining paths in registry)
 

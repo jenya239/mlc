@@ -1,0 +1,82 @@
+// Orphan rule for `extend Type : Trait` (TRACK_LANG_ORPHAN_RULE).
+// Allowed only in the module that defines Type or Trait.
+
+import {
+  Program, Decl, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append,
+  decl_inner, decl_span
+} from '../frontend/ast'
+import { TypeRegistry, trait_base_name } from './registry'
+import { diagnostic_code_e086 } from './diagnostic_codes'
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty: [Diagnostic] = []
+  empty
+end
+
+fn extend_module_owns_type_or_trait(
+  registry: TypeRegistry,
+  type_name: string,
+  trait_name: string,
+  extend_path: string
+) -> bool = do
+  const type_path = registry.defining_path_for_type(type_name)
+  const trait_path = registry.defining_path_for_trait(trait_base_name(trait_name))
+  const owns_type = type_path.length() > 0 && type_path == extend_path
+  const owns_trait = trait_path.length() > 0 && trait_path == extend_path
+  owns_type || owns_trait
+end
+
+fn extend_is_orphan_impl(
+  registry: TypeRegistry,
+  type_name: string,
+  trait_name: string,
+  extend_path: string
+) -> bool =
+  if trait_name.length() == 0 then false
+  else if extend_path.length() == 0 then false
+  else do
+    const type_path = registry.defining_path_for_type(type_name)
+    const trait_path = registry.defining_path_for_trait(trait_base_name(trait_name))
+    if type_path.length() == 0 && trait_path.length() == 0 then false
+    else !extend_module_owns_type_or_trait(registry, type_name, trait_name, extend_path)
+    end
+  end
+
+fn orphan_diagnostic_for_extend(
+  type_name: string,
+  trait_name: string,
+  extend_span: Span
+) -> Diagnostic =
+  diagnostic_error_with_code(
+    'orphan impl: extend ' + type_name + ' : ' + trait_base_name(trait_name) +
+      ' must be declared in the module defining ' + type_name + ' or ' +
+      trait_base_name(trait_name),
+    extend_span,
+    diagnostic_code_e086())
+
+fn orphan_diagnostics_for_declaration(
+  declaration: Shared<Decl>,
+  registry: TypeRegistry
+) -> [Diagnostic] =
+  match decl_inner(declaration) {
+    DeclExtend(type_name, trait_name, _, _) => do
+      const extend_span = decl_span(declaration)
+      if extend_is_orphan_impl(registry, type_name, trait_name, extend_span.file) then
+        [orphan_diagnostic_for_extend(type_name, trait_name, extend_span)]
+      else empty_diagnostic_list()
+      end
+    end,
+    _ => empty_diagnostic_list()
+  }
+
+export fn orphan_impl_diagnostics(program: Program, registry: TypeRegistry) -> [Diagnostic] = do
+  let mut diagnostics: [Diagnostic] = []
+  let mut index = 0
+  while index < program.decls.length() do
+    diagnostics = diagnostics_append(
+      diagnostics,
+      orphan_diagnostics_for_declaration(program.decls[index], registry))
+    index = index + 1
+  end
+  diagnostics
+end

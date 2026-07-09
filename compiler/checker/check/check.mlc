@@ -18,6 +18,7 @@ import { diagnostic_code_e004, diagnostic_code_e036, diagnostic_code_e037, diagn
 import { record_field_default_expression_is_static_initializer } from '../../ir/record_field_default_validate'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 import { shared_cycle_lint_diagnostics } from '../cycle_lint'
+import { orphan_impl_diagnostics } from '../orphan_lint'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -451,6 +452,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   let registry = build_registry(destructured_full_program)
   all_diagnostics = diagnostics_append(all_diagnostics, type_alias_cycle_diagnostics(destructured_full_program, registry))
   all_diagnostics = diagnostics_append(all_diagnostics, shared_cycle_lint_diagnostics(destructured_full_program, registry))
+  all_diagnostics = diagnostics_append(all_diagnostics, orphan_impl_diagnostics(destructured_full_program, registry))
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {

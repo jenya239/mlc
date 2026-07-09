@@ -3,7 +3,7 @@
 Parent: [../PLAN.md](../PLAN.md). Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #7.
 
-## Status: **open** (STEP=2 done 2026-07-09 — defining paths in registry)
+## Status: **open** (STEP=3 done 2026-07-09 — E086 orphan diagnostic)
 
 **Проблема:** сейчас `extend T : Trait` разрешён в любом модуле, без
 проверки когерентности.
@@ -18,9 +18,9 @@ Parent: [../PLAN.md](../PLAN.md). Source:
 | Step | Status | Notes |
 |------|--------|-------|
 | 1 | **done** | Inventory: no module maps in TypeRegistry; ownership via Span.file / LoadItem.path |
-| 2 | pending | Add `type_defining_path` + `trait_defining_path` to registry (from Decl span.file); builtins → `""` |
-| 3 | pending | Orphan diagnostic on `DeclExtend` with non-empty trait (E-code TBD); skip bare extend |
-| 4 | pending | Tests: same-module ok; orphan red; builtin+local trait ok; self-check compiler/ |
+| 2 | **done** | `type_defining_path` / `trait_defining_path` + accessors; record from DeclType/Alias/Trait span.file |
+| 3 | **done** | E086 + `orphan_lint.mlc`; wired in `gather_program_check`; tests same-module / orphan / builtin / bare / empty path |
+| 4 | pending | Self-check compiler/ trait-extends under E086; any debt notes |
 | 5 | pending | verify-gate + close |
 
 ## Inventory (STEP=1, `compiler/` only)
