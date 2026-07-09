@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
-| active_track | TRACK_BUILD_SPEED3 STEP=2 |
+| driver_turns_since_plan | 3 |
+| step_last | 2 |
+| active_track | TRACK_BUILD_SPEED3 STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:33 (Driver TRACK_BUILD_SPEED3 STEP=2 — ftime-trace)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_BUILD_SPEED3 |
+| started | 2026-07-09 12:32 |
+| elapsed | ~2 min |
+| done    | `-ftime-trace` on `compiler/out/exprs.cpp` (1245 lines, largest). Wrote `docs/agent/BUILD_SPEED3_FTIME_TRACE_2026_07_09.md`. |
+| verify  | wall 9.95s; InstantiateFunction 7220× / ~4.4s Total; variant~14s family; std::function 89ms; Array 132ms; shared_ptr ~2s. |
+| result  | STEP=2 done. Plain: CLOSURE_ESCAPE убрал std::function; узкое место — AST variant. |
+| issues  | — |
+| next    | ROLE=Driver STEP=3 TRACK_BUILD_SPEED3 — decide a/b/c from ftime-trace table |
 
 ### Turn 2026-07-09 12:32 (Driver TRACK_BUILD_SPEED3 STEP=1 — CI ccache)
 
