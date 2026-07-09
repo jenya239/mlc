@@ -3,25 +3,30 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "registry.hpp"
 #include "ast.hpp"
+
 namespace infer_result {
 
-struct InferResult {
-  std::shared_ptr<registry::Type> inferred_type;
-  mlc::Array<ast::Diagnostic> errors;
-};
-struct StmtInferResult {
-  mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;
-  mlc::Array<ast::Diagnostic> errors;
-};
-InferResult InferResult_with_type(InferResult self, std::shared_ptr<registry::Type> new_type) noexcept;
-InferResult InferResult_absorb(InferResult self, InferResult other) noexcept;
-InferResult InferResult_absorb_stmt(InferResult self, StmtInferResult statement_result) noexcept;
-InferResult infer_ok(std::shared_ptr<registry::Type> type_value) noexcept;
-InferResult InferResult_with_type(InferResult self, std::shared_ptr<registry::Type> new_type) noexcept;
-InferResult InferResult_absorb(InferResult self, InferResult other) noexcept;
-InferResult InferResult_absorb_stmt(InferResult self, StmtInferResult statement_result) noexcept;
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
+struct InferResult {std::shared_ptr<registry::Type> inferred_type;mlc::Array<ast::Diagnostic> errors;};
+
+struct StmtInferResult {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_env;mlc::Array<ast::Diagnostic> errors;};
+
+infer_result::InferResult infer_ok(std::shared_ptr<registry::Type> type_value) noexcept;
+
+infer_result::InferResult InferResult_with_type(infer_result::InferResult self, std::shared_ptr<registry::Type> new_type) noexcept;
+
+infer_result::InferResult InferResult_absorb(infer_result::InferResult self, infer_result::InferResult other) noexcept;
+
+infer_result::InferResult InferResult_absorb_stmt(infer_result::InferResult self, infer_result::StmtInferResult statement_result) noexcept;
 
 } // namespace infer_result
 

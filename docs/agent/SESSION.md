@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 2 |
-| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=3 |
+| driver_turns_since_plan | 9 |
+| step_last | 3 |
+| active_track | TRACK_LANG_WEAK_SUGAR **open** STEP=4 |
 | test_gate | ok |
+
+### Turn 2026-07-09 04:45 (Driver TRACK_LANG_WEAK_SUGAR STEP=3 — mlcc .weak/.upgrade parity)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_WEAK_SUGAR |
+| started | 2026-07-09 04:05 |
+| elapsed | ~40 min |
+| done    | `infer_weak_method.mlc` (Shared.new→TShared, weak/upgrade); `transform.mlc` Shared.new + method result types; `weak_method_gen.mlc` + `method_gen.mlc`; `type_gen.mlc` Weak→weak_ptr; `test_weak_sugar.mlc`. |
+| result  | `dev_gate_fast` **1437/0**; probe emits `std::weak_ptr` + `from_nullable`. Plain: mlcc теперь понимает `.weak()`/`.upgrade()`. |
+| issues  | Shared.new was TUnknown so sugar never fired; fixed. Parse issues with `else do` in transform — helper. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_WEAK_SUGAR — verify-gate (self-host diff + regression) + optional Weak use; close track |
 
 ### Turn 2026-07-09 04:00 (Driver TRACK_LANG_WEAK_SUGAR STEP=2 — Ruby .weak/.upgrade sugar)
 

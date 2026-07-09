@@ -1,4 +1,4 @@
-57271536b3ee7f50343cb9d3cf18ff4eeee23e445def6955d09ec19f7bb50d3c
+fa863638e2b04981753cc14546e1e160508ec5329f86fba6fb51bd8bb777f161
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -68,6 +68,7 @@ infer_question_expression.cpp
 infer_result.cpp
 infer_result_option_method.cpp
 infer_trait_bounds.cpp
+infer_weak_method.cpp
 interpreter.cpp
 let_pat.cpp
 let_pat_cpp.cpp

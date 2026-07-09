@@ -1,0 +1,59 @@
+import { TestResult, assert_eq_int } from './test_runner'
+import { assert_code_contains } from './codegen_test_helpers'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { check } from '../checker/check/check'
+import { gen_expr } from '../codegen/eval'
+import { create_codegen_context } from '../codegen/context'
+import { type_to_cpp } from '../codegen/decl/type_gen'
+import { empty_program } from './ast_builders'
+import { SemanticExpressionMethod, SemanticExpressionIdent } from '../ir/semantic_ir'
+import { span_unknown, TyGeneric, TyNamed } from '../frontend/ast'
+import { TShared, TGeneric, TNamed } from '../checker/registry'
+
+fn check_error_count(source: string) -> i32 =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => 0,
+    Err(errors) => errors.length()
+  }
+
+fn integer_type() -> Shared<Type> = Shared.new(TI32)
+fn node_type() -> Shared<Type> = Shared.new(TNamed('Node'))
+fn shared_node_type() -> Shared<Type> = Shared.new(TShared(node_type()))
+fn weak_node_type() -> Shared<Type> = Shared.new(TGeneric('Weak', [node_type()]))
+
+export fn weak_sugar_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int('Shared.weak checks',
+    check_error_count(
+      'type Node = { value: i32 }\nfn main() -> Weak<Node> = Shared.new(Node { value: 1 }).weak()'),
+    0))
+
+  results.push(assert_eq_int('Weak.upgrade checks',
+    check_error_count(
+      'type Node = { value: i32 }\nfn main() -> Option<Shared<Node>> = do\n  let weak_ref: Weak<Node> = Shared.new(Node { value: 1 }).weak()\n  weak_ref.upgrade()\nend'),
+    0))
+
+  const shared_receiver = Shared.new(SemanticExpressionIdent('shared', shared_node_type(), span_unknown()))
+  const weak_call = Shared.new(SemanticExpressionMethod(
+    shared_receiver, 'weak', [], [0], weak_node_type(), span_unknown()))
+  const context = create_codegen_context(empty_program())
+  const weak_generated = gen_expr(weak_call, context)
+  results.push(assert_code_contains('Shared.weak in cpp', weak_generated.to_string(), 'std::weak_ptr'))
+
+  const weak_receiver = Shared.new(SemanticExpressionIdent('weak_ref', weak_node_type(), span_unknown()))
+  const upgrade_call = Shared.new(SemanticExpressionMethod(
+    weak_receiver, 'upgrade', [], [0],
+    Shared.new(TGeneric('Option', [shared_node_type()])),
+    span_unknown()))
+  const upgrade_generated = gen_expr(upgrade_call, context)
+  results.push(assert_code_contains('Weak.upgrade in cpp', upgrade_generated.to_string(), 'from_nullable'))
+
+  results.push(assert_code_contains(
+    'Weak type in cpp',
+    type_to_cpp(context, Shared.new(TyGeneric('Weak', [Shared.new(TyNamed('Node'))]))),
+    'std::weak_ptr'))
+
+  results
+end

@@ -1,4 +1,3 @@
-#define main mlc_user_main
 #include "outcome.hpp"
 
 #include "value.hpp"
@@ -8,6 +7,5 @@ namespace outcome {
 
 using namespace value;
 using namespace frame;
-
 
 } // namespace outcome

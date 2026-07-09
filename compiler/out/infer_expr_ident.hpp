@@ -3,10 +3,19 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "check_context.hpp"
 #include "infer_result.hpp"
 #include "registry.hpp"
+
 namespace infer_expr_ident {
+
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
 
 infer_result::InferResult infer_expr_identifier(mlc::String name, check_context::CheckContext inference_context) noexcept;
 

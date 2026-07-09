@@ -1,4 +1,3 @@
-#define main mlc_user_main
 #include "array_method_types.hpp"
 
 #include "registry.hpp"
@@ -9,100 +8,22 @@ namespace array_method_types {
 using namespace registry;
 using namespace semantic_type_structure;
 
-bool is_array_hof_method(mlc::String method_name) noexcept{
-  return (((((((((((((((((method_name == mlc::String("map", 3)) || (method_name == mlc::String("filter", 6))) || (method_name == mlc::String("fold", 4))) || (method_name == mlc::String("flat_map", 8))) || (method_name == mlc::String("any", 3))) || (method_name == mlc::String("all", 3))) || (method_name == mlc::String("find_index", 10))) || (method_name == mlc::String("find", 4))) || (method_name == mlc::String("sort_by", 7))) || (method_name == mlc::String("take", 4))) || (method_name == mlc::String("drop", 4))) || (method_name == mlc::String("zip", 3))) || (method_name == mlc::String("enumerate", 9))) || (method_name == mlc::String("join", 4))) || (method_name == mlc::String("sum", 3))) || (method_name == mlc::String("group_by", 8))) || (method_name == mlc::String("flat", 4)));
-}
-int array_hof_expected_argument_count(mlc::String method_name) noexcept{
-  if ((method_name == mlc::String("fold", 4)))   {
-    return 2;
-  } else if ((((method_name == mlc::String("enumerate", 9)) || (method_name == mlc::String("sum", 3))) || (method_name == mlc::String("flat", 4))))   {
-    return 0;
-  } else   {
-    return 1;
-  }
-}
-std::shared_ptr<registry::Type> array_hof_call_result_type(std::shared_ptr<registry::Type> element_type, mlc::String method_name, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types) noexcept{
-  if ((method_name == mlc::String("map", 3)))   {
-    if ((argument_inferred_types.length() > 0))     {
-      return std::make_shared<registry::Type>(registry::TArray{semantic_type_structure::function_return_type(argument_inferred_types[0])});
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else if (((method_name == mlc::String("filter", 6)) || (method_name == mlc::String("sort_by", 7))))   {
-    return std::make_shared<registry::Type>(registry::TArray{element_type});
-  } else if ((method_name == mlc::String("fold", 4)))   {
-    if ((argument_inferred_types.length() > 0))     {
-      return argument_inferred_types[0];
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else if ((method_name == mlc::String("flat_map", 8)))   {
-    if ((argument_inferred_types.length() > 0))     {
-      auto callback_return = semantic_type_structure::function_return_type(argument_inferred_types[0]);
-      if (semantic_type_structure::type_is_array(callback_return))       {
-        return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = callback_return;
-if (std::holds_alternative<registry::TArray>((*__match_subject))) {
-const registry::TArray& tArray = std::get<registry::TArray>((*__match_subject));
-auto [inner] = tArray; return std::make_shared<registry::Type>(registry::TArray{inner});
-}
-return std::make_shared<registry::Type>(registry::TUnknown{});
-std::abort();
-}();
-      } else       {
-        return std::make_shared<registry::Type>(registry::TUnknown{});
-      }
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else if (((method_name == mlc::String("any", 3)) || (method_name == mlc::String("all", 3))))   {
-    return std::make_shared<registry::Type>(registry::TBool{});
-  } else if ((method_name == mlc::String("find_index", 10)))   {
-    return std::make_shared<registry::Type>(registry::TI32{});
-  } else if ((method_name == mlc::String("find", 4)))   {
-    return std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Option", 6), mlc::Array<std::shared_ptr<registry::Type>>{element_type}});
-  } else if (((method_name == mlc::String("take", 4)) || (method_name == mlc::String("drop", 4))))   {
-    return std::make_shared<registry::Type>(registry::TArray{element_type});
-  } else if ((method_name == mlc::String("zip", 3)))   {
-    if ((argument_inferred_types.length() > 0))     {
-      return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = argument_inferred_types[0];
-if (std::holds_alternative<registry::TArray>((*__match_subject))) {
-const registry::TArray& tArray = std::get<registry::TArray>((*__match_subject));
-auto [other_element] = tArray; return std::make_shared<registry::Type>(registry::TArray{std::make_shared<registry::Type>(registry::TPair{element_type, other_element})});
-}
-return std::make_shared<registry::Type>(registry::TUnknown{});
-std::abort();
-}();
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else if ((method_name == mlc::String("enumerate", 9)))   {
-    return std::make_shared<registry::Type>(registry::TArray{std::make_shared<registry::Type>(registry::TPair{std::make_shared<registry::Type>(registry::TI32{}), element_type})});
-  } else if ((method_name == mlc::String("join", 4)))   {
-    return std::make_shared<registry::Type>(registry::TString{});
-  } else if ((method_name == mlc::String("sum", 3)))   {
-    return std::make_shared<registry::Type>(registry::TI32{});
-  } else if ((method_name == mlc::String("group_by", 8)))   {
-    if ((argument_inferred_types.length() > 0))     {
-      auto key_type = semantic_type_structure::function_return_type(argument_inferred_types[0]);
-      return std::make_shared<registry::Type>(registry::TArray{std::make_shared<registry::Type>(registry::TPair{key_type, std::make_shared<registry::Type>(registry::TArray{element_type})})});
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else if ((method_name == mlc::String("flat", 4)))   {
-    return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = element_type;
-if (std::holds_alternative<registry::TArray>((*__match_subject))) {
-const registry::TArray& tArray = std::get<registry::TArray>((*__match_subject));
-auto [inner] = tArray; return std::make_shared<registry::Type>(registry::TArray{inner});
-}
-return std::make_shared<registry::Type>(registry::TUnknown{});
-std::abort();
-}();
-  } else   {
-    return std::make_shared<registry::Type>(registry::TUnknown{});
-  }
-}
+bool is_array_hof_method(mlc::String method_name) noexcept;
+
+int array_hof_expected_argument_count(mlc::String method_name) noexcept;
+
+std::shared_ptr<registry::Type> array_hof_call_result_type(std::shared_ptr<registry::Type> element_type, mlc::String method_name, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types) noexcept;
+
+bool is_array_hof_method(mlc::String method_name) noexcept{return method_name == mlc::String("map") || method_name == mlc::String("filter") || method_name == mlc::String("fold") || method_name == mlc::String("flat_map") || method_name == mlc::String("any") || method_name == mlc::String("all") || method_name == mlc::String("find_index") || method_name == mlc::String("find") || method_name == mlc::String("sort_by") || method_name == mlc::String("take") || method_name == mlc::String("drop") || method_name == mlc::String("zip") || method_name == mlc::String("enumerate") || method_name == mlc::String("join") || method_name == mlc::String("sum") || method_name == mlc::String("group_by") || method_name == mlc::String("flat");}
+
+int array_hof_expected_argument_count(mlc::String method_name) noexcept{return method_name == mlc::String("fold") ? 2 : method_name == mlc::String("enumerate") || method_name == mlc::String("sum") || method_name == mlc::String("flat") ? 0 : 1;}
+
+std::shared_ptr<registry::Type> array_hof_call_result_type(std::shared_ptr<registry::Type> element_type, mlc::String method_name, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types) noexcept{return method_name == mlc::String("map") ? argument_inferred_types.size() > 0 ? std::make_shared<registry::Type>(registry::TArray(semantic_type_structure::function_return_type(argument_inferred_types[0]))) : std::make_shared<registry::Type>((registry::TUnknown{})) : method_name == mlc::String("filter") || method_name == mlc::String("sort_by") ? std::make_shared<registry::Type>(registry::TArray(element_type)) : method_name == mlc::String("fold") ? argument_inferred_types.size() > 0 ? argument_inferred_types[0] : std::make_shared<registry::Type>((registry::TUnknown{})) : method_name == mlc::String("flat_map") ? argument_inferred_types.size() > 0 ? [&]() -> std::shared_ptr<registry::Type> { 
+  std::shared_ptr<registry::Type> callback_return = semantic_type_structure::function_return_type(argument_inferred_types[0]);
+  return semantic_type_structure::type_is_array(callback_return) ? [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*callback_return))) { auto _v_tarray = std::get<registry::TArray>((*callback_return)); auto [inner] = _v_tarray; return std::make_shared<registry::Type>(registry::TArray(inner)); } return std::make_shared<registry::Type>((registry::TUnknown{})); }() : std::make_shared<registry::Type>((registry::TUnknown{}));
+ }() : std::make_shared<registry::Type>((registry::TUnknown{})) : method_name == mlc::String("any") || method_name == mlc::String("all") ? std::make_shared<registry::Type>((registry::TBool{})) : method_name == mlc::String("find_index") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("find") ? std::make_shared<registry::Type>(registry::TGeneric(mlc::String("Option"), mlc::Array<std::shared_ptr<registry::Type>>{element_type})) : method_name == mlc::String("take") || method_name == mlc::String("drop") ? std::make_shared<registry::Type>(registry::TArray(element_type)) : method_name == mlc::String("zip") ? argument_inferred_types.size() > 0 ? [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*argument_inferred_types[0]))) { auto _v_tarray = std::get<registry::TArray>((*argument_inferred_types[0])); auto [other_element] = _v_tarray; return std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>(registry::TPair(element_type, other_element)))); } return std::make_shared<registry::Type>((registry::TUnknown{})); }() : std::make_shared<registry::Type>((registry::TUnknown{})) : method_name == mlc::String("enumerate") ? std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>(registry::TPair(std::make_shared<registry::Type>((registry::TI32{})), element_type)))) : method_name == mlc::String("join") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("sum") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("group_by") ? argument_inferred_types.size() > 0 ? [&]() -> std::shared_ptr<registry::Type> { 
+  std::shared_ptr<registry::Type> key_type = semantic_type_structure::function_return_type(argument_inferred_types[0]);
+  return std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>(registry::TPair(key_type, std::make_shared<registry::Type>(registry::TArray(element_type))))));
+ }() : std::make_shared<registry::Type>((registry::TUnknown{})) : method_name == mlc::String("flat") ? [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TArray>((*element_type))) { auto _v_tarray = std::get<registry::TArray>((*element_type)); auto [inner] = _v_tarray; return std::make_shared<registry::Type>(registry::TArray(inner)); } return std::make_shared<registry::Type>((registry::TUnknown{})); }() : std::make_shared<registry::Type>((registry::TUnknown{}));}
 
 } // namespace array_method_types

@@ -3,20 +3,39 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "registry.hpp"
 #include "semantic_type_structure.hpp"
+
 namespace result_option_method_types {
 
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
 bool is_result_generic(std::shared_ptr<registry::Type> type_value) noexcept;
+
 bool is_option_generic(std::shared_ptr<registry::Type> type_value) noexcept;
+
 bool should_skip_array_hof_for_receiver(std::shared_ptr<registry::Type> type_value) noexcept;
+
 bool is_result_combinator_method(mlc::String method_name) noexcept;
+
 bool is_option_combinator_method(mlc::String method_name) noexcept;
+
 bool should_infer_result_option_combinator(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name) noexcept;
+
 int result_option_hof_expected_argument_count(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name) noexcept;
+
 std::shared_ptr<registry::Type> result_ok_type(std::shared_ptr<registry::Type> result_type) noexcept;
+
 std::shared_ptr<registry::Type> result_err_type(std::shared_ptr<registry::Type> result_type) noexcept;
+
 std::shared_ptr<registry::Type> option_inner_type(std::shared_ptr<registry::Type> option_type) noexcept;
+
 std::shared_ptr<registry::Type> result_option_hof_call_result_type(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name, mlc::Array<std::shared_ptr<registry::Type>> argument_inferred_types) noexcept;
 
 } // namespace result_option_method_types

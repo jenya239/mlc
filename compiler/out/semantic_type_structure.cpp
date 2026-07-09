@@ -1,4 +1,3 @@
-#define main mlc_user_main
 #include "semantic_type_structure.hpp"
 
 #include "registry.hpp"
@@ -7,862 +6,437 @@ namespace semantic_type_structure {
 
 using namespace registry;
 
-mlc::String generic_type_name_from_type(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [name, __1] = tGeneric; return name; },
-[&](const registry::TI32& tI32) { return mlc::String("", 0); },
-[&](const registry::TString& tString) { return mlc::String("", 0); },
-[&](const registry::TBool& tBool) { return mlc::String("", 0); },
-[&](const registry::TUnit& tUnit) { return mlc::String("", 0); },
-[&](const registry::TI64& tI64) { return mlc::String("", 0); },
-[&](const registry::TF64& tF64) { return mlc::String("", 0); },
-[&](const registry::TU8& tU8) { return mlc::String("", 0); },
-[&](const registry::TUsize& tUsize) { return mlc::String("", 0); },
-[&](const registry::TChar& tChar) { return mlc::String("", 0); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return mlc::String("", 0); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return mlc::String("", 0); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return mlc::String("", 0); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return mlc::String("", 0); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return mlc::String("", 0); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return mlc::String("", 0); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return mlc::String("", 0); },
-[&](const registry::TUnknown& tUnknown) { return mlc::String("", 0); }
-}, (*type_value));
-}
-mlc::Array<std::shared_ptr<registry::Type>> generic_type_arguments_from_type(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TGeneric& tGeneric) { auto [__0, type_arguments] = tGeneric; return type_arguments; },
-[&](const registry::TI32& tI32) { return empty_type_parameter_list(); },
-[&](const registry::TString& tString) { return empty_type_parameter_list(); },
-[&](const registry::TBool& tBool) { return empty_type_parameter_list(); },
-[&](const registry::TUnit& tUnit) { return empty_type_parameter_list(); },
-[&](const registry::TI64& tI64) { return empty_type_parameter_list(); },
-[&](const registry::TF64& tF64) { return empty_type_parameter_list(); },
-[&](const registry::TU8& tU8) { return empty_type_parameter_list(); },
-[&](const registry::TUsize& tUsize) { return empty_type_parameter_list(); },
-[&](const registry::TChar& tChar) { return empty_type_parameter_list(); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return empty_type_parameter_list(); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return empty_type_parameter_list(); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return empty_type_parameter_list(); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return empty_type_parameter_list(); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return empty_type_parameter_list(); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return empty_type_parameter_list(); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return empty_type_parameter_list(); },
-[&](const registry::TUnknown& tUnknown) { return empty_type_parameter_list(); }
-}, (*type_value));
-}
-mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept{
-  return mlc::Array<std::shared_ptr<registry::Type>>{};
-}
-bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TUnknown& tUnknown) { return true; },
-[&](const registry::TI32& tI32) { return false; },
-[&](const registry::TString& tString) { return false; },
-[&](const registry::TBool& tBool) { return false; },
-[&](const registry::TUnit& tUnit) { return false; },
-[&](const registry::TI64& tI64) { return false; },
-[&](const registry::TF64& tF64) { return false; },
-[&](const registry::TU8& tU8) { return false; },
-[&](const registry::TUsize& tUsize) { return false; },
-[&](const registry::TChar& tChar) { return false; },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return false; },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; }
-}, (*type_value));
-}
-bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept{
-  if ((type_is_unknown(left) || type_is_unknown(right)))   {
-    return true;
-  } else   {
-    return std::visit(overloaded{[&](const registry::TI32& tI32) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TI32>((*__match_subject))) {
-const registry::TI32& tI32 = std::get<registry::TI32>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TString& tString) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TBool& tBool) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TBool>((*__match_subject))) {
-const registry::TBool& tBool = std::get<registry::TBool>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TUnit& tUnit) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TUnit>((*__match_subject))) {
-const registry::TUnit& tUnit = std::get<registry::TUnit>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TI64& tI64) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TI64>((*__match_subject))) {
-const registry::TI64& tI64 = std::get<registry::TI64>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TF64& tF64) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TF64>((*__match_subject))) {
-const registry::TF64& tF64 = std::get<registry::TF64>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TU8& tU8) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TU8>((*__match_subject))) {
-const registry::TU8& tU8 = std::get<registry::TU8>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TUsize& tUsize) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TUsize>((*__match_subject))) {
-const registry::TUsize& tUsize = std::get<registry::TUsize>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TChar& tChar) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TChar>((*__match_subject))) {
-const registry::TChar& tChar = std::get<registry::TChar>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TUnknown& tUnknown) { return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TArray& tArray) { auto [inner_left] = tArray; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TArray>((*__match_subject))) {
-const registry::TArray& tArray = std::get<registry::TArray>((*__match_subject));
-auto [inner_right] = tArray; return types_structurally_equal(inner_left, inner_right);
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TShared& tShared) { auto [inner_left] = tShared; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TShared>((*__match_subject))) {
-const registry::TShared& tShared = std::get<registry::TShared>((*__match_subject));
-auto [inner_right] = tShared; return types_structurally_equal(inner_left, inner_right);
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TNamed& tNamed) { auto [left_name] = tNamed; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TNamed>((*__match_subject))) {
-const registry::TNamed& tNamed = std::get<registry::TNamed>((*__match_subject));
-auto [right_name] = tNamed; return (left_name == right_name);
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TGeneric& tGeneric) { auto [left_name, left_args] = tGeneric; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
-const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
-auto [right_name, right_args] = tGeneric; return (((left_name == right_name) && (left_args.length() == right_args.length())) && zipped_shared_types_structurally_equal(left_args, right_args));
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TTuple& tTuple) { auto [left_tuple_types] = tTuple; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TTuple>((*__match_subject))) {
-const registry::TTuple& tTuple = std::get<registry::TTuple>((*__match_subject));
-auto [right_tuple_types] = tTuple; return ((left_tuple_types.length() == right_tuple_types.length()) && zipped_shared_types_structurally_equal(left_tuple_types, right_tuple_types));
-}
-if (std::holds_alternative<registry::TPair>((*__match_subject))) {
-const registry::TPair& tPair = std::get<registry::TPair>((*__match_subject));
-auto [right_first, right_second] = tPair; return (((left_tuple_types.length() == 2) && types_structurally_equal(left_tuple_types[0], right_first)) && types_structurally_equal(left_tuple_types[1], right_second));
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TPair& tPair) { auto [left_first, left_second] = tPair; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TPair>((*__match_subject))) {
-const registry::TPair& tPair = std::get<registry::TPair>((*__match_subject));
-auto [right_first, right_second] = tPair; return (types_structurally_equal(left_first, right_first) && types_structurally_equal(left_second, right_second));
-}
-if (std::holds_alternative<registry::TTuple>((*__match_subject))) {
-const registry::TTuple& tTuple = std::get<registry::TTuple>((*__match_subject));
-auto [right_tuple_types] = tTuple; return (((right_tuple_types.length() == 2) && types_structurally_equal(left_first, right_tuple_types[0])) && types_structurally_equal(left_second, right_tuple_types[1]));
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TFn& tFn) { auto [left_parameters, left_return_type] = tFn; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TFn>((*__match_subject))) {
-const registry::TFn& tFn = std::get<registry::TFn>((*__match_subject));
-auto [right_parameters, right_return_type] = tFn; return (((left_parameters.length() == right_parameters.length()) && zipped_shared_types_structurally_equal(left_parameters, right_parameters)) && types_structurally_equal(left_return_type, right_return_type));
-}
-return false;
-std::abort();
-}(); },
-[&](const registry::TAssoc& tAssoc) { auto [left_parameter, left_associated] = tAssoc; return [&]() -> bool {
-auto __match_subject = right;
-if (std::holds_alternative<registry::TAssoc>((*__match_subject))) {
-const registry::TAssoc& tAssoc = std::get<registry::TAssoc>((*__match_subject));
-auto [right_parameter, right_associated] = tAssoc; return ((left_parameter == right_parameter) && (left_associated == right_associated));
-}
-return true;
-std::abort();
-}(); }
-}, (*left));
-  }
-}
-bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept{
-  return zipped_suffix_types_structurally_equal(left_list, right_list, 0);
-}
-bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept{
-  if ((index >= left_list.length()))   {
-    return true;
-  } else   {
-    return (types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, (index + 1)));
-  }
-}
-bool type_is_channel(std::shared_ptr<registry::Type> type_value) noexcept{
-  return (generic_type_name_from_type(type_value) == mlc::String("Channel", 7));
-}
+mlc::String generic_type_name_from_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> generic_type_arguments_from_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept;
+
+bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept;
+
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept;
+
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept;
+
+bool type_is_channel(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> channel_element_type_from_channel_type(std::shared_ptr<registry::Type> channel_type) noexcept;
+
+bool type_is_mutex(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> mutex_inner_type_from_mutex_type(std::shared_ptr<registry::Type> mutex_type) noexcept;
+
+bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept;
+
+bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept;
+
+bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept;
+
+std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept;
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept;
+
+bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept;
+
+bool is_numeric_type(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool types_compatible_for_call_argument(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept;
+
+bool zipped_type_arguments_assignment_compatible(mlc::Array<std::shared_ptr<registry::Type>> expected_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_arguments, int index) noexcept;
+
+bool types_assignment_compatible(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept;
+
+std::shared_ptr<registry::Type> arithmetic_binary_result_type(std::shared_ptr<registry::Type> left_type) noexcept;
+
+std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept;
+
+mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept;
+
+bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+bool types_allowed_for_binary_int_only(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+bool types_allowed_for_ordering(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+bool types_allowed_for_logical_and_or(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
+
+std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept;
+
+int builtin_method_expected_argument_count(mlc::String method_name) noexcept;
+
+std::shared_ptr<registry::Type> substitute_named_type_for_map(mlc::String name, std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_array_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_shared_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_generic_type_for_map(mlc::String name, mlc::Array<std::shared_ptr<registry::Type>> type_arguments, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_pair_type_for_map(std::shared_ptr<registry::Type> first, std::shared_ptr<registry::Type> second, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_tuple_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_function_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_list, std::shared_ptr<registry::Type> return_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
+
+mlc::String operator_method_for(mlc::String operation) noexcept;
+
+mlc::String generic_type_name_from_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TGeneric& tgeneric) -> mlc::String { auto [name, _w0] = tgeneric; return name; },
+  [&](const TI32& ti32) -> mlc::String { return mlc::String(""); },
+  [&](const TString& tstring) -> mlc::String { return mlc::String(""); },
+  [&](const TBool& tbool) -> mlc::String { return mlc::String(""); },
+  [&](const TUnit& tunit) -> mlc::String { return mlc::String(""); },
+  [&](const TI64& ti64) -> mlc::String { return mlc::String(""); },
+  [&](const TF64& tf64) -> mlc::String { return mlc::String(""); },
+  [&](const TU8& tu8) -> mlc::String { return mlc::String(""); },
+  [&](const TUsize& tusize) -> mlc::String { return mlc::String(""); },
+  [&](const TChar& tchar) -> mlc::String { return mlc::String(""); },
+  [&](const TShared& tshared) -> mlc::String { auto [_w0] = tshared; return mlc::String(""); },
+  [&](const TNamed& tnamed) -> mlc::String { auto [_w0] = tnamed; return mlc::String(""); },
+  [&](const TArray& tarray) -> mlc::String { auto [_w0] = tarray; return mlc::String(""); },
+  [&](const TPair& tpair) -> mlc::String { auto [_w0, _w1] = tpair; return mlc::String(""); },
+  [&](const TTuple& ttuple) -> mlc::String { auto [_w0] = ttuple; return mlc::String(""); },
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String(""); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [_w0, _w1] = tassoc; return mlc::String(""); },
+  [&](const TUnknown& tunknown) -> mlc::String { return mlc::String(""); }
+}, (*type_value));}
+
+mlc::Array<std::shared_ptr<registry::Type>> generic_type_arguments_from_type(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, type_arguments] = tgeneric; return type_arguments; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TI64& ti64) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TF64& tf64) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TU8& tu8) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TUsize& tusize) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TChar& tchar) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return empty_type_parameter_list(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return empty_type_parameter_list(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return empty_type_parameter_list(); },
+  [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return empty_type_parameter_list(); },
+  [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return empty_type_parameter_list(); },
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tfn; return empty_type_parameter_list(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return empty_type_parameter_list(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); }
+}, (*type_value));}
+
+mlc::Array<std::shared_ptr<registry::Type>> empty_type_parameter_list() noexcept{return {};}
+
+bool type_is_unknown(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TUnknown& tunknown) -> bool { return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; }
+}, (*type_value));}
+
+bool types_structurally_equal(std::shared_ptr<registry::Type> left, std::shared_ptr<registry::Type> right) noexcept{return type_is_unknown(left) || type_is_unknown(right) ? true : std::visit(overloaded{
+  [&](const TI32& ti32) -> bool { return [&]() { if (std::holds_alternative<registry::TI32>((*right))) {  return true; } return false; }(); },
+  [&](const TString& tstring) -> bool { return [&]() { if (std::holds_alternative<registry::TString>((*right))) {  return true; } return false; }(); },
+  [&](const TBool& tbool) -> bool { return [&]() { if (std::holds_alternative<registry::TBool>((*right))) {  return true; } return false; }(); },
+  [&](const TUnit& tunit) -> bool { return [&]() { if (std::holds_alternative<registry::TUnit>((*right))) {  return true; } return false; }(); },
+  [&](const TI64& ti64) -> bool { return [&]() { if (std::holds_alternative<registry::TI64>((*right))) {  return true; } return false; }(); },
+  [&](const TF64& tf64) -> bool { return [&]() { if (std::holds_alternative<registry::TF64>((*right))) {  return true; } return false; }(); },
+  [&](const TU8& tu8) -> bool { return [&]() { if (std::holds_alternative<registry::TU8>((*right))) {  return true; } return false; }(); },
+  [&](const TUsize& tusize) -> bool { return [&]() { if (std::holds_alternative<registry::TUsize>((*right))) {  return true; } return false; }(); },
+  [&](const TChar& tchar) -> bool { return [&]() { if (std::holds_alternative<registry::TChar>((*right))) {  return true; } return false; }(); },
+  [&](const TUnknown& tunknown) -> bool { return [&]() { if (std::holds_alternative<registry::TUnknown>((*right))) {  return true; } return false; }(); },
+  [&](const TArray& tarray) -> bool { auto [inner_left] = tarray; return [&]() { if (std::holds_alternative<registry::TArray>((*right))) { auto _v_tarray = std::get<registry::TArray>((*right)); auto [inner_right] = _v_tarray; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
+  [&](const TShared& tshared) -> bool { auto [inner_left] = tshared; return [&]() { if (std::holds_alternative<registry::TShared>((*right))) { auto _v_tshared = std::get<registry::TShared>((*right)); auto [inner_right] = _v_tshared; return types_structurally_equal(inner_left, inner_right); } return false; }(); },
+  [&](const TNamed& tnamed) -> bool { auto [left_name] = tnamed; return [&]() { if (std::holds_alternative<registry::TNamed>((*right))) { auto _v_tnamed = std::get<registry::TNamed>((*right)); auto [right_name] = _v_tnamed; return left_name == right_name; } return false; }(); },
+  [&](const TGeneric& tgeneric) -> bool { auto [left_name, left_args] = tgeneric; return [&]() { if (std::holds_alternative<registry::TGeneric>((*right))) { auto _v_tgeneric = std::get<registry::TGeneric>((*right)); auto [right_name, right_args] = _v_tgeneric; return left_name == right_name && left_args.size() == right_args.size() && zipped_shared_types_structurally_equal(left_args, right_args); } return false; }(); },
+  [&](const TTuple& ttuple) -> bool { auto [left_tuple_types] = ttuple; return [&]() { if (std::holds_alternative<registry::TTuple>((*right))) { auto _v_ttuple = std::get<registry::TTuple>((*right)); auto [right_tuple_types] = _v_ttuple; return left_tuple_types.size() == right_tuple_types.size() && zipped_shared_types_structurally_equal(left_tuple_types, right_tuple_types); } if (std::holds_alternative<registry::TPair>((*right))) { auto _v_tpair = std::get<registry::TPair>((*right)); auto [right_first, right_second] = _v_tpair; return left_tuple_types.size() == 2 && types_structurally_equal(left_tuple_types[0], right_first) && types_structurally_equal(left_tuple_types[1], right_second); } return false; }(); },
+  [&](const TPair& tpair) -> bool { auto [left_first, left_second] = tpair; return [&]() { if (std::holds_alternative<registry::TPair>((*right))) { auto _v_tpair = std::get<registry::TPair>((*right)); auto [right_first, right_second] = _v_tpair; return types_structurally_equal(left_first, right_first) && types_structurally_equal(left_second, right_second); } if (std::holds_alternative<registry::TTuple>((*right))) { auto _v_ttuple = std::get<registry::TTuple>((*right)); auto [right_tuple_types] = _v_ttuple; return right_tuple_types.size() == 2 && types_structurally_equal(left_first, right_tuple_types[0]) && types_structurally_equal(left_second, right_tuple_types[1]); } return false; }(); },
+  [&](const TFn& tfn) -> bool { auto [left_parameters, left_return_type] = tfn; return [&]() { if (std::holds_alternative<registry::TFn>((*right))) { auto _v_tfn = std::get<registry::TFn>((*right)); auto [right_parameters, right_return_type] = _v_tfn; return left_parameters.size() == right_parameters.size() && zipped_shared_types_structurally_equal(left_parameters, right_parameters) && types_structurally_equal(left_return_type, right_return_type); } return false; }(); },
+  [&](const TAssoc& tassoc) -> bool { auto [left_parameter, left_associated] = tassoc; return [&]() { if (std::holds_alternative<registry::TAssoc>((*right))) { auto _v_tassoc = std::get<registry::TAssoc>((*right)); auto [right_parameter, right_associated] = _v_tassoc; return left_parameter == right_parameter && left_associated == right_associated; } return true; }(); }
+}, (*left));}
+
+bool zipped_shared_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list) noexcept{return zipped_suffix_types_structurally_equal(left_list, right_list, 0);}
+
+bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry::Type>> left_list, mlc::Array<std::shared_ptr<registry::Type>> right_list, int index) noexcept{return index >= left_list.size() ? true : types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, index + 1);}
+
+bool type_is_channel(std::shared_ptr<registry::Type> type_value) noexcept{return generic_type_name_from_type(type_value) == mlc::String("Channel");}
+
 std::shared_ptr<registry::Type> channel_element_type_from_channel_type(std::shared_ptr<registry::Type> channel_type) noexcept{
-  if ((generic_type_name_from_type(channel_type) == mlc::String("Channel", 7)))   {
-    auto type_arguments = generic_type_arguments_from_type(channel_type);
-    if ((type_arguments.length() == 1))     {
-      return type_arguments[0];
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else   {
-    return std::make_shared<registry::Type>(registry::TUnknown{});
-  }
+return generic_type_name_from_type(channel_type) == mlc::String("Channel") ? [&]() -> std::shared_ptr<registry::Type> { 
+  mlc::Array<std::shared_ptr<registry::Type>> type_arguments = generic_type_arguments_from_type(channel_type);
+  return type_arguments.size() == 1 ? type_arguments[0] : std::make_shared<registry::Type>((registry::TUnknown{}));
+ }() : std::make_shared<registry::Type>((registry::TUnknown{}));
 }
-bool type_is_mutex(std::shared_ptr<registry::Type> type_value) noexcept{
-  return (generic_type_name_from_type(type_value) == mlc::String("Mutex", 5));
-}
+
+bool type_is_mutex(std::shared_ptr<registry::Type> type_value) noexcept{return generic_type_name_from_type(type_value) == mlc::String("Mutex");}
+
 std::shared_ptr<registry::Type> mutex_inner_type_from_mutex_type(std::shared_ptr<registry::Type> mutex_type) noexcept{
-  if ((generic_type_name_from_type(mutex_type) == mlc::String("Mutex", 5)))   {
-    auto type_arguments = generic_type_arguments_from_type(mutex_type);
-    if ((type_arguments.length() == 1))     {
-      return type_arguments[0];
-    } else     {
-      return std::make_shared<registry::Type>(registry::TUnknown{});
-    }
-  } else   {
-    return std::make_shared<registry::Type>(registry::TUnknown{});
-  }
-}
-bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TArray& tArray) { auto [__0] = tArray; return true; },
-[&](const registry::TI32& tI32) { return false; },
-[&](const registry::TString& tString) { return false; },
-[&](const registry::TBool& tBool) { return false; },
-[&](const registry::TUnit& tUnit) { return false; },
-[&](const registry::TI64& tI64) { return false; },
-[&](const registry::TF64& tF64) { return false; },
-[&](const registry::TU8& tU8) { return false; },
-[&](const registry::TUsize& tUsize) { return false; },
-[&](const registry::TChar& tChar) { return false; },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return false; },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; },
-[&](const registry::TUnknown& tUnknown) { return false; }
-}, (*type_value));
-}
-std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept{
-  return std::visit(overloaded{[&](const registry::TArray& tArray) { auto [inner] = tArray; return inner; },
-[&](const registry::TI32& tI32) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TString& tString) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TBool& tBool) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnit& tUnit) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TI64& tI64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TF64& tF64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TU8& tU8) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUsize& tUsize) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TChar& tChar) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnknown& tUnknown) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
-}, (*array_type));
-}
-bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TShared& tShared) { auto [__0] = tShared; return true; },
-[&](const registry::TI32& tI32) { return false; },
-[&](const registry::TString& tString) { return false; },
-[&](const registry::TBool& tBool) { return false; },
-[&](const registry::TUnit& tUnit) { return false; },
-[&](const registry::TI64& tI64) { return false; },
-[&](const registry::TF64& tF64) { return false; },
-[&](const registry::TU8& tU8) { return false; },
-[&](const registry::TUsize& tUsize) { return false; },
-[&](const registry::TChar& tChar) { return false; },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return false; },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; },
-[&](const registry::TUnknown& tUnknown) { return false; }
-}, (*type_value));
-}
-std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept{
-  return std::visit(overloaded{[&](const registry::TShared& tShared) { auto [inner] = tShared; return inner; },
-[&](const registry::TI32& tI32) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TString& tString) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TBool& tBool) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnit& tUnit) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TI64& tI64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TF64& tF64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TU8& tU8) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUsize& tUsize) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TChar& tChar) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnknown& tUnknown) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
-}, (*shared_pointer_type));
-}
-bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return true; },
-[&](const registry::TI32& tI32) { return false; },
-[&](const registry::TString& tString) { return false; },
-[&](const registry::TBool& tBool) { return false; },
-[&](const registry::TUnit& tUnit) { return false; },
-[&](const registry::TI64& tI64) { return false; },
-[&](const registry::TF64& tF64) { return false; },
-[&](const registry::TU8& tU8) { return false; },
-[&](const registry::TUsize& tUsize) { return false; },
-[&](const registry::TChar& tChar) { return false; },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return false; },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; },
-[&](const registry::TUnknown& tUnknown) { return false; }
-}, (*type_value));
-}
-std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept{
-  return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [__0, return_type] = tFn; return return_type; },
-[&](const registry::TI32& tI32) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TString& tString) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TBool& tBool) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnit& tUnit) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TI64& tI64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TF64& tF64) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TU8& tU8) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUsize& tUsize) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TChar& tChar) { return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return std::make_shared<registry::Type>(registry::TUnknown{}); },
-[&](const registry::TUnknown& tUnknown) { return std::make_shared<registry::Type>(registry::TUnknown{}); }
-}, (*function_type));
-}
-mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{
-  return std::visit(overloaded{[&](const registry::TFn& tFn) { auto [parameters, __1] = tFn; return parameters; },
-[&](const registry::TI32& tI32) { return empty_type_parameter_list(); },
-[&](const registry::TString& tString) { return empty_type_parameter_list(); },
-[&](const registry::TBool& tBool) { return empty_type_parameter_list(); },
-[&](const registry::TUnit& tUnit) { return empty_type_parameter_list(); },
-[&](const registry::TI64& tI64) { return empty_type_parameter_list(); },
-[&](const registry::TF64& tF64) { return empty_type_parameter_list(); },
-[&](const registry::TU8& tU8) { return empty_type_parameter_list(); },
-[&](const registry::TUsize& tUsize) { return empty_type_parameter_list(); },
-[&](const registry::TChar& tChar) { return empty_type_parameter_list(); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return empty_type_parameter_list(); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return empty_type_parameter_list(); },
-[&](const registry::TNamed& tNamed) { auto [__0] = tNamed; return empty_type_parameter_list(); },
-[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return empty_type_parameter_list(); },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return empty_type_parameter_list(); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return empty_type_parameter_list(); },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return empty_type_parameter_list(); },
-[&](const registry::TUnknown& tUnknown) { return empty_type_parameter_list(); }
-}, (*function_type));
-}
-bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept{
-  return [&]() -> bool {
-auto __match_subject = type_value;
-if (std::holds_alternative<registry::TI32>((*__match_subject))) {
-const registry::TI32& tI32 = std::get<registry::TI32>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept{
-  return [&]() -> bool {
-auto __match_subject = type_value;
-if (std::holds_alternative<registry::TBool>((*__match_subject))) {
-const registry::TBool& tBool = std::get<registry::TBool>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept{
-  return [&]() -> bool {
-auto __match_subject = type_value;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept{
-  return [&]() -> bool {
-auto __match_subject = receiver_type;
-if (std::holds_alternative<registry::TNamed>((*__match_subject))) {
-const registry::TNamed& tNamed = std::get<registry::TNamed>((*__match_subject));
-auto [name] = tNamed; return (name == mlc::String("Map", 3));
-}
-if (std::holds_alternative<registry::TGeneric>((*__match_subject))) {
-const registry::TGeneric& tGeneric = std::get<registry::TGeneric>((*__match_subject));
-auto [name, __1] = tGeneric; return (name == mlc::String("Map", 3));
-}
-return false;
-std::abort();
-}();
-}
-bool is_numeric_type(std::shared_ptr<registry::Type> type_value) noexcept{
-  return [&]() -> bool {
-auto __match_subject = type_value;
-if (std::holds_alternative<registry::TI32>((*__match_subject))) {
-const registry::TI32& tI32 = std::get<registry::TI32>((*__match_subject));
-return true;
-}
-if (std::holds_alternative<registry::TI64>((*__match_subject))) {
-const registry::TI64& tI64 = std::get<registry::TI64>((*__match_subject));
-return true;
-}
-if (std::holds_alternative<registry::TF64>((*__match_subject))) {
-const registry::TF64& tF64 = std::get<registry::TF64>((*__match_subject));
-return true;
-}
-if (std::holds_alternative<registry::TU8>((*__match_subject))) {
-const registry::TU8& tU8 = std::get<registry::TU8>((*__match_subject));
-return true;
-}
-if (std::holds_alternative<registry::TUsize>((*__match_subject))) {
-const registry::TUsize& tUsize = std::get<registry::TUsize>((*__match_subject));
-return true;
-}
-if (std::holds_alternative<registry::TChar>((*__match_subject))) {
-const registry::TChar& tChar = std::get<registry::TChar>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-std::shared_ptr<registry::Type> arithmetic_binary_result_type(std::shared_ptr<registry::Type> left_type) noexcept{
-  return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TString{});
-}
-if (std::holds_alternative<registry::TI64>((*__match_subject))) {
-const registry::TI64& tI64 = std::get<registry::TI64>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TI64{});
-}
-if (std::holds_alternative<registry::TF64>((*__match_subject))) {
-const registry::TF64& tF64 = std::get<registry::TF64>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TF64{});
-}
-if (std::holds_alternative<registry::TU8>((*__match_subject))) {
-const registry::TU8& tU8 = std::get<registry::TU8>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TU8{});
-}
-if (std::holds_alternative<registry::TUsize>((*__match_subject))) {
-const registry::TUsize& tUsize = std::get<registry::TUsize>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TUsize{});
-}
-if (std::holds_alternative<registry::TChar>((*__match_subject))) {
-const registry::TChar& tChar = std::get<registry::TChar>((*__match_subject));
-return std::make_shared<registry::Type>(registry::TChar{});
-}
-return std::make_shared<registry::Type>(registry::TI32{});
-std::abort();
-}();
-}
-std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept{
-  return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = operation;
-if ((__match_subject == mlc::String("+", 1))) {
-  return arithmetic_binary_result_type(left_type);
-} else if ((__match_subject == mlc::String("-", 1))) {
-  return arithmetic_binary_result_type(left_type);
-} else if ((__match_subject == mlc::String("*", 1))) {
-  return arithmetic_binary_result_type(left_type);
-} else if ((__match_subject == mlc::String("/", 1))) {
-  return arithmetic_binary_result_type(left_type);
-} else if ((__match_subject == mlc::String("%", 1))) {
-  return arithmetic_binary_result_type(left_type);
-} else if ((__match_subject == mlc::String("=", 1))) {
-  return std::make_shared<registry::Type>(registry::TUnit{});
-} else {
-  return std::make_shared<registry::Type>(registry::TBool{});
-}
-}();
-}
-mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept{
-  return std::visit(overloaded{[&](const registry::TI32& tI32) { return mlc::String("i32", 3); },
-[&](const registry::TString& tString) { return mlc::String("string", 6); },
-[&](const registry::TBool& tBool) { return mlc::String("bool", 4); },
-[&](const registry::TUnit& tUnit) { return mlc::String("unit", 4); },
-[&](const registry::TI64& tI64) { return mlc::String("i64", 3); },
-[&](const registry::TF64& tF64) { return mlc::String("f64", 3); },
-[&](const registry::TU8& tU8) { return mlc::String("u8", 2); },
-[&](const registry::TUsize& tUsize) { return mlc::String("usize", 5); },
-[&](const registry::TChar& tChar) { return mlc::String("char", 4); },
-[&](const registry::TUnknown& tUnknown) { return mlc::String("unknown", 7); },
-[&](const registry::TArray& tArray) { auto [__0] = tArray; return mlc::String("array", 5); },
-[&](const registry::TShared& tShared) { auto [__0] = tShared; return mlc::String("shared", 6); },
-[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return type_name; },
-[&](const registry::TGeneric& tGeneric) { auto [type_name, __1] = tGeneric; return type_name; },
-[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return mlc::String("pair", 4); },
-[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return mlc::String("tuple", 5); },
-[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return mlc::String("function", 8); },
-[&](const registry::TAssoc& tAssoc) { auto [parameter_name, associated_type_name] = tAssoc; return ((parameter_name + mlc::String(".", 1)) + associated_type_name); }
-}, (*type_value));
-}
-bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{
-  return (([&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-std::abort();
-}() || (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type))) || [&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-return false;
-std::abort();
-}());
-}
-bool types_allowed_for_binary_int_only(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{
-  return ([&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-std::abort();
-}() || (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type)));
-}
-bool types_allowed_for_ordering(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{
-  return (([&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-std::abort();
-}() || (is_numeric_type(left_type) && types_structurally_equal(left_type, right_type))) || [&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TString>((*__match_subject))) {
-const registry::TString& tString = std::get<registry::TString>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-return false;
-std::abort();
-}());
-}
-bool types_allowed_for_logical_and_or(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{
-  return ([&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TUnknown>((*__match_subject))) {
-const registry::TUnknown& tUnknown = std::get<registry::TUnknown>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-std::abort();
-}() || [&]() -> bool {
-auto __match_subject = left_type;
-if (std::holds_alternative<registry::TBool>((*__match_subject))) {
-const registry::TBool& tBool = std::get<registry::TBool>((*__match_subject));
-return [&]() -> bool {
-auto __match_subject = right_type;
-if (std::holds_alternative<registry::TBool>((*__match_subject))) {
-const registry::TBool& tBool = std::get<registry::TBool>((*__match_subject));
-return true;
-}
-return false;
-std::abort();
-}();
-}
-return false;
-std::abort();
-}());
-}
-std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept{
-  return [&]() -> std::shared_ptr<registry::Type> {
-auto __match_subject = method_name;
-if ((__match_subject == mlc::String("length", 6))) {
-  return std::make_shared<registry::Type>(registry::TI32{});
-} else if ((__match_subject == mlc::String("size", 4))) {
-  return std::make_shared<registry::Type>(registry::TI32{});
-} else if ((__match_subject == mlc::String("to_i", 4))) {
-  return std::make_shared<registry::Type>(registry::TI32{});
-} else if ((__match_subject == mlc::String("push", 4))) {
-  return std::make_shared<registry::Type>(registry::TUnit{});
-} else if ((__match_subject == mlc::String("set", 3))) {
-  return std::make_shared<registry::Type>(registry::TUnit{});
-} else if ((__match_subject == mlc::String("remove", 6))) {
-  return std::make_shared<registry::Type>(registry::TUnit{});
-} else if ((__match_subject == mlc::String("keys", 4))) {
-  return std::make_shared<registry::Type>(registry::TArray{std::make_shared<registry::Type>(registry::TUnknown{})});
-} else if ((__match_subject == mlc::String("values", 6))) {
-  return std::make_shared<registry::Type>(registry::TArray{std::make_shared<registry::Type>(registry::TUnknown{})});
-} else if ((__match_subject == mlc::String("char_at", 7))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("join", 4))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("to_string", 9))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("substring", 9))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("to_lower", 8))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("make_temp_directory", 19))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("temp_directory_base", 19))) {
-  return std::make_shared<registry::Type>(registry::TString{});
-} else if ((__match_subject == mlc::String("has", 3))) {
-  return std::make_shared<registry::Type>(registry::TBool{});
-} else if ((__match_subject == mlc::String("send", 4))) {
-  return std::make_shared<registry::Type>(registry::TBool{});
-} else {
-  return std::make_shared<registry::Type>(registry::TUnknown{});
-}
-}();
-}
-int builtin_method_expected_argument_count(mlc::String method_name) noexcept{
-  return [&]() -> int {
-auto __match_subject = method_name;
-if ((__match_subject == mlc::String("push", 4))) {
-  return 1;
-} else if ((__match_subject == mlc::String("set", 3))) {
-  return 2;
-} else if ((__match_subject == mlc::String("length", 6))) {
-  return 0;
-} else if ((__match_subject == mlc::String("size", 4))) {
-  return 0;
-} else if ((__match_subject == mlc::String("to_i", 4))) {
-  return 0;
-} else if ((__match_subject == mlc::String("to_lower", 8))) {
-  return 0;
-} else if ((__match_subject == mlc::String("char_at", 7))) {
-  return 1;
-} else if ((__match_subject == mlc::String("substring", 9))) {
-  return 2;
-} else if ((__match_subject == mlc::String("join", 4))) {
-  return 1;
-} else if ((__match_subject == mlc::String("make_temp_directory", 19))) {
-  return 1;
-} else if ((__match_subject == mlc::String("temp_directory_base", 19))) {
-  return 0;
-} else if ((__match_subject == mlc::String("to_string", 9))) {
-  return 0;
-} else if ((__match_subject == mlc::String("has", 3))) {
-  return 1;
-} else if ((__match_subject == mlc::String("get", 3))) {
-  return 1;
-} else if ((__match_subject == mlc::String("remove", 6))) {
-  return 1;
-} else if ((__match_subject == mlc::String("keys", 4))) {
-  return 0;
-} else if ((__match_subject == mlc::String("values", 6))) {
-  return 0;
-} else if ((__match_subject == mlc::String("send", 4))) {
-  return 1;
-} else if ((__match_subject == mlc::String("recv", 4))) {
-  return 0;
-} else {
-  return (-1);
-}
-}();
-}
-std::shared_ptr<registry::Type> substitute_named_type_for_map(mlc::String name, std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  if (substitution.has(name))   {
-    return substitute_type(substitution.get(name), substitution);
-  } else   {
-    return type_value;
-  }
-}
-std::shared_ptr<registry::Type> substitute_array_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TArray{substitute_type(inner, substitution)});
-}
-std::shared_ptr<registry::Type> substitute_shared_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TShared{substitute_type(inner, substitution)});
-}
-std::shared_ptr<registry::Type> substitute_generic_type_for_map(mlc::String name, mlc::Array<std::shared_ptr<registry::Type>> type_arguments, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TGeneric{name, type_arguments.map([=](std::shared_ptr<registry::Type> argument) mutable { return substitute_type(argument, substitution); })});
-}
-std::shared_ptr<registry::Type> substitute_pair_type_for_map(std::shared_ptr<registry::Type> first, std::shared_ptr<registry::Type> second, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TPair{substitute_type(first, substitution), substitute_type(second, substitution)});
-}
-std::shared_ptr<registry::Type> substitute_tuple_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TTuple{parameter_types.map([=](std::shared_ptr<registry::Type> entry) mutable { return substitute_type(entry, substitution); })});
-}
-std::shared_ptr<registry::Type> substitute_function_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_list, std::shared_ptr<registry::Type> return_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::make_shared<registry::Type>(registry::TFn{parameter_list.map([=](std::shared_ptr<registry::Type> parameter) mutable { return substitute_type(parameter, substitution); }), substitute_type(return_type, substitution)});
-}
-std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{
-  return std::visit(overloaded{[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return substitute_named_type_for_map(name, type_value, substitution); },
-[&](const registry::TArray& tArray) { auto [inner] = tArray; return substitute_array_type_for_map(inner, substitution); },
-[&](const registry::TShared& tShared) { auto [inner] = tShared; return substitute_shared_type_for_map(inner, substitution); },
-[&](const registry::TGeneric& tGeneric) { auto [name, type_arguments] = tGeneric; return substitute_generic_type_for_map(name, type_arguments, substitution); },
-[&](const registry::TPair& tPair) { auto [first, second] = tPair; return substitute_pair_type_for_map(first, second, substitution); },
-[&](const registry::TTuple& tTuple) { auto [parameter_types] = tTuple; return substitute_tuple_type_for_map(parameter_types, substitution); },
-[&](const registry::TFn& tFn) { auto [parameter_list, return_type] = tFn; return substitute_function_type_for_map(parameter_list, return_type, substitution); },
-[&](const registry::TI32& tI32) { return type_value; },
-[&](const registry::TString& tString) { return type_value; },
-[&](const registry::TBool& tBool) { return type_value; },
-[&](const registry::TUnit& tUnit) { return type_value; },
-[&](const registry::TI64& tI64) { return type_value; },
-[&](const registry::TF64& tF64) { return type_value; },
-[&](const registry::TU8& tU8) { return type_value; },
-[&](const registry::TUsize& tUsize) { return type_value; },
-[&](const registry::TChar& tChar) { return type_value; },
-[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return type_value; },
-[&](const registry::TUnknown& tUnknown) { return type_value; }
-}, (*type_value));
-}
-mlc::String operator_method_for(mlc::String operation) noexcept{
-  return [&]() -> mlc::String {
-auto __match_subject = operation;
-if ((__match_subject == mlc::String("+", 1))) {
-  return mlc::String("add", 3);
-} else if ((__match_subject == mlc::String("-", 1))) {
-  return mlc::String("sub", 3);
-} else if ((__match_subject == mlc::String("*", 1))) {
-  return mlc::String("mul", 3);
-} else if ((__match_subject == mlc::String("/", 1))) {
-  return mlc::String("div", 3);
-} else if ((__match_subject == mlc::String("%", 1))) {
-  return mlc::String("rem", 3);
-} else {
-  return mlc::String("", 0);
-}
-}();
-}
+return generic_type_name_from_type(mutex_type) == mlc::String("Mutex") ? [&]() -> std::shared_ptr<registry::Type> { 
+  mlc::Array<std::shared_ptr<registry::Type>> type_arguments = generic_type_arguments_from_type(mutex_type);
+  return type_arguments.size() == 1 ? type_arguments[0] : std::make_shared<registry::Type>((registry::TUnknown{}));
+ }() : std::make_shared<registry::Type>((registry::TUnknown{}));
+}
+
+bool type_is_array(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; },
+  [&](const TUnknown& tunknown) -> bool { return false; }
+}, (*type_value));}
+
+std::shared_ptr<registry::Type> array_element_type_from_array_type(std::shared_ptr<registry::Type> array_type) noexcept{return std::visit(overloaded{
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [inner] = tarray; return inner; },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [_w0] = tshared; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [_w0] = tnamed; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tfn; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
+}, (*array_type));}
+
+bool type_is_shared_pointer(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; },
+  [&](const TUnknown& tunknown) -> bool { return false; }
+}, (*type_value));}
+
+std::shared_ptr<registry::Type> shared_pointer_inner_type(std::shared_ptr<registry::Type> shared_pointer_type) noexcept{return std::visit(overloaded{
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [inner] = tshared; return inner; },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [_w0] = tnamed; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [_w0] = tarray; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tfn; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
+}, (*shared_pointer_type));}
+
+bool type_is_function(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> bool { auto [_w0, _w1] = tfn; return true; },
+  [&](const TI32& ti32) -> bool { return false; },
+  [&](const TString& tstring) -> bool { return false; },
+  [&](const TBool& tbool) -> bool { return false; },
+  [&](const TUnit& tunit) -> bool { return false; },
+  [&](const TI64& ti64) -> bool { return false; },
+  [&](const TF64& tf64) -> bool { return false; },
+  [&](const TU8& tu8) -> bool { return false; },
+  [&](const TUsize& tusize) -> bool { return false; },
+  [&](const TChar& tchar) -> bool { return false; },
+  [&](const TShared& tshared) -> bool { auto [_w0] = tshared; return false; },
+  [&](const TNamed& tnamed) -> bool { auto [_w0] = tnamed; return false; },
+  [&](const TGeneric& tgeneric) -> bool { auto [_w0, _w1] = tgeneric; return false; },
+  [&](const TArray& tarray) -> bool { auto [_w0] = tarray; return false; },
+  [&](const TPair& tpair) -> bool { auto [_w0, _w1] = tpair; return false; },
+  [&](const TTuple& ttuple) -> bool { auto [_w0] = ttuple; return false; },
+  [&](const TAssoc& tassoc) -> bool { auto [_w0, _w1] = tassoc; return false; },
+  [&](const TUnknown& tunknown) -> bool { return false; }
+}, (*type_value));}
+
+std::shared_ptr<registry::Type> function_return_type(std::shared_ptr<registry::Type> function_type) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [_w0, return_type] = tfn; return return_type; },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [_w0] = tarray; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [_w0] = tshared; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [_w0] = tnamed; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tgeneric; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tpair; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [_w0] = ttuple; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return std::make_shared<registry::Type>((registry::TUnknown{})); },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return std::make_shared<registry::Type>((registry::TUnknown{})); }
+}, (*function_type));}
+
+mlc::Array<std::shared_ptr<registry::Type>> function_parameter_list(std::shared_ptr<registry::Type> function_type) noexcept{return std::visit(overloaded{
+  [&](const TFn& tfn) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [parameters, _w0] = tfn; return parameters; },
+  [&](const TI32& ti32) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TString& tstring) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TBool& tbool) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TUnit& tunit) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TI64& ti64) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TF64& tf64) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TU8& tu8) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TUsize& tusize) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TChar& tchar) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); },
+  [&](const TArray& tarray) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tarray; return empty_type_parameter_list(); },
+  [&](const TShared& tshared) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tshared; return empty_type_parameter_list(); },
+  [&](const TNamed& tnamed) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = tnamed; return empty_type_parameter_list(); },
+  [&](const TGeneric& tgeneric) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tgeneric; return empty_type_parameter_list(); },
+  [&](const TPair& tpair) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tpair; return empty_type_parameter_list(); },
+  [&](const TTuple& ttuple) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0] = ttuple; return empty_type_parameter_list(); },
+  [&](const TAssoc& tassoc) -> mlc::Array<std::shared_ptr<registry::Type>> { auto [_w0, _w1] = tassoc; return empty_type_parameter_list(); },
+  [&](const TUnknown& tunknown) -> mlc::Array<std::shared_ptr<registry::Type>> { return empty_type_parameter_list(); }
+}, (*function_type));}
+
+bool type_is_i32(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } return false; }();}
+
+bool type_is_bool(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TBool>((*type_value))) {  return true; } return false; }();}
+
+bool type_is_string(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TString>((*type_value))) {  return true; } return false; }();}
+
+bool receiver_type_is_map(std::shared_ptr<registry::Type> receiver_type) noexcept{return [&]() { if (std::holds_alternative<registry::TNamed>((*receiver_type))) { auto _v_tnamed = std::get<registry::TNamed>((*receiver_type)); auto [name] = _v_tnamed; return name == mlc::String("Map"); } if (std::holds_alternative<registry::TGeneric>((*receiver_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*receiver_type)); auto [name, _w0] = _v_tgeneric; return name == mlc::String("Map"); } return false; }();}
+
+bool is_numeric_type(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() { if (std::holds_alternative<registry::TI32>((*type_value))) {  return true; } if (std::holds_alternative<registry::TI64>((*type_value))) {  return true; } if (std::holds_alternative<registry::TF64>((*type_value))) {  return true; } if (std::holds_alternative<registry::TU8>((*type_value))) {  return true; } if (std::holds_alternative<registry::TUsize>((*type_value))) {  return true; } if (std::holds_alternative<registry::TChar>((*type_value))) {  return true; } return false; }();}
+
+bool types_compatible_for_call_argument(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept{return types_structurally_equal(expected_type, actual_type) ? true : [&]() { if (std::holds_alternative<registry::TI64>((*expected_type))) {  return [&]() { if (std::holds_alternative<registry::TI32>((*actual_type))) {  return true; } if (std::holds_alternative<registry::TChar>((*actual_type))) {  return true; } return false; }(); } if (std::holds_alternative<registry::TI32>((*expected_type))) {  return [&]() { if (std::holds_alternative<registry::TChar>((*actual_type))) {  return true; } return false; }(); } return false; }();}
+
+bool zipped_type_arguments_assignment_compatible(mlc::Array<std::shared_ptr<registry::Type>> expected_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_arguments, int index) noexcept{return index >= expected_arguments.size() ? true : types_assignment_compatible(expected_arguments[index], actual_arguments[index]) && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, index + 1);}
+
+bool types_assignment_compatible(std::shared_ptr<registry::Type> expected_type, std::shared_ptr<registry::Type> actual_type) noexcept{return types_structurally_equal(expected_type, actual_type) ? true : types_compatible_for_call_argument(expected_type, actual_type) ? true : [&]() { if (std::holds_alternative<registry::TGeneric>((*expected_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*expected_type)); auto [expected_name, expected_arguments] = _v_tgeneric; return [&]() { if (std::holds_alternative<registry::TGeneric>((*actual_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*actual_type)); auto [actual_name, actual_arguments] = _v_tgeneric; return expected_name == actual_name && expected_arguments.size() == actual_arguments.size() && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, 0); } return false; }(); } if (std::holds_alternative<registry::TArray>((*expected_type))) { auto _v_tarray = std::get<registry::TArray>((*expected_type)); auto [expected_element] = _v_tarray; return [&]() { if (std::holds_alternative<registry::TArray>((*actual_type))) { auto _v_tarray = std::get<registry::TArray>((*actual_type)); auto [actual_element] = _v_tarray; return types_assignment_compatible(expected_element, actual_element); } return false; }(); } if (std::holds_alternative<registry::TShared>((*expected_type))) { auto _v_tshared = std::get<registry::TShared>((*expected_type)); auto [expected_element] = _v_tshared; return [&]() { if (std::holds_alternative<registry::TShared>((*actual_type))) { auto _v_tshared = std::get<registry::TShared>((*actual_type)); auto [actual_element] = _v_tshared; return types_assignment_compatible(expected_element, actual_element); } return false; }(); } return false; }();}
+
+std::shared_ptr<registry::Type> arithmetic_binary_result_type(std::shared_ptr<registry::Type> left_type) noexcept{return [&]() -> std::shared_ptr<registry::Type> { if (std::holds_alternative<registry::TString>((*left_type))) {  return std::make_shared<registry::Type>((registry::TString{})); } if (std::holds_alternative<registry::TI64>((*left_type))) {  return std::make_shared<registry::Type>((registry::TI64{})); } if (std::holds_alternative<registry::TF64>((*left_type))) {  return std::make_shared<registry::Type>((registry::TF64{})); } if (std::holds_alternative<registry::TU8>((*left_type))) {  return std::make_shared<registry::Type>((registry::TU8{})); } if (std::holds_alternative<registry::TUsize>((*left_type))) {  return std::make_shared<registry::Type>((registry::TUsize{})); } if (std::holds_alternative<registry::TChar>((*left_type))) {  return std::make_shared<registry::Type>((registry::TChar{})); } return std::make_shared<registry::Type>((registry::TI32{})); }();}
+
+std::shared_ptr<registry::Type> binary_operation_result_type(mlc::String operation, std::shared_ptr<registry::Type> left_type) noexcept{return operation == mlc::String("+") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("-") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("*") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("/") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("%") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("&") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("|") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("^") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("<<") ? arithmetic_binary_result_type(left_type) : operation == mlc::String(">>") ? arithmetic_binary_result_type(left_type) : operation == mlc::String("=") ? std::make_shared<registry::Type>((registry::TUnit{})) : std::make_shared<registry::Type>((registry::TBool{}));}
+
+mlc::String type_description(std::shared_ptr<registry::Type> type_value) noexcept{return std::visit(overloaded{
+  [&](const TI32& ti32) -> mlc::String { return mlc::String("i32"); },
+  [&](const TString& tstring) -> mlc::String { return mlc::String("string"); },
+  [&](const TBool& tbool) -> mlc::String { return mlc::String("bool"); },
+  [&](const TUnit& tunit) -> mlc::String { return mlc::String("unit"); },
+  [&](const TI64& ti64) -> mlc::String { return mlc::String("i64"); },
+  [&](const TF64& tf64) -> mlc::String { return mlc::String("f64"); },
+  [&](const TU8& tu8) -> mlc::String { return mlc::String("u8"); },
+  [&](const TUsize& tusize) -> mlc::String { return mlc::String("usize"); },
+  [&](const TChar& tchar) -> mlc::String { return mlc::String("char"); },
+  [&](const TUnknown& tunknown) -> mlc::String { return mlc::String("unknown"); },
+  [&](const TArray& tarray) -> mlc::String { auto [_w0] = tarray; return mlc::String("array"); },
+  [&](const TShared& tshared) -> mlc::String { auto [_w0] = tshared; return mlc::String("shared"); },
+  [&](const TNamed& tnamed) -> mlc::String { auto [type_name] = tnamed; return type_name; },
+  [&](const TGeneric& tgeneric) -> mlc::String { auto [type_name, _w0] = tgeneric; return type_name; },
+  [&](const TPair& tpair) -> mlc::String { auto [_w0, _w1] = tpair; return mlc::String("pair"); },
+  [&](const TTuple& ttuple) -> mlc::String { auto [_w0] = ttuple; return mlc::String("tuple"); },
+  [&](const TFn& tfn) -> mlc::String { auto [_w0, _w1] = tfn; return mlc::String("function"); },
+  [&](const TAssoc& tassoc) -> mlc::String { auto [parameter_name, associated_type_name] = tassoc; return parameter_name + mlc::String(".") + associated_type_name; }
+}, (*type_value));}
+
+bool types_allowed_for_binary_plus(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*left_type))) {  return true; } return [&]() { if (std::holds_alternative<registry::TUnknown>((*right_type))) {  return true; } return false; }(); }() || is_numeric_type(left_type) && types_structurally_equal(left_type, right_type) || [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return [&]() { if (std::holds_alternative<registry::TString>((*right_type))) {  return true; } return false; }(); } return false; }();}
+
+bool types_allowed_for_binary_int_only(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*left_type))) {  return true; } return [&]() { if (std::holds_alternative<registry::TUnknown>((*right_type))) {  return true; } return false; }(); }() || is_numeric_type(left_type) && types_structurally_equal(left_type, right_type);}
+
+bool types_allowed_for_ordering(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*left_type))) {  return true; } return [&]() { if (std::holds_alternative<registry::TUnknown>((*right_type))) {  return true; } return false; }(); }() || is_numeric_type(left_type) && types_structurally_equal(left_type, right_type) || [&]() { if (std::holds_alternative<registry::TString>((*left_type))) {  return [&]() { if (std::holds_alternative<registry::TString>((*right_type))) {  return true; } return false; }(); } return false; }();}
+
+bool types_allowed_for_logical_and_or(std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{return [&]() { if (std::holds_alternative<registry::TUnknown>((*left_type))) {  return true; } return [&]() { if (std::holds_alternative<registry::TUnknown>((*right_type))) {  return true; } return false; }(); }() || [&]() { if (std::holds_alternative<registry::TBool>((*left_type))) {  return [&]() { if (std::holds_alternative<registry::TBool>((*right_type))) {  return true; } return false; }(); } return false; }();}
+
+std::shared_ptr<registry::Type> builtin_method_return_type(mlc::String method_name) noexcept{return method_name == mlc::String("length") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("size") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("to_i") ? std::make_shared<registry::Type>((registry::TI32{})) : method_name == mlc::String("push") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("set") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("remove") ? std::make_shared<registry::Type>((registry::TUnit{})) : method_name == mlc::String("keys") ? std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>((registry::TUnknown{})))) : method_name == mlc::String("values") ? std::make_shared<registry::Type>(registry::TArray(std::make_shared<registry::Type>((registry::TUnknown{})))) : method_name == mlc::String("char_at") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("join") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("to_string") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("substring") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("to_lower") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("make_temp_directory") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("temp_directory_base") ? std::make_shared<registry::Type>((registry::TString{})) : method_name == mlc::String("has") ? std::make_shared<registry::Type>((registry::TBool{})) : method_name == mlc::String("send") ? std::make_shared<registry::Type>((registry::TBool{})) : std::make_shared<registry::Type>((registry::TUnknown{}));}
+
+int builtin_method_expected_argument_count(mlc::String method_name) noexcept{return method_name == mlc::String("push") ? 1 : method_name == mlc::String("set") ? 2 : method_name == mlc::String("length") ? 0 : method_name == mlc::String("size") ? 0 : method_name == mlc::String("to_i") ? 0 : method_name == mlc::String("to_lower") ? 0 : method_name == mlc::String("char_at") ? 1 : method_name == mlc::String("substring") ? 2 : method_name == mlc::String("join") ? 1 : method_name == mlc::String("make_temp_directory") ? 1 : method_name == mlc::String("temp_directory_base") ? 0 : method_name == mlc::String("to_string") ? 0 : method_name == mlc::String("has") ? 1 : method_name == mlc::String("get") ? 1 : method_name == mlc::String("remove") ? 1 : method_name == mlc::String("keys") ? 0 : method_name == mlc::String("values") ? 0 : method_name == mlc::String("send") ? 1 : method_name == mlc::String("recv") ? 0 : -1;}
+
+std::shared_ptr<registry::Type> substitute_named_type_for_map(mlc::String name, std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return substitution.has(name) ? substitute_type(substitution.get(name), substitution) : type_value;}
+
+std::shared_ptr<registry::Type> substitute_array_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TArray(substitute_type(inner, substitution)));}
+
+std::shared_ptr<registry::Type> substitute_shared_type_for_map(std::shared_ptr<registry::Type> inner, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TShared(substitute_type(inner, substitution)));}
+
+std::shared_ptr<registry::Type> substitute_generic_type_for_map(mlc::String name, mlc::Array<std::shared_ptr<registry::Type>> type_arguments, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TGeneric(name, type_arguments.map([substitution](std::shared_ptr<registry::Type> argument) mutable { return substitute_type(argument, substitution); })));}
+
+std::shared_ptr<registry::Type> substitute_pair_type_for_map(std::shared_ptr<registry::Type> first, std::shared_ptr<registry::Type> second, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TPair(substitute_type(first, substitution), substitute_type(second, substitution)));}
+
+std::shared_ptr<registry::Type> substitute_tuple_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TTuple(parameter_types.map([substitution](std::shared_ptr<registry::Type> entry) mutable { return substitute_type(entry, substitution); })));}
+
+std::shared_ptr<registry::Type> substitute_function_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_list, std::shared_ptr<registry::Type> return_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::make_shared<registry::Type>(registry::TFn(parameter_list.map([substitution](std::shared_ptr<registry::Type> parameter) mutable { return substitute_type(parameter, substitution); }), substitute_type(return_type, substitution)));}
+
+std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept{return std::visit(overloaded{
+  [&](const TNamed& tnamed) -> std::shared_ptr<registry::Type> { auto [name] = tnamed; return substitute_named_type_for_map(name, type_value, substitution); },
+  [&](const TArray& tarray) -> std::shared_ptr<registry::Type> { auto [inner] = tarray; return substitute_array_type_for_map(inner, substitution); },
+  [&](const TShared& tshared) -> std::shared_ptr<registry::Type> { auto [inner] = tshared; return substitute_shared_type_for_map(inner, substitution); },
+  [&](const TGeneric& tgeneric) -> std::shared_ptr<registry::Type> { auto [name, type_arguments] = tgeneric; return substitute_generic_type_for_map(name, type_arguments, substitution); },
+  [&](const TPair& tpair) -> std::shared_ptr<registry::Type> { auto [first, second] = tpair; return substitute_pair_type_for_map(first, second, substitution); },
+  [&](const TTuple& ttuple) -> std::shared_ptr<registry::Type> { auto [parameter_types] = ttuple; return substitute_tuple_type_for_map(parameter_types, substitution); },
+  [&](const TFn& tfn) -> std::shared_ptr<registry::Type> { auto [parameter_list, return_type] = tfn; return substitute_function_type_for_map(parameter_list, return_type, substitution); },
+  [&](const TI32& ti32) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TString& tstring) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TBool& tbool) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TUnit& tunit) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TI64& ti64) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TF64& tf64) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TU8& tu8) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TUsize& tusize) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TChar& tchar) -> std::shared_ptr<registry::Type> { return type_value; },
+  [&](const TAssoc& tassoc) -> std::shared_ptr<registry::Type> { auto [_w0, _w1] = tassoc; return type_value; },
+  [&](const TUnknown& tunknown) -> std::shared_ptr<registry::Type> { return type_value; }
+}, (*type_value));}
+
+mlc::String operator_method_for(mlc::String operation) noexcept{return operation == mlc::String("+") ? mlc::String("add") : operation == mlc::String("-") ? mlc::String("sub") : operation == mlc::String("*") ? mlc::String("mul") : operation == mlc::String("/") ? mlc::String("div") : operation == mlc::String("%") ? mlc::String("rem") : mlc::String("");}
 
 } // namespace semantic_type_structure

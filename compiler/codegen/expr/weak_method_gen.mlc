@@ -1,0 +1,54 @@
+// Shared.weak / Weak.upgrade codegen helpers (TRACK_LANG_WEAK_SUGAR STEP=3).
+
+import { Type, TGeneric, TUnknown } from '../../checker/registry'
+import { CppExpression, CppCall, CppMember } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { CodegenContext } from '../context'
+import * as expression_output from './expr'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { type_is_shared_pointer, shared_pointer_inner_type } from '../../checker/semantic_type_structure'
+
+export fn type_is_weak_pointer(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TGeneric(name, type_arguments) => name == 'Weak' && type_arguments.length() == 1,
+    _ => false
+  }
+
+export fn is_shared_weak_sugar_method(method_name: string) -> bool =
+  method_name == 'weak' || method_name == 'downgrade'
+
+export fn is_weak_upgrade_sugar_method(method_name: string) -> bool =
+  method_name == 'upgrade' || method_name == 'lock'
+
+export fn gen_method_shared_weak_using_fragments(
+  receiver_fragment: string,
+  receiver_type: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const inner_type_cpp = sem_type_to_cpp(context, shared_pointer_inner_type(receiver_type))
+  expression_output.function_call_parentheses(`std::weak_ptr<${inner_type_cpp}>`, receiver_fragment)
+end
+
+export fn gen_method_weak_upgrade_using_fragments(receiver_fragment: string) -> string =
+  expression_output.function_call_parentheses(
+    'mlc::option::from_nullable',
+    `${receiver_fragment}.lock()`)
+
+fn make_callee_call_cpp(callee_name: string, arguments: [Shared<CppExpression>]) -> Shared<CppExpression> =
+  Shared.new(CppCall(emit_helpers.make_identifier_cpp_expression(callee_name), arguments))
+
+export fn gen_method_shared_weak_cpp(
+  receiver_expression: Shared<CppExpression>,
+  receiver_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppExpression> = do
+  const inner_type_cpp = sem_type_to_cpp(context, shared_pointer_inner_type(receiver_type))
+  make_callee_call_cpp(`std::weak_ptr<${inner_type_cpp}>`, [receiver_expression])
+end
+
+export fn gen_method_weak_upgrade_cpp(receiver_expression: Shared<CppExpression>) -> Shared<CppExpression> =
+  make_callee_call_cpp(
+    'mlc::option::from_nullable',
+    [Shared.new(CppCall(
+      Shared.new(CppMember(receiver_expression, 'lock', false)),
+      []))])

@@ -28,9 +28,14 @@ Source: [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #4
 | Codegen | `call_rule.rb`: `Shared_weak`/`Weak_upgrade` aliases; `lower_smart_pointer_instance_method` before Result/Option dispatch |
 | Test | `smart_pointers_e2e_test.rb` `test_shared_weak_upgrade_sugar` — no inline extend; exit 77 |
 
-## STEP=3 — mlcc parity (compiler/ only)
+## STEP=3 — mlcc parity (compiler/ only) — **done** (2026-07-09)
 
-Mirror sugar in checker (`infer` / builtin method types for `Shared`/`Weak`) + codegen. Separate turn.
+| Piece | Change |
+|-------|--------|
+| Infer | `infer_weak_method.mlc`: Shared.new → `TShared`; `.weak`/`.downgrade` → `Weak<T>`; `.upgrade`/`.lock` → `Option<Shared<T>>` |
+| Transform | `transform.mlc`: Shared.new + weak/upgrade result types |
+| Codegen | `weak_method_gen.mlc` + `method_gen.mlc` dispatch; `type_gen.mlc` Weak→`std::weak_ptr` |
+| Test | `test_weak_sugar.mlc` (check + codegen contains) |
 
 ## STEP=4 — verify-gate + optional compiler AST use of `Weak`
 

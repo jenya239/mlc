@@ -3,29 +3,28 @@
 
 #include "mlc.hpp"
 #include <variant>
+
 #include "ast.hpp"
 #include "param_analysis.hpp"
+
 namespace ctor_info {
 
-struct CtorTypeInfo {
-  mlc::String name;
-  mlc::Array<int> shared_pos;
-  mlc::Array<int> shared_arr_pos;
-};
-struct ConstructorArgumentScanState {
-  int next_position_index;
-  mlc::Array<int> shared_positions;
-  mlc::Array<int> shared_array_positions;
-};
-std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> field_definition) noexcept;
-std::shared_ptr<CtorTypeInfo> ctor_type_info_for(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> argument_type_expressions) noexcept;
-mlc::Array<std::shared_ptr<CtorTypeInfo>> variant_to_ctor_info(std::shared_ptr<ast::TypeVariant> variant) noexcept;
-mlc::Array<std::shared_ptr<CtorTypeInfo>> add_ctor_infos_from_variants(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
-mlc::Array<std::shared_ptr<CtorTypeInfo>> declaration_to_ctor_infos(std::shared_ptr<ast::Decl> declaration) noexcept;
-mlc::Array<std::shared_ptr<CtorTypeInfo>> build_ctor_type_infos_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept;
-std::shared_ptr<CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
-mlc::HashMap<mlc::String, std::shared_ptr<CtorTypeInfo>> build_ctor_type_info_index(mlc::Array<std::shared_ptr<CtorTypeInfo>> infos) noexcept;
-std::shared_ptr<CtorTypeInfo> lookup_ctor_type_info_indexed(mlc::HashMap<mlc::String, std::shared_ptr<CtorTypeInfo>> index, mlc::Array<std::shared_ptr<CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
+struct Expr;
+struct Stmt;
+struct SemanticExpression;
+struct SemanticStatement;
+struct CppStatement;
+struct CppExpression;
+
+struct CtorTypeInfo {mlc::String name;mlc::Array<int> shared_pos;mlc::Array<int> shared_arr_pos;};
+
+mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_infos_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declarations) noexcept;
+
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
+
+mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> build_ctor_type_info_index(mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos) noexcept;
+
+std::shared_ptr<ctor_info::CtorTypeInfo> lookup_ctor_type_info_indexed(mlc::HashMap<mlc::String, std::shared_ptr<ctor_info::CtorTypeInfo>> index, mlc::Array<std::shared_ptr<ctor_info::CtorTypeInfo>> infos, mlc::String constructor_lookup_name) noexcept;
 
 } // namespace ctor_info
 

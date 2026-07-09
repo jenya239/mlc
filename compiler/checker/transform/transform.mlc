@@ -12,11 +12,17 @@ import {
   type_is_function,
   array_element_type_from_array_type,
   type_is_array,
-  operator_method_for
+  operator_method_for,
+  shared_pointer_inner_type,
+  substitute_type
 } from '../semantic_type_structure'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver, hof_call_result_type } from '../hof_method_spec'
+import {
+  is_shared_static_new,
+  is_shared_weak_method_on_receiver,
+  is_weak_upgrade_method_on_receiver
+} from '../infer/infer_weak_method'
 import { env_for_pattern_substituted } from './pattern_env'
-import { substitute_type } from '../semantic_type_structure'
 import { substitution_from_generic } from '../substitution'
 import { infer_expr } from '../infer/infer'
 import { check_context_new } from '../check/check_context'
@@ -307,11 +313,36 @@ fn method_result_type_for_dispatch(
   receiver_type: Shared<Type>,
   method_name: string,
   registry: TypeRegistry
-) -> Shared<Type> = do
-  const builtin_type = builtin_method_return_type(method_name)
-  if type_is_unknown(builtin_type) then
+) -> Shared<Type> =
+  if is_shared_weak_method_on_receiver(receiver_type, method_name) then
+    Shared.new(TGeneric('Weak', [shared_pointer_inner_type(receiver_type)]))
+  else if is_weak_upgrade_method_on_receiver(receiver_type, method_name) then
+    match receiver_type {
+      TGeneric(_, type_arguments) =>
+        if type_arguments.length() == 1 then
+          Shared.new(TGeneric('Option', [Shared.new(TShared(type_arguments[0]))]))
+        else Shared.new(TUnknown) end,
+      _ => Shared.new(TUnknown)
+    }
+  else if type_is_unknown(builtin_method_return_type(method_name)) then
     method_return_type_from_object(receiver_type, method_name, registry)
-  else builtin_type end
+  else
+    builtin_method_return_type(method_name)
+  end
+
+fn transform_shared_static_new_call(
+  method_arguments: [Shared<Expr>],
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
+  const argument_type =
+    if typed_arguments.length() == 1 then sexpr_type(typed_arguments[0]) else Shared.new(TUnknown) end
+  const result_type = Shared.new(TShared(argument_type))
+  const typed_receiver = Shared.new(SemanticExpressionIdent('Shared', Shared.new(TUnknown), source_span))
+  Shared.new(SemanticExpressionMethod(
+    typed_receiver, 'new', typed_arguments, [0], result_type, source_span))
 end
 
 fn merge_conditional_expression_types(
@@ -1294,41 +1325,20 @@ extend TransformPass {
     method_name: string,
     method_arguments: [Shared<Expr>],
     source_span: Span
-  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
-    const typed_object = dispatch_transform_pass(self, object, stmts_fn)
-    const receiver_type = sexpr_type(typed_object)
-    if is_result_option_hof_method(receiver_type, method_name) then
-      transform_result_option_hof_method_call(
-        self.transform_context.registry,
-        typed_object,
-        method_name,
-        method_arguments,
-        receiver_type,
-        self.transform_context,
-        source_span,
-        stmts_fn)
-    else if is_array_hof_method_on_receiver(receiver_type, method_name) then
-      transform_array_hof_method_call(
-        self.transform_context.registry,
-        typed_object,
-        method_name,
-        method_arguments,
-        receiver_type,
-        self.transform_context,
-        source_span,
-        stmts_fn)
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
+    if is_shared_static_new(object, method_name) then
+      transform_shared_static_new_call(
+        method_arguments, self.transform_context, source_span, stmts_fn)
     else
-      transform_regular_method_call(
+      transform_method_call_after_object(
         self.transform_context.registry,
-        typed_object,
+        object,
         method_name,
         method_arguments,
-        receiver_type,
-        self.transform_context,
+        self,
         source_span,
         stmts_fn)
     end
-  end
   fn visit_field(
     self: TransformPass,
     object: Shared<Expr>,
@@ -1575,6 +1585,32 @@ extend TransformPass {
 }
 
 // --- Expression transform dispatcher ----------------------------------------
+
+fn transform_method_call_after_object(
+  registry: TypeRegistry,
+  object: Shared<Expr>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  transform_pass: TransformPass,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_object = dispatch_transform_pass(transform_pass, object, stmts_fn)
+  const receiver_type = sexpr_type(typed_object)
+  if is_result_option_hof_method(receiver_type, method_name) then
+    transform_result_option_hof_method_call(
+      registry, typed_object, method_name, method_arguments, receiver_type,
+      transform_pass.transform_context, source_span, stmts_fn)
+  else if is_array_hof_method_on_receiver(receiver_type, method_name) then
+    transform_array_hof_method_call(
+      registry, typed_object, method_name, method_arguments, receiver_type,
+      transform_pass.transform_context, source_span, stmts_fn)
+  else
+    transform_regular_method_call(
+      registry, typed_object, method_name, method_arguments, receiver_type,
+      transform_pass.transform_context, source_span, stmts_fn)
+  end
+end
 
 export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
   const expression_partial_application = partial_application_desugar_expr(expression)

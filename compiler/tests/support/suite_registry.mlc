@@ -23,6 +23,7 @@ import { mir_vm_smoke_tests } from '../test_mir_vm_smoke'
 import { spawn_tests } from '../test_spawn'
 import { channel_syntax_tests } from '../test_channel_syntax'
 import { arc_syntax_tests } from '../test_arc_syntax'
+import { weak_sugar_tests } from '../test_weak_sugar'
 import { mutex_syntax_tests } from '../test_mutex_syntax'
 import { compiler_db_tests } from '../test_compiler_db'
 import { driver_tests } from '../test_driver'
@@ -135,6 +136,7 @@ export fn integration_suite_results() -> [TestResult] = do
   results = append_suite_results(results, spawn_tests())
   results = append_suite_results(results, channel_syntax_tests())
   results = append_suite_results(results, arc_syntax_tests())
+  results = append_suite_results(results, weak_sugar_tests())
   results = append_suite_results(results, mutex_syntax_tests())
   results = append_suite_results(results, compiler_db_tests())
   results = append_suite_results(results, driver_tests())

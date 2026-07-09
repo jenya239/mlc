@@ -14,7 +14,16 @@ import { infer_shared_new_type_name,
 import * as mut_actual_argument from './mut_actual_argument'
 import * as expression_output from './expr'
 import { sem_type_to_cpp } from '../decl/type_gen'
-import { type_is_mutex, mutex_inner_type_from_mutex_type } from '../../checker/semantic_type_structure'
+import { type_is_mutex, mutex_inner_type_from_mutex_type, type_is_shared_pointer } from '../../checker/semantic_type_structure'
+import {
+  type_is_weak_pointer,
+  is_shared_weak_sugar_method,
+  is_weak_upgrade_sugar_method,
+  gen_method_shared_weak_using_fragments,
+  gen_method_weak_upgrade_using_fragments,
+  gen_method_shared_weak_cpp,
+  gen_method_weak_upgrade_cpp
+} from './weak_method_gen'
 
 fn gen_method_file_using_trailing_argument_fragments(
   method_name: string,
@@ -373,6 +382,14 @@ export fn gen_method_expr(
     tail_fragment_index = tail_fragment_index + 1
   end
   const trailing_arguments_joined = trailing_argument_fragments_join(trailing_argument_fragments)
+  const smart_pointer_sugar =
+    if is_shared_weak_sugar_method(method_name) && type_is_shared_pointer(object_type) && arguments.length() == 0 then
+      gen_method_shared_weak_using_fragments(receiver_fragment, object_type, context)
+    else if is_weak_upgrade_sugar_method(method_name) && type_is_weak_pointer(object_type) && arguments.length() == 0 then
+      gen_method_weak_upgrade_using_fragments(receiver_fragment)
+    else
+      ''
+    end
   const ro_code = match object_type {
     TGeneric(generic_name, _) =>
       if generic_name == "Result" then gen_result_option_combinator_call_using_fragments(false, receiver_fragment, method_name, trailing_arguments_joined)
@@ -387,7 +404,8 @@ export fn gen_method_expr(
     _ => "",
   }
   const invoke_expression =
-    if ro_code != '' then ro_code
+    if smart_pointer_sugar != '' then smart_pointer_sugar
+    else if ro_code != '' then ro_code
     else match object {
       SemanticExpressionIdent(namespace_object_name, _, _) =>
         if context.namespace_alias_prefixes.has(namespace_object_name) then
@@ -735,6 +753,14 @@ export fn gen_method_expr_cpp(
       materialization_outcome.prelude_statements,
       gen_method_mutex_lock_cpp(
         receiver_expression, arguments[0], object_type, context, gen_stmts, evaluate_expression))
+  else if is_shared_weak_sugar_method(method_name) && type_is_shared_pointer(object_type) && arguments.length() == 0 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_shared_weak_cpp(receiver_expression, object_type, context))
+  else if is_weak_upgrade_sugar_method(method_name) && type_is_weak_pointer(object_type) && arguments.length() == 0 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_weak_upgrade_cpp(receiver_expression))
   else
   const result_or_option_code = match object_type {
     TGeneric(generic_name, _) =>

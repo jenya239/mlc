@@ -14,6 +14,7 @@ import * as expression_output from '../expr/expr'
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   if type_name == 'Map' then 'mlc::HashMap'
   else if type_name == 'Shared' then 'std::shared_ptr'
+  else if type_name == 'Weak' then 'std::weak_ptr'
   else if type_name == 'Task' then 'mlc::Task'
   else if type_name == 'Future' then 'mlc::Task'
   else if type_name == 'Channel' then 'mlc::concurrency::Channel'

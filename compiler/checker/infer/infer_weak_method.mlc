@@ -1,0 +1,106 @@
+// Shared.weak / Weak.upgrade type inference (TRACK_LANG_WEAK_SUGAR STEP=3).
+
+import { Expr, ExprIdent, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
+import { Type, TShared, TGeneric, TUnknown } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import { type_is_shared_pointer, shared_pointer_inner_type } from '../semantic_type_structure'
+import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
+
+fn type_is_weak_pointer(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TGeneric(name, type_arguments) => name == 'Weak' && type_arguments.length() == 1,
+    _ => false
+  }
+
+fn weak_pointer_inner_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TGeneric(_, type_arguments) =>
+      if type_arguments.length() == 1 then type_arguments[0] else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn is_shared_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'Shared' && method_name == 'new',
+    _ => false
+  }
+
+export fn infer_shared_static_new_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const empty_errors: [Diagnostic] = []
+  const arity_errors = method_arity_after_receiver(
+    empty_errors, 'new', method_arguments.length(), method_span)
+  if method_arguments.length() != 1 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    InferResult {
+      inferred_type: Shared.new(TShared(argument_parsed.inferred_type)),
+      errors: diagnostics_append(
+        diagnostics_append(object_parsed.errors, arity_errors),
+        argument_parsed.errors)
+    }
+  end
+end
+
+export fn is_shared_weak_method(method_name: string) -> bool =
+  method_name == 'weak' || method_name == 'downgrade'
+
+export fn is_weak_upgrade_method(method_name: string) -> bool =
+  method_name == 'upgrade' || method_name == 'lock'
+
+export fn is_shared_weak_method_on_receiver(receiver_type: Shared<Type>, method_name: string) -> bool =
+  type_is_shared_pointer(receiver_type) && is_shared_weak_method(method_name)
+
+export fn is_weak_upgrade_method_on_receiver(receiver_type: Shared<Type>, method_name: string) -> bool =
+  type_is_weak_pointer(receiver_type) && is_weak_upgrade_method(method_name)
+
+export fn infer_shared_weak_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  _inference_context: CheckContext,
+  _infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const empty_errors: [Diagnostic] = []
+  const arity_errors = method_arity_after_receiver(
+    empty_errors, method_name, method_arguments.length(), method_span)
+  if method_arguments.length() != 0 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const inner_type = shared_pointer_inner_type(object_parsed.inferred_type)
+    InferResult {
+      inferred_type: Shared.new(TGeneric('Weak', [inner_type])),
+      errors: diagnostics_append(object_parsed.errors, arity_errors)
+    }
+  end
+end
+
+export fn infer_weak_upgrade_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  _inference_context: CheckContext,
+  _infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const empty_errors: [Diagnostic] = []
+  const arity_errors = method_arity_after_receiver(
+    empty_errors, method_name, method_arguments.length(), method_span)
+  if method_arguments.length() != 0 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const inner_type = weak_pointer_inner_type(object_parsed.inferred_type)
+    InferResult {
+      inferred_type: Shared.new(TGeneric('Option', [Shared.new(TShared(inner_type))])),
+      errors: diagnostics_append(object_parsed.errors, arity_errors)
+    }
+  end
+end
