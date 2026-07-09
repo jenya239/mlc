@@ -7,7 +7,7 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](TRACK_LAMBDA_CAPTURE.md)
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **open** — STEP=2 done (self-hosted escape_analysis.mlc)
+## Status: **open** — STEP=2 done (self-hosted escape_analysis.mlc), STEP=3 в процессе (uncommitted, не верифицирован)
 
 **Driver 2026-07-09 STEP=2:** `compiler/checker/escape_analysis.mlc` —
 `non_escaping_params` / `non_escaping_params_for_named_fn` (Ruby EscapeAnalyzer
@@ -16,6 +16,23 @@ syntax). Wired in `suite_registry` types suite. Not yet wired into
 `gather_program_check` (analysis API for STEP=3 codegen). Verify: mlcc smoke
 7/0; `mlcc --check-only main` 0; arch_lint 0. Note: Ruby `dev_gate_fast`
 currently broken by STEP=1 template codegen on HOF callbacks (`TokenKind_is_comma`).
+
+**STEP=3 (2026-07-09, ~09:53–10:10) — НЕ закоммичено, статус неизвестен.**
+Попытка codegen-проводки в `compiler/checker/`, `compiler/codegen/`,
+`compiler/ir/`, `compiler/mir/`, `compiler/tests/` — 15+ файлов изменены,
+`compiler/out/` частично пересобран (317 файлов diff), новый
+`compiler/tests/test_closure_escape_codegen.mlc`. Не верифицировано (не было
+коммита к моменту проверки). Найденная и нерешённая проблема: smoke-тест
+(`escape_smoke_main.mlc`, см. `.tmp_escape_smoke`) на
+`fn apply_twice(f: fn(i32) -> i32, x: i32) -> i32` даёт `watched=0` —
+self-hosted парсер не распознаёт тип параметра как ожидаемый вариант
+(`type_tag` печатает `other`, не `TyFn`); `function_typed_param_names` из
+`escape_analysis.mlc` эту функцию не видит. **Следующий turn:** сначала
+разобраться, как self-hosted `TypeExpr` на самом деле представляет `fn(T) ->
+U` (искать вариант в `compiler/frontend/ast.mlc`, не предполагать `TyFn`),
+затем продолжить STEP=3. Если рабочее дерево пусто/расходится с этим — не
+доверять предположению "уже сделано", смотреть `git status`/`git diff`
+заново (см. правило анти-false-done в CONTINUITY.md).
 
 
 ## Формальная граница (не размывать в реализации)

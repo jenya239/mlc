@@ -21,7 +21,7 @@ mlcc_binary="${out_dir}/mlcc"
 bootstrap_binary="${out_dir}/bootstrap/mlcc_bootstrap"
 entry_main="${compiler_dir}/main.mlc"
 run_tests="${out_dir}/tests/run_tests"
-baseline_file="${root}/docs/agent/reddit_demo_baseline.txt"
+baseline_file="${root}/docs/archive/tracks/reddit_demo_baseline.txt"
 
 measure_seconds() {
   local output

@@ -117,7 +117,7 @@ Enqueue Driver next pending step как обычно.
 
 ## Reddit draft — self-hosted MLC compiler (STEP=4, 2026-06-26)
 
-Target: r/ProgrammingLanguages, r/rust. Media: [REDDIT_DEMO_MEDIA.md](REDDIT_DEMO_MEDIA.md). Baseline: [reddit_demo_baseline.txt](reddit_demo_baseline.txt).
+Target: r/ProgrammingLanguages, r/rust. Media: [REDDIT_DEMO_MEDIA.md](../archive/tracks/REDDIT_DEMO_MEDIA.md). Baseline: [reddit_demo_baseline.txt](../archive/tracks/reddit_demo_baseline.txt).
 
 ### Title (pick one)
 
@@ -188,7 +188,7 @@ Lowers to `std::variant` + `std::visit` (see root `README.md`).
 
 ### Media placeholders
 
-- Screenshot: after `scripts/reddit_demo.sh --run` (checklist in REDDIT_DEMO_MEDIA.md)
+- Screenshot: after `scripts/reddit_demo.sh --run` (checklist in `docs/archive/tracks/REDDIT_DEMO_MEDIA.md`)
 - Asciinema: `asciinema rec reddit_demo.cast` — URL: _TBD after manual upload_
 
 ### Links

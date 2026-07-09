@@ -9,7 +9,7 @@ Look at recently closed tracks and find what was missed, deferred, or should spa
 
 ## Process
 
-1. Read the last 5�7 closed TRACK_*.md files (sort by `## Status: **closed**` date).
+1. Read the last 5�7 closed `docs/archive/tracks/TRACK_*.md` files (sort by `## Status: **closed**` date).
 2. For each closed track scan for:
    - Steps marked `pending` or never committed (compare status vs `git log --oneline`).
    - `TODO`, `FIXME`, `deferred`, `later`, `workaround` comments in touched source files.

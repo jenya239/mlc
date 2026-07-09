@@ -4,7 +4,7 @@
 
 Parent: [ARCHITECTURE.md](ARCHITECTURE.md) (driver vs core, LSP adapters); [PLAN.md](PLAN.md) Phase 2.8 follow-on.
 
-**Prerequisites:** [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) closed — IR layers, verifiers, pass manager, driver split, architecture lint.
+**Prerequisites:** [TRACK_CLEAN_ARCHITECTURE](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) closed — IR layers, verifiers, pass manager, driver split, architecture lint.
 
 ---
 
@@ -65,9 +65,9 @@ New query entry points must add a named `*_is_safe` predicate and unit tests (pa
 
 | Track | Relationship |
 |-------|--------------|
-| [TRACK_INCREMENTAL](agent/TRACK_CONCURRENCY.md) (future) | persistent CST / stable node ids |
-| [TRACK_CORE_IR](agent/TRACK_CLEAN_ARCHITECTURE.md) STEP=7 sketch | lowering target for typed queries |
-| [TRACK_LSP](agent/TRACK_LSP.md) | current adapter; migrate to queries incrementally |
+| [TRACK_INCREMENTAL](archive/tracks/TRACK_CONCURRENCY.md) (future) | persistent CST / stable node ids |
+| [TRACK_CORE_IR](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) STEP=7 sketch | lowering target for typed queries |
+| [TRACK_LSP](archive/tracks/TRACK_LSP.md) | current adapter; migrate to queries incrementally |
 
 ---
 

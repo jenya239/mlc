@@ -112,7 +112,7 @@ Premature observability > premature abstraction.
 
 Lint: `compiler/tests/run_architecture_lint.sh` (IR imports, file size, survivor trends).
 Allowlist: `compiler/tests/architecture_lint_allowlist.txt` � shrink over time.
-Details: [agent/TRACK_CLEAN_ARCHITECTURE.md](agent/TRACK_CLEAN_ARCHITECTURE.md) �Code quality gates.
+Details: [archive/tracks/TRACK_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) �Code quality gates.
 
 ---
 
@@ -148,9 +148,9 @@ pass ?????? ?????????? singleton
 
 | Track | ?????????? |
 |-------|------------|
-| [TRACK_CLEAN_ARCHITECTURE](agent/TRACK_CLEAN_ARCHITECTURE.md) | verifiers, pass manager, driver split, tests, dumps |
+| [TRACK_CLEAN_ARCHITECTURE](archive/tracks/TRACK_CLEAN_ARCHITECTURE.md) | verifiers, pass manager, driver split, tests, dumps |
 | Phase 2.7 | opaque IDs, `?`/guard |
-| [TRACK_MIR](agent/TRACK_MIR.md) | MLC MIR types, verifier, lowering center |
+| [TRACK_MIR](archive/tracks/TRACK_MIR.md) | MLC MIR types, verifier, lowering center |
 | Future: TRACK_CORE_IR | deprecated — superseded by TRACK_MIR |
 | Future: TRACK_QUERY_ENGINE | demand-driven queries — see [QUERY_ENGINE.md](QUERY_ENGINE.md) |
 | Future: TRACK_INCREMENTAL | persistent CST / stable node ids |

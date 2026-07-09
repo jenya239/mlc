@@ -40,7 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_BOOTSTRAP_LINK** STEP=1 — fresh bootstrap emit g++ link (`MLCC_BOOTSTRAP=1` regressed). Stability first.
+**TRACK_LANG_CLOSURE_ESCAPE** STEP=3 — self-hosted codegen: emit template for non-escaping fn-param (STEP=1 Ruby, STEP=2 self-hosted checker уже done). Приоритет пользователя — прямое лекарство от исходной причины медленной C++-сборки (тяжёлые замыкания по умолчанию).
+
+Остальные открытые треки (низкий приоритет): `TRACK_LANG_REGION_ARENA` (гипотеза, дорогой прототип), `TRACK_MIR_VM_FULL` (Epic 0 done, Epic C pending).
 
 ## Step sizing (good vs bad)
 
