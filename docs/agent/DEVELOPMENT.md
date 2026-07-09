@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=2 — FreeType `extern` bindings + one-glyph smoke.
-(STEP=1 done: TEXT_RENDERING.md §5.1/§5.3 decided; §5.2 deferred to STEP=5.)
+**TRACK_TEXT_RENDERING** STEP=3 — HarfBuzz bindings + `TextShaper.shape` (UTF-8 incl. Cyrillic).
+(STEP=2 done: `freetype_shim` + `run_freetype_glyph_smoke.sh`.)
 
 ## Step sizing (good vs bad)
 

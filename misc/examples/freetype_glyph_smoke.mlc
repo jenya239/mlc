@@ -1,0 +1,23 @@
+// FreeType bindings via runtime shim (TRACK_TEXT_RENDERING STEP=2).
+// Header path needs -I runtime/include (build_bin.sh). FreeType C API stays in the shim.
+
+extern fn glyph_bitmap_packed(font_path: string, codepoint: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_packed" from "mlc/text/freetype_shim.hpp"
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const packed = glyph_bitmap_packed(font_path, 65, 32)
+  if packed < 0 then
+    return 1
+  end
+  const width = packed / 65536
+  const rows = packed - width * 65536
+  // DejaVuSans 'A' at 32px: expect non-empty bitmap (native probe: 22x23).
+  if width < 8 || rows < 8 then
+    return 2
+  end
+  if width > 64 || rows > 64 then
+    return 3
+  end
+  0
+end

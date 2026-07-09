@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_TEXT_RENDERING STEP=2 |
-| test_gate | ok (docs-only STEP=1 design decisions) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_TEXT_RENDERING STEP=3 |
+| test_gate | ok (freetype glyph smoke exit 0) |
+
+### Turn 2026-07-10 00:15 (Driver TRACK_TEXT_RENDERING STEP=2 — FreeType glyph smoke)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 00:10 |
+| elapsed | ~2 min |
+| done    | `runtime/src/text/freetype_shim.cpp` + header; `freetype_glyph_smoke.mlc`; `build_bin.sh` optional freetype2; `run_freetype_glyph_smoke.sh`. |
+| verify  | smoke SMOKE:0 (DejaVu 'A'@32px width/rows in range). |
+| result  | STEP=2 done. Plain: FreeType load+render via runtime shim. |
+| issues  | Direct `extern` FT_* deferred (out-params/pkg include); shim pattern matches §5.3. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_RENDERING — HarfBuzz + TextShaper.shape UTF-8 |
 
 ### Turn 2026-07-10 00:09 (Driver TRACK_TEXT_RENDERING STEP=1 — design §5.1/§5.3)
 
