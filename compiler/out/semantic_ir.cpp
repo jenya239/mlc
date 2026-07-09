@@ -120,6 +120,10 @@ if (std::holds_alternative<SemanticDeclarationExternLib>((*__match_subject))) {
 const SemanticDeclarationExternLib& semanticDeclarationExternLib = std::get<SemanticDeclarationExternLib>((*__match_subject));
 auto [__0, span] = semanticDeclarationExternLib; return span;
 }
+if (std::holds_alternative<SemanticDeclarationExternType>((*__match_subject))) {
+const SemanticDeclarationExternType& semanticDeclarationExternType = std::get<SemanticDeclarationExternType>((*__match_subject));
+auto [__0, __1, __2, __3, span] = semanticDeclarationExternType; return span;
+}
 return ast::span_unknown();
 std::abort();
 }();

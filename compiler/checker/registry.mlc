@@ -744,6 +744,26 @@ fn register_decl_exported_if(registry: ref mut TypeRegistry, declaration: Shared
 
 fn registry_decl_noop() -> unit = do end
 
+fn register_decl_extern_type_into_registry(
+  registry: ref mut TypeRegistry,
+  type_name: string,
+  defining_path: string
+) -> unit = do
+  registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, [])
+  registry.adt_index.algebraic_decl_variant_names.set(type_name, [])
+  registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, [])
+  record_type_defining_path(registry, type_name, defining_path)
+end
+
+fn register_decl_extern_type_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclExternType(type_name, _, _, _, name_span) => do
+      register_decl_extern_type_into_registry(registry, type_name, name_span.file)
+      true
+    end,
+    _ => false
+  }
+
 fn register_decl_into(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> unit = do
   const handled =
     register_decl_trait_if(registry, declaration) ||
@@ -751,6 +771,7 @@ fn register_decl_into(registry: ref mut TypeRegistry, declaration: Shared<Decl>)
     register_decl_fn_if(registry, declaration) ||
     register_decl_type_if(registry, declaration) ||
     register_decl_type_alias_if(registry, declaration) ||
+    register_decl_extern_type_if(registry, declaration) ||
     register_decl_exported_if(registry, declaration)
 end
 

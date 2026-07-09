@@ -235,6 +235,7 @@ export type Decl =
   | DeclExtend(string, string, [Shared<Decl>], Span)
   | DeclImport(string, [string])
   | DeclExternLib(string, Span)
+  | DeclExternType(string, string, string, string, Span)
   | DeclExported(Shared<Decl>)
   | DeclAssocType(string, Span)
   | DeclAssocBind(string, Shared<TypeExpr>, Span)
@@ -256,6 +257,7 @@ export fn decl_inner(decl: Shared<Decl>) -> Shared<Decl> = do
     DeclExtend(_, _, _, _) => decl,
     DeclImport(_, _) => decl,
     DeclExternLib(_, _) => decl,
+    DeclExternType(_, _, _, _, _) => decl,
     DeclAssocType(_, _) => decl,
     DeclAssocBind(_, _, _) => decl
   }
@@ -271,6 +273,7 @@ export fn decl_name(decl: Shared<Decl>) -> string = do
     DeclExtend(type_name, _, _, _) => type_name,
     DeclImport(_, _) => '',
     DeclExternLib(_, _) => '',
+    DeclExternType(type_name, _, _, _, _) => type_name,
     DeclExported(inner) => decl_name(inner),
     DeclAssocType(name, _) => name,
     DeclAssocBind(name, _, _) => name
@@ -299,6 +302,7 @@ export fn decl_span(declaration: Shared<Decl>) -> Span = do
     DeclAssocBind(_, _, span) => span,
     DeclAssocType(_, span) => span,
     DeclExternLib(_, span) => span,
+    DeclExternType(_, _, _, _, span) => span,
     DeclExported(inner) => decl_span(inner),
     _ => span_unknown()
   }

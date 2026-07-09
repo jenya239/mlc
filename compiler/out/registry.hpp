@@ -164,6 +164,8 @@ bool register_decl_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> de
 bool register_decl_type_alias_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool register_decl_exported_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 void registry_decl_noop() noexcept;
+void register_decl_extern_type_into_registry(TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept;
+bool register_decl_extern_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 void register_decl_into(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool type_param_in_annotation(mlc::String param, std::shared_ptr<ast::TypeExpr> type_expression) noexcept;
 bool type_param_in_annotation_list(mlc::String param, mlc::Array<std::shared_ptr<ast::TypeExpr>> types) noexcept;

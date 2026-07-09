@@ -714,8 +714,28 @@ std::abort();
 void registry_decl_noop() noexcept{
 
 }
+void register_decl_extern_type_into_registry(TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept{
+  registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, {});
+  registry.adt_index.algebraic_decl_variant_names.set(type_name, {});
+  registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, {});
+  return record_type_defining_path(registry, type_name, defining_path);
+}
+bool register_decl_extern_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{
+  return [&]() -> bool {
+auto __match_subject = declaration;
+if (std::holds_alternative<ast::DeclExternType>((*__match_subject))) {
+const ast::DeclExternType& declExternType = std::get<ast::DeclExternType>((*__match_subject));
+auto [type_name, __1, __2, __3, name_span] = declExternType; return [&]() {
+register_decl_extern_type_into_registry(registry, type_name, name_span.file);
+return true;
+}();
+}
+return false;
+std::abort();
+}();
+}
 void register_decl_into(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{
-  auto handled = (((((register_decl_trait_if(registry, declaration) || register_decl_extend_if(registry, declaration)) || register_decl_fn_if(registry, declaration)) || register_decl_type_if(registry, declaration)) || register_decl_type_alias_if(registry, declaration)) || register_decl_exported_if(registry, declaration));
+  auto handled = ((((((register_decl_trait_if(registry, declaration) || register_decl_extend_if(registry, declaration)) || register_decl_fn_if(registry, declaration)) || register_decl_type_if(registry, declaration)) || register_decl_type_alias_if(registry, declaration)) || register_decl_extern_type_if(registry, declaration)) || register_decl_exported_if(registry, declaration));
 }
 bool type_param_in_annotation(mlc::String param, std::shared_ptr<ast::TypeExpr> type_expression) noexcept{
   return [&]() -> bool {

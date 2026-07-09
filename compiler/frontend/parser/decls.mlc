@@ -6,7 +6,7 @@ import { parse_type, parse_type_args, parser_at_generic_close, parser_advance_ge
 import { parse_expr, parse_record_pattern_fields } from './exprs'
 import { comma_separated_types_suffix_from_first, comma_separated_params_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace } from './expect_close'
-import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, DeclExternLib, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TypeExpr, TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc, FieldDef, TypeVariant, VarRecord } from '../ast'
+import { Decl, DeclFn, DeclTrait, DeclType, DeclTypeAlias, DeclAssocType, DeclExternLib, DeclExternType, ExprExtern, ExprIdent, param_name, span_unknown, expr_span, ExprUnit, WhereClauseBound, Pattern, PatternTuple, PatternRecord, PatternWild, PatternIdent, PatternUnit, Span, Program, TypeExpr, TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc, FieldDef, TypeVariant, VarRecord } from '../ast'
 
 fn type_expression_display(type_expression: Shared<TypeExpr>) -> string =
   match type_expression {
@@ -472,6 +472,8 @@ export fn parse_declaration(parser: Parser) -> DeclResult = do
     parse_trait_decl(parser)
   else if kind.is_extern() && parser.advance().kind().is_ident() && parser.advance().kind().ident() == 'lib' then
     parse_extern_lib_declaration(parser)
+  else if kind.is_extern() && parser.advance().kind().is_type() then
+    parse_extern_type_declaration(parser)
   else if kind.is_fn() || (kind.is_extern() && parser.advance().kind().is_fn()) then
     parse_function_declaration(parser)
   else if kind.is_type() then
@@ -499,6 +501,56 @@ fn parse_extern_lib_declaration(parser: Parser) -> DeclResult = do
   end
   const library_name = after_lib.kind().str_val()
   declaration_parse_result(Shared.new(DeclExternLib(library_name, extern_span)), after_lib.advance())
+end
+
+fn parse_extern_type_declaration(parser: Parser) -> DeclResult = do
+  const extern_span = parser.span_at_cursor()
+  const after_extern = parser.advance()
+  const after_type = after_extern.advance()
+  const name_parser = parser_expect_ident(after_type, 'extern type name')
+  const type_name = name_parser.kind().ident()
+  let mut state = name_parser.advance()
+  if !state.kind().is_equal() then
+    return declaration_parse_result(
+      Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+      state.record_parse_error('parse: expected = after extern type name'))
+  end
+  state = state.advance()
+  if !state.kind().is_str() then
+    return declaration_parse_result(
+      Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+      state.record_parse_error('parse: expected C type name string after = in extern type'))
+  end
+  const c_type_name = state.kind().str_val()
+  state = state.advance()
+  if !state.kind().is_from() then
+    return declaration_parse_result(
+      Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+      state.record_parse_error('parse: expected from after C type name in extern type'))
+  end
+  state = state.advance()
+  if !state.kind().is_str() then
+    return declaration_parse_result(
+      Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+      state.record_parse_error('parse: expected header string after from in extern type'))
+  end
+  const extern_header = state.kind().str_val()
+  state = state.advance()
+  let drop_function_name = ''
+  if state.kind().is_ident() && state.kind().ident() == 'drop' then
+    state = state.advance()
+    if state.kind().is_str() then
+      drop_function_name = state.kind().str_val()
+      state = state.advance()
+    else
+      return declaration_parse_result(
+        Shared.new(DeclFn('__skip__', [], [], [], Shared.new(TyUnit), Shared.new(ExprUnit(span_unknown())), [])),
+        state.record_parse_error('parse: expected deleter string after drop'))
+    end
+  end
+  declaration_parse_result(
+    Shared.new(DeclExternType(type_name, c_type_name, extern_header, drop_function_name, extern_span)),
+    state)
 end
 
 fn parse_extern_fn_body(where_parser: Parser, extern_keyword_span: Span) -> ExprResult = do

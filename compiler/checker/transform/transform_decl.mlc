@@ -84,6 +84,8 @@ fn transform_decl(
     end,
     DeclImport(path, names) => Shared.new(SemanticDeclarationImport(path, names)),
     DeclExternLib(library_name, span) => Shared.new(SemanticDeclarationExternLib(library_name, span)),
+    DeclExternType(type_name, c_type_name, extern_header, drop_function_name, span) =>
+      Shared.new(SemanticDeclarationExternType(type_name, c_type_name, extern_header, drop_function_name, span)),
     DeclExported(exported_declaration) =>
       Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry, functions_used_as_values, apply_escape_templates))),
     DeclAssocType(_, _)     => Shared.new(SemanticDeclarationImport('', [])),

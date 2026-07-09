@@ -534,6 +534,8 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_declaration(predicates
     return parse_trait_decl(parser);
   } else if (((predicates::TokenKind_is_extern(kind) && predicates::TokenKind_is_ident(predicates::Parser_kind(predicates::Parser_advance(parser)))) && (predicates::TokenKind_ident(predicates::Parser_kind(predicates::Parser_advance(parser))) == mlc::String("lib", 3))))   {
     return parse_extern_lib_declaration(parser);
+  } else if ((predicates::TokenKind_is_extern(kind) && predicates::TokenKind_is_type(predicates::Parser_kind(predicates::Parser_advance(parser)))))   {
+    return parse_extern_type_declaration(parser);
   } else if ((predicates::TokenKind_is_fn(kind) || (predicates::TokenKind_is_extern(kind) && predicates::TokenKind_is_fn(predicates::Parser_kind(predicates::Parser_advance(parser))))))   {
     return parse_function_declaration(parser);
   } else if (predicates::TokenKind_is_type(kind))   {
@@ -556,6 +558,43 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_lib_declaration
   }
   auto library_name = predicates::TokenKind_str_val(predicates::Parser_kind(after_lib));
   return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternLib{library_name, extern_span}), predicates::Parser_advance(after_lib));
+}
+predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extern_type_declaration(predicates::Parser parser) noexcept{
+  auto extern_span = predicates::Parser_span_at_cursor(parser);
+  auto after_extern = predicates::Parser_advance(parser);
+  auto after_type = predicates::Parser_advance(after_extern);
+  auto name_parser = parser_expect_ident(after_type, mlc::String("extern type name", 16));
+  auto type_name = predicates::TokenKind_ident(predicates::Parser_kind(name_parser));
+  auto state = predicates::Parser_advance(name_parser);
+  if ((!predicates::TokenKind_is_equal(predicates::Parser_kind(state))))   {
+    return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected = after extern type name", 40)));
+  }
+  (state = predicates::Parser_advance(state));
+  if ((!predicates::TokenKind_is_str(predicates::Parser_kind(state))))   {
+    return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected C type name string after = in extern type", 57)));
+  }
+  auto c_type_name = predicates::TokenKind_str_val(predicates::Parser_kind(state));
+  (state = predicates::Parser_advance(state));
+  if ((!predicates::TokenKind_is_from(predicates::Parser_kind(state))))   {
+    return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected from after C type name in extern type", 53)));
+  }
+  (state = predicates::Parser_advance(state));
+  if ((!predicates::TokenKind_is_str(predicates::Parser_kind(state))))   {
+    return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected header string after from in extern type", 55)));
+  }
+  auto extern_header = predicates::TokenKind_str_val(predicates::Parser_kind(state));
+  (state = predicates::Parser_advance(state));
+  auto drop_function_name = mlc::String("", 0);
+  if ((predicates::TokenKind_is_ident(predicates::Parser_kind(state)) && (predicates::TokenKind_ident(predicates::Parser_kind(state)) == mlc::String("drop", 4))))   {
+    (state = predicates::Parser_advance(state));
+    if (predicates::TokenKind_is_str(predicates::Parser_kind(state)))     {
+      (drop_function_name = predicates::TokenKind_str_val(predicates::Parser_kind(state)));
+      (state = predicates::Parser_advance(state));
+    } else     {
+      return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclFn{mlc::String("__skip__", 8), {}, {}, {}, std::make_shared<ast::TypeExpr>(ast::TyUnit{}), std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), {}}), predicates::Parser_record_parse_error(state, mlc::String("parse: expected deleter string after drop", 41)));
+    }
+  }
+  return predicates::declaration_parse_result(std::make_shared<ast::Decl>(ast::DeclExternType{type_name, c_type_name, extern_header, drop_function_name, extern_span}), state);
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_extern_fn_body(predicates::Parser where_parser, ast::Span extern_keyword_span) noexcept{
   if (predicates::TokenKind_is_equal(predicates::Parser_kind(where_parser)))   {

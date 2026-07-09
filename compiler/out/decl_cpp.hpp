@@ -83,6 +83,7 @@ bool semantic_expression_is_ffi_extern(std::shared_ptr<semantic_ir::SemanticExpr
 bool semantic_expression_is_bare_extern(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
 mlc::String ffi_header_include_line(mlc::String extern_header) noexcept;
 mlc::String collect_ffi_include_lines_from_declaration(std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept;
+std::shared_ptr<cpp_ast::CppDeclaration> gen_extern_type_decl_cpp(mlc::String type_name, mlc::String c_type_name, mlc::String drop_function_name) noexcept;
 mlc::String collect_ffi_include_lines(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept;
 mlc::Array<mlc::String> ffi_parameter_type_items(mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext context) noexcept;
 mlc::Array<mlc::String> ffi_parameter_name_items(mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;

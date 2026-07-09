@@ -249,6 +249,7 @@ std::shared_ptr<Decl> decl_inner(std::shared_ptr<Decl> decl) noexcept{
 [&](const DeclExtend& declExtend) { auto [__0, __1, __2, __3] = declExtend; return decl; },
 [&](const DeclImport& declImport) { auto [__0, __1] = declImport; return decl; },
 [&](const DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return decl; },
+[&](const DeclExternType& declExternType) { auto [__0, __1, __2, __3, __4] = declExternType; return decl; },
 [&](const DeclAssocType& declAssocType) { auto [__0, __1] = declAssocType; return decl; },
 [&](const DeclAssocBind& declAssocBind) { auto [__0, __1, __2] = declAssocBind; return decl; }
 }, (*unwrapped));
@@ -262,6 +263,7 @@ mlc::String decl_name(std::shared_ptr<Decl> decl) noexcept{
 [&](const DeclExtend& declExtend) { auto [type_name, __1, __2, __3] = declExtend; return type_name; },
 [&](const DeclImport& declImport) { auto [__0, __1] = declImport; return mlc::String("", 0); },
 [&](const DeclExternLib& declExternLib) { auto [__0, __1] = declExternLib; return mlc::String("", 0); },
+[&](const DeclExternType& declExternType) { auto [type_name, __1, __2, __3, __4] = declExternType; return type_name; },
 [&](const DeclExported& declExported) { auto [inner] = declExported; return decl_name(inner); },
 [&](const DeclAssocType& declAssocType) { auto [name, __1] = declAssocType; return name; },
 [&](const DeclAssocBind& declAssocBind) { auto [name, __1, __2] = declAssocBind; return name; }
@@ -329,6 +331,10 @@ auto [__0, span] = declAssocType; return span;
 if (std::holds_alternative<DeclExternLib>((*__match_subject))) {
 const DeclExternLib& declExternLib = std::get<DeclExternLib>((*__match_subject));
 auto [__0, span] = declExternLib; return span;
+}
+if (std::holds_alternative<DeclExternType>((*__match_subject))) {
+const DeclExternType& declExternType = std::get<DeclExternType>((*__match_subject));
+auto [__0, __1, __2, __3, span] = declExternType; return span;
 }
 if (std::holds_alternative<DeclExported>((*__match_subject))) {
 const DeclExported& declExported = std::get<DeclExported>((*__match_subject));

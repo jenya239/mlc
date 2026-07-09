@@ -11,6 +11,7 @@ fn semantic_declaration_label(declaration: Shared<SemanticDeclaration>) -> strin
     SemanticDeclarationExtend(type_name, _, _, _) => `extend ${type_name}`,
     SemanticDeclarationImport(path, _) => `import ${path}`,
     SemanticDeclarationExternLib(library_name, _) => `extern lib ${library_name}`,
+    SemanticDeclarationExternType(type_name, _, _, _, _) => `extern type ${type_name}`,
     SemanticDeclarationExported(inner) => semantic_declaration_label(inner),
     SemanticDeclarationAssocBind(name, _, _) => `assoc ${name}`
   }

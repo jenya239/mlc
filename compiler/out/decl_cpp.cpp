@@ -340,6 +340,7 @@ return std::visit(overloaded{[&](const semantic_ir::SemanticDeclarationFn& seman
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [type_name, trait_name, methods, __3] = semanticDeclarationExtend; return cpp_decl_from_native_declarations(gen_decl_extend_cpp(type_name, trait_name, methods, self)); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declaration(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declaration(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [type_name, c_type_name, __2, drop_function_name, __4] = semanticDeclarationExternType; return gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declaration(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return CodegenContext_gen_decl_cpp(self, semantic_ir::sdecl_inner(inner_declaration)); }
 }, (*declaration));
@@ -369,6 +370,7 @@ return cpp_decl_from_native_declarations(proto_declarations);
 }(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declaration(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declaration(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declaration(); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declaration(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return CodegenContext_gen_proto_cpp(self, semantic_ir::sdecl_inner(inner_declaration)); }
 }, (*declaration));
@@ -439,6 +441,13 @@ if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*__match_subject
 const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn = std::get<semantic_ir::SemanticDeclarationFn>((*__match_subject));
 auto [__0, __1, __2, __3, __4, body, __6, __7, __8] = semanticDeclarationFn; return (semantic_expression_is_ffi_extern(body) ? (ffi_header_include_line(semantic_extern_ffi_header(body))) : (mlc::String("", 0)));
 }
+if (std::holds_alternative<semantic_ir::SemanticDeclarationExternType>((*__match_subject))) {
+const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType = std::get<semantic_ir::SemanticDeclarationExternType>((*__match_subject));
+auto [__0, __1, extern_header, drop_function_name, __4] = semanticDeclarationExternType; return [&]() {
+auto include_text = ffi_header_include_line(extern_header);
+return ((drop_function_name.length() > 0) ? ((include_text + mlc::String("#include <memory>\n", 18))) : (include_text));
+}();
+}
 if (std::holds_alternative<semantic_ir::SemanticDeclarationExported>((*__match_subject))) {
 const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported = std::get<semantic_ir::SemanticDeclarationExported>((*__match_subject));
 auto [inner_declaration] = semanticDeclarationExported; return collect_ffi_include_lines_from_declaration(semantic_ir::sdecl_inner(inner_declaration));
@@ -446,6 +455,16 @@ auto [inner_declaration] = semanticDeclarationExported; return collect_ffi_inclu
 return mlc::String("", 0);
 std::abort();
 }();
+}
+std::shared_ptr<cpp_ast::CppDeclaration> gen_extern_type_decl_cpp(mlc::String type_name, mlc::String c_type_name, mlc::String drop_function_name) noexcept{
+  auto declarations = mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{};
+  declarations.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppUsing{cpp_naming::cpp_safe(type_name), (mlc::String("::", 2) + c_type_name)}));
+  if ((drop_function_name.length() > 0))   {
+    auto deleter_name = (mlc::String("mlc_ffi_drop_", 13) + cpp_naming::cpp_safe(type_name));
+    auto owned_name = (mlc::String("Owned", 5) + cpp_naming::cpp_safe(type_name));
+    declarations.push_back(emit_helpers::make_fragment_cpp_declaration((((((((((((((((((mlc::String("struct ", 7) + deleter_name) + mlc::String(" {\n", 3)) + mlc::String("  void operator()(", 18)) + cpp_naming::cpp_safe(type_name)) + mlc::String("* pointer) const noexcept {\n", 28)) + mlc::String("    if (pointer) ::", 19)) + drop_function_name) + mlc::String("(pointer);\n", 11)) + mlc::String("  }\n", 4)) + mlc::String("};\n", 3)) + mlc::String("using ", 6)) + owned_name) + mlc::String(" = std::unique_ptr<", 19)) + cpp_naming::cpp_safe(type_name)) + mlc::String(", ", 2)) + deleter_name) + mlc::String(">;\n", 3))));
+  }
+  return cpp_decl_from_native_declarations(declarations);
 }
 mlc::String collect_ffi_include_lines(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept{
   auto include_text = mlc::String("", 0);
@@ -809,6 +828,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_proto_for_me
 [&](const semantic_ir::SemanticDeclarationExtend& semanticDeclarationExtend) { auto [__0, __1, __2, __3] = semanticDeclarationExtend; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return extend_forward_proto_for_method(semantic_ir::sdecl_inner(inner_declaration), extend_context); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); }
 }, (*method));
@@ -836,6 +856,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_cpp_forward_segment_
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [__0] = semanticDeclarationExported; return empty_cpp_declarations(); }
 }, (*semantic_ir::sdecl_inner(inner_declaration))); },
@@ -845,6 +866,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_cpp_forward_segment_
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); }
 }, (*declaration));
 }
@@ -903,6 +925,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_for_exported_c
 [&](const semantic_ir::SemanticDeclarationTrait& semanticDeclarationTrait) { auto [name, type_params, methods, __3] = semanticDeclarationTrait; return decl_segment_trait_cpp(name, type_params, methods, context, phase); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [type_name, c_type_name, __2, drop_function_name, __4] = semanticDeclarationExternType; return ((phase == 1) ? (mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name)}) : (empty_cpp_declarations())); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [nested_inner] = semanticDeclarationExported; return decl_segment_for_exported_cpp(nested_inner, context, phase); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, __1, __2, __3, __4, body, __6, __7, __8] = semanticDeclarationFn; return decl_segment_exported_fn_segment_cpp(inner_declaration, body, context, phase); }
@@ -922,6 +945,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_segment_cpp(std::share
 [&](const semantic_ir::SemanticDeclarationTrait& semanticDeclarationTrait) { auto [name, type_params, methods, __3] = semanticDeclarationTrait; return decl_segment_trait_cpp(name, type_params, methods, context, phase); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [type_name, c_type_name, __2, drop_function_name, __4] = semanticDeclarationExternType; return ((phase == 1) ? (mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>>{gen_extern_type_decl_cpp(type_name, c_type_name, drop_function_name)}) : (empty_cpp_declarations())); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [inner_declaration] = semanticDeclarationExported; return decl_segment_for_exported_cpp(inner_declaration, context, phase); },
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, __1, __2, __3, __4, body, __6, __7, __8] = semanticDeclarationFn; return decl_segment_native_fn_segment_cpp(declaration, body, context, phase); }
@@ -1037,6 +1061,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_for_exported_cp
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [__0, type_parameters, __2, __3, __4, body, __6, escape_info, __8] = semanticDeclarationFn; return decl_fn_def_exported_fn_cpp(inner_declaration, type_parameters, body, escape_info, context); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExported& semanticDeclarationExported) { auto [nested_inner] = semanticDeclarationExported; return decl_fn_def_for_exported_cpp(nested_inner, context); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); }
 }, (*semantic_ir::sdecl_inner(inner_declaration)));
@@ -1063,6 +1088,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> decl_fn_def_cpp(std::shared
 [&](const semantic_ir::SemanticDeclarationTrait& semanticDeclarationTrait) { auto [__0, __1, __2, __3] = semanticDeclarationTrait; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationImport& semanticDeclarationImport) { auto [__0, __1] = semanticDeclarationImport; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationExternLib& semanticDeclarationExternLib) { auto [__0, __1] = semanticDeclarationExternLib; return empty_cpp_declarations(); },
+[&](const semantic_ir::SemanticDeclarationExternType& semanticDeclarationExternType) { auto [__0, __1, __2, __3, __4] = semanticDeclarationExternType; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationAssocBind& semanticDeclarationAssocBind) { auto [__0, __1, __2] = semanticDeclarationAssocBind; return empty_cpp_declarations(); },
 [&](const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn) { auto [name, type_params, type_bounds, params, return_type, body, __6, escape_info, __8] = semanticDeclarationFn; return decl_fn_def_native_fn_cpp_with_escape(name, type_params, type_bounds, params, return_type, body, escape_info, context); }
 }, (*declaration));

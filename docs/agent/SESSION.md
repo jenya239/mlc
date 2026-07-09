@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-09-anti-false-done` |
+| instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
-| active_track | TRACK_FFI_LAYER STEP=5 |
-| test_gate | ok (extern lib -lm smoke) |
+| driver_turns_since_plan | 4 |
+| step_last | 5 |
+| active_track | TRACK_FFI_LAYER STEP=6 |
+| test_gate | ok (extern type FILE+drop probe) |
+
+### Turn 2026-07-09 18:15 (Driver TRACK_FFI_LAYER STEP=5 — extern type + drop RAII)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_FFI_LAYER |
+| started | 2026-07-09 18:03 |
+| elapsed | ~12 min |
+| done    | `DeclExternType`/`SemanticDeclarationExternType`; parse `extern type Name = "C" from "<h>"` + optional `drop "fn"`; registry opaque; codegen `using` + `OwnedName` unique_ptr deleter; FFI `#include` + `<memory>`. |
+| verify  | probe FILE/fclose → `using FILE = ::FILE`, `OwnedFILE`, `#include <stdio.h>`/`<memory>`; `mlcc --check-only main` 0. |
+| result  | STEP=5 done. Plain: extern type + drop → using + unique_ptr RAII typedef. |
+| issues  | `owned` return-marker wiring deferred; dirty `compiler/out/mlcc` not committed. |
+| next    | ROLE=Driver STEP=6 TRACK_FFI_LAYER — extern fn(...) type as C function pointer |
 
 ### Turn 2026-07-09 15:55 (Driver TRACK_FFI_LAYER STEP=4 — extern lib → -l)
 
