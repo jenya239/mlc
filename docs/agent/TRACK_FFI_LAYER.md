@@ -4,10 +4,10 @@ Parent: [../PLAN.md](../PLAN.md) §10, [../FFI_LAYER.md](../FFI_LAYER.md)
 (полная спецификация — читать перед началом работы, там же факт-таблица
 текущего состояния с точными файлами/строками).
 
-Приоритет: **средний** — после HARNESS T5 / Isolate STEP=1 (см. `PLAN.md`
-приоритетная цепочка). Send/Sync для STEP=7 уже готовы.
+Приоритет: **средний** — concurrency Isolate/TaskScope closed; **next in PLAN
+queue**. Send/Sync для STEP=7 уже готовы.
 
-## Status: **open** — STEP=1 ready for Driver (когда очередь дойдёт)
+## Status: **open** — STEP=1 **next** for Driver
 
 ## Steps
 

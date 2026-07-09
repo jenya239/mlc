@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_ISOLATE** STEP=4 — docs + self-host / close or Supervisor handoff.
-STEP=3 StopToken on pool/isolate done.
+**TRACK_FFI_LAYER** STEP=1 — `RawPointer[T]` Ruby bootstrap.
+ISOLATE closed; Supervisor deferred: [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md).
 
 ## Step sizing (good vs bad)
 

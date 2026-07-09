@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_ISOLATE STEP=4 |
-| test_gate | ok (smoke) |
+| driver_turns_since_plan | 0 |
+| step_last | 4 |
+| active_track | TRACK_FFI_LAYER STEP=1 |
+| test_gate | ok (smoke + check-only) |
+
+### Turn 2026-07-09 14:35 (Driver TRACK_CONCURRENCY_ISOLATE STEP=4 — close + FFI handoff)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CONCURRENCY_ISOLATE |
+| started | 2026-07-09 14:35 |
+| elapsed | ~3 min |
+| done    | MEMORY_MODEL ThreadPool/Isolate; PLAN §8; archive ISOLATE; handoff `TRACK_CONCURRENCY_SUPERVISOR.md` (deferred); FFI STEP=1 next. |
+| verify  | `mlcc --check-only main` 0; `run_concurrency_smoke.sh` exit 0. |
+| result  | TRACK closed. Plain: pool+isolate сданы; дальше FFI. |
+| issues  | Dirty runtime binaries left uncommitted. |
+| next    | ROLE=Driver STEP=1 TRACK_FFI_LAYER — RawPointer[T] Ruby bootstrap |
 
 ### Turn 2026-07-09 14:31 (Driver TRACK_CONCURRENCY_ISOLATE STEP=3 — StopToken shutdown)
 

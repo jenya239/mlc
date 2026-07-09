@@ -383,8 +383,8 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](agent/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); [TRACK_CONCURRENCY_V2](archive/tracks/TRACK_CONCURRENCY_V2.md) **closed**; [TRACK_CONCURRENCY_TASKSCOPE](archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md) **closed** 2026-07-09 (cancel wake, TaskScope C++, Sync-safe Mutex/Arc capture). Next: [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) T5; then [TRACK_CONCURRENCY_ISOLATE](agent/TRACK_CONCURRENCY_ISOLATE.md). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
-| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **planned, средний приоритет** | [FFI_LAYER.md](FFI_LAYER.md) — инфраструктура для будущих биндингов (libpq/OpenGL/GTK/ffmpeg обсуждались, сами биндинги не в этом треке); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-6 независимы, STEP=7 (concurrency-метаданные) заблокирован на `TRACK_CONCURRENCY_V2` STEP=1 |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **planned, средний приоритет** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1 **next**; STEP=7 concurrency-метаданные unblocked (Send/Sync ready) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -397,9 +397,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_V2 STEP=1–6 (**closed** 2026-07-09)
   → CONCURRENCY_TASKSCOPE STEP=1–4 (**closed** 2026-07-09)
   → CONCURRENCY_TEST_HARNESS T5 (**done** 2026-07-09); T6 deferred
-  → CONCURRENCY_ISOLATE STEP=1 (**next** — ThreadPool runtime)
-  → FFI_LAYER STEP=1-6 (**средний приоритет пользователя** — после
-    concurrency polish; STEP=7 FFI ждёт Send/Sync — уже готово)
+  → CONCURRENCY_ISOLATE STEP=1–4 (**closed** 2026-07-09)
+  → FFI_LAYER STEP=1 (**next** — RawPointer Ruby bootstrap)
+  → CONCURRENCY_SUPERVISOR (deferred; after FFI polish / chat-server gate)
   → MIR_VM_FULL Epic 0 STEP C (одна ступень; Epic 1-5 — 150-250 agent-часов, не брать целиком; это НЕ ускорение сборки — интерпретация без g++, 20-80× медленнее исполнения)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
