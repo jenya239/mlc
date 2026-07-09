@@ -4,12 +4,26 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-09-plain-queue` |
+| instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 3 |
-| active_track | TRACK_LANG_CLOSURE_ESCAPE STEP=3 done; next verify-gate |
+| driver_turns_since_plan | 6 |
+| step_last | 4 |
+| active_track | TRACK_LANG_CLOSURE_ESCAPE closed |
 | test_gate | ok |
+
+### Turn 2026-07-09 11:28 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=4 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_CLOSURE_ESCAPE |
+| started | 2026-07-09 11:24 |
+| elapsed | ~4 min |
+| done    | Self-host: `mlcc`→p1, `build_bin` mlcc2, mlcc2→p2; `diff -rq` identical. Timing ~4.5s. Closed TRACK. Anti-false-done: STEP=3 = `c8c38229`. |
+| result  | BUILD:0 P1:0 MLCC2:0 P2:0 DIFF:0; run_tests 1471/0; check-only 0. Plain: self-host чистый, трек закрыт. |
+| issues  | `dev_gate_fast` red (Ruby rebuild tests: STEP=1 templates). Verified via existing `run_tests` + mlcc. |
+| next    | ROLE=Planner STEP=pick-next TRACK — next open item from docs/PLAN.md |
 
 ### Turn 2026-07-09 11:03 (Driver TRACK_LANG_CLOSURE_ESCAPE STEP=3 — self-hosted codegen templates)
 

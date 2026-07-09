@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_CLOSURE_ESCAPE** STEP=3 done — next STEP=4 verify-gate (self-host p1/mlcc2/p2 diff + close). Timing after STEP=3: `mlcc` translate main ~2.4s (ориентир 4–5s).
+**TRACK_LANG_CLOSURE_ESCAPE** closed (STEP=4 verify-gate: DIFF_EXIT:0, translate ~4.5s).
 
-Остальные открытые треки (низкий приоритет): `TRACK_LANG_REGION_ARENA` (гипотеза, дорогой прототип), `TRACK_MIR_VM_FULL` (Epic 0 done, Epic C pending).
+Следующий приоритет: открытый TRACK из PLAN / `TRACK_LANG_*` (низкий: `TRACK_LANG_REGION_ARENA`, `TRACK_MIR_VM_FULL`). Ruby `dev_gate_fast` всё ещё red от STEP=1 HOF templates — отдельный fix при необходимости.
 
 ## Step sizing (good vs bad)
 

@@ -7,23 +7,21 @@ Related, already closed: [TRACK_LAMBDA_CAPTURE.md](../archive/tracks/TRACK_LAMBD
 (фиксировал `[&]`→`[=]` для корректности захвата, не про эту оптимизацию —
 не пересекается по коду, читать для контекста текущей формы codegen лямбд).
 
-## Status: **open** — STEP=3 done (self-hosted codegen templates); next verify-gate
+## Status: **closed** — STEP=4 verify-gate ok (2026-07-09)
+
+**Driver 2026-07-09 STEP=4:** Self-host p1→mlcc2→p2 identical
+(`DIFF_EXIT:0`). Timing: mlcc translate main ~4.5–4.7s (ориентир 4–5s).
+`run_tests` 1471/0; `mlcc --check-only main` 0. Note: Ruby
+`dev_gate_fast`/`build_tests_fast` still red from STEP=1 HOF templates
+(header bodies / unqualified calls) — verify via existing `run_tests` +
+mlcc path.
 
 **Driver 2026-07-09 STEP=3:** Non-escaping top-level fn-params →
 `template<typename __Fn>` + `__Fn` param type; escaping stays `std::function`.
-`FnEscapeInfo` on `SemanticDeclarationFn`; `transform_decl` fills via
-`non_escaping_params_for_decl_if_template_safe` + `function_names_used_as_values`
-(skip functions used as values — not convertible to `std::function`);
-`apply_escape_templates=false` for trait/extend methods. Codegen:
-`with_param_template_type_names` (no field shadowing),
-`parameter_type_cpp` map lookup, proto-then-body in header via
-`collect_template_fn_bodies_cpp`. Tests: `test_closure_escape_codegen.mlc`.
-Smoke: `apply_twice` → `__F0`; `make_handler` → `std::function`.
-`mlcc --check-only main` 0; `run_tests` 1471/0; translate main ~2.4s.
+Commit `c8c38229`.
 
 **Driver 2026-07-09 STEP=2:** `escape_analysis.mlc` —
-`non_escaping_params` / `non_escaping_params_for_named_fn`. Tests:
-`test_escape_analysis.mlc` (7 cases).
+`non_escaping_params` / `non_escaping_params_for_named_fn`.
 
 
 ## Формальная граница (не размывать в реализации)
