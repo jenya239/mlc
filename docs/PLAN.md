@@ -386,6 +386,7 @@ compiler/
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **in progress** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](agent/TRACK_FFI_LAYER.md) open, STEP=1-4 done (RawPointer, `extern fn = "c" from "<h>"` codegen, `extern lib` → `-l`); STEP=5 **next** (`extern type` + `drop` RAII); STEP=7 concurrency-метаданные unblocked (Send/Sync ready) |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **blocked** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — личный проект пользователя (media-фреймворк, flash-like), жёстко блокирован закрытием FFI_LAYER (STEP=1-6) |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер не блокирован FFI_LAYER (может стартовать после STEP=3); Postgres/crypto — после FFI_LAYER close |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -407,6 +408,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     не начинать реализацию, максимум — отдельный design-turn)
   → TEXT_RENDERING (ЗАБЛОКИРОВАН до закрытия FFI_LAYER STEP=1-6; личный
     проект пользователя, не поднимать выше в очереди без явной команды)
+  → STDLIB_BACKEND: TCP/HTTP-сервер трек (может стартовать после FFI_LAYER
+    STEP=3, не ждать STEP=5-6) → Postgres/crypto треки (после FFI_LAYER
+    close) → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
+    треки создавать по одному перед стартом каждого, не заранее
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
