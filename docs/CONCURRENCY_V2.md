@@ -452,6 +452,11 @@ Per-source quotas, bounded ingress queues, batch limits, yield points — что
 
 ## 34. Deterministic `TestRuntime`
 
+Развёрнутый дизайн (deterministic scheduler, полная stress-матрица, sanitizer
+CI gate) — отдельный документ: [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md),
+трек: [agent/TRACK_CONCURRENCY_TEST_HARNESS.md](agent/TRACK_CONCURRENCY_TEST_HARNESS.md).
+Ниже — исходная формулировка требования (§34-37 из research-запроса).
+
 ```mlc
 let rt = TestRuntime.new(seed: 918271)
 rt.spawn { actor_a() }
@@ -632,3 +637,4 @@ spawn 50 threads {
 - Реализация: `runtime/include/mlc/concurrency/`, `compiler/checker/send_safe.mlc`
 - Дорожная карта: [PLAN.md](PLAN.md) Фаза 8
 - Первый исполняемый трек: [agent/TRACK_CONCURRENCY_V2.md](agent/TRACK_CONCURRENCY_V2.md)
+- Тестовый суперстенд: [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md), [agent/TRACK_CONCURRENCY_TEST_HARNESS.md](agent/TRACK_CONCURRENCY_TEST_HARNESS.md)
