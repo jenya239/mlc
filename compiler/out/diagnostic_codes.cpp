@@ -176,7 +176,9 @@ mlc::String diagnostic_code_w_cycle() noexcept;
 
 mlc::String diagnostic_code_e085() noexcept;
 
-int diagnostic_code_catalog_count() noexcept{return 86;}
+mlc::String diagnostic_code_e086() noexcept;
+
+int diagnostic_code_catalog_count() noexcept{return 87;}
 
 mlc::String diagnostic_code_e001() noexcept{return mlc::String("E001");}
 
@@ -349,5 +351,7 @@ mlc::String diagnostic_code_e084() noexcept{return mlc::String("E084");}
 mlc::String diagnostic_code_w_cycle() noexcept{return mlc::String("W-CYCLE");}
 
 mlc::String diagnostic_code_e085() noexcept{return mlc::String("E085");}
+
+mlc::String diagnostic_code_e086() noexcept{return mlc::String("E086");}
 
 } // namespace diagnostic_codes

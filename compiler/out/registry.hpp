@@ -24,7 +24,7 @@ struct AdtIndex {mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> cons
 
 struct RecordIndex {mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>> field_types;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> record_field_names_ordered;mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<ast::Expr>>> record_literal_field_defaults;};
 
-struct TypeRegistry {registry::FunctionIndex function_index;registry::AdtIndex adt_index;registry::RecordIndex record_index;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> type_alias_type_parameter_names;};
+struct TypeRegistry {registry::FunctionIndex function_index;registry::AdtIndex adt_index;registry::RecordIndex record_index;mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>> type_alias_annotations;mlc::HashMap<mlc::String, mlc::Array<mlc::String>> type_alias_type_parameter_names;mlc::HashMap<mlc::String, mlc::String> type_defining_path;mlc::HashMap<mlc::String, mlc::String> trait_defining_path;};
 
 std::shared_ptr<registry::Type> TypeRegistry_fn_type(registry::TypeRegistry self, mlc::String name) noexcept;
 
@@ -73,6 +73,10 @@ bool TypeRegistry_is_private_ctor(registry::TypeRegistry self, mlc::String name)
 mlc::Array<mlc::String> TypeRegistry_trait_assoc_names(registry::TypeRegistry self, mlc::String trait_name) noexcept;
 
 std::shared_ptr<registry::Type> TypeRegistry_resolve_assoc(registry::TypeRegistry self, mlc::String type_name, mlc::String trait_name, mlc::String assoc_name) noexcept;
+
+mlc::String TypeRegistry_defining_path_for_type(registry::TypeRegistry self, mlc::String type_name) noexcept;
+
+mlc::String TypeRegistry_defining_path_for_trait(registry::TypeRegistry self, mlc::String trait_name) noexcept;
 
 registry::TypeRegistry empty_registry() noexcept;
 

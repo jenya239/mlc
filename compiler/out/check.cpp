@@ -15,6 +15,7 @@
 #include "record_field_default_validate.hpp"
 #include "partial_application_desugar.hpp"
 #include "cycle_lint.hpp"
+#include "orphan_lint.hpp"
 
 namespace check {
 
@@ -33,6 +34,7 @@ using namespace diagnostic_codes;
 using namespace record_field_default_validate;
 using namespace partial_application_desugar;
 using namespace cycle_lint;
+using namespace orphan_lint;
 using namespace ast_tokens;
 
 struct Check_fn_locals_fold_state {mlc::Array<mlc::String> locals;mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;};
@@ -289,6 +291,7 @@ mlc::HashMap<mlc::String, bool> globals = collect_globals(destructured_full_prog
 registry::TypeRegistry registry = registry::build_registry(destructured_full_program);
 all_diagnostics = ast::diagnostics_append(all_diagnostics, type_alias_cycle_diagnostics(destructured_full_program, registry));
 all_diagnostics = ast::diagnostics_append(all_diagnostics, cycle_lint::shared_cycle_lint_diagnostics(destructured_full_program, registry));
+all_diagnostics = ast::diagnostics_append(all_diagnostics, orphan_lint::orphan_impl_diagnostics(destructured_full_program, registry));
 int declaration_index = 0;
 while (declaration_index < expanded_entry_program.decls.size()){
 {

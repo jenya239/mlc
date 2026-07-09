@@ -57,7 +57,15 @@ mlc::Array<mlc::String> TypeRegistry_trait_assoc_names(registry::TypeRegistry se
 
 std::shared_ptr<registry::Type> TypeRegistry_resolve_assoc(registry::TypeRegistry self, mlc::String type_name, mlc::String trait_name, mlc::String assoc_name) noexcept;
 
+mlc::String TypeRegistry_defining_path_for_type(registry::TypeRegistry self, mlc::String type_name) noexcept;
+
+mlc::String TypeRegistry_defining_path_for_trait(registry::TypeRegistry self, mlc::String trait_name) noexcept;
+
 registry::TypeRegistry empty_registry() noexcept;
+
+void record_type_defining_path(registry::TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept;
+
+void record_trait_defining_path(registry::TypeRegistry& registry, mlc::String trait_name, mlc::String defining_path) noexcept;
 
 std::shared_ptr<registry::Type> primitive_type_from_name(mlc::String name) noexcept;
 
@@ -105,7 +113,7 @@ bool trait_method_is_assoc_type_declaration(std::shared_ptr<ast::Decl> method) n
 
 void register_trait_method_into_registry(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> method) noexcept;
 
-void register_decl_trait_into_registry(registry::TypeRegistry& registry, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods) noexcept;
+void register_decl_trait_into_registry(registry::TypeRegistry& registry, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods, mlc::String defining_path) noexcept;
 
 mlc::String trait_base_name(mlc::String trait_name) noexcept;
 
@@ -115,9 +123,9 @@ void register_decl_fn_into_registry(registry::TypeRegistry& registry, mlc::Strin
 
 mlc::String variant_name_of(std::shared_ptr<ast::TypeVariant> variant) noexcept;
 
-void register_decl_type_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+void register_decl_type_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String defining_path) noexcept;
 
-void register_decl_type_alias_into_registry(registry::TypeRegistry& registry, mlc::String alias_name, mlc::Array<mlc::String> type_parameters, std::shared_ptr<ast::TypeExpr> type_expression) noexcept;
+void register_decl_type_alias_into_registry(registry::TypeRegistry& registry, mlc::String alias_name, mlc::Array<mlc::String> type_parameters, std::shared_ptr<ast::TypeExpr> type_expression, mlc::String defining_path) noexcept;
 
 bool register_extend_method_into_registry(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> method, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>& assoc_type_bindings) noexcept;
 
@@ -253,6 +261,10 @@ return self.adt_index.assoc_type_bindings.has(key) ? [&]() -> std::shared_ptr<re
  }() : std::make_shared<registry::Type>((registry::TUnknown{}));
 }
 
+mlc::String TypeRegistry_defining_path_for_type(registry::TypeRegistry self, mlc::String type_name) noexcept{return self.type_defining_path.has(type_name) ? self.type_defining_path.get(type_name) : mlc::String("");}
+
+mlc::String TypeRegistry_defining_path_for_trait(registry::TypeRegistry self, mlc::String trait_name) noexcept{return self.trait_defining_path.has(trait_name) ? self.trait_defining_path.get(trait_name) : mlc::String("");}
+
 registry::TypeRegistry empty_registry() noexcept{
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> constructor_types_map = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>> constructor_parameters_map = mlc::HashMap<mlc::String, mlc::Array<std::shared_ptr<registry::Type>>>();
@@ -281,7 +293,19 @@ builtin_function_types.set(mlc::String("make_channel"), std::make_shared<registr
 builtin_required_arity.set(mlc::String("make_channel"), 1);
 builtin_required_arity.set(mlc::String("read_line"), 0);
 mlc::HashMap<mlc::String, bool> empty_private_constructors = mlc::HashMap<mlc::String, bool>();
-return registry::TypeRegistry{registry::FunctionIndex{builtin_function_types, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<int>>(), builtin_required_arity, mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>>()}, registry::AdtIndex{constructor_types_map, constructor_parameters_map, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), empty_private_constructors, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>()}, registry::RecordIndex{mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<ast::Expr>>>()}, mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>()};
+return registry::TypeRegistry{registry::FunctionIndex{builtin_function_types, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<int>>(), builtin_required_arity, mlc::HashMap<mlc::String, mlc::Array<mlc::Array<mlc::String>>>()}, registry::AdtIndex{constructor_types_map, constructor_parameters_map, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), empty_private_constructors, mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>()}, registry::RecordIndex{mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::HashMap<mlc::String, std::shared_ptr<ast::Expr>>>()}, mlc::HashMap<mlc::String, std::shared_ptr<ast::TypeExpr>>(), mlc::HashMap<mlc::String, mlc::Array<mlc::String>>(), mlc::HashMap<mlc::String, mlc::String>(), mlc::HashMap<mlc::String, mlc::String>()};
+}
+
+void record_type_defining_path(registry::TypeRegistry& registry, mlc::String type_name, mlc::String defining_path) noexcept{
+if (defining_path.length() > 0){
+registry.type_defining_path.set(type_name, defining_path);
+}
+}
+
+void record_trait_defining_path(registry::TypeRegistry& registry, mlc::String trait_name, mlc::String defining_path) noexcept{
+if (defining_path.length() > 0){
+registry.trait_defining_path.set(trait_name, defining_path);
+}
 }
 
 std::shared_ptr<registry::Type> primitive_type_from_name(mlc::String name) noexcept{return name == mlc::String("i64") ? std::make_shared<registry::Type>((registry::TI64{})) : name == mlc::String("f64") ? std::make_shared<registry::Type>((registry::TF64{})) : name == mlc::String("u8") ? std::make_shared<registry::Type>((registry::TU8{})) : name == mlc::String("usize") ? std::make_shared<registry::Type>((registry::TUsize{})) : name == mlc::String("char") ? std::make_shared<registry::Type>((registry::TChar{})) : name == mlc::String("i32") ? std::make_shared<registry::Type>((registry::TI32{})) : name == mlc::String("string") ? std::make_shared<registry::Type>((registry::TString{})) : name == mlc::String("bool") ? std::make_shared<registry::Type>((registry::TBool{})) : name == mlc::String("unit") ? std::make_shared<registry::Type>((registry::TUnit{})) : std::make_shared<registry::Type>(registry::TNamed(name));}
@@ -433,7 +457,7 @@ register_decl_into(registry, method);
 }
 }
 
-void register_decl_trait_into_registry(registry::TypeRegistry& registry, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods) noexcept{
+void register_decl_trait_into_registry(registry::TypeRegistry& registry, mlc::String trait_name, mlc::Array<std::shared_ptr<ast::Decl>> methods, mlc::String defining_path) noexcept{
 int index = 0;
 while (index < methods.size()){
 {
@@ -444,8 +468,11 @@ index = index + 1;
 mlc::Array<mlc::String> initial_trait_associated_type_names = trait_associated_type_names_for(registry, trait_name);
 mlc::Array<mlc::String> trait_associated_type_names = methods.fold(initial_trait_associated_type_names, accumulate_trait_associated_type_name);
 if (true){
+{
 registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names);
 }
+}
+return record_trait_defining_path(registry, trait_name, defining_path);
 }
 
 mlc::String trait_base_name(mlc::String trait_name) noexcept{
@@ -522,7 +549,7 @@ mlc::String variant_name_of(std::shared_ptr<ast::TypeVariant> variant) noexcept{
   [&](const VarRecord& varrecord) -> mlc::String { auto [variant_name, _w0, _w1] = varrecord; return variant_name; }
 }, (*variant));}
 
-void register_decl_type_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
+void register_decl_type_into_registry(registry::TypeRegistry& registry, mlc::String type_name, mlc::Array<mlc::String> type_parameters, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String defining_path) noexcept{
 registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters);
 mlc::Array<mlc::String> variant_names = {};
 int variant_index = 0;
@@ -536,15 +563,21 @@ variant_index = variant_index + 1;
 registry.adt_index.algebraic_decl_variant_names.set(type_name, variant_names);
 mlc::Array<mlc::String> phantom = compute_phantom_type_params(type_parameters, variants);
 if (true){
+{
 registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom);
 }
 }
+return record_type_defining_path(registry, type_name, defining_path);
+}
 
-void register_decl_type_alias_into_registry(registry::TypeRegistry& registry, mlc::String alias_name, mlc::Array<mlc::String> type_parameters, std::shared_ptr<ast::TypeExpr> type_expression) noexcept{
+void register_decl_type_alias_into_registry(registry::TypeRegistry& registry, mlc::String alias_name, mlc::Array<mlc::String> type_parameters, std::shared_ptr<ast::TypeExpr> type_expression, mlc::String defining_path) noexcept{
 registry.type_alias_annotations.set(alias_name, type_expression);
 if (type_parameters.size() > 0){
+{
 registry.type_alias_type_parameter_names.set(alias_name, type_parameters);
 }
+}
+return record_type_defining_path(registry, alias_name, defining_path);
 }
 
 bool register_extend_method_into_registry(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> method, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>& assoc_type_bindings) noexcept{return [&]() { if (std::holds_alternative<ast::DeclAssocBind>((*method))) { auto _v_declassocbind = std::get<ast::DeclAssocBind>((*method)); auto [assoc_name, type_expr, _w0] = _v_declassocbind; return [&]() -> bool { 
@@ -555,8 +588,8 @@ bool register_extend_method_into_registry(registry::TypeRegistry& registry, std:
   return false;
  }(); }();}
 
-bool register_decl_trait_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclTrait>((*declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*declaration)); auto [trait_name, _w0, methods, _w1] = _v_decltrait; return [&]() -> bool { 
-  register_decl_trait_into_registry(registry, trait_name, methods);
+bool register_decl_trait_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclTrait>((*declaration))) { auto _v_decltrait = std::get<ast::DeclTrait>((*declaration)); auto [trait_name, _w0, methods, name_span] = _v_decltrait; return [&]() -> bool { 
+  register_decl_trait_into_registry(registry, trait_name, methods, name_span.file);
   return true;
  }(); } return false; }();}
 
@@ -570,13 +603,13 @@ bool register_decl_fn_if(registry::TypeRegistry& registry, std::shared_ptr<ast::
   return true;
  }(); } return false; }();}
 
-bool register_decl_type_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclType>((*declaration))) { auto _v_decltype = std::get<ast::DeclType>((*declaration)); auto [type_name, type_parameters, variants, _w0, _w1] = _v_decltype; return [&]() -> bool { 
-  register_decl_type_into_registry(registry, type_name, type_parameters, variants);
+bool register_decl_type_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclType>((*declaration))) { auto _v_decltype = std::get<ast::DeclType>((*declaration)); auto [type_name, type_parameters, variants, _w0, name_span] = _v_decltype; return [&]() -> bool { 
+  register_decl_type_into_registry(registry, type_name, type_parameters, variants, name_span.file);
   return true;
  }(); } return false; }();}
 
-bool register_decl_type_alias_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclTypeAlias>((*declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*declaration)); auto [alias_name, type_parameters, type_expression, _w0] = _v_decltypealias; return [&]() -> bool { 
-  register_decl_type_alias_into_registry(registry, alias_name, type_parameters, type_expression);
+bool register_decl_type_alias_if(registry::TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{return [&]() { if (std::holds_alternative<ast::DeclTypeAlias>((*declaration))) { auto _v_decltypealias = std::get<ast::DeclTypeAlias>((*declaration)); auto [alias_name, type_parameters, type_expression, name_span] = _v_decltypealias; return [&]() -> bool { 
+  register_decl_type_alias_into_registry(registry, alias_name, type_parameters, type_expression, name_span.file);
   return true;
  }(); } return false; }();}
 

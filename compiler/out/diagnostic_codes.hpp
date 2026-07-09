@@ -187,6 +187,8 @@ mlc::String diagnostic_code_w_cycle() noexcept;
 
 mlc::String diagnostic_code_e085() noexcept;
 
+mlc::String diagnostic_code_e086() noexcept;
+
 } // namespace diagnostic_codes
 
 #endif // DIAGNOSTIC_CODES_HPP

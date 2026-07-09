@@ -19,6 +19,7 @@
 #include "record_field_default_validate.hpp"
 #include "partial_application_desugar.hpp"
 #include "cycle_lint.hpp"
+#include "orphan_lint.hpp"
 
 namespace check {
 
