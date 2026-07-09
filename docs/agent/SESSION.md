@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 2 |
-| active_track | TRACK_CONCURRENCY_V2 STEP=3 |
+| driver_turns_since_plan | 2 |
+| step_last | 3 |
+| active_track | TRACK_CONCURRENCY_V2 STEP=4 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:38 (Driver TRACK_CONCURRENCY_V2 STEP=3 — Sender/Receiver)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 12:37 |
+| elapsed | ~2 min |
+| done    | `Sender`/`Receiver` + `open_channel`/`Channel::sender|receiver`; `clone`; last Sender drop closes after drain; `Sender::close()` wakes. Legacy `Channel` API kept. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_channel 41/41). |
+| result  | STEP=3 done. Plain: Sender/Receiver split в runtime. |
+| issues  | — |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_V2 — spawn_thread move-state tracking (compiler) |
 
 ### Turn 2026-07-09 12:36 (Driver TRACK_CONCURRENCY_V2 STEP=2 — rendezvous Channel)
 

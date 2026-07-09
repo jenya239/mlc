@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=3 — `Sender`/`Receiver` split + close semantics
-(`runtime/`). STEP=2 rendezvous done.
+**TRACK_CONCURRENCY_V2** STEP=4 — `spawn_thread(move x)` move-state tracking
+(`compiler/`). STEP=3 Sender/Receiver done (runtime).
 
 ## Step sizing (good vs bad)
 

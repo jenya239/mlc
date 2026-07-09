@@ -137,6 +137,52 @@ void test_string_copy() {
     CHECK(received->as_std_string() == "hello");
 }
 
+void test_sender_receiver_open_channel() {
+    auto [sender, receiver] = mlc::concurrency::open_channel<int>(4);
+    CHECK(sender.send(7));
+    auto value = receiver.receive();
+    CHECK(value.has_value() && *value == 7);
+}
+
+void test_sender_clone_last_drop_closes() {
+    auto [sender, receiver] = mlc::concurrency::open_channel<int>(4);
+    auto sender_copy = sender.clone();
+    CHECK(sender.send(1));
+    CHECK(sender_copy.send(2));
+    sender = mlc::concurrency::Sender<int>();
+    CHECK(sender_copy.send(3));
+    sender_copy = mlc::concurrency::Sender<int>();
+    auto first = receiver.receive();
+    auto second = receiver.receive();
+    auto third = receiver.receive();
+    auto closed = receiver.receive();
+    CHECK(first.has_value() && *first == 1);
+    CHECK(second.has_value() && *second == 2);
+    CHECK(third.has_value() && *third == 3);
+    CHECK(!closed.has_value());
+    CHECK(receiver.is_closed());
+}
+
+void test_sender_explicit_close_wakes_receiver() {
+    auto [sender, receiver] = mlc::concurrency::open_channel<int>(4);
+    std::optional<int> received = 0;
+    std::thread waiter([&] { received = receiver.receive(); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    sender.close();
+    waiter.join();
+    CHECK(!received.has_value());
+    CHECK(receiver.is_closed());
+}
+
+void test_channel_sender_receiver_handles() {
+    mlc::concurrency::Channel<int> channel(2);
+    auto sender = channel.sender();
+    auto receiver = channel.receiver();
+    CHECK(sender.send(9));
+    auto value = receiver.receive();
+    CHECK(value.has_value() && *value == 9);
+}
+
 int main() {
     test_capacity_validation();
     test_rendezvous_handoff();
@@ -149,6 +195,10 @@ int main() {
     test_receive_after_close_empty();
     test_threaded_round_trip();
     test_string_copy();
+    test_sender_receiver_open_channel();
+    test_sender_clone_last_drop_closes();
+    test_sender_explicit_close_wakes_receiver();
+    test_channel_sender_receiver_handles();
 
     if (failed == 0) {
         std::cout << "ALL " << passed << " checks PASSED\n";

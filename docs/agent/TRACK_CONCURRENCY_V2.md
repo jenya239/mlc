@@ -5,10 +5,10 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
 Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
 
-## Status: **open** — STEP=2 done; STEP=3 next
+## Status: **open** — STEP=3 done; STEP=4 next
 
-**Driver 2026-07-09:** STEP=2 — `Channel(0)` rendezvous handoff in
-`channel.hpp` + `TestChannel`; tests in `test_channel.cpp`.
+**Driver 2026-07-09:** STEP=3 — `Sender`/`Receiver` + `open_channel` /
+`Channel::sender`/`receiver`; last Sender drop closes; `Sender::close()` wakes.
 
 ### STEP=2 acceptance (Driver)
 
@@ -69,8 +69,8 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 |------|------|--------|
 | 1 | Обобщить `compiler/checker/send_safe.mlc` (`type_is_send_safe`) в переиспользуемый bound `Send[T]`, доступный не только для `Channel.send`, но и для будущих `spawn_thread`/`ThreadPool.submit` capture-проверок. Развести понятия Send/Sync — сейчас предикат конфлирует оба (`Arc<T>` даёт `false`, должен давать `true` для `Send`). Trait name locked: **`Sync`**. | **done** |
 | 2 | Rendezvous channel: `Channel[T].bounded(0)` в `runtime/include/mlc/concurrency/channel.hpp` — сейчас `capacity == 0` кидает `invalid_argument`, нужен синхронный handoff вместо ошибки. | **done** |
-| 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | **next** |
-| 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). | pending |
+| 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | **done** |
+| 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). | **next** |
 | 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | pending |
 | 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | pending |
 
