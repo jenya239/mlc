@@ -5,21 +5,23 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 дорожная карта Фаза 1-11 + критерий приёмки — читать перед началом работы).
 Предыдущий MVP (closed): [../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
 
-## Status: **open** — STEP=3 done; STEP=4 in progress (mutable-capture slice)
+## Status: **open** — STEP=4 done (4a+4b); STEP=5 next
 
-**Driver 2026-07-09:** STEP=4a — E087 forbid free `let mut` capture in `spawn`
-body (`spawn_capture.mlc`). Move-state tracking still pending.
+**Driver 2026-07-09:** STEP=4b — `move` keyword (`KMove`/`ExprUn("move")`),
+E088 use-after-move, `move x` exempts E087 in spawn; codegen `std::move`.
 
 ### STEP=4 acceptance (Driver)
 
 **Layer:** `compiler/` only (not `lib/mlc/` / not `runtime/` in the same turn).
 
-**Slice 4a (this turn):** conservative capture — free use of enclosing `let mut` /
+**Slice 4a (done):** conservative capture — free use of enclosing `let mut` /
 mut param inside `spawn do … end` → `error[E087]`. Immutable capture and
-`let mut` local to the spawn body remain allowed. No `move` keyword yet.
+`let mut` local to the spawn body remain allowed.
 
-**Slice 4b (next):** `move` + use-after-move for values moved into spawn
-(parser/AST/checker); wire Sync-safe exceptions if already expressible.
+**Slice 4b (done):** `move` keyword + use-after-move (`error[E088]`);
+`move x` inside spawn allows mutable transfer; later use of `x` is E088.
+Codegen emits `std::move(...)`. Sync-safe shared capture without `move` still
+deferred (E087 remains for free mut).
 
 - Unit coverage in `compiler/tests/test_spawn.mlc` (or mlcc `--check-only` probes
   if Ruby `build_tests` still red).
@@ -85,8 +87,8 @@ MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 | 1 | Обобщить `compiler/checker/send_safe.mlc` (`type_is_send_safe`) в переиспользуемый bound `Send[T]`, доступный не только для `Channel.send`, но и для будущих `spawn_thread`/`ThreadPool.submit` capture-проверок. Развести понятия Send/Sync — сейчас предикат конфлирует оба (`Arc<T>` даёт `false`, должен давать `true` для `Send`). Trait name locked: **`Sync`**. | **done** |
 | 2 | Rendezvous channel: `Channel[T].bounded(0)` в `runtime/include/mlc/concurrency/channel.hpp` — сейчас `capacity == 0` кидает `invalid_argument`, нужен синхронный handoff вместо ошибки. | **done** |
 | 3 | `Sender[T]`/`Receiver[T]` split + `Sender.clone()` + явная close-семантика (последний `Sender` уничтожен → `Closed` после дочитывания buffer; `tx.close()` будит blocked receivers) — сейчас `Channel<T>` единый handle без разделения ролей. | **done** |
-| 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). **4a done:** E087 mutable free-capture in `spawn`. **4b next:** `move` + use-after-move. | **next** |
-| 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | pending |
+| 4 | `spawn_thread(move x) { ... }` — простое move-state tracking (не полный borrow checker): после `move x` использование `x` в исходном scope — ошибка компиляции. Conservative capture checker: захват mutable значения без `move`/явного `Sync`-типа — ошибка (сегодня — тихий COW data race, см. `MEMORY_MODEL.md` §Известные ограничения п.2). **4a+4b done:** E087 + `move`/E088. | **done** |
+| 5 | `StopSource`/`StopToken` runtime primitive (backend: C++20 `stop_source`/`stop_token`, не экспортировать C++ API наружу напрямую). | **next** |
 | 6 | Self-host верификация + `MEMORY_MODEL.md` обновление (заменить "Thread safety (TRACK_CONCURRENCY closed)" на актуальную таблицу с `Send`/`Sync`); close track или передать эстафету следующему (`TaskScope`/cancellation) треку. | pending |
 
 ## Out of scope (этот трек)

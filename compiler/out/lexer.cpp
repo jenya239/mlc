@@ -75,7 +75,7 @@ bool is_ws(mlc::String character) noexcept{
   return ((((character == mlc::String(" ", 1)) || (character == mlc::String("\t", 1))) || (character == mlc::String("\r", 1))) || (character == mlc::String("\n", 1)));
 }
 mlc::Array<mlc::String> mlc_reserved_keywords() noexcept{
-  return mlc::Array<mlc::String>{mlc::String("fn", 2), mlc::String("type", 4), mlc::String("let", 3), mlc::String("mut", 3), mlc::String("const", 5), mlc::String("return", 6), mlc::String("break", 5), mlc::String("continue", 8), mlc::String("if", 2), mlc::String("then", 4), mlc::String("else", 4), mlc::String("unless", 6), mlc::String("while", 5), mlc::String("for", 3), mlc::String("in", 2), mlc::String("do", 2), mlc::String("end", 3), mlc::String("match", 5), mlc::String("with", 4), mlc::String("import", 6), mlc::String("from", 4), mlc::String("as", 2), mlc::String("extern", 6), mlc::String("extend", 6), mlc::String("where", 5), mlc::String("spawn", 5), mlc::String("true", 4), mlc::String("false", 5)};
+  return mlc::Array<mlc::String>{mlc::String("fn", 2), mlc::String("type", 4), mlc::String("let", 3), mlc::String("mut", 3), mlc::String("const", 5), mlc::String("return", 6), mlc::String("break", 5), mlc::String("continue", 8), mlc::String("if", 2), mlc::String("then", 4), mlc::String("else", 4), mlc::String("unless", 6), mlc::String("while", 5), mlc::String("for", 3), mlc::String("in", 2), mlc::String("do", 2), mlc::String("end", 3), mlc::String("match", 5), mlc::String("with", 4), mlc::String("import", 6), mlc::String("from", 4), mlc::String("as", 2), mlc::String("extern", 6), mlc::String("extend", 6), mlc::String("where", 5), mlc::String("spawn", 5), mlc::String("move", 4), mlc::String("true", 4), mlc::String("false", 5)};
 }
 bool is_reserved_keyword(mlc::String word) noexcept{
   return mlc_reserved_keywords().any([=](mlc::String keyword) mutable { return (word == keyword); });
@@ -133,6 +133,8 @@ ast_tokens::TokenKind reserved_keyword_kind(mlc::String word) noexcept{
     return ast_tokens::KWhere{};
   } else if ((word == mlc::String("spawn", 5)))   {
     return ast_tokens::KSpawn{};
+  } else if ((word == mlc::String("move", 4)))   {
+    return ast_tokens::KMove{};
   } else if ((word == mlc::String("true", 4)))   {
     return ast_tokens::KTrue{};
   } else if ((word == mlc::String("false", 5)))   {

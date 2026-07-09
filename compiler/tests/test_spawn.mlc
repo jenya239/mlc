@@ -12,7 +12,7 @@ import {
 } from '../ir/semantic_ir'
 import { span_unknown, TyI32, TyGeneric } from '../frontend/ast'
 import { TI32, TUnit, TFn, TGeneric } from '../checker/registry'
-import { diagnostic_code_e087 } from '../checker/diagnostic_codes'
+import { diagnostic_code_e087, diagnostic_code_e088 } from '../checker/diagnostic_codes'
 
 fn check_error_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
@@ -54,6 +54,27 @@ export fn spawn_tests() -> [TestResult] = do
     check_error_count(
       'fn main() -> Task<i32> = spawn do\n  let mut x = 7\n  return x\nend'),
     0))
+
+  results.push(assert_eq_int('spawn move mut binding ok',
+    check_error_count(
+      'fn main() -> Task<i32> = do\n  let mut x = 7\n  spawn do return move x end\nend'),
+    0))
+
+  results.push(assert_eq_int('use after move E088',
+    check_error_count(
+      'fn main() -> i32 = do\n  let x = 7\n  let y = move x\n  x\nend'),
+    1))
+
+  results.push(assert_eq_int('use after move diagnostic code',
+    if first_error_line(
+      'fn main() -> i32 = do\n  let x = 7\n  let y = move x\n  x\nend'
+    ).contains('error[' + diagnostic_code_e088() + ']') then 1 else 0 end,
+    1))
+
+  results.push(assert_eq_int('use after move into spawn E088',
+    check_error_count(
+      'fn main() -> i32 = do\n  let mut x = 7\n  let t = spawn do return move x end\n  x\nend'),
+    1))
 
   const return_value = Shared.new(SemanticExpressionInt(7, integer_type(), span_unknown()))
   const block = Shared.new(SemanticExpressionBlock([], return_value, integer_type(), span_unknown()))

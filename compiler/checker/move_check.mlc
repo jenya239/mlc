@@ -1,0 +1,292 @@
+// Use-after-move tracking (TRACK_CONCURRENCY_V2 STEP=4b).
+// `move x` marks binding x as moved; later free uses of x are E088.
+// Rebinding via let/let mut clears the moved mark for that name.
+
+import {
+  Expr, Stmt, Param, MatchArm, FieldVal, RecordLitPart, Diagnostic, Span,
+  diagnostic_error_with_code, diagnostics_append
+} from '../frontend/ast'
+import { pattern_bindings } from './names'
+import { diagnostic_code_e088 } from './diagnostic_codes'
+
+type MoveCheckWalkState = MoveCheckWalkState {
+  diagnostics: [Diagnostic],
+  moved: [string]
+}
+
+fn empty_names() -> [string] = do
+  let names: [string] = []
+  names
+end
+
+fn names_contains(names: [string], sought: string) -> bool =
+  names.any(entry => entry == sought)
+
+fn names_add(names: [string], name: string) -> [string] =
+  if name.length() == 0 then names
+  else if names_contains(names, name) then names
+  else names.concat([name])
+  end
+
+fn names_add_all(names: [string], additions: [string]) -> [string] =
+  additions.fold(names, (accumulated, addition) => names_add(accumulated, addition))
+
+fn names_remove(names: [string], name: string) -> [string] =
+  names.filter(entry => entry != name)
+
+fn names_remove_all(names: [string], removals: [string]) -> [string] =
+  removals.fold(names, (accumulated, removal) => names_remove(accumulated, removal))
+
+fn empty_diagnostics() -> [Diagnostic] = do
+  let diagnostics: [Diagnostic] = []
+  diagnostics
+end
+
+fn use_after_move_diagnostic(binding_name: string, source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'value \'' + binding_name + '\' was moved and cannot be used here',
+    source_span,
+    diagnostic_code_e088())
+
+fn statement_binding_names(statement: Shared<Stmt>) -> [string] =
+  match statement {
+    StmtLet(name, _, _, _, _) => [name],
+    StmtLetPattern(pattern, _, _, _, _, _, _) => pattern_bindings(pattern),
+    StmtLetConst(name, _, _, _) => [name],
+    StmtExpr(_, _) => empty_names(),
+    StmtBreak(_) => empty_names(),
+    StmtContinue(_) => empty_names(),
+    StmtReturn(_, _) => empty_names()
+  }
+
+fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkState =
+  match expression {
+    ExprIdent(name, source_span) =>
+      if names_contains(moved, name) then
+        MoveCheckWalkState {
+          diagnostics: [use_after_move_diagnostic(name, source_span)],
+          moved: moved
+        }
+      else
+        MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved }
+      end,
+    ExprUn(operation, operand, _) =>
+      if operation == "move" then
+        match operand {
+          ExprIdent(name, _) =>
+            MoveCheckWalkState {
+              diagnostics: empty_diagnostics(),
+              moved: names_add(moved, name)
+            },
+          _ => move_check_expr(operand, moved)
+        }
+      else
+        move_check_expr(operand, moved)
+      end,
+    ExprInt(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprStr(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprBool(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprUnit(_) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprFloat(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprI64(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprU8(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprUsize(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprChar(_, _) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprExtern(_) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    ExprBin(_, left, right, _) => do
+      const left_state = move_check_expr(left, moved)
+      const right_state = move_check_expr(right, left_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(left_state.diagnostics, right_state.diagnostics),
+        moved: right_state.moved
+      }
+    end,
+    ExprCall(callee, arguments, _) => do
+      const callee_state = move_check_expr(callee, moved)
+      move_check_expr_list(arguments, callee_state)
+    end,
+    ExprMethod(receiver, _, arguments, _) => do
+      const receiver_state = move_check_expr(receiver, moved)
+      move_check_expr_list(arguments, receiver_state)
+    end,
+    ExprField(object, _, _) => move_check_expr(object, moved),
+    ExprIndex(object, index_expression, _) => do
+      const object_state = move_check_expr(object, moved)
+      const index_state = move_check_expr(index_expression, object_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(object_state.diagnostics, index_state.diagnostics),
+        moved: index_state.moved
+      }
+    end,
+    ExprIf(condition, then_branch, else_branch, _) => do
+      const condition_state = move_check_expr(condition, moved)
+      const then_state = move_check_expr(then_branch, condition_state.moved)
+      const else_state = move_check_expr(else_branch, condition_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(
+          condition_state.diagnostics,
+          diagnostics_append(then_state.diagnostics, else_state.diagnostics)),
+        moved: names_add_all(then_state.moved, else_state.moved)
+      }
+    end,
+    ExprBlock(statements, result_expression, _) => do
+      const statements_state = move_check_stmts(statements, moved)
+      const result_state = move_check_expr(result_expression, statements_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(statements_state.diagnostics, result_state.diagnostics),
+        moved: result_state.moved
+      }
+    end,
+    ExprWhile(condition, body, _) => do
+      const condition_state = move_check_expr(condition, moved)
+      const body_state = move_check_stmts(body, condition_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(condition_state.diagnostics, body_state.diagnostics),
+        moved: names_add_all(condition_state.moved, body_state.moved)
+      }
+    end,
+    ExprFor(_, iterable, body, _) => do
+      const iterable_state = move_check_expr(iterable, moved)
+      const body_state = move_check_stmts(body, iterable_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(iterable_state.diagnostics, body_state.diagnostics),
+        moved: names_add_all(iterable_state.moved, body_state.moved)
+      }
+    end,
+    ExprMatch(scrutinee, arms, _) => do
+      const scrutinee_state = move_check_expr(scrutinee, moved)
+      move_check_match_arms(arms, scrutinee_state)
+    end,
+    ExprRecord(_, parts, _) => move_check_record_parts(parts, moved),
+    ExprRecordUpdate(_, base, field_values, _) => do
+      const base_state = move_check_expr(base, moved)
+      move_check_field_values(field_values, base_state)
+    end,
+    ExprArray(elements, _) =>
+      move_check_expr_list(elements, MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved }),
+    ExprTuple(elements, _) =>
+      move_check_expr_list(elements, MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved }),
+    ExprQuestion(inner, _) => move_check_expr(inner, moved),
+    ExprLambda(_, body, _) => do
+      const body_state = move_check_expr(body, empty_names())
+      MoveCheckWalkState { diagnostics: body_state.diagnostics, moved: moved }
+    end,
+    ExprSpawn(body, _) => do
+      const body_state = move_check_stmts(body, moved)
+      MoveCheckWalkState {
+        diagnostics: body_state.diagnostics,
+        moved: body_state.moved
+      }
+    end,
+    ExprNamedArg(_, value, _) => move_check_expr(value, moved),
+    ExprWith(resource, _, body, _) => do
+      const resource_state = move_check_expr(resource, moved)
+      const body_state = move_check_stmts(body, resource_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(resource_state.diagnostics, body_state.diagnostics),
+        moved: body_state.moved
+      }
+    end
+  }
+
+fn move_check_expr_list(
+  expressions: [Shared<Expr>],
+  state: MoveCheckWalkState
+) -> MoveCheckWalkState =
+  expressions.fold(
+    state,
+    (accumulator, expression) => do
+      const next = move_check_expr(expression, accumulator.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(accumulator.diagnostics, next.diagnostics),
+        moved: next.moved
+      }
+    end)
+
+fn move_check_field_values(
+  field_values: [Shared<FieldVal>],
+  state: MoveCheckWalkState
+) -> MoveCheckWalkState =
+  field_values.fold(
+    state,
+    (accumulator, field_value) => do
+      const next = move_check_expr(field_value.value, accumulator.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(accumulator.diagnostics, next.diagnostics),
+        moved: next.moved
+      }
+    end)
+
+fn move_check_record_parts(
+  parts: [RecordLitPart],
+  moved: [string]
+) -> MoveCheckWalkState =
+  parts.fold(
+    MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    (accumulator, part) =>
+      match part {
+        RecordLitFields(field_values) => move_check_field_values(field_values, accumulator),
+        RecordLitSpread(spread_expression) => do
+          const next = move_check_expr(spread_expression, accumulator.moved)
+          MoveCheckWalkState {
+            diagnostics: diagnostics_append(accumulator.diagnostics, next.diagnostics),
+            moved: next.moved
+          }
+        end
+      })
+
+fn move_check_match_arms(
+  arms: [Shared<MatchArm>],
+  state: MoveCheckWalkState
+) -> MoveCheckWalkState =
+  arms.fold(
+    MoveCheckWalkState { diagnostics: state.diagnostics, moved: state.moved },
+    (accumulator, arm) => do
+      const guard_state =
+        if arm.has_guard then move_check_expr(arm.when_condition, state.moved)
+        else MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: state.moved }
+        end
+      const body_state = move_check_expr(arm.body, guard_state.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(
+          accumulator.diagnostics,
+          diagnostics_append(guard_state.diagnostics, body_state.diagnostics)),
+        moved: names_add_all(accumulator.moved, body_state.moved)
+      }
+    end)
+
+fn move_check_stmts(
+  statements: [Shared<Stmt>],
+  moved: [string]
+) -> MoveCheckWalkState =
+  statements.fold(
+    MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved },
+    (state, statement) => do
+      const value_state = match statement {
+        StmtLet(_, _, _, value, _) => move_check_expr(value, state.moved),
+        StmtLetPattern(_, _, _, value, _, else_expression, _) => do
+          const value_checked = move_check_expr(value, state.moved)
+          const else_checked = move_check_expr(else_expression, value_checked.moved)
+          MoveCheckWalkState {
+            diagnostics: diagnostics_append(value_checked.diagnostics, else_checked.diagnostics),
+            moved: else_checked.moved
+          }
+        end,
+        StmtLetConst(_, _, value, _) => move_check_expr(value, state.moved),
+        StmtExpr(expression, _) => move_check_expr(expression, state.moved),
+        StmtBreak(_) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: state.moved },
+        StmtContinue(_) => MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: state.moved },
+        StmtReturn(expression, _) => move_check_expr(expression, state.moved)
+      }
+      const bindings = statement_binding_names(statement)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(state.diagnostics, value_state.diagnostics),
+        moved: names_remove_all(value_state.moved, bindings)
+      }
+    end)
+
+export fn move_use_after_diagnostics(
+  _parameters: [Shared<Param>],
+  body: Shared<Expr>
+) -> [Diagnostic] =
+  move_check_expr(body, empty_names()).diagnostics

@@ -43,6 +43,21 @@ mlc::Array<mlc::String> mutable_scope_from_parameters(mlc::Array<std::shared_ptr
 }
 mlc::Array<ast::Diagnostic> free_mutable_capture_in_expr(std::shared_ptr<ast::Expr> expression, mlc::Array<mlc::String> local_bound, mlc::Array<mlc::String> outer_mutable) noexcept{
   return std::visit(overloaded{[&](const ast::ExprIdent& exprIdent) { auto [name, source_span] = exprIdent; return ((names_contains(outer_mutable, name) && (!names_contains(local_bound, name))) ? (mlc::Array<ast::Diagnostic>{mutable_capture_diagnostic(name, source_span)}) : (empty_diagnostics())); },
+[&](const ast::ExprUn& exprUn) { auto [operation, operand, __2] = exprUn; return [&]() -> mlc::Array<ast::Diagnostic> {
+  if ((operation == mlc::String("move", 4)))   {
+    return [&]() -> mlc::Array<ast::Diagnostic> {
+auto __match_subject = operand;
+if (std::holds_alternative<ast::ExprIdent>((*__match_subject))) {
+const ast::ExprIdent& exprIdent = std::get<ast::ExprIdent>((*__match_subject));
+auto [__0, __1] = exprIdent; return empty_diagnostics();
+}
+return free_mutable_capture_in_expr(operand, local_bound, outer_mutable);
+std::abort();
+}();
+  } else   {
+    return free_mutable_capture_in_expr(operand, local_bound, outer_mutable);
+  }
+}(); },
 [&](const ast::ExprInt& exprInt) { auto [__0, __1] = exprInt; return empty_diagnostics(); },
 [&](const ast::ExprStr& exprStr) { auto [__0, __1] = exprStr; return empty_diagnostics(); },
 [&](const ast::ExprBool& exprBool) { auto [__0, __1] = exprBool; return empty_diagnostics(); },
@@ -54,7 +69,6 @@ mlc::Array<ast::Diagnostic> free_mutable_capture_in_expr(std::shared_ptr<ast::Ex
 [&](const ast::ExprChar& exprChar) { auto [__0, __1] = exprChar; return empty_diagnostics(); },
 [&](const ast::ExprExtern& exprExtern) { auto [__0] = exprExtern; return empty_diagnostics(); },
 [&](const ast::ExprBin& exprBin) { auto [__0, left, right, __3] = exprBin; return ast::diagnostics_append(free_mutable_capture_in_expr(left, local_bound, outer_mutable), free_mutable_capture_in_expr(right, local_bound, outer_mutable)); },
-[&](const ast::ExprUn& exprUn) { auto [__0, operand, __2] = exprUn; return free_mutable_capture_in_expr(operand, local_bound, outer_mutable); },
 [&](const ast::ExprCall& exprCall) { auto [callee, arguments, __2] = exprCall; return ast::diagnostics_append(free_mutable_capture_in_expr(callee, local_bound, outer_mutable), free_mutable_capture_in_expr_list(arguments, local_bound, outer_mutable)); },
 [&](const ast::ExprMethod& exprMethod) { auto [receiver, __1, arguments, __3] = exprMethod; return ast::diagnostics_append(free_mutable_capture_in_expr(receiver, local_bound, outer_mutable), free_mutable_capture_in_expr_list(arguments, local_bound, outer_mutable)); },
 [&](const ast::ExprField& exprField) { auto [object, __1, __2] = exprField; return free_mutable_capture_in_expr(object, local_bound, outer_mutable); },

@@ -596,7 +596,11 @@ end
 
 fn parse_unary(parser: Parser) -> ExprResult = do
   const kind = parser.kind()
-  if kind.is_op() && (kind.op_val() == "!" || kind.op_val() == "-" || kind.op_val() == "~" || kind.op_val() == "+") then
+  if kind.is_move() then
+    const operator_span = parser.span_at_cursor()
+    const inner = parse_unary(parser.advance())
+    expression_parse_result(Shared.new(ExprUn("move", inner.value, operator_span)), inner.parser)
+  else if kind.is_op() && (kind.op_val() == "!" || kind.op_val() == "-" || kind.op_val() == "~" || kind.op_val() == "+") then
     const operator_span = parser.span_at_cursor()
     const inner = parse_unary(parser.advance())
     expression_parse_result(Shared.new(ExprUn(kind.op_val(), inner.value, operator_span)), inner.parser)

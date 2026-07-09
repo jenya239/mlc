@@ -24,6 +24,7 @@ bool TokenKind_is_while(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_for(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_with(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_spawn(ast_tokens::TokenKind self) noexcept;
+bool TokenKind_is_move(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_match(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_return(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_break(ast_tokens::TokenKind self) noexcept;
@@ -171,6 +172,7 @@ bool TokenKind_is_while(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_for(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_with(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_spawn(ast_tokens::TokenKind self) noexcept;
+bool TokenKind_is_move(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_match(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_return(ast_tokens::TokenKind self) noexcept;
 bool TokenKind_is_break(ast_tokens::TokenKind self) noexcept;
@@ -368,6 +370,17 @@ return [&]() -> bool {
 auto __match_subject = self;
 if (std::holds_alternative<ast_tokens::KSpawn>(__match_subject)) {
 const ast_tokens::KSpawn& kSpawn = std::get<ast_tokens::KSpawn>(__match_subject);
+return true;
+}
+return false;
+std::abort();
+}();
+}
+bool TokenKind_is_move(ast_tokens::TokenKind self) noexcept{
+return [&]() -> bool {
+auto __match_subject = self;
+if (std::holds_alternative<ast_tokens::KMove>(__match_subject)) {
+const ast_tokens::KMove& kMove = std::get<ast_tokens::KMove>(__match_subject);
 return true;
 }
 return false;

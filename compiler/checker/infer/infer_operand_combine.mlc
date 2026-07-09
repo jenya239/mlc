@@ -1,6 +1,6 @@
 // Combine InferResult values after subexpressions are inferred (no infer_expr).
 
-import { Expr, ExprArray, Span, diagnostics_append } from '../../frontend/ast'
+import { Expr, ExprArray, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
 import { InferResult } from './infer_result'
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from '../registry'
 import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from '../semantic_type_structure'
@@ -35,9 +35,16 @@ export fn infer_binary_from_operand_results(
 end
 
 export fn infer_unary_from_inner_result(operation: string, inner_result: InferResult, source_span: Span) -> InferResult = do
-  const minus_errors = unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)
-  const bang_errors  = unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)
-  const result_type  = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
+  const empty_errors: [Diagnostic] = []
+  const minus_errors =
+    if operation == "move" then empty_errors
+    else unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)
+    end
+  const bang_errors =
+    if operation == "move" then empty_errors
+    else unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)
+    end
+  const result_type = if operation == "!" then Shared.new(TBool) else inner_result.inferred_type end
   InferResult {
     inferred_type: result_type,
     errors: diagnostics_append(diagnostics_append(inner_result.errors, minus_errors), bang_errors)

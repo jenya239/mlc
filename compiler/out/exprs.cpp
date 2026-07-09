@@ -583,7 +583,11 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_mul(predicates::Parser
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_unary(predicates::Parser parser) noexcept{
   auto kind = predicates::Parser_kind(parser);
-  if ((predicates::TokenKind_is_op(kind) && ((((predicates::TokenKind_op_val(kind) == mlc::String("!", 1)) || (predicates::TokenKind_op_val(kind) == mlc::String("-", 1))) || (predicates::TokenKind_op_val(kind) == mlc::String("~", 1))) || (predicates::TokenKind_op_val(kind) == mlc::String("+", 1)))))   {
+  if (predicates::TokenKind_is_move(kind))   {
+    auto operator_span = predicates::Parser_span_at_cursor(parser);
+    auto inner = parse_unary(predicates::Parser_advance(parser));
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUn{mlc::String("move", 4), inner.value, operator_span}), inner.parser);
+  } else if ((predicates::TokenKind_is_op(kind) && ((((predicates::TokenKind_op_val(kind) == mlc::String("!", 1)) || (predicates::TokenKind_op_val(kind) == mlc::String("-", 1))) || (predicates::TokenKind_op_val(kind) == mlc::String("~", 1))) || (predicates::TokenKind_op_val(kind) == mlc::String("+", 1)))))   {
     auto operator_span = predicates::Parser_span_at_cursor(parser);
     auto inner = parse_unary(predicates::Parser_advance(parser));
     return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUn{predicates::TokenKind_op_val(kind), inner.value, operator_span}), inner.parser);

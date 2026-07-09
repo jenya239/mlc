@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4a |
-| active_track | TRACK_CONCURRENCY_V2 STEP=4b |
+| driver_turns_since_plan | 4 |
+| step_last | 4b |
+| active_track | TRACK_CONCURRENCY_V2 STEP=5 |
 | test_gate | ok (mlcc probes; Ruby gate red known) |
+
+### Turn 2026-07-09 13:05 (Driver TRACK_CONCURRENCY_V2 STEP=4b — move + E088)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4b |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 12:51 |
+| elapsed | ~14 min |
+| done    | `KMove`/`move` → `ExprUn("move")`; `move_check.mlc` E088; spawn `move x` exempts E087; codegen `std::move`; catalog 89; tests in `test_spawn.mlc`. |
+| verify  | `compiler/build.sh` ok; `mlcc --check-only main` 0; move_ok 0; after_move/spawn_then_use E088 exit 1; still_e087 exit 1. |
+| result  | STEP=4 done (4a+4b). Plain: move + use-after-move работают. |
+| issues  | Ruby `dev_gate_fast` still red (pre-existing). Sync-safe capture without move deferred. |
+| next    | ROLE=Driver STEP=5 TRACK_CONCURRENCY_V2 — StopSource/StopToken runtime primitive |
 
 ### Turn 2026-07-09 12:50 (Driver TRACK_CONCURRENCY_V2 STEP=4a — spawn mutable capture E087)
 

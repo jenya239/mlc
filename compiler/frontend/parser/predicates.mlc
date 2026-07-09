@@ -141,6 +141,7 @@ export extend TokenKind {
   fn is_for(self)      -> bool = match self { KFor      => true, _ => false }
   fn is_with(self)     -> bool = match self { KWith     => true, _ => false }
   fn is_spawn(self)    -> bool = match self { KSpawn    => true, _ => false }
+  fn is_move(self)     -> bool = match self { KMove     => true, _ => false }
   fn is_match(self)    -> bool = match self { KMatch    => true, _ => false }
   fn is_return(self)   -> bool = match self { KReturn   => true, _ => false }
   fn is_break(self)    -> bool = match self { KBreak    => true, _ => false }

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=4b — `move` + use-after-move into spawn
-(`compiler/`). STEP=4a E087 mutable capture done.
+**TRACK_CONCURRENCY_V2** STEP=5 — `StopSource`/`StopToken` runtime
+(`runtime/`). STEP=4 move/E087/E088 done.
 
 ## Step sizing (good vs bad)
 

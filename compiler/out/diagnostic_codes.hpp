@@ -94,6 +94,7 @@ mlc::String diagnostic_code_w_cycle() noexcept;
 mlc::String diagnostic_code_e085() noexcept;
 mlc::String diagnostic_code_e086() noexcept;
 mlc::String diagnostic_code_e087() noexcept;
+mlc::String diagnostic_code_e088() noexcept;
 
 } // namespace diagnostic_codes
 

@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 88
+export fn diagnostic_code_catalog_count() -> i32 = 89
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -178,3 +178,5 @@ export fn diagnostic_code_e085() -> string = 'E085'
 export fn diagnostic_code_e086() -> string = 'E086'
 // E087: mutable binding captured across spawn concurrency boundary
 export fn diagnostic_code_e087() -> string = 'E087'
+// E088: use of binding after move
+export fn diagnostic_code_e088() -> string = 'E088'

@@ -2,7 +2,7 @@
 
 import { Type, TNamed, TGeneric, TArray, TFn, TUnit } from './checker/registry'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionIdent, SemanticExpressionArray, SemanticExpressionUnit, SemanticExpressionIf, SemanticExpressionBlock, sexpr_type } from './ir/semantic_ir'
-import { CppExpression, CppBinary, CppUnary, CppCall, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStatement } from './cpp_ir/cpp_ast'
+import { CppExpression, CppBinary, CppUnary, CppCall, CppIdent, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStatement } from './cpp_ir/cpp_ast'
 import {print_expr, print_statement} from './cpp_emit/print'
 import * as emit_helpers from './cpp_emit/emit_helpers'
 import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
@@ -840,7 +840,13 @@ export fn gen_unary_via_cpp_visitor(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
   evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
-  Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
+  if operation == "move" then
+    Shared.new(CppCall(
+      Shared.new(CppIdent("std::move")),
+      [evaluate_expression(inner_expression, context, gen_stmts)]))
+  else
+    Shared.new(CppUnary(operation, evaluate_expression(inner_expression, context, gen_stmts)))
+  end
 
 extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
   fn visit_int(self: CodegenPass, value: i32, _semantic_type: Shared<Type>) -> Shared<CppExpression> =

@@ -65,6 +65,16 @@ fn free_mutable_capture_in_expr(
         [mutable_capture_diagnostic(name, source_span)]
       else empty_diagnostics()
       end,
+    ExprUn(operation, operand, _) =>
+      if operation == "move" then
+        match operand {
+          // Explicit move transfers ownership across the spawn boundary.
+          ExprIdent(_, _) => empty_diagnostics(),
+          _ => free_mutable_capture_in_expr(operand, local_bound, outer_mutable)
+        }
+      else
+        free_mutable_capture_in_expr(operand, local_bound, outer_mutable)
+      end,
     ExprInt(_, _) => empty_diagnostics(),
     ExprStr(_, _) => empty_diagnostics(),
     ExprBool(_, _) => empty_diagnostics(),
@@ -79,8 +89,6 @@ fn free_mutable_capture_in_expr(
       diagnostics_append(
         free_mutable_capture_in_expr(left, local_bound, outer_mutable),
         free_mutable_capture_in_expr(right, local_bound, outer_mutable)),
-    ExprUn(_, operand, _) =>
-      free_mutable_capture_in_expr(operand, local_bound, outer_mutable),
     ExprCall(callee, arguments, _) =>
       diagnostics_append(
         free_mutable_capture_in_expr(callee, local_bound, outer_mutable),

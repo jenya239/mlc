@@ -26,8 +26,9 @@ infer_result::InferResult infer_binary_from_operand_results(mlc::String operatio
   return infer_result::InferResult{semantic_type_structure::binary_operation_result_type(operation, left_result.inferred_type), ast::diagnostics_append(merged.errors, operand_errors)};
 }
 infer_result::InferResult infer_unary_from_inner_result(mlc::String operation, infer_result::InferResult inner_result, ast::Span source_span) noexcept{
-  auto minus_errors = type_diagnostics::unary_minus_diagnostic(operation, inner_result.inferred_type, source_span);
-  auto bang_errors = type_diagnostics::unary_bang_diagnostic(operation, inner_result.inferred_type, source_span);
+  auto empty_errors = mlc::Array<ast::Diagnostic>{};
+  auto minus_errors = ((operation == mlc::String("move", 4)) ? (empty_errors) : (type_diagnostics::unary_minus_diagnostic(operation, inner_result.inferred_type, source_span)));
+  auto bang_errors = ((operation == mlc::String("move", 4)) ? (empty_errors) : (type_diagnostics::unary_bang_diagnostic(operation, inner_result.inferred_type, source_span)));
   auto result_type = ((operation == mlc::String("!", 1)) ? (std::make_shared<registry::Type>(registry::TBool{})) : (inner_result.inferred_type));
   return infer_result::InferResult{result_type, ast::diagnostics_append(ast::diagnostics_append(inner_result.errors, minus_errors), bang_errors)};
 }

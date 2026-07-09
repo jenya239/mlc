@@ -233,7 +233,11 @@ std::shared_ptr<cpp_ast::CppExpression> gen_binary_via_cpp_visitor(mlc::String o
 }
 template<typename __F4>
 std::shared_ptr<cpp_ast::CppExpression> gen_unary_via_cpp_visitor(mlc::String operation, std::shared_ptr<semantic_ir::SemanticExpression> inner_expression, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, __F4 evaluate_expression) noexcept{
-  return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary{operation, evaluate_expression(inner_expression, context, gen_stmts)});
+  if ((operation == mlc::String("move", 4)))   {
+    return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppCall{std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppIdent{mlc::String("std::move", 9)}), mlc::Array<std::shared_ptr<cpp_ast::CppExpression>>{evaluate_expression(inner_expression, context, gen_stmts)}});
+  } else   {
+    return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary{operation, evaluate_expression(inner_expression, context, gen_stmts)});
+  }
 }
 
 } // namespace expr_visitor_cpp

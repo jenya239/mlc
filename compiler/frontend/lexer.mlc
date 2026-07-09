@@ -59,7 +59,7 @@ fn mlc_reserved_keywords() -> [string] = [
   "fn", "type", "let", "mut", "const", "return", "break", "continue",
   "if", "then", "else", "unless", "while", "for", "in", "do", "end",
   "match", "with", "import", "from", "as", "extern", "extend", "where",
-  "spawn", "true", "false"
+  "spawn", "move", "true", "false"
 ]
 
 fn is_reserved_keyword(word: string) -> bool =
@@ -92,6 +92,7 @@ fn reserved_keyword_kind(word: string) -> TokenKind =
   else if word == "extend" then KExtend
   else if word == "where" then KWhere
   else if word == "spawn" then KSpawn
+  else if word == "move" then KMove
   else if word == "true" then KTrue
   else if word == "false" then KFalse
   else Ident(word)
