@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 1 |
-| active_track | TRACK_CONCURRENCY_ISOLATE STEP=2 |
+| driver_turns_since_plan | 7 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_ISOLATE STEP=3 |
 | test_gate | ok (smoke) |
+
+### Turn 2026-07-09 14:27 (Driver TRACK_CONCURRENCY_ISOLATE STEP=2 — Isolate mailbox)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_ISOLATE |
+| started | 2026-07-09 14:27 |
+| elapsed | ~4 min |
+| done    | `isolate.hpp` Isolate&lt;State,Message&gt; (bounded mailbox, owner thread, serial handler, Block); `test_isolate.cpp` 5 cases; smoke + `mlc.hpp`. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_isolate 870/870). |
+| result  | STEP=2 done. Plain: state только на одном owner thread. |
+| issues  | Dirty runtime binaries left uncommitted. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_ISOLATE — StopToken into pool/isolate shutdown |
 
 ### Turn 2026-07-09 14:23 (Driver TRACK_CONCURRENCY_ISOLATE STEP=1 — ThreadPool)
 
