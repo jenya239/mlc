@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
+| driver_turns_since_plan | 2 |
 | step_last | 1 |
-| active_track | TRACK_BUILD_SPEED3 STEP=1 |
+| active_track | TRACK_BUILD_SPEED3 STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 12:32 (Driver TRACK_BUILD_SPEED3 STEP=1 — CI ccache)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_BUILD_SPEED3 |
+| started | 2026-07-09 12:31 |
+| elapsed | ~2 min |
+| done    | `ci.yml` / `build-mlcc-once.yml` / `triple-bootstrap.yml`: `CCACHE_DIR=.ccache`, key `os/ref/sha` + restore-keys, `CCACHE_SLOPPINESS`; `ccache -s` on once+triple. `.gitignore` `.ccache/`. |
+| verify  | YAML parse ok; local `MLCC_OBJ_CLEAN=1`×2: ccache 153/153 direct hits, wall ~2.3s. |
+| result  | STEP=1 done. Plain: CI ccache keys aligned with TRACK. |
+| issues  | Cache step already existed (hashFiles); upgraded to ref/sha keys per TRACK text. |
+| next    | ROLE=Driver STEP=2 TRACK_BUILD_SPEED3 — ftime-trace largest TU |
 
 ### Turn 2026-07-09 12:30 (Driver TRACK_CONCURRENCY_V2 STEP=1 — Send/Sync predicates)
 

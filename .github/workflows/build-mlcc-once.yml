@@ -12,6 +12,8 @@ jobs:
       MLC_CXX: ccache clang++
       MLC_JOBS: 4
       CCACHE_MAXSIZE: 500M
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_SLOPPINESS: pch_defines,time_macros
     steps:
       - uses: actions/checkout@v4
 
@@ -21,9 +23,10 @@ jobs:
       - name: Cache ccache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('compiler/**/*.mlc', 'runtime/**/*.hpp', 'runtime/**/*.cpp') }}
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
+            ccache-${{ runner.os }}-${{ github.ref_name }}-
             ccache-${{ runner.os }}-
 
       - uses: ruby/setup-ruby@v1
@@ -36,6 +39,9 @@ jobs:
 
       - name: Smoke check-only
         run: compiler/out/mlcc --check-only compiler/main.mlc
+
+      - name: ccache stats
+        run: ccache -s
 
       - name: Upload mlcc binary
         uses: actions/upload-artifact@v4

@@ -9,6 +9,7 @@ compile_commands_probe.cpp
 compile_commands_probe.hpp
 compile_demo.rb
 .tmp_*
+.ccache/
 coverage/
 *.gch
 # Compiled binaries and object files
