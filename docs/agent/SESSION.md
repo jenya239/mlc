@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=2 done; next STEP=3) |
+| driver_turns_since_plan | 1 |
+| step_last | 3a |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=3a done; next STEP=3b codegen From) |
 | test_gate | ok |
+
+### Turn 2026-07-09 07:21 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=3a — From skips E085)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3a |
+| track   | TRACK_LANG_RESULT_COMBINATORS |
+| started | 2026-07-09 06:43 |
+| elapsed | ~38 min |
+| done    | Parser `type_arguments_display` keeps `From<T>` on extend; `trait_base_name` + dual trait_impls; `infer_question_expression` skips E085 when `E2: From<E1>`; codegen uses bare trait name for Add/assoc. Tests: From ok + parser trait name + E085 still. |
+| result  | `dev_gate_fast` 1449/0; fresh mlcc From check-only exit 0, mismatch still E085. Plain: с `extend AppError : From<ParseError>` оператор `?` больше не ошибка; конверсия в C++ ещё нет. |
+| issues  | Codegen still returns raw Err (STEP=3b). Split commit: sources then out/mlcc. |
+| next    | ROLE=Driver STEP=3b TRACK_LANG_RESULT_COMBINATORS — codegen `?` Err via `ExpectedErr_from(...)` when From impl |
 
 ### Turn 2026-07-09 06:42 (Critic critique-audit — CYCLE_LINT + RESULT STEP1–2)
 
