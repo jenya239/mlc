@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TASKSCOPE** STEP=2 — `TaskScope` / structured spawn
-(`runtime/` or `compiler/` per Planner). STEP=1 Channel cancel wake done.
+**TRACK_CONCURRENCY_TASKSCOPE** STEP=3 — Sync-safe shared capture without
+`move` (`compiler/`). STEP=2 TaskScope runtime done.
 
 ## Step sizing (good vs bad)
 

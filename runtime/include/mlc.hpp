@@ -30,6 +30,7 @@
 #include "mlc/concurrency/arc.hpp"
 #include "mlc/concurrency/mutex.hpp"
 #include "mlc/concurrency/stop.hpp"
+#include "mlc/concurrency/task_scope.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

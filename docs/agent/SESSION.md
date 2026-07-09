@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=2 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=3 |
 | test_gate | ok |
+
+### Turn 2026-07-09 13:33 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=2 — TaskScope)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_TASKSCOPE |
+| started | 2026-07-09 13:31 |
+| elapsed | ~2 min |
+| done    | `task_scope.hpp` TaskScope: spawn/spawn_with_token/join/dtor cancel+join; `test_task_scope.cpp` 4 checks; smoke + `mlc.hpp`. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_task_scope 4/4). |
+| result  | STEP=2 done. Plain: structured scope ждёт children. |
+| issues  | MLC `scope` syntax + error policy deferred. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_TASKSCOPE — Sync-safe shared capture without move |
 
 ### Turn 2026-07-09 13:28 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=1 — Channel cancel wake)
 
