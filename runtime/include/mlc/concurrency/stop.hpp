@@ -14,6 +14,9 @@ public:
     explicit StopToken(std::stop_token token) noexcept : token_(std::move(token)) {}
 
     [[nodiscard]] bool requested() const noexcept { return token_.stop_requested(); }
+
+    // Runtime waits (channel/sleep) register stop_callback via this handle.
+    [[nodiscard]] std::stop_token native_token() const noexcept { return token_; }
 };
 
 class StopSource {

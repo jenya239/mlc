@@ -1,8 +1,11 @@
 #pragma once
 
 // Bounded / rendezvous channel + Sender/Receiver split (TRACK_CONCURRENCY_V2 STEP=2–3).
+// Cancel wake (TRACK_CONCURRENCY_TASKSCOPE STEP=1): send/receive(StopToken) → ChannelStatus.
 // capacity >= 1: buffered; capacity 0: synchronous handoff.
 // Last Sender drop (or Sender::close) marks closed and wakes waiters.
+
+#include "mlc/concurrency/stop.hpp"
 
 #include <condition_variable>
 #include <cstddef>
@@ -11,9 +14,22 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+#include <stop_token>
 #include <utility>
 
 namespace mlc::concurrency {
+
+enum class ChannelStatus {
+    Ok = 0,
+    Closed = 1,
+    Cancelled = 2,
+};
+
+template<typename Value>
+struct ChannelReceiveResult {
+    ChannelStatus status = ChannelStatus::Closed;
+    std::optional<Value> value;
+};
 
 namespace detail {
 
@@ -84,6 +100,49 @@ bool channel_send(std::shared_ptr<ChannelState<Value>> state, Value value) {
 }
 
 template<typename Value>
+ChannelStatus channel_send_cancellable(
+    std::shared_ptr<ChannelState<Value>> state,
+    Value value,
+    const StopToken& stop_token
+) {
+    std::stop_callback wake(stop_token.native_token(), [state] { state->wake_all(); });
+    if (state->capacity == 0) {
+        std::unique_lock<std::mutex> lock(state->mutex);
+        state->not_full.wait(lock, [&] {
+            return state->closed || stop_token.requested() || state->waiting_receivers > 0;
+        });
+        if (stop_token.requested()) return ChannelStatus::Cancelled;
+        if (state->closed) return ChannelStatus::Closed;
+        state->queue.push_back(std::move(value));
+        lock.unlock();
+        state->not_empty.notify_one();
+        lock.lock();
+        state->handoff_done.wait(lock, [&] {
+            return state->closed || stop_token.requested() || state->queue.empty();
+        });
+        if (stop_token.requested()) {
+            if (!state->queue.empty()) state->queue.clear();
+            return ChannelStatus::Cancelled;
+        }
+        if (!state->queue.empty()) {
+            state->queue.clear();
+            return ChannelStatus::Closed;
+        }
+        return ChannelStatus::Ok;
+    }
+    std::unique_lock<std::mutex> lock(state->mutex);
+    state->not_full.wait(lock, [&] {
+        return state->closed || stop_token.requested() || state->queue.size() < state->capacity;
+    });
+    if (stop_token.requested()) return ChannelStatus::Cancelled;
+    if (state->closed) return ChannelStatus::Closed;
+    state->queue.push_back(std::move(value));
+    lock.unlock();
+    state->not_empty.notify_one();
+    return ChannelStatus::Ok;
+}
+
+template<typename Value>
 bool channel_try_send(std::shared_ptr<ChannelState<Value>> state, const Value& value) {
     std::lock_guard<std::mutex> lock(state->mutex);
     if (state->closed) return false;
@@ -126,6 +185,49 @@ std::optional<Value> channel_receive(std::shared_ptr<ChannelState<Value>> state)
     lock.unlock();
     state->not_full.notify_one();
     return value;
+}
+
+template<typename Value>
+ChannelReceiveResult<Value> channel_receive_cancellable(
+    std::shared_ptr<ChannelState<Value>> state,
+    const StopToken& stop_token
+) {
+    std::stop_callback wake(stop_token.native_token(), [state] { state->wake_all(); });
+    if (state->capacity == 0) {
+        std::unique_lock<std::mutex> lock(state->mutex);
+        state->waiting_receivers += 1;
+        state->not_full.notify_one();
+        state->not_empty.wait(lock, [&] {
+            return state->closed || stop_token.requested() || !state->queue.empty();
+        });
+        state->waiting_receivers -= 1;
+        if (stop_token.requested() && state->queue.empty()) {
+            return ChannelReceiveResult<Value>{ChannelStatus::Cancelled, std::nullopt};
+        }
+        if (state->queue.empty()) {
+            return ChannelReceiveResult<Value>{ChannelStatus::Closed, std::nullopt};
+        }
+        Value value = std::move(state->queue.front());
+        state->queue.pop_front();
+        lock.unlock();
+        state->handoff_done.notify_one();
+        return ChannelReceiveResult<Value>{ChannelStatus::Ok, std::move(value)};
+    }
+    std::unique_lock<std::mutex> lock(state->mutex);
+    state->not_empty.wait(lock, [&] {
+        return state->closed || stop_token.requested() || !state->queue.empty();
+    });
+    if (stop_token.requested() && state->queue.empty()) {
+        return ChannelReceiveResult<Value>{ChannelStatus::Cancelled, std::nullopt};
+    }
+    if (state->queue.empty()) {
+        return ChannelReceiveResult<Value>{ChannelStatus::Closed, std::nullopt};
+    }
+    Value value = std::move(state->queue.front());
+    state->queue.pop_front();
+    lock.unlock();
+    state->not_full.notify_one();
+    return ChannelReceiveResult<Value>{ChannelStatus::Ok, std::move(value)};
 }
 
 template<typename Value>
@@ -251,6 +353,16 @@ public:
         return detail::channel_send(state_, std::move(value));
     }
 
+    ChannelStatus send(const Value& value, const StopToken& stop_token) {
+        if (!state_) return ChannelStatus::Closed;
+        return detail::channel_send_cancellable(state_, value, stop_token);
+    }
+
+    ChannelStatus send(Value&& value, const StopToken& stop_token) {
+        if (!state_) return ChannelStatus::Closed;
+        return detail::channel_send_cancellable(state_, std::move(value), stop_token);
+    }
+
     bool try_send(const Value& value) {
         if (!state_) return false;
         return detail::channel_try_send(state_, value);
@@ -297,6 +409,11 @@ public:
         return detail::channel_receive(state_);
     }
 
+    ChannelReceiveResult<Value> receive(const StopToken& stop_token) {
+        if (!state_) return ChannelReceiveResult<Value>{ChannelStatus::Closed, std::nullopt};
+        return detail::channel_receive_cancellable(state_, stop_token);
+    }
+
     std::optional<Value> try_receive() {
         if (!state_) return std::nullopt;
         return detail::channel_try_receive(state_);
@@ -337,7 +454,16 @@ public:
 
     bool send(const Value& value) { return detail::channel_send(state_, value); }
     bool send(Value&& value) { return detail::channel_send(state_, std::move(value)); }
+    ChannelStatus send(const Value& value, const StopToken& stop_token) {
+        return detail::channel_send_cancellable(state_, value, stop_token);
+    }
+    ChannelStatus send(Value&& value, const StopToken& stop_token) {
+        return detail::channel_send_cancellable(state_, std::move(value), stop_token);
+    }
     std::optional<Value> receive() { return detail::channel_receive(state_); }
+    ChannelReceiveResult<Value> receive(const StopToken& stop_token) {
+        return detail::channel_receive_cancellable(state_, stop_token);
+    }
     bool try_send(const Value& value) { return detail::channel_try_send(state_, value); }
     std::optional<Value> try_receive() { return detail::channel_try_receive(state_); }
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 6 |
-| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=1 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_TASKSCOPE STEP=2 |
 | test_gate | ok |
+
+### Turn 2026-07-09 13:28 (Driver TRACK_CONCURRENCY_TASKSCOPE STEP=1 — Channel cancel wake)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_TASKSCOPE |
+| started | 2026-07-09 13:25 |
+| elapsed | ~3 min |
+| done    | `ChannelStatus` + `send`/`receive(StopToken)`; `stop_callback` wakes waiters; `StopToken::native_token()`; 3 cancel tests in `test_channel.cpp`. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (test_channel 48/48). |
+| result  | STEP=1 done. Plain: cancel будит blocked channel. |
+| issues  | TestChannel cancel + HARNESS T5 stress matrix still open. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_TASKSCOPE — TaskScope structured spawn |
 
 ### Turn 2026-07-09 13:23 (Driver TRACK_CONCURRENCY_V2 STEP=6 — close + handoff)
 

@@ -6,27 +6,29 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; spec:
 [../archive/tracks/TRACK_CONCURRENCY_V2.md](../archive/tracks/TRACK_CONCURRENCY_V2.md)
 (Send/Sync predicates, rendezvous + Sender/Receiver, move/E087/E088, StopToken).
 
-## Status: **open** — STEP=1 next (Planner may refine)
+## Status: **open** — STEP=1 done; STEP=2 next
 
-Handoff from CONCURRENCY_V2 STEP=6 (2026-07-09): phases 1–4 of the V2 roadmap
-are done in the predecessor track. This track owns structured concurrency and
-cancel wake-up.
+**Driver 2026-07-09:** STEP=1 — `ChannelStatus::{Ok,Closed,Cancelled}`;
+`send`/`receive(StopToken)` wake via `stop_callback`; tests in `test_channel.cpp`.
 
-### STEP=1 acceptance (draft)
+### STEP=1 acceptance (Driver)
 
-**Layer:** `runtime/` first (or Planner splits).
+**Layer:** `runtime/` only (not `compiler/` / not `lib/mlc/` in the same turn).
 
-- Document / implement `TaskScope` API shape per CONCURRENCY_V2 §6.
-- Wire `StopToken` into blocked `Channel` send/recv wake (Cancelled outcome) —
-  unblocks HARNESS T5.
-- Verify: concurrency smoke + targeted cancel tests.
+- `ChannelStatus` + `ChannelReceiveResult<T>` in `channel.hpp`.
+- Overloads: `send(value, StopToken)` → status; `receive(StopToken)` → result.
+- Blocked wait wakes on `StopSource::request()` (`std::stop_callback` → `wake_all`).
+- Legacy `bool`/`optional` APIs unchanged.
+- Tests: cancel-unblocks send/recv + ok path; smoke green.
+- Out of scope: TestChannel cancel, MLC surface, TaskScope construct.
+- Verify: `runtime/test/run_concurrency_smoke.sh` exit 0.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Cancel wake for Channel send/recv + `Cancelled` outcome; unlock HARNESS T5 | **next** |
-| 2 | `TaskScope` / structured spawn ownership | pending |
+| 1 | Cancel wake for Channel send/recv + `Cancelled` outcome; unlock HARNESS T5 | **done** |
+| 2 | `TaskScope` / structured spawn ownership | **next** |
 | 3 | Sync-safe shared capture without `move` (checker) | pending |
 | 4 | Self-host + docs; close or hand off to Isolate/ThreadPool track | pending |
 

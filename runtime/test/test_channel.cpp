@@ -183,6 +183,44 @@ void test_channel_sender_receiver_handles() {
     CHECK(value.has_value() && *value == 9);
 }
 
+void test_cancel_unblocks_receive() {
+    mlc::concurrency::Channel<int> channel(1);
+    mlc::concurrency::StopSource stop;
+    mlc::concurrency::ChannelReceiveResult<int> result{
+        mlc::concurrency::ChannelStatus::Ok, std::nullopt};
+    std::thread waiter([&] { result = channel.receive(stop.token()); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    stop.request();
+    waiter.join();
+    CHECK(result.status == mlc::concurrency::ChannelStatus::Cancelled);
+    CHECK(!result.value.has_value());
+}
+
+void test_cancel_unblocks_send_when_full() {
+    mlc::concurrency::Channel<int> channel(1);
+    CHECK(channel.send(1));
+    mlc::concurrency::StopSource stop;
+    std::atomic<int> status_value{-1};
+    std::thread waiter([&] {
+        status_value.store(
+            static_cast<int>(channel.send(2, stop.token())),
+            std::memory_order_release);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    stop.request();
+    waiter.join();
+    CHECK(status_value.load() == static_cast<int>(mlc::concurrency::ChannelStatus::Cancelled));
+}
+
+void test_cancellable_send_receive_ok() {
+    mlc::concurrency::Channel<int> channel(2);
+    mlc::concurrency::StopSource stop;
+    CHECK(channel.send(7, stop.token()) == mlc::concurrency::ChannelStatus::Ok);
+    auto result = channel.receive(stop.token());
+    CHECK(result.status == mlc::concurrency::ChannelStatus::Ok);
+    CHECK(result.value.has_value() && *result.value == 7);
+}
+
 int main() {
     test_capacity_validation();
     test_rendezvous_handoff();
@@ -199,6 +237,9 @@ int main() {
     test_sender_clone_last_drop_closes();
     test_sender_explicit_close_wakes_receiver();
     test_channel_sender_receiver_handles();
+    test_cancel_unblocks_receive();
+    test_cancel_unblocks_send_when_full();
+    test_cancellable_send_receive_ok();
 
     if (failed == 0) {
         std::cout << "ALL " << passed << " checks PASSED\n";

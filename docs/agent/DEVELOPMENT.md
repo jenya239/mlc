@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_TASKSCOPE** STEP=1 — Channel cancel wake / `Cancelled`
-(`runtime/`). CONCURRENCY_V2 closed (phases 1–4).
+**TRACK_CONCURRENCY_TASKSCOPE** STEP=2 — `TaskScope` / structured spawn
+(`runtime/` or `compiler/` per Planner). STEP=1 Channel cancel wake done.
 
 ## Step sizing (good vs bad)
 
