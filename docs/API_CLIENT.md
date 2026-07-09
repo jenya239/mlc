@@ -94,8 +94,7 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
 ## 7. Порядок реализации
 
 1. §2 — исправить `JsonNumber(f32)`→`f64`, `JsonObject`→`Map<str, JsonValue>`
-   на MLC-уровне (Ruby-бутстрап, потом self-hosted). Регрессия: существующие
-   тесты на `json.mlc`, если есть.
+   на MLC-уровне — **done** 2026-07-09 (`json.mlc` + `json_value_type_sync_test`).
 2. `JsonError` тип + `derive { Json }` в Ruby-бутстрапе: checker
    (`derive_validation.mlc` — добавить `"Json"` в список известных трейтов)
    + codegen (`to_json`/`from_json` генерация по полям record-типа).
