@@ -104,7 +104,7 @@ fn vm_execute_statement(
                 VmCallUser(callee) =>
                   vm_execute_user_call(
                     program, frames, frame_index, local_id, callee, argument_values, callee_name, trace_enabled),
-                VmCallNative(_) | VmCallVariantCtor(_) =>
+                VmCallNative(_) =>
                   match vm_dispatch_call(dispatch, callee_name, argument_values) {
                     Err(errors) => VmRunFailed(errors),
                     Ok(value) =>

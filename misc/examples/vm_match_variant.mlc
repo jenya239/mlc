@@ -1,0 +1,6 @@
+type Choice = Left(i32) | Right(i32)
+
+fn main() -> i32 = match Left(3) {
+  Left(x) => x
+  Right(y) => y
+}

@@ -124,6 +124,9 @@ fn mir_lower_emit_call_assign(
   MirLowerState { ...state, current_stmts: statements }
 end
 
+fn mir_lower_is_variant_ctor_name(name: string) -> bool =
+  name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z" && !name.contains("_")
+
 fn mir_lower_call_target_name(expression: Shared<SemanticExpression>) -> Result<string, [string]> =
   match expression {
     SemanticExpressionIdent(name, _, _) => Ok(name),
@@ -136,6 +139,19 @@ fn mir_lower_call_target_name(expression: Shared<SemanticExpression>) -> Result<
       },
     _ => Err(['mir lower: call target must be identifier'])
   }
+
+fn mir_lower_variant_new_arguments(
+  tag: string,
+  payload_operands: [MirOperand]
+) -> [MirOperand] = do
+  let mut arguments: [MirOperand] = [MirOperandConstStr(tag)]
+  let mut index = 0
+  while index < payload_operands.length() do
+    arguments.push(payload_operands[index])
+    index = index + 1
+  end
+  arguments
+end
 
 fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]> =
   if method_name == 'push' then Ok('__mir_array_push')
@@ -381,7 +397,19 @@ fn mir_lower_operand_from_expression(
     SemanticExpressionIdent(name, _, _) =>
       match mir_lower_lookup_local(state, name) {
         Ok(local_id) => Ok(MirLowerOperandStep { state: state, operand: MirOperandLocal(local_id) }),
-        Err(errors) => Err(errors)
+        Err(_) =>
+          if mir_lower_is_variant_ctor_name(name) then
+            match mir_lower_expression_to_local(state, expression) {
+              Err(errors) => Err(errors),
+              Ok(local_step) =>
+                Ok(MirLowerOperandStep {
+                  state: local_step.state,
+                  operand: MirOperandLocal(local_step.local_id)
+                })
+            }
+          else
+            Err([`mir lower: unknown identifier ${name}`])
+          end
       },
     SemanticExpressionBin(operation, _, _, _, _) =>
       if mir_lower_is_assign_operation(operation) then
@@ -439,7 +467,19 @@ fn mir_lower_rvalue_from_expression(
       match mir_lower_lookup_local(state, name) {
         Ok(local_id) =>
           Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandLocal(local_id)) }),
-        Err(errors) => Err(errors)
+        Err(_) =>
+          if mir_lower_is_variant_ctor_name(name) then
+            match mir_lower_expression_to_local(state, expression) {
+              Err(errors) => Err(errors),
+              Ok(local_step) =>
+                Ok(MirLowerRvalueStep {
+                  state: local_step.state,
+                  rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+                })
+            }
+          else
+            Err([`mir lower: unknown identifier ${name}`])
+          end
       },
     SemanticExpressionBin(operation, left, right, _, _) =>
       if mir_lower_is_assign_operation(operation) then
@@ -847,14 +887,53 @@ fn mir_lower_expression_to_local(
                 Err(errors) => Err(errors),
                 Ok(callee_name) => do
                   const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
-                  Ok(MirLowerLocalStep {
-                    state: mir_lower_emit_call_assign(
-                      local_step.state, local_step.local_id, callee_name, operands_step.operands),
-                    local_id: local_step.local_id
-                  })
+                  if mir_lower_is_variant_ctor_name(callee_name) then
+                    Ok(MirLowerLocalStep {
+                      state: mir_lower_emit_call_assign(
+                        local_step.state,
+                        local_step.local_id,
+                        '__mir_variant_new',
+                        mir_lower_variant_new_arguments(callee_name, operands_step.operands)),
+                      local_id: local_step.local_id
+                    })
+                  else
+                    Ok(MirLowerLocalStep {
+                      state: mir_lower_emit_call_assign(
+                        local_step.state, local_step.local_id, callee_name, operands_step.operands),
+                      local_id: local_step.local_id
+                    })
+                  end
                 end
               }
           }
+      },
+    SemanticExpressionIdent(name, _, _) =>
+      match mir_lower_lookup_local(state, name) {
+        Ok(_) =>
+          match mir_lower_rvalue_from_expression(state, expression) {
+            Err(errors) => Err(errors),
+            Ok(rvalue_step) => do
+              const local_step = mir_lower_allocate_local(rvalue_step.state, '', mir_lower_unknown_type())
+              Ok(MirLowerLocalStep {
+                state: mir_lower_emit_assign(local_step.state, local_step.local_id, rvalue_step.rvalue),
+                local_id: local_step.local_id
+              })
+            end
+          },
+        Err(_) =>
+          if mir_lower_is_variant_ctor_name(name) then do
+            const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+            Ok(MirLowerLocalStep {
+              state: mir_lower_emit_call_assign(
+                local_step.state,
+                local_step.local_id,
+                '__mir_variant_new',
+                mir_lower_variant_new_arguments(name, [])),
+              local_id: local_step.local_id
+            })
+          end else
+            Err([`mir lower: unknown identifier ${name}`])
+          end
       },
     _ =>
       match mir_lower_rvalue_from_expression(state, expression) {

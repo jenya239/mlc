@@ -1,9 +1,25 @@
-// MIR summary text for --dump-mir (future) and tests.
+// MIR summary text for --dump-mir and tests.
 
-import { MirProgram, MirModule, MirFunction, MirBlock } from './mir_types'
+import {
+  MirProgram, MirModule, MirFunction, MirBlock, MirStmt, MirCallAssign, MirAssign
+} from './mir_types'
 
-export fn print_mir_block(block: MirBlock) -> string =
-  `block ${block.id.index} (${block.label}) stmts=${block.stmts.length()}`
+fn print_mir_stmt(statement: MirStmt) -> string =
+  match statement {
+    MirAssign(local_id, _) => `assign l${local_id.index}`,
+    MirCallAssign(local_id, callee_name, arguments) =>
+      `call l${local_id.index} = ${callee_name}(${arguments.length()})`
+  }
+
+export fn print_mir_block(block: MirBlock) -> string = do
+  let mut result = `block ${block.id.index} (${block.label}) stmts=${block.stmts.length()}`
+  let mut index = 0
+  while index < block.stmts.length() do
+    result = result + `\n    ${print_mir_stmt(block.stmts[index])}`
+    index = index + 1
+  end
+  result
+end
 
 export fn print_mir_function(function: MirFunction) -> string = do
   let mut result = `mir fn ${function.name} blocks=${function.blocks.length()} locals=${function.locals.length()}`

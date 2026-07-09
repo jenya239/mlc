@@ -88,5 +88,12 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke match variant exit', false))
   }
 
+  match vm_smoke_interpret(
+    'type Option = Some(i32) | None\nfn main() -> i32 = do\n  const value = None\n  match value {\n    Some(x) => x\n    None => 9\n  }\nend',
+    'vm_match_unit_variant.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke match unit variant exit', code, 9)),
+    Err(_) => results.push(assert_true('vm smoke match unit variant exit', false))
+  }
+
   results
 end

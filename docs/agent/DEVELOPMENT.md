@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 0 STEP C — variant ctor via MIR metadata
-(API_CLIENT closed 2026-07-09; TEXT_RENDERING remains low-priority).
+**TRACK_MIR_VM_FULL** Epic 1 STEP=1 — VmVariant typed fields (i32/bool/string)
+(Epic 0 A–C done 2026-07-09; TEXT_RENDERING remains low-priority).
 
 ## Step sizing (good vs bad)
 

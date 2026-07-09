@@ -3,3 +3,6 @@
 misc/examples/minimal.mlc
 misc/examples/vm_hello.mlc
 misc/examples/vm_collections.mlc
+misc/examples/vm_match.mlc
+# vm_match_variant.mlc: VM --run only (C++ visit on sum ctor temp is pre-existing codegen gap)
+

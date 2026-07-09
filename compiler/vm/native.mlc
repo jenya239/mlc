@@ -20,6 +20,7 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
+  else if name == '__mir_variant_new' then vm_native_variant_new(arguments)
   else Err([`vm: unknown native ${name}`])
 
 export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> VmValue = do
@@ -31,6 +32,23 @@ export fn vm_variant_ctor(tag: string, arguments: [VmValue]) -> VmValue = do
   end
   VmVariant(VmVariantValue { tag: tag, integer_fields: integer_fields })
 end
+
+fn vm_native_variant_new(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() == 0 then Err(['vm: __mir_variant_new expects tag argument'])
+  else
+    match arguments[0] {
+      VmString(tag) => do
+        let mut payload: [VmValue] = []
+        let mut index = 1
+        while index < arguments.length() do
+          payload.push(arguments[index])
+          index = index + 1
+        end
+        Ok(vm_variant_ctor(tag, payload))
+      end,
+      _ => Err(['vm: __mir_variant_new expects string tag'])
+    }
+  end
 
 fn vm_native_println(arguments: [VmValue]) -> Result<VmValue, [string]> = do
   let mut index = 0

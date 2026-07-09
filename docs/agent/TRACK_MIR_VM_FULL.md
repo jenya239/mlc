@@ -2,13 +2,13 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0 STEP A�B done
+**Status:** open, Epic 0 STEP A–C **done**; Epic 1 STEP=1 next
 
 | Step | Item | Status |
 |------|------|--------|
 | A | Layer split (`eval` / `execute` / `runtime` / `outcome`) | done |
 | B | `build_mir_program_from_semantic_items_checked` on `--run` | done |
-| C | Variant ctor via MIR metadata | pending |
+| C | Variant ctor via MIR metadata | **done** |
 
 **Goal (north star):** `mlcc --run compiler/main.mlc -o /tmp/out` compiles a small program end-to-end without `g++`, with parity vs C++ backend on a growing corpus.
 
@@ -54,7 +54,7 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 |------|-------------|------|
 | A | Layer split per �1 | dev_gate_fast + vm smoke |
 | B | `lower_report`: failed `lower_semantic_function` ? diagnostic, not silent drop | test_lower_fn |
-| C | Variant ctor via MIR metadata (`MirCallAssign` + const tag operand or `__mir_variant_new`) | vm_match + diff |
+| C | Variant ctor via MIR metadata (`MirCallAssign` + const tag operand or `__mir_variant_new`) | **done** (vm `--run` + dump `__mir_variant_new`; C++ sum visit gap deferred) |
 
 ### Epic 1 � Values & ADTs (STEP 1�4)
 

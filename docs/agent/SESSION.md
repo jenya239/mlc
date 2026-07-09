@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_MIR_VM_FULL Epic 0 STEP C |
-| test_gate | ok (self-host diff identical; regression_gate 20/0) |
+| driver_turns_since_plan | 7 |
+| step_last | C |
+| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=1 |
+| test_gate | ok (vm --run Left=3; dump __mir_variant_new; vm_cpp_diff 4/0) |
+
+### Turn 2026-07-09 22:07 (Driver TRACK_MIR_VM_FULL STEP=C — variant ctor MIR metadata)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | C |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 21:45 |
+| elapsed | ~22 min |
+| done    | Lower `Some`/`Left`/unit ctors to `__mir_variant_new(tag, …)`; drop A-Z `VmCallVariantCtor`; native + dump; smoke/fixture. |
+| verify  | `--dump-mir` shows `__mir_variant_new`; `--run` Left=3 / Right=9; `run_vm_cpp_exit_diff` 4/0. |
+| result  | Epic 0 STEP C done. Plain: variant ctors are MIR natives, not name heuristic. |
+| issues  | Ruby `build_tests` still blocked by spawn_capture MATCH; C++ sum `visit` on ctor temp not in this step. Dirty `compiler/out/mlcc` left uncommitted. |
+| next    | ROLE=Driver STEP=1 TRACK_MIR_VM_FULL — VmVariant typed fields (i32/bool/string) |
 
 ### Turn 2026-07-09 21:42 (Driver TRACK_API_CLIENT STEP=6 — verify-gate + close)
 
