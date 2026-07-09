@@ -74,11 +74,54 @@ void test_full_queue_blocks_until_worker_drains() {
     CHECK(third_done.load());
 }
 
+void test_cancel_unblocks_blocked_submit() {
+    std::atomic<bool> worker_busy{false};
+    mlc::concurrency::ThreadPool pool(1, 1);
+    CHECK(pool.submit([&] {
+        worker_busy.store(true);
+        while (!pool.cancel_requested()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }));
+    while (!worker_busy.load()) std::this_thread::yield();
+    CHECK(pool.submit([] {})); // fills the one queue slot
+    std::atomic<bool> submit_returned{false};
+    std::atomic<bool> submit_ok{true};
+    std::thread blocker([&] {
+        submit_ok.store(pool.submit([] {}));
+        submit_returned.store(true);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    CHECK(!submit_returned.load());
+    pool.request_cancel();
+    blocker.join();
+    CHECK(submit_returned.load());
+    CHECK(!submit_ok.load());
+    pool.shutdown();
+}
+
+void test_submit_with_token_sees_cancel() {
+    std::atomic<bool> saw_cancel{false};
+    mlc::concurrency::ThreadPool pool(1, 4);
+    CHECK(pool.submit_with_token([&](mlc::concurrency::StopToken token) {
+        while (!token.requested()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        saw_cancel.store(true);
+    }));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    pool.request_cancel();
+    pool.shutdown();
+    CHECK(saw_cancel.load());
+}
+
 int main() {
     test_submit_runs_on_workers();
     test_destructor_drains_queued_jobs();
     test_submit_after_shutdown_fails();
     test_full_queue_blocks_until_worker_drains();
+    test_cancel_unblocks_blocked_submit();
+    test_submit_with_token_sees_cancel();
     if (failed == 0) {
         std::cout << "ALL " << passed << " checks PASSED\n";
     } else {

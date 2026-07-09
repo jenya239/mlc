@@ -6,10 +6,10 @@ Supervisor later). Predecessor closed:
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md)
 (cancel wake, TaskScope C++, Sync-safe spawn capture).
 
-## Status: **open** — STEP=2 done; STEP=3 next (StopToken shutdown)
+## Status: **open** — STEP=3 done; STEP=4 next (docs / close)
 
-**Driver 2026-07-09:** STEP=2 — `Isolate<State,Message>` (bounded mailbox,
-single owner thread, serial handler, Block overflow).
+**Driver 2026-07-09:** STEP=3 — StopToken on ThreadPool/Isolate: `token` /
+`request_cancel`; cancellable submit/send; `submit_with_token`; shutdown cancels.
 
 ## Goal
 
@@ -22,8 +22,8 @@ per CONCURRENCY_V2 §16–19. No MLC actor sugar in v1.
 |------|------|--------|
 | 1 | `ThreadPool` runtime (workers + bounded queue); unit + smoke | **done** |
 | 2 | `Isolate` mailbox (bounded channel + single owner thread) | **done** |
-| 3 | Wire cancel/`StopToken` into pool/isolate shutdown | **next** |
-| 4 | Docs + self-host / close or hand off to Supervisor | pending |
+| 3 | Wire cancel/`StopToken` into pool/isolate shutdown | **done** |
+| 4 | Docs + self-host / close or hand off to Supervisor | **next** |
 
 ## Out of scope
 

@@ -1,10 +1,13 @@
 #pragma once
 
-// Serial state machine + bounded mailbox (TRACK_CONCURRENCY_ISOLATE STEP=2).
+// Serial state machine + bounded mailbox (TRACK_CONCURRENCY_ISOLATE STEP=2+3).
 // Guarantee: handler runs on one owner thread; State is never concurrent.
 // Overflow policy v1: Block (send waits). Drop/Reject deferred.
+// shutdown/dtor: request_cancel → close mailbox → join owner.
+// Blocked send wakes on cancel (ChannelStatus::Cancelled).
 
 #include "mlc/concurrency/channel.hpp"
+#include "mlc/concurrency/stop.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -16,6 +19,7 @@ namespace mlc::concurrency {
 
 template<typename State, typename Message>
 class Isolate {
+    StopSource stop_;
     Channel<Message> mailbox_;
     State state_;
     std::function<void(State&, Message)> handler_;
@@ -28,6 +32,12 @@ class Isolate {
             if (!message.has_value()) break;
             handler_(state_, std::move(*message));
         }
+    }
+
+    bool enqueue(Message message) {
+        if (shut_down_) return false;
+        const ChannelStatus status = mailbox_.send(std::move(message), stop_.token());
+        return status == ChannelStatus::Ok;
     }
 
 public:
@@ -49,21 +59,22 @@ public:
 
     ~Isolate() { shutdown(); }
 
-    // Enqueue a message. Blocks if the mailbox is full. Returns false after shutdown.
-    bool send(const Message& message) {
-        if (shut_down_) return false;
-        return mailbox_.send(message);
-    }
+    [[nodiscard]] StopToken token() const noexcept { return stop_.token(); }
 
-    bool send(Message&& message) {
-        if (shut_down_) return false;
-        return mailbox_.send(std::move(message));
-    }
+    void request_cancel() noexcept { stop_.request(); }
 
-    // Close mailbox and join the owner thread. Idempotent. Drains queued messages first.
+    [[nodiscard]] bool cancel_requested() const noexcept { return stop_.requested(); }
+
+    // Enqueue a message. Blocks if the mailbox is full. Returns false after shutdown/cancel.
+    bool send(const Message& message) { return enqueue(message); }
+
+    bool send(Message&& message) { return enqueue(std::move(message)); }
+
+    // request_cancel, close mailbox, join owner. Idempotent. Drains queued messages first.
     void shutdown() {
         if (shut_down_) return;
         shut_down_ = true;
+        request_cancel();
         mailbox_.close();
         if (owner_.joinable()) owner_.join();
     }

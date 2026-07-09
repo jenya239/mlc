@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_ISOLATE** STEP=3 — StopToken into pool/isolate shutdown.
-STEP=2 Isolate mailbox done.
+**TRACK_CONCURRENCY_ISOLATE** STEP=4 — docs + self-host / close or Supervisor handoff.
+STEP=3 StopToken on pool/isolate done.
 
 ## Step sizing (good vs bad)
 

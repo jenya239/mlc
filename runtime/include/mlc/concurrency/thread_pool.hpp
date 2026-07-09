@@ -1,20 +1,25 @@
 #pragma once
 
-// Fixed-size worker pool + bounded job queue (TRACK_CONCURRENCY_ISOLATE STEP=1).
-// submit blocks when the queue is full (no silent drop). shutdown/dtor: close queue, join workers.
+// Fixed-size worker pool + bounded job queue (TRACK_CONCURRENCY_ISOLATE STEP=1+3).
+// submit blocks when the queue is full (no silent drop).
+// shutdown/dtor: request_cancel → close queue → join workers.
+// Blocked submit wakes on cancel (ChannelStatus::Cancelled).
 
 #include "mlc/concurrency/channel.hpp"
+#include "mlc/concurrency/stop.hpp"
 
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace mlc::concurrency {
 
 class ThreadPool {
+    StopSource stop_;
     Channel<std::function<void()>> jobs_;
     std::vector<std::thread> workers_;
     bool shut_down_ = false;
@@ -32,6 +37,12 @@ class ThreadPool {
             if (worker.joinable()) worker.join();
         }
         workers_.clear();
+    }
+
+    bool enqueue(std::function<void()> job) {
+        if (shut_down_) return false;
+        const ChannelStatus status = jobs_.send(std::move(job), stop_.token());
+        return status == ChannelStatus::Ok;
     }
 
 public:
@@ -56,17 +67,33 @@ public:
 
     ~ThreadPool() { shutdown(); }
 
-    // Enqueue work. Blocks if the queue is full. Returns false after shutdown.
+    [[nodiscard]] StopToken token() const noexcept { return stop_.token(); }
+
+    void request_cancel() noexcept { stop_.request(); }
+
+    [[nodiscard]] bool cancel_requested() const noexcept { return stop_.requested(); }
+
+    // Enqueue work. Blocks if the queue is full. Returns false after shutdown/cancel.
     template<typename Callable>
     bool submit(Callable&& callable) {
-        if (shut_down_) return false;
-        return jobs_.send(std::function<void()>(std::forward<Callable>(callable)));
+        return enqueue(std::function<void()>(std::forward<Callable>(callable)));
     }
 
-    // Close the job queue and join all workers. Idempotent.
+    // Enqueue work that receives this pool's StopToken.
+    template<typename Callable>
+    bool submit_with_token(Callable&& callable) {
+        using Decayed = std::decay_t<Callable>;
+        StopToken child_token = token();
+        return enqueue(std::function<void()>(
+            [callable = Decayed(std::forward<Callable>(callable)),
+             child_token]() mutable { callable(child_token); }));
+    }
+
+    // request_cancel, close the job queue, join all workers. Idempotent.
     void shutdown() {
         if (shut_down_) return;
         shut_down_ = true;
+        request_cancel();
         jobs_.close();
         join_workers();
     }

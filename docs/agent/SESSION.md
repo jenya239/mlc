@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 2 |
-| active_track | TRACK_CONCURRENCY_ISOLATE STEP=3 |
+| driver_turns_since_plan | 8 |
+| step_last | 3 |
+| active_track | TRACK_CONCURRENCY_ISOLATE STEP=4 |
 | test_gate | ok (smoke) |
+
+### Turn 2026-07-09 14:31 (Driver TRACK_CONCURRENCY_ISOLATE STEP=3 — StopToken shutdown)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_ISOLATE |
+| started | 2026-07-09 14:31 |
+| elapsed | ~5 min |
+| done    | ThreadPool/Isolate: StopSource, `token`/`request_cancel`, cancellable send/submit, `submit_with_token`; shutdown cancels; tests cancel-unblock + token. |
+| verify  | `run_concurrency_smoke.sh` exit 0 (pool 77, isolate 879). |
+| result  | STEP=3 done. Plain: cancel будит blocked submit/send. |
+| issues  | Dirty runtime binaries left uncommitted. |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_ISOLATE — docs + self-host / close or Supervisor handoff |
 
 ### Turn 2026-07-09 14:27 (Driver TRACK_CONCURRENCY_ISOLATE STEP=2 — Isolate mailbox)
 
