@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0 A–C **done**; Epic 1 STEP=1–4 **done**; STEP=5 next
+**Status:** open, Epic 0 A–C **done**; Epic 1 STEP=1–4 **done**; Epic 2 STEP=5 **done**; STEP=6 next
 
 | Step | Item | Status |
 |------|------|--------|
@@ -69,9 +69,17 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 
 | Step | Deliverable | Gate |
 |------|-------------|------|
-| 5 | Closures / lambda calls (already partial) � formalize calling convention | test_mir_interpreter |
+| 5 | Closures / lambda calls (already partial) — formalize calling convention | **done** |
 | 6 | Mutual recursion, default params desugared | smoke |
 | 7 | `?` / Result propagation in MIR + VM | smoke |
+
+
+### Lambda calling convention (STEP=5)
+
+- Immediate call `(params) => body(args)`: inline at call site (bind params → locals, evaluate body).
+- Bound `const name = (params) => body` then `name(args)`: store `MirLambdaBinding` in lower state (not a `VmValue`); call site inlines the same way.
+- Captures: free names resolve through `name_environment` at inline time (lexical, no closure heap object).
+- Out of scope this step: first-class lambda values, returning/storing lambdas, higher-order without inline.
 
 ### Epic 3 � Collections & strings (STEP 8�9)
 

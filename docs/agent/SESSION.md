@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 4 |
-| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=5 |
-| test_gate | ok (opt/res/shared=7; vm_cpp_diff 7/0) |
+| driver_turns_since_plan | 12 |
+| step_last | 5 |
+| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=6 |
+| test_gate | ok (lambda/capture/imm=7; vm_cpp_diff 10/0) |
+
+### Turn 2026-07-09 23:05 (Driver TRACK_MIR_VM_FULL STEP=5 — lambda calling convention)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 22:55 |
+| elapsed | ~10 min |
+| done    | `MirLambdaBinding` + bound-call inline; fixtures lambda/capture/immediate; TRACK convention note. |
+| verify  | `--run` all=7; `run_vm_cpp_exit_diff` 10/0; build EXIT:0. |
+| result  | STEP=5 done. Plain: bound/immediate lambdas inline at call site. |
+| issues  | No first-class lambda VmValue. Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=6 TRACK_MIR_VM_FULL — mutual recursion, default params desugared |
 
 ### Turn 2026-07-09 22:50 (Driver TRACK_MIR_VM_FULL STEP=4 — Option/Result/Shared corpus)
 

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 2 STEP=5 — closures / lambda calling convention
-(STEP=4 done: Option/Result corpus + Shared.new → `__mir_shared_new`).
+**TRACK_MIR_VM_FULL** Epic 2 STEP=6 — mutual recursion, default params desugared
+(STEP=5 done: bound/immediate lambda inline + lexical captures).
 
 ## Step sizing (good vs bad)
 

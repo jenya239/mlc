@@ -1,0 +1,5 @@
+fn main() -> i32 = do
+  const base = 3
+  const add = x => x + base
+  add(4)
+end

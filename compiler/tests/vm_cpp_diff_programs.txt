@@ -7,5 +7,8 @@ misc/examples/vm_match.mlc
 misc/examples/vm_option.mlc
 misc/examples/vm_result.mlc
 misc/examples/vm_shared.mlc
+misc/examples/vm_lambda.mlc
+misc/examples/vm_lambda_capture.mlc
+misc/examples/vm_lambda_immediate.mlc
 # vm_match_variant.mlc: VM --run only (C++ visit on sum ctor temp is pre-existing codegen gap)
 

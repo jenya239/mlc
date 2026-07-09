@@ -165,5 +165,26 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke shared exit', false))
   }
 
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  const add = (x: i32, y: i32) => x + y\n  add(3, 4)\nend',
+    'vm_lambda.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke lambda bound exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke lambda bound exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = do\n  const base = 3\n  const add = x => x + base\n  add(4)\nend',
+    'vm_lambda_capture.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke lambda capture exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke lambda capture exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'fn main() -> i32 = ((x: i32) => x + 1)(6)',
+    'vm_lambda_immediate.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke lambda immediate exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke lambda immediate exit', false))
+  }
+
   results
 end
