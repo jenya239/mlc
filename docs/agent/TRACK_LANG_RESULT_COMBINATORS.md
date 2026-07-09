@@ -3,100 +3,78 @@
 Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #3.
 
-## Status: **open**
+## Status: **open** (STEP=1 done 2026-07-09 — inventory)
 
-Комбинаторы уже специфицированы в `docs/MLC.md` §A2 (методы, C++-трансляция
-через `std::visit`/`holds_alternative` на `std::variant<Ok<T>,Err<E>>`).
-Аудит добавляет **новую** часть — авто-конверсия ошибки в `?` через `From`
-(не покрыта существующей спецификацией A2).
+Комбинаторы уже специфицированы в `docs/MLC.md` §A2. Аудит добавляет
+**новую** часть — авто-конверсия ошибки в `?` через `From`.
 
-## Scope
+### Steps
 
-1. **Result методы** (`MLC.md` §A2): `map`, `map_err`, `and_then`, `or_else`,
-   `unwrap_or`, `unwrap_or_else`, `ok`.
-2. **Option методы** (`MLC.md` §A2): `map`, `and_then`, `or_else`,
-   `unwrap_or`, `filter`, `ok_or`.
-3. **Новое (этот аудит): `?` с авто-конверсией `E`.** Сейчас `?` работает,
-   только если тип ошибки совпадает с типом ошибки функции. Ввести
-   `From<E1> for E2` (трейт), и при несовпадении `?` ищет `impl From<E1> for
-   E2` в registry вместо прямой ошибки типов.
+| Step | Status | Notes |
+|------|--------|-------|
+| 1 | **done** | Inventory: A2 combinators **shipped** in mlcc; remaining gap is `?` + `From` / E-mismatch |
+| 2 | pending | Red: `?` with `Result<T,E1>` inside `Result<T,E2>` fn must diagnose (today silent + bad C++) |
+| 3 | pending | Green: trait `From<E1>` + convert on `?` when E differs (or staged: hard error first) |
+| 4 | pending | verify-gate + close |
 
-## Файлы
+## Inventory (STEP=1, `compiler/` only)
 
-- **Checker (комбинаторы):** `infer_method_from_object_and_arguments` —
-  self-hosted аналог `compiler/checker/infer/infer_operand_combine.mlc:120`
-  (`infer_method_from_object_and_arguments`) — добавить ветки для
-  `TGeneric("Result", ...)` и `TGeneric("Option", ...)`, выводящие тип
-  результата из типа переданной лямбды.
-- **Ruby reference (read-only):** проверить, есть ли уже реализация в
-  `lib/mlc/` (искать `and_then`/`map_err` в `lib/mlc/registries/`,
-  `lib/mlc/backends/cpp/`) — если Ruby уже поддерживает, взять оттуда точную
-  семантику один в один, не изобретать заново.
-- **Codegen (комбинаторы):** место lowering методов на `Result`/`Option` —
-  искать текущую обработку `ExprQuestion` (`?` оператор) в
-  `compiler/codegen/` как ориентир по стилю (`std::holds_alternative`
-  каскады, не `std::visit` — см. отдельную рекомендацию аудита про
-  `std::visit`-баги, не смешивать в этом треке).
-- **`?` + `From` (новое):** место, где сейчас проверяется совпадение типа `E`
-  для `?` (искать в checker обработку `ExprQuestion` — вероятно рядом с B3
-  exhaustive `let`) — при несовпадении не сразу ошибка, а поиск
-  `extend E2 : From<E1>` в `TraitRegistry`/`ImplRegistry`
-  (`compiler/checker/registry.mlc`).
+### Combinators — **shipped**
 
-## Repro
+| Layer | Location |
+|-------|----------|
+| Names / arity / result type | `checker/check/method_types/result_option_method_types.mlc` |
+| Infer + diagnostics E055–E064 | `checker/infer/infer_result_option_method.mlc` |
+| Transform HOF | `checker/transform/transform.mlc` (`transform_result_option_hof_method_call`) |
+| Codegen | `codegen/expr/method_gen.mlc` (`gen_result_option_combinator_*`, `ok` → `ok_into_optional`) |
+| Runtime | `runtime/include/mlc/core/result_combinators.hpp`, `optional_combinators.hpp` |
 
-```mlc
-fn parse(source: string) -> Result<i32, string> = Ok(42)
-fn check(value: i32) -> Result<i32, string> = Ok(value * 2)
+**Result:** `map`, `map_err`, `and_then`, `or_else`, `unwrap_or`, `unwrap_or_else`, `ok`  
+**Option:** `map`, `and_then`, `or_else`, `unwrap_or`, `filter`, `ok_or`
 
-fn pipeline(source: string) -> Result<string, string> =
-  parse(source)
-    .and_then(check)
-    .map(v => v.to_string())
-    .map_err(e => "pipeline failed: " + e)
+Smoke (`mlcc --check-only`, 2026-07-09): TRACK pipeline repro with `.and_then`/`.map`/`.map_err` → exit 0.  
+Unit coverage in `test_checker.mlc`: map ok; negatives for `and_then`/filter; not a full method matrix.
 
-fn main() -> i32 = do
-  match pipeline("x") {
-    Ok(s) => println(s),
-    Err(e) => println(e)
-  }
-  0
-end
-```
+TRACK file list claiming “add Result/Option branches” is **stale** — already present.
 
-До фикса: `.and_then`/`.map`/`.map_err` — `E001` (метод не найден). После:
-exits 0, печатает `84`.
+### `?` operator — **partial**
 
-`From`-конверсия — отдельный repro:
+| Piece | Status |
+|-------|--------|
+| Parse `ExprQuestion` | yes (`frontend/parser/exprs.mlc`) |
+| Infer unwrap Ok | yes (`infer_question_expression.mlc`) — any `TGeneric`, E068 if not |
+| Check E vs enclosing fn return `Result<_,E>` | **missing** |
+| Trait `From` / `extend T : From<U>` | **missing** (no hits in `compiler/`) |
+| Codegen early-return Err | yes — returns Err payload **as-is** (`get_if<1>`), no conversion |
+
+**Repro gap (confirmed):**
 
 ```mlc
+type Result<T, E> = Ok(T) | Err(E)
 type ParseError = { message: string }
 type AppError = { message: string }
-
-extend AppError : From<ParseError> {
-  fn from(e: ParseError) -> AppError = AppError { message: e.message }
-}
-
 fn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })
 fn run(s: string) -> Result<i32, AppError> = do
-  let value = parse(s)?   // ParseError -> AppError через From, без ручного map_err
+  let value = parse(s)?   // should fail or From-convert; today check-only exit 0
   Ok(value)
 end
 ```
 
-До фикса: `?` требует совпадения типов ошибки, `E00X` type mismatch. После:
-компилируется, авто-конвертирует через `From_from`.
+`mlcc --check-only` → exit 0. Emit returns `ParseError` from `Result<i32,AppError>` body — invalid C++ if linked.
+
+## Scope (remaining)
+
+1. ~~Result/Option A2 methods~~ — done (pre-existing).
+2. **`?` + E mismatch:** diagnose when inner `E` ≠ function `E` and no `From`.
+3. **`From` conversion:** `extend E2 : From<E1> { fn from(...) }` + codegen call before return.
+
+Prefer staged commits: (2a) hard error on mismatch → (2b) `From` auto-convert.
 
 ## Verify gate
 
 ```bash
-bundle exec rake test_compiler_mlc
+scripts/dev_gate_fast.sh   # each turn
+# before close:
 compiler/build.sh
-compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
-compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
-.tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+# self-host p1/mlcc2/p2 + regression_gate + build_tests.sh
 ```
-
-Делать двумя отдельными шагами/коммитами: (1) комбинаторы, (2) `?` + `From` —
-независимые изменения в разном коде.
