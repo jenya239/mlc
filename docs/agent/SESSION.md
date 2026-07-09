@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 1 |
-| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=1 done; next STEP=2 registry paths) |
+| driver_turns_since_plan | 5 |
+| step_last | 2 |
+| active_track | TRACK_LANG_ORPHAN_RULE **open** (STEP=2 done; next STEP=3 orphan diagnostic) |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:33 (Driver TRACK_LANG_ORPHAN_RULE STEP=2 — defining paths in registry)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_ORPHAN_RULE |
+| started | 2026-07-09 08:21 |
+| elapsed | ~12 min |
+| done    | `TypeRegistry.type_defining_path` / `trait_defining_path`; `defining_path_for_type` / `defining_path_for_trait`; record on DeclType/Alias/Trait from `name_span.file`. Tests in `test_checker.mlc` (+7). |
+| result  | `dev_gate_fast` 1461/0. Plain: registry знает файл объявления типа и трейта. |
+| issues  | Empty path not stored (builtins/`parse_program` stay `""`). Orphan emit still STEP=3. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_ORPHAN_RULE — orphan diagnostic on DeclExtend |
 
 ### Turn 2026-07-09 08:19 (Driver TRACK_LANG_ORPHAN_RULE STEP=1 — inventory module ownership)
 

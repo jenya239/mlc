@@ -3,7 +3,7 @@
 Parent: [../PLAN.md](../PLAN.md). Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #7.
 
-## Status: **open** (STEP=1 done 2026-07-09 — inventory)
+## Status: **open** (STEP=2 done 2026-07-09 — defining paths in registry)
 
 **Проблема:** сейчас `extend T : Trait` разрешён в любом модуле, без
 проверки когерентности.

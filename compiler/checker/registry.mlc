@@ -50,7 +50,9 @@ export type TypeRegistry = TypeRegistry {
   adt_index: AdtIndex,
   record_index: RecordIndex,
   type_alias_annotations: Map<string, Shared<TypeExpr>>,
-  type_alias_type_parameter_names: Map<string, [string]>
+  type_alias_type_parameter_names: Map<string, [string]>,
+  type_defining_path: Map<string, string>,
+  trait_defining_path: Map<string, string>
 }
 
 export extend TypeRegistry {
@@ -168,6 +170,14 @@ export extend TypeRegistry {
       else Shared.new(TUnknown) end
     else Shared.new(TUnknown) end
   end
+
+  fn defining_path_for_type(self, type_name: string) -> string =
+    if self.type_defining_path.has(type_name) then self.type_defining_path.get(type_name)
+    else '' end
+
+  fn defining_path_for_trait(self, trait_name: string) -> string =
+    if self.trait_defining_path.has(trait_name) then self.trait_defining_path.get(trait_name)
+    else '' end
 }
 
 export fn empty_registry() -> TypeRegistry = do
@@ -240,8 +250,22 @@ export fn empty_registry() -> TypeRegistry = do
       record_literal_field_defaults: Map.new()
     },
     type_alias_annotations: Map.new(),
-    type_alias_type_parameter_names: Map.new()
+    type_alias_type_parameter_names: Map.new(),
+    type_defining_path: Map.new(),
+    trait_defining_path: Map.new()
   }
+end
+
+fn record_type_defining_path(registry: ref mut TypeRegistry, type_name: string, defining_path: string) -> unit = do
+  if defining_path.length() > 0 then
+    registry.type_defining_path.set(type_name, defining_path)
+  end
+end
+
+fn record_trait_defining_path(registry: ref mut TypeRegistry, trait_name: string, defining_path: string) -> unit = do
+  if defining_path.length() > 0 then
+    registry.trait_defining_path.set(trait_name, defining_path)
+  end
 end
 
 fn primitive_type_from_name(name: string) -> Shared<Type> =
@@ -516,7 +540,8 @@ end
 fn register_decl_trait_into_registry(
   registry: ref mut TypeRegistry,
   trait_name: string,
-  methods: [Shared<Decl>]
+  methods: [Shared<Decl>],
+  defining_path: string
 ) -> unit = do
   let mut index = 0
   while index < methods.length() do
@@ -529,6 +554,7 @@ fn register_decl_trait_into_registry(
   if true then
     registry.adt_index.trait_assoc_types.set(trait_name, trait_associated_type_names)
   end
+  record_trait_defining_path(registry, trait_name, defining_path)
 end
 
 // Strip type arguments from extend trait name: "From<ParseError>" -> "From".
@@ -613,7 +639,8 @@ fn register_decl_type_into_registry(
   registry: ref mut TypeRegistry,
   type_name: string,
   type_parameters: [string],
-  variants: [Shared<TypeVariant>]
+  variants: [Shared<TypeVariant>],
+  defining_path: string
 ) -> unit = do
   registry.adt_index.algebraic_decl_type_parameter_names.set(type_name, type_parameters)
   let mut variant_names: [string] = []
@@ -628,18 +655,21 @@ fn register_decl_type_into_registry(
   if true then
     registry.adt_index.algebraic_decl_phantom_type_params.set(type_name, phantom)
   end
+  record_type_defining_path(registry, type_name, defining_path)
 end
 
 fn register_decl_type_alias_into_registry(
   registry: ref mut TypeRegistry,
   alias_name: string,
   type_parameters: [string],
-  type_expression: Shared<TypeExpr>
+  type_expression: Shared<TypeExpr>,
+  defining_path: string
 ) -> unit = do
   registry.type_alias_annotations.set(alias_name, type_expression)
   if type_parameters.length() > 0 then
     registry.type_alias_type_parameter_names.set(alias_name, type_parameters)
   end
+  record_type_defining_path(registry, alias_name, defining_path)
 end
 
 fn register_extend_method_into_registry(
@@ -660,8 +690,8 @@ fn register_extend_method_into_registry(
 
 fn register_decl_trait_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclTrait(trait_name, _, methods, _) => do
-      register_decl_trait_into_registry(registry, trait_name, methods)
+    DeclTrait(trait_name, _, methods, name_span) => do
+      register_decl_trait_into_registry(registry, trait_name, methods, name_span.file)
       true
     end,
     _ => false
@@ -687,8 +717,8 @@ fn register_decl_fn_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>
 
 fn register_decl_type_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclType(type_name, type_parameters, variants, _, _) => do
-      register_decl_type_into_registry(registry, type_name, type_parameters, variants)
+    DeclType(type_name, type_parameters, variants, _, name_span) => do
+      register_decl_type_into_registry(registry, type_name, type_parameters, variants, name_span.file)
       true
     end,
     _ => false
@@ -696,8 +726,8 @@ fn register_decl_type_if(registry: ref mut TypeRegistry, declaration: Shared<Dec
 
 fn register_decl_type_alias_if(registry: ref mut TypeRegistry, declaration: Shared<Decl>) -> bool =
   match declaration {
-    DeclTypeAlias(alias_name, type_parameters, type_expression, _) => do
-      register_decl_type_alias_into_registry(registry, alias_name, type_parameters, type_expression)
+    DeclTypeAlias(alias_name, type_parameters, type_expression, name_span) => do
+      register_decl_type_alias_into_registry(registry, alias_name, type_parameters, type_expression, name_span.file)
       true
     end,
     _ => false

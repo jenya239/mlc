@@ -4,6 +4,7 @@ import { TestResult, assert_eq_int, assert_eq_str, assert_true, assert_diagnosti
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_source_path } from '../frontend/parser/decls'
 import { check, check_with_context, program_diagnostics } from '../checker/check/check'
+import { build_registry } from '../checker/registry'
 import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_w_cycle, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
@@ -892,6 +893,56 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(
       'type Result<T, E> = Ok(T) | Err(E)\ntrait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\nfn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })\nfn run(s: string) -> Result<i32, AppError> = do\n  let value = parse(s)?\n  Ok(value)\nend'),
     0))
+
+  // --- orphan rule prep: defining paths in TypeRegistry (STEP=2) --------------
+
+  results.push(assert_eq_str(
+    'registry: type defining path from source_path',
+    build_registry(parse_program_with_source_path(
+      tokenize('type Point = { x: i32 }\ntrait Display { fn to_string(self: Display) -> string }\n').tokens,
+      'mod_a.mlc')).defining_path_for_type('Point'),
+    'mod_a.mlc'))
+
+  results.push(assert_eq_str(
+    'registry: trait defining path from source_path',
+    build_registry(parse_program_with_source_path(
+      tokenize('type Point = { x: i32 }\ntrait Display { fn to_string(self: Display) -> string }\n').tokens,
+      'mod_a.mlc')).defining_path_for_trait('Display'),
+    'mod_a.mlc'))
+
+  results.push(assert_eq_str(
+    'registry: type alias defining path from source_path',
+    build_registry(parse_program_with_source_path(
+      tokenize('type Alias = i32\n').tokens,
+      'alias_mod.mlc')).defining_path_for_type('Alias'),
+    'alias_mod.mlc'))
+
+  results.push(assert_eq_str(
+    'registry: exported type keeps defining path',
+    build_registry(parse_program_with_source_path(
+      tokenize('export type Point = { x: i32 }\n').tokens,
+      'export_mod.mlc')).defining_path_for_type('Point'),
+    'export_mod.mlc'))
+
+  results.push(assert_eq_str(
+    'registry: empty source_path yields empty defining path',
+    build_registry(parse_program(
+      tokenize('type Point = { x: i32 }\n').tokens)).defining_path_for_type('Point'),
+    ''))
+
+  results.push(assert_eq_str(
+    'registry: unknown type has empty defining path',
+    build_registry(parse_program_with_source_path(
+      tokenize('type Point = { x: i32 }\n').tokens,
+      'mod_a.mlc')).defining_path_for_type('Missing'),
+    ''))
+
+  results.push(assert_eq_str(
+    'registry: builtin name has empty defining path',
+    build_registry(parse_program_with_source_path(
+      tokenize('type Point = { x: i32 }\n').tokens,
+      'mod_a.mlc')).defining_path_for_type('i32'),
+    ''))
 
   // --- Result / Option combinators (A2) --------------------------------------
 
