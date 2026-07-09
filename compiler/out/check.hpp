@@ -7,6 +7,7 @@
 #include "ast.hpp"
 #include "names.hpp"
 #include "check_mutations.hpp"
+#include "spawn_capture.hpp"
 #include "registry.hpp"
 #include "trait_param_expand.hpp"
 #include "param_destructure_expand.hpp"

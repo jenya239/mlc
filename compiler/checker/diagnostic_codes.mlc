@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 87
+export fn diagnostic_code_catalog_count() -> i32 = 88
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -176,3 +176,5 @@ export fn diagnostic_code_w_cycle() -> string = 'W-CYCLE'
 export fn diagnostic_code_e085() -> string = 'E085'
 // E086: orphan extend Type : Trait (neither Type nor Trait defined in this module)
 export fn diagnostic_code_e086() -> string = 'E086'
+// E087: mutable binding captured across spawn concurrency boundary
+export fn diagnostic_code_e087() -> string = 'E087'

@@ -4,7 +4,7 @@
 namespace diagnostic_codes {
 
 int diagnostic_code_catalog_count() noexcept{
-  return 87;
+  return 88;
 }
 mlc::String diagnostic_code_e001() noexcept{
   return mlc::String("E001", 4);
@@ -266,6 +266,9 @@ mlc::String diagnostic_code_e085() noexcept{
 }
 mlc::String diagnostic_code_e086() noexcept{
   return mlc::String("E086", 4);
+}
+mlc::String diagnostic_code_e087() noexcept{
+  return mlc::String("E087", 4);
 }
 
 } // namespace diagnostic_codes

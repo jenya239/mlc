@@ -1,0 +1,453 @@
+// Conservative spawn capture check (TRACK_CONCURRENCY_V2 STEP=4 slice):
+// free use of an enclosing `let mut` / mut param inside `spawn` is an error.
+// Local bindings inside the spawn body shadow and are allowed.
+// Full `move` tracking is a later sub-step.
+
+import {
+  Expr, Stmt, Param, MatchArm, FieldVal, RecordLitPart, Diagnostic, Span,
+  diagnostic_error_with_code, diagnostics_append
+} from '../frontend/ast'
+import { pattern_bindings } from './names'
+import { diagnostic_code_e087 } from './diagnostic_codes'
+
+type SpawnCaptureStmtWalkState = SpawnCaptureStmtWalkState {
+  diagnostics: [Diagnostic],
+  bound: [string]
+}
+
+type SpawnCaptureMutableWalkState = SpawnCaptureMutableWalkState {
+  diagnostics: [Diagnostic],
+  scope: [string]
+}
+
+fn empty_names() -> [string] = do
+  let names: [string] = []
+  names
+end
+
+fn names_contains(names: [string], sought: string) -> bool =
+  names.any(entry => entry == sought)
+
+fn names_add(names: [string], name: string) -> [string] =
+  if name.length() == 0 then names
+  else if names_contains(names, name) then names
+  else names.concat([name])
+  end
+
+fn names_add_all(names: [string], additions: [string]) -> [string] =
+  additions.fold(names, (accumulated, addition) => names_add(accumulated, addition))
+
+fn empty_diagnostics() -> [Diagnostic] = do
+  let diagnostics: [Diagnostic] = []
+  diagnostics
+end
+
+fn mutable_capture_diagnostic(binding_name: string, source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'mutable value \'' + binding_name + '\' crosses concurrency boundary (spawn); use move or Sync-safe sharing',
+    source_span,
+    diagnostic_code_e087())
+
+fn mutable_scope_from_parameters(parameters: [Shared<Param>]) -> [string] =
+  parameters.fold(
+    empty_names(),
+    (scope, parameter) =>
+      if parameter.is_mut then names_add(scope, parameter.name) else scope end)
+
+fn free_mutable_capture_in_expr(
+  expression: Shared<Expr>,
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  match expression {
+    ExprIdent(name, source_span) =>
+      if names_contains(outer_mutable, name) && !names_contains(local_bound, name) then
+        [mutable_capture_diagnostic(name, source_span)]
+      else empty_diagnostics()
+      end,
+    ExprInt(_, _) => empty_diagnostics(),
+    ExprStr(_, _) => empty_diagnostics(),
+    ExprBool(_, _) => empty_diagnostics(),
+    ExprUnit(_) => empty_diagnostics(),
+    ExprFloat(_, _) => empty_diagnostics(),
+    ExprI64(_, _) => empty_diagnostics(),
+    ExprU8(_, _) => empty_diagnostics(),
+    ExprUsize(_, _) => empty_diagnostics(),
+    ExprChar(_, _) => empty_diagnostics(),
+    ExprExtern(_) => empty_diagnostics(),
+    ExprBin(_, left, right, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(left, local_bound, outer_mutable),
+        free_mutable_capture_in_expr(right, local_bound, outer_mutable)),
+    ExprUn(_, operand, _) =>
+      free_mutable_capture_in_expr(operand, local_bound, outer_mutable),
+    ExprCall(callee, arguments, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(callee, local_bound, outer_mutable),
+        free_mutable_capture_in_expr_list(arguments, local_bound, outer_mutable)),
+    ExprMethod(receiver, _, arguments, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(receiver, local_bound, outer_mutable),
+        free_mutable_capture_in_expr_list(arguments, local_bound, outer_mutable)),
+    ExprField(object, _, _) =>
+      free_mutable_capture_in_expr(object, local_bound, outer_mutable),
+    ExprIndex(object, index_expression, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(object, local_bound, outer_mutable),
+        free_mutable_capture_in_expr(index_expression, local_bound, outer_mutable)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(condition, local_bound, outer_mutable),
+        diagnostics_append(
+          free_mutable_capture_in_expr(then_branch, local_bound, outer_mutable),
+          free_mutable_capture_in_expr(else_branch, local_bound, outer_mutable))),
+    ExprBlock(statements, result_expression, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_stmts(statements, local_bound, outer_mutable),
+        free_mutable_capture_in_expr(
+          result_expression,
+          bindings_after_statements(statements, local_bound),
+          outer_mutable)),
+    ExprWhile(condition, body, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(condition, local_bound, outer_mutable),
+        free_mutable_capture_in_stmts(body, local_bound, outer_mutable)),
+    ExprFor(variable_name, iterable, body, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(iterable, local_bound, outer_mutable),
+        free_mutable_capture_in_stmts(body, names_add(local_bound, variable_name), outer_mutable)),
+    ExprMatch(scrutinee, arms, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(scrutinee, local_bound, outer_mutable),
+        free_mutable_capture_in_match_arms(arms, local_bound, outer_mutable)),
+    ExprRecord(_, parts, _) =>
+      free_mutable_capture_in_record_parts(parts, local_bound, outer_mutable),
+    ExprRecordUpdate(_, base, field_values, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(base, local_bound, outer_mutable),
+        free_mutable_capture_in_field_values(field_values, local_bound, outer_mutable)),
+    ExprArray(elements, _) =>
+      free_mutable_capture_in_expr_list(elements, local_bound, outer_mutable),
+    ExprTuple(elements, _) =>
+      free_mutable_capture_in_expr_list(elements, local_bound, outer_mutable),
+    ExprQuestion(inner, _) =>
+      free_mutable_capture_in_expr(inner, local_bound, outer_mutable),
+    ExprLambda(parameter_names, body, _) =>
+      free_mutable_capture_in_expr(body, names_add_all(local_bound, parameter_names), outer_mutable),
+    // Nested spawn sites are checked by walk_spawn_sites; do not recurse here.
+    ExprSpawn(_, _) => empty_diagnostics(),
+    ExprNamedArg(_, value, _) =>
+      free_mutable_capture_in_expr(value, local_bound, outer_mutable),
+    ExprWith(resource, binder, body, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_expr(resource, local_bound, outer_mutable),
+        free_mutable_capture_in_stmts(body, names_add(local_bound, binder), outer_mutable))
+  }
+
+fn free_mutable_capture_in_expr_list(
+  expressions: [Shared<Expr>],
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  expressions.fold(
+    empty_diagnostics(),
+    (diagnostics, expression) =>
+      diagnostics_append(
+        diagnostics,
+        free_mutable_capture_in_expr(expression, local_bound, outer_mutable)))
+
+fn free_mutable_capture_in_field_values(
+  field_values: [Shared<FieldVal>],
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  field_values.fold(
+    empty_diagnostics(),
+    (diagnostics, field_value) =>
+      diagnostics_append(
+        diagnostics,
+        free_mutable_capture_in_expr(field_value.value, local_bound, outer_mutable)))
+
+fn free_mutable_capture_in_record_parts(
+  parts: [RecordLitPart],
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  parts.fold(
+    empty_diagnostics(),
+    (diagnostics, part) =>
+      match part {
+        RecordLitFields(field_values) =>
+          diagnostics_append(
+            diagnostics,
+            free_mutable_capture_in_field_values(field_values, local_bound, outer_mutable)),
+        RecordLitSpread(spread_expression) =>
+          diagnostics_append(
+            diagnostics,
+            free_mutable_capture_in_expr(spread_expression, local_bound, outer_mutable))
+      })
+
+fn free_mutable_capture_in_match_arms(
+  arms: [Shared<MatchArm>],
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  arms.fold(
+    empty_diagnostics(),
+    (diagnostics, arm) => do
+      const arm_bound = names_add_all(local_bound, pattern_bindings(arm.pattern))
+      const guard_diagnostics =
+        if arm.has_guard then
+          free_mutable_capture_in_expr(arm.when_condition, arm_bound, outer_mutable)
+        else empty_diagnostics()
+        end
+      diagnostics_append(
+        diagnostics,
+        diagnostics_append(
+          guard_diagnostics,
+          free_mutable_capture_in_expr(arm.body, arm_bound, outer_mutable)))
+    end)
+
+fn statement_binding_names(statement: Shared<Stmt>) -> [string] =
+  match statement {
+    StmtLet(name, _, _, _, _) => [name],
+    StmtLetPattern(pattern, _, _, _, _, _, _) => pattern_bindings(pattern),
+    StmtLetConst(name, _, _, _) => [name],
+    StmtExpr(_, _) => empty_names(),
+    StmtBreak(_) => empty_names(),
+    StmtContinue(_) => empty_names(),
+    StmtReturn(_, _) => empty_names()
+  }
+
+fn statement_introduces_mutable(statement: Shared<Stmt>) -> bool =
+  match statement {
+    StmtLet(_, is_mut, _, _, _) => is_mut,
+    StmtLetPattern(_, is_mut, _, _, _, _, _) => is_mut,
+    StmtLetConst(_, _, _, _) => false,
+    StmtExpr(_, _) => false,
+    StmtBreak(_) => false,
+    StmtContinue(_) => false,
+    StmtReturn(_, _) => false
+  }
+
+fn bindings_after_statements(statements: [Shared<Stmt>], local_bound: [string]) -> [string] =
+  statements.fold(
+    local_bound,
+    (bound, statement) => names_add_all(bound, statement_binding_names(statement)))
+
+fn free_mutable_capture_in_stmts(
+  statements: [Shared<Stmt>],
+  local_bound: [string],
+  outer_mutable: [string]
+) -> [Diagnostic] =
+  statements.fold(
+    SpawnCaptureStmtWalkState { diagnostics: empty_diagnostics(), bound: local_bound },
+    (state, statement) => do
+      const value_diagnostics = match statement {
+        StmtLet(_, _, _, value, _) =>
+          free_mutable_capture_in_expr(value, state.bound, outer_mutable),
+        StmtLetPattern(_, _, _, value, _, else_expression, _) =>
+          diagnostics_append(
+            free_mutable_capture_in_expr(value, state.bound, outer_mutable),
+            free_mutable_capture_in_expr(else_expression, state.bound, outer_mutable)),
+        StmtLetConst(_, _, value, _) =>
+          free_mutable_capture_in_expr(value, state.bound, outer_mutable),
+        StmtExpr(expression, _) =>
+          free_mutable_capture_in_expr(expression, state.bound, outer_mutable),
+        StmtBreak(_) => empty_diagnostics(),
+        StmtContinue(_) => empty_diagnostics(),
+        StmtReturn(expression, _) =>
+          free_mutable_capture_in_expr(expression, state.bound, outer_mutable)
+      }
+      SpawnCaptureStmtWalkState {
+        diagnostics: diagnostics_append(state.diagnostics, value_diagnostics),
+        bound: names_add_all(state.bound, statement_binding_names(statement))
+      }
+    end).diagnostics
+
+fn walk_spawn_sites_in_expr(expression: Shared<Expr>, mutable_scope: [string]) -> [Diagnostic] =
+  match expression {
+    ExprSpawn(body, _) =>
+      diagnostics_append(
+        free_mutable_capture_in_stmts(body, empty_names(), mutable_scope),
+        walk_spawn_sites_in_stmts(body, mutable_scope)),
+    ExprInt(_, _) => empty_diagnostics(),
+    ExprStr(_, _) => empty_diagnostics(),
+    ExprBool(_, _) => empty_diagnostics(),
+    ExprUnit(_) => empty_diagnostics(),
+    ExprFloat(_, _) => empty_diagnostics(),
+    ExprI64(_, _) => empty_diagnostics(),
+    ExprU8(_, _) => empty_diagnostics(),
+    ExprUsize(_, _) => empty_diagnostics(),
+    ExprChar(_, _) => empty_diagnostics(),
+    ExprExtern(_) => empty_diagnostics(),
+    ExprIdent(_, _) => empty_diagnostics(),
+    ExprBin(_, left, right, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(left, mutable_scope),
+        walk_spawn_sites_in_expr(right, mutable_scope)),
+    ExprUn(_, operand, _) =>
+      walk_spawn_sites_in_expr(operand, mutable_scope),
+    ExprCall(callee, arguments, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(callee, mutable_scope),
+        walk_spawn_sites_in_expr_list(arguments, mutable_scope)),
+    ExprMethod(receiver, _, arguments, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(receiver, mutable_scope),
+        walk_spawn_sites_in_expr_list(arguments, mutable_scope)),
+    ExprField(object, _, _) =>
+      walk_spawn_sites_in_expr(object, mutable_scope),
+    ExprIndex(object, index_expression, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(object, mutable_scope),
+        walk_spawn_sites_in_expr(index_expression, mutable_scope)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(condition, mutable_scope),
+        diagnostics_append(
+          walk_spawn_sites_in_expr(then_branch, mutable_scope),
+          walk_spawn_sites_in_expr(else_branch, mutable_scope))),
+    ExprBlock(statements, result_expression, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_stmts(statements, mutable_scope),
+        walk_spawn_sites_in_expr(
+          result_expression,
+          mutable_scope_after_statements(statements, mutable_scope))),
+    ExprWhile(condition, body, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(condition, mutable_scope),
+        walk_spawn_sites_in_stmts(body, mutable_scope)),
+    ExprFor(_, iterable, body, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(iterable, mutable_scope),
+        walk_spawn_sites_in_stmts(body, mutable_scope)),
+    ExprMatch(scrutinee, arms, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(scrutinee, mutable_scope),
+        walk_spawn_sites_in_match_arms(arms, mutable_scope)),
+    ExprRecord(_, parts, _) =>
+      walk_spawn_sites_in_record_parts(parts, mutable_scope),
+    ExprRecordUpdate(_, base, field_values, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(base, mutable_scope),
+        walk_spawn_sites_in_field_values(field_values, mutable_scope)),
+    ExprArray(elements, _) =>
+      walk_spawn_sites_in_expr_list(elements, mutable_scope),
+    ExprTuple(elements, _) =>
+      walk_spawn_sites_in_expr_list(elements, mutable_scope),
+    ExprQuestion(inner, _) =>
+      walk_spawn_sites_in_expr(inner, mutable_scope),
+    ExprLambda(_, body, _) =>
+      walk_spawn_sites_in_expr(body, empty_names()),
+    ExprNamedArg(_, value, _) =>
+      walk_spawn_sites_in_expr(value, mutable_scope),
+    ExprWith(resource, _, body, _) =>
+      diagnostics_append(
+        walk_spawn_sites_in_expr(resource, mutable_scope),
+        walk_spawn_sites_in_stmts(body, mutable_scope))
+  }
+
+fn walk_spawn_sites_in_expr_list(
+  expressions: [Shared<Expr>],
+  mutable_scope: [string]
+) -> [Diagnostic] =
+  expressions.fold(
+    empty_diagnostics(),
+    (diagnostics, expression) =>
+      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(expression, mutable_scope)))
+
+fn walk_spawn_sites_in_field_values(
+  field_values: [Shared<FieldVal>],
+  mutable_scope: [string]
+) -> [Diagnostic] =
+  field_values.fold(
+    empty_diagnostics(),
+    (diagnostics, field_value) =>
+      diagnostics_append(diagnostics, walk_spawn_sites_in_expr(field_value.value, mutable_scope)))
+
+fn walk_spawn_sites_in_record_parts(
+  parts: [RecordLitPart],
+  mutable_scope: [string]
+) -> [Diagnostic] =
+  parts.fold(
+    empty_diagnostics(),
+    (diagnostics, part) =>
+      match part {
+        RecordLitFields(field_values) =>
+          diagnostics_append(
+            diagnostics,
+            walk_spawn_sites_in_field_values(field_values, mutable_scope)),
+        RecordLitSpread(spread_expression) =>
+          diagnostics_append(
+            diagnostics,
+            walk_spawn_sites_in_expr(spread_expression, mutable_scope))
+      })
+
+fn walk_spawn_sites_in_match_arms(
+  arms: [Shared<MatchArm>],
+  mutable_scope: [string]
+) -> [Diagnostic] =
+  arms.fold(
+    empty_diagnostics(),
+    (diagnostics, arm) => do
+      const guard_diagnostics =
+        if arm.has_guard then walk_spawn_sites_in_expr(arm.when_condition, mutable_scope)
+        else empty_diagnostics()
+        end
+      diagnostics_append(
+        diagnostics,
+        diagnostics_append(guard_diagnostics, walk_spawn_sites_in_expr(arm.body, mutable_scope)))
+    end)
+
+fn mutable_scope_after_statements(
+  statements: [Shared<Stmt>],
+  mutable_scope: [string]
+) -> [string] =
+  statements.fold(
+    mutable_scope,
+    (scope, statement) =>
+      if statement_introduces_mutable(statement) then
+        names_add_all(scope, statement_binding_names(statement))
+      else scope
+      end)
+
+fn walk_spawn_sites_in_stmts(
+  statements: [Shared<Stmt>],
+  mutable_scope: [string]
+) -> [Diagnostic] =
+  statements.fold(
+    SpawnCaptureMutableWalkState { diagnostics: empty_diagnostics(), scope: mutable_scope },
+    (state, statement) => do
+      const value_diagnostics = match statement {
+        StmtLet(_, _, _, value, _) =>
+          walk_spawn_sites_in_expr(value, state.scope),
+        StmtLetPattern(_, _, _, value, _, else_expression, _) =>
+          diagnostics_append(
+            walk_spawn_sites_in_expr(value, state.scope),
+            walk_spawn_sites_in_expr(else_expression, state.scope)),
+        StmtLetConst(_, _, value, _) =>
+          walk_spawn_sites_in_expr(value, state.scope),
+        StmtExpr(expression, _) =>
+          walk_spawn_sites_in_expr(expression, state.scope),
+        StmtBreak(_) => empty_diagnostics(),
+        StmtContinue(_) => empty_diagnostics(),
+        StmtReturn(expression, _) =>
+          walk_spawn_sites_in_expr(expression, state.scope)
+      }
+      const scope_after =
+        if statement_introduces_mutable(statement) then
+          names_add_all(state.scope, statement_binding_names(statement))
+        else state.scope
+        end
+      SpawnCaptureMutableWalkState {
+        diagnostics: diagnostics_append(state.diagnostics, value_diagnostics),
+        scope: scope_after
+      }
+    end).diagnostics
+
+export fn spawn_mutable_capture_diagnostics(
+  parameters: [Shared<Param>],
+  body: Shared<Expr>
+) -> [Diagnostic] =
+  walk_spawn_sites_in_expr(body, mutable_scope_from_parameters(parameters))

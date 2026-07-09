@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_V2** STEP=4 — `spawn_thread(move x)` move-state tracking
-(`compiler/`). STEP=3 Sender/Receiver done (runtime).
+**TRACK_CONCURRENCY_V2** STEP=4b — `move` + use-after-move into spawn
+(`compiler/`). STEP=4a E087 mutable capture done.
 
 ## Step sizing (good vs bad)
 

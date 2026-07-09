@@ -7,6 +7,7 @@ import { Program, Decl, Result, decl_inner, decl_span, decl_name_span, param_nam
 import { ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar } from '../../frontend/ast'
 import { check_names_expr } from '../names'
 import { check_fn_body_mutations } from './check_mutations'
+import { spawn_mutable_capture_diagnostics } from '../spawn_capture'
 import { Type, TypeRegistry, TUnknown, build_registry, type_from_annotation_with_registry, type_alias_has_cycle, resolve_nominal_type_name_for_fields } from '../registry'
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from '../transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from '../transform/param_destructure_expand'
@@ -476,6 +477,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         const body_partial_application = partial_application_desugar_expr(body)
         all_diagnostics = diagnostics_append(all_diagnostics, check_names_expr(body_partial_application, locals, globals))
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
+        all_diagnostics = diagnostics_append(all_diagnostics, spawn_mutable_capture_diagnostics(parameters, body_partial_application))
         const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const inference_context = check_context_with_expected_return(type_environment, registry, expected_type)
         const body_parsed = infer_expr(body_partial_application, inference_context)

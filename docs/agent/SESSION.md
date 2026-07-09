@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-anti-false-done` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_V2 STEP=4 |
-| test_gate | ok |
+| driver_turns_since_plan | 3 |
+| step_last | 4a |
+| active_track | TRACK_CONCURRENCY_V2 STEP=4b |
+| test_gate | ok (mlcc probes; Ruby gate red known) |
+
+### Turn 2026-07-09 12:50 (Driver TRACK_CONCURRENCY_V2 STEP=4a — spawn mutable capture E087)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4a |
+| track   | TRACK_CONCURRENCY_V2 |
+| started | 2026-07-09 12:39 |
+| elapsed | ~11 min |
+| done    | `spawn_capture.mlc` + E087; wired in `check.mlc`; tests in `test_spawn.mlc`; catalog 88. Free `let mut` in `spawn` rejected; immutable + local mut ok. |
+| verify  | `compiler/build.sh` ok; `mlcc --check-only main` 0; probes ok/local 0, bad E087 exit 1. Ruby `dev_gate_fast` still red (known MATCH parse). |
+| result  | STEP=4a done (not full STEP=4). Plain: mutable capture across spawn запрещён. |
+| issues  | Ruby rebuild tests still red (pre-existing). |
+| next    | ROLE=Driver STEP=4b TRACK_CONCURRENCY_V2 — move keyword + use-after-move into spawn |
 
 ### Turn 2026-07-09 12:38 (Driver TRACK_CONCURRENCY_V2 STEP=3 — Sender/Receiver)
 

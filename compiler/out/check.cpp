@@ -5,6 +5,7 @@
 #include "ast.hpp"
 #include "names.hpp"
 #include "check_mutations.hpp"
+#include "spawn_capture.hpp"
 #include "registry.hpp"
 #include "trait_param_expand.hpp"
 #include "param_destructure_expand.hpp"
@@ -24,6 +25,7 @@ using namespace ast;
 using namespace ast;
 using namespace names;
 using namespace check_mutations;
+using namespace spawn_capture;
 using namespace registry;
 using namespace trait_param_expand;
 using namespace param_destructure_expand;
@@ -439,6 +441,7 @@ auto type_environment = locals_fold_result.type_environment;
 auto body_partial_application = partial_application_desugar::partial_application_desugar_expr(body);
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, names::check_names_expr(body_partial_application, locals, globals)));
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body_partial_application)));
+(all_diagnostics = ast::diagnostics_append(all_diagnostics, spawn_capture::spawn_mutable_capture_diagnostics(parameters, body_partial_application)));
 auto expected_type = registry::type_from_annotation_with_registry(return_type_annotation, registry);
 auto inference_context = check_context::check_context_with_expected_return(type_environment, registry, expected_type);
 auto body_parsed = infer::infer_expr(body_partial_application, inference_context);
