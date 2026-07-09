@@ -293,6 +293,11 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
   const type_name_span = parser.span_at_cursor()
   const type_name = parser.kind().ident()
   let mut state = parser.advance()
+  // Type-name generics: extend Shared<T> / extend Box<T>: Iter
+  if state.kind().is_op() && state.kind().op_val() == "<" then
+    const type_name_arguments_parsed = parse_type_args(state.advance())
+    state = type_name_arguments_parsed.parser
+  end
   let mut trait_name = ''
   if state.kind().is_colon() then
     state = state.advance()
@@ -300,11 +305,12 @@ fn parse_extend_decl(parser: Parser) -> DeclResult = do
       trait_name = state.kind().ident()
       state = state.advance()
     end
-  end
-  if state.kind().is_op() && state.kind().op_val() == "<" then
-    const trait_type_arguments_parsed = parse_type_args(state.advance())
-    trait_name = trait_name + "<" + type_arguments_display(trait_type_arguments_parsed.value) + ">"
-    state = trait_type_arguments_parsed.parser
+    // Trait generics only after `: Trait` (e.g. From<ParseError>, Add<Vec2>)
+    if trait_name.length() > 0 && state.kind().is_op() && state.kind().op_val() == "<" then
+      const trait_type_arguments_parsed = parse_type_args(state.advance())
+      trait_name = trait_name + "<" + type_arguments_display(trait_type_arguments_parsed.value) + ">"
+      state = trait_type_arguments_parsed.parser
+    end
   end
   let mut methods_state = parser_after_optional_lbrace(state)
   const methods: [Shared<Decl>] = []

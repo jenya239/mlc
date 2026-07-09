@@ -6,10 +6,24 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plain-queue` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 3b |
-| active_track | TRACK_LANG_RESULT_COMBINATORS **open** (STEP=3b done; next STEP=4 verify-gate) |
+| driver_turns_since_plan | 3 |
+| step_last | 4 |
+| active_track | TRACK_LANG_RESULT_COMBINATORS **closed**; next TRACK_LANG_ORPHAN_RULE |
 | test_gate | ok |
+
+### Turn 2026-07-09 08:16 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=4 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_RESULT_COMBINATORS |
+| started | 2026-07-09 07:45 |
+| elapsed | ~31 min |
+| done    | Fixed `parse_extend_decl` (type generics before trait); `empty_diagnostic_list` + flat E085 chain; parser tests Shared/Box; rebuild mlcc; closed TRACK. |
+| result  | self-host DIFF_EXIT:0; regression 20/0; build_tests 1454/0 TESTS_EXIT:0. Plain: From/`?` gate зелёный; Shared\<T\> больше не ломает self-host. |
+| issues  | STEP=3a briefly broke `extend Shared<T>` trait parse; fixed before close. Untracked CLOSURE_ESCAPE WIP left out of commit. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_ORPHAN_RULE — inventory module ownership for extend T:Trait |
 
 ### Turn 2026-07-09 07:45 (Driver TRACK_LANG_RESULT_COMBINATORS STEP=3b — codegen From convert)
 

@@ -6,6 +6,7 @@
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "expr.hpp"
+#include "expression_support.hpp"
 #include "eval.hpp"
 #include "stmt_cpp.hpp"
 #include "expr_visitor_cpp.hpp"
@@ -18,6 +19,7 @@ using namespace cpp_ast;
 using namespace emit_helpers;
 using namespace context;
 using namespace expr;
+using namespace expression_support;
 using namespace eval;
 using namespace stmt_cpp;
 using namespace expr_visitor_cpp;
@@ -99,9 +101,11 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> gen_try_unwrap_return_stateme
 mlc::String try_identifier = mlc::String("__try_ret");
 std::shared_ptr<cpp_ast::CppExpression> inner_cpp = gen_expr_for_return_body_cpp(inner_expression, context);
 std::shared_ptr<cpp_ast::CppExpression> error_pointer = try_result_err_pointer_expression(try_identifier);
+mlc::String from_converter_name = expression_support::question_from_converter_name(context, semantic_ir::sexpr_type(inner_expression));
+std::shared_ptr<cpp_ast::CppExpression> error_return_value = from_converter_name.length() > 0 ? std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppCall(std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppIdent(from_converter_name)), mlc::Array<std::shared_ptr<cpp_ast::CppExpression>>{std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary(mlc::String("*"), error_pointer))})) : std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary(mlc::String("*"), error_pointer));
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements = {};
 statements.push_back(emit_helpers::make_auto_cpp_statement(try_identifier, inner_cpp));
-statements.push_back(emit_helpers::make_if_cpp_statement(error_pointer, emit_helpers::make_block_cpp_statement(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>>{emit_helpers::make_return_cpp_statement(std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary(mlc::String("*"), error_pointer)))}), emit_helpers::make_block_cpp_statement({})));
+statements.push_back(emit_helpers::make_if_cpp_statement(error_pointer, emit_helpers::make_block_cpp_statement(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>>{emit_helpers::make_return_cpp_statement(error_return_value)}), emit_helpers::make_block_cpp_statement({})));
 statements.push_back(emit_helpers::make_return_cpp_statement(try_result_ok_field0_expression(try_identifier)));
 return statements;
 }

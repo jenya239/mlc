@@ -42,7 +42,7 @@ mlc::String expression_operation_statement(mlc::String operation, mlc::String le
 
 mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept;
 
-mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept;
+mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line, mlc::String from_converter_name) noexcept;
 
 mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
 
@@ -240,7 +240,7 @@ mlc::String expression_operation_statement(mlc::String operation, mlc::String le
 
 mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept{return expression_code + mlc::String(";\n");}
 
-mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept{return mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\nif (std::get_if<1>(&") + result_variable + mlc::String(")) return *std::get_if<1>(&") + result_variable + mlc::String(");\n") + success_line;}
+mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line, mlc::String from_converter_name) noexcept{return from_converter_name.length() > 0 ? mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\nif (std::get_if<1>(&") + result_variable + mlc::String(")) return ") + from_converter_name + mlc::String("(*std::get_if<1>(&") + result_variable + mlc::String("));\n") + success_line : mlc::String("auto ") + result_variable + mlc::String(" = ") + inner_code + mlc::String(";\nif (std::get_if<1>(&") + result_variable + mlc::String(")) return *std::get_if<1>(&") + result_variable + mlc::String(");\n") + success_line;}
 
 mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept{return mlc::String("auto ") + binding_cpp_safe + mlc::String(" = ") + value_code + mlc::String(";\n");}
 

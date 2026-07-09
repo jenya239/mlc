@@ -464,21 +464,27 @@ predicates::DeclResult parse_extend_decl(predicates::Parser parser) noexcept{
 ast::Span type_name_span = predicates::Parser_span_at_cursor(parser);
 mlc::String type_name = predicates::TokenKind_ident(predicates::Parser_kind(parser));
 predicates::Parser state = predicates::Parser_advance(parser);
+if (predicates::TokenKind_is_op(predicates::Parser_kind(state)) && predicates::TokenKind_op_val(predicates::Parser_kind(state)) == mlc::String("<")){
+{
+predicates::TypesResult type_name_arguments_parsed = types::parse_type_args(predicates::Parser_advance(state));
+state = type_name_arguments_parsed.parser;
+}
+}
 mlc::String trait_name = mlc::String("");
 if (predicates::TokenKind_is_colon(predicates::Parser_kind(state))){
 {
 state = predicates::Parser_advance(state);
 if (predicates::TokenKind_is_ident(predicates::Parser_kind(state))){
+{
 trait_name = predicates::TokenKind_ident(predicates::Parser_kind(state));
 state = predicates::Parser_advance(state);
 }
 }
-}
-if (predicates::TokenKind_is_op(predicates::Parser_kind(state)) && predicates::TokenKind_op_val(predicates::Parser_kind(state)) == mlc::String("<")){
-{
+if (trait_name.length() > 0 && predicates::TokenKind_is_op(predicates::Parser_kind(state)) && predicates::TokenKind_op_val(predicates::Parser_kind(state)) == mlc::String("<")){
 predicates::TypesResult trait_type_arguments_parsed = types::parse_type_args(predicates::Parser_advance(state));
 trait_name = trait_name + mlc::String("<") + type_arguments_display(trait_type_arguments_parsed.value) + mlc::String(">");
 state = trait_type_arguments_parsed.parser;
+}
 }
 }
 predicates::Parser methods_state = parser_after_optional_lbrace(state);

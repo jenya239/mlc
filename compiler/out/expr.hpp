@@ -53,7 +53,7 @@ mlc::String expression_operation_statement(mlc::String operation, mlc::String le
 
 mlc::String suffix_semicolon_newline(mlc::String expression_code) noexcept;
 
-mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line) noexcept;
+mlc::String try_unwrap_result_block(mlc::String result_variable, mlc::String inner_code, mlc::String success_line, mlc::String from_converter_name) noexcept;
 
 mlc::String auto_binding_statement(mlc::String binding_cpp_safe, mlc::String value_code) noexcept;
 

@@ -7,6 +7,8 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"
+#include "result_option_method_types.hpp"
+#include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"
@@ -19,6 +21,8 @@ struct SemanticExpression;
 struct SemanticStatement;
 struct CppStatement;
 struct CppExpression;
+
+mlc::String question_from_converter_name(context::CodegenContext context, std::shared_ptr<registry::Type> inner_result_type) noexcept;
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
 

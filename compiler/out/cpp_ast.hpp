@@ -62,7 +62,7 @@ struct CppInvokedWhile {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::Stri
 struct CppInvokedFor {mlc::String field0;std::shared_ptr<cpp_ast::CppExpression> field1;mlc::String field2;};
 struct CppInvokedBlock {mlc::String field0;};
 struct CppInvokedBlockWithReturn {mlc::String field0;mlc::String field1;};
-struct CppQuestionTry {std::shared_ptr<cpp_ast::CppExpression> field0;};
+struct CppQuestionTry {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::String field1;};
 struct CppWithBlock {std::shared_ptr<cpp_ast::CppExpression> field0;mlc::String field1;mlc::String field2;};
 struct CppExpression {std::variant<CppInt, CppStr, CppCharLiteral, CppFloatLiteral, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary, CppTernary, CppLambda, CppMutableLambda, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding, CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock> _;};
 

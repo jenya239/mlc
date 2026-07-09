@@ -196,7 +196,7 @@ mlc::String constexpr_binding_value_code(std::shared_ptr<semantic_ir::SemanticEx
 
 mlc::String eval_try_unwrap(std::shared_ptr<semantic_ir::SemanticExpression> inner_expression, context::CodegenContext context, mlc::String try_identifier, mlc::String success_line, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> gen_expr_fn) noexcept{
 mlc::String inner_code = gen_expr_fn(inner_expression, context);
-return expr::try_unwrap_result_block(try_identifier, inner_code, success_line);
+return expr::try_unwrap_result_block(try_identifier, inner_code, success_line, expression_support::question_from_converter_name(context, semantic_ir::sexpr_type(inner_expression)));
 }
 
 bool empty_unit_block_expression(std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept{return std::visit(overloaded{

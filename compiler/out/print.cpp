@@ -220,7 +220,7 @@ mlc::String invoked_block_expression(mlc::String body_statements) noexcept;
 
 mlc::String invoked_block_with_return_expression(mlc::String return_type, mlc::String body_statements) noexcept;
 
-mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpression> inner) noexcept;
+mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpression> inner, mlc::String from_converter_name) noexcept;
 
 mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpression> resource, mlc::String binder, mlc::String body_statements) noexcept;
 
@@ -573,7 +573,7 @@ mlc::String invoked_block_expression(mlc::String body_statements) noexcept{retur
 
 mlc::String invoked_block_with_return_expression(mlc::String return_type, mlc::String body_statements) noexcept{return mlc::String("[&]() -> ") + return_type + mlc::String(" {\n") + body_statements + mlc::String("}()");}
 
-mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpression> inner) noexcept{return mlc::String("({ auto __q = ") + print_expr(inner) + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");}
+mlc::String question_try_expression(std::shared_ptr<cpp_ast::CppExpression> inner, mlc::String from_converter_name) noexcept{return from_converter_name.length() > 0 ? mlc::String("({ auto __q = ") + print_expr(inner) + mlc::String("; if (std::get_if<1>(&__q)) return ") + from_converter_name + mlc::String("(*std::get_if<1>(&__q)); std::get<0>(__q).field0; })") : mlc::String("({ auto __q = ") + print_expr(inner) + mlc::String("; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })");}
 
 mlc::String with_block_expression(std::shared_ptr<cpp_ast::CppExpression> resource, mlc::String binder, mlc::String body_statements) noexcept{return mlc::String("{\nauto ") + binder + mlc::String(" = (") + print_expr(resource) + mlc::String(");\n") + body_statements + binder + mlc::String(".drop();\n}\n");}
 
@@ -632,7 +632,7 @@ mlc::String print_expr(std::shared_ptr<cpp_ast::CppExpression> expression) noexc
   [&](const CppInvokedFor& cppinvokedfor) -> mlc::String { auto [variable_name, iterator, body_statements] = cppinvokedfor; return invoked_for_expression(variable_name, iterator, body_statements); },
   [&](const CppInvokedBlock& cppinvokedblock) -> mlc::String { auto [body_statements] = cppinvokedblock; return invoked_block_expression(body_statements); },
   [&](const CppInvokedBlockWithReturn& cppinvokedblockwithreturn) -> mlc::String { auto [return_type, body_statements] = cppinvokedblockwithreturn; return invoked_block_with_return_expression(return_type, body_statements); },
-  [&](const CppQuestionTry& cppquestiontry) -> mlc::String { auto [inner] = cppquestiontry; return question_try_expression(inner); },
+  [&](const CppQuestionTry& cppquestiontry) -> mlc::String { auto [inner, from_converter_name] = cppquestiontry; return question_try_expression(inner, from_converter_name); },
   [&](const CppWithBlock& cppwithblock) -> mlc::String { auto [resource, binder, body_statements] = cppwithblock; return with_block_expression(resource, binder, body_statements); }
 }, (*expression)._);}
 

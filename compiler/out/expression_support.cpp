@@ -3,6 +3,8 @@
 #include "ast.hpp"
 #include "semantic_ir.hpp"
 #include "registry.hpp"
+#include "result_option_method_types.hpp"
+#include "semantic_type_structure.hpp"
 #include "context.hpp"
 #include "decl_index.hpp"
 #include "cpp_naming.hpp"
@@ -12,10 +14,16 @@ namespace expression_support {
 using namespace ast;
 using namespace semantic_ir;
 using namespace registry;
+using namespace result_option_method_types;
+using namespace semantic_type_structure;
 using namespace context;
 using namespace decl_index;
 using namespace cpp_naming;
 using namespace ast_tokens;
+
+mlc::String named_or_described_error_type_name(std::shared_ptr<registry::Type> type_value) noexcept;
+
+mlc::String question_from_converter_name(context::CodegenContext context, std::shared_ptr<registry::Type> inner_result_type) noexcept;
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept;
 
@@ -36,6 +44,40 @@ mlc::String cpp_function_name_for_profile_method(mlc::String method_name) noexce
 mlc::String field_access_operator(std::shared_ptr<semantic_ir::SemanticExpression> object, context::CodegenContext context) noexcept;
 
 mlc::String generate_conditional_else_with_empty_array_coercion(std::shared_ptr<semantic_ir::SemanticExpression> then_expression, std::shared_ptr<semantic_ir::SemanticExpression> else_expression, std::shared_ptr<registry::Type> preferred_array_semantic_type, context::CodegenContext context, std::function<mlc::String(std::shared_ptr<semantic_ir::SemanticExpression>, context::CodegenContext)> evaluate_expression) noexcept;
+
+mlc::String named_or_described_error_type_name(std::shared_ptr<registry::Type> type_value) noexcept{return [&]() -> mlc::String { if (std::holds_alternative<registry::TNamed>((*type_value))) { auto _v_tnamed = std::get<registry::TNamed>((*type_value)); auto [name] = _v_tnamed; return name; } return semantic_type_structure::type_description(type_value); }();}
+
+mlc::String question_from_converter_name(context::CodegenContext context, std::shared_ptr<registry::Type> inner_result_type) noexcept{
+if (!result_option_method_types::is_result_generic(inner_result_type)){
+{
+return mlc::String("");
+}
+}
+if (!result_option_method_types::is_result_generic(context.enclosing_function_return_type)){
+{
+return mlc::String("");
+}
+}
+std::shared_ptr<registry::Type> inner_error_type = result_option_method_types::result_err_type(inner_result_type);
+std::shared_ptr<registry::Type> expected_error_type = result_option_method_types::result_err_type(context.enclosing_function_return_type);
+if (semantic_type_structure::type_is_unknown(inner_error_type) || semantic_type_structure::type_is_unknown(expected_error_type)){
+{
+return mlc::String("");
+}
+}
+if (semantic_type_structure::types_structurally_equal(inner_error_type, expected_error_type)){
+{
+return mlc::String("");
+}
+}
+mlc::String expected_error_name = named_or_described_error_type_name(expected_error_type);
+if (expected_error_name.length() == 0){
+{
+return mlc::String("");
+}
+}
+return cpp_naming::cpp_safe(expected_error_name + mlc::String("_from"));
+}
 
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept{
 mlc::String capture = parameters.size() == 0 ? mlc::String("[]") : mlc::String("[=]");

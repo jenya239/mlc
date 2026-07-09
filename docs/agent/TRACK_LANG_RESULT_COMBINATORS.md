@@ -3,22 +3,21 @@
 Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md) #3.
 
-## Status: **open** (STEP=3b done 2026-07-09 — `?` emits `E2_from` on Err mismatch)
+## Status: **closed** (2026-07-09) — STEP=4 verify-gate green
 
-Комбинаторы уже специфицированы в `docs/MLC.md` §A2. Аудит добавляет
-**новую** часть — авто-конверсия ошибки в `?` через `From`.
+Комбинаторы A2 + `?` E085 + `From` skip + codegen `E2_from(...)` shipped.
 
 ### Steps
 
 | Step | Status | Notes |
 |------|--------|-------|
-| 1 | **done** | Inventory: A2 combinators **shipped**; gap is `?` + `From` / E-mismatch |
+| 1 | **done** | Inventory: A2 combinators **shipped**; gap was `?` + `From` / E-mismatch |
 | 2 | **done** | Hard error E085 when `?` Err ≠ enclosing fn Result Err; `CheckContext.expected_return_type` |
 | 3a | **done** | Parser keeps `From<T>` on extend; registry stores full+bare; E085 skipped when `E2: From<E1>` |
 | 3b | **done** | Codegen: `question_from_converter_name` → `CppQuestionTry` / try_unwrap / return_body call `E2_from(...)` |
-| 4 | pending | verify-gate + close |
+| 4 | **done** | verify-gate: build.sh, self-host DIFF_EXIT:0, regression 20/0, build_tests 1454/0; parser Shared\<T\> fix |
 
-**Critic notes (2026-07-09):** extend-method check contexts leave `expected_return_type` as `TUnknown` — `?` inside `extend` methods does not get E085 yet.
+**Critic notes (2026-07-09):** extend-method check contexts leave `expected_return_type` as `TUnknown` — `?` inside `extend` methods does not get E085 yet (known gap, out of scope).
 
 ## Inventory (STEP=1, `compiler/` only)
 
@@ -35,49 +34,23 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §A2. Source:
 **Result:** `map`, `map_err`, `and_then`, `or_else`, `unwrap_or`, `unwrap_or_else`, `ok`  
 **Option:** `map`, `and_then`, `or_else`, `unwrap_or`, `filter`, `ok_or`
 
-Smoke (`mlcc --check-only`, 2026-07-09): TRACK pipeline repro with `.and_then`/`.map`/`.map_err` → exit 0.  
-Unit coverage in `test_checker.mlc`: map ok; negatives for `and_then`/filter; not a full method matrix.
-
-TRACK file list claiming “add Result/Option branches” is **stale** — already present.
-
-### `?` operator — **partial**
+### `?` operator — **done**
 
 | Piece | Status |
 |-------|--------|
 | Parse `ExprQuestion` | yes (`frontend/parser/exprs.mlc`) |
-| Infer unwrap Ok | yes (`infer_question_expression.mlc`) — any `TGeneric`, E068 if not |
+| Infer unwrap Ok | yes (`infer_question_expression.mlc`) |
 | Check E vs enclosing fn return `Result<_,E>` | **done** (E085; skip if From) |
 | Trait `From` / `extend T : From<U>` | **done** (parser `From<T>` key; checker lookup) |
 | Codegen early-return Err | **done** — mismatch → `ExpectedErr_from(*get_if<1>)` |
 
-**Repro gap (confirmed):**
+**STEP=4 self-host fix:** `parse_extend_decl` must consume type-name generics (`Shared<T>`) before trait generics (`From<U>`); otherwise `extend Shared<T>` polluted `trait_name`. Also `empty_diagnostic_list()` — no `return do` early-return (broken mlcc emit).
 
-```mlc
-type Result<T, E> = Ok(T) | Err(E)
-type ParseError = { message: string }
-type AppError = { message: string }
-fn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })
-fn run(s: string) -> Result<i32, AppError> = do
-  let value = parse(s)?   // should fail or From-convert; today check-only exit 0
-  Ok(value)
-end
+## Verify gate (STEP=4, 2026-07-09)
+
 ```
-
-`mlcc --check-only` → exit 0. Emit returns `ParseError` from `Result<i32,AppError>` body — invalid C++ if linked.
-
-## Scope (remaining)
-
-1. ~~Result/Option A2 methods~~ — done (pre-existing).
-2. **`?` + E mismatch:** diagnose when inner `E` ≠ function `E` and no `From`.
-3. **`From` conversion:** `extend E2 : From<E1> { fn from(...) }` + codegen call before return.
-
-Prefer staged commits: (2a) hard error on mismatch → (2b) `From` auto-convert.
-
-## Verify gate
-
-```bash
-scripts/dev_gate_fast.sh   # each turn
-# before close:
-compiler/build.sh
-# self-host p1/mlcc2/p2 + regression_gate + build_tests.sh
+dev_gate_fast 1454/0
+self-host p1/mlcc2/p2 DIFF_EXIT:0
+regression_gate 20/0
+build_tests.sh TESTS_EXIT:0 (1454 passed)
 ```

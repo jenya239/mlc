@@ -10,6 +10,7 @@
 #include "emit_helpers.hpp"
 #include "context.hpp"
 #include "expr.hpp"
+#include "expression_support.hpp"
 #include "eval.hpp"
 #include "stmt_cpp.hpp"
 #include "expr_visitor_cpp.hpp"

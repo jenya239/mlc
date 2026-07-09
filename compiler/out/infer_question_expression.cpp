@@ -27,6 +27,8 @@ mlc::String from_trait_name_for_error_type(std::shared_ptr<registry::Type> inner
 
 bool expected_error_implements_from(registry::TypeRegistry registry, std::shared_ptr<registry::Type> expected_error_type, std::shared_ptr<registry::Type> inner_error_type) noexcept;
 
+mlc::Array<ast::Diagnostic> empty_diagnostic_list() noexcept;
+
 mlc::Array<ast::Diagnostic> question_error_type_mismatch_diagnostics(registry::TypeRegistry registry, std::shared_ptr<registry::Type> inner_result_type, std::shared_ptr<registry::Type> expected_return_type, ast::Span question_span) noexcept;
 
 infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type, registry::TypeRegistry registry) noexcept;
@@ -44,51 +46,12 @@ mlc::String from_trait_name_for_error_type(std::shared_ptr<registry::Type> inner
 
 bool expected_error_implements_from(registry::TypeRegistry registry, std::shared_ptr<registry::Type> expected_error_type, std::shared_ptr<registry::Type> inner_error_type) noexcept{return registry::TypeRegistry_type_implements_trait(registry, named_or_described_type_name(expected_error_type), from_trait_name_for_error_type(inner_error_type));}
 
-mlc::Array<ast::Diagnostic> question_error_type_mismatch_diagnostics(registry::TypeRegistry registry, std::shared_ptr<registry::Type> inner_result_type, std::shared_ptr<registry::Type> expected_return_type, ast::Span question_span) noexcept{
-if (!result_option_method_types::is_result_generic(inner_result_type)){
-{
-return [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> empty = {};
-  return empty;
- }();
+mlc::Array<ast::Diagnostic> empty_diagnostic_list() noexcept{
+mlc::Array<ast::Diagnostic> empty = {};
+return empty;
 }
-}
-if (!result_option_method_types::is_result_generic(expected_return_type)){
-{
-return [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> empty = {};
-  return empty;
- }();
-}
-}
-std::shared_ptr<registry::Type> inner_error_type = result_option_method_types::result_err_type(inner_result_type);
-std::shared_ptr<registry::Type> expected_error_type = result_option_method_types::result_err_type(expected_return_type);
-if (semantic_type_structure::type_is_unknown(inner_error_type) || semantic_type_structure::type_is_unknown(expected_error_type)){
-{
-return [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> empty = {};
-  return empty;
- }();
-}
-}
-if (semantic_type_structure::types_structurally_equal(inner_error_type, expected_error_type)){
-{
-return [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> empty = {};
-  return empty;
- }();
-}
-}
-if (expected_error_implements_from(registry, expected_error_type, inner_error_type)){
-{
-return [&]() -> mlc::Array<ast::Diagnostic> { 
-  mlc::Array<ast::Diagnostic> empty = {};
-  return empty;
- }();
-}
-}
-return mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("? operator error type mismatch: expected ") + semantic_type_structure::type_description(expected_error_type) + mlc::String(", got ") + semantic_type_structure::type_description(inner_error_type), question_span, diagnostic_codes::diagnostic_code_e085())};
-}
+
+mlc::Array<ast::Diagnostic> question_error_type_mismatch_diagnostics(registry::TypeRegistry registry, std::shared_ptr<registry::Type> inner_result_type, std::shared_ptr<registry::Type> expected_return_type, ast::Span question_span) noexcept{return !result_option_method_types::is_result_generic(inner_result_type) ? empty_diagnostic_list() : !result_option_method_types::is_result_generic(expected_return_type) ? empty_diagnostic_list() : semantic_type_structure::type_is_unknown(result_option_method_types::result_err_type(inner_result_type)) || semantic_type_structure::type_is_unknown(result_option_method_types::result_err_type(expected_return_type)) ? empty_diagnostic_list() : semantic_type_structure::types_structurally_equal(result_option_method_types::result_err_type(inner_result_type), result_option_method_types::result_err_type(expected_return_type)) ? empty_diagnostic_list() : expected_error_implements_from(registry, result_option_method_types::result_err_type(expected_return_type), result_option_method_types::result_err_type(inner_result_type)) ? empty_diagnostic_list() : mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("? operator error type mismatch: expected ") + semantic_type_structure::type_description(result_option_method_types::result_err_type(expected_return_type)) + mlc::String(", got ") + semantic_type_structure::type_description(result_option_method_types::result_err_type(inner_result_type)), question_span, diagnostic_codes::diagnostic_code_e085())};}
 
 infer_result::InferResult infer_question_from_inner_result(infer_result::InferResult inner_parsed, ast::Span question_span, std::shared_ptr<registry::Type> expected_return_type, registry::TypeRegistry registry) noexcept{return [&]() -> infer_result::InferResult { if (std::holds_alternative<registry::TGeneric>((*inner_parsed.inferred_type))) { auto _v_tgeneric = std::get<registry::TGeneric>((*inner_parsed.inferred_type)); auto [generic_name, type_arguments] = _v_tgeneric; return [&]() -> infer_result::InferResult { 
   if (generic_name != mlc::String("Result")){
