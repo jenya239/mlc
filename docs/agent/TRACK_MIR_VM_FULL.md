@@ -2,7 +2,7 @@
 
 Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRACK_MIR.md](../archive/tracks/TRACK_MIR.md)
 
-**Status:** open, Epic 0 A–C **done**; Epic 1 STEP=1–3 **done**; STEP=4 next
+**Status:** open, Epic 0 A–C **done**; Epic 1 STEP=1–4 **done**; STEP=5 next
 
 | Step | Item | Status |
 |------|------|--------|
@@ -63,7 +63,7 @@ Each epic ? steps ? gate. Agent picks **one leaf step** per session; no parallel
 | 1 | `VmVariant` typed fields: i32, bool, string (flat, no recursive VmValue in MLC type) | **done** |
 | 2 | Full variant match: guards, `PatternOr` expand (done in lower), nested ctor patterns | **done** |
 | 3 | Records: literal, field access, record patterns in match | **done** |
-| 4 | `Option`/`Result`/`Shared` as variants in VM corpus | diff harness |
+| 4 | `Option`/`Result`/`Shared` as variants in VM corpus | **done** |
 
 ### Epic 2 � Control & functions (STEP 5�7)
 

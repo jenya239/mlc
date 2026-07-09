@@ -1,0 +1,5 @@
+type Box = { value: i32 }
+fn main() -> i32 = do
+  const shared = Shared.new(Box { value: 7 })
+  shared.value
+end

@@ -1,0 +1,8 @@
+type Option = Some(i32) | None
+
+fn unwrap_option(value: Option) -> i32 = match value {
+  Some(x) => x
+  None => 0
+}
+
+fn main() -> i32 = unwrap_option(Some(7))

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 3 |
-| active_track | TRACK_MIR_VM_FULL Epic 1 STEP=4 |
-| test_gate | ok (record=7 match=7; vm_cpp_diff 4/0) |
+| driver_turns_since_plan | 11 |
+| step_last | 4 |
+| active_track | TRACK_MIR_VM_FULL Epic 2 STEP=5 |
+| test_gate | ok (opt/res/shared=7; vm_cpp_diff 7/0) |
+
+### Turn 2026-07-09 22:50 (Driver TRACK_MIR_VM_FULL STEP=4 — Option/Result/Shared corpus)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_MIR_VM_FULL |
+| started | 2026-07-09 22:39 |
+| elapsed | ~11 min |
+| done    | `Shared.new` → `__mir_shared_new` (identity); fixtures vm_option/result/shared; smoke + diff manifest. |
+| verify  | `--run` all=7; dump `__mir_variant_new`/`__mir_shared_new`; `run_vm_cpp_exit_diff` 7/0. |
+| result  | STEP=4 done. Plain: Option/Result/Shared in VM corpus. |
+| issues  | Shared is value-copy (no refcount). Diff fixtures use helper+param (C++ visit on ctor temp gap). Dirty `compiler/out/mlcc` left. |
+| next    | ROLE=Driver STEP=5 TRACK_MIR_VM_FULL — closures / lambda calling convention |
 
 ### Turn 2026-07-09 22:40 (Driver TRACK_MIR_VM_FULL STEP=3 — records)
 

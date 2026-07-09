@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_MIR_VM_FULL** Epic 1 STEP=4 — Option/Result/Shared as variants in VM corpus
-(STEP=3 done: VmRecord + record field/match).
+**TRACK_MIR_VM_FULL** Epic 2 STEP=5 — closures / lambda calling convention
+(STEP=4 done: Option/Result corpus + Shared.new → `__mir_shared_new`).
 
 ## Step sizing (good vs bad)
 

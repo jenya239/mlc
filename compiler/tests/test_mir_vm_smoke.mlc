@@ -144,5 +144,26 @@ export fn mir_vm_smoke_tests() -> [TestResult] = do
     Err(_) => results.push(assert_true('vm smoke record match exit', false))
   }
 
+  match vm_smoke_interpret(
+    'type Option = Some(i32) | None\nfn main() -> i32 = match Some(7) {\n  Some(x) => x\n  None => 0\n}',
+    'vm_option.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke option exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke option exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Result = Ok(i32) | Err(i32)\nfn main() -> i32 = match Ok(7) {\n  Ok(x) => x\n  Err(_) => 0\n}',
+    'vm_result.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke result exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke result exit', false))
+  }
+
+  match vm_smoke_interpret(
+    'type Box = { value: i32 }\nfn main() -> i32 = do\n  const shared = Shared.new(Box { value: 7 })\n  shared.value\nend',
+    'vm_shared.mlc') {
+    Ok(code) => results.push(assert_eq_int('vm smoke shared exit', code, 7)),
+    Err(_) => results.push(assert_true('vm smoke shared exit', false))
+  }
+
   results
 end

@@ -228,6 +228,29 @@ fn mir_lower_map_new_local(state: MirLowerState) -> Result<MirLowerLocalStep, [s
   })
 end
 
+fn mir_lower_shared_new_to_local(
+  state: MirLowerState,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> =
+  if arguments.length() != 1 then
+    Err(['mir lower: Shared.new expects 1 argument'])
+  else
+    match mir_lower_operand_from_expression(state, arguments[0]) {
+      Err(errors) => Err(errors),
+      Ok(argument_step) => do
+        const local_step = mir_lower_allocate_local(argument_step.state, '', mir_lower_unknown_type())
+        Ok(MirLowerLocalStep {
+          state: mir_lower_emit_call_assign(
+            local_step.state,
+            local_step.local_id,
+            '__mir_shared_new',
+            [argument_step.operand]),
+          local_id: local_step.local_id
+        })
+      end
+    }
+  end
+
 fn mir_lower_method_to_local(
   state: MirLowerState,
   object: Shared<SemanticExpression>,
@@ -238,6 +261,8 @@ fn mir_lower_method_to_local(
     SemanticExpressionIdent(type_name, _, _) =>
       if type_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
         mir_lower_map_new_local(state)
+      else if type_name == 'Shared' && method_name == 'new' then
+        mir_lower_shared_new_to_local(state, arguments)
       else
         mir_lower_method_call_on_operand(state, object, method_name, arguments)
       end,
