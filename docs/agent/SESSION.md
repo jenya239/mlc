@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_VALIDATION closed (Critic OK) |
-| test_gate | gate re-OK 12/0+1/10; reopen none |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=1 |
+| test_gate | docs-only Planner; no code gate |
+
+### Turn 2026-07-11 02:24 (Planner — activate TRACK_TEXT_RENDERING_NATIVE)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 02:21 |
+| elapsed | ~3 min |
+| done    | Activated existing track (no new file): status **active** STEP=1; PLAN §10a/§11 + queue; DEVELOPMENT; STEP=1 sub-steps comment. STDLIB §5 done → GUI/text window next. |
+| verify  | Track STEP=1 pending; PLAN links `agent/TRACK_TEXT_RENDERING_NATIVE.md` as active; Decision draft present for Driver lock. |
+| result  | Track activated. Plain: next Driver = GLFW/MLC Decision. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_RENDERING_NATIVE — lock Decision (GLFW, GL set, MLC architecture) |
 
 ### Turn 2026-07-11 02:20 (Critic TRACK_STDLIB_VALIDATION — critique-audit)
 
