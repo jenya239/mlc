@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_CRYPTO` open** — STEP=3 (`lib/mlc/common/stdlib/crypto/crypto.mlc`).
+**`TRACK_STDLIB_CRYPTO` open** — STEP=4 (gate script / known-answer vectors).
 See [TRACK_STDLIB_CRYPTO.md](TRACK_STDLIB_CRYPTO.md).
 
 

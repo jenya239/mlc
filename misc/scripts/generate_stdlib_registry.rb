@@ -90,7 +90,8 @@ registry_content += <<~RUBY
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
         "Tcp" => "std/net/tcp",
-        "Postgres" => "std/db/postgres"
+        "Postgres" => "std/db/postgres",
+        "Crypto" => "std/crypto/crypto"
       }.freeze
 
       def self.module_info(module_name)

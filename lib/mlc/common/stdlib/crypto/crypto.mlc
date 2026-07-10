@@ -1,0 +1,16 @@
+//! @module std/crypto/crypto
+//! @category crypto
+//! @type extern
+//! @namespace mlc::crypto
+
+# libsodium crypto (TRACK_STDLIB_CRYPTO). Digests/random as lowercase hex.
+# Errors: None / false + last_error() — Postgres/Tcp pattern.
+
+module Crypto
+
+export extern fn sha256(data: string) -> string
+export extern fn hmac_sha256(key: string, data: string) -> string
+export extern fn random_bytes(count: i32) -> Option<string>
+export extern fn pwhash(password: string) -> Option<string>
+export extern fn pwhash_verify(hashed: string, password: string) -> bool
+export extern fn last_error() -> string

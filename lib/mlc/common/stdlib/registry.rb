@@ -74,6 +74,12 @@ module MLC
           namespace: "mlc::db",
           path: "db/postgres.mlc"
         },
+        "std/crypto/crypto" => {
+          category: "crypto",
+          type: :extern,
+          namespace: "mlc::crypto",
+          path: "crypto/crypto.mlc"
+        },
         "std/text/conv" => {
           category: "text",
           type: :extern,
@@ -102,7 +108,8 @@ module MLC
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
         "Tcp" => "std/net/tcp",
-        "Postgres" => "std/db/postgres"
+        "Postgres" => "std/db/postgres",
+        "Crypto" => "std/crypto/crypto"
       }.freeze
 
       def self.module_info(module_name)

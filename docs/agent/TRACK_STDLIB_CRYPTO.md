@@ -6,7 +6,7 @@ Trigger: Postgres **closed**; auth/backend needs hash/HMAC/password primitives.
 STDLIB_BACKEND prefers **libsodium** over OpenSSL (simpler C API, less global
 state).
 
-## Status: **open** — STEP=3 next (`crypto.mlc` stdlib)
+## Status: **open** — STEP=4 next (gate script)
 
 **Planner 2026-07-10:** opened after closed STDLIB_POSTGRES Critic. Pipeline
 (Decision C / Tcp+Postgres pattern): MLC via Ruby `common/stdlib`; runtime

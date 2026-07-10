@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_CRYPTO open STEP=3 |
-| test_gate | ok (crypto smoke 9/0) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_CRYPTO open STEP=4 |
+| test_gate | ok (crypto_stdlib_test 1/14) |
+
+### Turn 2026-07-10 20:25 (Driver TRACK_STDLIB_CRYPTO STEP=3 — crypto.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_CRYPTO |
+| started | 2026-07-10 19:58 |
+| elapsed | ~8 min |
+| done    | `lib/mlc/common/stdlib/crypto/crypto.mlc`; registry+alias; codegen `sodium_bridge.hpp`; header_generator; `test/mlc/crypto_stdlib_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/crypto_stdlib_test.rb` → 1 run / 14 assertions. |
+| result  | STEP=3 done. Plain: MLC can import Crypto::* → `mlc::crypto::*`. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_CRYPTO — `scripts/run_crypto_gate.sh` |
 
 ### Turn 2026-07-10 20:22 (Driver TRACK_STDLIB_CRYPTO STEP=2 — sodium.hpp)
 
