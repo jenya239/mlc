@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=2 (named-module resolve in mlcc).
-Max priority over WEBSOCKET (CONTINUITY hard limit). Decision **A**.
+**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=3 (Tcp smoke via mlcc, no spawn).
+Max priority over WEBSOCKET (CONTINUITY hard limit). Decision **A**; bare resolve done.
 See [TRACK_PIPELINE_MERGE_TCP_SPAWN.md](TRACK_PIPELINE_MERGE_TCP_SPAWN.md).
 
 Paused: `TRACK_STDLIB_WEBSOCKET` STEP=2 until merge track closes.

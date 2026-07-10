@@ -72,7 +72,64 @@ mlc::String resolve_dotdot(mlc::String path) noexcept{
   }
   return remaining_path;
 }
+bool import_path_contains_slash(mlc::String import_path) noexcept{
+  auto index = 0;
+  while ((index < import_path.length()))   {
+    if ((import_path.char_at(index) == mlc::String("/", 1)))     {
+      return true;
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return false;
+}
+bool is_bare_module_import_name(mlc::String import_path) noexcept{
+  return (((import_path.length() > 0) && (import_path.char_at(0) != mlc::String(".", 1))) && (!import_path_contains_slash(import_path)));
+}
+mlc::String stdlib_module_relative_path(mlc::String module_name) noexcept{
+  if ((module_name == mlc::String("Tcp", 3)))   {
+    return mlc::String("net/tcp.mlc", 11);
+  } else   {
+    return mlc::String("", 0);
+  }
+}
+mlc::String parent_directory(mlc::String path) noexcept{
+  if (((path == mlc::String("", 0)) || (path == mlc::String(".", 1))))   {
+    return mlc::String("", 0);
+  } else   {
+    auto directory = dirname(path);
+    if ((directory != mlc::String("", 0)))     {
+      return directory;
+    } else     {
+      return mlc::String(".", 1);
+    }
+  }
+}
+mlc::String find_stdlib_root(mlc::String from_path) noexcept{
+  auto directory = dirname(from_path);
+  if ((directory == mlc::String("", 0)))   {
+    (directory = mlc::String(".", 1));
+  }
+  auto attempts = 0;
+  while (((attempts < 48) && (directory != mlc::String("", 0))))   {
+    auto candidate_root = ((directory == mlc::String(".", 1)) ? (mlc::String("lib/mlc/common/stdlib", 21)) : (((mlc::String("", 0) + mlc::to_string(directory)) + mlc::String("/lib/mlc/common/stdlib", 22))));
+    if (mlc::file::exists(((mlc::String("", 0) + mlc::to_string(candidate_root)) + mlc::String("/net/tcp.mlc", 12))))     {
+      return candidate_root;
+    }
+    (directory = parent_directory(directory));
+    (attempts = mlc::arith::checked_add(attempts, 1));
+  }
+  return mlc::String("", 0);
+}
 mlc::String resolve_import_path(mlc::String base_path, mlc::String import_path) noexcept{
+  if (is_bare_module_import_name(import_path))   {
+    auto relative_path = stdlib_module_relative_path(import_path);
+    if ((relative_path != mlc::String("", 0)))     {
+      auto stdlib_root = find_stdlib_root(base_path);
+      if ((stdlib_root != mlc::String("", 0)))       {
+        return resolve_dotdot(((((mlc::String("", 0) + mlc::to_string(stdlib_root)) + mlc::String("/", 1)) + mlc::to_string(relative_path)) + mlc::String("", 0)));
+      }
+    }
+  }
   auto base_dir = dirname(base_path);
   auto rest = (((import_path.length() >= 2) && (import_path.substring(0, 2) == mlc::String("./", 2))) ? (import_path.substring(2, mlc::arith::checked_sub(import_path.length(), 2))) : (import_path));
   auto with_extension = (header_import::is_cpp_header_path(rest) ? (rest) : ((((rest.length() >= 4) && (rest.substring(mlc::arith::checked_sub(rest.length(), 4), 4) == mlc::String(".mlc", 4))) ? (rest) : (((mlc::String("", 0) + mlc::to_string(rest)) + mlc::String(".mlc", 4))))));

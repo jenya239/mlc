@@ -68,7 +68,55 @@ export fn resolve_dotdot(path: string) -> string = do
   remaining_path
 end
 
+fn import_path_contains_slash(import_path: string) -> bool = do
+  let mut index = 0
+  while index < import_path.length() do
+    if import_path.char_at(index) == "/" then return true end
+    index = index + 1
+  end
+  false
+end
+
+fn is_bare_module_import_name(import_path: string) -> bool =
+  import_path.length() > 0
+  && import_path.char_at(0) != "."
+  && !import_path_contains_slash(import_path)
+
+fn stdlib_module_relative_path(module_name: string) -> string =
+  if module_name == "Tcp" then "net/tcp.mlc" else "" end
+
+fn parent_directory(path: string) -> string = do
+  if path == "" || path == "." then
+    ""
+  else
+    const directory = dirname(path)
+    if directory != "" then directory else "." end
+  end
+end
+
+fn find_stdlib_root(from_path: string) -> string = do
+  let mut directory = dirname(from_path)
+  if directory == "" then directory = "." end
+  let mut attempts = 0
+  while attempts < 48 && directory != "" do
+    const candidate_root = if directory == "." then "lib/mlc/common/stdlib" else `${directory}/lib/mlc/common/stdlib` end
+    if File.exists(`${candidate_root}/net/tcp.mlc`) then return candidate_root end
+    directory = parent_directory(directory)
+    attempts = attempts + 1
+  end
+  ""
+end
+
 export fn resolve_import_path(base_path: string, import_path: string) -> string = do
+  if is_bare_module_import_name(import_path) then
+    const relative_path = stdlib_module_relative_path(import_path)
+    if relative_path != "" then
+      const stdlib_root = find_stdlib_root(base_path)
+      if stdlib_root != "" then
+        return resolve_dotdot(`${stdlib_root}/${relative_path}`)
+      end
+    end
+  end
   const base_dir = dirname(base_path)
   const rest = if import_path.length() >= 2 && import_path.substring(0, 2) == './'
     then import_path.substring(2, import_path.length() - 2)

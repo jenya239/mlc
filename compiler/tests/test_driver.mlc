@@ -1,5 +1,5 @@
-import { TestResult, assert_true } from './test_runner'
-import { driver_source_path_is_safe } from '../driver/path_normalize'
+import { TestResult, assert_true, assert_eq_str } from './test_runner'
+import { driver_source_path_is_safe, resolve_import_path } from '../driver/path_normalize'
 import { compile_modular } from '../driver/compile_driver'
 
 export fn driver_tests() -> [TestResult] = do
@@ -8,6 +8,17 @@ export fn driver_tests() -> [TestResult] = do
   results.push(assert_true('driver_source_path_is_safe accepts entry.mlc', driver_source_path_is_safe('entry.mlc')))
   results.push(assert_true('driver_source_path_is_safe rejects parent segment', !driver_source_path_is_safe('../entry.mlc')))
   results.push(assert_true('driver_source_path_is_safe rejects semicolon', !driver_source_path_is_safe('foo;bar.mlc')))
+
+  results.push(assert_eq_str(
+    'resolve_import_path bare Tcp to stdlib net/tcp.mlc',
+    resolve_import_path('tmp/probe.mlc', 'Tcp'),
+    'lib/mlc/common/stdlib/net/tcp.mlc'
+  ))
+  results.push(assert_eq_str(
+    'resolve_import_path relative ./foo unchanged',
+    resolve_import_path('tmp/probe.mlc', './foo'),
+    'tmp/foo.mlc'
+  ))
 
   const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false, false, false, false, false)
   results.push(assert_true('compile_modular rejects unsafe entry path',
