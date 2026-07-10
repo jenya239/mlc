@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=1 |
-| test_gate | docs-only Planner; no code gate |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=2 |
+| test_gate | docs-only Decision; no code gate |
+
+### Turn 2026-07-11 02:28 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 02:25 |
+| elapsed | ~4 min |
+| done    | Locked Decision: GLFW; GLFW fn list; thin GL dispatch via glfwGetProcAddress (not TextRenderer in C++); locked GL set from shim; FBO/readPixels deferred; GLFW optional CI; headless golden kept. PLAN/DEVELOPMENT → STEP=2. |
+| verify  | TRACK Decision section marked locked; Open Qs resolved; STEP=1 done, STEP=2 pending. |
+| result  | STEP=1 done. Plain: GLFW + MLC scene, thin GL loader only. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; absorbed Planner leftover PLAN/TRACK dirty. |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_RENDERING_NATIVE — GLFW window + empty clear/poll/swap loop |
 
 ### Turn 2026-07-11 02:24 (Planner — activate TRACK_TEXT_RENDERING_NATIVE)
 

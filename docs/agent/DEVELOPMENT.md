@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=1 — Decision (GLFW + MLC GL).
+**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=2 — GLFW window + empty loop.
 See [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
-STDLIB_VALIDATION closed (archive).
 
 
 ## Step sizing (good vs bad)
