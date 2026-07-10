@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-09-mir-vm-gate` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-10-vm-block-id-gate` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-09-plan-sync
+INSTRUCTIONS_REV=2026-07-10-vm-block-id-gate
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -54,7 +54,7 @@ INSTRUCTIONS_REV=2026-07-09-plan-sync
 | SESSION.md > **~600 строк** | Архивировать старые turn's в `SESSION_HISTORY.md` **в этом же turn** до записи новой строки — не ждать Cleaner-ротацию (инцидент 2026-07-09: доросло до 928 без вмешательства между Cleaner-турнами) |
 | TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
 | **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
-| **Открыт `TRACK_VM_TRAMPOLINE` (критический, PLAN.md §13a) и ещё не closed** | Не продолжать `TEXT_RENDERING`/другой in-progress трек по инерции "Planner не повторяется" — этот критический трек **переопределяет** это правило один раз: если сейчас Driver и следующий `next` вёл бы в другой трек, вместо этого взять `TRACK_VM_TRAMPOLINE STEP=1` первым же следующим Driver turn |
+| **Открыт `TRACK_VM_BLOCK_ID_COLLISION` (критический, PLAN.md §13a-2) и ещё не closed** | Не продолжать `TEXT_RENDERING`/`CLI_STDIN`/другой in-progress трек по инерции — этот критический трек **переопределяет** обычный порядок очереди один раз: если сейчас Driver и следующий `next` вёл бы в другой трек, вместо этого взять `TRACK_VM_BLOCK_ID_COLLISION STEP=1` первым же следующим Driver turn. Root cause и однострочный фикс уже описаны в самом треке (`compiler/mir/lower_fn.mlc:780`), не нужно расследование с нуля |
 
 ## When to stop (only these)
 
