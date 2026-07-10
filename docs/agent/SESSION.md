@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 1 |
-| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=2 |
-| test_gate | ok (dump-mir unique 0–4; classify(0/1/5)→100/200/44) |
+| driver_turns_since_plan | 11 |
+| step_last | 2 |
+| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=3 |
+| test_gate | ok (elif gate classify0/1/5 → 100/200/44) |
+
+### Turn 2026-07-10 14:05 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=2 — classify fixture)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_VM_BLOCK_ID_COLLISION |
+| started | 2026-07-10 13:56 |
+| elapsed | ~9 min |
+| done    | `misc/examples/vm_elif_classify_{0,1,5}.mlc`; `compiler/tests/run_vm_elif_block_id_gate.sh` (timeout 5s). |
+| verify  | gate ok: classify0=100, classify1=200, classify5=44. |
+| result  | STEP=2 done. Plain: elif hang class permanently gated. |
+| issues  | Foreign CLI_STDIN WIP + dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_VM_BLOCK_ID_COLLISION — deeper nesting (elif×5+, if-in-then) |
 
 ### Turn 2026-07-10 14:00 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=1 — else_block_step.state)
 
