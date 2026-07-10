@@ -6,7 +6,7 @@ Trigger: ENV_LOGGING **closed** (Critic OK); STDLIB_BACKEND §5 next is
 Validation — **blocked on philosophy** (§3 / §5.7): compile-time vs runtime
 schema must be locked before implementation.
 
-## Status: **open** — STEP=4 next (gate)
+## Status: **open** — STEP=5 next (docs+close)
 
 **Planner 2026-07-11:** opened after ENV_LOGGING Critic. Chose Validation over
 jumping to TEXT_RENDERING_NATIVE (already open, medium/personal priority) to
@@ -21,6 +21,8 @@ C++ implements (Env pattern).
 
 **Driver 2026-07-11:** STEP=3 — registry + LEGACY_ALIASES + header_generator;
 `validate_stdlib_test` 1/10.
+
+**Driver 2026-07-11:** STEP=4 — `run_validate_gate.sh` (smoke 12/0 + stdlib 1/10).
 
 ## Goal
 
@@ -104,8 +106,8 @@ Validate.range_i32(value: i32, minimum: i32, maximum: i32) -> Result<(), string>
 |------|------|--------|
 | 1 | Philosophy Decision. | **done** |
 | 2 | Runtime `validate.hpp` + extern `validate.mlc` (+ C++ smoke). | **done** (2026-07-11: smoke 12/0; codegen include) |
-| 3 | Registry/aliases + stdlib test (codegen/import). | **pending** |
-| 4 | Gate: script — valid/invalid fixtures assert. | pending |
+| 3 | Registry/aliases + stdlib test (codegen/import). | **done** (2026-07-11: registry; test 1/10) |
+| 4 | Gate: script — valid/invalid fixtures assert. | **done** (2026-07-11: `run_validate_gate.sh` — smoke 12/0 + stdlib 1/10) |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
 
 <!-- sub-steps STEP=2: 1) validate.hpp; 2) extern mlc; 3) smoke -->

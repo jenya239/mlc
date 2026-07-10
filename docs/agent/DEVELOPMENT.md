@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` open** STEP=4 — gate script.
+**`TRACK_STDLIB_VALIDATION` open** STEP=5 — docs + example + close.
 See [TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
 
 

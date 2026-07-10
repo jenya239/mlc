@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_VALIDATION STEP=4 |
-| test_gate | `validate_stdlib_test` 1/10 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_VALIDATION STEP=5 |
+| test_gate | `run_validate_gate.sh` smoke 12/0 + stdlib 1/10 |
+
+### Turn 2026-07-11 02:12 (Driver TRACK_STDLIB_VALIDATION STEP=4 — gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 02:09 |
+| elapsed | ~3 min |
+| done    | `scripts/run_validate_gate.sh` (runtime smoke valid/invalid + `validate_stdlib_test`). PLAN/STDLIB/DEVELOPMENT → STEP=5. |
+| verify  | `bash scripts/run_validate_gate.sh` → smoke 12/0 + stdlib 1/10. |
+| result  | STEP=4 done. Plain: Validate gate green. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; absorbed STEP=3 leftover PLAN/STDLIB sync. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_VALIDATION — docs + example + close → Critic |
 
 ### Turn 2026-07-11 02:05 (Driver TRACK_STDLIB_VALIDATION STEP=3 — registry)
 
