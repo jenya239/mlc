@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 33 |
-| step_last | 1 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=2 |
-| test_gate | ok (design-only) |
+| driver_turns_since_plan | 34 |
+| step_last | 2 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=3 |
+| test_gate | ok (docs-only) |
+
+### Turn 2026-07-10 18:05 (Driver TRACK_LANG_INT_OVERFLOW STEP=2 — MLC.md)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 15:51 |
+| elapsed | ~5 min |
+| done    | `MLC.md` C4 subsection «Целочисленная арифметика: переполнение и деление на 0» — signed/unsigned/`/` `%` table; TRACK/PLAN synced. |
+| verify  | Section present under C4; STEP=2 marked done in TRACK. |
+| result  | STEP=2 done. Plain: overflow semantics documented in language spec. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_INT_OVERFLOW — codegen debug panic + div0 |
 
 ### Turn 2026-07-10 18:00 (Driver TRACK_LANG_INT_OVERFLOW STEP=1 — design)
 

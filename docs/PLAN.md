@@ -394,7 +394,7 @@ compiler/
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
 | **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
-| **16** Integer overflow semantics | **open** | [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) — STEP=1 **done** (signed debug-panic / release-UB; unsigned wrap; div0 panic); STEP=2 next (`MLC.md`) |
+| **16** Integer overflow semantics | **open** | [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) — STEP=1–2 **done** (`MLC.md` C4); STEP=3 next (codegen) |
 | **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
 | **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
@@ -461,7 +461,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     не начинать реализацию, максимум — отдельный design-turn)
   → **LANG_INT_OVERFLOW STEP=1 (**done** 2026-07-10: signed debug-panic/release-UB;
       unsigned wrap; div0 panic);
-    STEP=2 (**next** — document in `MLC.md`)
+    STEP=2 (**done** 2026-07-10: `MLC.md` C4 integer arithmetic section);
+    STEP=3 (**next** — codegen debug panic + div0)
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее

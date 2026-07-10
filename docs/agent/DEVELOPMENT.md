@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=2 — document overflow/`/` semantics in `MLC.md`.
-(STEP=1 done: signed debug-panic / release-UB; unsigned wrap; div0 panic.)
+**TRACK_LANG_INT_OVERFLOW** STEP=3 — codegen: signed debug overflow panic +
+div0 panic; unsigned wrap unchanged.
+(STEP=2 done: `MLC.md` C4 integer arithmetic.)
 
 ## Step sizing (good vs bad)
 
