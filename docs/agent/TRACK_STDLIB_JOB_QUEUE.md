@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: WEBSOCKET **closed**; STDLIB_BACKEND §5 next is job queue/scheduler
 over existing `ThreadPool`/`Channel` (no new FFI).
 
-## Status: **open** — STEP=3 next (document C++-only / skip MLC)
+## Status: **open** — STEP=4 next (gate)
 
 **Planner 2026-07-11:** opened after closed STDLIB_WEBSOCKET Critic. Chose
 job-queue over env/config+logging (§5 order: item 5 before filler item 6).
@@ -15,6 +15,7 @@ under mlcc). Ruby pipeline still has no `spawn`/`Channel` builtins.
 
 **Driver 2026-07-11:** STEP=1 — Decision locked (see below).
 **Driver 2026-07-11:** STEP=2 — `job_queue.hpp` + smoke (enqueue/delay/retry).
+**Driver 2026-07-11:** STEP=3 — C++-only documented; no MLC registry.
 
 ## Decision (STEP=1, 2026-07-11)
 
@@ -54,9 +55,8 @@ in worker wrapper, count as failure for retry; do **not** `std::terminate`.
 ### Delay
 
 - **`schedule_after(delay_ms, callable)` in v1** (track name includes scheduler).
-- Implementation sketch for STEP=2: dedicated timer thread + min-heap of due
-  times, or `enqueue` of a wrapper that `sleep`s then runs (simpler, OK for
-  smoke; document if chosen). Prefer timer thread if cheap.
+- Implementation: **timer thread** + min-heap of due times (STEP=2); does not
+  sleep on pool workers.
 
 ### Completion / error model
 
@@ -95,7 +95,7 @@ a distributed broker (Redis/Sidekiq out of scope).
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design: API (`enqueue` / `schedule_after` / `shutdown`); sync vs async completion; retry policy; MLC module vs C++-only; which pipeline (Ruby+C++ runtime vs mlcc `spawn`). Document in «Decision». | **done** (2026-07-11: C++ JobQueue on ThreadPool; MLC deferred; wait_idle; fixed retry; schedule_after) |
-| 2 | Runtime: `job_queue.hpp` + C++ smoke (N jobs complete; delay; shutdown). | pending |
+| 2 | Runtime: `job_queue.hpp` + C++ smoke (N jobs complete; delay; shutdown). | **done** (2026-07-11: timer thread; retry; `run_job_queue_runtime_smoke.sh` 50/0) |
 | 3 | Stdlib: **skip MLC** per Decision — document C++-only in STDLIB/MLC notes (or no-op if docs wait for STEP=5). | pending |
 | 4 | Gate: script — enqueue N jobs, assert all run; `schedule_after` smoke; shutdown clean. | pending |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |

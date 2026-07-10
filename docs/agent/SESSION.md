@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_JOB_QUEUE STEP=3 |
-| test_gate | job_queue runtime smoke 50/0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_JOB_QUEUE STEP=4 |
+| test_gate | docs STEP=3; smoke still 50/0 from STEP=2 |
+
+### Turn 2026-07-11 00:48 (Driver TRACK_STDLIB_JOB_QUEUE STEP=3 — C++-only docs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:42 |
+| elapsed | ~5 min |
+| done    | Documented C++-only: STDLIB §1 Job queue row + concurrency/`JobQueue` notes; §4 diagram; MLC.md JobQueue §; confirmed no `std/`/`registry` entry. PLAN → STEP=4. |
+| verify  | `rg JobQueue lib/mlc/common/stdlib` empty; TRACK STEP=3 done. |
+| result  | STEP=3 done. Plain: no MLC JobQueue module in v1. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_JOB_QUEUE — `run_job_queue_gate.sh` |
 
 ### Turn 2026-07-11 00:45 (Driver TRACK_STDLIB_JOB_QUEUE STEP=2 — job_queue.hpp)
 
