@@ -2,14 +2,13 @@
 
 Parent: [../PLAN.md](../PLAN.md), [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md).
 Found while writing example scripts for `mlcc --run` 2026-07-10. Distinct
-from [TRACK_VM_BLOCK_ID_COLLISION](TRACK_VM_BLOCK_ID_COLLISION.md) (that one
+From [TRACK_VM_BLOCK_ID_COLLISION](../archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) (that one
 is a correctness bug producing wrong CFG; these two are missing coverage —
 compile-time error, not silent wrong behaviour, lower severity).
 
 ## Status: **open, высокий приоритет** (блокирует обычные языковые
-конструкции в VM, но не корректность/hang) — рекомендуется после
-`TRACK_VM_BLOCK_ID_COLLISION` (критичнее), можно параллельно с
-`TRACK_CLI_STDIN`.
+конструкции в VM, но не корректность/hang) — после closed
+`TRACK_VM_BLOCK_ID_COLLISION`; можно параллельно с `TRACK_CLI_STDIN`.
 
 ## Gap 1 — унарные операторы не lowering'уются
 

@@ -12,18 +12,14 @@ Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRAC
 2026-07-10 (trampoline host loop; depth gate 100k; self-host diff identical;
 `regression_gate` 20/0). Epic 5 remains **NOT authorized**.
 
-**Second correctness bug found 2026-07-10 (while writing example scripts):**
-[TRACK_VM_BLOCK_ID_COLLISION](TRACK_VM_BLOCK_ID_COLLISION.md) — **критический
-приоритет, разбирать первым**. `mir_lower_return_expression` (nested `if`,
-`compiler/mir/lower_fn.mlc:773-791`) теряет счётчик block-id при вложенном
-`if` внутри ветки (elif-цепочка от 3 ветвей) — два блока получают
-одинаковый id, `vm_find_block` резолвит на неправильный, VM зависает в
-бесконечном цикле. Root cause найден и подтверждён через `--dump-mir`,
-фикс — одна строка, не закоммичен. Плюс два меньших пробела lowering'а
-(unary операторы, `if` не в tail-позиции) —
-[TRACK_VM_LOWERING_GAPS](TRACK_VM_LOWERING_GAPS.md), высокий приоритет,
-после block-id фикса. Corpus этого не поймал — все существующие фикстуры
-используют только двухветочные `if`/`else`, elif-цепочки не покрыты.
+**Second correctness bug (2026-07-10, closed):**
+[TRACK_VM_BLOCK_ID_COLLISION](../archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md)
+— nested `if`/elif in `mir_lower_return_expression` reused MIR block ids
+(`then_block_step.state` instead of `else_block_step.state`); VM hung on the
+second elif arm. **Fixed** 2026-07-10 (one-line; classify/deep-nesting gates;
+corpus green; self-host diff identical; `regression_gate` 20/0). Remaining
+lowering gaps (unary, non-tail `if`):
+[TRACK_VM_LOWERING_GAPS](TRACK_VM_LOWERING_GAPS.md).
 
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —

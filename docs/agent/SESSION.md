@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 13 |
-| step_last | 4 |
-| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=5 |
-| test_gate | ok (elif6; depth; examples28; single18+cpp_diff18) |
+| driver_turns_since_plan | 14 |
+| step_last | 5 |
+| active_track | TRACK_VM_LOWERING_GAPS STEP=1 |
+| test_gate | ok (self-host DIFF identical; regression_gate 20/0) |
+
+### Turn 2026-07-10 14:25 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=5 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_VM_BLOCK_ID_COLLISION |
+| started | 2026-07-10 14:06 |
+| elapsed | ~19 min |
+| done    | Self-host p1→mlcc2→p2; `regression_gate.sh`; archive track; MIR_VM_FULL note; PLAN 13a-2 done. |
+| verify  | DIFF:IDENTICAL (p1=7.45s, link=456.85s, p2=5.77s); regression_gate 20/0 (303s). |
+| result  | STEP=5 done; track **closed**. Plain: nested elif no longer hangs VM; self-host still bit-identical. |
+| issues  | Foreign CLI_STDIN WIP stashed/restored. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_VM_LOWERING_GAPS — lower unary `!`/`-` in MIR |
 
 ### Turn 2026-07-10 14:15 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=4 — VM corpus)
 

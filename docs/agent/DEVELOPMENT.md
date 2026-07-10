@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_BLOCK_ID_COLLISION** STEP=5 — verify-gate + close (self-host diff, regression_gate; note MIR_VM_FULL).
-(STEP=1–4 done: fix; fixtures; corpus elif6/depth/examples28/single18+diff18.)
+**TRACK_VM_LOWERING_GAPS** STEP=1 — lower unary `!`/`-` in MIR (`SemanticExpressionUn`).
+(VM_BLOCK_ID_COLLISION **closed** 2026-07-10: self-host identical; regression_gate 20/0.)
 
 ## Step sizing (good vs bad)
 
