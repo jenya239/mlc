@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` open** STEP=3 — `websocket.mlc` + registry/bridge.
-Runtime STEP=2 done (`websocket.hpp`, smoke 19/0).
+**`TRACK_STDLIB_WEBSOCKET` open** STEP=4 — upgrade + text echo gate.
+STEP=3 done (`websocket.mlc`, `mlc::websocket`, bridge).
 See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
 
 

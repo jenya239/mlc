@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: CRYPTO **closed**; STDLIB_BACKEND §5 next is WebSocket upgrade +
 frames on top of existing TCP/HTTP server runtime.
 
-## Status: **open** — STEP=3 next (stdlib `websocket.mlc`)
+## Status: **open** — STEP=4 next (echo gate)
 
 **Planner 2026-07-10:** opened after closed STDLIB_CRYPTO Critic. Chose
 WebSocket over job-queue (§5 order; depends on NET_SERVER). Pipeline
@@ -13,6 +13,7 @@ WebSocket over job-queue (§5 order; depends on NET_SERVER). Pipeline
 (extend existing TCP). No language `spawn` for v1.
 
 **Driver 2026-07-10:** STEP=2 — `websocket.hpp` + C++ smoke (RFC Accept + echo).
+**Driver 2026-07-10:** STEP=3 — `websocket.mlc` + registry + bridge (`mlc::websocket`).
 
 ## Decision (STEP=1, 2026-07-10)
 

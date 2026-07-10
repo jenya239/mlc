@@ -90,6 +90,7 @@ registry_content += <<~RUBY
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
         "Tcp" => "std/net/tcp",
+        "WebSocket" => "std/net/websocket",
         "Postgres" => "std/db/postgres",
         "Crypto" => "std/crypto/crypto"
       }.freeze

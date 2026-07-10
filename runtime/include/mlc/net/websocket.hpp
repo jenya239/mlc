@@ -449,4 +449,124 @@ inline std::optional<String> read_text(WsConnection& connection) {
 }
 
 } // namespace net
+
+// MLC stdlib surface (TRACK_STDLIB_WEBSOCKET STEP=3): opaque i32 handles.
+// Separate namespace so last_error does not clash with mlc::net::last_error (Tcp).
+namespace websocket {
+
+namespace detail {
+
+struct WsHandleTable {
+  std::mutex mutex;
+  std::vector<std::shared_ptr<net::WsConnection>> connections;
+};
+
+inline WsHandleTable& ws_handle_table() {
+  static WsHandleTable table;
+  return table;
+}
+
+} // namespace detail
+
+inline String last_error() {
+  return net::websocket_last_error();
+}
+
+inline std::optional<std::int32_t> upgrade(std::int32_t stream_handle) {
+  net::TcpStream stream;
+  {
+    std::lock_guard<std::mutex> lock(net::detail::tcp_handle_table().mutex);
+    if (stream_handle <= 0 ||
+        static_cast<std::size_t>(stream_handle) > net::detail::tcp_handle_table().streams.size()) {
+      net::websocket_detail::set_error("WebSocket.upgrade: invalid stream handle");
+      return std::nullopt;
+    }
+    auto& stream_pointer =
+        net::detail::tcp_handle_table().streams[static_cast<std::size_t>(stream_handle) - 1];
+    if (!stream_pointer || !stream_pointer->is_open()) {
+      net::websocket_detail::set_error("WebSocket.upgrade: stream closed");
+      return std::nullopt;
+    }
+    stream = std::move(*stream_pointer);
+    stream_pointer.reset();
+  }
+  auto connection_option = net::upgrade(std::move(stream));
+  if (!connection_option.has_value()) {
+    return std::nullopt;
+  }
+  auto shared = std::make_shared<net::WsConnection>(std::move(*connection_option));
+  std::lock_guard<std::mutex> lock(detail::ws_handle_table().mutex);
+  detail::ws_handle_table().connections.push_back(std::move(shared));
+  return static_cast<std::int32_t>(detail::ws_handle_table().connections.size());
+}
+
+inline std::optional<String> read_text(std::int32_t connection_handle) {
+  std::shared_ptr<net::WsConnection> connection;
+  {
+    std::lock_guard<std::mutex> lock(detail::ws_handle_table().mutex);
+    if (connection_handle <= 0 ||
+        static_cast<std::size_t>(connection_handle) > detail::ws_handle_table().connections.size()) {
+      net::websocket_detail::set_error("WebSocket.read_text: invalid connection handle");
+      return std::nullopt;
+    }
+    connection =
+        detail::ws_handle_table().connections[static_cast<std::size_t>(connection_handle) - 1];
+  }
+  if (!connection || !connection->is_open()) {
+    net::websocket_detail::set_error("WebSocket.read_text: connection closed");
+    return std::nullopt;
+  }
+  return net::read_text(*connection);
+}
+
+inline bool write_text(std::int32_t connection_handle, const String& data) {
+  std::shared_ptr<net::WsConnection> connection;
+  {
+    std::lock_guard<std::mutex> lock(detail::ws_handle_table().mutex);
+    if (connection_handle <= 0 ||
+        static_cast<std::size_t>(connection_handle) > detail::ws_handle_table().connections.size()) {
+      net::websocket_detail::set_error("WebSocket.write_text: invalid connection handle");
+      return false;
+    }
+    connection =
+        detail::ws_handle_table().connections[static_cast<std::size_t>(connection_handle) - 1];
+  }
+  if (!connection || !connection->is_open()) {
+    net::websocket_detail::set_error("WebSocket.write_text: connection closed");
+    return false;
+  }
+  return net::write_text(*connection, data);
+}
+
+inline void close(std::int32_t connection_handle) {
+  std::lock_guard<std::mutex> lock(detail::ws_handle_table().mutex);
+  if (connection_handle <= 0 ||
+      static_cast<std::size_t>(connection_handle) > detail::ws_handle_table().connections.size()) {
+    return;
+  }
+  auto& connection =
+      detail::ws_handle_table().connections[static_cast<std::size_t>(connection_handle) - 1];
+  if (connection) {
+    net::close(*connection);
+    connection.reset();
+  }
+}
+
+inline std::optional<std::int32_t> upgrade_mlc(std::int32_t stream_handle) {
+  return upgrade(stream_handle);
+}
+inline std::optional<String> read_text_mlc(std::int32_t connection_handle) {
+  return read_text(connection_handle);
+}
+inline bool write_text_mlc(std::int32_t connection_handle, String data) {
+  return write_text(connection_handle, data);
+}
+inline void close_mlc(std::int32_t connection_handle) {
+  close(connection_handle);
+}
+inline String last_error_mlc() {
+  return last_error();
+}
+
+} // namespace websocket
 } // namespace mlc

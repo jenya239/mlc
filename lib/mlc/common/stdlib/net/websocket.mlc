@@ -1,0 +1,17 @@
+//! @module std/net/websocket
+//! @category net
+//! @type extern
+//! @namespace mlc::websocket
+
+# Server-side WebSocket over Tcp handles (TRACK_STDLIB_WEBSOCKET).
+# upgrade takes a Tcp stream handle (consumes it). Opaque i32 connection handles.
+# Errors: None / false + last_error() — Tcp pattern.
+# C++ namespace mlc::websocket (not mlc::net) so last_error ≠ Tcp.last_error.
+
+module WebSocket
+
+export extern fn upgrade(stream: i32) -> Option<i32> = "mlc::websocket::upgrade_mlc" from "mlc/net/websocket.hpp"
+export extern fn read_text(connection: i32) -> Option<string> = "mlc::websocket::read_text_mlc" from "mlc/net/websocket.hpp"
+export extern fn write_text(connection: i32, data: string) -> bool = "mlc::websocket::write_text_mlc" from "mlc/net/websocket.hpp"
+export extern fn close(connection: i32) -> unit = "mlc::websocket::close_mlc" from "mlc/net/websocket.hpp"
+export extern fn last_error() -> string = "mlc::websocket::last_error_mlc" from "mlc/net/websocket.hpp"

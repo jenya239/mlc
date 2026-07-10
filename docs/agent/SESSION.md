@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_WEBSOCKET STEP=3 |
-| test_gate | websocket runtime smoke 19/0 |
+| driver_turns_since_plan | 2 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_WEBSOCKET STEP=4 |
+| test_gate | websocket smoke 19/0; websocket_stdlib_test 1/0 |
+
+### Turn 2026-07-11 00:05 (Driver TRACK_STDLIB_WEBSOCKET STEP=3 — websocket.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-10 23:58 |
+| elapsed | ~12 min |
+| done    | Handle API `mlc::websocket::{upgrade,read_text,write_text,close,last_error}`; `std/net/websocket.mlc`; registry+alias; `websocket_bridge.hpp`; codegen include; `websocket_stdlib_test.rb`. |
+| verify  | runtime smoke 19/0; `bundle exec ruby -Ilib:test test/mlc/websocket_stdlib_test.rb` 1 run 0 fail. |
+| result  | STEP=3 done. Plain: MLC can import WebSocket::* → mlc::websocket. |
+| issues  | Namespace `mlc::websocket` (not net) to avoid Tcp `last_error` clash. Foreign dirty compiler/out left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_WEBSOCKET — gate script upgrade+text echo |
 
 ### Turn 2026-07-10 23:55 (Driver TRACK_STDLIB_WEBSOCKET STEP=2 — websocket.hpp)
 

@@ -68,6 +68,12 @@ module MLC
           namespace: "mlc::net",
           path: "net/tcp.mlc"
         },
+        "std/net/websocket" => {
+          category: "net",
+          type: :extern,
+          namespace: "mlc::websocket",
+          path: "net/websocket.mlc"
+        },
         "std/db/postgres" => {
           category: "db",
           type: :extern,
@@ -108,6 +114,7 @@ module MLC
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
         "Tcp" => "std/net/tcp",
+        "WebSocket" => "std/net/websocket",
         "Postgres" => "std/db/postgres",
         "Crypto" => "std/crypto/crypto"
       }.freeze
