@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_WEBSOCKET STEP=4 |
-| test_gate | websocket smoke 19/0; websocket_stdlib_test 1/0 |
+| driver_turns_since_plan | 3 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_WEBSOCKET STEP=5 |
+| test_gate | run_websocket_gate.sh OK (19/0 + codegen) |
+
+### Turn 2026-07-11 00:15 (Driver TRACK_STDLIB_WEBSOCKET STEP=4 — gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-11 00:12 |
+| elapsed | ~5 min |
+| done    | `scripts/run_websocket_gate.sh` (runtime smoke + `websocket_stdlib_test`); fixed TRACK STEP=3 row leftover; PLAN/STDLIB → STEP=5. |
+| verify  | `bash scripts/run_websocket_gate.sh` → smoke 19/0; stdlib 1/0; gate OK. |
+| result  | STEP=4 done. Plain: WS upgrade+text echo gated. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_WEBSOCKET — docs + example + close → Critic |
 
 ### Turn 2026-07-11 00:05 (Driver TRACK_STDLIB_WEBSOCKET STEP=3 — websocket.mlc)
 

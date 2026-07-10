@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` open** STEP=4 — upgrade + text echo gate.
-STEP=3 done (`websocket.mlc`, `mlc::websocket`, bridge).
+**`TRACK_STDLIB_WEBSOCKET` open** STEP=5 — docs + example + close.
+Gate STEP=4 done (`run_websocket_gate.sh`).
 See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
 
 
