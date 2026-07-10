@@ -6,7 +6,7 @@ Trigger: Postgres **closed**; auth/backend needs hash/HMAC/password primitives.
 STDLIB_BACKEND prefers **libsodium** over OpenSSL (simpler C API, less global
 state).
 
-## Status: **open** — STEP=4 next (gate script)
+## Status: **open** — STEP=5 next (docs + example + close)
 
 **Planner 2026-07-10:** opened after closed STDLIB_POSTGRES Critic. Pipeline
 (Decision C / Tcp+Postgres pattern): MLC via Ruby `common/stdlib`; runtime
@@ -101,7 +101,7 @@ secure random bytes, password hash/verify (`crypto_pwhash`). Validate
 | 1 | Design: public API (`Crypto.sha256` / `hmac_sha256` / `random_bytes` / `pwhash`+`pwhash_verify`); error model; libsodium vs OpenSSL (prefer sodium); link `-lsodium`. Document in «Decision». | **done** (2026-07-10: see Decision) |
 | 2 | Runtime: `runtime/include/mlc/crypto/sodium.hpp` — wrappers; C++ smoke compile+link `-lsodium`. | **done** (2026-07-10: `mlc::crypto::*`; smoke 9/0) |
 | 3 | Stdlib: `lib/mlc/common/stdlib/crypto/crypto.mlc` + registry/scanner; codegen bridge include; Ruby codegen smoke. | **done** (2026-07-10: `crypto_stdlib_test` 1/14) |
-| 4 | Gate: `scripts/run_crypto_gate.sh` — link smoke + stdlib test; known-answer vectors (SHA-256 / HMAC). | pending |
+| 4 | Gate: `scripts/run_crypto_gate.sh` — link smoke + stdlib test; known-answer vectors (SHA-256 / HMAC). | **done** (2026-07-10: gate OK; smoke 9/0 + codegen 1/14) |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md` note) + example; close (regression_gate only if `compiler/**` touched). | pending |
 
 <!-- sub-steps STEP=1: 1) API table; 2) Option+last_error vs Result; 3) v1 vs JWT/argon2-only/TLS out -->

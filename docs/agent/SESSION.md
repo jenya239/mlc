@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_CRYPTO open STEP=4 |
-| test_gate | ok (crypto_stdlib_test 1/14) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_CRYPTO open STEP=5 |
+| test_gate | ok (run_crypto_gate.sh) |
+
+### Turn 2026-07-10 20:28 (Driver TRACK_STDLIB_CRYPTO STEP=4 — gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_CRYPTO |
+| started | 2026-07-10 19:59 |
+| elapsed | ~5 min |
+| done    | `scripts/run_crypto_gate.sh` — runtime smoke (SHA-256/HMAC vectors) + `crypto_stdlib_test`. |
+| verify  | gate OK: smoke 9/0, stdlib 1/14. |
+| result  | STEP=4 done. Plain: crypto gate green with known-answer vectors. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_CRYPTO — docs + example + close |
 
 ### Turn 2026-07-10 20:25 (Driver TRACK_STDLIB_CRYPTO STEP=3 — crypto.mlc)
 
