@@ -7,6 +7,7 @@
 #define MLC_HAS_GLFW 0
 #endif
 
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -446,6 +447,17 @@ void gl_scratch_u8_resize_zero(int32_t byte_count) {
   scratch_u8().assign(static_cast<size_t>(byte_count), 0);
 }
 
+uint8_t* gl_scratch_u8_mutable_data() {
+  if (scratch_u8().empty()) {
+    return nullptr;
+  }
+  return scratch_u8().data();
+}
+
+int32_t gl_scratch_u8_size() {
+  return static_cast<int32_t>(scratch_u8().size());
+}
+
 void gl_scratch_u8_fill_rect(
   int32_t atlas_width,
   int32_t x,
@@ -595,6 +607,14 @@ void glfw_gl_context_end() {
   glfwTerminate();
 }
 
+double glfw_gl_get_time() {
+  return glfwGetTime();
+}
+
+double glfw_gl_anim_unit() {
+  return 0.5 + 0.5 * std::sin(glfwGetTime() * 2.0);
+}
+
 int32_t glfw_gl_dispatch_clear_smoke() {
   const int32_t begin_status = glfw_gl_context_begin(kWindowWidth, kWindowHeight);
   if (begin_status != 0) {
@@ -636,6 +656,8 @@ int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
 int32_t glfw_gl_context_should_close() { return 1; }
 void glfw_gl_context_swap_poll() {}
 void glfw_gl_context_end() {}
+double glfw_gl_get_time() { return 0.0; }
+double glfw_gl_anim_unit() { return 0.0; }
 
 void gl_clear(int32_t) {}
 void gl_clear_color(float, float, float, float) {}
@@ -672,6 +694,8 @@ void gl_delete_texture(int32_t) {}
 int32_t gl_get_uniform_location_string(int32_t, String) { return -1; }
 void gl_scratch_u8_clear() {}
 void gl_scratch_u8_resize_zero(int32_t) {}
+uint8_t* gl_scratch_u8_mutable_data() { return nullptr; }
+int32_t gl_scratch_u8_size() { return 0; }
 void gl_scratch_u8_fill_rect(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) {}
 int32_t gl_tex_image_2d_scratch_luminance(int32_t, int32_t) { return -100; }
 void gl_scratch_push_glyph_quad(

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=6 |
-| test_gate | `run_text_renderer_native_smoke.sh` ok |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=7 |
+| test_gate | `run_text_window_demo.sh` ok |
+
+### Turn 2026-07-11 03:30 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=6 — text_window_demo)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 03:20 |
+| elapsed | ~10 min |
+| done    | `text_window_demo.mlc`: Hi/MLC A8 (HB+FT) + Aa MSDF; anim clear via `glfw_gl_anim_unit`; FT glyph byte cache; `text_window_helpers.cpp` blit/screen-quad/RGB upload; gate `scripts/run_text_window_demo.sh`. PLAN/DEVELOPMENT → STEP=7. |
+| verify  | `run_text_window_demo.sh` ok; FT/native/gl_renderer smokes ok. |
+| result  | STEP=6 done. Plain: window demo A8+MSDF+anim green. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; demo rebuilds atlas twice (functional, messy). |
+| next    | ROLE=Driver STEP=7 TRACK_TEXT_RENDERING_NATIVE — docs (TEXT_RENDERING.md + GUI track pointer) |
 
 ### Turn 2026-07-11 03:15 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=5 — TextRenderer)
 

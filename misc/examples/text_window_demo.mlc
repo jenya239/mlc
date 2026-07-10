@@ -1,0 +1,569 @@
+// text_window_demo (TRACK_TEXT_RENDERING_NATIVE STEP=6).
+// ≥3 strings, A8 + MSDF, clear-color anim via glfw_gl_anim_unit, Esc/timeout.
+// Automated: hidden window, N frames. MLC_GLFW_VISIBLE=1 for interactive.
+
+extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_should_close() -> i32
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_anim_unit() -> f64
+  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+extern fn gl_clear(mask: i32) -> unit
+  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_enable(capability: i32) -> unit
+  = "mlc::gl::gl_enable" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
+  = "mlc::gl::gl_blend_func" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_shader(shader_type: i32) -> i32
+  = "mlc::gl::gl_create_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_shader_source_string(shader: i32, source: string) -> unit
+  = "mlc::gl::gl_shader_source_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_compile_shader(shader: i32) -> unit
+  = "mlc::gl::gl_compile_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_shader_iv_value(shader: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_shader_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_program() -> i32
+  = "mlc::gl::gl_create_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_attach_shader(program: i32, shader: i32) -> unit
+  = "mlc::gl::gl_attach_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_link_program(program: i32) -> unit
+  = "mlc::gl::gl_link_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_program_iv_value(program: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_program_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_use_program(program: i32) -> unit
+  = "mlc::gl::gl_use_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_shader(shader: i32) -> unit
+  = "mlc::gl::gl_delete_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_program(program: i32) -> unit
+  = "mlc::gl::gl_delete_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_attrib_location_string(program: i32, name: string) -> i32
+  = "mlc::gl::gl_get_attrib_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_uniform_location_string(program: i32, name: string) -> i32
+  = "mlc::gl::gl_get_uniform_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_uniform_1i(location: i32, value: i32) -> unit
+  = "mlc::gl::gl_uniform_1i" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_gen_buffer() -> i32
+  = "mlc::gl::gl_gen_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_buffer(buffer: i32) -> unit
+  = "mlc::gl::gl_delete_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_bind_buffer(target: i32, buffer: i32) -> unit
+  = "mlc::gl::gl_bind_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_f32_clear() -> unit
+  = "mlc::gl::gl_scratch_f32_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_buffer_data_scratch(target: i32, usage: i32) -> i32
+  = "mlc::gl::gl_buffer_data_scratch" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
+  = "mlc::gl::gl_enable_vertex_attrib_array" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_vertex_attrib_pointer_offset(
+  index: i32, size: i32, attribute_type: i32, normalized: i32, stride: i32, byte_offset: i32
+) -> unit
+  = "mlc::gl::gl_vertex_attrib_pointer_offset" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
+  = "mlc::gl::gl_draw_arrays" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_gen_texture() -> i32
+  = "mlc::gl::gl_gen_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_texture(texture: i32) -> unit
+  = "mlc::gl::gl_delete_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_bind_texture(target: i32, texture: i32) -> unit
+  = "mlc::gl::gl_bind_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_active_texture(texture_unit: i32) -> unit
+  = "mlc::gl::gl_active_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_u8_clear() -> unit
+  = "mlc::gl::gl_scratch_u8_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_u8_resize_zero(byte_count: i32) -> unit
+  = "mlc::gl::gl_scratch_u8_resize_zero" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_tex_image_2d_scratch_luminance(width: i32, height: i32) -> i32
+  = "mlc::gl::gl_tex_image_2d_scratch_luminance" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
+  = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_rgb_resize_zero(width: i32, height: i32) -> i32
+  = "mlc::gl::gl_scratch_rgb_resize_zero" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_rgb_blit_msdf(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
+  = "mlc::gl::gl_scratch_rgb_blit_msdf" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_tex_image_2d_scratch_rgb(width: i32, height: i32) -> i32
+  = "mlc::gl::gl_tex_image_2d_scratch_rgb" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_push_screen_quad(
+  window_width: i32, window_height: i32,
+  pixel_x: i32, pixel_y: i32, pixel_width: i32, pixel_height: i32,
+  atlas_size: i32, slot_x: i32, slot_y: i32, slot_width: i32, slot_height: i32
+) -> unit
+  = "mlc::gl::gl_scratch_push_screen_quad" from "mlc/gl/text_window_helpers.hpp"
+
+extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
+  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_id_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_advance_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
+  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
+extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
+extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_shim.hpp"
+
+fn gl_color_buffer_bit() -> i32 = 16384
+fn gl_triangles() -> i32 = 4
+fn gl_float() -> i32 = 5126
+fn gl_array_buffer() -> i32 = 34962
+fn gl_dynamic_draw() -> i32 = 35048
+fn gl_fragment_shader() -> i32 = 35632
+fn gl_vertex_shader() -> i32 = 35633
+fn gl_compile_status() -> i32 = 35713
+fn gl_link_status() -> i32 = 35714
+fn gl_texture_2d() -> i32 = 3553
+fn gl_texture0() -> i32 = 33984
+fn gl_blend() -> i32 = 3042
+fn gl_src_alpha() -> i32 = 770
+fn gl_one_minus_src_alpha() -> i32 = 771
+
+fn vertex_source() -> string =
+  "attribute vec2 a_pos;\nattribute vec2 a_uv;\nvarying vec2 v_uv;\nvoid main() {\n  v_uv = a_uv;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
+
+fn a8_fragment_source() -> string =
+  "varying vec2 v_uv;\nuniform sampler2D u_tex;\nvoid main() {\n  float a = texture2D(u_tex, v_uv).r;\n  gl_FragColor = vec4(0.95, 0.95, 0.98, a);\n}\n"
+
+fn msdf_fragment_source() -> string =
+  "varying vec2 v_uv;\nuniform sampler2D u_tex;\nfloat median(float r, float g, float b) {\n  return max(min(r, g), min(max(r, g), b));\n}\nvoid main() {\n  vec3 s = texture2D(u_tex, v_uv).rgb;\n  float sig = median(s.r, s.g, s.b);\n  float a = smoothstep(0.45, 0.55, sig);\n  gl_FragColor = vec4(0.3, 0.85, 0.55, a);\n}\n"
+
+type AtlasSlot = { page_index: i32, x: i32, y: i32, width: i32, height: i32 }
+type AtlasPage = {
+  mode: i32, width: i32, height: i32, shelf_x: i32, shelf_y: i32, shelf_height: i32
+}
+type GlyphAtlas = { page_size: i32, pages: [AtlasPage] }
+type GlyphAtlasPackOk = { atlas: GlyphAtlas, slot: AtlasSlot, error_code: i32 }
+type Pass = {
+  program: i32, buffer: i32, texture: i32,
+  position_location: i32, uv_location: i32, vertex_count: i32, atlas_size: i32
+}
+
+fn atlas_page_empty(mode: i32, page_size: i32) -> AtlasPage =
+  AtlasPage { mode: mode, width: page_size, height: page_size, shelf_x: 0, shelf_y: 0, shelf_height: 0 }
+
+fn atlas_page_with_shelf(page: AtlasPage, shelf_x: i32, shelf_y: i32, shelf_height: i32) -> AtlasPage =
+  AtlasPage {
+    mode: page.mode, width: page.width, height: page.height,
+    shelf_x: shelf_x, shelf_y: shelf_y, shelf_height: shelf_height
+  }
+
+fn atlas_pages_replace(pages: [AtlasPage], page_index: i32, page: AtlasPage) -> [AtlasPage] = do
+  let mut rebuilt: [AtlasPage] = []
+  let mut index = 0
+  while index < pages.length() do
+    if index == page_index then rebuilt.push(page) else rebuilt.push(pages[index]) end
+    index = index + 1
+  end
+  rebuilt
+end
+
+fn glyph_atlas_find_last_page(atlas: GlyphAtlas, mode: i32) -> i32 = do
+  let mut index = atlas.pages.length() - 1
+  while index >= 0 do
+    if atlas.pages[index].mode == mode then return index end
+    index = index - 1
+  end
+  -1
+end
+
+fn glyph_atlas_pack(atlas: GlyphAtlas, mode: i32, glyph_width: i32, glyph_height: i32) -> GlyphAtlasPackOk = do
+  if glyph_width <= 0 || glyph_height <= 0 || glyph_width > atlas.page_size || glyph_height > atlas.page_size then
+    return GlyphAtlasPackOk {
+      atlas: atlas,
+      slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
+      error_code: 1
+    }
+  end
+  let mut pages = atlas.pages
+  let mut page_index = glyph_atlas_find_last_page(atlas, mode)
+  let mut placed = false
+  let mut slot_x = 0
+  let mut slot_y = 0
+  if page_index >= 0 then
+    const page = pages[page_index]
+    if page.shelf_height == 0 then
+      pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(page, glyph_width, 0, glyph_height))
+      placed = true
+    else if page.shelf_x + glyph_width <= page.width && glyph_height <= page.shelf_height then
+      pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(page, page.shelf_x + glyph_width, page.shelf_y, page.shelf_height))
+      slot_x = page.shelf_x
+      slot_y = page.shelf_y
+      placed = true
+    else
+      const next_shelf_y = page.shelf_y + page.shelf_height
+      if next_shelf_y + glyph_height <= page.height then
+        pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(page, glyph_width, next_shelf_y, glyph_height))
+        slot_y = next_shelf_y
+        placed = true
+      end
+    end
+  end
+  if !placed then
+    page_index = pages.length()
+    pages.push(atlas_page_empty(mode, atlas.page_size))
+    pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(pages[page_index], glyph_width, 0, glyph_height))
+  end
+  GlyphAtlasPackOk {
+    atlas: GlyphAtlas { page_size: atlas.page_size, pages: pages },
+    slot: AtlasSlot { page_index: page_index, x: slot_x, y: slot_y, width: glyph_width, height: glyph_height },
+    error_code: 0
+  }
+end
+
+fn compile_program(vertex_source_text: string, fragment_source_text: string) -> i32 = do
+  const vertex_shader = gl_create_shader(gl_vertex_shader())
+  gl_shader_source_string(vertex_shader, vertex_source_text)
+  gl_compile_shader(vertex_shader)
+  if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
+    return -12
+  end
+  const fragment_shader = gl_create_shader(gl_fragment_shader())
+  gl_shader_source_string(fragment_shader, fragment_source_text)
+  gl_compile_shader(fragment_shader)
+  if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    return -13
+  end
+  const program = gl_create_program()
+  gl_attach_shader(program, vertex_shader)
+  gl_attach_shader(program, fragment_shader)
+  gl_link_program(program)
+  gl_delete_shader(vertex_shader)
+  gl_delete_shader(fragment_shader)
+  if gl_get_program_iv_value(program, gl_link_status()) == 0 then
+    gl_delete_program(program)
+    return -14
+  end
+  program
+end
+
+fn make_pass(fragment_source_text: string, atlas_size: i32) -> Pass = do
+  const program = compile_program(vertex_source(), fragment_source_text)
+  if program < 0 then
+    return Pass {
+      program: program, buffer: 0, texture: 0,
+      position_location: -1, uv_location: -1, vertex_count: 0, atlas_size: atlas_size
+    }
+  end
+  const position_location = gl_get_attrib_location_string(program, "a_pos")
+  const uv_location = gl_get_attrib_location_string(program, "a_uv")
+  const texture_location = gl_get_uniform_location_string(program, "u_tex")
+  const buffer = gl_gen_buffer()
+  const texture = gl_gen_texture()
+  if position_location < 0 || uv_location < 0 || texture_location < 0 || buffer == 0 || texture == 0 then
+    gl_delete_buffer(buffer)
+    gl_delete_texture(texture)
+    gl_delete_program(program)
+    return Pass {
+      program: -15, buffer: 0, texture: 0,
+      position_location: -1, uv_location: -1, vertex_count: 0, atlas_size: atlas_size
+    }
+  end
+  gl_use_program(program)
+  gl_uniform_1i(texture_location, 0)
+  Pass {
+    program: program, buffer: buffer, texture: texture,
+    position_location: position_location, uv_location: uv_location,
+    vertex_count: 0, atlas_size: atlas_size
+  }
+end
+
+fn destroy_pass(pass: Pass) -> i32 = do
+  gl_delete_buffer(pass.buffer)
+  gl_delete_texture(pass.texture)
+  gl_delete_program(pass.program)
+  0
+end
+
+fn draw_pass(pass: Pass, width: i32, height: i32) -> i32 = do
+  gl_use_program(pass.program)
+  gl_active_texture(gl_texture0())
+  gl_bind_texture(gl_texture_2d(), pass.texture)
+  gl_bind_buffer(gl_array_buffer(), pass.buffer)
+  gl_enable_vertex_attrib_array(pass.position_location)
+  gl_vertex_attrib_pointer_offset(pass.position_location, 2, gl_float(), 0, 16, 0)
+  gl_enable_vertex_attrib_array(pass.uv_location)
+  gl_vertex_attrib_pointer_offset(pass.uv_location, 2, gl_float(), 0, 16, 8)
+  gl_draw_arrays(gl_triangles(), 0, pass.vertex_count)
+  0
+end
+
+fn append_shaped_a8(
+  font_path: string,
+  text: string,
+  pixel_size: i32,
+  window_width: i32,
+  window_height: i32,
+  pen_x: i32,
+  pen_y: i32,
+  atlas: GlyphAtlas,
+  atlas_size: i32
+) -> GlyphAtlasPackOk = do
+  const count = shape_glyph_count(font_path, text, pixel_size)
+  if count < 0 then
+    return GlyphAtlasPackOk {
+      atlas: atlas,
+      slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
+      error_code: count
+    }
+  end
+  let mut working = atlas
+  let mut cursor_x = pen_x
+  let mut index = 0
+  let mut vertices = 0
+  while index < count do
+    const glyph_id = shape_glyph_id_at(index)
+    const packed = glyph_bitmap_by_index(font_path, glyph_id, pixel_size)
+    if packed < 0 then
+      return GlyphAtlasPackOk {
+        atlas: working,
+        slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
+        error_code: packed
+      }
+    end
+    const gw = glyph_width()
+    const gh = glyph_rows()
+    if gw > 0 && gh > 0 then
+      const pack = glyph_atlas_pack(working, 0, gw, gh)
+      if pack.error_code != 0 then
+        return pack
+      end
+      working = pack.atlas
+      if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) != 0 then
+        return GlyphAtlasPackOk {
+          atlas: working,
+          slot: pack.slot,
+          error_code: -30
+        }
+      end
+      gl_scratch_push_screen_quad(
+        window_width, window_height, cursor_x, pen_y, gw, gh,
+        atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
+      )
+      vertices = vertices + 6
+    end
+    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    index = index + 1
+  end
+  GlyphAtlasPackOk {
+    atlas: working,
+    slot: AtlasSlot { page_index: vertices, x: 0, y: 0, width: 0, height: 0 },
+    error_code: 0
+  }
+end
+
+fn main() -> i32 = do
+  const width = 800
+  const height = 600
+  const a8_atlas_size = 256
+  const msdf_atlas_size = 128
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const begin_status = glfw_gl_context_begin(width, height)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  let mut a8_pass = make_pass(a8_fragment_source(), a8_atlas_size)
+  if a8_pass.program < 0 then
+    const error_code = a8_pass.program
+    glfw_gl_context_end()
+    return error_code
+  end
+  let mut msdf_pass = make_pass(msdf_fragment_source(), msdf_atlas_size)
+  if msdf_pass.program < 0 then
+    const error_code = msdf_pass.program
+    destroy_pass(a8_pass)
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  gl_scratch_u8_clear()
+  gl_scratch_u8_resize_zero(a8_atlas_size * a8_atlas_size)
+  gl_scratch_f32_clear()
+  let mut a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
+
+  // String 1 + 2 (A8 via HarfBuzz shape)
+  const line1 = append_shaped_a8(font_path, "Hi", 28, width, height, 40, 40, a8_atlas, a8_atlas_size)
+  if line1.error_code != 0 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return line1.error_code
+  end
+  a8_atlas = line1.atlas
+  let mut a8_vertices = line1.slot.page_index
+
+  const line2 = append_shaped_a8(font_path, "MLC", 28, width, height, 40, 90, a8_atlas, a8_atlas_size)
+  if line2.error_code != 0 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return line2.error_code
+  end
+  a8_atlas = line2.atlas
+  a8_vertices = a8_vertices + line2.slot.page_index
+
+  // String 3 (MSDF codepoints)
+  gl_scratch_rgb_resize_zero(msdf_atlas_size, msdf_atlas_size)
+  let mut msdf_atlas = GlyphAtlas { page_size: msdf_atlas_size, pages: [] }
+  let mut msdf_vertices = 0
+  let mut msdf_pen = 40
+  let mut codepoint_index = 0
+  const codepoints: [i32] = [65, 97]
+  while codepoint_index < codepoints.length() do
+    const codepoint = codepoints[codepoint_index]
+    if msdf_generate(font_path, codepoint, 32, 4) != 0 then
+      destroy_pass(a8_pass)
+      destroy_pass(msdf_pass)
+      glfw_gl_context_end()
+      return -40
+    end
+    const pack = glyph_atlas_pack(msdf_atlas, 1, msdf_width(), msdf_height())
+    if pack.error_code != 0 then
+      destroy_pass(a8_pass)
+      destroy_pass(msdf_pass)
+      glfw_gl_context_end()
+      return -41
+    end
+    msdf_atlas = pack.atlas
+    if gl_scratch_rgb_blit_msdf(msdf_atlas_size, pack.slot.x, pack.slot.y) != 0 then
+      destroy_pass(a8_pass)
+      destroy_pass(msdf_pass)
+      glfw_gl_context_end()
+      return -42
+    end
+    gl_scratch_push_screen_quad(
+      width, height, msdf_pen, 160, 48, 48,
+      msdf_atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
+    )
+    msdf_vertices = msdf_vertices + 6
+    msdf_pen = msdf_pen + 52
+    codepoint_index = codepoint_index + 1
+  end
+
+  // Upload A8 batch (vertices currently in scratch from both A8 lines + MSDF quads mixed!)
+  // Rebuild: clear and re-push A8 then MSDF separately into two buffers.
+  // Simpler approach: upload textures now; rebuild vertex scratches per pass.
+
+  gl_active_texture(gl_texture0())
+  gl_bind_texture(gl_texture_2d(), a8_pass.texture)
+  if gl_tex_image_2d_scratch_luminance(a8_atlas_size, a8_atlas_size) != 0 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return -50
+  end
+  gl_bind_texture(gl_texture_2d(), msdf_pass.texture)
+  if gl_tex_image_2d_scratch_rgb(msdf_atlas_size, msdf_atlas_size) != 0 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return -51
+  end
+
+  // Rebuild A8 vertices only
+  gl_scratch_f32_clear()
+  a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
+  gl_scratch_u8_clear()
+  gl_scratch_u8_resize_zero(a8_atlas_size * a8_atlas_size)
+  const rebuild1 = append_shaped_a8(font_path, "Hi", 28, width, height, 40, 40, a8_atlas, a8_atlas_size)
+  a8_atlas = rebuild1.atlas
+  a8_vertices = rebuild1.slot.page_index
+  const rebuild2 = append_shaped_a8(font_path, "MLC", 28, width, height, 40, 90, a8_atlas, a8_atlas_size)
+  a8_atlas = rebuild2.atlas
+  a8_vertices = a8_vertices + rebuild2.slot.page_index
+  gl_bind_buffer(gl_array_buffer(), a8_pass.buffer)
+  if gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw()) != 0 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return -52
+  end
+  a8_pass = Pass {
+    program: a8_pass.program, buffer: a8_pass.buffer, texture: a8_pass.texture,
+    position_location: a8_pass.position_location, uv_location: a8_pass.uv_location,
+    vertex_count: a8_vertices, atlas_size: a8_atlas_size
+  }
+  // Re-upload A8 atlas after rebuild blits
+  gl_bind_texture(gl_texture_2d(), a8_pass.texture)
+  gl_tex_image_2d_scratch_luminance(a8_atlas_size, a8_atlas_size)
+
+  // Rebuild MSDF vertices
+  gl_scratch_f32_clear()
+  msdf_vertices = 0
+  msdf_pen = 40
+  codepoint_index = 0
+  while codepoint_index < codepoints.length() do
+    const codepoint = codepoints[codepoint_index]
+    msdf_generate(font_path, codepoint, 32, 4)
+    // slots already packed in msdf_atlas from first pass — re-pack fresh
+    codepoint_index = codepoint_index + 1
+  end
+  msdf_atlas = GlyphAtlas { page_size: msdf_atlas_size, pages: [] }
+  gl_scratch_rgb_resize_zero(msdf_atlas_size, msdf_atlas_size)
+  codepoint_index = 0
+  msdf_pen = 40
+  while codepoint_index < codepoints.length() do
+    const codepoint = codepoints[codepoint_index]
+    msdf_generate(font_path, codepoint, 32, 4)
+    const pack = glyph_atlas_pack(msdf_atlas, 1, msdf_width(), msdf_height())
+    msdf_atlas = pack.atlas
+    gl_scratch_rgb_blit_msdf(msdf_atlas_size, pack.slot.x, pack.slot.y)
+    gl_scratch_push_screen_quad(
+      width, height, msdf_pen, 160, 48, 48,
+      msdf_atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
+    )
+    msdf_vertices = msdf_vertices + 6
+    msdf_pen = msdf_pen + 52
+    codepoint_index = codepoint_index + 1
+  end
+  gl_bind_buffer(gl_array_buffer(), msdf_pass.buffer)
+  gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw())
+  msdf_pass = Pass {
+    program: msdf_pass.program, buffer: msdf_pass.buffer, texture: msdf_pass.texture,
+    position_location: msdf_pass.position_location, uv_location: msdf_pass.uv_location,
+    vertex_count: msdf_vertices, atlas_size: msdf_atlas_size
+  }
+  gl_bind_texture(gl_texture_2d(), msdf_pass.texture)
+  gl_tex_image_2d_scratch_rgb(msdf_atlas_size, msdf_atlas_size)
+
+  if a8_vertices < 12 || msdf_vertices < 12 then
+    destroy_pass(a8_pass)
+    destroy_pass(msdf_pass)
+    glfw_gl_context_end()
+    return -60
+  end
+
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    const phase = glfw_gl_anim_unit()
+    gl_viewport(0, 0, width, height)
+    gl_clear_color_f64(0.04, 0.05 + phase * 0.12, 0.10 + phase * 0.08, 1.0)
+    gl_clear(gl_color_buffer_bit())
+    gl_enable(gl_blend())
+    gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
+    draw_pass(a8_pass, width, height)
+    draw_pass(msdf_pass, width, height)
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 48 then
+      break
+    end
+  end
+
+  destroy_pass(a8_pass)
+  destroy_pass(msdf_pass)
+  glfw_gl_context_end()
+  0
+end

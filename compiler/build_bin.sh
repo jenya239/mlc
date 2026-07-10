@@ -59,6 +59,9 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   TEXT_CFLAGS+=($(pkg-config --cflags glfw3))
   # shellcheck disable=SC2207
   TEXT_LIBS+=($(pkg-config --libs glfw3))
+  if pkg-config --exists freetype2 && pkg-config --exists harfbuzz; then
+    RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_window_helpers.cpp")
+  fi
 fi
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=6 — `text_window_demo.mlc`
-(≥3 strings, A8+MSDF, anim via glfwGetTime). See
+**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=7 — docs (`TEXT_RENDERING.md`,
+PLAN, GUI-framework track pointer). See
 [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
 
 

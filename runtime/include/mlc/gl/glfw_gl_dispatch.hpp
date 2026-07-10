@@ -20,6 +20,9 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height);
 int32_t glfw_gl_context_should_close();
 void glfw_gl_context_swap_poll();
 void glfw_gl_context_end();
+double glfw_gl_get_time();
+// 0..1 oscillating phase from sin(time); for demo color animation.
+double glfw_gl_anim_unit();
 
 // --- MLC-facing GL surface (int32_t / String) ---
 
@@ -66,6 +69,8 @@ void gl_delete_texture(int32_t texture);
 int32_t gl_get_uniform_location_string(int32_t program, String name);
 void gl_scratch_u8_clear();
 void gl_scratch_u8_resize_zero(int32_t byte_count);
+uint8_t* gl_scratch_u8_mutable_data();
+int32_t gl_scratch_u8_size();
 void gl_scratch_u8_fill_rect(
   int32_t atlas_width,
   int32_t x,
