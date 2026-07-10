@@ -483,8 +483,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_CRYPTO (**closed** 2026-07-10: `mlc::crypto` + `std/crypto/crypto`;
       gate `run_crypto_gate.sh`; example `crypto_sha256_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_CRYPTO.md](archive/tracks/TRACK_STDLIB_CRYPTO.md))
-  → WebSocket / job-queue / config / logging (STDLIB_BACKEND backlog;
-      open TRACK via Planner)
+  → STDLIB_WEBSOCKET (**open** STEP=1 — API Decision; server upgrade+frames
+      → [agent/TRACK_STDLIB_WEBSOCKET.md](agent/TRACK_STDLIB_WEBSOCKET.md))
+  → job-queue / config / logging (STDLIB_BACKEND backlog)
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
