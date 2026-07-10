@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=5 |
-| test_gate | run_mlcc_tcp_spawn_echo_gate OK (overlap); spawn_side_effect gate |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=6 |
+| test_gate | docs-only (examples/gates already linked) |
+
+### Turn 2026-07-10 23:20 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=5 — docs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 23:17 |
+| elapsed | ~5 min |
+| done    | `MLC.md` §pipelines + Tcp: mlcc bare `Tcp`+`spawn` yes; `STDLIB_BACKEND.md` §1/§5 link examples/gates; PLAN §8c → STEP=6; DEVELOPMENT. |
+| verify  | TRACK STEP=5 done; examples `tcp_echo_mlcc`/`tcp_spawn_echo_mlcc` referenced. |
+| result  | STEP=5 done. Plain: docs say Tcp+spawn gap closed under mlcc. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=6 TRACK_PIPELINE_MERGE_TCP_SPAWN — self-host diff + regression_gate; close → Critic |
 
 ### Turn 2026-07-10 23:15 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=4 — Tcp+spawn e2e)
 

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=5 (docs + example).
-Max priority over WEBSOCKET (CONTINUITY hard limit). Decision **A**; resolve + echo + Tcp+spawn e2e done.
+**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=6 (self-host diff + regression_gate; close).
+Max priority over WEBSOCKET (CONTINUITY hard limit). Docs updated: Tcp+spawn under mlcc.
 See [TRACK_PIPELINE_MERGE_TCP_SPAWN.md](TRACK_PIPELINE_MERGE_TCP_SPAWN.md).
 
 Paused: `TRACK_STDLIB_WEBSOCKET` STEP=2 until merge track closes.

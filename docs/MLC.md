@@ -62,23 +62,25 @@ fn area(s: Shape) -> i32 =
 ### Два пайплайна: Ruby vs `mlcc` (временный split)
 
 Зафиксировано 2026-07-10 (`TRACK_CONCURRENCY_RUBY_PARITY`, Decision **C**).
-Два компилятора пока **не** покрывают один и тот же набор фич:
+Обновлено 2026-07-10 (`TRACK_PIPELINE_MERGE_TCP_SPAWN` STEP=1–4, Decision **A**):
+для **`Tcp` + `spawn`** разрыв снят в self-hosted `mlcc`.
 
 | Фича | Ruby (`lib/mlc/`, `MLC.build_project`) | Self-hosted (`mlcc`) |
 |------|----------------------------------------|----------------------|
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
-| `std/net/tcp` / `std/db/postgres` / `std/crypto/crypto` (`Tcp`/`Postgres`/`Crypto`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
+| `Tcp` (`lib/mlc/common/stdlib/net/tcp.mlc`) | да (`import Tcp::{…}`) | да (`import { … } from 'Tcp'`; bare-name → stdlib) |
+| `Postgres` / `Crypto` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
-| Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя | нельзя |
+| Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя (нет `spawn`) | **да** (2026-07-10; gate `scripts/run_mlcc_tcp_spawn_echo_gate.sh`) |
 
-**Следствие:** backend TCP+пул сегодня — через C++ `serve_http_with_thread_pool`
-(или Ruby+`Tcp` без языкового `spawn`). Не смешивать ожидания «как в одном
-компиляторе».
+**Следствие:** многопоточный echo/accept на MLC — через **`mlcc`** + `import … from 'Tcp'`
++ `spawn` (пример `misc/examples/tcp_spawn_echo_mlcc.mlc`). C++
+`serve_http_with_thread_pool` остаётся альтернативой для HTTP/`ThreadPool`
+без языкового `spawn`. Ruby по-прежнему без concurrency builtins.
 
-**Follow-up (не в этом треке):** option **B** — портировать скан
-`common/stdlib/` в `mlcc`, чтобы IO-stdlib и concurrency жили в одном
-пайплайне. Option **A** (портировать concurrency в Ruby) отвергнут.
+**Остаток split:** полный скан `common/stdlib/` в `mlcc` (Postgres/Crypto/…) —
+не в этом треке; v1 table только `"Tcp" => "net/tcp.mlc"`.
 
 ---
 
@@ -416,13 +418,16 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 Зафиксировано 2026-07-10 (`TRACK_STDLIB_NET_SERVER`). Runtime (`mlc::net`):
 
 - `TcpListener` / `TcpStream` — blocking IPv4, `SO_REUSEADDR`, `Result` errors.
-- MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`
-  — **только Ruby-пайплайн** (см. § «Два пайплайна» выше). Runtime C++ headers
-  доступны обоим компиляторам.
+- MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`.
+  Ruby: `import Tcp::{…}`. **mlcc** (2026-07-10): `import { … } from 'Tcp'`
+  (bare-name resolve + FFI `*_mlc`); with `spawn` —
+  `misc/examples/tcp_spawn_echo_mlcc.mlc`, gate
+  `scripts/run_mlcc_tcp_spawn_echo_gate.sh`. Runtime C++ headers shared.
 - `parse_http_request` — HTTP/1.1 request-line + headers; body via `Content-Length`
   (caps: headers 64 KiB, body 1 MiB).
 - `HttpRouter` — exact method+path match; `http_not_found` / `write_http_response`.
-- `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`.
+- `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`
+  (C++ path; language `spawn`+`Tcp` is the MLC alternative under mlcc).
 
 Не в v1: TLS, HTTP/2, WebSocket, epoll reactor.
 
