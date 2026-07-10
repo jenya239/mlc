@@ -480,9 +480,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_POSTGRES (**closed** 2026-07-10: `mlc::db` + `std/db/postgres`;
       gate `run_postgres_gate.sh`; example `postgres_select_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_POSTGRES.md](archive/tracks/TRACK_STDLIB_POSTGRES.md))
-  → STDLIB_CRYPTO (**open** STEP=5 — docs/example/close; gate OK
-      → [agent/TRACK_STDLIB_CRYPTO.md](agent/TRACK_STDLIB_CRYPTO.md))
-  → WebSocket / job-queue / config / logging (STDLIB_BACKEND backlog)
+  → STDLIB_CRYPTO (**closed** 2026-07-10: `mlc::crypto` + `std/crypto/crypto`;
+      gate `run_crypto_gate.sh`; example `crypto_sha256_demo.mlc`
+      → [archive/tracks/TRACK_STDLIB_CRYPTO.md](archive/tracks/TRACK_STDLIB_CRYPTO.md))
+  → WebSocket / job-queue / config / logging (STDLIB_BACKEND backlog;
+      open TRACK via Planner)
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
