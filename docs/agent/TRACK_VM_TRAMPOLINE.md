@@ -17,7 +17,10 @@ Blocks the entire practical value of `TRACK_MIR_VM_FULL`. Small, well-scoped,
 root cause already found (see below) — no further investigation needed
 before starting the fix.
 
-## Status: **open** — STEP=1 next
+## Status: **open** — STEP=1 **done**; STEP=2 next (corpus regression)
+
+**Driver 2026-07-10:** STEP=1 — `vm_run_frames` trampoline loop + `vm_pop_return` →
+`VmRunContinue`; helper `vm_run_frames_step` / `vm_failed_outcome` (typed mut).
 
 ## Root cause (found, confirmed, not fixed)
 
@@ -121,7 +124,7 @@ self-call) needs to stop recursing.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Rewrite `vm_run_frames` in `compiler/vm/execute.mlc` as an explicit `while` loop (see Fix approach). Change `vm_pop_return` to return `VmRunOutcome` instead of calling `vm_run_frames` directly. | pending |
+| 1 | Rewrite `vm_run_frames` in `compiler/vm/execute.mlc` as an explicit `while` loop (see Fix approach). Change `vm_pop_return` to return `VmRunOutcome` instead of calling `vm_run_frames` directly. | **done** (2026-07-10: trampoline + step helper; loop 10k / rec 1200 no segfault) |
 | 2 | Regression: full existing corpus (`vm_cpp_diff_programs.txt`, `run_single_file_vm_gate.sh`, `run_examples_vm_gate.sh`) must still pass — this is a pure refactor, no behavior change for small programs. | pending |
 | 3 | New regression fixture: loop/recursion depth **≥ 100,000** steps (well past the old ~1700 ceiling) must complete without crashing and without `ulimit -s unlimited`. Add to `compiler/tests/` corpus permanently — this exact class of bug must never regress silently again. | pending |
 | 4 | Re-benchmark throughput after the fix (same 1000/2,000,000-iteration loops as the 2026-07-10 manual benchmark) — confirm no major regression from the refactor itself (trampoline should be same speed or faster, no recursion call overhead). Record numbers in this track or `TRACK_MIR_VM_FULL.md` §4. | pending |

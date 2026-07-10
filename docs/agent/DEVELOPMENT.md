@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_TRAMPOLINE** STEP=1 — fix `vm_run_frames` host recursion (critical; PLAN 13a).
-(TEXT_RENDERING STEP=3 done: HarfBuzz TextShaper + UTF-8 string literal byte_size.)
+**TRACK_VM_TRAMPOLINE** STEP=2 — corpus regression (`vm_cpp_diff` / examples gates).
+(STEP=1 done: `vm_run_frames` host loop; 10k loop + rec 1200 no segfault.)
 
 ## Step sizing (good vs bad)
 

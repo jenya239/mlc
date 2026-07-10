@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_VM_TRAMPOLINE STEP=1 (after TEXT_RENDERING STEP=3) |
-| test_gate | ok (harfbuzz shape smoke; freetype smoke) |
+| driver_turns_since_plan | 4 |
+| step_last | 1 |
+| active_track | TRACK_VM_TRAMPOLINE STEP=2 |
+| test_gate | ok (loop 10k / rec 1200 no segfault; hello/mutual/for) |
+
+### Turn 2026-07-10 12:15 (Driver TRACK_VM_TRAMPOLINE STEP=1 — trampoline loop)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_VM_TRAMPOLINE |
+| started | 2026-07-10 12:03 |
+| elapsed | ~12 min |
+| done    | `execute.mlc`: `vm_run_frames` while-loop + `vm_run_frames_step`; `vm_pop_return` → `VmRunContinue`; `vm_failed_outcome` for typed mut. |
+| verify  | BUILD:0; `--run` loop 1700/10000 + rec 1200 no segfault; hello/mutual/for ok. |
+| result  | STEP=1 done. Plain: VM no longer grows C++ stack per MIR step. |
+| issues  | Codegen: avoid bare `let mut x = VariantArm` (infers arm type); foreign CLI_STDIN WIP stashed/restored. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_VM_TRAMPOLINE — corpus regression (vm_cpp_diff + examples gates) |
 
 ### Turn 2026-07-10 12:02 (Driver TRACK_TEXT_RENDERING STEP=3 — HarfBuzz TextShaper)
 

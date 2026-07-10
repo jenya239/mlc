@@ -26,7 +26,10 @@ export fn vm_run_function(
     Ok(locals) => vm_run_frames(program, [vm_frame_new(function, mir_block_id(0), locals)], trace_enabled)
   }
 
-export fn vm_run_frames(program: MirProgram, frames: [VmFrame], trace_enabled: bool) -> VmRunOutcome = do
+fn vm_failed_outcome(message: string) -> VmRunOutcome =
+  VmRunFailed([message])
+
+fn vm_run_frames_step(program: MirProgram, frames: [VmFrame], trace_enabled: bool) -> VmRunOutcome = do
   if frames.length() == 0 then return VmRunFailed(['vm: empty frame stack']) end
   const frame_index = frames.length() - 1
   const frame = vm_frame_at(frames, frame_index)
@@ -34,19 +37,35 @@ export fn vm_run_frames(program: MirProgram, frames: [VmFrame], trace_enabled: b
     Err(errors) => VmRunFailed(errors),
     Ok(block) =>
       if frame.statement_index < block.stmts.length() then
-        match vm_execute_statement(program, frames, frame_index, block.stmts[frame.statement_index], trace_enabled) {
-          VmRunContinue(next_frames) => vm_run_frames(program, next_frames, trace_enabled),
-          VmRunReturn(value) => VmRunReturn(value),
-          VmRunFailed(errors) => VmRunFailed(errors)
-        }
+        vm_execute_statement(
+          program, frames, frame_index, block.stmts[frame.statement_index], trace_enabled)
       else
-        match vm_execute_terminator(program, frames, frame_index, block.term, trace_enabled) {
-          VmRunContinue(next_frames) => vm_run_frames(program, next_frames, trace_enabled),
-          VmRunReturn(value) => VmRunReturn(value),
-          VmRunFailed(errors) => VmRunFailed(errors)
-        }
+        vm_execute_terminator(program, frames, frame_index, block.term, trace_enabled)
       end
   }
+end
+
+export fn vm_run_frames(program: MirProgram, frames_initial: [VmFrame], trace_enabled: bool) -> VmRunOutcome = do
+  let mut frames = frames_initial
+  let mut done = false
+  let mut final_outcome = vm_failed_outcome('vm: trampoline fell through')
+  while !done do
+    const step_outcome = vm_run_frames_step(program, frames, trace_enabled)
+    match step_outcome {
+      VmRunContinue(next_frames) => do
+        frames = next_frames
+      end,
+      VmRunReturn(value) => do
+        final_outcome = VmRunReturn(value)
+        done = true
+      end,
+      VmRunFailed(errors) => do
+        final_outcome = VmRunFailed(errors)
+        done = true
+      end
+    }
+  end
+  final_outcome
 end
 
 fn vm_find_block(function: MirFunction, block_id: BlockId) -> Result<MirBlock, [string]> = do
@@ -192,5 +211,6 @@ fn vm_pop_return(
     }
     caller_frames = vm_frame_update(caller_frames, caller_index, caller_frame)
   end
-  vm_run_frames(program, vm_frame_advance_statement(caller_frames, caller_index), trace_enabled)
+  // Trampoline: continue in vm_run_frames loop (do not recurse).
+  VmRunContinue(vm_frame_advance_statement(caller_frames, caller_index))
 end
