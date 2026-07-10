@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | Planner — STDLIB §5.6 after JOB_QUEUE |
-| test_gate | job_queue gate OK; Critic reopen none |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_ENV_LOGGING STEP=1 |
+| test_gate | docs-only Planner; no code gate |
+
+### Turn 2026-07-11 01:02 (Planner — open TRACK_STDLIB_ENV_LOGGING)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_ENV_LOGGING |
+| started | 2026-07-11 00:58 |
+| elapsed | ~5 min |
+| done    | Created `docs/agent/TRACK_STDLIB_ENV_LOGGING.md` (STEP=1–5); PLAN §11 + queue; STDLIB_BACKEND §2/§5.6; DEVELOPMENT. Combined env+logging per §5.6. |
+| verify  | Track STEP=1 pending; PLAN links `agent/TRACK_STDLIB_ENV_LOGGING.md`; OTel out of scope. |
+| result  | Track opened. Plain: next stdlib = getenv + structured log. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; included leftover JOB_QUEUE archive one-liner. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_ENV_LOGGING — API Decision (Env/Log, format, pipeline) |
 
 ### Turn 2026-07-11 00:58 (Critic TRACK_STDLIB_JOB_QUEUE — critique-audit)
 

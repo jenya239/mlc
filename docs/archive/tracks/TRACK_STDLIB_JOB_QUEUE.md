@@ -31,7 +31,7 @@ retry is exception-only (no explicit failure callback).
   MLC has no reliable extern-callable closure story yet (same class of gap as
   Ruby lacking `spawn`). Pattern = **C++-only like early HTTP router**, not
   Crypto/WebSocket handles.
-- Soft include from `mlc.hpp` / concurrency umbrella when implemented.
+- Soft include from `mlc.hpp` (shipped with STEP=2).
 - Pure-mlcc `spawn` queue library = **follow-up**, not this track.
 
 ### API (C++ v1)

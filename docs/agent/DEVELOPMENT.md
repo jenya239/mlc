@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_JOB_QUEUE` closed** 2026-07-11 (Critic OK) — Planner next
-(env/config + logging per STDLIB_BACKEND §5.6).
+**`TRACK_STDLIB_ENV_LOGGING` open** STEP=1 — API Decision
+(`Env` / `Log` surface). See [TRACK_STDLIB_ENV_LOGGING.md](TRACK_STDLIB_ENV_LOGGING.md).
 
 
 ## Step sizing (good vs bad)
