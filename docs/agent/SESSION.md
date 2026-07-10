@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_ENV_LOGGING STEP=1 |
-| test_gate | docs-only Planner; no code gate |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_ENV_LOGGING STEP=2 |
+| test_gate | docs-only Decision; no code gate |
+
+### Turn 2026-07-11 01:05 (Driver TRACK_STDLIB_ENV_LOGGING STEP=1 — API Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_ENV_LOGGING |
+| started | 2026-07-11 01:02 |
+| elapsed | ~3 min |
+| done    | Decision: modules `Env`+`Log` (`mlc::env`/`mlc::log`); API `get`/`get_or`/`has` + `Log.{error,warn,info,debug}`; JSON lines stderr; Crypto MLC+C++ pipeline; no last_error/dotenv/OTel. PLAN/STDLIB/DEVELOPMENT → STEP=2. |
+| verify  | TRACK Decision section present; Open Qs resolved; STEP=1 done, STEP=2 pending. |
+| result  | STEP=1 done. Plain: Env+Log JSON lines, Crypto-style. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; absorbed Planner leftover PLAN/STDLIB queue sync. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_ENV_LOGGING — runtime `env.hpp`/`log.hpp` + C++ smoke |
 
 ### Turn 2026-07-11 01:02 (Planner — open TRACK_STDLIB_ENV_LOGGING)
 

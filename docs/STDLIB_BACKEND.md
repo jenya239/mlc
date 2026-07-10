@@ -37,7 +37,7 @@ env-based config) — категории зависимостей такого �
 | Crypto | hash (SHA-256), HMAC, bcrypt/argon2 для паролей, JWT sign/verify | **closed** — [TRACK_STDLIB_CRYPTO](archive/tracks/TRACK_STDLIB_CRYPTO.md) (JWT follow-up) |
 | WebSocket | upgrade handshake, frame parsing поверх TCP сервера | **closed** — [TRACK_STDLIB_WEBSOCKET](archive/tracks/TRACK_STDLIB_WEBSOCKET.md) |
 | Job queue / scheduler | периодические задачи, retry — библиотека поверх `ThreadPool`/`Channel` | **closed** — [TRACK_STDLIB_JOB_QUEUE](archive/tracks/TRACK_STDLIB_JOB_QUEUE.md) |
-| Env config + logging | `getenv` обёртка, structured log (json lines) | **open** — [TRACK_STDLIB_ENV_LOGGING](agent/TRACK_STDLIB_ENV_LOGGING.md) STEP=1 |
+| Env config + logging | `getenv` обёртка, structured log (json lines) | **open** — [TRACK_STDLIB_ENV_LOGGING](agent/TRACK_STDLIB_ENV_LOGGING.md) STEP=2 |
 | Validation | декларативные схемы для входных данных | средний, зависит от философии (см. §3) |
 
 ## 3. Философия: что не копировать из динамических экосистем
@@ -103,7 +103,8 @@ fn`-паттерн (POSIX C ABI, без callback/struct-сложностей у�
 5. **Job queue/scheduler** — [TRACK_STDLIB_JOB_QUEUE](archive/tracks/TRACK_STDLIB_JOB_QUEUE.md)
    **closed** 2026-07-11. C++ `job_queue.hpp`; gate `run_job_queue_gate.sh`;
    example `misc/examples/job_queue_demo.cpp`. MLC module — out of scope v1.
-6. **Env config + logging** — низкая сложность; filler after job-queue (§5.5).
+6. **Env config + logging** — **[TRACK_STDLIB_ENV_LOGGING](agent/TRACK_STDLIB_ENV_LOGGING.md)
+   open** STEP=2. Decision: Env+Log; JSON lines stderr; Crypto pipeline.
 7. **Validation** — после определения философии (§3), не начинать раньше
    явного решения compile-time vs runtime schema.
 
