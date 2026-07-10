@@ -119,3 +119,6 @@ jobs:
 
       - name: MSDF median shader FBO smoke
         run: compiler/tests/run_msdf_renderer_smoke.sh
+
+      - name: RenderMode A8/MSDF switch smoke
+        run: compiler/tests/run_render_mode_smoke.sh

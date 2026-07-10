@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 30 |
-| step_last | 7.2 |
-| active_track | TRACK_TEXT_RENDERING STEP=7.3 |
-| test_gate | ok (msdf renderer fbo) |
+| driver_turns_since_plan | 31 |
+| step_last | 7.3 |
+| active_track | TRACK_TEXT_RENDERING STEP=8 |
+| test_gate | ok (render mode smoke) |
+
+### Turn 2026-07-10 17:25 (Driver TRACK_TEXT_RENDERING STEP=7.3 — RenderMode)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7.3 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:32 |
+| elapsed | ~8 min |
+| done    | `choose_render_mode`: A8 if pixel_size&lt;28 else MSDF; `rasterize_by_mode` dispatch; `render_mode_smoke.mlc` + gate; CI; STEP=7 closed. |
+| verify  | `run_render_mode_smoke.sh` ok (exit 0). |
+| result  | STEP=7.3 done; STEP=7 **done**. Plain: pixel-size picks A8 vs MSDF. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=8 TRACK_TEXT_RENDERING — verify-gate + close |
 
 ### Turn 2026-07-10 17:10 (Driver TRACK_TEXT_RENDERING STEP=7.2 — MSDF median FBO)
 

@@ -154,6 +154,7 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
 - MLC: обычный `extern fn` / `extern lib` к шиму (C ABI only; C++ `msdfgen` не торчит в MLC).
 - Реализация шима — **STEP=7**, не раньше; STEP=2–4 (A8 FreeType path) не зависят от MSDF.
 - **STEP=7.1 (2026-07-10):** без системного `msdfgen` — EDT signed distance из FreeType A8-маски, RGB каналы = один SDF (совместимо с median MSDF-шейдером). API `msdf_generate` / `msdf_byte_at` зафиксирован; тело можно заменить на Chlumsky `msdfgen` без смены MLC-контракта.
+- **STEP=7.3 (2026-07-10):** `RenderMode` — `0=BitmapA8` если `pixel_size < 28`, иначе `1=MsdfRgb8`. Порог в `choose_render_mode` (`misc/examples/render_mode_smoke.mlc`).
 - Вариант (б) (чистый MLC MSDF) — запасной, только если шим окажется непропорционально тяжёлым; не default.
 
 ## 6. Критерий приёмки первого milestone (фаза 1-2, headless)

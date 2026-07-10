@@ -9,7 +9,7 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 (STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_MIR_VM_FULL` без
 явной команды.
 
-## Status: **open** — STEP=0–6 **done**; STEP=7.1–7.2 **done**; STEP=7.3 next
+## Status: **open** — STEP=0–7 **done**; STEP=8 next (verify-gate + close)
 
 **Planner 2026-07-10:** After `TRACK_MIR_VM_FULL` Epic 4 closed (STEP=12), queue
 skips SUPERVISOR (deferred) and LANG_REGION_ARENA (design-blocked). Next
@@ -50,6 +50,9 @@ textured quad → readback; MAE vs CPU blit (tol 8/255); smoke gate.
 
 **Driver 2026-07-10:** STEP=7.2 — `msdf_renderer_shim`: median MSDF FBO smoke;
 RGB8 atlas pack of field in MLC smoke.
+
+**Driver 2026-07-10:** STEP=7.3 — `choose_render_mode`: A8 if pixel_size&lt;28 else
+MSDF; dispatch smoke; STEP=7 closed.
 
 ## Test strategy (обязательно к соблюдению, не только для STEP=6)
 
@@ -109,11 +112,11 @@ packing атласа, MSDF-генерация — чистые данные, т�
   2) string/shaped-glyph path + golden fixture + CI — done
   3) optional narrow GL extern surface — skipped (shim owns GL; §5.2)
 -->
-| 7 | MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер + `RenderMode` переключение по pixel size. Численное сравнение distance-field с эталоном (без GPU для самой генерации). | **partial** (7.1–7.2 done; 7.3 RenderMode pending) |
+| 7 | MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер + `RenderMode` переключение по pixel size. Численное сравнение distance-field с эталоном (без GPU для самой генерации). | **done** (2026-07-10: 7.1 SDF RGB8; 7.2 median FBO; 7.3 RenderMode threshold 28) |
 <!-- sub-steps STEP=7:
   1) msdf_shim: FT→EDT SDF→RGB8 API + numerical smoke — done
   2) RGB8 atlas pack of MSDF glyph + MSDF median shader FBO smoke — done
-  3) RenderMode switch by pixel size
+  3) RenderMode switch by pixel size — done
 -->
 | 8 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `TEXT_RENDERING.md` §6 (фаза 1-2 headless) + tolerance-порог golden-тестов зафиксировать в критерии приёмки явным числом. | pending |
 

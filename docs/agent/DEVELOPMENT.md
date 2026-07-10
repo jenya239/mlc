@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=7.3 — `RenderMode` switch by pixel size.
-(STEP=7.2 done: MSDF median FBO + RGB8 atlas pack.)
+**TRACK_TEXT_RENDERING** STEP=8 — verify-gate + close
+(self-host diff, regression_gate, acceptance §6 + MAE tol 8).
+(STEP=7 done: MSDF path + RenderMode.)
 
 ## Step sizing (good vs bad)
 

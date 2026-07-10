@@ -1,0 +1,75 @@
+// RenderMode by pixel size (TRACK_TEXT_RENDERING STEP=7.3).
+// Small sizes → A8 bitmap; larger → MSDF/SDF RGB8 (single atlas entry scales).
+
+extern fn glyph_bitmap_packed(font_path: string, codepoint: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_packed" from "mlc/text/freetype_shim.hpp"
+
+extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
+  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
+
+extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
+extern fn msdf_byte_count() -> i32 = "mlc::text::msdf_byte_count" from "mlc/text/msdf_shim.hpp"
+
+// 0 = BitmapA8, 1 = MsdfRgb8
+type RenderMode = i32
+
+fn render_mode_threshold() -> i32 = 28
+
+fn choose_render_mode(pixel_size: i32) -> RenderMode = do
+  if pixel_size < render_mode_threshold() then
+    return 0
+  end
+  1
+end
+
+fn rasterize_by_mode(
+  font_path: string,
+  codepoint: i32,
+  pixel_size: i32,
+  mode: RenderMode
+) -> i32 = do
+  if mode == 0 then
+    const packed = glyph_bitmap_packed(font_path, codepoint, pixel_size)
+    if packed < 0 then
+      return -1
+    end
+    return packed
+  end
+  // MSDF field size fixed; display scale is independent of pixel_size.
+  const status = msdf_generate(font_path, codepoint, 32, 4)
+  if status != 0 then
+    return -2
+  end
+  if msdf_width() != 32 then
+    return -3
+  end
+  if msdf_byte_count() != 32 * 32 * 3 then
+    return -4
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  if choose_render_mode(16) != 0 then
+    return 1
+  end
+  if choose_render_mode(27) != 0 then
+    return 2
+  end
+  if choose_render_mode(28) != 1 then
+    return 3
+  end
+  if choose_render_mode(48) != 1 then
+    return 4
+  end
+  const small = rasterize_by_mode(font_path, 65, 16, choose_render_mode(16))
+  if small < 0 then
+    return 5
+  end
+  const large = rasterize_by_mode(font_path, 65, 48, choose_render_mode(48))
+  if large != 0 then
+    return 6
+  end
+  0
+end
