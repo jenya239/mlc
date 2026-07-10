@@ -383,9 +383,9 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09. SPAWN_DOUBLE_EXEC **closed**. **Next:** [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=1 (design A/B/C). SUPERVISOR deferred. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09. SPAWN_DOUBLE_EXEC **closed**. **Next:** [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=2 (`block_on`). SUPERVISOR deferred. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
-| **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby; `block_on` не в checker | **open** | [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=1 **next** (design A/B/C); STEP=2 `block_on`/`is_ready` |
+| **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby; `block_on` не в checker | **open** | [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=1 **done** (Decision **C**); STEP=2 **next** (`block_on`/`is_ready`) |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET_SERVER **closed**. Postgres/crypto **после** [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) design (STEP=1) |
@@ -474,8 +474,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → LANG_SPAWN_DOUBLE_EXEC (**closed** 2026-07-10: `expr_spawn_body_statements`;
       e2e `run_spawn_side_effect_gate.sh`; self-host p1≡p2; regression 20/0
       → [archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md))
-  → CONCURRENCY_RUBY_PARITY STEP=1 (**next** — design A/B/C: port spawn to
-      Ruby / port stdlib to mlcc / document split; then `block_on`)
+  → CONCURRENCY_RUBY_PARITY STEP=1 (**done** 2026-07-10: Decision **C**
+      document split; A reject; B deferred follow-up);
+    STEP=2 (**next** — `block_on`/`is_ready` in self-hosted checker)
   → Postgres/crypto треки (после RUBY_PARITY design) → WebSocket/job-queue/
       config/logging (см. STDLIB_BACKEND.md §5; треки по одному перед стартом)
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,

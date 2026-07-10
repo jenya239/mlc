@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_RUBY_PARITY** STEP=1 — design Decision A/B/C
-(port spawn→Ruby / stdlib→mlcc / document split).
+**TRACK_CONCURRENCY_RUBY_PARITY** STEP=2 — register `block_on`/`is_ready`
+in self-hosted checker (codegen map exists). Decision C done.
 
 
 ## Step sizing (good vs bad)

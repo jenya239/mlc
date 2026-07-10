@@ -5,11 +5,15 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 Найдено 2026-07-10 при попытке собрать многопоточный TCP-сервер: два
 языковых feature-набора реализованы в двух непересекающихся компиляторах.
 
-## Status: **open** — STEP=1 next (design)
+## Status: **open** — STEP=1 **done**; STEP=2 next (`block_on`)
 
 **Planner 2026-07-10:** выбран после closed SPAWN_DOUBLE_EXEC (выше
 Postgres — `block_on` residual + pipeline split blocks language-level
 TCP+spawn). Postgres track not opened this turn.
+
+**Driver 2026-07-10:** STEP=1 — Decision **C** (document temporary split);
+re-checked `rg spawn lib/mlc` → 0; `rg common/stdlib compiler` → 0;
+`block_on`/`is_ready` mapped in `cpp_naming.mlc` only.
 
 ## Проблема
 
@@ -54,26 +58,39 @@ TCP+spawn). Postgres track not opened this turn.
 без Ruby/`spawn` паритета. Этот трек остаётся для design-решения
 разрыва пайплайнов.
 
-## Decision (STEP=1 — fill here)
+## Decision (STEP=1, 2026-07-10) — **C**
 
-_Pending Driver STEP=1._ Options:
+**Chosen: C — document temporary pipeline split** (this track STEP=3).
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **A** Port `spawn`/`Mutex`/`Channel`/`Task` into Ruby `lib/mlc/` | One pipeline for backend+concurrency via Ruby | Large port; duplicates self-hosted work |
-| **B** Port `common/stdlib/` scan into self-hosted `mlcc` | One pipeline via mlcc; Tcp+spawn together | Stdlib loader design; many modules |
-| **C** Document temporary split (Ruby=IO stdlib, mlcc=language/concurrency) | Cheap; honest | No single-compiler TCP+spawn until later |
+| Option | Verdict |
+|--------|---------|
+| **A** Port concurrency into Ruby `lib/mlc/` | **Reject.** Duplicates self-hosted CONCURRENCY_V2; Ruby is bootstrap/reference, not the destination. |
+| **B** Port `common/stdlib/` into self-hosted `mlcc` | **Defer** to a future dedicated track. Correct long-term (self-host north star) but too large for STEP=3 here (loader + many modules). |
+| **C** Document split: Ruby = IO/backend stdlib (`Tcp`, …); `mlcc` = language + concurrency | **Accept for now.** Matches reality; cheap; NET_SERVER already uses C++ `ThreadPool` without language `spawn`. |
 
-Prefer recording **one** chosen option + what STEP=2–3 do under it.
-`block_on`/`is_ready` (STEP=2) is valuable under any option.
+### Rationale
+
+1. Re-check 2026-07-10: `rg spawn lib/mlc` → **0 files**; `rg common/stdlib compiler` → **0 files**.
+2. Full parity (A or B) is a multi-track project; this track’s job is an explicit Decision + cheap `block_on` fix + docs.
+3. Long-term intent remains **B** (stdlib on `mlcc`); do not start B implementation in STEP=3 — only name it as follow-up in `MLC.md` when documenting C.
+
+### What STEP=2–3 do under C
+
+- **STEP=2:** register `block_on`/`is_ready` in self-hosted checker (codegen map already exists) so `mlcc` spawn programs can join without relying on Task dtor.
+- **STEP=3:** matrix in `MLC.md` (and short README pointer): which features are Ruby-only vs `mlcc`-only; note follow-up = stdlib-on-mlcc (option B).
+
+### Non-goals (this track)
+
+- Implementing A or B.
+- Opening Postgres/crypto (unblocked after STEP=1 design; queue still prefers finishing STEP=2–3 first).
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design: choose A/B/C above; write Decision; list non-goals. | **pending** |
+| 1 | Design: choose A/B/C above; write Decision; list non-goals. | **done** (2026-07-10: **C**; B deferred follow-up) |
 | 2 | `block_on`/`is_ready` as identifiers in self-hosted checker (registry) + existing codegen map + regression (spawn e2e can `block_on`). | pending |
-| 3 | Per Decision: port one feature set **or** document split in `MLC.md`/`README.md`. | pending |
+| 3 | Document split in `MLC.md`/`README.md` (Decision C); name B as follow-up. | pending |
 
 <!-- sub-steps STEP=1: 1) re-check `rg spawn lib/mlc` + `rg common/stdlib compiler`; 2) pick A/B/C with 3–5 line rationale; 3) Decision table in this TRACK; 4) PLAN §8b sync -->
 <!-- sub-steps STEP=2: 1) registry/names for block_on/is_ready; 2) smoke `spawn`+`block_on` checks; 3) optional tighten spawn_side_effect_gate to block_on -->

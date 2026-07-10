@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=1 |
-| test_gate | ok (prior Critic) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=2 |
+| test_gate | ok (rg re-check) |
+
+### Turn 2026-07-10 19:33 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_RUBY_PARITY |
+| started | 2026-07-10 19:33 |
+| elapsed | ~5 min |
+| done    | Decision **C** (document split); A reject; B deferred. Re-check: `spawn` in `lib/mlc`=0; `common/stdlib` in `compiler/`=0. PLAN §8/§8b + queue. |
+| verify  | Decision section filled; STEP=2–3 scoped under C. |
+| result  | STEP=1 done. Plain: temporary Ruby=IO / mlcc=concurrency split. |
+| issues  | Foreign dirty left. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_RUBY_PARITY — register block_on/is_ready |
 
 ### Turn 2026-07-10 19:32 (Planner — plan-refresh after SPAWN)
 
