@@ -56,7 +56,7 @@ class MLCBlockTest < Minitest::Test
     cpp = MLC.to_cpp(source)
 
     assert_includes cpp, "int result = 0;"
-    assert_includes cpp, "result = x + 1;"
+    assert_includes cpp, "result = mlc::arith::checked_add(x, 1);"
     assert_includes cpp, "for (int x : xs)"
   end
 
@@ -71,7 +71,7 @@ class MLCBlockTest < Minitest::Test
     cpp = MLC.to_cpp(source)
 
     assert_includes cpp, "int x = 0;"
-    assert_includes cpp, "x = x + 1;"
+    assert_includes cpp, "x = mlc::arith::checked_add(x, 1);"
     assert_includes cpp, "return x;"
   end
 end

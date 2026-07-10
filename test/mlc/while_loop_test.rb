@@ -50,7 +50,7 @@ class WhileLoopUnitTypeTest < Minitest::Test
 
     # Verify block-style while loop
     assert_includes cpp, "while (count < 3)"
-    assert_includes cpp, "count = count + 1;"
+    assert_includes cpp, "count = mlc::arith::checked_add(count, 1);"
   end
 
   def test_while_loop_empty_body

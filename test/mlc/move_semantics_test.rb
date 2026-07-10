@@ -18,7 +18,7 @@ class MoveSemanticsTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "a + b"
+    assert_includes cpp, "mlc::arith::checked_add(a, b)"
   end
 
   def test_copy_type_bool_no_move

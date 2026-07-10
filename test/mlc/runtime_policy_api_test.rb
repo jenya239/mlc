@@ -105,6 +105,6 @@ class RuntimePolicyApiTest < Minitest::Test
     cpp = MLC.to_cpp(source, runtime_policy: nil)
 
     assert_includes cpp, "test"
-    assert_includes cpp, "1 + 2"
+    assert_includes cpp, "mlc::arith::checked_add(1, 2)"
   end
 end

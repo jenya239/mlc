@@ -338,7 +338,7 @@ class SafetyModelTest < Minitest::Test
     cpp = MLC.compile(source).to_source
     assert_includes cpp, "compute"
     # Unsafe blocks with statements use IIFE pattern
-    assert_includes cpp, "x + y"
+    assert_includes cpp, "mlc::arith::checked_add(x, y)"
   end
 
   def test_e2e_shared_pointer_type

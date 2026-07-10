@@ -91,7 +91,7 @@ class RecordUpdateTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
 
-    assert_includes cpp, "point.x + delta"
+    assert_includes cpp, "mlc::arith::checked_add(point.x, delta)"
   end
 
   def test_codegen_record_update_with_all_fields_overridden

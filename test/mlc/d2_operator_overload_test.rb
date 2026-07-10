@@ -51,7 +51,7 @@ class MLCD2OperatorOverloadTest < Minitest::Test
       fn main() -> i32 = 0
     MLC
     cpp = MLC.to_cpp(src)
-    assert_includes cpp, "a + b"
-    refute_includes cpp, "_add("
+    assert_includes cpp, "mlc::arith::checked_add(a, b)"
+    refute_includes cpp, "Vec2_add("
   end
 end

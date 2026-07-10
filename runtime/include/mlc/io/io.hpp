@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include <vector>
 #include "mlc/core/string.hpp"
 #include "mlc/core/array.hpp"
@@ -40,6 +41,12 @@ void set_args(std::vector<String>&& new_args);
 
 // Process control
 [[noreturn]] inline int exit(int code) { std::exit(code); }
+
+// Abort with message. Header-only (no link to io.cpp) for arith helpers.
+[[noreturn]] inline void panic(const String& message) {
+  std::fprintf(stderr, "PANIC: %s\n", message.c_str());
+  std::exit(1);
+}
 
 } // namespace io
 } // namespace mlc

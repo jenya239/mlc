@@ -38,7 +38,7 @@ class MLCRoundtripTest < Minitest::Test
     assert_includes cpp_code, "int a"
     assert_includes cpp_code, "int b"
     assert_includes cpp_code, "return"
-    assert_includes cpp_code, "a + b"
+    assert_includes cpp_code, "mlc::arith::checked_add(a, b)"
   end
 
   def test_full_pipeline
@@ -49,7 +49,7 @@ class MLCRoundtripTest < Minitest::Test
 
     # Verify generated C++
     assert_includes cpp_code, "int add(int a, int b)"
-    assert_includes cpp_code, "return a + b"
+    assert_includes cpp_code, "return mlc::arith::checked_add(a, b)"
   end
 
   def test_compile_and_run

@@ -36,6 +36,19 @@ module MLC
             # keep its parentheses whenever it shares the parent's precedence tier.
             FULLY_ASSOCIATIVE_OPERATORS = %w[+ * & | ^ && ||].freeze
 
+            # Signed + - *: runtime helpers (debug overflow panic). See mlc/core/arith.hpp.
+            SIGNED_OVERFLOW_HELPERS = {
+              "+" => "mlc::arith::checked_add",
+              "-" => "mlc::arith::checked_sub",
+              "*" => "mlc::arith::checked_mul"
+            }.freeze
+
+            # All integer / %: div0 panic (and signed MIN/-1 in debug).
+            INTEGER_DIVISION_HELPERS = {
+              "/" => "mlc::arith::checked_div",
+              "%" => "mlc::arith::checked_mod"
+            }.freeze
+
             def applies?(node)
               context.checker.binary_expr?(node)
             end
@@ -44,6 +57,13 @@ module MLC
               # Recursively lower left and right child expressions
               left = parenthesize_child_if_needed(lower_expression(node.left), node.left, node.op, side: :left)
               right = parenthesize_child_if_needed(lower_expression(node.right), node.right, node.op, side: :right)
+
+              helper = checked_arithmetic_helper(node)
+              if helper
+                return context.factory.raw_expression(
+                  code: "#{helper}(#{left.to_source}, #{right.to_source})"
+                )
+              end
 
               context.factory.binary_expression(
                 left: left,
@@ -55,6 +75,20 @@ module MLC
             end
 
             private
+
+            def checked_arithmetic_helper(node)
+              type_name = MLC::Common::Typing::Predicates.describe_type(node.type)
+              if SIGNED_OVERFLOW_HELPERS.key?(node.op) &&
+                 MLC::Common::Typing::Predicates::SIGNED_INTEGERS.include?(type_name)
+                return SIGNED_OVERFLOW_HELPERS[node.op]
+              end
+              if INTEGER_DIVISION_HELPERS.key?(node.op) &&
+                 MLC::Common::Typing::Predicates::INTEGER_PRIMITIVES.include?(type_name)
+                return INTEGER_DIVISION_HELPERS[node.op]
+              end
+
+              nil
+            end
 
             # Wrap a lowered child expression in parentheses when omitting them would
             # change what the emitted C++ parses back to (precedence- or

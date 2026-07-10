@@ -248,6 +248,7 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/collections.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/hashmap.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/io.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/core/arith.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/file.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/profile.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),

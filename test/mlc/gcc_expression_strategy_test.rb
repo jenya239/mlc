@@ -34,7 +34,7 @@ class GccExpressionStrategyTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "double"
-    assert_includes cpp, "x * 2"
+    assert_includes cpp, "mlc::arith::checked_mul(x, 2)"
   end
 
   def test_trivial_block_inlined

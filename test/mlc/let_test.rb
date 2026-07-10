@@ -15,7 +15,7 @@ class MLCLetTest < Minitest::Test
 
     refute_includes cpp, "[&]()"
     assert_includes cpp, "int x = 1;"
-    assert_includes cpp, "return x + 1;"
+    assert_includes cpp, "return mlc::arith::checked_add(x, 1);"
   end
 
   def test_let_expression_retains_constexpr_effect

@@ -64,7 +64,7 @@ class RecordFieldDefaultsTest < Minitest::Test
         Line { }.offset
     MLC
     cpp = MLC.to_cpp(src)
-    assert_match(/offset\s*=\s*10\s*\+\s*5\s*\*\s*2/, cpp)
+    assert_match(/offset\s*=\s*mlc::arith::checked_add\(10,\s*mlc::arith::checked_mul\(5,\s*2\)\)/, cpp)
   end
 
   def test_generic_record_field_defaults_rejected

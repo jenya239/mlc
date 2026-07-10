@@ -53,7 +53,7 @@ class MLCStringInterpolationTest < Minitest::Test
       fn f(x: i32) -> string = `${x + 1}`
     MLC
     assert_match(/to_string/, cpp)
-    assert_match(/\+\s*1|1\s*\+/, cpp)
+    assert_match(/checked_add\(x,\s*1\)/, cpp)
   end
 
   def test_nested_braces_in_interpolation

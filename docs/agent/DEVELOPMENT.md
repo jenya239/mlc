@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=3 — codegen: signed debug overflow panic +
-div0 panic; unsigned wrap unchanged.
-(STEP=2 done: `MLC.md` C4 integer arithmetic.)
+**TRACK_LANG_INT_OVERFLOW** STEP=3.2 — self-hosted codegen parity
+(signed debug overflow + div0). STEP=3.1 done (Ruby `BinaryRule` +
+`mlc/core/arith.hpp`).
 
 ## Step sizing (good vs bad)
 

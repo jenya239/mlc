@@ -75,7 +75,7 @@ class MLCStdlibTest < Minitest::Test
 
     cpp = MLC.to_cpp(mlc_source)
 
-    assert_includes cpp, "5 + 3 + 7"
+    assert_includes cpp, "mlc::arith::checked_add(mlc::arith::checked_add(5, 3), 7)"
   end
 
   def test_string_concatenation

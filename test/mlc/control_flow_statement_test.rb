@@ -31,9 +31,9 @@ class MLCControlFlowStatementTest < Minitest::Test
 
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "if (total > 10)"
-    assert_includes cpp, "total = total - 5;"
+    assert_includes cpp, "total = mlc::arith::checked_sub(total, 5);"
     assert_includes cpp, "else"
-    assert_includes cpp, "total = total + 5;"
+    assert_includes cpp, "total = mlc::arith::checked_add(total, 5);"
   end
 
   def test_while_statement_generates_cpp_while
@@ -50,7 +50,7 @@ class MLCControlFlowStatementTest < Minitest::Test
     cpp = MLC.to_cpp(source)
 
     assert_includes cpp, "while (value > 0)"
-    assert_includes cpp, "value = value - 1;"
+    assert_includes cpp, "value = mlc::arith::checked_sub(value, 1);"
   end
 
   def test_return_statement_in_block

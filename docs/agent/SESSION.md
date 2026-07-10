@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 34 |
-| step_last | 2 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=3 |
-| test_gate | ok (docs-only) |
+| driver_turns_since_plan | 35 |
+| step_last | 3.1 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=3.2 |
+| test_gate | ok (Ruby overflow codegen + smoke) |
+
+### Turn 2026-07-10 19:10 (Driver TRACK_LANG_INT_OVERFLOW STEP=3.1 — Ruby codegen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3.1 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 15:53 |
+| elapsed | ~40 min |
+| done    | Runtime `mlc::io::panic` + `mlc/core/arith.hpp` (`checked_add/sub/mul/div/mod`); Ruby `BinaryRule` emits helpers for signed `+`/`-`/`*` and all-integer `/` `%`; unsigned wrap raw; include in codegen; tests updated + `integer_overflow_codegen_test.rb`. |
+| verify  | 129 affected tests 0 fail; g++ smoke: debug panics on overflow/div0; release ok path. |
+| result  | STEP=3.1 done. Plain: Ruby emits checked integer ops. |
+| issues  | Dirty `compiler/out/*` left. Pre-existing EngineTest/IRBuilder + generics nxt errors unrelated. |
+| next    | ROLE=Driver STEP=3.2 TRACK_LANG_INT_OVERFLOW — self-hosted codegen parity |
 
 ### Turn 2026-07-10 18:05 (Driver TRACK_LANG_INT_OVERFLOW STEP=2 — MLC.md)
 
