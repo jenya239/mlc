@@ -40,8 +40,11 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` open** — STEP=2 (`runtime/include/mlc/net/websocket.hpp`).
-See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
+**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=2 (named-module resolve in mlcc).
+Max priority over WEBSOCKET (CONTINUITY hard limit). Decision **A**.
+See [TRACK_PIPELINE_MERGE_TCP_SPAWN.md](TRACK_PIPELINE_MERGE_TCP_SPAWN.md).
+
+Paused: `TRACK_STDLIB_WEBSOCKET` STEP=2 until merge track closes.
 
 
 ## Step sizing (good vs bad)

@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-10-critic-after-close-gate` |
+| instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
 | step_last | 1 |
-| active_track | TRACK_STDLIB_WEBSOCKET open STEP=2 |
+| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=2 |
 | test_gate | n/a (docs Decision) |
+
+### Turn 2026-07-10 21:50 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=1 — Decision A)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 21:45 |
+| elapsed | ~5 min |
+| done    | Decision **A** (Tcp→mlcc named resolve); B reject; minimal module=`Tcp` only; bare-name table. PLAN §8c + queue; DEVELOPMENT. Switched from WEBSOCKET per CONTINUITY hard limit (WEBSOCKET STEP=2 not started). |
+| verify  | TRACK STEP=1 done; STEP=2 pending; WEBSOCKET remains open STEP=2 paused. |
+| result  | STEP=1 done. Plain: merge path = named `import Tcp` in mlcc. |
+| issues  | instructions_rev sync critic→pipeline-merge-priority. Foreign dirty none this turn. |
+| next    | ROLE=Driver STEP=2 TRACK_PIPELINE_MERGE_TCP_SPAWN — bare-name resolve in module_loader/path_normalize |
 
 ### Turn 2026-07-10 20:42 (Driver TRACK_STDLIB_WEBSOCKET STEP=1 — API Decision)
 
