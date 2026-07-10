@@ -220,3 +220,15 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
   требует (см. обсуждение в чате 2026-07-09): эффорт сопоставим с отдельным
   крупным подпроектом, отдельно от §2.4 (GObject refcounting ≠ `Shared<T>`,
   GTK signals) и §2.6 (ffmpeg struct/union/макросы).
+
+## 8. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
+
+Слой §2 даёт ABI-механизм, не даёт safety-гарантий. `extern fn`/
+`RawPointer[T]`/`extern type` — unsafe escape hatch без синтаксического
+маркера (в отличие от Rust `unsafe fn`/`unsafe {}`): lifetime, null-checks
+и реальная ABI-сверка сигнатуры остаются на совести автора биндинга,
+компилятор их не проверяет. Concurrency-атрибуты (§2.7) реализованы, но
+ничто не требует их указывать — дефолт при отсутствии атрибута не
+зафиксирован явно. Детали, открытые вопросы и план — в
+`agent/TRACK_FFI_SAFETY.md`, отдельный трек, не блокирует использование
+слоя как есть.

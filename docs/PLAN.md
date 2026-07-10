@@ -390,6 +390,12 @@ compiler/
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **open, КРИТИЧЕСКИЙ приоритет** | [TRACK_VM_TRAMPOLINE](agent/TRACK_VM_TRAMPOLINE.md) — STEP=1–2 **done** (trampoline + corpus 18/18/28), STEP=3 next (≥100k fixture); root cause: `vm_run_frames` host recursion per MIR step |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1 next; root cause и точные места фикса уже найдены (2026-07-10 ручное расследование, не закоммичено по команде пользователя — "не делай сам"). Маленький, изолированный, не зависит от MIR_VM_FULL/TEXT_RENDERING |
+| **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
+| **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
+| **16** Integer overflow semantics | **open, средний приоритет** | [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) — дырка в спецификации языка (UB как в C++, не зафиксировано нигде), затрагивает весь codegen арифметики |
+| **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
+| **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
+| **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -441,6 +447,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее
+  → LANG_INT_OVERFLOW (**средний приоритет**, дырка в спецификации — можно
+    брать параллельно с TEXT_RENDERING/STDLIB_BACKEND, не пересекается по файлам)
+  → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
+    без зависимостей друг от друга)
+  → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
+    без отдельной команды пользователя)
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
