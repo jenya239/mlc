@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_CRYPTO closed (Critic done) |
-| test_gate | ok (run_crypto_gate.sh) |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_WEBSOCKET open STEP=1 |
+| test_gate | n/a (docs-only Planner) |
+
+### Turn 2026-07-10 20:38 (Planner — open TRACK_STDLIB_WEBSOCKET)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-10 20:04 |
+| elapsed | ~5 min |
+| done    | Created `docs/agent/TRACK_STDLIB_WEBSOCKET.md` (STEP=1–5); PLAN §11 + queue; STDLIB_BACKEND §2/§5.4; DEVELOPMENT. Chose WS over job-queue (§5). |
+| verify  | Track STEP=1 pending; PLAN links `agent/TRACK_STDLIB_WEBSOCKET.md`; WSS/client out of scope. |
+| result  | plan-refresh done. Plain: WebSocket server track ready for Driver. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_WEBSOCKET — API Decision (MLC vs C++-only, text frames, upgrade API) |
 
 ### Turn 2026-07-10 20:35 (Critic TRACK_STDLIB_CRYPTO — critique-audit)
 

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_CRYPTO` closed** 2026-07-10 — Critic done, no reopen.
-Next: Planner opens WebSocket (or job-queue) from STDLIB_BACKEND backlog.
+**`TRACK_STDLIB_WEBSOCKET` open** — STEP=1 (API Decision; server WS).
+See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
 
 
 ## Step sizing (good vs bad)
