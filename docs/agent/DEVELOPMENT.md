@@ -40,10 +40,10 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**STDLIB_ENV_LOGGING Critic OK** — reopen none. Next: **Planner**
-`plan-refresh` — open Validation (STDLIB_BACKEND §5.7) or continue
-TEXT_RENDERING_NATIVE (already open in queue). Archive:
-[TRACK_STDLIB_ENV_LOGGING.md](../archive/tracks/TRACK_STDLIB_ENV_LOGGING.md).
+**`TRACK_STDLIB_VALIDATION` open** STEP=1 — Philosophy Decision
+(compile-time vs runtime schema). See
+[TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
+TEXT_RENDERING_NATIVE remains open (medium/personal) but not Driver-next.
 
 
 ## Step sizing (good vs bad)
