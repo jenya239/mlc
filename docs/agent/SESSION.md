@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 24 |
-| step_last | 4.2 |
-| active_track | TRACK_TEXT_RENDERING STEP=4.3 |
-| test_gate | ok (glyph cache smoke native) |
+| driver_turns_since_plan | 25 |
+| step_last | 4.3 |
+| active_track | TRACK_TEXT_RENDERING STEP=5 |
+| test_gate | ok (text shim sanitize asan+ubsan) |
+
+### Turn 2026-07-10 15:35 (Driver TRACK_TEXT_RENDERING STEP=4.3 — ASan/UBSan FT/HB)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4.3 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:14 |
+| elapsed | ~8 min |
+| done    | `build_bin.sh` honors `MLC_SANITIZE` (address/undefined/thread, separate obj tags); `run_text_shim_sanitize_gate.sh` runs FT+HB smokes under asan and ubsan. STEP=4 closed. |
+| verify  | sanitize gate ok (~34s). |
+| result  | STEP=4.3 done; STEP=4 **done**. Plain: text shims clean under ASan/UBSan. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_TEXT_RENDERING — §5.2 glXGetProcAddress design + smoke |
 
 ### Turn 2026-07-10 15:30 (Driver TRACK_TEXT_RENDERING STEP=4.2 — GlyphCache LRU)
 

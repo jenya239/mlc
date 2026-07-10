@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=4.3 — ASan/UBSan on freetype/harfbuzz smoke fixtures.
-(STEP=4.2 done: `glyph_cache_smoke.mlc` / `run_glyph_cache_smoke.sh`.)
+**TRACK_TEXT_RENDERING** STEP=5 — §5.2 `glXGetProcAddress` design + smoke.
+(STEP=4 done: atlas, LRU, `run_text_shim_sanitize_gate.sh`.)
 
 ## Step sizing (good vs bad)
 

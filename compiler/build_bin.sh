@@ -61,6 +61,27 @@ else
   OBJECT_STORE_TAG="O${OPTIMIZATION_LEVEL}"
 fi
 
+SANITIZE_FLAGS=()
+case "${MLC_SANITIZE:-}" in
+  "") ;;
+  address)
+    SANITIZE_FLAGS=(-fsanitize=address -g -fno-omit-frame-pointer)
+    OBJECT_STORE_TAG="${OBJECT_STORE_TAG}_asan"
+    ;;
+  undefined)
+    SANITIZE_FLAGS=(-fsanitize=undefined -g)
+    OBJECT_STORE_TAG="${OBJECT_STORE_TAG}_ubsan"
+    ;;
+  thread)
+    SANITIZE_FLAGS=(-fsanitize=thread -g)
+    OBJECT_STORE_TAG="${OBJECT_STORE_TAG}_tsan"
+    ;;
+  *)
+    echo "build_bin.sh: unknown MLC_SANITIZE=${MLC_SANITIZE} (want address|undefined|thread)" >&2
+    exit 1
+    ;;
+esac
+
 OBJ_DIR="$CPP_DIR/obj/$OBJECT_STORE_TAG"
 if [ "${MLCC_OBJ_CLEAN:-0}" = "1" ]; then
   rm -rf "$OBJ_DIR"
@@ -136,7 +157,7 @@ if [ "${MLCC_PCH:-1}" != "0" ] && [ -f "$PRECOMPILED_SOURCE" ]; then
   if [ ! -f "$PRECOMPILED_OUTPUT" ] \
     || [ "$PRECOMPILED_HEADER" -nt "$PRECOMPILED_OUTPUT" ] \
     || [ "$RT_INC/mlc.hpp" -nt "$PRECOMPILED_OUTPUT" ]; then
-    "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${INC_FLAGS[@]}" \
+    "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" "${INC_FLAGS[@]}" \
       -x c++-header "$PRECOMPILED_HEADER" -o "$PRECOMPILED_OUTPUT"
   fi
   if cxx_is_clang; then
@@ -190,7 +211,7 @@ for cpp in "${ALL_CPP[@]}"; do
     continue
   fi
   dep_file="$(dep_file_for_object "$object_path")"
-  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -MMD -MF "$dep_file" -c "$cpp" -o "$object_path" &
+  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -MMD -MF "$dep_file" -c "$cpp" -o "$object_path" &
   PIDS+=($!)
   if [ ${#PIDS[@]} -ge "$JOBS" ]; then
     for pid in "${PIDS[@]}"; do
@@ -227,4 +248,4 @@ if [ -f "$CPP_DIR/mlc_link_libs.txt" ]; then
 fi
 EXTERN_LINK_LIBS+=("${TEXT_LIBS[@]}")
 
-"${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}" "${EXTERN_LINK_LIBS[@]}"
+"${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}" "${EXTERN_LINK_LIBS[@]}"
