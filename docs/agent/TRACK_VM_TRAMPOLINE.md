@@ -17,10 +17,10 @@ Blocks the entire practical value of `TRACK_MIR_VM_FULL`. Small, well-scoped,
 root cause already found (see below) — no further investigation needed
 before starting the fix.
 
-## Status: **open** — STEP=1 **done**; STEP=2 next (corpus regression)
+## Status: **open** — STEP=1–3 **done**; STEP=4 next (re-benchmark)
 
-**Driver 2026-07-10:** STEP=1 — `vm_run_frames` trampoline loop + `vm_pop_return` →
-`VmRunContinue`; helper `vm_run_frames_step` / `vm_failed_outcome` (typed mut).
+**Driver 2026-07-10:** STEP=1 — trampoline; STEP=2 — corpus; STEP=3 — `vm_deep_loop.mlc`
+(100k iters) + `run_vm_trampoline_depth_gate.sh` under default `ulimit -s`.
 
 ## Root cause (found, confirmed, not fixed)
 
@@ -126,7 +126,7 @@ self-call) needs to stop recursing.
 |------|------|--------|
 | 1 | Rewrite `vm_run_frames` in `compiler/vm/execute.mlc` as an explicit `while` loop (see Fix approach). Change `vm_pop_return` to return `VmRunOutcome` instead of calling `vm_run_frames` directly. | **done** (2026-07-10: trampoline + step helper; loop 10k / rec 1200 no segfault) |
 | 2 | Regression: full existing corpus (`vm_cpp_diff_programs.txt`, `run_single_file_vm_gate.sh`, `run_examples_vm_gate.sh`) must still pass — this is a pure refactor, no behavior change for small programs. | **done** (2026-07-10: cpp_diff 18, single-file 18+diff, examples 28) |
-| 3 | New regression fixture: loop/recursion depth **≥ 100,000** steps (well past the old ~1700 ceiling) must complete without crashing and without `ulimit -s unlimited`. Add to `compiler/tests/` corpus permanently — this exact class of bug must never regress silently again. | pending |
+| 3 | New regression fixture: loop/recursion depth **≥ 100,000** steps (well past the old ~1700 ceiling) must complete without crashing and without `ulimit -s unlimited`. Add to `compiler/tests/` corpus permanently — this exact class of bug must never regress silently again. | **done** (2026-07-10: `misc/examples/vm_deep_loop.mlc` 100k + `run_vm_trampoline_depth_gate.sh`; exit=7, ulimit -s=8192, ~0.34s) |
 | 4 | Re-benchmark throughput after the fix (same 1000/2,000,000-iteration loops as the 2026-07-10 manual benchmark) — confirm no major regression from the refactor itself (trampoline should be same speed or faster, no recursion call overhead). Record numbers in this track or `TRACK_MIR_VM_FULL.md` §4. | pending |
 | 5 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`. Update `TRACK_MIR_VM_FULL.md` — Epic 4's stability claim was false until this fix; note the correction there with a link to this track. | pending |
 

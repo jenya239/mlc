@@ -1,0 +1,10 @@
+# TRACK_VM_TRAMPOLINE STEP=3: ≥100k MIR steps via while-loop.
+# Pre-trampoline VM segfaulted around ~1500–2000 steps (C++ stack growth).
+# Note: avoid `if i == N` after the loop — that path can hang in VM (separate bug).
+fn main() -> i32 = do
+  let mut i = 0
+  while i < 100000 do
+    i = i + 1
+  end
+  7
+end

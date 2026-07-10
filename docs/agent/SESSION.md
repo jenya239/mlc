@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 2 |
-| active_track | TRACK_VM_TRAMPOLINE STEP=3 |
-| test_gate | ok (cpp_diff 18 / single-file 18+diff / examples 28) |
+| driver_turns_since_plan | 6 |
+| step_last | 3 |
+| active_track | TRACK_VM_TRAMPOLINE STEP=4 |
+| test_gate | ok (vm_deep_loop 100k exit=7, ulimit -s=8192, ~0.34s) |
+
+### Turn 2026-07-10 12:55 (Driver TRACK_VM_TRAMPOLINE STEP=3 — ≥100k depth fixture)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_VM_TRAMPOLINE |
+| started | 2026-07-10 12:27 |
+| elapsed | ~28 min |
+| done    | `misc/examples/vm_deep_loop.mlc` (while 100k→7); `compiler/tests/run_vm_trampoline_depth_gate.sh` (default stack, refuse unlimited). |
+| verify  | gate ok exit=7; `ulimit -s=8192`; elapsed≈0.34s. |
+| result  | STEP=3 done. Plain: 100k-step loop no longer segfaults on default C++ stack. |
+| issues  | `if i == N` after long loop hangs in VM — fixture returns bare `7`; separate bug, not this track. Foreign WIP left. |
+| next    | ROLE=Driver STEP=4 TRACK_VM_TRAMPOLINE — re-bench 1000/2e6 loops; record numbers |
 
 ### Turn 2026-07-10 12:30 (Driver TRACK_VM_TRAMPOLINE STEP=2 — corpus regression)
 
