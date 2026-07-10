@@ -49,6 +49,9 @@
 #include "mlc/env/env.hpp"
 #include "mlc/log/log.hpp"
 
+// Validation helpers (no third-party deps)
+#include "mlc/validate/validate.hpp"
+
 // Text processing
 #include "mlc/text/regex.hpp"
 

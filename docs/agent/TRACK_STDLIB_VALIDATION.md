@@ -6,14 +6,18 @@ Trigger: ENV_LOGGING **closed** (Critic OK); STDLIB_BACKEND §5 next is
 Validation — **blocked on philosophy** (§3 / §5.7): compile-time vs runtime
 schema must be locked before implementation.
 
-## Status: **open** — STEP=2 next (pure MLC Validate helpers)
+## Status: **open** — STEP=3 next (registry + stdlib test)
 
 **Planner 2026-07-11:** opened after ENV_LOGGING Critic. Chose Validation over
 jumping to TEXT_RENDERING_NATIVE (already open, medium/personal priority) to
 finish STDLIB_BACKEND §5 chain. STEP=1 **is** the required philosophy lock.
 
-**Driver 2026-07-11:** STEP=1 — Decision locked (explicit runtime helpers; pure
-MLC `Validate`; `Result<(), string>`; no derive/schema DSL).
+**Driver 2026-07-11:** STEP=1 — Decision locked (explicit runtime helpers;
+`Result<(), string>`; no derive/schema DSL).
+
+**Driver 2026-07-11:** STEP=2 — `validate.hpp` + extern `validate.mlc`; smoke
+12/0. Amended: pure-MLC stdlib bodies are **not** inlined by Ruby codegen →
+C++ implements (Env pattern).
 
 ## Goal
 
@@ -46,8 +50,8 @@ ever wanted.
 
 ### Surface
 
-- Module **`Validate`** (`std/validate/validate`), namespace N/A (pure MLC).
-- Free functions on the module (Crypto/Env style `import Validate::{…}`).
+- Module **`Validate`** (`std/validate/validate`), C++ `mlc::validate`.
+- Header: `runtime/include/mlc/validate/validate.hpp`.
 
 ```
 Validate.non_empty(value: string) -> Result<(), string>
@@ -58,30 +62,29 @@ Validate.range_i32(value: i32, minimum: i32, maximum: i32) -> Result<(), string>
 
 | Method | Semantics |
 |--------|-----------|
-| `non_empty` | `Ok(())` if `value.length() > 0`; else `Err("must be non-empty")` |
-| `min_length` | `Ok(())` if length ≥ `minimum`; else `Err` with message |
-| `max_length` | `Ok(())` if length ≤ `maximum`; else `Err` with message |
-| `range_i32` | `Ok(())` if `minimum ≤ value ≤ maximum`; else `Err` with message |
+| `non_empty` | `Ok(())` if non-empty; else `Err("must be non-empty")` |
+| `min_length` / `max_length` | byte length (`byte_size`) vs bound; ASCII-oriented v1 |
+| `range_i32` | `Ok(())` if `minimum ≤ value ≤ maximum`; else `Err("value out of range")` |
 
 - **No** trait `extend Type : Validate` in v1.
 - **No** multi-check aggregator / varargs in v1 (compose with `?` or match).
 
 ### Error model
 
-- **`Result<(), string>`** — success `Ok(())`, failure `Err(message)`.
+- **`Result<(), string>`** — success `Ok(())` (`std::tuple<>` in C++), failure
+  `Err(message)`.
 - **First failure only** — no error list / multi-error collect.
-- **No** `last_error()` (message is in `Err`).
-- If `Result<(), string>` hits a unit-type codegen gap in STEP=2, fallback
-  documented then: `Result<bool, string>` with `Ok(true)` — same messages.
+- **No** `last_error()`.
 
 ### Pipeline
 
-- **Pure MLC** stdlib (like `Option`/`Result` modules) — **no** C++ runtime
-  header required for v1 (string/i32 checks are language-level).
-- Ruby registry + scanner; codegen needs no new includes.
-- Self-hosted bare `Validate` import: **out of scope v1** (Env/WebSocket class).
-- **No** `compiler/**` in this track unless STEP=2 discovers a hard blocker
-  (then stop and re-Decision — do not silently add derive).
+- **C++ runtime + MLC extern** (Env pattern). STEP=2 found pure-MLC stdlib
+  function bodies are **not emitted** into consumer TUs by Ruby codegen
+  (calls become `mlc::validate::*` with no definition) — same class as Array
+  helpers living in C++ headers.
+- Ruby registry in STEP=3; codegen includes `validate.hpp`.
+- Self-hosted bare `Validate` import: **out of scope v1**.
+- **No** `compiler/**` / derive in this track.
 
 ### Non-goals (locked)
 
@@ -96,14 +99,13 @@ Validate.range_i32(value: i32, minimum: i32, maximum: i32) -> Result<(), string>
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Philosophy Decision: compile-time (derive/codegen) vs runtime helpers vs hybrid; API surface; error model; non-goals. Document in «Decision». | **done** |
-| 2 | Implement pure MLC `Validate` helpers (+ Ruby smoke/unit). | **pending** |
-| 3 | Registry/aliases + stdlib test (codegen/import). | pending |
+| 1 | Philosophy Decision. | **done** |
+| 2 | Runtime `validate.hpp` + extern `validate.mlc` (+ C++ smoke). | **done** (2026-07-11: smoke 12/0; codegen include) |
+| 3 | Registry/aliases + stdlib test (codegen/import). | **pending** |
 | 4 | Gate: script — valid/invalid fixtures assert. | pending |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
 
-<!-- sub-steps STEP=1: 1) compile-time vs runtime; 2) API sketch; 3) error model; 4) non-goals -->
-<!-- sub-steps STEP=2: 1) validate.mlc; 2) unit smoke; 3) SESSION -->
+<!-- sub-steps STEP=2: 1) validate.hpp; 2) extern mlc; 3) smoke -->
 <!-- sub-steps STEP=3: 1) registry; 2) stdlib test; 3) SESSION -->
 <!-- sub-steps STEP=4: 1) gate script; 2) fixtures; 3) SESSION -->
 <!-- sub-steps STEP=5: 1) docs+example; 2) archive; 3) Critic -->

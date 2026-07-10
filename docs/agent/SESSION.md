@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_VALIDATION STEP=2 |
-| test_gate | docs-only Decision; no code gate |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_VALIDATION STEP=3 |
+| test_gate | `run_validate_runtime_smoke.sh` 12/0; ruby codegen OK |
+
+### Turn 2026-07-11 01:55 (Driver TRACK_STDLIB_VALIDATION STEP=2 — runtime)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 01:50 |
+| elapsed | ~5 min |
+| done    | `runtime/include/mlc/validate/validate.hpp`; extern `stdlib/validate/validate.mlc`; `mlc.hpp`+codegen include; smoke `test_validate.cpp` + `run_validate_runtime_smoke.sh`. Amended Decision: C++ (pure stdlib not inlined). PLAN/STDLIB → STEP=3. |
+| verify  | smoke 12/0; `MLC.compile` import Validate → `mlc/validate/validate.hpp` + `mlc::validate::non_empty`. |
+| result  | STEP=2 done. Plain: Validate helpers ship in C++ + extern MLC. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; absorbed STEP=1 leftover PLAN/STDLIB dirty. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_VALIDATION — registry + stdlib test |
 
 ### Turn 2026-07-11 01:48 (Driver TRACK_STDLIB_VALIDATION STEP=1 — Philosophy Decision)
 

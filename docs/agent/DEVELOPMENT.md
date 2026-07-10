@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` open** STEP=2 — pure MLC `Validate` helpers.
+**`TRACK_STDLIB_VALIDATION` open** STEP=3 — registry + stdlib test.
 See [TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
 
 

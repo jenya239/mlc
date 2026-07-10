@@ -1,0 +1,15 @@
+//! @module std/validate/validate
+//! @category validate
+//! @type extern
+//! @namespace mlc::validate
+
+# Explicit validation helpers (TRACK_STDLIB_VALIDATION).
+# First-failure Result<(), string> — no schema DSL / derive.
+# Bodies in runtime validate.hpp (Ruby codegen does not inline pure stdlib).
+
+module Validate
+
+export extern fn non_empty(value: string) -> Result<(), string>
+export extern fn min_length(value: string, minimum: i32) -> Result<(), string>
+export extern fn max_length(value: string, maximum: i32) -> Result<(), string>
+export extern fn range_i32(value: i32, minimum: i32, maximum: i32) -> Result<(), string>
