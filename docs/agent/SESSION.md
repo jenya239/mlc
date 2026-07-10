@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 26 |
-| step_last | 5 |
-| active_track | TRACK_TEXT_RENDERING STEP=6 |
-| test_gate | ok (gl loader smoke) |
+| driver_turns_since_plan | 27 |
+| step_last | 6.1 |
+| active_track | TRACK_TEXT_RENDERING STEP=6.2 |
+| test_gate | ok (text renderer a8 smoke) |
+
+### Turn 2026-07-10 16:20 (Driver TRACK_TEXT_RENDERING STEP=6.1 — TextRenderer A8 FBO)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6.1 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:18 |
+| elapsed | ~25 min |
+| done    | `text_renderer_shim.cpp`: FT A8 → GLES2 FBO quad → readback; MAE vs CPU blit (tol 8); `text_renderer_a8_smoke.mlc` + `run_text_renderer_a8_smoke.sh`; CI job extended. |
+| verify  | `run_text_renderer_a8_smoke.sh` ok (exit 0). |
+| result  | STEP=6.1 done. Plain: one glyph A8 path pixel-diff gated. |
+| issues  | Dirty `compiler/out/*` left. GL_LUMINANCE unreliable on Mesa — use RGBA upload. |
+| next    | ROLE=Driver STEP=6.2 TRACK_TEXT_RENDERING — shaped string / golden fixture |
 
 ### Turn 2026-07-10 16:00 (Driver TRACK_TEXT_RENDERING STEP=5 — §5.2 EGL loader)
 

@@ -43,6 +43,9 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
   TEXT_CFLAGS+=($(pkg-config --cflags egl glesv2))
   # shellcheck disable=SC2207
   TEXT_LIBS+=($(pkg-config --libs egl glesv2))
+  if pkg-config --exists freetype2; then
+    RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_renderer_shim.cpp")
+  fi
 fi
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"

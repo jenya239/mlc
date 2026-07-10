@@ -81,12 +81,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang + Mesa EGL (headless llvmpipe)
+      - name: Install clang + Mesa EGL + FreeType (headless llvmpipe)
         run: |
           sudo apt-get update
           sudo apt-get install -y clang pkg-config \
             libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev \
-            mesa-utils libgl1-mesa-dri
+            mesa-utils libgl1-mesa-dri \
+            libfreetype-dev fonts-dejavu-core
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -106,3 +107,6 @@ jobs:
 
       - name: EGL glGenBuffers loader smoke
         run: compiler/tests/run_gl_loader_smoke.sh
+
+      - name: TextRenderer A8 FBO pixel-diff smoke
+        run: compiler/tests/run_text_renderer_a8_smoke.sh

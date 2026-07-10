@@ -1,0 +1,14 @@
+// TextRenderer A8 smoke (TRACK_TEXT_RENDERING STEP=6.1).
+// FreeType glyph → GLES2 FBO → pixel-diff vs CPU blit (MAE tolerance).
+
+extern fn text_renderer_a8_glyph_smoke(font_path: string, codepoint: i32, pixel_size: i32) -> i32
+  = "mlc::gl::text_renderer_a8_glyph_smoke" from "mlc/gl/text_renderer_shim.hpp"
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const status = text_renderer_a8_glyph_smoke(font_path, 65, 32)
+  if status != 0 then
+    return status
+  end
+  0
+end

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=6 — OpenGL binding + `TextRenderer` A8
-(offscreen FBO + golden pixel-diff). (STEP=5 done: EGL loader shim + CI.)
+**TRACK_TEXT_RENDERING** STEP=6.2 — shaped string / golden fixture on A8 path.
+(STEP=6.1 done: `text_renderer_shim` FBO + MAE tol 8.)
 
 ## Step sizing (good vs bad)
 
