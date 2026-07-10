@@ -72,3 +72,37 @@ jobs:
 
       - name: Concurrency sanitizer gate (asan/ubsan/tsan)
         run: scripts/concurrency_sanitize_gate.sh
+
+  gl-loader-smoke:
+    runs-on: ubuntu-latest
+    env:
+      MLC_CXX: clang++
+      TMPDIR: ${{ github.workspace }}/tmp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang + Mesa EGL (headless llvmpipe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang pkg-config \
+            libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev \
+            mesa-utils libgl1-mesa-dri
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Download bootstrap mlcc binary
+        run: |
+          mkdir -p compiler/out tmp
+          gh release download --repo jenya239/mlc --pattern 'mlcc' --dir compiler/out/ \
+            $(gh release list --repo jenya239/mlc --limit 1 | awk '{print $3}')
+          chmod +x compiler/out/mlcc
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build mlcc (self-hosted, Ruby fallback if stale)
+        run: compiler/build.sh
+
+      - name: EGL glGenBuffers loader smoke
+        run: compiler/tests/run_gl_loader_smoke.sh

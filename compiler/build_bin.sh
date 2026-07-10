@@ -20,7 +20,7 @@ RT_SRC=(
   "$ROOT_DIR/runtime/src/core/string.cpp"
   "$ROOT_DIR/runtime/src/core/profile.cpp"
 )
-# Optional text shims (TRACK_TEXT_RENDERING): FreeType / HarfBuzz when installed.
+# Optional text/GL shims (TRACK_TEXT_RENDERING): FreeType / HarfBuzz / EGL loader.
 TEXT_CFLAGS=()
 TEXT_LIBS=()
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
@@ -36,6 +36,13 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
     # shellcheck disable=SC2207
     TEXT_LIBS+=($(pkg-config --libs harfbuzz))
   fi
+fi
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-config --exists glesv2; then
+  RT_SRC+=("$ROOT_DIR/runtime/src/gl/loader_shim.cpp")
+  # shellcheck disable=SC2207
+  TEXT_CFLAGS+=($(pkg-config --cflags egl glesv2))
+  # shellcheck disable=SC2207
+  TEXT_LIBS+=($(pkg-config --libs egl glesv2))
 fi
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"

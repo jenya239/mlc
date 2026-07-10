@@ -1,0 +1,13 @@
+// GL loader smoke (TRACK_TEXT_RENDERING STEP=5 / TEXT_RENDERING.md §5.2).
+// Runtime shim owns EGL context + eglGetProcAddress; MLC calls a plain extern fn.
+
+extern fn gl_loader_gen_buffers_smoke() -> i32
+  = "mlc::gl::gl_loader_gen_buffers_smoke" from "mlc/gl/loader_shim.hpp"
+
+fn main() -> i32 = do
+  const status = gl_loader_gen_buffers_smoke()
+  if status != 0 then
+    return status
+  end
+  0
+end

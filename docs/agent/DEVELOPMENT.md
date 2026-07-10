@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=5 — §5.2 `glXGetProcAddress` design + smoke.
-(STEP=4 done: atlas, LRU, `run_text_shim_sanitize_gate.sh`.)
+**TRACK_TEXT_RENDERING** STEP=6 — OpenGL binding + `TextRenderer` A8
+(offscreen FBO + golden pixel-diff). (STEP=5 done: EGL loader shim + CI.)
 
 ## Step sizing (good vs bad)
 

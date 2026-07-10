@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 25 |
-| step_last | 4.3 |
-| active_track | TRACK_TEXT_RENDERING STEP=5 |
-| test_gate | ok (text shim sanitize asan+ubsan) |
+| driver_turns_since_plan | 26 |
+| step_last | 5 |
+| active_track | TRACK_TEXT_RENDERING STEP=6 |
+| test_gate | ok (gl loader smoke) |
+
+### Turn 2026-07-10 16:00 (Driver TRACK_TEXT_RENDERING STEP=5 — §5.2 EGL loader)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:16 |
+| elapsed | ~45 min |
+| done    | §5.2: no runtime `extern fn`; EGL shim `eglGetProcAddress`; `loader_shim.cpp`; `gl_loader_smoke.mlc`; `run_gl_loader_smoke.sh`; CI job `gl-loader-smoke`; `build_bin.sh` links egl/glesv2. |
+| verify  | `run_gl_loader_smoke.sh` ok (exit 0). |
+| result  | STEP=5 done. Plain: headless GL proc load via EGL shim. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_TEXT_RENDERING — OpenGL binding + TextRenderer A8 |
 
 ### Turn 2026-07-10 15:35 (Driver TRACK_TEXT_RENDERING STEP=4.3 — ASan/UBSan FT/HB)
 
