@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=4 |
-| test_gate | ok (tcp_stdlib 1/18) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=5 |
+| test_gate | ok (echo client gate; test_tcp 12/0) |
+
+### Turn 2026-07-10 22:45 (Driver TRACK_STDLIB_NET_SERVER STEP=4 — echo gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:24 |
+| elapsed | ~25 min |
+| done    | MLC echo server (port file); `runtime/test/tcp_echo_client.cpp`; `test_echo_server_roundtrip_via_client`; `scripts/run_tcp_echo_gate.sh`. |
+| verify  | echo client test 1/4 pass (~48s); codegen 18 assert; `test_tcp` 12/0. |
+| result  | STEP=4 done. Plain: MLC TCP echo roundtrip gated. |
+| issues  | Ruby `TCPSocket` hung under Open3 — switched to C++ client. Foreign dirty left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_NET_SERVER — HTTP/1.1 request-line+headers parse |
 
 ### Turn 2026-07-10 22:25 (Driver TRACK_STDLIB_NET_SERVER STEP=3 — tcp.mlc)
 

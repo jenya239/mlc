@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=4 — echo server gate (`nc`/Ruby TCPSocket).
-STEP=3 done (`std/net/tcp.mlc`, Option+i32 handles).
+**TRACK_STDLIB_NET_SERVER** STEP=5 — HTTP/1.1 request parse (`HttpRequest`).
+STEP=4 done (MLC echo server + C++ client gate).
 
 ## Step sizing (good vs bad)
 
