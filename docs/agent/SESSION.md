@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=4 |
-| test_gate | `run_glfw_gl_dispatch_smoke.sh` ok |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=5 |
+| test_gate | `run_gl_renderer_smoke.sh` ok |
+
+### Turn 2026-07-11 02:55 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=4 — GlRenderer)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 02:47 |
+| elapsed | ~8 min |
+| done    | MLC `GlRenderer` in `gl_renderer_smoke.mlc` (shader literals, compile/link, VBO triangle); context helpers + MLC ABI (`int32_t`/`String`, scratch f32) in `glfw_gl_dispatch.*`; gate `scripts/run_gl_renderer_smoke.sh`. PLAN/DEVELOPMENT → STEP=5. |
+| verify  | `bash scripts/run_gl_renderer_smoke.sh` → ok; `run_glfw_gl_dispatch_smoke.sh` → ok. |
+| result  | STEP=4 done. Plain: GlRenderer on MLC draws triangle via dispatch. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; mlcc `-> void` → `void_` (use `unit`); desktop GL fragment must omit GLES `precision`. |
+| next    | ROLE=Driver STEP=5 TRACK_TEXT_RENDERING_NATIVE — TextRenderer on MLC (batching, Atlas/Cache/Shaper) |
 
 ### Turn 2026-07-11 02:45 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=3 — GL dispatch)
 

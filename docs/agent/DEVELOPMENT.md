@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=4 — `GlRenderer` on MLC
-поверх STEP=3 dispatch. See [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
+**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=5 — `TextRenderer` on MLC
+(batching; reuse Atlas/Cache/Shaper). See [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
 
 
 ## Step sizing (good vs bad)

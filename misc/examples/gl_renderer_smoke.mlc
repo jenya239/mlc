@@ -1,0 +1,201 @@
+// GlRenderer on MLC (TRACK_TEXT_RENDERING_NATIVE STEP=4).
+// Shader compile/link + VBO + draw triangle via mlc::gl::* dispatch.
+// Context lifecycle is thin C helpers; GL orchestration stays in MLC.
+
+extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_should_close() -> i32
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+extern fn gl_clear(mask: i32) -> unit
+  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_shader(shader_type: i32) -> i32
+  = "mlc::gl::gl_create_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_shader_source_string(shader: i32, source: string) -> unit
+  = "mlc::gl::gl_shader_source_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_compile_shader(shader: i32) -> unit
+  = "mlc::gl::gl_compile_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_shader_iv_value(shader: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_shader_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_program() -> i32
+  = "mlc::gl::gl_create_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_attach_shader(program: i32, shader: i32) -> unit
+  = "mlc::gl::gl_attach_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_link_program(program: i32) -> unit
+  = "mlc::gl::gl_link_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_program_iv_value(program: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_program_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_use_program(program: i32) -> unit
+  = "mlc::gl::gl_use_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_shader(shader: i32) -> unit
+  = "mlc::gl::gl_delete_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_program(program: i32) -> unit
+  = "mlc::gl::gl_delete_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_attrib_location_string(program: i32, name: string) -> i32
+  = "mlc::gl::gl_get_attrib_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_gen_buffer() -> i32
+  = "mlc::gl::gl_gen_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_buffer(buffer: i32) -> unit
+  = "mlc::gl::gl_delete_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_bind_buffer(target: i32, buffer: i32) -> unit
+  = "mlc::gl::gl_bind_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_f32_clear() -> unit
+  = "mlc::gl::gl_scratch_f32_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_f32_push(value: f64) -> unit
+  = "mlc::gl::gl_scratch_f32_push" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_buffer_data_scratch(target: i32, usage: i32) -> i32
+  = "mlc::gl::gl_buffer_data_scratch" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
+  = "mlc::gl::gl_enable_vertex_attrib_array" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_vertex_attrib_pointer_offset(
+  index: i32,
+  size: i32,
+  attribute_type: i32,
+  normalized: i32,
+  stride: i32,
+  byte_offset: i32
+) -> unit
+  = "mlc::gl::gl_vertex_attrib_pointer_offset" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
+  = "mlc::gl::gl_draw_arrays" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+fn gl_color_buffer_bit() -> i32 = 16384
+fn gl_triangles() -> i32 = 4
+fn gl_float() -> i32 = 5126
+fn gl_array_buffer() -> i32 = 34962
+fn gl_static_draw() -> i32 = 35044
+fn gl_fragment_shader() -> i32 = 35632
+fn gl_vertex_shader() -> i32 = 35633
+fn gl_compile_status() -> i32 = 35713
+fn gl_link_status() -> i32 = 35714
+
+fn vertex_shader_source() -> string =
+  "attribute vec2 a_pos;\nvoid main() {\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
+
+fn fragment_shader_source() -> string =
+  "void main() {\n  gl_FragColor = vec4(0.2, 0.75, 0.35, 1.0);\n}\n"
+
+type GlRenderer = {
+  program: i32,
+  vertex_buffer: i32,
+  position_location: i32
+}
+
+fn gl_renderer_create() -> GlRenderer = do
+  const vertex_shader = gl_create_shader(gl_vertex_shader())
+  gl_shader_source_string(vertex_shader, vertex_shader_source())
+  gl_compile_shader(vertex_shader)
+  if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
+    return GlRenderer { program: -12, vertex_buffer: 0, position_location: -1 }
+  end
+
+  const fragment_shader = gl_create_shader(gl_fragment_shader())
+  gl_shader_source_string(fragment_shader, fragment_shader_source())
+  gl_compile_shader(fragment_shader)
+  if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    return GlRenderer { program: -13, vertex_buffer: 0, position_location: -1 }
+  end
+
+  const program = gl_create_program()
+  gl_attach_shader(program, vertex_shader)
+  gl_attach_shader(program, fragment_shader)
+  gl_link_program(program)
+  if gl_get_program_iv_value(program, gl_link_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    gl_delete_shader(fragment_shader)
+    gl_delete_program(program)
+    return GlRenderer { program: -14, vertex_buffer: 0, position_location: -1 }
+  end
+
+  gl_delete_shader(vertex_shader)
+  gl_delete_shader(fragment_shader)
+
+  const position_location = gl_get_attrib_location_string(program, "a_pos")
+  if position_location < 0 then
+    gl_delete_program(program)
+    return GlRenderer { program: -15, vertex_buffer: 0, position_location: -1 }
+  end
+
+  const vertex_buffer = gl_gen_buffer()
+  if vertex_buffer == 0 then
+    gl_delete_program(program)
+    return GlRenderer { program: -16, vertex_buffer: 0, position_location: -1 }
+  end
+
+  gl_bind_buffer(gl_array_buffer(), vertex_buffer)
+  gl_scratch_f32_clear()
+  gl_scratch_f32_push(0.0)
+  gl_scratch_f32_push(0.6)
+  gl_scratch_f32_push(0.0 - 0.6)
+  gl_scratch_f32_push(0.0 - 0.5)
+  gl_scratch_f32_push(0.6)
+  gl_scratch_f32_push(0.0 - 0.5)
+  if gl_buffer_data_scratch(gl_array_buffer(), gl_static_draw()) != 0 then
+    gl_delete_buffer(vertex_buffer)
+    gl_delete_program(program)
+    return GlRenderer { program: -17, vertex_buffer: 0, position_location: -1 }
+  end
+
+  GlRenderer {
+    program: program,
+    vertex_buffer: vertex_buffer,
+    position_location: position_location
+  }
+end
+
+fn gl_renderer_draw(renderer: GlRenderer, width: i32, height: i32) -> i32 = do
+  gl_viewport(0, 0, width, height)
+  gl_clear_color_f64(0.08, 0.1, 0.16, 1.0)
+  gl_clear(gl_color_buffer_bit())
+  gl_use_program(renderer.program)
+  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  gl_enable_vertex_attrib_array(renderer.position_location)
+  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 8, 0)
+  gl_draw_arrays(gl_triangles(), 0, 3)
+  0
+end
+
+fn gl_renderer_destroy(renderer: GlRenderer) -> i32 = do
+  gl_delete_buffer(renderer.vertex_buffer)
+  gl_delete_program(renderer.program)
+  0
+end
+
+fn main() -> i32 = do
+  const width = 800
+  const height = 600
+  const begin_status = glfw_gl_context_begin(width, height)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const renderer = gl_renderer_create()
+  if renderer.program < 0 then
+    const error_code = renderer.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    gl_renderer_draw(renderer, width, height)
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 8 then
+      break
+    end
+  end
+
+  gl_renderer_destroy(renderer)
+  glfw_gl_context_end()
+  0
+end
