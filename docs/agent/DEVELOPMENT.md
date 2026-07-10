@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_ENV_LOGGING` open** STEP=4 — gate script (env + log assert).
+**`TRACK_STDLIB_ENV_LOGGING` open** STEP=5 — docs + example + close.
 See [TRACK_STDLIB_ENV_LOGGING.md](TRACK_STDLIB_ENV_LOGGING.md).
 
 
