@@ -9,7 +9,7 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 (STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_MIR_VM_FULL` без
 явной команды.
 
-## Status: **open** — STEP=0–3 **done**; STEP=4 in progress (GlyphAtlas **done**; GlyphCache next)
+## Status: **open** — STEP=0–3 **done**; STEP=4 in progress (4.1–4.2 **done**; ASan next)
 
 **Planner 2026-07-10:** After `TRACK_MIR_VM_FULL` Epic 4 closed (STEP=12), queue
 skips SUPERVISOR (deferred) and LANG_REGION_ARENA (design-blocked). Next
@@ -28,6 +28,9 @@ gate `run_freetype_glyph_smoke.sh`.
 **Driver 2026-07-10:** STEP=4.1 — `GlyphAtlas` shelf pack (pure MLC);
 `glyph_atlas_smoke.mlc` + `run_glyph_atlas_smoke.sh` (native; shelf wrap,
 new page, A8/RGB8 split, oversized reject).
+
+**Driver 2026-07-10:** STEP=4.2 — `GlyphCache` LRU insert/get/evict;
+`glyph_cache_smoke.mlc` + `run_glyph_cache_smoke.sh`.
 
 ## Test strategy (обязательно к соблюдению, не только для STEP=6)
 

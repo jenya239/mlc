@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=4.2 — GlyphCache LRU (after GlyphAtlas shelf pack).
-(STEP=4.1 done: `glyph_atlas_smoke.mlc` / `run_glyph_atlas_smoke.sh`.)
+**TRACK_TEXT_RENDERING** STEP=4.3 — ASan/UBSan on freetype/harfbuzz smoke fixtures.
+(STEP=4.2 done: `glyph_cache_smoke.mlc` / `run_glyph_cache_smoke.sh`.)
 
 ## Step sizing (good vs bad)
 

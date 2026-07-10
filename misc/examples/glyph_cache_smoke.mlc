@@ -1,0 +1,175 @@
+// GlyphCache LRU (TRACK_TEXT_RENDERING STEP=4.2). Pure MLC, no FFI.
+// Entries ordered oldest→newest; get/insert move to end; full insert drops index 0.
+
+type AtlasSlot = {
+  page_index: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+type GlyphCacheKey = {
+  font_id: i32,
+  glyph_index: i32,
+  size_px: i32,
+  mode: i32
+}
+
+type GlyphCacheEntry = {
+  key: GlyphCacheKey,
+  slot: AtlasSlot
+}
+
+type GlyphCache = {
+  capacity: i32,
+  entries: [GlyphCacheEntry]
+}
+
+type GlyphCacheOp = {
+  cache: GlyphCache,
+  found: i32,
+  slot: AtlasSlot,
+  evicted: i32
+}
+
+fn glyph_cache_key_equal(left: GlyphCacheKey, right: GlyphCacheKey) -> bool =
+  left.font_id == right.font_id
+  && left.glyph_index == right.glyph_index
+  && left.size_px == right.size_px
+  && left.mode == right.mode
+
+fn glyph_cache_new(capacity: i32) -> GlyphCache =
+  GlyphCache { capacity: capacity, entries: [] }
+
+fn empty_slot() -> AtlasSlot =
+  AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 }
+
+fn glyph_cache_find_index(cache: GlyphCache, key: GlyphCacheKey) -> i32 = do
+  let mut index = 0
+  while index < cache.entries.length() do
+    if glyph_cache_key_equal(cache.entries[index].key, key) then
+      return index
+    end
+    index = index + 1
+  end
+  -1
+end
+
+fn glyph_cache_entries_without(entries: [GlyphCacheEntry], remove_index: i32) -> [GlyphCacheEntry] = do
+  let mut rebuilt: [GlyphCacheEntry] = []
+  let mut index = 0
+  while index < entries.length() do
+    if index != remove_index then
+      rebuilt.push(entries[index])
+    end
+    index = index + 1
+  end
+  rebuilt
+end
+
+fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheOp = do
+  const found_index = glyph_cache_find_index(cache, key)
+  if found_index < 0 then
+    return GlyphCacheOp {
+      cache: cache,
+      found: 0,
+      slot: empty_slot(),
+      evicted: 0
+    }
+  end
+  const entry = cache.entries[found_index]
+  let mut entries = glyph_cache_entries_without(cache.entries, found_index)
+  entries.push(entry)
+  GlyphCacheOp {
+    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    found: 1,
+    slot: entry.slot,
+    evicted: 0
+  }
+end
+
+fn glyph_cache_insert(
+  cache: GlyphCache,
+  key: GlyphCacheKey,
+  slot: AtlasSlot
+) -> GlyphCacheOp = do
+  const found_index = glyph_cache_find_index(cache, key)
+  if found_index >= 0 then
+    let mut entries = glyph_cache_entries_without(cache.entries, found_index)
+    entries.push(GlyphCacheEntry { key: key, slot: slot })
+    return GlyphCacheOp {
+      cache: GlyphCache { capacity: cache.capacity, entries: entries },
+      found: 1,
+      slot: slot,
+      evicted: 0
+    }
+  end
+  let mut entries = cache.entries
+  let mut evicted = 0
+  if entries.length() >= cache.capacity && cache.capacity > 0 then
+    entries = glyph_cache_entries_without(entries, 0)
+    evicted = 1
+  end
+  entries.push(GlyphCacheEntry { key: key, slot: slot })
+  GlyphCacheOp {
+    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    found: 0,
+    slot: slot,
+    evicted: evicted
+  }
+end
+
+fn make_key(font_id: i32, glyph_index: i32, size_px: i32, mode: i32) -> GlyphCacheKey =
+  GlyphCacheKey {
+    font_id: font_id,
+    glyph_index: glyph_index,
+    size_px: size_px,
+    mode: mode
+  }
+
+fn make_slot(page_index: i32, x: i32, y: i32) -> AtlasSlot =
+  AtlasSlot { page_index: page_index, x: x, y: y, width: 8, height: 8 }
+
+fn main() -> i32 = do
+  let mut cache = glyph_cache_new(2)
+  let mut op = glyph_cache_insert(cache, make_key(1, 10, 32, 0), make_slot(0, 0, 0))
+  cache = op.cache
+  if op.evicted != 0 || cache.entries.length() != 1 then return 10 end
+
+  op = glyph_cache_insert(cache, make_key(1, 11, 32, 0), make_slot(0, 8, 0))
+  cache = op.cache
+  if op.evicted != 0 || cache.entries.length() != 2 then return 11 end
+
+  // Hit moves key 10 to MRU (end).
+  op = glyph_cache_get(cache, make_key(1, 10, 32, 0))
+  cache = op.cache
+  if op.found != 1 || op.slot.x != 0 then return 12 end
+  if cache.entries[1].key.glyph_index != 10 then return 13 end
+
+  // Insert third → evict LRU (glyph 11, now at front).
+  op = glyph_cache_insert(cache, make_key(1, 12, 32, 0), make_slot(0, 16, 0))
+  cache = op.cache
+  if op.evicted != 1 || cache.entries.length() != 2 then return 14 end
+  op = glyph_cache_get(cache, make_key(1, 11, 32, 0))
+  if op.found != 0 then return 15 end
+  op = glyph_cache_get(cache, make_key(1, 10, 32, 0))
+  cache = op.cache
+  if op.found != 1 then return 16 end
+  op = glyph_cache_get(cache, make_key(1, 12, 32, 0))
+  cache = op.cache
+  if op.found != 1 then return 17 end
+
+  // Re-insert existing key updates slot, no growth, no eviction.
+  op = glyph_cache_insert(cache, make_key(1, 10, 32, 0), make_slot(1, 1, 1))
+  cache = op.cache
+  if op.evicted != 0 || cache.entries.length() != 2 then return 18 end
+  op = glyph_cache_get(cache, make_key(1, 10, 32, 0))
+  if op.found != 1 || op.slot.page_index != 1 || op.slot.x != 1 then return 19 end
+
+  // Miss
+  op = glyph_cache_get(cache, make_key(2, 10, 32, 0))
+  if op.found != 0 then return 20 end
+
+  0
+end
