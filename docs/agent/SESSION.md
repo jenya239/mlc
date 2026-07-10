@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=1 |
-| test_gate | n/a (Planner docs-only) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=2 |
+| test_gate | n/a (design docs) |
+
+### Turn 2026-07-10 22:10 (Driver TRACK_STDLIB_NET_SERVER STEP=1 — API Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:03 |
+| elapsed | ~5 min |
+| done    | TRACK Decision: opaque `TcpListener`/`TcpStream`; `Result<T,string>`; sync `fn(HttpRequest)->HttpResponse`; bind host explicit (`127.0.0.1` in examples); HTTP caps 64KiB headers / 1MiB body; no raw fd/TLS/WS. PLAN/DEVELOPMENT synced. |
+| verify  | Open questions section cleared; STEP=1 marked done; PLAN §11 + queue → STEP=2. |
+| result  | STEP=1 done. Plain: TCP/HTTP v1 API locked for implementation. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_NET_SERVER — `runtime/include/mlc/net/tcp.hpp` POSIX wrap |
 
 ### Turn 2026-07-10 22:05 (Planner — create TRACK_STDLIB_NET_SERVER)
 
