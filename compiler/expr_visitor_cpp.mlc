@@ -669,7 +669,7 @@ export fn gen_array_via_cpp_visitor(
 end
 
 fn lambda_capture_list(parameter_binding_names: [string]) -> [Shared<CppCapture>] = do
-  if parameter_binding_names.length() == 0 then return [] end
+  // Always [=]: zero-parameter spawn lambdas still close over outer bindings.
   let captures: [Shared<CppCapture>] = []
   captures.push(value_capture_for_lambda())
   captures

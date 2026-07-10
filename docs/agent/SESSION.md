@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=4 |
-| test_gate | run_mlcc_tcp_echo_gate OK; Ruby tcp_stdlib 2/22 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=5 |
+| test_gate | run_mlcc_tcp_spawn_echo_gate OK (overlap); spawn_side_effect gate |
+
+### Turn 2026-07-10 23:15 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=4 — Tcp+spawn e2e)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 22:50 |
+| elapsed | ~25 min |
+| done    | Spawn lambda capture `[=]` (`expression_support` + `expr_visitor_cpp`); `tcp_spawn_echo_mlcc.mlc` + `run_mlcc_tcp_spawn_echo_gate.sh` (2 clients, marker overlap); `//` comments on echo example. PLAN §8c + DEVELOPMENT. |
+| verify  | gate OK overlap; `run_spawn_side_effect_gate.sh` OK. |
+| result  | STEP=4 done. Plain: mlcc runs Tcp+spawn multi-client echo in parallel. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. Mutex<[i32]>→`Mutex<auto>` avoided. |
+| next    | ROLE=Driver STEP=5 TRACK_PIPELINE_MERGE_TCP_SPAWN — docs (STDLIB_BACKEND/MLC/PLAN) + example |
 
 ### Turn 2026-07-10 22:45 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=3 — Tcp echo via mlcc)
 

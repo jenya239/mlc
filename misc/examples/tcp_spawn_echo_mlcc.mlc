@@ -1,0 +1,59 @@
+// TCP echo with spawn (TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=4).
+// Accept two clients; each handled in spawn. Markers prove overlap.
+// Gate: scripts/run_mlcc_tcp_spawn_echo_gate.sh
+
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+
+fn busy_wait() -> unit = do
+  let mut index = 0
+  while index < 80000000 do
+    index = index + 1
+  end
+end
+
+fn echo_one(stream: i32, marker_path: string) -> i32 = do
+  File.write(marker_path, "start")
+  busy_wait()
+  let data_option = read(stream, 64)
+  let data = if data_option.is_some() then data_option.unwrap() else "" end
+  let wrote = write_all(stream, data)
+  close_stream(stream)
+  File.write(marker_path, "done")
+  if wrote then 0 else 1 end
+end
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  File.write("tcp_spawn_port.txt", `${port(listener)}`)
+
+  let stream_a_option = accept(listener)
+  if !stream_a_option.is_some() then
+    println(last_error())
+    close_listener(listener)
+    return 2
+  end
+  let stream_a = stream_a_option.unwrap()
+  let task_a = spawn do echo_one(stream_a, "tcp_spawn_marker_a.txt") end
+
+  let stream_b_option = accept(listener)
+  if !stream_b_option.is_some() then
+    println(last_error())
+    close_listener(listener)
+    return 3
+  end
+  let stream_b = stream_b_option.unwrap()
+  let task_b = spawn do echo_one(stream_b, "tcp_spawn_marker_b.txt") end
+
+  let status_a = block_on(task_a)
+  let status_b = block_on(task_b)
+  close_listener(listener)
+
+  if status_a != 0 then return 4 end
+  if status_b != 0 then return 5 end
+  0
+end

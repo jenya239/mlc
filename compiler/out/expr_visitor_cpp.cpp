@@ -519,9 +519,6 @@ std::shared_ptr<cpp_ast::CppExpression> gen_array_via_cpp_visitor(mlc::Array<std
   return gen_array_for_container_type(element_container_semantic_type, elements, element_expressions, context);
 }
 mlc::Array<std::shared_ptr<cpp_ast::CppCapture>> lambda_capture_list(mlc::Array<mlc::String> parameter_binding_names) noexcept{
-  if ((parameter_binding_names.length() == 0))   {
-    return {};
-  }
   auto captures = mlc::Array<std::shared_ptr<cpp_ast::CppCapture>>{};
   captures.push_back(value_capture_for_lambda());
   return captures;

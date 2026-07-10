@@ -1,6 +1,6 @@
-# TCP echo via self-hosted mlcc (TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=3).
-# Bind 127.0.0.1:0, write port to ./tcp_echo_port.txt, echo one connection.
-# Gate: scripts/run_mlcc_tcp_echo_gate.sh
+// TCP echo via self-hosted mlcc (TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=3).
+// Bind 127.0.0.1:0, write port to ./tcp_echo_port.txt, echo one connection.
+// Gate: scripts/run_mlcc_tcp_echo_gate.sh
 
 import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
 

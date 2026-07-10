@@ -33,7 +33,9 @@ end
 
 
 export fn cpp_lambda_header_prefix(parameters: [string]) -> string = do
-  const capture = if parameters.length() == 0 then '[]' else '[=]' end
+  // Always capture-by-value: spawn/do lambdas close over outer bindings.
+  // Empty `[]` broke `spawn do f(x) end` (TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=4).
+  const capture = '[=]'
   const parameter_list = if parameters.length() == 0 then ''
     else do
       let parts: [string] = []; let mut index = 0

@@ -55,7 +55,7 @@ mlc::String question_from_converter_name(context::CodegenContext context, std::s
   return cpp_naming::cpp_safe((expected_error_name + mlc::String("_from", 5)));
 }
 mlc::String cpp_lambda_header_prefix(mlc::Array<mlc::String> parameters) noexcept{
-  auto capture = ((parameters.length() == 0) ? (mlc::String("[]", 2)) : (mlc::String("[=]", 3)));
+  auto capture = mlc::String("[=]", 3);
   auto parameter_list = [&]() -> mlc::String {
   if ((parameters.length() == 0))   {
     return mlc::String("", 0);
