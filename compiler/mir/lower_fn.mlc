@@ -653,6 +653,12 @@ fn mir_lower_operand_from_expression(
         Ok(local_step) =>
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+      match mir_lower_if_to_local(state, condition, then_expression, else_expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
     _ => Err(['mir lower: unsupported expression in operand context'])
   }
 end
@@ -776,6 +782,15 @@ fn mir_lower_rvalue_from_expression(
       },
     SemanticExpressionQuestion(_, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+      match mir_lower_if_to_local(state, condition, then_expression, else_expression) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
           Ok(MirLowerRvalueStep {
@@ -1219,6 +1234,8 @@ fn mir_lower_expression_to_local(
       mir_lower_index_to_local(state, object, index_expression),
     SemanticExpressionMethod(object, method_name, arguments, _, _, _) =>
       mir_lower_method_to_local(state, object, method_name, arguments),
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+      mir_lower_if_to_local(state, condition, then_expression, else_expression),
     SemanticExpressionCall(function, arguments, _, _, _) =>
       match function {
         SemanticExpressionLambda(parameter_names, body, _, _) =>
@@ -1412,6 +1429,80 @@ fn mir_lower_discard_expression(
         state,
         Shared.new(SemanticStatementExpr(expression, sexpr_span(expression))))
   }
+
+// Materialize expression value into an existing local (if-as-rvalue arms).
+fn mir_lower_expression_into_local(
+  state: MirLowerState,
+  expression: Shared<SemanticExpression>,
+  local_id: LocalId
+) -> Result<MirLowerState, [string]> =
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) =>
+      match mir_lower_statements(state, statements) {
+        Err(errors) => Err(errors),
+        Ok(statement_state) =>
+          mir_lower_expression_into_local(statement_state, result_expression, local_id)
+      },
+    SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+      mir_lower_if_into_local(
+        state, condition, then_expression, else_expression, local_id),
+    _ =>
+      match mir_lower_rvalue_from_expression(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(rvalue_step) => Ok(mir_lower_emit_assign(rvalue_step.state, local_id, rvalue_step.rvalue))
+      }
+  }
+
+// Mid-block `if` as rvalue: CondJump → then/else assign shared local → Jump continue.
+fn mir_lower_if_into_local(
+  state: MirLowerState,
+  condition: Shared<SemanticExpression>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>,
+  result_local_id: LocalId
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_operand_from_expression(state, condition) {
+    Err(errors) => Err(errors),
+    Ok(condition_step) => do
+      const then_block_step = mir_lower_allocate_block_index(condition_step.state)
+      const else_block_step = mir_lower_allocate_block_index(then_block_step.state)
+      const continue_block_step = mir_lower_allocate_block_index(else_block_step.state)
+      let mut branch_state = mir_lower_finish_current_block(
+        continue_block_step.state,
+        MirCondJump(condition_step.operand, then_block_step.block_id, else_block_step.block_id))
+      branch_state = mir_lower_start_block(branch_state, then_block_step.block_id, 'if_then')
+      match mir_lower_expression_into_local(branch_state, then_expression, result_local_id) {
+        Err(errors) => Err(errors),
+        Ok(then_state) => do
+          let mut after_then = mir_lower_finish_current_block(
+            then_state, MirJump(continue_block_step.block_id))
+          after_then = mir_lower_start_block(after_then, else_block_step.block_id, 'if_else')
+          match mir_lower_expression_into_local(after_then, else_expression, result_local_id) {
+            Err(errors) => Err(errors),
+            Ok(else_state) => do
+              let mut after_else = mir_lower_finish_current_block(
+                else_state, MirJump(continue_block_step.block_id))
+              Ok(mir_lower_start_block(after_else, continue_block_step.block_id, 'if_continue'))
+            end
+          }
+        end
+      }
+    end
+  }
+
+fn mir_lower_if_to_local(
+  state: MirLowerState,
+  condition: Shared<SemanticExpression>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>
+) -> Result<MirLowerLocalStep, [string]> = do
+  const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  match mir_lower_if_into_local(
+    local_step.state, condition, then_expression, else_expression, local_step.local_id) {
+    Err(errors) => Err(errors),
+    Ok(done_state) => Ok(MirLowerLocalStep { state: done_state, local_id: local_step.local_id })
+  }
+end
 
 // Mid-block `if` as statement: CondJump → then/else → Jump continue (value discarded).
 fn mir_lower_if_statement(
