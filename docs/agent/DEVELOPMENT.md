@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=5 — HTTP/1.1 request parse (`HttpRequest`).
-STEP=4 done (MLC echo server + C++ client gate).
+**TRACK_STDLIB_NET_SERVER** STEP=6 — routing table + `HttpResponse` write.
+STEP=5 done (`parse_http_request`, smoke 14/0).
 
 ## Step sizing (good vs bad)
 

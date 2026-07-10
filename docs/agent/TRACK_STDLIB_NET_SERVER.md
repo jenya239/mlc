@@ -4,10 +4,10 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: backend-class apps need listen/accept; today only HTTP **client**
 (`mlc/net/http.hpp` + curl). No `bind`/`listen`/`accept` in runtime/stdlib.
 
-## Status: **open** — STEP=1–4 **done**; STEP=5 next (HTTP parse)
+## Status: **open** — STEP=1–5 **done**; STEP=6 next (routing)
 
-**Driver 2026-07-10:** STEP=4 — MLC echo server + `tcp_echo_client.cpp` gate;
-`scripts/run_tcp_echo_gate.sh`; `test_echo_server_roundtrip_via_client` pass.
+**Driver 2026-07-10:** STEP=5 — `mlc/net/http_request.hpp` (`parse_http_request`);
+caps 64KiB headers / 1MiB body; `test_http_request.cpp` 14/0; include in `mlc.hpp`.
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -97,7 +97,7 @@ usable from MLC without a framework. Concurrent accept via existing
 | 2 | Runtime: `runtime/include/mlc/net/tcp.hpp` — wrap POSIX `socket`/`bind`/`listen`/`accept`/`read`/`write`/`close`/`setsockopt(SO_REUSEADDR)`; IPv4 `127.0.0.1` + port; RAII close. | **done** (2026-07-10: tcp.hpp + test_tcp 12/0; `result::ok` move) |
 | 3 | Stdlib: `lib/mlc/common/stdlib/net/tcp.mlc` + registry/scanner; smoke compile of listen+accept+write from MLC. | **done** (2026-07-10: Option+i32 handles + last_error; codegen smoke) |
 | 4 | Gate: echo server test (connect via `nc`/`curl` or Ruby `TCPSocket`); script under `scripts/` or `test/mlc/`. | **done** (2026-07-10: MLC server + C++ client; gate script) |
-| 5 | HTTP/1.1: parse request-line + headers into `HttpRequest` (C++ helper or MLC); reject oversized headers; no chunked/body streaming in v1 beyond optional `Content-Length` read up to cap. | pending |
+| 5 | HTTP/1.1: parse request-line + headers into `HttpRequest` (C++ helper or MLC); reject oversized headers; no chunked/body streaming in v1 beyond optional `Content-Length` read up to cap. | **done** (2026-07-10: `parse_http_request`; smoke 14/0) |
 | 6 | Routing: explicit `Array`/`Map` of `(method, path) → handler`; write status-line + headers + body; 404 default. | pending |
 | 7 | Concurrency: accept loop dispatches connection handler on `ThreadPool` (or document single-thread-only if pool wiring is blocked). | pending |
 | 8 | Docs (`STDLIB_BACKEND.md` / short `MLC.md` note) + example under `misc/examples/`; verify-gate (`regression_gate.sh`; self-host if `compiler/**` touched) + close. | pending |

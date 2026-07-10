@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=5 |
-| test_gate | ok (echo client gate; test_tcp 12/0) |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=6 |
+| test_gate | ok (http_request smoke 14/0) |
+
+### Turn 2026-07-10 22:50 (Driver TRACK_STDLIB_NET_SERVER STEP=5 — HTTP parse)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:45 |
+| elapsed | ~8 min |
+| done    | `runtime/include/mlc/net/http_request.hpp` (`HttpRequest`/`parse_http_request`, 64KiB/1MiB caps); `runtime/test/test_http_request.cpp`; include in `mlc.hpp`. |
+| verify  | `g++ … test_http_request.cpp` → 14 passed, 0 failed. |
+| result  | STEP=5 done. Plain: HTTP/1.1 request parse in runtime. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. MLC stdlib bind deferred to STEP=6. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_NET_SERVER — route table + HttpResponse write + 404 |
 
 ### Turn 2026-07-10 22:45 (Driver TRACK_STDLIB_NET_SERVER STEP=4 — echo gate)
 
