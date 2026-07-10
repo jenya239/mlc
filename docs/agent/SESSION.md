@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=5 |
-| test_gate | `run_gl_renderer_smoke.sh` ok |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=6 |
+| test_gate | `run_text_renderer_native_smoke.sh` ok |
+
+### Turn 2026-07-11 03:15 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=5 — TextRenderer)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 03:08 |
+| elapsed | ~7 min |
+| done    | MLC `TextRenderer` in `text_renderer_native_smoke.mlc`: GlyphAtlas shelf + GlyphCache LRU + textured quad batch; scratch_u8 atlas + `gl_scratch_push_glyph_quad`; helpers in `glfw_gl_dispatch.*`; gate `scripts/run_text_renderer_native_smoke.sh`. PLAN/DEVELOPMENT → STEP=6. |
+| verify  | `bash scripts/run_text_renderer_native_smoke.sh` → ok; `run_gl_renderer_smoke.sh` → ok. |
+| result  | STEP=5 done. Plain: TextRenderer batches 3 atlas glyphs on MLC. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; synthetic A8 (no FT/HB yet — STEP=6 demo); no i32→f64 in mlcc (UV via C helper). |
+| next    | ROLE=Driver STEP=6 TRACK_TEXT_RENDERING_NATIVE — text_window_demo (≥3 strings, A8+MSDF, anim) |
 
 ### Turn 2026-07-11 02:55 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=4 — GlRenderer)
 

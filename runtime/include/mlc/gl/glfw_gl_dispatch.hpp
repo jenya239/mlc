@@ -61,6 +61,32 @@ void gl_vertex_attrib_pointer_offset(
 );
 void gl_draw_arrays(int32_t mode, int32_t first, int32_t count);
 
+int32_t gl_gen_texture();
+void gl_delete_texture(int32_t texture);
+int32_t gl_get_uniform_location_string(int32_t program, String name);
+void gl_scratch_u8_clear();
+void gl_scratch_u8_resize_zero(int32_t byte_count);
+void gl_scratch_u8_fill_rect(
+  int32_t atlas_width,
+  int32_t x,
+  int32_t y,
+  int32_t width,
+  int32_t height,
+  int32_t value
+);
+int32_t gl_tex_image_2d_scratch_luminance(int32_t width, int32_t height);
+void gl_scratch_push_glyph_quad(
+  double left,
+  double bottom,
+  double right,
+  double top,
+  int32_t atlas_size,
+  int32_t slot_x,
+  int32_t slot_y,
+  int32_t slot_width,
+  int32_t slot_height
+);
+
 // Texture helpers (int32_t ids; pointer out-params for multi-gen).
 void gl_gen_textures(int32_t count, uint32_t* textures);
 void gl_bind_texture(int32_t target, int32_t texture);

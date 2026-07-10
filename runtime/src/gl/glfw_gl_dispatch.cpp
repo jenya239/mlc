@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <vector>
 
 namespace mlc {
@@ -121,6 +122,11 @@ GlDispatch& dispatch() {
 
 std::vector<float>& scratch_f32() {
   static std::vector<float> values;
+  return values;
+}
+
+std::vector<uint8_t>& scratch_u8() {
+  static std::vector<uint8_t> values;
   return values;
 }
 
@@ -408,6 +414,125 @@ void gl_draw_arrays(int32_t mode, int32_t first, int32_t count) {
   }
 }
 
+int32_t gl_gen_texture() {
+  unsigned int texture = 0;
+  if (dispatch().gen_textures != nullptr) {
+    dispatch().gen_textures(1, &texture);
+  }
+  return static_cast<int32_t>(texture);
+}
+
+void gl_delete_texture(int32_t texture) {
+  if (dispatch().delete_textures != nullptr) {
+    const unsigned int handle = as_gl(texture);
+    dispatch().delete_textures(1, &handle);
+  }
+}
+
+int32_t gl_get_uniform_location_string(int32_t program, String name) {
+  if (dispatch().get_uniform_location == nullptr) {
+    return -1;
+  }
+  return dispatch().get_uniform_location(as_gl(program), name.c_str());
+}
+
+void gl_scratch_u8_clear() { scratch_u8().clear(); }
+
+void gl_scratch_u8_resize_zero(int32_t byte_count) {
+  if (byte_count < 0) {
+    scratch_u8().clear();
+    return;
+  }
+  scratch_u8().assign(static_cast<size_t>(byte_count), 0);
+}
+
+void gl_scratch_u8_fill_rect(
+  int32_t atlas_width,
+  int32_t x,
+  int32_t y,
+  int32_t width,
+  int32_t height,
+  int32_t value
+) {
+  if (atlas_width <= 0 || width <= 0 || height <= 0) {
+    return;
+  }
+  std::vector<uint8_t>& pixels = scratch_u8();
+  const uint8_t byte_value = static_cast<uint8_t>(value & 0xff);
+  for (int32_t row = 0; row < height; row += 1) {
+    const int32_t atlas_y = y + row;
+    for (int32_t column = 0; column < width; column += 1) {
+      const size_t index =
+        static_cast<size_t>(atlas_y * atlas_width + (x + column));
+      if (index < pixels.size()) {
+        pixels[index] = byte_value;
+      }
+    }
+  }
+}
+
+int32_t gl_tex_image_2d_scratch_luminance(int32_t width, int32_t height) {
+  constexpr int32_t kGlTexture2d = 0x0DE1;
+  constexpr int32_t kGlLuminance = 0x1909;
+  constexpr int32_t kGlUnsignedByte = 0x1401;
+  constexpr int32_t kGlTextureMinFilter = 0x2801;
+  constexpr int32_t kGlTextureMagFilter = 0x2800;
+  constexpr int32_t kGlNearest = 0x2600;
+  const std::vector<uint8_t>& pixels = scratch_u8();
+  const size_t expected = static_cast<size_t>(width) * static_cast<size_t>(height);
+  if (width <= 0 || height <= 0 || pixels.size() < expected) {
+    return -1;
+  }
+  if (dispatch().tex_image_2d == nullptr || dispatch().tex_parameter_i == nullptr) {
+    return -2;
+  }
+  dispatch().tex_image_2d(
+    as_gl(kGlTexture2d),
+    0,
+    kGlLuminance,
+    width,
+    height,
+    0,
+    as_gl(kGlLuminance),
+    as_gl(kGlUnsignedByte),
+    pixels.data()
+  );
+  dispatch().tex_parameter_i(as_gl(kGlTexture2d), as_gl(kGlTextureMinFilter), kGlNearest);
+  dispatch().tex_parameter_i(as_gl(kGlTexture2d), as_gl(kGlTextureMagFilter), kGlNearest);
+  return 0;
+}
+
+void gl_scratch_push_glyph_quad(
+  double left,
+  double bottom,
+  double right,
+  double top,
+  int32_t atlas_size,
+  int32_t slot_x,
+  int32_t slot_y,
+  int32_t slot_width,
+  int32_t slot_height
+) {
+  if (atlas_size <= 0) {
+    return;
+  }
+  const double atlas = static_cast<double>(atlas_size);
+  const double u0 = static_cast<double>(slot_x) / atlas;
+  const double v0 = static_cast<double>(slot_y) / atlas;
+  const double u1 = static_cast<double>(slot_x + slot_width) / atlas;
+  const double v1 = static_cast<double>(slot_y + slot_height) / atlas;
+  auto& values = scratch_f32();
+  const float verts[] = {
+    static_cast<float>(left), static_cast<float>(bottom), static_cast<float>(u0), static_cast<float>(v1),
+    static_cast<float>(right), static_cast<float>(bottom), static_cast<float>(u1), static_cast<float>(v1),
+    static_cast<float>(left), static_cast<float>(top), static_cast<float>(u0), static_cast<float>(v0),
+    static_cast<float>(right), static_cast<float>(bottom), static_cast<float>(u1), static_cast<float>(v1),
+    static_cast<float>(right), static_cast<float>(top), static_cast<float>(u1), static_cast<float>(v0),
+    static_cast<float>(left), static_cast<float>(top), static_cast<float>(u0), static_cast<float>(v0),
+  };
+  values.insert(values.end(), std::begin(verts), std::end(verts));
+}
+
 int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
   if (context_window() != nullptr) {
     return -10;
@@ -542,6 +667,16 @@ void gl_vertex_attrib_pointer_offset(
   int32_t, int32_t, int32_t, int32_t, int32_t, int32_t
 ) {}
 void gl_draw_arrays(int32_t, int32_t, int32_t) {}
+int32_t gl_gen_texture() { return 0; }
+void gl_delete_texture(int32_t) {}
+int32_t gl_get_uniform_location_string(int32_t, String) { return -1; }
+void gl_scratch_u8_clear() {}
+void gl_scratch_u8_resize_zero(int32_t) {}
+void gl_scratch_u8_fill_rect(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) {}
+int32_t gl_tex_image_2d_scratch_luminance(int32_t, int32_t) { return -100; }
+void gl_scratch_push_glyph_quad(
+  double, double, double, double, int32_t, int32_t, int32_t, int32_t, int32_t
+) {}
 void gl_gen_textures(int32_t, uint32_t*) {}
 void gl_bind_texture(int32_t, int32_t) {}
 void gl_tex_image_2d(
