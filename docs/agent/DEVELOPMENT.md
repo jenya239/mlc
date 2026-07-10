@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_TRAMPOLINE** STEP=2 — corpus regression (`vm_cpp_diff` / examples gates).
-(STEP=1 done: `vm_run_frames` host loop; 10k loop + rec 1200 no segfault.)
+**TRACK_VM_TRAMPOLINE** STEP=3 — deep ≥100k MIR-steps fixture (no `ulimit -s unlimited`).
+(STEP=1–2 done: trampoline; cpp_diff 18 / single-file 18+diff / examples 28.)
 
 ## Step sizing (good vs bad)
 

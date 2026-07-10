@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 1 |
-| active_track | TRACK_VM_TRAMPOLINE STEP=2 |
-| test_gate | ok (loop 10k / rec 1200 no segfault; hello/mutual/for) |
+| driver_turns_since_plan | 5 |
+| step_last | 2 |
+| active_track | TRACK_VM_TRAMPOLINE STEP=3 |
+| test_gate | ok (cpp_diff 18 / single-file 18+diff / examples 28) |
+
+### Turn 2026-07-10 12:30 (Driver TRACK_VM_TRAMPOLINE STEP=2 — corpus regression)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_VM_TRAMPOLINE |
+| started | 2026-07-10 12:16 |
+| elapsed | ~14 min |
+| done    | Ran existing VM corpus gates on trampoline `mlcc` (no code change). |
+| verify  | `run_vm_cpp_exit_diff.sh` 18 ok; `run_single_file_vm_gate.sh` 18+diff ok; `run_examples_vm_gate.sh` 28 ok. |
+| result  | STEP=2 done. Plain: trampoline does not change small-program VM behavior. |
+| issues  | Foreign CLI_STDIN WIP + dirty `compiler/out/*` left untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_VM_TRAMPOLINE — ≥100k MIR-steps fixture (no ulimit -s unlimited) |
 
 ### Turn 2026-07-10 12:15 (Driver TRACK_VM_TRAMPOLINE STEP=1 — trampoline loop)
 
