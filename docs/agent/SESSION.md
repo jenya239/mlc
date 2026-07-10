@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_CONCURRENCY_RUBY_PARITY closed (Critic done) |
-| test_gate | ok (block_on + spawn gate) |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_POSTGRES open STEP=1 |
+| test_gate | n/a (docs-only Planner) |
+
+### Turn 2026-07-10 19:45 (Planner — open TRACK_STDLIB_POSTGRES)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:40 |
+| elapsed | ~5 min |
+| done    | Created `docs/agent/TRACK_STDLIB_POSTGRES.md` (STEP=1–5); PLAN §11 + queue; STDLIB_BACKEND §2/§5.2; DEVELOPMENT. |
+| verify  | Track STEP=1 pending (API Decision); PLAN links `agent/TRACK_STDLIB_POSTGRES.md`; queue after RUBY_PARITY. |
+| result  | plan-refresh done. Plain: Postgres libpq track ready for Driver. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_POSTGRES — API Decision (handles vs Result, libpq set, link `-lpq`) |
 
 ### Turn 2026-07-10 19:39 (Critic TRACK_CONCURRENCY_RUBY_PARITY — critique-audit)
 

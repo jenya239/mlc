@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner** `plan-refresh` — open `TRACK_STDLIB_POSTGRES` (STDLIB_BACKEND §5)
-after closed RUBY_PARITY. Critic: no reopen.
+**`TRACK_STDLIB_POSTGRES` open** — STEP=1 (API Decision; libpq PoC).
+See [TRACK_STDLIB_POSTGRES.md](TRACK_STDLIB_POSTGRES.md).
 
 
 ## Step sizing (good vs bad)
