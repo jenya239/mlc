@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=3 — `lib/mlc/common/stdlib/net/tcp.mlc` + registry.
-STEP=2 done (`mlc/net/tcp.hpp`, smoke 12/0).
+**TRACK_STDLIB_NET_SERVER** STEP=4 — echo server gate (`nc`/Ruby TCPSocket).
+STEP=3 done (`std/net/tcp.mlc`, Option+i32 handles).
 
 ## Step sizing (good vs bad)
 

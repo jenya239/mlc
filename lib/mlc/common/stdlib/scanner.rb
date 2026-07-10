@@ -257,6 +257,8 @@ module MLC
             'mlc::io'
           when 'IntArith'
             'mlc::int_arith'
+          when 'Tcp'
+            'mlc::net'
           else
             # Default: lowercase the module name
             "mlc::#{module_name.downcase}"

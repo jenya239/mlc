@@ -62,6 +62,12 @@ module MLC
           namespace: "mlc::math",
           path: "math/math.mlc"
         },
+        "std/net/tcp" => {
+          category: "net",
+          type: :extern,
+          namespace: "mlc::net",
+          path: "net/tcp.mlc"
+        },
         "std/text/conv" => {
           category: "text",
           type: :extern,
@@ -88,7 +94,8 @@ module MLC
         "File" => "std/io/file",
         "Json" => "std/data/json",
         "Math" => "std/math/math",
-        "Graphics" => "std/graphics/graphics"
+        "Graphics" => "std/graphics/graphics",
+        "Tcp" => "std/net/tcp"
       }.freeze
 
       def self.module_info(module_name)

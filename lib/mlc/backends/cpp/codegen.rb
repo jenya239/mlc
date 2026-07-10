@@ -251,6 +251,7 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/arith.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/int_arith.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/io/file.hpp", system: false),
+            CppAst::Nodes::IncludeDirective.new(path: "mlc/net/tcp.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/profile.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false),

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=3 |
-| test_gate | ok (test_tcp 12/0) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=4 |
+| test_gate | ok (tcp_stdlib 1/18) |
+
+### Turn 2026-07-10 22:25 (Driver TRACK_STDLIB_NET_SERVER STEP=3 — tcp.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:13 |
+| elapsed | ~15 min |
+| done    | Handle-table free fns in `tcp.hpp`; `std/net/tcp.mlc`; registry/scanner/`Tcp` alias; codegen+header include; `tcp_stdlib_test.rb`. |
+| verify  | 1 run / 18 assertions pass; g++ compile-check of `mlc::net::bind` ok. |
+| result  | STEP=3 done. Plain: MLC can call TCP bind/accept/read/write via stdlib. |
+| issues  | Decision `Result<TcpListener,_>` deferred — Option+i32 handles + `last_error`. Foreign dirty left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_NET_SERVER — echo server gate (connect + assert) |
 
 ### Turn 2026-07-10 22:15 (Driver TRACK_STDLIB_NET_SERVER STEP=2 — tcp.hpp)
 

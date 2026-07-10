@@ -311,7 +311,7 @@ module MLC
 
         def stdlib_import?(path)
           return true if path.start_with?("std/")
-          stdlib_aliases = %w[Option Result Array String Conv IO File Json Math Graphics]
+          stdlib_aliases = %w[Option Result Array String Conv IO File Json Math Graphics Tcp IntArith]
           stdlib_aliases.include?(path)
         end
 

@@ -1,0 +1,19 @@
+//! @module std/net/tcp
+//! @category net
+//! @type extern
+//! @namespace mlc::net
+
+# Blocking TCP listener/stream (TRACK_STDLIB_NET_SERVER).
+# Handles are opaque positive i32 tokens (not file descriptors).
+# Errors: None / false + last_error() — Decision Result wrappers can layer later.
+
+module Tcp
+
+export extern fn bind(host: string, port: i32) -> Option<i32>
+export extern fn accept(listener: i32) -> Option<i32>
+export extern fn read(stream: i32, max_bytes: i32) -> Option<string>
+export extern fn write_all(stream: i32, data: string) -> bool
+export extern fn close_listener(listener: i32) -> unit
+export extern fn close_stream(stream: i32) -> unit
+export extern fn port(listener: i32) -> i32
+export extern fn last_error() -> string
