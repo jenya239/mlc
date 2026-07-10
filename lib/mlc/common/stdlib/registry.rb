@@ -86,6 +86,18 @@ module MLC
           namespace: "mlc::crypto",
           path: "crypto/crypto.mlc"
         },
+        "std/env/env" => {
+          category: "env",
+          type: :extern,
+          namespace: "mlc::env",
+          path: "env/env.mlc"
+        },
+        "std/log/log" => {
+          category: "log",
+          type: :extern,
+          namespace: "mlc::log",
+          path: "log/log.mlc"
+        },
         "std/text/conv" => {
           category: "text",
           type: :extern,
@@ -116,7 +128,9 @@ module MLC
         "Tcp" => "std/net/tcp",
         "WebSocket" => "std/net/websocket",
         "Postgres" => "std/db/postgres",
-        "Crypto" => "std/crypto/crypto"
+        "Crypto" => "std/crypto/crypto",
+        "Env" => "std/env/env",
+        "Log" => "std/log/log"
       }.freeze
 
       def self.module_info(module_name)

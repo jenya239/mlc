@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: JOB_QUEUE **closed**; STDLIB_BACKEND §5 next is env/config + logging
 (low complexity, high frequency of use).
 
-## Status: **open** — STEP=3 next (stdlib modules)
+## Status: **open** — STEP=4 next (gate)
 
 **Planner 2026-07-11:** opened after closed STDLIB_JOB_QUEUE Critic. Chose
 combined **env + logging** track (§5.6 as one unit — both are thin wrappers,
@@ -16,6 +16,9 @@ lines stderr; Crypto-style MLC+C++; Option/default for missing env).
 
 **Driver 2026-07-11:** STEP=2 — `env.hpp` / `log.hpp` + smoke
 (`run_env_log_runtime_smoke.sh` 14/0); included from `mlc.hpp`.
+
+**Driver 2026-07-11:** STEP=3 — `env.mlc` / `log.mlc` + registry + codegen
+includes; `env_log_stdlib_test` 1/18.
 
 ## Goal
 
@@ -105,7 +108,7 @@ points at json lines; one format only).
 |------|------|--------|
 | 1 | Design: `Env.get` / `Env.get_or` API; log levels + sink (stderr/stdout); JSON lines vs plain; MLC modules vs C++-only; error model. Document in «Decision». | **done** |
 | 2 | Runtime: `env.hpp` and/or `log.hpp` (+ C++ smoke). | **done** (2026-07-11: `env.hpp`/`log.hpp`; `run_env_log_runtime_smoke.sh` 14/0) |
-| 3 | Stdlib: `std/…` modules + registry/bridge **or** document C++-only. | pending |
+| 3 | Stdlib: `std/…` modules + registry/bridge **or** document C++-only. | **done** (2026-07-11: `env.mlc`/`log.mlc`; registry; codegen includes; test 1/18) |
 | 4 | Gate: script — env roundtrip + log line assert (or capture stderr). | pending |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
 

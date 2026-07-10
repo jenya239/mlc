@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_ENV_LOGGING STEP=3 |
-| test_gate | `run_env_log_runtime_smoke.sh` 14/0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_ENV_LOGGING STEP=4 |
+| test_gate | `env_log_stdlib_test` 1/18 |
+
+### Turn 2026-07-11 01:18 (Driver TRACK_STDLIB_ENV_LOGGING STEP=3 — stdlib)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_ENV_LOGGING |
+| started | 2026-07-11 01:16 |
+| elapsed | ~3 min |
+| done    | `stdlib/env/env.mlc`, `stdlib/log/log.mlc`; registry + LEGACY_ALIASES; codegen includes `env.hpp`/`log.hpp`; header_generator aliases; `test/mlc/env_log_stdlib_test.rb`. PLAN/STDLIB/DEVELOPMENT → STEP=4. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/env_log_stdlib_test.rb` → 1 runs, 18 assertions, 0 failures. |
+| result  | STEP=3 done. Plain: MLC Env/Log externs codegen to mlc::env/log. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; no soft bridge (direct includes per Decision). |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_ENV_LOGGING — gate script (env roundtrip + log line assert) |
 
 ### Turn 2026-07-11 01:12 (Driver TRACK_STDLIB_ENV_LOGGING STEP=2 — runtime)
 
