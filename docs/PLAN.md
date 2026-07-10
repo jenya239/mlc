@@ -390,7 +390,7 @@ compiler/
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
-| **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **open, высокий приоритет** | [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) — STEP=1 next (после closed 13a-2) |
+| **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **open, высокий приоритет** | [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) — STEP=1 **done** (`MirRvalueUnary`), STEP=2 next (if-as-statement) |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1 **done** (streambuf in `file.hpp`), STEP=2 next (`read_all` builtin); after LOWERING_GAPS or parallel |
 | **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
@@ -436,7 +436,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     regression_gate 20/0) — Epic 4 `--run` stability claim was false until this
   → VM_BLOCK_ID_COLLISION STEP=1–5 (**closed** 2026-07-10: `else_block_step.state`;
     classify/deep gates; corpus; self-host identical; regression_gate 20/0)
-  → **VM_LOWERING_GAPS STEP=1 (**next**, высокий приоритет) → STEP=2–4** —
+  → **VM_LOWERING_GAPS STEP=1 (**done** 2026-07-10: `MirRvalueUnary` + eval)
+    → STEP=2 (**next** — if-as-statement) → STEP=3–4** —
     unary операторы (`!`/`-`) не lowering'уются; `if` не в tail-позиции падает
   → CLI_STDIN STEP=1 (**done** 2026-07-10: streambuf `file.hpp`; `/dev/stdin`
     no length_error) → STEP=2–5 — `read_all` builtin; `-` convention;
