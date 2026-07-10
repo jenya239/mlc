@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=4 — stdlib `wrapping_add` /
-`checked_add` / `saturating_add` (and `-`/`*`). STEP=3 done (Ruby +
-self-hosted checked ops).
+**TRACK_LANG_INT_OVERFLOW** STEP=5 — tests + verify-gate + close.
+STEP=4 done (`mlc::int_arith` i32 wrapping/checked/saturating).
 
 ## Step sizing (good vs bad)
 

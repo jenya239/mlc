@@ -255,6 +255,8 @@ module MLC
           when 'IO'
             # Preserve uppercase for IO
             'mlc::io'
+          when 'IntArith'
+            'mlc::int_arith'
           else
             # Default: lowercase the module name
             "mlc::#{module_name.downcase}"

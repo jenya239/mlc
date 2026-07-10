@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 36 |
-| step_last | 3.2 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=4 |
-| test_gate | ok (self-host DIFF identical; mlcc smoke) |
+| driver_turns_since_plan | 37 |
+| step_last | 4 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=5 |
+| test_gate | ok (int_arith stdlib tests) |
+
+### Turn 2026-07-10 21:20 (Driver TRACK_LANG_INT_OVERFLOW STEP=4 — stdlib int_arith)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 17:16 |
+| elapsed | ~25 min |
+| done    | `runtime/.../int_arith.hpp` (`wrapping_*`/`saturating_*`/`checked_*`→optional); `std/core/int_arith.mlc` + registry/scanner; Ruby codegen include; `MLC.md` C4; `int_arith_stdlib_test.rb`. |
+| verify  | 2 tests / 26 assertions pass; C++ smoke wrapping/saturating/checked. |
+| result  | STEP=4 done. Plain: i32 wrap/check/sat stdlib available. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer left. i64/u* deferred to STEP=5. |
+| next    | ROLE=Driver STEP=5 TRACK_LANG_INT_OVERFLOW — overflow tests + verify-gate + close |
 
 ### Turn 2026-07-10 20:00 (Driver TRACK_LANG_INT_OVERFLOW STEP=3.2 — self-hosted)
 

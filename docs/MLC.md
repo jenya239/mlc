@@ -382,8 +382,11 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 | Unsigned (`u32`, `u64`, `u8`, `usize`, …) | `+` `-` `*` | **Wrap** по модулю 2ⁿ во всех сборках (определённое поведение C++). |
 | Все целые | `/` `%` | **Panic**, если делитель = 0 (все сборки). Signed `MIN / -1` и `MIN % -1` — как overflow у `*`: debug panic / release UB. |
 
-Явные методы stdlib (не операторы; реализация — отдельный шаг трека):
-`wrapping_add` / `checked_add` / `saturating_add` и аналоги для `-`/`*`.
+Явные методы stdlib (`std/core/int_arith`, namespace `mlc::int_arith`;
+сейчас `i32`):
+`wrapping_add` / `wrapping_sub` / `wrapping_mul` — wrap mod 2ⁿ;
+`saturating_add` / `saturating_sub` / `saturating_mul` — clamp к min/max;
+`checked_add` / `checked_sub` / `checked_mul` — `Option<i32>` (`None` при overflow).
 
 Вещественные `f32`/`f64` (NaN/Inf) сюда не входят.
 

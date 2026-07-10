@@ -26,6 +26,12 @@ module MLC
 
           path: "core/result.mlc"
         },
+        "std/core/int_arith" => {
+          category: "core",
+          type: :extern,
+          namespace: "mlc::int_arith",
+          path: "core/int_arith.mlc"
+        },
         "std/data/json" => {
           category: "data",
           type: :extern,
@@ -74,6 +80,7 @@ module MLC
       LEGACY_ALIASES = {
         "Option" => "std/core/option",
         "Result" => "std/core/result",
+        "IntArith" => "std/core/int_arith",
         "Array" => "std/collections/array",
         "String" => "std/text/string",
         "Conv" => "std/text/conv",

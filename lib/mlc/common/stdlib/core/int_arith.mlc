@@ -1,0 +1,21 @@
+//! @module std/core/int_arith
+//! @category core
+//! @type extern
+//! @namespace mlc::int_arith
+
+# Explicit integer arithmetic (wrap / check / saturate).
+# Separate from default operators (debug panic / release UB on signed overflow).
+
+module IntArith
+
+export extern fn wrapping_add(left: i32, right: i32) -> i32
+export extern fn wrapping_sub(left: i32, right: i32) -> i32
+export extern fn wrapping_mul(left: i32, right: i32) -> i32
+
+export extern fn saturating_add(left: i32, right: i32) -> i32
+export extern fn saturating_sub(left: i32, right: i32) -> i32
+export extern fn saturating_mul(left: i32, right: i32) -> i32
+
+export extern fn checked_add(left: i32, right: i32) -> Option<i32>
+export extern fn checked_sub(left: i32, right: i32) -> Option<i32>
+export extern fn checked_mul(left: i32, right: i32) -> Option<i32>
