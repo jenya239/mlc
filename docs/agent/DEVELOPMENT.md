@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_JOB_QUEUE` open** STEP=4 — `run_job_queue_gate.sh`.
-STEP=3: C++-only documented; no MLC module/registry.
+**`TRACK_STDLIB_JOB_QUEUE` open** STEP=5 — docs + example + close.
+Gate STEP=4 done (`run_job_queue_gate.sh` 50/0).
 See [TRACK_STDLIB_JOB_QUEUE.md](TRACK_STDLIB_JOB_QUEUE.md).
 
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_JOB_QUEUE STEP=4 |
-| test_gate | docs STEP=3; smoke still 50/0 from STEP=2 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_JOB_QUEUE STEP=5 |
+| test_gate | run_job_queue_gate.sh OK (50/0) |
+
+### Turn 2026-07-11 00:52 (Driver TRACK_STDLIB_JOB_QUEUE STEP=4 — gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:47 |
+| elapsed | ~5 min |
+| done    | `scripts/run_job_queue_gate.sh` wraps runtime smoke (C++-only; no MLC test); PLAN/STDLIB → STEP=5. |
+| verify  | `bash scripts/run_job_queue_gate.sh` → smoke 50/0; gate OK. |
+| result  | STEP=4 done. Plain: JobQueue enqueue/delay/retry gated. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_JOB_QUEUE — docs + example + close → Critic |
 
 ### Turn 2026-07-11 00:48 (Driver TRACK_STDLIB_JOB_QUEUE STEP=3 — C++-only docs)
 
