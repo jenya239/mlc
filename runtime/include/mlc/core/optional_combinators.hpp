@@ -12,6 +12,16 @@
 
 namespace mlc::opt {
 
+template<typename T>
+bool is_some(const std::optional<T>& option_value) {
+  return option_value.has_value();
+}
+
+template<typename T>
+T unwrap(const std::optional<T>& option_value) {
+  return *option_value;
+}
+
 template<typename T, typename F>
 auto map(std::optional<T> o, F&& f) {
   if (!o) {

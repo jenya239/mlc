@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=3 |
-| test_gate | regression 20/0; Tcp check-only; resolve unit bin |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=4 |
+| test_gate | run_mlcc_tcp_echo_gate OK; Ruby tcp_stdlib 2/22 |
+
+### Turn 2026-07-10 22:45 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=3 — Tcp echo via mlcc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 22:30 |
+| elapsed | ~20 min |
+| done    | `tcp.mlc` FFI→`*_mlc`; `tcp.hpp` by-value wrappers; `mlc::opt::is_some/unwrap` + include combinators; `misc/examples/tcp_echo_mlcc.mlc`; `scripts/run_mlcc_tcp_echo_gate.sh`. PLAN §8c + DEVELOPMENT. |
+| verify  | gate OK (echo ping); Ruby `tcp_stdlib_test` 2 runs/22 assert. |
+| result  | STEP=3 done. Plain: mlcc compiles+runs Tcp echo without spawn. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=4 TRACK_PIPELINE_MERGE_TCP_SPAWN — Tcp+spawn e2e (2+ clients) |
 
 ### Turn 2026-07-10 22:25 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=2 — bare Tcp resolve)
 

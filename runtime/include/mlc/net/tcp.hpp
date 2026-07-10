@@ -367,5 +367,32 @@ inline std::int32_t port(std::int32_t listener_handle) {
   return listener->port();
 }
 
+// By-value entry points for mlcc FFI binders (TRACK_PIPELINE_MERGE_TCP_SPAWN).
+// mlcc emits `T(*)(mlc::String, …)` casts; the primary API uses `const String&`.
+inline std::optional<std::int32_t> bind_mlc(String host, std::int32_t port_value) {
+  return bind(host, port_value);
+}
+inline std::optional<std::int32_t> accept_mlc(std::int32_t listener_handle) {
+  return accept(listener_handle);
+}
+inline std::optional<String> read_mlc(std::int32_t stream_handle, std::int32_t max_bytes) {
+  return read(stream_handle, max_bytes);
+}
+inline bool write_all_mlc(std::int32_t stream_handle, String data) {
+  return write_all(stream_handle, data);
+}
+inline void close_listener_mlc(std::int32_t listener_handle) {
+  close_listener(listener_handle);
+}
+inline void close_stream_mlc(std::int32_t stream_handle) {
+  close_stream(stream_handle);
+}
+inline std::int32_t port_mlc(std::int32_t listener_handle) {
+  return port(listener_handle);
+}
+inline String last_error_mlc() {
+  return last_error();
+}
+
 } // namespace net
 } // namespace mlc
