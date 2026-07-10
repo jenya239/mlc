@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_POSTGRES closed (await Critic) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_POSTGRES closed (Critic done) |
 | test_gate | ok (run_postgres_gate.sh) |
+
+### Turn 2026-07-10 20:10 (Critic TRACK_STDLIB_POSTGRES — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:52 |
+| elapsed | ~5 min |
+| done    | Audited `97767fee`/`2a8b758f`/`c435fafe`/`3d6fabac`/`69f03ddb` vs STEP 1–5; PLAN §11/archive; Critic note on archived TRACK; re-ran gate. |
+| verify  | gate OK (7/0 + 1/18); archive path; no false-done (each STEP has commit). |
+| result  | **reopen: none**. Residuals: no `extern lib "pq"` in mlc; example ungated; live SELECT never in CI; libpq often via `.tmp_libpq`. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Planner STEP=plan-refresh — open next STDLIB_BACKEND track (crypto or WS) |
 
 ### Turn 2026-07-10 20:05 (Driver TRACK_STDLIB_POSTGRES STEP=5 — docs+close)
 

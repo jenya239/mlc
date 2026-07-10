@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_POSTGRES` closed** 2026-07-10 — awaiting Critic.
-Next after Critic: Planner opens crypto / WS from STDLIB_BACKEND backlog.
+**`TRACK_STDLIB_POSTGRES` closed** 2026-07-10 — Critic done, no reopen.
+Next: Planner opens crypto / WS from STDLIB_BACKEND backlog.
 
 
 ## Step sizing (good vs bad)

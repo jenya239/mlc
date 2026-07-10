@@ -11,6 +11,13 @@ Trigger: FFI_LAYER **closed**; first real FFI proof-of-concept is libpq
 `misc/examples/postgres_select_demo.mlc`; `STDLIB_BACKEND` closed; gate
 re-run OK; no `compiler/**` (regression_gate N/A); track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `97767fee`…`69f03ddb`
+match STEP 1–5; PLAN §11/queue/archive synced; `run_postgres_gate.sh` OK
+(smoke 7/0, stdlib 1/18). Residuals (no reopen): Decision `extern lib "pq"`
+not in `postgres.mlc` (link `-lpq` manual/runtime smoke only); example not
+compile-gated; live `SELECT 1` never run in CI (env-gated by design);
+system `libpq-dev` often absent (local `.tmp_libpq` for smoke).
+
 ## Decision (STEP=1, 2026-07-10)
 
 ### Pipeline
