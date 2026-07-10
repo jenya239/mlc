@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 17 |
-| step_last | 3 |
-| active_track | TRACK_VM_LOWERING_GAPS STEP=4 |
-| test_gate | ok (if_rvalue=1/2/11; nested=3; stmt; elif6) |
+| driver_turns_since_plan | 18 |
+| step_last | 4 |
+| active_track | TRACK_CLI_STDIN STEP=2 |
+| test_gate | ok (DIFF identical; regression 20/0; corpus) |
+
+### Turn 2026-07-10 15:00 (Driver TRACK_VM_LOWERING_GAPS STEP=4 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_VM_LOWERING_GAPS |
+| started | 2026-07-10 14:40 |
+| elapsed | ~20 min |
+| done    | Self-host p1→mlcc2→p2 DIFF identical; `regression_gate` 20/0; VM corpus (elif6, depth, examples 28, single 18, cpp_diff 18); archived track; PLAN 13a-3 done; MIR_VM_FULL note. |
+| verify  | DIFF:IDENTICAL (p1≈6.3s, link≈112s, p2≈7.4s); regression_gate 20/0; corpus all ok. |
+| result  | STEP=4 done; track **closed**. Plain: unary + mid-block/rvalue `if` lowering accepted. |
+| issues  | Dirty `compiler/out/*` left. New `vm_if_*`/`vm_unary_*` not yet in examples manifest (28). |
+| next    | ROLE=Driver STEP=2 TRACK_CLI_STDIN — `read_all` builtin registration |
 
 ### Turn 2026-07-10 14:50 (Driver TRACK_VM_LOWERING_GAPS STEP=3 — if-as-rvalue)
 

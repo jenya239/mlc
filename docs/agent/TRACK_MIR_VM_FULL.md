@@ -17,9 +17,13 @@ Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRAC
 — nested `if`/elif in `mir_lower_return_expression` reused MIR block ids
 (`then_block_step.state` instead of `else_block_step.state`); VM hung on the
 second elif arm. **Fixed** 2026-07-10 (one-line; classify/deep-nesting gates;
-corpus green; self-host diff identical; `regression_gate` 20/0). Remaining
-lowering gaps (unary, non-tail `if`):
-[TRACK_VM_LOWERING_GAPS](TRACK_VM_LOWERING_GAPS.md).
+corpus green; self-host diff identical; `regression_gate` 20/0).
+
+**Lowering coverage gaps (2026-07-10, closed):**
+[TRACK_VM_LOWERING_GAPS](../archive/tracks/TRACK_VM_LOWERING_GAPS.md) —
+unary `!`/`-`/`~`/`+` (`MirRvalueUnary`); mid-block `if` as statement;
+`if` as rvalue via shared local + continue. **Fixed** 2026-07-10 (self-host
+DIFF identical; `regression_gate` 20/0; VM corpus green).
 
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —
