@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_PIPELINE_MERGE_TCP_SPAWN` closed** 2026-07-10 — Critic next, then resume
+**`TRACK_PIPELINE_MERGE_TCP_SPAWN` closed** 2026-07-10 (Critic OK) — resume
 `TRACK_STDLIB_WEBSOCKET` STEP=2 (`websocket.hpp`).
 See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
 

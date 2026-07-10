@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 6 |
-| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN closed → Critic |
-| test_gate | self-host p1≡p2; regression 20/0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_WEBSOCKET STEP=2 |
+| test_gate | tcp echo+spawn gates OK; Critic reopen none |
+
+### Turn 2026-07-10 23:47 (Critic TRACK_PIPELINE_MERGE_TCP_SPAWN — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 23:44 |
+| elapsed | ~5 min |
+| done    | Audited STEP1–6 vs `501badc6`/`de892bec`/`7a42b34e`/`2565d22d`/`3cff5b1d`/`d4a2917c`; PLAN §8c/archive; re-ran both tcp gates; fixed archive import prose + PACKAGE_MANAGER link. |
+| verify  | `run_mlcc_tcp_echo_gate.sh` OK; `run_mlcc_tcp_spawn_echo_gate.sh` OK (overlap); no false-done. |
+| result  | **reopen: none**. Residuals: only docs wording (fixed). Plain: Tcp+spawn merge audit clean. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_WEBSOCKET — `websocket.hpp` + C++ smoke |
 
 ### Turn 2026-07-10 23:40 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=6 — verify+close)
 
