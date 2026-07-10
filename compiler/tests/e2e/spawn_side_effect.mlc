@@ -5,5 +5,5 @@ end
 
 fn main() -> i32 = do
   let task_a = spawn do side() end
-  0
+  block_on(task_a)
 end

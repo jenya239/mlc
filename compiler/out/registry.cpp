@@ -276,6 +276,10 @@ TypeRegistry empty_registry() noexcept{
   builtin_required_arity.set(mlc::String("args", 4), 0);
   builtin_function_types.set(mlc::String("spawn_task", 10), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}, std::make_shared<Type>(TGeneric{mlc::String("Task", 4), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}})}));
   builtin_required_arity.set(mlc::String("spawn_task", 10), 1);
+  builtin_function_types.set(mlc::String("block_on", 8), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TGeneric{mlc::String("Task", 4), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}})}, std::make_shared<Type>(TUnknown{})}));
+  builtin_required_arity.set(mlc::String("block_on", 8), 1);
+  builtin_function_types.set(mlc::String("is_ready", 8), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TGeneric{mlc::String("Task", 4), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}})}, std::make_shared<Type>(TBool{})}));
+  builtin_required_arity.set(mlc::String("is_ready", 8), 1);
   builtin_function_types.set(mlc::String("make_channel", 12), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUsize{})}, std::make_shared<Type>(TGeneric{mlc::String("Channel", 7), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}})}));
   builtin_required_arity.set(mlc::String("make_channel", 12), 1);
   builtin_required_arity.set(mlc::String("read_line", 9), 0);

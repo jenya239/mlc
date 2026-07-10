@@ -5,7 +5,7 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 Найдено 2026-07-10 при попытке собрать многопоточный TCP-сервер: два
 языковых feature-набора реализованы в двух непересекающихся компиляторах.
 
-## Status: **open** — STEP=1 **done**; STEP=2 next (`block_on`)
+## Status: **open** — STEP=1–2 **done**; STEP=3 next (docs)
 
 **Planner 2026-07-10:** выбран после closed SPAWN_DOUBLE_EXEC (выше
 Postgres — `block_on` residual + pipeline split blocks language-level
@@ -14,6 +14,10 @@ TCP+spawn). Postgres track not opened this turn.
 **Driver 2026-07-10:** STEP=1 — Decision **C** (document temporary split);
 re-checked `rg spawn lib/mlc` → 0; `rg common/stdlib compiler` → 0;
 `block_on`/`is_ready` mapped in `cpp_naming.mlc` only.
+
+**Driver 2026-07-10:** STEP=2 — `block_on`/`is_ready` in `registry.mlc` +
+`check.mlc` `collect_globals`; rebuilt mlcc; spawn gate uses `block_on`;
+`--check-only` probes green; codegen `mlc::block_on`.
 
 ## Проблема
 
@@ -89,7 +93,7 @@ re-checked `rg spawn lib/mlc` → 0; `rg common/stdlib compiler` → 0;
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design: choose A/B/C above; write Decision; list non-goals. | **done** (2026-07-10: **C**; B deferred follow-up) |
-| 2 | `block_on`/`is_ready` as identifiers in self-hosted checker (registry) + existing codegen map + regression (spawn e2e can `block_on`). | pending |
+| 2 | `block_on`/`is_ready` as identifiers in self-hosted checker (registry) + existing codegen map + regression (spawn e2e can `block_on`). | **done** (2026-07-10: registry+globals; gate uses `block_on`; probes OK) |
 | 3 | Document split in `MLC.md`/`README.md` (Decision C); name B as follow-up. | pending |
 
 <!-- sub-steps STEP=1: 1) re-check `rg spawn lib/mlc` + `rg common/stdlib compiler`; 2) pick A/B/C with 3–5 line rationale; 3) Decision table in this TRACK; 4) PLAN §8b sync -->

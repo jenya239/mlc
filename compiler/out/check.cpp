@@ -277,6 +277,8 @@ mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
   names.set(mlc::String("read_line", 9), true);
   names.set(mlc::String("read_all", 8), true);
   names.set(mlc::String("spawn_task", 10), true);
+  names.set(mlc::String("block_on", 8), true);
+  names.set(mlc::String("is_ready", 8), true);
   names.set(mlc::String("make_channel", 12), true);
   names.set(mlc::String("Channel", 7), true);
   names.set(mlc::String("Arc", 3), true);

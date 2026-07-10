@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=2 |
-| test_gate | ok (rg re-check) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=3 |
+| test_gate | ok (block_on probes + spawn gate + run_tests 1471/0) |
+
+### Turn 2026-07-10 19:34 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=2 — block_on)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_RUBY_PARITY |
+| started | 2026-07-10 19:34 |
+| elapsed | ~8 min |
+| done    | `registry.mlc` + `check.mlc` register `block_on`/`is_ready`; rebuilt mlcc; `test_spawn.mlc` cases; spawn gate uses `block_on`. |
+| verify  | `--check-only` probes OK; codegen `mlc::block_on`; `run_spawn_side_effect_gate.sh` PASS; `run_tests` 1471/0. |
+| result  | STEP=2 done. Plain: `block_on(task)` passes checker. |
+| issues  | `rake test_compiler_mlc` rebuild fails pre-existing Ruby parse on tests_main (MATCH); left foreign dirty. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_RUBY_PARITY — MLC.md feature matrix |
 
 ### Turn 2026-07-10 19:33 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=1 — Decision)
 

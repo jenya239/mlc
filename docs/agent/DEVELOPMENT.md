@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_RUBY_PARITY** STEP=2 — register `block_on`/`is_ready`
-in self-hosted checker (codegen map exists). Decision C done.
+**TRACK_CONCURRENCY_RUBY_PARITY** STEP=3 — document Ruby vs mlcc feature
+matrix in `MLC.md` (Decision C); name B as follow-up.
 
 
 ## Step sizing (good vs bad)

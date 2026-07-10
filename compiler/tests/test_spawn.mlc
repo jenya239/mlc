@@ -70,6 +70,16 @@ export fn spawn_tests() -> [TestResult] = do
       'fn main() -> Task<unit> = do\n  let mut shared = Arc.new(7)\n  spawn do let _ = shared; return () end\nend'),
     0))
 
+  results.push(assert_eq_int('block_on joins spawn Task',
+    check_error_count(
+      'fn main() -> i32 = do\n  let task_a = spawn do 7 end\n  block_on(task_a)\nend'),
+    0))
+
+  results.push(assert_eq_int('is_ready on spawn Task',
+    check_error_count(
+      'fn main() -> bool = do\n  let task_a = spawn do 7 end\n  is_ready(task_a)\nend'),
+    0))
+
   results.push(assert_eq_int('use after move E088',
     check_error_count(
       'fn main() -> i32 = do\n  let x = 7\n  let y = move x\n  x\nend'),
@@ -103,6 +113,15 @@ export fn spawn_tests() -> [TestResult] = do
     'Task type in cpp', context,
     Shared.new(TyGeneric('Task', [Shared.new(TyI32)])),
     'mlc::Task<int>'))
+
+  const block_on_call = Shared.new(SemanticExpressionCall(
+    Shared.new(SemanticExpressionIdent('block_on', Shared.new(TUnit), span_unknown())),
+    [spawn_call],
+    [0],
+    integer_type(),
+    span_unknown()))
+  const block_on_generated = gen_expr(block_on_call, context)
+  results.push(assert_code_contains('block_on in cpp', block_on_generated.to_string(), 'block_on'))
 
   results
 end
