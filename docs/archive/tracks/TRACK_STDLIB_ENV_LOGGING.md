@@ -15,6 +15,10 @@ Trigger: JOB_QUEUE **closed**; STDLIB_BACKEND §5 next is env/config + logging
 **Driver 2026-07-11:** STEP=5 — MLC.md/STDLIB/example; archived.
 No `compiler/**` (regression_gate N/A).
 
+**Critic 2026-07-11:** STEP=1–5 vs `015d562d`…`a3baa3b9`; PLAN/archive/STDLIB/MLC
+aligned; gate re-OK 14/0+1/18; **reopen: none**. Residuals: example not
+compile-gated (Ruby codegen only); mlcc bare `Env`/`Log` not in v1 table.
+
 ## Decision (STEP=1, 2026-07-11)
 
 ### Surface

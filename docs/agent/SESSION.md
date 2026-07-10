@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_ENV_LOGGING closed (Critic next) |
-| test_gate | `run_env_log_gate.sh` OK; example codegen OK; regression_gate N/A |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_ENV_LOGGING closed (Critic OK) |
+| test_gate | gate re-OK 14/0+1/18; reopen none |
+
+### Turn 2026-07-11 01:40 (Critic TRACK_STDLIB_ENV_LOGGING — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_ENV_LOGGING |
+| started | 2026-07-11 01:37 |
+| elapsed | ~4 min |
+| done    | Audited STEP1–5 vs `015d562d`/`a9445387`/`ee43c1c9`/`18589f97`/`a3baa3b9`; PLAN/archive/STDLIB/MLC; deliverables on disk; re-ran gate+example codegen; Critic note in archive. |
+| verify  | `run_env_log_gate.sh` OK (14/0 + 1/18); archive path; agent TRACK removed; no false-done. |
+| result  | **reopen: none**. Residuals: example not compile-gated; mlcc bare Env/Log out of v1. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — open Validation (§5.7) or next PLAN queue item |
 
 ### Turn 2026-07-11 01:33 (Driver TRACK_STDLIB_ENV_LOGGING STEP=5 — docs+close)
 
