@@ -17,6 +17,12 @@ spawn gate uses `block_on`.
 **Driver 2026-07-10:** STEP=3 — `MLC.md` § «Два пайплайна» + README pointer;
 track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `02fe9f1f`/`292ec125`/`1136f463`
+match STEP 1–3; PLAN §8/§8b/queue/archive synced; `--check-only`+spawn gate
+PASS. Residuals (no reopen): new `test_spawn` cases not in stale `run_tests`
+(Ruby `build_tests` parse fail pre-existing); option B not opened as TRACK;
+`block_on` typed as `Task<_>`→`Unknown`.
+
 ## Проблема
 
 1. **`spawn`/`Mutex`/`Channel`/`Task` — только self-hosted.** `rg spawn lib/mlc`

@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Critic** `critique-audit` on closed
-[TRACK_CONCURRENCY_RUBY_PARITY](../archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md).
-Then Planner: open Postgres track (STDLIB_BACKEND §5).
+**Planner** `plan-refresh` — open `TRACK_STDLIB_POSTGRES` (STDLIB_BACKEND §5)
+after closed RUBY_PARITY. Critic: no reopen.
 
 
 ## Step sizing (good vs bad)

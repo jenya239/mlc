@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_RUBY_PARITY closed → Critic |
-| test_gate | ok (docs; prior STEP=2 probes) |
+| step_last | critique-audit |
+| active_track | TRACK_CONCURRENCY_RUBY_PARITY closed (Critic done) |
+| test_gate | ok (block_on + spawn gate) |
+
+### Turn 2026-07-10 19:39 (Critic TRACK_CONCURRENCY_RUBY_PARITY — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_RUBY_PARITY |
+| started | 2026-07-10 19:39 |
+| elapsed | ~5 min |
+| done    | Audited `02fe9f1f`/`292ec125`/`1136f463` vs STEP 1–3; PLAN §8/§8b/archive; Critic note; re-ran spawn gate + `block_on` check. |
+| verify  | gate PASS; `block_on` in registry+globals; MLC.md matrix present; no false-done. |
+| result  | **reopen: none**. Residuals: stale `run_tests` missing new spawn cases; B follow-up not tracked; `block_on`→Unknown. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Planner STEP=plan-refresh — open TRACK_STDLIB_POSTGRES (STDLIB_BACKEND §5) |
 
 ### Turn 2026-07-10 19:38 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=3 — docs+close)
 
