@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_INT_OVERFLOW closed (Critic ok) → Planner STDLIB_NET_SERVER |
-| test_gate | ok (9/44 overflow+int_arith) |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=1 |
+| test_gate | n/a (Planner docs-only) |
+
+### Turn 2026-07-10 22:05 (Planner — create TRACK_STDLIB_NET_SERVER)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 17:59 |
+| elapsed | ~8 min |
+| done    | Created `docs/agent/TRACK_STDLIB_NET_SERVER.md` (STEP=1–8); synced `PLAN.md` §8/§11 + priority queue; `STDLIB_BACKEND.md` §5.1; `DEVELOPMENT.md`. |
+| verify  | Track file present; PLAN links to `agent/TRACK_STDLIB_NET_SERVER.md`; STEP=1 pending with sub-steps. |
+| result  | plan-refresh done. Plain: TCP/HTTP server track ready for Driver. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_NET_SERVER — API Decision (TcpListener/HttpRequest, errors, v1 HTTP scope) |
 
 ### Turn 2026-07-10 22:00 (Critic TRACK_LANG_INT_OVERFLOW — critique-audit)
 

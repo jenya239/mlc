@@ -40,9 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner** `plan-refresh` — create [TRACK_STDLIB_NET_SERVER](TRACK_STDLIB_NET_SERVER.md)
-from [STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5 (TCP/HTTP). Critic on
-LANG_INT_OVERFLOW done.
+**TRACK_STDLIB_NET_SERVER** STEP=1 — TCP/HTTP API design (Decision in TRACK).
 
 ## Step sizing (good vs bad)
 
