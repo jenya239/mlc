@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=4 |
-| test_gate | ok (spawn side-effect gate + run_tests 1471/0) |
+| driver_turns_since_plan | 0 |
+| step_last | 4 |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC closed → Critic |
+| test_gate | ok (self-host identical; regression 20/0) |
+
+### Turn 2026-07-10 19:30 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=4 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:20 |
+| elapsed | ~10 min |
+| done    | Self-host p1≡p2; `regression_gate` 20/0; spawn gate PASS; track → `docs/archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md`; PLAN §8/§8a/§11 + queue; DEVELOPMENT. |
+| verify  | `diff -rq p1 p2 --exclude=obj` empty; regression 20/0; `run_spawn_side_effect_gate.sh` PASS. |
+| result  | STEP=4 done; track **closed**. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_LANG_SPAWN_DOUBLE_EXEC |
 
 ### Turn 2026-07-10 19:18 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=3 — e2e)
 

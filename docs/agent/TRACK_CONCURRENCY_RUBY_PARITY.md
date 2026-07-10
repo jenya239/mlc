@@ -8,7 +8,7 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 ## Status: **open** (архитектурная находка; после SPAWN_DOUBLE_EXEC)
 
 **Planner 2026-07-10:** не стартуем — сначала критический
-[TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md). NET_SERVER
+[TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md). NET_SERVER
 STEP=7 уже обошёл разрыв через C++ `serve_http_with_thread_pool`.
 
 ## Проблема
@@ -66,4 +66,4 @@ STEP=7 уже обошёл разрыв через C++ `serve_http_with_thread_p
 - Полное слияние двух пайплайнов в один — не в этом треке, слишком
   дорого; см. общий roadmap self-hosting в `PLAN.md`.
 - Дублирование statement/tail-expression в `spawn`-лямбде — отдельный,
-  критический баг, см. [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md).
+  критический баг, см. [TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md).

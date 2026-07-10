@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=4 — self-host `mlcc`→`mlcc2` diff +
-`regression_gate.sh`; then close.
+**Critic** `critique-audit` on closed
+[TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md).
+Then Planner: CONCURRENCY_RUBY_PARITY or Postgres/crypto.
 
 
 ## Step sizing (good vs bad)

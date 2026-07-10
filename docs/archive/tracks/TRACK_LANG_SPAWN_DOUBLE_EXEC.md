@@ -1,12 +1,12 @@
 # Track: `spawn do <tail-call> end` выполняет тело дважды
 
-Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
-[../archive/tracks/TRACK_CONCURRENCY.md](../archive/tracks/TRACK_CONCURRENCY.md).
+Parent: [../../CONCURRENCY_V2.md](../../CONCURRENCY_V2.md),
+[TRACK_CONCURRENCY.md](TRACK_CONCURRENCY.md).
 Найдено 2026-07-10 при попытке собрать многопоточный TCP-сервер (два
 `spawn`, разное время выполнения) — оба задания напечатали свой лог
 дважды.
 
-## Status: **open** — STEP=1–3 **done**; STEP=4 next (verify-gate)
+## Status: **closed** (2026-07-10) — STEP=1–4 **done**
 
 **Planner 2026-07-10:** выбран следующим после closed NET_SERVER (выше
 Postgres/crypto в очереди — повторный побочный эффект на `spawn`).
@@ -21,6 +21,9 @@ Verify: `spawn do side() end` → `return side();` (no prior `side();`).
 **Driver 2026-07-10:** STEP=3 — `compiler/tests/e2e/spawn_side_effect.mlc` +
 `run_spawn_side_effect_gate.sh` (codegen bare-`side();` ban + runtime
 `SIDE_ONCE` count=1); `run_tests` 1471/0.
+
+**Driver 2026-07-10:** STEP=4 — self-host p1≡p2; `regression_gate` 20/0;
+spawn gate PASS; track archived.
 
 ## Проблема
 
@@ -89,7 +92,7 @@ end
 | 1 | Найти точное место, где `spawn do ... end` даёт double emit; сравнить с обычным `do ... end`. | **done** (2026-07-10: `transform.mlc:1431-1435` `visit_spawn`; plain OK) |
 | 2 | Fix: убрать дублирование statement/tail в `visit_spawn` (split как `block_body`/`block_result`). | **done** (2026-07-10: `expr_spawn_body_statements`; codegen single `return side();`) |
 | 3 | Regression: репро (лог **один** раз); e2e gate с подсчётом побочного эффекта (checker-only `test_spawn` не ловит). | **done** (2026-07-10: `run_spawn_side_effect_gate.sh` PASS; run_tests 1471/0) |
-| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`. | pending |
+| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`. | **done** (2026-07-10: p1≡p2; regression 20/0; closed) |
 
 <!-- sub-steps STEP=2: 1) split stmts in visit_spawn like block_body/block_result; 2) rebuild mlcc; 3) spawn_locate → single `return side();` -->
 <!-- sub-steps STEP=3: 1) e2e gate; 2) count side-effect; 3) checker corpus green -->
@@ -99,4 +102,4 @@ end
 
 - `block_on`/`is_ready` не зарегистрированы в checker как identifiers
   (`error: undefined: block_on` при попытке забрать результат `Task`) —
-  отдельная находка, см. [TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md).
+  отдельная находка, см. [TRACK_CONCURRENCY_RUBY_PARITY](../../agent/TRACK_CONCURRENCY_RUBY_PARITY.md).
