@@ -62,7 +62,7 @@ fn area(s: Shape) -> i32 =
 ### Два пайплайна: Ruby vs `mlcc` (временный split)
 
 Зафиксировано 2026-07-10 (`TRACK_CONCURRENCY_RUBY_PARITY`, Decision **C**).
-Обновлено 2026-07-10 (`TRACK_PIPELINE_MERGE_TCP_SPAWN` STEP=1–4, Decision **A**):
+Обновлено 2026-07-10 (`TRACK_PIPELINE_MERGE_TCP_SPAWN` STEP=1–6 **closed**, Decision **A**):
 для **`Tcp` + `spawn`** разрыв снят в self-hosted `mlcc`.
 
 | Фича | Ruby (`lib/mlc/`, `MLC.build_project`) | Self-hosted (`mlcc`) |

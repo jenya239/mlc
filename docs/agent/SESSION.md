@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN open STEP=6 |
-| test_gate | docs-only (examples/gates already linked) |
+| driver_turns_since_plan | 0 |
+| step_last | 6 |
+| active_track | TRACK_PIPELINE_MERGE_TCP_SPAWN closed → Critic |
+| test_gate | self-host p1≡p2; regression 20/0 |
+
+### Turn 2026-07-10 23:40 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=6 — verify+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_PIPELINE_MERGE_TCP_SPAWN |
+| started | 2026-07-10 23:22 |
+| elapsed | ~20 min |
+| done    | Self-host `mlcc`→`mlcc2` p1≡p2; `regression_gate` 20/0; TRACK archived; PLAN §8c done; STDLIB/MLC/DEVELOPMENT links; WEBSOCKET resume in queue. |
+| verify  | diff empty; regression 20/0; archive path `docs/archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md`. |
+| result  | STEP=6 done; track **closed**. Plain: Tcp+spawn merge verified and archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_PIPELINE_MERGE_TCP_SPAWN |
 
 ### Turn 2026-07-10 23:20 (Driver TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=5 — docs)
 

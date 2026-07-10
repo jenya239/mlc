@@ -40,11 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_PIPELINE_MERGE_TCP_SPAWN` open** — STEP=6 (self-host diff + regression_gate; close).
-Max priority over WEBSOCKET (CONTINUITY hard limit). Docs updated: Tcp+spawn under mlcc.
-See [TRACK_PIPELINE_MERGE_TCP_SPAWN.md](TRACK_PIPELINE_MERGE_TCP_SPAWN.md).
-
-Paused: `TRACK_STDLIB_WEBSOCKET` STEP=2 until merge track closes.
+**`TRACK_PIPELINE_MERGE_TCP_SPAWN` closed** 2026-07-10 — Critic next, then resume
+`TRACK_STDLIB_WEBSOCKET` STEP=2 (`websocket.hpp`).
+See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
 
 
 ## Step sizing (good vs bad)

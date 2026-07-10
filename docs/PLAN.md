@@ -386,7 +386,7 @@ compiler/
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. SUPERVISOR deferred. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
-| **8c** Слить `Tcp` + `spawn` в одном компиляторе (многопоточный HTTP-сервер целиком на MLC) | **open, максимальный приоритет** | [TRACK_PIPELINE_MERGE_TCP_SPAWN](agent/TRACK_PIPELINE_MERGE_TCP_SPAWN.md) **open** STEP=6 (docs done; verify-gate + close) |
+| **8c** Слить `Tcp` + `spawn` в одном компиляторе (многопоточный HTTP-сервер целиком на MLC) | **done** | [TRACK_PIPELINE_MERGE_TCP_SPAWN](archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md) **closed** 2026-07-10 (STEP=1–6: Decision A; bare `Tcp`; echo; Tcp+spawn e2e; docs; self-host identical; regression 20/0) |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **open, средний приоритет** | [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) — GL-orchestration/TextRenderer перенести из C++-шима на MLC; GLFW-окно; демо с разным текстом + анимация |
@@ -479,16 +479,16 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_RUBY_PARITY (**closed** 2026-07-10: Decision C; `block_on`/`is_ready`;
       MLC.md § «Два пайплайна» + README
       → [archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md))
-  → **PIPELINE_MERGE_TCP_SPAWN (open STEP=6 — docs done; self-host+regression close;
-      max priority ahead of WEBSOCKET
-      → [agent/TRACK_PIPELINE_MERGE_TCP_SPAWN.md](agent/TRACK_PIPELINE_MERGE_TCP_SPAWN.md))**
+  → **PIPELINE_MERGE_TCP_SPAWN (**closed** 2026-07-10: Tcp into mlcc + spawn e2e;
+      self-host identical; regression 20/0
+      → [archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md](archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md))**
   → STDLIB_POSTGRES (**closed** 2026-07-10: `mlc::db` + `std/db/postgres`;
       gate `run_postgres_gate.sh`; example `postgres_select_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_POSTGRES.md](archive/tracks/TRACK_STDLIB_POSTGRES.md))
   → STDLIB_CRYPTO (**closed** 2026-07-10: `mlc::crypto` + `std/crypto/crypto`;
       gate `run_crypto_gate.sh`; example `crypto_sha256_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_CRYPTO.md](archive/tracks/TRACK_STDLIB_CRYPTO.md))
-  → STDLIB_WEBSOCKET (**open** STEP=2 — paused until PIPELINE_MERGE closes
+  → STDLIB_WEBSOCKET (**open** STEP=2 — resume after PIPELINE_MERGE closed
       → [agent/TRACK_STDLIB_WEBSOCKET.md](agent/TRACK_STDLIB_WEBSOCKET.md))
   → TEXT_RENDERING_NATIVE (open, средний приоритет, личный проект пользователя,
       2026-07-10: GL-orchestration/TextRenderer перенести из C++-шима на MLC;
