@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Critic** `critique-audit` on closed
-[TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md).
-Then Planner: CONCURRENCY_RUBY_PARITY or Postgres/crypto.
+**Planner** `plan-refresh` — next after closed SPAWN: open
+[TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=1
+(design) **or** Postgres track (STDLIB_BACKEND §5). Critic: SPAWN no reopen.
 
 
 ## Step sizing (good vs bad)

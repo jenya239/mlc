@@ -25,6 +25,12 @@ Verify: `spawn do side() end` → `return side();` (no prior `side();`).
 **Driver 2026-07-10:** STEP=4 — self-host p1≡p2; `regression_gate` 20/0;
 spawn gate PASS; track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `8fb7d92a`…`467c3f39`
+match STEP 1–4; PLAN §8/§8a/queue/archive path synced; re-ran
+`run_spawn_side_effect_gate.sh` PASS. Residuals (no reopen): e2e covers
+single-stmt spawn only; runtime wait relies on Task/future dtor join (no
+`block_on` — RUBY_PARITY); multi-stmt side-effect count not in gate.
+
 ## Проблема
 
 Сгенерированный C++ для

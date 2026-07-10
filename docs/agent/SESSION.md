@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 4 |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC closed → Critic |
-| test_gate | ok (self-host identical; regression 20/0) |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC closed (Critic done) |
+| test_gate | ok (spawn side-effect gate PASS) |
+
+### Turn 2026-07-10 19:31 (Critic TRACK_LANG_SPAWN_DOUBLE_EXEC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:31 |
+| elapsed | ~5 min |
+| done    | Audited `8fb7d92a`…`467c3f39` vs STEP 1–4; PLAN §8/§8a/archive; Critic note on archived TRACK; re-ran spawn gate. |
+| verify  | `run_spawn_side_effect_gate.sh` PASS; no false-done (each STEP has commit). |
+| result  | **reopen: none**. Residuals: single-stmt e2e only; no `block_on` wait (dtor join); multi-stmt count not gated. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Planner STEP=plan-refresh — pick CONCURRENCY_RUBY_PARITY vs Postgres |
 
 ### Turn 2026-07-10 19:30 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=4 — close)
 
