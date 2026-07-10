@@ -35,6 +35,7 @@
 #include "mlc/concurrency/stop.hpp"
 #include "mlc/concurrency/task_scope.hpp"
 #include "mlc/concurrency/thread_pool.hpp"
+#include "mlc/concurrency/job_queue.hpp"
 #include "mlc/concurrency/isolate.hpp"
 
 // I/O

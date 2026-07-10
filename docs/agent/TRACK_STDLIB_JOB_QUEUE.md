@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: WEBSOCKET **closed**; STDLIB_BACKEND §5 next is job queue/scheduler
 over existing `ThreadPool`/`Channel` (no new FFI).
 
-## Status: **open** — STEP=2 next (runtime JobQueue)
+## Status: **open** — STEP=3 next (document C++-only / skip MLC)
 
 **Planner 2026-07-11:** opened after closed STDLIB_WEBSOCKET Critic. Chose
 job-queue over env/config+logging (§5 order: item 5 before filler item 6).
@@ -14,6 +14,7 @@ Primitives exist (`mlc::concurrency::ThreadPool`, `Channel`, language `spawn`
 under mlcc). Ruby pipeline still has no `spawn`/`Channel` builtins.
 
 **Driver 2026-07-11:** STEP=1 — Decision locked (see below).
+**Driver 2026-07-11:** STEP=2 — `job_queue.hpp` + smoke (enqueue/delay/retry).
 
 ## Decision (STEP=1, 2026-07-11)
 

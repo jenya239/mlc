@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_JOB_QUEUE STEP=2 |
-| test_gate | Decision docs-only |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_JOB_QUEUE STEP=3 |
+| test_gate | job_queue runtime smoke 50/0 |
+
+### Turn 2026-07-11 00:45 (Driver TRACK_STDLIB_JOB_QUEUE STEP=2 — job_queue.hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:37 |
+| elapsed | ~10 min |
+| done    | `runtime/include/mlc/concurrency/job_queue.hpp` (ThreadPool + timer thread; enqueue/schedule_after/wait_idle/retry); `test_job_queue.cpp`; `run_job_queue_runtime_smoke.sh`; `mlc.hpp` include. |
+| verify  | `bash scripts/run_job_queue_runtime_smoke.sh` → 50 passed, 0 failed. |
+| result  | STEP=2 done. Plain: C++ JobQueue enqueue/delay/retry works. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_JOB_QUEUE — document C++-only (skip MLC registry) |
 
 ### Turn 2026-07-11 00:38 (Driver TRACK_STDLIB_JOB_QUEUE STEP=1 — API Decision)
 

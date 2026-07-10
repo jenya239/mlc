@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_JOB_QUEUE` open** STEP=2 — `job_queue.hpp` + C++ smoke.
-Decision: C++ on ThreadPool; MLC deferred. See [TRACK_STDLIB_JOB_QUEUE.md](TRACK_STDLIB_JOB_QUEUE.md).
+**`TRACK_STDLIB_JOB_QUEUE` open** STEP=3 — document C++-only (skip MLC module).
+Runtime STEP=2 done (`job_queue.hpp`, smoke 50/0).
+See [TRACK_STDLIB_JOB_QUEUE.md](TRACK_STDLIB_JOB_QUEUE.md).
 
 
 ## Step sizing (good vs bad)
