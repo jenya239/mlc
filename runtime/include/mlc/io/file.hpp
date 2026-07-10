@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <optional>
@@ -87,18 +88,13 @@ public:
         return path_;
     }
 
-    // Read entire file as string
+    // Read entire file as string (works for seekable and non-seekable streams)
     std::optional<mlc::String> read_all() {
         if (!is_open_) return std::nullopt;
 
-        stream_.seekg(0, std::ios::end);
-        size_t size = stream_.tellg();
-        stream_.seekg(0, std::ios::beg);
-
-        std::string content(size, '\0');
-        stream_.read(&content[0], size);
-
-        return mlc::String(content);
+        std::ostringstream output_stream;
+        output_stream << stream_.rdbuf();
+        return mlc::String(output_stream.str());
     }
 
     // Read one line
@@ -169,14 +165,10 @@ inline mlc::String read_to_string(const mlc::String& path) {
         return mlc::String("");
     }
 
-    file.seekg(0, std::ios::end);
-    size_t size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::string content(size, '\0');
-    file.read(&content[0], size);
-
-    return mlc::String(content);
+    // streambuf read: safe for pipes /dev/stdin (seekg/tellg would yield size_t(-1))
+    std::ostringstream output_stream;
+    output_stream << file.rdbuf();
+    return mlc::String(output_stream.str());
 }
 
 inline mlc::Array<mlc::String> read_lines(const mlc::String& path) {

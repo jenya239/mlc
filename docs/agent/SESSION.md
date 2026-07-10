@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 5 |
-| active_track | TRACK_CLI_STDIN STEP=1 |
-| test_gate | ok (self-host DIFF identical; regression_gate 20/0) |
+| driver_turns_since_plan | 9 |
+| step_last | 1 |
+| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=1 |
+| test_gate | ok (file.hpp streambuf; file_io_e2e 8/0; mlcc --run /dev/stdin exit=7) |
+
+### Turn 2026-07-10 13:45 (Driver TRACK_CLI_STDIN STEP=1 — streambuf read)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CLI_STDIN |
+| started | 2026-07-10 13:20 |
+| elapsed | ~25 min |
+| done    | `runtime/include/mlc/io/file.hpp`: `read_to_string` + `File::read_all` via `ostringstream << rdbuf()` (no seekg/tellg). |
+| verify  | header smoke regular+pipe; `file_io_e2e` 8 runs/0 fail; rebuilt mlcc; `echo '…' \| mlcc --run /dev/stdin` exit=7, no length_error. |
+| result  | STEP=1 done. Plain: reading pipes/`/dev/stdin` no longer aborts. |
+| issues  | Uncommitted STEP=2 WIP in check/registry/cpp_naming left for next CLI_STDIN turn. PLAN critical next is BLOCK_ID. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_VM_BLOCK_ID_COLLISION — fix duplicate MIR block ids (elif/nested if hang) |
 
 ### Turn 2026-07-10 13:20 (Driver TRACK_VM_TRAMPOLINE STEP=5 — verify-gate + close)
 

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CLI_STDIN** STEP=1 — fix stdin crash (`seekg`/`tellg` → streambuf in `file.hpp`).
-(VM_TRAMPOLINE **closed** 2026-07-10: trampoline + depth gate + self-host identical.)
+**TRACK_VM_BLOCK_ID_COLLISION** STEP=1 — fix duplicate MIR block ids (elif / nested if hang).
+(CLI_STDIN STEP=1 done: `file.hpp` streambuf; STEP=2+ paused — PLAN critical is block-id.)
 
 ## Step sizing (good vs bad)
 

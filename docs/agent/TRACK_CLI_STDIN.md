@@ -13,9 +13,11 @@ track exists so the next Driver turn does not have to re-discover them.
 самодостаточный (не зависит от MIR_VM_FULL/Epic 4, не трогает `compiler/vm/`).
 Можно брать сразу, не дожидаясь HARD STOP GATE.
 
-## Status: **open** — STEP=1 next
+## Status: **open** — STEP=1 **done**; STEP=2 next
 
-## Root cause (found, not yet fixed)
+**Driver 2026-07-10:** STEP=1 — `file.hpp` streambuf read (no seekg/tellg).
+
+## Root cause (found, fixed in STEP=1)
 
 `compiler/out/mlcc --run /dev/stdin` crashes:
 
@@ -60,7 +62,7 @@ specific to `compiler/`, not a missing runtime feature.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Fix `read_to_string`/`File::read_all()` crash in `runtime/include/mlc/io/file.hpp` (see Root cause above) — streambuf read instead of seekg/tellg. Regression: existing `File.read`/`.read_all()` tests on regular files must still pass byte-for-byte. | pending |
+| 1 | Fix `read_to_string`/`File::read_all()` crash in `runtime/include/mlc/io/file.hpp` (see Root cause above) — streambuf read instead of seekg/tellg. Regression: existing `File.read`/`.read_all()` tests on regular files must still pass byte-for-byte. | **done** (2026-07-10: streambuf; header smoke + file_io_e2e 8/0; `mlcc --run /dev/stdin` exit=7 no length_error) |
 | 2 | Register `read_all` as a self-hosted global builtin: `compiler/checker/check/check.mlc` (add to the `names.set(...)` global whitelist near `read_line`), `compiler/checker/registry.mlc` (`builtin_function_types.set('read_all', TFn([], TString))` + `builtin_required_arity.set('read_all', 0)`), `compiler/codegen/cpp_naming.mlc` (`map_builtin`: `"read_all" -> "mlc::io::read_all"`). Mirror the existing `read_line` pattern exactly (same 3 files, same shape). | pending |
 | 3 | `compiler/driver/module_loader.mlc:42` — when the entry/import path is exactly `"-"`, call `read_all()` instead of `File.read(path)`, and skip the `File.exists(path)` not-found check for that case (a nonexistent file literally named `-` must not shadow the stdin convention). Convention: `mlcc --run -` reads the program from stdin, matching `python -`/`ruby -`. | pending |
 | 4 | Smoke test: `echo '...' \| compiler/out/mlcc --run -` runs correctly; `compiler/out/mlcc --run /dev/stdin` no longer crashes (graceful behavior, same as `-`, or a clear "use -" error — decide at implementation time, do not leave a crash either way). Add to `compiler/tests/` (or `misc/examples/` smoke script per project convention) so it is not silently lost. | pending |
