@@ -6,7 +6,11 @@ Trigger: два референсных C++ прототипа в `~/workspaces/g
 кода, только архитектура. Цель — эффективный текстовый рендеринг как основа
 будущего media-фреймворка (flash-like) на MLC.
 
-**Зависимость: `TRACK_FFI_LAYER` closed 2026-07-09** (`RawPointer`, `extern fn`/`lib`/`type`+`drop`, C fptr, concurrency attrs). Трек text rendering **open**, низкий приоритет.
+**Зависимость: `TRACK_FFI_LAYER` closed 2026-07-09** (`RawPointer`, `extern fn`/`lib`/`type`+`drop`, C fptr, concurrency attrs).
+
+**Статус headless-пайплайна:** [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (A8/MSDF FBO golden, MAE ≤ 8.0/255).
+
+**Статус windowed/MLC-оркестрации:** [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) **active** (GLFW окно + `GlRenderer`/`TextRenderer` на MLC) — см. §8.
 
 ## 1. Референсы (факты, не код)
 
@@ -181,3 +185,24 @@ pixel-diff/SSIM допуском (не байт-в-байт — референс
 сам недоделал именно эту часть, не повторять). ASan/UBSan на shim-код
 (`freetype_shim.cpp`/`harfbuzz_shim.cpp`/будущий MSDF) с STEP=4, не в конце
 трека.
+
+## 8. Windowed path + MLC orchestration (2026-07-11)
+
+Headless EGL (`loader_shim` / `text_renderer_shim`) **остаётся** для CI golden.
+Additive windowed path (не замена headless):
+
+```
+GLFW + thin GL dispatch (glfwGetProcAddress → mlc::gl::*)
+  → GlRenderer / TextRenderer на MLC (шейдеры, VBO, atlas batch)
+  → main loop на MLC (poll → draw → swap)
+```
+
+| Артефакт | Путь |
+|----------|------|
+| Track | [agent/TRACK_TEXT_RENDERING_NATIVE.md](agent/TRACK_TEXT_RENDERING_NATIVE.md) |
+| GL dispatch | `runtime/include/mlc/gl/glfw_gl_dispatch.hpp` |
+| Demo | `misc/examples/text_window_demo.mlc` (`scripts/run_text_window_demo.sh`) |
+| Smokes | `gl_renderer_smoke`, `text_renderer_native_smoke`, `glfw_*_smoke` |
+
+**Не в этом треке:** layout/widgets/easing — отдельный будущий GUI-фреймворк:
+[agent/TRACK_GUI_FRAMEWORK.md](agent/TRACK_GUI_FRAMEWORK.md) (backlog).

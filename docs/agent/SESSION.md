@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=7 |
-| test_gate | `run_text_window_demo.sh` ok |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=8 |
+| test_gate | docs-only (TEXT_RENDERING §8 + GUI backlog) |
+
+### Turn 2026-07-11 03:40 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=7 — docs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 03:36 |
+| elapsed | ~4 min |
+| done    | `TEXT_RENDERING.md` §8 windowed/MLC path + status; backlog `TRACK_GUI_FRAMEWORK.md`; PLAN §10a→STEP=8, §10b GUI backlog + queue. DEVELOPMENT → STEP=8. |
+| verify  | TEXT_RENDERING §8 links NATIVE + GUI; PLAN §10b present; TRACK STEP=7 done. |
+| result  | STEP=7 done. Plain: docs + GUI track pointer. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=8 TRACK_TEXT_RENDERING_NATIVE — verify-gate (self-host, regression_gate, demo) |
 
 ### Turn 2026-07-11 03:30 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=6 — text_window_demo)
 
