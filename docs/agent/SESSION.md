@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_NET_SERVER closed (Critic done) |
-| test_gate | ok (tcp/http smokes + codegen) |
+| step_last | plan-refresh |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=1 |
+| test_gate | ok (prior Critic smokes) |
+
+### Turn 2026-07-10 19:06 (Planner — plan-refresh after NET_SERVER)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:06 |
+| elapsed | ~5 min |
+| done    | Chose SPAWN over Postgres: formalized TRACK + sub-steps; committed RUBY_PARITY; PLAN §8/§11 + queue reorder; STDLIB_BACKEND §5.2 note; DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending with sub-steps; PLAN queue puts SPAWN before Postgres/RUBY_PARITY. |
+| result  | Active track = LANG_SPAWN_DOUBLE_EXEC STEP=1. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_SPAWN_DOUBLE_EXEC — locate double emit in codegen |
 
 ### Turn 2026-07-10 19:05 (Critic TRACK_STDLIB_NET_SERVER — critique-audit)
 

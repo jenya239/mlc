@@ -383,12 +383,12 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue: Postgres/crypto after NET_SERVER closed. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09. HARNESS T1–T5 done, T6 deferred. **Next:** [TRACK_LANG_SPAWN_DOUBLE_EXEC](agent/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) STEP=1 (критический). SUPERVISOR deferred. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **open, критический** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](agent/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) — найдено 2026-07-10 запуском реального бинарника (не только checker-тестом); повторный побочный эффект и работа |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby; `block_on` не в checker | **open, архитектурная находка** | [TRACK_CONCURRENCY_RUBY_PARITY](agent/TRACK_CONCURRENCY_RUBY_PARITY.md) — найдено 2026-07-10; STDLIB_NET_SERVER STEP=7 обошёл проблему через чистый C++ `serve_http_with_thread_pool`, не языковой `spawn` |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); [TRACK_STDLIB_NET_SERVER](archive/tracks/TRACK_STDLIB_NET_SERVER.md) **closed** 2026-07-10 (TCP+HTTP parse/route/ThreadPool; `std/net/tcp`; example). Next: Postgres/crypto треки (§5) |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); [TRACK_STDLIB_NET_SERVER](archive/tracks/TRACK_STDLIB_NET_SERVER.md) **closed** 2026-07-10. Postgres/crypto **после** [TRACK_LANG_SPAWN_DOUBLE_EXEC](agent/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) (критический codegen-баг) |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
@@ -471,17 +471,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_NET_SERVER (**closed** 2026-07-10: TCP+HTTP parse/router/ThreadPool;
       `std/net/tcp`; `misc/examples/tcp_echo_demo.mlc`; regression 20/0
       → [archive/tracks/TRACK_STDLIB_NET_SERVER.md](archive/tracks/TRACK_STDLIB_NET_SERVER.md))
+  → **LANG_SPAWN_DOUBLE_EXEC STEP=1 (**next** — locate double emit in
+      `compiler/codegen/` for `spawn do <tail> end`; critical correctness)
+  → CONCURRENCY_RUBY_PARITY (после SPAWN; design: Ruby vs mlcc feature split)
   → Postgres/crypto треки (FFI closed) → WebSocket/job-queue/config/logging
       (см. STDLIB_BACKEND.md §5; треки по одному перед стартом)
-  → LANG_SPAWN_DOUBLE_EXEC (open, критический, 2026-07-10: `spawn do
-    <tail-call> end` выполняет тело блока дважды — реальный побочный
-    эффект, не только лишний код; найдено запуском бинарника, не только
-    checker-тестом)
-  → CONCURRENCY_RUBY_PARITY (open, архитектурная находка, 2026-07-10:
-    `spawn`/`Mutex`/`Channel`/`Task` только в self-hosted `compiler/`, `Tcp`
-    stdlib только в Ruby `lib/mlc/`, `block_on`/`is_ready` не в checker —
-    нет одного пайплайна с обоими; design-решение нужно перед следующим
-    использованием `spawn` вместе с Ruby-only stdlib)
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию

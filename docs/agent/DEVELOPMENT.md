@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner** `plan-refresh` — next after closed NET_SERVER: Postgres/crypto
-(STDLIB_BACKEND §5) **or** critical [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md)
-(PLAN §8a). Critic audit of NET_SERVER done (no reopen).
+**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=1 — locate double statement/tail emit
+for `spawn do <call> end` in `compiler/codegen/`. Critical correctness.
+
 
 ## Step sizing (good vs bad)
 
