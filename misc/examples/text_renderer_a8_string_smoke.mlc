@@ -1,0 +1,20 @@
+// TextRenderer A8 shaped-string smoke (TRACK_TEXT_RENDERING STEP=6.2).
+// HarfBuzz shape → multi-quad FBO → MAE vs CPU; golden RGBA lock.
+
+extern fn text_renderer_a8_string_smoke(
+  font_path: string,
+  text: string,
+  pixel_size: i32,
+  golden_path: string
+) -> i32
+  = "mlc::gl::text_renderer_a8_string_smoke" from "mlc/gl/text_renderer_shim.hpp"
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const golden_path = "misc/examples/fixtures/text_a8_privet_24.rgba"
+  const status = text_renderer_a8_string_smoke(font_path, "Привет", 24, golden_path)
+  if status != 0 then
+    return status
+  end
+  0
+end

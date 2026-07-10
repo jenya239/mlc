@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=6.2 — shaped string / golden fixture on A8 path.
-(STEP=6.1 done: `text_renderer_shim` FBO + MAE tol 8.)
+**TRACK_TEXT_RENDERING** STEP=7 — MSDF shim + RGB8 atlas + shader.
+(STEP=6 done: A8 FBO glyph + shaped-string golden.)
 
 ## Step sizing (good vs bad)
 

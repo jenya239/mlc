@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 27 |
-| step_last | 6.1 |
-| active_track | TRACK_TEXT_RENDERING STEP=6.2 |
-| test_gate | ok (text renderer a8 smoke) |
+| driver_turns_since_plan | 28 |
+| step_last | 6.2 |
+| active_track | TRACK_TEXT_RENDERING STEP=7 |
+| test_gate | ok (text renderer string + golden) |
+
+### Turn 2026-07-10 16:40 (Driver TRACK_TEXT_RENDERING STEP=6.2 — shaped string golden)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6.2 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:22 |
+| elapsed | ~20 min |
+| done    | `text_renderer_a8_string_smoke`: HB shape «Привет»@24 → multi-quad FBO; golden `misc/examples/fixtures/text_a8_privet_24.rgba` (CPU exact + GL MAE≤8); gate + CI. STEP=6 closed. |
+| verify  | `run_text_renderer_a8_string_smoke.sh` ok; glyph smoke still ok. |
+| result  | STEP=6.2 done; STEP=6 **done**. Plain: shaped Cyrillic string pixel-diff gated. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_TEXT_RENDERING — MSDF shim + RGB8 atlas |
 
 ### Turn 2026-07-10 16:20 (Driver TRACK_TEXT_RENDERING STEP=6.1 — TextRenderer A8 FBO)
 

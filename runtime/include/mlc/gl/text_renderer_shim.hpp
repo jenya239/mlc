@@ -13,4 +13,13 @@ int32_t text_renderer_a8_glyph_smoke(
   int32_t pixel_size
 );
 
+// HarfBuzz-shaped UTF-8 string → multi-quad A8 FBO → MAE vs CPU composite
+// and vs committed golden RGBA (headerless). Empty golden_path skips golden.
+int32_t text_renderer_a8_string_smoke(
+  mlc::String font_path,
+  mlc::String text,
+  int32_t pixel_size,
+  mlc::String golden_path
+);
+
 } // namespace mlc::gl

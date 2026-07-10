@@ -110,3 +110,6 @@ jobs:
 
       - name: TextRenderer A8 FBO pixel-diff smoke
         run: compiler/tests/run_text_renderer_a8_smoke.sh
+
+      - name: TextRenderer A8 shaped-string golden smoke
+        run: compiler/tests/run_text_renderer_a8_string_smoke.sh
