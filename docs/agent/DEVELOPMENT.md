@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_CRYPTO` open** — STEP=1 (API Decision; libsodium).
+**`TRACK_STDLIB_CRYPTO` open** — STEP=2 (`runtime/include/mlc/crypto/sodium.hpp`).
 See [TRACK_STDLIB_CRYPTO.md](TRACK_STDLIB_CRYPTO.md).
 
 
