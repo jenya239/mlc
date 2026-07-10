@@ -1,0 +1,100 @@
+// MSDF median shader FBO + RGB8 atlas pack (TRACK_TEXT_RENDERING STEP=7.2).
+
+extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
+  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
+extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
+extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_shim.hpp"
+
+extern fn msdf_renderer_fbo_smoke(
+  font_path: string,
+  codepoint: i32,
+  field_size: i32,
+  px_range: i32
+) -> i32
+  = "mlc::gl::msdf_renderer_fbo_smoke" from "mlc/gl/msdf_renderer_shim.hpp"
+
+type AtlasSlot = {
+  page_index: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+type AtlasPage = {
+  mode: i32,
+  width: i32,
+  height: i32,
+  shelf_x: i32,
+  shelf_y: i32,
+  shelf_height: i32
+}
+
+type GlyphAtlas = {
+  page_size: i32,
+  pages: [AtlasPage]
+}
+
+fn atlas_page_empty(mode: i32, page_size: i32) -> AtlasPage =
+  AtlasPage {
+    mode: mode,
+    width: page_size,
+    height: page_size,
+    shelf_x: 0,
+    shelf_y: 0,
+    shelf_height: 0
+  }
+
+fn glyph_atlas_pack_rgb8(page_size: i32, glyph_width: i32, glyph_height: i32) -> AtlasSlot = do
+  let mut page = atlas_page_empty(1, page_size)
+  if glyph_width > page_size || glyph_height > page_size then
+    return AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 }
+  end
+  if page.shelf_x + glyph_width > page.width then
+    page = AtlasPage {
+      mode: page.mode,
+      width: page.width,
+      height: page.height,
+      shelf_x: 0,
+      shelf_y: page.shelf_y + page.shelf_height,
+      shelf_height: 0
+    }
+  end
+  if page.shelf_y + glyph_height > page.height then
+    return AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 }
+  end
+  const slot = AtlasSlot {
+    page_index: 0,
+    x: page.shelf_x,
+    y: page.shelf_y,
+    width: glyph_width,
+    height: glyph_height
+  }
+  slot
+end
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const field_size = 32
+  const px_range = 4
+  const generate_status = msdf_generate(font_path, 65, field_size, px_range)
+  if generate_status != 0 then
+    return 1
+  end
+  if msdf_width() != field_size || msdf_height() != field_size then
+    return 2
+  end
+  // RGB8 atlas page can hold the MSDF field.
+  const slot = glyph_atlas_pack_rgb8(64, msdf_width(), msdf_height())
+  if slot.page_index != 0 then
+    return 3
+  end
+  if slot.width != field_size || slot.height != field_size then
+    return 4
+  end
+  const render_status = msdf_renderer_fbo_smoke(font_path, 65, field_size, px_range)
+  if render_status != 0 then
+    return render_status
+  end
+  0
+end

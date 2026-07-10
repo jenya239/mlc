@@ -22,4 +22,7 @@ int32_t msdf_px_range();
 int32_t msdf_byte_at(int32_t index);
 int32_t msdf_byte_count();
 
+// Pointer to interleaved RGB cache (valid until next msdf_generate). C++ shims only.
+const uint8_t* msdf_rgb_data();
+
 } // namespace mlc::text

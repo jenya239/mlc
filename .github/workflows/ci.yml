@@ -116,3 +116,6 @@ jobs:
 
       - name: MSDF/SDF RGB8 glyph smoke
         run: compiler/tests/run_msdf_glyph_smoke.sh
+
+      - name: MSDF median shader FBO smoke
+        run: compiler/tests/run_msdf_renderer_smoke.sh

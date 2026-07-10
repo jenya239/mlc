@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=7.2 — RGB8 atlas + MSDF median shader FBO.
-(STEP=7.1 done: `msdf_shim` SDF→RGB8 numerical smoke.)
+**TRACK_TEXT_RENDERING** STEP=7.3 — `RenderMode` switch by pixel size.
+(STEP=7.2 done: MSDF median FBO + RGB8 atlas pack.)
 
 ## Step sizing (good vs bad)
 

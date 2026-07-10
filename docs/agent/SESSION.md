@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 29 |
-| step_last | 7.1 |
-| active_track | TRACK_TEXT_RENDERING STEP=7.2 |
-| test_gate | ok (msdf glyph smoke) |
+| driver_turns_since_plan | 30 |
+| step_last | 7.2 |
+| active_track | TRACK_TEXT_RENDERING STEP=7.3 |
+| test_gate | ok (msdf renderer fbo) |
+
+### Turn 2026-07-10 17:10 (Driver TRACK_TEXT_RENDERING STEP=7.2 — MSDF median FBO)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7.2 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:29 |
+| elapsed | ~15 min |
+| done    | `msdf_renderer_shim.cpp`: median MSDF GLES2 FBO; RGB8 atlas pack in `msdf_renderer_smoke.mlc`; `msdf_rgb_data()` helper; gate + CI. |
+| verify  | `run_msdf_renderer_smoke.sh` ok (exit 0). |
+| result  | STEP=7.2 done. Plain: MSDF field renders via median shader. |
+| issues  | Dirty `compiler/out/*` left. SDF sign inverted vs Chlumsky — shader uses `(0.5 - median)`. |
+| next    | ROLE=Driver STEP=7.3 TRACK_TEXT_RENDERING — RenderMode by pixel size |
 
 ### Turn 2026-07-10 16:55 (Driver TRACK_TEXT_RENDERING STEP=7.1 — msdf_shim SDF RGB8)
 

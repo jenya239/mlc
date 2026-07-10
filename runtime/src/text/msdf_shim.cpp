@@ -243,4 +243,11 @@ int32_t msdf_byte_at(int32_t index) {
   return static_cast<int32_t>(g_msdf_cache.rgb[static_cast<size_t>(index)]);
 }
 
+const uint8_t* msdf_rgb_data() {
+  if (g_msdf_cache.rgb.empty()) {
+    return nullptr;
+  }
+  return g_msdf_cache.rgb.data();
+}
+
 } // namespace mlc::text
