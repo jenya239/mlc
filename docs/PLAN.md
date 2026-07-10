@@ -388,7 +388,8 @@ compiler/
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — **queue head**; STEP=0–2 **done**, STEP=3 next (HarfBuzz + TextShaper) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
-| **13** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1 next; root cause и точные места фикса уже найдены (2026-07-10 ручное расследование, не закоммичено по команде пользователя — "не делай сам"). Маленький, изолированный, не зависит от MIR_VM_FULL/TEXT_RENDERING |
+| **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **open, КРИТИЧЕСКИЙ приоритет** | [TRACK_VM_TRAMPOLINE](agent/TRACK_VM_TRAMPOLINE.md) — STEP=1 next; root cause найден и подтверждён (2026-07-10 ручной бенчмарк): `vm_run_frames` в `compiler/vm/execute.mlc` рекурсирует в host C++ на каждый MIR-шаг вместо цикла, segfault на ~1500-2000 шагах (цикл или пользовательская рекурсия — без разницы). Делает VM непригодным для любой нетривиальной программы. Выше `TEXT_RENDERING`/`CLI_STDIN` — блокирует практическую ценность всего `MIR_VM_FULL` |
+| **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1 next; root cause и точные места фикса уже найдены (2026-07-10 ручное расследование, не закоммичено по команде пользователя — "не делай сам"). Маленький, изолированный, не зависит от MIR_VM_FULL/TEXT_RENDERING |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -422,11 +423,14 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     Epic 4 STEP=12 (**done** 2026-07-10: `run_examples_vm_gate.sh` 28 programs; Epic 4 closed);
     **HARD STOP — Epic 5 (STEP 13-20) НЕ авторизован** без явной команды
     пользователя (2026-07-09); не открывать STEP=13
+  → **VM_TRAMPOLINE STEP=1-5 (КРИТИЧЕСКИЙ, 2026-07-10, брать первым из
+    всего ниже)** — `vm_run_frames` self-recursion → host loop; без этого
+    VM падает на любой программе крупнее ~1500 MIR-шагов, вся ценность
+    MIR_VM_FULL Epic 0-4 практически недостижима
   → CLI_STDIN STEP=1-5 (**высокий приоритет**, 2026-07-10: crash fix
     seekg/tellg → streambuf в `runtime/include/mlc/io/file.hpp`; `read_all`
     self-hosted builtin registration; `-` stdin convention в
-    `module_loader.mlc`; маленький, изолированный, брать перед/наравне с
-    TEXT_RENDERING continuation)
+    `module_loader.mlc`; маленький, изолированный)
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
