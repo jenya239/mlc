@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 22 |
-| step_last | 5 |
-| active_track | TRACK_TEXT_RENDERING STEP=4 |
-| test_gate | ok (DIFF identical; regression 20/0; cli stdin 2/2) |
+| driver_turns_since_plan | 23 |
+| step_last | 4.1 |
+| active_track | TRACK_TEXT_RENDERING STEP=4.2 |
+| test_gate | ok (glyph atlas smoke native) |
+
+### Turn 2026-07-10 15:25 (Driver TRACK_TEXT_RENDERING STEP=4.1 — GlyphAtlas shelf pack)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4.1 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:07 |
+| elapsed | ~18 min |
+| done    | `misc/examples/glyph_atlas_smoke.mlc`: shelf pack, new page, A8/RGB8 split, oversized reject; `compiler/tests/run_glyph_atlas_smoke.sh` (native build). |
+| verify  | `run_glyph_atlas_smoke.sh` ok (exit 0). |
+| result  | STEP=4.1 done. Plain: GlyphAtlas packs without FFI. |
+| issues  | `mlcc --run` VM cannot hold nested record returns yet — gate uses native binary. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4.2 TRACK_TEXT_RENDERING — GlyphCache LRU insert/get/evict |
 
 ### Turn 2026-07-10 15:20 (Driver TRACK_CLI_STDIN STEP=5 — verify-gate + close)
 

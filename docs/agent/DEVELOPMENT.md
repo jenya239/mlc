@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=4 — GlyphAtlas + GlyphCache.
-([TRACK_CLI_STDIN](../archive/tracks/TRACK_CLI_STDIN.md) **closed** 2026-07-10.)
+**TRACK_TEXT_RENDERING** STEP=4.2 — GlyphCache LRU (after GlyphAtlas shelf pack).
+(STEP=4.1 done: `glyph_atlas_smoke.mlc` / `run_glyph_atlas_smoke.sh`.)
 
 ## Step sizing (good vs bad)
 
