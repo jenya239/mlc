@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=5 — tests + verify-gate + close.
-STEP=4 done (`mlc::int_arith` i32 wrapping/checked/saturating).
+**Critic** `critique-audit` on closed [TRACK_LANG_INT_OVERFLOW](../archive/tracks/TRACK_LANG_INT_OVERFLOW.md).
+Then STDLIB_BACKEND (TCP/HTTP track — create before start).
 
 ## Step sizing (good vs bad)
 

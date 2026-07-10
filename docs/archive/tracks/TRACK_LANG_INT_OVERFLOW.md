@@ -1,10 +1,14 @@
 # Track: integer overflow semantics
 
-Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) (типы `i32`/`i64`/
+Parent: [../../PLAN.md](../../PLAN.md), [../../MLC.md](../../MLC.md) (типы `i32`/`i64`/
 `u32`/`u64`). Trigger: обзор пробелов 2026-07-10 — семантика переполнения
 целочисленной арифметики не зафиксирована ни в одном документе.
 
-## Status: **open** — STEP=1–4 **done**; STEP=5 next (tests + verify-gate + close)
+## Status: **closed** (2026-07-10) — STEP=1–5 **done**
+
+**Driver 2026-07-10:** STEP=5 — overflow/div0/unsigned-wrap runtime tests;
+`int_arith` runtime wrap/sat/check; self-host DIFF identical; regression_gate 20/0;
+track archived.
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -56,7 +60,7 @@ signed overflow — undefined behavior. Никакой документ прое
 | 3.2 | Self-hosted codegen parity (`compiler/` expr visitor / mir_to_cpp). Benchmark if hot path. | **done** (2026-07-10: both-operand integer gate; `arith.hpp` non-integral fallback; self-host DIFF identical; translate ~4s) |
 | 3 | Codegen: debug panic checks for signed `+`/`-`/`*` and all-builds div0 for `/` `%`; unsigned wrap unchanged. Ruby then self-hosted. | **done** (3.1+3.2) |
 | 4 | Stdlib: `wrapping_add`/`checked_add`/`saturating_add`/аналоги для `-`/`*`. | **done** (2026-07-10: `mlc::int_arith` + `std/core/int_arith` for `i32`; `Option` for checked_*) |
-| 5 | Тесты: unit-тесты на overflow/underflow/деление на 0 для всех целочисленных типов; verify-gate self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`; close. Extend int_arith to i64/u* if needed. | pending |
+| 5 | Тесты: unit-тесты на overflow/underflow/деление на 0 для всех целочисленных типов; verify-gate self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`; close. Extend int_arith to i64/u* if needed. | **done** (2026-07-10: codegen+runtime panic/div0/uwrap; int_arith runtime; DIFF identical; regression 20/0; i64/u* stdlib deferred) |
 
 ## Out of scope
 

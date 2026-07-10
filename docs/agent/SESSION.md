@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-10-vm-block-id-gate` |
+| instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 37 |
-| step_last | 4 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=5 |
-| test_gate | ok (int_arith stdlib tests) |
+| driver_turns_since_plan | 38 |
+| step_last | 5 |
+| active_track | TRACK_LANG_INT_OVERFLOW closed → Critic |
+| test_gate | ok (overflow tests; regression 20/0; DIFF identical) |
+
+### Turn 2026-07-10 21:50 (Driver TRACK_LANG_INT_OVERFLOW STEP=5 — tests + verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 17:26 |
+| elapsed | ~25 min |
+| done    | Expanded `integer_overflow_codegen_test.rb` (i16/char/u*; runtime panic/div0/uwrap); `int_arith_stdlib_test.rb` runtime wrap/sat/check; archive track; PLAN/DEVELOPMENT sync. |
+| verify  | 9 overflow+int_arith tests pass; self-host p1→mlcc2→p2 DIFF identical; `regression_gate.sh` 20/0. |
+| result  | STEP=5 done; track **closed**. Plain: overflow semantics tested and gated. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. i64/u* int_arith deferred. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_LANG_INT_OVERFLOW |
 
 ### Turn 2026-07-10 21:20 (Driver TRACK_LANG_INT_OVERFLOW STEP=4 — stdlib int_arith)
 

@@ -2,6 +2,9 @@
 
 require_relative "../test_helper"
 require_relative "../../lib/mlc/common/index"
+require "fileutils"
+require "open3"
+require "tmpdir"
 
 class MLCIntArithStdlibTest < Minitest::Test
   def test_wrapping_saturating_checked_codegen
@@ -47,6 +50,37 @@ class MLCIntArithStdlibTest < Minitest::Test
        saturating_add saturating_sub saturating_mul
        checked_add checked_sub checked_mul].each do |name|
       assert_includes cpp, "mlc::int_arith::#{name}"
+    end
+  end
+
+  def test_int_arith_runtime_wrap_sat_check
+    Dir.mktmpdir do |dir|
+      src_dir = File.join(dir, "src")
+      out_dir = File.join(dir, "out")
+      FileUtils.mkdir_p(src_dir)
+      File.write(File.join(src_dir, "main.mlc"), <<~MLC)
+        import IntArith::{wrapping_add, saturating_add, checked_add}
+        fn unwrap_or_neg1(value: Option<i32>) -> i32 =
+          match value { Some(v) => v, None => -1 }
+        fn main() -> i32 = do
+          let wrapped = wrapping_add(2147483647, 1)
+          let saturated = saturating_add(2147483647, 1)
+          let ok = unwrap_or_neg1(checked_add(2, 3))
+          let overflow = unwrap_or_neg1(checked_add(2147483647, 1))
+          if wrapped == -2147483648 && saturated == 2147483647 && ok == 5 && overflow == -1 {
+            0
+          } else {
+            1
+          }
+        end
+      MLC
+      result = MLC.build_project(
+        entry_path: File.join(src_dir, "main.mlc"),
+        out_dir: out_dir,
+        root_dir: src_dir
+      )
+      _stdout, stderr, status = Open3.capture3(result[:binary])
+      assert_equal 0, status.exitstatus, stderr
     end
   end
 end
