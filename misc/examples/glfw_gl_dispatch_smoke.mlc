@@ -1,0 +1,14 @@
+// GLFW GL dispatch clear smoke (TRACK_TEXT_RENDERING_NATIVE STEP=3).
+// Runtime loads locked GL set via glfwGetProcAddress after MakeContextCurrent;
+// smoke clears through exported mlc::gl::gl_* wrappers (not raw GetProcAddress).
+
+extern fn glfw_gl_dispatch_clear_smoke() -> i32
+  = "mlc::gl::glfw_gl_dispatch_clear_smoke" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+fn main() -> i32 = do
+  const status = glfw_gl_dispatch_clear_smoke()
+  if status != 0 then
+    return status
+  end
+  0
+end

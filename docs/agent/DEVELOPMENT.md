@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=3 — GL dispatch via
-`glfwGetProcAddress`. See [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
+**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=4 — `GlRenderer` on MLC
+поверх STEP=3 dispatch. See [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
 
 
 ## Step sizing (good vs bad)

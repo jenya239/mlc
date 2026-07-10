@@ -51,9 +51,10 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_renderer_shim.cpp")
   fi
 fi
-# Optional GLFW window path (TRACK_TEXT_RENDERING_NATIVE STEP=2).
+# Optional GLFW window + GL dispatch (TRACK_TEXT_RENDERING_NATIVE STEP=2–3).
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window.cpp")
+  RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_gl_dispatch.cpp")
   # shellcheck disable=SC2207
   TEXT_CFLAGS+=($(pkg-config --cflags glfw3))
   # shellcheck disable=SC2207

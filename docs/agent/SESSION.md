@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=3 |
-| test_gate | `run_glfw_window_smoke.sh` ok |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=4 |
+| test_gate | `run_glfw_gl_dispatch_smoke.sh` ok |
+
+### Turn 2026-07-11 02:45 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=3 — GL dispatch)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 02:37 |
+| elapsed | ~8 min |
+| done    | `runtime/include/mlc/gl/glfw_gl_dispatch.hpp` + `glfw_gl_dispatch.cpp`: `glfw_gl_load` via `glfwGetProcAddress`, locked GL set as `mlc::gl::gl_*`, smoke `glfw_gl_dispatch_clear_smoke` (load-all + genBuffers + clear/viewport). Example `glfw_gl_dispatch_smoke.mlc`; `scripts/run_glfw_gl_dispatch_smoke.sh`; `build_bin.sh` links dispatch. PLAN/DEVELOPMENT → STEP=4. |
+| verify  | `bash scripts/run_glfw_gl_dispatch_smoke.sh` → ok (exit 0). |
+| result  | STEP=3 done. Plain: thin GL dispatch + MLC smoke green. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; per-fn GLFW extern still deferred (STEP=4+ GlRenderer uses `gl_*`). |
+| next    | ROLE=Driver STEP=4 TRACK_TEXT_RENDERING_NATIVE — GlRenderer on MLC (shaders/buffers/textures) |
 
 ### Turn 2026-07-11 02:35 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=2 — GLFW window)
 
