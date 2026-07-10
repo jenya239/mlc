@@ -87,8 +87,10 @@ fn`-паттерн (POSIX C ABI, без callback/struct-сложностей у�
 2. **Postgres driver** — [TRACK_STDLIB_POSTGRES](archive/tracks/TRACK_STDLIB_POSTGRES.md)
    **closed** 2026-07-10. Runtime `mlc::db`; MLC `std/db/postgres`; gate
    `scripts/run_postgres_gate.sh`; example `misc/examples/postgres_select_demo.mlc`.
-3. **Crypto** — **[TRACK_STDLIB_CRYPTO](agent/TRACK_STDLIB_CRYPTO.md) open**
-   STEP=5. Gate: `scripts/run_crypto_gate.sh` (vectors + codegen). Next: docs/close.
+3. **Crypto** — [TRACK_STDLIB_CRYPTO](archive/tracks/TRACK_STDLIB_CRYPTO.md)
+   **closed** 2026-07-10. Runtime `mlc::crypto`; MLC `std/crypto/crypto`; gate
+   `scripts/run_crypto_gate.sh`; example `misc/examples/crypto_sha256_demo.mlc`.
+   JWT — follow-up TRACK.
 4. **WebSocket** — после (1), поверх TCP-сервера.
 5. **Job queue/scheduler** — не зависит от FFI, может идти параллельно
    с (1)-(4) как чистая MLC-библиотека над `ThreadPool`+`Channel`.
