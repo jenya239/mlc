@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 2 |
-| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=3 |
-| test_gate | ok (elif gate classify0/1/5 → 100/200/44) |
+| driver_turns_since_plan | 12 |
+| step_last | 3 |
+| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=4 |
+| test_gate | ok (elif gate 6: 100/200/44/40/50/22) |
+
+### Turn 2026-07-10 14:10 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=3 — deeper nesting)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_VM_BLOCK_ID_COLLISION |
+| started | 2026-07-10 13:58 |
+| elapsed | ~12 min |
+| done    | `vm_elif_chain_{mid,last}.mlc`, `vm_if_in_then.mlc`; extended `run_vm_elif_block_id_gate.sh` to 6 cases. |
+| verify  | gate ok: 100/200/44/40/50/22; no timeout. |
+| result  | STEP=3 done. Plain: long elif and if-in-then also safe after block-id fix. |
+| issues  | Foreign CLI_STDIN WIP + dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_VM_BLOCK_ID_COLLISION — full VM corpus gates |
 
 ### Turn 2026-07-10 14:05 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=2 — classify fixture)
 

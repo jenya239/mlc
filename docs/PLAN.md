@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10; next: [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) STEP=3 (STEP=1–2 **done**) → [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10; next: [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) STEP=4 (STEP=1–3 **done**) → [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -434,8 +434,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → VM_TRAMPOLINE STEP=1–5 (**closed** 2026-07-10: trampoline host loop;
     corpus; 100k depth; re-bench 1k/2e6; self-host diff identical;
     regression_gate 20/0) — Epic 4 `--run` stability claim was false until this
-  → **VM_BLOCK_ID_COLLISION STEP=1 (**done** 2026-07-10: `else_block_step.state`)
-    → STEP=2 (**next** — fixture) → STEP=3–5** —
+  → **VM_BLOCK_ID_COLLISION STEP=1–2 (**done** 2026-07-10: fix + classify
+    fixture gate) → STEP=3 (**next** — deeper nesting) → STEP=4–5** —
     elif-цепочка/вложенный `if` внутри ветки другого `if` вешает VM
     (дублирующийся block id); только `--run`, не обычная компиляция
   → VM_LOWERING_GAPS STEP=1–4 (высокий приоритет, после block-id фикса) —

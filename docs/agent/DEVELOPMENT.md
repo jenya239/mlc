@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_BLOCK_ID_COLLISION** STEP=3 — deeper nesting (elif×5+, if-in-then).
-(STEP=1–2 done: `else_block_step.state`; classify gate 100/200/44.)
+**TRACK_VM_BLOCK_ID_COLLISION** STEP=4 — full VM corpus gates (cpp_diff / examples / depth).
+(STEP=1–3 done: fix; classify; elif×5 + if-in-then gate 6.)
 
 ## Step sizing (good vs bad)
 

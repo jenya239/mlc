@@ -1,0 +1,11 @@
+# TRACK_VM_BLOCK_ID_COLLISION STEP=3: if nested inside then-branch.
+fn nested_then(value: i32) -> i32 =
+  if value > 0 then
+    if value == 1 then 11
+    else if value == 2 then 22
+    else 33
+  else 0
+
+fn main() -> i32 = do
+  nested_then(2)
+end

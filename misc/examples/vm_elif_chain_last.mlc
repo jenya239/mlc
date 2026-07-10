@@ -1,0 +1,12 @@
+# TRACK_VM_BLOCK_ID_COLLISION STEP=3: long elif chain (last elif before else).
+fn grade(value: i32) -> i32 =
+  if value == 0 then 10
+  else if value == 1 then 20
+  else if value == 2 then 30
+  else if value == 3 then 40
+  else if value == 4 then 50
+  else 60
+
+fn main() -> i32 = do
+  grade(4)
+end

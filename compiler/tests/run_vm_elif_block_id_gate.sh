@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_VM_BLOCK_ID_COLLISION STEP=2: elif/nested-if must not hang or mis-branch.
+# TRACK_VM_BLOCK_ID_COLLISION: elif/nested-if must not hang or mis-branch.
 # Pre-fix: classify(1) infinite-looped (duplicate MIR block id).
 set -e
 
@@ -50,13 +50,27 @@ run_case() {
 }
 
 fail_count=0
+case_count=0
+
+# STEP=2: basic elif classify
 run_case "$ROOT_DIR/misc/examples/vm_elif_classify_0.mlc" 100 "classify0" || fail_count=$((fail_count + 1))
+case_count=$((case_count + 1))
 run_case "$ROOT_DIR/misc/examples/vm_elif_classify_1.mlc" 200 "classify1" || fail_count=$((fail_count + 1))
-# 300 % 256 == 44 (mlcc --run exit is result mod 256)
+case_count=$((case_count + 1))
+# 300 % 256 == 44
 run_case "$ROOT_DIR/misc/examples/vm_elif_classify_5.mlc" 44 "classify5" || fail_count=$((fail_count + 1))
+case_count=$((case_count + 1))
+
+# STEP=3: long elif + if-in-then
+run_case "$ROOT_DIR/misc/examples/vm_elif_chain_mid.mlc" 40 "chain_mid" || fail_count=$((fail_count + 1))
+case_count=$((case_count + 1))
+run_case "$ROOT_DIR/misc/examples/vm_elif_chain_last.mlc" 50 "chain_last" || fail_count=$((fail_count + 1))
+case_count=$((case_count + 1))
+run_case "$ROOT_DIR/misc/examples/vm_if_in_then.mlc" 22 "if_in_then" || fail_count=$((fail_count + 1))
+case_count=$((case_count + 1))
 
 if [ "$fail_count" -ne 0 ]; then
-  echo "[vm elif block-id] FAIL: $fail_count of 3" >&2
+  echo "[vm elif block-id] FAIL: $fail_count of $case_count" >&2
   exit 1
 fi
-echo "[vm elif block-id] ok (3 cases)" >&2
+echo "[vm elif block-id] ok ($case_count cases)" >&2
