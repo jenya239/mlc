@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_POSTGRES` open** — STEP=3 (`lib/mlc/common/stdlib/db/postgres.mlc`).
+**`TRACK_STDLIB_POSTGRES` open** — STEP=4 (gate script / env-gated live query).
 See [TRACK_STDLIB_POSTGRES.md](TRACK_STDLIB_POSTGRES.md).
 
 

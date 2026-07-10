@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_POSTGRES open STEP=3 |
-| test_gate | ok (postgres smoke 7/0) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_POSTGRES open STEP=4 |
+| test_gate | ok (postgres_stdlib_test 1/18) |
+
+### Turn 2026-07-10 19:58 (Driver TRACK_STDLIB_POSTGRES STEP=3 — postgres.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:45 |
+| elapsed | ~10 min |
+| done    | `lib/mlc/common/stdlib/db/postgres.mlc`; scanner `Postgres`→`mlc::db`; registry+alias; codegen `postgres_bridge.hpp`; header_generator; `test/mlc/postgres_stdlib_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/postgres_stdlib_test.rb` → 1 run / 18 assertions. |
+| result  | STEP=3 done. Plain: MLC can import Postgres::* → `mlc::db::*`. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_POSTGRES — gate script (link smoke + env-gated SELECT 1) |
 
 ### Turn 2026-07-10 19:55 (Driver TRACK_STDLIB_POSTGRES STEP=2 — postgres.hpp)
 

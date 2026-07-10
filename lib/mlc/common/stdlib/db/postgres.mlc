@@ -1,0 +1,19 @@
+//! @module std/db/postgres
+//! @category db
+//! @type extern
+//! @namespace mlc::db
+
+# Blocking Postgres client via libpq (TRACK_STDLIB_POSTGRES).
+# Handles are opaque positive i32 tokens (not raw PGconn*/PGresult*).
+# Errors: None + last_error() — Tcp shipping pattern.
+
+module Postgres
+
+export extern fn connect(conninfo: string) -> Option<i32>
+export extern fn exec(connection: i32, sql: string) -> Option<i32>
+export extern fn ntuples(result: i32) -> i32
+export extern fn nfields(result: i32) -> i32
+export extern fn getvalue(result: i32, row: i32, column: i32) -> Option<string>
+export extern fn clear(result: i32) -> unit
+export extern fn finish(connection: i32) -> unit
+export extern fn last_error() -> string

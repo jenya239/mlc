@@ -68,6 +68,12 @@ module MLC
           namespace: "mlc::net",
           path: "net/tcp.mlc"
         },
+        "std/db/postgres" => {
+          category: "db",
+          type: :extern,
+          namespace: "mlc::db",
+          path: "db/postgres.mlc"
+        },
         "std/text/conv" => {
           category: "text",
           type: :extern,
@@ -95,7 +101,8 @@ module MLC
         "Json" => "std/data/json",
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
-        "Tcp" => "std/net/tcp"
+        "Tcp" => "std/net/tcp",
+        "Postgres" => "std/db/postgres"
       }.freeze
 
       def self.module_info(module_name)

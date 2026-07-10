@@ -259,6 +259,8 @@ module MLC
             'mlc::int_arith'
           when 'Tcp'
             'mlc::net'
+          when 'Postgres'
+            'mlc::db'
           else
             # Default: lowercase the module name
             "mlc::#{module_name.downcase}"

@@ -88,7 +88,9 @@ registry_content += <<~RUBY
         "File" => "std/io/file",
         "Json" => "std/data/json",
         "Math" => "std/math/math",
-        "Graphics" => "std/graphics/graphics"
+        "Graphics" => "std/graphics/graphics",
+        "Tcp" => "std/net/tcp",
+        "Postgres" => "std/db/postgres"
       }.freeze
 
       def self.module_info(module_name)
