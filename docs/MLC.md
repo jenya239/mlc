@@ -68,7 +68,7 @@ fn area(s: Shape) -> i32 =
 |------|----------------------------------------|----------------------|
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
-| `std/net/tcp` (`import Tcp::…`) / `std/db/postgres` (`import Postgres::…`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
+| `std/net/tcp` / `std/db/postgres` / `std/crypto/crypto` (`Tcp`/`Postgres`/`Crypto`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя | нельзя |
 
@@ -437,6 +437,18 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 - Gate: `scripts/run_postgres_gate.sh`. Example: `misc/examples/postgres_select_demo.mlc`.
 
 Не в v1: ORM, pool, prepared statements, COPY, async/`spawn`.
+
+#### Crypto (libsodium stdlib)
+
+Зафиксировано 2026-07-10 (`TRACK_STDLIB_CRYPTO`). Runtime (`mlc::crypto`):
+
+- `sha256` / `hmac_sha256` → lowercase hex; `random_bytes`; `pwhash` /
+  `pwhash_verify` (`crypto_pwhash_str`); `last_error`.
+- MLC module `Crypto` (`std/crypto/crypto`) — **только Ruby-пайплайн**.
+- Link `-lsodium` for consumers. Gate: `scripts/run_crypto_gate.sh`.
+  Example: `misc/examples/crypto_sha256_demo.mlc`.
+
+Не в v1: JWT, TLS, OpenSSL dual-backend, raw binary digests.
 
 ---
 

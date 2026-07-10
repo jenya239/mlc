@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_CRYPTO` open** — STEP=5 (docs + example + close).
-See [TRACK_STDLIB_CRYPTO.md](TRACK_STDLIB_CRYPTO.md).
+**`TRACK_STDLIB_CRYPTO` closed** 2026-07-10 — awaiting Critic.
+Next after Critic: Planner opens WebSocket / job-queue from STDLIB_BACKEND.
 
 
 ## Step sizing (good vs bad)

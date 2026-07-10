@@ -1,0 +1,19 @@
+# Crypto SHA-256 demo (TRACK_STDLIB_CRYPTO).
+# Requires libsodium at link (`-lsodium`). Ruby pipeline: import Crypto.
+# Gate: scripts/run_crypto_gate.sh
+
+import Crypto::{sha256, hmac_sha256, last_error}
+import IO::{println}
+
+fn main() -> i32 = do
+  let digest = sha256("")
+  println(digest)
+  let mac = hmac_sha256("key", "message")
+  println(mac)
+  let _err = last_error()
+  if digest == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" then
+    0
+  else
+    1
+  end
+end

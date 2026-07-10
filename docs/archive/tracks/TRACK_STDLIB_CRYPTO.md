@@ -1,16 +1,16 @@
 # Track: Crypto stdlib (libsodium)
 
-Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5.3,
-[../FFI_LAYER.md](../FFI_LAYER.md).
+Parent: [../../PLAN.md](../../PLAN.md), [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md) §5.3,
+[../../FFI_LAYER.md](../../FFI_LAYER.md).
 Trigger: Postgres **closed**; auth/backend needs hash/HMAC/password primitives.
 STDLIB_BACKEND prefers **libsodium** over OpenSSL (simpler C API, less global
 state).
 
-## Status: **open** — STEP=5 next (docs + example + close)
+## Status: **closed** (2026-07-10) — STEP=1–5 **done**
 
-**Planner 2026-07-10:** opened after closed STDLIB_POSTGRES Critic. Pipeline
-(Decision C / Tcp+Postgres pattern): MLC via Ruby `common/stdlib`; runtime
-C++ under `mlc::crypto`. No language `spawn` for v1.
+**Driver 2026-07-10:** STEP=5 — `MLC.md` Crypto note + pipeline matrix;
+`misc/examples/crypto_sha256_demo.mlc`; `STDLIB_BACKEND` closed; gate re-run
+OK; no `compiler/**` (regression_gate N/A); track archived.
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -102,13 +102,7 @@ secure random bytes, password hash/verify (`crypto_pwhash`). Validate
 | 2 | Runtime: `runtime/include/mlc/crypto/sodium.hpp` — wrappers; C++ smoke compile+link `-lsodium`. | **done** (2026-07-10: `mlc::crypto::*`; smoke 9/0) |
 | 3 | Stdlib: `lib/mlc/common/stdlib/crypto/crypto.mlc` + registry/scanner; codegen bridge include; Ruby codegen smoke. | **done** (2026-07-10: `crypto_stdlib_test` 1/14) |
 | 4 | Gate: `scripts/run_crypto_gate.sh` — link smoke + stdlib test; known-answer vectors (SHA-256 / HMAC). | **done** (2026-07-10: gate OK; smoke 9/0 + codegen 1/14) |
-| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md` note) + example; close (regression_gate only if `compiler/**` touched). | pending |
-
-<!-- sub-steps STEP=1: 1) API table; 2) Option+last_error vs Result; 3) v1 vs JWT/argon2-only/TLS out -->
-<!-- sub-steps STEP=2: 1) header wrap sodium; 2) test_crypto.cpp; 3) soft include bridge -->
-<!-- sub-steps STEP=3: 1) crypto.mlc; 2) scanner namespace mlc::crypto; 3) codegen test -->
-<!-- sub-steps STEP=4: 1) gate script; 2) NIST/RFC vectors; 3) SESSION verify -->
-<!-- sub-steps STEP=5: 1) docs+example; 2) archive; 3) Critic next -->
+| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md` note) + example; close (regression_gate only if `compiler/**` touched). | **done** (2026-07-10: MLC.md + example; no compiler/**) |
 
 ## Out of scope (this track)
 
