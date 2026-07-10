@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=7 |
-| test_gate | ok (http_router smoke 14/0) |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=8 |
+| test_gate | ok (http_server smoke 5/0) |
+
+### Turn 2026-07-10 23:00 (Driver TRACK_STDLIB_NET_SERVER STEP=7 — ThreadPool)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:54 |
+| elapsed | ~8 min |
+| done    | `runtime/include/mlc/net/http_server.hpp` (`read_http_message`, `serve_http_connection`, `serve_http_with_thread_pool`); `test_http_server.cpp`; include in `mlc.hpp`. |
+| verify  | `g++ … test_http_server.cpp` → 5 passed, 0 failed (2 concurrent clients). |
+| result  | STEP=7 done. Plain: accept loop dispatches connections on ThreadPool. |
+| issues  | `std::function` needs `shared_ptr<TcpStream>` (move-only). Foreign dirty left. |
+| next    | ROLE=Driver STEP=8 TRACK_STDLIB_NET_SERVER — docs/example + regression_gate + close |
 
 ### Turn 2026-07-10 22:55 (Driver TRACK_STDLIB_NET_SERVER STEP=6 — routing)
 

@@ -58,3 +58,4 @@
 #include "mlc/net/tcp.hpp"
 #include "mlc/net/http_request.hpp"
 #include "mlc/net/http_router.hpp"
+#include "mlc/net/http_server.hpp"

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=7 — accept loop + `ThreadPool` dispatch.
-STEP=6 done (`HttpRouter`, response write, 404).
+**TRACK_STDLIB_NET_SERVER** STEP=8 — docs + example + verify-gate + close.
+STEP=7 done (`serve_http_with_thread_pool`, smoke 5/0).
 
 ## Step sizing (good vs bad)
 
