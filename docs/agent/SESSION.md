@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_JOB_QUEUE STEP=5 |
-| test_gate | run_job_queue_gate.sh OK (50/0) |
+| driver_turns_since_plan | 0 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_JOB_QUEUE closed → Critic |
+| test_gate | run_job_queue_gate.sh OK; demo counter=18; no compiler/** |
+
+### Turn 2026-07-11 00:55 (Driver TRACK_STDLIB_JOB_QUEUE STEP=5 — docs+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:50 |
+| elapsed | ~8 min |
+| done    | `misc/examples/job_queue_demo.cpp` (counter=18); MLC.md gate+example; track → `docs/archive/tracks/TRACK_STDLIB_JOB_QUEUE.md`; PLAN §11 + queue; STDLIB closed. |
+| verify  | gate OK 50/0; demo exit 0; no `compiler/**` (regression_gate N/A); archive path. |
+| result  | STEP=5 done; track **closed**. Plain: JobQueue C++ stdlib archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_JOB_QUEUE |
 
 ### Turn 2026-07-11 00:52 (Driver TRACK_STDLIB_JOB_QUEUE STEP=4 — gate)
 

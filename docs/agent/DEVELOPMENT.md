@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_JOB_QUEUE` open** STEP=5 — docs + example + close.
-Gate STEP=4 done (`run_job_queue_gate.sh` 50/0).
-See [TRACK_STDLIB_JOB_QUEUE.md](TRACK_STDLIB_JOB_QUEUE.md).
+**`TRACK_STDLIB_JOB_QUEUE` closed** 2026-07-11 — Critic next.
+Then Planner: env/config + logging (§5.6) or other PLAN queue item.
 
 
 ## Step sizing (good vs bad)

@@ -1,22 +1,21 @@
 # Track: Job queue / scheduler (stdlib)
 
-Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5.5,
-[../archive/tracks/TRACK_STDLIB_WEBSOCKET.md](../archive/tracks/TRACK_STDLIB_WEBSOCKET.md),
-[../CONCURRENCY_V2.md](../CONCURRENCY_V2.md).
+Parent: [../../PLAN.md](../../PLAN.md), [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md) §5.5,
+[TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md),
+[../../CONCURRENCY_V2.md](../../CONCURRENCY_V2.md).
 Trigger: WEBSOCKET **closed**; STDLIB_BACKEND §5 next is job queue/scheduler
 over existing `ThreadPool`/`Channel` (no new FFI).
 
-## Status: **open** — STEP=5 next (docs + example + close)
+## Status: **closed** (2026-07-11) — STEP=1–5 **done**
 
-**Planner 2026-07-11:** opened after closed STDLIB_WEBSOCKET Critic. Chose
-job-queue over env/config+logging (§5 order: item 5 before filler item 6).
-Primitives exist (`mlc::concurrency::ThreadPool`, `Channel`, language `spawn`
-under mlcc). Ruby pipeline still has no `spawn`/`Channel` builtins.
-
-**Driver 2026-07-11:** STEP=1 — Decision locked (see below).
-**Driver 2026-07-11:** STEP=2 — `job_queue.hpp` + smoke (enqueue/delay/retry).
+**Planner 2026-07-11:** opened after closed STDLIB_WEBSOCKET Critic.
+**Driver 2026-07-11:** STEP=1 — Decision (C++ JobQueue; MLC deferred).
+**Driver 2026-07-11:** STEP=2 — `job_queue.hpp` + smoke.
 **Driver 2026-07-11:** STEP=3 — C++-only documented; no MLC registry.
 **Driver 2026-07-11:** STEP=4 — `run_job_queue_gate.sh` (smoke 50/0).
+**Driver 2026-07-11:** STEP=5 — MLC.md/STDLIB/example; archived.
+No `compiler/**` (regression_gate N/A).
+
 
 ## Decision (STEP=1, 2026-07-11)
 
@@ -97,8 +96,8 @@ a distributed broker (Redis/Sidekiq out of scope).
 | 1 | Design: API (`enqueue` / `schedule_after` / `shutdown`); sync vs async completion; retry policy; MLC module vs C++-only; which pipeline (Ruby+C++ runtime vs mlcc `spawn`). Document in «Decision». | **done** (2026-07-11: C++ JobQueue on ThreadPool; MLC deferred; wait_idle; fixed retry; schedule_after) |
 | 2 | Runtime: `job_queue.hpp` + C++ smoke (N jobs complete; delay; shutdown). | **done** (2026-07-11: timer thread; retry; `run_job_queue_runtime_smoke.sh` 50/0) |
 | 3 | Stdlib: **skip MLC** per Decision — document C++-only in STDLIB/MLC notes (or no-op if docs wait for STEP=5). | **done** (2026-07-11: STDLIB §1/§2/§4/§5 + MLC.md JobQueue; no registry) |
-| 4 | Gate: script — enqueue N jobs, assert all run; `schedule_after` smoke; shutdown clean. | pending |
-| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
+| 4 | Gate: script — enqueue N jobs, assert all run; `schedule_after` smoke; shutdown clean. | **done** (2026-07-11: `run_job_queue_gate.sh` — smoke 50/0) |
+| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | **done** (2026-07-11: example `job_queue_demo.cpp`; archived) |
 
 <!-- sub-steps STEP=2: 1) JobQueue wrap ThreadPool; 2) schedule_after; 3) test_job_queue.cpp -->
 <!-- sub-steps STEP=3: 1) mark C++-only in track/STDLIB; 2) no registry -->

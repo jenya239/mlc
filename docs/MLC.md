@@ -447,14 +447,14 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 
 #### JobQueue (C++ concurrency stdlib)
 
-Зафиксировано 2026-07-11 (`TRACK_STDLIB_JOB_QUEUE` STEP=1–3). Runtime
+Зафиксировано 2026-07-11 (`TRACK_STDLIB_JOB_QUEUE` **closed**). Runtime
 (`mlc::concurrency::JobQueue` in `job_queue.hpp`):
 
 - Built on `ThreadPool`; timer thread for `schedule_after`; fixed `max_attempts`
   retry on exception; `wait_idle` / `shutdown`.
 - **No MLC module in v1** — enqueue needs C++ callables; no `std/job_queue.mlc`,
   no registry alias. Consumers include the header (via `mlc.hpp`).
-- Smoke: `scripts/run_job_queue_runtime_smoke.sh`.
+- Gate: `scripts/run_job_queue_gate.sh`. Example: `misc/examples/job_queue_demo.cpp`.
 
 Не в v1: MLC `JobQueue`, broker/persistence, cron expressions.
 
