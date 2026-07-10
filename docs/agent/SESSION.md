@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_WEBSOCKET STEP=2 |
-| test_gate | tcp echo+spawn gates OK; Critic reopen none |
+| driver_turns_since_plan | 1 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_WEBSOCKET STEP=3 |
+| test_gate | websocket runtime smoke 19/0 |
+
+### Turn 2026-07-10 23:55 (Driver TRACK_STDLIB_WEBSOCKET STEP=2 — websocket.hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-10 23:49 |
+| elapsed | ~10 min |
+| done    | `runtime/include/mlc/net/websocket.hpp` (SHA1+base64, upgrade/read_text/write_text/close, ping→pong); `test_websocket.cpp`; `run_websocket_runtime_smoke.sh`; `mlc.hpp` include. `websocket_last_error` (Tcp `last_error` clash). |
+| verify  | `bash scripts/run_websocket_runtime_smoke.sh` → 19 passed, 0 failed; RFC Accept vector OK. |
+| result  | STEP=2 done. Plain: C++ WS server upgrade+text echo works. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_WEBSOCKET — `websocket.mlc` + registry + codegen bridge |
 
 ### Turn 2026-07-10 23:47 (Critic TRACK_PIPELINE_MERGE_TCP_SPAWN — critique-audit)
 
