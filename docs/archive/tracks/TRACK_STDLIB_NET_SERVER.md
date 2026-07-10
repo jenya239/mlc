@@ -66,7 +66,7 @@ runtime helper if no match.
   module as `Tcp`, not the language-level `spawn`** — `spawn`/`Mutex`/`Channel`
   exist only in self-hosted `compiler/`, unreachable from the Ruby pipeline
   this track's TCP stdlib depends on; see
-  [TRACK_CONCURRENCY_RUBY_PARITY](../../agent/TRACK_CONCURRENCY_RUBY_PARITY.md) (found
+  [TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md) (found
   2026-07-10). Also: self-hosted `spawn do <tail-call> end` currently
   double-executes the block body — [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md),
   another reason to avoid `spawn` here until fixed.

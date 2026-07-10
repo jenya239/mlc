@@ -23,6 +23,10 @@ MLC source → Lexer → Parser → AST → Checker (name resolution + type infe
 | Self-hosted (`mlcc`) | `compiler/` | Модульная сборка `compiler/main.mlc` → C++; E2E и двойной проход (mlcc/mlcc2) |
 | Ruby (bootstrap) | `lib/mlc/` | Полнофункциональный эталон, не удаляется |
 
+**Временный split фич (2026-07-10):** concurrency (`spawn`/`Mutex`/`Channel`/`block_on`) —
+только `mlcc`; `std/net/tcp` и прочий `common/stdlib` — только Ruby. Матрица:
+[docs/MLC.md](docs/MLC.md) § «Два пайплайна». Follow-up: stdlib на `mlcc`.
+
 ## Быстрый старт
 
 ```bash

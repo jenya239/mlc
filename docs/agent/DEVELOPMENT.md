@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CONCURRENCY_RUBY_PARITY** STEP=3 — document Ruby vs mlcc feature
-matrix in `MLC.md` (Decision C); name B as follow-up.
+**Critic** `critique-audit` on closed
+[TRACK_CONCURRENCY_RUBY_PARITY](../archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md).
+Then Planner: open Postgres track (STDLIB_BACKEND §5).
 
 
 ## Step sizing (good vs bad)

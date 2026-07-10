@@ -59,6 +59,27 @@ fn area(s: Shape) -> i32 =
 
 Текущий mlcc имеет 210 `while`-циклов с ручными индексами, 0 pipeline-вызовов, 13 uses of `extend` на 5200 строк. Причина: язык не даёт инструментов для идиоматичного кода.
 
+### Два пайплайна: Ruby vs `mlcc` (временный split)
+
+Зафиксировано 2026-07-10 (`TRACK_CONCURRENCY_RUBY_PARITY`, Decision **C**).
+Два компилятора пока **не** покрывают один и тот же набор фич:
+
+| Фича | Ruby (`lib/mlc/`, `MLC.build_project`) | Self-hosted (`mlcc`) |
+|------|----------------------------------------|----------------------|
+| `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
+| `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
+| `std/net/tcp` (`import Tcp::…`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
+| HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
+| Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя | нельзя |
+
+**Следствие:** backend TCP+пул сегодня — через C++ `serve_http_with_thread_pool`
+(или Ruby+`Tcp` без языкового `spawn`). Не смешивать ожидания «как в одном
+компиляторе».
+
+**Follow-up (не в этом треке):** option **B** — портировать скан
+`common/stdlib/` в `mlcc`, чтобы IO-stdlib и concurrency жили в одном
+пайплайне. Option **A** (портировать concurrency в Ruby) отвергнут.
+
 ---
 
 ## Фаза A — Критический минимум (HOF + комбинаторы)
@@ -395,7 +416,9 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 Зафиксировано 2026-07-10 (`TRACK_STDLIB_NET_SERVER`). Runtime (`mlc::net`):
 
 - `TcpListener` / `TcpStream` — blocking IPv4, `SO_REUSEADDR`, `Result` errors.
-- MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`.
+- MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`
+  — **только Ruby-пайплайн** (см. § «Два пайплайна» выше). Runtime C++ headers
+  доступны обоим компиляторам.
 - `parse_http_request` — HTTP/1.1 request-line + headers; body via `Content-Length`
   (caps: headers 64 KiB, body 1 MiB).
 - `HttpRouter` — exact method+path match; `http_not_found` / `write_http_response`.

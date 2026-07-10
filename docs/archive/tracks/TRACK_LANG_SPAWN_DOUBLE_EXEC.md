@@ -108,4 +108,4 @@ end
 
 - `block_on`/`is_ready` не зарегистрированы в checker как identifiers
   (`error: undefined: block_on` при попытке забрать результат `Task`) —
-  отдельная находка, см. [TRACK_CONCURRENCY_RUBY_PARITY](../../agent/TRACK_CONCURRENCY_RUBY_PARITY.md).
+  отдельная находка, см. [TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md).

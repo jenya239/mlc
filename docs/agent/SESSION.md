@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=3 |
-| test_gate | ok (block_on probes + spawn gate + run_tests 1471/0) |
+| driver_turns_since_plan | 0 |
+| step_last | 3 |
+| active_track | TRACK_CONCURRENCY_RUBY_PARITY closed → Critic |
+| test_gate | ok (docs; prior STEP=2 probes) |
+
+### Turn 2026-07-10 19:38 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=3 — docs+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_RUBY_PARITY |
+| started | 2026-07-10 19:38 |
+| elapsed | ~5 min |
+| done    | `MLC.md` § «Два пайплайна»; README pointer; track → `docs/archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md`; PLAN §8/§8b/§11 + queue; STDLIB_BACKEND §5.2. |
+| verify  | Matrix lists spawn/Tcp/`block_on` split; archive Parent links `../../`. No `compiler/**` this turn. |
+| result  | STEP=3 done; track **closed**. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_CONCURRENCY_RUBY_PARITY |
 
 ### Turn 2026-07-10 19:34 (Driver TRACK_CONCURRENCY_RUBY_PARITY STEP=2 — block_on)
 
