@@ -4,17 +4,13 @@ Parent: [TRACK_MIR_VM.md](../archive/tracks/TRACK_MIR_VM.md) (MVP closed); [TRAC
 
 **Status:** open, Epic 0–4 **done** (STEP=12 closed Epic 4); Epic 5 **NOT authorized** — next turn is Planner, not STEP=13
 
-**CRITICAL REGRESSION FOUND 2026-07-10 (not caught by Epic 0-4 gates):** the
-VM crashes with a real segfault on any program executing more than ~1500-2000
-MIR steps (loop iterations or user recursion depth) — `vm_run_frames` in
-`compiler/vm/execute.mlc` recurses in the host C++ once per MIR step instead
-of looping, unbounded C++ stack growth. Every corpus fixture used to close
-Epic 0-4 is a handful of steps, so this was invisible until manual
-benchmarking with realistic iteration counts. **Epic 4's "single/multi-file
-`--run` stable" claim is not actually true for any non-toy program.** Fix
-tracked separately, higher priority than continuing this track further: see
-[TRACK_VM_TRAMPOLINE.md](TRACK_VM_TRAMPOLINE.md) (root cause, repro, fix
-approach already written up — do not re-investigate).
+**Epic 4 stability correction (2026-07-10):** Epic 4's "single/multi-file
+`--run` stable" claim (STEP=10–12) was **false for non-toy programs** until
+[TRACK_VM_TRAMPOLINE](../archive/tracks/TRACK_VM_TRAMPOLINE.md) closed —
+`vm_run_frames` recursed once per MIR step in host C++ and segfaulted past
+~1500–2000 steps. Corpus fixtures were too small to catch it. **Fixed**
+2026-07-10 (trampoline host loop; depth gate 100k; self-host diff identical;
+`regression_gate` 20/0). Epic 5 remains **NOT authorized**.
 
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —

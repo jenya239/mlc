@@ -1,6 +1,6 @@
 # Track: MIR VM stack-overflow crash (~1500 steps) — trampoline fix
 
-Parent: [../PLAN.md](../PLAN.md), [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md).
+Parent: [../../PLAN.md](../../PLAN.md), [../../agent/TRACK_MIR_VM_FULL.md](../../agent/TRACK_MIR_VM_FULL.md).
 
 Trigger: manual benchmarking of `mlcc --run` (2026-07-10) found the VM
 crashes with a real segfault on **any** program executing more than
@@ -17,9 +17,20 @@ Blocks the entire practical value of `TRACK_MIR_VM_FULL`. Small, well-scoped,
 root cause already found (see below) — no further investigation needed
 before starting the fix.
 
-## Status: **open** — STEP=1–4 **done**; STEP=5 next (verify-gate + close)
+## Status: **closed** 2026-07-10 — STEP=1–5 done
 
-**Driver 2026-07-10:** STEP=1–3 trampoline/corpus/depth; STEP=4 re-bench (below).
+**Driver 2026-07-10:** STEP=5 — self-host `mlcc`→`mlcc2`→`diff` **IDENTICAL**;
+`regression_gate.sh` **20/0**. Epic 4 stability claim corrected in
+[TRACK_MIR_VM_FULL.md](../../agent/TRACK_MIR_VM_FULL.md).
+
+## Verify gate (STEP=5, 2026-07-10)
+
+```
+p1_codegen=11.89s; mlcc2_link=606.44s; p2_codegen=8.22s
+diff -r p1 p2 --exclude=obj → IDENTICAL
+regression_gate: 20 passed, 0 failed (375.71s)
+depth gate: vm_deep_loop 100k exit=7 @ ulimit -s=8192
+```
 
 ## Post-fix throughput (STEP=4, 2026-07-10)
 
@@ -33,9 +44,9 @@ Machine: default `ulimit -s=8192` (no stack raise). Binary: `compiler/out/mlcc` 
 
 - VM ≈ **1.87e5** iters/s on this loop (~20–80× slower than native is expected; native run below timer resolution).
 - No throughput regression from the trampoline refactor: the old path could not complete 2e6 at all; trampoline finishes in ~11s on default stack.
-- Numbers also recorded under [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) §4.
+- Numbers also recorded under [TRACK_MIR_VM_FULL.md](../../agent/TRACK_MIR_VM_FULL.md) §4.
 
-## Root cause (found, confirmed, not fixed)
+## Root cause (found, confirmed, fixed)
 
 Repro:
 
@@ -141,7 +152,7 @@ self-call) needs to stop recursing.
 | 2 | Regression: full existing corpus (`vm_cpp_diff_programs.txt`, `run_single_file_vm_gate.sh`, `run_examples_vm_gate.sh`) must still pass — this is a pure refactor, no behavior change for small programs. | **done** (2026-07-10: cpp_diff 18, single-file 18+diff, examples 28) |
 | 3 | New regression fixture: loop/recursion depth **≥ 100,000** steps (well past the old ~1700 ceiling) must complete without crashing and without `ulimit -s unlimited`. Add to `compiler/tests/` corpus permanently — this exact class of bug must never regress silently again. | **done** (2026-07-10: `misc/examples/vm_deep_loop.mlc` 100k + `run_vm_trampoline_depth_gate.sh`; exit=7, ulimit -s=8192, ~0.34s) |
 | 4 | Re-benchmark throughput after the fix (same 1000/2,000,000-iteration loops as the 2026-07-10 manual benchmark) — confirm no major regression from the refactor itself (trampoline should be same speed or faster, no recursion call overhead). Record numbers in this track or `TRACK_MIR_VM_FULL.md` §4. | **done** (2026-07-10: VM 1k=0.01s / 2e6=10.72s; native run ~0s; pre-fix 2e6 did not finish in 15s) |
-| 5 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`. Update `TRACK_MIR_VM_FULL.md` — Epic 4's stability claim was false until this fix; note the correction there with a link to this track. | pending |
+| 5 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`. Update `TRACK_MIR_VM_FULL.md` — Epic 4's stability claim was false until this fix; note the correction there with a link to this track. | **done** (2026-07-10: diff IDENTICAL; regression_gate 20/0) |
 
 ## Out of scope
 

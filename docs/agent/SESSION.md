@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 4 |
-| active_track | TRACK_VM_TRAMPOLINE STEP=5 |
-| test_gate | ok (bench VM 1k=0.01s / 2e6=10.72s exit=7; native run ~0s) |
+| driver_turns_since_plan | 8 |
+| step_last | 5 |
+| active_track | TRACK_CLI_STDIN STEP=1 |
+| test_gate | ok (self-host DIFF identical; regression_gate 20/0) |
+
+### Turn 2026-07-10 13:20 (Driver TRACK_VM_TRAMPOLINE STEP=5 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_VM_TRAMPOLINE |
+| started | 2026-07-10 12:59 |
+| elapsed | ~21 min |
+| done    | Self-host p1→mlcc2→p2; `regression_gate.sh`; archive track; Epic4 note in MIR_VM_FULL; PLAN 13a done. |
+| verify  | DIFF:IDENTICAL (p1=11.89s, link=606s, p2=8.22s); regression_gate 20/0 (375s). |
+| result  | STEP=5 done; track **closed**. Plain: VM no longer dies on long runs; self-host still bit-identical. |
+| issues  | Foreign CLI_STDIN WIP was stashed for clean gate; restore after commit. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_CLI_STDIN — fix stdin crash (seekg/tellg → streambuf) |
 
 ### Turn 2026-07-10 13:00 (Driver TRACK_VM_TRAMPOLINE STEP=4 — re-bench)
 

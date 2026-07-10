@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_TRAMPOLINE** STEP=5 — verify-gate + close (self-host diff, regression_gate; note Epic4 claim).
-(STEP=1–4 done: trampoline; corpus; 100k depth; re-bench 1k=0.01s / 2e6=10.72s.)
+**TRACK_CLI_STDIN** STEP=1 — fix stdin crash (`seekg`/`tellg` → streambuf in `file.hpp`).
+(VM_TRAMPOLINE **closed** 2026-07-10: trampoline + depth gate + self-host identical.)
 
 ## Step sizing (good vs bad)
 
