@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_JOB_QUEUE closed → Critic |
-| test_gate | run_job_queue_gate.sh OK; demo counter=18; no compiler/** |
+| step_last | critique-audit |
+| active_track | Planner — STDLIB §5.6 after JOB_QUEUE |
+| test_gate | job_queue gate OK; Critic reopen none |
+
+### Turn 2026-07-11 00:58 (Critic TRACK_STDLIB_JOB_QUEUE — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:55 |
+| elapsed | ~5 min |
+| done    | Audited STEP1–5 vs `7c14b896`/`4c5169bc`/`648c0a95`/`537ceac4`/`9c993742`; PLAN/archive/STDLIB; re-ran gate+demo; clarified `mlc.hpp` include note in archive. |
+| verify  | `run_job_queue_gate.sh` OK (50/0); demo counter=18; archive path; no false-done. |
+| result  | **reopen: none**. Residuals: MLC deferred; retry exception-only. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — open TRACK_STDLIB_ENV_LOGGING (or config) |
 
 ### Turn 2026-07-11 00:55 (Driver TRACK_STDLIB_JOB_QUEUE STEP=5 — docs+close)
 

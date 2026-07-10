@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_JOB_QUEUE` closed** 2026-07-11 — Critic next.
-Then Planner: env/config + logging (§5.6) or other PLAN queue item.
+**`TRACK_STDLIB_JOB_QUEUE` closed** 2026-07-11 (Critic OK) — Planner next
+(env/config + logging per STDLIB_BACKEND §5.6).
 
 
 ## Step sizing (good vs bad)

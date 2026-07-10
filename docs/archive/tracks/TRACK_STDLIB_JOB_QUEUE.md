@@ -16,6 +16,10 @@ over existing `ThreadPool`/`Channel` (no new FFI).
 **Driver 2026-07-11:** STEP=5 — MLC.md/STDLIB/example; archived.
 No `compiler/**` (regression_gate N/A).
 
+**Critic 2026-07-11:** STEP=1–5 vs `7c14b896`…`9c993742`; gate+demo re-OK;
+PLAN/archive/STDLIB aligned; **reopen: none**. Residuals: MLC module deferred;
+retry is exception-only (no explicit failure callback).
+
 
 ## Decision (STEP=1, 2026-07-11)
 
