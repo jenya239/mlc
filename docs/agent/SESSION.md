@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC closed (Critic done) |
-| test_gate | ok (spawn side-effect gate PASS) |
+| step_last | plan-refresh |
+| active_track | TRACK_CONCURRENCY_RUBY_PARITY STEP=1 |
+| test_gate | ok (prior Critic) |
+
+### Turn 2026-07-10 19:32 (Planner — plan-refresh after SPAWN)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_CONCURRENCY_RUBY_PARITY |
+| started | 2026-07-10 19:32 |
+| elapsed | ~5 min |
+| done    | Chose RUBY_PARITY over Postgres: formalized TRACK Decision A/B/C + sub-steps; PLAN §8/§8b/§11 + queue; STDLIB_BACKEND §5.2; DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending with Decision template; queue puts RUBY_PARITY before Postgres. |
+| result  | Active track = CONCURRENCY_RUBY_PARITY STEP=1. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, ?? TYPED_COLLECTIONS). |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_RUBY_PARITY — write Decision A/B/C |
 
 ### Turn 2026-07-10 19:31 (Critic TRACK_LANG_SPAWN_DOUBLE_EXEC — critique-audit)
 

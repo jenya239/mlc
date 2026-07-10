@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner** `plan-refresh` — next after closed SPAWN: open
-[TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md) STEP=1
-(design) **or** Postgres track (STDLIB_BACKEND §5). Critic: SPAWN no reopen.
+**TRACK_CONCURRENCY_RUBY_PARITY** STEP=1 — design Decision A/B/C
+(port spawn→Ruby / stdlib→mlcc / document split).
 
 
 ## Step sizing (good vs bad)

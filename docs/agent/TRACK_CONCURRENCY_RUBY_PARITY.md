@@ -5,11 +5,11 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 Найдено 2026-07-10 при попытке собрать многопоточный TCP-сервер: два
 языковых feature-набора реализованы в двух непересекающихся компиляторах.
 
-## Status: **open** (архитектурная находка; после SPAWN_DOUBLE_EXEC)
+## Status: **open** — STEP=1 next (design)
 
-**Planner 2026-07-10:** не стартуем — сначала критический
-[TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md). NET_SERVER
-STEP=7 уже обошёл разрыв через C++ `serve_http_with_thread_pool`.
+**Planner 2026-07-10:** выбран после closed SPAWN_DOUBLE_EXEC (выше
+Postgres — `block_on` residual + pipeline split blocks language-level
+TCP+spawn). Postgres track not opened this turn.
 
 ## Проблема
 
@@ -44,7 +44,8 @@ STEP=7 уже обошёл разрыв через C++ `serve_http_with_thread_p
    `error[E001]: undefined: block_on`, хотя codegen-маппинг на
    `mlc::block_on` уже есть (`compiler/codegen/cpp_naming.mlc:79`). Значит
    `Task` через `spawn` создать можно, а забрать результат штатным
-   способом, который проходит checker, — нельзя.
+   способом, который проходит checker, — нельзя. Critic residual on
+   SPAWN e2e: gate waits via Task/future destructor, not `block_on`.
 
 ## Практический обход (уже сделан в NET_SERVER)
 
@@ -53,17 +54,35 @@ STEP=7 уже обошёл разрыв через C++ `serve_http_with_thread_p
 без Ruby/`spawn` паритета. Этот трек остаётся для design-решения
 разрыва пайплайнов.
 
+## Decision (STEP=1 — fill here)
+
+_Pending Driver STEP=1._ Options:
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **A** Port `spawn`/`Mutex`/`Channel`/`Task` into Ruby `lib/mlc/` | One pipeline for backend+concurrency via Ruby | Large port; duplicates self-hosted work |
+| **B** Port `common/stdlib/` scan into self-hosted `mlcc` | One pipeline via mlcc; Tcp+spawn together | Stdlib loader design; many modules |
+| **C** Document temporary split (Ruby=IO stdlib, mlcc=language/concurrency) | Cheap; honest | No single-compiler TCP+spawn until later |
+
+Prefer recording **one** chosen option + what STEP=2–3 do under it.
+`block_on`/`is_ready` (STEP=2) is valuable under any option.
+
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design-решение: портировать `spawn`/`Mutex`/`Channel`/`Task` в `lib/mlc/` (Ruby), **или** портировать stdlib-скан (`common/stdlib/`) в self-hosted, **или** осознанно принять разделение (Ruby = backend/IO stdlib, self-hosted = язык/concurrency) как временную границу с явной документацией — записать решение в этот трек. | open |
-| 2 | `block_on`/`is_ready` как identifiers в self-hosted checker (registry) + codegen (уже есть маппинг) + regression. | open |
-| 3 | В зависимости от решения STEP=1 — либо портировать один набор фич в другой пайплайн, либо задокументировать границу в `MLC.md`/`README.md` («какие фичи доступны только через Ruby-сборку, какие только через `mlcc`»). | open |
+| 1 | Design: choose A/B/C above; write Decision; list non-goals. | **pending** |
+| 2 | `block_on`/`is_ready` as identifiers in self-hosted checker (registry) + existing codegen map + regression (spawn e2e can `block_on`). | pending |
+| 3 | Per Decision: port one feature set **or** document split in `MLC.md`/`README.md`. | pending |
+
+<!-- sub-steps STEP=1: 1) re-check `rg spawn lib/mlc` + `rg common/stdlib compiler`; 2) pick A/B/C with 3–5 line rationale; 3) Decision table in this TRACK; 4) PLAN §8b sync -->
+<!-- sub-steps STEP=2: 1) registry/names for block_on/is_ready; 2) smoke `spawn`+`block_on` checks; 3) optional tighten spawn_side_effect_gate to block_on -->
+<!-- sub-steps STEP=3: 1) implement Decision path or MLC.md matrix; 2) verify-gate; 3) close -->
 
 ## Out of scope
 
 - Полное слияние двух пайплайнов в один — не в этом треке, слишком
   дорого; см. общий roadmap self-hosting в `PLAN.md`.
-- Дублирование statement/tail-expression в `spawn`-лямбде — отдельный,
-  критический баг, см. [TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md).
+- Дублирование statement/tail-expression в `spawn`-лямбде — **closed**,
+  см. [TRACK_LANG_SPAWN_DOUBLE_EXEC](../archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md).
+- Opening Postgres/crypto tracks — after this design (or deferred if C).
