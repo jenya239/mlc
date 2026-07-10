@@ -40,10 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` open** STEP=1 — Philosophy Decision
-(compile-time vs runtime schema). See
-[TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
-TEXT_RENDERING_NATIVE remains open (medium/personal) but not Driver-next.
+**`TRACK_STDLIB_VALIDATION` open** STEP=2 — pure MLC `Validate` helpers.
+See [TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
 
 
 ## Step sizing (good vs bad)

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_VALIDATION STEP=1 |
-| test_gate | docs-only Planner; no code gate |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_VALIDATION STEP=2 |
+| test_gate | docs-only Decision; no code gate |
+
+### Turn 2026-07-11 01:48 (Driver TRACK_STDLIB_VALIDATION STEP=1 — Philosophy Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 01:45 |
+| elapsed | ~3 min |
+| done    | Decision: explicit runtime helpers (not derive/Zod); pure MLC `Validate`; API `non_empty`/`min_length`/`max_length`/`range_i32` → `Result<(), string>`; no multi-error/last_error/compiler. PLAN/STDLIB/DEVELOPMENT → STEP=2. |
+| verify  | TRACK Decision section present; Open Qs resolved; STEP=1 done, STEP=2 pending. |
+| result  | STEP=1 done. Plain: Validate = pure MLC helpers, Result errors. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_VALIDATION — implement `validate.mlc` + smoke |
 
 ### Turn 2026-07-11 01:43 (Planner — open TRACK_STDLIB_VALIDATION)
 
