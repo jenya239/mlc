@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; next: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=8).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; next: [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) STEP=1).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -383,9 +383,9 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=7. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) STEP=1. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
-| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — STEP=0–7 **done**, STEP=8 next (verify-gate + close) |
+| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
@@ -453,15 +453,16 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     STEP=6.2 (**done** 2026-07-10: shaped «Привет» + golden `text_a8_privet_24.rgba`);
     STEP=7.1 (**done** 2026-07-10: msdf_shim SDF→RGB8 + numerical smoke);
     STEP=7.2 (**done** 2026-07-10: MSDF median FBO + RGB8 atlas pack);
-    STEP=7.3 (**next** — RenderMode by pixel size) → STEP=8
+    STEP=7.3 (**done** 2026-07-10: RenderMode A8/MSDF threshold 28);
+    STEP=8 (**done** 2026-07-10: self-host identical; regression 20/0; MAE≤8;
+      track **closed** → archive)
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
+  → **LANG_INT_OVERFLOW STEP=1 (**next** — design default overflow semantics)
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее
-  → LANG_INT_OVERFLOW (**средний приоритет**, дырка в спецификации — можно
-    брать параллельно с TEXT_RENDERING/STDLIB_BACKEND, не пересекается по файлам)
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию

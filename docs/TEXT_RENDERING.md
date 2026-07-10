@@ -164,8 +164,12 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
 2. Растеризация глифа в A8 bitmap, атлас-паковка, LRU cache hit/miss.
 3. Self-host: `mlcc` → `mlcc2` → `diff` идентичен (обычный гейт проекта).
 
-Фаза 3+ (GL offscreen) — §5.2 решён (EGL shim); критерий приёмки golden
-image — перед/на STEP=6 (pixel-diff/SSIM, см. §7).
+Фаза 3+ (GL offscreen) — §5.2 решён (EGL shim). **Tolerance golden/pixel-diff
+(зафиксировано STEP=8, 2026-07-10):** mean absolute error (MAE) по RGB
+каналам ≤ **8.0 / 255** между CPU-эталоном и GLES2 readback
+(`text_renderer_a8_*`, shaped-string golden exact на CPU-компози; GL vs CPU —
+MAE). SSIM не требуется для закрытия трека; при необходимости — отдельный
+порог в будущем golden-тесте.
 
 ## 7. Тест-стратегия (2026-07-10)
 

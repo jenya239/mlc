@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 31 |
-| step_last | 7.3 |
-| active_track | TRACK_TEXT_RENDERING STEP=8 |
-| test_gate | ok (render mode smoke) |
+| driver_turns_since_plan | 32 |
+| step_last | 8 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=1 |
+| test_gate | ok (self-host identical; regression 20/0) |
+
+### Turn 2026-07-10 17:50 (Driver TRACK_TEXT_RENDERING STEP=8 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:33 |
+| elapsed | ~20 min |
+| done    | Self-host p1→mlcc2→p2 DIFF identical; regression_gate 20/0; §6 MAE ≤ 8.0/255; track archived to `docs/archive/tracks/TRACK_TEXT_RENDERING.md`. |
+| verify  | DIFF:IDENTICAL; regression_gate 20/0. |
+| result  | STEP=8 done; track **closed**. Plain: text rendering milestone gated and archived. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_INT_OVERFLOW — design default overflow semantics |
 
 ### Turn 2026-07-10 17:25 (Driver TRACK_TEXT_RENDERING STEP=7.3 — RenderMode)
 

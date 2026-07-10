@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=8 — verify-gate + close
-(self-host diff, regression_gate, acceptance §6 + MAE tol 8).
-(STEP=7 done: MSDF path + RenderMode.)
+**TRACK_LANG_INT_OVERFLOW** STEP=1 — design default integer overflow semantics.
+(TEXT_RENDERING **closed** 2026-07-10.)
 
 ## Step sizing (good vs bad)
 
@@ -59,8 +58,5 @@ bash scripts/dev_gate_fast.sh
 
 ## Orchestration
 
-Обычная очередь Cursor (без внешнего MCP/сервера) — [CONTINUITY.md](CONTINUITY.md). Старый подход (`agent-loop` MCP, `cr` сервер, токены) архивирован: `docs/archive/`.
-
-**mlc-memory:** `memory_search` / `memory_write` (`project_memories`) — decisions, bugs, conventions, failed_attempts. Legacy: `known_limitations`, `notes`. Не дублировать TURNLOG.
-
-**codebase-memory:** перед чтением многих файлов — `search_graph`, `query_graph`, impact/callers. Reindex: `bash scripts/memory_reindex.sh`.
+Queued identical driver prompts; state in [SESSION.md](SESSION.md) `next`.
+No MCP enqueue. Commits without asking the user.
