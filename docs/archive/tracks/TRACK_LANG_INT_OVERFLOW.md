@@ -10,6 +10,12 @@ Parent: [../../PLAN.md](../../PLAN.md), [../../MLC.md](../../MLC.md) (типы `
 `int_arith` runtime wrap/sat/check; self-host DIFF identical; regression_gate 20/0;
 track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `bba2b517`…`a5de2a30` match STEP
+claims; PLAN §16/queue/archive paths synced; 9 tests / 44 assertions green.
+Residuals (no reopen): runtime panic/div0 only exercised on `i32`; unsigned wrap
+test does not assert wrap-to-0; no `MIN/-1` runtime case; `int_arith` i64/u*
+deferred (noted in STEP=5).
+
 ## Decision (STEP=1, 2026-07-10)
 
 Default for `+` / `-` / `*` / `/` / `%` on integer types:

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 38 |
-| step_last | 5 |
-| active_track | TRACK_LANG_INT_OVERFLOW closed → Critic |
-| test_gate | ok (overflow tests; regression 20/0; DIFF identical) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_INT_OVERFLOW closed (Critic ok) → Planner STDLIB_NET_SERVER |
+| test_gate | ok (9/44 overflow+int_arith) |
+
+### Turn 2026-07-10 22:00 (Critic TRACK_LANG_INT_OVERFLOW — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 17:54 |
+| elapsed | ~10 min |
+| done    | Audited commits `bba2b517`/`639c4461`/`dfb151d8`/`56f050cc`/`694b5fc5`/`a5de2a30` vs STEP 1–5; PLAN §16+queue+archive path; re-ran overflow+int_arith tests; note on archived TRACK. |
+| verify  | 9 runs / 44 assertions pass; no false-done (each STEP has matching commit); PLAN closed links correct. |
+| result  | **reopen: none**. Residuals: runtime panic/div0 only i32; uwrap no value assert; no MIN/-1 runtime; int_arith i64/u* deferred. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Planner STEP=plan-refresh — create TRACK_STDLIB_NET_SERVER (STDLIB_BACKEND §5) |
 
 ### Turn 2026-07-10 21:50 (Driver TRACK_LANG_INT_OVERFLOW STEP=5 — tests + verify-gate + close)
 

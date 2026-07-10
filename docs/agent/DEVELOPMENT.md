@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Critic** `critique-audit` on closed [TRACK_LANG_INT_OVERFLOW](../archive/tracks/TRACK_LANG_INT_OVERFLOW.md).
-Then STDLIB_BACKEND (TCP/HTTP track — create before start).
+**Planner** `plan-refresh` — create [TRACK_STDLIB_NET_SERVER](TRACK_STDLIB_NET_SERVER.md)
+from [STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5 (TCP/HTTP). Critic on
+LANG_INT_OVERFLOW done.
 
 ## Step sizing (good vs bad)
 
