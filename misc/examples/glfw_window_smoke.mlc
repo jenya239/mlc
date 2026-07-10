@@ -1,0 +1,14 @@
+// GLFW empty window loop smoke (TRACK_TEXT_RENDERING_NATIVE STEP=2).
+// Runtime owns GLFW window + clear/poll/swap; MLC calls a plain extern fn.
+// Default: hidden window, N frames. MLC_GLFW_VISIBLE=1 shows window (Esc/timeout).
+
+extern fn glfw_window_empty_loop_smoke() -> i32
+  = "mlc::gl::glfw_window_empty_loop_smoke" from "mlc/gl/glfw_window.hpp"
+
+fn main() -> i32 = do
+  const status = glfw_window_empty_loop_smoke()
+  if status != 0 then
+    return status
+  end
+  0
+end

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=2 |
-| test_gate | docs-only Decision; no code gate |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=3 |
+| test_gate | `run_glfw_window_smoke.sh` ok |
+
+### Turn 2026-07-11 02:35 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=2 — GLFW window)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 02:29 |
+| elapsed | ~6 min |
+| done    | `runtime/include/mlc/gl/glfw_window.hpp` + `glfw_window.cpp`; example `glfw_window_smoke.mlc`; `scripts/run_glfw_window_smoke.sh`; optional glfw3 in `build_bin.sh`. Hidden 800×600 clear/swap loop (MLC_GLFW_VISIBLE=1 interactive). PLAN/DEVELOPMENT → STEP=3. |
+| verify  | `bash scripts/run_glfw_window_smoke.sh` → ok (exit 0). |
+| result  | STEP=2 done. Plain: GLFW empty window loop smoke green. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; per-fn GLFW extern surface deferred to later (smoke fn first, like gl_loader). |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_RENDERING_NATIVE — thin GL dispatch via glfwGetProcAddress |
 
 ### Turn 2026-07-11 02:28 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=1 — Decision)
 

@@ -51,6 +51,14 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_renderer_shim.cpp")
   fi
 fi
+# Optional GLFW window path (TRACK_TEXT_RENDERING_NATIVE STEP=2).
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
+  RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window.cpp")
+  # shellcheck disable=SC2207
+  TEXT_CFLAGS+=($(pkg-config --cflags glfw3))
+  # shellcheck disable=SC2207
+  TEXT_LIBS+=($(pkg-config --libs glfw3))
+fi
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 ENTRY_BASENAME="${MLCC_ENTRY_BASENAME:-main}"
