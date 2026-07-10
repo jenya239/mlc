@@ -390,6 +390,19 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 
 Вещественные `f32`/`f64` (NaN/Inf) сюда не входят.
 
+#### TCP / HTTP server (stdlib runtime)
+
+Зафиксировано 2026-07-10 (`TRACK_STDLIB_NET_SERVER`). Runtime (`mlc::net`):
+
+- `TcpListener` / `TcpStream` — blocking IPv4, `SO_REUSEADDR`, `Result` errors.
+- MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`.
+- `parse_http_request` — HTTP/1.1 request-line + headers; body via `Content-Length`
+  (caps: headers 64 KiB, body 1 MiB).
+- `HttpRouter` — exact method+path match; `http_not_found` / `write_http_response`.
+- `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`.
+
+Не в v1: TLS, HTTP/2, WebSocket, epoll reactor.
+
 ---
 
 ### C5. `with` — resource management / RAII

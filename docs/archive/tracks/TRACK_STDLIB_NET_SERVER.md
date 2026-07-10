@@ -1,13 +1,13 @@
 # Track: TCP/HTTP server stdlib
 
-Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5.1.
+Parent: [../../PLAN.md](../../PLAN.md), [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md) §5.1.
 Trigger: backend-class apps need listen/accept; today only HTTP **client**
 (`mlc/net/http.hpp` + curl). No `bind`/`listen`/`accept` in runtime/stdlib.
 
-## Status: **open** — STEP=1–7 **done**; STEP=8 next (docs + verify-gate + close)
+## Status: **closed** (2026-07-10) — STEP=1–8 **done**
 
-**Driver 2026-07-10:** STEP=7 — `http_server.hpp` (`read_http_message`,
-`serve_http_connection`, `serve_http_with_thread_pool`); smoke 5/0.
+**Driver 2026-07-10:** STEP=8 — `STDLIB_BACKEND.md`/`MLC.md` note;
+`misc/examples/tcp_echo_demo.mlc`; `regression_gate` 20/0; track archived.
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -54,6 +54,14 @@ runtime helper if no match.
   (`while true { let stream = listener.accept()? … }`).
 - STEP=7: optional `accept` + `ThreadPool.submit` per connection; pool is
   existing `mlc::concurrency::ThreadPool`. No epoll/reactor in this track.
+  **Use an `extern fn` stdlib wrapper in the same Ruby `lib/mlc/common/stdlib/`
+  module as `Tcp`, not the language-level `spawn`** — `spawn`/`Mutex`/`Channel`
+  exist only in self-hosted `compiler/`, unreachable from the Ruby pipeline
+  this track's TCP stdlib depends on; see
+  [TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md) (found
+  2026-07-10). Also: self-hosted `spawn do <tail-call> end` currently
+  double-executes the block body — [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md),
+  another reason to avoid `spawn` here until fixed.
 
 ### Bind defaults
 
@@ -100,7 +108,7 @@ usable from MLC without a framework. Concurrent accept via existing
 | 5 | HTTP/1.1: parse request-line + headers into `HttpRequest` (C++ helper or MLC); reject oversized headers; no chunked/body streaming in v1 beyond optional `Content-Length` read up to cap. | **done** (2026-07-10: `parse_http_request`; smoke 14/0) |
 | 6 | Routing: explicit `Array`/`Map` of `(method, path) → handler`; write status-line + headers + body; 404 default. | **done** (2026-07-10: `HttpRouter` + `write_http_response`; smoke 14/0) |
 | 7 | Concurrency: accept loop dispatches connection handler on `ThreadPool` (or document single-thread-only if pool wiring is blocked). | **done** (2026-07-10: `serve_http_with_thread_pool`; smoke 5/0) |
-| 8 | Docs (`STDLIB_BACKEND.md` / short `MLC.md` note) + example under `misc/examples/`; verify-gate (`regression_gate.sh`; self-host if `compiler/**` touched) + close. | pending |
+| 8 | Docs (`STDLIB_BACKEND.md` / short `MLC.md` note) + example under `misc/examples/`; verify-gate (`regression_gate.sh`; self-host if `compiler/**` touched) + close. | **done** (2026-07-10: docs + tcp_echo_demo; regression 20/0; closed) |
 
 <!-- sub-steps STEP=1: 1) list types/methods in Decision table; 2) pick Result vs errno panic; 3) list non-goals (TLS, HTTP/2, WS) -->
 <!-- sub-steps STEP=2: 1) tcp.hpp listen/accept/read/write; 2) C++ unit or smoke main; 3) include from mlc.hpp if needed -->

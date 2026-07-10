@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=8 — docs + example + verify-gate + close.
-STEP=7 done (`serve_http_with_thread_pool`, smoke 5/0).
+**Critic** `critique-audit` on closed [TRACK_STDLIB_NET_SERVER](../archive/tracks/TRACK_STDLIB_NET_SERVER.md)
+(TCP/HTTP server stdlib). Then Planner: Postgres/crypto per STDLIB_BACKEND §5.
 
 ## Step sizing (good vs bad)
 
