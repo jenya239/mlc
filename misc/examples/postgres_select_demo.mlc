@@ -1,0 +1,37 @@
+# Postgres SELECT 1 demo (TRACK_STDLIB_POSTGRES).
+# Requires libpq (libpq-dev) at link; set DATABASE_URL or PGHOST(+PGDATABASE).
+# Build via Ruby pipeline (import Postgres — not mlcc stdlib).
+# Gate: scripts/run_postgres_gate.sh
+
+import Postgres::{connect, exec, ntuples, nfields, getvalue, clear, finish, last_error}
+import IO::{eprintln, println}
+
+fn unwrap_handle(value: Option<i32>) -> i32 =
+  match value { Some(handle) => handle, None => -1 }
+
+fn unwrap_text(value: Option<string>) -> string =
+  match value { Some(text) => text, None => "" }
+
+fn main() -> i32 = do
+  let connection = unwrap_handle(connect("dbname=postgres"))
+  if connection < 0 then
+    eprintln(last_error())
+    return 1
+  end
+  let result = unwrap_handle(exec(connection, "SELECT 1 AS one"))
+  if result < 0 then
+    eprintln(last_error())
+    finish(connection)
+    return 2
+  end
+  if ntuples(result) != 1 then
+    clear(result)
+    finish(connection)
+    return 3
+  end
+  let cell = unwrap_text(getvalue(result, 0, 0))
+  println(cell)
+  clear(result)
+  finish(connection)
+  if cell == "1" then 0 else 4 end
+end

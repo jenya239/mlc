@@ -68,7 +68,7 @@ fn area(s: Shape) -> i32 =
 |------|----------------------------------------|----------------------|
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
-| `std/net/tcp` (`import Tcp::…`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
+| `std/net/tcp` (`import Tcp::…`) / `std/db/postgres` (`import Postgres::…`) и прочий `lib/mlc/common/stdlib/` | да (registry/scanner) | нет (`mlcc` не читает `common/stdlib/`) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя | нельзя |
 
@@ -425,6 +425,18 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 - `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`.
 
 Не в v1: TLS, HTTP/2, WebSocket, epoll reactor.
+
+#### Postgres (libpq stdlib)
+
+Зафиксировано 2026-07-10 (`TRACK_STDLIB_POSTGRES`). Runtime (`mlc::db`):
+
+- Opaque `i32` connection/result handles + `last_error`; cells as `string`.
+- MLC module `Postgres` (`std/db/postgres`): `connect` / `exec` / `ntuples` /
+  `nfields` / `getvalue` / `clear` / `finish` — **только Ruby-пайплайн**.
+- Link `-lpq` for consumers; live DB env-gated (`DATABASE_URL` / `PGHOST`).
+- Gate: `scripts/run_postgres_gate.sh`. Example: `misc/examples/postgres_select_demo.mlc`.
+
+Не в v1: ORM, pool, prepared statements, COPY, async/`spawn`.
 
 ---
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_POSTGRES open STEP=5 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_POSTGRES closed (await Critic) |
 | test_gate | ok (run_postgres_gate.sh) |
+
+### Turn 2026-07-10 20:05 (Driver TRACK_STDLIB_POSTGRES STEP=5 — docs+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:50 |
+| elapsed | ~8 min |
+| done    | `MLC.md` Postgres § + matrix; `misc/examples/postgres_select_demo.mlc`; track → `docs/archive/tracks/TRACK_STDLIB_POSTGRES.md`; PLAN §11 + queue; STDLIB_BACKEND §2/§5.2. |
+| verify  | `run_postgres_gate.sh` OK; no `compiler/**` this track (regression_gate N/A). |
+| result  | STEP=5 done; track **closed**. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. Example not compile-gated (needs live DB + `-lpq`). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_POSTGRES |
 
 ### Turn 2026-07-10 20:00 (Driver TRACK_STDLIB_POSTGRES STEP=4 — gate)
 

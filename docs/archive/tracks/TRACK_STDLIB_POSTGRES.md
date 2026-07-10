@@ -1,16 +1,15 @@
 # Track: Postgres driver (libpq) stdlib
 
-Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5.2,
-[../FFI_LAYER.md](../FFI_LAYER.md) §5.
+Parent: [../../PLAN.md](../../PLAN.md), [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md) §5.2,
+[../../FFI_LAYER.md](../../FFI_LAYER.md) §5.
 Trigger: FFI_LAYER **closed**; first real FFI proof-of-concept is libpq
 (connect + exec + status + clear). Backend apps need a minimal query API.
 
-## Status: **open** — STEP=5 next (docs + example + close)
+## Status: **closed** (2026-07-10) — STEP=1–5 **done**
 
-**Planner 2026-07-10:** opened after closed NET_SERVER / SPAWN /
-RUBY_PARITY. Pipeline note (Decision C): MLC `std/` surface via **Ruby**
-`common/stdlib` (same as `Tcp`); runtime C++ under `mlc::db` usable from
-both. Do **not** require language `spawn` for v1.
+**Driver 2026-07-10:** STEP=5 — `MLC.md` Postgres note + pipeline matrix;
+`misc/examples/postgres_select_demo.mlc`; `STDLIB_BACKEND` closed; gate
+re-run OK; no `compiler/**` (regression_gate N/A); track archived.
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -113,13 +112,7 @@ status/error, clear result, disconnect. Validate FFI (`extern`/`RawPointer`/
 | 2 | Runtime: `runtime/include/mlc/db/postgres.hpp` — handle-table free fns over libpq; C++ smoke (compile+link `-lpq`; live query optional). | **done** (2026-07-10: `mlc::db::*`; `scripts/run_postgres_runtime_smoke.sh` 7/0) |
 | 3 | Stdlib: `lib/mlc/common/stdlib/db/postgres.mlc` + registry/scanner; codegen include; smoke compile from MLC (Ruby pipeline). | **done** (2026-07-10: Option+handles; `postgres_stdlib_test` 1/18) |
 | 4 | Gate: script under `scripts/` or `test/mlc/` — at least link smoke; if `PGHOST`/`DATABASE_URL` set, run `SELECT 1` roundtrip. | **done** (2026-07-10: `scripts/run_postgres_gate.sh`; live env-gated) |
-| 5 | Docs (`STDLIB_BACKEND.md` / short `MLC.md` note) + example under `misc/examples/`; `regression_gate.sh` (self-host if `compiler/**` touched) + close. | pending |
-
-<!-- sub-steps STEP=1: 1) list types/methods in Decision; 2) Result vs Option+handles (mirror Tcp); 3) non-goals (ORM, pool, prepared stmts, COPY) -->
-<!-- sub-steps STEP=2: 1) postgres.hpp wrap PQ*; 2) test_postgres.cpp smoke; 3) include from mlc.hpp if needed -->
-<!-- sub-steps STEP=3: 1) postgres.mlc externs; 2) registry; 3) MLC compile smoke -->
-<!-- sub-steps STEP=4: 1) gate script; 2) env-gated live query; 3) SESSION verify -->
-<!-- sub-steps STEP=5: 1) docs+example; 2) regression_gate; 3) archive -->
+| 5 | Docs (`STDLIB_BACKEND.md` / short `MLC.md` note) + example under `misc/examples/`; `regression_gate.sh` (self-host if `compiler/**` touched) + close. | **done** (2026-07-10: MLC.md + example; no compiler/**) |
 
 ## Out of scope (this track)
 
