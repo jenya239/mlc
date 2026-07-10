@@ -777,7 +777,7 @@ fn mir_lower_return_expression(state: MirLowerState, expression: Shared<Semantic
           const then_block_step = mir_lower_allocate_block_index(condition_step.state)
           const else_block_step = mir_lower_allocate_block_index(then_block_step.state)
           let mut branch_state = mir_lower_finish_current_block(
-            then_block_step.state,
+            else_block_step.state,
             MirCondJump(condition_step.operand, then_block_step.block_id, else_block_step.block_id))
           branch_state = mir_lower_start_block(branch_state, then_block_step.block_id, 'then')
           match mir_lower_return_expression(branch_state, then_expression) {

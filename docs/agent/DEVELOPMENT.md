@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_BLOCK_ID_COLLISION** STEP=1 — fix duplicate MIR block ids (elif / nested if hang).
-(CLI_STDIN STEP=1 done: `file.hpp` streambuf; STEP=2+ paused — PLAN critical is block-id.)
+**TRACK_VM_BLOCK_ID_COLLISION** STEP=2 — permanent repro fixture (`classify(0/1/5)`); no hang.
+(STEP=1 done: `else_block_step.state`; dump-mir unique ids; classify(1)=200.)
 
 ## Step sizing (good vs bad)
 

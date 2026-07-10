@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
+| driver_turns_since_plan | 10 |
 | step_last | 1 |
-| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=1 |
-| test_gate | ok (file.hpp streambuf; file_io_e2e 8/0; mlcc --run /dev/stdin exit=7) |
+| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=2 |
+| test_gate | ok (dump-mir unique 0–4; classify(0/1/5)→100/200/44) |
+
+### Turn 2026-07-10 14:00 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=1 — else_block_step.state)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_VM_BLOCK_ID_COLLISION |
+| started | 2026-07-10 13:42 |
+| elapsed | ~18 min |
+| done    | `compiler/mir/lower_fn.mlc`: If-arm `mir_lower_finish_current_block(else_block_step.state, …)`. |
+| verify  | BUILD:0; `--dump-mir` blocks 0–4 unique; `--run` classify(0)=100, (1)=200, (5)=44 (=300%256). |
+| result  | STEP=1 done. Plain: elif second branch no longer infinite-loops in VM. |
+| issues  | Foreign CLI_STDIN STEP=2 WIP stashed/restored. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_VM_BLOCK_ID_COLLISION — permanent classify fixture in compiler/tests |
 
 ### Turn 2026-07-10 13:45 (Driver TRACK_CLI_STDIN STEP=1 — streambuf read)
 

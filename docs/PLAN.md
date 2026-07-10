@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10; next: [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) (критический, найден 2026-07-10, root cause + однострочный фикс готовы, не закоммичены) → [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10; next: [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) STEP=2 (STEP=1 **done** 2026-07-10) → [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -389,7 +389,7 @@ compiler/
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
-| **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **open, КРИТИЧЕСКИЙ, разбирать первым** | [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) — найдено 2026-07-10; root cause подтверждён `--dump-mir` (дублирующийся block id), фикс — одна строка `compiler/mir/lower_fn.mlc:780`, не закоммичен; только `mlcc --run`/VM, обычная компиляция (g++) не задета |
+| **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **open, КРИТИЧЕСКИЙ** | [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) — STEP=1 **done** (2026-07-10: `else_block_step.state`; dump-mir unique; classify(1)=200), STEP=2 next (fixture) |
 | **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **open, высокий приоритет** | [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) — после 13a-2 |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1 **done** (streambuf in `file.hpp`), STEP=2 next (`read_all` builtin); note PLAN queue: after [TRACK_VM_BLOCK_ID_COLLISION](agent/TRACK_VM_BLOCK_ID_COLLISION.md) |
 | **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
@@ -434,10 +434,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → VM_TRAMPOLINE STEP=1–5 (**closed** 2026-07-10: trampoline host loop;
     corpus; 100k depth; re-bench 1k/2e6; self-host diff identical;
     regression_gate 20/0) — Epic 4 `--run` stability claim was false until this
-  → **VM_BLOCK_ID_COLLISION STEP=1 (**next, КРИТИЧЕСКИЙ**) → STEP=2–5** —
+  → **VM_BLOCK_ID_COLLISION STEP=1 (**done** 2026-07-10: `else_block_step.state`)
+    → STEP=2 (**next** — fixture) → STEP=3–5** —
     elif-цепочка/вложенный `if` внутри ветки другого `if` вешает VM
-    (дублирующийся block id, найдено `--dump-mir`); root cause + однострочный
-    фикс готовы, не закоммичены; только `--run`, не обычная компиляция
+    (дублирующийся block id); только `--run`, не обычная компиляция
   → VM_LOWERING_GAPS STEP=1–4 (высокий приоритет, после block-id фикса) —
     unary операторы (`!`/`-`) не lowering'уются; `if` не в tail-позиции падает
   → CLI_STDIN STEP=1 (**done** 2026-07-10: streambuf `file.hpp`; `/dev/stdin`
