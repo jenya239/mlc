@@ -113,3 +113,6 @@ jobs:
 
       - name: TextRenderer A8 shaped-string golden smoke
         run: compiler/tests/run_text_renderer_a8_string_smoke.sh
+
+      - name: MSDF/SDF RGB8 glyph smoke
+        run: compiler/tests/run_msdf_glyph_smoke.sh

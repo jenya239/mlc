@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 28 |
-| step_last | 6.2 |
-| active_track | TRACK_TEXT_RENDERING STEP=7 |
-| test_gate | ok (text renderer string + golden) |
+| driver_turns_since_plan | 29 |
+| step_last | 7.1 |
+| active_track | TRACK_TEXT_RENDERING STEP=7.2 |
+| test_gate | ok (msdf glyph smoke) |
+
+### Turn 2026-07-10 16:55 (Driver TRACK_TEXT_RENDERING STEP=7.1 — msdf_shim SDF RGB8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7.1 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 15:27 |
+| elapsed | ~15 min |
+| done    | `msdf_shim.cpp`: FT mask → Felzenszwalb EDT → RGB8 SDF; API `msdf_generate`/`msdf_byte_at`; `msdf_glyph_smoke.mlc` + gate; CI step. No system msdfgen. |
+| verify  | `run_msdf_glyph_smoke.sh` ok (exit 0). |
+| result  | STEP=7.1 done. Plain: distance-field RGB8 generated without GPU. |
+| issues  | Dirty `compiler/out/*` left. True multi-channel edge coloring deferred (API stable). |
+| next    | ROLE=Driver STEP=7.2 TRACK_TEXT_RENDERING — RGB8 atlas + MSDF median shader |
 
 ### Turn 2026-07-10 16:40 (Driver TRACK_TEXT_RENDERING STEP=6.2 — shaped string golden)
 
