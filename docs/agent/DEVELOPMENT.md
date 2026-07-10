@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` open** STEP=5 — docs + example + close.
-See [TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
+**`TRACK_STDLIB_VALIDATION` closed** — pending Critic `critique-audit`.
+Next after Critic: TEXT_RENDERING_NATIVE (already open) or PLAN backlog.
+Archive: [TRACK_STDLIB_VALIDATION.md](../archive/tracks/TRACK_STDLIB_VALIDATION.md).
 
 
 ## Step sizing (good vs bad)

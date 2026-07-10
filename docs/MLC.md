@@ -70,7 +70,7 @@ fn area(s: Shape) -> i32 =
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
 | `Tcp` (`lib/mlc/common/stdlib/net/tcp.mlc`) | да (`import Tcp::{…}`) | да (`import { … } from 'Tcp'`; bare-name → stdlib) |
-| `Postgres` / `Crypto` / `WebSocket` / `Env` / `Log` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
+| `Postgres` / `Crypto` / `WebSocket` / `Env` / `Log` / `Validate` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя (нет `spawn`) | **да** (2026-07-10; gate `scripts/run_mlcc_tcp_spawn_echo_gate.sh`) |
 
@@ -472,6 +472,18 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 - Gate: `scripts/run_env_log_gate.sh`. Example: `misc/examples/env_log_demo.mlc`.
 
 Не в v1: dotenv/`setenv`, OTel, timestamps/extra fields, mlcc bare import.
+
+#### Validate (explicit helpers)
+
+Зафиксировано 2026-07-11 (`TRACK_STDLIB_VALIDATION` **closed**). Runtime
+(`mlc::validate`):
+
+- `non_empty` / `min_length` / `max_length` / `range_i32` →
+  `Result<(), string>` (first-failure message; byte length for strings).
+- MLC module `Validate` (`std/validate/validate`) — **только Ruby-пайплайн**.
+- Gate: `scripts/run_validate_gate.sh`. Example: `misc/examples/validate_demo.mlc`.
+
+Не в v1: derive `{ Validate }`, JSON Schema, multi-error collect, mlcc bare import.
 
 #### Postgres (libpq stdlib)
 

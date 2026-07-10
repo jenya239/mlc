@@ -1,0 +1,22 @@
+# Validate demo (TRACK_STDLIB_VALIDATION).
+# Ruby pipeline: import Validate. Gate: scripts/run_validate_gate.sh
+
+import Validate::{non_empty, range_i32}
+import IO::{println}
+
+fn main() -> i32 = do
+  match non_empty("name")
+    | Err(message) => do
+      println(message)
+      1
+    end
+    | Ok(_) =>
+      match range_i32(42, 1, 100)
+        | Ok(_) => 0
+        | Err(message) => do
+          println(message)
+          2
+        end
+      end
+  end
+end

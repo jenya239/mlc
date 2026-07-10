@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_VALIDATION STEP=5 |
-| test_gate | `run_validate_gate.sh` smoke 12/0 + stdlib 1/10 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_VALIDATION closed (Critic next) |
+| test_gate | gate OK 12/0+1/10; example codegen OK; regression_gate N/A |
+
+### Turn 2026-07-11 02:16 (Driver TRACK_STDLIB_VALIDATION STEP=5 — docs+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 02:13 |
+| elapsed | ~4 min |
+| done    | `misc/examples/validate_demo.mlc`; MLC.md Validate § + matrix; STDLIB §1/§2/§5.7 closed; track → `docs/archive/tracks/TRACK_STDLIB_VALIDATION.md`; PLAN §11 + queue. |
+| verify  | gate OK 12/0+1/10; example codegen has `mlc::validate::non_empty`/`range_i32`; no `compiler/**` (regression_gate N/A); archive path. |
+| result  | STEP=5 done; track **closed**. Plain: Validate stdlib archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; example not compile-gated (Ruby codegen only). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_VALIDATION |
 
 ### Turn 2026-07-11 02:12 (Driver TRACK_STDLIB_VALIDATION STEP=4 — gate)
 
