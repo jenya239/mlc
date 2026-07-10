@@ -100,7 +100,7 @@ secure random bytes, password hash/verify (`crypto_pwhash`). Validate
 |------|------|--------|
 | 1 | Design: public API (`Crypto.sha256` / `hmac_sha256` / `random_bytes` / `pwhash`+`pwhash_verify`); error model; libsodium vs OpenSSL (prefer sodium); link `-lsodium`. Document in «Decision». | **done** (2026-07-10: see Decision) |
 | 2 | Runtime: `runtime/include/mlc/crypto/sodium.hpp` — wrappers; C++ smoke compile+link `-lsodium`. | **done** (2026-07-10: `mlc::crypto::*`; smoke 9/0) |
-| 3 | Stdlib: `lib/mlc/common/stdlib/crypto/crypto.mlc` + registry/scanner; codegen bridge include; Ruby codegen smoke. | pending |
+| 3 | Stdlib: `lib/mlc/common/stdlib/crypto/crypto.mlc` + registry/scanner; codegen bridge include; Ruby codegen smoke. | **done** (2026-07-10: `crypto_stdlib_test` 1/14) |
 | 4 | Gate: `scripts/run_crypto_gate.sh` — link smoke + stdlib test; known-answer vectors (SHA-256 / HMAC). | pending |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md` note) + example; close (regression_gate only if `compiler/**` touched). | pending |
 
