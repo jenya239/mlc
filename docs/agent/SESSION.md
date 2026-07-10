@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_JOB_QUEUE STEP=1 |
-| test_gate | docs-only Planner; no code gate |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_JOB_QUEUE STEP=2 |
+| test_gate | Decision docs-only |
+
+### Turn 2026-07-11 00:38 (Driver TRACK_STDLIB_JOB_QUEUE STEP=1 — API Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:33 |
+| elapsed | ~5 min |
+| done    | Decision: C++ `JobQueue` on `ThreadPool`; MLC deferred (no extern closures); `enqueue`/`schedule_after`/`wait_idle`/`shutdown`; fixed `max_attempts`; fire-and-forget. PLAN/STDLIB → STEP=2. |
+| verify  | Open questions cleared; STEP=1 done; STEP=2 pending. |
+| result  | STEP=1 done. Plain: job queue v1 = C++ runtime, not MLC module. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_JOB_QUEUE — `runtime/.../job_queue.hpp` + C++ smoke |
 
 ### Turn 2026-07-11 00:32 (Planner — open TRACK_STDLIB_JOB_QUEUE)
 
