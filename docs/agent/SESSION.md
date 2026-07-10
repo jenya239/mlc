@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_POSTGRES open STEP=4 |
-| test_gate | ok (postgres_stdlib_test 1/18) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_POSTGRES open STEP=5 |
+| test_gate | ok (run_postgres_gate.sh) |
+
+### Turn 2026-07-10 20:00 (Driver TRACK_STDLIB_POSTGRES STEP=4 — gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:49 |
+| elapsed | ~5 min |
+| done    | `scripts/run_postgres_gate.sh` — runtime smoke + `postgres_stdlib_test`; live SELECT via env in runtime smoke. |
+| verify  | gate OK: smoke 7/0, stdlib 1/18; live skipped (no PGHOST/DATABASE_URL). |
+| result  | STEP=4 done. Plain: Postgres gate script green without live DB. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_POSTGRES — docs + example + close |
 
 ### Turn 2026-07-10 19:58 (Driver TRACK_STDLIB_POSTGRES STEP=3 — postgres.mlc)
 
