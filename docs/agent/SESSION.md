@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 32 |
-| step_last | 8 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=1 |
-| test_gate | ok (self-host identical; regression 20/0) |
+| driver_turns_since_plan | 33 |
+| step_last | 1 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=2 |
+| test_gate | ok (design-only) |
+
+### Turn 2026-07-10 18:00 (Driver TRACK_LANG_INT_OVERFLOW STEP=1 — design)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 15:47 |
+| elapsed | ~5 min |
+| done    | Decision: signed `+`/`-`/`*` debug=panic, release=UB (UBSan); unsigned wrap; `/` `%` div0 panic all builds; wrapping/checked/saturating → STEP=4. Recorded in TRACK. |
+| verify  | Decision table in `TRACK_LANG_INT_OVERFLOW.md`; PLAN/DEVELOPMENT synced. |
+| result  | STEP=1 done. Plain: overflow defaults chosen. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_INT_OVERFLOW — document semantics in MLC.md |
 
 ### Turn 2026-07-10 17:50 (Driver TRACK_TEXT_RENDERING STEP=8 — verify-gate + close)
 

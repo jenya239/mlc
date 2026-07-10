@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=1 — design default integer overflow semantics.
-(TEXT_RENDERING **closed** 2026-07-10.)
+**TRACK_LANG_INT_OVERFLOW** STEP=2 — document overflow/`/` semantics in `MLC.md`.
+(STEP=1 done: signed debug-panic / release-UB; unsigned wrap; div0 panic.)
 
 ## Step sizing (good vs bad)
 
