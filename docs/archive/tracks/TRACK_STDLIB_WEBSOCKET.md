@@ -15,6 +15,10 @@ frames on top of existing TCP/HTTP server runtime.
 **Driver 2026-07-11:** STEP=5 — `MLC.md` + example; STDLIB/PLAN closed; archived.
 No `compiler/**` (regression_gate N/A).
 
+**Critic 2026-07-11:** STEP=1–5 vs `7be2a25d`…`e7d02b00`; gate re-OK;
+PLAN/archive/STDLIB/MLC aligned; **reopen: none**. Residuals: example not
+live-client gated; mlcc bare `WebSocket` not in v1 resolve table.
+
 ## Decision (STEP=1, 2026-07-10)
 
 ### Pipeline
@@ -53,8 +57,9 @@ WebSocket.last_error() -> string
 buffered request in C++ helper — STEP=2 may expose
 `upgrade_from_request(TcpStream&, HttpRequest)` for C++ tests).
 
-C++ mirrors: free functions on `TcpStream` / handle table.
-Note: C++ error accessor is `websocket_last_error()` (Tcp already owns
+C++ mirrors: RAII `WsConnection` in `mlc::net`; MLC handles in
+`mlc::websocket` (`upgrade`/`read_text`/`write_text`/`close`/`last_error`).
+RAII error slot: `mlc::net::websocket_last_error()` (Tcp owns
 `mlc::net::last_error()`).
 
 ### Frames (v1)

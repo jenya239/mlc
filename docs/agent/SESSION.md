@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_WEBSOCKET closed → Critic |
-| test_gate | run_websocket_gate.sh OK; no compiler/** |
+| step_last | critique-audit |
+| active_track | Planner — STDLIB backlog after WEBSOCKET |
+| test_gate | websocket gate OK; Critic reopen none |
+
+### Turn 2026-07-11 00:28 (Critic TRACK_STDLIB_WEBSOCKET — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-11 00:24 |
+| elapsed | ~5 min |
+| done    | Audited STEP1–5 vs `7be2a25d`/`3099c89e`/`fa5f3345`/`2d8981ce`/`e7d02b00`; PLAN/archive/STDLIB/MLC; re-ran gate; clarified Decision C++ error namespaces in archive. |
+| verify  | `run_websocket_gate.sh` OK (19/0 + codegen); archive path; no false-done. |
+| result  | **reopen: none**. Residuals: example ungated vs live client; mlcc bare WebSocket out of scope. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — open TRACK_STDLIB_JOB_QUEUE (or config/logging) |
 
 ### Turn 2026-07-11 00:25 (Driver TRACK_STDLIB_WEBSOCKET STEP=5 — docs+close)
 

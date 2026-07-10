@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` closed** 2026-07-11 — Critic next.
-Then Planner: next STDLIB backlog (job-queue) or other PLAN queue item.
+**`TRACK_STDLIB_WEBSOCKET` closed** 2026-07-11 (Critic OK) — Planner next
+(job-queue / config / logging per STDLIB_BACKEND §5).
 
 
 ## Step sizing (good vs bad)
