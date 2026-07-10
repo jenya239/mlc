@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` closed** 2026-07-11 (Critic OK) — Planner next
-(job-queue / config / logging per STDLIB_BACKEND §5).
+**`TRACK_STDLIB_JOB_QUEUE` open** STEP=1 — API Decision
+(`enqueue` / pipeline / retry). See [TRACK_STDLIB_JOB_QUEUE.md](TRACK_STDLIB_JOB_QUEUE.md).
 
 
 ## Step sizing (good vs bad)

@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | Planner — STDLIB backlog after WEBSOCKET |
-| test_gate | websocket gate OK; Critic reopen none |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_JOB_QUEUE STEP=1 |
+| test_gate | docs-only Planner; no code gate |
+
+### Turn 2026-07-11 00:32 (Planner — open TRACK_STDLIB_JOB_QUEUE)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_JOB_QUEUE |
+| started | 2026-07-11 00:28 |
+| elapsed | ~5 min |
+| done    | Created `docs/agent/TRACK_STDLIB_JOB_QUEUE.md` (STEP=1–5); PLAN §11 + queue; STDLIB_BACKEND §2/§5.5; DEVELOPMENT. Chose job-queue over env/logging (§5 order). |
+| verify  | Track STEP=1 pending; PLAN links `agent/TRACK_STDLIB_JOB_QUEUE.md`; broker/persistence out of scope. |
+| result  | Track opened. Plain: next stdlib = in-process job queue. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_JOB_QUEUE — API Decision (pipeline, enqueue/retry/delay) |
 
 ### Turn 2026-07-11 00:28 (Critic TRACK_STDLIB_WEBSOCKET — critique-audit)
 
