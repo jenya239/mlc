@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_VALIDATION STEP=3 |
-| test_gate | `run_validate_runtime_smoke.sh` 12/0; ruby codegen OK |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_VALIDATION STEP=4 |
+| test_gate | `validate_stdlib_test` 1/10 |
+
+### Turn 2026-07-11 02:05 (Driver TRACK_STDLIB_VALIDATION STEP=3 — registry)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 02:03 |
+| elapsed | ~3 min |
+| done    | registry `std/validate/validate` + LEGACY `Validate`; header_generator alias; `test/mlc/validate_stdlib_test.rb`. PLAN/STDLIB/DEVELOPMENT → STEP=4. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/validate_stdlib_test.rb` → 1 runs, 10 assertions, 0 failures. |
+| result  | STEP=3 done. Plain: Validate import wired in registry. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; absorbed STEP=2 leftover PLAN/STDLIB queue sync. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_VALIDATION — gate script (valid/invalid fixtures) |
 
 ### Turn 2026-07-11 01:55 (Driver TRACK_STDLIB_VALIDATION STEP=2 — runtime)
 

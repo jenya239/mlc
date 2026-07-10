@@ -98,6 +98,12 @@ module MLC
           namespace: "mlc::log",
           path: "log/log.mlc"
         },
+        "std/validate/validate" => {
+          category: "validate",
+          type: :extern,
+          namespace: "mlc::validate",
+          path: "validate/validate.mlc"
+        },
         "std/text/conv" => {
           category: "text",
           type: :extern,
@@ -130,7 +136,8 @@ module MLC
         "Postgres" => "std/db/postgres",
         "Crypto" => "std/crypto/crypto",
         "Env" => "std/env/env",
-        "Log" => "std/log/log"
+        "Log" => "std/log/log",
+        "Validate" => "std/validate/validate"
       }.freeze
 
       def self.module_info(module_name)

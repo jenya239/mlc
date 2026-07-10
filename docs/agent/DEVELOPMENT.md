@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` open** STEP=3 — registry + stdlib test.
+**`TRACK_STDLIB_VALIDATION` open** STEP=4 — gate script.
 See [TRACK_STDLIB_VALIDATION.md](TRACK_STDLIB_VALIDATION.md).
 
 

@@ -390,7 +390,7 @@ compiler/
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **open, средний приоритет** | [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) — GL-orchestration/TextRenderer перенести из C++-шима на MLC; GLFW-окно; демо с разным текстом + анимация |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING **closed**. **[TRACK_STDLIB_VALIDATION](agent/TRACK_STDLIB_VALIDATION.md) open** STEP=3 (registry) |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING **closed**. **[TRACK_STDLIB_VALIDATION](agent/TRACK_STDLIB_VALIDATION.md) open** STEP=4 (gate) |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
@@ -497,7 +497,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_ENV_LOGGING (**closed** 2026-07-11: `mlc::env`/`mlc::log` + MLC
       `Env`/`Log`; gate `run_env_log_gate.sh`; example `env_log_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_ENV_LOGGING.md](archive/tracks/TRACK_STDLIB_ENV_LOGGING.md))
-  → STDLIB_VALIDATION (**open** STEP=2 — pure MLC Validate helpers
+  → STDLIB_VALIDATION (**open** STEP=3 — registry + stdlib test
       → [agent/TRACK_STDLIB_VALIDATION.md](agent/TRACK_STDLIB_VALIDATION.md))
   → TEXT_RENDERING_NATIVE (open, средний приоритет, личный проект пользователя,
       2026-07-10: GL-orchestration/TextRenderer перенести из C++-шима на MLC;

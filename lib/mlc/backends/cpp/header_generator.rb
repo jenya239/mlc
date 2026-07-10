@@ -311,7 +311,7 @@ module MLC
 
         def stdlib_import?(path)
           return true if path.start_with?("std/")
-          stdlib_aliases = %w[Option Result Array String Conv IO File Json Math Graphics Tcp IntArith Postgres Crypto WebSocket Env Log]
+          stdlib_aliases = %w[Option Result Array String Conv IO File Json Math Graphics Tcp IntArith Postgres Crypto WebSocket Env Log Validate]
           stdlib_aliases.include?(path)
         end
 

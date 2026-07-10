@@ -6,7 +6,7 @@ Trigger: ENV_LOGGING **closed** (Critic OK); STDLIB_BACKEND §5 next is
 Validation — **blocked on philosophy** (§3 / §5.7): compile-time vs runtime
 schema must be locked before implementation.
 
-## Status: **open** — STEP=3 next (registry + stdlib test)
+## Status: **open** — STEP=4 next (gate)
 
 **Planner 2026-07-11:** opened after ENV_LOGGING Critic. Chose Validation over
 jumping to TEXT_RENDERING_NATIVE (already open, medium/personal priority) to
@@ -18,6 +18,9 @@ finish STDLIB_BACKEND §5 chain. STEP=1 **is** the required philosophy lock.
 **Driver 2026-07-11:** STEP=2 — `validate.hpp` + extern `validate.mlc`; smoke
 12/0. Amended: pure-MLC stdlib bodies are **not** inlined by Ruby codegen →
 C++ implements (Env pattern).
+
+**Driver 2026-07-11:** STEP=3 — registry + LEGACY_ALIASES + header_generator;
+`validate_stdlib_test` 1/10.
 
 ## Goal
 
