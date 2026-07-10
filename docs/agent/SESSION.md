@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_VALIDATION closed (Critic next) |
-| test_gate | gate OK 12/0+1/10; example codegen OK; regression_gate N/A |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_VALIDATION closed (Critic OK) |
+| test_gate | gate re-OK 12/0+1/10; reopen none |
+
+### Turn 2026-07-11 02:20 (Critic TRACK_STDLIB_VALIDATION — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_VALIDATION |
+| started | 2026-07-11 02:18 |
+| elapsed | ~3 min |
+| done    | Audited STEP1–5 vs `bd8295e2`/`98ab4384`/`30920303`/`2356bc88`/`32c3c9ea`; PLAN/archive/STDLIB/MLC; deliverables on disk; re-ran gate+example; Critic note in archive. |
+| verify  | `run_validate_gate.sh` OK (12/0 + 1/10); archive path; agent TRACK removed; no false-done. |
+| result  | **reopen: none**. Residuals: example not compile-gated; mlcc bare Validate out of v1; pure-MLC→C++ amendment documented at STEP=2. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate TRACK_TEXT_RENDERING_NATIVE STEP=1 (already open) |
 
 ### Turn 2026-07-11 02:16 (Driver TRACK_STDLIB_VALIDATION STEP=5 — docs+close)
 

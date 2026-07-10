@@ -16,6 +16,11 @@ Validation — philosophy lock required before implementation.
 **Driver 2026-07-11:** STEP=5 — MLC.md/STDLIB/example; archived.
 No `compiler/**` (regression_gate N/A).
 
+**Critic 2026-07-11:** STEP=1–5 vs `bd8295e2`…`32c3c9ea`; PLAN/archive/STDLIB/MLC
+aligned; gate re-OK 12/0+1/10; **reopen: none**. Residuals: example not
+compile-gated (Ruby codegen only); mlcc bare `Validate` not in v1; STEP=1
+“pure MLC” amended in STEP=2 to C++ (documented).
+
 ## Decision (STEP=1, 2026-07-11)
 
 ### Philosophy

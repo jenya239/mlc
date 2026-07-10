@@ -40,9 +40,10 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_VALIDATION` closed** — pending Critic `critique-audit`.
-Next after Critic: TEXT_RENDERING_NATIVE (already open) or PLAN backlog.
-Archive: [TRACK_STDLIB_VALIDATION.md](../archive/tracks/TRACK_STDLIB_VALIDATION.md).
+**STDLIB_VALIDATION Critic OK** — reopen none. Next: **Planner**
+`plan-refresh` — activate [TRACK_TEXT_RENDERING_NATIVE](TRACK_TEXT_RENDERING_NATIVE.md)
+(already open STEP=1) or other PLAN backlog. Archive:
+[TRACK_STDLIB_VALIDATION.md](../archive/tracks/TRACK_STDLIB_VALIDATION.md).
 
 
 ## Step sizing (good vs bad)
