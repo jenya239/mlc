@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_TRAMPOLINE** STEP=4 — re-benchmark throughput after trampoline (1000 / 2e6 loops).
-(STEP=1–3 done: trampoline; corpus; `vm_deep_loop` 100k depth gate.)
+**TRACK_VM_TRAMPOLINE** STEP=5 — verify-gate + close (self-host diff, regression_gate; note Epic4 claim).
+(STEP=1–4 done: trampoline; corpus; 100k depth; re-bench 1k=0.01s / 2e6=10.72s.)
 
 ## Step sizing (good vs bad)
 

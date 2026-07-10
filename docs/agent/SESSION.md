@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 3 |
-| active_track | TRACK_VM_TRAMPOLINE STEP=4 |
-| test_gate | ok (vm_deep_loop 100k exit=7, ulimit -s=8192, ~0.34s) |
+| driver_turns_since_plan | 7 |
+| step_last | 4 |
+| active_track | TRACK_VM_TRAMPOLINE STEP=5 |
+| test_gate | ok (bench VM 1k=0.01s / 2e6=10.72s exit=7; native run ~0s) |
+
+### Turn 2026-07-10 13:00 (Driver TRACK_VM_TRAMPOLINE STEP=4 — re-bench)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_VM_TRAMPOLINE |
+| started | 2026-07-10 12:55 |
+| elapsed | ~5 min |
+| done    | Timed same 1k/2e6 while-loops; recorded in TRACK_VM_TRAMPOLINE + MIR_VM_FULL §4. |
+| verify  | VM 1k=0.01s / 2e6=10.72s exit=7 @ ulimit -s=8192; native run ~0.00s; pre-fix 2e6 did not finish in 15s. |
+| result  | STEP=4 done. Plain: trampoline finishes 2e6 (~11s); no throughput regression vs broken pre-fix path. |
+| issues  | Foreign CLI_STDIN WIP + dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_VM_TRAMPOLINE — self-host diff + regression_gate; close track; note Epic4 |
 
 ### Turn 2026-07-10 12:55 (Driver TRACK_VM_TRAMPOLINE STEP=3 — ≥100k depth fixture)
 

@@ -195,7 +195,18 @@ Do not skip Epic 0 even if tempting to add features in monolithic interpreter.
 
 ## 4. Performance: VM mlcc vs native mlcc
 
-**Model:** direct MIR struct interpreter (no bytecode), same algorithmic complexity as emitted C++.
+### Measured tight-loop (TRACK_VM_TRAMPOLINE STEP=4, 2026-07-10)
+
+`while i < N; i = i + 1` via `mlcc --run` after trampoline (`ulimit -s=8192`):
+
+| N | VM `--run` | Native run |
+|---|------------|------------|
+| 1_000 | 0.01 s | ~0.00 s |
+| 2_000_000 | 10.72 s | ~0.00 s |
+
+Pre-trampoline: 2e6 did not finish in 15s even with unlimited stack (host recursion). Post-fix: completes; ~1.87e5 iters/s on this microbench.
+
+### Order-of-magnitude (planning)**Model:** direct MIR struct interpreter (no bytecode), same algorithmic complexity as emitted C++.
 
 | Workload | Native `mlcc` (O2) | `--run` VM (expect) |
 |----------|-------------------|---------------------|
