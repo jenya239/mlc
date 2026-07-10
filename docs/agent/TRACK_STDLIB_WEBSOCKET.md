@@ -5,12 +5,84 @@ Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) �
 Trigger: CRYPTO **closed**; STDLIB_BACKEND §5 next is WebSocket upgrade +
 frames on top of existing TCP/HTTP server runtime.
 
-## Status: **open** — STEP=1 next (API Decision)
+## Status: **open** — STEP=2 next (runtime `websocket.hpp`)
 
 **Planner 2026-07-10:** opened after closed STDLIB_CRYPTO Critic. Chose
 WebSocket over job-queue (§5 order; depends on NET_SERVER). Pipeline
 (Decision C): MLC via Ruby `common/stdlib`; runtime C++ under `mlc::net`
 (extend existing TCP). No language `spawn` for v1.
+
+## Decision (STEP=1, 2026-07-10)
+
+### Pipeline
+
+- Runtime: `runtime/include/mlc/net/websocket.hpp` under `mlc::net`.
+- MLC: `lib/mlc/common/stdlib/net/websocket.mlc`, module `WebSocket`
+  (Tcp-style opaque `i32` handles + `last_error`) — **not** C++-only.
+- Soft bridge include in codegen (like postgres/crypto bridges).
+- Blocking I/O only; no `spawn`.
+
+### Upgrade (server)
+
+Required request: `GET`, `Upgrade: websocket`, `Connection: Upgrade`,
+`Sec-WebSocket-Key`, `Sec-WebSocket-Version: 13`. Optional `Sec-WebSocket-Protocol`
+ignored in v1 (no subprotocol negotiation).
+
+Response: `101 Switching Protocols` + `Sec-WebSocket-Accept` =
+`base64(SHA1(key + GUID))` per RFC 6455. Use existing crypto/SHA1 — prefer
+libsodium or a tiny SHA1 in-net if sodium not linked; **Decision:** implement
+SHA1 locally in `websocket.hpp` (avoid hard `-lsodium` for WS) or reuse
+OpenSSL-free public-domain SHA1 (~small). Do **not** require libsodium for WS.
+
+### Types / methods (MLC)
+
+```
+WebSocket.upgrade(stream: i32) -> Option<i32>
+WebSocket.read_text(connection: i32) -> Option<string>
+WebSocket.write_text(connection: i32, data: string) -> bool
+WebSocket.close(connection: i32) -> unit
+WebSocket.last_error() -> string
+```
+
+`upgrade` reads HTTP request from the Tcp stream handle (or uses already-
+buffered request in C++ helper — STEP=2 may expose
+`upgrade_from_request(TcpStream&, HttpRequest)` for C++ tests).
+
+C++ mirrors: free functions on `TcpStream` / handle table.
+
+### Frames (v1)
+
+| In | Out |
+|----|-----|
+| Text opcode (0x1), FIN=1, payload ≤ **1 MiB** | Binary (0x2), continuation, RSV, fragmented messages |
+| Client→server masked; server→client **unmasked** | Per-message deflate |
+| Close (0x8): reply close + tear down | Full close status codes beyond echo |
+| Ping (0x9): auto **Pong** with same payload | Unsolicited ping from server |
+
+`read_text`: returns payload string; `None` on protocol error / close / non-text
+(after handling ping/close). `write_text`: single FIN text frame.
+
+### Error model
+
+- `Option` / `bool` + `last_error()` (Tcp/Postgres shipped pattern).
+- No Decision-only `Result` for MLC v1.
+- No panic on protocol/I/O failure.
+
+### Integration
+
+- **Standalone** on accepted `TcpStream` / Tcp handle — **not** wired into
+  `serve_http_with_thread_pool` in this track (user/demo calls upgrade after
+  accept). Optional later.
+
+### Non-goals (locked)
+
+WSS/TLS, WS client, HTTP/2, job-queue.
+
+### Open questions — resolved
+
+1. **MLC module?** Yes — `WebSocket` + handles (not C++-only).
+2. **Text only?** Yes; binary rejected.
+3. **ThreadPool serve?** No — standalone upgrade on stream.
 
 ## Goal
 
@@ -22,17 +94,16 @@ full client library, not WSS.
 
 - Build on `mlc::net` TCP handles / streams (no new socket stack).
 - Thin C++ runtime + optional thin `std/net/*.mlc` (Tcp pattern).
-- Errors → `Option`/`bool`+`last_error` unless Decision picks otherwise —
-  **lock in STEP=1**; avoid Decision/ship split.
+- Errors → `Option`/`bool`+`last_error` (Decision); no panic on protocol failure.
 - Blocking I/O only in v1.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design: upgrade API (`accept_websocket` / `WsConnection`); frame API (text only?); masking (server→client unmasked); error model; what HTTP headers required. Document in «Decision». | **pending** |
-| 2 | Runtime: handshake + frame encode/decode in `runtime/include/mlc/net/` (e.g. `websocket.hpp`); C++ smoke (in-process or paired client). | pending |
-| 3 | Stdlib (optional if C++-only like HTTP router): `std/net/websocket.mlc` + registry **or** document C++-only + Tcp reuse — lock in Decision. | pending |
+| 1 | Design: upgrade API (`accept_websocket` / `WsConnection`); frame API (text only?); masking (server→client unmasked); error model; what HTTP headers required. Document in «Decision». | **done** (2026-07-10: see Decision) |
+| 2 | Runtime: handshake + frame encode/decode in `runtime/include/mlc/net/websocket.hpp`; C++ smoke (in-process or paired client). | pending |
+| 3 | Stdlib: `std/net/websocket.mlc` + registry + codegen bridge (Decision: MLC module yes). | pending |
 | 4 | Gate: script — upgrade + text echo roundtrip (C++ client or `websocat` if available). | pending |
 | 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
 
@@ -49,8 +120,6 @@ full client library, not WSS.
 - Per-message deflate, extensions, ping/pong auto-reply (may add minimal later)
 - Job-queue, env/logging, JWT
 
-## Open questions (resolve in STEP=1)
+## Open questions
 
-1. MLC `WebSocket` module (Tcp-style handles) vs C++-only like HTTP router?
-2. Text frames only in v1, or binary too?
-3. Integrate with `serve_http_with_thread_pool` or standalone upgrade on `TcpStream`?
+None for v1 — resolved in Decision above.
