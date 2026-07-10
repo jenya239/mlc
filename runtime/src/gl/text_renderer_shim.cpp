@@ -913,6 +913,11 @@ int32_t text_renderer_a8_string_smoke(
   constexpr double mae_tolerance = 8.0;
   const double mae = mean_absolute_error(expected_rgba, actual_flipped);
 
+  const char* dump_actual_path = std::getenv("MLC_DUMP_ACTUAL_RGBA");
+  if (dump_actual_path != nullptr && dump_actual_path[0] != '\0') {
+    write_golden_rgba(dump_actual_path, actual_flipped);
+  }
+
   gl.delete_buffers(1, &vertex_buffer);
   gl.delete_program(program);
   gl.delete_shader(vertex_shader);

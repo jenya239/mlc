@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-10-vm-block-id-gate` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-10-critic-after-close-gate` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-10-vm-block-id-gate
 
 Перед работой: `git status`. Чужой uncommitted diff (например `compiler/out/mlcc` без TRACK/SESSION записи под него) — не удалять, не коммитить чужое, работать поверх, `git add` явным списком своих файлов. Если TRACK/SESSION говорит STEP done, а коммита с этими файлами нет — считать НЕ done, переделать (анти-false-done, правило в этом файле).
 
-Выполни один проверяемый sub-step. Если этим turn менялся status/STEP TRACK (особенно close/open нового) — тем же коммитом обновить соответствующую строку и приоритетную цепочку в `docs/PLAN.md` (не только TRACK-файл — расхождение PLAN.md/TRACK уже было поймано ревью). Если этот turn кладёт `SESSION.md` за ~600 строк — сначала перенести старые turn's в `docs/archive/SESSION_HISTORY.md`, потом писать новую запись. Не коммитить бинарники (`runtime/test/*` без расширения и т.п. build-артефакты — уже в `.gitignore`, не форсить `git add -f`).
+Выполни один проверяемый sub-step. Если этим turn менялся status/STEP TRACK (особенно close/open нового) — тем же коммитом обновить соответствующую строку и приоритетную цепочку в `docs/PLAN.md` (не только TRACK-файл — расхождение PLAN.md/TRACK уже было поймано ревью). **Если этим turn трек закрыт (последний pending STEP → closed) — `next` строго `ROLE=Critic STEP=critique-audit` на этот трек, не следующий Driver-степ из другого трека** (правило нарушалось 5 раз подряд 2026-07-10, см. HARD LIMIT). Если этот turn кладёт `SESSION.md` за ~600 строк — сначала перенести старые turn's в `docs/archive/SESSION_HISTORY.md`, потом писать новую запись. Не коммитить бинарники (`runtime/test/*` без расширения и т.п. build-артефакты — уже в `.gitignore`, не форсить `git add -f`).
 
 Обнови SESSION.md (`done`/`verify`/`next` — конкретно, без плейсхолдеров). Commit + push сам, без вопросов пользователю. Не останавливайся — следующая копия этого же промпта уже в очереди и продолжит по `next`.
 ```
@@ -54,7 +54,7 @@ INSTRUCTIONS_REV=2026-07-10-vm-block-id-gate
 | SESSION.md > **~600 строк** | Архивировать старые turn's в `SESSION_HISTORY.md` **в этом же turn** до записи новой строки — не ждать Cleaner-ротацию (инцидент 2026-07-09: доросло до 928 без вмешательства между Cleaner-турнами) |
 | TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
 | **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
-| **Открыт `TRACK_VM_BLOCK_ID_COLLISION` (критический, PLAN.md §13a-2) и ещё не closed** | Не продолжать `TEXT_RENDERING`/`CLI_STDIN`/другой in-progress трек по инерции — этот критический трек **переопределяет** обычный порядок очереди один раз: если сейчас Driver и следующий `next` вёл бы в другой трек, вместо этого взять `TRACK_VM_BLOCK_ID_COLLISION STEP=1` первым же следующим Driver turn. Root cause и однострочный фикс уже описаны в самом треке (`compiler/mir/lower_fn.mlc:780`), не нужно расследование с нуля |
+| **Этот turn закрыл трек (Driver STEP=N был последним pending, TRACK помечен closed)** | `next` = **`ROLE=Critic STEP=critique-audit TRACK=<только что закрытый>`** — обязательно, даже если следующий трек в очереди `PLAN.md` уже известен и есть pending шаг. Инцидент 2026-07-10: 5 закрытий подряд (TRAMPOLINE, BLOCK_ID_COLLISION, LOWERING_GAPS, CLI_STDIN, TEXT_RENDERING) — ни разу не запустился Critic, правило «Planner не повторяется» (см. ниже) съедало ротацию, потому что pending-шаг в следующем треке был всегда. Проверка на старте turn: если последняя запись `SESSION.md` содержит `close`/`closed` в `result` — этот HARD LIMIT применяется **раньше** любого другого выбора `next`, включая numbered pending step |
 
 ## When to stop (only these)
 

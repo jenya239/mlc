@@ -25,6 +25,15 @@ unary `!`/`-`/`~`/`+` (`MirRvalueUnary`); mid-block `if` as statement;
 `if` as rvalue via shared local + continue. **Fixed** 2026-07-10 (self-host
 DIFF identical; `regression_gate` 20/0; VM corpus green).
 
+**Value model gap (2026-07-10, open):**
+[TRACK_VM_TYPED_COLLECTIONS](TRACK_VM_TYPED_COLLECTIONS.md) — `VmArrayValue`/
+`VmMapValue` (§5.2 below) hard-code `[i32]` elements/values; array or map of
+`string`/`record`/`bool`/nested-array pushes fail with `vm: expected i32
+value`. Narrows the Epic 3 STEP=8 "parity" claim to i32-only containers.
+Not yet fixed — design decision needed first (recursive `VmValue` in
+container type breaks C++ codegen the same way §5.2 already flags for
+variant fields).
+
 **HARD STOP GATE (2026-07-09, user decision):** Epic 4 (STEP 10–12) is
 authorized to run to completion. **Epic 5 (STEP 13+) is NOT authorized** —
 do not start STEP 13 without an explicit new user command in chat. When
