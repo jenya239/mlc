@@ -39,9 +39,9 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
   else
   loaded.set(norm_path, true)
   profile_maybe_begin(profile_enabled, 'load_io')
-  const source = File.read(path)
+  const source = if path == "-" then read_all() else File.read(path) end
   profile_maybe_end(profile_enabled, 'load_io')
-  if source.length() == 0 && !File.exists(path) then
+  if source.length() == 0 && path != "-" && !File.exists(path) then
     LoadResult { items: [], errors: [`file not found: ${path}`] }
   else
   profile_maybe_begin(profile_enabled, 'lex')

@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; next: [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) STEP=3 → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; next: [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) STEP=4 → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -391,7 +391,7 @@ compiler/
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
 | **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **done** (2026-07-10) | [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) — STEP=1–4 **closed** (`MirRvalueUnary`; if-as-statement; if-as-rvalue; verify-gate) |
-| **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1–2 **done** (`file.hpp` streambuf; `read_all` builtin), STEP=3 next (`"-"` → stdin) |
+| **13b** `mlcc --run` stdin (crash fix + `-` convention) | **open, высокий приоритет** | [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) — STEP=1–3 **done**, STEP=4 next (smoke + `/dev/stdin`) |
 | **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
 | **16** Integer overflow semantics | **open, средний приоритет** | [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) — дырка в спецификации языка (UB как в C++, не зафиксировано нигде), затрагивает весь codegen арифметики |

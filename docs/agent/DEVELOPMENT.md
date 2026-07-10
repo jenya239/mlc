@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CLI_STDIN** STEP=3 — `module_loader` path `"-"` → `read_all()`.
-(STEP=2 done: `read_all` builtin in check/registry/cpp_naming.)
+**TRACK_CLI_STDIN** STEP=4 — smoke `mlcc --run -` + `/dev/stdin` gate script.
+(STEP=3 done: `"-"` → `read_all()` in module_loader + compile_driver.)
 
 ## Step sizing (good vs bad)
 

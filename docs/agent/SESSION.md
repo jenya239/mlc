@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 19 |
-| step_last | 2 |
-| active_track | TRACK_CLI_STDIN STEP=3 |
-| test_gate | ok (read_all codegen; pipe exit=6) |
+| driver_turns_since_plan | 20 |
+| step_last | 3 |
+| active_track | TRACK_CLI_STDIN STEP=4 |
+| test_gate | ok (`mlcc --run -` exit=7) |
+
+### Turn 2026-07-10 15:10 (Driver TRACK_CLI_STDIN STEP=3 — path "-" → read_all)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CLI_STDIN |
+| started | 2026-07-10 14:58 |
+| elapsed | ~12 min |
+| done    | `module_loader.mlc`: `path == "-"` → `read_all()`, skip exists; `compile_driver.mlc` entry same (required for CLI). |
+| verify  | BUILD:0; `printf 'fn main() -> i32 = 7\n' \| mlcc --run -` →7; hello=7. |
+| result  | STEP=3 done. Plain: `mlcc --run -` reads program from stdin. |
+| issues  | Dirty `compiler/out/*` left. STEP=4 owns permanent smoke script + `/dev/stdin` policy. |
+| next    | ROLE=Driver STEP=4 TRACK_CLI_STDIN — smoke gate for `-` and `/dev/stdin` |
 
 ### Turn 2026-07-10 15:05 (Driver TRACK_CLI_STDIN STEP=2 — read_all builtin)
 

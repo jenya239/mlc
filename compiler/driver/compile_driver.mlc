@@ -26,7 +26,7 @@ export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: 
   profile_reset_if_enabled(profile_enabled)
   profile_maybe_begin(profile_enabled, 'total')
   profile_maybe_begin(profile_enabled, 'load_io')
-  const entry_source = File.read(entry_path)
+  const entry_source = if entry_path == "-" then read_all() else File.read(entry_path) end
   profile_maybe_end(profile_enabled, 'load_io')
   profile_maybe_begin(profile_enabled, 'lex')
   const lexer_output = tokenize(entry_source)
