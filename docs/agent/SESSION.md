@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=1 |
-| test_gate | ok (prior Critic smokes) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=2 |
+| test_gate | ok (mlcc spawn_locate codegen) |
+
+### Turn 2026-07-10 19:07 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=1 — locate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:07 |
+| elapsed | ~8 min |
+| done    | Root cause: `TransformPass.visit_spawn` in `compiler/checker/transform/transform.mlc:1431-1435` — all stmts + `expr_spawn_body_result` tail. Contrast: `ExprBlock` via `block_body`/`block_result` (`exprs.mlc:1030-1059`). |
+| verify  | `mlcc` on spawn+plain: spawn → `side(); return side();`; plain → `side()`. |
+| result  | STEP=1 done. Plain: bug in transform IR, not codegen printer. |
+| issues  | Foreign dirty left. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_SPAWN_DOUBLE_EXEC — fix visit_spawn split |
 
 ### Turn 2026-07-10 19:06 (Planner — plan-refresh after NET_SERVER)
 

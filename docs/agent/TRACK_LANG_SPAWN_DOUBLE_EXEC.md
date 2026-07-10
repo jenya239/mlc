@@ -6,10 +6,19 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 `spawn`, разное время выполнения) — оба задания напечатали свой лог
 дважды.
 
-## Status: **open** — STEP=1 next (критический correctness-баг)
+## Status: **open** — STEP=1 **done**; STEP=2 next (fix)
 
 **Planner 2026-07-10:** выбран следующим после closed NET_SERVER (выше
 Postgres/crypto в очереди — повторный побочный эффект на `spawn`).
+
+**Driver 2026-07-10:** STEP=1 — root cause in transform (not codegen emit):
+`TransformPass.visit_spawn` (`compiler/checker/transform/transform.mlc:1431-1435`)
+passes **all** spawn body stmts into `SemanticExpressionBlock.statements`
+**and** re-extracts the last via `expr_spawn_body_result` as `result`.
+Parser `ExprBlock` splits via `block_body`/`block_result`
+(`exprs.mlc:1030-1059`); `ExprSpawn` does not. Codegen then emits stmts +
+`return result` → double call. Verify: `spawn do side() end` →
+`side(); return side();`; plain `do side() end` → single `side()`.
 
 ## Проблема
 
@@ -63,29 +72,25 @@ end
 
 Вывод: `A done (slow, 2000ms)` печатается **два раза**.
 
-## Гипотеза причины
+## Гипотеза причины — **подтверждена (уточнена)**
 
-Общий паттерн лоуэринга блока-как-выражения (`do ... end` → immediately
-invoked lambda `[&]() { ...; return <tail>; }()`), судя по всему,
-переиспользует ту же функцию генерации statements для тела блока, что и
-для генерации tail-return, без де-дупликации в случае, когда блок состоит
-из ровно одного statement, который сам является tail-expression. Похоже
-специфично для пути генерации `spawn`-лямбды (обычные функции с
-однострочным телом `do X end` — проверить, воспроизводится ли тот же баг
-без `spawn`, это сузит область поиска до конкретного codegen-файла).
+Баг не в codegen IIFE-emit, а в **transform** `visit_spawn`: в
+`SemanticExpressionBlock` попадают и все stmts, и отдельно tail из
+`expr_spawn_body_result`. Обычный `ExprBlock` парсер уже режет хвост
+(`block_body` / `block_result`); `ExprSpawn` — нет. Plain `do side() end`
+не дублирует.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Найти точное место в codegen (`compiler/codegen/`), где генерируется лямбда для `spawn do ... end`; сравнить с генерацией обычного `do ... end` блока-выражения без `spawn` — воспроизводится ли дублирование там же. | **pending** |
-| 2 | Fix: убрать дублирование statement/tail-expression в теле блока-как-lambda. | pending |
-| 3 | Regression: репро выше (лог печатается **один** раз); проверить существующий concurrency-корпус (`compiler/tests/test_spawn.mlc` и т.п.) — эти тесты проверяют только checker-уровень (`check_error_count`), не ловят этот баг, так как не компилируют+запускают бинарник. Добавить хотя бы один e2e `--run`/`g++`-gate, который реально выполняет `spawn`-программу и проверяет побочный эффект по count, не только по exit-коду. | pending |
+| 1 | Найти точное место, где `spawn do ... end` даёт double emit; сравнить с обычным `do ... end`. | **done** (2026-07-10: `transform.mlc:1431-1435` `visit_spawn`; plain OK) |
+| 2 | Fix: убрать дублирование statement/tail в `visit_spawn` (split как `block_body`/`block_result`). | pending |
+| 3 | Regression: репро (лог **один** раз); e2e gate с подсчётом побочного эффекта (checker-only `test_spawn` не ловит). | pending |
 | 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`. | pending |
 
-<!-- sub-steps STEP=1: 1) `rg spawn` / `spawn_task` in `compiler/codegen/` + expr/block emit; 2) minimal `do f() end` as expr (no spawn) → inspect C++; 3) SESSION: file:line of double emit -->
-<!-- sub-steps STEP=2: 1) patch emit so single-stmt block is only `return <expr>`; 2) recompile repro; 3) assert one side-effect -->
-<!-- sub-steps STEP=3: 1) e2e gate script or compiler/tests e2e; 2) count println/side-effect; 3) keep checker corpus green -->
+<!-- sub-steps STEP=2: 1) split stmts in visit_spawn like block_body/block_result; 2) rebuild mlcc; 3) spawn_locate → single `return side();` -->
+<!-- sub-steps STEP=3: 1) e2e gate; 2) count side-effect; 3) checker corpus green -->
 <!-- sub-steps STEP=4: 1) build.sh; 2) mlcc→mlcc2 diff; 3) regression_gate 20/0 -->
 
 ## Out of scope

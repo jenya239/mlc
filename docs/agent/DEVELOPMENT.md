@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=1 — locate double statement/tail emit
-for `spawn do <call> end` in `compiler/codegen/`. Critical correctness.
+**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=2 — fix `visit_spawn` to drop tail
+stmt from block statements (mirror `block_body`/`block_result`).
 
 
 ## Step sizing (good vs bad)
