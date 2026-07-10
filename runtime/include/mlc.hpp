@@ -59,3 +59,8 @@
 #include "mlc/net/http_request.hpp"
 #include "mlc/net/http_router.hpp"
 #include "mlc/net/http_server.hpp"
+
+// DB (optional — requires libpq-fe.h)
+#if __has_include(<libpq-fe.h>) || __has_include(<postgresql/libpq-fe.h>)
+#include "mlc/db/postgres.hpp"
+#endif

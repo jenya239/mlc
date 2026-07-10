@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_POSTGRES open STEP=2 |
-| test_gate | n/a (docs Decision) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_POSTGRES open STEP=3 |
+| test_gate | ok (postgres smoke 7/0) |
+
+### Turn 2026-07-10 19:55 (Driver TRACK_STDLIB_POSTGRES STEP=2 — postgres.hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:43 |
+| elapsed | ~12 min |
+| done    | `runtime/include/mlc/db/postgres.hpp` (`mlc::db` connect/exec/ntuples/nfields/getvalue/clear/finish/last_error); gated include in `mlc.hpp`; `runtime/test/test_postgres.cpp`; `scripts/run_postgres_runtime_smoke.sh`. |
+| verify  | smoke 7 passed / 0 failed (local `.tmp_libpq`); live SELECT skipped (no PGHOST). |
+| result  | STEP=2 done. Plain: libpq handle-table runtime usable from C++. |
+| issues  | System `libpq-dev` absent — smoke used extracted `.tmp_libpq` (gitignored). Foreign dirty left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_POSTGRES — `postgres.mlc` + registry/scanner |
 
 ### Turn 2026-07-10 19:48 (Driver TRACK_STDLIB_POSTGRES STEP=1 — API Decision)
 
