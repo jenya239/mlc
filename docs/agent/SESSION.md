@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=2 |
-| test_gate | n/a (design docs) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=3 |
+| test_gate | ok (test_tcp 12/0) |
+
+### Turn 2026-07-10 22:15 (Driver TRACK_STDLIB_NET_SERVER STEP=2 — tcp.hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:06 |
+| elapsed | ~12 min |
+| done    | `runtime/include/mlc/net/tcp.hpp` (bind/accept/read/write_all/close, RAII, SO_REUSEADDR, port()); `result.hpp` ok/err move; include in `mlc.hpp`; `runtime/test/test_tcp.cpp`. |
+| verify  | `g++ … test_tcp.cpp` → 12 passed, 0 failed. |
+| result  | STEP=2 done. Plain: POSIX TCP listener/stream usable from C++. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_NET_SERVER — `std/net/tcp.mlc` + registry/scanner smoke |
 
 ### Turn 2026-07-10 22:10 (Driver TRACK_STDLIB_NET_SERVER STEP=1 — API Decision)
 

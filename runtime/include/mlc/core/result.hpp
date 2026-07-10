@@ -22,12 +22,12 @@ using Result = std::variant<Ok<T>, Err<E>>;
 
 template<typename T>
 Ok<T> ok(T value) {
-    return Ok<T>{value};
+    return Ok<T>{std::move(value)};
 }
 
 template<typename E>
 Err<E> err(E error) {
-    return Err<E>{error};
+    return Err<E>{std::move(error)};
 }
 
 }  // namespace result
