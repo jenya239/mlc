@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_BLOCK_ID_COLLISION** STEP=4 — full VM corpus gates (cpp_diff / examples / depth).
-(STEP=1–3 done: fix; classify; elif×5 + if-in-then gate 6.)
+**TRACK_VM_BLOCK_ID_COLLISION** STEP=5 — verify-gate + close (self-host diff, regression_gate; note MIR_VM_FULL).
+(STEP=1–4 done: fix; fixtures; corpus elif6/depth/examples28/single18+diff18.)
 
 ## Step sizing (good vs bad)
 

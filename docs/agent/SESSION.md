@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 12 |
-| step_last | 3 |
-| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=4 |
-| test_gate | ok (elif gate 6: 100/200/44/40/50/22) |
+| driver_turns_since_plan | 13 |
+| step_last | 4 |
+| active_track | TRACK_VM_BLOCK_ID_COLLISION STEP=5 |
+| test_gate | ok (elif6; depth; examples28; single18+cpp_diff18) |
+
+### Turn 2026-07-10 14:15 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=4 — VM corpus)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_VM_BLOCK_ID_COLLISION |
+| started | 2026-07-10 14:00 |
+| elapsed | ~15 min |
+| done    | Ran elif/depth/examples/single-file(+cpp_diff) gates on post-fix `mlcc` (no code change). |
+| verify  | elif 6 ok; trampoline depth ok; examples 28 ok; single-file 18 + cpp_diff 18 ok. |
+| result  | STEP=4 done. Plain: one-line block-id fix does not regress VM corpus. |
+| issues  | Foreign CLI_STDIN WIP + dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_VM_BLOCK_ID_COLLISION — self-host diff + regression_gate; close track |
 
 ### Turn 2026-07-10 14:10 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=3 — deeper nesting)
 
