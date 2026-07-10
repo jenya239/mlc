@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_LOWERING_GAPS** STEP=2 — `mir_lower_if_statement` (if as mid-block statement).
-(STEP=1 done: `MirRvalueUnary`; `vm_unary_not`/`vm_unary_neg` ok.)
+**TRACK_CLI_STDIN** STEP=2 — `read_all` builtin registration.
+([TRACK_VM_LOWERING_GAPS](../archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed** 2026-07-10.)
 
 ## Step sizing (good vs bad)
 
