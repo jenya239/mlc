@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_CRYPTO closed (await Critic) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_CRYPTO closed (Critic done) |
 | test_gate | ok (run_crypto_gate.sh) |
+
+### Turn 2026-07-10 20:35 (Critic TRACK_STDLIB_CRYPTO — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_CRYPTO |
+| started | 2026-07-10 20:03 |
+| elapsed | ~5 min |
+| done    | Audited `e2e9e04b`/`1f09057d`/`d7a038d4`/`a7bcc139`/`e12f08fd` vs STEP 1–5; PLAN/archive; fixed STDLIB §1 Crypto row; re-ran gate. |
+| verify  | gate OK (9/0 + 1/14); archive path; no false-done. |
+| result  | **reopen: none**. Residuals: example ungated; JWT untracked; close had PLAN/STDLIB follow-up commits. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Planner STEP=plan-refresh — open TRACK_STDLIB_WEBSOCKET (or job-queue) |
 
 ### Turn 2026-07-10 20:32 (Driver TRACK_STDLIB_CRYPTO STEP=5 — docs+close)
 

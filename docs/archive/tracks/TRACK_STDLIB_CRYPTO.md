@@ -12,6 +12,13 @@ state).
 `misc/examples/crypto_sha256_demo.mlc`; `STDLIB_BACKEND` closed; gate re-run
 OK; no `compiler/**` (regression_gate N/A); track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `e2e9e04b`…`e12f08fd`
+(+ PLAN/STDLIB sync `a49ba5bb`/`89cbe892`) match STEP 1–5; PLAN §11/queue/
+archive synced; `run_crypto_gate.sh` OK (9/0 + 1/14). Residuals (no reopen):
+example not compile-gated (`-lsodium`); JWT follow-up not tracked; close
+needed follow-up commits for PLAN queue / STDLIB §5.3 (staging race).
+Fixed stale STDLIB_BACKEND §1 Crypto row.
+
 ## Decision (STEP=1, 2026-07-10)
 
 ### Library
