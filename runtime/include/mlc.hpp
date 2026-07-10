@@ -45,6 +45,10 @@
 #include "mlc/io/file.hpp"
 #include "mlc/io/buffer.hpp"
 
+// Env + structured log (no third-party deps)
+#include "mlc/env/env.hpp"
+#include "mlc/log/log.hpp"
+
 // Text processing
 #include "mlc/text/regex.hpp"
 

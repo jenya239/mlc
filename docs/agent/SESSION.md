@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_ENV_LOGGING STEP=2 |
-| test_gate | docs-only Decision; no code gate |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_ENV_LOGGING STEP=3 |
+| test_gate | `run_env_log_runtime_smoke.sh` 14/0 |
+
+### Turn 2026-07-11 01:12 (Driver TRACK_STDLIB_ENV_LOGGING STEP=2 — runtime)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_ENV_LOGGING |
+| started | 2026-07-11 01:09 |
+| elapsed | ~3 min |
+| done    | `runtime/include/mlc/env/env.hpp`, `log/log.hpp`; include in `mlc.hpp`; smoke `runtime/test/test_env_log.cpp` + `scripts/run_env_log_runtime_smoke.sh`. PLAN/STDLIB/DEVELOPMENT → STEP=3. |
+| verify  | `bash scripts/run_env_log_runtime_smoke.sh` → 14 passed, 0 failed. |
+| result  | STEP=2 done. Plain: getenv + JSON-line log headers ship. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_ENV_LOGGING — MLC `Env`/`Log` modules + registry/bridge |
 
 ### Turn 2026-07-11 01:05 (Driver TRACK_STDLIB_ENV_LOGGING STEP=1 — API Decision)
 

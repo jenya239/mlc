@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_ENV_LOGGING` open** STEP=2 — runtime `env.hpp` / `log.hpp`.
+**`TRACK_STDLIB_ENV_LOGGING` open** STEP=3 — MLC `Env`/`Log` modules + bridge.
 See [TRACK_STDLIB_ENV_LOGGING.md](TRACK_STDLIB_ENV_LOGGING.md).
 
 
