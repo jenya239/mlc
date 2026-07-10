@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=3 — e2e gate: spawn side-effect
-runs once (not checker-only).
+**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=4 — self-host `mlcc`→`mlcc2` diff +
+`regression_gate.sh`; then close.
 
 
 ## Step sizing (good vs bad)

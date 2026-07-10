@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=3 |
-| test_gate | ok (codegen single return side()) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=4 |
+| test_gate | ok (spawn side-effect gate + run_tests 1471/0) |
+
+### Turn 2026-07-10 19:18 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=3 — e2e)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:18 |
+| elapsed | ~6 min |
+| done    | `compiler/tests/e2e/spawn_side_effect.mlc`; `compiler/tests/run_spawn_side_effect_gate.sh` (codegen + runtime `SIDE_ONCE`×1). |
+| verify  | gate PASS; `compiler/out/tests/run_tests` → 1471 passed, 0 failed. |
+| result  | STEP=3 done. Plain: e2e catches double side-effect. |
+| issues  | Foreign dirty left. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_SPAWN_DOUBLE_EXEC — self-host diff + regression_gate + close |
 
 ### Turn 2026-07-10 19:16 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=2 — fix)
 
