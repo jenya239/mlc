@@ -17,7 +17,7 @@ mlc::Array<mlc::String> verify_semantic_append_errors(mlc::Array<mlc::String> ac
   auto index = 0;
   while ((index < more.length()))   {
     combined.push_back(more[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return combined;
 }
@@ -80,7 +80,7 @@ auto [callee, arguments, __2, __3, __4] = semanticExpressionCall; return [&]() {
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -92,7 +92,7 @@ auto [receiver, __1, arguments, __3, __4, __5] = semanticExpressionMethod; retur
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -116,7 +116,7 @@ auto [statements, result, __2, __3] = semanticExpressionBlock; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -128,7 +128,7 @@ auto [condition, statements, __2, __3] = semanticExpressionWhile; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -140,7 +140,7 @@ auto [__0, iterable, statements, __3, __4] = semanticExpressionFor; return [&]()
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -156,7 +156,7 @@ while ((index < arms.length())) {
     (errors = verify_semantic_append_errors(errors, verify_semantic_expression(arm->when_condition)));
   }
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(arm->body)));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -167,7 +167,7 @@ auto [__0, fields, __2, __3] = semanticExpressionRecord; return [&]() {
 auto index = 0;
 while ((index < fields.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(fields[index]->value)));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -179,7 +179,7 @@ auto [__0, base, fields, __3, __4] = semanticExpressionRecordUpdate; return [&](
 auto index = 0;
 while ((index < fields.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(fields[index]->value)));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -190,7 +190,7 @@ auto [elements, __1, __2] = semanticExpressionArray; return [&]() {
 auto index = 0;
 while ((index < elements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(elements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -201,7 +201,7 @@ auto [elements, __1, __2] = semanticExpressionTuple; return [&]() {
 auto index = 0;
 while ((index < elements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_expression(elements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -221,7 +221,7 @@ auto [subject, __1, statements, __3, __4] = semanticExpressionWith; return [&]()
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_semantic_append_errors(errors, verify_semantic_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -249,7 +249,7 @@ mlc::Array<mlc::String> verify_semantic_declaration_members(mlc::Array<mlc::Stri
   auto index = 0;
   while ((index < members.length()))   {
     (accumulated = verify_semantic_append_errors(accumulated, verify_semantic_declaration(members[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accumulated;
 }
@@ -296,9 +296,9 @@ mlc::Array<mlc::String> verify_semantic_ir_load_items(mlc::Array<semantic_ir::Se
     auto decl_index = 0;
     while ((decl_index < load_item.decls.length()))     {
       (errors = verify_semantic_append_errors(errors, verify_semantic_declaration(load_item.decls[decl_index])));
-      (decl_index = (decl_index + 1));
+      (decl_index = mlc::arith::checked_add(decl_index, 1));
     }
-    (item_index = (item_index + 1));
+    (item_index = mlc::arith::checked_add(item_index, 1));
   }
   return errors;
 }

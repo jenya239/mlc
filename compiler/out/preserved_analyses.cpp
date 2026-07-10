@@ -13,7 +13,7 @@ PreservedAnalyses preserved_analyses_mark(PreservedAnalyses preserved, mlc::Stri
     if ((names[index] == analysis_name))     {
       return preserved;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   names.push_back(analysis_name);
   return PreservedAnalyses{names};
@@ -27,7 +27,7 @@ bool preserved_analyses_contains(PreservedAnalyses preserved, mlc::String analys
     if ((preserved.analysis_names[index] == analysis_name))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }

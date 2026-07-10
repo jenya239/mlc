@@ -120,7 +120,7 @@ return empty_fields;
 SpreadAccumulationState accumulate_spread_from_part(SpreadAccumulationState state, ast::RecordLitPart part_under_walk, mlc::Array<std::shared_ptr<ast::FieldVal>> explicit_fields, mlc::Array<mlc::String> ordered_target_field_names, mlc::Array<std::shared_ptr<registry::Type>> spread_types_in_order, registry::TypeRegistry registry) noexcept{
   return std::visit(overloaded{[&](const ast::RecordLitSpread& recordLitSpread) -> SpreadAccumulationState { auto [spread_expression] = recordLitSpread; return [&]() {
 auto expanded_from_spread = spread_fields_for_part(spread_expression, spread_types_in_order[state.spread_type_index], explicit_fields, state.spread_field_values, ordered_target_field_names, registry);
-return SpreadAccumulationState{state.spread_field_values.concat(expanded_from_spread), (state.spread_type_index + 1)};
+return SpreadAccumulationState{state.spread_field_values.concat(expanded_from_spread), mlc::arith::checked_add(state.spread_type_index, 1)};
 }(); },
 [&](const ast::RecordLitFields& recordLitFields) -> SpreadAccumulationState { auto [__0] = recordLitFields; return state; }
 }, part_under_walk);

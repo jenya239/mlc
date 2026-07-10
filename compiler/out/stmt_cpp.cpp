@@ -63,7 +63,7 @@ mlc::String print_cpp_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStatemen
   return statements.map([=](std::shared_ptr<cpp_ast::CppStatement> statement) mutable { return print_cpp_statement_line(statement); }).join(mlc::String("", 0));
 }
 mlc::String print_cpp_statement_fragment_line(mlc::String fragment) noexcept{
-  if (((fragment.length() >= 1) && (fragment.char_at((fragment.length() - 1)) == mlc::String("\n", 1))))   {
+  if (((fragment.length() >= 1) && (fragment.char_at(mlc::arith::checked_sub(fragment.length(), 1)) == mlc::String("\n", 1))))   {
     return fragment;
   } else   {
     return (fragment + mlc::String("\n", 1));
@@ -91,8 +91,8 @@ std::shared_ptr<cpp_ast::CppStatement> cpp_stmt_fragment_from_string_output(mlc:
   return emit_helpers::make_fragment_cpp_statement(strip_trailing_newline(output));
 }
 mlc::String strip_trailing_newline(mlc::String text) noexcept{
-  if (((text.length() >= 1) && (text.char_at((text.length() - 1)) == mlc::String("\n", 1))))   {
-    return text.substring(0, (text.length() - 1));
+  if (((text.length() >= 1) && (text.char_at(mlc::arith::checked_sub(text.length(), 1)) == mlc::String("\n", 1))))   {
+    return text.substring(0, mlc::arith::checked_sub(text.length(), 1));
   } else   {
     return text;
   }
@@ -283,7 +283,7 @@ GenStmtCppResult gen_let_method_stmt_cpp(mlc::String name, std::shared_ptr<seman
   }
 }
 GenStmtCppResult gen_let_stmt_cpp(mlc::String name, std::shared_ptr<semantic_ir::SemanticExpression> value, std::shared_ptr<registry::Type> value_type, context::CodegenContext context, int try_counter) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_auto_cpp_statement(cpp_naming::cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)), (try_counter + 1), context}; },
+  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_auto_cpp_statement(cpp_naming::cpp_safe(name), gen_expr_cpp_for_stmt_codegen(value, context)), mlc::arith::checked_add(try_counter, 1), context}; },
 [&](const semantic_ir::SemanticExpressionMethod& semanticExpressionMethod) -> GenStmtCppResult { auto [map_object, method_name, __2, __3, __4, __5] = semanticExpressionMethod; return gen_let_method_stmt_cpp(name, map_object, method_name, value, value_type, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionInt; return gen_auto_let_stmt_cpp_result(name, value, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionStr; return gen_auto_let_stmt_cpp_result(name, value, context, try_counter); },
@@ -318,7 +318,7 @@ GenStmtCppResult gen_return_stmt_cpp_default(std::shared_ptr<semantic_ir::Semant
   return GenStmtCppResult{emit_helpers::make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)), try_counter, context};
 }
 GenStmtCppResult gen_return_stmt_cpp(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)), (try_counter + 1), context}; },
+  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_return_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)), mlc::arith::checked_add(try_counter, 1), context}; },
 [&](const semantic_ir::SemanticExpressionInt& semanticExpressionInt) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionInt; return gen_return_stmt_cpp_default(expression, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionStr& semanticExpressionStr) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionStr; return gen_return_stmt_cpp_default(expression, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionFloat& semanticExpressionFloat) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionFloat; return gen_return_stmt_cpp_default(expression, context, try_counter); },
@@ -360,7 +360,7 @@ GenStmtCppResult gen_if_expr_stmt_cpp(std::shared_ptr<semantic_ir::SemanticExpre
   }
 }
 GenStmtCppResult gen_expr_stmt_cpp(std::shared_ptr<semantic_ir::SemanticExpression> expression, context::CodegenContext context, int try_counter) noexcept{
-  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_expression_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)), (try_counter + 1), context}; },
+  return std::visit(overloaded{[&](const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion) -> GenStmtCppResult { auto [__0, __1, __2] = semanticExpressionQuestion; return GenStmtCppResult{emit_helpers::make_expression_cpp_statement(gen_expr_cpp_for_stmt_codegen(expression, context)), mlc::arith::checked_add(try_counter, 1), context}; },
 [&](const semantic_ir::SemanticExpressionWhile& semanticExpressionWhile) -> GenStmtCppResult { auto [condition, body_statements, __2, __3] = semanticExpressionWhile; return gen_while_statement_cpp(condition, body_statements, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionFor& semanticExpressionFor) -> GenStmtCppResult { auto [variable_name, iterator, body_statements, __3, __4] = semanticExpressionFor; return gen_for_statement_cpp(variable_name, iterator, body_statements, context, try_counter); },
 [&](const semantic_ir::SemanticExpressionIf& semanticExpressionIf) -> GenStmtCppResult { auto [condition, then_expression, else_expression, semantic_type, __4] = semanticExpressionIf; return gen_if_expr_stmt_cpp(condition, then_expression, else_expression, semantic_type, expression, context, try_counter); },
@@ -416,7 +416,7 @@ StmtsCppAccumState eval_stmts_cpp_with_try(mlc::Array<std::shared_ptr<semantic_i
     (codegen_context = statement_parsed.codegen_context);
     context::mutate_context_from_statement(statement, codegen_context);
     (next_try = statement_parsed.next_try);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return StmtsCppAccumState{output_statements, next_try, codegen_context};
 }

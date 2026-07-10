@@ -65,7 +65,7 @@ auto parts = mlc::Array<mlc::String>{};
 auto index = 0;
 while ((index < parameters.length())) {
   parts.push_back((mlc::String("auto ", 5) + cpp_naming::cpp_safe(parameters[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return parts.join(mlc::String(", ", 2));
 }();
@@ -81,7 +81,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> find_field_value(mlc::Array<std
     if ((field_values[index]->name == field_name))     {
       (result = field_values[index]->value);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }

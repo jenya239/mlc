@@ -114,7 +114,7 @@ int type_parameter_name_index(mlc::Array<mlc::String> parameter_names, mlc::Stri
     if ((parameter_names[index] == parameter_name))     {
       return index;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return (-1);
 }
@@ -130,7 +130,7 @@ mlc::String generic_sum_variant_ctor_type_argument_from_enclosing(mlc::String ow
       return mlc::String("", 0);
     }
     cpp_argument_parts.push_back(type_gen::sem_type_to_cpp(context, type_arguments[parameter_index]));
-    (used_index = (used_index + 1));
+    (used_index = mlc::arith::checked_add(used_index, 1));
   }
   if ((cpp_argument_parts.length() == 0))   {
     return mlc::String("", 0);
@@ -550,7 +550,7 @@ auto parameters = mlc::Array<std::shared_ptr<cpp_ast::CppParam>>{};
 auto lambda_parameter_index = 0;
 while ((lambda_parameter_index < parameter_binding_names.length())) {
   parameters.push_back(std::make_shared<cpp_ast::CppParam>(cpp_ast::CppParam{cpp_naming::cpp_safe(parameter_binding_names[lambda_parameter_index]), lambda_parameter_type_cpp(context, lambda_parameter_semantic_types[lambda_parameter_index])}));
-  (lambda_parameter_index = (lambda_parameter_index + 1));
+  (lambda_parameter_index = mlc::arith::checked_add(lambda_parameter_index, 1));
 }
 return parameters;
 }();

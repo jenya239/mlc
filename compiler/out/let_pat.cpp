@@ -89,7 +89,7 @@ mlc::String record_ordered_tuple_pattern_output(mlc::Array<std::shared_ptr<ast::
     auto member_slot_index = 0;
     while ((member_slot_index < sub_patterns.length()))     {
       (record_ordered_tuple_fragment = append_tuple_member_ident_binding(record_ordered_tuple_fragment, sub_patterns[member_slot_index], ordered_member_labels[member_slot_index], temp_name));
-      (member_slot_index = (member_slot_index + 1));
+      (member_slot_index = mlc::arith::checked_add(member_slot_index, 1));
     }
     return record_ordered_tuple_fragment;
   } else   {
@@ -157,7 +157,7 @@ mlc::String record_pattern_output(mlc::Array<std::shared_ptr<ast::Pattern>> fiel
   auto index = 0;
   while ((index < field_patterns.length()))   {
     (binding_fragment = append_record_field_ident_binding(binding_fragment, field_patterns[index], temp_name));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return binding_fragment;
 }
@@ -167,7 +167,7 @@ mlc::String array_pattern_output(mlc::Array<std::shared_ptr<ast::Pattern>> sub_p
   auto index = 0;
   while ((index < sub_patterns.length()))   {
     (binding_fragment = append_array_ident_binding(binding_fragment, sub_patterns[index], temp_name, index));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((rest != mlc::String("", 0)))   {
     (binding_fragment = (((((binding_fragment + mlc::String("auto ", 5)) + cpp_naming::cpp_safe(rest)) + mlc::String(" = ", 3)) + gen_let_array_rest_slice(temp_name, sub_patterns.length(), element_cpp)) + mlc::String(";\n", 2)));

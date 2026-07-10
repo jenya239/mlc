@@ -53,7 +53,7 @@ auto required_trait = bounds[trait_index];
 if ((!registry::TypeRegistry_type_implements_trait(inference_context.registry, actual_name, required_trait))) {
   (param_errors = ast::diagnostics_append(param_errors, mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code((((mlc::String("type ", 5) + actual_name) + mlc::String(" does not implement ", 20)) + required_trait), bound_diagnostic_span, diagnostic_codes::diagnostic_code_e033())}));
 }
-(trait_index = (trait_index + 1));
+(trait_index = mlc::arith::checked_add(trait_index, 1));
 }
 }();
     }
@@ -74,7 +74,7 @@ mlc::Array<ast::Diagnostic> trait_bound_diagnostics(mlc::String callee_name, mlc
       auto type_param = callee_type_parameter_names[param_index];
       auto bounds = bounds_per_param[param_index];
       (bound_errors = ast::diagnostics_append(bound_errors, check_one_type_param_bounds(type_param, bounds, substitution, type_parameter_source_argument_index, argument_expressions, call_source_span, inference_context)));
-      (param_index = (param_index + 1));
+      (param_index = mlc::arith::checked_add(param_index, 1));
     }
     return bound_errors;
   }

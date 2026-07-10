@@ -141,16 +141,16 @@ return empty_diagnostics;
 }
 String_match_wildcard_fold_state string_match_wildcard_fold_step(String_match_wildcard_fold_state state, std::shared_ptr<ast::MatchArm> match_arm) noexcept{
   auto is_wildcard_arm = pattern_is_wildcard_only(match_arm->pattern);
-  auto wildcard_count_after_arm = (is_wildcard_arm ? ((state.wildcard_count + 1)) : (state.wildcard_count));
+  auto wildcard_count_after_arm = (is_wildcard_arm ? (mlc::arith::checked_add(state.wildcard_count, 1)) : (state.wildcard_count));
   auto errors_after_arm = ((is_wildcard_arm && (state.arm_index != state.last_arm_index)) ? (state.errors.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("wildcard match arm must be last for string match", 48), ast::pattern_span(match_arm->pattern), diagnostic_codes::diagnostic_code_e080())})) : (state.errors));
-  return String_match_wildcard_fold_state{errors_after_arm, wildcard_count_after_arm, (state.arm_index + 1), state.last_arm_index};
+  return String_match_wildcard_fold_state{errors_after_arm, wildcard_count_after_arm, mlc::arith::checked_add(state.arm_index, 1), state.last_arm_index};
 }
 mlc::Array<ast::Diagnostic> string_match_wildcard_diagnostic(mlc::Array<std::shared_ptr<ast::MatchArm>> match_arms) noexcept{
   auto last_arm_index = (-1);
   auto arm_count_index = 0;
   while ((arm_count_index < match_arms.length()))   {
     (last_arm_index = arm_count_index);
-    (arm_count_index = (arm_count_index + 1));
+    (arm_count_index = mlc::arith::checked_add(arm_count_index, 1));
   }
   auto fold_result = match_arms.fold(String_match_wildcard_fold_state{[&]() {
 auto empty_diagnostics = mlc::Array<ast::Diagnostic>{};
@@ -263,7 +263,7 @@ mlc::Array<ast::Diagnostic> match_exhaustiveness_diagnostic(std::shared_ptr<ast:
             (covered_constructors = append_covered_constructors(match_arm->pattern, covered_constructors));
           }
         }
-        (arm_index = (arm_index + 1));
+        (arm_index = mlc::arith::checked_add(arm_index, 1));
       }
       if (has_catch_all)       {
         return empty_diagnostics;

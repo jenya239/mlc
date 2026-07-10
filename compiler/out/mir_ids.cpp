@@ -27,11 +27,11 @@ int mir_block_id_index(mir_types::BlockId block_id) noexcept{
 }
 MirIdLocalStep mir_id_pool_allocate_local(MirIdPool pool) noexcept{
   auto local_id = mir_types::mir_local_id(pool.next_local_index);
-  return MirIdLocalStep{MirIdPool{(pool.next_local_index + 1), pool.next_block_index}, local_id};
+  return MirIdLocalStep{MirIdPool{mlc::arith::checked_add(pool.next_local_index, 1), pool.next_block_index}, local_id};
 }
 MirIdBlockStep mir_id_pool_allocate_block(MirIdPool pool) noexcept{
   auto block_id = mir_types::mir_block_id(pool.next_block_index);
-  return MirIdBlockStep{MirIdPool{pool.next_local_index, (pool.next_block_index + 1)}, block_id};
+  return MirIdBlockStep{MirIdPool{pool.next_local_index, mlc::arith::checked_add(pool.next_block_index, 1)}, block_id};
 }
 
 } // namespace mir_ids

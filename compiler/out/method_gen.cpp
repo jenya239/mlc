@@ -247,7 +247,7 @@ mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> build_positional_re
   auto argument_walk_index = 0;
   while ((argument_walk_index < trailing_arguments.length()))   {
     positional.push_back(trailing_arguments[argument_walk_index]);
-    (argument_walk_index = (argument_walk_index + 1));
+    (argument_walk_index = mlc::arith::checked_add(argument_walk_index, 1));
   }
   return positional;
 }
@@ -261,7 +261,7 @@ mlc::String gen_method_expr(std::shared_ptr<semantic_ir::SemanticExpression> obj
   auto tail_fragment_index = 1;
   while ((tail_fragment_index < materialization_outcome.materialized_argument_fragments.length()))   {
     trailing_argument_fragments.push_back(materialization_outcome.materialized_argument_fragments[tail_fragment_index]);
-    (tail_fragment_index = (tail_fragment_index + 1));
+    (tail_fragment_index = mlc::arith::checked_add(tail_fragment_index, 1));
   }
   auto trailing_arguments_joined = trailing_argument_fragments_join(trailing_argument_fragments);
   auto smart_pointer_sugar = (((weak_method_gen::is_shared_weak_sugar_method(method_name) && semantic_type_structure::type_is_shared_pointer(object_type)) && (arguments.length() == 0)) ? (weak_method_gen::gen_method_shared_weak_using_fragments(receiver_fragment, object_type, context)) : ((((weak_method_gen::is_weak_upgrade_sugar_method(method_name) && weak_method_gen::type_is_weak_pointer(object_type)) && (arguments.length() == 0)) ? (weak_method_gen::gen_method_weak_upgrade_using_fragments(receiver_fragment)) : (mlc::String("", 0)))));
@@ -303,7 +303,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> prepend_expression_to_argume
   auto index = 0;
   while ((index < trailing_expressions.length()))   {
     arguments.push_back(trailing_expressions[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return arguments;
 }
@@ -395,7 +395,7 @@ std::shared_ptr<cpp_ast::CppExpression> gen_method_expr_cpp(std::shared_ptr<sema
   auto tail_index = 1;
   while ((tail_index < materialization_outcome.materialized_argument_expressions.length()))   {
     trailing_argument_expressions.push_back(materialization_outcome.materialized_argument_expressions[tail_index]);
-    (tail_index = (tail_index + 1));
+    (tail_index = mlc::arith::checked_add(tail_index, 1));
   }
   if ((((method_name == mlc::String("lock", 4)) && semantic_type_structure::type_is_mutex(object_type)) && (arguments.length() == 1)))   {
     return mut_actual_argument::wrap_invoke_with_mut_prelude_cpp(materialization_outcome.prelude_statements, gen_method_mutex_lock_cpp(receiver_expression, arguments[0], object_type, context, gen_stmts, evaluate_expression));

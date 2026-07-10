@@ -4,7 +4,7 @@
 namespace compile_options {
 
 mlc::String compile_usage_message() noexcept{
-  return mlc::String("Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp", 252);
+  return mlc::String("Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc|-> [-o out_dir]\n       (- reads program from stdin)\n       mlcc fmt <source.mlc>\n       mlcc lsp", 290);
 }
 bool is_output_directory_flag(mlc::String argument) noexcept{
   return (argument == mlc::String("-o", 2));
@@ -97,14 +97,14 @@ CompileOptions parse_compile_options(mlc::Array<mlc::String> arguments) noexcept
       (run_interpreter = true);
     } else if (is_trace_vm_flag(argument))     {
       (trace_vm = true);
-    } else if ((is_output_directory_flag(argument) && ((index + 1) < arguments.length())))     {
-      (out_directory = arguments[(index + 1)]);
+    } else if ((is_output_directory_flag(argument) && (mlc::arith::checked_add(index, 1) < arguments.length())))     {
+      (out_directory = arguments[mlc::arith::checked_add(index, 1)]);
       (out_directory_explicit = true);
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     } else if ((entry_path.length() == 0))     {
       (entry_path = argument);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return CompileOptions{entry_path, resolve_default_out_directory(check_only, out_directory_explicit, out_directory), profile_enabled, check_only, emit_compile_commands, verify_each_pass, dump_ast, dump_sem, dump_mir, mir_bootstrap_report, time_passes, run_interpreter, trace_vm};
 }

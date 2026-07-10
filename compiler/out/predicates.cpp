@@ -969,14 +969,14 @@ Parser Parser_advance(Parser self) noexcept{
 if (self.has_unget_angle_close) {
   return Parser{self.tokens, self.position, self.source_path, self.suppress_lambda_shorthand, self.errors, false};
 } else {
-  return Parser{self.tokens, (self.position + 1), self.source_path, self.suppress_lambda_shorthand, self.errors, false};
+  return Parser{self.tokens, mlc::arith::checked_add(self.position, 1), self.source_path, self.suppress_lambda_shorthand, self.errors, false};
 }
 }
 Parser Parser_advance_shift_right_as_angle_close(Parser self) noexcept{
-return Parser{self.tokens, (self.position + 1), self.source_path, self.suppress_lambda_shorthand, self.errors, true};
+return Parser{self.tokens, mlc::arith::checked_add(self.position, 1), self.source_path, self.suppress_lambda_shorthand, self.errors, true};
 }
 Parser Parser_advance_by(Parser self, int count) noexcept{
-return Parser{self.tokens, (self.position + count), self.source_path, self.suppress_lambda_shorthand, self.errors, self.has_unget_angle_close};
+return Parser{self.tokens, mlc::arith::checked_add(self.position, count), self.source_path, self.suppress_lambda_shorthand, self.errors, self.has_unget_angle_close};
 }
 bool Parser_at_eof(Parser self) noexcept{
 if ((self.position >= self.tokens.length())) {
@@ -1012,7 +1012,7 @@ if ((self.position >= self.tokens.length())) {
 }
 int Parser_prev_line(Parser self) noexcept{
 if ((self.position > 0)) {
-  auto current_token = self.tokens[(self.position - 1)];
+  auto current_token = self.tokens[mlc::arith::checked_sub(self.position, 1)];
   std::make_tuple();
   return current_token.line;
 } else {

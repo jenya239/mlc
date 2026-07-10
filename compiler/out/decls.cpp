@@ -116,7 +116,7 @@ bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) 
     if ((haystack[index] == needle))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -125,7 +125,7 @@ mlc::Array<mlc::String> clone_string_row(mlc::Array<mlc::String> source) noexcep
   auto index = 0;
   while ((index < source.length()))   {
     copy.push_back(source[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return copy;
 }
@@ -134,7 +134,7 @@ mlc::Array<mlc::Array<mlc::String>> clone_trait_bounds_matrix(mlc::Array<mlc::Ar
   auto row_index = 0;
   while ((row_index < source.length()))   {
     matrix.push_back(clone_string_row(source[row_index]));
-    (row_index = (row_index + 1));
+    (row_index = mlc::arith::checked_add(row_index, 1));
   }
   return matrix;
 }
@@ -146,7 +146,7 @@ mlc::Array<mlc::String> union_trait_string_rows(mlc::Array<mlc::String> existing
     if ((!string_list_contains(combined, trait_name)))     {
       combined.push_back(trait_name);
     }
-    (incoming_index = (incoming_index + 1));
+    (incoming_index = mlc::arith::checked_add(incoming_index, 1));
   }
   return combined;
 }
@@ -156,7 +156,7 @@ int type_parameter_row_index(mlc::Array<mlc::String> type_parameter_names, mlc::
     if ((type_parameter_names[index] == parameter_name))     {
       return index;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return (-1);
 }
@@ -169,7 +169,7 @@ mlc::Array<mlc::Array<mlc::String>> replace_trait_bounds_row_at(mlc::Array<mlc::
     } else     {
       output_matrix.push_back(clone_string_row(matrix[matrix_row_index]));
     }
-    (matrix_row_index = (matrix_row_index + 1));
+    (matrix_row_index = mlc::arith::checked_add(matrix_row_index, 1));
   }
   return output_matrix;
 }
@@ -187,7 +187,7 @@ mlc::Array<mlc::Array<mlc::String>> merge_where_clause_trait_bounds(mlc::Array<m
       auto updated_row = union_trait_string_rows(merged[row_index], entry.traits);
       (merged = replace_trait_bounds_row_at(merged, row_index, updated_row));
     }
-    (entry_index = (entry_index + 1));
+    (entry_index = mlc::arith::checked_add(entry_index, 1));
   }
   return merged;
 }
@@ -453,7 +453,7 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extend_extern_method(p
     if ((ast::param_name(rest_parameter) != mlc::String("self", 4)))     {
       params.push_back(rest_parameter);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   auto after_rparen = predicates::Parser_advance(rest_parsed.parser);
   auto return_type_parsed = types::parse_type(parser_after_optional_arrow(after_rparen));
@@ -509,7 +509,7 @@ predicates::ParseResult<std::shared_ptr<ast::Decl>> parse_extend_method(predicat
     if ((ast::param_name(rest_parameter) != mlc::String("self", 4)))     {
       params.push_back(rest_parameter);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   auto after_rparen = predicates::Parser_advance(rest_parsed.parser);
   auto return_type_parsed = types::parse_type(parser_after_optional_arrow(after_rparen));
@@ -941,7 +941,7 @@ predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Decl>>> parse_trait_body
       std::make_tuple();
       while ((bounds_index < type_params.length()))       {
         initial_trait_bounds.push_back({});
-        (bounds_index = (bounds_index + 1));
+        (bounds_index = mlc::arith::checked_add(bounds_index, 1));
       }
       auto where_parse = parse_where_clause_opt(return_type_parsed.parser);
       auto merged_trait_bounds = merge_where_clause_trait_bounds(type_params, initial_trait_bounds, where_parse.value);
@@ -963,7 +963,7 @@ predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Decl>>> parse_trait_body
         std::make_tuple();
         while ((bounds_index_extern < type_params.length()))         {
           initial_trait_bounds_extern.push_back({});
-          (bounds_index_extern = (bounds_index_extern + 1));
+          (bounds_index_extern = mlc::arith::checked_add(bounds_index_extern, 1));
         }
         auto where_parse_extern = parse_where_clause_opt(return_type_parsed.parser);
         auto merged_trait_bounds_extern = merge_where_clause_trait_bounds(type_params, initial_trait_bounds_extern, where_parse_extern.value);

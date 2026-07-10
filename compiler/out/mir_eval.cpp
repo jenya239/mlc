@@ -61,6 +61,7 @@ std::abort();
 }(); },
 [&](const value::VmMap& vmMap) { auto [__0] = vmMap; return false; },
 [&](const value::VmVariant& vmVariant) { auto [__0] = vmVariant; return false; },
+[&](const value::VmRecord& vmRecord) { auto [__0] = vmRecord; return false; },
 [&](const value::VmUnit& vmUnit) { return [&]() -> bool {
 auto __match_subject = right;
 if (std::holds_alternative<value::VmUnit>(__match_subject)) {
@@ -74,17 +75,17 @@ std::abort();
 }
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_eval_binary_i32(mlc::String operation, int left, int right) noexcept{
   if ((operation == mlc::String("+", 1)))   {
-    return ast::Ok<value::VmValue>{value::VmI32{(left + right)}};
+    return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_add(left, right)}};
   } else if ((operation == mlc::String("-", 1)))   {
-    return ast::Ok<value::VmValue>{value::VmI32{(left - right)}};
+    return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_sub(left, right)}};
   } else if ((operation == mlc::String("*", 1)))   {
-    return ast::Ok<value::VmValue>{value::VmI32{(left * right)}};
+    return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_mul(left, right)}};
   } else if (((operation == mlc::String("/", 1)) && (right != 0)))   {
-    return ast::Ok<value::VmValue>{value::VmI32{(left / right)}};
+    return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_div(left, right)}};
   } else if ((operation == mlc::String("/", 1)))   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: division by zero", 20)}};
   } else if (((operation == mlc::String("%", 1)) && (right != 0)))   {
-    return ast::Ok<value::VmValue>{value::VmI32{(left % right)}};
+    return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_mod(left, right)}};
   } else if ((operation == mlc::String("%", 1)))   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: modulo by zero", 18)}};
   } else if ((operation == mlc::String(">", 1)))   {
@@ -162,13 +163,53 @@ std::abort();
 }();
   }
 }
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_eval_unary(mlc::String operation, value::VmValue value) noexcept{
+  if ((operation == mlc::String("!", 1)))   {
+    return ast::Ok<value::VmValue>{value::VmBool{(!value::vm_value_is_truthy(value))}};
+  } else if ((operation == mlc::String("-", 1)))   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = value;
+if (std::holds_alternative<value::VmI32>(__match_subject)) {
+const value::VmI32& vmI32 = std::get<value::VmI32>(__match_subject);
+auto [number] = vmI32; return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_sub(0, number)}};
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: unary - requires i32", 24)}};
+std::abort();
+}();
+  } else if ((operation == mlc::String("+", 1)))   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = value;
+if (std::holds_alternative<value::VmI32>(__match_subject)) {
+const value::VmI32& vmI32 = std::get<value::VmI32>(__match_subject);
+auto [number] = vmI32; return ast::Ok<value::VmValue>{value::VmI32{number}};
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: unary + requires i32", 24)}};
+std::abort();
+}();
+  } else if ((operation == mlc::String("~", 1)))   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = value;
+if (std::holds_alternative<value::VmI32>(__match_subject)) {
+const value::VmI32& vmI32 = std::get<value::VmI32>(__match_subject);
+auto [number] = vmI32; return ast::Ok<value::VmValue>{value::VmI32{mlc::arith::checked_sub(mlc::arith::checked_sub(0, number), 1)}};
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: unary ~ requires i32", 24)}};
+std::abort();
+}();
+  } else   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{((mlc::String("vm: unknown unary ", 18) + mlc::to_string(operation)) + mlc::String("", 0))}};
+  }
+}
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_eval_rvalue(frame::VmFrame frame, mir_types::MirRvalue rvalue) noexcept{
   return std::visit(overloaded{[&](const mir_types::MirRvalueUse& mirRvalueUse) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [operand] = mirRvalueUse; return vm_eval_operand(frame, operand); },
 [&](const mir_types::MirRvalueBinary& mirRvalueBinary) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [operation, left_operand, right_operand] = mirRvalueBinary; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
 [&](const ast::Ok<value::VmValue>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [left_value] = ok; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
 [&](const ast::Ok<value::VmValue>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [right_value] = ok; return vm_eval_binary(operation, left_value, right_value); }
 }, vm_eval_operand(frame, right_operand)); }
-}, vm_eval_operand(frame, left_operand)); }
+}, vm_eval_operand(frame, left_operand)); },
+[&](const mir_types::MirRvalueUnary& mirRvalueUnary) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [operation, operand] = mirRvalueUnary; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
+[&](const ast::Ok<value::VmValue>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [value] = ok; return vm_eval_unary(operation, value); }
+}, vm_eval_operand(frame, operand)); }
 }, rvalue);
 }
 ast::Result<mlc::Array<value::VmValue>, mlc::Array<mlc::String>> vm_eval_operands_loop(frame::VmFrame frame, mlc::Array<mir_types::MirOperand> operands, int index, mlc::Array<value::VmValue> values) noexcept{
@@ -176,7 +217,7 @@ ast::Result<mlc::Array<value::VmValue>, mlc::Array<mlc::String>> vm_eval_operand
     return ast::Ok<mlc::Array<value::VmValue>>{values};
   } else   {
     return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<mlc::Array<value::VmValue>, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
-[&](const ast::Ok<value::VmValue>& ok) -> ast::Result<mlc::Array<value::VmValue>, mlc::Array<mlc::String>> { auto [value] = ok; return vm_eval_operands_loop(frame, operands, (index + 1), vm_values_push(values, value)); }
+[&](const ast::Ok<value::VmValue>& ok) -> ast::Result<mlc::Array<value::VmValue>, mlc::Array<mlc::String>> { auto [value] = ok; return vm_eval_operands_loop(frame, operands, mlc::arith::checked_add(index, 1), vm_values_push(values, value)); }
 }, vm_eval_operand(frame, operands[index]));
   }
 }

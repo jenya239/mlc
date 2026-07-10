@@ -13,12 +13,12 @@ mlc::String path_to_module_base(mlc::String path) noexcept{
     } else if (((path.char_at(i) == mlc::String(".", 1)) && (i > last_slash)))     {
       (last_dot = i);
     }
-    (i = (i + 1));
+    (i = mlc::arith::checked_add(i, 1));
   }
   if ((last_dot > last_slash))   {
-    return path.substring((last_slash + 1), ((last_dot - last_slash) - 1));
+    return path.substring(mlc::arith::checked_add(last_slash, 1), mlc::arith::checked_sub(mlc::arith::checked_sub(last_dot, last_slash), 1));
   } else   {
-    return path.substring((last_slash + 1), ((path.length() - last_slash) - 1));
+    return path.substring(mlc::arith::checked_add(last_slash, 1), mlc::arith::checked_sub(mlc::arith::checked_sub(path.length(), last_slash), 1));
   }
 }
 mlc::Array<mlc::String> cpp_reserved_keywords() noexcept{
@@ -82,6 +82,8 @@ mlc::String map_builtin(mlc::String name) noexcept{
     return mlc::String("mlc::io::args", 13);
   } else if ((name == mlc::String("read_line", 9)))   {
     return mlc::String("mlc::io::read_line", 18);
+  } else if ((name == mlc::String("read_all", 8)))   {
+    return mlc::String("mlc::io::read_all", 17);
   } else if ((name == mlc::String("spawn_task", 10)))   {
     return mlc::String("mlc::concurrency::spawn_task", 28);
   } else if ((name == mlc::String("make_channel", 12)))   {
@@ -121,7 +123,7 @@ mlc::String escape_str(mlc::String input) noexcept{
     } else     {
       parts.push_back(ch);
     }
-    (i = (i + 1));
+    (i = mlc::arith::checked_add(i, 1));
   }
   return parts.join(mlc::String("", 0));
 }
@@ -156,7 +158,7 @@ mlc::Array<mlc::String> using_namespace_names(mlc::Array<mlc::String> import_pat
         (has_ast = true);
       }
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if (has_ast)   {
     names.push_back(mlc::String("ast_tokens", 10));
@@ -169,7 +171,7 @@ mlc::String using_namespace_lines(mlc::Array<mlc::String> import_paths) noexcept
   auto names = using_namespace_names(import_paths);
   while ((index < names.length()))   {
     (lines = (((lines + mlc::String("using namespace ", 16)) + names[index]) + mlc::String(";\n", 2)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return lines;
 }

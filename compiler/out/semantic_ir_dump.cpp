@@ -25,7 +25,7 @@ mlc::String print_semantic_load_item(semantic_ir::SemanticLoadItem item) noexcep
   auto index = 0;
   while (((index < item.decls.length()) && (index < 256)))   {
     (result = (result + ((mlc::String("\n  ", 3) + mlc::to_string(semantic_declaration_label(item.decls[index]))) + mlc::String("", 0))));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((item.decls.length() > 256))   {
     (result = (result + ((mlc::String("\n  ... truncated (", 18) + mlc::to_string(item.decls.length())) + mlc::String(" total)", 7))));
@@ -40,7 +40,7 @@ mlc::String print_semantic_load_items(mlc::Array<semantic_ir::SemanticLoadItem> 
       (result = (result + mlc::String("\n\n", 2)));
     }
     (result = (result + print_semantic_load_item(items[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }

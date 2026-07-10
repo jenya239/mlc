@@ -59,7 +59,7 @@ mlc::Array<std::shared_ptr<registry::Type>> generic_type_arguments_from_substitu
     } else     {
       type_arguments.push_back(std::make_shared<registry::Type>(registry::TUnknown{}));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return type_arguments;
 }

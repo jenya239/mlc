@@ -396,7 +396,7 @@ while ((arm_index < arms.length())) {
     (accumulator = merge_mutation_check_results(accumulator, dispatch_mutations_pass(arm_pass, arm_under_walk->when_condition)));
   }
   (accumulator = merge_mutation_check_results(accumulator, dispatch_mutations_pass(arm_pass, arm_under_walk->body)));
-  (arm_index = (arm_index + 1));
+  (arm_index = mlc::arith::checked_add(arm_index, 1));
 }
 return MutationCheckResult{accumulator.diagnostics, self.mutable_locals};
 }

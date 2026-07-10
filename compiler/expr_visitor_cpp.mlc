@@ -5,7 +5,7 @@ import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldV
 import { CppExpression, CppBinary, CppUnary, CppCall, CppIdent, CppMember, CppIndex, CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock, CppStdVisit, CppAggregateInit, CppInitList, CppTernary, CppLambda, CppMutableLambda, CppCapture, CppParam, CppType, CppTypeName, CppStatement } from './cpp_ir/cpp_ast'
 import {print_expr, print_statement} from './cpp_emit/print'
 import * as emit_helpers from './cpp_emit/emit_helpers'
-import { operator_method_for, array_element_type_from_array_type, type_is_unknown } from './checker/semantic_type_structure'
+import { operator_method_for, array_element_type_from_array_type, type_is_unknown, checked_arithmetic_helper_name } from './checker/semantic_type_structure'
 import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import { field_access_operator, find_field_value, is_constructor_call, question_from_converter_name } from './codegen/expr/expression_support'
@@ -824,6 +824,17 @@ export fn gen_binary_via_cpp_visitor(
   if method != '' && type_name != '' then
     return Shared.new(CppCall(
       emit_helpers.make_identifier_cpp_expression(type_name + "_" + method),
+      [evaluate_expression(left_expression, context, gen_stmts),
+       evaluate_expression(right_expression, context, gen_stmts)]))
+  end
+  // Both operand types must be integer (avoid Map.get mistyped as TI32 + string).
+  const helper_name = checked_arithmetic_helper_name(
+    operation,
+    sexpr_type(left_expression),
+    sexpr_type(right_expression))
+  if helper_name != '' then
+    return Shared.new(CppCall(
+      emit_helpers.make_identifier_cpp_expression(helper_name),
       [evaluate_expression(left_expression, context, gen_stmts),
        evaluate_expression(right_expression, context, gen_stmts)]))
   end

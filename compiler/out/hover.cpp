@@ -34,7 +34,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> hover_function_parame
   while ((index < parameters.length()))   {
     auto parameter = parameters[index];
     type_environment.set(ast::param_name(parameter), registry::type_from_annotation_with_registry(ast::param_type_value(parameter), registry));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return type_environment;
 }
@@ -95,7 +95,7 @@ std::make_tuple();
 return;
 std::abort();
 }();
-(statement_index = (statement_index + 1));
+(statement_index = mlc::arith::checked_add(statement_index, 1));
 }
 }();
 }();
@@ -116,7 +116,7 @@ std::make_tuple();
 return;
 std::abort();
 }();
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return found_type;
   }
@@ -128,7 +128,7 @@ mlc::String resolve_hover_type_in_source(mlc::String source_text, mlc::String so
   if ((identifier_name.length() == 0))   {
     return mlc::String("", 0);
   } else   {
-    return hover_type_for_identifier_in_program(expanded_program, registry, identifier_name, (line_zero_based + 1));
+    return hover_type_for_identifier_in_program(expanded_program, registry, identifier_name, mlc::arith::checked_add(line_zero_based, 1));
   }
 }
 

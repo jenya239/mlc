@@ -37,6 +37,7 @@
 
 // I/O
 #include "mlc/io/io.hpp"
+#include "mlc/core/arith.hpp"
 #include "mlc/io/file.hpp"
 #include "mlc/io/buffer.hpp"
 

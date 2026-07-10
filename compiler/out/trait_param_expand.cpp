@@ -89,7 +89,7 @@ TraitExpandChunk expand_type_expression_for_trait_param(std::shared_ptr<ast::Typ
 auto synthetic_name = ((mlc::String("__trait_param_", 14) + mlc::to_string(mlc::to_string(synthetic_counter))) + mlc::String("", 0));
 auto single_trait_row = mlc::Array<mlc::String>{name};
 auto bounds_wrapper = mlc::Array<mlc::Array<mlc::String>>{single_trait_row};
-return TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyNamed{synthetic_name}), (synthetic_counter + 1), mlc::Array<mlc::String>{synthetic_name}, bounds_wrapper};
+return TraitExpandChunk{std::make_shared<ast::TypeExpr>(ast::TyNamed{synthetic_name}), mlc::arith::checked_add(synthetic_counter, 1), mlc::Array<mlc::String>{synthetic_name}, bounds_wrapper};
 }();
   } else   {
     return TraitExpandChunk{type_expression, synthetic_counter, {}, {}};

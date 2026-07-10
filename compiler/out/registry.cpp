@@ -267,6 +267,7 @@ TypeRegistry empty_registry() noexcept{
   builtin_function_types.set(mlc::String("exit", 4), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TI32{})}, std::make_shared<Type>(TUnit{})}));
   builtin_function_types.set(mlc::String("args", 4), std::make_shared<Type>(TFn{{}, std::make_shared<Type>(TArray{std::make_shared<Type>(TString{})})}));
   builtin_function_types.set(mlc::String("read_line", 9), std::make_shared<Type>(TFn{{}, std::make_shared<Type>(TString{})}));
+  builtin_function_types.set(mlc::String("read_all", 8), std::make_shared<Type>(TFn{{}, std::make_shared<Type>(TString{})}));
   auto builtin_required_arity = mlc::HashMap<mlc::String, int>();
   builtin_required_arity.set(mlc::String("print", 5), 1);
   builtin_required_arity.set(mlc::String("println", 7), 1);
@@ -278,6 +279,7 @@ TypeRegistry empty_registry() noexcept{
   builtin_function_types.set(mlc::String("make_channel", 12), std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUsize{})}, std::make_shared<Type>(TGeneric{mlc::String("Channel", 7), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TUnknown{})}})}));
   builtin_required_arity.set(mlc::String("make_channel", 12), 1);
   builtin_required_arity.set(mlc::String("read_line", 9), 0);
+  builtin_required_arity.set(mlc::String("read_all", 8), 0);
   auto empty_private_constructors = mlc::HashMap<mlc::String, bool>();
   return TypeRegistry{FunctionIndex{builtin_function_types, {}, {}, {}, builtin_required_arity, {}, {}, {}}, AdtIndex{constructor_types_map, constructor_parameters_map, {}, {}, {}, {}, empty_private_constructors, {}, {}}, RecordIndex{{}, {}, {}}, {}, {}, {}, {}};
 }
@@ -341,7 +343,7 @@ std::shared_ptr<ast::TypeExpr> substitute_type_expression_type_parameters(std::s
     if ((index < argument_expressions.length()))     {
       (result = type_expression_substitute_named_parameter(result, parameter_names[index], argument_expressions[index]));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -350,7 +352,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<Type>> type_parameter_substitution_fro
   auto index = 0;
   while (((index < parameter_names.length()) && (index < type_arguments.length())))   {
     substitution.set(parameter_names[index], type_arguments[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return substitution;
 }
@@ -489,7 +491,7 @@ int required_arity_from_params(mlc::Array<std::shared_ptr<ast::Param>> params) n
     if (params[i]->has_default)     {
       return i;
     }
-    (i = (i + 1));
+    (i = mlc::arith::checked_add(i, 1));
   }
   return params.length();
 }
@@ -499,7 +501,7 @@ TypeRegistry build_registry(ast::Program program) noexcept{
   auto index = 0;
   while ((index < expanded.decls.length()))   {
     register_decl_into(registry, expanded.decls[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return registry;
 }
@@ -542,7 +544,7 @@ void register_decl_trait_into_registry(TypeRegistry& registry, mlc::String trait
   auto index = 0;
   while ((index < methods.length()))   {
     register_trait_method_into_registry(registry, methods[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   auto initial_trait_associated_type_names = trait_associated_type_names_for(registry, trait_name);
   auto trait_associated_type_names = methods.fold(initial_trait_associated_type_names, accumulate_trait_associated_type_name);
@@ -557,7 +559,7 @@ mlc::String trait_base_name(mlc::String trait_name) noexcept{
     if ((trait_name.char_at(index) == mlc::String("<", 1)))     {
       return trait_name.substring(0, index);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return trait_name;
 }
@@ -597,7 +599,7 @@ return empty_bindings;
     if (register_extend_method_into_registry(registry, methods[method_index], assoc_type_bindings))     {
       (assoc_bindings_dirty = true);
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   if (assoc_bindings_dirty)   {
     registry.adt_index.assoc_type_bindings.set(assoc_binding_key, assoc_type_bindings);
@@ -632,7 +634,7 @@ void register_decl_type_into_registry(TypeRegistry& registry, mlc::String type_n
   while ((variant_index < variants.length()))   {
     register_variant_into(registry, type_name, variants[variant_index]);
     (variant_names = variant_names.concat(mlc::Array<mlc::String>{variant_name_of(variants[variant_index])}));
-    (variant_index = (variant_index + 1));
+    (variant_index = mlc::arith::checked_add(variant_index, 1));
   }
   registry.adt_index.algebraic_decl_variant_names.set(type_name, variant_names);
   auto phantom = compute_phantom_type_params(type_parameters, variants);
@@ -719,13 +721,34 @@ return false;
 std::abort();
 }();
 }
+bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) noexcept{
+  return haystack.any([=](mlc::String item) mutable { return (item == needle); });
+}
+void register_derive_json_functions(TypeRegistry& registry, mlc::String type_name) noexcept{
+  auto to_json_name = (type_name + mlc::String("_to_json", 8));
+  auto from_json_name = (type_name + mlc::String("_from_json", 10));
+  auto empty_type_parameters = mlc::Array<mlc::String>{};
+  registry.function_index.function_types.set(to_json_name, std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TNamed{type_name})}, std::make_shared<Type>(TNamed{mlc::String("JsonValue", 9)})}));
+  registry.function_index.function_type_parameter_names.set(to_json_name, empty_type_parameters);
+  registry.function_index.function_parameter_names.set(to_json_name, mlc::Array<mlc::String>{mlc::String("self", 4)});
+  registry.function_index.function_parameter_mutability_flags.set(to_json_name, mlc::Array<int>{0});
+  registry.function_index.function_required_arity.set(to_json_name, 1);
+  registry.function_index.function_types.set(from_json_name, std::make_shared<Type>(TFn{mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TNamed{mlc::String("JsonValue", 9)})}, std::make_shared<Type>(TGeneric{mlc::String("Result", 6), mlc::Array<std::shared_ptr<Type>>{std::make_shared<Type>(TNamed{type_name}), std::make_shared<Type>(TNamed{mlc::String("JsonError", 9)})}})}));
+  registry.function_index.function_type_parameter_names.set(from_json_name, empty_type_parameters);
+  registry.function_index.function_parameter_names.set(from_json_name, mlc::Array<mlc::String>{mlc::String("value", 5)});
+  registry.function_index.function_parameter_mutability_flags.set(from_json_name, mlc::Array<int>{0});
+  return registry.function_index.function_required_arity.set(from_json_name, 1);
+}
 bool register_decl_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept{
   return [&]() -> bool {
 auto __match_subject = declaration;
 if (std::holds_alternative<ast::DeclType>((*__match_subject))) {
 const ast::DeclType& declType = std::get<ast::DeclType>((*__match_subject));
-auto [type_name, type_parameters, variants, __3, name_span] = declType; return [&]() {
+auto [type_name, type_parameters, variants, derive_traits, name_span] = declType; return [&]() {
 register_decl_type_into_registry(registry, type_name, type_parameters, variants, name_span.file);
+if (string_list_contains(derive_traits, mlc::String("Json", 4))) {
+  register_derive_json_functions(registry, type_name);
+}
 return true;
 }();
 }
@@ -863,7 +886,7 @@ void register_variant_record_into_registry(TypeRegistry& registry, mlc::String t
     if (field_definition->has_default_expression)     {
       defaults_for_variant.set(field_definition->name, field_definition->default_expression);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   registry.adt_index.constructor_types.set(variant_name, result_type);
   registry.adt_index.constructor_parameters.set(variant_name, {});

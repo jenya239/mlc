@@ -19,7 +19,7 @@ auto index = 0;
 return [&]() {
 while (((index < parameter_names.length()) && (index < type_arguments.length()))) {
 substitution.set(parameter_names[index], type_arguments[index]);
-(index = (index + 1));
+(index = mlc::arith::checked_add(index, 1));
 }
 }();
 }();

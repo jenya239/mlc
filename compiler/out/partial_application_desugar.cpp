@@ -52,11 +52,11 @@ PartialNamesAllocation partial_allocate_parameter_names_loop(mlc::Array<mlc::Str
   if ((remaining <= 0))   {
     return PartialNamesAllocation{names, serial};
   } else   {
-    return partial_allocate_parameter_names_loop(names.concat(mlc::Array<mlc::String>{(mlc::String("partial_application_parameter_", 30) + mlc::to_string(serial))}), (serial + 1), (remaining - 1));
+    return partial_allocate_parameter_names_loop(names.concat(mlc::Array<mlc::String>{(mlc::String("partial_application_parameter_", 30) + mlc::to_string(serial))}), mlc::arith::checked_add(serial, 1), mlc::arith::checked_sub(remaining, 1));
   }
 }
 int partial_count_placeholder_arguments(mlc::Array<std::shared_ptr<ast::Expr>> arguments) noexcept{
-  return arguments.fold(0, [=](int accumulated_total, std::shared_ptr<ast::Expr> argument_under_scan) mutable { return (accumulated_total + partial_placeholder_delta_for_argument(argument_under_scan)); });
+  return arguments.fold(0, [=](int accumulated_total, std::shared_ptr<ast::Expr> argument_under_scan) mutable { return mlc::arith::checked_add(accumulated_total, partial_placeholder_delta_for_argument(argument_under_scan)); });
 }
 ExpressionListAccumulator partial_application_desugar_expression_element_sequence(mlc::Array<std::shared_ptr<ast::Expr>> elements, int initial_serial) noexcept{
   return elements.fold(ExpressionListAccumulator{{}, initial_serial}, [=](ExpressionListAccumulator accumulated, std::shared_ptr<ast::Expr> element_under_sequence) mutable { return [&]() {
@@ -78,13 +78,13 @@ mlc::Array<std::shared_ptr<ast::Expr>> partial_replace_call_arguments_inner(mlc:
 auto __match_subject = arguments[argument_index];
 if (std::holds_alternative<ast::ExprNamedArg>((*__match_subject))) {
 const ast::ExprNamedArg& exprNamedArg = std::get<ast::ExprNamedArg>((*__match_subject));
-auto [label, inner_expression, span_named] = exprNamedArg; return (expr_is_placeholder(inner_expression) ? (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, (argument_index + 1), (name_index + 1), output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprNamedArg{label, std::make_shared<ast::Expr>(ast::ExprIdent{parameter_names[name_index], fallback_span}), span_named})}))) : (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, (argument_index + 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}))));
+auto [label, inner_expression, span_named] = exprNamedArg; return (expr_is_placeholder(inner_expression) ? (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, mlc::arith::checked_add(argument_index, 1), mlc::arith::checked_add(name_index, 1), output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprNamedArg{label, std::make_shared<ast::Expr>(ast::ExprIdent{parameter_names[name_index], fallback_span}), span_named})}))) : (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, mlc::arith::checked_add(argument_index, 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}))));
 }
 if (std::holds_alternative<ast::ExprIdent>((*__match_subject))) {
 const ast::ExprIdent& exprIdent = std::get<ast::ExprIdent>((*__match_subject));
-auto [name, __1] = exprIdent; return ((name == mlc::String("_", 1)) ? (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, (argument_index + 1), (name_index + 1), output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprIdent{parameter_names[name_index], fallback_span})}))) : (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, (argument_index + 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}))));
+auto [name, __1] = exprIdent; return ((name == mlc::String("_", 1)) ? (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, mlc::arith::checked_add(argument_index, 1), mlc::arith::checked_add(name_index, 1), output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprIdent{parameter_names[name_index], fallback_span})}))) : (partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, mlc::arith::checked_add(argument_index, 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}))));
 }
-return partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, (argument_index + 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}));
+return partial_replace_call_arguments_inner(arguments, parameter_names, fallback_span, mlc::arith::checked_add(argument_index, 1), name_index, output.concat(mlc::Array<std::shared_ptr<ast::Expr>>{arguments[argument_index]}));
 std::abort();
 }();
   }
@@ -124,12 +124,12 @@ if (std::holds_alternative<ast::ExprNamedArg>((*__match_subject))) {
 const ast::ExprNamedArg& exprNamedArg = std::get<ast::ExprNamedArg>((*__match_subject));
 auto [label, inner_expression, span_named] = exprNamedArg; return [&]() {
 auto inner_pair = partial_application_desugar_inner(inner_expression, serial);
-return partial_application_map_arguments_at(arguments, (index + 1), inner_pair.next_serial, mapped.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprNamedArg{label, inner_pair.expression, span_named})}));
+return partial_application_map_arguments_at(arguments, mlc::arith::checked_add(index, 1), inner_pair.next_serial, mapped.concat(mlc::Array<std::shared_ptr<ast::Expr>>{std::make_shared<ast::Expr>(ast::ExprNamedArg{label, inner_pair.expression, span_named})}));
 }();
 }
 return [&]() {
 auto argument_pair = partial_application_desugar_inner(arguments[index], serial);
-return partial_application_map_arguments_at(arguments, (index + 1), argument_pair.next_serial, mapped.concat(mlc::Array<std::shared_ptr<ast::Expr>>{argument_pair.expression}));
+return partial_application_map_arguments_at(arguments, mlc::arith::checked_add(index, 1), argument_pair.next_serial, mapped.concat(mlc::Array<std::shared_ptr<ast::Expr>>{argument_pair.expression}));
 }();
 std::abort();
 }();

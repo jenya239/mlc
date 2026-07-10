@@ -229,10 +229,10 @@ std::shared_ptr<registry::Type> array_element_type_from_value_type(std::shared_p
 }
 Tuple_or_slot_pattern_environment_fold_state let_tuple_environment_fold_step(Tuple_or_slot_pattern_environment_fold_state state, std::shared_ptr<ast::Pattern> tuple_component_pattern, mlc::Array<std::shared_ptr<registry::Type>> tuple_member_types, registry::TypeRegistry registry) noexcept{
   auto tuple_member_type = tuple_member_types[state.next_component_index];
-  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(tuple_component_pattern, tuple_member_type, state.pattern_environment, registry), (state.next_component_index + 1)};
+  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(tuple_component_pattern, tuple_member_type, state.pattern_environment, registry), mlc::arith::checked_add(state.next_component_index, 1)};
 }
 Tuple_or_slot_pattern_environment_fold_state let_array_element_patterns_fold_step(Tuple_or_slot_pattern_environment_fold_state state, std::shared_ptr<ast::Pattern> array_cell_pattern, std::shared_ptr<registry::Type> array_element_type, registry::TypeRegistry registry) noexcept{
-  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(array_cell_pattern, array_element_type, state.pattern_environment, registry), (state.next_component_index + 1)};
+  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(array_cell_pattern, array_element_type, state.pattern_environment, registry), mlc::arith::checked_add(state.next_component_index, 1)};
 }
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> let_record_literal_field_pattern_fold_step(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> field_pattern_environment, std::shared_ptr<ast::Pattern> field_subpattern, std::shared_ptr<registry::Type> let_rhs_object_type, registry::TypeRegistry registry) noexcept{
   auto record_field_binding_name = pattern_ident_binding_name(field_subpattern);
@@ -291,7 +291,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> apply_let_ctor_patter
 Tuple_or_slot_pattern_environment_fold_state ordered_record_tuple_environment_fold_step(Tuple_or_slot_pattern_environment_fold_state state, std::shared_ptr<ast::Pattern> tuple_component_pattern_in_record_order, mlc::Array<mlc::String> ordered_field_labels, std::shared_ptr<registry::Type> let_rhs_record_object_type, registry::TypeRegistry registry) noexcept{
   auto label_for_ordered_slot = ordered_field_labels[state.next_component_index];
   auto inferred_field_member_type = registry::field_type_from_object(let_rhs_record_object_type, label_for_ordered_slot, registry);
-  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(tuple_component_pattern_in_record_order, inferred_field_member_type, state.pattern_environment, registry), (state.next_component_index + 1)};
+  return Tuple_or_slot_pattern_environment_fold_state{apply_let_pattern_to_env(tuple_component_pattern_in_record_order, inferred_field_member_type, state.pattern_environment, registry), mlc::arith::checked_add(state.next_component_index, 1)};
 }
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> apply_let_ident_pattern_to_env(mlc::String let_binding_name, std::shared_ptr<registry::Type> value_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> base_env) noexcept{
   auto environment_where_ident_binding_is_added = base_env;

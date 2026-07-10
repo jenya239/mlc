@@ -95,10 +95,10 @@ predicates::ParseResult<std::shared_ptr<ast::Stmt>> parse_statement_let_const(pr
   return predicates::statement_parse_result(std::make_shared<ast::Stmt>(ast::StmtLetConst{var_name, type_expr, expression, statement_span}), value_parsed.parser);
 }
 ast_tokens::TokenKind parser_next_kind(predicates::Parser p) noexcept{
-  if (((p.position + 1) >= p.tokens.length()))   {
+  if ((mlc::arith::checked_add(p.position, 1) >= p.tokens.length()))   {
     return ast_tokens::Eof{};
   } else   {
-    return p.tokens[(p.position + 1)].kind;
+    return p.tokens[mlc::arith::checked_add(p.position, 1)].kind;
   }
 }
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_after_let_pattern(predicates::Parser parser) noexcept{
@@ -685,7 +685,7 @@ std::shared_ptr<ast::Expr> build_template_expr(mlc::Array<mlc::String> parts) no
   auto result = std::make_shared<ast::Expr>(ast::ExprStr{mlc::String("", 0), ast::span_unknown()});
   auto pi = 0;
   while ((pi < parts.length()))   {
-    auto part_expr = (((pi % 2) == 0) ? (std::make_shared<ast::Expr>(ast::ExprStr{parts[pi], ast::span_unknown()})) : ([&]() -> std::shared_ptr<ast::Expr> {
+    auto part_expr = ((mlc::arith::checked_mod(pi, 2) == 0) ? (std::make_shared<ast::Expr>(ast::ExprStr{parts[pi], ast::span_unknown()})) : ([&]() -> std::shared_ptr<ast::Expr> {
   if ((parts[pi].length() == 0))   {
     return std::make_shared<ast::Expr>(ast::ExprStr{mlc::String("", 0), ast::span_unknown()});
   } else   {
@@ -701,7 +701,7 @@ return std::make_shared<ast::Expr>(ast::ExprMethod{sub_parsed.value, mlc::String
     } else     {
       (result = std::make_shared<ast::Expr>(ast::ExprBin{mlc::String("+", 1), result, part_expr, ast::span_unknown()}));
     }
-    (pi = (pi + 1));
+    (pi = mlc::arith::checked_add(pi, 1));
   }
   return result;
 }
@@ -1024,7 +1024,7 @@ std::shared_ptr<ast::Expr> block_result(mlc::Array<std::shared_ptr<ast::Stmt>> s
   if ((stmts.length() == 0))   {
     return std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()});
   }
-  auto last = stmts[(stmts.length() - 1)];
+  auto last = stmts[mlc::arith::checked_sub(stmts.length(), 1)];
   if ((!is_stmt_expr(last)))   {
     return std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()});
   }
@@ -1037,9 +1037,9 @@ std::shared_ptr<ast::Expr> block_result(mlc::Array<std::shared_ptr<ast::Stmt>> s
 mlc::Array<std::shared_ptr<ast::Stmt>> block_body_without_last_statement(mlc::Array<std::shared_ptr<ast::Stmt>> stmts) noexcept{
   auto result = mlc::Array<std::shared_ptr<ast::Stmt>>{};
   auto index = 0;
-  while ((index < (stmts.length() - 1)))   {
+  while ((index < mlc::arith::checked_sub(stmts.length(), 1)))   {
     result.push_back(stmts[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -1047,7 +1047,7 @@ mlc::Array<std::shared_ptr<ast::Stmt>> block_body(mlc::Array<std::shared_ptr<ast
   if ((stmts.length() == 0))   {
     return stmts;
   }
-  auto last = stmts[(stmts.length() - 1)];
+  auto last = stmts[mlc::arith::checked_sub(stmts.length(), 1)];
   if ((!is_stmt_expr(last)))   {
     return stmts;
   }

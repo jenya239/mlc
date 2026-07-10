@@ -3,6 +3,7 @@
 
 #include "ast.hpp"
 #include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "mir_types.hpp"
 #include "mir_ids.hpp"
 #include "cpp_ast.hpp"
@@ -12,6 +13,7 @@ namespace mir_to_cpp {
 
 using namespace ast;
 using namespace registry;
+using namespace semantic_type_structure;
 using namespace mir_types;
 using namespace mir_ids;
 using namespace cpp_ast;
@@ -56,7 +58,7 @@ mir_types::MirLocal mir_find_local(mir_types::MirFunction function, mir_types::L
     if ((mir_ids::mir_local_id_index(function.locals[index].id) == mir_ids::mir_local_id_index(local_id)))     {
       return function.locals[index];
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return mir_types::MirLocal{local_id, mlc::String("", 0), mir_to_cpp_unknown_type()};
 }
@@ -66,7 +68,7 @@ mir_types::MirBlock mir_block_by_id(mir_types::MirFunction function, mir_types::
     if ((mir_ids::mir_block_id_index(function.blocks[index].id) == mir_ids::mir_block_id_index(block_id)))     {
       return function.blocks[index];
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return function.blocks[0];
 }
@@ -86,9 +88,21 @@ std::shared_ptr<cpp_ast::CppExpression> mir_operand_to_cpp_expression(mir_types:
 [&](const mir_types::MirOperandLocal& mirOperandLocal) { auto [local_id] = mirOperandLocal; return emit_helpers::make_identifier_cpp_expression(mir_local_cpp_name(function, local_id)); }
 }, operand);
 }
+std::shared_ptr<registry::Type> mir_operand_type(mir_types::MirFunction function, mir_types::MirOperand operand) noexcept{
+  return std::visit(overloaded{[&](const mir_types::MirOperandLocal& mirOperandLocal) { auto [local_id] = mirOperandLocal; return mir_find_local(function, local_id).type_value; },
+[&](const mir_types::MirOperandConstInt& mirOperandConstInt) { auto [__0] = mirOperandConstInt; return std::make_shared<registry::Type>(registry::TI32{}); },
+[&](const mir_types::MirOperandConstBool& mirOperandConstBool) { auto [__0] = mirOperandConstBool; return std::make_shared<registry::Type>(registry::TBool{}); },
+[&](const mir_types::MirOperandConstStr& mirOperandConstStr) { auto [__0] = mirOperandConstStr; return std::make_shared<registry::Type>(registry::TString{}); },
+[&](const mir_types::MirOperandUnit& mirOperandUnit) { return std::make_shared<registry::Type>(registry::TUnit{}); }
+}, operand);
+}
 std::shared_ptr<cpp_ast::CppExpression> mir_rvalue_to_cpp_expression(mir_types::MirFunction function, mir_types::MirRvalue rvalue) noexcept{
   return std::visit(overloaded{[&](const mir_types::MirRvalueUse& mirRvalueUse) { auto [operand] = mirRvalueUse; return mir_operand_to_cpp_expression(function, operand); },
-[&](const mir_types::MirRvalueBinary& mirRvalueBinary) { auto [operation, left, right] = mirRvalueBinary; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppBinary{operation, mir_operand_to_cpp_expression(function, left), mir_operand_to_cpp_expression(function, right)}); }
+[&](const mir_types::MirRvalueBinary& mirRvalueBinary) { auto [operation, left, right] = mirRvalueBinary; return [&]() {
+auto helper_name = semantic_type_structure::checked_arithmetic_helper_name(operation, mir_operand_type(function, left), mir_operand_type(function, right));
+return ((helper_name != mlc::String("", 0)) ? (std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppCall{emit_helpers::make_identifier_cpp_expression(helper_name), mlc::Array<std::shared_ptr<cpp_ast::CppExpression>>{mir_operand_to_cpp_expression(function, left), mir_operand_to_cpp_expression(function, right)}})) : (std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppBinary{operation, mir_operand_to_cpp_expression(function, left), mir_operand_to_cpp_expression(function, right)})));
+}(); },
+[&](const mir_types::MirRvalueUnary& mirRvalueUnary) { auto [operation, operand] = mirRvalueUnary; return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppUnary{operation, mir_operand_to_cpp_expression(function, operand)}); }
 }, rvalue);
 }
 mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> mir_call_operands_to_cpp_expressions(mir_types::MirFunction function, mlc::Array<mir_types::MirOperand> operands) noexcept{
@@ -96,7 +110,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> mir_call_operands_to_cpp_exp
   auto index = 0;
   while ((index < operands.length()))   {
     expressions.push_back(mir_operand_to_cpp_expression(function, operands[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return expressions;
 }
@@ -117,7 +131,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> mir_stmts_to_cpp_statements(m
   auto index = 0;
   while ((index < statements.length()))   {
     output.push_back(mir_stmt_to_cpp_statement(function, statements[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return output;
 }
@@ -226,7 +240,7 @@ mlc::Array<mlc::String> mir_function_parameter_strings(mir_types::MirFunction fu
   while ((index < function.params.length()))   {
     auto parameter = function.params[index];
     parameters.push_back(((((mlc::String("", 0) + mlc::to_string(mir_type_to_cpp_string(parameter.type_value))) + mlc::String(" ", 1)) + mlc::to_string(mir_cpp_safe_name(parameter.name))) + mlc::String("", 0)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parameters;
 }

@@ -14,7 +14,7 @@ std::shared_ptr<ast::TypeExpr> field_def_type(std::shared_ptr<ast::FieldDef> fie
   return field_definition->type_value;
 }
 std::shared_ptr<CtorTypeInfo> ctor_type_info_for(mlc::String constructor_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> argument_type_expressions) noexcept{
-  auto scan_parsed = argument_type_expressions.fold(ConstructorArgumentScanState{0, {}, {}}, [=](ConstructorArgumentScanState accumulated_state, std::shared_ptr<ast::TypeExpr> type_expression_under_scan) mutable { return ConstructorArgumentScanState{(accumulated_state.next_position_index + 1), (param_analysis::is_shared_type(type_expression_under_scan) ? (accumulated_state.shared_positions.concat(mlc::Array<int>{accumulated_state.next_position_index})) : (accumulated_state.shared_positions)), (param_analysis::is_shared_array_type(type_expression_under_scan) ? (accumulated_state.shared_array_positions.concat(mlc::Array<int>{accumulated_state.next_position_index})) : (accumulated_state.shared_array_positions))}; });
+  auto scan_parsed = argument_type_expressions.fold(ConstructorArgumentScanState{0, {}, {}}, [=](ConstructorArgumentScanState accumulated_state, std::shared_ptr<ast::TypeExpr> type_expression_under_scan) mutable { return ConstructorArgumentScanState{mlc::arith::checked_add(accumulated_state.next_position_index, 1), (param_analysis::is_shared_type(type_expression_under_scan) ? (accumulated_state.shared_positions.concat(mlc::Array<int>{accumulated_state.next_position_index})) : (accumulated_state.shared_positions)), (param_analysis::is_shared_array_type(type_expression_under_scan) ? (accumulated_state.shared_array_positions.concat(mlc::Array<int>{accumulated_state.next_position_index})) : (accumulated_state.shared_array_positions))}; });
   return std::make_shared<CtorTypeInfo>(CtorTypeInfo{constructor_name, scan_parsed.shared_positions, scan_parsed.shared_array_positions});
 }
 mlc::Array<std::shared_ptr<CtorTypeInfo>> variant_to_ctor_info(std::shared_ptr<ast::TypeVariant> variant) noexcept{
@@ -69,7 +69,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<CtorTypeInfo>> build_ctor_type_info_in
   auto info_index = 0;
   while ((info_index < infos.length()))   {
     index.set(infos[info_index]->name, infos[info_index]);
-    (info_index = (info_index + 1));
+    (info_index = mlc::arith::checked_add(info_index, 1));
   }
   return index;
 }

@@ -167,6 +167,8 @@ bool register_extend_method_into_registry(TypeRegistry& registry, std::shared_pt
 bool register_decl_trait_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool register_decl_extend_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool register_decl_fn_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
+bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) noexcept;
+void register_derive_json_functions(TypeRegistry& registry, mlc::String type_name) noexcept;
 bool register_decl_type_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool register_decl_type_alias_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;
 bool register_decl_exported_if(TypeRegistry& registry, std::shared_ptr<ast::Decl> declaration) noexcept;

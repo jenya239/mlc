@@ -53,7 +53,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> append_statements(mlc::Array<
   auto index = 0;
   while ((index < extra.length()))   {
     output.push_back(extra[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return output;
 }
@@ -81,7 +81,7 @@ bool tuple_subpatterns_are_simple_identifiers(mlc::Array<std::shared_ptr<ast::Pa
     if ((!pattern_is_identifier(subpatterns[index])))     {
       (all_simple = false);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return all_simple;
 }
@@ -90,7 +90,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> simple_tuple_ident_binding_st
   auto index = 0;
   while ((index < subpatterns.length()))   {
     statements.push_back(tuple_ident_binding_statement(subpatterns[index], source_name, index));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return statements;
 }
@@ -118,7 +118,7 @@ std::shared_ptr<cpp_ast::CppStatement> let_pattern_block(mlc::Array<std::shared_
   auto index = 0;
   while ((index < statements.length()))   {
     block_statements.push_back(statements[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return emit_helpers::make_fragment_cpp_statement(print_statements_as_fragment(block_statements));
 }
@@ -185,7 +185,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> record_member_binding_stateme
   auto member_slot_index = 0;
   while ((member_slot_index < subpatterns.length()))   {
     member_statements.push_back(record_member_binding_statement(subpatterns[member_slot_index], ordered_member_labels[member_slot_index], temp_name));
-    (member_slot_index = (member_slot_index + 1));
+    (member_slot_index = mlc::arith::checked_add(member_slot_index, 1));
   }
   return member_statements;
 }
@@ -218,7 +218,7 @@ GenLetPatternCppResult record_pattern_cpp_result(mlc::Array<std::shared_ptr<ast:
   auto index = 0;
   while ((index < field_patterns.length()))   {
     field_statements.push_back(record_field_binding_statement(field_patterns[index], temp_name));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return GenLetPatternCppResult{let_pattern_block(field_statements, value_expression, temp_name), codegen_context};
 }
@@ -243,7 +243,7 @@ GenLetPatternCppResult array_pattern_cpp_result(mlc::Array<std::shared_ptr<ast::
   auto index = 0;
   while ((index < subpatterns.length()))   {
     array_statements.push_back(array_element_binding_statement(subpatterns[index], temp_name, index));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((rest_name != mlc::String("", 0)))   {
     array_statements.push_back(emit_helpers::make_auto_cpp_statement(cpp_naming::cpp_safe(rest_name), array_rest_slice_expression(temp_name, subpatterns.length(), element_cpp)));

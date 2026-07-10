@@ -21,7 +21,7 @@ mlc::Array<mlc::String> mir_lower_append_errors(mlc::Array<mlc::String> accumula
   auto index = 0;
   while ((index < errors.length()))   {
     next.push_back(errors[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return next;
 }
@@ -35,11 +35,12 @@ return MirLowerAccum{next_functions, accum.errors};
 }, lower_fn::lower_semantic_function(declaration));
 }
 MirLowerAccum mir_lower_append_declaration(MirLowerAccum accum, std::shared_ptr<semantic_ir::SemanticDeclaration> declaration) noexcept{
+  auto inner = semantic_ir::sdecl_inner(declaration);
   return [&]() -> MirLowerAccum {
-auto __match_subject = semantic_ir::sdecl_inner(declaration);
+auto __match_subject = inner;
 if (std::holds_alternative<semantic_ir::SemanticDeclarationFn>((*__match_subject))) {
 const semantic_ir::SemanticDeclarationFn& semanticDeclarationFn = std::get<semantic_ir::SemanticDeclarationFn>((*__match_subject));
-auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return mir_lower_append_function(accum, declaration);
+auto [__0, __1, __2, __3, __4, __5, __6, __7, __8] = semanticDeclarationFn; return mir_lower_append_function(accum, inner);
 }
 return accum;
 std::abort();
@@ -50,7 +51,7 @@ MirLowerAccum mir_lower_declarations(MirLowerAccum accum, mlc::Array<std::shared
   auto next = accum;
   while ((index < declarations.length()))   {
     (next = mir_lower_append_declaration(next, declarations[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return next;
 }
@@ -59,7 +60,7 @@ MirLowerAccum mir_lower_items(mlc::Array<semantic_ir::SemanticLoadItem> items) n
   auto accum = MirLowerAccum{{}, {}};
   while ((index < items.length()))   {
     (accum = mir_lower_declarations(accum, items[index].decls));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accum;
 }

@@ -123,7 +123,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment_from
   while ((index < parameters.length()))   {
     auto parameter = parameters[index];
     type_environment.set(parameter->name, registry::type_from_annotation_with_registry(parameter->type_value, registry));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return type_environment;
 }
@@ -293,7 +293,7 @@ auto bindings = names::pattern_bindings(pattern);
 auto index = 0;
 while ((index < bindings.length())) {
   type_environment.set(bindings[index], binding_type);
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 auto scope_after = ((is_mut && (!type_is_sync_safe_shared(binding_type, registry))) ? (names_add_all(scope, bindings)) : (scope));
 return SpawnCaptureMutableWalkState{empty_diagnostics(), scope_after, type_environment};

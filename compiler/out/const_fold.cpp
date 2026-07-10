@@ -12,19 +12,19 @@ mir_types::MirOperand const_fold_operand(mir_types::MirOperand operand) noexcept
 }
 mir_types::MirOperand const_fold_binary_int(mlc::String operation, int left, int right) noexcept{
   if ((operation == mlc::String("+", 1)))   {
-    return mir_types::MirOperandConstInt{(left + right)};
+    return mir_types::MirOperandConstInt{mlc::arith::checked_add(left, right)};
   }
   if ((operation == mlc::String("-", 1)))   {
-    return mir_types::MirOperandConstInt{(left - right)};
+    return mir_types::MirOperandConstInt{mlc::arith::checked_sub(left, right)};
   }
   if ((operation == mlc::String("*", 1)))   {
-    return mir_types::MirOperandConstInt{(left * right)};
+    return mir_types::MirOperandConstInt{mlc::arith::checked_mul(left, right)};
   }
   if (((operation == mlc::String("/", 1)) && (right != 0)))   {
-    return mir_types::MirOperandConstInt{(left / right)};
+    return mir_types::MirOperandConstInt{mlc::arith::checked_div(left, right)};
   }
   if (((operation == mlc::String("%", 1)) && (right != 0)))   {
-    return mir_types::MirOperandConstInt{(left % right)};
+    return mir_types::MirOperandConstInt{mlc::arith::checked_mod(left, right)};
   }
   if ((operation == mlc::String(">", 1)))   {
     return mir_types::MirOperandConstBool{(left > right)};
@@ -81,7 +81,8 @@ mir_types::MirRvalue const_fold_rvalue_binary(mlc::String operation, mir_types::
 }
 mir_types::MirRvalue const_fold_rvalue(mir_types::MirRvalue rvalue) noexcept{
   return std::visit(overloaded{[&](const mir_types::MirRvalueUse& mirRvalueUse) -> mir_types::MirRvalue { auto [operand] = mirRvalueUse; return mir_types::MirRvalueUse{const_fold_operand(operand)}; },
-[&](const mir_types::MirRvalueBinary& mirRvalueBinary) -> mir_types::MirRvalue { auto [operation, left, right] = mirRvalueBinary; return const_fold_rvalue_binary(operation, left, right); }
+[&](const mir_types::MirRvalueBinary& mirRvalueBinary) -> mir_types::MirRvalue { auto [operation, left, right] = mirRvalueBinary; return const_fold_rvalue_binary(operation, left, right); },
+[&](const mir_types::MirRvalueUnary& mirRvalueUnary) -> mir_types::MirRvalue { auto [operation, operand] = mirRvalueUnary; return mir_types::MirRvalueUnary{operation, const_fold_operand(operand)}; }
 }, rvalue);
 }
 mlc::Array<mir_types::MirOperand> const_fold_call_operands(mlc::Array<mir_types::MirOperand> operands) noexcept{
@@ -89,7 +90,7 @@ mlc::Array<mir_types::MirOperand> const_fold_call_operands(mlc::Array<mir_types:
   auto index = 0;
   while ((index < operands.length()))   {
     folded.push_back(const_fold_operand(operands[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return folded;
 }
@@ -103,7 +104,7 @@ mlc::Array<mir_types::MirStmt> const_fold_block_statements(mlc::Array<mir_types:
   auto index = 0;
   while ((index < statements.length()))   {
     folded.push_back(const_fold_statement(statements[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return folded;
 }
@@ -130,7 +131,7 @@ mlc::Array<mir_types::MirBlock> const_fold_blocks(mlc::Array<mir_types::MirBlock
   auto index = 0;
   while ((index < blocks.length()))   {
     folded.push_back(const_fold_block(blocks[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return folded;
 }

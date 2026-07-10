@@ -34,7 +34,7 @@ CppParseResult cpp_parse(mlc::Array<cpp_tokens::CppToken> tokens) noexcept{
       errors.push_back(parse_result.error_message);
     }
     if ((cpp_is_skip_declaration(parse_result.declaration) && (parse_result.position == position)))     {
-      (position = (position + 1));
+      (position = mlc::arith::checked_add(position, 1));
     } else if ((!cpp_is_skip_declaration(parse_result.declaration)))     {
       declarations.push_back(parse_result.declaration);
       (position = parse_result.position);

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 35 |
-| step_last | 3.1 |
-| active_track | TRACK_LANG_INT_OVERFLOW STEP=3.2 |
-| test_gate | ok (Ruby overflow codegen + smoke) |
+| driver_turns_since_plan | 36 |
+| step_last | 3.2 |
+| active_track | TRACK_LANG_INT_OVERFLOW STEP=4 |
+| test_gate | ok (self-host DIFF identical; mlcc smoke) |
+
+### Turn 2026-07-10 20:00 (Driver TRACK_LANG_INT_OVERFLOW STEP=3.2 — self-hosted)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3.2 |
+| track   | TRACK_LANG_INT_OVERFLOW |
+| started | 2026-07-10 16:15 |
+| elapsed | ~110 min |
+| done    | Self-hosted: `checked_arithmetic_helper_name(op,left,right)` both-operand integer gate; `gen_binary_via_cpp_visitor` + `mir_to_cpp`; `mlc.hpp` includes `arith.hpp`; non-integral `checked_*` fallback; tests expectations; rebuild `compiler/out`. |
+| verify  | mlcc smoke i32→checked_add, u8→raw `+`; self-host p1→mlcc2→p2 DIFF identical; translate ~4s. |
+| result  | STEP=3.2+3 done. Plain: self-hosted emits checked integer ops. |
+| issues  | Ruby `test_compiler_mlc` blocked (pre-existing MATCH parse on move_check); first codegen used Bin result type → string `checked_add` — fixed by both-operand gate + arith fallback. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_INT_OVERFLOW — stdlib wrapping/checked/saturating methods |
 
 ### Turn 2026-07-10 19:10 (Driver TRACK_LANG_INT_OVERFLOW STEP=3.1 — Ruby codegen)
 

@@ -36,7 +36,7 @@ Constructor_pattern_environment_fold_state constructor_subpattern_environment_fo
   auto raw_constructor_parameter_type = ((current_subpattern_index < parameter_types.length()) ? (parameter_types[current_subpattern_index]) : (std::make_shared<registry::Type>(registry::TUnknown{})));
   auto resolved_constructor_subpattern_type = semantic_type_structure::substitute_type(raw_constructor_parameter_type, parameter_type_substitution);
   auto next_environment_after_subpattern = env_for_pattern_with_type(accumulator.environment, sub_pattern_value, resolved_constructor_subpattern_type, registry);
-  return Constructor_pattern_environment_fold_state{next_environment_after_subpattern, (current_subpattern_index + 1)};
+  return Constructor_pattern_environment_fold_state{next_environment_after_subpattern, mlc::arith::checked_add(current_subpattern_index, 1)};
 }
 mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> environment_after_all_constructor_subpatterns(mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> initial_environment, mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::Array<std::shared_ptr<registry::Type>> parameter_types, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> parameter_type_substitution, registry::TypeRegistry registry) noexcept{
   return sub_patterns.fold(Constructor_pattern_environment_fold_state{initial_environment, 0}, [=](Constructor_pattern_environment_fold_state accumulator, std::shared_ptr<ast::Pattern> sub_pattern_value) mutable { return constructor_subpattern_environment_fold_step(accumulator, sub_pattern_value, parameter_types, parameter_type_substitution, registry); }).environment;

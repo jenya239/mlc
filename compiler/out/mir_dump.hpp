@@ -6,6 +6,7 @@
 #include "mir_types.hpp"
 namespace mir_dump {
 
+mlc::String print_mir_stmt(mir_types::MirStmt statement) noexcept;
 mlc::String print_mir_block(mir_types::MirBlock block) noexcept;
 mlc::String print_mir_function(mir_types::MirFunction function) noexcept;
 mlc::String print_mir_module(mir_types::MirModule mir_module) noexcept;

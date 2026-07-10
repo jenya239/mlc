@@ -52,6 +52,9 @@ std::shared_ptr<registry::Type> substitute_tuple_type_for_map(mlc::Array<std::sh
 std::shared_ptr<registry::Type> substitute_function_type_for_map(mlc::Array<std::shared_ptr<registry::Type>> parameter_list, std::shared_ptr<registry::Type> return_type, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
 std::shared_ptr<registry::Type> substitute_type(std::shared_ptr<registry::Type> type_value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> substitution) noexcept;
 mlc::String operator_method_for(mlc::String operation) noexcept;
+bool signed_integer_type_for_overflow(std::shared_ptr<registry::Type> type_value) noexcept;
+bool integer_type_for_division_check(std::shared_ptr<registry::Type> type_value) noexcept;
+mlc::String checked_arithmetic_helper_name(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept;
 
 } // namespace semantic_type_structure
 

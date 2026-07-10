@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) (типы `i32`/`i64`/
 `u32`/`u64`). Trigger: обзор пробелов 2026-07-10 — семантика переполнения
 целочисленной арифметики не зафиксирована ни в одном документе.
 
-## Status: **open** — STEP=1–2 **done**; STEP=3.1 **done** (Ruby+runtime); STEP=3.2 next (self-hosted)
+## Status: **open** — STEP=1–3 **done**; STEP=4 next (stdlib wrapping/checked/saturating)
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -53,8 +53,8 @@ signed overflow — undefined behavior. Никакой документ прое
 | 1 | Design-решение: выбрать один вариант по умолчанию (рекомендация: panic в debug-сборке/UBSan-детектируемый UB в release — соответствует уже принятому в проекте паттерну "panic с сообщением" из `PLAN.md` §7 метрики "Crashes на невалидном вводе: 0 (panic с сообщением)"); отдельные `wrapping_add`/`checked_add`/`saturating_add` как явные stdlib-методы, не операторы, — второй приоритет, не блокирует STEP=1. | **done** (2026-07-10: see Decision; signed debug-panic / release-UB; unsigned wrap; `/` `%` div0 panic) |
 | 2 | Документация: раздел в `MLC.md` — зафиксировать выбранную семантику для `+`/`-`/`*`/`/` (включая целочисленное деление на 0 — тоже не зафиксировано, тот же трек, тот же STEP). | **done** (2026-07-10: `MLC.md` C4 «Целочисленная арифметика») |
 | 3.1 | Ruby codegen + runtime: `mlc::arith::checked_{add,sub,mul,div,mod}`; `mlc::io::panic`; signed `+`/`-`/`*` → helpers; unsigned wrap raw; `/` `%` → helpers (div0 all builds). | **done** (2026-07-10) |
-| 3.2 | Self-hosted codegen parity (`compiler/` expr visitor / mir_to_cpp). Benchmark if hot path. | pending |
-| 3 | Codegen: debug panic checks for signed `+`/`-`/`*` and all-builds div0 for `/` `%`; unsigned wrap unchanged. Ruby then self-hosted. | **partial** (3.1 done; 3.2 pending) |
+| 3.2 | Self-hosted codegen parity (`compiler/` expr visitor / mir_to_cpp). Benchmark if hot path. | **done** (2026-07-10: both-operand integer gate; `arith.hpp` non-integral fallback; self-host DIFF identical; translate ~4s) |
+| 3 | Codegen: debug panic checks for signed `+`/`-`/`*` and all-builds div0 for `/` `%`; unsigned wrap unchanged. Ruby then self-hosted. | **done** (3.1+3.2) |
 | 4 | Stdlib: `wrapping_add`/`checked_add`/`saturating_add`/аналоги для `-`/`*`. | pending |
 | 5 | Тесты: unit-тесты на overflow/underflow/деление на 0 для всех целочисленных типов; verify-gate self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`; close. | pending |
 

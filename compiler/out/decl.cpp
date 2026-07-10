@@ -451,7 +451,7 @@ DeclPartsBundle collect_all_decl_parts(mlc::Array<std::shared_ptr<semantic_ir::S
     if ((trait_struct_segment.length() > 0))     {
       fn_defs.push_back(trait_struct_segment);
     }
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   auto extend_helper_prototypes = extend_helper_protos_for_exported_types(declarations, context);
   (fn_protos = fn_protos.concat(extend_helper_prototypes));

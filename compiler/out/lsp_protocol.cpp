@@ -16,21 +16,21 @@ int lsp_parse_content_length_header(mlc::String header_line) noexcept{
   if ((!lsp_string_starts_with(header_line, prefix)))   {
     return (-1);
   } else   {
-    return header_line.substring(prefix.length(), (header_line.length() - prefix.length())).trim().to_i();
+    return header_line.substring(prefix.length(), mlc::arith::checked_sub(header_line.length(), prefix.length())).trim().to_i();
   }
 }
 mlc::String lsp_scan_quoted_json_value(mlc::String message_body, int value_start) noexcept{
   auto scan_index = value_start;
   while (((scan_index < message_body.length()) && (message_body.char_at(scan_index) != mlc::String("\"", 1))))   {
-    (scan_index = (scan_index + 1));
+    (scan_index = mlc::arith::checked_add(scan_index, 1));
   }
-  return message_body.substring(value_start, (scan_index - value_start));
+  return message_body.substring(value_start, mlc::arith::checked_sub(scan_index, value_start));
 }
 mlc::String lsp_read_quoted_field_value(mlc::String message_body, int value_start) noexcept{
   if (((value_start >= message_body.length()) || (message_body.char_at(value_start) != mlc::String("\"", 1))))   {
     return mlc::String("", 0);
   } else   {
-    return lsp_scan_quoted_json_value(message_body, (value_start + 1));
+    return lsp_scan_quoted_json_value(message_body, mlc::arith::checked_add(value_start, 1));
   }
 }
 mlc::String lsp_extract_json_string_field(mlc::String message_body, mlc::String field_name) noexcept{
@@ -53,9 +53,9 @@ int lsp_scan_json_number_at(mlc::String message_body, int value_start) noexcept{
     if (((character == mlc::String(",", 1)) || (character == mlc::String("}", 1))))     {
       break;
     }
-    (scan_index = (scan_index + 1));
+    (scan_index = mlc::arith::checked_add(scan_index, 1));
   }
-  return message_body.substring(value_start, (scan_index - value_start)).trim().to_i();
+  return message_body.substring(value_start, mlc::arith::checked_sub(scan_index, value_start)).trim().to_i();
 }
 int lsp_extract_json_number_field(mlc::String message_body, mlc::String field_name) noexcept{
   auto quoted_field = (((mlc::String("\"", 1) + field_name) + mlc::String("\"", 1)) + mlc::String(":", 1));
@@ -92,9 +92,9 @@ mlc::String lsp_build_location(mlc::String document_uri, ast::Span definition_sp
   if ((definition_span.line <= 0))   {
     return mlc::String("null", 4);
   } else   {
-    auto start_line = (definition_span.line - 1);
-    auto start_character = (definition_span.column - 1);
-    auto end_character = (start_character + 1);
+    auto start_line = mlc::arith::checked_sub(definition_span.line, 1);
+    auto start_character = mlc::arith::checked_sub(definition_span.column, 1);
+    auto end_character = mlc::arith::checked_add(start_character, 1);
     auto location_json = ((((((((((mlc::String("{\"uri\":\"", 8) + document_uri) + mlc::String("\",\"range\":{\"start\":{\"line\":", 27)) + mlc::to_string(start_line)) + mlc::String(",\"character\":", 13)) + mlc::to_string(start_character)) + mlc::String("},\"end\":{\"line\":", 16)) + mlc::to_string(start_line)) + mlc::String(",\"character\":", 13)) + mlc::to_string(end_character)) + mlc::String("}}}", 3));
     return location_json;
   }
@@ -111,14 +111,14 @@ int lsp_diagnostic_severity_number(mlc::String severity) noexcept{
 }
 int lsp_line_zero_based(int line) noexcept{
   if ((line > 0))   {
-    return (line - 1);
+    return mlc::arith::checked_sub(line, 1);
   } else   {
     return 0;
   }
 }
 int lsp_column_zero_based(int column) noexcept{
   if ((column > 0))   {
-    return (column - 1);
+    return mlc::arith::checked_sub(column, 1);
   } else   {
     return 0;
   }
@@ -126,7 +126,7 @@ int lsp_column_zero_based(int column) noexcept{
 mlc::String lsp_build_single_diagnostic_json(ast::Diagnostic diagnostic) noexcept{
   auto start_line = lsp_line_zero_based(diagnostic.span.line);
   auto start_character = lsp_column_zero_based(diagnostic.span.column);
-  auto end_character = (start_character + 1);
+  auto end_character = mlc::arith::checked_add(start_character, 1);
   return ((((((((((((mlc::String("{\"range\":{\"start\":{\"line\":", 26) + mlc::to_string(start_line)) + mlc::String(",\"character\":", 13)) + mlc::to_string(start_character)) + mlc::String("},\"end\":{\"line\":", 16)) + mlc::to_string(start_line)) + mlc::String(",\"character\":", 13)) + mlc::to_string(end_character)) + mlc::String("}},\"severity\":", 14)) + mlc::to_string(lsp_diagnostic_severity_number(diagnostic.severity))) + mlc::String(",\"message\":\"", 12)) + diagnostic.message) + mlc::String("\"}", 2));
 }
 mlc::String lsp_build_diagnostics_json_array(mlc::Array<ast::Diagnostic> diagnostics) noexcept{
@@ -134,7 +134,7 @@ mlc::String lsp_build_diagnostics_json_array(mlc::Array<ast::Diagnostic> diagnos
   auto index = 0;
   while ((index < diagnostics.length()))   {
     parts.push_back(lsp_build_single_diagnostic_json(diagnostics[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parts.join(mlc::String(",", 1));
 }

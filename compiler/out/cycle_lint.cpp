@@ -64,7 +64,7 @@ mlc::Array<mlc::String> named_targets_from_generic_through_shared(mlc::String ge
   auto argument_index = 0;
   while ((argument_index < type_arguments.length()))   {
     (accumulated = accumulated.concat(named_targets_through_shared(type_arguments[argument_index], registry)));
-    (argument_index = (argument_index + 1));
+    (argument_index = mlc::arith::checked_add(argument_index, 1));
   }
   return accumulated;
 }
@@ -73,7 +73,7 @@ mlc::Array<mlc::String> named_targets_from_tuple_through_shared(mlc::Array<std::
   auto member_index = 0;
   while ((member_index < members.length()))   {
     (accumulated = accumulated.concat(named_targets_through_shared(members[member_index], registry)));
-    (member_index = (member_index + 1));
+    (member_index = mlc::arith::checked_add(member_index, 1));
   }
   return accumulated;
 }
@@ -124,7 +124,7 @@ mlc::Array<mlc::String> named_targets_from_generic_inside_shared(mlc::String gen
   auto argument_index = 0;
   while ((argument_index < type_arguments.length()))   {
     (accumulated = accumulated.concat(named_targets_inside_shared(type_arguments[argument_index], registry)));
-    (argument_index = (argument_index + 1));
+    (argument_index = mlc::arith::checked_add(argument_index, 1));
   }
   return accumulated;
 }
@@ -133,7 +133,7 @@ mlc::Array<mlc::String> named_targets_from_tuple_inside_shared(mlc::Array<std::s
   auto member_index = 0;
   while ((member_index < members.length()))   {
     (accumulated = accumulated.concat(named_targets_inside_shared(members[member_index], registry)));
-    (member_index = (member_index + 1));
+    (member_index = mlc::arith::checked_add(member_index, 1));
   }
   return accumulated;
 }
@@ -160,7 +160,7 @@ mlc::Array<mlc::String> record_type_names_from_program(ast::Program program, reg
   auto declaration_index = 0;
   while ((declaration_index < program.decls.length()))   {
     (accumulated = append_record_type_name_if_present(accumulated, program.decls[declaration_index], registry));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return accumulated;
 }
@@ -181,14 +181,14 @@ mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_shared_adjacency(mlc::A
         [&]() {
 while ((target_index < field_targets.length())) {
 (targets = append_unique_name(targets, field_targets[target_index]));
-(target_index = (target_index + 1));
+(target_index = mlc::arith::checked_add(target_index, 1));
 }
 }();
       }
-      (field_index = (field_index + 1));
+      (field_index = mlc::arith::checked_add(field_index, 1));
     }
     adjacency.set(type_name, targets);
-    (type_index = (type_index + 1));
+    (type_index = mlc::arith::checked_add(type_index, 1));
   }
   return adjacency;
 }
@@ -203,7 +203,7 @@ bool can_reach_self(mlc::String start_name, mlc::String current_name, mlc::HashM
     } else if ((!path.contains(neighbor)))     {
       (found = can_reach_self(start_name, neighbor, adjacency, path.concat(mlc::Array<mlc::String>{neighbor})));
     }
-    (neighbor_index = (neighbor_index + 1));
+    (neighbor_index = mlc::arith::checked_add(neighbor_index, 1));
   }
   return found;
 }
@@ -229,7 +229,7 @@ mlc::Array<ast::Diagnostic> warning_for_type_declaration(ast::Program program, m
   auto declaration_index = 0;
   while ((declaration_index < program.decls.length()))   {
     (accumulated = append_warning_for_matching_type(accumulated, program.decls[declaration_index], type_name));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return accumulated;
 }
@@ -245,7 +245,7 @@ mlc::Array<ast::Diagnostic> shared_cycle_lint_diagnostics(ast::Program program, 
       (diagnostics = ast::diagnostics_append(diagnostics, warning_for_type_declaration(program, type_name)));
       (emitted = emitted.concat(mlc::Array<mlc::String>{type_name}));
     }
-    (type_index = (type_index + 1));
+    (type_index = mlc::arith::checked_add(type_index, 1));
   }
   return diagnostics;
 }

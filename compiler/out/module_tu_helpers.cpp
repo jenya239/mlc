@@ -10,10 +10,10 @@ using namespace cpp_naming;
 using namespace cpp_ast;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> push_parsed_include_line(mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> declarations, mlc::String line) noexcept{
-  if ((((line.length() >= 10) && (line.substring(0, 10) == mlc::String("#include \"", 10))) && (line.char_at((line.length() - 1)) == mlc::String("\"", 1))))   {
-    declarations.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{false, line.substring(10, (line.length() - 11))}));
-  } else if ((((line.length() >= 10) && (line.substring(0, 10) == mlc::String("#include <", 10))) && (line.char_at((line.length() - 1)) == mlc::String(">", 1))))   {
-    declarations.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{true, line.substring(10, (line.length() - 11))}));
+  if ((((line.length() >= 10) && (line.substring(0, 10) == mlc::String("#include \"", 10))) && (line.char_at(mlc::arith::checked_sub(line.length(), 1)) == mlc::String("\"", 1))))   {
+    declarations.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{false, line.substring(10, mlc::arith::checked_sub(line.length(), 11))}));
+  } else if ((((line.length() >= 10) && (line.substring(0, 10) == mlc::String("#include <", 10))) && (line.char_at(mlc::arith::checked_sub(line.length(), 1)) == mlc::String(">", 1))))   {
+    declarations.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{true, line.substring(10, mlc::arith::checked_sub(line.length(), 11))}));
   }
   return declarations;
 }
@@ -24,14 +24,14 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_cpp_declarations_fro
   while ((index < include_text.length()))   {
     if ((include_text.char_at(index) == mlc::String("\n", 1)))     {
       if ((index > start))       {
-        (result = push_parsed_include_line(result, include_text.substring(start, (index - start))));
+        (result = push_parsed_include_line(result, include_text.substring(start, mlc::arith::checked_sub(index, start))));
       }
-      (start = (index + 1));
+      (start = mlc::arith::checked_add(index, 1));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((start < include_text.length()))   {
-    (result = push_parsed_include_line(result, include_text.substring(start, (include_text.length() - start))));
+    (result = push_parsed_include_line(result, include_text.substring(start, mlc::arith::checked_sub(include_text.length(), start))));
   }
   return result;
 }
@@ -68,7 +68,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_using_namespace_decl
   auto index = 0;
   while ((index < namespace_names.length()))   {
     result.push_back(make_using_namespace_cpp_declaration(namespace_names[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }

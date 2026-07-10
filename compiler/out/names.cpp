@@ -96,7 +96,7 @@ mlc::Array<ast::Diagnostic> check_or_pattern_alternatives_same_bindings(mlc::Arr
       if ((!binding_name_sets_equal(first_bindings, alternative_bindings)))       {
         (diagnostics = diagnostics.concat(mlc::Array<ast::Diagnostic>{ast::diagnostic_error_with_code(mlc::String("all alternatives of an or-pattern must bind the same names", 58), source_span, diagnostic_codes::diagnostic_code_e083())}));
       }
-      (alternative_index = (alternative_index + 1));
+      (alternative_index = mlc::arith::checked_add(alternative_index, 1));
     }
     return diagnostics;
   }
@@ -217,7 +217,7 @@ NameCheckResult check_names_semantic_field_values(mlc::Array<std::shared_ptr<sem
   auto index = 0;
   while ((index < field_values.length()))   {
     (accumulator = merge_name_check_results(accumulator, dispatch_names_pass(names_pass, field_values[index]->value)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accumulator;
 }
@@ -226,7 +226,7 @@ NameCheckResult check_names_semantic_elements(mlc::Array<std::shared_ptr<semanti
   auto index = 0;
   while ((index < elements.length()))   {
     (accumulator = merge_name_check_results(accumulator, dispatch_names_pass(names_pass, elements[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accumulator;
 }
@@ -388,7 +388,7 @@ while ((arm_index < arms.length())) {
     (accumulator = merge_name_check_results(accumulator, dispatch_names_pass(arm_pass, arm_under_walk->when_condition)));
   }
   (accumulator = merge_name_check_results(accumulator, dispatch_names_pass(arm_pass, arm_under_walk->body)));
-  (arm_index = (arm_index + 1));
+  (arm_index = mlc::arith::checked_add(arm_index, 1));
 }
 return NameCheckResult{accumulator.diagnostics, self.locals};
 }
@@ -412,7 +412,7 @@ auto lambda_environment = self.locals;
 auto parameter_index = 0;
 while ((parameter_index < parameter_names.length())) {
   (lambda_environment = lambda_environment.concat(mlc::Array<mlc::String>{parameter_names[parameter_index]}));
-  (parameter_index = (parameter_index + 1));
+  (parameter_index = mlc::arith::checked_add(parameter_index, 1));
 }
 return dispatch_names_pass(names_pass_new(lambda_environment, self.globals), body_expression);
 }

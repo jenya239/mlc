@@ -70,6 +70,18 @@ std::shared_ptr<cpp_ast::CppDeclaration> hash_specialization_declaration(mlc::St
 std::shared_ptr<cpp_ast::CppDeclaration> derive_hash_record_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
 std::shared_ptr<cpp_ast::CppDeclaration> derive_hash_sum_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_hash_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+mlc::String derive_json_cpp_type(std::shared_ptr<ast::TypeExpr> field_type) noexcept;
+mlc::String derive_json_encode_field(mlc::String access, std::shared_ptr<ast::TypeExpr> field_type) noexcept;
+mlc::String derive_json_extract_required(mlc::String value_expr, mlc::String field_name, std::shared_ptr<ast::TypeExpr> field_type, mlc::String indent) noexcept;
+mlc::String derive_json_decode_record_field(std::shared_ptr<ast::FieldDef> field_definition) noexcept;
+mlc::String derive_json_record_to_json_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
+mlc::String derive_json_record_from_json_body(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
+std::shared_ptr<cpp_ast::CppDeclaration> derive_json_record_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept;
+mlc::String derive_json_sum_to_json_variant(std::shared_ptr<ast::TypeVariant> variant) noexcept;
+mlc::String derive_json_sum_from_json_variant(mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
+mlc::String derive_json_sum_unit_string_variant(mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept;
+std::shared_ptr<cpp_ast::CppDeclaration> derive_json_sum_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
+mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_json_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept;
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_trait_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::String trait_name) noexcept;
 mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_derive_methods_cpp(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants, mlc::Array<mlc::String> derive_traits) noexcept;
 

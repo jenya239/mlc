@@ -15,7 +15,7 @@ bool mir_block_ids_contains(mlc::Array<mir_types::BlockId> block_ids, mir_types:
     if (mir_ids::mir_block_id_equals(block_ids[index], block_id))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -40,7 +40,7 @@ mir_types::MirBlock mir_block_by_id(mlc::Array<mir_types::MirBlock> blocks, mir_
     if (mir_ids::mir_block_id_equals(blocks[index].id, block_id))     {
       return blocks[index];
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return blocks[0];
 }
@@ -56,9 +56,9 @@ mlc::Array<mir_types::BlockId> mir_collect_reachable_block_ids(mlc::Array<mir_ty
     auto target_index = 0;
     while ((target_index < targets.length()))     {
       (reachable = mir_append_block_id(reachable, targets[target_index]));
-      (target_index = (target_index + 1));
+      (target_index = mlc::arith::checked_add(target_index, 1));
     }
-    (queue_index = (queue_index + 1));
+    (queue_index = mlc::arith::checked_add(queue_index, 1));
   }
   return reachable;
 }
@@ -98,7 +98,7 @@ mlc::Array<mir_types::MirBlock> mir_simplify_cfg_blocks(mlc::Array<mir_types::Mi
   auto index = 0;
   while ((index < blocks.length()))   {
     simplified.push_back(mir_simplify_cfg_block(blocks[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return simplified;
 }
@@ -109,7 +109,7 @@ mlc::Array<mir_types::MirBlock> mir_filter_reachable_blocks(mlc::Array<mir_types
     if (mir_block_ids_contains(reachable_ids, blocks[index].id))     {
       kept.push_back(blocks[index]);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return kept;
 }

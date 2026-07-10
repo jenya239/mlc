@@ -17,6 +17,8 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_call(mlc::String 
     return vm_native_array_empty(arguments);
   } else if ((name == mlc::String("__mir_array_push", 16)))   {
     return vm_native_array_push(arguments);
+  } else if ((name == mlc::String("__mir_array_pop", 15)))   {
+    return vm_native_array_pop(arguments);
   } else if ((name == mlc::String("__mir_array_length", 18)))   {
     return vm_native_array_length(arguments);
   } else if ((name == mlc::String("__mir_array_get", 15)))   {
@@ -31,24 +33,224 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_call(mlc::String 
     return vm_native_map_length(arguments);
   } else if ((name == mlc::String("__mir_string_length", 19)))   {
     return vm_native_string_length(arguments);
+  } else if ((name == mlc::String("__mir_string_contains", 21)))   {
+    return vm_native_string_contains(arguments);
   } else if ((name == mlc::String("__mir_length", 12)))   {
     return vm_native_collection_length(arguments);
   } else if ((name == mlc::String("__mir_variant_is", 16)))   {
     return vm_native_variant_is(arguments);
   } else if ((name == mlc::String("__mir_variant_field", 19)))   {
     return vm_native_variant_field(arguments);
+  } else if ((name == mlc::String("__mir_variant_new", 17)))   {
+    return vm_native_variant_new(arguments);
+  } else if ((name == mlc::String("__mir_record_new", 16)))   {
+    return vm_native_record_new(arguments);
+  } else if ((name == mlc::String("__mir_record_field", 18)))   {
+    return vm_native_record_field(arguments);
+  } else if ((name == mlc::String("__mir_shared_new", 16)))   {
+    return vm_native_shared_new(arguments);
+  } else if ((name == mlc::String("__mir_result_is_err", 19)))   {
+    return vm_native_result_is_err(arguments);
+  } else if ((name == mlc::String("__mir_result_ok_value", 21)))   {
+    return vm_native_result_ok_value(arguments);
   } else   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{((mlc::String("vm: unknown native ", 19) + mlc::to_string(name)) + mlc::String("", 0))}};
   }
 }
-value::VmValue vm_variant_ctor(mlc::String tag, mlc::Array<value::VmValue> arguments) noexcept{
-  auto integer_fields = mlc::Array<int>{};
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_variant_ctor(mlc::String tag, mlc::Array<value::VmValue> arguments) noexcept{
+  auto fields = mlc::Array<value::VmFieldSlot>{};
   auto index = 0;
-  while ((index < arguments.length()))   {
-    integer_fields.push_back(value::vm_value_int_or_zero(arguments[index]));
-    (index = (index + 1));
+  auto failed = false;
+  auto errors = mlc::Array<mlc::String>{};
+  while (((index < arguments.length()) && (!failed)))   {
+    std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> void { auto [slot_errors] = err; [&]() {
+(failed = true);
+(errors = slot_errors);
+return std::make_tuple();
+}(); },
+[&](const ast::Ok<value::VmFieldSlot>& ok) -> void { auto [slot] = ok; fields.push_back(slot); }
+}, value::vm_field_slot_from_value(arguments[index]));
+    (index = mlc::arith::checked_add(index, 1));
   }
-  return value::VmVariant{value::VmVariantValue{tag, integer_fields}};
+  if (failed)   {
+    return ast::Err<mlc::Array<mlc::String>>{errors};
+  } else   {
+    return ast::Ok<value::VmValue>{value::VmVariant{value::VmVariantValue{tag, fields}}};
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_shared_new(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 1))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_shared_new expects 1 argument", 39)}};
+  } else   {
+    return ast::Ok<value::VmValue>{arguments[0]};
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_result_is_err(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 1))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_result_is_err expects 1 argument", 42)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmVariant>(__match_subject)) {
+const value::VmVariant& vmVariant = std::get<value::VmVariant>(__match_subject);
+auto [variant] = vmVariant; return ast::Ok<value::VmValue>{value::VmBool{(variant.tag == mlc::String("Err", 3))}};
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_result_is_err expects Result variant", 46)}};
+std::abort();
+}();
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_result_ok_value(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 1))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_result_ok_value expects 1 argument", 44)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmVariant>(__match_subject)) {
+const value::VmVariant& vmVariant = std::get<value::VmVariant>(__match_subject);
+auto [variant] = vmVariant; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if ((variant.tag != mlc::String("Ok", 2)))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_result_ok_value expects Ok", 36)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if ((variant.fields.length() == 0))   {
+    return ast::Ok<value::VmValue>{value::VmUnit{}};
+  } else   {
+    return ast::Ok<value::VmValue>{value::vm_value_from_field_slot(variant.fields[0])};
+  }
+}();
+  }
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_result_ok_value expects Result variant", 48)}};
+std::abort();
+}();
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_variant_new(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() == 0))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_variant_new expects tag argument", 42)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [tag] = vmString; return [&]() {
+auto payload = mlc::Array<value::VmValue>{};
+auto index = 1;
+while ((index < arguments.length())) {
+  payload.push_back(arguments[index]);
+  (index = mlc::arith::checked_add(index, 1));
+}
+return vm_variant_ctor(tag, payload);
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_variant_new expects string tag", 40)}};
+std::abort();
+}();
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_record_new(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() < 1))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_new expects type name", 38)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [type_name] = vmString; return [&]() {
+auto field_names = mlc::Array<mlc::String>{};
+auto fields = mlc::Array<value::VmFieldSlot>{};
+auto index = 1;
+auto failed = false;
+auto errors = mlc::Array<mlc::String>{};
+while (((mlc::arith::checked_add(index, 1) < arguments.length()) && (!failed))) {
+  [&]() {
+auto __match_subject = arguments[index];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [field_name] = vmString; std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> void { auto [slot_errors] = err; [&]() {
+(failed = true);
+(errors = slot_errors);
+return std::make_tuple();
+}(); },
+[&](const ast::Ok<value::VmFieldSlot>& ok) -> void { auto [slot] = ok; [&]() {
+field_names.push_back(field_name);
+return fields.push_back(slot);
+}(); }
+}, value::vm_field_slot_from_value(arguments[mlc::arith::checked_add(index, 1)]));
+return;
+}
+[&]() {
+(failed = true);
+(errors = mlc::Array<mlc::String>{mlc::String("vm: __mir_record_new expects string field names", 47)});
+return std::make_tuple();
+}();
+return;
+std::abort();
+}();
+  (index = mlc::arith::checked_add(index, 2));
+}
+return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if (failed)   {
+    return ast::Err<mlc::Array<mlc::String>>{errors};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if ((index != arguments.length()))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_new expects name/value pairs", 45)}};
+  } else   {
+    return ast::Ok<value::VmValue>{value::VmRecord{value::VmRecordValue{type_name, field_names, fields}}};
+  }
+}();
+  }
+}();
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_new expects string type name", 45)}};
+std::abort();
+}();
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_record_field(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 2))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_field expects 2 arguments", 42)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmRecord>(__match_subject)) {
+const value::VmRecord& vmRecord = std::get<value::VmRecord>(__match_subject);
+auto [record] = vmRecord; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[1];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [field_name] = vmString; return [&]() {
+auto found = false;
+auto result_value = value::vm_value_unit();
+auto index = 0;
+while ((index < record.field_names.length())) {
+  if ((record.field_names[index] == field_name))   {
+    (found = true);
+    (result_value = value::vm_value_from_field_slot(record.fields[index]));
+  }
+  (index = mlc::arith::checked_add(index, 1));
+}
+return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if (found)   {
+    return ast::Ok<value::VmValue>{result_value};
+  } else   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{((mlc::String("vm: record field ", 17) + mlc::to_string(field_name)) + mlc::String(" not found", 10))}};
+  }
+}();
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_field expects string field name", 48)}};
+std::abort();
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_record_field expects record", 37)}};
+std::abort();
+}();
+  }
 }
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_println(mlc::Array<value::VmValue> arguments) noexcept{
   auto index = 0;
@@ -59,9 +261,10 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_println(mlc::Arra
 [&](const value::VmArray& vmArray) -> void { auto [__0] = vmArray; mlc::io::println(mlc::String("<array>", 7)); },
 [&](const value::VmMap& vmMap) -> void { auto [__0] = vmMap; mlc::io::println(mlc::String("<map>", 5)); },
 [&](const value::VmVariant& vmVariant) -> void { auto [variant] = vmVariant; mlc::io::println(((mlc::String("<variant ", 9) + mlc::to_string(variant.tag)) + mlc::String(">", 1))); },
+[&](const value::VmRecord& vmRecord) -> void { auto [record] = vmRecord; mlc::io::println(((mlc::String("<record ", 8) + mlc::to_string(record.type_name)) + mlc::String(">", 1))); },
 [&](const value::VmUnit& vmUnit) -> void { mlc::io::println(mlc::String("()", 2)); }
 }, arguments[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return ast::Ok<value::VmValue>{value::vm_value_unit()};
 }
@@ -100,6 +303,36 @@ return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{integer_elemen
 }, vm_native_value_as_i32(arguments[1]));
 }
 return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_array_push expects array", 34)}};
+std::abort();
+}();
+  }
+}
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_pop(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 1))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_array_pop expects 1 argument", 38)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmArray>(__match_subject)) {
+const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
+auto [array] = vmArray; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+  if ((array.integer_elements.length() == 0))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: pop from empty array", 24)}};
+  } else   {
+    return [&]() {
+auto integer_elements = mlc::Array<int>{};
+auto index = 0;
+auto last = mlc::arith::checked_sub(array.integer_elements.length(), 1);
+while ((index < last)) {
+  integer_elements.push_back(array.integer_elements[index]);
+  (index = mlc::arith::checked_add(index, 1));
+}
+return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{integer_elements}}};
+}();
+  }
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_array_pop expects array", 33)}};
 std::abort();
 }();
   }
@@ -156,7 +389,7 @@ int vm_native_map_find_key_index(mlc::Array<mlc::String> keys, mlc::String key) 
     if ((keys[index] == key))     {
       return index;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return (-1);
 }
@@ -169,7 +402,7 @@ mlc::Array<int> vm_native_map_replace_value(mlc::Array<int> integer_values, int 
     } else     {
       rebuilt.push_back(integer_values[position]);
     }
-    (position = (position + 1));
+    (position = mlc::arith::checked_add(position, 1));
   }
   return rebuilt;
 }
@@ -186,7 +419,7 @@ value::VmValue vm_native_map_insert_value(value::VmMapValue map_value, mlc::Stri
   auto integer_values = map_value.integer_values;
   keys.push_back(key);
   integer_values.push_back(integer_value);
-  return value::VmMap{value::VmMapValue{keys, integer_values, (map_value.entry_count + 1)}};
+  return value::VmMap{value::VmMapValue{keys, integer_values, mlc::arith::checked_add(map_value.entry_count, 1)}};
 }
 value::VmValue vm_native_map_update_value(value::VmMapValue map_value, mlc::String key, int integer_value) noexcept{
   auto existing_index = vm_native_map_find_key_index(map_value.keys, key);
@@ -276,6 +509,29 @@ std::abort();
 }();
   }
 }
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_string_contains(mlc::Array<value::VmValue> arguments) noexcept{
+  if ((arguments.length() != 2))   {
+    return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_string_contains expects 2 arguments", 45)}};
+  } else   {
+    return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[0];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [text] = vmString; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+auto __match_subject = arguments[1];
+if (std::holds_alternative<value::VmString>(__match_subject)) {
+const value::VmString& vmString = std::get<value::VmString>(__match_subject);
+auto [needle] = vmString; return ast::Ok<value::VmValue>{value::VmBool{text.contains(needle)}};
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_string_contains expects string needle", 47)}};
+std::abort();
+}();
+}
+return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_string_contains expects string", 40)}};
+std::abort();
+}();
+  }
+}
 ast::Result<value::VmVariantValue, mlc::Array<mlc::String>> vm_native_variant_value(mlc::Array<value::VmValue> arguments) noexcept{
   if ((arguments.length() == 0))   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: variant native expects value argument", 41)}};
@@ -321,8 +577,8 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_variant_field(mlc
     return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
 [&](const ast::Ok<value::VmVariantValue>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [variant] = ok; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
 [&](const ast::Ok<int>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [field_index] = ok; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
-  if (((field_index >= 0) && (field_index < variant.integer_fields.length())))   {
-    return ast::Ok<value::VmValue>{value::VmI32{variant.integer_fields[field_index]}};
+  if (((field_index >= 0) && (field_index < variant.fields.length())))   {
+    return ast::Ok<value::VmValue>{value::vm_value_from_field_slot(variant.fields[field_index])};
   } else   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: variant field index out of bounds", 37)}};
   }

@@ -18,7 +18,7 @@ bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) 
     if ((haystack[index] == needle))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -38,7 +38,7 @@ mlc::Array<mlc::String> string_list_difference(mlc::Array<mlc::String> left, mlc
     if ((!string_list_contains(right, left[index])))     {
       (result = string_list_add(result, left[index]));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -47,7 +47,7 @@ mlc::Array<mlc::String> mark_all_watched(mlc::Array<mlc::String> watched, mlc::A
   auto index = 0;
   while ((index < watched.length()))   {
     (result = string_list_add(result, watched[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -69,7 +69,7 @@ mlc::Array<mlc::String> function_typed_param_names(mlc::Array<std::shared_ptr<as
     if (type_expr_is_function(ast::param_type_value(parameters[index])))     {
       (names = string_list_add(names, ast::param_name(parameters[index])));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return names;
 }
@@ -78,7 +78,7 @@ mlc::Array<mlc::String> visit_field_values(mlc::Array<std::shared_ptr<ast::Field
   auto index = 0;
   while ((index < field_values.length()))   {
     (result = visit_expr(field_values[index]->value, watched, result));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -89,7 +89,7 @@ mlc::Array<mlc::String> visit_record_parts(mlc::Array<ast::RecordLitPart> parts,
     (result = std::visit(overloaded{[&](const ast::RecordLitFields& recordLitFields) { auto [field_values] = recordLitFields; return visit_field_values(field_values, watched, result); },
 [&](const ast::RecordLitSpread& recordLitSpread) { auto [spread_expression] = recordLitSpread; return visit_expr(spread_expression, watched, result); }
 }, parts[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -102,7 +102,7 @@ mlc::Array<mlc::String> visit_match_arms(mlc::Array<std::shared_ptr<ast::MatchAr
       (result = visit_expr(arm->when_condition, watched, result));
     }
     (result = visit_expr(arm->body, watched, result));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -111,7 +111,7 @@ mlc::Array<mlc::String> visit_expr_list(mlc::Array<std::shared_ptr<ast::Expr>> e
   auto index = 0;
   while ((index < expressions.length()))   {
     (result = visit_expr(expressions[index], watched, result));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -120,7 +120,7 @@ mlc::Array<mlc::String> visit_stmt_list(mlc::Array<std::shared_ptr<ast::Stmt>> s
   auto index = 0;
   while ((index < statements.length()))   {
     (result = visit_stmt(statements[index], watched, result));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -218,7 +218,7 @@ mlc::Array<mlc::String> non_escaping_params_for_named_fn(ast::Program program, m
     if (declaration_is_function_named(program.decls[index], function_name))     {
       return non_escaping_params_for_decl(program.decls[index]);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return empty_string_list();
 }
@@ -249,7 +249,7 @@ std::abort();
 auto index = 0;
 while ((index < arguments.length())) {
   (result = collect_idents_used_as_values_in_expr(arguments[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -258,7 +258,7 @@ auto result = collect_idents_used_as_values_in_expr(receiver, names);
 auto index = 0;
 while ((index < arguments.length())) {
   (result = collect_idents_used_as_values_in_expr(arguments[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -277,7 +277,7 @@ while ((index < arms.length())) {
     (result = collect_idents_used_as_values_in_expr(arm->when_condition, result));
   }
   (result = collect_idents_used_as_values_in_expr(arm->body, result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -290,13 +290,13 @@ auto field_result = result;
 auto field_index = 0;
 while ((field_index < field_values.length())) {
   (field_result = collect_idents_used_as_values_in_expr(field_values[field_index]->value, field_result));
-  (field_index = (field_index + 1));
+  (field_index = mlc::arith::checked_add(field_index, 1));
 }
 return field_result;
 }(); },
 [&](const ast::RecordLitSpread& recordLitSpread) { auto [spread_expression] = recordLitSpread; return collect_idents_used_as_values_in_expr(spread_expression, result); }
 }, parts[index]));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -305,7 +305,7 @@ auto result = collect_idents_used_as_values_in_expr(base, names);
 auto index = 0;
 while ((index < field_values.length())) {
   (result = collect_idents_used_as_values_in_expr(field_values[index]->value, result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -314,7 +314,7 @@ auto result = names;
 auto index = 0;
 while ((index < elements.length())) {
   (result = collect_idents_used_as_values_in_expr(elements[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -323,7 +323,7 @@ auto result = names;
 auto index = 0;
 while ((index < elements.length())) {
   (result = collect_idents_used_as_values_in_expr(elements[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }(); },
@@ -346,7 +346,7 @@ mlc::Array<mlc::String> collect_idents_used_as_values_in_stmts(mlc::Array<std::s
 [&](const ast::StmtContinue& stmtContinue) { auto [__0] = stmtContinue; return result; },
 [&](const ast::StmtReturn& stmtReturn) { auto [expression, __1] = stmtReturn; return collect_idents_used_as_values_in_expr(expression, result); }
 }, (*statements[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -364,7 +364,7 @@ auto result = names;
 auto index = 0;
 while ((index < methods.length())) {
   (result = collect_idents_used_as_values_in_decl(methods[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }();
@@ -376,7 +376,7 @@ auto result = names;
 auto index = 0;
 while ((index < methods.length())) {
   (result = collect_idents_used_as_values_in_decl(methods[index], result));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return result;
 }();
@@ -394,7 +394,7 @@ mlc::Array<mlc::String> function_names_used_as_values(ast::Program program) noex
   auto index = 0;
   while ((index < program.decls.length()))   {
     (names = collect_idents_used_as_values_in_decl(program.decls[index], names));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return names;
 }

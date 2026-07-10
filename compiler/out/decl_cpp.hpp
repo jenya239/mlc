@@ -189,7 +189,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_trait_implementation
     if ((is_semantic_declaration_fn(methods[method_index]) && (!semantic_fn_body_is_extern(methods[method_index]))))     {
       result.push_back(gen_proto_cpp(methods[method_index], extend_context));
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return result;
 }

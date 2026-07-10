@@ -257,7 +257,7 @@ bool zipped_suffix_types_structurally_equal(mlc::Array<std::shared_ptr<registry:
   if ((index >= left_list.length()))   {
     return true;
   } else   {
-    return (types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, (index + 1)));
+    return (types_structurally_equal(left_list[index], right_list[index]) && zipped_suffix_types_structurally_equal(left_list, right_list, mlc::arith::checked_add(index, 1)));
   }
 }
 bool type_is_channel(std::shared_ptr<registry::Type> type_value) noexcept{
@@ -570,13 +570,13 @@ bool zipped_type_arguments_assignment_compatible(mlc::Array<std::shared_ptr<regi
   if ((index >= expected_arguments.length()))   {
     return true;
   } else   {
-    return (types_assignment_compatible(expected_arguments[index], actual_arguments[index]) && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, (index + 1)));
+    return (types_assignment_compatible(expected_arguments[index], actual_arguments[index]) && zipped_type_arguments_assignment_compatible(expected_arguments, actual_arguments, mlc::arith::checked_add(index, 1)));
   }
 }
 bool extern_fn_compatible_with_function(mlc::Array<std::shared_ptr<registry::Type>> expected_extern_arguments, mlc::Array<std::shared_ptr<registry::Type>> actual_parameters, std::shared_ptr<registry::Type> actual_return_type) noexcept{
   if ((expected_extern_arguments.length() == 0))   {
     return false;
-  } else if (((expected_extern_arguments.length() - 1) != actual_parameters.length()))   {
+  } else if ((mlc::arith::checked_sub(expected_extern_arguments.length(), 1) != actual_parameters.length()))   {
     return false;
   } else if ((!types_assignment_compatible(expected_extern_arguments[0], actual_return_type)))   {
     return false;
@@ -993,6 +993,67 @@ mlc::String operator_method_for(mlc::String operation) noexcept{
     return mlc::String("div", 3);
   } else if ((operation == mlc::String("%", 1)))   {
     return mlc::String("rem", 3);
+  } else   {
+    return mlc::String("", 0);
+  }
+}
+bool signed_integer_type_for_overflow(std::shared_ptr<registry::Type> type_value) noexcept{
+  return std::visit(overloaded{[&](const registry::TI32& tI32) { return true; },
+[&](const registry::TI64& tI64) { return true; },
+[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return ((name == mlc::String("i8", 2)) || (name == mlc::String("i16", 3))); },
+[&](const registry::TString& tString) { return false; },
+[&](const registry::TBool& tBool) { return false; },
+[&](const registry::TUnit& tUnit) { return false; },
+[&](const registry::TF64& tF64) { return false; },
+[&](const registry::TU8& tU8) { return false; },
+[&](const registry::TUsize& tUsize) { return false; },
+[&](const registry::TChar& tChar) { return false; },
+[&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
+[&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
+[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
+[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
+[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
+[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return false; },
+[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; },
+[&](const registry::TUnknown& tUnknown) { return false; }
+}, (*type_value));
+}
+bool integer_type_for_division_check(std::shared_ptr<registry::Type> type_value) noexcept{
+  return std::visit(overloaded{[&](const registry::TI32& tI32) { return true; },
+[&](const registry::TI64& tI64) { return true; },
+[&](const registry::TU8& tU8) { return true; },
+[&](const registry::TUsize& tUsize) { return true; },
+[&](const registry::TChar& tChar) { return true; },
+[&](const registry::TNamed& tNamed) { auto [name] = tNamed; return (((((name == mlc::String("i8", 2)) || (name == mlc::String("i16", 3))) || (name == mlc::String("u16", 3))) || (name == mlc::String("u32", 3))) || (name == mlc::String("u64", 3))); },
+[&](const registry::TString& tString) { return false; },
+[&](const registry::TBool& tBool) { return false; },
+[&](const registry::TUnit& tUnit) { return false; },
+[&](const registry::TF64& tF64) { return false; },
+[&](const registry::TArray& tArray) { auto [__0] = tArray; return false; },
+[&](const registry::TShared& tShared) { auto [__0] = tShared; return false; },
+[&](const registry::TGeneric& tGeneric) { auto [__0, __1] = tGeneric; return false; },
+[&](const registry::TPair& tPair) { auto [__0, __1] = tPair; return false; },
+[&](const registry::TTuple& tTuple) { auto [__0] = tTuple; return false; },
+[&](const registry::TFn& tFn) { auto [__0, __1] = tFn; return false; },
+[&](const registry::TAssoc& tAssoc) { auto [__0, __1] = tAssoc; return false; },
+[&](const registry::TUnknown& tUnknown) { return false; }
+}, (*type_value));
+}
+mlc::String checked_arithmetic_helper_name(mlc::String operation, std::shared_ptr<registry::Type> left_type, std::shared_ptr<registry::Type> right_type) noexcept{
+  if ((((((operation == mlc::String("+", 1)) || (operation == mlc::String("-", 1))) || (operation == mlc::String("*", 1))) && signed_integer_type_for_overflow(left_type)) && signed_integer_type_for_overflow(right_type)))   {
+    if ((operation == mlc::String("+", 1)))     {
+      return mlc::String("mlc::arith::checked_add", 23);
+    } else if ((operation == mlc::String("-", 1)))     {
+      return mlc::String("mlc::arith::checked_sub", 23);
+    } else     {
+      return mlc::String("mlc::arith::checked_mul", 23);
+    }
+  } else if (((((operation == mlc::String("/", 1)) || (operation == mlc::String("%", 1))) && integer_type_for_division_check(left_type)) && integer_type_for_division_check(right_type)))   {
+    if ((operation == mlc::String("/", 1)))     {
+      return mlc::String("mlc::arith::checked_div", 23);
+    } else     {
+      return mlc::String("mlc::arith::checked_mod", 23);
+    }
   } else   {
     return mlc::String("", 0);
   }

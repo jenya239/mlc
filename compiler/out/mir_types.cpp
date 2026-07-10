@@ -31,7 +31,7 @@ bool mir_function_name_is_safe(mlc::String name) noexcept{
       if ((!mir_name_character_is_safe(name.char_at(index))))       {
         return false;
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return true;
   }
@@ -45,7 +45,7 @@ bool mir_block_label_is_safe(mlc::String label) noexcept{
       if ((!mir_name_character_is_safe(label.char_at(index))))       {
         return false;
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return true;
   }

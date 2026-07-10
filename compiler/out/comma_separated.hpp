@@ -37,7 +37,7 @@ predicates::ParseResult<mlc::Array<std::shared_ptr<ast::Param>>> comma_separated
     auto next = parse_one(predicates::Parser_advance(state), slot_index);
     parameters.push_back(next.value);
     (state = next.parser);
-    (slot_index = (slot_index + 1));
+    (slot_index = mlc::arith::checked_add(slot_index, 1));
   }
   return predicates::parameters_parse_result(parameters, state);
 }

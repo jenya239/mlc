@@ -20,42 +20,42 @@ int cpp_decl_skip_token(mlc::Array<cpp_tokens::CppToken> tokens, int position) n
   if (cpp_predicates::cpp_at_end(tokens, position))   {
     return position;
   } else   {
-    return (position + 1);
+    return mlc::arith::checked_add(position, 1);
   }
 }
 int cpp_decl_skip_to_semicolon(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   auto scan_position = position;
   while (((!cpp_predicates::cpp_at_end(tokens, scan_position)) && (!cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))))   {
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   if (cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))   {
-    return (scan_position + 1);
+    return mlc::arith::checked_add(scan_position, 1);
   } else   {
     return scan_position;
   }
 }
 int cpp_decl_after_semicolon(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   if (cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, position)))   {
-    return (position + 1);
+    return mlc::arith::checked_add(position, 1);
   } else   {
     return position;
   }
 }
 bool cpp_decl_has_attribute_start(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  return (cpp_predicates::cpp_is_left_bracket(cpp_predicates::cpp_token_kind_at(tokens, position)) && cpp_predicates::cpp_is_left_bracket(cpp_predicates::cpp_token_kind_at(tokens, (position + 1))));
+  return (cpp_predicates::cpp_is_left_bracket(cpp_predicates::cpp_token_kind_at(tokens, position)) && cpp_predicates::cpp_is_left_bracket(cpp_predicates::cpp_token_kind_at(tokens, mlc::arith::checked_add(position, 1))));
 }
 int cpp_decl_skip_one_attribute(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   if ((!cpp_decl_has_attribute_start(tokens, position)))   {
     return position;
   } else   {
-    auto scan_position = (position + 2);
+    auto scan_position = mlc::arith::checked_add(position, 2);
     auto found_end = false;
     while (((!cpp_predicates::cpp_at_end(tokens, scan_position)) && (!found_end)))     {
-      if ((cpp_predicates::cpp_is_right_bracket(cpp_predicates::cpp_token_kind_at(tokens, scan_position)) && cpp_predicates::cpp_is_right_bracket(cpp_predicates::cpp_token_kind_at(tokens, (scan_position + 1)))))       {
-        (scan_position = (scan_position + 2));
+      if ((cpp_predicates::cpp_is_right_bracket(cpp_predicates::cpp_token_kind_at(tokens, scan_position)) && cpp_predicates::cpp_is_right_bracket(cpp_predicates::cpp_token_kind_at(tokens, mlc::arith::checked_add(scan_position, 1)))))       {
+        (scan_position = mlc::arith::checked_add(scan_position, 2));
         (found_end = true);
       } else       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     }
     return scan_position;
@@ -72,9 +72,9 @@ int cpp_decl_skip_attributes(mlc::Array<cpp_tokens::CppToken> tokens, int positi
 }
 int cpp_decl_template_depth_after_token(int depth, cpp_tokens::CppTokenKind kind) noexcept{
   if (cpp_predicates::cpp_is_right_angle(kind))   {
-    return (depth - 1);
+    return mlc::arith::checked_sub(depth, 1);
   } else if (cpp_predicates::cpp_is_angle(kind))   {
-    return (depth + 1);
+    return mlc::arith::checked_add(depth, 1);
   } else   {
     return depth;
   }
@@ -90,7 +90,7 @@ int cpp_decl_template_skip_brackets(mlc::Array<cpp_tokens::CppToken> tokens, int
     if ((next_depth <= 0))     {
       return scan_position;
     } else     {
-      return cpp_decl_template_skip_brackets(tokens, (scan_position + 1), next_depth);
+      return cpp_decl_template_skip_brackets(tokens, mlc::arith::checked_add(scan_position, 1), next_depth);
     }
   }
 }
@@ -102,20 +102,20 @@ mlc::String cpp_decl_template_parameters_between(mlc::Array<cpp_tokens::CppToken
     if ((part != mlc::String("", 0)))     {
       parts.push_back(part);
     }
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   return parts.join(mlc::String(" ", 1));
 }
 CppTemplateHeaderParse cpp_decl_parse_template_header(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_template = (position + 1);
+  auto after_template = mlc::arith::checked_add(position, 1);
   if ((!cpp_predicates::cpp_is_angle(cpp_predicates::cpp_token_kind_at(tokens, after_template))))   {
     return CppTemplateHeaderParse{mlc::String("", 0), after_template};
   } else   {
-    auto parameter_start = (after_template + 1);
+    auto parameter_start = mlc::arith::checked_add(after_template, 1);
     auto parameter_end = cpp_decl_template_skip_brackets(tokens, parameter_start, 1);
     auto scan_position = parameter_end;
     if (cpp_predicates::cpp_is_right_angle(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppTemplateHeaderParse{cpp_decl_template_parameters_between(tokens, parameter_start, parameter_end), scan_position};
   }
@@ -127,21 +127,21 @@ CppClassMembersParse cpp_decl_parse_class_members(mlc::Array<cpp_tokens::CppToke
     (scan_position = cpp_decl_skip_attributes(tokens, scan_position));
     if (cpp_predicates::cpp_is_public_keyword(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
       members.push_back(cpp_ast::CppClassMemberAccess{cpp_ast::CppPublic{}});
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       if (cpp_predicates::cpp_is_colon(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     } else if (cpp_predicates::cpp_is_protected_keyword(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
       members.push_back(cpp_ast::CppClassMemberAccess{cpp_ast::CppProtected{}});
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       if (cpp_predicates::cpp_is_colon(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     } else if (cpp_predicates::cpp_is_private_keyword(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
       members.push_back(cpp_ast::CppClassMemberAccess{cpp_ast::CppPrivate{}});
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       if (cpp_predicates::cpp_is_colon(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     } else     {
       auto type_parsed = cpp_types::parse_cpp_type(tokens, scan_position);
@@ -150,7 +150,7 @@ CppClassMembersParse cpp_decl_parse_class_members(mlc::Array<cpp_tokens::CppToke
         (scan_position = cpp_decl_skip_token(tokens, scan_position));
       } else       {
         members.push_back(cpp_ast::CppClassMemberField{type_parsed.type_node, field_name, mlc::String("", 0)});
-        (scan_position = cpp_decl_after_semicolon(tokens, (type_parsed.position + 1)));
+        (scan_position = cpp_decl_after_semicolon(tokens, mlc::arith::checked_add(type_parsed.position, 1)));
       }
     }
   }
@@ -159,10 +159,10 @@ CppClassMembersParse cpp_decl_parse_class_members(mlc::Array<cpp_tokens::CppToke
 int cpp_decl_parse_include_skip(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   auto scan_position = position;
   if (cpp_predicates::cpp_is_hash(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))   {
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   if ((cpp_predicates::cpp_is_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position)) && (cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position)) == mlc::String("include", 7))))   {
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   return scan_position;
 }
@@ -170,20 +170,20 @@ CppDeclarationParseResult parse_cpp_include_decl(mlc::Array<cpp_tokens::CppToken
   auto after_skip = cpp_decl_parse_include_skip(tokens, position);
   auto kind = cpp_predicates::cpp_token_kind_at(tokens, after_skip);
   if (cpp_predicates::cpp_is_angle(kind))   {
-    auto name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, (after_skip + 1)));
-    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{true, name}), (after_skip + 3), mlc::String("", 0)};
+    auto name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, mlc::arith::checked_add(after_skip, 1)));
+    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{true, name}), mlc::arith::checked_add(after_skip, 3), mlc::String("", 0)};
   } else if (cpp_predicates::cpp_is_string(kind))   {
     auto path = cpp_predicates::cpp_get_string(kind);
-    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{false, path}), (after_skip + 1), mlc::String("", 0)};
+    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppInclude{false, path}), mlc::arith::checked_add(after_skip, 1), mlc::String("", 0)};
   } else   {
     return cpp_decl_empty_result(after_skip);
   }
 }
 CppDeclarationParseResult parse_cpp_using_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_using = (position + 1);
+  auto after_using = mlc::arith::checked_add(position, 1);
   auto alias = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, after_using));
-  auto after_alias = (after_using + 1);
-  auto after_equals = (cpp_predicates::cpp_is_equals(cpp_predicates::cpp_token_kind_at(tokens, after_alias)) ? ((after_alias + 1)) : (after_alias));
+  auto after_alias = mlc::arith::checked_add(after_using, 1);
+  auto after_equals = (cpp_predicates::cpp_is_equals(cpp_predicates::cpp_token_kind_at(tokens, after_alias)) ? (mlc::arith::checked_add(after_alias, 1)) : (after_alias));
   auto type_parsed = cpp_types::parse_cpp_type_to_string(tokens, after_equals);
   auto after_type = type_parsed.position;
   return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppUsing{alias, type_parsed.type_string}), cpp_decl_after_semicolon(tokens, after_type), mlc::String("", 0)};
@@ -196,7 +196,7 @@ CppRecordFieldsParse cpp_decl_parse_record_fields(mlc::Array<cpp_tokens::CppToke
     auto field_type = print::print_cpp_type(type_parsed.type_node);
     (scan_position = type_parsed.position);
     auto field_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position));
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
     (scan_position = cpp_decl_after_semicolon(tokens, scan_position));
     fields.push_back(std::make_shared<cpp_ast::CppField>(cpp_ast::CppField{field_type, field_name}));
   }
@@ -204,18 +204,18 @@ CppRecordFieldsParse cpp_decl_parse_record_fields(mlc::Array<cpp_tokens::CppToke
 }
 CppDeclarationParseResult cpp_decl_parse_record_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position, mlc::String kind_word) noexcept{
   auto is_struct = (kind_word == mlc::String("struct", 6));
-  auto after_keyword = (position + 1);
+  auto after_keyword = mlc::arith::checked_add(position, 1);
   auto name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, after_keyword));
-  auto after_name = (after_keyword + 1);
+  auto after_name = mlc::arith::checked_add(after_keyword, 1);
   if (cpp_predicates::cpp_is_left_brace(cpp_predicates::cpp_token_kind_at(tokens, after_name)))   {
-    auto members_parsed = cpp_decl_parse_class_members(tokens, (after_name + 1));
+    auto members_parsed = cpp_decl_parse_class_members(tokens, mlc::arith::checked_add(after_name, 1));
     auto scan_position = members_parsed.position;
     if (cpp_predicates::cpp_is_right_brace(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppClassDeclaration{cpp_ast::CppClassDefinition{is_struct, mlc::String("", 0), name, {}, members_parsed.members}}), cpp_decl_after_semicolon(tokens, scan_position), mlc::String("", 0)};
   } else if (cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, after_name)))   {
-    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppForwardDecl{kind_word, name}), (after_name + 1), mlc::String("", 0)};
+    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppForwardDecl{kind_word, name}), mlc::arith::checked_add(after_name, 1), mlc::String("", 0)};
   } else   {
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppStruct{mlc::String("", 0), name, {}, true}), after_name, mlc::String("", 0)};
   }
@@ -232,23 +232,23 @@ CppParameterListParse cpp_decl_parse_parameter_list(mlc::Array<cpp_tokens::CppTo
   if ((!cpp_predicates::cpp_is_left_paren(cpp_predicates::cpp_token_kind_at(tokens, scan_position))))   {
     return CppParameterListParse{parameters, scan_position};
   } else   {
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
     while (((!cpp_predicates::cpp_at_end(tokens, scan_position)) && (!cpp_predicates::cpp_is_right_paren(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))))     {
       auto type_parsed = cpp_types::parse_cpp_type_to_string(tokens, scan_position);
       (scan_position = type_parsed.position);
       auto parameter_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position));
       if ((parameter_name != mlc::String("", 0)))       {
         parameters.push_back(((type_parsed.type_string + mlc::String(" ", 1)) + parameter_name));
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       } else       {
         parameters.push_back(type_parsed.type_string);
       }
       if (cpp_predicates::cpp_is_comma(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     }
     if (cpp_predicates::cpp_is_right_paren(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppParameterListParse{parameters, scan_position};
   }
@@ -259,7 +259,7 @@ CppDeclarationParseResult parse_cpp_fn_proto_decl(mlc::Array<cpp_tokens::CppToke
   if ((function_name == mlc::String("", 0)))   {
     return cpp_decl_empty_result(type_parsed.position);
   } else   {
-    auto parameters_parsed = cpp_decl_parse_parameter_list(tokens, (type_parsed.position + 1));
+    auto parameters_parsed = cpp_decl_parse_parameter_list(tokens, mlc::arith::checked_add(type_parsed.position, 1));
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppFnProto{mlc::String("", 0), type_parsed.type_string, function_name, parameters_parsed.parameters}), cpp_decl_after_semicolon(tokens, parameters_parsed.position), mlc::String("", 0)};
   }
 }
@@ -270,37 +270,37 @@ CppEnumArmsParse cpp_decl_parse_enum_arms(mlc::Array<cpp_tokens::CppToken> token
     auto arm_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position));
     if ((arm_name != mlc::String("", 0)))     {
       arms.push_back(std::make_shared<cpp_ast::CppVariantArm>(cpp_ast::CppVariantArm{arm_name, {}}));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else     {
       (scan_position = cpp_decl_skip_token(tokens, scan_position));
     }
     if (cpp_predicates::cpp_is_equals(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       [&]() {
 while ((((!cpp_predicates::cpp_at_end(tokens, scan_position)) && (!cpp_predicates::cpp_is_comma(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))) && (!cpp_predicates::cpp_is_right_brace(cpp_predicates::cpp_token_kind_at(tokens, scan_position))))) {
-(scan_position = (scan_position + 1));
+(scan_position = mlc::arith::checked_add(scan_position, 1));
 }
 }();
     }
     if (cpp_predicates::cpp_is_comma(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
   }
   return CppEnumArmsParse{arms, scan_position};
 }
 CppDeclarationParseResult parse_cpp_enum_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_enum = (position + 1);
+  auto after_enum = mlc::arith::checked_add(position, 1);
   auto enum_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, after_enum));
-  auto after_name = (after_enum + 1);
+  auto after_name = mlc::arith::checked_add(after_enum, 1);
   if (cpp_predicates::cpp_is_left_brace(cpp_predicates::cpp_token_kind_at(tokens, after_name)))   {
-    auto arms_parsed = cpp_decl_parse_enum_arms(tokens, (after_name + 1));
+    auto arms_parsed = cpp_decl_parse_enum_arms(tokens, mlc::arith::checked_add(after_name, 1));
     auto scan_position = arms_parsed.position;
     if (cpp_predicates::cpp_is_right_brace(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppVariant{mlc::String("", 0), enum_name, arms_parsed.arms}), cpp_decl_after_semicolon(tokens, scan_position), mlc::String("", 0)};
   } else if (cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, after_name)))   {
-    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppForwardDecl{mlc::String("enum", 4), enum_name}), (after_name + 1), mlc::String("", 0)};
+    return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppForwardDecl{mlc::String("enum", 4), enum_name}), mlc::arith::checked_add(after_name, 1), mlc::String("", 0)};
   } else   {
     return cpp_decl_empty_result(after_name);
   }
@@ -330,14 +330,14 @@ CppDeclarationsBlockParse parse_cpp_declarations_until_right_brace(mlc::Array<cp
   return CppDeclarationsBlockParse{declarations, scan_position, errors};
 }
 CppDeclarationParseResult parse_cpp_namespace_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_namespace = (position + 1);
+  auto after_namespace = mlc::arith::checked_add(position, 1);
   auto namespace_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, after_namespace));
-  auto after_name = (after_namespace + 1);
+  auto after_name = mlc::arith::checked_add(after_namespace, 1);
   if (cpp_predicates::cpp_is_left_brace(cpp_predicates::cpp_token_kind_at(tokens, after_name)))   {
-    auto inner = parse_cpp_declarations_until_right_brace(tokens, (after_name + 1));
+    auto inner = parse_cpp_declarations_until_right_brace(tokens, mlc::arith::checked_add(after_name, 1));
     auto scan_position = inner.position;
     if (cpp_predicates::cpp_is_right_brace(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppNamespace{namespace_name, inner.declarations}), scan_position, inner.errors.join(mlc::String("; ", 2))};
   } else   {
@@ -359,18 +359,18 @@ bool cpp_decl_can_start_fn_proto(mlc::Array<cpp_tokens::CppToken> tokens, int po
   auto type_parsed = cpp_types::parse_cpp_type_to_string(tokens, position);
   auto name_position = type_parsed.position;
   auto function_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, name_position));
-  return ((function_name != mlc::String("", 0)) && cpp_predicates::cpp_is_left_paren(cpp_predicates::cpp_token_kind_at(tokens, (name_position + 1))));
+  return ((function_name != mlc::String("", 0)) && cpp_predicates::cpp_is_left_paren(cpp_predicates::cpp_token_kind_at(tokens, mlc::arith::checked_add(name_position, 1))));
 }
 bool cpp_decl_can_start_variable_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   auto type_parsed = cpp_types::parse_cpp_type_to_string(tokens, position);
   auto name_position = type_parsed.position;
   auto variable_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, name_position));
-  return ((variable_name != mlc::String("", 0)) && cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, (name_position + 1))));
+  return ((variable_name != mlc::String("", 0)) && cpp_predicates::cpp_is_semicolon(cpp_predicates::cpp_token_kind_at(tokens, mlc::arith::checked_add(name_position, 1))));
 }
 CppDeclarationParseResult parse_cpp_variable_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   auto type_parsed = cpp_types::parse_cpp_type_to_string(tokens, position);
   auto variable_name = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, type_parsed.position));
-  auto after_name = (type_parsed.position + 1);
+  auto after_name = mlc::arith::checked_add(type_parsed.position, 1);
   return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppDeclarationFragment{(((type_parsed.type_string + mlc::String(" ", 1)) + variable_name) + mlc::String(";", 1))}), cpp_decl_after_semicolon(tokens, after_name), mlc::String("", 0)};
 }
 int cpp_decl_last_identifier_before_semicolon(mlc::Array<cpp_tokens::CppToken> tokens, int start) noexcept{
@@ -380,7 +380,7 @@ int cpp_decl_last_identifier_before_semicolon(mlc::Array<cpp_tokens::CppToken> t
     if ((cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, scan_position)) != mlc::String("", 0)))     {
       (last_identifier_position = scan_position);
     }
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   return last_identifier_position;
 }
@@ -392,15 +392,15 @@ std::shared_ptr<cpp_ast::CppType> cpp_decl_type_node_until(mlc::Array<cpp_tokens
     if ((part != mlc::String("", 0)))     {
       parts.push_back(part);
     }
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
   }
   return std::make_shared<cpp_ast::CppType>(cpp_ast::CppTypeName{parts.join(mlc::String(" ", 1))});
 }
 CppDeclarationParseResult parse_cpp_typedef_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_typedef = (position + 1);
+  auto after_typedef = mlc::arith::checked_add(position, 1);
   auto alias_position = cpp_decl_last_identifier_before_semicolon(tokens, after_typedef);
   auto alias = cpp_predicates::cpp_get_identifier(cpp_predicates::cpp_token_kind_at(tokens, alias_position));
-  return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppTypedefDeclaration{alias, cpp_decl_type_node_until(tokens, after_typedef, alias_position)}), cpp_decl_after_semicolon(tokens, (alias_position + 1)), mlc::String("", 0)};
+  return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppTypedefDeclaration{alias, cpp_decl_type_node_until(tokens, after_typedef, alias_position)}), cpp_decl_after_semicolon(tokens, mlc::arith::checked_add(alias_position, 1)), mlc::String("", 0)};
 }
 CppDeclarationParseResult parse_cpp_template_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
   auto header = cpp_decl_parse_template_header(tokens, position);
@@ -408,14 +408,14 @@ CppDeclarationParseResult parse_cpp_template_decl(mlc::Array<cpp_tokens::CppToke
   return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppTemplateDeclaration{header.parameters, inner.declaration}), inner.position, inner.error_message};
 }
 CppDeclarationParseResult parse_cpp_extern_block_decl(mlc::Array<cpp_tokens::CppToken> tokens, int position) noexcept{
-  auto after_extern = (position + 1);
+  auto after_extern = mlc::arith::checked_add(position, 1);
   auto linkage = (cpp_predicates::cpp_is_string(cpp_predicates::cpp_token_kind_at(tokens, after_extern)) ? (((mlc::String("\"", 1) + cpp_predicates::cpp_get_string(cpp_predicates::cpp_token_kind_at(tokens, after_extern))) + mlc::String("\"", 1))) : (mlc::String("", 0)));
-  auto after_linkage = ((linkage != mlc::String("", 0)) ? ((after_extern + 1)) : (after_extern));
+  auto after_linkage = ((linkage != mlc::String("", 0)) ? (mlc::arith::checked_add(after_extern, 1)) : (after_extern));
   if (cpp_predicates::cpp_is_left_brace(cpp_predicates::cpp_token_kind_at(tokens, after_linkage)))   {
-    auto inner = parse_cpp_declarations_until_right_brace(tokens, (after_linkage + 1));
+    auto inner = parse_cpp_declarations_until_right_brace(tokens, mlc::arith::checked_add(after_linkage, 1));
     auto scan_position = inner.position;
     if (cpp_predicates::cpp_is_right_brace(cpp_predicates::cpp_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppDeclarationParseResult{std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppExternBlock{linkage, inner.declarations}), scan_position, inner.errors.join(mlc::String("; ", 2))};
   } else   {

@@ -19,7 +19,7 @@ using namespace registry;
 using namespace ast_tokens;
 
 bool is_cpp_header_path(mlc::String path) noexcept{
-  return (((path.length() >= 2) && (path.substring((path.length() - 2), 2) == mlc::String(".h", 2))) || ((path.length() >= 4) && (path.substring((path.length() - 4), 4) == mlc::String(".hpp", 4))));
+  return (((path.length() >= 2) && (path.substring(mlc::arith::checked_sub(path.length(), 2), 2) == mlc::String(".h", 2))) || ((path.length() >= 4) && (path.substring(mlc::arith::checked_sub(path.length(), 4), 4) == mlc::String(".hpp", 4))));
 }
 std::shared_ptr<ast::TypeExpr> cpp_type_string_to_type_expr(mlc::String type_string) noexcept{
   if ((type_string == mlc::String("int", 3)))   {
@@ -39,12 +39,12 @@ CppParameterParts split_cpp_parameter_string(mlc::String parameter_string) noexc
     if ((parameter_string.char_at(scan_index) == mlc::String(" ", 1)))     {
       (last_space = scan_index);
     }
-    (scan_index = (scan_index + 1));
+    (scan_index = mlc::arith::checked_add(scan_index, 1));
   }
   if ((last_space < 0))   {
     return CppParameterParts{parameter_string, mlc::String("", 0)};
   } else   {
-    return CppParameterParts{parameter_string.substring(0, last_space), parameter_string.substring((last_space + 1), ((parameter_string.length() - last_space) - 1))};
+    return CppParameterParts{parameter_string.substring(0, last_space), parameter_string.substring(mlc::arith::checked_add(last_space, 1), mlc::arith::checked_sub(mlc::arith::checked_sub(parameter_string.length(), last_space), 1))};
   }
 }
 mlc::Array<std::shared_ptr<ast::Param>> cpp_parameter_strings_to_params(mlc::Array<mlc::String> parameter_strings) noexcept{
@@ -54,7 +54,7 @@ mlc::Array<std::shared_ptr<ast::Param>> cpp_parameter_strings_to_params(mlc::Arr
     auto parts = split_cpp_parameter_string(parameter_strings[index]);
     auto parameter_name = ((parts.name == mlc::String("", 0)) ? (((mlc::String("arg", 3) + mlc::to_string(index)) + mlc::String("", 0))) : (parts.name));
     parameters.push_back(std::make_shared<ast::Param>(ast::Param{parameter_name, false, cpp_type_string_to_type_expr(parts.type_string), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), std::make_shared<ast::Pattern>(ast::PatternWild{ast::span_unknown()})}));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parameters;
 }
@@ -65,7 +65,7 @@ mlc::Array<std::shared_ptr<ast::Param>> cpp_cpp_parameters_to_mlc_params(mlc::Ar
     auto parameter = parameters[index];
     auto parameter_name = ((parameter->name == mlc::String("", 0)) ? (((mlc::String("arg", 3) + mlc::to_string(index)) + mlc::String("", 0))) : (parameter->name));
     mlc_parameters.push_back(std::make_shared<ast::Param>(ast::Param{parameter_name, false, cpp_type_string_to_type_expr(print::print_cpp_type(parameter->parameter_type)), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()}), std::make_shared<ast::Pattern>(ast::PatternWild{ast::span_unknown()})}));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return mlc_parameters;
 }
@@ -78,7 +78,7 @@ mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_fields_to_field_definitions(mlc::
   while ((index < fields.length()))   {
     auto field = fields[index];
     field_definitions.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field->name, cpp_type_string_to_type_expr(field->type_value), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return field_definitions;
 }
@@ -87,7 +87,7 @@ mlc::Array<std::shared_ptr<ast::TypeVariant>> cpp_enum_arms_to_variants(mlc::Arr
   auto index = 0;
   while ((index < arms.length()))   {
     variants.push_back(std::make_shared<ast::TypeVariant>(ast::VarUnit{arms[index]->name, false}));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return variants;
 }
@@ -122,7 +122,7 @@ mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_class_members_to_field_definition
     if ((field_name != mlc::String("", 0)))     {
       field_definitions.push_back(std::make_shared<ast::FieldDef>(ast::FieldDef{field_name, cpp_type_string_to_type_expr(print::print_cpp_type(cpp_class_member_field_type(member))), false, std::make_shared<ast::Expr>(ast::ExprUnit{ast::span_unknown()})}));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return field_definitions;
 }
@@ -188,9 +188,9 @@ mlc::Array<std::shared_ptr<ast::Decl>> cpp_declarations_to_mlc_decls_list(mlc::A
     auto inner_index = 0;
     while ((inner_index < converted.length()))     {
       mlc_declarations.push_back(converted[inner_index]);
-      (inner_index = (inner_index + 1));
+      (inner_index = mlc::arith::checked_add(inner_index, 1));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return mlc_declarations;
 }

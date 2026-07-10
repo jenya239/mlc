@@ -223,7 +223,7 @@ mlc::String cpp_type_append_spelling(mlc::String existing, mlc::String piece) no
     return piece;
   } else if ((piece == mlc::String("::", 2)))   {
     return (existing + mlc::String("::", 2));
-  } else if (((existing.length() >= 2) && (existing.substring((existing.length() - 2), 2) == mlc::String("::", 2))))   {
+  } else if (((existing.length() >= 2) && (existing.substring(mlc::arith::checked_sub(existing.length(), 2), 2) == mlc::String("::", 2))))   {
     return (existing + piece);
   } else   {
     return ((existing + mlc::String(" ", 1)) + piece);
@@ -237,7 +237,7 @@ CppQualifiedNameResult cpp_type_join_qualified_name(mlc::Array<cpp_tokens::CppTo
     auto kind = cpp_type_token_kind_at(tokens, scan_position);
     if (cpp_type_is_scope(kind))     {
       (qualified_name = cpp_type_append_spelling(qualified_name, mlc::String("::", 2)));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       (after_scope = true);
     } else     {
       auto spelling = cpp_type_spelling_from_kind(kind);
@@ -248,7 +248,7 @@ CppQualifiedNameResult cpp_type_join_qualified_name(mlc::Array<cpp_tokens::CppTo
         break;
       }
       (qualified_name = cpp_type_append_spelling(qualified_name, spelling));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
       (after_scope = false);
     }
   }
@@ -262,22 +262,22 @@ CppTypeQualifierScan cpp_type_parse_qualifiers(mlc::Array<cpp_tokens::CppToken> 
     auto kind = cpp_type_token_kind_at(tokens, scan_position);
     if (cpp_type_is_const(kind))     {
       (has_const = true);
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_volatile(kind))     {
       prefix_words.push_back(mlc::String("volatile", 8));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_unsigned(kind))     {
       prefix_words.push_back(mlc::String("unsigned", 8));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_signed(kind))     {
       prefix_words.push_back(mlc::String("signed", 6));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_long(kind))     {
       prefix_words.push_back(mlc::String("long", 4));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_short(kind))     {
       prefix_words.push_back(mlc::String("short", 5));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else     {
       break;
     }
@@ -299,17 +299,17 @@ CppTemplateArgumentsResult cpp_type_parse_template_arguments(mlc::Array<cpp_toke
   if ((!cpp_type_is_left_angle(cpp_type_token_kind_at(tokens, scan_position))))   {
     return CppTemplateArgumentsResult{arguments, scan_position};
   } else   {
-    (scan_position = (scan_position + 1));
+    (scan_position = mlc::arith::checked_add(scan_position, 1));
     while (((!cpp_type_at_end(tokens, scan_position)) && (!cpp_type_is_right_angle(cpp_type_token_kind_at(tokens, scan_position)))))     {
       auto argument_parsed = parse_cpp_type(tokens, scan_position);
       arguments.push_back(argument_parsed.type_node);
       (scan_position = argument_parsed.position);
       if (cpp_type_is_comma(cpp_type_token_kind_at(tokens, scan_position)))       {
-        (scan_position = (scan_position + 1));
+        (scan_position = mlc::arith::checked_add(scan_position, 1));
       }
     }
     if (cpp_type_is_right_angle(cpp_type_token_kind_at(tokens, scan_position)))     {
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     }
     return CppTemplateArgumentsResult{arguments, scan_position};
   }
@@ -328,13 +328,13 @@ CppTypedParseResult cpp_type_parse_suffixes(mlc::Array<cpp_tokens::CppToken> tok
     auto kind = cpp_type_token_kind_at(tokens, scan_position);
     if (cpp_type_is_star(kind))     {
       (current_type = std::make_shared<cpp_ast::CppType>(cpp_ast::CppTypePtr{current_type}));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_rvalue_reference(kind))     {
       (current_type = std::make_shared<cpp_ast::CppType>(cpp_ast::CppTypeRRef{current_type}));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else if (cpp_type_is_ampersand(kind))     {
       (current_type = std::make_shared<cpp_ast::CppType>(cpp_ast::CppTypeRef{current_type}));
-      (scan_position = (scan_position + 1));
+      (scan_position = mlc::arith::checked_add(scan_position, 1));
     } else     {
       break;
     }

@@ -32,7 +32,7 @@ template<typename __F5>
 mlc::String eval_field_update_value(std::shared_ptr<semantic_ir::SemanticExpression> base_expression, mlc::String field_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> overrides, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, __F5 eval_expr_fn) noexcept{
   auto override_index = 0;
   while (((override_index < overrides.length()) && (overrides[override_index]->name != field_name)))   {
-    (override_index = (override_index + 1));
+    (override_index = mlc::arith::checked_add(override_index, 1));
   }
   if ((override_index < overrides.length()))   {
     return eval_expr_fn(overrides[override_index]->value, context, gen_stmts);
@@ -56,7 +56,7 @@ template<typename __F5>
 std::shared_ptr<cpp_ast::CppExpression> eval_field_update_value_cpp(std::shared_ptr<semantic_ir::SemanticExpression> base_expression, mlc::String field_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> overrides, context::CodegenContext context, std::function<mlc::String(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>, context::CodegenContext)> gen_stmts, __F5 eval_expr_fn) noexcept{
   auto override_index = 0;
   while (((override_index < overrides.length()) && (overrides[override_index]->name != field_name)))   {
-    (override_index = (override_index + 1));
+    (override_index = mlc::arith::checked_add(override_index, 1));
   }
   if ((override_index < overrides.length()))   {
     return eval_expr_fn(overrides[override_index]->value, context, gen_stmts);

@@ -14,7 +14,7 @@ mlc::Array<int> zero_based_indices(int count) noexcept{
   if ((count <= 0))   {
     return mlc::Array<int>{};
   } else   {
-    return zero_based_indices((count - 1)).concat(mlc::Array<int>{(count - 1)});
+    return zero_based_indices(mlc::arith::checked_sub(count, 1)).concat(mlc::Array<int>{mlc::arith::checked_sub(count, 1)});
   }
 }
 mlc::String indent_text(int depth) noexcept{
@@ -45,7 +45,7 @@ mlc::String escape_string_literal_content(mlc::String input) noexcept{
     } else     {
       parts.push_back(character);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parts.join(mlc::String("", 0));
 }
@@ -109,7 +109,7 @@ int max_field_name_length_from_values(mlc::Array<std::shared_ptr<ast::FieldVal>>
     if ((field_values[index]->name.length() > maximum))     {
       (maximum = field_values[index]->name.length());
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return maximum;
 }
@@ -120,7 +120,7 @@ int max_field_name_length_from_definitions(mlc::Array<std::shared_ptr<ast::Field
     if ((field_definitions[index]->name.length() > maximum))     {
       (maximum = field_definitions[index]->name.length());
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return maximum;
 }
@@ -128,8 +128,8 @@ int record_fields_count(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values)
   auto count = 0;
   auto index = 0;
   while ((index < field_values.length()))   {
-    (count = (count + 1));
-    (index = (index + 1));
+    (count = mlc::arith::checked_add(count, 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return count;
 }
@@ -151,7 +151,7 @@ int max_field_name_length_in_lit_parts(mlc::Array<ast::RecordLitPart> lit_parts)
     if ((part_maximum > maximum))     {
       (maximum = part_maximum);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return maximum;
 }
@@ -159,8 +159,8 @@ int record_lit_parts_field_value_count(mlc::Array<ast::RecordLitPart> lit_parts)
   auto count = 0;
   auto index = 0;
   while ((index < lit_parts.length()))   {
-    (count = (count + record_lit_part_field_count(lit_parts[index])));
-    (index = (index + 1));
+    (count = mlc::arith::checked_add(count, record_lit_part_field_count(lit_parts[index])));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return count;
 }
@@ -171,14 +171,14 @@ mlc::String print_field_values_inline(mlc::Array<std::shared_ptr<ast::FieldVal>>
   return field_values.map([=](std::shared_ptr<ast::FieldVal> field_value) mutable { return print_field_value_inline(field_value, depth); }).join(mlc::String(", ", 2));
 }
 mlc::String print_field_value_aligned(std::shared_ptr<ast::FieldVal> field_value, int name_width, int depth) noexcept{
-  return ((((indent_text(depth) + field_value->name) + mlc::String(": ", 2)) + padding_spaces((name_width - field_value->name.length()))) + print_mlc_expr_at_depth(field_value->value, depth));
+  return ((((indent_text(depth) + field_value->name) + mlc::String(": ", 2)) + padding_spaces(mlc::arith::checked_sub(name_width, field_value->name.length()))) + print_mlc_expr_at_depth(field_value->value, depth));
 }
 mlc::Array<mlc::String> append_field_values_inline(mlc::Array<mlc::String> segments, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, int depth) noexcept{
   auto result = segments;
   auto field_index = 0;
   while ((field_index < field_values.length()))   {
     result.push_back(print_field_value_inline(field_values[field_index], depth));
-    (field_index = (field_index + 1));
+    (field_index = mlc::arith::checked_add(field_index, 1));
   }
   return result;
 }
@@ -192,7 +192,7 @@ mlc::String print_record_lit_parts_inline(mlc::Array<ast::RecordLitPart> lit_par
   auto index = 0;
   while ((index < lit_parts.length()))   {
     (segments = append_record_lit_part_inline(segments, lit_parts[index], depth));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return segments.join(mlc::String(", ", 2));
 }
@@ -201,7 +201,7 @@ mlc::Array<mlc::String> append_field_values_multiline(mlc::Array<mlc::String> li
   auto field_index = 0;
   while ((field_index < field_values.length()))   {
     result.push_back((print_field_value_aligned(field_values[field_index], name_width, depth) + mlc::String(",", 1)));
-    (field_index = (field_index + 1));
+    (field_index = mlc::arith::checked_add(field_index, 1));
   }
   return result;
 }
@@ -215,7 +215,7 @@ mlc::String print_record_lit_parts_multiline(mlc::Array<ast::RecordLitPart> lit_
   auto index = 0;
   while ((index < lit_parts.length()))   {
     (lines = append_record_lit_part_multiline(lines, lit_parts[index], name_width, depth));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return lines.join(mlc::String("\n", 1));
 }
@@ -224,7 +224,7 @@ mlc::String print_record_literal(mlc::String type_name, mlc::Array<ast::RecordLi
     return (((type_name + mlc::String(" { ", 3)) + print_record_lit_parts_inline(lit_parts, depth)) + mlc::String(" }", 2));
   } else   {
     auto name_width = max_field_name_length_in_lit_parts(lit_parts);
-    return ((((((type_name + mlc::String(" {", 2)) + mlc::String("\n", 1)) + print_record_lit_parts_multiline(lit_parts, name_width, (depth + 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
+    return ((((((type_name + mlc::String(" {", 2)) + mlc::String("\n", 1)) + print_record_lit_parts_multiline(lit_parts, name_width, mlc::arith::checked_add(depth, 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
   }
 }
 mlc::String print_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> overrides, int depth) noexcept{
@@ -232,26 +232,26 @@ mlc::String print_record_update(mlc::String type_name, std::shared_ptr<ast::Expr
     return ((((((type_name + mlc::String(" { ", 3)) + record_spread_text()) + print_mlc_expr_at_depth(base, depth)) + mlc::String(", ", 2)) + print_field_values_inline(overrides, depth)) + mlc::String(" }", 2));
   } else   {
     auto name_width = max_field_name_length_from_values(overrides);
-    return (((((((((((type_name + mlc::String(" {", 2)) + mlc::String("\n", 1)) + indent_text((depth + 1))) + record_spread_text()) + print_mlc_expr_at_depth(base, (depth + 1))) + mlc::String(",", 1)) + mlc::String("\n", 1)) + overrides.map([=](std::shared_ptr<ast::FieldVal> field_value) mutable { return (print_field_value_aligned(field_value, name_width, (depth + 1)) + mlc::String(",", 1)); }).join(mlc::String("\n", 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
+    return (((((((((((type_name + mlc::String(" {", 2)) + mlc::String("\n", 1)) + indent_text(mlc::arith::checked_add(depth, 1))) + record_spread_text()) + print_mlc_expr_at_depth(base, mlc::arith::checked_add(depth, 1))) + mlc::String(",", 1)) + mlc::String("\n", 1)) + overrides.map([=](std::shared_ptr<ast::FieldVal> field_value) mutable { return (print_field_value_aligned(field_value, name_width, mlc::arith::checked_add(depth, 1)) + mlc::String(",", 1)); }).join(mlc::String("\n", 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
   }
 }
 mlc::String print_type_fields_inline(mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions) noexcept{
   return field_definitions.map([=](std::shared_ptr<ast::FieldDef> field_definition) mutable { return ((field_definition->name + mlc::String(": ", 2)) + print_mlc_type(field_definition->type_value)); }).join(mlc::String(", ", 2));
 }
 mlc::String print_type_fields_multiline(mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions, int name_width, int depth) noexcept{
-  return field_definitions.map([=](std::shared_ptr<ast::FieldDef> field_definition) mutable { return (((((indent_text(depth) + field_definition->name) + mlc::String(": ", 2)) + padding_spaces((name_width - field_definition->name.length()))) + print_mlc_type(field_definition->type_value)) + mlc::String(",", 1)); }).join(mlc::String("\n", 1));
+  return field_definitions.map([=](std::shared_ptr<ast::FieldDef> field_definition) mutable { return (((((indent_text(depth) + field_definition->name) + mlc::String(": ", 2)) + padding_spaces(mlc::arith::checked_sub(name_width, field_definition->name.length()))) + print_mlc_type(field_definition->type_value)) + mlc::String(",", 1)); }).join(mlc::String("\n", 1));
 }
 mlc::String print_type_record_body(mlc::Array<std::shared_ptr<ast::FieldDef>> field_definitions, int depth) noexcept{
   if ((field_definitions.length() <= 1))   {
     return ((mlc::String("{ ", 2) + print_type_fields_inline(field_definitions)) + mlc::String(" }", 2));
   } else   {
     auto name_width = max_field_name_length_from_definitions(field_definitions);
-    return (((((mlc::String("{", 1) + mlc::String("\n", 1)) + print_type_fields_multiline(field_definitions, name_width, (depth + 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
+    return (((((mlc::String("{", 1) + mlc::String("\n", 1)) + print_type_fields_multiline(field_definitions, name_width, mlc::arith::checked_add(depth, 1))) + mlc::String("\n", 1)) + indent_text(depth)) + mlc::String("}", 1));
   }
 }
 mlc::String format_do_end_block(mlc::Array<std::shared_ptr<ast::Stmt>> statements, std::shared_ptr<ast::Expr> result_expression, int depth) noexcept{
   auto header = (indent_text(depth) + mlc::String("do", 2));
-  auto body_lines = print_mlc_block_lines(statements, result_expression, (depth + 1));
+  auto body_lines = print_mlc_block_lines(statements, result_expression, mlc::arith::checked_add(depth, 1));
   auto footer = (indent_text(depth) + mlc::String("end", 3));
   if ((body_lines == mlc::String("", 0)))   {
     return ((header + mlc::String("\n", 1)) + footer);
@@ -275,7 +275,7 @@ mlc::String print_mlc_block_lines(mlc::Array<std::shared_ptr<ast::Stmt>> stateme
   auto index = 0;
   while ((index < statements.length()))   {
     parts.push_back(print_mlc_stmt_at_depth(statements[index], depth));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   parts.push_back(print_mlc_stmt_expression_at_depth(result_expression, depth));
   return parts.join(mlc::String("\n", 1));
@@ -402,7 +402,7 @@ mlc::String print_mlc_program(ast::Program program) noexcept{
   auto index = 0;
   while ((index < program.decls.length()))   {
     parts.push_back(print_mlc_decl(program.decls[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parts.join(mlc::String("\n", 1));
 }

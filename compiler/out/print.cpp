@@ -14,7 +14,7 @@ mlc::Array<int> zero_based_indices(int count) noexcept{
   if ((count <= 0))   {
     return mlc::Array<int>{};
   } else   {
-    return zero_based_indices((count - 1)).concat(mlc::Array<int>{(count - 1)});
+    return zero_based_indices(mlc::arith::checked_sub(count, 1)).concat(mlc::Array<int>{mlc::arith::checked_sub(count, 1)});
   }
 }
 mlc::String indent_text(int depth) noexcept{
@@ -200,13 +200,13 @@ mlc::String print_statement_body(std::shared_ptr<cpp_ast::CppStatement> statemen
 auto __match_subject = statement;
 if (std::holds_alternative<cpp_ast::CppBlock>((*__match_subject))) {
 const cpp_ast::CppBlock& cppBlock = std::get<cpp_ast::CppBlock>((*__match_subject));
-auto [statements] = cppBlock; return formatted_block(print_statements(statements, (depth + 1)), depth);
+auto [statements] = cppBlock; return formatted_block(print_statements(statements, mlc::arith::checked_add(depth, 1)), depth);
 }
 if (std::holds_alternative<cpp_ast::CppIf>((*__match_subject))) {
 const cpp_ast::CppIf& cppIf = std::get<cpp_ast::CppIf>((*__match_subject));
 auto [__0, __1, __2] = cppIf; return print_statement_node(statement, depth);
 }
-return formatted_block((indent_text((depth + 1)) + print_statement_node(statement, (depth + 1))), depth);
+return formatted_block((indent_text(mlc::arith::checked_add(depth, 1)) + print_statement_node(statement, mlc::arith::checked_add(depth, 1))), depth);
 std::abort();
 }();
 }
@@ -488,10 +488,10 @@ mlc::String print_statement_node(std::shared_ptr<cpp_ast::CppStatement> statemen
 [&](const cpp_ast::CppConstexprAutoDecl& cppConstexprAutoDecl) { auto [name, initializer] = cppConstexprAutoDecl; return constexpr_auto_declaration(name, print_expr(initializer)); },
 [&](const cpp_ast::CppReturn& cppReturn) { auto [expression] = cppReturn; return ((mlc::String("return ", 7) + print_expr(expression)) + mlc::String(";", 1)); },
 [&](const cpp_ast::CppExpressionStatement& cppExpressionStatement) { auto [expression] = cppExpressionStatement; return (print_expr(expression) + mlc::String(";", 1)); },
-[&](const cpp_ast::CppBlock& cppBlock) { auto [statements] = cppBlock; return formatted_block(print_statements(statements, (depth + 1)), depth); },
+[&](const cpp_ast::CppBlock& cppBlock) { auto [statements] = cppBlock; return formatted_block(print_statements(statements, mlc::arith::checked_add(depth, 1)), depth); },
 [&](const cpp_ast::CppIf& cppIf) { auto [condition, then_branch, else_branch] = cppIf; return conditional_if_statement(print_expr(condition), print_statement_body(then_branch, depth), else_branch, depth); },
 [&](const cpp_ast::CppWhile& cppWhile) { auto [condition, body] = cppWhile; return while_statement(print_expr(condition), print_statement_body(body, depth)); },
-[&](const cpp_ast::CppFor& cppFor) { auto [variable_name, range_expression, body] = cppFor; return range_for_statement(variable_name, print_expr(range_expression), formatted_block(print_statements(body, (depth + 1)), depth)); },
+[&](const cpp_ast::CppFor& cppFor) { auto [variable_name, range_expression, body] = cppFor; return range_for_statement(variable_name, print_expr(range_expression), formatted_block(print_statements(body, mlc::arith::checked_add(depth, 1)), depth)); },
 [&](const cpp_ast::CppStructuredBinding& cppStructuredBinding) { auto [binding_names, initializer] = cppStructuredBinding; return structured_binding_declaration(binding_names, print_expr(initializer)); },
 [&](const cpp_ast::CppStatementFragment& cppStatementFragment) { auto [fragment] = cppStatementFragment; return fragment; }
 }, (*statement));

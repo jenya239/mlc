@@ -23,7 +23,7 @@ CppTokenKind reserved_cpp_keyword_kind(mlc::String word) noexcept{
     if ((entries[index].name == word))     {
       return entries[index].kind;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return CKAuto{};
 }
@@ -139,7 +139,7 @@ mlc::String cpp_tokens_to_source(mlc::Array<CppToken> tokens) noexcept{
     if ((!cpp_token_kind_is_eof(token.kind)))     {
       parts.push_back(cpp_token_to_source(token));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parts.join(mlc::String("", 0));
 }
@@ -153,7 +153,7 @@ bool cpp_token_kinds_equal(mlc::Array<CppToken> first, mlc::Array<CppToken> seco
       if ((cpp_token_lexeme(first[index].kind) != cpp_token_lexeme(second[index].kind)))       {
         (equal = false);
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return equal;
   }

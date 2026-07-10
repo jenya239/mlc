@@ -42,7 +42,7 @@ mlc::Array<Diagnostic> diagnostics_append(mlc::Array<Diagnostic> destination, ml
   auto index = 0;
   while ((index < source.length()))   {
     accumulator.push_back(source[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accumulator;
 }
@@ -51,7 +51,7 @@ mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<Diagnostic> diagnostic
   auto index = 0;
   while ((index < diagnostics.length()))   {
     lines.push_back(diagnostic_format(diagnostics[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return lines;
 }
@@ -191,7 +191,7 @@ std::shared_ptr<Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<Stmt>> s
     return std::make_shared<Expr>(ExprUnit{span_unknown()});
   } else   {
     return [&]() -> std::shared_ptr<Expr> {
-auto __match_subject = statements[(statements.length() - 1)];
+auto __match_subject = statements[mlc::arith::checked_sub(statements.length(), 1)];
 if (std::holds_alternative<StmtReturn>((*__match_subject))) {
 const StmtReturn& stmtReturn = std::get<StmtReturn>((*__match_subject));
 auto [expression, __1] = stmtReturn; return expression;
@@ -348,7 +348,7 @@ mlc::Array<mlc::String> errs_append(mlc::Array<mlc::String>& dst, mlc::Array<mlc
   auto i = 0;
   while ((i < src.length()))   {
     dst.push_back(src[i]);
-    (i = (i + 1));
+    (i = mlc::arith::checked_add(i, 1));
   }
   return dst;
 }

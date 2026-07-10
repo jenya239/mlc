@@ -37,7 +37,7 @@ void collect_pattern_list_definition_spans(mlc::Array<std::shared_ptr<ast::Patte
   return [&]() {
 while ((pattern_index < patterns.length())) {
 collect_pattern_definition_spans(patterns[pattern_index], source_file, table);
-(pattern_index = (pattern_index + 1));
+(pattern_index = mlc::arith::checked_add(pattern_index, 1));
 }
 }();
 }
@@ -46,7 +46,7 @@ void collect_expression_list_definition_spans(mlc::Array<std::shared_ptr<ast::Ex
   return [&]() {
 while ((expression_index < expressions.length())) {
 collect_expression_definition_spans(expressions[expression_index], source_file, table);
-(expression_index = (expression_index + 1));
+(expression_index = mlc::arith::checked_add(expression_index, 1));
 }
 }();
 }
@@ -55,7 +55,7 @@ void collect_declaration_list_definition_spans(mlc::Array<std::shared_ptr<ast::D
   return [&]() {
 while ((declaration_index < declarations.length())) {
 collect_declaration_definition_spans(declarations[declaration_index], source_file, table);
-(declaration_index = (declaration_index + 1));
+(declaration_index = mlc::arith::checked_add(declaration_index, 1));
 }
 }();
 }
@@ -68,13 +68,13 @@ auto field_index = 0;
 return [&]() {
 while ((field_index < field_values.length())) {
 collect_expression_definition_spans(field_values[field_index]->value, source_file, table);
-(field_index = (field_index + 1));
+(field_index = mlc::arith::checked_add(field_index, 1));
 }
 }();
 }(); },
 [&](const ast::RecordLitSpread& recordLitSpread) -> void { auto [spread_expression] = recordLitSpread; collect_expression_definition_spans(spread_expression, source_file, table); }
 }, parts[part_index]);
-(part_index = (part_index + 1));
+(part_index = mlc::arith::checked_add(part_index, 1));
 }
 }();
 }
@@ -83,7 +83,7 @@ void collect_field_values_definition_spans(mlc::Array<std::shared_ptr<ast::Field
   return [&]() {
 while ((field_index < field_values.length())) {
 collect_expression_definition_spans(field_values[field_index]->value, source_file, table);
-(field_index = (field_index + 1));
+(field_index = mlc::arith::checked_add(field_index, 1));
 }
 }();
 }
@@ -156,7 +156,7 @@ void collect_statements_definition_spans(mlc::Array<std::shared_ptr<ast::Stmt>> 
   return [&]() {
 while ((index < statements.length())) {
 collect_statement_definition_spans(statements[index], source_file, table);
-(index = (index + 1));
+(index = mlc::arith::checked_add(index, 1));
 }
 }();
 }
@@ -181,7 +181,7 @@ auto [parameter_names, body_expression, lambda_span] = exprLambda; [&]() {
 auto index = 0;
 while ((index < parameter_names.length())) {
   symbol_table_set(table, parameter_names[index], source_file, lambda_span);
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return collect_expression_definition_spans(body_expression, source_file, table);
 }();
@@ -226,7 +226,7 @@ auto index = 0;
 return [&]() {
 while ((index < arms.length())) {
 collect_match_arm_definition_spans(arms[index], source_file, table);
-(index = (index + 1));
+(index = mlc::arith::checked_add(index, 1));
 }
 }();
 }();
@@ -331,7 +331,7 @@ symbol_table_set(table, function_name, source_file, ast::expr_span(body_expressi
 auto index = 0;
 while ((index < parameters.length())) {
   symbol_table_set(table, parameters[index]->name, source_file, ast::expr_span(body_expression));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return collect_expression_definition_spans(body_expression, source_file, table);
 }();
@@ -375,7 +375,7 @@ mlc::HashMap<mlc::String, ast::Span> build_symbol_table(ast::Program program, ml
   auto index = 0;
   while ((index < program.decls.length()))   {
     collect_declaration_definition_spans(program.decls[index], source_file, table);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return table;
 }
@@ -394,15 +394,15 @@ mlc::String find_identifier_at_position(mlc::String source_text, int line_zero_b
   auto lex_output = lexer::tokenize(source_text);
   auto index = 0;
   auto found_name = mlc::String("", 0);
-  auto target_line = (line_zero_based + 1);
-  auto target_column = (column_zero_based + 1);
+  auto target_line = mlc::arith::checked_add(line_zero_based, 1);
+  auto target_column = mlc::arith::checked_add(column_zero_based, 1);
   while ((index < lex_output.tokens.length()))   {
     auto token = lex_output.tokens[index];
     auto identifier_name = token_identifier_name(token);
     if ((identifier_name.length() > 0))     {
-      (found_name = ((((ast_tokens::Token_line_number(token) == target_line) && (ast_tokens::Token_column(token) <= target_column)) && (target_column < (ast_tokens::Token_column(token) + identifier_name.length()))) ? (identifier_name) : (found_name)));
+      (found_name = ((((ast_tokens::Token_line_number(token) == target_line) && (ast_tokens::Token_column(token) <= target_column)) && (target_column < mlc::arith::checked_add(ast_tokens::Token_column(token), identifier_name.length()))) ? (identifier_name) : (found_name)));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return found_name;
 }

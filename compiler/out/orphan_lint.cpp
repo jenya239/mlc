@@ -60,7 +60,7 @@ mlc::Array<ast::Diagnostic> orphan_impl_diagnostics(ast::Program program, regist
   auto index = 0;
   while ((index < program.decls.length()))   {
     (diagnostics = ast::diagnostics_append(diagnostics, orphan_diagnostics_for_declaration(program.decls[index], registry)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return diagnostics;
 }

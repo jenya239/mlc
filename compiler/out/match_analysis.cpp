@@ -61,7 +61,7 @@ return (mlc::String("__", 2) + mlc::to_string(index));
 std::abort();
 }();
     parts.push_back(bind_name);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return parts;
 }

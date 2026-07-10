@@ -19,7 +19,7 @@ mlc::Array<mir_types::MirFunction> run_mir_passes_on_functions(mlc::Array<mir_ty
   auto index = 0;
   while ((index < functions.length()))   {
     optimized.push_back(run_mir_passes_on_function(functions[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return optimized;
 }
@@ -29,7 +29,7 @@ mlc::Array<mir_types::MirModule> run_mir_passes_on_modules(mlc::Array<mir_types:
   while ((index < modules.length()))   {
     auto mir_module = modules[index];
     optimized.push_back(mir_types::MirModule{run_mir_passes_on_functions(mir_module.functions)});
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return optimized;
 }

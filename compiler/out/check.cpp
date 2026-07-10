@@ -55,7 +55,7 @@ bool param_defaults_in_tail(mlc::Array<std::shared_ptr<ast::Param>> parameters) 
     if (has_default_now)     {
       (optional_began = true);
     }
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return true;
 }
@@ -241,8 +241,12 @@ mlc::HashMap<mlc::String, bool> global_names_merge_single_declaration_into_map(m
 global_names_so_far.set(name, true);
 return global_names_so_far;
 }(); },
-[&](const ast::DeclType& declType) { auto [name, __1, variants, __3, __4] = declType; return [&]() {
+[&](const ast::DeclType& declType) { auto [name, __1, variants, derive_traits, __4] = declType; return [&]() {
 global_names_so_far.set(name, true);
+if (derive_traits.any([=](mlc::String trait_name) mutable { return (trait_name == mlc::String("Json", 4)); })) {
+  global_names_so_far.set((name + mlc::String("_to_json", 8)), true);
+  global_names_so_far.set((name + mlc::String("_from_json", 10)), true);
+}
 return variants.fold(global_names_so_far, [=](mlc::HashMap<mlc::String, bool> names_after_type_definition, std::shared_ptr<ast::TypeVariant> variant_shared_under_scan) mutable { return global_names_merge_type_constructor_variant_into_map(names_after_type_definition, variant_shared_under_scan); });
 }(); },
 [&](const ast::DeclTypeAlias& declTypeAlias) { auto [name, __1, __2, __3] = declTypeAlias; return [&]() {
@@ -271,6 +275,7 @@ mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
   names.set(mlc::String("println", 7), true);
   names.set(mlc::String("args", 4), true);
   names.set(mlc::String("read_line", 9), true);
+  names.set(mlc::String("read_all", 8), true);
   names.set(mlc::String("spawn_task", 10), true);
   names.set(mlc::String("make_channel", 12), true);
   names.set(mlc::String("Channel", 7), true);
@@ -381,7 +386,7 @@ auto method_environment = mlc::HashMap<mlc::String, std::shared_ptr<registry::Ty
 auto parameter_index = 0;
 while ((parameter_index < parameters.length())) {
   method_environment.set(ast::param_name(parameters[parameter_index]), registry::type_from_annotation_with_registry(ast::param_type_value(parameters[parameter_index]), registry));
-  (parameter_index = (parameter_index + 1));
+  (parameter_index = mlc::arith::checked_add(parameter_index, 1));
 }
 auto extend_context = check_context::CheckContext{method_environment, registry, extend_type_name, std::make_shared<registry::Type>(registry::TUnknown{})};
 auto method_parsed = infer::infer_expr(method_body, extend_context);
@@ -503,7 +508,7 @@ std::make_tuple();
 return std::make_tuple();
 }(); }
 }, (*ast::decl_inner(expanded_entry_program.decls[declaration_index])));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return Program_check_gathered{all_diagnostics, registry};
 }

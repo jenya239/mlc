@@ -113,7 +113,7 @@ mlc::Array<int> instance_method_receiver_and_parameters_mutability_pattern(regis
       return empty_mutability_pattern;
     } else     {
       auto stored = registry::TypeRegistry_parameter_mutability_flags_for(registry, mangled);
-      if ((stored.length() != (method_argument_count + 1)))       {
+      if ((stored.length() != mlc::arith::checked_add(method_argument_count, 1)))       {
         auto empty_mutability_pattern = mlc::Array<int>{};
         return empty_mutability_pattern;
       } else       {
@@ -137,15 +137,18 @@ mlc::String extend_method_mangled_name(registry::TypeRegistry registry, std::sha
 }
 std::shared_ptr<semantic_ir::SemanticExpression> transform_extend_method_as_call(registry::TypeRegistry registry, std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::String method_name, mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> typed_arguments, std::shared_ptr<registry::Type> receiver_type, std::shared_ptr<registry::Type> result_type, ast::Span source_span) noexcept{
   auto mangled = extend_method_mangled_name(registry, receiver_type, method_name);
+  auto required_arity = registry::TypeRegistry_required_arity_for_fn(registry, mangled);
   auto call_arguments = mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>>{};
-  call_arguments.push_back(typed_object);
+  if ((required_arity == mlc::arith::checked_add(typed_arguments.length(), 1)))   {
+    call_arguments.push_back(typed_object);
+  }
   auto argument_index = 0;
   while ((argument_index < typed_arguments.length()))   {
     call_arguments.push_back(typed_arguments[argument_index]);
-    (argument_index = (argument_index + 1));
+    (argument_index = mlc::arith::checked_add(argument_index, 1));
   }
   auto callee = std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIdent{mangled, registry::TypeRegistry_fn_type(registry, mangled), source_span});
-  auto call_parameter_mutability_flags = instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.length());
+  auto call_parameter_mutability_flags = ((required_arity == mlc::arith::checked_add(typed_arguments.length(), 1)) ? (instance_method_receiver_and_parameters_mutability_pattern(registry, receiver_type, method_name, typed_arguments.length())) : (registry::TypeRegistry_parameter_mutability_flags_for(registry, mangled)));
   return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionCall{callee, call_arguments, call_parameter_mutability_flags, result_type, source_span});
 }
 bool semantic_type_is_tarray(std::shared_ptr<registry::Type> type_value) noexcept{
@@ -769,7 +772,7 @@ std::shared_ptr<registry::Type> function_return_type_from_callee_type(std::share
 }, (*type_value));
 }
 Transform_call_arguments_fold_state transform_call_arguments_fold_step(Transform_call_arguments_fold_state state, std::shared_ptr<ast::Expr> argument_expression, mlc::Array<std::shared_ptr<registry::Type>> expected_formal_parameter_types, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
-  return Transform_call_arguments_fold_state{state.transformed_arguments.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>>{transform_one_call_argument_using_optional_expected_type(argument_expression, expected_call_argument_type_at_index(state.next_argument_index, expected_formal_parameter_types), transform_context, stmts_fn)}), (state.next_argument_index + 1)};
+  return Transform_call_arguments_fold_state{state.transformed_arguments.concat(mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>>{transform_one_call_argument_using_optional_expected_type(argument_expression, expected_call_argument_type_at_index(state.next_argument_index, expected_formal_parameter_types), transform_context, stmts_fn)}), mlc::arith::checked_add(state.next_argument_index, 1)};
 }
 mlc::Array<std::shared_ptr<semantic_ir::SemanticExpression>> transform_call_arguments_using_callee_semantic_type(std::shared_ptr<semantic_ir::SemanticExpression> callee_semantic_expression, mlc::Array<std::shared_ptr<ast::Expr>> argument_expressions_under_call, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
   auto callee_type = semantic_ir::sexpr_type(callee_semantic_expression);
@@ -802,7 +805,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> lambda_environment_as
 Transform_lambda_parameter_types_fold_state transform_lambda_parameter_types_environment_fold_step(Transform_lambda_parameter_types_fold_state state, mlc::String parameter_binding_name, mlc::Array<std::shared_ptr<registry::Type>> optional_explicit_parameter_types) noexcept{
   auto resolved_parameter_type = ((state.next_explicit_type_position < optional_explicit_parameter_types.length()) ? (optional_explicit_parameter_types[state.next_explicit_type_position]) : (standalone_unknown_cell()));
   state.type_environment.set(parameter_binding_name, resolved_parameter_type);
-  return Transform_lambda_parameter_types_fold_state{state.type_environment, state.parameter_type_vector.concat(mlc::Array<std::shared_ptr<registry::Type>>{resolved_parameter_type}), (state.next_explicit_type_position + 1)};
+  return Transform_lambda_parameter_types_fold_state{state.type_environment, state.parameter_type_vector.concat(mlc::Array<std::shared_ptr<registry::Type>>{resolved_parameter_type}), mlc::arith::checked_add(state.next_explicit_type_position, 1)};
 }
 std::shared_ptr<semantic_ir::SemanticExpression> transform_expr_lambda_with_param_types(mlc::Array<mlc::String> parameter_names, mlc::Array<std::shared_ptr<registry::Type>> parameter_types, std::shared_ptr<ast::Expr> body, ast::Span source_span, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
   auto lambda_environment = transform_context.type_env;
@@ -1056,7 +1059,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_extern(Tran
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionExtern{std::make_shared<registry::Type>(registry::TUnit{}), extern_c_name, extern_header, concurrency_attrs, source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_ident(TransformPass self, mlc::String name, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
-auto resolved_type = (self.transform_context.type_env.has(name) ? (self.transform_context.type_env.get(name)) : ((registry::TypeRegistry_has_fn(self.transform_context.registry, name) ? (registry::TypeRegistry_fn_type(self.transform_context.registry, name)) : ((registry::TypeRegistry_has_ctor(self.transform_context.registry, name) ? (registry::TypeRegistry_ctor_type(self.transform_context.registry, name)) : (std::make_shared<registry::Type>(registry::TUnknown{})))))));
+auto resolved_type = (self.transform_context.type_env.has(name) ? (self.transform_context.type_env.get(name)) : ((registry::TypeRegistry_has_fn(self.transform_context.registry, name) ? (registry::TypeRegistry_fn_type(self.transform_context.registry, name)) : ((registry::TypeRegistry_has_ctor(self.transform_context.registry, name) ? (registry::TypeRegistry_ctor_type(self.transform_context.registry, name)) : ((self.transform_context.registry.adt_index.algebraic_decl_type_parameter_names.has(name) ? (std::make_shared<registry::Type>(registry::TNamed{name})) : (std::make_shared<registry::Type>(registry::TUnknown{})))))))));
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIdent{name, resolved_type, source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_bin(TransformPass self, mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{

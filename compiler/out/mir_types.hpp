@@ -6,6 +6,12 @@
 #include "registry.hpp"
 namespace mir_types {
 
+struct MirParamDefaultNone;
+struct MirParamDefaultInt;
+struct MirParamDefaultBool;
+struct MirParamDefaultStr;
+struct MirParamDefaultUnit;
+using MirParamDefault = std::variant<MirParamDefaultNone, MirParamDefaultInt, MirParamDefaultBool, MirParamDefaultStr, MirParamDefaultUnit>;
 struct MirOperandLocal;
 struct MirOperandConstInt;
 struct MirOperandConstBool;
@@ -14,7 +20,8 @@ struct MirOperandUnit;
 using MirOperand = std::variant<MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit>;
 struct MirRvalueUse;
 struct MirRvalueBinary;
-using MirRvalue = std::variant<MirRvalueUse, MirRvalueBinary>;
+struct MirRvalueUnary;
+using MirRvalue = std::variant<MirRvalueUse, MirRvalueBinary, MirRvalueUnary>;
 struct MirAssign;
 struct MirCallAssign;
 using MirStmt = std::variant<MirAssign, MirCallAssign>;
@@ -29,9 +36,21 @@ struct LocalId {
 struct BlockId {
   int index;
 };
+struct MirParamDefaultNone {};
+struct MirParamDefaultInt {
+  int field0;
+};
+struct MirParamDefaultBool {
+  bool field0;
+};
+struct MirParamDefaultStr {
+  mlc::String field0;
+};
+struct MirParamDefaultUnit {};
 struct MirParam {
   mlc::String name;
   std::shared_ptr<registry::Type> type_value;
+  MirParamDefault default_value;
 };
 struct MirLocal {
   LocalId id;
@@ -58,6 +77,10 @@ struct MirRvalueBinary {
   mlc::String field0;
   MirOperand field1;
   MirOperand field2;
+};
+struct MirRvalueUnary {
+  mlc::String field0;
+  MirOperand field1;
 };
 struct MirAssign {
   LocalId field0;

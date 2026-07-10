@@ -13,7 +13,7 @@ using namespace ast_tokens;
 mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noexcept{
   auto prefix = (type_name + mlc::String("_", 1));
   if (((fn_name.length() > prefix.length()) && (fn_name.substring(0, prefix.length()) == prefix)))   {
-    return fn_name.substring(prefix.length(), (fn_name.length() - prefix.length()));
+    return fn_name.substring(prefix.length(), mlc::arith::checked_sub(fn_name.length(), prefix.length()));
   } else   {
     return fn_name;
   }
@@ -26,7 +26,7 @@ mlc::String extract_owner_prefix_from_mangled(mlc::String fn_name) noexcept{
       (result = fn_name.substring(0, index));
       (index = fn_name.length());
     } else     {
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
   }
   return result;
@@ -72,7 +72,7 @@ mlc::HashMap<mlc::String, bool> build_trait_names_from_decls(mlc::Array<std::sha
   auto index = 0;
   while ((index < decls.length()))   {
     register_trait_name_from_decl(trait_names, decls[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return trait_names;
 }
@@ -90,7 +90,7 @@ void register_trait_method_owners(mlc::HashMap<mlc::String, mlc::String>& owners
   return [&]() {
 while ((method_index < methods.length())) {
 register_function_method_owner(owners, trait_name, methods[method_index]);
-(method_index = (method_index + 1));
+(method_index = mlc::arith::checked_add(method_index, 1));
 }
 }();
 }
@@ -110,7 +110,7 @@ void register_extend_method_owners(mlc::HashMap<mlc::String, mlc::String>& owner
   return [&]() {
 while ((method_index < methods.length())) {
 register_extend_function_method_owner(owners, type_name, methods[method_index], trait_names);
-(method_index = (method_index + 1));
+(method_index = mlc::arith::checked_add(method_index, 1));
 }
 }();
 }
@@ -174,7 +174,7 @@ void add_method_owners_from_decls(mlc::Array<std::shared_ptr<ast::Decl>> declara
   return [&]() {
 while ((declaration_index < declarations.length())) {
 register_method_owners_from_decl(owners, declarations[declaration_index], trait_names);
-(declaration_index = (declaration_index + 1));
+(declaration_index = mlc::arith::checked_add(declaration_index, 1));
 }
 }();
 }
@@ -223,7 +223,7 @@ mlc::Array<mlc::String> append_generic_variant_names(mlc::Array<mlc::String> res
   auto variant_index = 0;
   while ((variant_index < variants.length()))   {
     accumulated.push_back(generic_variant_entry_name(type_parameters, variants[variant_index]));
-    (variant_index = (variant_index + 1));
+    (variant_index = mlc::arith::checked_add(variant_index, 1));
   }
   return accumulated;
 }
@@ -245,9 +245,9 @@ mlc::Array<mlc::String> build_generic_variants_from_decls(mlc::Array<std::shared
     auto variant_index = 0;
     while ((variant_index < decl_variants.length()))     {
       result.push_back(decl_variants[variant_index]);
-      (variant_index = (variant_index + 1));
+      (variant_index = mlc::arith::checked_add(variant_index, 1));
     }
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return result;
 }
@@ -273,7 +273,7 @@ void register_variant_types_for_decl(mlc::HashMap<mlc::String, mlc::String> vari
     [&]() {
 while ((variant_index < variants.length())) {
 register_variant_type_mapping(variant_map, type_name, variants[variant_index]);
-(variant_index = (variant_index + 1));
+(variant_index = mlc::arith::checked_add(variant_index, 1));
 }
 }();
   }
@@ -283,7 +283,7 @@ mlc::HashMap<mlc::String, mlc::String> build_variant_types_from_decls(mlc::Array
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     register_variant_types_for_decl(variant_map, declarations[declaration_index]);
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return variant_map;
 }
@@ -292,7 +292,7 @@ mlc::Array<mlc::String> field_names_from_field_definitions(mlc::Array<std::share
   auto field_index = 0;
   while ((field_index < field_definitions.length()))   {
     field_names.push_back(field_definitions[field_index]->name);
-    (field_index = (field_index + 1));
+    (field_index = mlc::arith::checked_add(field_index, 1));
   }
   return field_names;
 }
@@ -338,11 +338,11 @@ mlc::Array<std::shared_ptr<decl_index::FieldOrder>> field_orders_for_type_varian
       [&]() {
 while ((order_index < new_orders.length())) {
 result.push_back(new_orders[order_index]);
-(order_index = (order_index + 1));
+(order_index = mlc::arith::checked_add(order_index, 1));
 }
 }();
     }
-    (variant_index = (variant_index + 1));
+    (variant_index = mlc::arith::checked_add(variant_index, 1));
   }
   return result;
 }
@@ -396,9 +396,9 @@ mlc::Array<std::shared_ptr<decl_index::FieldOrder>> build_field_orders(ast::Prog
     auto order_index = 0;
     while ((order_index < decl_orders.length()))     {
       orders.push_back(decl_orders[order_index]);
-      (order_index = (order_index + 1));
+      (order_index = mlc::arith::checked_add(order_index, 1));
     }
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return orders;
 }
@@ -461,7 +461,7 @@ mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_sum_type_parameter_name
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     register_sum_type_parameter_names(parameter_map, declarations[declaration_index]);
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return parameter_map;
 }
@@ -479,7 +479,7 @@ void register_variant_used_type_parameter_names_for_decl(mlc::HashMap<mlc::Strin
     [&]() {
 while ((variant_index < variants.length())) {
 register_variant_used_type_parameter_names(used_map, type_name, type_parameters, variants[variant_index]);
-(variant_index = (variant_index + 1));
+(variant_index = mlc::arith::checked_add(variant_index, 1));
 }
 }();
   }
@@ -489,7 +489,7 @@ mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_variant_used_type_param
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     register_variant_used_type_parameter_names_for_decl(used_map, declarations[declaration_index]);
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return used_map;
 }

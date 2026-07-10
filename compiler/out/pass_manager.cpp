@@ -25,7 +25,7 @@ bool pass_name_is_safe(mlc::String name) noexcept{
       if ((!pass_name_character_is_safe(name.char_at(index))))       {
         return false;
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return true;
   }
@@ -36,7 +36,7 @@ bool descriptor_name_exists(mlc::Array<PassDescriptor> descriptors, mlc::String 
     if ((descriptors[index].name == name))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -60,7 +60,7 @@ bool context_has_key(mlc::Array<mlc::String> produced_keys, mlc::String key) noe
     if ((produced_keys[index] == key))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -71,7 +71,7 @@ mlc::Array<mlc::String> context_mark_keys(mlc::Array<mlc::String> produced_keys,
     if ((!context_has_key(merged, keys[index])))     {
       merged.push_back(keys[index]);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return merged;
 }
@@ -86,7 +86,7 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> pass_manager_validate_descript
     if ((!context_has_key(produced_keys, key)))     {
       missing.push_back(key);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((missing.length() > 0))   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{((((mlc::String("pass_manager: pass ", 19) + mlc::to_string(descriptor.name)) + mlc::String(" missing keys: ", 15)) + mlc::to_string(missing.join(mlc::String(", ", 2)))) + mlc::String("", 0))}};
@@ -102,7 +102,7 @@ preserved_analyses::PreservedAnalyses pass_manager_apply_preserved(preserved_ana
     auto index = 0;
     while ((index < descriptor.preserves_analyses.length()))     {
       (next = preserved_analyses::preserved_analyses_mark(next, descriptor.preserves_analyses[index]));
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return next;
   }
@@ -118,7 +118,7 @@ mlc::Array<mlc::String> pass_manager_pass_names(PassManager manager) noexcept{
   auto index = 0;
   while ((index < manager.descriptors.length()))   {
     names.push_back(manager.descriptors[index].name);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return names;
 }

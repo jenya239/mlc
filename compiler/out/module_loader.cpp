@@ -44,9 +44,15 @@ LoadResult load_module_impl(mlc::String path, mlc::HashMap<mlc::String, bool>& l
   } else   {
     loaded.set(norm_path, true);
     profile::profile_maybe_begin(profile_enabled, mlc::String("load_io", 7));
-    auto source = mlc::file::read_to_string(path);
+    auto source = [&]() -> mlc::String {
+  if ((path == mlc::String("-", 1)))   {
+    return mlc::io::read_all();
+  } else   {
+    return mlc::file::read_to_string(path);
+  }
+}();
     profile::profile_maybe_end(profile_enabled, mlc::String("load_io", 7));
-    if (((source.length() == 0) && (!mlc::file::exists(path))))     {
+    if ((((source.length() == 0) && (path != mlc::String("-", 1))) && (!mlc::file::exists(path))))     {
       return LoadResult{{}, mlc::Array<mlc::String>{((mlc::String("file not found: ", 16) + mlc::to_string(path)) + mlc::String("", 0))}};
     } else     {
       profile::profile_maybe_begin(profile_enabled, mlc::String("lex", 3));
@@ -87,7 +93,7 @@ if ((!loaded_paths_seen.has(dependency_item.path))) {
   loaded_paths_seen.set(dependency_item.path, true);
   items.push_back(dependency_item);
 }
-(dep_item_index = (dep_item_index + 1));
+(dep_item_index = mlc::arith::checked_add(dep_item_index, 1));
 }
 }();
 }();
@@ -102,7 +108,7 @@ module_declarations.push_back(program.decls[index]);
 return;
 std::abort();
 }();
-          (index = (index + 1));
+          (index = mlc::arith::checked_add(index, 1));
         }
         items.push_back(load_item::LoadItem{norm_path, module_declarations, my_imports, my_namespace_import_aliases});
         auto load_parsed = LoadResult{items, all_errors};

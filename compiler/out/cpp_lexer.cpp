@@ -16,7 +16,7 @@ bool cpp_is_horizontal_whitespace(mlc::String character) noexcept{
 }
 mlc::String cpp_append_range(mlc::String source_text, int start, int end_position, mlc::String accumulated) noexcept{
   if ((end_position > start))   {
-    return (accumulated + source_text.substring(start, (end_position - start)));
+    return (accumulated + source_text.substring(start, mlc::arith::checked_sub(end_position, start)));
   } else   {
     return accumulated;
   }
@@ -31,7 +31,7 @@ bool cpp_lexer_is_pragma_after_hash(lexer::LexState state) noexcept{
   while (((!lexer::LexState_eof(scan)) && lexer::is_alnum(lexer::LexState_current(scan))))   {
     (scan = lexer::LexState_lex_advance(scan));
   }
-  auto word = source_text.substring(word_start, (scan.position - word_start));
+  auto word = source_text.substring(word_start, mlc::arith::checked_sub(scan.position, word_start));
   return (word == mlc::String("pragma", 6));
 }
 bool cpp_lexer_pragma_line_starts(lexer::LexState state) noexcept{
@@ -142,7 +142,7 @@ CppScanIdR cpp_scan_ident(lexer::LexState state) noexcept{
   while (((!lexer::LexState_eof(current)) && lexer::is_alnum(lexer::LexState_current(current))))   {
     (current = lexer::LexState_lex_advance(current));
   }
-  auto word = input_text.substring(start, (current.position - start));
+  auto word = input_text.substring(start, mlc::arith::checked_sub(current.position, start));
   return CppScanIdR{current, cpp_tokens::cpp_token_make(cpp_tokens::cpp_keyword_kind(word), line, token_column)};
 }
 bool cpp_is_hex_digit(mlc::String character) noexcept{
@@ -177,8 +177,8 @@ int cpp_parse_decimal_integer(mlc::String source_text, int start, int end_positi
   auto value = 0;
   auto index = start;
   while ((index < end_position))   {
-    (value = ((value * 10) + source_text.char_at(index).to_i()));
-    (index = (index + 1));
+    (value = mlc::arith::checked_add(mlc::arith::checked_mul(value, 10), source_text.char_at(index).to_i()));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return value;
 }
@@ -195,7 +195,7 @@ CppScanNumberR cpp_scan_number(lexer::LexState state) noexcept{
     }
     (current = cpp_scan_exponent(current));
     (current = cpp_scan_number_suffixes(current));
-    auto lexeme = source_text.substring(start, (current.position - start));
+    auto lexeme = source_text.substring(start, mlc::arith::checked_sub(current.position, start));
     return CppScanNumberR{current, cpp_tokens::cpp_token_make(cpp_tokens::CLFloat{lexeme}, line, token_column)};
   } else   {
     while (((!lexer::LexState_eof(current)) && lexer::is_digit(lexer::LexState_current(current))))     {
@@ -207,7 +207,7 @@ CppScanNumberR cpp_scan_number(lexer::LexState state) noexcept{
         (current = lexer::LexState_lex_advance(current));
       }
       (current = cpp_scan_number_suffixes(current));
-      auto hex_lexeme = source_text.substring(start, (current.position - start));
+      auto hex_lexeme = source_text.substring(start, mlc::arith::checked_sub(current.position, start));
       return CppScanNumberR{current, cpp_tokens::cpp_token_make(cpp_tokens::CLHex{hex_lexeme}, line, token_column)};
     } else if (((!lexer::LexState_eof(current)) && (lexer::LexState_current(current) == mlc::String(".", 1))))     {
       (current = lexer::LexState_lex_advance(current));
@@ -216,12 +216,12 @@ CppScanNumberR cpp_scan_number(lexer::LexState state) noexcept{
       }
       (current = cpp_scan_exponent(current));
       (current = cpp_scan_number_suffixes(current));
-      auto float_lexeme = source_text.substring(start, (current.position - start));
+      auto float_lexeme = source_text.substring(start, mlc::arith::checked_sub(current.position, start));
       return CppScanNumberR{current, cpp_tokens::cpp_token_make(cpp_tokens::CLFloat{float_lexeme}, line, token_column)};
     } else if (((!lexer::LexState_eof(current)) && ((lexer::LexState_current(current) == mlc::String("e", 1)) || (lexer::LexState_current(current) == mlc::String("E", 1)))))     {
       (current = cpp_scan_exponent(current));
       (current = cpp_scan_number_suffixes(current));
-      auto exponent_lexeme = source_text.substring(start, (current.position - start));
+      auto exponent_lexeme = source_text.substring(start, mlc::arith::checked_sub(current.position, start));
       return CppScanNumberR{current, cpp_tokens::cpp_token_make(cpp_tokens::CLFloat{exponent_lexeme}, line, token_column)};
     } else     {
       (current = cpp_scan_number_suffixes(current));
@@ -267,7 +267,7 @@ CppScanIntR cpp_scan_int(lexer::LexState state) noexcept{
   auto current = state;
   auto value = 0;
   while (((!lexer::LexState_eof(current)) && lexer::is_digit(lexer::LexState_current(current))))   {
-    (value = ((value * 10) + lexer::LexState_current(current).to_i()));
+    (value = mlc::arith::checked_add(mlc::arith::checked_mul(value, 10), lexer::LexState_current(current).to_i()));
     (current = lexer::LexState_lex_advance(current));
   }
   return CppScanIntR{current, cpp_tokens::cpp_token_make(cpp_tokens::CLInt{value}, line, token_column)};

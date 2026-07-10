@@ -74,7 +74,7 @@ while ((argument_index < type_arguments.length())) {
     (parameter_types_csv = (parameter_types_csv + mlc::String(", ", 2)));
   }
   (parameter_types_csv = (parameter_types_csv + sem_type_to_cpp(context, type_arguments[argument_index])));
-  (argument_index = (argument_index + 1));
+  (argument_index = mlc::arith::checked_add(argument_index, 1));
 }
 return expr::cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv);
 }();
@@ -173,7 +173,7 @@ while ((argument_index < type_arguments.length())) {
     (parameter_types_csv = (parameter_types_csv + mlc::String(", ", 2)));
   }
   (parameter_types_csv = (parameter_types_csv + type_to_cpp(context, type_arguments[argument_index])));
-  (argument_index = (argument_index + 1));
+  (argument_index = mlc::arith::checked_add(argument_index, 1));
 }
 return expr::cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv);
 }();
@@ -251,7 +251,7 @@ mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String>
 mlc::String field_def_member_declaration(context::CodegenContext context, std::shared_ptr<ast::FieldDef> field_definition) noexcept{
   auto base = expr::struct_named_field_declaration(type_to_cpp(context, field_definition->type_value), cpp_naming::cpp_safe(field_definition->name));
   if ((field_definition->has_default_expression && record_field_default_validate::record_field_default_expression_is_static_initializer(field_definition->default_expression)))   {
-    return ((base + mlc::String(" = ", 3)) + record_field_default_emit::record_field_default_expression_cpp_initializer(field_definition->default_expression, context));
+    return mlc::arith::checked_add((base + mlc::String(" = ", 3)), record_field_default_emit::record_field_default_expression_cpp_initializer(field_definition->default_expression, context));
   } else   {
     return base;
   }
@@ -266,7 +266,7 @@ mlc::String variant_ctor_name(std::shared_ptr<ast::TypeVariant> variant) noexcep
 }, (*variant));
 }
 mlc::String tuple_variant_struct_members_fragment(context::CodegenContext context, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types) noexcept{
-  return field_types.fold(TupleStructCodegenFoldState{0, mlc::String("", 0)}, [=](TupleStructCodegenFoldState accumulated_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleStructCodegenFoldState{(accumulated_tuple_state.field_slot_index + 1), (accumulated_tuple_state.declaration_text_so_far + expr::struct_tuple_field_declaration(type_to_cpp(context, field_type_expression_under_tuple), mlc::to_string(accumulated_tuple_state.field_slot_index)))}; }).declaration_text_so_far;
+  return field_types.fold(TupleStructCodegenFoldState{0, mlc::String("", 0)}, [=](TupleStructCodegenFoldState accumulated_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleStructCodegenFoldState{mlc::arith::checked_add(accumulated_tuple_state.field_slot_index, 1), (accumulated_tuple_state.declaration_text_so_far + expr::struct_tuple_field_declaration(type_to_cpp(context, field_type_expression_under_tuple), mlc::to_string(accumulated_tuple_state.field_slot_index)))}; }).declaration_text_so_far;
 }
 mlc::String gen_variant_struct(context::CodegenContext context, mlc::String type_name, std::shared_ptr<ast::TypeVariant> variant) noexcept{
   return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [name, __1] = varUnit; return expr::struct_empty_definition(context::CodegenContext_resolve(context, name)); },
@@ -397,10 +397,10 @@ mlc::String derive_ord_build_cond(mlc::Array<std::shared_ptr<ast::FieldDef>> fie
     auto previous_field_index = 1;
     while ((previous_field_index < field_index))     {
       (previous_equality = (previous_equality + ((((mlc::String(" && a.", 6) + mlc::to_string(field_defs[previous_field_index]->name)) + mlc::String(" == b.", 6)) + mlc::to_string(field_defs[previous_field_index]->name)) + mlc::String("", 0))));
-      (previous_field_index = (previous_field_index + 1));
+      (previous_field_index = mlc::arith::checked_add(previous_field_index, 1));
     }
     (condition = (condition + ((((((mlc::String(" || (", 5) + mlc::to_string(previous_equality)) + mlc::String(" && a.", 6)) + mlc::to_string(field_defs[field_index]->name)) + mlc::String(" < b.", 5)) + mlc::to_string(field_defs[field_index]->name)) + mlc::String(")", 1))));
-    (field_index = (field_index + 1));
+    (field_index = mlc::arith::checked_add(field_index, 1));
   }
   return condition;
 }
@@ -443,7 +443,7 @@ mlc::String derive_hash_record(mlc::String type_name, mlc::Array<std::shared_ptr
   return ((((((mlc::String("namespace std {\ntemplate<>\nstruct hash<", 39) + mlc::to_string(type_name)) + mlc::String("> {\n  size_t operator()(const ", 30)) + mlc::to_string(type_name)) + mlc::String("& self) const noexcept {\n    ", 29)) + operator_body) + mlc::String("  }\n};\n}\n", 9));
 }
 mlc::String derive_hash_tuple_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::TypeExpr>> field_types, int discriminant_index) noexcept{
-  return field_types.fold(TupleHashCodegenFoldState{0, derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index))}, [=](TupleHashCodegenFoldState accumulated_hash_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleHashCodegenFoldState{(accumulated_hash_tuple_state.tuple_field_slot + 1), (accumulated_hash_tuple_state.concatenated_combine_lines + derive_hash_combine_line(derive_hash_std_cpp_type(field_type_expression_under_tuple), ((((mlc::String("std::get<", 9) + mlc::to_string(variant_struct_name)) + mlc::String(">(self._).field", 15)) + mlc::to_string(mlc::to_string(accumulated_hash_tuple_state.tuple_field_slot))) + mlc::String("", 0))))}; }).concatenated_combine_lines;
+  return field_types.fold(TupleHashCodegenFoldState{0, derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index))}, [=](TupleHashCodegenFoldState accumulated_hash_tuple_state, std::shared_ptr<ast::TypeExpr> field_type_expression_under_tuple) mutable { return TupleHashCodegenFoldState{mlc::arith::checked_add(accumulated_hash_tuple_state.tuple_field_slot, 1), (accumulated_hash_tuple_state.concatenated_combine_lines + derive_hash_combine_line(derive_hash_std_cpp_type(field_type_expression_under_tuple), ((((mlc::String("std::get<", 9) + mlc::to_string(variant_struct_name)) + mlc::String(">(self._).field", 15)) + mlc::to_string(mlc::to_string(accumulated_hash_tuple_state.tuple_field_slot))) + mlc::String("", 0))))}; }).concatenated_combine_lines;
 }
 mlc::String derive_hash_record_variant_inner(mlc::String variant_struct_name, mlc::Array<std::shared_ptr<ast::FieldDef>> field_defs, int discriminant_index) noexcept{
   return field_defs.fold(derive_hash_combine_line(mlc::String("size_t", 6), mlc::to_string(discriminant_index)), [=](mlc::String accumulator, std::shared_ptr<ast::FieldDef> field_definition) mutable { return (accumulator + derive_hash_combine_line(derive_hash_std_cpp_type(field_definition->type_value), ((((mlc::String("std::get<", 9) + mlc::to_string(variant_struct_name)) + mlc::String(">(self._).", 10)) + mlc::to_string(field_definition->name)) + mlc::String("", 0)))); });
@@ -466,7 +466,7 @@ mlc::String derive_hash_sum_branch(std::shared_ptr<ast::TypeVariant> variant, in
   return ((((mlc::String("if (std::holds_alternative<", 27) + mlc::to_string(constructor_name)) + mlc::String(">(self._)) {\n    ", 17)) + variant_inner) + mlc::String("    return h;\n  }\n", 18));
 }
 mlc::String derive_hash_sum_operator_body(mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
-  return (variants.fold(HashSumOperatorFoldState{0, mlc::String("size_t h = 1469598103934665603ULL;\n", 35)}, [=](HashSumOperatorFoldState accumulated_hash_sum_state, std::shared_ptr<ast::TypeVariant> variant_under_hash_sum) mutable { return HashSumOperatorFoldState{(accumulated_hash_sum_state.next_discriminant_index + 1), (accumulated_hash_sum_state.operator_body_text + derive_hash_sum_branch(variant_under_hash_sum, accumulated_hash_sum_state.next_discriminant_index))}; }).operator_body_text + mlc::String("return h;\n", 10));
+  return (variants.fold(HashSumOperatorFoldState{0, mlc::String("size_t h = 1469598103934665603ULL;\n", 35)}, [=](HashSumOperatorFoldState accumulated_hash_sum_state, std::shared_ptr<ast::TypeVariant> variant_under_hash_sum) mutable { return HashSumOperatorFoldState{mlc::arith::checked_add(accumulated_hash_sum_state.next_discriminant_index, 1), (accumulated_hash_sum_state.operator_body_text + derive_hash_sum_branch(variant_under_hash_sum, accumulated_hash_sum_state.next_discriminant_index))}; }).operator_body_text + mlc::String("return h;\n", 10));
 }
 mlc::String derive_hash_sum(mlc::String type_name, mlc::Array<std::shared_ptr<ast::TypeVariant>> variants) noexcept{
   auto operator_body = derive_hash_sum_operator_body(variants);
@@ -554,7 +554,7 @@ mlc::String requires_clause(mlc::Array<mlc::String> type_parameters, mlc::Array<
     if ((type_parameter_index < type_bounds.length()))     {
       (parts = parts.concat(type_bounds[type_parameter_index].map([=](mlc::String bound_trait_name) mutable { return requires_clause_bound_part(type_parameters, type_parameter_index, bound_trait_name); })));
     }
-    (type_parameter_index = (type_parameter_index + 1));
+    (type_parameter_index = mlc::arith::checked_add(type_parameter_index, 1));
   }
   if ((parts.length() > 0))   {
     return expr::concept_requires_clause_line(parts.join(mlc::String(" && ", 4)));

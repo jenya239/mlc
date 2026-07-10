@@ -30,8 +30,8 @@ int mir_bootstrap_block_count(mir_types::MirFunction function) noexcept{
   auto block_count = 0;
   auto block_index = 0;
   while ((block_index < function.blocks.length()))   {
-    (block_count = (block_count + 1));
-    (block_index = (block_index + 1));
+    (block_count = mlc::arith::checked_add(block_count, 1));
+    (block_index = mlc::arith::checked_add(block_index, 1));
   }
   return block_count;
 }
@@ -65,29 +65,29 @@ mlc::Array<MirBootstrapFunctionEntry> mir_bootstrap_append_function_entries(mlc:
   }
   auto next_entries = entries;
   next_entries.push_back(mir_bootstrap_entry_for_function(functions[index]));
-  return mir_bootstrap_append_function_entries(next_entries, functions, (index + 1));
+  return mir_bootstrap_append_function_entries(next_entries, functions, mlc::arith::checked_add(index, 1));
 }
 int mir_bootstrap_count_cpp_ok(mlc::Array<MirBootstrapFunctionEntry> entries, int index, int count) noexcept{
   if ((index >= entries.length()))   {
     return count;
   }
   auto entry = entries[index];
-  auto next_count = (entry.cpp_ok ? ((count + 1)) : (count));
-  return mir_bootstrap_count_cpp_ok(entries, (index + 1), next_count);
+  auto next_count = (entry.cpp_ok ? (mlc::arith::checked_add(count, 1)) : (count));
+  return mir_bootstrap_count_cpp_ok(entries, mlc::arith::checked_add(index, 1), next_count);
 }
 int mir_bootstrap_count_simple_functions(mlc::Array<mir_types::MirFunction> functions, int index, int count) noexcept{
   if ((index >= functions.length()))   {
     return count;
   }
-  auto next_count = (mir_to_cpp::mir_function_is_simple(functions[index]) ? ((count + 1)) : (count));
-  return mir_bootstrap_count_simple_functions(functions, (index + 1), next_count);
+  auto next_count = (mir_to_cpp::mir_function_is_simple(functions[index]) ? (mlc::arith::checked_add(count, 1)) : (count));
+  return mir_bootstrap_count_simple_functions(functions, mlc::arith::checked_add(index, 1), next_count);
 }
 int mir_bootstrap_array_length_i32(mlc::Array<mir_types::MirFunction> items) noexcept{
   auto count = 0;
   auto index = 0;
   while ((index < items.length()))   {
-    (count = (count + 1));
-    (index = (index + 1));
+    (count = mlc::arith::checked_add(count, 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return count;
 }
@@ -95,7 +95,7 @@ MirBootstrapReport build_mir_bootstrap_report(mir_types::MirProgram program) noe
   auto functions = program.modules[0].functions;
   auto entries = mir_bootstrap_append_function_entries(mlc::Array<MirBootstrapFunctionEntry>{}, functions, 0);
   auto cpp_ok_count = mir_bootstrap_count_cpp_ok(entries, 0, 0);
-  return MirBootstrapReport{mir_bootstrap_array_length_i32(functions), mir_bootstrap_count_simple_functions(functions, 0, 0), cpp_ok_count, (mir_bootstrap_array_length_i32(functions) - cpp_ok_count), entries};
+  return MirBootstrapReport{mir_bootstrap_array_length_i32(functions), mir_bootstrap_count_simple_functions(functions, 0, 0), cpp_ok_count, mlc::arith::checked_sub(mir_bootstrap_array_length_i32(functions), cpp_ok_count), entries};
 }
 MirBootstrapReport build_mir_bootstrap_report_from_semantic_items(mlc::Array<semantic_ir::SemanticLoadItem> items) noexcept{
   return build_mir_bootstrap_report(lower_program::build_mir_program_from_semantic_items(items));
@@ -111,7 +111,7 @@ mlc::Array<mlc::String> mir_bootstrap_append_entry_lines(mlc::Array<mlc::String>
     } else     {
       next_lines.push_back(((((mlc::String("  fn ", 5) + mlc::to_string(entry.function_name)) + mlc::String(" blocks=", 8)) + mlc::to_string(entry.mir_block_count)) + mlc::String(" cpp_skip", 9)));
     }
-    return mir_bootstrap_append_entry_lines(next_lines, entries, (index + 1));
+    return mir_bootstrap_append_entry_lines(next_lines, entries, mlc::arith::checked_add(index, 1));
   }
 }
 mlc::String mir_bootstrap_join_lines(mlc::Array<mlc::String> lines) noexcept{
@@ -122,7 +122,7 @@ mlc::String mir_bootstrap_join_lines(mlc::Array<mlc::String> lines) noexcept{
   auto index = 1;
   while ((index < lines.length()))   {
     (result = ((result + mlc::String("\n", 1)) + lines[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -138,7 +138,7 @@ bool mir_bootstrap_report_cpp_matches_mir(MirBootstrapReport report) noexcept{
     if ((entry.cpp_ok && (!entry.cpp_signature.contains(entry.function_name))))     {
       return false;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return true;
 }

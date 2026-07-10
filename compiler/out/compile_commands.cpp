@@ -35,7 +35,7 @@ mlc::String build_compile_commands_json(mlc::String output_directory, mlc::Array
   auto index = 0;
   while ((index < implementation_paths.length()))   {
     entries.push_back(compile_commands_entry_json(output_directory, implementation_paths[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return ((mlc::String("[\n", 2) + entries.join(mlc::String(",\n", 2))) + mlc::String("\n]\n", 3));
 }

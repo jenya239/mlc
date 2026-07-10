@@ -40,7 +40,7 @@ predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_extern_fn_type(pre
   auto parameter_index = 0;
   while ((parameter_index < paren_types_parsed.value.length()))   {
     type_arguments.push_back(paren_types_parsed.value[parameter_index]);
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyGeneric{mlc::String("__ExternFn", 10), type_arguments}), return_type_parsed.parser);
 }

@@ -103,7 +103,7 @@ auto generic_unification_diagnostics = empty_diagnostic_list();
 auto generic_index = 0;
 while ((generic_index < expected_type_arguments.length())) {
   (generic_unification_diagnostics = ast::diagnostics_append(generic_unification_diagnostics, unify_expected_and_actual_argument_types(expected_type_arguments[generic_index], actual_type_arguments[generic_index], type_parameter_names, substitution, diagnostic_span, type_parameter_source_argument_index, argument_index)));
-  (generic_index = (generic_index + 1));
+  (generic_index = mlc::arith::checked_add(generic_index, 1));
 }
 return generic_unification_diagnostics;
 }();
@@ -133,7 +133,7 @@ auto tuple_output = empty_diagnostic_list();
 auto tuple_index = 0;
 while ((tuple_index < expected_elements.length())) {
   (tuple_output = ast::diagnostics_append(tuple_output, unify_expected_and_actual_argument_types(expected_elements[tuple_index], actual_elements[tuple_index], type_parameter_names, substitution, diagnostic_span, type_parameter_source_argument_index, argument_index)));
-  (tuple_index = (tuple_index + 1));
+  (tuple_index = mlc::arith::checked_add(tuple_index, 1));
 }
 return tuple_output;
 }();
@@ -179,7 +179,7 @@ auto function_output = empty_diagnostic_list();
 auto parameter_index = 0;
 while ((parameter_index < expected_params.length())) {
   (function_output = ast::diagnostics_append(function_output, unify_expected_and_actual_argument_types(expected_params[parameter_index], actual_params[parameter_index], type_parameter_names, substitution, diagnostic_span, type_parameter_source_argument_index, argument_index)));
-  (parameter_index = (parameter_index + 1));
+  (parameter_index = mlc::arith::checked_add(parameter_index, 1));
 }
 return ast::diagnostics_append(function_output, unify_expected_and_actual_argument_types(expected_ret, actual_ret, type_parameter_names, substitution, diagnostic_span, type_parameter_source_argument_index, argument_index));
 }();
@@ -201,7 +201,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> build_call_type_subst
   while (((index < expected_parameter_types.length()) && (index < actual_argument_types.length())))   {
     auto diagnostic_span = ((index < argument_expressions.length()) ? (ast::expr_span(argument_expressions[index])) : (fallback_span));
     unify_expected_and_actual_argument_types(expected_parameter_types[index], actual_argument_types[index], type_parameter_names, substitution, diagnostic_span, type_parameter_source_argument_index, index);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return substitution;
 }
@@ -213,7 +213,7 @@ mlc::Array<ast::Diagnostic> call_argument_unification_diagnostics(mlc::Array<std
   while (((index < expected_parameter_types.length()) && (index < actual_argument_types.length())))   {
     (collected = ast::diagnostics_append(collected, unify_expected_and_actual_argument_types(expected_parameter_types[index], actual_argument_types[index], type_parameter_names, substitution, ast::expr_span(argument_expressions[index]), type_parameter_source_argument_index, index)));
     (collected = ast::diagnostics_append(collected, extern_fn_argument_shape_diagnostics(expected_parameter_types[index], argument_expressions[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return collected;
 }

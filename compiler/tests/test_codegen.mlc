@@ -125,8 +125,8 @@ export fn codegen_tests() -> [TestResult] = do
     gen_expr(sid('println'), context), 'mlc::io::println'))
 
 
-  results.push(assert_eq_str('ExprBin add - \'(1 + 2)\'',
-    gen_expr(Shared.new(SemanticExpressionBin("+", si(1), si(2), i32_t(), span_unknown())), context), '(1 + 2)'))
+  results.push(assert_eq_str('ExprBin add - checked_add',
+    gen_expr(Shared.new(SemanticExpressionBin("+", si(1), si(2), i32_t(), span_unknown())), context), 'mlc::arith::checked_add(1, 2)'))
 
   results.push(assert_eq_str('ExprUn neg - \'(-42)\'',
     gen_expr(Shared.new(SemanticExpressionUn("-", si(42), i32_t(), span_unknown())), context), '(-42)'))
@@ -137,17 +137,17 @@ export fn codegen_tests() -> [TestResult] = do
   const single_params: [string] = ["x"]
   results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) mutable { return ... }\'',
     gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
-    '[=](auto x) mutable { return (x + 1); }'))
+    '[=](auto x) mutable { return mlc::arith::checked_add(x, 1); }'))
 
   const lambda_typed_with_single_i32_parameter = Shared.new(TFn([Shared.new(TI32)], Shared.new(TI32)))
   results.push(assert_eq_str('ExprLambda annotated TFn([i32], i32) uses explicit int parameter',
     gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), context),
-    '[=](int x) mutable { return (x + 1); }'))
+    '[=](int x) mutable { return mlc::arith::checked_add(x, 1); }'))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) mutable { return ... }\'',
     gen_expr(Shared.new(SemanticExpressionLambda(two_params, Shared.new(SemanticExpressionBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
-    '[=](auto a, auto b) mutable { return (a + b); }'))
+    '[=](auto a, auto b) mutable { return mlc::arith::checked_add(a, b); }'))
 
   const zero_params: [string] = []
   results.push(assert_eq_str('ExprLambda zero params - \'[]() mutable { return ... }\'',
@@ -207,7 +207,7 @@ export fn codegen_tests() -> [TestResult] = do
   const call_lambda_args: [Shared<SemanticExpression>] = [si(5), Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
     gen_expr(Shared.new(SemanticExpressionCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
-    'apply(5, [=](auto x) mutable { return (x + 1); })'))
+    'apply(5, [=](auto x) mutable { return mlc::arith::checked_add(x, 1); })'))
 
   const ok_args: [Shared<SemanticExpression>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',

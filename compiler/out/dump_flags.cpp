@@ -35,7 +35,7 @@ bool dump_label_is_safe(mlc::String label) noexcept{
       if ((!dump_label_character_is_safe(label.char_at(index))))       {
         (safe = false);
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     return safe;
   }

@@ -89,13 +89,13 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_type_forward_declara
   auto variant_index = 0;
   while ((variant_index < variants.length()))   {
     result.push_back(variant_forward_struct_cpp(context, type_params, phantom, variants[variant_index]));
-    (variant_index = (variant_index + 1));
+    (variant_index = mlc::arith::checked_add(variant_index, 1));
   }
   auto alias_arms = mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>>{};
   (variant_index = 0);
   while ((variant_index < variants.length()))   {
     alias_arms.push_back(variant_alias_arm_cpp(context, type_params, phantom, variants[variant_index]));
-    (variant_index = (variant_index + 1));
+    (variant_index = mlc::arith::checked_add(variant_index, 1));
   }
   result.push_back(std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppVariant{cpp_naming::template_prefix(type_params), context::CodegenContext_resolve(context, type_name), alias_arms}));
   return result;
@@ -118,7 +118,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppField>> tuple_fields_cpp(context::Codegen
   auto field_index = 0;
   while ((field_index < field_types.length()))   {
     fields.push_back(std::make_shared<cpp_ast::CppField>(cpp_ast::CppField{type_gen::type_to_cpp(context, field_types[field_index]), (mlc::String("field", 5) + mlc::to_string(field_index))}));
-    (field_index = (field_index + 1));
+    (field_index = mlc::arith::checked_add(field_index, 1));
   }
   return fields;
 }
@@ -139,7 +139,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> struct_using_declarations_c
   auto entry_index = 0;
   while ((entry_index < using_entries.length()))   {
     declarations.push_back(cpp_using_from_struct_using_entry(using_entries[entry_index]));
-    (entry_index = (entry_index + 1));
+    (entry_index = mlc::arith::checked_add(entry_index, 1));
   }
   return declarations;
 }
@@ -165,7 +165,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_type_body_struct_dec
     auto variant_index = 0;
     while ((variant_index < variants.length()))     {
       result.push_back(variant_body_struct_cpp(context, type_params, phantom, variants[variant_index]));
-      (variant_index = (variant_index + 1));
+      (variant_index = mlc::arith::checked_add(variant_index, 1));
     }
     return result;
   }
@@ -176,7 +176,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_type_decl_body_cpp(cont
   auto derive_index = 0;
   while ((derive_index < derive_declarations.length()))   {
     result.push_back(derive_declarations[derive_index]);
-    (derive_index = (derive_index + 1));
+    (derive_index = mlc::arith::checked_add(derive_index, 1));
   }
   return result;
 }
@@ -207,7 +207,7 @@ mlc::Array<mlc::String> trait_requires_expressions_cpp(context::CodegenContext c
     if ((expression.length() > 0))     {
       expressions.push_back(expression);
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return expressions;
 }
@@ -240,7 +240,7 @@ return;
 std::abort();
 }();
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return forward_protos;
 }
@@ -269,7 +269,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> prepend_main_set_args_preambl
   auto statement_index = 0;
   while ((statement_index < statements.length()))   {
     result.push_back(statements[statement_index]);
-    (statement_index = (statement_index + 1));
+    (statement_index = mlc::arith::checked_add(statement_index, 1));
   }
   return result;
 }
@@ -362,7 +362,7 @@ while ((method_index < methods.length())) {
   if ((is_semantic_declaration_fn(methods[method_index]) && (!semantic_fn_body_is_extern(methods[method_index]))))   {
     proto_declarations.push_back(CodegenContext_gen_proto_cpp(extend_context, methods[method_index]));
   }
-  (method_index = (method_index + 1));
+  (method_index = mlc::arith::checked_add(method_index, 1));
 }
 return cpp_decl_from_native_declarations(proto_declarations);
 }();
@@ -426,8 +426,8 @@ bool semantic_expression_is_bare_extern(std::shared_ptr<semantic_ir::SemanticExp
   return (semantic_expression_is_extern(expression) && (!semantic_expression_is_ffi_extern(expression)));
 }
 mlc::String ffi_header_include_line(mlc::String extern_header) noexcept{
-  if ((((extern_header.length() >= 2) && (extern_header.char_at(0) == mlc::String("<", 1))) && (extern_header.char_at((extern_header.length() - 1)) == mlc::String(">", 1))))   {
-    return ((mlc::String("#include <", 10) + extern_header.substring(1, (extern_header.length() - 2))) + mlc::String(">\n", 2));
+  if ((((extern_header.length() >= 2) && (extern_header.char_at(0) == mlc::String("<", 1))) && (extern_header.char_at(mlc::arith::checked_sub(extern_header.length(), 1)) == mlc::String(">", 1))))   {
+    return ((mlc::String("#include <", 10) + extern_header.substring(1, mlc::arith::checked_sub(extern_header.length(), 2))) + mlc::String(">\n", 2));
   } else if ((extern_header.length() > 0))   {
     return ((mlc::String("#include \"", 10) + extern_header) + mlc::String("\"\n", 2));
   } else   {
@@ -471,7 +471,7 @@ mlc::String collect_ffi_include_lines(mlc::Array<std::shared_ptr<semantic_ir::Se
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     (include_text = (include_text + collect_ffi_include_lines_from_declaration(declarations[declaration_index])));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return include_text;
 }
@@ -480,7 +480,7 @@ mlc::Array<mlc::String> ffi_parameter_type_items(mlc::Array<std::shared_ptr<ast:
   auto parameter_index = 0;
   while ((parameter_index < params.length()))   {
     type_items.push_back(type_gen::type_to_cpp(context, params[parameter_index]->type_value));
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return type_items;
 }
@@ -489,7 +489,7 @@ mlc::Array<mlc::String> ffi_parameter_name_items(mlc::Array<std::shared_ptr<ast:
   auto parameter_index = 0;
   while ((parameter_index < params.length()))   {
     name_items.push_back(cpp_naming::cpp_safe(params[parameter_index]->name));
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return name_items;
 }
@@ -536,7 +536,7 @@ while ((method_index < methods.length())) {
   if ((!semantic_fn_body_is_extern(methods[method_index])))   {
     result.push_back(gen_proto_cpp(methods[method_index], context));
   }
-  (method_index = (method_index + 1));
+  (method_index = mlc::arith::checked_add(method_index, 1));
 }
 return result;
 }();
@@ -569,7 +569,7 @@ while ((method_index < methods.length())) {
   if ((!semantic_fn_body_is_extern(methods[method_index])))   {
     result.push_back(gen_proto_cpp(methods[method_index], context));
   }
-  (method_index = (method_index + 1));
+  (method_index = mlc::arith::checked_add(method_index, 1));
 }
 return result;
 }();
@@ -616,7 +616,7 @@ mlc::String extend_method_return_type_cpp(context::CodegenContext extend_context
         return return_type_cpp;
       }
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return mlc::String("void", 4);
 }
@@ -625,7 +625,7 @@ mlc::String extend_forward_call_argument_list(mlc::Array<std::shared_ptr<ast::Pa
   auto parameter_index = 0;
   while ((parameter_index < params.length()))   {
     argument_names.push_back(cpp_naming::cpp_safe(params[parameter_index]->name));
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return argument_names.join(mlc::String(", ", 2));
 }
@@ -634,7 +634,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> extend_forward_call_argument
   auto parameter_index = 0;
   while ((parameter_index < params.length()))   {
     expressions.push_back(emit_helpers::make_identifier_cpp_expression(cpp_naming::cpp_safe(params[parameter_index]->name)));
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return expressions;
 }
@@ -683,7 +683,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_decl_extend_trait_wrapp
   auto method_index = 0;
   while ((method_index < methods.length()))   {
     (wrapper_only = append_cpp_declarations(wrapper_only, extend_trait_wrapper_for_method_cpp(methods[method_index], type_name, context, context::context_resolve)));
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return wrapper_only;
 }
@@ -704,7 +704,7 @@ bool extend_methods_have_assoc_bind(mlc::Array<std::shared_ptr<semantic_ir::Sema
     if (semantic_declaration_is_assoc_bind(methods[method_index]))     {
       return true;
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return false;
 }
@@ -737,7 +737,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_decl_extend_trait_conce
   auto method_index = 0;
   while ((method_index < methods.length()))   {
     (result = append_cpp_declarations(result, extend_trait_concept_method_suffix_cpp(methods[method_index], type_name, trait_name, context, context::context_resolve)));
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   result.push_back(extend_trait_static_assert_decl_cpp(trait_name, type_name, methods, extend_context, implementor_type_cpp));
   return result;
@@ -772,7 +772,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_decl_extend_methods_cpp
   auto method_index = 0;
   while ((method_index < methods.length()))   {
     (result = append_cpp_declarations(result, extend_method_definition_cpp(methods[method_index], type_name, trait_name, context, extend_context, context::context_resolve)));
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   return result;
 }
@@ -808,7 +808,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> gen_extend_wrapper_protos_c
     auto method_index = 0;
     while ((method_index < methods.length()))     {
       (wrappers = append_cpp_declarations(wrappers, extend_wrapper_proto_for_method_cpp(methods[method_index], type_name, context)));
-      (method_index = (method_index + 1));
+      (method_index = mlc::arith::checked_add(method_index, 1));
     }
     return wrappers;
   }
@@ -841,7 +841,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> extend_forward_segment_for_
     [&]() {
 while ((method_index < methods.length())) {
 (result = append_cpp_declarations(result, extend_forward_proto_for_method(methods[method_index], extend_context)));
-(method_index = (method_index + 1));
+(method_index = mlc::arith::checked_add(method_index, 1));
 }
 }();
   }
@@ -956,7 +956,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> collect_native_decl_segment
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     (output = append_cpp_declarations(output, decl_segment_cpp(declarations[declaration_index], context, phase)));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return output;
 }
@@ -1023,7 +1023,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> append_cpp_declarations(mlc
   auto index = 0;
   while ((index < declarations.length()))   {
     output.push_back(declarations[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return output;
 }
@@ -1104,10 +1104,10 @@ mlc::Array<std::shared_ptr<cpp_ast::CppDeclaration>> collect_fn_defs_cpp(mlc::Ar
     auto segment_index = 0;
     while ((segment_index < definition_segments.length()))     {
       output.push_back(definition_segments[segment_index]);
-      (segment_index = (segment_index + 1));
+      (segment_index = mlc::arith::checked_add(segment_index, 1));
     }
     (output = append_cpp_declarations(output, collect_decl_parts_cpp(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>>{declaration}, context, 4)));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return output;
 }

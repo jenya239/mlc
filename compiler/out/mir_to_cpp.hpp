@@ -5,6 +5,7 @@
 #include <variant>
 #include "ast.hpp"
 #include "registry.hpp"
+#include "semantic_type_structure.hpp"
 #include "mir_types.hpp"
 #include "mir_ids.hpp"
 #include "cpp_ast.hpp"
@@ -19,6 +20,7 @@ mir_types::MirLocal mir_find_local(mir_types::MirFunction function, mir_types::L
 mir_types::MirBlock mir_block_by_id(mir_types::MirFunction function, mir_types::BlockId block_id) noexcept;
 mlc::String mir_local_cpp_name(mir_types::MirFunction function, mir_types::LocalId local_id) noexcept;
 std::shared_ptr<cpp_ast::CppExpression> mir_operand_to_cpp_expression(mir_types::MirFunction function, mir_types::MirOperand operand) noexcept;
+std::shared_ptr<registry::Type> mir_operand_type(mir_types::MirFunction function, mir_types::MirOperand operand) noexcept;
 std::shared_ptr<cpp_ast::CppExpression> mir_rvalue_to_cpp_expression(mir_types::MirFunction function, mir_types::MirRvalue rvalue) noexcept;
 mlc::Array<std::shared_ptr<cpp_ast::CppExpression>> mir_call_operands_to_cpp_expressions(mir_types::MirFunction function, mlc::Array<mir_types::MirOperand> operands) noexcept;
 std::shared_ptr<cpp_ast::CppStatement> mir_stmt_to_cpp_statement(mir_types::MirFunction function, mir_types::MirStmt statement) noexcept;

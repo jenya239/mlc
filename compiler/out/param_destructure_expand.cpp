@@ -49,11 +49,11 @@ std::abort();
 }
 Expand_fn_parameter_destructure_fold_state expand_decl_fn_parameter_destructure_fold_step(Expand_fn_parameter_destructure_fold_state state, std::shared_ptr<ast::Param> current_parameter) noexcept{
   if (parameter_pattern_is_plain(current_parameter))   {
-    return Expand_fn_parameter_destructure_fold_state{state.prelude_statements, state.new_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{current_parameter}), (state.parameter_position_index + 1)};
+    return Expand_fn_parameter_destructure_fold_state{state.prelude_statements, state.new_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{current_parameter}), mlc::arith::checked_add(state.parameter_position_index, 1)};
   } else   {
     auto synthetic_name = synthetic_destructure_parameter_name(state.parameter_position_index);
     auto binding_span = ast::pattern_span(current_parameter->param_pattern);
-    return Expand_fn_parameter_destructure_fold_state{state.prelude_statements.concat(mlc::Array<std::shared_ptr<ast::Stmt>>{prelude_statement_destructure(current_parameter, synthetic_name, binding_span)}), state.new_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{strip_parameter_to_synthetic_plain(current_parameter, synthetic_name)}), (state.parameter_position_index + 1)};
+    return Expand_fn_parameter_destructure_fold_state{state.prelude_statements.concat(mlc::Array<std::shared_ptr<ast::Stmt>>{prelude_statement_destructure(current_parameter, synthetic_name, binding_span)}), state.new_parameters.concat(mlc::Array<std::shared_ptr<ast::Param>>{strip_parameter_to_synthetic_plain(current_parameter, synthetic_name)}), mlc::arith::checked_add(state.parameter_position_index, 1)};
   }
 }
 std::shared_ptr<ast::Decl> expand_decl_fn_parameter_destructuring_inner(mlc::String function_name, mlc::Array<mlc::String> type_parameter_names, mlc::Array<mlc::Array<mlc::String>> trait_bounds_rows, mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::TypeExpr> return_type_expression, std::shared_ptr<ast::Expr> body_expression, mlc::Array<ast::WhereClauseBound> where_clause_bounds_entries) noexcept{
@@ -133,7 +133,7 @@ auto concatenated_errors = mlc::Array<ast::Diagnostic>{};
 auto method_scan_index = 0;
 while ((method_scan_index < methods.length())) {
   (concatenated_errors = concatenate_diagnostic_arrays(concatenated_errors, extern_parameter_destructure_errors_for_decl_shared(methods[method_scan_index])));
-  (method_scan_index = (method_scan_index + 1));
+  (method_scan_index = mlc::arith::checked_add(method_scan_index, 1));
 }
 return concatenated_errors;
 }();
@@ -150,7 +150,7 @@ mlc::Array<ast::Diagnostic> extern_parameter_destructure_diagnostics(ast::Progra
   auto declaration_index = 0;
   while ((declaration_index < program.decls.length()))   {
     (all_errors = concatenate_diagnostic_arrays(all_errors, extern_parameter_destructure_errors_for_decl_shared(program.decls[declaration_index])));
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return all_errors;
 }

@@ -18,6 +18,8 @@ infer_result::InferResult infer_expr_identifier(mlc::String name, check_context:
     return infer_result::infer_ok(registry::TypeRegistry_fn_type(inference_context.registry, name));
   } else if (registry::TypeRegistry_has_ctor(inference_context.registry, name))   {
     return infer_result::infer_ok(registry::TypeRegistry_ctor_type(inference_context.registry, name));
+  } else if (inference_context.registry.adt_index.algebraic_decl_type_parameter_names.has(name))   {
+    return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TNamed{name}));
   } else   {
     return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TUnknown{}));
   }

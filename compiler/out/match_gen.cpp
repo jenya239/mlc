@@ -90,7 +90,7 @@ std::make_tuple();
 return;
 std::abort();
 }();
-    (pattern_index = (pattern_index + 1));
+    (pattern_index = mlc::arith::checked_add(pattern_index, 1));
   }
   return arm_context;
 }
@@ -232,7 +232,7 @@ int type_parameter_name_index(mlc::Array<mlc::String> parameter_names, mlc::Stri
     if ((parameter_names[index] == parameter_name))     {
       return index;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return (-1);
 }
@@ -257,7 +257,7 @@ mlc::String instantiated_variant_type_argument_from_maps(context::CodegenContext
       return mlc::String("", 0);
     }
     cpp_argument_parts.push_back(type_gen::sem_type_to_cpp(context, type_arguments[parameter_index]));
-    (used_index = (used_index + 1));
+    (used_index = mlc::arith::checked_add(used_index, 1));
   }
   return cpp_angle_bracket_type_arguments(cpp_argument_parts);
 }
@@ -356,11 +356,11 @@ auto [__0] = patternWild; return return_block;
 }
 if (std::holds_alternative<ast::PatternStr>((*__match_subject))) {
 const ast::PatternStr& patternStr = std::get<ast::PatternStr>((*__match_subject));
-auto [__0, __1] = patternStr; return emit_helpers::make_if_cpp_statement(string_match_literal_condition_cpp(arm->pattern, subject_holder), return_block, string_match_arm_else_branch(arms, (start_index + 1), subject_holder, context, gen_stmts, build_return_block));
+auto [__0, __1] = patternStr; return emit_helpers::make_if_cpp_statement(string_match_literal_condition_cpp(arm->pattern, subject_holder), return_block, string_match_arm_else_branch(arms, mlc::arith::checked_add(start_index, 1), subject_holder, context, gen_stmts, build_return_block));
 }
 if (std::holds_alternative<ast::PatternStringLit>((*__match_subject))) {
 const ast::PatternStringLit& patternStringLit = std::get<ast::PatternStringLit>((*__match_subject));
-auto [__0, __1] = patternStringLit; return emit_helpers::make_if_cpp_statement(string_match_literal_condition_cpp(arm->pattern, subject_holder), return_block, string_match_arm_else_branch(arms, (start_index + 1), subject_holder, context, gen_stmts, build_return_block));
+auto [__0, __1] = patternStringLit; return emit_helpers::make_if_cpp_statement(string_match_literal_condition_cpp(arm->pattern, subject_holder), return_block, string_match_arm_else_branch(arms, mlc::arith::checked_add(start_index, 1), subject_holder, context, gen_stmts, build_return_block));
 }
 return return_block;
 std::abort();
@@ -384,7 +384,7 @@ mlc::String string_match_statements_to_source(mlc::Array<std::shared_ptr<cpp_ast
   auto statement_index = 0;
   while ((statement_index < statements.length()))   {
     (body_source = ((body_source + print::print_statement(statements[statement_index])) + mlc::String("\n", 1)));
-    (statement_index = (statement_index + 1));
+    (statement_index = mlc::arith::checked_add(statement_index, 1));
   }
   return body_source;
 }

@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_INT_OVERFLOW** STEP=3.2 — self-hosted codegen parity
-(signed debug overflow + div0). STEP=3.1 done (Ruby `BinaryRule` +
-`mlc/core/arith.hpp`).
+**TRACK_LANG_INT_OVERFLOW** STEP=4 — stdlib `wrapping_add` /
+`checked_add` / `saturating_add` (and `-`/`*`). STEP=3 done (Ruby +
+self-hosted checked ops).
 
 ## Step sizing (good vs bad)
 

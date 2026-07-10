@@ -229,6 +229,10 @@ std::shared_ptr<cpp_ast::CppExpression> gen_binary_via_cpp_visitor(mlc::String o
   if (((method != mlc::String("", 0)) && (type_name != mlc::String("", 0))))   {
     return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppCall{emit_helpers::make_identifier_cpp_expression(((type_name + mlc::String("_", 1)) + method)), mlc::Array<std::shared_ptr<cpp_ast::CppExpression>>{evaluate_expression(left_expression, context, gen_stmts), evaluate_expression(right_expression, context, gen_stmts)}});
   }
+  auto helper_name = semantic_type_structure::checked_arithmetic_helper_name(operation, semantic_ir::sexpr_type(left_expression), semantic_ir::sexpr_type(right_expression));
+  if ((helper_name != mlc::String("", 0)))   {
+    return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppCall{emit_helpers::make_identifier_cpp_expression(helper_name), mlc::Array<std::shared_ptr<cpp_ast::CppExpression>>{evaluate_expression(left_expression, context, gen_stmts), evaluate_expression(right_expression, context, gen_stmts)}});
+  }
   return std::make_shared<cpp_ast::CppExpression>(cpp_ast::CppBinary{operation, evaluate_expression(left_expression, context, gen_stmts), evaluate_expression(right_expression, context, gen_stmts)});
 }
 template<typename __F4>

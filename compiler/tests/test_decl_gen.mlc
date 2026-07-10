@@ -240,7 +240,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_fn_decl: addition',
     gen_fn_decl('add', [], [], [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right')), context),
-    'int add(int left, int right) noexcept{\nreturn (left + right);\n}\n'))
+    'int add(int left, int right) noexcept{\nreturn mlc::arith::checked_add(left, right);\n}\n'))
 
   results.push(assert_eq_str('gen_fn_decl: unit return',
     gen_fn_decl('nothing', [], [], [], tunit(), make_unit_expr(), context),
@@ -255,7 +255,7 @@ export fn decl_gen_tests() -> [TestResult] = do
     gen_decl(add_decl, context), 'int add'))
 
   results.push(assert_code_contains('gen_decl DeclFn: contains body',
-    gen_decl(add_decl, context), 'return (left + right)'))
+    gen_decl(add_decl, context), 'return mlc::arith::checked_add(left, right)'))
 
   // --- gen_decl with SemanticDeclarationType -------------------------------------------------
 
@@ -966,7 +966,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
       make_bin("+", make_ident('left'), make_ident('right'))), context)),
-    'int add(int left, int right) noexcept{\n  return (left + right);\n}\n'))
+    'int add(int left, int right) noexcept{\n  return mlc::arith::checked_add(left, right);\n}\n'))
 
   results.push(assert_eq_str('gen_proto_cpp DeclFn matches string',
     print_cpp_declaration(gen_proto_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),

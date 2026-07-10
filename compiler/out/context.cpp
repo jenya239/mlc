@@ -46,7 +46,7 @@ int new_temp_name_counter() noexcept{
   return 0;
 }
 TempNameResult take_temp_name(CodegenContext context) noexcept{
-  return TempNameResult{(mlc::String("__tmp_", 6) + mlc::to_string(context.temp_name_counter)), CodegenContext{context.field_orders, context.field_order_index, context.namespace_prefix, context.qualified, context.namespace_alias_prefixes, context.self_type, context.method_owners, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.ctor_type_infos, context.ctor_type_info_index, context.variant_types, context.sum_type_parameter_names, context.variant_used_type_parameter_names, context.value_params, context.match_deref_params, context.generic_variants, context.struct_using_entries, context.struct_using_lines, context.type_alias_annotations, context.trait_associated_type_names, (context.temp_name_counter + 1), context.enclosing_function_return_type, context.param_template_type_names}};
+  return TempNameResult{(mlc::String("__tmp_", 6) + mlc::to_string(context.temp_name_counter)), CodegenContext{context.field_orders, context.field_order_index, context.namespace_prefix, context.qualified, context.namespace_alias_prefixes, context.self_type, context.method_owners, context.shared_params, context.shared_array_params, context.array_elem_types, context.shared_map_params, context.ctor_type_infos, context.ctor_type_info_index, context.variant_types, context.sum_type_parameter_names, context.variant_used_type_parameter_names, context.value_params, context.match_deref_params, context.generic_variants, context.struct_using_entries, context.struct_using_lines, context.type_alias_annotations, context.trait_associated_type_names, mlc::arith::checked_add(context.temp_name_counter, 1), context.enclosing_function_return_type, context.param_template_type_names}};
 }
 GenStmtsResult GenStmtsResult_append_stmt(GenStmtsResult self, GenStmtResult statement_parsed) noexcept;
 mlc::String GenStmtsResult_joined_code(GenStmtsResult self) noexcept;
@@ -79,7 +79,7 @@ mlc::String type_method_namespace_prefix(mlc::String mangled_name, CodegenContex
       if ((mangled_name.char_at(index) == mlc::String("_", 1)))       {
         (underscore = index);
       }
-      (index = (index + 1));
+      (index = mlc::arith::checked_add(index, 1));
     }
     if ((underscore <= 0))     {
       return mlc::String("", 0);
@@ -115,7 +115,7 @@ auto [__0, sub_patterns, __2] = patternCtor; return [&]() {
 auto index = 0;
 while ((index < sub_patterns.length())) {
   (accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return accumulator;
 }();
@@ -126,7 +126,7 @@ auto [__0, field_patterns, __2] = patternRecord; return [&]() {
 auto index = 0;
 while ((index < field_patterns.length())) {
   (accumulator = collect_pattern_bind_names_for_context(field_patterns[index], accumulator));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return accumulator;
 }();
@@ -137,7 +137,7 @@ auto [sub_patterns, __1] = patternTuple; return [&]() {
 auto index = 0;
 while ((index < sub_patterns.length())) {
   (accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return accumulator;
 }();
@@ -148,7 +148,7 @@ auto [sub_patterns, rest, __2] = patternArray; return [&]() {
 auto index = 0;
 while ((index < sub_patterns.length())) {
   (accumulator = collect_pattern_bind_names_for_context(sub_patterns[index], accumulator));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 if (((rest != mlc::String("", 0)) && (rest != mlc::String("_", 1)))) {
   accumulator.push_back(rest);
@@ -258,7 +258,7 @@ auto codegen_context = self;
 auto name_index = 0;
 while ((name_index < names.length())) {
   (codegen_context = CodegenContext_add_value(codegen_context, names[name_index]));
-  (name_index = (name_index + 1));
+  (name_index = mlc::arith::checked_add(name_index, 1));
 }
 return codegen_context;
 }();
@@ -302,7 +302,7 @@ void push_pattern_bind_names_to_value_params(std::shared_ptr<ast::Pattern> patte
   return [&]() {
 while ((name_index < names.length())) {
 context.value_params.push_back(names[name_index]);
-(name_index = (name_index + 1));
+(name_index = mlc::arith::checked_add(name_index, 1));
 }
 }();
 }

@@ -213,7 +213,7 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> gen_return_block_body_cpp(mlc
   auto prefix_index = 0;
   while ((prefix_index < statements_with_context.statements.length()))   {
     output_statements.push_back(statements_with_context.statements[prefix_index]);
-    (prefix_index = (prefix_index + 1));
+    (prefix_index = mlc::arith::checked_add(prefix_index, 1));
   }
   auto final_context = statements_with_context.codegen_context;
   return [&]() -> mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> {
@@ -225,7 +225,7 @@ auto tail_statements = gen_try_unwrap_return_statements_cpp(inner_expression, fi
 auto tail_index = 0;
 while ((tail_index < tail_statements.length())) {
   output_statements.push_back(tail_statements[tail_index]);
-  (tail_index = (tail_index + 1));
+  (tail_index = mlc::arith::checked_add(tail_index, 1));
 }
 return output_statements;
 }();
@@ -241,7 +241,7 @@ auto tail_statements = gen_return_body_cpp(result_expression, final_context);
 auto tail_index = 0;
 while ((tail_index < tail_statements.length())) {
   output_statements.push_back(tail_statements[tail_index]);
-  (tail_index = (tail_index + 1));
+  (tail_index = mlc::arith::checked_add(tail_index, 1));
 }
 return output_statements;
 }();
@@ -253,7 +253,7 @@ auto tail_statements = gen_return_body_cpp(result_expression, final_context);
 auto tail_index = 0;
 while ((tail_index < tail_statements.length())) {
   output_statements.push_back(tail_statements[tail_index]);
-  (tail_index = (tail_index + 1));
+  (tail_index = mlc::arith::checked_add(tail_index, 1));
 }
 return output_statements;
 }();
@@ -265,7 +265,7 @@ auto tail_statements = gen_return_body_cpp(result_expression, final_context);
 auto tail_index = 0;
 while ((tail_index < tail_statements.length())) {
   output_statements.push_back(tail_statements[tail_index]);
-  (tail_index = (tail_index + 1));
+  (tail_index = mlc::arith::checked_add(tail_index, 1));
 }
 return output_statements;
 }();

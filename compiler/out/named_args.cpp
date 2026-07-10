@@ -58,7 +58,7 @@ return empty_slot_filled_flags;
 int first_unfilled_positional_slot(mlc::Array<int> slot_filled_flags, int parameter_count, int start_at) noexcept{
   auto slot_index = start_at;
   while (((slot_index < parameter_count) && (slot_filled_flags[slot_index] == 1)))   {
-    (slot_index = (slot_index + 1));
+    (slot_index = mlc::arith::checked_add(slot_index, 1));
   }
   return slot_index;
 }
@@ -94,7 +94,7 @@ auto slot_expressions = state.slot_expressions;
 slot_expressions.set(positional_slot, argument);
 auto slot_filled_flags = state.slot_filled_flags;
 slot_filled_flags.set(positional_slot, 1);
-return Named_argument_reorder_state{slot_expressions, slot_filled_flags, state.errors, (positional_slot + 1)};
+return Named_argument_reorder_state{slot_expressions, slot_filled_flags, state.errors, mlc::arith::checked_add(positional_slot, 1)};
 }();
   } else   {
     return state;
@@ -105,7 +105,7 @@ std::abort();
 }();
 }
 Compact_slot_expressions_fold_state compact_slot_expressions_fold_step(Compact_slot_expressions_fold_state state, std::shared_ptr<ast::Expr> slot_expression, mlc::Array<int> slot_filled_flags) noexcept{
-  return Compact_slot_expressions_fold_state{((slot_filled_flags[state.next_slot_index] == 1) ? (state.compact_expressions.concat(mlc::Array<std::shared_ptr<ast::Expr>>{slot_expression})) : (state.compact_expressions)), (state.next_slot_index + 1)};
+  return Compact_slot_expressions_fold_state{((slot_filled_flags[state.next_slot_index] == 1) ? (state.compact_expressions.concat(mlc::Array<std::shared_ptr<ast::Expr>>{slot_expression})) : (state.compact_expressions)), mlc::arith::checked_add(state.next_slot_index, 1)};
 }
 mlc::Array<std::shared_ptr<ast::Expr>> compact_filled_slot_expressions(mlc::Array<std::shared_ptr<ast::Expr>> slot_expressions, mlc::Array<int> slot_filled_flags) noexcept{
   return slot_expressions.fold(Compact_slot_expressions_fold_state{[&]() {

@@ -30,7 +30,7 @@ bool string_list_contains(mlc::Array<mlc::String> haystack, mlc::String needle) 
     if ((haystack[index] == needle))     {
       return true;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return false;
 }
@@ -57,7 +57,7 @@ while ((index < parameters.length())) {
     synthetic_type_params.push_back(template_type_name);
     param_template_type_names.set(parameter_name, template_type_name);
   }
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return semantic_ir::FnEscapeInfo{synthetic_type_params, param_template_type_names};
 }();
@@ -72,7 +72,7 @@ auto param_env = mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>>();
 auto index = 0;
 while ((index < params.length())) {
   param_env.set(params[index]->name, registry::type_from_annotation_with_registry(params[index]->type_value, registry));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 auto return_type = registry::type_from_annotation_with_registry(return_type_expr, registry);
 auto initial_context = transform::TransformContext{param_env, registry, {}};

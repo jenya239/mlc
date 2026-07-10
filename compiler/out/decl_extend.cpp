@@ -30,7 +30,7 @@ mlc::String trait_dispatch_name(mlc::String trait_name, mlc::String method_name)
 mlc::String extract_method_name(mlc::String fn_name, mlc::String type_name) noexcept{
   auto prefix = (type_name + mlc::String("_", 1));
   if (((fn_name.length() > prefix.length()) && (fn_name.substring(0, prefix.length()) == prefix)))   {
-    return fn_name.substring(prefix.length(), (fn_name.length() - prefix.length()));
+    return fn_name.substring(prefix.length(), mlc::arith::checked_sub(fn_name.length(), prefix.length()));
   } else   {
     return fn_name;
   }
@@ -280,7 +280,7 @@ std::make_tuple();
 return;
 std::abort();
 }();
-      (method_index = (method_index + 1));
+      (method_index = mlc::arith::checked_add(method_index, 1));
     }
     return forward_protos;
   }

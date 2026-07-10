@@ -49,7 +49,7 @@ void append_export_names_from_method_declarations(mlc::Array<mlc::String>& names
     if ((function_name != mlc::String("", 0)))     {
       names.push_back(function_name);
     }
-    (method_index = (method_index + 1));
+    (method_index = mlc::arith::checked_add(method_index, 1));
   }
   std::make_tuple();
 }
@@ -92,7 +92,7 @@ auto names = mlc::Array<mlc::String>{ast::decl_name(declaration)};
 auto variant_index = 0;
 while ((variant_index < variants.length())) {
   names.push_back(type_variant_export_name(variants[variant_index]));
-  (variant_index = (variant_index + 1));
+  (variant_index = mlc::arith::checked_add(variant_index, 1));
 }
 return names;
 }(); },
@@ -153,7 +153,7 @@ mlc::Array<std::shared_ptr<ast::Decl>> ast_decls_for_path(mlc::String module_pat
     if ((all_items[item_index].path == module_path))     {
       return all_items[item_index].decls;
     }
-    (item_index = (item_index + 1));
+    (item_index = mlc::arith::checked_add(item_index, 1));
   }
   auto empty = mlc::Array<std::shared_ptr<ast::Decl>>{};
   return empty;
@@ -181,15 +181,15 @@ if ((method_name != mlc::String("", 0))) {
     qualified.set(mangled_name, module_prefix);
   }
 }
-(method_index = (method_index + 1));
+(method_index = mlc::arith::checked_add(method_index, 1));
 }
 }();
 }
-(declaration_index = (declaration_index + 1));
+(declaration_index = mlc::arith::checked_add(declaration_index, 1));
 }
 }();
     }
-    (item_index = (item_index + 1));
+    (item_index = mlc::arith::checked_add(item_index, 1));
   }
   return qualified;
 }
@@ -211,13 +211,13 @@ while ((name_index < export_names.length())) {
   if ((!qualified.has(export_names[name_index])))   {
     qualified.set(export_names[name_index], prefix);
   }
-  (name_index = (name_index + 1));
+  (name_index = mlc::arith::checked_add(name_index, 1));
 }
-(declaration_index = (declaration_index + 1));
+(declaration_index = mlc::arith::checked_add(declaration_index, 1));
 }
 }();
     }
-    (item_index = (item_index + 1));
+    (item_index = mlc::arith::checked_add(item_index, 1));
   }
   return qualified;
 }
@@ -227,7 +227,7 @@ mlc::HashMap<mlc::String, mlc::String> build_namespace_alias_prefixes(mlc::Array
   while ((index < aliases.length()))   {
     auto entry = aliases[index];
     prefixes.set(entry.alias, (cpp_naming::path_to_module_base(entry.module_path) + mlc::String("::", 2)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return prefixes;
 }
@@ -245,13 +245,13 @@ mlc::HashMap<mlc::String, mlc::String> build_qualified(mlc::Array<mlc::String> i
         [&]() {
 while ((transitive_import_index < current_item.imports.length())) {
 (qualified = add_exports_to_qualified(qualified, current_item.imports[transitive_import_index], all_items));
-(transitive_import_index = (transitive_import_index + 1));
+(transitive_import_index = mlc::arith::checked_add(transitive_import_index, 1));
 }
 }();
       }
-      (item_index = (item_index + 1));
+      (item_index = mlc::arith::checked_add(item_index, 1));
     }
-    (import_index = (import_index + 1));
+    (import_index = mlc::arith::checked_add(import_index, 1));
   }
   return qualified;
 }
@@ -262,7 +262,7 @@ bool list_contains(mlc::Array<mlc::String> list, mlc::String item) noexcept{
     if ((list[index] == item))     {
       (found = true);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return found;
 }
@@ -275,7 +275,7 @@ mlc::Array<mlc::String> lookup_fields(mlc::Array<std::shared_ptr<FieldOrder>> or
       (result = orders[index]->fields);
       (found = true);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return result;
 }
@@ -284,7 +284,7 @@ mlc::HashMap<mlc::String, mlc::Array<mlc::String>> build_field_order_index(mlc::
   auto order_index = 0;
   while ((order_index < orders.length()))   {
     index.set(orders[order_index]->type_name, orders[order_index]->fields);
-    (order_index = (order_index + 1));
+    (order_index = mlc::arith::checked_add(order_index, 1));
   }
   return index;
 }
@@ -293,7 +293,7 @@ mlc::HashMap<mlc::String, std::shared_ptr<load_item::LoadItem>> build_item_index
   auto index = 0;
   while ((index < all_items.length()))   {
     item_index.set(all_items[index].path, std::make_shared<load_item::LoadItem>(all_items[index]));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return item_index;
 }

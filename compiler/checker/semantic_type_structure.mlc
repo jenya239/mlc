@@ -524,3 +524,73 @@ export fn operator_method_for(operation: string) -> string =
   else if operation == "%" then "rem"
   else ""
   end
+
+export fn signed_integer_type_for_overflow(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TI32 => true,
+    TI64 => true,
+    TNamed(name) => name == "i8" || name == "i16",
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TArray(_) => false,
+    TShared(_) => false,
+    TGeneric(_, _) => false,
+    TPair(_, _) => false,
+    TTuple(_) => false,
+    TFn(_, _) => false,
+    TAssoc(_, _) => false,
+    TUnknown => false
+  }
+
+export fn integer_type_for_division_check(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TI32 => true,
+    TI64 => true,
+    TU8 => true,
+    TUsize => true,
+    TChar => true,
+    TNamed(name) =>
+      name == "i8" || name == "i16" || name == "u16" || name == "u32" || name == "u64",
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TF64 => false,
+    TArray(_) => false,
+    TShared(_) => false,
+    TGeneric(_, _) => false,
+    TPair(_, _) => false,
+    TTuple(_) => false,
+    TFn(_, _) => false,
+    TAssoc(_, _) => false,
+    TUnknown => false
+  }
+
+// Empty string = emit raw C++ operator (unsigned wrap, floats, string +, non-arith).
+// Both operands must be integer: a mistyped left (e.g. Map.get as TI32) + string
+// must not become checked_add.
+export fn checked_arithmetic_helper_name(
+  operation: string,
+  left_type: Shared<Type>,
+  right_type: Shared<Type>
+) -> string =
+  if (operation == "+" || operation == "-" || operation == "*") &&
+     signed_integer_type_for_overflow(left_type) &&
+     signed_integer_type_for_overflow(right_type) then
+    if operation == "+" then "mlc::arith::checked_add"
+    else if operation == "-" then "mlc::arith::checked_sub"
+    else "mlc::arith::checked_mul"
+    end
+  else if (operation == "/" || operation == "%") &&
+          integer_type_for_division_check(left_type) &&
+          integer_type_for_division_check(right_type) then
+    if operation == "/" then "mlc::arith::checked_div"
+    else "mlc::arith::checked_mod"
+    end
+  else
+    ""
+  end

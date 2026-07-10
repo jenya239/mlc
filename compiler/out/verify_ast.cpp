@@ -34,7 +34,7 @@ mlc::Array<mlc::String> verify_ast_append_errors(mlc::Array<mlc::String> accumul
   auto index = 0;
   while ((index < more.length()))   {
     combined.push_back(more[index]);
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return combined;
 }
@@ -49,7 +49,7 @@ auto [__0, arguments, __2] = patternCtor; return [&]() {
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_pattern(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -60,7 +60,7 @@ auto [__0, fields, __2] = patternRecord; return [&]() {
 auto index = 0;
 while ((index < fields.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_pattern(fields[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -71,7 +71,7 @@ auto [arguments, __1] = patternTuple; return [&]() {
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_pattern(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -82,7 +82,7 @@ auto [elements, __1, __2] = patternArray; return [&]() {
 auto index = 0;
 while ((index < elements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_pattern(elements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -93,7 +93,7 @@ auto [alternatives, __1] = patternOr; return [&]() {
 auto index = 0;
 while ((index < alternatives.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_pattern(alternatives[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -112,7 +112,7 @@ auto field_errors = errors;
 auto field_index = 0;
 while ((field_index < fields.length())) {
   (field_errors = verify_ast_append_errors(field_errors, verify_ast_expression(fields[field_index]->value)));
-  (field_index = (field_index + 1));
+  (field_index = mlc::arith::checked_add(field_index, 1));
 }
 return field_errors;
 }(); },
@@ -143,7 +143,7 @@ auto [callee, arguments, __2] = exprCall; return [&]() {
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_expression(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -155,7 +155,7 @@ auto [receiver, __1, arguments, __3] = exprMethod; return [&]() {
 auto index = 0;
 while ((index < arguments.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_expression(arguments[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -179,7 +179,7 @@ auto [statements, result, __2] = exprBlock; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -191,7 +191,7 @@ auto [condition, statements, __2] = exprWhile; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -202,7 +202,7 @@ auto [statements, __1] = exprSpawn; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -214,7 +214,7 @@ auto [__0, iterable, statements, __3] = exprFor; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -231,7 +231,7 @@ while ((index < arms.length())) {
     (errors = verify_ast_append_errors(errors, verify_ast_expression(arm->when_condition)));
   }
   (errors = verify_ast_append_errors(errors, verify_ast_expression(arm->body)));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -242,7 +242,7 @@ auto [__0, parts, __2] = exprRecord; return [&]() {
 auto index = 0;
 while ((index < parts.length())) {
   (errors = verify_ast_record_lit_part(errors, parts[index]));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -254,7 +254,7 @@ auto [__0, base, fields, __3] = exprRecordUpdate; return [&]() {
 auto index = 0;
 while ((index < fields.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_expression(fields[index]->value)));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -265,7 +265,7 @@ auto [elements, __1] = exprArray; return [&]() {
 auto index = 0;
 while ((index < elements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_expression(elements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -276,7 +276,7 @@ auto [elements, __1] = exprTuple; return [&]() {
 auto index = 0;
 while ((index < elements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_expression(elements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -300,7 +300,7 @@ auto [subject, __1, statements, __3] = exprWith; return [&]() {
 auto index = 0;
 while ((index < statements.length())) {
   (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
-  (index = (index + 1));
+  (index = mlc::arith::checked_add(index, 1));
 }
 return errors;
 }();
@@ -348,7 +348,7 @@ mlc::Array<mlc::String> verify_ast_declaration_members(mlc::Array<mlc::String> e
   auto index = 0;
   while ((index < members.length()))   {
     (accumulated = verify_ast_append_errors(accumulated, verify_ast_declaration(members[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return accumulated;
 }
@@ -396,7 +396,7 @@ mlc::Array<mlc::String> verify_ast_parameters(mlc::Array<std::shared_ptr<ast::Pa
   auto index = 0;
   while ((index < parameters.length()))   {
     (errors = verify_ast_append_errors(errors, verify_ast_parameter(parameters[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return errors;
 }
@@ -405,7 +405,7 @@ mlc::Array<mlc::String> verify_ast_program(ast::Program program) noexcept{
   auto index = 0;
   while ((index < program.decls.length()))   {
     (errors = verify_ast_append_errors(errors, verify_ast_declaration(program.decls[index])));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return errors;
 }

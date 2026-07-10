@@ -39,7 +39,7 @@ mlc::Array<value::VmValue> vm_locals_store(mlc::Array<value::VmValue> locals, mi
     } else     {
       rebuilt.push_back(slots[position]);
     }
-    (position = (position + 1));
+    (position = mlc::arith::checked_add(position, 1));
   }
   return rebuilt;
 }
@@ -55,13 +55,13 @@ mlc::Array<VmFrame> vm_frame_update(mlc::Array<VmFrame> frames, int frame_index,
     } else     {
       rebuilt.push_back(frames[index]);
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return rebuilt;
 }
 mlc::Array<VmFrame> vm_frame_advance_statement(mlc::Array<VmFrame> frames, int frame_index) noexcept{
   auto frame = vm_frame_at(frames, frame_index);
-  return vm_frame_update(frames, frame_index, VmFrame{frame.function, frame.block_id, (frame.statement_index + 1), frame.locals, frame.pending_call_local});
+  return vm_frame_update(frames, frame_index, VmFrame{frame.function, frame.block_id, mlc::arith::checked_add(frame.statement_index, 1), frame.locals, frame.pending_call_local});
 }
 mlc::Array<VmFrame> vm_frame_set_block(mlc::Array<VmFrame> frames, int frame_index, mir_types::BlockId block_id) noexcept{
   auto frame = vm_frame_at(frames, frame_index);

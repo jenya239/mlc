@@ -27,7 +27,7 @@ mlc::Array<mlc::String> prefix_parse_errors(mlc::String source_path, mlc::Array<
   auto index = 0;
   while ((index < messages.length()))   {
     prefixed.push_back(((((mlc::String("parse ", 6) + mlc::to_string(source_path)) + mlc::String(": ", 2)) + mlc::to_string(messages[index])) + mlc::String("", 0)));
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return prefixed;
 }
@@ -38,7 +38,13 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String en
   profile::profile_reset_if_enabled(profile_enabled);
   profile::profile_maybe_begin(profile_enabled, mlc::String("total", 5));
   profile::profile_maybe_begin(profile_enabled, mlc::String("load_io", 7));
-  auto entry_source = mlc::file::read_to_string(entry_path);
+  auto entry_source = [&]() -> mlc::String {
+  if ((entry_path == mlc::String("-", 1)))   {
+    return mlc::io::read_all();
+  } else   {
+    return mlc::file::read_to_string(entry_path);
+  }
+}();
   profile::profile_maybe_end(profile_enabled, mlc::String("load_io", 7));
   profile::profile_maybe_begin(profile_enabled, mlc::String("lex", 3));
   auto lexer_output = lexer::tokenize(entry_source);
@@ -66,7 +72,7 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> compile_modular(mlc::String en
         return ast::Err<mlc::Array<mlc::String>>{merged.errors};
       } else       {
         auto merged_item_count = merged.items.length();
-        auto entry_load_item = merged.items[(merged_item_count - 1)];
+        auto entry_load_item = merged.items[mlc::arith::checked_sub(merged_item_count, 1)];
         auto entry_only_program = ast::Program{entry_load_item.decls};
         if (dump_ast)         {
           dump_flags::emit_dump_ast(merged.program, entry_path);

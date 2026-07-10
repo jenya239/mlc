@@ -52,7 +52,7 @@ bool pipeline_wants_timing(ModularCompileInput input) noexcept{
 }
 mlc::String modular_input_entry_label(ModularCompileInput input) noexcept{
   if ((input.load_items.length() > 0))   {
-    return input.load_items[(input.load_items.length() - 1)].path;
+    return input.load_items[mlc::arith::checked_sub(input.load_items.length(), 1)].path;
   } else   {
     return mlc::String("program", 7);
   }
@@ -68,7 +68,7 @@ void emit_checker_warnings(mlc::Array<mlc::String> warning_lines) noexcept{
   return [&]() {
 while ((warning_index < warning_lines.length())) {
 mlc::io::eprintln(warning_lines[warning_index]);
-(warning_index = (warning_index + 1));
+(warning_index = mlc::arith::checked_add(warning_index, 1));
 }
 }();
 }
@@ -123,14 +123,14 @@ ast::Result<mlc::String, mlc::Array<mlc::String>> run_codegen_pass(TransformedCo
         if ((link_libraries[existing_index] == library_name))         {
           (already_present = true);
         }
-        (existing_index = (existing_index + 1));
+        (existing_index = mlc::arith::checked_add(existing_index, 1));
       }
       if ((!already_present))       {
         link_libraries.push_back(library_name);
       }
-      (library_index = (library_index + 1));
+      (library_index = mlc::arith::checked_add(library_index, 1));
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   if ((transformed_state.output_directory.length() > 0))   {
     write_text_if_changed((transformed_state.output_directory + mlc::String("/mlc_link_libs.txt", 18)), link_libraries.map([=](mlc::String library_name) mutable { return (library_name + mlc::String("\n", 1)); }).join(mlc::String("", 0)));
@@ -203,7 +203,7 @@ ast::Result<PipelineContext, mlc::Array<mlc::String>> run_pass_manager_descripto
   auto descriptor = manager.descriptors[pass_index];
   auto advanced = advance_pipeline_context(manager, descriptor, context);
   return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<PipelineContext, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
-[&](const ast::Ok<PipelineContext>& ok) -> ast::Result<PipelineContext, mlc::Array<mlc::String>> { auto [next] = ok; return run_pass_manager_descriptors(manager, next, (pass_index + 1)); }
+[&](const ast::Ok<PipelineContext>& ok) -> ast::Result<PipelineContext, mlc::Array<mlc::String>> { auto [next] = ok; return run_pass_manager_descriptors(manager, next, mlc::arith::checked_add(pass_index, 1)); }
 }, advanced);
 }
 ast::Result<PipelineContext, mlc::Array<mlc::String>> advance_pipeline_context(pass_manager::PassManager manager, pass_manager::PassDescriptor descriptor, PipelineContext context) noexcept{

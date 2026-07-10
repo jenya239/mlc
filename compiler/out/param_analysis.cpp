@@ -78,7 +78,7 @@ mlc::HashMap<mlc::String, mlc::String> collect_array_elem_types(mlc::Array<std::
     if ((element_name.length() > 0))     {
       result.set(parameters[parameter_index]->name, element_name);
     }
-    (parameter_index = (parameter_index + 1));
+    (parameter_index = mlc::arith::checked_add(parameter_index, 1));
   }
   return result;
 }

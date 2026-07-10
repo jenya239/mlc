@@ -46,7 +46,7 @@ mlc::Array<load_item::NamespaceImportAlias> namespace_aliases_mapped(mlc::Array<
   while ((index < items.length()))   {
     auto entry = items[index];
     mapped_aliases.push_back(load_item::NamespaceImportAlias{entry.alias, entry.module_path});
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return mapped_aliases;
 }
@@ -107,7 +107,7 @@ if (semantic_declaration_is_assoc_bind(methods[method_index])) {
   auto entry = semantic_declaration_assoc_bind_entry(methods[method_index], context);
   push_struct_using_entry(entries, lines, type_name, entry);
 }
-(method_index = (method_index + 1));
+(method_index = mlc::arith::checked_add(method_index, 1));
 }
 }();
 }
@@ -138,7 +138,7 @@ context::StructUsingData build_struct_using_data(mlc::Array<std::shared_ptr<sema
   auto declaration_index = 0;
   while ((declaration_index < declarations.length()))   {
     add_assoc_binds_from_declaration(entries, lines, declarations[declaration_index], context);
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return context::StructUsingData{entries, lines};
 }
@@ -158,7 +158,7 @@ ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem 
   auto context = context::CodegenContext_with_struct_using_data(base_context, build_struct_using_data(load_item.decls, base_context));
   auto module_namespace = ((base == mlc::String("main", 4)) ? (mlc::String("mlc_main", 8)) : (base));
   auto is_entry = decl::decls_have_main(load_item.decls);
-  auto std_includes = ((expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(load_item.imports)) + mlc::String("\n", 1));
+  auto std_includes = mlc::arith::checked_add((expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(load_item.imports)), mlc::String("\n", 1));
   auto ffi_includes = decl_cpp::collect_ffi_include_lines(load_item.decls);
   auto decl_parts = decl_cpp::collect_all_decl_parts_cpp(load_item.decls, context);
   auto guard = (base.upper() + mlc::String("_HPP", 4));
@@ -228,7 +228,7 @@ mlc::Array<mlc::String> append_unique_library_name(mlc::Array<mlc::String> names
     if ((names[index] == library_name))     {
       return names;
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   names.push_back(library_name);
   return names;
@@ -241,9 +241,9 @@ mlc::Array<mlc::String> collect_extern_lib_names(mlc::Array<std::shared_ptr<sema
     auto found_index = 0;
     while ((found_index < found.length()))     {
       (names = append_unique_library_name(names, found[found_index]));
-      (found_index = (found_index + 1));
+      (found_index = mlc::arith::checked_add(found_index, 1));
     }
-    (declaration_index = (declaration_index + 1));
+    (declaration_index = mlc::arith::checked_add(declaration_index, 1));
   }
   return names;
 }

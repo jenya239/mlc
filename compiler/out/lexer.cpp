@@ -35,7 +35,7 @@ if (LexState_eof(self)) {
 }
 }
 mlc::String LexState_peek(LexState self, int offset) noexcept{
-auto byte_index = (self.position + offset);
+auto byte_index = mlc::arith::checked_add(self.position, offset);
 if ((byte_index < 0)) {
   lexer_internal_panic(mlc::String("lexer peek before start of source", 33));
   return mlc::String("\0", 1);
@@ -47,16 +47,16 @@ if ((byte_index < 0)) {
 }
 LexState LexState_lex_advance(LexState self) noexcept{
 if ((LexState_current(self) == mlc::String("\n", 1))) {
-  return LexState{self.source, (self.position + 1), (self.line + 1), 1};
+  return LexState{self.source, mlc::arith::checked_add(self.position, 1), mlc::arith::checked_add(self.line, 1), 1};
 } else {
-  return LexState{self.source, (self.position + 1), self.line, (self.column + 1)};
+  return LexState{self.source, mlc::arith::checked_add(self.position, 1), self.line, mlc::arith::checked_add(self.column, 1)};
 }
 }
 LexState LexState_lex_advance_by(LexState self, int advance_count) noexcept{
 if ((advance_count <= 0)) {
   return self;
 } else {
-  return LexState_lex_advance_by(LexState_lex_advance(self), (advance_count - 1));
+  return LexState_lex_advance_by(LexState_lex_advance(self), mlc::arith::checked_sub(advance_count, 1));
 }
 }
 ast_tokens::Token LexState_token(LexState self, ast_tokens::TokenKind token_kind) noexcept{
@@ -159,7 +159,7 @@ ScanResult scan_ident(LexState state) noexcept{
   while (((!LexState_eof(current)) && is_alnum(LexState_current(current))))   {
     (current = LexState_lex_advance(current));
   }
-  auto word = input_text.byte_substring(start, (current.position - start));
+  auto word = input_text.byte_substring(start, mlc::arith::checked_sub(current.position, start));
   return ScanResult{current, ast_tokens::Token{keyword_kind(word), token_line, token_column}};
 }
 bool is_alpha_lower(mlc::String character) noexcept{
@@ -175,7 +175,7 @@ SuffixScan try_scan_suffix(LexState state) noexcept{
     while (((!LexState_eof(current_state)) && (is_alpha_lower(LexState_current(current_state)) || is_digit(LexState_current(current_state)))))     {
       (current_state = LexState_lex_advance(current_state));
     }
-    auto candidate = current_state.source.byte_substring(start, (current_state.position - start));
+    auto candidate = current_state.source.byte_substring(start, mlc::arith::checked_sub(current_state.position, start));
     if (numeric_type_suffixes.any([=](mlc::String suffix_under_scan) mutable { return (suffix_under_scan == candidate); }))     {
       return SuffixScan{candidate, current_state};
     } else     {
@@ -193,7 +193,7 @@ ScanResult scan_int(LexState state) noexcept{
   auto current = state;
   auto value = 0;
   while (((!LexState_eof(current)) && is_digit(LexState_current(current))))   {
-    (value = ((value * 10) + LexState_current(current).to_i()));
+    (value = mlc::arith::checked_add(mlc::arith::checked_mul(value, 10), LexState_current(current).to_i()));
     (current = LexState_lex_advance(current));
   }
   if (((((!LexState_eof(current)) && (LexState_current(current) == mlc::String(".", 1))) && (!LexState_eof(LexState_lex_advance(current)))) && is_digit(LexState_current(LexState_lex_advance(current)))))   {
@@ -201,7 +201,7 @@ ScanResult scan_int(LexState state) noexcept{
     while (((!LexState_eof(current)) && is_digit(LexState_current(current))))     {
       (current = LexState_lex_advance(current));
     }
-    auto raw_float = current.source.byte_substring(int_start, (current.position - int_start));
+    auto raw_float = current.source.byte_substring(int_start, mlc::arith::checked_sub(current.position, int_start));
 auto __tmp_0 = try_scan_suffix(current);
 auto after = __tmp_0.after;
 
@@ -365,7 +365,7 @@ ScanStrResult scan_string(LexState state) noexcept{
       auto run_start = current.position;
       (current = lex_advance_past_unescaped_string_run(current));
       if ((current.position > run_start))       {
-        parts.push_back(current.source.byte_substring(run_start, (current.position - run_start)));
+        parts.push_back(current.source.byte_substring(run_start, mlc::arith::checked_sub(current.position, run_start)));
       }
     }
   }
@@ -446,13 +446,13 @@ ScanStrResult scan_template(LexState state) noexcept{
       auto depth = 1;
       while (((!LexState_eof(current)) && (depth > 0)))       {
         if ((LexState_current(current) == mlc::String("{", 1)))         {
-          (depth = (depth + 1));
+          (depth = mlc::arith::checked_add(depth, 1));
           std::make_tuple();
           expr_chars.push_back(LexState_current(current));
           std::make_tuple();
           (current = LexState_lex_advance(current));
         } else if ((LexState_current(current) == mlc::String("}", 1)))         {
-          (depth = (depth - 1));
+          (depth = mlc::arith::checked_sub(depth, 1));
           if ((depth > 0))           {
             expr_chars.push_back(LexState_current(current));
           }
@@ -473,7 +473,7 @@ ScanStrResult scan_template(LexState state) noexcept{
       auto run_start = current.position;
       (current = lex_advance_past_template_literal_run(current));
       if ((current.position > run_start))       {
-        current_lit.push_back(current.source.byte_substring(run_start, (current.position - run_start)));
+        current_lit.push_back(current.source.byte_substring(run_start, mlc::arith::checked_sub(current.position, run_start)));
       }
     }
   }

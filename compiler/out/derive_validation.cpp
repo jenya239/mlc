@@ -19,6 +19,8 @@ bool derive_trait_name_allowed(mlc::String trait_name) noexcept{
     return true;
   } else if ((trait_name == mlc::String("Hash", 4)))   {
     return true;
+  } else if ((trait_name == mlc::String("Json", 4)))   {
+    return true;
   } else   {
     return false;
   }
@@ -55,7 +57,7 @@ mlc::Array<ast::Diagnostic> derive_hash_field_error(mlc::String variant_label, m
 Derive_hash_tuple_field_fold_state derive_hash_tuple_field_fold_step(Derive_hash_tuple_field_fold_state state, std::shared_ptr<ast::TypeExpr> field_type, mlc::String variant_name, ast::Span diagnostic_span) noexcept{
   auto slot_label = (mlc::String("_", 1) + mlc::to_string(state.field_index));
   auto field_errors = derive_hash_field_error(((mlc::String("variant '", 9) + mlc::to_string(variant_name)) + mlc::String("'", 1)), slot_label, field_type, diagnostic_span);
-  return Derive_hash_tuple_field_fold_state{ast::diagnostics_append(state.diagnostics, field_errors), (state.field_index + 1)};
+  return Derive_hash_tuple_field_fold_state{ast::diagnostics_append(state.diagnostics, field_errors), mlc::arith::checked_add(state.field_index, 1)};
 }
 mlc::Array<ast::Diagnostic> derive_hash_field_errors_for_variant(std::shared_ptr<ast::TypeVariant> variant, ast::Span diagnostic_span) noexcept{
   return std::visit(overloaded{[&](const ast::VarUnit& varUnit) { auto [__0, __1] = varUnit; return [&]() {

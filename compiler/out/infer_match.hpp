@@ -75,7 +75,7 @@ infer_result::InferResult infer_expr_match(std::shared_ptr<ast::Expr> subject, m
     (arm_type = ((arm_index == 0) ? (arm_parsed.inferred_type) : (arm_type)));
     auto arm_mismatch = type_diagnostics::match_arm_type_mismatch_diagnostic(arm_index, arm_type, arm_parsed.inferred_type, match_arms[arm_index]->body);
     (collected_errors = ast::diagnostics_append(collected_errors, arm_mismatch));
-    (arm_index = (arm_index + 1));
+    (arm_index = mlc::arith::checked_add(arm_index, 1));
   }
   return infer_result::InferResult{arm_type, collected_errors};
 }

@@ -1,7 +1,8 @@
 // MirFunction → CppAST for simple functions (TRACK_MIR STEP=5).
 
 import { Result } from '../frontend/ast'
-import { Type, TI32, TBool, TUnit, TUnknown } from '../checker/registry'
+import { Type, TI32, TBool, TUnit, TString, TUnknown } from '../checker/registry'
+import { checked_arithmetic_helper_name } from '../checker/semantic_type_structure'
 import {
   MirFunction, MirBlock, MirLocal, MirStmt, MirRvalue, MirOperand, MirTerminator,
   LocalId, BlockId,
@@ -66,14 +67,35 @@ fn mir_operand_to_cpp_expression(function: MirFunction, operand: MirOperand) -> 
       emit_helpers.make_identifier_cpp_expression(mir_local_cpp_name(function, local_id))
   }
 
+fn mir_operand_type(function: MirFunction, operand: MirOperand) -> Shared<Type> =
+  match operand {
+    MirOperandLocal(local_id) => mir_find_local(function, local_id).type_value,
+    MirOperandConstInt(_) => Shared.new(TI32),
+    MirOperandConstBool(_) => Shared.new(TBool),
+    MirOperandConstStr(_) => Shared.new(TString),
+    MirOperandUnit => Shared.new(TUnit)
+  }
+
 fn mir_rvalue_to_cpp_expression(function: MirFunction, rvalue: MirRvalue) -> Shared<CppExpression> =
   match rvalue {
     MirRvalueUse(operand) => mir_operand_to_cpp_expression(function, operand),
-    MirRvalueBinary(operation, left, right) =>
-      Shared.new(CppBinary(
+    MirRvalueBinary(operation, left, right) => do
+      const helper_name = checked_arithmetic_helper_name(
         operation,
-        mir_operand_to_cpp_expression(function, left),
-        mir_operand_to_cpp_expression(function, right))),
+        mir_operand_type(function, left),
+        mir_operand_type(function, right))
+      if helper_name != '' then
+        Shared.new(CppCall(
+          emit_helpers.make_identifier_cpp_expression(helper_name),
+          [mir_operand_to_cpp_expression(function, left),
+           mir_operand_to_cpp_expression(function, right)]))
+      else
+        Shared.new(CppBinary(
+          operation,
+          mir_operand_to_cpp_expression(function, left),
+          mir_operand_to_cpp_expression(function, right)))
+      end
+    end,
     MirRvalueUnary(operation, operand) =>
       Shared.new(CppUnary(operation, mir_operand_to_cpp_expression(function, operand)))
   }

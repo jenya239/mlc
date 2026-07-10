@@ -47,11 +47,11 @@ if ((!seen_paths.has(dependency_item.path))) {
   [&]() {
 while ((decl_inner_index < dependency_item.decls.length())) {
 merged_declarations.push_back(dependency_item.decls[decl_inner_index]);
-(decl_inner_index = (decl_inner_index + 1));
+(decl_inner_index = mlc::arith::checked_add(decl_inner_index, 1));
 }
 }();
 }
-(dep_item_index = (dep_item_index + 1));
+(dep_item_index = mlc::arith::checked_add(dep_item_index, 1));
 }
 }();
 }();
@@ -72,7 +72,7 @@ return merged_declarations.push_back(program.decls[index]);
 return;
 std::abort();
 }();
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   auto norm_entry = path_normalize::resolve_dotdot(entry_path);
   items_ordered.push_back(load_item::LoadItem{norm_entry, entry_decls, entry_imports, entry_namespace_import_aliases});

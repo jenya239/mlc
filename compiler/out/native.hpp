@@ -8,11 +8,18 @@
 namespace native {
 
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_call(mlc::String name, mlc::Array<value::VmValue> arguments) noexcept;
-value::VmValue vm_variant_ctor(mlc::String tag, mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_variant_ctor(mlc::String tag, mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_shared_new(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_result_is_err(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_result_ok_value(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_variant_new(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_record_new(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_record_field(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_println(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_empty(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<int, mlc::Array<mlc::String>> vm_native_value_as_i32(value::VmValue value) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_push(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_pop(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_length(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_at(value::VmArrayValue array, int index) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_get(mlc::Array<value::VmValue> arguments) noexcept;
@@ -26,6 +33,7 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_map_set(mlc::Arra
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_map_get(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_map_length(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_string_length(mlc::Array<value::VmValue> arguments) noexcept;
+ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_string_contains(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmVariantValue, mlc::Array<mlc::String>> vm_native_variant_value(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_variant_is(mlc::Array<value::VmValue> arguments) noexcept;
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_variant_field(mlc::Array<value::VmValue> arguments) noexcept;

@@ -18,7 +18,7 @@ using namespace ast_tokens;
 
 mlc::String lsp_uri_to_file_path(mlc::String document_uri) noexcept{
   if (lsp_protocol::lsp_string_starts_with(document_uri, mlc::String("file://", 7)))   {
-    return document_uri.substring(7, (document_uri.length() - 7));
+    return document_uri.substring(7, mlc::arith::checked_sub(document_uri.length(), 7));
   } else   {
     return document_uri;
   }
@@ -146,7 +146,7 @@ mlc::Array<mlc::String> lsp_process_messages_for_test(mlc::Array<mlc::String> me
     } else if ((method_name == mlc::String("exit", 4)))     {
       (index = messages.length());
     }
-    (index = (index + 1));
+    (index = mlc::arith::checked_add(index, 1));
   }
   return outgoing;
 }
