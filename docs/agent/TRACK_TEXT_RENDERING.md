@@ -9,7 +9,7 @@ Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md)
 (STEP=1–8 closed 2026-07-09). Не поднимать выше `TRACK_MIR_VM_FULL` без
 явной команды.
 
-## Status: **open** — STEP=0–2 **done**; STEP=3 next (HarfBuzz + TextShaper)
+## Status: **open** — STEP=0–3 **done**; STEP=4 next (GlyphAtlas + GlyphCache)
 
 **Planner 2026-07-10:** After `TRACK_MIR_VM_FULL` Epic 4 closed (STEP=12), queue
 skips SUPERVISOR (deferred) and LANG_REGION_ARENA (design-blocked). Next
@@ -22,6 +22,9 @@ executable track is this one. Epic 5 MIR_VM remains unauthorized.
 `misc/examples/freetype_glyph_smoke.mlc`; `build_bin.sh` optional freetype2;
 gate `run_freetype_glyph_smoke.sh`.
 
+**Driver 2026-07-10:** STEP=3 — `harfbuzz_shim` + `text_shaper_shape` →
+`[ShapedGlyph]`; Cyrillic smoke; fix `gen_string_literal` to use `byte_size()`.
+
 ## Steps
 
 | Step | Item | Status |
@@ -29,13 +32,13 @@ gate `run_freetype_glyph_smoke.sh`.
 | 0 | Предусловие: `TRACK_FFI_LAYER` closed (STEP=1-6, минимум без concurrency-метаданных STEP=7-8). | **done** (FFI closed 2026-07-09) |
 | 1 | Решить открытые вопросы `TEXT_RENDERING.md` §5.1 (C array view) и §5.3 (msdfgen шим) — design-turn, не кодогенерация. | **done** (2026-07-10: RawPointer+length view; msdf_shim.cpp at STEP=7; §5.2 → STEP=5) |
 | 2 | `extern type`/`extern fn` биндинги FreeType (`TEXT_RENDERING.md` §3.1, FreeType-подмножество). Тест: загрузка `.ttf`, `FT_Load_Glyph`+`FT_Render_Glyph` на 1 символе, сравнение bitmap-размера с ожидаемым. | **done** (shim `glyph_bitmap_packed`; smoke exit 0; DejaVu 'A'@32px) |
-| 3 | `extern type`/`extern fn` биндинги HarfBuzz (§3.1, HarfBuzz-подмножество) + `hb_ft_font_create` мост. `TextShaper.shape()` на MLC: строка UTF-8 (включая кириллицу) → `ShapedGlyph[]`. | **pending** |
-<!-- sub-steps STEP=3:
-  1) runtime HarfBuzz(+FT) shim or extern subset for shape
-  2) TextShaper.shape UTF-8 incl. Cyrillic → ShapedGlyph[]
-  3) smoke/assert glyph indices/advances
+| 3 | `extern type`/`extern fn` биндинги HarfBuzz (§3.1, HarfBuzz-подмножество) + `hb_ft_font_create` мост. `TextShaper.shape()` на MLC: строка UTF-8 (включая кириллицу) → `ShapedGlyph[]`. | **done** (shim + `text_shaper_shape`; smoke «Привет»=6; `literals.mlc` byte_size) |
+| 4 | `GlyphAtlas` (shelf bin-pack) + `GlyphCache` (LRU) — чистый MLC, без FFI. Юнит-тесты на packing/eviction. | **pending** |
+<!-- sub-steps STEP=4:
+  1) GlyphAtlas shelf pack in MLC (no FFI)
+  2) GlyphCache LRU insert/get/evict
+  3) unit tests packing + eviction
 -->
-| 4 | `GlyphAtlas` (shelf bin-pack) + `GlyphCache` (LRU) — чистый MLC, без FFI. Юнит-тесты на packing/eviction. | pending |
 | 5 | Решить открытый вопрос §5.2 (`glXGetProcAddress` как runtime-полученный `extern fn(...)`) — design-turn + smoke на 1 функции (`glGenBuffers` или аналог) до начала полного биндинга. | pending |
 | 6 | OpenGL биндинг узкого набора (§3.3, ~20-30 функций) + `TextRenderer` A8-путь — end-to-end glyph на экране (offscreen framebuffer + pixel-diff тест, не интерактивное окно). | pending |
 | 7 | MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер + `RenderMode` переключение по pixel size. | pending |

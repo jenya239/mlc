@@ -8,7 +8,7 @@ export fn gen_integer_literal(integer_value: i32) -> string =
   integer_value.to_string()
 
 export fn gen_string_literal(string_value: string) -> string =
-  'mlc::String("' + escape_str(string_value) + '", ' + string_value.length().to_string() + `)`
+  'mlc::String("' + escape_str(string_value) + '", ' + string_value.byte_size().to_string() + `)`
 
 export fn gen_boolean_literal(boolean_value: bool) -> string =
   if boolean_value then 'true' else 'false' end

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_TEXT_RENDERING** STEP=3 — HarfBuzz bindings + `TextShaper.shape` (UTF-8 incl. Cyrillic).
-(STEP=2 done: `freetype_shim` + `run_freetype_glyph_smoke.sh`.)
+**TRACK_VM_TRAMPOLINE** STEP=1 — fix `vm_run_frames` host recursion (critical; PLAN 13a).
+(TEXT_RENDERING STEP=3 done: HarfBuzz TextShaper + UTF-8 string literal byte_size.)
 
 ## Step sizing (good vs bad)
 

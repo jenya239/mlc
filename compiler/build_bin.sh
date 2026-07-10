@@ -20,15 +20,22 @@ RT_SRC=(
   "$ROOT_DIR/runtime/src/core/string.cpp"
   "$ROOT_DIR/runtime/src/core/profile.cpp"
 )
-# Optional FreeType shim (TRACK_TEXT_RENDERING): only when freetype2 is installed.
-FREETYPE_CFLAGS=()
-FREETYPE_LIBS=()
+# Optional text shims (TRACK_TEXT_RENDERING): FreeType / HarfBuzz when installed.
+TEXT_CFLAGS=()
+TEXT_LIBS=()
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
   RT_SRC+=("$ROOT_DIR/runtime/src/text/freetype_shim.cpp")
   # shellcheck disable=SC2207
-  FREETYPE_CFLAGS=($(pkg-config --cflags freetype2))
+  TEXT_CFLAGS+=($(pkg-config --cflags freetype2))
   # shellcheck disable=SC2207
-  FREETYPE_LIBS=($(pkg-config --libs freetype2))
+  TEXT_LIBS+=($(pkg-config --libs freetype2))
+  if pkg-config --exists harfbuzz; then
+    RT_SRC+=("$ROOT_DIR/runtime/src/text/harfbuzz_shim.cpp")
+    # shellcheck disable=SC2207
+    TEXT_CFLAGS+=($(pkg-config --cflags harfbuzz))
+    # shellcheck disable=SC2207
+    TEXT_LIBS+=($(pkg-config --libs harfbuzz))
+  fi
 fi
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
@@ -103,7 +110,7 @@ object_is_stale() {
 
 INC_FLAGS=(-I "$CPP_DIR" -I "$RT_INC")
 [ -n "$EXTRA_INC" ] && INC_FLAGS+=(-I "$EXTRA_INC")
-INC_FLAGS+=("${FREETYPE_CFLAGS[@]}")
+INC_FLAGS+=("${TEXT_CFLAGS[@]}")
 
 COMPILER_DIR="$(cd "$(dirname "$0")" && pwd)"
 PRECOMPILED_SOURCE="$COMPILER_DIR/mlcc_precompiled.hpp"
@@ -218,6 +225,6 @@ if [ -f "$CPP_DIR/mlc_link_libs.txt" ]; then
     EXTERN_LINK_LIBS+=("-l${library_name}")
   done < "$CPP_DIR/mlc_link_libs.txt"
 fi
-EXTERN_LINK_LIBS+=("${FREETYPE_LIBS[@]}")
+EXTERN_LINK_LIBS+=("${TEXT_LIBS[@]}")
 
 "${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}" "${EXTERN_LINK_LIBS[@]}"

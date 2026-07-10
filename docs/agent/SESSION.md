@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_TEXT_RENDERING STEP=3 |
-| test_gate | ok (freetype glyph smoke exit 0) |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_VM_TRAMPOLINE STEP=1 (after TEXT_RENDERING STEP=3) |
+| test_gate | ok (harfbuzz shape smoke; freetype smoke) |
+
+### Turn 2026-07-10 12:02 (Driver TRACK_TEXT_RENDERING STEP=3 — HarfBuzz TextShaper)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_RENDERING |
+| started | 2026-07-10 11:42 |
+| elapsed | ~20 min |
+| done    | `harfbuzz_shim` + header; `harfbuzz_shape_smoke.mlc` (`text_shaper_shape`); `build_bin.sh` harfbuzz; gate; fix `literals.mlc` `byte_size()` for UTF-8. |
+| verify  | `run_harfbuzz_shape_smoke.sh` SMOKE:0 («Привет»=6); freetype smoke ok; BUILD:0. |
+| result  | STEP=3 done. Plain: HarfBuzz shapes Cyrillic into ShapedGlyph[]. |
+| issues  | PLAN 13a VM_TRAMPOLINE is critical above TEXT STEP=4 — next switches. Foreign CLI_STDIN WIP stashed then restored. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_VM_TRAMPOLINE — replace `vm_run_frames` self-recursion with host loop |
 
 ### Turn 2026-07-10 00:15 (Driver TRACK_TEXT_RENDERING STEP=2 — FreeType glyph smoke)
 

@@ -1,0 +1,53 @@
+// TextShaper via HarfBuzz+FreeType runtime shim (TRACK_TEXT_RENDERING STEP=3).
+
+extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
+  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
+
+extern fn shape_glyph_id_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
+
+extern fn shape_glyph_advance_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
+
+type ShapedGlyph = { glyph_id: i32, x_advance: i32 }
+
+fn text_shaper_shape(font_path: string, text: string, pixel_size: i32) -> [ShapedGlyph] = do
+  let mut glyphs: [ShapedGlyph] = []
+  const count = shape_glyph_count(font_path, text, pixel_size)
+  if count < 0 then
+    return glyphs
+  end
+  let mut index = 0
+  while index < count do
+    glyphs.push(ShapedGlyph {
+      glyph_id: shape_glyph_id_at(index),
+      x_advance: shape_glyph_advance_at(index)
+    })
+    index = index + 1
+  end
+  glyphs
+end
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const glyphs = text_shaper_shape(font_path, "Привет", 32)
+  if glyphs.length() != 6 then
+    return 1
+  end
+  let mut index = 0
+  while index < glyphs.length() do
+    if glyphs[index].glyph_id <= 0 then
+      return 2
+    end
+    if glyphs[index].x_advance <= 0 then
+      return 3
+    end
+    index = index + 1
+  end
+  // Latin sanity: "Hi" → 2 glyphs
+  const latin = text_shaper_shape(font_path, "Hi", 32)
+  if latin.length() != 2 then
+    return 4
+  end
+  0
+end

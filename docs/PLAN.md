@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. Queue head: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=3).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. Critical: [TRACK_VM_TRAMPOLINE](agent/TRACK_VM_TRAMPOLINE.md); text: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -383,9 +383,9 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=3. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed** 2026-07-09 (Send/Sync, cancel wake, TaskScope, ThreadPool, Isolate). HARNESS T1–T5 done, T6 deferred. Next concurrency: [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) (deferred). Queue next: [TRACK_VM_TRAMPOLINE](agent/TRACK_VM_TRAMPOLINE.md) (critical) then [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
-| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — **queue head**; STEP=0–2 **done**, STEP=3 next (HarfBuzz + TextShaper) |
+| **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **open** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) — STEP=0–3 **done**, STEP=4 next (GlyphAtlas/Cache); note PLAN **13a** VM_TRAMPOLINE is higher priority |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **review** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md) — обзор пробелов + порядок; треки не созданы, создаются по мере старта каждого компонента (§5). TCP/HTTP сервер unblocked; Postgres/crypto unblocked by FFI_LAYER close |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **open, КРИТИЧЕСКИЙ приоритет** | [TRACK_VM_TRAMPOLINE](agent/TRACK_VM_TRAMPOLINE.md) — STEP=1 next; root cause найден и подтверждён (2026-07-10 ручной бенчмарк): `vm_run_frames` в `compiler/vm/execute.mlc` рекурсирует в host C++ на каждый MIR-шаг вместо цикла, segfault на ~1500-2000 шагах (цикл или пользовательская рекурсия — без разницы). Делает VM непригодным для любой нетривиальной программы. Выше `TEXT_RENDERING`/`CLI_STDIN` — блокирует практическую ценность всего `MIR_VM_FULL` |
@@ -436,7 +436,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     не начинать реализацию, максимум — отдельный design-turn)
   → TEXT_RENDERING STEP=1 (**done** 2026-07-10: §5.1 RawPointer+length view; §5.3 msdf_shim at STEP=7; §5.2 → STEP=5);
     STEP=2 (**done** 2026-07-10: freetype_shim + glyph smoke);
-    STEP=3 (**next** — HarfBuzz + TextShaper) → STEP=4–8
+    STEP=3 (**done** 2026-07-10: harfbuzz_shim + TextShaper Cyrillic; string literal byte_size);
+    STEP=4 (**next** — GlyphAtlas + GlyphCache) → STEP=5–8
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее
