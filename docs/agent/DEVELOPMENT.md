@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_ENV_LOGGING` open** STEP=5 — docs + example + close.
-See [TRACK_STDLIB_ENV_LOGGING.md](TRACK_STDLIB_ENV_LOGGING.md).
+**`TRACK_STDLIB_ENV_LOGGING` closed** — pending Critic `critique-audit`.
+Next Planner backlog after Critic: Validation (STDLIB_BACKEND §5.7) or
+TEXT_RENDERING_NATIVE. See [archive/tracks/TRACK_STDLIB_ENV_LOGGING.md](../archive/tracks/TRACK_STDLIB_ENV_LOGGING.md).
 
 
 ## Step sizing (good vs bad)

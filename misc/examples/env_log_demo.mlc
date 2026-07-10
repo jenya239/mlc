@@ -1,0 +1,18 @@
+# Env + Log demo (TRACK_STDLIB_ENV_LOGGING).
+# Ruby pipeline: import Env / Log. Gate: scripts/run_env_log_gate.sh
+
+import Env::{get_or, has}
+import Log::{info, warn}
+import IO::{println}
+
+fn main() -> i32 = do
+  let port = get_or("PORT", "8080")
+  info("env_log demo start")
+  warn("using port " + port)
+  println(port)
+  if has("PATH") then
+    0
+  else
+    1
+  end
+end

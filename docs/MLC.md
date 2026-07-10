@@ -70,7 +70,7 @@ fn area(s: Shape) -> i32 =
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
 | `Tcp` (`lib/mlc/common/stdlib/net/tcp.mlc`) | да (`import Tcp::{…}`) | да (`import { … } from 'Tcp'`; bare-name → stdlib) |
-| `Postgres` / `Crypto` / `WebSocket` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
+| `Postgres` / `Crypto` / `WebSocket` / `Env` / `Log` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя (нет `spawn`) | **да** (2026-07-10; gate `scripts/run_mlcc_tcp_spawn_echo_gate.sh`) |
 
@@ -457,6 +457,21 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 - Gate: `scripts/run_job_queue_gate.sh`. Example: `misc/examples/job_queue_demo.cpp`.
 
 Не в v1: MLC `JobQueue`, broker/persistence, cron expressions.
+
+#### Env + Log (process env + JSON lines)
+
+Зафиксировано 2026-07-11 (`TRACK_STDLIB_ENV_LOGGING` **closed**). Runtime
+(`mlc::env` / `mlc::log`):
+
+- `Env.get` / `get_or` / `has` over `getenv`; missing key → `None` / default
+  (no `last_error`).
+- `Log.error` / `warn` / `info` / `debug` → JSON lines on stderr
+  (`{"level":"…","msg":"…"}`).
+- MLC modules `Env` / `Log` (`std/env/env`, `std/log/log`) — **только
+  Ruby-пайплайн**.
+- Gate: `scripts/run_env_log_gate.sh`. Example: `misc/examples/env_log_demo.mlc`.
+
+Не в v1: dotenv/`setenv`, OTel, timestamps/extra fields, mlcc bare import.
 
 #### Postgres (libpq stdlib)
 
