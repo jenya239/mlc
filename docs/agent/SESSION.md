@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_POSTGRES open STEP=1 |
-| test_gate | n/a (docs-only Planner) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_POSTGRES open STEP=2 |
+| test_gate | n/a (docs Decision) |
+
+### Turn 2026-07-10 19:48 (Driver TRACK_STDLIB_POSTGRES STEP=1 — API Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_POSTGRES |
+| started | 2026-07-10 19:42 |
+| elapsed | ~5 min |
+| done    | TRACK Decision: Option+i32 handles + last_error; connect/exec/ntuples/nfields/getvalue/clear/finish; libpq call set; `-lpq` consumers-only; live DB env-gated. PLAN §11 + queue; STDLIB_BACKEND; DEVELOPMENT. |
+| verify  | Open questions cleared; STEP=1 done; STEP=2 pending; no Result-vs-handles Decision/ship split. |
+| result  | STEP=1 done. Plain: Postgres v1 API locked (Tcp pattern). |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_POSTGRES — `runtime/include/mlc/db/postgres.hpp` + C++ smoke |
 
 ### Turn 2026-07-10 19:45 (Planner — open TRACK_STDLIB_POSTGRES)
 
