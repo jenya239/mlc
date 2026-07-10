@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_STDLIB_NET_SERVER** STEP=6 — routing table + `HttpResponse` write.
-STEP=5 done (`parse_http_request`, smoke 14/0).
+**TRACK_STDLIB_NET_SERVER** STEP=7 — accept loop + `ThreadPool` dispatch.
+STEP=6 done (`HttpRouter`, response write, 404).
 
 ## Step sizing (good vs bad)
 

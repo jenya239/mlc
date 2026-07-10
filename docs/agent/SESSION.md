@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_NET_SERVER STEP=6 |
-| test_gate | ok (http_request smoke 14/0) |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_STDLIB_NET_SERVER STEP=7 |
+| test_gate | ok (http_router smoke 14/0) |
+
+### Turn 2026-07-10 22:55 (Driver TRACK_STDLIB_NET_SERVER STEP=6 — routing)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 18:49 |
+| elapsed | ~8 min |
+| done    | `runtime/include/mlc/net/http_router.hpp` (`HttpResponse`, `format_http_response`, `write_http_response`, `HttpRouter`, `http_not_found`); `test_http_router.cpp`; include in `mlc.hpp`. |
+| verify  | `g++ … test_http_router.cpp` → 14 passed, 0 failed. |
+| result  | STEP=6 done. Plain: exact-match routes + HTTP response write. |
+| issues  | Foreign dirty CONTINUITY/TRACK_MIR/text_renderer + `?? TRACK_VM_TYPED_COLLECTIONS` left. |
+| next    | ROLE=Driver STEP=7 TRACK_STDLIB_NET_SERVER — ThreadPool connection dispatch (or document single-thread) |
 
 ### Turn 2026-07-10 22:50 (Driver TRACK_STDLIB_NET_SERVER STEP=5 — HTTP parse)
 
