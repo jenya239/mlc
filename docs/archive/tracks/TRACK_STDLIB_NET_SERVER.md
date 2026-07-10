@@ -9,6 +9,14 @@ Trigger: backend-class apps need listen/accept; today only HTTP **client**
 **Driver 2026-07-10:** STEP=8 — `STDLIB_BACKEND.md`/`MLC.md` note;
 `misc/examples/tcp_echo_demo.mlc`; `regression_gate` 20/0; track archived.
 
+**Critic 2026-07-10:** `critique-audit` — commits `e27a7092`…`d0d3206a`
+match STEP 1–8 claims; PLAN §11/queue/archive path synced; smokes
+tcp 12/0, http_request 14/0, http_router 14/0, http_server 5/0;
+codegen `tcp_stdlib_test` 1/18. Residuals (no reopen): Decision
+`Result<TcpListener,_>` vs MLC `Option<i32>`+`last_error`; HTTP
+parse/router/serve C++-only (no MLC stdlib); example not compile-gated
+in STEP=8; archive links to SPAWN/RUBY_PARITY fixed to `../../agent/`.
+
 ## Decision (STEP=1, 2026-07-10)
 
 ### Types (MLC surface; C++ mirrors under `mlc::net`)
@@ -58,9 +66,9 @@ runtime helper if no match.
   module as `Tcp`, not the language-level `spawn`** — `spawn`/`Mutex`/`Channel`
   exist only in self-hosted `compiler/`, unreachable from the Ruby pipeline
   this track's TCP stdlib depends on; see
-  [TRACK_CONCURRENCY_RUBY_PARITY](TRACK_CONCURRENCY_RUBY_PARITY.md) (found
+  [TRACK_CONCURRENCY_RUBY_PARITY](../../agent/TRACK_CONCURRENCY_RUBY_PARITY.md) (found
   2026-07-10). Also: self-hosted `spawn do <tail-call> end` currently
-  double-executes the block body — [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md),
+  double-executes the block body — [TRACK_LANG_SPAWN_DOUBLE_EXEC](../../agent/TRACK_LANG_SPAWN_DOUBLE_EXEC.md),
   another reason to avoid `spawn` here until fixed.
 
 ### Bind defaults

@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Critic** `critique-audit` on closed [TRACK_STDLIB_NET_SERVER](../archive/tracks/TRACK_STDLIB_NET_SERVER.md)
-(TCP/HTTP server stdlib). Then Planner: Postgres/crypto per STDLIB_BACKEND §5.
+**Planner** `plan-refresh` — next after closed NET_SERVER: Postgres/crypto
+(STDLIB_BACKEND §5) **or** critical [TRACK_LANG_SPAWN_DOUBLE_EXEC](TRACK_LANG_SPAWN_DOUBLE_EXEC.md)
+(PLAN §8a). Critic audit of NET_SERVER done (no reopen).
 
 ## Step sizing (good vs bad)
 

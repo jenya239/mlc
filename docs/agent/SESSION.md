@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 8 |
-| active_track | TRACK_STDLIB_NET_SERVER closed → Critic |
-| test_gate | ok (regression_gate 20/0) |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_NET_SERVER closed (Critic done) |
+| test_gate | ok (tcp/http smokes + codegen) |
+
+### Turn 2026-07-10 19:05 (Critic TRACK_STDLIB_NET_SERVER — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_NET_SERVER |
+| started | 2026-07-10 19:05 |
+| elapsed | ~8 min |
+| done    | Audited `e27a7092`…`d0d3206a` vs STEP 1–8; PLAN §11/queue/archive; fixed archive links to SPAWN/RUBY_PARITY; Critic note on archived TRACK. |
+| verify  | smokes tcp 12/0, http_request 14/0, http_router 14/0, http_server 5/0; `tcp_stdlib_test` codegen 1 run / 18 assertions; no false-done. |
+| result  | **reopen: none**. Residuals: Decision Result types vs MLC Option+handles; HTTP C++-only; example not compile-gated in STEP=8. |
+| issues  | Foreign dirty left (CONTINUITY, MIR_VM_FULL, text_renderer_shim, SPAWN/RUBY_PARITY/TYPED untracked). |
+| next    | ROLE=Planner STEP=plan-refresh — pick next track (SPAWN_DOUBLE_EXEC §8a vs Postgres/crypto) |
 
 ### Turn 2026-07-10 19:04 (Driver TRACK_STDLIB_NET_SERVER STEP=8 — close)
 
