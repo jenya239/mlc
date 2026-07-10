@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; next: [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) STEP=1).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; next: [TRACK_LANG_INT_OVERFLOW](agent/TRACK_LANG_INT_OVERFLOW.md) STEP=2).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -459,7 +459,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
   → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
     не начинать реализацию, максимум — отдельный design-turn)
-  → **LANG_INT_OVERFLOW STEP=1 (**next** — design default overflow semantics)
+  → **LANG_INT_OVERFLOW STEP=1 (**done** 2026-07-10: signed debug-panic/release-UB;
+      unsigned wrap; div0 panic);
+    STEP=2 (**next** — document in `MLC.md`)
   → STDLIB_BACKEND: TCP/HTTP-сервер трек → Postgres/crypto треки (FFI closed)
     → WebSocket/job-queue/config/logging (см. STDLIB_BACKEND.md §5);
     треки создавать по одному перед стартом каждого, не заранее

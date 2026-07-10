@@ -4,10 +4,23 @@ Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) (типы `i32`/`i64`/
 `u32`/`u64`). Trigger: обзор пробелов 2026-07-10 — семантика переполнения
 целочисленной арифметики не зафиксирована ни в одном документе.
 
-## Status: **open, средний приоритет** — это дырка в спецификации языка,
-не в реализации; дешёвая, но затрагивает codegen для всех арифметических
-операторов, желательно решить до того, как накопится больше кода,
-зависящего от текущего (неопределённого) поведения.
+## Status: **open** — STEP=1 **done**; STEP=2 next (document in MLC.md)
+
+## Decision (STEP=1, 2026-07-10)
+
+Default for `+` / `-` / `*` / `/` / `%` on integer types:
+
+| Class | Default operators | Notes |
+|-------|-------------------|--------|
+| Signed (`i32`, `i64`, …) | **Debug:** panic with message on overflow. **Release:** C++ signed overflow remains UB (UBSan-detectable; CI may enable `-fsanitize=undefined`). | Matches PLAN §7 “panic с сообщением”; no silent wrap on signed. |
+| Unsigned (`u32`, `u64`, …) | **Wrap** mod 2ⁿ in all builds (C++ defined). | No panic on unsigned wrap. |
+| `/` and `%` | **Panic if divisor is 0** in all builds. Signed `MIN / -1` (and `%`) treated as overflow: debug panic / release UB like `*`. | Division-by-zero was also unspecified; fixed here. |
+
+Explicit stdlib methods (not operators) — **STEP=4**, do not block STEP=2–3:
+`wrapping_add` / `checked_add` / `saturating_add` (and `-`/`*` analogues).
+
+Rejected for v1 default: always-wrap signed; always-trap in release (hot-path cost);
+operator split beyond the debug-panic / release-UB pair above.
 
 ## Проблема
 
@@ -37,10 +50,10 @@ signed overflow — undefined behavior. Никакой документ прое
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design-решение: выбрать один вариант по умолчанию (рекомендация: panic в debug-сборке/UBSan-детектируемый UB в release — соответствует уже принятому в проекте паттерну "panic с сообщением" из `PLAN.md` §7 метрики "Crashes на невалидном вводе: 0 (panic с сообщением)"); отдельные `wrapping_add`/`checked_add`/`saturating_add` как явные stdlib-методы, не операторы, — второй приоритет, не блокирует STEP=1. | pending |
+| 1 | Design-решение: выбрать один вариант по умолчанию (рекомендация: panic в debug-сборке/UBSan-детектируемый UB в release — соответствует уже принятому в проекте паттерну "panic с сообщением" из `PLAN.md` §7 метрики "Crashes на невалидном вводе: 0 (panic с сообщением)"); отдельные `wrapping_add`/`checked_add`/`saturating_add` как явные stdlib-методы, не операторы, — второй приоритет, не блокирует STEP=1. | **done** (2026-07-10: see Decision; signed debug-panic / release-UB; unsigned wrap; `/` `%` div0 panic) |
 | 2 | Документация: раздел в `MLC.md` — зафиксировать выбранную семантику для `+`/`-`/`*`/`/` (включая целочисленное деление на 0 — тоже не зафиксировано, тот же трек, тот же STEP). | pending |
-| 3 | Codegen: если выбран panic-вариант — обёртка арифметики в проверку (только для `i32`/`i64`/`u32`/`u64`, не `f32`/`f64`), сначала Ruby, потом self-hosted. Замер влияния на скорость трансляции/выполнения (см. `.cursor/rules/mlcc-self-host-verification.mdc` — бенчмарк обязателен при изменении codegen горячего пути). | pending |
-| 4 | Stdlib: `wrapping_add`/`checked_add`/`saturating_add`/аналоги для `-`/`*`, если решено на STEP=1 иметь явные варианты. | pending |
+| 3 | Codegen: debug panic checks for signed `+`/`-`/`*` and all-builds div0 for `/` `%`; unsigned wrap unchanged. Ruby then self-hosted. Benchmark translation/runtime if hot path changes. | pending |
+| 4 | Stdlib: `wrapping_add`/`checked_add`/`saturating_add`/аналоги для `-`/`*`. | pending |
 | 5 | Тесты: unit-тесты на overflow/underflow/деление на 0 для всех целочисленных типов; verify-gate self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`; close. | pending |
 
 ## Out of scope
