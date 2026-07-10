@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_CRYPTO` open** — STEP=2 (`runtime/include/mlc/crypto/sodium.hpp`).
+**`TRACK_STDLIB_CRYPTO` open** — STEP=3 (`lib/mlc/common/stdlib/crypto/crypto.mlc`).
 See [TRACK_STDLIB_CRYPTO.md](TRACK_STDLIB_CRYPTO.md).
 
 

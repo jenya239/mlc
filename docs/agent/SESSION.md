@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_CRYPTO open STEP=2 |
-| test_gate | n/a (docs Decision) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_CRYPTO open STEP=3 |
+| test_gate | ok (crypto smoke 9/0) |
+
+### Turn 2026-07-10 20:22 (Driver TRACK_STDLIB_CRYPTO STEP=2 — sodium.hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_CRYPTO |
+| started | 2026-07-10 19:55 |
+| elapsed | ~10 min |
+| done    | `runtime/include/mlc/crypto/sodium.hpp` + `sodium_bridge.hpp`; gated `mlc.hpp`; `runtime/test/test_crypto.cpp`; `scripts/run_crypto_runtime_smoke.sh`. |
+| verify  | smoke 9 passed / 0 failed (local `.tmp_libsodium`); SHA-256 empty + RFC4231 HMAC + pwhash roundtrip. |
+| result  | STEP=2 done. Plain: libsodium runtime usable from C++. |
+| issues  | System `libsodium-dev` absent — used `.tmp_libsodium`. Foreign dirty left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_CRYPTO — `crypto.mlc` + registry/scanner |
 
 ### Turn 2026-07-10 20:18 (Driver TRACK_STDLIB_CRYPTO STEP=1 — API Decision)
 

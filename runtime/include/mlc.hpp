@@ -64,3 +64,8 @@
 #if __has_include(<libpq-fe.h>) || __has_include(<postgresql/libpq-fe.h>)
 #include "mlc/db/postgres.hpp"
 #endif
+
+// Crypto (optional — requires sodium.h)
+#if __has_include(<sodium.h>)
+#include "mlc/crypto/sodium.hpp"
+#endif
