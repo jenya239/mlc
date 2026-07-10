@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET` open** STEP=5 — docs + example + close.
-Gate STEP=4 done (`run_websocket_gate.sh`).
-See [TRACK_STDLIB_WEBSOCKET.md](TRACK_STDLIB_WEBSOCKET.md).
+**`TRACK_STDLIB_WEBSOCKET` closed** 2026-07-11 — Critic next.
+Then Planner: next STDLIB backlog (job-queue) or other PLAN queue item.
 
 
 ## Step sizing (good vs bad)

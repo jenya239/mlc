@@ -1,20 +1,19 @@
 # Track: WebSocket (server) over TCP
 
-Parent: [../PLAN.md](../PLAN.md), [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md) §5.4,
-[../archive/tracks/TRACK_STDLIB_NET_SERVER.md](../archive/tracks/TRACK_STDLIB_NET_SERVER.md).
+Parent: [../../PLAN.md](../../PLAN.md), [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md) §5.4,
+[TRACK_STDLIB_NET_SERVER.md](TRACK_STDLIB_NET_SERVER.md).
 Trigger: CRYPTO **closed**; STDLIB_BACKEND §5 next is WebSocket upgrade +
 frames on top of existing TCP/HTTP server runtime.
 
-## Status: **open** — STEP=5 next (docs + example + close)
+## Status: **closed** (2026-07-11) — STEP=1–5 **done**
 
-**Planner 2026-07-10:** opened after closed STDLIB_CRYPTO Critic. Chose
-WebSocket over job-queue (§5 order; depends on NET_SERVER). Pipeline
-(Decision C): MLC via Ruby `common/stdlib`; runtime C++ under `mlc::net`
-(extend existing TCP). No language `spawn` for v1.
-
+**Planner 2026-07-10:** opened after closed STDLIB_CRYPTO Critic.
+**Driver 2026-07-10:** STEP=1 — Decision (MLC WebSocket; text-only; standalone).
 **Driver 2026-07-10:** STEP=2 — `websocket.hpp` + C++ smoke (RFC Accept + echo).
 **Driver 2026-07-10:** STEP=3 — `websocket.mlc` + registry + bridge (`mlc::websocket`).
 **Driver 2026-07-11:** STEP=4 — `run_websocket_gate.sh` (smoke 19/0 + codegen).
+**Driver 2026-07-11:** STEP=5 — `MLC.md` + example; STDLIB/PLAN closed; archived.
+No `compiler/**` (regression_gate N/A).
 
 ## Decision (STEP=1, 2026-07-10)
 
@@ -112,8 +111,8 @@ full client library, not WSS.
 | 1 | Design: upgrade API (`accept_websocket` / `WsConnection`); frame API (text only?); masking (server→client unmasked); error model; what HTTP headers required. Document in «Decision». | **done** (2026-07-10: see Decision) |
 | 2 | Runtime: handshake + frame encode/decode in `runtime/include/mlc/net/websocket.hpp`; C++ smoke (in-process or paired client). | **done** (2026-07-10: SHA1+base64 local; upgrade/read_text/write_text; `run_websocket_runtime_smoke.sh` 19/0) |
 | 3 | Stdlib: `std/net/websocket.mlc` + registry + codegen bridge (Decision: MLC module yes). | **done** (2026-07-10: `mlc::websocket` handles; bridge; codegen test) |
-| 4 | Gate: script — upgrade + text echo roundtrip (C++ client or `websocat` if available). | pending |
-| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | pending |
+| 4 | Gate: script — upgrade + text echo roundtrip (C++ client or `websocat` if available). | **done** (2026-07-11: `run_websocket_gate.sh` — smoke 19/0 + stdlib test) |
+| 5 | Docs (`STDLIB_BACKEND.md` / `MLC.md`) + example; close (regression_gate if `compiler/**`). | **done** (2026-07-11: MLC.md; `websocket_echo_demo.mlc`; archived) |
 
 <!-- sub-steps STEP=1: 1) API table; 2) MLC surface vs C++-only; 3) text-only vs binary; 4) non-goals TLS/client -->
 <!-- sub-steps STEP=2: 1) Sec-WebSocket-Accept; 2) frame parser; 3) test_websocket.cpp -->

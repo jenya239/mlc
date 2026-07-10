@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_WEBSOCKET STEP=5 |
-| test_gate | run_websocket_gate.sh OK (19/0 + codegen) |
+| driver_turns_since_plan | 0 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_WEBSOCKET closed → Critic |
+| test_gate | run_websocket_gate.sh OK; no compiler/** |
+
+### Turn 2026-07-11 00:25 (Driver TRACK_STDLIB_WEBSOCKET STEP=5 — docs+close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_WEBSOCKET |
+| started | 2026-07-11 00:17 |
+| elapsed | ~10 min |
+| done    | `MLC.md` WebSocket § + matrix; `misc/examples/websocket_echo_demo.mlc`; track → `docs/archive/tracks/TRACK_STDLIB_WEBSOCKET.md`; PLAN §11 + queue; STDLIB_BACKEND §1/§2/§5.4 closed. |
+| verify  | `run_websocket_gate.sh` OK; no `compiler/**` (regression_gate N/A); archive path. |
+| result  | STEP=5 done; track **closed**. Plain: WS server stdlib documented and archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. Example not live-client gated (gate is C++ smoke). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_WEBSOCKET |
 
 ### Turn 2026-07-11 00:15 (Driver TRACK_STDLIB_WEBSOCKET STEP=4 — gate)
 

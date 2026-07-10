@@ -70,7 +70,7 @@ fn area(s: Shape) -> i32 =
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
 | `Tcp` (`lib/mlc/common/stdlib/net/tcp.mlc`) | да (`import Tcp::{…}`) | да (`import { … } from 'Tcp'`; bare-name → stdlib) |
-| `Postgres` / `Crypto` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
+| `Postgres` / `Crypto` / `WebSocket` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
 | HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя (нет `spawn`) | **да** (2026-07-10; gate `scripts/run_mlcc_tcp_spawn_echo_gate.sh`) |
 
@@ -429,7 +429,21 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 - `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`
   (C++ path; language `spawn`+`Tcp` is the MLC alternative under mlcc).
 
-Не в v1: TLS, HTTP/2, WebSocket, epoll reactor.
+Не в v1: TLS, HTTP/2, epoll reactor.
+
+#### WebSocket (server stdlib)
+
+Зафиксировано 2026-07-11 (`TRACK_STDLIB_WEBSOCKET`). Runtime (`mlc::net` RAII +
+`mlc::websocket` handles):
+
+- HTTP/1.1 upgrade (RFC 6455 Accept via local SHA1+base64); text frames;
+  client masked / server unmasked; ping→pong; close teardown.
+- MLC module `WebSocket` (`std/net/websocket`) — **только Ruby-пайплайн**
+  (`import WebSocket::{…}`). Opaque `i32` connection handles; `upgrade` consumes
+  a Tcp stream handle.
+- Gate: `scripts/run_websocket_gate.sh`. Example: `misc/examples/websocket_echo_demo.mlc`.
+
+Не в v1: WSS/TLS, WS client, binary/fragmented frames, ThreadPool serve wiring.
 
 #### Postgres (libpq stdlib)
 
