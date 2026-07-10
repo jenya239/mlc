@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 18 |
-| step_last | 4 |
-| active_track | TRACK_CLI_STDIN STEP=2 |
-| test_gate | ok (DIFF identical; regression 20/0; corpus) |
+| driver_turns_since_plan | 19 |
+| step_last | 2 |
+| active_track | TRACK_CLI_STDIN STEP=3 |
+| test_gate | ok (read_all codegen; pipe exit=6) |
+
+### Turn 2026-07-10 15:05 (Driver TRACK_CLI_STDIN STEP=2 — read_all builtin)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CLI_STDIN |
+| started | 2026-07-10 14:55 |
+| elapsed | ~10 min |
+| done    | `read_all` in `check.mlc` globals, `registry.mlc` TFn+arity 0, `cpp_naming.mlc` → `mlc::io::read_all`. |
+| verify  | BUILD:0; `--check-only` ok; codegen has `mlc::io::read_all()`; arity E014; `printf 'abc\nxy' \| bin` exit=6. |
+| result  | STEP=2 done. Plain: self-hosted `read_all()` lowers like Ruby builtin. |
+| issues  | Dirty `compiler/out/*` left. Stash `foreign-cli-stdin-step2` obsolete (same diff). |
+| next    | ROLE=Driver STEP=3 TRACK_CLI_STDIN — module_loader path `"-"` → read_all() |
 
 ### Turn 2026-07-10 15:00 (Driver TRACK_VM_LOWERING_GAPS STEP=4 — verify-gate + close)
 

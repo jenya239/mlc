@@ -232,6 +232,9 @@ export fn empty_registry() -> TypeRegistry = do
   builtin_function_types.set(
     'read_line',
     Shared.new(TFn([], Shared.new(TString))))
+  builtin_function_types.set(
+    'read_all',
+    Shared.new(TFn([], Shared.new(TString))))
   const builtin_required_arity: Map<string, i32> = Map.new()
   builtin_required_arity.set('print', 1)
   builtin_required_arity.set('println', 1)
@@ -247,6 +250,7 @@ export fn empty_registry() -> TypeRegistry = do
     Shared.new(TFn([Shared.new(TUsize)], Shared.new(TGeneric('Channel', [Shared.new(TUnknown)])))))
   builtin_required_arity.set('make_channel', 1)
   builtin_required_arity.set('read_line', 0)
+  builtin_required_arity.set('read_all', 0)
   const empty_private_constructors: Map<string, bool> = Map.new()
   TypeRegistry {
     function_index: FunctionIndex {

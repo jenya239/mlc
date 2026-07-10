@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CLI_STDIN** STEP=2 — `read_all` builtin registration.
-([TRACK_VM_LOWERING_GAPS](../archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed** 2026-07-10.)
+**TRACK_CLI_STDIN** STEP=3 — `module_loader` path `"-"` → `read_all()`.
+(STEP=2 done: `read_all` builtin in check/registry/cpp_naming.)
 
 ## Step sizing (good vs bad)
 
