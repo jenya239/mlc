@@ -25,6 +25,42 @@ gate `run_freetype_glyph_smoke.sh`.
 **Driver 2026-07-10:** STEP=3 — `harfbuzz_shim` + `text_shaper_shape` →
 `[ShapedGlyph]`; Cyrillic smoke; fix `gen_string_literal` to use `byte_size()`.
 
+## Test strategy (обязательно к соблюдению, не только для STEP=6)
+
+Пирамида: **GPU нужен только на верхнем слое.** Шейпинг, растеризация,
+packing атласа, MSDF-генерация — чистые данные, тестируются без GL вообще
+(уже так и делалось в STEP=2-3, продолжать так же в STEP=4/7).
+
+1. **Sanitizer с STEP=4, не откладывать до конца трека.** Shim-код
+   (`freetype_shim.cpp`, `harfbuzz_shim.cpp`, будущий atlas/MSDF) — сырые
+   указатели, C-массив `hb_glyph_info_t*`+length, копирование bitmap —
+   классический источник buffer overflow. ASan/UBSan гонять на
+   `misc/examples/*_smoke.mlc` фикстурах каждый STEP начиная с 4, по
+   образцу `scripts/concurrency_sanitize_gate.sh` (не ждать отдельного
+   финального прогона).
+2. **Не рассчитывать на системные шрифты в тестах** — bundled test-font
+   (уже верно: DejaVu в STEP=2-3 smoke) — держать так и дальше, шрифт как
+   fixture в репозитории, не системная зависимость.
+3. **Headless GL для STEP=6+**: EGL surfaceless + Mesa llvmpipe (софтверный
+   рендер, детерминированный между машинами) — не Xvfb+GLX (зависит от
+   системного драйвера, менее детерминированно), не расчитывать на
+   реальный GPU в CI-раннере. Добавить в `.github/workflows/ci.yml` новую
+   job по образцу существующей `concurrency-sanitize` (строка 63) —
+   `apt-get install` Mesa/EGL headless-пакеты — **до** начала STEP=6, не
+   после.
+4. **Golden image — pixel-diff/SSIM с допуском, не байт-в-байт.** Даже
+   софтверный рендерер даёт микро-отличия между версиями Mesa. Референс
+   `gl-gui-pipeline-2025` (см. `TEXT_RENDERING.md` §1) сам признаёт в своей
+   архитектурной доке "CI/SSIM described but not connected" — не повторять
+   этот пробел, подключить сразу при первом golden-тесте STEP=6, не
+   оставлять аспирационным пунктом.
+5. **Тест-матрикс** (минимум, по образцу покрытия `gtk-gl-cpp-2025`):
+   шейпинг — ASCII/кириллица/пустая строка/unknown-glyph fallback/смешанные
+   скрипты; растеризация — граничные pixel size; атлас — заполнение
+   страницы → новая страница, LRU eviction, раздельные A8/RGB8(MSDF)
+   страницы; GPU — один глиф pixel-diff, целая строка pixel-diff, resize/
+   projection-матрица; стресс — тысячи уникальных глифов (давление на кэш).
+
 ## Steps
 
 | Step | Item | Status |
@@ -33,16 +69,17 @@ gate `run_freetype_glyph_smoke.sh`.
 | 1 | Решить открытые вопросы `TEXT_RENDERING.md` §5.1 (C array view) и §5.3 (msdfgen шим) — design-turn, не кодогенерация. | **done** (2026-07-10: RawPointer+length view; msdf_shim.cpp at STEP=7; §5.2 → STEP=5) |
 | 2 | `extern type`/`extern fn` биндинги FreeType (`TEXT_RENDERING.md` §3.1, FreeType-подмножество). Тест: загрузка `.ttf`, `FT_Load_Glyph`+`FT_Render_Glyph` на 1 символе, сравнение bitmap-размера с ожидаемым. | **done** (shim `glyph_bitmap_packed`; smoke exit 0; DejaVu 'A'@32px) |
 | 3 | `extern type`/`extern fn` биндинги HarfBuzz (§3.1, HarfBuzz-подмножество) + `hb_ft_font_create` мост. `TextShaper.shape()` на MLC: строка UTF-8 (включая кириллицу) → `ShapedGlyph[]`. | **done** (shim + `text_shaper_shape`; smoke «Привет»=6; `literals.mlc` byte_size) |
-| 4 | `GlyphAtlas` (shelf bin-pack) + `GlyphCache` (LRU) — чистый MLC, без FFI. Юнит-тесты на packing/eviction. | **pending** |
+| 4 | `GlyphAtlas` (shelf bin-pack) + `GlyphCache` (LRU) — чистый MLC, без FFI. Юнит-тесты на packing/eviction (тест-матрикс п.5 выше). **Плюс: ASan/UBSan гейт на shim-код с этого шага** (Test strategy п.1). | **pending** |
 <!-- sub-steps STEP=4:
   1) GlyphAtlas shelf pack in MLC (no FFI)
   2) GlyphCache LRU insert/get/evict
-  3) unit tests packing + eviction
+  3) unit tests packing + eviction (full page -> new page, LRU eviction, A8/RGB8 separation)
+  4) ASan/UBSan run on freetype_shim/harfbuzz_shim smoke fixtures
 -->
-| 5 | Решить открытый вопрос §5.2 (`glXGetProcAddress` как runtime-полученный `extern fn(...)`) — design-turn + smoke на 1 функции (`glGenBuffers` или аналог) до начала полного биндинга. | pending |
-| 6 | OpenGL биндинг узкого набора (§3.3, ~20-30 функций) + `TextRenderer` A8-путь — end-to-end glyph на экране (offscreen framebuffer + pixel-diff тест, не интерактивное окно). | pending |
-| 7 | MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер + `RenderMode` переключение по pixel size. | pending |
-| 8 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `TEXT_RENDERING.md` §6 (фаза 1-2 headless). | pending |
+| 5 | Решить открытый вопрос §5.2 (`glXGetProcAddress` как runtime-полученный `extern fn(...)`) — design-turn + smoke на 1 функции (`glGenBuffers` или аналог) до начала полного биндинга. **Плюс: до этого шага добавить headless GL CI job** (Test strategy п.3 — EGL/Mesa llvmpipe, не Xvfb). | pending |
+| 6 | OpenGL биндинг узкого набора (§3.3, ~20-30 функций) + `TextRenderer` A8-путь — end-to-end glyph на экране (offscreen framebuffer + pixel-diff тест, не интерактивное окно). **Golden image с tolerance (pixel-diff/SSIM), не точное совпадение** (Test strategy п.4) — подключить с первого теста, не откладывать. | pending |
+| 7 | MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер + `RenderMode` переключение по pixel size. Численное сравнение distance-field с эталоном (без GPU для самой генерации). | pending |
+| 8 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, критерий приёмки `TEXT_RENDERING.md` §6 (фаза 1-2 headless) + tolerance-порог golden-тестов зафиксировать в критерии приёмки явным числом. | pending |
 
 ## Out of scope (см. `TEXT_RENDERING.md` §1, §4.5)
 
