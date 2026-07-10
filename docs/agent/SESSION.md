@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-09-plan-sync` |
+| instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 15 |
-| step_last | 1 |
-| active_track | TRACK_VM_LOWERING_GAPS STEP=2 |
-| test_gate | ok (unary not=0; neg=7; elif6; hello=7) |
+| driver_turns_since_plan | 16 |
+| step_last | 2 |
+| active_track | TRACK_VM_LOWERING_GAPS STEP=3 |
+| test_gate | ok (if_stmt=1; if_else=2; unary; elif6) |
+
+### Turn 2026-07-10 14:40 (Driver TRACK_VM_LOWERING_GAPS STEP=2 — mir_lower_if_statement)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_VM_LOWERING_GAPS |
+| started | 2026-07-10 14:27 |
+| elapsed | ~13 min |
+| done    | `mir_lower_if_statement` (CondJump→then/else→continue); `mir_lower_discard_expression` (Block/Unit/empty Tuple); statement Expr: Block/Unit/empty Tuple; operand empty Tuple→Unit; examples `vm_if_stmt{,_else}.mlc`. |
+| verify  | BUILD:0; `--run` then=1 else=2; unary not/neg; elif gate 6 ok. |
+| result  | STEP=2 done. Plain: mid-block `if` with `do`/`()` arms runs in VM. |
+| issues  | Bare `if then x=1 else x=2` still E015 (unit vs i32); use `do`+`()`. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_VM_LOWERING_GAPS — if-as-rvalue (shared local + continue) |
 
 ### Turn 2026-07-10 14:30 (Driver TRACK_VM_LOWERING_GAPS STEP=1 — MirRvalueUnary)
 

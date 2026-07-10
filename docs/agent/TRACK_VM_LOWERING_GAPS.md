@@ -6,9 +6,10 @@ From [TRACK_VM_BLOCK_ID_COLLISION](../archive/tracks/TRACK_VM_BLOCK_ID_COLLISION
 is a correctness bug producing wrong CFG; these two are missing coverage —
 compile-time error, not silent wrong behaviour, lower severity).
 
-## Status: **open** — STEP=1 **done**; STEP=2 next (if-as-statement)
+## Status: **open** — STEP=1–2 **done**; STEP=3 next (if-as-rvalue)
 
 **Driver 2026-07-10:** STEP=1 — `MirRvalueUnary` + lower/eval/`mir_to_cpp`/`const_fold`.
+**Driver 2026-07-10:** STEP=2 — `mir_lower_if_statement` + discard Block/`()`; mid-block if.
 
 ## Gap 1 — унарные операторы не lowering'уются
 
@@ -113,7 +114,7 @@ STEP, если окажется существенно дороже.
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Gap 1: `MirRvalueUnary` (или аналог) в `mir_types.mlc` + lowering кейс в `lower_fn.mlc` (оба места) + eval в `mir_eval.mlc` для `!`/`-`/`~`. Regression: repro выше + существующий корпус. | **done** (2026-07-10: `MirRvalueUnary`; `vm_unary_not` exit=0; `vm_unary_neg` exit=7; elif gate 6 ok) |
-| 2 | Gap 2.1: `mir_lower_if_statement` (if как statement, значение отбрасывается) — новая функция по аналогии с `mir_lower_while_statement`. Regression: repro выше + существующий корпус. | pending |
+| 2 | Gap 2.1: `mir_lower_if_statement` (if как statement, значение отбрасывается) — новая функция по аналогии с `mir_lower_while_statement`. Regression: repro выше + существующий корпус. | **done** (2026-07-10: CondJump+continue; discard Block/Unit/empty Tuple; `vm_if_stmt` exit=1, `vm_if_stmt_else` exit=2; elif gate 6 ok) |
 | 3 | Gap 2.2: `if` как rvalue (shared local + continue-block) — в `mir_lower_rvalue_from_expression`. Более дорогой шаг, может быть отдельным STEP при необходимости декомпозиции. | pending |
 | 4 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`, полный VM-корпус. | pending |
 

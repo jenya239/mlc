@@ -11,12 +11,12 @@ import {
   SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionStr, SemanticExpressionUnit,
   SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall,
   SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
-  SemanticExpressionArray, SemanticExpressionRecord,
+  SemanticExpressionArray, SemanticExpressionRecord, SemanticExpressionTuple,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
   SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
   SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
-  SemanticStatementReturn
+  SemanticStatementReturn, sexpr_span
 } from '../ir/semantic_ir'
 import { Type, TUnknown } from '../checker/registry'
 import {
@@ -570,6 +570,12 @@ fn mir_lower_operand_from_expression(
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     SemanticExpressionUnit(_, _) =>
       Ok(MirLowerOperandStep { state: state, operand: MirOperandUnit }),
+    SemanticExpressionTuple(elements, _, _) =>
+      if elements.length() == 0 then
+        Ok(MirLowerOperandStep { state: state, operand: MirOperandUnit })
+      else
+        Err(['mir lower: non-empty tuple is not an operand'])
+      end,
     SemanticExpressionIdent(name, _, _) =>
       match mir_lower_lookup_local(state, name) {
         Ok(local_id) => Ok(MirLowerOperandStep { state: state, operand: MirOperandLocal(local_id) }),
@@ -1386,6 +1392,63 @@ fn mir_lower_question_return(
     Ok(local_step) => Ok(mir_lower_finish_return(local_step.state, MirOperandLocal(local_step.local_id)))
   }
 
+// Discard expression value (side effects only). Used by mid-block `if` arms.
+fn mir_lower_discard_expression(
+  state: MirLowerState,
+  expression: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match expression {
+    SemanticExpressionBlock(statements, result_expression, _, _) =>
+      match mir_lower_statements(state, statements) {
+        Err(errors) => Err(errors),
+        Ok(statement_state) => mir_lower_discard_expression(statement_state, result_expression)
+      },
+    SemanticExpressionUnit(_, _) => Ok(state),
+    SemanticExpressionTuple(elements, _, _) =>
+      if elements.length() == 0 then Ok(state)
+      else Err(['mir lower: non-empty tuple discard not supported']),
+    _ =>
+      mir_lower_statement(
+        state,
+        Shared.new(SemanticStatementExpr(expression, sexpr_span(expression))))
+  }
+
+// Mid-block `if` as statement: CondJump → then/else → Jump continue (value discarded).
+fn mir_lower_if_statement(
+  state: MirLowerState,
+  condition: Shared<SemanticExpression>,
+  then_expression: Shared<SemanticExpression>,
+  else_expression: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_operand_from_expression(state, condition) {
+    Err(errors) => Err(errors),
+    Ok(condition_step) => do
+      const then_block_step = mir_lower_allocate_block_index(condition_step.state)
+      const else_block_step = mir_lower_allocate_block_index(then_block_step.state)
+      const continue_block_step = mir_lower_allocate_block_index(else_block_step.state)
+      let mut branch_state = mir_lower_finish_current_block(
+        continue_block_step.state,
+        MirCondJump(condition_step.operand, then_block_step.block_id, else_block_step.block_id))
+      branch_state = mir_lower_start_block(branch_state, then_block_step.block_id, 'if_then')
+      match mir_lower_discard_expression(branch_state, then_expression) {
+        Err(errors) => Err(errors),
+        Ok(then_state) => do
+          let mut after_then = mir_lower_finish_current_block(
+            then_state, MirJump(continue_block_step.block_id))
+          after_then = mir_lower_start_block(after_then, else_block_step.block_id, 'if_else')
+          match mir_lower_discard_expression(after_then, else_expression) {
+            Err(errors) => Err(errors),
+            Ok(else_state) => do
+              let mut after_else = mir_lower_finish_current_block(
+                else_state, MirJump(continue_block_step.block_id))
+              Ok(mir_lower_start_block(after_else, continue_block_step.block_id, 'if_continue'))
+            end
+          }
+        end
+      }
+    end
+  }
+
 fn mir_lower_while_statement(
   state: MirLowerState,
   condition: Shared<SemanticExpression>,
@@ -1568,8 +1631,14 @@ fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement
               Ok(local_step) => Ok(local_step.state)
             }
           end,
-        SemanticExpressionIf(_, _, _, _, _) =>
-          Err(['mir lower: if expression statement requires return context']),
+        SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
+          mir_lower_if_statement(state, condition, then_expression, else_expression),
+        SemanticExpressionBlock(_, _, _, _) =>
+          mir_lower_discard_expression(state, expression),
+        SemanticExpressionUnit(_, _) => Ok(state),
+        SemanticExpressionTuple(elements, _, _) =>
+          if elements.length() == 0 then Ok(state)
+          else Err(['mir lower: non-empty tuple statement not supported']),
         _ =>
           match mir_lower_operand_from_expression(state, expression) {
             Err(errors) => Err(errors),

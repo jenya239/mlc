@@ -1,0 +1,11 @@
+fn main() -> i32 = do
+  let mut x = 0
+  if false then do
+    x = 1
+    ()
+  end else do
+    x = 2
+    ()
+  end
+  x
+end
