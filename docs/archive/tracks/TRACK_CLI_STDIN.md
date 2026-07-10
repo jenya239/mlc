@@ -1,6 +1,6 @@
 # Track: `mlcc --run` — stdin support + crash fix (as in other interpreters)
 
-Parent: [../PLAN.md](../PLAN.md).
+Parent: [../../PLAN.md](../../PLAN.md).
 
 Trigger: `mlcc --run <file>` works (verified manually, 2026-07-10), but there
 is no stdin convention like `python -`/`node -`/`ruby < file` — and piping
@@ -13,12 +13,13 @@ track exists so the next Driver turn does not have to re-discover them.
 самодостаточный (не зависит от MIR_VM_FULL/Epic 4, не трогает `compiler/vm/`).
 Можно брать сразу, не дожидаясь HARD STOP GATE.
 
-## Status: **open** — STEP=1–4 **done**; STEP=5 next
+## Status: **closed** (2026-07-10) — STEP=1–5 **done**
 
 **Driver 2026-07-10:** STEP=1 — `file.hpp` streambuf read (no seekg/tellg).
 **Driver 2026-07-10:** STEP=2 — `read_all` builtin (check/registry/cpp_naming).
 **Driver 2026-07-10:** STEP=3 — path `"-"` → `read_all()` in module_loader + compile_driver.
 **Driver 2026-07-10:** STEP=4 — `run_cli_stdin_gate.sh` (`-` + `/dev/stdin`).
+**Driver 2026-07-10:** STEP=5 — usage `<source.mlc|->`; self-host DIFF identical; regression_gate 20/0.
 
 ## Root cause (found, fixed in STEP=1)
 
@@ -69,7 +70,7 @@ specific to `compiler/`, not a missing runtime feature.
 | 2 | Register `read_all` as a self-hosted global builtin: `compiler/checker/check/check.mlc` (add to the `names.set(...)` global whitelist near `read_line`), `compiler/checker/registry.mlc` (`builtin_function_types.set('read_all', TFn([], TString))` + `builtin_required_arity.set('read_all', 0)`), `compiler/codegen/cpp_naming.mlc` (`map_builtin`: `"read_all" -> "mlc::io::read_all"`). Mirror the existing `read_line` pattern exactly (same 3 files, same shape). | **done** (2026-07-10: check+registry+cpp_naming; codegen `mlc::io::read_all()`; pipe native exit=6 for `abc\nxy`; arity E014) |
 | 3 | `compiler/driver/module_loader.mlc:42` — when the entry/import path is exactly `"-"`, call `read_all()` instead of `File.read(path)`, and skip the `File.exists(path)` not-found check for that case (a nonexistent file literally named `-` must not shadow the stdin convention). Convention: `mlcc --run -` reads the program from stdin, matching `python -`/`ruby -`. | **done** (2026-07-10: module_loader + compile_driver entry; `printf 'fn main()…7' \| mlcc --run -` exit=7) |
 | 4 | Smoke test: `echo '...' \| compiler/out/mlcc --run -` runs correctly; `compiler/out/mlcc --run /dev/stdin` no longer crashes (graceful behavior, same as `-`, or a clear "use -" error — decide at implementation time, do not leave a crash either way). Add to `compiler/tests/` (or `misc/examples/` smoke script per project convention) so it is not silently lost. | **done** (2026-07-10: `run_cli_stdin_gate.sh`; `-`→7, `/dev/stdin`→11 via File.read streambuf; no length_error) |
-| 5 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`. Update `compiler/compile_options.mlc:18` usage string to mention `-` for stdin. | pending |
+| 5 | Verify-gate + close: self-host (`mlcc`→`mlcc2`→`diff`), `regression_gate.sh`. Update `compiler/compile_options.mlc:18` usage string to mention `-` for stdin. | **done** (2026-07-10: usage `<source.mlc|->`; DIFF identical; regression_gate 20/0; cli stdin gate 2/2) |
 
 ## Out of scope
 

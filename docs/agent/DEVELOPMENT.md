@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CLI_STDIN** STEP=5 — verify-gate + usage string + close.
-(STEP=4 done: `run_cli_stdin_gate.sh` for `-` and `/dev/stdin`.)
+**TRACK_TEXT_RENDERING** STEP=4 — GlyphAtlas + GlyphCache.
+([TRACK_CLI_STDIN](../archive/tracks/TRACK_CLI_STDIN.md) **closed** 2026-07-10.)
 
 ## Step sizing (good vs bad)
 

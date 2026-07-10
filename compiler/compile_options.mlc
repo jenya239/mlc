@@ -15,7 +15,7 @@ export type CompileOptions = CompileOptions {
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc> [-o out_dir]\n       mlcc fmt <source.mlc>\n       mlcc lsp'
+  'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] <source.mlc|-> [-o out_dir]\n       (- reads program from stdin)\n       mlcc fmt <source.mlc>\n       mlcc lsp'
 
 fn is_output_directory_flag(argument: string) -> bool =
   argument == "-o"

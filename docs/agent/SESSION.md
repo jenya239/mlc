@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 21 |
-| step_last | 4 |
-| active_track | TRACK_CLI_STDIN STEP=5 |
-| test_gate | ok (cli stdin gate 2/2) |
+| driver_turns_since_plan | 22 |
+| step_last | 5 |
+| active_track | TRACK_TEXT_RENDERING STEP=4 |
+| test_gate | ok (DIFF identical; regression 20/0; cli stdin 2/2) |
+
+### Turn 2026-07-10 15:20 (Driver TRACK_CLI_STDIN STEP=5 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_CLI_STDIN |
+| started | 2026-07-10 15:01 |
+| elapsed | ~20 min |
+| done    | Usage `<source.mlc|->` + stdin note in `compile_options.mlc`; self-host p1→mlcc2→p2 DIFF identical; `regression_gate` 20/0; `run_cli_stdin_gate.sh` 2/2; archived track; PLAN 13b done. |
+| verify  | DIFF:IDENTICAL; regression_gate 20/0; cli stdin ok; usage shows `-`. |
+| result  | STEP=5 done; track **closed**. Plain: `mlcc --run -` is supported and gated. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_TEXT_RENDERING — GlyphAtlas + GlyphCache |
 
 ### Turn 2026-07-10 15:15 (Driver TRACK_CLI_STDIN STEP=4 — smoke gate)
 
