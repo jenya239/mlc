@@ -37,6 +37,7 @@ export type MirOperand =
 export type MirRvalue =
   | MirRvalueUse(MirOperand)
   | MirRvalueBinary(string, MirOperand, MirOperand)
+  | MirRvalueUnary(string, MirOperand)
 
 export type MirStmt =
   | MirAssign(LocalId, MirRvalue)

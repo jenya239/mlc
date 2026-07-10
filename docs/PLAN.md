@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10; next: [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; next: [TRACK_VM_LOWERING_GAPS](agent/TRACK_VM_LOWERING_GAPS.md) STEP=2 → [TRACK_CLI_STDIN](agent/TRACK_CLI_STDIN.md) → [TRACK_TEXT_RENDERING](agent/TRACK_TEXT_RENDERING.md) STEP=4).
 
 ### C++ AST (приоритет: Phase 2)
 

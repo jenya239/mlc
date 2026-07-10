@@ -9,7 +9,7 @@ import {
   SemanticDeclaration, SemanticDeclarationFn,
   SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal,
   SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionStr, SemanticExpressionUnit,
-  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionCall,
+  SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall,
   SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
   SemanticExpressionArray, SemanticExpressionRecord,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
@@ -22,7 +22,7 @@ import { Type, TUnknown } from '../checker/registry'
 import {
   MirFunction, MirParam, MirLocal, MirBlock, MirStmt, MirRvalue, MirOperand,
   MirAssign, MirCallAssign, MirReturn, MirJump, MirCondJump, MirUnreachable, MirTerminator,
-  MirRvalueUse, MirRvalueBinary,
+  MirRvalueUse, MirRvalueBinary, MirRvalueUnary,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
   MirParamDefault, MirParamDefaultNone, MirParamDefaultInt, MirParamDefaultBool,
   MirParamDefaultStr, MirParamDefaultUnit,
@@ -596,6 +596,15 @@ fn mir_lower_operand_from_expression(
           Ok(rvalue_step) => Ok(mir_lower_temp_operand_from_rvalue(rvalue_step.state, rvalue_step.rvalue))
         }
       end,
+    SemanticExpressionUn(operation, _, _, _) =>
+      if operation == "move" then
+        Err(['mir lower: move expression is not supported in MIR operand context'])
+      else
+        match mir_lower_rvalue_from_expression(state, expression) {
+          Err(errors) => Err(errors),
+          Ok(rvalue_step) => Ok(mir_lower_temp_operand_from_rvalue(rvalue_step.state, rvalue_step.rvalue))
+        }
+      end,
     SemanticExpressionCall(function, arguments, _, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
         Err(errors) => Err(errors),
@@ -690,6 +699,19 @@ fn mir_lower_rvalue_from_expression(
                   rvalue: MirRvalueBinary(operation, left_step.operand, right_step.operand)
                 })
             }
+        }
+      end,
+    SemanticExpressionUn(operation, inner, _, _) =>
+      if operation == "move" then
+        Err(['mir lower: move expression is not supported in MIR rvalue context'])
+      else
+        match mir_lower_operand_from_expression(state, inner) {
+          Err(errors) => Err(errors),
+          Ok(inner_step) =>
+            Ok(MirLowerRvalueStep {
+              state: inner_step.state,
+              rvalue: MirRvalueUnary(operation, inner_step.operand)
+            })
         }
       end,
     SemanticExpressionCall(function, arguments, _, _, _) =>

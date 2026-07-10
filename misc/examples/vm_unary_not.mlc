@@ -1,0 +1,5 @@
+# TRACK_VM_LOWERING_GAPS STEP=1: unary ! in condition.
+fn main() -> i32 = do
+  const flag = true
+  if !flag then 1 else 0 end
+end

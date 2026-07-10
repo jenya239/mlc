@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_VM_LOWERING_GAPS** STEP=1 — lower unary `!`/`-` in MIR (`SemanticExpressionUn`).
-(VM_BLOCK_ID_COLLISION **closed** 2026-07-10: self-host identical; regression_gate 20/0.)
+**TRACK_VM_LOWERING_GAPS** STEP=2 — `mir_lower_if_statement` (if as mid-block statement).
+(STEP=1 done: `MirRvalueUnary`; `vm_unary_not`/`vm_unary_neg` ok.)
 
 ## Step sizing (good vs bad)
 

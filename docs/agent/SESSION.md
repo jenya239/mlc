@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-09-plan-sync` |
 | agent_token_last | — |
-| driver_turns_since_plan | 14 |
-| step_last | 5 |
-| active_track | TRACK_VM_LOWERING_GAPS STEP=1 |
-| test_gate | ok (self-host DIFF identical; regression_gate 20/0) |
+| driver_turns_since_plan | 15 |
+| step_last | 1 |
+| active_track | TRACK_VM_LOWERING_GAPS STEP=2 |
+| test_gate | ok (unary not=0; neg=7; elif6; hello=7) |
+
+### Turn 2026-07-10 14:30 (Driver TRACK_VM_LOWERING_GAPS STEP=1 — MirRvalueUnary)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_VM_LOWERING_GAPS |
+| started | 2026-07-10 14:21 |
+| elapsed | ~9 min |
+| done    | `MirRvalueUnary` in mir_types; lower_fn operand+rvalue; mir_eval `!`/`-`/`+`/`~`; const_fold + mir_to_cpp; examples `vm_unary_{not,neg}.mlc`. |
+| verify  | BUILD:0; `--run` not→0, neg→7; elif gate 6 ok; hello=7. |
+| result  | STEP=1 done. Plain: VM can evaluate unary `!` and `-`. |
+| issues  | Foreign CLI_STDIN WIP stashed/restored. Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_VM_LOWERING_GAPS — mir_lower_if_statement (mid-block if) |
 
 ### Turn 2026-07-10 14:25 (Driver TRACK_VM_BLOCK_ID_COLLISION STEP=5 — verify-gate + close)
 

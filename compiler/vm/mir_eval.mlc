@@ -2,7 +2,7 @@
 
 import { Result, Ok, Err } from '../frontend/ast'
 import {
-  MirRvalue, MirOperand, MirRvalueUse, MirRvalueBinary,
+  MirRvalue, MirOperand, MirRvalueUse, MirRvalueBinary, MirRvalueUnary,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit
 } from '../mir/mir_types'
 import { VmValue, VmI32, VmBool, VmString, VmArray, VmMap, VmVariant, VmRecord, VmUnit, vm_value_is_truthy, vm_value_unit } from './value'
@@ -87,6 +87,28 @@ fn vm_eval_binary(operation: string, left: VmValue, right: VmValue) -> Result<Vm
     }
   end
 
+fn vm_eval_unary(operation: string, value: VmValue) -> Result<VmValue, [string]> =
+  if operation == "!" then
+    Ok(VmBool(!vm_value_is_truthy(value)))
+  else if operation == "-" then
+    match value {
+      VmI32(number) => Ok(VmI32(0 - number)),
+      _ => Err(['vm: unary - requires i32'])
+    }
+  else if operation == "+" then
+    match value {
+      VmI32(number) => Ok(VmI32(number)),
+      _ => Err(['vm: unary + requires i32'])
+    }
+  else if operation == "~" then
+    match value {
+      VmI32(number) => Ok(VmI32(0 - number - 1)),
+      _ => Err(['vm: unary ~ requires i32'])
+    }
+  else
+    Err([`vm: unknown unary ${operation}`])
+  end
+
 export fn vm_eval_rvalue(frame: VmFrame, rvalue: MirRvalue) -> Result<VmValue, [string]> =
   match rvalue {
     MirRvalueUse(operand) => vm_eval_operand(frame, operand),
@@ -98,6 +120,11 @@ export fn vm_eval_rvalue(frame: VmFrame, rvalue: MirRvalue) -> Result<VmValue, [
             Err(errors) => Err(errors),
             Ok(right_value) => vm_eval_binary(operation, left_value, right_value)
           }
+      },
+    MirRvalueUnary(operation, operand) =>
+      match vm_eval_operand(frame, operand) {
+        Err(errors) => Err(errors),
+        Ok(value) => vm_eval_unary(operation, value)
       }
   }
 

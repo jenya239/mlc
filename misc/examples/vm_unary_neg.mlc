@@ -1,0 +1,5 @@
+# TRACK_VM_LOWERING_GAPS STEP=1: unary - on i32 (result 7).
+fn main() -> i32 = do
+  const value = 7
+  0 - -value
+end

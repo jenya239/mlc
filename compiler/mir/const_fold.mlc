@@ -4,7 +4,7 @@ import {
   MirFunction, MirBlock, MirStmt, MirRvalue, MirOperand, MirTerminator,
   MirAssign, MirCallAssign,
   MirReturn, MirCondJump,
-  MirRvalueUse, MirRvalueBinary,
+  MirRvalueUse, MirRvalueBinary, MirRvalueUnary,
   MirOperandConstInt, MirOperandConstBool, MirOperandUnit, MirOperandLocal,
   BlockId
 } from './mir_types'
@@ -56,7 +56,8 @@ end
 fn const_fold_rvalue(rvalue: MirRvalue) -> MirRvalue =
   match rvalue {
     MirRvalueUse(operand) => MirRvalueUse(const_fold_operand(operand)),
-    MirRvalueBinary(operation, left, right) => const_fold_rvalue_binary(operation, left, right)
+    MirRvalueBinary(operation, left, right) => const_fold_rvalue_binary(operation, left, right),
+    MirRvalueUnary(operation, operand) => MirRvalueUnary(operation, const_fold_operand(operand))
   }
 
 fn const_fold_call_operands(operands: [MirOperand]) -> [MirOperand] = do

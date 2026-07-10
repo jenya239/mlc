@@ -6,13 +6,13 @@ import {
   MirFunction, MirBlock, MirLocal, MirStmt, MirRvalue, MirOperand, MirTerminator,
   LocalId, BlockId,
   MirOperandLocal, MirOperandConstInt, MirOperandConstBool, MirOperandConstStr, MirOperandUnit,
-  MirRvalueUse, MirRvalueBinary,
+  MirRvalueUse, MirRvalueBinary, MirRvalueUnary,
   MirAssign, MirCallAssign,
   MirReturn, MirCondJump
 } from '../mir/mir_types'
 import { mir_local_id_index, mir_block_id_index } from '../mir/mir_ids'
 import {
-  CppDeclaration, CppFnDef, CppExpression, CppBinary, CppCall, CppType, CppTypeName
+  CppDeclaration, CppFnDef, CppExpression, CppBinary, CppUnary, CppCall, CppType, CppTypeName
 } from './cpp_ast'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 
@@ -73,7 +73,9 @@ fn mir_rvalue_to_cpp_expression(function: MirFunction, rvalue: MirRvalue) -> Sha
       Shared.new(CppBinary(
         operation,
         mir_operand_to_cpp_expression(function, left),
-        mir_operand_to_cpp_expression(function, right)))
+        mir_operand_to_cpp_expression(function, right))),
+    MirRvalueUnary(operation, operand) =>
+      Shared.new(CppUnary(operation, mir_operand_to_cpp_expression(function, operand)))
   }
 
 fn mir_call_operands_to_cpp_expressions(function: MirFunction, operands: [MirOperand]) -> [Shared<CppExpression>] = do
