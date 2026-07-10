@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_CLI_STDIN** STEP=4 — smoke `mlcc --run -` + `/dev/stdin` gate script.
-(STEP=3 done: `"-"` → `read_all()` in module_loader + compile_driver.)
+**TRACK_CLI_STDIN** STEP=5 — verify-gate + usage string + close.
+(STEP=4 done: `run_cli_stdin_gate.sh` for `-` and `/dev/stdin`.)
 
 ## Step sizing (good vs bad)
 

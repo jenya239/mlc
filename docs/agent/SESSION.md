@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-vm-block-id-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 20 |
-| step_last | 3 |
-| active_track | TRACK_CLI_STDIN STEP=4 |
-| test_gate | ok (`mlcc --run -` exit=7) |
+| driver_turns_since_plan | 21 |
+| step_last | 4 |
+| active_track | TRACK_CLI_STDIN STEP=5 |
+| test_gate | ok (cli stdin gate 2/2) |
+
+### Turn 2026-07-10 15:15 (Driver TRACK_CLI_STDIN STEP=4 — smoke gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CLI_STDIN |
+| started | 2026-07-10 15:00 |
+| elapsed | ~5 min |
+| done    | `compiler/tests/run_cli_stdin_gate.sh`: pipe → `--run -` exit=7; pipe → `--run /dev/stdin` exit=11; rejects length_error/abort. Policy: `/dev/stdin` stays File.read (streambuf), not forced to `-`. |
+| verify  | gate ok (2 cases). |
+| result  | STEP=4 done. Plain: stdin smoke is a permanent gate. |
+| issues  | Dirty `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_CLI_STDIN — usage string + self-host + regression_gate; close track |
 
 ### Turn 2026-07-10 15:10 (Driver TRACK_CLI_STDIN STEP=3 — path "-" → read_all)
 
