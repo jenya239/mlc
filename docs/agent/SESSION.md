@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-critic-after-close-gate` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=2 |
-| test_gate | ok (mlcc spawn_locate codegen) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=3 |
+| test_gate | ok (codegen single return side()) |
+
+### Turn 2026-07-10 19:16 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=2 — fix)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_SPAWN_DOUBLE_EXEC |
+| started | 2026-07-10 19:09 |
+| elapsed | ~7 min |
+| done    | `expr_spawn_body_statements` in `ast.mlc`; `visit_spawn` + `infer_expr_spawn` use prefix stmts; rebuilt `compiler/out/mlcc`. |
+| verify  | `spawn do side() end` → `return side();`; multi-stmt spawn: println once + `return side();`. |
+| result  | STEP=2 done. Plain: tail no longer double-emitted. |
+| issues  | Foreign dirty left. Bootstrap build missed regenerating `infer.cpp` — synced via fresh `mlcc` translate. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_SPAWN_DOUBLE_EXEC — e2e side-effect count gate |
 
 ### Turn 2026-07-10 19:07 (Driver TRACK_LANG_SPAWN_DOUBLE_EXEC STEP=1 — locate)
 

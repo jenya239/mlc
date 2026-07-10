@@ -15,7 +15,8 @@ import {
   RecordLitPart,
   RecordLitFields,
   RecordLitSpread,
-  expr_spawn_body_result
+  expr_spawn_body_result,
+  expr_spawn_body_statements
 } from '../../frontend/ast'
 import {
   Type,
@@ -290,7 +291,8 @@ fn infer_expr_while_loop(condition: Shared<Expr>, statements: [Shared<Stmt>], in
 end
 
 fn infer_expr_spawn(statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
-  const statements_parsed = infer_statements(statements, inference_context)
+  const body_statements = expr_spawn_body_statements(statements)
+  const statements_parsed = infer_statements(body_statements, inference_context)
   const body_context = check_context_child(inference_context, statements_parsed.type_env)
   const result_parsed = infer_expr(expr_spawn_body_result(statements), body_context)
   result_parsed.absorb_stmt(statements_parsed).with_type(

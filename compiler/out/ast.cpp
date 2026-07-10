@@ -205,6 +205,33 @@ std::abort();
 }();
   }
 }
+mlc::Array<std::shared_ptr<Stmt>> expr_spawn_body_statements(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept{
+  if ((statements.length() == 0))   {
+    return statements;
+  }
+  return [&]() -> mlc::Array<std::shared_ptr<Stmt>> {
+auto __match_subject = statements[mlc::arith::checked_sub(statements.length(), 1)];
+if (std::holds_alternative<StmtReturn>((*__match_subject))) {
+const StmtReturn& stmtReturn = std::get<StmtReturn>((*__match_subject));
+auto [__0, __1] = stmtReturn; return expr_spawn_body_without_last(statements);
+}
+if (std::holds_alternative<StmtExpr>((*__match_subject))) {
+const StmtExpr& stmtExpr = std::get<StmtExpr>((*__match_subject));
+auto [__0, __1] = stmtExpr; return expr_spawn_body_without_last(statements);
+}
+return statements;
+std::abort();
+}();
+}
+mlc::Array<std::shared_ptr<Stmt>> expr_spawn_body_without_last(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept{
+  auto result = mlc::Array<std::shared_ptr<Stmt>>{};
+  auto index = 0;
+  while ((index < mlc::arith::checked_sub(statements.length(), 1)))   {
+    result.push_back(statements[index]);
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return result;
+}
 Span stmt_span(std::shared_ptr<Stmt> statement) noexcept{
   return std::visit(overloaded{[&](const StmtLet& stmtLet) -> Span { auto [__0, __1, __2, __3, source_span] = stmtLet; return source_span; },
 [&](const StmtLetPattern& stmtLetPattern) -> Span { auto [__0, __1, __2, __3, __4, __5, source_span] = stmtLetPattern; return source_span; },

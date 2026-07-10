@@ -188,7 +188,8 @@ infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condi
   return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(condition_parsed, statements_parsed), std::make_shared<registry::Type>(registry::TUnit{}));
 }
 infer_result::InferResult infer_expr_spawn(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
-  auto statements_parsed = infer_statements(statements, inference_context);
+  auto body_statements = ast::expr_spawn_body_statements(statements);
+  auto statements_parsed = infer_statements(body_statements, inference_context);
   auto body_context = check_context::check_context_child(inference_context, statements_parsed.type_env);
   auto result_parsed = infer_expr(ast::expr_spawn_body_result(statements), body_context);
   return infer_result::InferResult_with_type(infer_result::InferResult_absorb_stmt(result_parsed, statements_parsed), std::make_shared<registry::Type>(registry::TGeneric{mlc::String("Task", 4), mlc::Array<std::shared_ptr<registry::Type>>{result_parsed.inferred_type}}));

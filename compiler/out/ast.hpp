@@ -502,6 +502,8 @@ mlc::Array<Diagnostic> diagnostics_append(mlc::Array<Diagnostic> destination, ml
 mlc::Array<mlc::String> diagnostics_to_strings(mlc::Array<Diagnostic> diagnostics) noexcept;
 Span expr_span(std::shared_ptr<Expr> expression) noexcept;
 std::shared_ptr<Expr> expr_spawn_body_result(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept;
+mlc::Array<std::shared_ptr<Stmt>> expr_spawn_body_statements(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept;
+mlc::Array<std::shared_ptr<Stmt>> expr_spawn_body_without_last(mlc::Array<std::shared_ptr<Stmt>> statements) noexcept;
 Span stmt_span(std::shared_ptr<Stmt> statement) noexcept;
 Span pattern_span(std::shared_ptr<Pattern> pattern) noexcept;
 mlc::String param_name(std::shared_ptr<Param> p) noexcept;

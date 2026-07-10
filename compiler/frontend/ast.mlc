@@ -171,6 +171,27 @@ export fn expr_spawn_body_result(statements: [Shared<Stmt>]) -> Shared<Expr> =
     }
   end
 
+// Prefix stmts for spawn body IR — last StmtExpr/StmtReturn becomes result
+// (see expr_spawn_body_result). Mirrors parser block_body for ExprBlock.
+export fn expr_spawn_body_statements(statements: [Shared<Stmt>]) -> [Shared<Stmt>] = do
+  if statements.length() == 0 then return statements end
+  match statements[statements.length() - 1] {
+    StmtReturn(_, _) => expr_spawn_body_without_last(statements),
+    StmtExpr(_, _) => expr_spawn_body_without_last(statements),
+    _ => statements
+  }
+end
+
+fn expr_spawn_body_without_last(statements: [Shared<Stmt>]) -> [Shared<Stmt>] = do
+  let result: [Shared<Stmt>] = []
+  let mut index = 0
+  while index < statements.length() - 1 do
+    result.push(statements[index])
+    index = index + 1
+  end
+  result
+end
+
 export type Stmt =
   | StmtLet(string, bool, Shared<TypeExpr>, Shared<Expr>, Span)
   | StmtLetPattern(Shared<Pattern>, bool, Shared<TypeExpr>, Shared<Expr>, bool, Shared<Expr>, Span)

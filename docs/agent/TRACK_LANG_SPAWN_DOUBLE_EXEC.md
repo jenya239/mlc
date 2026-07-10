@@ -6,19 +6,17 @@ Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md),
 `spawn`, разное время выполнения) — оба задания напечатали свой лог
 дважды.
 
-## Status: **open** — STEP=1 **done**; STEP=2 next (fix)
+## Status: **open** — STEP=1–2 **done**; STEP=3 next (e2e regression)
 
 **Planner 2026-07-10:** выбран следующим после closed NET_SERVER (выше
 Postgres/crypto в очереди — повторный побочный эффект на `spawn`).
 
 **Driver 2026-07-10:** STEP=1 — root cause in transform (not codegen emit):
-`TransformPass.visit_spawn` (`compiler/checker/transform/transform.mlc:1431-1435`)
-passes **all** spawn body stmts into `SemanticExpressionBlock.statements`
-**and** re-extracts the last via `expr_spawn_body_result` as `result`.
-Parser `ExprBlock` splits via `block_body`/`block_result`
-(`exprs.mlc:1030-1059`); `ExprSpawn` does not. Codegen then emits stmts +
-`return result` → double call. Verify: `spawn do side() end` →
-`side(); return side();`; plain `do side() end` → single `side()`.
+`TransformPass.visit_spawn` double-includes tail.
+
+**Driver 2026-07-10:** STEP=2 — `expr_spawn_body_statements` in `ast.mlc`;
+`visit_spawn` + `infer_expr_spawn` use prefix-only stmts; rebuild mlcc.
+Verify: `spawn do side() end` → `return side();` (no prior `side();`).
 
 ## Проблема
 
@@ -85,7 +83,7 @@ end
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Найти точное место, где `spawn do ... end` даёт double emit; сравнить с обычным `do ... end`. | **done** (2026-07-10: `transform.mlc:1431-1435` `visit_spawn`; plain OK) |
-| 2 | Fix: убрать дублирование statement/tail в `visit_spawn` (split как `block_body`/`block_result`). | pending |
+| 2 | Fix: убрать дублирование statement/tail в `visit_spawn` (split как `block_body`/`block_result`). | **done** (2026-07-10: `expr_spawn_body_statements`; codegen single `return side();`) |
 | 3 | Regression: репро (лог **один** раз); e2e gate с подсчётом побочного эффекта (checker-only `test_spawn` не ловит). | pending |
 | 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`. | pending |
 

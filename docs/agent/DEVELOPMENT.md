@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=2 — fix `visit_spawn` to drop tail
-stmt from block statements (mirror `block_body`/`block_result`).
+**TRACK_LANG_SPAWN_DOUBLE_EXEC** STEP=3 — e2e gate: spawn side-effect
+runs once (not checker-only).
 
 
 ## Step sizing (good vs bad)

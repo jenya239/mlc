@@ -1124,8 +1124,11 @@ auto statements_parsed = stmts_fn(statements, self.transform_context);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionWhile{typed_condition, statements_parsed.statements, std::make_shared<registry::Type>(registry::TUnit{}), source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_spawn(TransformPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
-auto statements_parsed = stmts_fn(statements, self.transform_context);
-auto result_parsed = dispatch_transform_pass(self, ast::expr_spawn_body_result(statements), stmts_fn);
+auto body_statements = ast::expr_spawn_body_statements(statements);
+auto statements_parsed = stmts_fn(body_statements, self.transform_context);
+auto body_context = transform_context_with_env(self.transform_context, statements_parsed.type_env);
+auto body_pass = transform_pass_new(body_context);
+auto result_parsed = dispatch_transform_pass(body_pass, ast::expr_spawn_body_result(statements), stmts_fn);
 auto result_type = semantic_ir::sexpr_type(result_parsed);
 auto block = std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{statements_parsed.statements, result_parsed, result_type, source_span});
 auto lambda_type = std::make_shared<registry::Type>(registry::TFn{{}, result_type});
