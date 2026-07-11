@@ -2,12 +2,16 @@
 
 Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §5-6,
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md),
-[../archive/tracks/TRACK_STDLIB_HTTP_MLC.md](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md).
+[../archive/tracks/TRACK_STDLIB_HTTP_MLC.md](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md),
+[../PLAN.md](../PLAN.md) §11b.
 Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже готов? можем сделать
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: open — STEP=1 next
+## Status: **active** — STEP=1 next (Decision)
+
+**Planner 2026-07-11:** activated after WEBSOCKET_TO_MLC Critic OK (`2a53fa0c`).
+CONTINUITY hard limit: SPAWN_DETACH before remaining «без C++» queue (§20b/d/e).
 
 ## Проблема (эмпирически проверено 2026-07-11)
 
@@ -64,14 +68,22 @@ end
 Tcp/HTTP/spawn по отдельности (все три готовы и стыкуются), а из-за этого
 рантайм-бага в `spawn`.
 
-## Decision (STEP=1)
+## Decision (STEP=1) — pending lock
 
 | Вопрос | Вариант | Рекомендация |
 |--------|---------|--------------|
-| Модель | (a) `std::thread::detach()`-семантика — результат теряется, не блокирует; (b) `TaskGroup`/`TaskScope` — явная коллекция, reap в конце scope (уже есть `task_scope.hpp` в C++, не в MLC surface); (c) checker требует явный `.detach()`/discard на `spawn`, иначе ошибка компиляции | (b) — соответствует `CONCURRENCY_V2.md` §5-6 (structured concurrency, "не `Thread.spawn` без handle"); (a) даёт data race на panics/ошибках без обработки |
-| Where | MLC-уровень: `scope |s| { s.spawn { ... } }` (уже спроектировано в `CONCURRENCY_V2.md` §6, `TaskScope` C++ уже есть — не экспонирован в checker/codegen) | реализовать MLC-синтаксис поверх существующего `task_scope.hpp`, не с нуля |
-| Совместимость | Текущий `spawn do ... end -> Task<T>` с явным `block_on`/`await` — оставить (валиден, просто нужно знать про блокировку без reap) | не менять существующую семантику, добавить `scope`-форму как основной способ "spawn много, жди все" |
-| Минимальный фикс без нового синтаксиса | Задокументировать существующее поведение как есть (не потерять данные — деструктор блокирует, это memory-safe, просто не параллельно) + добавить чек в checker/lint: `spawn` как expression-statement (результат не привязан к `let`) — warning/error | обязательно как shim до реализации `scope`, чтобы не плодить тихо-серийный код |
+| Модель | (a) `std::thread::detach()` — результат теряется; (b) `TaskScope` — явная коллекция, reap в конце scope (`task_scope.hpp` уже есть); (c) checker требует `.detach()`/discard | **(b)** — `CONCURRENCY_V2.md` §5-6 structured concurrency; (a) data race на panics |
+| Where | MLC `scope |s| { s.spawn { ... } }` поверх `task_scope.hpp` | не с нуля |
+| Совместимость | `spawn do ... end -> Task<T>` + `block_on`/`await` | **оставить**; `scope` = основной «spawn много, жди все» |
+| Shim до scope | checker/lint: bare `spawn` statement (результат не в `let`) → error/warning | **обязательно** до STEP=3, чтобы не плодить тихо-серийный код |
+
+### Rejected (draft for Driver lock)
+
+| Вариант | Почему |
+|---------|--------|
+| Только detach без scope | нет reap/error aggregation; против V2 §5-6 |
+| Менять `~Task` чтобы не ждать future | ломает memory-safety / silently drops running work |
+| Только docs, без checker | молчаливый серийный accept-loop остаётся ловушкой |
 
 ## Scope
 
@@ -91,13 +103,21 @@ Tcp/HTTP/spawn по отдельности (все три готовы и сты
   частично закрыт предыдущими треками, не переоткрывать.
 - Async/non-blocking I/O — остаётся thread-per-connection, только реально
   параллельный, не серийный под видом параллельного.
+- «без C++» stdlib ports (§20b/d/e) — после этого трека или параллельно
+  только если SPAWN не блокирует.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | pending |
+| 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **pending** |
 | 2 | Checker: диагностика bare `spawn do...end` statement. | pending |
 | 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | pending |
 | 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | pending |
 | 5 | Self-host diff + `regression_gate.sh`; close. | pending |
+
+<!-- STEP=1 sub-steps: 1) lock Decision table (scope vs detach vs lint-only); 2) cite task_scope.hpp + CONCURRENCY_V2 §6 surface; 3) list STEP=2 diagnostic code/message; PLAN→STEP=2 -->
+<!-- STEP=2 sub-steps: 1) find spawn stmt in checker; 2) error if result unused; 3) unit test + mlcc --check-only repro -->
+<!-- STEP=3 sub-steps: 1) parse/check scope syntax; 2) codegen → task_scope.hpp; 3) smoke parallel sleep < serial -->
+<!-- STEP=4 sub-steps: 1) HttpServer accept-loop demo; 2) N parallel curl gate; 3) wall-time assert -->
+<!-- STEP=5 sub-steps: 1) regression_gate; 2) self-host diff; 3) close → Critic -->

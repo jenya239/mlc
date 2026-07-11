@@ -40,10 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**No active Driver track.** Critic OK on `TRACK_STDLIB_WEBSOCKET_TO_MLC`
-(`reopen: none`). Next: Planner — prefer `TRACK_CONCURRENCY_SPAWN_DETACH`
-(PLAN §11b / CONTINUITY hard limit).
-(`TRACK_CONCURRENCY_SPAWN_DETACH` still high priority for MT servers — separate.)
+**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=1 — lock Decision (scope + bare-spawn lint).
+See [TRACK_CONCURRENCY_SPAWN_DETACH.md](TRACK_CONCURRENCY_SPAWN_DETACH.md).
 
 
 ## Step sizing (good vs bad)

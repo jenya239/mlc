@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none — WEBSOCKET_TO_MLC Critic OK) |
-| test_gate | websocket_gate + sha1/frame/handshake smokes |
+| step_last | plan-refresh |
+| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=1 |
+| test_gate | (none yet — Decision) |
+
+### Turn 2026-07-11 20:00 (Planner — activate TRACK_CONCURRENCY_SPAWN_DETACH)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 19:55 |
+| elapsed | ~5 min |
+| done    | Activated after WEBSOCKET Critic OK; Status **active** STEP=1; sub-steps STEPs 1–5; PLAN §11b/queue + DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; PLAN links `agent/TRACK_CONCURRENCY_SPAWN_DETACH.md` active. |
+| result  | Plan refresh done. Plain: next Driver work is spawn Decision lock. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_SPAWN_DETACH — lock Decision (scope + bare-spawn lint) |
 
 ### Turn 2026-07-11 19:55 (Critic TRACK_STDLIB_WEBSOCKET_TO_MLC — critique-audit)
 
