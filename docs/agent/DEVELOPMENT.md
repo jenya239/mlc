@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_LANG_ERROR_UNION` active** STEP=4 — e2e tests + `?` compat.
-See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=3: mlcc `types.mlc` smoke ok.
+**`TRACK_LANG_ERROR_UNION` active** STEP=5 — `MLC.md` + REG/self-host close.
+See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=4: e2e T!E+`?` ok.
 
 
 ## Step sizing (good vs bad)

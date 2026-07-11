@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_LANG_ERROR_UNION STEP=4 |
-| test_gate | STEP=3: error_union_sugar_smoke ok; mlcc rebuild |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_LANG_ERROR_UNION STEP=5 |
+| test_gate | STEP=4: smoke e2e T!E+`?` stdout ok; Ruby error_union 6/0 |
+
+### Turn 2026-07-11 33:25 (Driver TRACK_LANG_ERROR_UNION STEP=4 — e2e + ?)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 33:10 |
+| elapsed | ~15 min |
+| done    | Fixture `with_question.mlc`; smoke compile/link/run; Ruby `?`+to_cpp tests. |
+| verify  | smoke ok (stdout `6` / `division by zero`); `bundle exec ruby … error_union_sugar_test.rb` 6/0. |
+| result  | STEP=4 done. Plain: `T!E` works with `?` end-to-end. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_LANG_ERROR_UNION — MLC.md + REG + self-host; close → Critic |
 
 ### Turn 2026-07-11 33:10 (Driver TRACK_LANG_ERROR_UNION STEP=3 — self-hosted desugar)
 

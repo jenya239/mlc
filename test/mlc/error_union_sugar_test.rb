@@ -43,4 +43,35 @@ class ErrorUnionSugarTest < Minitest::Test
       parse("fn f() -> i32! = Ok(0)")
     end
   end
+
+  def test_question_compat_with_error_union_return
+    program = parse(<<~MLC)
+      type Result<T, E> = Ok(T) | Err(E)
+      fn inner() -> i32!string = Ok(7)
+      fn outer() -> i32!string = do
+        const value = inner()?
+        Ok(value)
+      end
+    MLC
+    outer = program.declarations.find { |declaration| declaration.respond_to?(:name) && declaration.name == "outer" }
+    assert outer
+    assert_instance_of MLC::Source::AST::GenericType, outer.ret_type
+    assert_equal "Result", outer.ret_type.base_type.name
+    binding_statement = outer.body.statements.first
+    assert_instance_of MLC::Source::AST::VariableDecl, binding_statement
+    assert_instance_of MLC::Source::AST::TryExpr, binding_statement.value
+  end
+
+  def test_to_cpp_error_union_with_question
+    source = <<~MLC
+      type Result<T, E> = Ok(T) | Err(E)
+      fn safe_div(a: i32, b: i32) -> i32!string =
+        if b == 0 then Err("zero") else Ok(a / b) end
+      fn compute(divisor: i32) -> i32!string =
+        Ok(safe_div(10, divisor)? + 1)
+      fn main() -> i32 = 0
+    MLC
+    cpp = MLC.to_cpp(source)
+    assert_match(/Result|mlc::Result|Ok/, cpp)
+  end
 end
