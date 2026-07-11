@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_VM_TYPED_COLLECTIONS` closed** — pending Critic `critique-audit`.
-Next queue after Critic: [TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
+**Next:** Planner `plan-refresh` — activate
+[TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md) (queue after VM typed
+collections Critic OK).
 
 
 ## Step sizing (good vs bad)

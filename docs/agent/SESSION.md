@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_VM_TYPED_COLLECTIONS closed (pending Critic) |
-| test_gate | self-host identical; regression 20/0; VM corpus ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_VM_TYPED_COLLECTIONS archived (Critic OK) |
+| test_gate | run_vm_typed_collections_gate.sh 6/0 |
+
+### Turn 2026-07-11 12:10 (Critic TRACK_VM_TYPED_COLLECTIONS — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 12:09 |
+| elapsed | ~3 min |
+| done    | Audited `cf613f0b`…`cdffcbf8` vs STEP 1–4; value/native/examples/gate on disk; archived track; PLAN §13c + MIR_VM_FULL gap → closed; re-ran typed gate. |
+| verify  | gate 6/0; no pending STEPs; archive path OK; no false-done. |
+| result  | **reopen: none**. Residuals: length-only array/map equal; Decision A wording vs VmFieldSlot carrier (documented). |
+| issues  | Queued prompt STEP=2 stale; ran SESSION Critic. Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate TRACK_STDLIB_HTTP_MLC (PLAN queue) |
 
 ### Turn 2026-07-11 12:05 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=4 — verify-gate)
 

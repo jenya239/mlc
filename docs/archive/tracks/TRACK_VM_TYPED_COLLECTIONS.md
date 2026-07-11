@@ -1,14 +1,21 @@
 # Track: VM — типизированные коллекции (массивы/map только `i32`)
 
-Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value model»).
+Parent: [TRACK_MIR_VM_FULL.md](../../agent/TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value model»).
 Найдено 2026-07-10 при попытке запустить через `mlcc --run` пример с
 `[Point]` (массив records). Шире и старее, чем закрытые
-[TRACK_VM_LOWERING_GAPS](../archive/tracks/TRACK_VM_LOWERING_GAPS.md) /
-[TRACK_VM_BLOCK_ID_COLLISION](../archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md)
+[TRACK_VM_LOWERING_GAPS](TRACK_VM_LOWERING_GAPS.md) /
+[TRACK_VM_BLOCK_ID_COLLISION](TRACK_VM_BLOCK_ID_COLLISION.md)
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: **closed** (2026-07-11) — STEP=1–4 done — pending Critic
+## Status: **closed** (2026-07-11)
+
+**Critic 2026-07-11:** `critique-audit` — commits `cf613f0b`…`cdffcbf8` match
+STEP 1–4; types/native/examples/gate on disk; re-ran
+`run_vm_typed_collections_gate.sh` (6/0). PLAN §13c → archive. **reopen: none.**
+Residuals: deep `VmArray`/`VmMap` equality still length-only; Decision A wording
+said `Shared<VmValue>` but carrier is `VmFieldSlot` (documented STEP=2); TRACK
+«Проблема» section is historical pre-fix text.
 
 **Driver 2026-07-11:** STEP=4 — self-host `mlcc`→`mlcc2`→`diff -rq` identical;
 `regression_gate` 20/0; VM corpus (typed 6, examples 28, single+cpp_diff 18,
