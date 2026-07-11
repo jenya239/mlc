@@ -85,6 +85,9 @@ fn is_bare_module_import_name(import_path: string) -> bool =
 fn stdlib_module_relative_path(module_name: string) -> string =
   if module_name == "Tcp" then "net/tcp.mlc"
   else if module_name == "HttpServer" then "net/http_server.mlc"
+  else if module_name == "Env" then "env/env.mlc"
+  else if module_name == "Log" then "log/logger.mlc"
+  else if module_name == "Validate" then "validate/validate.mlc"
   else ""
   end
 

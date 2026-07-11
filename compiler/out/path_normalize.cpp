@@ -88,6 +88,14 @@ bool is_bare_module_import_name(mlc::String import_path) noexcept{
 mlc::String stdlib_module_relative_path(mlc::String module_name) noexcept{
   if ((module_name == mlc::String("Tcp", 3)))   {
     return mlc::String("net/tcp.mlc", 11);
+  } else if ((module_name == mlc::String("HttpServer", 10)))   {
+    return mlc::String("net/http_server.mlc", 19);
+  } else if ((module_name == mlc::String("Env", 3)))   {
+    return mlc::String("env/env.mlc", 11);
+  } else if ((module_name == mlc::String("Log", 3)))   {
+    return mlc::String("log/logger.mlc", 14);
+  } else if ((module_name == mlc::String("Validate", 8)))   {
+    return mlc::String("validate/validate.mlc", 21);
   } else   {
     return mlc::String("", 0);
   }

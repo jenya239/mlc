@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=5 |
-| test_gate | validate MLC smoke exit 0; validate.hpp absent |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=6 |
+| test_gate | bare smoke exit 0; resolve probe 0; self-host DIFF 0 |
+
+### Turn 2026-07-11 25:00 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=5 — bare names)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 24:50 |
+| elapsed | ~25 min |
+| done    | `path_normalize` Env→env/env.mlc, Log→log/logger.mlc, Validate→validate/validate.mlc; `test_driver` asserts; `stdlib_logic_bare_smoke.mlc` (`from 'Env'|'Log'|'Validate'`). |
+| verify  | bare smoke exit 0 (env+logger+validate TUs); resolve probe exit 0; `compiler/build.sh` + mlcc2 DIFF 0. |
+| result  | STEP=5 done. Plain: bare imports resolve like Tcp. |
+| issues  | Foreign `compiler/out/*` (except intentional rebuild) left mostly unstaged; commit `path_normalize` sources + generated cpp if clean. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_LOGIC_TO_MLC — mlcc gates + regression + close → Critic |
 
 ### Turn 2026-07-11 24:50 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=4 — Validate → MLC)
 

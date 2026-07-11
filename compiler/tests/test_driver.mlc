@@ -20,6 +20,21 @@ export fn driver_tests() -> [TestResult] = do
     'lib/mlc/common/stdlib/net/http_server.mlc'
   ))
   results.push(assert_eq_str(
+    'resolve_import_path bare Env to stdlib env/env.mlc',
+    resolve_import_path('tmp/probe.mlc', 'Env'),
+    'lib/mlc/common/stdlib/env/env.mlc'
+  ))
+  results.push(assert_eq_str(
+    'resolve_import_path bare Log to stdlib log/logger.mlc',
+    resolve_import_path('tmp/probe.mlc', 'Log'),
+    'lib/mlc/common/stdlib/log/logger.mlc'
+  ))
+  results.push(assert_eq_str(
+    'resolve_import_path bare Validate to stdlib validate/validate.mlc',
+    resolve_import_path('tmp/probe.mlc', 'Validate'),
+    'lib/mlc/common/stdlib/validate/validate.mlc'
+  ))
+  results.push(assert_eq_str(
     'resolve_import_path relative ./foo unchanged',
     resolve_import_path('tmp/probe.mlc', './foo'),
     'tmp/foo.mlc'

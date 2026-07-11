@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=5 — bare-name Env/Log/Validate in `path_normalize.mlc`.
+**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=6 — mlcc gates + regression + self-host; close → Critic.
 See [TRACK_STDLIB_LOGIC_TO_MLC.md](TRACK_STDLIB_LOGIC_TO_MLC.md).
 
 
