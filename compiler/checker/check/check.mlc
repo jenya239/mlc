@@ -22,6 +22,7 @@ import { partial_application_desugar_expr } from '../transform/partial_applicati
 import { shared_cycle_lint_diagnostics } from '../cycle_lint'
 import { orphan_impl_diagnostics } from '../orphan_lint'
 import { extern_concurrency_attr_diagnostics } from '../extern_concurrency_lint'
+import { extern_header_arity_diagnostics } from '../extern_header_arity_lint'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -467,6 +468,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   all_diagnostics = diagnostics_append(all_diagnostics, shared_cycle_lint_diagnostics(destructured_full_program, registry))
   all_diagnostics = diagnostics_append(all_diagnostics, orphan_impl_diagnostics(destructured_full_program, registry))
   all_diagnostics = diagnostics_append(all_diagnostics, extern_concurrency_attr_diagnostics(destructured_full_program))
+  all_diagnostics = diagnostics_append(all_diagnostics, extern_header_arity_diagnostics(destructured_full_program))
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {

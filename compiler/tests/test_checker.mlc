@@ -92,7 +92,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 89))
+    diagnostic_code_catalog_count(), 90))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))
@@ -137,6 +137,9 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('diagnostic code W-EXTERN-ATTR catalog',
     diagnostic_code_w_extern_attr(), 'W-EXTERN-ATTR'))
+
+  results.push(assert_eq_str('diagnostic code W-EXTERN-ARITY catalog',
+    diagnostic_code_w_extern_arity(), 'W-EXTERN-ARITY'))
 
   results.push(assert_eq_int('extern fn from header without attr — check Ok (warning)',
     check_error_count(

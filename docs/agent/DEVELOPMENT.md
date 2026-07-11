@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` active** STEP=3 — ABI arity sanity when header imported.
-See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=2: `W-EXTERN-ATTR` + env/tcp `blocking`.
+**`TRACK_FFI_SAFETY` active** STEP=4 — Safety contract docs in `FFI_LAYER.md` §9.
+See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=3: `W-EXTERN-ARITY` smoke ok.
 
 
 ## Step sizing (good vs bad)

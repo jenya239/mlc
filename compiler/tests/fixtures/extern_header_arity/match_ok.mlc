@@ -1,0 +1,3 @@
+import "./probe.h"
+extern fn ok(value: i32) -> i32 = "c_entry" from "./probe.h" blocking
+fn main() -> i32 = 0

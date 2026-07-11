@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_FFI_SAFETY STEP=3 |
-| test_gate | STEP=2: W-EXTERN-ATTR smoke ok; env_log gate OK; mlcc --check-only main 0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_FFI_SAFETY STEP=4 |
+| test_gate | STEP=3: W-EXTERN-ARITY smoke ok; concurrency smoke ok; mlcc --check-only main 0 |
+
+### Turn 2026-07-11 30:45 (Driver TRACK_FFI_SAFETY STEP=3 — W-EXTERN-ARITY)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 30:20 |
+| elapsed | ~25 min |
+| done    | `extern_header_arity_lint.mlc` + `W-EXTERN-ARITY`; header stubs marker/`PatternUnit`/`CppFnProto`; hook in `check.mlc`; smoke `run_extern_header_arity_smoke.sh`. |
+| verify  | arity smoke ok (mismatch→W-EXTERN-ARITY; match_ok/no_import clean); concurrency smoke ok; `mlcc --check-only compiler/main.mlc` 0. |
+| result  | STEP=3 done. Plain: full-form arity ≠ imported header stub arity → warning. |
+| issues  | Foreign `compiler/out/*`. Best-effort by C symbol name only (no path link). |
+| next    | ROLE=Driver STEP=4 TRACK_FFI_SAFETY — Safety contract docs in FFI_LAYER.md §9 |
 
 ### Turn 2026-07-11 30:20 (Driver TRACK_FFI_SAFETY STEP=2 — W-EXTERN-ATTR)
 

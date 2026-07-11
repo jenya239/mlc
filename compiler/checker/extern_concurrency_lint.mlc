@@ -9,6 +9,8 @@ import {
 } from '../frontend/ast'
 import { diagnostic_code_w_extern_attr } from './diagnostic_codes'
 
+fn header_import_extern_marker() -> string = "__mlc_header_import__"
+
 fn empty_diagnostic_list() -> [Diagnostic] = do
   let empty: [Diagnostic] = []
   empty
@@ -32,6 +34,8 @@ fn diagnostics_for_extern_fn_body(body: Shared<Expr>) -> [Diagnostic] = do
   match body {
     ExprExtern(_c_name, header, attributes, source_span) => do
       if header.length() == 0 then
+        empty_diagnostic_list()
+      else if header == header_import_extern_marker() then
         empty_diagnostic_list()
       else if attributes.length() > 0 then
         empty_diagnostic_list()

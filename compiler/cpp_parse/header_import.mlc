@@ -7,7 +7,7 @@ import { CppDeclaration, CppField, CppFnProto, CppStruct, CppForwardDecl, CppUsi
          CppTypedefDeclaration, CppTemplateDeclaration, CppExternBlock, CppFunctionPrototypeDecl, CppFunctionPrototype } from '../cpp_ir/cpp_ast'
 import { print_cpp_type } from '../cpp_emit/print'
 import { Decl, DeclFn, DeclType, DeclTypeAlias, Param, TypeExpr, TyI32, TyBool, TyUnit, TyNamed,
-         TypeVariant, VarRecord, VarUnit, FieldDef, ExprExtern, ExprUnit, PatternWild, Program, span_unknown } from '../frontend/ast'
+         TypeVariant, VarRecord, VarUnit, FieldDef, ExprExtern, ExprUnit, PatternUnit, Program, span_unknown } from '../frontend/ast'
 import { TypeRegistry, build_registry } from '../checker/registry'
 
 export type HeaderImportResult = HeaderImportResult {
@@ -57,7 +57,7 @@ fn cpp_parameter_strings_to_params(parameter_strings: [string]) -> [Shared<Param
       type_value: cpp_type_string_to_type_expr(parts.type_string),
       has_default: false,
       default: Shared.new(ExprUnit(span_unknown())),
-      param_pattern: Shared.new(PatternWild(span_unknown()))
+      param_pattern: Shared.new(PatternUnit(span_unknown()))
     }))
     index = index + 1
   end
@@ -76,7 +76,7 @@ fn cpp_cpp_parameters_to_mlc_params(parameters: [Shared<CppParam>]) -> [Shared<P
       type_value: cpp_type_string_to_type_expr(print_cpp_type(parameter.parameter_type)),
       has_default: false,
       default: Shared.new(ExprUnit(span_unknown())),
-      param_pattern: Shared.new(PatternWild(span_unknown()))
+      param_pattern: Shared.new(PatternUnit(span_unknown()))
     }))
     index = index + 1
   end
@@ -87,7 +87,11 @@ fn cpp_function_prototype_to_mlc_decls(prototype: CppFunctionPrototype) -> [Shar
   [Shared.new(DeclFn(
     prototype.name, [], [], cpp_cpp_parameters_to_mlc_params(prototype.parameters),
     cpp_type_string_to_type_expr(print_cpp_type(prototype.return_type)),
-    Shared.new(ExprExtern("", "", [], span_unknown())), []))]
+    Shared.new(ExprExtern(prototype.name, header_import_extern_marker(), [], span_unknown())), []))]
+
+// Marker in ExprExtern.header for stubs from parse_cpp_header_source / load_cpp_header_decls.
+// Lets arity lint index C symbols without LoadItem plumbing; concurrency lint skips these.
+export fn header_import_extern_marker() -> string = "__mlc_header_import__"
 
 fn cpp_fields_to_field_definitions(fields: [Shared<CppField>]) -> [Shared<FieldDef>] = do
   let mut field_definitions: [Shared<FieldDef>] = []
@@ -149,7 +153,7 @@ fn cpp_declaration_to_mlc_decls(declaration: Shared<CppDeclaration>) -> [Shared<
       [Shared.new(DeclFn(
         function_name, [], [], cpp_parameter_strings_to_params(parameter_strings),
         cpp_type_string_to_type_expr(return_type),
-        Shared.new(ExprExtern("", "", [], span_unknown())), []))],
+        Shared.new(ExprExtern(function_name, header_import_extern_marker(), [], span_unknown())), []))],
     CppStruct(_, type_name, fields, _) =>
       [Shared.new(DeclType(type_name, [],
         [Shared.new(VarRecord(type_name, cpp_fields_to_field_definitions(fields), false))],

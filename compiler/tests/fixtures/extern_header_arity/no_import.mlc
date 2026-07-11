@@ -1,0 +1,2 @@
+extern fn wrong(a: i32, b: i32) -> i32 = "c_entry" from "./probe.h" blocking
+fn main() -> i32 = 0

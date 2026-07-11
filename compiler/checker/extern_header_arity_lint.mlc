@@ -1,0 +1,152 @@
+// Extern arity vs header_import stubs (TRACK_FFI_SAFETY STEP=3).
+// Best-effort: if a header-imported DeclFn stub exists for the same C symbol
+// (ExprExtern.c_name + header_import marker), warn when user full-form
+// `extern fn … = "c_name" from "…"` has a different parameter count.
+// Skip when the symbol was not imported.
+
+import {
+  Program, Decl, Diagnostic, Span, diagnostic_new_with_code, diagnostics_append,
+  decl_inner, Expr, ExprExtern
+} from '../frontend/ast'
+import { diagnostic_code_w_extern_arity } from './diagnostic_codes'
+
+// Must match header_import.header_import_extern_marker()
+fn header_import_extern_marker() -> string = "__mlc_header_import__"
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty: [Diagnostic] = []
+  empty
+end
+
+fn arity_mismatch_message(
+  c_name: string,
+  user_arity: i32,
+  header_arity: i32
+) -> string =
+  'extern fn C symbol \'' + c_name + '\' arity ' + user_arity.to_string() +
+    ' does not match imported header arity ' + header_arity.to_string()
+
+fn warning_for_arity_mismatch(
+  c_name: string,
+  user_arity: i32,
+  header_arity: i32,
+  source_span: Span
+) -> [Diagnostic] =
+  [diagnostic_new_with_code(
+    'warning',
+    arity_mismatch_message(c_name, user_arity, header_arity),
+    source_span,
+    diagnostic_code_w_extern_arity())]
+
+fn maybe_record_stub_from_extern_body(
+  arity_by_c_name: Map<string, i32>,
+  parameters_length: i32,
+  body: Shared<Expr>
+) -> Map<string, i32> = do
+  match body {
+    ExprExtern(c_name, header, attributes, source_span) => do
+      const unused_attributes = attributes
+      const unused_span = source_span
+      if header == header_import_extern_marker() then
+        if c_name.length() > 0 then
+          arity_by_c_name.set(c_name, parameters_length)
+        end
+      end
+      arity_by_c_name
+    end,
+    _ => arity_by_c_name
+  }
+end
+
+fn record_header_stub_arity(
+  arity_by_c_name: Map<string, i32>,
+  declaration: Shared<Decl>
+) -> Map<string, i32> = do
+  match decl_inner(declaration) {
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, where_clause) => do
+      const unused_name = name
+      const unused_type_parameters = type_parameters
+      const unused_trait_bounds = trait_bounds
+      const unused_return_type = return_type
+      const unused_where_clause = where_clause
+      maybe_record_stub_from_extern_body(arity_by_c_name, parameters.length(), body)
+    end,
+    DeclExported(inner) => record_header_stub_arity(arity_by_c_name, inner),
+    _ => arity_by_c_name
+  }
+end
+
+fn build_header_import_arity_index(program: Program) -> Map<string, i32> = do
+  let mut arity_by_c_name: Map<string, i32> = Map.new()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    arity_by_c_name = record_header_stub_arity(
+      arity_by_c_name,
+      program.decls[declaration_index])
+    declaration_index = declaration_index + 1
+  end
+  arity_by_c_name
+end
+
+fn diagnostics_from_extern_body(
+  parameters_length: i32,
+  body: Shared<Expr>,
+  arity_by_c_name: Map<string, i32>
+) -> [Diagnostic] = do
+  match body {
+    ExprExtern(c_name, header, attributes, source_span) => do
+      const unused_attributes = attributes
+      if header.length() == 0 then
+        empty_diagnostic_list()
+      else if header == header_import_extern_marker() then
+        empty_diagnostic_list()
+      else if c_name.length() == 0 then
+        empty_diagnostic_list()
+      else if arity_by_c_name.has(c_name) then do
+        const header_arity = arity_by_c_name.get(c_name)
+        if parameters_length == header_arity then
+          empty_diagnostic_list()
+        else
+          warning_for_arity_mismatch(c_name, parameters_length, header_arity, source_span)
+        end
+      end
+      else
+        empty_diagnostic_list()
+      end
+    end,
+    _ => empty_diagnostic_list()
+  }
+end
+
+fn diagnostics_for_user_extern_against_header(
+  declaration: Shared<Decl>,
+  arity_by_c_name: Map<string, i32>
+) -> [Diagnostic] = do
+  match decl_inner(declaration) {
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, where_clause) => do
+      const unused_name = name
+      const unused_type_parameters = type_parameters
+      const unused_trait_bounds = trait_bounds
+      const unused_return_type = return_type
+      const unused_where_clause = where_clause
+      diagnostics_from_extern_body(parameters.length(), body, arity_by_c_name)
+    end,
+    DeclExported(inner) => diagnostics_for_user_extern_against_header(inner, arity_by_c_name),
+    _ => empty_diagnostic_list()
+  }
+end
+
+export fn extern_header_arity_diagnostics(program: Program) -> [Diagnostic] = do
+  const arity_by_c_name = build_header_import_arity_index(program)
+  let mut diagnostics = empty_diagnostic_list()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    diagnostics = diagnostics_append(
+      diagnostics,
+      diagnostics_for_user_extern_against_header(
+        program.decls[declaration_index],
+        arity_by_c_name))
+    declaration_index = declaration_index + 1
+  end
+  diagnostics
+end
