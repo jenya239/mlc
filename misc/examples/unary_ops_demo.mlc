@@ -1,64 +1,28 @@
-// Unary Operators Demo - negation and logical not
+// Unary Operators Demo — negation and logical not (mlcc).
 
 fn negate(x: i32) -> i32 = -x
 
 fn logical_not(b: bool) -> bool = !b
 
-fn demo_numeric_negation() -> i32 = do
-  const positive = 42
-  const negative = -positive
-  println("Numeric negation:")
-  println("  positive = " + to_string(positive))
-  println("  -positive = " + to_string(negative))
-  println("  -(-positive) = " + to_string(-negative))
-  negative
-end
-
-fn demo_logical_not() -> bool = do
-  const t = true
-  const f = false
-  println("Logical NOT:")
-  println("  !true = " + to_string(!t))
-  println("  !false = " + to_string(!f))
-  println("  !!true = " + to_string(!!t))
-  !f
-end
-
-fn demo_in_expressions() -> i32 = do
-  const a = 10
-  const b = 5
-  const result = -a + b
-  println("Expression with unary minus:")
-  println("  -10 + 5 = " + to_string(result))
-  result
-end
-
-fn demo_conditionals() -> i32 = do
-  const flag = false
-  println("Using !flag in conditional:")
-  // Using ternary-style if without complex blocks
-  if !flag then 1 else 0
-end
-
 fn main() -> i32 = do
   println("=== Unary Operators Demo ===")
-  println("")
-
-  const neg = demo_numeric_negation()
-  println("")
-
-  const not_result = demo_logical_not()
-  println("")
-
-  const expr_result = demo_in_expressions()
-  println("")
-
-  const cond = demo_conditionals()
-  println("  Conditional result (should be 1): " + to_string(cond))
-  println("")
-
-  println("negate(100): " + to_string(negate(100)))
-  println("logical_not(true): " + to_string(logical_not(true)))
-
-  0
+  let positive = 42
+  let negative = -positive
+  println("  positive = " + positive.to_string())
+  println("  -positive = " + negative.to_string())
+  println("  -(-positive) = " + (-negative).to_string())
+  let flag_true = true
+  let flag_false = false
+  let not_true = !flag_true
+  let not_false = !flag_false
+  println("  !true = " + not_true.to_string())
+  println("  !false = " + not_false.to_string())
+  println("  -10 + 5 = " + ((-10) + 5).to_string())
+  println("  negate(100) = " + negate(100).to_string())
+  println("  logical_not(true) = " + logical_not(true).to_string())
+  if !flag_false then
+    0
+  else
+    1
+  end
 end

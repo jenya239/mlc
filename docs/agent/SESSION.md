@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 7 |
+| driver_turns_since_plan | 5 |
+| step_last | 8 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=7: cluster A ONLY ok=3 skip=3 fail=0 |
+| test_gate | STEP=8: cluster B ONLY ok=7 fail=0 |
+
+### Turn 2026-07-12 02:20 (Driver TRACK_EXAMPLES_CI STEP=8 — fix cluster B to_string)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 02:14 |
+| elapsed | ~25 min |
+| done    | Rewrote 7 demos: `.to_string()`, mlcc match/`let mut`/`string`/`x =>`; dropped free `to_string`. |
+| verify  | ONLY seven → ok=7 fail=0. |
+| result  | STEP=8 done. Plain: cluster B demos compile+link under mlcc. |
+| issues  | Foreign `compiler/out/*` left. Generics demo uses monomorphic helpers (no `<T>`). |
+| next    | ROLE=Driver STEP=9 TRACK_EXAMPLES_CI — ABI soft-skip crypto/postgres |
 
 ### Turn 2026-07-12 01:55 (Driver TRACK_EXAMPLES_CI STEP=7 — fix cluster A imports)
 

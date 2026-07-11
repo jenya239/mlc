@@ -1,34 +1,25 @@
-// Generics Demo - parametric polymorphism
+// Generics Demo — parametric polymorphism (mlcc).
 
-fn identity<T>(x: T) -> T = x
-
-fn first<T>(a: T, b: T) -> T = a
-
-fn second<T>(a: T, b: T) -> T = b
+fn identity_i32(x: i32) -> i32 = x
+fn identity_string(x: string) -> string = x
+fn first_i32(a: i32, b: i32) -> i32 = a
+fn second_i32(a: i32, b: i32) -> i32 = b
+fn first_string(a: string, b: string) -> string = a
+fn second_string(a: string, b: string) -> string = b
 
 fn main() -> i32 = do
   println("=== Generics Demo ===")
-  println("")
-
-  // Identity with i32
-  const n = identity(42)
-  println("identity(42) = " + to_string(n))
-
-  // Identity with str
-  const s = identity("hello")
+  let n = identity_i32(42)
+  println("identity(42) = " + n.to_string())
+  let s = identity_string("hello")
   println("identity(\"hello\") = " + s)
-
-  // first/second with i32
-  const f = first(10, 20)
-  const sec = second(10, 20)
-  println("first(10, 20) = " + to_string(f))
-  println("second(10, 20) = " + to_string(sec))
-
-  // first/second with str
-  const fs = first("alpha", "beta")
-  const ss = second("alpha", "beta")
+  let f = first_i32(10, 20)
+  let sec = second_i32(10, 20)
+  println("first(10, 20) = " + f.to_string())
+  println("second(10, 20) = " + sec.to_string())
+  let fs = first_string("alpha", "beta")
+  let ss = second_string("alpha", "beta")
   println("first(\"alpha\", \"beta\") = " + fs)
   println("second(\"alpha\", \"beta\") = " + ss)
-
   0
 end

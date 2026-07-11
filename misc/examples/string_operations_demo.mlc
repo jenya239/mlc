@@ -1,98 +1,23 @@
-// String Operations Demo
-// Demonstrates string concatenation and methods
-
-fn demo_concatenation() -> String = do
-  const first = "Hello"
-  const last = "World"
-  const greeting = first + ", " + last + "!"
-  println("Concatenation: \"Hello\" + \", \" + \"World\" + \"!\" = \"" + greeting + "\"")
-  greeting
-end
-
-fn demo_upper_lower() -> String = do
-  const text = "MiXeD CaSe TeXt"
-  const upper_text = text.upper()
-  const lower_text = text.lower()
-  println("Original: \"" + text + "\"")
-  println("Upper: \"" + upper_text + "\"")
-  println("Lower: \"" + lower_text + "\"")
-  upper_text
-end
-
-fn demo_trim() -> String = do
-  const text = "   spaces around   "
-  const trimmed = text.trim()
-  println("Original: \"" + text + "\" (length: " + to_string(text.length()) + ")")
-  println("Trimmed: \"" + trimmed + "\" (length: " + to_string(trimmed.length()) + ")")
-  trimmed
-end
-
-fn demo_chaining() -> String = do
-  const messy_input = "  hello WORLD  "
-  const clean = messy_input.trim().lower()
-  println("Input: \"" + messy_input + "\"")
-  println("After .trim().lower(): \"" + clean + "\"")
-  clean
-end
-
-fn demo_contains() -> bool = do
-  const sentence = "The quick brown fox"
-  const has_fox = sentence.contains("fox")
-  const has_cat = sentence.contains("cat")
-  println("Sentence: \"" + sentence + "\"")
-  println("Contains \"fox\": " + to_string(has_fox))
-  println("Contains \"cat\": " + to_string(has_cat))
-  has_fox
-end
-
-fn demo_starts_ends() -> bool = do
-  const filename = "document.txt"
-  const starts = filename.starts_with("doc")
-  const ends = filename.ends_with(".txt")
-  println("Filename: \"" + filename + "\"")
-  println("Starts with \"doc\": " + to_string(starts))
-  println("Ends with \".txt\": " + to_string(ends))
-  starts && ends
-end
-
-fn demo_is_empty() -> bool = do
-  const empty_str = ""
-  const non_empty = "content"
-  println("Empty string is_empty: " + to_string(empty_str.is_empty()))
-  println("Non-empty string is_empty: " + to_string(non_empty.is_empty()))
-  empty_str.is_empty()
-end
+// String Operations Demo (mlcc: type string, not String).
 
 fn main() -> i32 = do
   println("=== String Operations Demo ===")
-  println("")
-
-  println("--- Concatenation ---")
-  const _ = demo_concatenation()
-  println("")
-
-  println("--- Upper/Lower Case ---")
-  const _ = demo_upper_lower()
-  println("")
-
-  println("--- Trim ---")
-  const _ = demo_trim()
-  println("")
-
-  println("--- Method Chaining ---")
-  const _ = demo_chaining()
-  println("")
-
-  println("--- Contains ---")
-  const _ = demo_contains()
-  println("")
-
-  println("--- Starts/Ends With ---")
-  const _ = demo_starts_ends()
-  println("")
-
-  println("--- Is Empty ---")
-  const _ = demo_is_empty()
-
+  let greeting = "Hello" + ", " + "World" + "!"
+  println("Concatenation = \"" + greeting + "\"")
+  let text = "MiXeD CaSe TeXt"
+  println("Upper: \"" + text.upper() + "\"")
+  println("Lower: \"" + text.lower() + "\"")
+  let padded = "   spaces around   "
+  let trimmed = padded.trim()
+  println("Trimmed length: " + trimmed.length().to_string())
+  let clean = "  hello WORLD  ".trim().lower()
+  println("After trim+lower: \"" + clean + "\"")
+  let sentence = "The quick brown fox"
+  println("Contains fox: " + sentence.contains("fox").to_string())
+  println("Contains cat: " + sentence.contains("cat").to_string())
+  let filename = "document.txt"
+  println("Starts doc: " + filename.starts_with("doc").to_string())
+  println("Ends .txt: " + filename.ends_with(".txt").to_string())
+  println("Empty is_empty: " + "".is_empty().to_string())
   0
 end

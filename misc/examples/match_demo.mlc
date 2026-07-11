@@ -1,4 +1,4 @@
-// Match and Sum Types Demo
+// Match and Sum Types Demo (mlcc).
 
 type Shape = Circle(i32) | Rectangle(i32, i32) | Square(i32)
 
@@ -9,24 +9,20 @@ fn area(shape: Shape) -> i32 =
     Square(s) => s * s
   }
 
-fn describe(shape: Shape) -> str =
+fn describe(shape: Shape) -> string =
   match shape {
-    Circle(r) => "Circle with radius " + to_string(r),
-    Rectangle(w, h) => "Rectangle " + to_string(w) + "x" + to_string(h),
-    Square(s) => "Square " + to_string(s) + "x" + to_string(s)
+    Circle(r) => "Circle with radius " + r.to_string(),
+    Rectangle(w, h) => "Rectangle " + w.to_string() + "x" + h.to_string(),
+    Square(s) => "Square " + s.to_string() + "x" + s.to_string()
   }
 
 fn main() -> i32 = do
   println("=== Match and Sum Types Demo ===")
-  println("")
-
-  const c = Circle(5)
-  const r = Rectangle(4, 6)
-  const s = Square(3)
-
-  println(describe(c) + " -> area: " + to_string(area(c)))
-  println(describe(r) + " -> area: " + to_string(area(r)))
-  println(describe(s) + " -> area: " + to_string(area(s)))
-
+  let c = Circle(5)
+  let r = Rectangle(4, 6)
+  let s = Square(3)
+  println(describe(c) + " -> area: " + area(c).to_string())
+  println(describe(r) + " -> area: " + area(r).to_string())
+  println(describe(s) + " -> area: " + area(s).to_string())
   0
 end
