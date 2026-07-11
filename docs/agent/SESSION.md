@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=1: dry 107 + gui_button; ONLY smoke ok=2 |
+| test_gate | STEP=2: soft-skip pkg+allowlist ok |
+
+### Turn 2026-07-12 01:28 (Driver TRACK_EXAMPLES_CI STEP=2 — sysdep soft-skip)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 01:27 |
+| elapsed | ~10 min |
+| done    | Soft-skip in `run_examples_compile_sweep.sh` (glfw3/freetype2/harfbuzz/font path); empty `examples_compile_sweep_allowlist.txt`. |
+| verify  | Fake pkg-config: SKIP gui+freetype, RUN minimal; allowlist: SKIP gui + OK minimal (exit 0). Dry w/ deps: skip=0 run=107. |
+| result  | STEP=2 done. Plain: CI without GLFW/fonts soft-skips instead of hard-fail. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_EXAMPLES_CI — full sweep failure inventory |
 
 ### Turn 2026-07-12 01:20 (Driver TRACK_EXAMPLES_CI STEP=1 — compile sweep script)
 

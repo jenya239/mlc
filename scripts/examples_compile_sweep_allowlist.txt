@@ -1,0 +1,3 @@
+# Optional force-skip basenames for TRACK_EXAMPLES_CI soft-skip allowlist.
+# One basename per line (e.g. experimental_demo.mlc). Empty by default —
+# pkg-config / font-path soft-skip in run_examples_compile_sweep.sh covers CI.

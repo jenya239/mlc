@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_EXAMPLES_CI` active** — STEP=1 done; STEP=2 (sysdep soft-skip) next.
+**`TRACK_EXAMPLES_CI` active** — STEP=2 done; STEP=3 (full sweep / failures) next.
 See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
 
 
