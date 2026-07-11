@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | Planner: no code |
+| test_gate | STEP=1: dry 107 + gui_button; ONLY smoke ok=2 |
+
+### Turn 2026-07-12 01:20 (Driver TRACK_EXAMPLES_CI STEP=1 — compile sweep script)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 01:18 |
+| elapsed | ~15 min |
+| done    | Added `scripts/run_examples_compile_sweep.sh` (discover `fn main`, mlcc+build_bin, DRY/ONLY/MAX). |
+| verify  | DRY: 107 entries, `gui_button_demo` present; `EXAMPLES_SWEEP_ONLY='minimal.mlc gui_button_demo.mlc'` → ok=2 fail=0. |
+| result  | STEP=1 done. Plain: examples compile+link sweep script works. |
+| issues  | Foreign `compiler/out/*` left. Full 107 inventory deferred to STEP=3. |
+| next    | ROLE=Driver STEP=2 TRACK_EXAMPLES_CI — sysdep soft-skip / allowlist |
 
 ### Turn 2026-07-12 01:10 (Planner — plan-refresh → EXAMPLES_CI)
 
