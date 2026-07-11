@@ -3,7 +3,11 @@
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
 [TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **open** — STEP=5 next (Button demo + easing) — **active**
+## Status: **open** — STEP=6 next (docs + verify-gate) — **active**
+
+**Driver 2026-07-11:** STEP=5 — `misc/gui/button.mlc` + `ease_in_out_unit`;
+`gui_button_demo.mlc` (layout button, inject click, clear-color easing);
+`run_gui_button_demo.sh` ok.
 
 **Driver 2026-07-11:** STEP=4 — `misc/gui/input.mlc` (GuiInput poll/hover/click_edge);
 GLFW `glfw_gl_mouse_*` + test inject; `run_gui_input_smoke.sh` ok.
@@ -13,7 +17,7 @@ GLFW `glfw_gl_mouse_*` + test inject; `run_gui_input_smoke.sh` ok.
 
 **Driver 2026-07-11:** STEP=2 — `misc/gui/gl_renderer.mlc` + `text_renderer.mlc`;
 smokes rewired to `import` from `../gui/*`; both smokes EXIT 0.
-`text_window_demo.mlc` still local (FT/MSDF) — rewire at STEP=5.
+`text_window_demo.mlc` still local (FT/MSDF) — residual, not required for v0 close.
 
 **Driver 2026-07-11:** STEP=1 — Decision **locked** (IM A; `misc/gui/`; Button v0).
 
@@ -102,8 +106,8 @@ Easing: `glfw_gl_anim_unit` and/or small MLC `ease_in_out` on button color.
 | 1 | Decision: layout model (A/B); module path; widget v0 surface. | **done** (2026-07-11: IM A; `misc/gui/`; Button) |
 | 2 | Extract shared MLC `GlRenderer` + `TextRenderer` modules; rewire smokes. | **done** (2026-07-11: `misc/gui/*`; smokes import; demo deferred STEP=5) |
 | 3 | Layout pass v0 (IM row/column) + screen hit-test helper. | **done** (2026-07-11: `layout.mlc`; `run_gui_layout_smoke.sh` ok) |
-| 4 | Input: mouse position/button + key via GLFW → widget hover/click. | pending |
-| 5 | Demo: one Button + easing anim; gate script (hidden window OK). | pending |
+| 4 | Input: mouse position/button + key via GLFW → widget hover/click. | **done** (2026-07-11: `input.mlc` + GLFW poll/inject; smoke ok) |
+| 5 | Demo: one Button + easing anim; gate script (hidden window OK). | **done** (2026-07-11: `button.mlc` + `run_gui_button_demo.sh` ok) |
 | 6 | Docs (`TEXT_RENDERING` or short `GUI.md`) + PLAN; verify-gate. | pending |
 
 <!-- sub-steps STEP=2: 1) misc/gui/gl_renderer.mlc + text_renderer.mlc; 2) rewire gl_renderer_smoke + text_renderer_native_smoke; 3) text_window_demo import or thin wrapper; 4) smokes EXIT 0 -->

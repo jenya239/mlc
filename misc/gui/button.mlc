@@ -1,0 +1,29 @@
+// IM Button (TRACK_GUI_FRAMEWORK STEP=5).
+// Hit-test + click edge; label reserved for TextRenderer draw (STEP=5 demo uses color).
+
+import { Rect } from './layout'
+import { GuiInput, gui_is_hovered, gui_click_edge } from './input'
+
+export type GuiButtonResult = {
+  hovered: i32,
+  clicked: i32
+}
+
+export fn gui_button(
+  label: string,
+  rect: Rect,
+  input: GuiInput,
+  previous_mouse_down: i32
+) -> GuiButtonResult = do
+  // label kept for API / future text draw; unused in hit logic.
+  const _unused_label_length = label.length()
+  const hovered = gui_is_hovered(input, rect)
+  const clicked = gui_click_edge(input, previous_mouse_down, rect)
+  GuiButtonResult { hovered: hovered, clicked: clicked }
+end
+
+// Smoothstep-ish ease on 0..1 unit (from glfw_gl_anim_unit).
+export fn ease_in_out_unit(unit: f64) -> f64 = do
+  const clamped = unit
+  clamped * clamped * (3.0 - 2.0 * clamped)
+end

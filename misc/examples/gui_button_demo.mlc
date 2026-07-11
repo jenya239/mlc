@@ -1,0 +1,83 @@
+// Button demo: one IM button, hover/click inject, clear-color easing (STEP=5).
+import { rect_new, layout_begin, layout_row_item } from '../gui/layout'
+import {
+  gui_input_poll,
+  gui_input_test_set,
+  gui_input_test_clear
+} from '../gui/input'
+import { gui_button, ease_in_out_unit } from '../gui/button'
+
+extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_should_close() -> i32
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_anim_unit() -> f64
+  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_clear(mask: i32) -> unit
+  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+fn gl_color_buffer_bit() -> i32 = 16384
+
+fn main() -> i32 = do
+  const width = 800
+  const height = 600
+  const begin_status = glfw_gl_context_begin(width, height)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const place = layout_row_item(layout_begin(40, 40, 8), 160, 48)
+  const button_rect = place.rect
+
+  let mut previous_mouse_down = 0
+  let mut click_count = 0
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    // Automated: hover over button; press on frame 4 (click edge).
+    if frame_index == 4 then
+      gui_input_test_set(button_rect.x + 8, button_rect.y + 8, 1, 0)
+    else
+      gui_input_test_set(button_rect.x + 8, button_rect.y + 8, 0, 0)
+    end
+
+    const input = gui_input_poll()
+    const result = gui_button("Go", button_rect, input, previous_mouse_down)
+    if result.clicked == 1 then
+      click_count = click_count + 1
+    end
+    previous_mouse_down = input.mouse_down
+
+    const phase = ease_in_out_unit(glfw_gl_anim_unit())
+    let mut green = 0.15 + phase * 0.25
+    if result.hovered == 1 then
+      green = green + 0.20
+    end
+    if click_count > 0 then
+      green = green + 0.15
+    end
+    gl_viewport(0, 0, width, height)
+    gl_clear_color_f64(0.08, green, 0.18, 1.0)
+    gl_clear(gl_color_buffer_bit())
+    glfw_gl_context_swap_poll()
+
+    frame_index = frame_index + 1
+    if frame_index >= 24 then
+      break
+    end
+  end
+
+  gui_input_test_clear()
+  glfw_gl_context_end()
+  if click_count != 1 then
+    return -30
+  end
+  0
+end

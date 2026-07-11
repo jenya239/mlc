@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_GUI_FRAMEWORK STEP=5 |
-| test_gate | run_gui_input_smoke.sh EXIT 0 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_GUI_FRAMEWORK STEP=6 |
+| test_gate | run_gui_button_demo.sh EXIT 0 |
+
+### Turn 2026-07-11 04:50 (Driver TRACK_GUI_FRAMEWORK STEP=5 — Button demo)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:45 |
+| elapsed | ~5 min |
+| done    | `misc/gui/button.mlc` (`gui_button`, `ease_in_out_unit`); `gui_button_demo.mlc` (layout+inject click+easing clear); `run_gui_button_demo.sh`. PLAN→STEP=6. |
+| verify  | `run_gui_button_demo.sh` ok (click_count==1). |
+| result  | STEP=5 done. Plain: Button demo with easing green. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. Label text draw deferred (color-only). |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_FRAMEWORK — docs + verify-gate |
 
 ### Turn 2026-07-11 04:40 (Driver TRACK_GUI_FRAMEWORK STEP=4 — GLFW input)
 

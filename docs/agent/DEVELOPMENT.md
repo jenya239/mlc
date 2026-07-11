@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GUI_FRAMEWORK` active** STEP=5 — Button demo + easing anim + gate.
-See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
+**`TRACK_GUI_FRAMEWORK` active** STEP=6 — docs (`GUI.md` / TEXT_RENDERING) +
+verify-gate. See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 
 
 ## Step sizing (good vs bad)
