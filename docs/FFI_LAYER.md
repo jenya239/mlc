@@ -234,15 +234,23 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
 | Рантайм языка (то, во что компилируется MLC) | `core/string.hpp`, `core/array.hpp`, `concurrency/{mutex,channel,task}.hpp` | **остаётся C++** — MLC компилируется в C++, у языка не может не быть рантайма на целевом языке. Не предмет этой инициативы |
 | FFI-адаптер к сторонней C-библиотеке (в основном bookkeeping/error-handling, не алгоритм) | `db/postgres.hpp`, `crypto/sodium.hpp`, часть `net/tcp.hpp` (i32-handle-table) | **убрать**: прямой `extern fn ... = "c_name" from "<header>"` + `extern type`+`drop` (слой уже закрыт, инфраструктура не нужна) — bookkeeping-логика (hex-encode, handle-table) переписывается на MLC |
 | Бизнес-логика/алгоритм, написанный на C++ вместо MLC (не биндинг ни к чему) | `text/msdf_shim.cpp` (EDT/SDF-алгоритм), `net/http_request.hpp`/`http_router.hpp` (парсер, нет внешней библиотеки), `net/websocket.hpp` (framing, нет внешней библиотеки) | **портировать на MLC целиком**, без FFI вообще для этой части |
-| Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | `gl/glfw_gl_dispatch.cpp` (`glfwGetProcAddress`+`reinterpret_cast`) | **портировать на MLC**, но требует новый примитив каста `RawPointer[T]` → `extern fn(...)` (нет сегодня) — отдельный трек-предпосылка |
+| Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | `gl/glfw_gl_dispatch.cpp` (`glfwGetProcAddress`+`reinterpret_cast`), `gl/loader_shim.cpp` (EGL/GLES2) | **убрать своими руками вообще** — `GLAD2` (сгенерированный один раз через `glad.sh`, вендоренный `.c`) резолвит function pointers сама через `#define glDrawArrays glad_glDrawArrays`; уже закрытый `extern fn ... from "<header>"` вызывает её прозрачно, без нового примитива каста |
 
 **Уточнение по итогам чтения кода (2026-07-11), меняет более раннюю оценку
 в чате**: `header_import.mlc` (авто-парсер `.h` в decl'ы) **не является
 блокером** ни для одного из перечисленных — слой `extern fn`/`RawPointer`/
 `extern type`+`drop`/`extern lib` закрыт 2026-07-09 и работает вручную для
-небольшого числа функций (`postgres`/`sodium`/`glfw`-core — десятки, не
-тысячи символов). Автогенератор биндингов остаётся design-only, не строить
-без конкретной необходимости (см. §3, §7 — не изменилось).
+небольшого числа функций (`postgres`/`sodium`/GL — десятки, не тысячи
+символов). Автогенератор биндингов остаётся design-only, не строить без
+конкретной необходимости (см. §3, §7 — не изменилось).
+
+**GL-loader — отдельное уточнение (2026-07-11)**: ни `RawPointer→fn-ptr`
+каст, ни ручная MLC-таблица не нужны. `GLAD2`/`libepoxy` резолвят GL
+function pointers **внутри себя** (`#define glDrawArrays glad_glDrawArrays`
+→ глобальная переменная-указатель, ленивый резолв в сгенерированном/системном
+коде) — уже закрытый `extern fn ... from "<header>"` вызывает их прозрачно.
+Выбор — `GLAD2` (вендоренный сгенерированный `.c`, без runtime-зависимости
+от системной `.so`, лучше для будущего embed-режима), не `libepoxy`.
 
 **Треки:**
 
@@ -256,10 +264,10 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
   framing/handshake на MLC.
 - [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — Env/Log/
   Validation: перевод пайплайна Ruby→mlcc + чистая MLC-логика где возможно.
-- [TRACK_FFI_POINTER_CAST](agent/TRACK_FFI_POINTER_CAST.md) — примитив
-  `RawPointer[T]` → `extern fn(...)` (предпосылка для GL loader).
-- [TRACK_GL_LOADER_TO_MLC](agent/TRACK_GL_LOADER_TO_MLC.md) — таблица GL
-  function pointers на MLC (после `FFI_POINTER_CAST`).
+- [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — GL-вызовы
+  через вендоренный GLAD2, без ручного C++ dispatch (заменяет отменённые
+  `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`, см.
+  `archive/tracks/`).
 
 ## 9. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
 

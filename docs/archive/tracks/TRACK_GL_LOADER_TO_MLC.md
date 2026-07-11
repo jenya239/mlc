@@ -1,4 +1,12 @@
-# Track: GL function-pointer loader — на MLC, не C++
+> **Superseded 2026-07-11, тем же чатом.** Не нужен собственный loader (ни на
+> MLC, ни на C++) — общепринятый современный способ на Linux — `libepoxy`
+> (используется в нашем C++-референсе `gtk-gl-cpp-2025`): она резолвит GL
+> function pointers **внутри себя**, наш код видит обычные имена функций
+> через макрос. Прямой `extern fn ... from "<epoxy/gl.h>"` (слой уже закрыт)
+> работает без каста и без ручной таблицы. См.
+> [TRACK_GL_EPOXY_MIGRATION](../../agent/TRACK_GL_EPOXY_MIGRATION.md).
+
+# Track: GL function-pointer loader — на MLC, не C++ (superseded, не нужен)
 
 Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8, [TRACK_FFI_POINTER_CAST](TRACK_FFI_POINTER_CAST.md) (hard dependency), [../PLAN.md](../PLAN.md).
 Trigger: пользователь 2026-07-11 — без ручного C++. Обсуждение в чате:

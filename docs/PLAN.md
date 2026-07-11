@@ -410,8 +410,7 @@ compiler/
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **open** | [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — не биндинг, собственная математика |
 | **20c** WebSocket framing/handshake — порт на MLC | **open, blocked on 11a** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) — зависит от `HttpRequest`/`HttpResponse` на MLC |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
-| **20e** `RawPointer[T]` → `extern fn(...)` cast | **open** | [TRACK_FFI_POINTER_CAST](agent/TRACK_FFI_POINTER_CAST.md) — предпосылка для 20f |
-| **20f** GL function-pointer loader — порт на MLC | **open, blocked on 20e** | [TRACK_GL_LOADER_TO_MLC](agent/TRACK_GL_LOADER_TO_MLC.md) |
+| **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — заменяет отменённые `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` (superseded 2026-07-11: GLAD2/epoxy резолвят function pointers сами, каст/таблица на MLC не нужны) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -533,10 +532,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [agent/TRACK_STDLIB_LOGIC_TO_MLC.md](agent/TRACK_STDLIB_LOGIC_TO_MLC.md))
   → STDLIB_WEBSOCKET_TO_MLC (blocked on STDLIB_HTTP_MLC closed
       → [agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md))
-  → FFI_POINTER_CAST (open, предпосылка GL loader
-      → [agent/TRACK_FFI_POINTER_CAST.md](agent/TRACK_FFI_POINTER_CAST.md))
-  → GL_LOADER_TO_MLC (blocked on FFI_POINTER_CAST closed
-      → [agent/TRACK_GL_LOADER_TO_MLC.md](agent/TRACK_GL_LOADER_TO_MLC.md))
+  → GL_GLAD_MIGRATION (open: GLAD2 вендоренный вместо ручного
+      `glfw_gl_dispatch.cpp`/`loader_shim.cpp`; заменяет отменённые
+      FFI_POINTER_CAST/GL_LOADER_TO_MLC (superseded 2026-07-11)
+      → [agent/TRACK_GL_GLAD_MIGRATION.md](agent/TRACK_GL_GLAD_MIGRATION.md))
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию

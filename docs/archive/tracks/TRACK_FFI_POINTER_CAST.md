@@ -1,4 +1,13 @@
-# Track: RawPointer[T] → extern fn(...) cast — примитив языка
+> **Superseded 2026-07-11, тем же чатом, ~30 минут после создания.** Причина:
+> факт-чек показал, что `libepoxy` (наш собственный C++-референс
+> `gtk-gl-cpp-2025` использует именно её) объявляет GL-функции как макрос →
+> глобальная переменная-указатель-на-функцию, резолвится ленивo **внутри**
+> `libepoxy.so`. Уже закрытый `extern fn ... = "glDrawArrays" from
+> "<epoxy/gl.h>"` эмитит текстовый вызов `glDrawArrays(...)`, который проходит
+> через макрос прозрачно — каст `RawPointer→fn-ptr` не нужен вообще. См.
+> [TRACK_GL_EPOXY_MIGRATION](../../agent/TRACK_GL_EPOXY_MIGRATION.md).
+
+# Track: RawPointer[T] → extern fn(...) cast — примитив языка (superseded, не нужен)
 
 Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §2.4/§8, [../PLAN.md](../PLAN.md).
 Trigger: пользователь 2026-07-11 — предпосылка для [TRACK_GL_LOADER_TO_MLC](TRACK_GL_LOADER_TO_MLC.md)
