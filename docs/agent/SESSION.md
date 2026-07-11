@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
+| driver_turns_since_plan | 4 |
 | step_last | 3 |
 | active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 |
-| test_gate | scope parse/infer check-only probes |
+| test_gate | scope codegen TaskScope+spawn link+run |
+
+### Turn 2026-07-11 20:55 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — scope codegen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 20:35 |
+| elapsed | ~20 min |
+| done    | `visit_scope`→`TaskScope()`+stmts; `__task_scope_new` builtin; TaskScope spawn infer; `scope` contextual Ident; `binding_scope` rename (keyword clash). |
+| verify  | check-only OK; C++ has `TaskScope()`+`.spawn`; link+run EXIT 0. |
+| result  | Codegen slice done. Plain: `scope \|s\|` emits real TaskScope. |
+| issues  | Parallel wall-time smoke still pending. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_SPAWN_DETACH — parallel sleep smoke (< serial) |
 
 ### Turn 2026-07-11 20:35 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — scope parse)
 

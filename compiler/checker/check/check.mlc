@@ -316,6 +316,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   names.set('true', true); names.set('false', true); names.set('exit', true)
   names.set('print', true); names.set('println', true); names.set('args', true); names.set('read_line', true); names.set('read_all', true)
   names.set('spawn_task', true)
+  names.set('__task_scope_new', true)
   names.set('block_on', true)
   names.set('is_ready', true)
   names.set('make_channel', true)

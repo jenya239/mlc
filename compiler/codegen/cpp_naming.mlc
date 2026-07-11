@@ -74,6 +74,7 @@ export fn map_builtin(name: string) -> string =
   else if name == "read_line" then "mlc::io::read_line"
   else if name == "read_all" then "mlc::io::read_all"
   else if name == "spawn_task" then "mlc::concurrency::spawn_task"
+  else if name == "__task_scope_new" then "mlc::concurrency::TaskScope"
   else if name == "make_channel" then "mlc::concurrency::make_channel"
   else if name == "is_ready" then "mlc::is_ready"
   else if name == "block_on" then "mlc::block_on"

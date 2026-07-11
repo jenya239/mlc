@@ -1,5 +1,5 @@
 // Mutation check: verify that x = value only applies to let mut bindings.
-// Separate pass from names.mlc; builds its own mutable-names scope.
+// Separate pass from names.mlc; builds its own mutable-names binding_scope.
 
 import { Expr, Stmt, Param, Pattern, Diagnostic, Span, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, SemanticExpressionIdent, SemanticExpressionBin, sexpr_span } from '../../ir/semantic_ir'
@@ -10,20 +10,20 @@ import { diagnostic_code_e031 } from '../diagnostic_codes'
 import { transform_expr, empty_transform_context, TransformContext } from '../transform/transform'
 import { transform_stmts } from '../transform/transform_stmts'
 
-fn scope_has(scope: [string], sought_name: string) -> bool =
-  scope.any(scope_entry => scope_entry == sought_name)
+fn scope_has(binding_scope: [string], sought_name: string) -> bool =
+  binding_scope.any(scope_entry => scope_entry == sought_name)
 
-fn mutable_scope_with_binding(scope: [string], binding_name: string) -> [string] =
-  scope.concat([binding_name])
+fn mutable_scope_with_binding(binding_scope: [string], binding_name: string) -> [string] =
+  binding_scope.concat([binding_name])
 
-fn mutable_scope_with_bindings(scope: [string], binding_names: [string]) -> [string] =
-  binding_names.fold(scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
+fn mutable_scope_with_bindings(binding_scope: [string], binding_names: [string]) -> [string] =
+  binding_names.fold(binding_scope, (accumulated_scope, binding_name) => accumulated_scope.concat([binding_name]))
 
-fn mutable_scope_after_let(scope: [string], name: string, is_mut: bool) -> [string] =
-  if is_mut then mutable_scope_with_binding(scope, name) else scope end
+fn mutable_scope_after_let(binding_scope: [string], name: string, is_mut: bool) -> [string] =
+  if is_mut then mutable_scope_with_binding(binding_scope, name) else binding_scope end
 
-fn mutable_scope_after_pattern_let(scope: [string], pattern: Shared<Pattern>, is_mut: bool) -> [string] =
-  if is_mut then mutable_scope_with_bindings(scope, pattern_bindings(pattern)) else scope end
+fn mutable_scope_after_pattern_let(binding_scope: [string], pattern: Shared<Pattern>, is_mut: bool) -> [string] =
+  if is_mut then mutable_scope_with_bindings(binding_scope, pattern_bindings(pattern)) else binding_scope end
 
 export type MutationCheckResult = MutationCheckResult { diagnostics: [Diagnostic], mutable_locals: [string] }
 

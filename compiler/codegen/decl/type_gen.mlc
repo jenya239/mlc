@@ -20,6 +20,7 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   else if type_name == 'Channel' then 'mlc::concurrency::Channel'
   else if type_name == 'Arc' then 'mlc::concurrency::Arc'
   else if type_name == 'Mutex' then 'mlc::concurrency::Mutex'
+  else if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
   else context.resolve(type_name)
   end
 
@@ -38,7 +39,10 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TUnknown => 'auto',
     TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
     TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
-    TNamed(type_name)  => context.resolve(type_name),
+    TNamed(type_name)  =>
+      if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
+      else context.resolve(type_name)
+      end,
     TTuple(types) =>
       `std::tuple<${types.map(type_value => sem_type_to_cpp(context, type_value)).join(', ')}>`,
     TPair(left, right) =>

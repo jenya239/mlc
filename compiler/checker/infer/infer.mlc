@@ -239,6 +239,9 @@ fn infer_expr_method(
   else if is_mutex_method(method_name) && type_is_mutex(object_parsed.inferred_type) then
     infer_mutex_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_task_scope_spawn_method(object_parsed.inferred_type, method_name) then
+    infer_task_scope_spawn_call(
+      object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_array_hof_method_on_receiver(object_parsed.inferred_type, method_name) then
     infer_array_hof_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
@@ -252,6 +255,26 @@ fn infer_expr_method(
       method_arguments.length(),
       inference_context.registry)
   end
+end
+
+fn type_is_task_scope(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'TaskScope',
+    _ => false
+  }
+
+fn is_task_scope_spawn_method(receiver_type: Shared<Type>, method_name: string) -> bool =
+  method_name == 'spawn' && type_is_task_scope(receiver_type)
+
+fn infer_task_scope_spawn_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  _method_span: Span,
+  inference_context: CheckContext,
+  _infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const with_arguments = infer_arguments_errors(object_parsed, method_arguments, inference_context)
+  with_arguments.with_type(Shared.new(TUnit))
 end
 
 fn infer_expr_field(object: Shared<Expr>, field_name: string, field_source_span: Span, inference_context: CheckContext) -> InferResult =

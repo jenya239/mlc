@@ -393,7 +393,7 @@ compiler/
 | **10b** GUI framework (layout/widgets/easing) | **done** | [TRACK_GUI_FRAMEWORK](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11 (STEP=0–6: IM layout/input/Button; `misc/gui/`; docs [GUI.md](GUI.md); smokes ok) |
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION/HTTP_MLC **closed**. Next: «без C++» queue (§20a–e) |
 | **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **done** (2026-07-11) | [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) **closed** STEP=1–7; Critic OK (`2fdc8c83`…`34977011`; parse+curl EXIT 0). Residual: no `[HttpRoute]` API |
-| **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **open, active** | [TRACK_CONCURRENCY_SPAWN_DETACH](agent/TRACK_CONCURRENCY_SPAWN_DETACH.md) **active** STEP=3 (parse done; codegen → task_scope.hpp) |
+| **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **open, active** | [TRACK_CONCURRENCY_SPAWN_DETACH](agent/TRACK_CONCURRENCY_SPAWN_DETACH.md) **active** STEP=3 (codegen done; parallel smoke next) |
 | **10c** Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas — один фреймворк) | **open, design-only, низкий приоритет** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — affine-transform tree + vector primitives, один фундамент для всех четырёх; v0 (screen-space, чистый IM) — прототип, не основа; активировать явной командой |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
@@ -523,7 +523,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_HTTP_MLC (**closed** 2026-07-11: Critic OK; STEP=1–7; self-host
       identical; REG 20/0; parse+curl
       → [archive/tracks/TRACK_STDLIB_HTTP_MLC.md](archive/tracks/TRACK_STDLIB_HTTP_MLC.md))
-  → **CONCURRENCY_SPAWN_DETACH (**active** STEP=3 — parse/infer ExprScope; codegen next;
+  → **CONCURRENCY_SPAWN_DETACH (**active** STEP=3 — TaskScope codegen; parallel smoke next;
     → [agent/TRACK_CONCURRENCY_SPAWN_DETACH.md](agent/TRACK_CONCURRENCY_SPAWN_DETACH.md)):**
   → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
     после SPAWN_DETACH / between independent tracks; `LANG_SELF_HOSTED_RUNTIME` = won't-do):**

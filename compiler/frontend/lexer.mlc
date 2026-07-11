@@ -58,7 +58,7 @@ fn is_ws(character: string) -> bool =
 fn mlc_reserved_keywords() -> [string] = [
   "fn", "type", "let", "mut", "const", "return", "break", "continue",
   "if", "then", "else", "unless", "while", "for", "in", "do", "end",
-  "match", "with", "scope", "import", "from", "as", "extern", "extend", "where",
+  "match", "with", "import", "from", "as", "extern", "extend", "where",
   "spawn", "move", "true", "false"
 ]
 
@@ -85,7 +85,6 @@ fn reserved_keyword_kind(word: string) -> TokenKind =
   else if word == "end" then KEnd
   else if word == "match" then KMatch
   else if word == "with" then KWith
-  else if word == "scope" then KScope
   else if word == "import" then KImport
   else if word == "from" then KFrom
   else if word == "as" then KAs

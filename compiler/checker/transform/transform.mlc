@@ -1254,6 +1254,8 @@ fn dispatch_transform_pass(
       transform_pass.visit_with(resource, binder, statements, source_span, stmts_fn),
     ExprSpawn(statements, source_span) =>
       transform_pass.visit_spawn(statements, source_span, stmts_fn),
+    ExprScope(binder, statements, source_span) =>
+      transform_pass.visit_scope(binder, statements, source_span, stmts_fn),
     _ =>
       transform_pass.visit_unsupported(expression, stmts_fn)
   }
@@ -1613,6 +1615,37 @@ extend TransformPass {
     const with_body_context = transform_context_with_env(self.transform_context, with_body_environment)
     const statements_parsed = stmts_fn(statements, with_body_context)
     Shared.new(SemanticExpressionWith(typed_resource, binder, statements_parsed.statements, Shared.new(TUnit), source_span))
+  end
+  fn visit_scope(
+    self: TransformPass,
+    binder: string,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
+    const scope_type = Shared.new(TNamed('TaskScope'))
+    let scope_body_environment = self.transform_context.type_env
+    scope_body_environment.set(binder, scope_type)
+    const scope_body_context = transform_context_with_env(self.transform_context, scope_body_environment)
+    const statements_parsed = stmts_fn(statements, scope_body_context)
+    const scope_init = Shared.new(SemanticExpressionCall(
+      Shared.new(SemanticExpressionIdent('__task_scope_new', scope_type, source_span)),
+      [],
+      [],
+      scope_type,
+      source_span))
+    const scope_let = Shared.new(SemanticStatementLet(
+      binder, false, scope_init, scope_type, source_span))
+    let block_statements: [Shared<SemanticStatement>] = [scope_let]
+    let mut statement_index = 0
+    while statement_index < statements_parsed.statements.length() do
+      block_statements.push(statements_parsed.statements[statement_index])
+      statement_index = statement_index + 1
+    end
+    Shared.new(SemanticExpressionBlock(
+      block_statements,
+      Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span)),
+      Shared.new(TUnit),
+      source_span))
   end
   fn visit_unsupported(self: TransformPass, expression: Shared<Expr>, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> =
     Shared.new(SemanticExpressionUnit(Shared.new(TUnit), expr_span(expression)))
