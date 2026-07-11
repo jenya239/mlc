@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 |
-| test_gate | websocket_sha1_smoke + websocket_gate |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 |
+| test_gate | websocket_frame_smoke + websocket_sha1_smoke + websocket_gate |
+
+### Turn 2026-07-11 18:10 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 — frames)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 18:01 |
+| elapsed | ~9 min |
+| done    | MLC `encode_unmasked/masked_frame`/`try_decode_frame`/`WsFrameDecode` in `websocket.mlc`; smoke `websocket_frame_smoke.mlc` + `run_websocket_frame_smoke.sh`. |
+| verify  | frame smoke EXIT 0; sha1 smoke EXIT 0; `run_websocket_gate.sh` OK. |
+| result  | STEP=3 done. Plain: WS frames encode/decode (+mask XOR) are pure MLC. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_WEBSOCKET_TO_MLC — handshake on HttpServer + Accept |
 
 ### Turn 2026-07-11 15:40 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 — SHA1/base64)
 

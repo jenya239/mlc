@@ -3,7 +3,7 @@
 //! @type mixed
 //! @namespace mlc::websocket
 //!
-//! TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 — MLC SHA1 + base64 for Accept.
+//! TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 — MLC frame encode/decode (+ STEP=2 SHA1).
 //! Public upgrade/read/write still extern → websocket.hpp until later STEPs.
 
 module WebSocket
@@ -151,16 +151,6 @@ fn sha1_digest_bytes(message: string) -> [i32] = do
   digest
 end
 
-fn digest_to_raw_string(digest: [i32]) -> string = do
-  let mut raw = ""
-  let mut index = 0
-  while index < digest.length() do
-    raw = raw + string_from_byte_u8(digest[index])
-    index = index + 1
-  end
-  raw
-end
-
 fn base64_encode_bytes(digest: [i32]) -> string = do
   let length = digest.length()
   let mut output = ""
@@ -210,3 +200,132 @@ end
 
 export fn sec_websocket_accept(client_key: string) -> string =
   base64_encode_bytes(sha1_digest_bytes(client_key + websocket_guid()))
+
+fn max_payload_bytes() -> i32 = 1048576
+
+fn bytes_to_string(bytes: [i32]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < bytes.length() do
+    text = text + string_from_byte_u8(bytes[index])
+    index = index + 1
+  end
+  text
+end
+
+export fn encode_unmasked_frame(opcode: i32, payload: string) -> string = do
+  let mut frame = ""
+  frame = frame + string_from_byte_u8(128 | (opcode & 15))
+  let length = payload.byte_size()
+  if length <= 125 then
+    frame = frame + string_from_byte_u8(length)
+  else if length <= 65535 then
+    frame = frame + string_from_byte_u8(126)
+    frame = frame + string_from_byte_u8(logical_shr(length, 8) & 255)
+    frame = frame + string_from_byte_u8(length & 255)
+  else
+    frame = frame + string_from_byte_u8(127)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(logical_shr(length, 24) & 255)
+    frame = frame + string_from_byte_u8(logical_shr(length, 16) & 255)
+    frame = frame + string_from_byte_u8(logical_shr(length, 8) & 255)
+    frame = frame + string_from_byte_u8(length & 255)
+  end
+  frame + payload
+end
+
+export fn encode_masked_frame(opcode: i32, payload: string, mask: string) -> string = do
+  let mut frame = ""
+  frame = frame + string_from_byte_u8(128 | (opcode & 15))
+  let length = payload.byte_size()
+  if length <= 125 then
+    frame = frame + string_from_byte_u8(128 | length)
+  else if length <= 65535 then
+    frame = frame + string_from_byte_u8(128 | 126)
+    frame = frame + string_from_byte_u8(logical_shr(length, 8) & 255)
+    frame = frame + string_from_byte_u8(length & 255)
+  else
+    frame = frame + string_from_byte_u8(128 | 127)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(0)
+    frame = frame + string_from_byte_u8(logical_shr(length, 24) & 255)
+    frame = frame + string_from_byte_u8(logical_shr(length, 16) & 255)
+    frame = frame + string_from_byte_u8(logical_shr(length, 8) & 255)
+    frame = frame + string_from_byte_u8(length & 255)
+  end
+  frame = frame + mask
+  let mut index = 0
+  while index < length do
+    let mask_byte = byte_at(mask, index % 4)
+    frame = frame + string_from_byte_u8(byte_at(payload, index) ^ mask_byte)
+    index = index + 1
+  end
+  frame
+end
+
+export type WsFrameDecode =
+  | WsFrameIncomplete
+  | WsFrameOk(i32, string, i32)
+  | WsFrameTooLarge
+
+export fn try_decode_frame(buffer: string) -> WsFrameDecode = do
+  let size = buffer.byte_size()
+  if size < 2 then
+    return WsFrameIncomplete
+  end
+  let first = byte_at(buffer, 0)
+  let second = byte_at(buffer, 1)
+  let opcode = first & 15
+  let masked = (second & 128) != 0
+  let mut payload_length = second & 127
+  let mut header_size = 2
+  if payload_length == 126 then
+    if size < 4 then
+      return WsFrameIncomplete
+    end
+    payload_length = (byte_at(buffer, 2) << 8) | byte_at(buffer, 3)
+    header_size = 4
+  else if payload_length == 127 then
+    if size < 10 then
+      return WsFrameIncomplete
+    end
+    if byte_at(buffer, 2) != 0 || byte_at(buffer, 3) != 0 || byte_at(buffer, 4) != 0 || byte_at(buffer, 5) != 0 then
+      return WsFrameTooLarge
+    end
+    payload_length =
+      (byte_at(buffer, 6) << 24) | (byte_at(buffer, 7) << 16) | (byte_at(buffer, 8) << 8) | byte_at(buffer, 9)
+    header_size = 10
+  end
+  if payload_length > max_payload_bytes() then
+    return WsFrameTooLarge
+  end
+  let mask_size = if masked then 4 else 0 end
+  let total = header_size + mask_size + payload_length
+  if size < total then
+    return WsFrameIncomplete
+  end
+  let mut payload_bytes: [i32] = []
+  let mut index = 0
+  while index < payload_length do
+    let raw = byte_at(buffer, header_size + mask_size + index)
+    if masked then
+      let mask_byte = byte_at(buffer, header_size + (index % 4))
+      payload_bytes.push(raw ^ mask_byte)
+    else
+      payload_bytes.push(raw)
+    end
+    index = index + 1
+  end
+  WsFrameOk(opcode, bytes_to_string(payload_bytes), total)
+end
+
+export fn encode_text_frame(payload: string) -> string =
+  encode_unmasked_frame(1, payload)
+
+export fn encode_close_frame() -> string =
+  encode_unmasked_frame(8, "")

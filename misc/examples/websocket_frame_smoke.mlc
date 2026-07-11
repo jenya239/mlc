@@ -1,0 +1,74 @@
+// TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 — frame encode/decode + mask XOR.
+
+import {
+  encode_text_frame,
+  encode_masked_frame,
+  try_decode_frame,
+  WsFrameIncomplete,
+  WsFrameOk,
+  WsFrameTooLarge
+} from '../../lib/mlc/common/stdlib/net/websocket.mlc'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+
+fn repeat_x(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + "x"
+    index = index + 1
+  end
+  text
+end
+
+fn mask4() -> string =
+  string_from_byte_u8(1) + string_from_byte_u8(2) + string_from_byte_u8(3) + string_from_byte_u8(4)
+
+fn decode_ok_text(frame: string, expected: string) -> i32 = do
+  match try_decode_frame(frame) {
+    WsFrameOk(opcode, payload, consumed) => do
+      if opcode != 1 then
+        return 1
+      end
+      if payload != expected then
+        return 2
+      end
+      if consumed != frame.byte_size() then
+        return 3
+      end
+      0
+    end
+    WsFrameIncomplete => 4
+    WsFrameTooLarge => 5
+  }
+end
+
+fn main() -> i32 = do
+  let status = decode_ok_text(encode_text_frame("hi"), "hi")
+  if status != 0 then
+    return status
+  end
+
+  let incomplete_status = match try_decode_frame(string_from_byte_u8(129)) {
+    WsFrameIncomplete => 0
+    WsFrameOk(_, _, _) => 6
+    WsFrameTooLarge => 7
+  }
+  if incomplete_status != 0 then
+    return incomplete_status
+  end
+
+  let masked_status = decode_ok_text(encode_masked_frame(1, "ab", mask4()), "ab")
+  if masked_status != 0 then
+    return 10 + masked_status
+  end
+
+  let long_payload = repeat_x(130)
+  let long_status = decode_ok_text(encode_text_frame(long_payload), long_payload)
+  if long_status != 0 then
+    return 20 + long_status
+  end
+
+  0
+end
