@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` active** STEP=1 — Design: `unsafe` marker vs diagnostics-only.
-See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). §20 initiative closed.
+**`TRACK_FFI_SAFETY` active** STEP=2 — checker warning missing concurrency attr (+ stdlib annotate).
+See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). Decision B locked (STEP=1).
 
 
 ## Step sizing (good vs bad)

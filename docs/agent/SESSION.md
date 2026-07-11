@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_FFI_SAFETY STEP=1 |
-| test_gate | docs-only plan-refresh; §20 done; FFI_SAFETY active |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_FFI_SAFETY STEP=2 |
+| test_gate | STEP=1: inventory 255 extern/0 attrs; Decision B locked |
+
+### Turn 2026-07-11 29:55 (Driver TRACK_FFI_SAFETY STEP=1 — Design)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 29:40 |
+| elapsed | ~15 min |
+| done    | Inventory `lib/mlc`: 255 `extern fn`, 0 concurrency attrs; Decision **B** (no `unsafe` syntax); severity=warning; no implicit attr; STEP=2 must annotate stdlib or exempt. |
+| verify  | `rg -c 'extern fn' lib/mlc` sum=255; `rg blocking\|thread_safe\|thread_affine lib/mlc --glob '*.mlc'` empty; Decision table in TRACK. |
+| result  | STEP=1 done. Plain: `extern` is the marker; warn, don't invent `unsafe`. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_FFI_SAFETY — checker warning missing concurrency attr + stdlib annotate |
 
 ### Turn 2026-07-11 29:40 (Planner — activate TRACK_FFI_SAFETY)
 
