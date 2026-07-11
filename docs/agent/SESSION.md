@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_LANG_ERROR_UNION closed → Critic |
-| test_gate | STEP=5: REG 20/0; self-host DIFF 0; error_union smoke ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none) — Planner next |
+| test_gate | Critic: smoke ok; Ruby error_union 6/0; main check-only 0 |
+
+### Turn 2026-07-11 34:05 (Critic TRACK_LANG_ERROR_UNION — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 33:50 |
+| elapsed | ~15 min |
+| done    | Audited STEP=1–5 (`57913a3f`…`4ee642cc`); Ruby+mlcc desugar; e2e+`?`; MLC.md; archive/PLAN; re-ran smoke + Ruby 6/0 + main 0. **reopen: none**. |
+| verify  | smoke ok; Ruby 6/0; `test ! -f docs/agent/TRACK_LANG_ERROR_UNION.md`; PLAN §17 Critic OK. |
+| result  | Critic OK. Residual: inferred `T!` out of scope by design. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — next after ERROR_UNION (DEBUG_SOURCE_MAP or PLAN pick) |
 
 ### Turn 2026-07-11 33:50 (Driver TRACK_LANG_ERROR_UNION STEP=5 — docs + close)
 

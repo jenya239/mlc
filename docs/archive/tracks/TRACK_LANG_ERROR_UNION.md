@@ -4,7 +4,12 @@ Parent: [../../PLAN.md](../../PLAN.md) §17 ("Zig — Error unions", приме�
 Предшественник: [TRACK_LANG_RESULT_COMBINATORS.md](TRACK_LANG_RESULT_COMBINATORS.md)
 (closed 2026-07-09 — `map`/`and_then`/`map_err`, `?` с `From`-конвертацией).
 
-## Status: **closed** (2026-07-11) — awaiting Critic
+## Status: **closed** (2026-07-11) — Critic OK
+
+**Critic 2026-07-11:** STEP=1–5 vs `57913a3f`…`4ee642cc`; Ruby
+`apply_error_union_sugar` + mlcc `types.mlc`; fixtures/smoke e2e+`?`; `MLC.md`;
+archived; PLAN §17 done; re-ran smoke + Ruby 6/0 + main check-only 0.
+**reopen: none**. Residual: inferred `T!` stays out of scope (by design).
 
 **Driver 2026-07-11 STEP=5:** `MLC.md` `T!E` note + feature table; `regression_gate`
 20/0; self-host p1↔p2 DIFF 0; TRACK archived. Close → Critic.

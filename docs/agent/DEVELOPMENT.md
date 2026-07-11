@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_LANG_ERROR_UNION` closed** (awaiting Critic) — STEP=1–5; REG 20/0; self-host DIFF 0.
-See [TRACK_LANG_ERROR_UNION.md](../archive/tracks/TRACK_LANG_ERROR_UNION.md).
+**No active Driver track.** Last: `TRACK_LANG_ERROR_UNION` Critic OK.
+See [TRACK_LANG_ERROR_UNION.md](../archive/tracks/TRACK_LANG_ERROR_UNION.md). Next: Planner (DEBUG_SOURCE_MAP research or PLAN pick).
 
 
 ## Step sizing (good vs bad)
