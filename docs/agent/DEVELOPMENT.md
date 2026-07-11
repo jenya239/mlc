@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` active** STEP=2 — `extern fn` to vendored glad headers.
+**`TRACK_GL_GLAD_MIGRATION` active** STEP=3 — link vendored glad `.c` in build.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 

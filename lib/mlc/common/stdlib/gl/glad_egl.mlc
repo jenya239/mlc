@@ -1,0 +1,5 @@
+//! @module std/gl/glad_egl
+//! EGL loaders via thin abi (opaque display APIs deferred — RawPointer codegen residual).
+
+export extern fn glad_loader_unload_egl() -> unit
+  = "mlc::gl::glad_egl_abi::loader_unload_egl" from "mlc/gl/glad_egl_abi.hpp"

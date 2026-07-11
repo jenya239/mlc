@@ -1,0 +1,53 @@
+//! @module std/gl/glad_gl
+//! Desktop OpenGL via vendored GLAD2 + thin `glad_gl_abi` (mlcc takes &symbol;
+//! GLAD macros make raw `glClear` unusable as a function address).
+//! GLFW context/input + string/scratch stay on `glfw_gl_dispatch` until STEPs 4–5.
+
+export extern fn glad_loader_load_gl() -> i32
+  = "mlc::gl::glad_abi::loader_load_gl" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn glad_loader_unload_gl() -> unit
+  = "mlc::gl::glad_abi::loader_unload_gl" from "mlc/gl/glad_gl_abi.hpp"
+
+export extern fn gl_clear(mask: i32) -> unit
+  = "mlc::gl::glad_abi::clear" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::glad_abi::viewport" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_enable(capability: i32) -> unit
+  = "mlc::gl::glad_abi::enable" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
+  = "mlc::gl::glad_abi::blend_func" from "mlc/gl/glad_gl_abi.hpp"
+
+export extern fn gl_create_shader(shader_type: i32) -> i32
+  = "mlc::gl::glad_abi::create_shader" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_compile_shader(shader: i32) -> unit
+  = "mlc::gl::glad_abi::compile_shader" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_create_program() -> i32
+  = "mlc::gl::glad_abi::create_program" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_attach_shader(program: i32, shader: i32) -> unit
+  = "mlc::gl::glad_abi::attach_shader" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_link_program(program: i32) -> unit
+  = "mlc::gl::glad_abi::link_program" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_use_program(program: i32) -> unit
+  = "mlc::gl::glad_abi::use_program" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_delete_shader(shader: i32) -> unit
+  = "mlc::gl::glad_abi::delete_shader" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_delete_program(program: i32) -> unit
+  = "mlc::gl::glad_abi::delete_program" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_uniform_1i(location: i32, value: i32) -> unit
+  = "mlc::gl::glad_abi::uniform_1i" from "mlc/gl/glad_gl_abi.hpp"
+
+export extern fn gl_bind_buffer(target: i32, buffer: i32) -> unit
+  = "mlc::gl::glad_abi::bind_buffer" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
+  = "mlc::gl::glad_abi::enable_vertex_attrib_array" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
+  = "mlc::gl::glad_abi::draw_arrays" from "mlc/gl/glad_gl_abi.hpp"
+
+export extern fn gl_bind_texture(target: i32, texture: i32) -> unit
+  = "mlc::gl::glad_abi::bind_texture" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_active_texture(texture_unit: i32) -> unit
+  = "mlc::gl::glad_abi::active_texture" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_tex_parameter_i(target: i32, parameter_name: i32, parameter_value: i32) -> unit
+  = "mlc::gl::glad_abi::tex_parameter_i" from "mlc/gl/glad_gl_abi.hpp"
+
+// Out-param / string / GLfloat / pointer entry points stay on dispatch wrappers.

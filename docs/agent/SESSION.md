@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=2 |
-| test_gate | glad vendored; all dispatch gl* in Core 3.3; eglGetPlatformDisplayEXT present |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=3 |
+| test_gate | glad_bindings_smoke mlcc+g++ -fsyntax-only 0 |
+
+### Turn 2026-07-11 26:45 (Driver TRACK_GL_GLAD_MIGRATION STEP=2 — extern fn)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 26:20 |
+| elapsed | ~25 min |
+| done    | `glad_{gl,egl,gles2}.mlc` + `glad_*_abi.hpp` shims; re-export `glad_{gl,egl,gles2}.hpp`; smoke `glad_bindings_smoke.mlc`. GLFW/string/scratch stay on dispatch. |
+| verify  | `mlcc -o tmp/glad_bindings_smoke …` 0; `g++ -fsyntax-only` on glad_gl/gles2/egl/smoke `.cpp` 0. |
+| result  | STEP=2 done. Plain: MLC calls glad via thin abi (macros break `&glClear`). |
+| issues  | Foreign `compiler/out/*` left. RawPointer EGL APIs deferred; glClearColor f32 vs f64 deferred. |
+| next    | ROLE=Driver STEP=3 TRACK_GL_GLAD_MIGRATION — link glad `.c` in build_bin.sh / GUI |
 
 ### Turn 2026-07-11 26:15 (Driver TRACK_GL_GLAD_MIGRATION STEP=1 — Decision + vendor)
 

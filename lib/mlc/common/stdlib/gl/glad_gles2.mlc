@@ -1,0 +1,16 @@
+//! @module std/gl/glad_gles2
+//! GLES2 via vendored GLAD2 + thin abi (same &macro issue as desktop).
+
+export extern fn glad_loader_load_gles2() -> i32
+  = "mlc::gl::glad_gles2_abi::loader_load_gles2" from "mlc/gl/glad_gles2_abi.hpp"
+export extern fn glad_loader_unload_gles2() -> unit
+  = "mlc::gl::glad_gles2_abi::loader_unload_gles2" from "mlc/gl/glad_gles2_abi.hpp"
+
+export extern fn gles_clear(mask: i32) -> unit
+  = "mlc::gl::glad_gles2_abi::clear" from "mlc/gl/glad_gles2_abi.hpp"
+export extern fn gles_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::glad_gles2_abi::viewport" from "mlc/gl/glad_gles2_abi.hpp"
+export extern fn gles_bind_buffer(target: i32, buffer: i32) -> unit
+  = "mlc::gl::glad_gles2_abi::bind_buffer" from "mlc/gl/glad_gles2_abi.hpp"
+export extern fn gles_draw_arrays(mode: i32, first: i32, count: i32) -> unit
+  = "mlc::gl::glad_gles2_abi::draw_arrays" from "mlc/gl/glad_gles2_abi.hpp"

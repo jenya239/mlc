@@ -1,0 +1,72 @@
+// TRACK_GL_GLAD_MIGRATION STEP=2 — extern fn → glad headers (codegen smoke).
+// No GL context; verifies #include + call emit for desktop + EGL unload + GLES2 loaders.
+
+import {
+  glad_loader_load_gl,
+  glad_loader_unload_gl,
+  gl_clear,
+  gl_viewport,
+  gl_draw_arrays,
+  gl_enable,
+  gl_blend_func,
+  gl_create_shader,
+  gl_create_program,
+  gl_bind_buffer,
+  gl_bind_texture,
+  gl_active_texture,
+  gl_tex_parameter_i,
+  gl_uniform_1i,
+  gl_use_program,
+  gl_delete_shader,
+  gl_delete_program,
+  gl_compile_shader,
+  gl_attach_shader,
+  gl_link_program,
+  gl_enable_vertex_attrib_array
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+import {
+  glad_loader_unload_egl
+} from '../../lib/mlc/common/stdlib/gl/glad_egl.mlc'
+
+import {
+  glad_loader_load_gles2,
+  glad_loader_unload_gles2,
+  gles_clear,
+  gles_viewport,
+  gles_bind_buffer,
+  gles_draw_arrays
+} from '../../lib/mlc/common/stdlib/gl/glad_gles2.mlc'
+
+fn main() -> i32 = do
+  let load_gl = glad_loader_load_gl()
+  gl_clear(0)
+  gl_viewport(0, 0, 1, 1)
+  gl_enable(0)
+  gl_blend_func(0, 0)
+  let shader = gl_create_shader(0)
+  gl_compile_shader(shader)
+  let program = gl_create_program()
+  gl_attach_shader(program, shader)
+  gl_link_program(program)
+  gl_use_program(program)
+  gl_uniform_1i(0, 0)
+  gl_bind_buffer(0, 0)
+  gl_enable_vertex_attrib_array(0)
+  gl_draw_arrays(0, 0, 0)
+  gl_bind_texture(0, 0)
+  gl_active_texture(0)
+  gl_tex_parameter_i(0, 0, 0)
+  gl_delete_shader(shader)
+  gl_delete_program(program)
+  glad_loader_unload_gl()
+
+  let load_gles = glad_loader_load_gles2()
+  gles_clear(0)
+  gles_viewport(0, 0, 1, 1)
+  gles_bind_buffer(0, 0)
+  gles_draw_arrays(0, 0, 0)
+  glad_loader_unload_gles2()
+  glad_loader_unload_egl()
+  load_gl + load_gles
+end
