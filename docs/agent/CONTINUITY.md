@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-11-self-hosted-runtime-priority` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-11-runtime-stays-cpp` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-11-self-hosted-runtime-priority
+INSTRUCTIONS_REV=2026-07-11-runtime-stays-cpp
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -55,8 +55,7 @@ INSTRUCTIONS_REV=2026-07-11-self-hosted-runtime-priority
 | TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
 | **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
 | **Этот turn закрыл трек (Driver STEP=N был последним pending, TRACK помечен closed)** | `next` = **`ROLE=Critic STEP=critique-audit TRACK=<только что закрытый>`** — обязательно, даже если следующий трек в очереди `PLAN.md` уже известен и есть pending шаг. Инцидент 2026-07-10: 5 закрытий подряд (TRAMPOLINE, BLOCK_ID_COLLISION, LOWERING_GAPS, CLI_STDIN, TEXT_RENDERING) — ни разу не запустился Critic, правило «Planner не повторяется» (см. ниже) съедало ротацию, потому что pending-шаг в следующем треке был всегда. Проверка на старте turn: если последняя запись `SESSION.md` содержит `close`/`closed` в `result` — этот HARD LIMIT применяется **раньше** любого другого выбора `next`, включая numbered pending step |
-| **`LANG_SELF_HOSTED_RUNTIME`** (PLAN.md §20f) | Пользователь 2026-07-11: «ручного C++ не должно быть нигде вообще, иначе в MLC нет смысла» — исправляет ошибочную границу, что рантайм (`core`/`concurrency`) остаётся C++ навсегда. **Максимальный приоритет** — Planner берёт этот трек **сразу после** закрытия текущего активного (`STDLIB_HTTP_MLC`), раньше остальной «без hand-written C++» группы ниже. STEP=1 — decision-only, не начинать реализацию без явного прохождения decision-таблицы в треке (максимальный blast radius в проекте — весь компилятор зависит от `Array`/`String`/`Shared`) |
-| **«без hand-written C++» инициатива** (PLAN.md §20, треки `FFI_SHIM_MIGRATION`/`TEXT_MSDF_TO_MLC`/`STDLIB_HTTP_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/`GL_GLAD_MIGRATION`) | Пользователь 2026-07-11 — высокий приоритет, но без «максимальный приоритет» (в отличие от `LANG_SELF_HOSTED_RUNTIME` выше и прошлого `PIPELINE_MERGE_TCP_SPAWN`). `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` superseded тем же днём (GLAD2/epoxy сами резолвят function pointers, свой каст/таблица не нужны) → `docs/archive/tracks/`, заменены на `GL_GLAD_MIGRATION`, не открывать их снова. Planner берёт следующий pending шаг из этой группы **после** текущего активного трека (`STDLIB_HTTP_MLC`) и после `LANG_SELF_HOSTED_RUNTIME`, не прерывая их на середине; порядок между треками этой группы — по зависимостям (`STDLIB_HTTP_MLC` → `STDLIB_WEBSOCKET_TO_MLC`), остальное — любой |
+| **«без hand-written C++» инициатива** (PLAN.md §20, треки `FFI_SHIM_MIGRATION`/`TEXT_MSDF_TO_MLC`/`STDLIB_HTTP_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/`GL_GLAD_MIGRATION`) | Пользователь 2026-07-11 — высокий приоритет, но без «максимальный приоритет» (в отличие от прошлого `PIPELINE_MERGE_TCP_SPAWN`). `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` superseded тем же днём (GLAD2/epoxy сами резолвят function pointers, свой каст/таблица не нужны) → `docs/archive/tracks/`, заменены на `GL_GLAD_MIGRATION`, не открывать их снова. `LANG_SELF_HOSTED_RUNTIME` рассмотрен и **отклонён** тем же днём (рантайм `core`/`concurrency` остаётся C++ — стандартная практика, риск/выгода не в пользу переписывания) → `docs/archive/tracks/`, не открывать снова. Planner берёт следующий pending шаг из этой группы **после** текущего активного трека, не прерывая его на середине; порядок между треками этой группы — по зависимостям (`STDLIB_HTTP_MLC` → `STDLIB_WEBSOCKET_TO_MLC`), остальное — любой |
 
 ## When to stop (only these)
 
