@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=7 |
-| test_gate | pg/crypto/tcp/spawn/ws/http + abi smokes OK |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_FFI_SHIM_MIGRATION closed — Critic |
+| test_gate | self-host identical; regression_gate 20/0 |
+
+### Turn 2026-07-11 15:10 (Driver TRACK_FFI_SHIM_MIGRATION STEP=7 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 15:00 |
+| elapsed | ~10 min |
+| done    | Self-host p1/p2 identical; `regression_gate.sh` 20/0; TRACK archived; PLAN §20a closed. |
+| verify  | `diff -rq p1 p2` empty; regression 20/0. |
+| result  | TRACK closed. Plain: shim `.hpp` gone; abi+bridges remain. |
+| issues  | Queued prompt VM STEP=2 stale. Residuals: bridges/TcpStream/Option. Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_FFI_SHIM_MIGRATION |
 
 ### Turn 2026-07-11 15:00 (Driver TRACK_FFI_SHIM_MIGRATION STEP=6 — regression)
 

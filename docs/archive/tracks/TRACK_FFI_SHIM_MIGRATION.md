@@ -1,11 +1,16 @@
 # Track: Postgres/Crypto/Tcp — прямой extern fn вместо hand-written C++ shim
 
-Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8, [../PLAN.md](../PLAN.md).
+Parent: [../../FFI_LAYER.md](../../FFI_LAYER.md) §8, [../../PLAN.md](../../PLAN.md).
 Trigger: пользователь 2026-07-11 — весь функционал должен собираться без
 ручного C++, либо автогенерация, либо прямой импорт заголовков сторонней
 библиотеки.
 
-## Status: **active** — STEP=7 next (self-host + close)
+## Status: **closed** (2026-07-11)
+
+**Driver 2026-07-11:** STEP=7 — self-host `mlcc`→`mlcc2`→`diff` identical;
+`regression_gate.sh` 20/0; archived. Residuals: Option extern on Tcp; Ruby
+control-flow in `*_bridge.hpp`; TcpStream RAII for websocket; abi/handle
+tables still C++ (no module-level `let mut`).
 
 **Driver 2026-07-11:** STEP=6 — regression OK: postgres/crypto/tcp echo/
 mlcc tcp echo/spawn/websocket/http curl + three mlc abi smokes. Public API
@@ -153,10 +158,10 @@ bare `extern fn` (Ruby maps to `.hpp`); `tcp.mlc` already `= "…" from
 | 4 | Tcp: `extern type`+`drop`+`extern fn` в `std/net/tcp.mlc` (оба пайплайна). | **done** (2026-07-11: fd-as-token + abi; Option/MLC-body residual) |
 | 5 | Удалить `postgres.hpp`/`sodium.hpp`/`tcp.hpp`. | **done** (2026-07-11: → `*_bridge.hpp` + abi) |
 | 6 | Regression: все gate зелёные без изменения публичного API. | **done** (2026-07-11: pg/crypto/tcp/spawn/ws/http + abi smokes) |
-| 7 | Self-host diff + `regression_gate.sh`; close. | pending |
+| 7 | Self-host diff + `regression_gate.sh`; close. | **done** (2026-07-11: identical; regression 20/0; closed) |
 
 ## Open questions
 
-- None blocking STEP=6. Residuals: Option extern on Tcp; Ruby control-flow still
-  in bridges (not pure abi); TcpListener/TcpStream in `tcp_bridge.hpp` for
-  websocket; module-level mut; no MLC `\xHH`.
+- Track closed. Residuals (not blockers): Option extern on Tcp; Ruby
+  control-flow in bridges; TcpStream in `tcp_bridge.hpp` for websocket;
+  module-level mut; no MLC `\xHH`.

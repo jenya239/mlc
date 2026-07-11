@@ -255,9 +255,9 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 
 **Треки:**
 
-- [TRACK_FFI_SHIM_MIGRATION](agent/TRACK_FFI_SHIM_MIGRATION.md) — Postgres +
-  Crypto + Tcp: прямой `extern fn` к `libpq-fe.h`/`sodium.h`/POSIX socket
-  syscalls, bookkeeping на MLC (сами syscall'ы — libc, не убираются).
+- [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) —
+  **closed** 2026-07-11: Postgres/Crypto/Tcp → `*_abi.hpp`/`*_bridge.hpp`;
+  bookkeeping partial MLC; TcpStream residual for websocket.
 - [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — EDT/SDF
   алгоритм на MLC, без C++.
 - [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) — HTTP-парсер/

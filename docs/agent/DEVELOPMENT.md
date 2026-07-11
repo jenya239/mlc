@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SHIM_MIGRATION` active** STEP=7 — self-host diff + `regression_gate.sh`; close.
-See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
+**`TRACK_FFI_SHIM_MIGRATION` closed** — Critic next. Then Planner activates next
+«без C++» track (e.g. WEBSOCKET_TO_MLC). See
+[TRACK_FFI_SHIM_MIGRATION.md](../archive/tracks/TRACK_FFI_SHIM_MIGRATION.md).
 
 
 ## Step sizing (good vs bad)
