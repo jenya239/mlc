@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` active** STEP=7 — verify-gate (self-host diff,
-`regression_gate`, close). See
-[TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
+**`TRACK_STDLIB_HTTP_MLC` closed** (STEP=1–7) — Critic next. Then max-pri
+[TRACK_LANG_SELF_HOSTED_RUNTIME](TRACK_LANG_SELF_HOSTED_RUNTIME.md).
 
 
 ## Step sizing (good vs bad)

@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-11-no-cpp-shim-priority` |
+| instructions_rev | `2026-07-11-self-hosted-runtime-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=7 |
-| test_gate | docs-only |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_STDLIB_HTTP_MLC closed — Critic |
+| test_gate | self-host + regression 20/0 + HTTP gates |
+
+### Turn 2026-07-11 13:00 (Driver TRACK_STDLIB_HTTP_MLC STEP=7 — verify-gate / close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:41 |
+| elapsed | ~19 min |
+| done    | Verify-gate: `mlcc`→`mlcc2` DIFF_EXIT=0; `regression_gate` 20/0; parse+curl EXIT 0; TRACK/PLAN/DEVELOPMENT closed. |
+| verify  | DIFF_EXIT=0; REG 20/0; PARSE=0; CURL=0. |
+| result  | Track closed. Plain: MLC HttpServer verified end-to-end. |
+| issues  | Queued prompt VM STEP=2 stale; ran SESSION STEP=7. Foreign `compiler/out/*` + dirty `FFI_LAYER.md` left. Residuals: `websocket_http.hpp`; demo if/else routes; Ruby registry bare-name. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_HTTP_MLC |
 
 ### Turn 2026-07-11 12:39 (Driver TRACK_STDLIB_HTTP_MLC STEP=6 — docs)
 

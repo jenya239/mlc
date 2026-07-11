@@ -21,7 +21,12 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=7 next (verify-gate) — **active**
+## Status: **closed** (2026-07-11) — STEP=1–7 done
+
+**Driver 2026-07-11:** STEP=7 — verify-gate: self-host `mlcc`→`mlcc2`
+`DIFF_EXIT=0`; `regression_gate` 20/0; parse+curl gates EXIT 0. Track closed.
+Residuals for Critic: `websocket_http.hpp`; demo local if/else (no
+`HttpRoute` array); Ruby `registry.rb` bare-name.
 
 **Driver 2026-07-11:** STEP=6 — `STDLIB_BACKEND.md` §1/§2/§5, `MLC.md`
 Tcp/HTTP + bare table, `FFI_LAYER.md` §8 row; examples already in place.
@@ -155,7 +160,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | **done** (2026-07-11: curl gate EXIT 0) |
 | 5 | Удалить `http_request.hpp`/`http_router.hpp` (+ проверить `serve_http_with_thread_pool` usage). | **done** (2026-07-11: deleted + http_server.hpp; WS uses `websocket_http.hpp`) |
 | 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | **done** (2026-07-11: STDLIB_BACKEND/MLC/FFI_LAYER) |
-| 7 | Verify-gate: self-host diff, regression_gate, close. | pending |
+| 7 | Verify-gate: self-host diff, regression_gate, close. | **done** (2026-07-11: DIFF_EXIT=0; REG 20/0; parse+curl EXIT 0) |
 
 <!-- sub-steps STEP=1: 1) lock module path + bare-name key; 2) lock HttpRequest/HttpResponse fields; 3) lock parse grammar (request-line/headers/CL) + router shape; write Decision section -->
 <!-- sub-steps STEP=2: 1) HttpRequest/HttpResponse record types; 2) parse_http_request byte-scan (request-line, headers до пустой строки, body по Content-Length); 3) unit smoke без сети (строковый вход) -->

@@ -391,8 +391,8 @@ compiler/
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **done** | [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (STEP=1–8: GLFW+GL dispatch+GlRenderer+TextRenderer+demo; self-host identical; regression 20/0); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
 | **10b** GUI framework (layout/widgets/easing) | **done** | [TRACK_GUI_FRAMEWORK](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11 (STEP=0–6: IM layout/input/Button; `misc/gui/`; docs [GUI.md](GUI.md); smokes ok) |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**. Active Driver: [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md) STEP=7 |
-| **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **open, active** | [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md) **active** STEP=7 (docs done; verify-gate) |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**; HTTP_MLC **closed** (await Critic). Next max-pri: [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) |
+| **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **done** (2026-07-11) | [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md) **closed** STEP=1–7 (pure-MLC HttpServer; C++ public HTTP gone; self-host identical; REG 20/0). Critic pending |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
@@ -411,7 +411,7 @@ compiler/
 | **20c** WebSocket framing/handshake — порт на MLC | **open, blocked on 11a** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) — зависит от `HttpRequest`/`HttpResponse` на MLC |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — заменяет отменённые `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` (superseded 2026-07-11: GLAD2/epoxy резолвят function pointers сами, каст/таблица на MLC не нужны) |
-| **20f** `core`/`concurrency` (~4500 строк) — self-hosted MLC вместо hand-written C++ рантайма | **open, максимальный приоритет и максимальный риск** | [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — исправляет ошибочную границу §20 («рантайм языка остаётся C++ навсегда»: пользователь 2026-07-11 — «ручного C++ не должно быть нигде вообще, иначе в MLC нет смысла»); `Array`/`String`/`HashMap`/`Shared`/`Mutex`/`Channel`/`Task` на MLC поверх `malloc`/atomics/`pthread` через `extern fn`; STEP=1 — decision only, реализация по одному типу с A/B verify-gate (весь компилятор зависит от корректности) |
+| — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -518,16 +518,17 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → VM_TYPED_COLLECTIONS (**closed** 2026-07-11: Critic OK; self-host identical;
       regression 20/0; typed/nested smokes
       → [archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md))
-  → STDLIB_HTTP_MLC (**active** STEP=7 — verify-gate / close
+  → STDLIB_HTTP_MLC (**closed** 2026-07-11: STEP=1–7; self-host identical;
+      REG 20/0; parse+curl gates; Critic pending
       → [agent/TRACK_STDLIB_HTTP_MLC.md](agent/TRACK_STDLIB_HTTP_MLC.md))
   → **LANG_SELF_HOSTED_RUNTIME (2026-07-11, максимальный приоритет — после
-    STDLIB_HTTP_MLC, перед остальной «без C++» группой: исправляет
+    Critic на STDLIB_HTTP_MLC, перед остальной «без C++» группой: исправляет
     ошибочную границу, что рантайм языка «остаётся C++ навсегда»; STEP=1
     decision-only, не блокирует остальные треки группы, но начинать
     следующим по важности
     → [agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md)):**
   → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
-    после STDLIB_HTTP_MLC, порядок между собой не строгий, независимые
+    после STDLIB_HTTP_MLC closed, порядок между собой не строгий, независимые
     треки):**
   → FFI_SHIM_MIGRATION (open: Postgres/Crypto/Tcp прямой `extern fn`, инфра
       уже закрыта → [agent/TRACK_FFI_SHIM_MIGRATION.md](agent/TRACK_FFI_SHIM_MIGRATION.md))
@@ -535,7 +536,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [agent/TRACK_TEXT_MSDF_TO_MLC.md](agent/TRACK_TEXT_MSDF_TO_MLC.md))
   → STDLIB_LOGIC_TO_MLC (open: Env/Log/Validation на mlcc + порт логики
       → [agent/TRACK_STDLIB_LOGIC_TO_MLC.md](agent/TRACK_STDLIB_LOGIC_TO_MLC.md))
-  → STDLIB_WEBSOCKET_TO_MLC (blocked on STDLIB_HTTP_MLC closed
+  → STDLIB_WEBSOCKET_TO_MLC (unblocked after STDLIB_HTTP_MLC closed;
+      still after LANG_SELF_HOSTED_RUNTIME in queue
       → [agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md))
   → GL_GLAD_MIGRATION (open: GLAD2 вендоренный вместо ручного
       `glfw_gl_dispatch.cpp`/`loader_shim.cpp`; заменяет отменённые
