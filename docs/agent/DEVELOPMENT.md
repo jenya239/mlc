@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_LANG_ERROR_UNION` active** STEP=1 — Design: grammar `-> T!E` only.
-See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). Chose over DEBUG_SOURCE_MAP (research).
+**`TRACK_LANG_ERROR_UNION` active** STEP=2 — Ruby parser `T!E` → `Result<T,E>`.
+See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=1: Design locked.
 
 
 ## Step sizing (good vs bad)

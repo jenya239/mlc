@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_LANG_ERROR_UNION STEP=1 |
-| test_gate | Planner: activated §17; TRACK Status active STEP=1 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_LANG_ERROR_UNION STEP=2 |
+| test_gate | STEP=1: Decision locked; lexer/unary/`?` cites in TRACK |
+
+### Turn 2026-07-11 32:35 (Driver TRACK_LANG_ERROR_UNION STEP=1 — Design)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 32:20 |
+| elapsed | ~10 min |
+| done    | Locked Decision: type postfix `!` after base/before `->`; desugar `TyGeneric("Result")`; no new AST; unary `!`/`?` expr-only; cites `lexer.mlc:430-431`, `exprs.mlc` `parse_unary`. |
+| verify  | Decision table in TRACK; PLAN §17 STEP=2; `rg 'parse_unary\|Op\(\"!\"\)' compiler/frontend`. |
+| result  | STEP=1 done. Plain: `T!E` = sugar for `Result<T,E>` in type grammar. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_ERROR_UNION — Ruby type_parser `T!E` desugar |
 
 ### Turn 2026-07-11 32:20 (Planner — activate TRACK_LANG_ERROR_UNION)
 
