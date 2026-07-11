@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_EXAMPLES_CI` active** — STEP=11 done; STEP=4 (wire regression_gate) next.
+**`TRACK_EXAMPLES_CI` active** — STEP=4 done; STEP=5 (docs) next.
 See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
 
 

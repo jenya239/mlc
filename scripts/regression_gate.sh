@@ -140,4 +140,10 @@ done
 
 echo ""
 echo "regression_gate: $PASS passed, $FAIL failed"
-[[ $FAIL -eq 0 ]]
+if [[ $FAIL -ne 0 ]]; then
+  exit 1
+fi
+
+echo ""
+echo "regression_gate: examples compile+link sweep"
+bash "$ROOT/scripts/run_examples_compile_sweep.sh"

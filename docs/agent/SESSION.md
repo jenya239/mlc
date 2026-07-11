@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 11 |
+| driver_turns_since_plan | 9 |
+| step_last | 4 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=11: cluster E ONLY ok=8 fail=0 |
+| test_gate | STEP=4: wired; full sweep ok=106 skip=1 |
+
+### Turn 2026-07-12 03:10 (Driver TRACK_EXAMPLES_CI STEP=4 — wire sweep into gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 03:07 |
+| elapsed | ~10 min |
+| done    | `regression_gate.sh` runs `run_examples_compile_sweep.sh` after program PASS. |
+| verify  | `bash -n` ok; full sweep ok=106 fail=0 skip=1 (dynrecord). |
+| result  | STEP=4 done. Plain: examples compile sweep is part of regression_gate. |
+| issues  | Foreign `compiler/out/*` left. Full `regression_gate` left for STEP=6. |
+| next    | ROLE=Driver STEP=5 TRACK_EXAMPLES_CI — docs line for sweep-gate |
 
 ### Turn 2026-07-12 02:55 (Driver TRACK_EXAMPLES_CI STEP=11 — fix cluster E vm_*)
 

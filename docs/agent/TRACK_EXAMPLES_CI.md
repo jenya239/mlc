@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md), [../GUI.md](../GUI.md).
 Trigger: 2026-07-11 — `gui_button_demo.mlc` not in regression_gate.
 See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 
-## Status: **active** — STEP=11 done; STEP=4 next
+## Status: **active** — STEP=4 done; STEP=5 next
 
 ## Next step
 
-**STEP=4** — wire `run_examples_compile_sweep.sh` into `scripts/regression_gate.sh`.
+**STEP=5** — docs: one line in README and/or DEVELOPMENT about the sweep-gate.
 
 ## Steps
 
@@ -22,20 +22,16 @@ See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 | 9 | Fix cluster C | **done** (2026-07-12) |
 | 10 | Fix cluster D | **done** (2026-07-12) |
 | 11 | Fix cluster E: `vm_*` | **done** (2026-07-12) |
-| 4 | Wire sweep в `scripts/regression_gate.sh` | pending |
+| 4 | Wire sweep в `scripts/regression_gate.sh` | **done** (2026-07-12) |
 | 5 | Docs: одна строка про sweep-gate | pending |
 | 6 | Verify-gate: `regression_gate.sh` exit 0 | pending |
 
-### STEP=11 done notes
+### STEP=4 done notes
 
-- Match demos: helper takes sum type (mlcc must visit `Choice`, not `Left{…}`).
-- Unit variants → payload variants; or-patterns expanded; record match → field access.
-- `vm_pop`: last index (no `Array.pop`).
-- `vm_question*`: `type Result<T,E>` + `i32!i32` + `?`.
-- Verify: ONLY eight → ok=8 fail=0.
+- After program PASS, `regression_gate.sh` runs `scripts/run_examples_compile_sweep.sh`.
+- Full sweep before wire: ok=106 fail=0 skip=1 (`dynrecord_demo` allowlist).
 
-### STEP=4 sub-steps (Driver)
+### STEP=5 sub-steps (Driver)
 
-1. Call sweep at end of `regression_gate.sh` (fail gate on fail).
-2. Ensure soft-skip still exit 0 when deps missing.
-3. Smoke: run gate or at least invoke sweep from gate path.
+1. One line in `README.md` and/or `docs/agent/DEVELOPMENT.md` mentioning examples compile sweep in regression_gate.
+2. No code changes.
