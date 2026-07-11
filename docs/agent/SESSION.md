@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 9 |
+| driver_turns_since_plan | 7 |
+| step_last | 10 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=9: ABI ONLY ok=4 fail=0 |
+| test_gate | STEP=10: cluster D ONLY ok=7 fail=0 |
+
+### Turn 2026-07-12 02:45 (Driver TRACK_EXAMPLES_CI STEP=10 — fix cluster D)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 02:42 |
+| elapsed | ~15 min |
+| done    | Rewrote 7 D-demos (HOF/fold/index/todo/safety/Shared); mlcc `[i32]`/`string`/`.to_string()`. |
+| verify  | ONLY seven → ok=7 fail=0. |
+| result  | STEP=10 done. Plain: cluster D examples compile+link. |
+| issues  | Foreign `compiler/out/*` left. pointer_types reduced to Shared smoke. |
+| next    | ROLE=Driver STEP=11 TRACK_EXAMPLES_CI — fix cluster E vm_* |
 
 ### Turn 2026-07-12 02:35 (Driver TRACK_EXAMPLES_CI STEP=9 — ABI soft-skip + link)
 

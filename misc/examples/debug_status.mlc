@@ -1,7 +1,7 @@
-fn normalize(line: str) -> str = line.trim()
+// Status line normalize/parse (mlcc).
 
-fn parse_status(line: str) -> str =
-  const trimmed = normalize(line).upper()
+fn parse_status(line: string) -> string = do
+  let trimmed = line.trim().upper()
   if trimmed.starts_with("TODO") then
     "TODO"
   else if trimmed.starts_with("DOING") then
@@ -10,9 +10,12 @@ fn parse_status(line: str) -> str =
     "DONE"
   else
     "OTHER"
+  end
+end
 
-fn main() -> i32 =
-  const _ = println(parse_status("TODO: something"))
-  const _ = println(parse_status("DOING: now"))
-  const _ = println(parse_status("DONE: done"))
+fn main() -> i32 = do
+  println(parse_status("TODO: something"))
+  println(parse_status("DOING: now"))
+  println(parse_status("DONE: done"))
   0
+end

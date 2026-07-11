@@ -1,8 +1,8 @@
+// Fold over status strings (mlcc).
+
 type Totals = { todo: i32, doing: i32, done: i32 }
 
-fn parse_status(line: str) -> str = line
-
-fn bump(stats: Totals, status: str) -> Totals =
+fn bump(stats: Totals, status: string) -> Totals =
   if status == "TODO" then
     Totals { todo: stats.todo + 1, doing: stats.doing, done: stats.done }
   else if status == "DOING" then
@@ -11,15 +11,14 @@ fn bump(stats: Totals, status: str) -> Totals =
     Totals { todo: stats.todo, doing: stats.doing, done: stats.done + 1 }
   else
     stats
+  end
 
-fn show(stats: Totals) -> str =
-  "todo=" + to_string(stats.todo) + ", doing=" + to_string(stats.doing) + ", done=" + to_string(stats.done)
-
-fn main() -> i32 =
-  const items = ["TODO", "DOING", "DONE"]
-  const stats = items.fold(
+fn main() -> i32 = do
+  let items = ["TODO", "DOING", "DONE"]
+  let stats = items.fold(
     Totals { todo: 0, doing: 0, done: 0 },
-    (acc: Totals, status: str) => bump(acc, status)
+    (acc, status) => bump(acc, status)
   )
-  println(show(stats))
-  0
+  println("todo=" + stats.todo.to_string() + ", doing=" + stats.doing.to_string() + ", done=" + stats.done.to_string())
+  if stats.todo == 1 && stats.doing == 1 && stats.done == 1 then 0 else 1 end
+end

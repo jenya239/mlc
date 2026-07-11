@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_EXAMPLES_CI` active** — STEP=9 done; STEP=10 (cluster D one-offs) next.
+**`TRACK_EXAMPLES_CI` active** — STEP=10 done; STEP=11 (vm_* cluster E) next.
 See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
 
 

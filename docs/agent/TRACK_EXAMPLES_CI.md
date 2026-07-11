@@ -2,13 +2,13 @@
 
 Parent: [../PLAN.md](../PLAN.md), [../GUI.md](../GUI.md).
 Trigger: 2026-07-11 — `gui_button_demo.mlc` not in regression_gate; duplicate extern.
-See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md) for root cause. This track = coverage.
+See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 
-## Status: **active** — STEP=9 done; STEP=10 next
+## Status: **active** — STEP=10 done; STEP=11 next
 
 ## Next step
 
-**STEP=10** — fix cluster D one-offs (`array_hof_demo`, `debug_*`, `index_access_demo`, `pointer_types_demo`, `safety_demo`, `todo_summary`).
+**STEP=11** — fix cluster E: `vm_*` C++ codegen/link failures.
 
 ## Steps
 
@@ -16,24 +16,24 @@ See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md) for root cause. This tra
 |------|------|--------|
 | 1 | `scripts/run_examples_compile_sweep.sh` | **done** (2026-07-12) |
 | 2 | Soft-skip sysdeps + allowlist | **done** (2026-07-12) |
-| 3 | Full sweep inventory | **done** (2026-07-12) — ok=77 fail=30 skip=0 |
+| 3 | Full sweep inventory | **done** (2026-07-12) |
 | 7 | Fix cluster A: bare Ruby imports | **done** (2026-07-12) |
 | 8 | Fix cluster B: `to_string` demos | **done** (2026-07-12) |
-| 9 | Fix cluster C: ABI sodium/libpq soft-skip + `mlc_link_libs` (-L for `.tmp_*`) | **done** (2026-07-12) |
-| 10 | Fix cluster D: type/demo one-offs | pending |
+| 9 | Fix cluster C: ABI sodium/libpq | **done** (2026-07-12) |
+| 10 | Fix cluster D: one-offs | **done** (2026-07-12) |
 | 11 | Fix cluster E: `vm_*` C++ codegen/link | pending |
 | 4 | Wire sweep в `scripts/regression_gate.sh` | pending |
 | 5 | Docs: одна строка про sweep-gate | pending |
 | 6 | Verify-gate: `regression_gate.sh` exit 0 | pending |
 
-### STEP=9 done notes
+### STEP=10 done notes
 
-- Soft-skip via `find_sodium_mode` / `find_libpq_mode` (system cxx probe or `.tmp_libsodium` / `.tmp_libpq`).
-- On hit: write `mlc_link_libs.txt` (`-L…` then `sodium`/`pq`); `build_bin.sh` passes `-`-prefixed lines through.
-- Verify: ONLY four abi demos → ok=4 fail=0.
+- Rewrote 7 demos for mlcc (`[i32]`, `string`, `.to_string()`, no `unsafe`).
+- `pointer_types_demo` → Shared smoke (Owned/Weak/unsafe tour deferred).
+- Verify: ONLY seven → ok=7 fail=0.
 
-### STEP=10 sub-steps (Driver)
+### STEP=11 sub-steps (Driver)
 
-1. Re-sweep ONLY the six D files; capture first errors.
-2. Fix minimally (mlcc syntax); allowlist only if blocked on language/compiler.
-3. ONLY six → fail=0.
+1. ONLY re-sweep vm_match_*, vm_pop, vm_question*, vm_record_match.
+2. Fix or allowlist each; prefer minimal source fix over compiler change.
+3. ONLY those → fail=0.
