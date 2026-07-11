@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC closed |
-| test_gate | websocket_gate + regression_gate 20/0 + self-host DIFF=0 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none — WEBSOCKET_TO_MLC Critic OK) |
+| test_gate | websocket_gate + sha1/frame/handshake smokes |
+
+### Turn 2026-07-11 19:55 (Critic TRACK_STDLIB_WEBSOCKET_TO_MLC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 19:50 |
+| elapsed | ~5 min |
+| done    | Audited `92cd608a`…`aa79fd7b` vs STEP 1–6; hpp gone; MLC bodies+smokes+archive on disk; PLAN §20c closed path; re-ran gate+smokes. |
+| verify  | GATE=0; sha1/frame/handshake EXIT 0; no pending STEPs; archive path OK; no false-done. |
+| result  | **reopen: none**. Residuals: Ruby bridge stubs; public API=`WsHandleResult` (not Option). |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate next track (SPAWN_DETACH high priority per CONTINUITY) |
 
 ### Turn 2026-07-11 19:45 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=6 — close)
 
