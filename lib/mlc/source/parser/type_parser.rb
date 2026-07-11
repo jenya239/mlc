@@ -111,7 +111,8 @@ module MLC
           with_origin(sum_origin_token) { MLC::Source::AST::SumType.new(name: "sum", variants: variants) }
         end
 
-        def parse_type
+        # allow_error_union: T!E → Result<T,E> (TRACK_LANG_ERROR_UNION). False for E side.
+        def parse_type(allow_error_union: true)
           # Check for reference types: ref T or ref mut T
           return parse_reference_type if current.type == :REF
 
@@ -146,7 +147,8 @@ module MLC
                         base_token = consume(:LBRACKET)
                         element_type = parse_type
                         consume(:RBRACKET)
-                        return with_origin(base_token) { MLC::Source::AST::ArrayType.new(element_type: element_type) }
+                        base_type = with_origin(base_token) { MLC::Source::AST::ArrayType.new(element_type: element_type) }
+                        return apply_error_union_sugar(base_type, base_token, allow_error_union: allow_error_union)
                       when :I8
                         base_token = consume(:I8)
                         with_origin(base_token) { MLC::Source::AST::PrimType.new(name: "i8") }
@@ -235,7 +237,7 @@ module MLC
                 assoc_name: assoc_name_token.value
               )
             end
-            return base_type
+            return apply_error_union_sugar(base_type, base_token, allow_error_union: allow_error_union)
           end
 
           # Check for generic type parameters <T1, T2, ...>
@@ -260,6 +262,9 @@ module MLC
             end
           end
 
+          # T!E → Result<T, E> (before array suffix; bang binds tighter than docs arrow)
+          base_type = apply_error_union_sugar(base_type, base_token, allow_error_union: allow_error_union)
+
           # Check for array type suffix []
           if current.type == :LBRACKET
             lbracket_token = consume(:LBRACKET)
@@ -267,6 +272,21 @@ module MLC
             with_origin(lbracket_token) { MLC::Source::AST::ArrayType.new(element_type: base_type) }
           else
             base_type
+          end
+        end
+
+        def apply_error_union_sugar(ok_type, origin_token, allow_error_union:)
+          return ok_type unless allow_error_union
+          return ok_type unless current.type == :OPERATOR && current.value == "!"
+
+          bang_token = consume(:OPERATOR)
+          error_type = parse_type(allow_error_union: false)
+          result_base = with_origin(bang_token) { MLC::Source::AST::PrimType.new(name: "Result") }
+          with_origin(origin_token || bang_token) do
+            MLC::Source::AST::GenericType.new(
+              base_type: result_base,
+              type_params: [ok_type, error_type]
+            )
           end
         end
 

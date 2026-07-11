@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_LANG_ERROR_UNION STEP=2 |
-| test_gate | STEP=1: Decision locked; lexer/unary/`?` cites in TRACK |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_LANG_ERROR_UNION STEP=3 |
+| test_gate | STEP=2: error_union_sugar_test 4/0 |
+
+### Turn 2026-07-11 32:50 (Driver TRACK_LANG_ERROR_UNION STEP=2 — Ruby desugar)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 32:35 |
+| elapsed | ~15 min |
+| done    | `type_parser.rb` `apply_error_union_sugar`; `test/mlc/error_union_sugar_test.rb` (ret/field/explicit/`T!` error). |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/error_union_sugar_test.rb` → 4 runs, 0 failures. |
+| result  | STEP=2 done. Plain: Ruby parses `i32!string` as `Result<i32,string>`. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_ERROR_UNION — self-hosted `types.mlc` mirror |
 
 ### Turn 2026-07-11 32:35 (Driver TRACK_LANG_ERROR_UNION STEP=1 — Design)
 

@@ -4,7 +4,12 @@ Parent: [../PLAN.md](../PLAN.md) §17 ("Zig — Error unions", применим�
 Предшественник: [../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md](../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md)
 (closed 2026-07-09 — `map`/`and_then`/`map_err`, `?` с `From`-конвертацией).
 
-## Status: **active** — STEP=2 next (Ruby parser desugar)
+## Status: **active** — STEP=3 next (self-hosted types.mlc desugar)
+
+**Driver 2026-07-11 STEP=2:** Ruby `type_parser.rb` — `T!E` →
+`GenericType(Result, [T,E])` via `apply_error_union_sugar` (after generics,
+before `[]`; E via `allow_error_union: false`). Tests
+`test/mlc/error_union_sugar_test.rb` 4/0.
 
 **Driver 2026-07-11 STEP=1:** Decision **locked** (table below). Lexer `!=`/`!`
 OK; unary `!` = expr-only (`parse_unary` → `ExprUn`); `?` = expr postfix.
@@ -50,7 +55,7 @@ tighter than arrow). `i32!E -> bool` = `TyFn(Result<i32,E>, bool)`.
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design: грамматика / конфликты `?` / унарный `!`. | **done** |
-| 2 | Парсер (Ruby): `T!E` → десугаринг в `Result<T, E>` на этапе парсинга. | pending |
+| 2 | Парсер (Ruby): `T!E` → десугаринг в `Result<T, E>` на этапе парсинга. | **done** |
 | 3 | Парсер (self-hosted, `compiler/frontend/parser/`): то же самое, после верификации на Ruby. | pending |
 | 4 | Тесты: unit-тест десугаринга, e2e на функции с `T!E`, включая совместимость с `?`. | pending |
 | 5 | Документация: `MLC.md` — `T!E` алиас; verify-gate + close. | pending |

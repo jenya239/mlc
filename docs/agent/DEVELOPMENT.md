@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_LANG_ERROR_UNION` active** STEP=2 — Ruby parser `T!E` → `Result<T,E>`.
-See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=1: Design locked.
+**`TRACK_LANG_ERROR_UNION` active** STEP=3 — self-hosted `types.mlc` `T!E` → `Result`.
+See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=2: Ruby desugar + 4 tests.
 
 
 ## Step sizing (good vs bad)
