@@ -21,7 +21,10 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=1 next (Decision) — **active**
+## Status: **open** — STEP=2 next (MLC parser) — **active**
+
+**Driver 2026-07-11:** STEP=1 — Decision **locked** (pure-MLC `HttpServer`
+module; records mirror C++ shapes; byte-scan parse; array router; one module).
 
 **Planner 2026-07-11:** activated after VM_TYPED_COLLECTIONS Critic OK
 (`8dfa2e42`). First in «без hand-written C++» HTTP path; blocks
@@ -60,16 +63,36 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 хендлера, пишет ответ, использует `spawn` на каждое соединение (переиспользуя
 `PIPELINE_MERGE_TCP_SPAWN`), обрабатывается через `mlcc`, проверяется `curl`.
 
-## Decision (STEP=1, нужно зафиксировать)
+## Decision (STEP=1, 2026-07-11) — **locked**
 
-| Вопрос | Варианты | Рекомендация |
-|--------|----------|--------------|
-| Где живёт парсер | (a) `lib/mlc/common/stdlib/net/http_server.mlc` (новый, не трогать client-стаб `http.mlc`) | (a) — отдельный модуль, добавить второй bare-name ключ в `mlcc` |
-| Представление запроса | Честный MLC `record HttpRequest { method: string, path: string, headers: Array<...>, body: string }`, собранный парсером один раз на запрос | record — не hot-path per-byte, разовая аллокация на соединение |
-| Парсинг request-line/headers | Ручной byte/char-scan на `string` (`.char_at`/`.substring`/`.index_of`, как в `points_mem.mlc`/subnet-calculator примерах) — без regex (в MLC нет regex-движка) | построчный сплит по `\r\n`, `substring` до первого `:`/пробела — стандартный подход HTTP-парсеров без библиотеки |
-| Роутинг | Явный `Array`/`Map` (method,path)→handler на MLC (как задумано в закрытом `STDLIB_NET_SERVER`) | без изменений |
-| Хендлер | `fn(HttpRequest) -> HttpResponse` синхронный | без изменений — v1 остаётся sync |
-| C++ `http_request.hpp`/`http_router.hpp`/`http_server.hpp` | Удалить после переключения (не оставлять параллельный C++-путь — иначе два парсера, расхождение поведения) | удалить; `serve_http_with_thread_pool` (C++-only ThreadPool-сервер) — отдельный вопрос, не блокирует этот трек, но зафиксировать в Out of scope явно |
+| Вопрос | Locked |
+|--------|--------|
+| Модуль | `lib/mlc/common/stdlib/net/http_server.mlc`, `module HttpServer` |
+| Bare-name | `"HttpServer"` → `"net/http_server.mlc"` in `path_normalize.mlc` (рядом с `"Tcp"`; **не** трогать client-стаб `http.mlc`) |
+| Типы | `HttpHeader { name, value: string }`; `HttpRequest { method, path, headers: [HttpHeader], body }`; `HttpResponse { status: i32, headers: [HttpHeader], body }` — как C++ shapes |
+| Парсер | `parse_http_request(raw: string) -> Option<HttpRequest>`; char-scan, **без regex**; header end `\r\n\r\n` или `\n\n`; request-line `METHOD SP path SP HTTP/x.y`; header `name: value` (trim); body только по `Content-Length` (cap **1 MiB**); header block cap **64 KiB**; no chunked |
+| Response | `format_http_response(response) -> string` (+ demo пишет через `Tcp.write_all`); auto `Content-Length` если нет; `Connection: close` |
+| Роутер | `[HttpRoute]` где `HttpRoute { method, path, handler }`; exact match method+path; sync `fn(HttpRequest) -> HttpResponse`; default 404 |
+| Один vs два файла | **один** модуль (`http_server.mlc`) — request+response+router |
+| C++ `.hpp` | удалить на STEP=5 после MLC-демо/гейта; `serve_http_with_thread_pool` — Out of scope / follow-up если ещё жив |
+
+### Rejected
+
+| Вариант | Почему |
+|---------|--------|
+| `extern fn` над `http_request.hpp` | не убирает C++; отменено пересмотром трека |
+| Bare-name `"Http"` → client `http.mlc` | конфликт с fetch-стабом; server — отдельный ключ |
+| Regex / chunked / keep-alive / HTTP/2 | нет regex-движка; Out of scope |
+
+### Impact (последующие STEPs)
+
+| File | Change |
+|------|--------|
+| `lib/mlc/common/stdlib/net/http_server.mlc` | STEP=2 types+parse+format+router |
+| `compiler/driver/path_normalize.mlc` | STEP=3 bare `"HttpServer"` |
+| `misc/examples/` + `scripts/run_*_gate.sh` | STEP=4 Tcp+spawn+curl |
+| `runtime/include/mlc/net/http_*.hpp` + C++ tests | STEP=5 delete |
+| `docs/STDLIB_BACKEND.md` | STEP=6 |
 
 ## Scope
 
@@ -106,7 +129,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Decision: имя модуля/файла; record; grammar парсинга; роутинг. | pending |
+| 1 | Decision: имя модуля/файла; record; grammar парсинга; роутинг. | **done** (2026-07-11: locked above) |
 | 2 | `record HttpRequest`/`HttpResponse` + чистый MLC-парсер (byte-scan, без regex). | pending |
 | 3 | Bare-name резолвинг в `mlcc` для нового модуля (без поломки `Tcp`). | pending |
 | 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | pending |
@@ -120,8 +143,5 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 
 ## Open questions
 
-- `Content-Length`/chunked edge cases при byte-scan без библиотеки — v1
-  ограничить фиксированным чтением до `\r\n\r\n` + `Content-Length` заголовок
-  (если есть), без chunked (уже в Out of scope).
-- Один module или два (`http_request`/`http_router` отдельно) — решить на
-  STEP=1, не критично для v1.
+- None blocking STEP=2. Chunked/`Content-Length` edge cases: v1 = header
+  end + optional CL only (caps locked above).

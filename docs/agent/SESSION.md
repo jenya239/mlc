@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=1 |
-| test_gate | — |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=2 |
+| test_gate | — (docs Decision) |
+
+### Turn 2026-07-11 12:16 (Driver TRACK_STDLIB_HTTP_MLC STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:16 |
+| elapsed | ~3 min |
+| done    | Decision locked: `HttpServer`/`http_server.mlc`; bare `HttpServer`; records+parse grammar+router; one module; reject extern wrap / bare `Http`. PLAN→STEP=2. |
+| verify  | TRACK Decision section + STEP=1 done; impact table lists STEP=2–6 files. |
+| result  | STEP=1 done. Plain: pure-MLC HTTP server API locked. |
+| issues  | Queued prompt STEP=2 VM_TYPED stale; ran SESSION Driver STEP=1 HTTP. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_HTTP_MLC — HttpRequest/Response + parse_http_request |
 
 ### Turn 2026-07-11 12:14 (Planner — activate TRACK_STDLIB_HTTP_MLC)
 
