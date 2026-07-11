@@ -1,0 +1,89 @@
+// TRACK_STDLIB_HTTP_MLC STEP=4 — Tcp + spawn + HttpServer parse/route.
+// Accepts two connections (GET /, GET /health). Gate: scripts/run_http_server_curl_gate.sh
+
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+import {
+  parse_http_request,
+  format_http_response,
+  http_not_found,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader,
+  HttpParseOk,
+  HttpParseErr
+} from 'HttpServer'
+
+fn route_http(request: HttpRequest) -> HttpResponse = do
+  if request.method == "GET" && request.path == "/" then
+    HttpResponse {
+      status: 200,
+      headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+      body: "home"
+    }
+  else if request.method == "GET" && request.path == "/health" then
+    HttpResponse {
+      status: 200,
+      headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+      body: "ok"
+    }
+  else
+    http_not_found()
+  end
+end
+
+fn handle_one(stream: i32) -> i32 = do
+  let raw_option = read(stream, 65536)
+  if !raw_option.is_some() then
+    close_stream(stream)
+    return 1
+  end
+  let raw = raw_option.unwrap()
+  let response = match parse_http_request(raw) {
+    HttpParseErr =>
+      HttpResponse {
+        status: 400,
+        headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+        body: "Bad Request"
+      },
+    HttpParseOk(request) => route_http(request)
+  }
+  let wrote = write_all(stream, format_http_response(response))
+  close_stream(stream)
+  if wrote then 0 else 2 end
+end
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  File.write("http_server_port.txt", `${port(listener)}`)
+
+  let stream_a_option = accept(listener)
+  if !stream_a_option.is_some() then
+    println(last_error())
+    close_listener(listener)
+    return 2
+  end
+  let stream_a = stream_a_option.unwrap()
+  let task_a = spawn do handle_one(stream_a) end
+
+  let stream_b_option = accept(listener)
+  if !stream_b_option.is_some() then
+    println(last_error())
+    close_listener(listener)
+    return 3
+  end
+  let stream_b = stream_b_option.unwrap()
+  let task_b = spawn do handle_one(stream_b) end
+
+  let status_a = block_on(task_a)
+  let status_b = block_on(task_b)
+  close_listener(listener)
+
+  if status_a != 0 then return 4 end
+  if status_b != 0 then return 5 end
+  0
+end

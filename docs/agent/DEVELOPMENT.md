@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` active** STEP=4 — Tcp+spawn HTTP demo + curl gate
-(bare-name `HttpServer` done). See
+**`TRACK_STDLIB_HTTP_MLC` active** STEP=5 — delete C++ `http_request.hpp`/
+`http_router.hpp` (curl demo done). See
 [TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
 
 

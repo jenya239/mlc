@@ -21,7 +21,10 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=4 next (demo+curl) — **active**
+## Status: **open** — STEP=5 next (delete C++ http_*.hpp) — **active**
+
+**Driver 2026-07-11:** STEP=4 — `http_server_curl_demo.mlc` (Tcp+spawn+route
+`GET /`/`/health`); `run_http_server_curl_gate.sh` curl ok.
 
 **Driver 2026-07-11:** STEP=3 — `path_normalize`: bare `"HttpServer"` →
 `net/http_server.mlc`; `test_driver` assert; smoke imports `'HttpServer'`;
@@ -140,7 +143,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | 1 | Decision: имя модуля/файла; record; grammar парсинга; роутинг. | **done** (2026-07-11: locked above) |
 | 2 | `record HttpRequest`/`HttpResponse` + чистый MLC-парсер (byte-scan, без regex). | **done** (2026-07-11: http_server.mlc + parse smoke) |
 | 3 | Bare-name резолвинг в `mlcc` для нового модуля (без поломки `Tcp`). | **done** (2026-07-11: path_normalize + smoke bare import) |
-| 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | pending |
+| 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | **done** (2026-07-11: curl gate EXIT 0) |
 | 5 | Удалить `http_request.hpp`/`http_router.hpp` (+ проверить `serve_http_with_thread_pool` usage). | pending |
 | 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | pending |
 | 7 | Verify-gate: self-host diff, regression_gate, close. | pending |

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=4 |
-| test_gate | run_http_server_parse_smoke.sh EXIT 0 (bare HttpServer) |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=5 |
+| test_gate | run_http_server_curl_gate.sh EXIT 0 |
+
+### Turn 2026-07-11 12:31 (Driver TRACK_STDLIB_HTTP_MLC STEP=4 — curl demo)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:31 |
+| elapsed | ~8 min |
+| done    | `http_server_curl_demo.mlc` (Tcp+spawn; route `/`→home, `/health`→ok); `run_http_server_curl_gate.sh`. |
+| verify  | curl gate EXIT 0 (bodies home/ok). |
+| result  | STEP=4 done. Plain: curl hits MLC HTTP server. |
+| issues  | Queued prompt VM STEP=2 stale. Routing local in demo (not HttpRoute array yet). |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_HTTP_MLC — delete C++ http_request/router (+ thread_pool check) |
 
 ### Turn 2026-07-11 12:29 (Driver TRACK_STDLIB_HTTP_MLC STEP=3 — bare-name)
 
