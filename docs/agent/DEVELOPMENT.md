@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner next** — `TRACK_TEXT_RENDERING_NATIVE` Critic OK. Decide:
-promote [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md) or next PLAN low-pri item.
+**`TRACK_GUI_FRAMEWORK` active** STEP=1 — Decision (layout A/B, module path,
+widget v0). See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 
 
 ## Step sizing (good vs bad)

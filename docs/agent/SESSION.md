@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_TEXT_RENDERING_NATIVE closed (Critic done) |
-| test_gate | demo+native/gl+headless A8 OK; prior self-host/regression green |
+| step_last | plan-refresh |
+| active_track | TRACK_GUI_FRAMEWORK STEP=1 |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-11 04:15 (Planner — activate TRACK_GUI_FRAMEWORK)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:13 |
+| elapsed | ~2 min |
+| done    | Promoted GUI from backlog: status **active** STEP=1; Decision draft (IM lean A; module extract; Button/Label v0); STEPs 0–6; PLAN §10b/§11 + queue; DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending with sub-steps; PLAN links `agent/TRACK_GUI_FRAMEWORK.md` active; NATIVE stays archived. |
+| result  | plan-refresh done. Plain: GUI v0 activated after NATIVE Critic. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_FRAMEWORK — lock Decision (layout A/B, module path, widget v0) |
 
 ### Turn 2026-07-11 04:10 (Critic TRACK_TEXT_RENDERING_NATIVE — critique-audit)
 
