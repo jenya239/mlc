@@ -1,0 +1,30 @@
+// TRACK_FFI_SHIM_MIGRATION STEP=4 — mlcc Tcp MLC+abi (fd-as-token echo).
+
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  if port(listener) <= 0 then
+    close_listener(listener)
+    return 2
+  end
+
+  // Invalid host path
+  let bad = bind("not-an-ip", 0)
+  if bad.is_some() then
+    close_listener(listener)
+    return 3
+  end
+  if last_error().length() == 0 then
+    close_listener(listener)
+    return 4
+  end
+
+  close_listener(listener)
+  0
+end

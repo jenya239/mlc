@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SHIM_MIGRATION` active** STEP=4 — Tcp libc externs; fd-as-token.
-See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
+**`TRACK_FFI_SHIM_MIGRATION` active** STEP=5 — delete postgres/sodium/tcp `.hpp`
+(after bridges/websocket ready). See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
 
 
 ## Step sizing (good vs bad)

@@ -1,15 +1,18 @@
 //! @module std/net/tcp
 //! @category net
-//! @type extern
+//! @type mixed
 //! @namespace mlc::net
-
-# Blocking TCP listener/stream (TRACK_STDLIB_NET_SERVER).
-# Handles are opaque positive i32 tokens (not file descriptors).
-# Errors: None / false + last_error() — Decision Result wrappers can layer later.
-# FFI: mlcc binders need by-value signatures → *_mlc in tcp.hpp
-# (TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=3).
+//!
+//! TRACK_FFI_SHIM_MIGRATION STEP=4 — fd-as-token over tcp_abi.hpp.
+//! Public API stays Option via extern (mlcc Option-import codegen segfaults —
+//! same residual as HttpServer/Postgres). Bind/accept/read control flow lives
+//! in tcp.hpp (mirrors intended MLC) on top of thin abi. TcpListener/TcpStream
+//! RAII kept for websocket.hpp until STEP=5 / WEBSOCKET.
 
 module Tcp
+
+# Opaque i32 tokens are real fds (fd-as-token). Errors: None/false + last_error().
+# FFI: mlcc binders need by-value → *_mlc in tcp.hpp.
 
 export extern fn bind(host: string, port: i32) -> Option<i32> = "mlc::net::bind_mlc" from "mlc/net/tcp.hpp"
 export extern fn accept(listener: i32) -> Option<i32> = "mlc::net::accept_mlc" from "mlc/net/tcp.hpp"

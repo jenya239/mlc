@@ -471,23 +471,16 @@ inline String last_error() {
   return net::websocket_last_error();
 }
 
+// stream_handle is a real Tcp fd (fd-as-token). Ownership moves into WsConnection.
 inline std::optional<std::int32_t> upgrade(std::int32_t stream_handle) {
-  net::TcpStream stream;
-  {
-    std::lock_guard<std::mutex> lock(net::detail::tcp_handle_table().mutex);
-    if (stream_handle <= 0 ||
-        static_cast<std::size_t>(stream_handle) > net::detail::tcp_handle_table().streams.size()) {
-      net::websocket_detail::set_error("WebSocket.upgrade: invalid stream handle");
-      return std::nullopt;
-    }
-    auto& stream_pointer =
-        net::detail::tcp_handle_table().streams[static_cast<std::size_t>(stream_handle) - 1];
-    if (!stream_pointer || !stream_pointer->is_open()) {
-      net::websocket_detail::set_error("WebSocket.upgrade: stream closed");
-      return std::nullopt;
-    }
-    stream = std::move(*stream_pointer);
-    stream_pointer.reset();
+  if (stream_handle < 0) {
+    net::websocket_detail::set_error("WebSocket.upgrade: invalid stream handle");
+    return std::nullopt;
+  }
+  net::TcpStream stream = net::TcpStream::adopt(stream_handle);
+  if (!stream.is_open()) {
+    net::websocket_detail::set_error("WebSocket.upgrade: stream closed");
+    return std::nullopt;
   }
   auto connection_option = net::upgrade(std::move(stream));
   if (!connection_option.has_value()) {

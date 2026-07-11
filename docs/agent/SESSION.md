@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=4 |
-| test_gate | crypto_mlc_abi_smoke + crypto_gate |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=5 |
+| test_gate | tcp_mlc_abi_smoke + tcp_echo + mlcc_tcp_echo + websocket |
+
+### Turn 2026-07-11 14:45 (Driver TRACK_FFI_SHIM_MIGRATION STEP=4 — Tcp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 14:30 |
+| elapsed | ~15 min |
+| done    | `tcp_abi.hpp`; fd-as-token in `tcp.hpp`; `TcpStream::adopt` + websocket upgrade; smoke+gates. |
+| verify  | `run_tcp_mlc_abi_smoke.sh` EXIT 0; `run_tcp_echo_gate.sh` OK; `run_mlcc_tcp_echo_gate.sh` OK; `run_websocket_gate.sh` OK. |
+| result  | STEP=4 done. Plain: Tcp tokens are fds over thin abi. |
+| issues  | Queued prompt VM STEP=2 stale. Residual: Option extern (no MLC bodies); RAII classes for websocket. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_FFI_SHIM_MIGRATION — delete postgres/sodium/tcp `.hpp` (+ bridges) |
 
 ### Turn 2026-07-11 14:30 (Driver TRACK_FFI_SHIM_MIGRATION STEP=3 — Crypto)
 
