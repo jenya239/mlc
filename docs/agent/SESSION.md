@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 5 |
-| active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=5: docs only |
+| driver_turns_since_plan | 11 |
+| step_last | 6 |
+| active_track | TRACK_EXAMPLES_CI closed → Critic |
+| test_gate | STEP=6: REG 20/0; sweep ok=106 skip=1; EXIT=0 |
+
+### Turn 2026-07-12 03:40 (Driver TRACK_EXAMPLES_CI STEP=6 — verify-gate close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 03:19 |
+| elapsed | ~25 min |
+| done    | `regression_gate.sh` EXIT=0; TRACK → `archive/tracks/`; PLAN §21 **done**. |
+| verify  | `regression_gate: 20 passed, 0 failed`; sweep ok=106 fail=0 skip=1. |
+| result  | STEP=6 done; track **closed**. Plain: examples compile sweep gated in CI path. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_EXAMPLES_CI |
 
 ### Turn 2026-07-12 03:15 (Driver TRACK_EXAMPLES_CI STEP=5 — docs sweep-gate)
 

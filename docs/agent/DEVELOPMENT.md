@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EXAMPLES_CI` active** — STEP=4 done; STEP=5 (docs) next.
-See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
+**`TRACK_EXAMPLES_CI` closed** (awaiting Critic) — STEP=6: REG 20/0; sweep ok=106 skip=1.
+See [TRACK_EXAMPLES_CI.md](../archive/tracks/TRACK_EXAMPLES_CI.md). Next after Critic: Planner → FFI_EXTERN_DEDUP.
 
 
 ## Step sizing (good vs bad)
