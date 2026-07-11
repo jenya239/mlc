@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 8 |
+| driver_turns_since_plan | 6 |
+| step_last | 9 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=8: cluster B ONLY ok=7 fail=0 |
+| test_gate | STEP=9: ABI ONLY ok=4 fail=0 |
+
+### Turn 2026-07-12 02:35 (Driver TRACK_EXAMPLES_CI STEP=9 — ABI soft-skip + link)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 02:27 |
+| elapsed | ~20 min |
+| done    | Sweep: sodium/libpq probe + `mlc_link_libs` (-L for `.tmp_*`); `build_bin.sh` pass-through for `-` lines. |
+| verify  | ONLY four (crypto/postgres abi+demo) → ok=4 fail=0. |
+| result  | STEP=9 done. Plain: ABI examples link when `.tmp_libsodium`/`.tmp_libpq` present. |
+| issues  | Foreign `compiler/out/*` left. Subshell LIBRARY_PATH bug fixed via direct call + `-L`. |
+| next    | ROLE=Driver STEP=10 TRACK_EXAMPLES_CI — fix cluster D one-offs |
 
 ### Turn 2026-07-12 02:20 (Driver TRACK_EXAMPLES_CI STEP=8 — fix cluster B to_string)
 

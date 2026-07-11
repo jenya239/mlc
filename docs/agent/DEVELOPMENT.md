@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_EXAMPLES_CI` active** — STEP=8 done; STEP=9 (ABI soft-skip) next.
+**`TRACK_EXAMPLES_CI` active** — STEP=9 done; STEP=10 (cluster D one-offs) next.
 See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
 
 

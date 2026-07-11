@@ -26,6 +26,81 @@ has_pkg() {
   command -v pkg-config >/dev/null 2>&1 && pkg-config --exists "$name"
 }
 
+# Returns: system | local | empty (missing). Same probes as run_crypto_mlc_abi_smoke.sh.
+find_sodium_mode() {
+  local cxx="${CXX:-c++}"
+  if echo '#include <sodium.h>' | "$cxx" -E -x c++ - >/dev/null 2>&1; then
+    echo system
+    return 0
+  fi
+  local local_prefix="$ROOT_DIR/.tmp_libsodium"
+  if [[ -f "$local_prefix/usr/include/sodium.h" && -f "$local_prefix/usr/lib/x86_64-linux-gnu/libsodium.so" ]]; then
+    echo local
+    return 0
+  fi
+  return 1
+}
+
+find_libpq_mode() {
+  local cxx="${CXX:-c++}"
+  if echo '#include <libpq-fe.h>' | "$cxx" -E -x c++ - >/dev/null 2>&1; then
+    echo system
+    return 0
+  fi
+  if echo '#include <postgresql/libpq-fe.h>' | "$cxx" -E -x c++ - >/dev/null 2>&1; then
+    echo system_pg
+    return 0
+  fi
+  local local_prefix="$ROOT_DIR/.tmp_libpq"
+  if [[ -f "$local_prefix/usr/include/postgresql/libpq-fe.h" && -f "$local_prefix/usr/lib/x86_64-linux-gnu/libpq.so" ]]; then
+    echo local
+    return 0
+  fi
+  return 1
+}
+
+entry_needs_sodium() {
+  local path="$1"
+  grep -qE 'crypto/crypto\.mlc|sodium_abi|libsodium|/crypto/' "$path" \
+    || grep -qE "from ['\"]Crypto['\"]" "$path"
+}
+
+entry_needs_libpq() {
+  local path="$1"
+  grep -qE 'db/postgres\.mlc|postgres_abi|libpq' "$path" \
+    || grep -qE "from ['\"]Postgres['\"]" "$path"
+}
+
+# Write mlc_link_libs.txt and set env for local .tmp_* prefixes. Sets global EXTRA_INC.
+prepare_abi_link() {
+  local path="$1"
+  local out_dir="$2"
+  EXTRA_INC=""
+  if entry_needs_sodium "$path"; then
+    local mode
+    mode="$(find_sodium_mode || true)"
+    if [[ "$mode" == "local" ]]; then
+      EXTRA_INC="$ROOT_DIR/.tmp_libsodium/usr/include"
+      export LIBRARY_PATH="$ROOT_DIR/.tmp_libsodium/usr/lib/x86_64-linux-gnu${LIBRARY_PATH:+:$LIBRARY_PATH}"
+      export LD_LIBRARY_PATH="$ROOT_DIR/.tmp_libsodium/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      # mold ignores LIBRARY_PATH — pass -L via link-libs file (build_bin pass-through).
+      printf -- '-L%s\n' "$ROOT_DIR/.tmp_libsodium/usr/lib/x86_64-linux-gnu" >>"$out_dir/mlc_link_libs.txt"
+    fi
+    printf 'sodium\n' >>"$out_dir/mlc_link_libs.txt"
+  fi
+  if entry_needs_libpq "$path"; then
+    local mode
+    mode="$(find_libpq_mode || true)"
+    if [[ "$mode" == "local" ]]; then
+      EXTRA_INC="$ROOT_DIR/.tmp_libpq/usr/include/postgresql"
+      export LIBRARY_PATH="$ROOT_DIR/.tmp_libpq/usr/lib/x86_64-linux-gnu${LIBRARY_PATH:+:$LIBRARY_PATH}"
+      export LD_LIBRARY_PATH="$ROOT_DIR/.tmp_libpq/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      printf -- '-L%s\n' "$ROOT_DIR/.tmp_libpq/usr/lib/x86_64-linux-gnu" >>"$out_dir/mlc_link_libs.txt"
+    fi
+    printf 'pq\n' >>"$out_dir/mlc_link_libs.txt"
+  fi
+}
+
 discover_entries() {
   local path
   for path in "$ROOT_DIR"/misc/examples/*.mlc "$ROOT_DIR"/misc/gui/*.mlc; do
@@ -68,17 +143,15 @@ soft_skip_reason() {
     fi
   fi
 
-  if grep -qE 'crypto/crypto\.mlc|sodium_abi|libsodium|/crypto/' "$path" \
-    || grep -qE "from ['\"]Crypto['\"]" "$path"; then
-    if ! has_pkg libsodium && [[ ! -f /usr/include/sodium.h ]]; then
+  if entry_needs_sodium "$path"; then
+    if ! find_sodium_mode >/dev/null; then
       printf 'missing libsodium (sodium.h)'
       return 0
     fi
   fi
 
-  if grep -qE 'db/postgres\.mlc|postgres_abi|libpq' "$path" \
-    || grep -qE "from ['\"]Postgres['\"]" "$path"; then
-    if ! has_pkg libpq && [[ ! -f /usr/include/postgresql/libpq-fe.h ]] && [[ ! -f /usr/include/libpq-fe.h ]]; then
+  if entry_needs_libpq "$path"; then
+    if ! find_libpq_mode >/dev/null; then
       printf 'missing libpq'
       return 0
     fi
@@ -171,7 +244,16 @@ for path in "${entries[@]}"; do
   "$MLCC" -o "$out_dir" "$path" >"$log_file" 2>&1
   compile_status=$?
   if [[ "$compile_status" -eq 0 ]]; then
-    "$COMPILER_DIR/build_bin.sh" "$out_dir" "$bin_out" >>"$log_file" 2>&1
+    EXTRA_INC=""
+    if entry_needs_sodium "$path" || entry_needs_libpq "$path"; then
+      : >"$out_dir/mlc_link_libs.txt"
+      prepare_abi_link "$path" "$out_dir"
+    fi
+    if [[ -n "$EXTRA_INC" ]]; then
+      "$COMPILER_DIR/build_bin.sh" "$out_dir" "$bin_out" "$EXTRA_INC" >>"$log_file" 2>&1
+    else
+      "$COMPILER_DIR/build_bin.sh" "$out_dir" "$bin_out" >>"$log_file" 2>&1
+    fi
     link_status=$?
   else
     link_status=1

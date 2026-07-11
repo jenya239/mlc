@@ -293,7 +293,10 @@ EXTERN_LINK_LIBS=()
 if [ -f "$CPP_DIR/mlc_link_libs.txt" ]; then
   while IFS= read -r library_name || [ -n "$library_name" ]; do
     [ -n "$library_name" ] || continue
-    EXTERN_LINK_LIBS+=("-l${library_name}")
+    case "$library_name" in
+      -*) EXTERN_LINK_LIBS+=("$library_name") ;;
+      *) EXTERN_LINK_LIBS+=("-l${library_name}") ;;
+    esac
   done < "$CPP_DIR/mlc_link_libs.txt"
 fi
 EXTERN_LINK_LIBS+=("${TEXT_LIBS[@]}")
