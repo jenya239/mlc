@@ -1,0 +1,85 @@
+// TRACK_STDLIB_HTTP_MLC STEP=2 — parse/format smoke (no network).
+// Relative import until STEP=3 bare-name HttpServer.
+
+import {
+  parse_http_request,
+  format_http_response,
+  HttpResponse,
+  HttpHeader,
+  HttpParseResult,
+  HttpParseOk,
+  HttpParseErr
+} from '../../lib/mlc/common/stdlib/net/http_server'
+
+fn parse_ok(result: HttpParseResult) -> bool =
+  match result {
+    HttpParseOk(_) => true,
+    HttpParseErr => false
+  }
+
+fn parse_method(result: HttpParseResult) -> string =
+  match result {
+    HttpParseOk(request) => request.method,
+    HttpParseErr => ""
+  }
+
+fn parse_path(result: HttpParseResult) -> string =
+  match result {
+    HttpParseOk(request) => request.path,
+    HttpParseErr => ""
+  }
+
+fn parse_body(result: HttpParseResult) -> string =
+  match result {
+    HttpParseOk(request) => request.body,
+    HttpParseErr => ""
+  }
+
+fn parse_header_count(result: HttpParseResult) -> i32 =
+  match result {
+    HttpParseOk(request) => request.headers.length(),
+    HttpParseErr => -1
+  }
+
+fn parse_header0_name(result: HttpParseResult) -> string =
+  match result {
+    HttpParseOk(request) =>
+      if request.headers.length() > 0 then request.headers[0].name else "" end,
+    HttpParseErr => ""
+  }
+
+fn main() -> i32 = do
+  const get_raw = "GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n"
+  const get_result = parse_http_request(get_raw)
+  if !parse_ok(get_result) then return 1 end
+  if parse_method(get_result) != "GET" then return 2 end
+  if parse_path(get_result) != "/health" then return 3 end
+  if parse_body(get_result) != "" then return 4 end
+  if parse_header_count(get_result) != 1 then return 5 end
+  if parse_header0_name(get_result) != "Host" then return 6 end
+
+  const post_raw = "POST /echo HTTP/1.1\r\nContent-Length: 5\r\n\r\nhelloEXTRA"
+  const post_result = parse_http_request(post_raw)
+  if !parse_ok(post_result) then return 7 end
+  if parse_method(post_result) != "POST" then return 8 end
+  if parse_path(post_result) != "/echo" then return 9 end
+  if parse_body(post_result) != "hello" then return 10 end
+
+  const lf_result = parse_http_request("GET / HTTP/1.0\n\n")
+  if !parse_ok(lf_result) then return 11 end
+  if parse_path(lf_result) != "/" then return 12 end
+
+  if parse_ok(parse_http_request("NOTHTTP")) then return 13 end
+
+  const response = HttpResponse {
+    status: 200,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "ok"
+  }
+  const formatted = format_http_response(response)
+  if !formatted.starts_with("HTTP/1.1 200") then return 14 end
+  if !formatted.contains("Content-Length: 2") then return 15 end
+  if !formatted.contains("Connection: close") then return 16 end
+  if !formatted.ends_with("ok") then return 17 end
+  0
+end

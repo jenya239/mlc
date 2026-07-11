@@ -21,7 +21,11 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=2 next (MLC parser) — **active**
+## Status: **open** — STEP=3 next (bare-name) — **active**
+
+**Driver 2026-07-11:** STEP=2 — `http_server.mlc`: records + `parse_http_request`/
+`format_http_response`; `HttpParseResult` sum; smoke
+`http_server_parse_smoke.mlc` + `run_http_server_parse_smoke.sh` (native link).
 
 **Driver 2026-07-11:** STEP=1 — Decision **locked** (pure-MLC `HttpServer`
 module; records mirror C++ shapes; byte-scan parse; array router; one module).
@@ -70,7 +74,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | Модуль | `lib/mlc/common/stdlib/net/http_server.mlc`, `module HttpServer` |
 | Bare-name | `"HttpServer"` → `"net/http_server.mlc"` in `path_normalize.mlc` (рядом с `"Tcp"`; **не** трогать client-стаб `http.mlc`) |
 | Типы | `HttpHeader { name, value: string }`; `HttpRequest { method, path, headers: [HttpHeader], body }`; `HttpResponse { status: i32, headers: [HttpHeader], body }` — как C++ shapes |
-| Парсер | `parse_http_request(raw: string) -> Option<HttpRequest>`; char-scan, **без regex**; header end `\r\n\r\n` или `\n\n`; request-line `METHOD SP path SP HTTP/x.y`; header `name: value` (trim); body только по `Content-Length` (cap **1 MiB**); header block cap **64 KiB**; no chunked |
+| Парсер | `parse_http_request(raw: string) -> HttpParseResult` (`HttpParseOk`/`HttpParseErr` — local sum; std `Option` import segfaults under mlcc); char-scan, **без regex**; header end `\r\n\r\n` или `\n\n`; request-line `METHOD SP path SP HTTP/x.y` (весь `head`, если нет `\n` — empty headers); header `name: value` (trim); body только по `Content-Length` (cap **1 MiB**); header block cap **64 KiB**; no chunked |
 | Response | `format_http_response(response) -> string` (+ demo пишет через `Tcp.write_all`); auto `Content-Length` если нет; `Connection: close` |
 | Роутер | `[HttpRoute]` где `HttpRoute { method, path, handler }`; exact match method+path; sync `fn(HttpRequest) -> HttpResponse`; default 404 |
 | Один vs два файла | **один** модуль (`http_server.mlc`) — request+response+router |

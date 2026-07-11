@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=2 |
-| test_gate | — (docs Decision) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=3 |
+| test_gate | run_http_server_parse_smoke.sh EXIT 0 |
+
+### Turn 2026-07-11 12:19 (Driver TRACK_STDLIB_HTTP_MLC STEP=2 — parser)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:19 |
+| elapsed | ~25 min |
+| done    | `lib/.../http_server.mlc` records+parse+format; `HttpParseResult` (not Option); smoke+`run_http_server_parse_smoke.sh` (codegen+link). Amended Decision: local sum. |
+| verify  | `bash scripts/run_http_server_parse_smoke.sh` EXIT 0. |
+| result  | STEP=2 done. Plain: pure-MLC HTTP parse/format works. |
+| issues  | Queued prompt VM STEP=2 stale; `mlcc --run` lacks string methods; Option import segfault → HttpParseResult. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_HTTP_MLC — bare-name HttpServer in path_normalize |
 
 ### Turn 2026-07-11 12:16 (Driver TRACK_STDLIB_HTTP_MLC STEP=1 — Decision)
 

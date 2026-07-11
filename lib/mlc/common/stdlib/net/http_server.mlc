@@ -1,0 +1,217 @@
+//! @module std/net/http_server
+//! @category net
+//! @type pure
+//!
+//! Pure-MLC HTTP/1.1 request parse + response format (TRACK_STDLIB_HTTP_MLC).
+//! No extern to http_request.hpp / http_router.hpp.
+//! Parse result is a local sum (not std Option — mlcc Option import unstable).
+
+module HttpServer
+
+export type HttpHeader = { name: string, value: string }
+
+export type HttpRequest = {
+  method: string,
+  path: string,
+  headers: [HttpHeader],
+  body: string
+}
+
+export type HttpResponse = {
+  status: i32,
+  headers: [HttpHeader],
+  body: string
+}
+
+export type HttpParseResult = HttpParseOk(HttpRequest) | HttpParseErr
+
+fn trim_spaces(text: string) -> string = do
+  let mut start = 0
+  let mut end_index = text.length()
+  while start < end_index && (text.char_at(start) == " " || text.char_at(start) == "\t") do
+    start = start + 1
+  end
+  while end_index > start && (text.char_at(end_index - 1) == " " || text.char_at(end_index - 1) == "\t") do
+    end_index = end_index - 1
+  end
+  text.substring(start, end_index - start)
+end
+
+fn parse_decimal(text: string) -> i32 = do
+  const trimmed = trim_spaces(text)
+  if trimmed.length() == 0 then return -1 end
+  let mut value = 0
+  let mut index = 0
+  while index < trimmed.length() do
+    const character = trimmed.char_at(index)
+    if character < "0" || character > "9" then return -1 end
+    const digit = character.to_i()
+    if value > (2147483647 - digit) / 10 then return -1 end
+    value = value * 10 + digit
+    index = index + 1
+  end
+  value
+end
+
+fn find_header_block_end(raw: string) -> i32 = do
+  const crlf = raw.index_of("\r\n\r\n")
+  const lf = raw.index_of("\n\n")
+  if crlf >= 0 && (lf < 0 || crlf <= lf) then crlf
+  else if lf >= 0 then lf
+  else -1
+  end
+end
+
+fn header_separator_length(raw: string, header_end: i32) -> i32 =
+  if header_end + 4 <= raw.length() && raw.substring(header_end, 4) == "\r\n\r\n" then 4
+  else 2
+  end
+
+fn strip_trailing_cr(line: string) -> string =
+  if line.length() > 0 && line.char_at(line.length() - 1) == "\r" then
+    line.substring(0, line.length() - 1)
+  else line
+  end
+
+fn header_name_is_content_length(name: string) -> bool =
+  name.lower() == "content-length"
+
+fn http_version_ok(version: string) -> bool =
+  version.length() >= 7 && version.substring(0, 7).lower() == "http/1."
+
+export fn parse_http_request(raw: string) -> HttpParseResult = do
+  const header_end = find_header_block_end(raw)
+  if header_end < 0 then return HttpParseErr end
+  if header_end > 65536 then return HttpParseErr end
+  const separator_length = header_separator_length(raw, header_end)
+  const head = raw.substring(0, header_end)
+  const first_newline = head.index_of("\n")
+  let request_line = ""
+  let line_start = 0
+  if first_newline < 0 then
+    request_line = strip_trailing_cr(head)
+    line_start = head.length()
+  else
+    request_line = strip_trailing_cr(head.substring(0, first_newline))
+    line_start = first_newline + 1
+  end
+  const first_space = request_line.index_of(" ")
+  if first_space < 0 then return HttpParseErr end
+  const after_method = request_line.substring(first_space + 1, request_line.length() - first_space - 1)
+  const second_space = after_method.index_of(" ")
+  if second_space < 0 then return HttpParseErr end
+  const second_space_absolute = first_space + 1 + second_space
+  const method = request_line.substring(0, first_space)
+  const path = request_line.substring(first_space + 1, second_space_absolute - first_space - 1)
+  const version = request_line.substring(second_space_absolute + 1, request_line.length() - second_space_absolute - 1)
+  if method.length() == 0 || path.length() == 0 then return HttpParseErr end
+  if !http_version_ok(version) then return HttpParseErr end
+
+  let mut headers: [HttpHeader] = []
+  let mut content_length = -1
+  while line_start < head.length() do
+    const rest = head.substring(line_start, head.length() - line_start)
+    const line_end = rest.index_of("\n")
+    let line = ""
+    if line_end < 0 then
+      line = strip_trailing_cr(rest)
+      line_start = head.length()
+    else
+      line = strip_trailing_cr(rest.substring(0, line_end))
+      line_start = line_start + line_end + 1
+    end
+    if line.length() == 0 then
+      // empty header line inside block — skip
+    else
+      const colon = line.index_of(":")
+      if colon < 0 then return HttpParseErr end
+      const name = trim_spaces(line.substring(0, colon))
+      const value = trim_spaces(line.substring(colon + 1, line.length() - colon - 1))
+      if name.length() == 0 then return HttpParseErr end
+      if header_name_is_content_length(name) then
+        content_length = parse_decimal(value)
+        if content_length < 0 then return HttpParseErr end
+      end
+      headers.push(HttpHeader { name: name, value: value })
+    end
+  end
+
+  const body_offset = header_end + separator_length
+  let body = ""
+  if content_length >= 0 then
+    if content_length > 1048576 then return HttpParseErr end
+    if body_offset + content_length > raw.length() then return HttpParseErr end
+    body = raw.substring(body_offset, content_length)
+  end
+
+  HttpParseOk(HttpRequest {
+    method: method,
+    path: path,
+    headers: headers,
+    body: body
+  })
+end
+
+fn http_status_text(status: i32) -> string =
+  if status == 200 then "OK"
+  else if status == 201 then "Created"
+  else if status == 204 then "No Content"
+  else if status == 400 then "Bad Request"
+  else if status == 404 then "Not Found"
+  else if status == 405 then "Method Not Allowed"
+  else if status == 500 then "Internal Server Error"
+  else "OK"
+  end
+
+export fn http_not_found() -> HttpResponse =
+  HttpResponse {
+    status: 404,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "Not Found"
+  }
+
+fn i32_to_decimal_string(value: i32) -> string = do
+  if value == 0 then return "0" end
+  let mut number = value
+  let mut negative = false
+  if number < 0 then
+    negative = true
+    number = 0 - number
+  end
+  let mut digits = ""
+  while number > 0 do
+    const digit = number % 10
+    const digit_char =
+      if digit == 0 then "0"
+      else if digit == 1 then "1"
+      else if digit == 2 then "2"
+      else if digit == 3 then "3"
+      else if digit == 4 then "4"
+      else if digit == 5 then "5"
+      else if digit == 6 then "6"
+      else if digit == 7 then "7"
+      else if digit == 8 then "8"
+      else "9"
+      end
+    digits = digit_char + digits
+    number = number / 10
+  end
+  if negative then "-" + digits else digits end
+end
+
+export fn format_http_response(response: HttpResponse) -> string = do
+  let mut output = "HTTP/1.1 " + i32_to_decimal_string(response.status) + " " + http_status_text(response.status) + "\r\n"
+  let mut has_content_length = false
+  let mut index = 0
+  while index < response.headers.length() do
+    const header = response.headers[index]
+    if header_name_is_content_length(header.name) then has_content_length = true end
+    output = output + header.name + ": " + header.value + "\r\n"
+    index = index + 1
+  end
+  if !has_content_length then
+    output = output + "Content-Length: " + i32_to_decimal_string(response.body.length()) + "\r\n"
+  end
+  output = output + "Connection: close\r\n\r\n" + response.body
+  output
+end

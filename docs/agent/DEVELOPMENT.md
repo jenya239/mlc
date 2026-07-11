@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` active** STEP=2 — `HttpRequest`/`HttpResponse` +
-pure-MLC `parse_http_request` (Decision locked). See
+**`TRACK_STDLIB_HTTP_MLC` active** STEP=3 — bare-name `"HttpServer"` in
+`path_normalize.mlc` (parser/format done). See
 [TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
 
 
