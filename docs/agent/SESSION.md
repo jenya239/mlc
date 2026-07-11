@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=6 |
-| test_gate | glyph/renderer/render_mode OK; MAE=0 |
+| driver_turns_since_plan | 0 |
+| step_last | 6 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC closed (await Critic) |
+| test_gate | regression 20/0; self-host DIFF_EXIT=0 |
+
+### Turn 2026-07-11 23:35 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=6 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 23:20 |
+| elapsed | ~15 min |
+| done    | `regression_gate` 20/0; self-host DIFF_EXIT=0; TEXT_RENDERING §3.2/§5.3; TRACK→archive; PLAN §20b closed. |
+| verify  | REG_EXIT=0; DIFF_EXIT=0. |
+| result  | Track closed. Plain: MSDF EDT is MLC; ready for Critic. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_TEXT_MSDF_TO_MLC |
 
 ### Turn 2026-07-11 23:20 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=5 — delete shim)
 

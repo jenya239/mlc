@@ -81,13 +81,11 @@ hot path per frame). Зафиксировать как открытый вопр
 
 ### 3.2 MSDF-генерация (средний риск)
 
-`msdfgen` — C++ библиотека (не чистый C ABI) с шаблонным API — прямой FFI
-сложнее, чем HarfBuzz/FreeType. Варианты: (а) обернуть в узкий extern "C"
-шим на стороне runtime (`runtime/src/text/msdf_shim.cpp`, компилируется
-вместе с MLC runtime, экспортирует C-функции) — предпочтительно; (б) писать
-MSDF-генерацию на MLC напрямую (алгоритм не сложный: edge coloring + signed
-distance per channel) — избегает C++-FFI вообще, но больше кода. Решение —
-на этапе реализации, не блокирует дизайн.
+Исторически: `msdfgen` (C++ шаблоны) vs узкий runtime-шим vs чистый MLC.
+**2026-07-11 ([TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md)
+closed):** EDT/SDF — `misc/gui/msdf.mlc`; FreeType→mask — thin
+`runtime/src/text/msdf_bridge.cpp`. Системный `msdfgen` не используется.
+Публичный `msdf_generate` / `msdf_byte_at` сохранён (MLC + RGB cache).
 
 ### 3.3 OpenGL (высокий риск объёма, НЕ требует bindgen для этой задачи)
 
@@ -150,16 +148,19 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
   на одном буфере; gate `compiler/tests/run_gl_loader_smoke.sh`; CI job
   `gl-loader-smoke` (Mesa/EGL packages).
 
-### 5.3 Шим `msdfgen` (C++ → C ABI) — **decided**
+### 5.3 MSDF/SDF (FreeType mask + MLC EDT) — **done** (2026-07-11)
 
-**Решение:** вариант (а) из §3.2 — узкий `extern "C"` шим в runtime.
+**Решение (обновлено TRACK_TEXT_MSDF_TO_MLC):** вариант (б) из старого §3.2 —
+чистый MLC EDT/SDF; FreeType mask остаётся тонким FFI.
 
-- Файл: `runtime/src/text/msdf_shim.cpp` (+ header), линкуется с runtime; экспортирует C-функции (load glyph outline → generate MSDF bitmap + pxRange).
-- MLC: обычный `extern fn` / `extern lib` к шиму (C ABI only; C++ `msdfgen` не торчит в MLC).
-- Реализация шима — **STEP=7**, не раньше; STEP=2–4 (A8 FreeType path) не зависят от MSDF.
-- **STEP=7.1 (2026-07-10):** без системного `msdfgen` — EDT signed distance из FreeType A8-маски, RGB каналы = один SDF (совместимо с median MSDF-шейдером). API `msdf_generate` / `msdf_byte_at` зафиксирован; тело можно заменить на Chlumsky `msdfgen` без смены MLC-контракта.
-- **STEP=7.3 (2026-07-10):** `RenderMode` — `0=BitmapA8` если `pixel_size < 28`, иначе `1=MsdfRgb8`. Порог в `choose_render_mode` (`misc/examples/render_mode_smoke.mlc`).
-- Вариант (б) (чистый MLC MSDF) — запасной, только если шим окажется непропорционально тяжёлым; не default.
+- Math: `misc/gui/msdf.mlc` (`msdf_sdf_rgb_from_mask` / `msdf_generate`)
+- Mask FFI: `runtime/src/text/msdf_bridge.cpp` (+ `msdf_bridge.hpp`);
+  `msdf_shim.cpp` **удалён**
+- API: `msdf_generate` / `msdf_width` / `msdf_byte_at` / RGB cache для GL helpers
+- Golden: `misc/examples/fixtures/msdf_A_32_4.rgb`, MAE gate
+  `scripts/run_msdf_mlc_mae_gate.rb` (MAE=0 vs frozen C++ fixture)
+- **STEP=7.1 (2026-07-10):** исходный C++ EDT shim (superseded by MLC port)
+- **STEP=7.3 (2026-07-10):** `RenderMode` — `0=BitmapA8` если `pixel_size < 28`, иначе `1=MsdfRgb8`
 
 ## 6. Критерий приёмки первого milestone (фаза 1-2, headless)
 

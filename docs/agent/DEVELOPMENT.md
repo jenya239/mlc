@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=6 — regression_gate + self-host; close → Critic.
-See [TRACK_TEXT_MSDF_TO_MLC.md](TRACK_TEXT_MSDF_TO_MLC.md).
+**`TRACK_TEXT_MSDF_TO_MLC` closed** — awaiting Critic. Next Planner: §20d LOGIC / §20e GL_GLAD.
+See [TRACK_TEXT_MSDF_TO_MLC.md](../archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md).
 
 
 ## Step sizing (good vs bad)
