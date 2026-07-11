@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` active** STEP=4 — retarget `misc/gui` to glad bindings.
+**`TRACK_GL_GLAD_MIGRATION` active** STEP=5 — delete `glfw_gl_dispatch` GL table / `loader_shim`.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 

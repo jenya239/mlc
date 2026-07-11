@@ -1,21 +1,14 @@
 // GLFW-polled GuiInput + hover/click edge (TRACK_GUI_FRAMEWORK STEP=4).
 
 import { Point, Rect, point_new, point_in_rect } from './layout'
-
-extern fn glfw_gl_mouse_x() -> i32
-  = "mlc::gl::glfw_gl_mouse_x" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_mouse_y() -> i32
-  = "mlc::gl::glfw_gl_mouse_y" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_mouse_left_down() -> i32
-  = "mlc::gl::glfw_gl_mouse_left_down" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_key_escape_down() -> i32
-  = "mlc::gl::glfw_gl_key_escape_down" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_input_test_set(
-  mouse_x: i32, mouse_y: i32, mouse_left_down: i32, escape_down: i32
-) -> unit
-  = "mlc::gl::glfw_gl_input_test_set" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_input_test_clear() -> unit
-  = "mlc::gl::glfw_gl_input_test_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+import {
+  glfw_gl_mouse_x,
+  glfw_gl_mouse_y,
+  glfw_gl_mouse_left_down,
+  glfw_gl_key_escape_down,
+  glfw_gl_input_test_set,
+  glfw_gl_input_test_clear
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 export type GuiInput = {
   mouse_x: i32,

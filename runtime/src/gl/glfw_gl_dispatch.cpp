@@ -1,10 +1,17 @@
 #include "mlc/gl/glfw_gl_dispatch.hpp"
 
 #if __has_include(<GLFW/glfw3.h>)
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
 #define MLC_HAS_GLFW 1
 #else
 #define MLC_HAS_GLFW 0
+#endif
+
+#if MLC_HAS_GLFW
+#include "mlc/gl/glad_gl.hpp"
 #endif
 
 #include <cmath>
@@ -567,6 +574,13 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
   }
   glfwMakeContextCurrent(window);
   glfwSwapInterval(0);
+  // TRACK_GL_GLAD_MIGRATION: load glad via GLFW proc address (GUI MLC uses glad_abi).
+  if (gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress)) == 0) {
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return -3;
+  }
+  // Keep hand dispatch table for examples still on glfw_gl_dispatch GL wrappers.
   if (glfw_gl_load() != 0) {
     glfwDestroyWindow(window);
     glfwTerminate();

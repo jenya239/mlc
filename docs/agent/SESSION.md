@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=4 |
-| test_gate | run_glad_link_smoke ok; gl_renderer smoke ok |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=5 |
+| test_gate | gl_renderer+gui_input+text_renderer_native smokes ok |
+
+### Turn 2026-07-11 27:30 (Driver TRACK_GL_GLAD_MIGRATION STEP=4 — retarget gui)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 27:05 |
+| elapsed | ~25 min |
+| done    | Expanded `glad_gl_abi`+`glad_gl.mlc`; `gl_window.mlc`; retargeted `misc/gui/{gl_renderer,text_renderer,input}`; `gladLoadGL` in context_begin; `GLFW_INCLUDE_NONE`. |
+| verify  | `run_gl_renderer_smoke` ok; `run_gui_input_smoke` ok; `run_text_renderer_native_smoke` ok. |
+| result  | STEP=4 done. Plain: GUI MLC calls glad; GLFW window stays. |
+| issues  | Foreign `compiler/out/*` left. Examples still on dispatch GL; dual load until STEP=5. |
+| next    | ROLE=Driver STEP=5 TRACK_GL_GLAD_MIGRATION — delete dispatch GL table / loader_shim |
 
 ### Turn 2026-07-11 27:00 (Driver TRACK_GL_GLAD_MIGRATION STEP=3 — link glad.c)
 

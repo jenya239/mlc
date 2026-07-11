@@ -1,0 +1,28 @@
+//! @module std/gl/gl_window
+//! GLFW window/context/input — stays on dispatch until a later track.
+
+export extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_context_should_close() -> i32
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_anim_unit() -> f64
+  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+export extern fn glfw_gl_mouse_x() -> i32
+  = "mlc::gl::glfw_gl_mouse_x" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_mouse_y() -> i32
+  = "mlc::gl::glfw_gl_mouse_y" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_mouse_left_down() -> i32
+  = "mlc::gl::glfw_gl_mouse_left_down" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_key_escape_down() -> i32
+  = "mlc::gl::glfw_gl_key_escape_down" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_input_test_set(
+  mouse_x: i32, mouse_y: i32, mouse_left_down: i32, escape_down: i32
+) -> unit
+  = "mlc::gl::glfw_gl_input_test_set" from "mlc/gl/glfw_gl_dispatch.hpp"
+export extern fn glfw_gl_input_test_clear() -> unit
+  = "mlc::gl::glfw_gl_input_test_clear" from "mlc/gl/glfw_gl_dispatch.hpp"

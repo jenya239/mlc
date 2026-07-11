@@ -8,13 +8,11 @@ import {
   gui_is_hovered,
   gui_click_edge
 } from '../gui/input'
-
-extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
-  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_context_end() -> unit
-  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
-extern fn glfw_gl_context_swap_poll() -> unit
-  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 fn main() -> i32 = do
   const button = rect_new(100, 80, 120, 40)
