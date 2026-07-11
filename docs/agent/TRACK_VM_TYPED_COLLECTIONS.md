@@ -8,7 +8,11 @@ Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value mode
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: **open** — STEP=4 next (verify-gate) — **active**
+## Status: **closed** (2026-07-11) — STEP=1–4 done — pending Critic
+
+**Driver 2026-07-11:** STEP=4 — self-host `mlcc`→`mlcc2`→`diff -rq` identical;
+`regression_gate` 20/0; VM corpus (typed 6, examples 28, single+cpp_diff 18,
+elif 6, trampoline depth). Track closed.
 
 **Driver 2026-07-11:** STEP=3 — nested field-slot smokes: record↔array,
 record↔map, `[[i32]]`; gate extended (`vm_record_holds_*`, `vm_nested_array`).
@@ -165,7 +169,7 @@ value-модели контейнеров:
 | 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | **done** (2026-07-11: Shared-indirection locked) |
 | 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | **done** (2026-07-11: VmFieldSlot elements; gate string/record/corpus ok) |
 | 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | **done** (2026-07-11: arms in STEP=2; nested smokes + gate) |
-| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | pending |
+| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | **done** (2026-07-11: diff identical; regression 20/0; corpus ok) |
 
 <!-- sub-steps STEP=1: 1) compare Shared-indirection vs VM-only types vs boxed heap slots; 2) lock one in Decision section; 3) note impact on native.mlc / mir_eval -->
 <!-- sub-steps STEP=2: 1) change value.mlc types; 2) native push/set/get; 3) repro [string]/[Point] gate -->

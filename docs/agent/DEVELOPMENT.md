@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=4 — verify-gate (self-host diff,
-`regression_gate.sh`, VM corpus). See
-[TRACK_VM_TYPED_COLLECTIONS.md](TRACK_VM_TYPED_COLLECTIONS.md).
+**`TRACK_VM_TYPED_COLLECTIONS` closed** — pending Critic `critique-audit`.
+Next queue after Critic: [TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
 
 
 ## Step sizing (good vs bad)

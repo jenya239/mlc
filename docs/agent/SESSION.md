@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=4 |
-| test_gate | run_vm_typed_collections_gate.sh EXIT 0 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_VM_TYPED_COLLECTIONS closed (pending Critic) |
+| test_gate | self-host identical; regression 20/0; VM corpus ok |
+
+### Turn 2026-07-11 12:05 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=4 — verify-gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 11:40 |
+| elapsed | ~25 min |
+| done    | Verify-gate: `mlcc`→`mlcc2`→`diff -rq` identical; `regression_gate` 20/0; typed 6 + examples 28 + single/cpp_diff 18 + elif 6 + trampoline depth; TRACK/PLAN closed. |
+| verify  | DIFF_EXIT=0; REG 20/0; CORPUS_EXIT=0; EXTRA_VM_EXIT=0. |
+| result  | Track closed. Plain: Shared/VmFieldSlot collections verified end-to-end. |
+| issues  | Queued prompt still STEP=2 stale; ran SESSION STEP=4. Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_VM_TYPED_COLLECTIONS |
 
 ### Turn 2026-07-11 11:37 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=3 — nested field-slot smokes)
 
