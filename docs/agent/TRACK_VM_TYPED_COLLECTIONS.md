@@ -8,12 +8,67 @@ Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value mode
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: **open** — STEP=1 next (Design) — **active**
+## Status: **open** — STEP=2 next (array/map hold Shared VmValue) — **active**
+
+**Driver 2026-07-11:** STEP=1 — Decision **locked**: Shared-indirection (same
+pattern as `VmFieldVariant`); reject bare `[VmValue]` and split-out VM tree.
 
 **Planner 2026-07-11:** activated after GUI Critic OK (`92e15855`). Prefer over
 low-pri FFI_SAFETY/ERROR_UNION/DEBUG_SOURCE_MAP: concrete VM correctness gap
-(narrows Epic 3 STEP=8 claim). STEP=1 still open — Driver locks Shared vs
-split-types Decision before code.
+(narrows Epic 3 STEP=8 claim).
+
+## Decision (STEP=1, 2026-07-11) — **locked**
+
+### Options
+
+| Вариант | Notes |
+|---------|-------|
+| **A. Shared-indirection** | `elements: [Shared<VmValue>]` / map values same; mirrors `VmFieldVariant(Shared<VmVariantValue>)` |
+| B. Bare `[VmValue]` inside `VmArrayValue` | Recursive sum in C++ layout — **rejected** (§5.2) |
+| C. Split VM types out of `compiler/` codegen path | VM still compiled into `mlcc` → C++; fake split — **rejected** |
+| D. New `VmBoxedValue` heap module only | Extra indirection layer; no gain over `Shared` already in language — **rejected** (v0) |
+
+### Locked shape (STEP=2 target)
+
+```mlc
+export type VmArrayValue = VmArrayValue {
+  elements: [Shared<VmValue>]
+}
+export type VmMapValue = VmMapValue {
+  keys: [string],
+  values: [Shared<VmValue>],
+  entry_count: i32
+}
+```
+
+- Keys stay `[string]` (unchanged).
+- `Shared.new` in VM remains identity wrap (no refcount) — same as today for
+  variant fields (`native.mlc` comment).
+- Native `__mir_array_push` / `__mir_map_set`: accept any `VmValue`, store
+  `Shared.new(value)`; get unwraps Shared → `VmValue`.
+- Equality/truthy (STEP=2 minimal): length-based OK to keep; deep equal deferred.
+
+### STEP=3 implication
+
+Extend `VmFieldSlot` with Shared-wrapped container/record arms (e.g.
+`VmFieldArray(Shared<VmArrayValue>)`, `VmFieldMap(...)`, `VmFieldRecord(...)`)
+so records/variants can hold arrays — same Decision A, not a new strategy.
+
+### Impact
+
+| File | Change |
+|------|--------|
+| `compiler/vm/value.mlc` | types + field_slot helpers |
+| `compiler/vm/native.mlc` | array/map empty/push/pop/get/set/length |
+| `compiler/vm/mir_eval.mlc` | truthy on `elements` (not `integer_elements`) |
+| gates | repro `[string]` / `[Point]` push must succeed |
+
+### Non-goals (locked)
+
+- Real refcounting / GC for Shared in VM
+- COW / perf of containers
+- Unifying VM values with user-program C++ `mlc::Array` layout
+
 
 ## Проблема
 
@@ -95,7 +150,7 @@ value-модели контейнеров:
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | pending |
+| 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | **done** (2026-07-11: Shared-indirection locked) |
 | 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | pending |
 | 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | pending |
 | 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | pending |

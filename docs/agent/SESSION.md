@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=1 |
-| test_gate | docs-only (Planner activate) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=2 |
+| test_gate | docs-only (Design lock) |
+
+### Turn 2026-07-11 05:10 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=1 — Design)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 05:07 |
+| elapsed | ~3 min |
+| done    | Decision locked: Shared-indirection for array/map elements (mirror `VmFieldVariant`); reject bare `[VmValue]` and split-out; STEP=3 field slots same strategy. PLAN→STEP=2. |
+| verify  | TRACK Decision section + STEP=1 done; impact table lists value/native/mir_eval. |
+| result  | STEP=1 done. Plain: Shared elements locked for VM containers. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=2 TRACK_VM_TYPED_COLLECTIONS — VmArray/VmMap Shared elements + native + repro |
 
 ### Turn 2026-07-11 05:05 (Planner — activate TRACK_VM_TYPED_COLLECTIONS)
 

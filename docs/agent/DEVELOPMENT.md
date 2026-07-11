@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=1 — Design (Shared-indirection vs
-split VM/codegen types). See
+**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=2 — `VmArrayValue`/`VmMapValue`
+hold `Shared<VmValue>`; native + repro gates. See
 [TRACK_VM_TYPED_COLLECTIONS.md](TRACK_VM_TYPED_COLLECTIONS.md).
 
 
