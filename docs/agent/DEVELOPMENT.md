@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=6 — regression + self-host; close.
-See [TRACK_STDLIB_WEBSOCKET_TO_MLC.md](TRACK_STDLIB_WEBSOCKET_TO_MLC.md).
+**No active Driver track.** Last closed: `TRACK_STDLIB_WEBSOCKET_TO_MLC`.
+Next: Critic audit on that track, then Planner (SPAWN_DETACH high priority).
+See [archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](../archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md).
 (`TRACK_CONCURRENCY_SPAWN_DETACH` still high priority for MT servers — separate.)
 
 

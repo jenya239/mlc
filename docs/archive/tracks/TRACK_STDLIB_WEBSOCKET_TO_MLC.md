@@ -7,7 +7,9 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: **active** — STEP=6 next (regression + self-host; close)
+## Status: **closed** (2026-07-11)
+
+**Driver 2026-07-11:** STEP=6 — `run_websocket_gate.sh` OK; `regression_gate` 20/0; self-host p1/p2 DIFF_EXIT=0; archived.
 
 **Driver 2026-07-11:** STEP=5 — MLC `upgrade`/`read_text`/`write_text`/`close`
 (`WsHandleResult`/`WsTextResult`); thin `websocket_bridge.hpp` (handles+I/O);
@@ -102,7 +104,7 @@ already documents «SHA1 + base64 local (no libsodium)».
 | 3 | Frame parser/writer на MLC. | **done** (2026-07-11: encode/decode + mask XOR smoke) |
 | 4 | Handshake на MLC (HttpServer types). | **done** (2026-07-11: check/format/from_raw + RFC smoke) |
 | 5 | Удалить `websocket.hpp`; переключить модуль. | **done** (2026-07-11: MLC bodies; hpp deleted; echo+Ruby client) |
-| 6 | Regression + self-host diff; close. | pending |
+| 6 | Regression + self-host diff; close. | **done** (2026-07-11: gate OK; REG 20/0; DIFF_EXIT=0; archived) |
 
 <!-- STEP=2 sub-steps: 1) port sha1+base64 to websocket.mlc; 2) RFC 6455 key→accept vector smoke; 3) mlcc --check-only / link smoke -->
 <!-- STEP=3 sub-steps: 1) port frame parse/write; 2) text frame roundtrip; 3) mask XOR parity -->

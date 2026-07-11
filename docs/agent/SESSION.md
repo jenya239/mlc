@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=6 |
-| test_gate | websocket_gate + handshake/frame/sha1 smokes |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC closed |
+| test_gate | websocket_gate + regression_gate 20/0 + self-host DIFF=0 |
+
+### Turn 2026-07-11 19:45 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=6 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 19:30 |
+| elapsed | ~15 min |
+| done    | `run_websocket_gate.sh` OK; `regression_gate` 20/0; self-host p1/p2 DIFF_EXIT=0; TRACK→`docs/archive/tracks/`; PLAN §20c closed. |
+| verify  | GATE=0; REG 20/0; DIFF_EXIT=0; no `websocket.hpp`. |
+| result  | TRACK closed. Plain: WS framing/handshake verified MLC end-to-end. |
+| issues  | Residual Ruby bridge stubs. Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_WEBSOCKET_TO_MLC |
 
 ### Turn 2026-07-11 19:30 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 — MLC bodies + delete hpp)
 

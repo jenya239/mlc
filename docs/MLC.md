@@ -429,22 +429,24 @@ HTTP parse/route на MLC — 2026-07-11 (`TRACK_STDLIB_HTTP_MLC`):
   demo `misc/examples/http_server_curl_demo.mlc`; gates
   `run_http_server_parse_smoke.sh` / `run_http_server_curl_gate.sh`.
 - Public C++ `http_request.hpp` / `http_router.hpp` / `http_server.hpp` and
-  `serve_http_with_thread_pool` **removed** (2026-07-11). WS handshake still
-  uses private `websocket_http.hpp` until `TRACK_STDLIB_WEBSOCKET_TO_MLC`.
+  `serve_http_with_thread_pool` **removed** (2026-07-11). WebSocket protocol
+  is MLC (`TRACK_STDLIB_WEBSOCKET_TO_MLC` closed); thin `websocket_bridge.hpp`
+  holds connection handles + Ruby residual stubs.
 
 Не в v1: TLS, HTTP/2, epoll reactor.
 
 #### WebSocket (server stdlib)
 
-Зафиксировано 2026-07-11 (`TRACK_STDLIB_WEBSOCKET`). Runtime (`mlc::net` RAII +
-`mlc::websocket` handles):
+Зафиксировано 2026-07-11 (`TRACK_STDLIB_WEBSOCKET` + `TRACK_STDLIB_WEBSOCKET_TO_MLC`).
+Protocol on MLC (`std/net/websocket.mlc`):
 
-- HTTP/1.1 upgrade (RFC 6455 Accept via local SHA1+base64); text frames;
+- HTTP/1.1 upgrade (RFC 6455 Accept via MLC SHA1+base64); text frames;
   client masked / server unmasked; ping→pong; close teardown.
-- MLC module `WebSocket` (`std/net/websocket`) — **только Ruby-пайплайн**
-  (`import WebSocket::{…}`). Opaque `i32` connection handles; `upgrade` consumes
-  a Tcp stream handle.
-- Gate: `scripts/run_websocket_gate.sh`. Example: `misc/examples/websocket_echo_demo.mlc`.
+- MLC module `WebSocket` — mlcc path; Ruby `MLC.compile` still emits
+  `mlc::websocket::*` calls (bridge stubs residual, like Crypto).
+- Thin bridge: connection handle table + Tcp I/O helpers.
+- Gate: `scripts/run_websocket_gate.sh` (MLC echo + Ruby client).
+  Example: `misc/examples/websocket_echo_demo.mlc`.
 
 Не в v1: WSS/TLS, WS client, binary/fragmented frames, ThreadPool serve wiring.
 
