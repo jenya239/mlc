@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-10-pipeline-merge-priority` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-11-no-cpp-shim-priority` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-10-pipeline-merge-priority
+INSTRUCTIONS_REV=2026-07-11-no-cpp-shim-priority
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -55,7 +55,7 @@ INSTRUCTIONS_REV=2026-07-10-pipeline-merge-priority
 | TRACK status/STEP изменился (особенно close) | В том же коммите обновить строку трека + приоритетную цепочку в `docs/PLAN.md` (инцидент 2026-07-09: `PLAN.md` говорил "STEP=1 next" на треке, где уже было done STEP=4) |
 | **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
 | **Этот turn закрыл трек (Driver STEP=N был последним pending, TRACK помечен closed)** | `next` = **`ROLE=Critic STEP=critique-audit TRACK=<только что закрытый>`** — обязательно, даже если следующий трек в очереди `PLAN.md` уже известен и есть pending шаг. Инцидент 2026-07-10: 5 закрытий подряд (TRAMPOLINE, BLOCK_ID_COLLISION, LOWERING_GAPS, CLI_STDIN, TEXT_RENDERING) — ни разу не запустился Critic, правило «Planner не повторяется» (см. ниже) съедало ротацию, потому что pending-шаг в следующем треке был всегда. Проверка на старте turn: если последняя запись `SESSION.md` содержит `close`/`closed` в `result` — этот HARD LIMIT применяется **раньше** любого другого выбора `next`, включая numbered pending step |
-| **`TRACK_PIPELINE_MERGE_TCP_SPAWN` открыт и не closed** (PLAN.md §8c) | Пользователь 2026-07-10 задал **максимальный приоритет** — переопределяет обычный порядок очереди один раз (аналогично прошлому BLOCK_ID_COLLISION override): если сейчас `ROLE=Planner`, или следующий `next` вёл бы в `TRACK_STDLIB_WEBSOCKET` (или любой другой трек §11 backlog), вместо этого взять `TRACK_PIPELINE_MERGE_TCP_SPAWN STEP=1` первым же следующим Driver turn. Если Driver сейчас **посреди** sub-step в `WEBSOCKET` — закончить этот один sub-step, закоммитить, и только после этого переключиться (не бросать чужой in-progress WIP на середине) |
+| **«без hand-written C++» инициатива** (PLAN.md §20, треки `FFI_SHIM_MIGRATION`/`TEXT_MSDF_TO_MLC`/`STDLIB_HTTP_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/`FFI_POINTER_CAST`/`GL_LOADER_TO_MLC`) | Пользователь 2026-07-11 — высокий приоритет, но без «максимальный приоритет» (в отличие от прошлого `PIPELINE_MERGE_TCP_SPAWN`). Planner берёт следующий pending шаг из этой группы **после** текущего активного трека (`VM_TYPED_COLLECTIONS`/`STDLIB_HTTP_MLC`), не прерывая его на середине; порядок между семью треками этой группы — по зависимостям (`STDLIB_HTTP_MLC` → `STDLIB_WEBSOCKET_TO_MLC`; `FFI_POINTER_CAST` → `GL_LOADER_TO_MLC`), остальное — любой |
 
 ## When to stop (only these)
 

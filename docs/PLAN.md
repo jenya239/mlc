@@ -405,6 +405,13 @@ compiler/
 | **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
 | **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
+| **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **open, высокий приоритет** | [FFI_LAYER.md](FFI_LAYER.md) §8 — граница: рантайм языка остаётся C++, FFI-адаптеры и дублирующая бизнес-логика на C++ убираются. 6 подчинённых треков ниже |
+| **20a** Postgres/Crypto — прямой `extern fn` вместо `.hpp`-shim | **open** | [TRACK_FFI_SHIM_MIGRATION](agent/TRACK_FFI_SHIM_MIGRATION.md) — инфраструктура уже закрыта (`FFI_LAYER` STEP=1-8), чистая замена |
+| **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **open** | [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — не биндинг, собственная математика |
+| **20c** WebSocket framing/handshake — порт на MLC | **open, blocked on 11a** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) — зависит от `HttpRequest`/`HttpResponse` на MLC |
+| **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
+| **20e** `RawPointer[T]` → `extern fn(...)` cast | **open** | [TRACK_FFI_POINTER_CAST](agent/TRACK_FFI_POINTER_CAST.md) — предпосылка для 20f |
+| **20f** GL function-pointer loader — порт на MLC | **open, blocked on 20e** | [TRACK_GL_LOADER_TO_MLC](agent/TRACK_GL_LOADER_TO_MLC.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -510,9 +517,26 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_FRAMEWORK.md](archive/tracks/TRACK_GUI_FRAMEWORK.md))
   → VM_TYPED_COLLECTIONS (**active** STEP=3 — field-slot / nested smokes
       → [agent/TRACK_VM_TYPED_COLLECTIONS.md](agent/TRACK_VM_TYPED_COLLECTIONS.md))
-  → STDLIB_HTTP_MLC (open, 2026-07-11: `HttpRequest`/`HttpRouter` C++-only,
-      не вызываются из MLC; обёртка extern fn + bare-name resolve + curl-гейт
+  → STDLIB_HTTP_MLC (open, пересмотрено 2026-07-11: не обёртка над C++,
+      порт HTTP/1.1 парсера/роутера на чистый MLC над `Tcp` (нет внешней
+      библиотеки в `http_request.hpp`/`http_router.hpp`, значит нет причины
+      оставлять C++) + bare-name resolve + curl-гейт
       → [agent/TRACK_STDLIB_HTTP_MLC.md](agent/TRACK_STDLIB_HTTP_MLC.md))
+  → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
+    после STDLIB_HTTP_MLC, порядок между собой не строгий, независимые
+    треки):**
+  → FFI_SHIM_MIGRATION (open: Postgres/Crypto прямой `extern fn`, инфра уже
+      закрыта → [agent/TRACK_FFI_SHIM_MIGRATION.md](agent/TRACK_FFI_SHIM_MIGRATION.md))
+  → TEXT_MSDF_TO_MLC (open: EDT/SDF алгоритм на MLC
+      → [agent/TRACK_TEXT_MSDF_TO_MLC.md](agent/TRACK_TEXT_MSDF_TO_MLC.md))
+  → STDLIB_LOGIC_TO_MLC (open: Env/Log/Validation на mlcc + порт логики
+      → [agent/TRACK_STDLIB_LOGIC_TO_MLC.md](agent/TRACK_STDLIB_LOGIC_TO_MLC.md))
+  → STDLIB_WEBSOCKET_TO_MLC (blocked on STDLIB_HTTP_MLC closed
+      → [agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md))
+  → FFI_POINTER_CAST (open, предпосылка GL loader
+      → [agent/TRACK_FFI_POINTER_CAST.md](agent/TRACK_FFI_POINTER_CAST.md))
+  → GL_LOADER_TO_MLC (blocked on FFI_POINTER_CAST closed
+      → [agent/TRACK_GL_LOADER_TO_MLC.md](agent/TRACK_GL_LOADER_TO_MLC.md))
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию

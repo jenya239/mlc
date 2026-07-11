@@ -221,7 +221,47 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
   крупным подпроектом, отдельно от §2.4 (GObject refcounting ≠ `Shared<T>`,
   GTK signals) и §2.6 (ffmpeg struct/union/макросы).
 
-## 8. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
+## 8. Стратегия «без hand-written C++» (2026-07-11)
+
+Пользователь: весь функционал (GUI/text/TCP/HTTP/DB/crypto) должен собираться
+через `mlcc` без Ruby, и без ручного C++ — либо автогенерация в сборке, либо
+прямой импорт заголовков сторонней библиотеки.
+
+**Граница (не смешивать два разных типа C++):**
+
+| Тип | Пример | Судьба |
+|-----|--------|--------|
+| Рантайм языка (то, во что компилируется MLC) | `core/string.hpp`, `core/array.hpp`, `concurrency/{mutex,channel,task}.hpp` | **остаётся C++** — MLC компилируется в C++, у языка не может не быть рантайма на целевом языке. Не предмет этой инициативы |
+| FFI-адаптер к сторонней C-библиотеке (в основном bookkeeping/error-handling, не алгоритм) | `db/postgres.hpp`, `crypto/sodium.hpp`, часть `net/tcp.hpp` (i32-handle-table) | **убрать**: прямой `extern fn ... = "c_name" from "<header>"` + `extern type`+`drop` (слой уже закрыт, инфраструктура не нужна) — bookkeeping-логика (hex-encode, handle-table) переписывается на MLC |
+| Бизнес-логика/алгоритм, написанный на C++ вместо MLC (не биндинг ни к чему) | `text/msdf_shim.cpp` (EDT/SDF-алгоритм), `net/http_request.hpp`/`http_router.hpp` (парсер, нет внешней библиотеки), `net/websocket.hpp` (framing, нет внешней библиотеки) | **портировать на MLC целиком**, без FFI вообще для этой части |
+| Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | `gl/glfw_gl_dispatch.cpp` (`glfwGetProcAddress`+`reinterpret_cast`) | **портировать на MLC**, но требует новый примитив каста `RawPointer[T]` → `extern fn(...)` (нет сегодня) — отдельный трек-предпосылка |
+
+**Уточнение по итогам чтения кода (2026-07-11), меняет более раннюю оценку
+в чате**: `header_import.mlc` (авто-парсер `.h` в decl'ы) **не является
+блокером** ни для одного из перечисленных — слой `extern fn`/`RawPointer`/
+`extern type`+`drop`/`extern lib` закрыт 2026-07-09 и работает вручную для
+небольшого числа функций (`postgres`/`sodium`/`glfw`-core — десятки, не
+тысячи символов). Автогенератор биндингов остаётся design-only, не строить
+без конкретной необходимости (см. §3, §7 — не изменилось).
+
+**Треки:**
+
+- [TRACK_FFI_SHIM_MIGRATION](agent/TRACK_FFI_SHIM_MIGRATION.md) — Postgres +
+  Crypto: прямой `extern fn` к `libpq-fe.h`/`sodium.h`, bookkeeping на MLC.
+- [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — EDT/SDF
+  алгоритм на MLC, без C++.
+- [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md) — HTTP-парсер/
+  роутер на MLC (пересмотрено: не обёртка, порт логики).
+- [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) —
+  framing/handshake на MLC.
+- [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — Env/Log/
+  Validation: перевод пайплайна Ruby→mlcc + чистая MLC-логика где возможно.
+- [TRACK_FFI_POINTER_CAST](agent/TRACK_FFI_POINTER_CAST.md) — примитив
+  `RawPointer[T]` → `extern fn(...)` (предпосылка для GL loader).
+- [TRACK_GL_LOADER_TO_MLC](agent/TRACK_GL_LOADER_TO_MLC.md) — таблица GL
+  function pointers на MLC (после `FFI_POINTER_CAST`).
+
+## 9. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
 
 Слой §2 даёт ABI-механизм, не даёт safety-гарантий. `extern fn`/
 `RawPointer[T]`/`extern type` — unsafe escape hatch без синтаксического

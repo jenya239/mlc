@@ -1,6 +1,12 @@
 # Stdlib для серверных backend-приложений — ревью и план (2026-07)
 
-Parent: [PLAN.md](PLAN.md), [FFI_LAYER.md](FFI_LAYER.md), [CONCURRENCY_V2.md](CONCURRENCY_V2.md).
+Parent: [PLAN.md](PLAN.md), [FFI_LAYER.md](FFI_LAYER.md) §8, [CONCURRENCY_V2.md](CONCURRENCY_V2.md).
+
+**2026-07-11:** таблица §1 ниже фиксирует состояние **до** инициативы
+«без hand-written C++» ([FFI_LAYER.md](FFI_LAYER.md) §8) — `postgres.hpp`/
+`sodium.hpp`/`http_request.hpp`/`http_router.hpp`/`websocket.hpp`/
+`env.hpp`/`log.hpp`/`validate.hpp` планово заменяются на прямой `extern fn`
+или порт логики на MLC, см. треки в §8.
 Trigger: анализ пригодности MLC для класса приложений "современный backend"
 (REST/WebSocket API, БД, auth, background workers, внешние HTTP-интеграции) —
 2026-07-09. Общий обзор пробелов stdlib в одном документе; треки на каждый
