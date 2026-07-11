@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-10-pipeline-merge-priority` |
+| instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=3 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=4 |
 | test_gate | run_vm_typed_collections_gate.sh EXIT 0 |
+
+### Turn 2026-07-11 11:37 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=3 — nested field-slot smokes)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 11:29 |
+| elapsed | ~8 min |
+| done    | Smokes `vm_record_holds_array`/`_map`/`vm_nested_array`; gate +3 expects; TRACK STEP=3 done; PLAN §13c→STEP=4. VmFieldSlot arms already from STEP=2. |
+| verify  | `run_vm_typed_collections_gate.sh` EXIT 0 (6 programs). |
+| result  | STEP=3 done. Plain: record↔array/map and nested arrays work via field slots. |
+| issues  | Queued prompt said STEP=2 (stale); executed SESSION `next` STEP=3. Foreign `compiler/out/*` left uncommitted. |
+| next    | ROLE=Driver STEP=4 TRACK_VM_TYPED_COLLECTIONS — verify-gate (self-host diff, regression_gate, VM corpus) |
 
 ### Turn 2026-07-11 05:35 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=2 — Shared elements)
 

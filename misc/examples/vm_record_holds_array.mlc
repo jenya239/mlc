@@ -1,0 +1,9 @@
+// TRACK_VM_TYPED_COLLECTIONS STEP=3: record field holds array (VmFieldArray).
+type Bundle = { items: [i32] }
+fn main() -> i32 = do
+  let mut items: [i32] = []
+  items.push(3)
+  items.push(4)
+  let bundle = Bundle { items: items }
+  bundle.items[0] + bundle.items[1] + bundle.items.length()
+end

@@ -1,0 +1,9 @@
+// TRACK_VM_TYPED_COLLECTIONS STEP=3: record field holds map (VmFieldMap).
+type Table = { scores: Map<string, i32> }
+fn main() -> i32 = do
+  let mut scores: Map<string, i32> = Map.new()
+  scores.set("a", 5)
+  scores.set("b", 2)
+  let table = Table { scores: scores }
+  table.scores.get("a") + table.scores.get("b")
+end

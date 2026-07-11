@@ -1,0 +1,9 @@
+// TRACK_VM_TYPED_COLLECTIONS STEP=3: array of arrays (VmFieldArray in elements).
+fn main() -> i32 = do
+  let mut row: [i32] = []
+  row.push(1)
+  row.push(2)
+  let mut rows: [[i32]] = []
+  rows.push(row)
+  rows[0][0] + rows[0][1] + rows.length()
+end

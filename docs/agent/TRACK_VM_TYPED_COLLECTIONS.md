@@ -8,7 +8,12 @@ Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value mode
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: **open** — STEP=3 next (field-slot smokes) — **active**
+## Status: **open** — STEP=4 next (verify-gate) — **active**
+
+**Driver 2026-07-11:** STEP=3 — nested field-slot smokes: record↔array,
+record↔map, `[[i32]]`; gate extended (`vm_record_holds_*`, `vm_nested_array`).
+VmFieldSlot Record/Array/Map arms were already in STEP=2; this step proves
+round-trip via `__mir_record_*` / nested push.
 
 **Driver 2026-07-11:** STEP=2 — `VmArrayValue.elements` / `VmMapValue.values` as
 `[VmFieldSlot]`; added `VmFieldRecord`/`Array`/`Map` Shared arms; native push/set
@@ -159,7 +164,7 @@ value-модели контейнеров:
 |------|------|--------|
 | 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | **done** (2026-07-11: Shared-indirection locked) |
 | 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | **done** (2026-07-11: VmFieldSlot elements; gate string/record/corpus ok) |
-| 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | pending |
+| 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | **done** (2026-07-11: arms in STEP=2; nested smokes + gate) |
 | 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | pending |
 
 <!-- sub-steps STEP=1: 1) compare Shared-indirection vs VM-only types vs boxed heap slots; 2) lock one in Decision section; 3) note impact on native.mlc / mir_eval -->

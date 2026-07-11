@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Non-i32 array push/get via mlcc --run (TRACK_VM_TYPED_COLLECTIONS STEP=2).
+# Non-i32 / nested field-slot collections via mlcc --run (TRACK_VM_TYPED_COLLECTIONS).
 set -euo pipefail
 # Fail the script if any pipeline stage fails when used under `| tee`.
 
@@ -31,5 +31,8 @@ run_expect() {
 run_expect "$ROOT_DIR/misc/examples/vm_array_of_string.mlc" 4
 run_expect "$ROOT_DIR/misc/examples/vm_array_of_record.mlc" 9
 run_expect "$ROOT_DIR/misc/examples/vm_collections_corpus.mlc" 7
+run_expect "$ROOT_DIR/misc/examples/vm_record_holds_array.mlc" 9
+run_expect "$ROOT_DIR/misc/examples/vm_record_holds_map.mlc" 7
+run_expect "$ROOT_DIR/misc/examples/vm_nested_array.mlc" 4
 echo "[vm typed collections] ok" >&2
 

@@ -391,14 +391,14 @@ compiler/
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **done** | [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (STEP=1–8: GLFW+GL dispatch+GlRenderer+TextRenderer+demo; self-host identical; regression 20/0); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
 | **10b** GUI framework (layout/widgets/easing) | **done** | [TRACK_GUI_FRAMEWORK](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11 (STEP=0–6: IM layout/input/Button; `misc/gui/`; docs [GUI.md](GUI.md); smokes ok) |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**. Active Driver: [TRACK_VM_TYPED_COLLECTIONS](agent/TRACK_VM_TYPED_COLLECTIONS.md) STEP=3 |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**. Active Driver: [TRACK_VM_TYPED_COLLECTIONS](agent/TRACK_VM_TYPED_COLLECTIONS.md) STEP=4 |
 | **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **open** | [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md) — уточнено 2026-07-11: `HttpRequest`/`HttpRouter` не вызываются из MLC вообще; `curl`-сервер на MLC невозможен до этого трека |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
 | **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **done** (2026-07-10) | [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) — STEP=1–4 **closed** (`MirRvalueUnary`; if-as-statement; if-as-rvalue; verify-gate) |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
-| **13c** VM: массив/map только `i32` (не point-fix, value-model) | **open, active** | [TRACK_VM_TYPED_COLLECTIONS](agent/TRACK_VM_TYPED_COLLECTIONS.md) **active** STEP=3 (field-slot smokes); Shared/VmFieldSlot elements done |
+| **13c** VM: массив/map только `i32` (не point-fix, value-model) | **open, active** | [TRACK_VM_TYPED_COLLECTIONS](agent/TRACK_VM_TYPED_COLLECTIONS.md) **active** STEP=4 (verify-gate); nested field-slot smokes done |
 | **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
@@ -514,7 +514,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → GUI_FRAMEWORK (**closed** 2026-07-11: IM Button v0; `misc/gui/`; GUI.md;
       layout/input/button smokes ok
       → [archive/tracks/TRACK_GUI_FRAMEWORK.md](archive/tracks/TRACK_GUI_FRAMEWORK.md))
-  → VM_TYPED_COLLECTIONS (**active** STEP=3 — field-slot / nested smokes
+  → VM_TYPED_COLLECTIONS (**active** STEP=4 — verify-gate
       → [agent/TRACK_VM_TYPED_COLLECTIONS.md](agent/TRACK_VM_TYPED_COLLECTIONS.md))
   → STDLIB_HTTP_MLC (open, пересмотрено 2026-07-11: не обёртка над C++,
       порт HTTP/1.1 парсера/роутера на чистый MLC над `Tcp` (нет внешней
