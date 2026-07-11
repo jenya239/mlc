@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=6 |
-| test_gate | bare smoke exit 0; resolve probe 0; self-host DIFF 0 |
+| driver_turns_since_plan | 0 |
+| step_last | 6 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC closed → Critic |
+| test_gate | env_log+validate mlcc gates OK; REG 20/0; DIFF 0 |
+
+### Turn 2026-07-11 25:15 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=6 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 25:00 |
+| elapsed | ~20 min |
+| done    | Gates → mlcc smokes; REG 20/0; self-host DIFF 0; TRACK archived; PLAN §20d done. |
+| verify  | `run_env_log_gate.sh` OK; `run_validate_gate.sh` OK; `regression_gate.sh` 20/0; DIFF_LINES=0. |
+| result  | Track **closed**. Plain: Env/Log/Validate build via mlcc. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_LOGIC_TO_MLC |
 
 ### Turn 2026-07-11 25:00 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=5 — bare names)
 

@@ -264,8 +264,8 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
   роутер на MLC (пересмотрено: не обёртка, порт логики).
 - [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) —
   framing/handshake на MLC.
-- [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — Env/Log/
-  Validation: перевод пайплайна Ruby→mlcc + чистая MLC-логика где возможно.
+- [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) — Env/Log/
+  Validation: перевод пайплайна Ruby→mlcc + чистая MLC-логика где возможно (**closed** 2026-07-11).
 - [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — GL-вызовы
   через вендоренный GLAD2, без ручного C++ dispatch (заменяет отменённые
   `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`, см.

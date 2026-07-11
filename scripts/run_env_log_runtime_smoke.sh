@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile+run Env/Log runtime smoke (TRACK_STDLIB_ENV_LOGGING STEP=2).
+# TRACK_STDLIB_LOGIC_TO_MLC STEP=6 — C++ Env runtime only (Log is MLC).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INCLUDE="$ROOT/runtime/include"

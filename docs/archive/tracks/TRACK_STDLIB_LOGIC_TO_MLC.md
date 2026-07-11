@@ -1,12 +1,16 @@
 # Track: Env/Log/Validation — mlcc-пайплайн + минимум C++
 
-Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8, [../PLAN.md](../PLAN.md).
+Parent: [../../FFI_LAYER.md](../../FFI_LAYER.md) §8, [../../PLAN.md](../../PLAN.md).
 Trigger: пользователь 2026-07-11 — всё должно собираться через `mlcc` без
 Ruby. `Env`/`Log`/`Validation` сегодня протестированы **только через Ruby**
 (`bundle exec ruby test/mlc/{env_log,validate}_stdlib_test.rb` — проверено
 `grep` по gate-скриптам), нет `mlcc`-пути вообще, в отличие от `Tcp`.
 
-## Status: **active** — STEP=6 next (mlcc gates + close)
+## Status: **closed** (2026-07-11) — awaiting Critic
+
+**Driver 2026-07-11:** STEP=6 — `run_env_log_gate.sh` / `run_validate_gate.sh`
+switched to **mlcc** smokes; `regression_gate` 20/0; self-host DIFF 0;
+TRACK archived. Close → Critic.
 
 **Driver 2026-07-11:** STEP=5 — bare `Env`/`Log`/`Validate` in
 `path_normalize.mlc` → `env/env.mlc`, `log/logger.mlc`, `validate/validate.mlc`;
@@ -113,7 +117,7 @@ Verified by reading `env.hpp` / `log.hpp` / `validate.hpp` and
 | 3 | `Log` → MLC JSON-lines поверх escape/`eprintln`, удалить `log.hpp`. | **done** (2026-07-11: logger.mlc + log_abi fwrite; mlcc stderr OK) |
 | 4 | `Validate` → чистый MLC, удалить `validate.hpp`. | **done** (2026-07-11: ValidateSuccess; mlcc smoke 0) |
 | 5 | Bare-name резолвинг в `mlcc` (`path_normalize.mlc`). | **done** (2026-07-11: Env/Log/Validate; bare smoke 0; DIFF 0) |
-| 6 | Regression gates на `mlcc`; self-host diff; close. | pending |
+| 6 | Regression gates на `mlcc`; self-host diff; close. | **done** (2026-07-11: mlcc gates; REG 20/0; DIFF 0; archived) |
 
 <!-- STEP=1 sub-steps: 1) lock Decision (bare names, Json for Log, Env libc extern); 2) cite hpp sizes + gate Ruby-only; 3) list STEP=2–4 delete targets; PLAN→STEP=2 -->
 <!-- STEP=2 sub-steps: 1) env.mlc → extern getenv/setenv; 2) delete env.hpp; 3) smoke via mlcc -->
