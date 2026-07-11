@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_LANG_ERROR_UNION STEP=5 |
-| test_gate | STEP=4: smoke e2e T!E+`?` stdout ok; Ruby error_union 6/0 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_LANG_ERROR_UNION closed → Critic |
+| test_gate | STEP=5: REG 20/0; self-host DIFF 0; error_union smoke ok |
+
+### Turn 2026-07-11 33:50 (Driver TRACK_LANG_ERROR_UNION STEP=5 — docs + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 33:25 |
+| elapsed | ~45 min |
+| done    | `MLC.md` T!E; REG 20/0; self-host DIFF 0; TRACK → `archive/tracks/`; PLAN §17 **done**. |
+| verify  | `regression_gate: 20 passed, 0 failed`; `diff -rq p1 p2` empty; smoke ok. |
+| result  | STEP=5 done; track **closed**. Plain: T!E sugar shipped and gated. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_LANG_ERROR_UNION |
 
 ### Turn 2026-07-11 33:25 (Driver TRACK_LANG_ERROR_UNION STEP=4 — e2e + ?)
 

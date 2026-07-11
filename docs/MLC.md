@@ -28,6 +28,10 @@ type Shape = Circle(i32) | Rect(i32, i32) | Empty         // sum type
 type Result<T, E> = Ok(T) | Err(E)                        // generic sum type
 type Option<T>   = Some(T) | None
 
+// T!E — sugar for Result<T,E> (parser desugar; same type, no new IR)
+fn safe_div(a: i32, b: i32) -> i32!string =
+  if b == 0 then Err("zero") else Ok(a / b)
+
 fn area(s: Shape) -> i32 =
   match s {
     Circle(r)    => r * r * 3,
@@ -47,6 +51,7 @@ fn area(s: Shape) -> i32 =
 | `extend Type`, `extend Type : Trait` | ✓ |
 | Generic trait bounds (`T: Display`) | ✓ |
 | `Result<T,E>` + `?` оператор | ✓ |
+| `T!E` sugar → `Result<T,E>` (type postfix; Ruby + mlcc) | ✓ |
 | `Shared<T>`, COW Array, HashMap | ✓ |
 | Lambdas, `\|>` pipe | ✓ |
 | Spread `...` в записях и паттернах (паритет Ruby ⇄ mlcc — § B4) | частично ✓ |
@@ -135,6 +140,11 @@ parse(source)
 **Result методы:** `map(T -> U) -> Result<U,E>`, `map_err(E -> F) -> Result<T,F>`,
 `and_then(T -> Result<U,E>) -> Result<U,E>`, `or_else(E -> Result<T,F>) -> Result<T,F>`,
 `unwrap_or(T) -> T`, `unwrap_or_else(E -> T) -> T`, `ok() -> Option<T>`.
+
+**`T!E` notation (2026-07-11):** type postfix desugars in the parser to
+`Result<T,E>` (Ruby + mlcc). Same semantics as writing `Result` explicitly;
+works with `?`. Not an inferred error set (`T!` alone is a parse error).
+See [TRACK_LANG_ERROR_UNION](archive/tracks/TRACK_LANG_ERROR_UNION.md).
 
 **Option методы:** `map(T -> U) -> Option<U>`, `and_then(T -> Option<U>) -> Option<U>`,
 `or_else(() -> Option<T>) -> Option<T>`, `unwrap_or(T) -> T`, `filter(T -> bool) -> Option<T>`,

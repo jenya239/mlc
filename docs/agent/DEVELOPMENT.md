@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_LANG_ERROR_UNION` active** STEP=5 — `MLC.md` + REG/self-host close.
-See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). STEP=4: e2e T!E+`?` ok.
+**`TRACK_LANG_ERROR_UNION` closed** (awaiting Critic) — STEP=1–5; REG 20/0; self-host DIFF 0.
+See [TRACK_LANG_ERROR_UNION.md](../archive/tracks/TRACK_LANG_ERROR_UNION.md).
 
 
 ## Step sizing (good vs bad)

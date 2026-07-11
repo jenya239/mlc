@@ -1,10 +1,13 @@
 # Track: `T!E` error-union sugar над `Result<T,E>`
 
-Parent: [../PLAN.md](../PLAN.md) §17 ("Zig — Error unions", применимо).
-Предшественник: [../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md](../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md)
+Parent: [../../PLAN.md](../../PLAN.md) §17 ("Zig — Error unions", применимо).
+Предшественник: [TRACK_LANG_RESULT_COMBINATORS.md](TRACK_LANG_RESULT_COMBINATORS.md)
 (closed 2026-07-09 — `map`/`and_then`/`map_err`, `?` с `From`-конвертацией).
 
-## Status: **active** — STEP=5 next (MLC.md + verify-gate + close)
+## Status: **closed** (2026-07-11) — awaiting Critic
+
+**Driver 2026-07-11 STEP=5:** `MLC.md` `T!E` note + feature table; `regression_gate`
+20/0; self-host p1↔p2 DIFF 0; TRACK archived. Close → Critic.
 
 **Driver 2026-07-11 STEP=4:** E2E `with_question.mlc` (T!E + `?`) compile/link/run
 stdout `6` / `division by zero`; smoke extended; Ruby tests +`?`/to_cpp (6/0).
@@ -65,18 +68,7 @@ tighter than arrow). `i32!E -> bool` = `TyFn(Result<i32,E>, bool)`.
 | 2 | Парсер (Ruby): `T!E` → десугаринг в `Result<T, E>` на этапе парсинга. | **done** |
 | 3 | Парсер (self-hosted, `compiler/frontend/parser/`): то же самое, после верификации на Ruby. | **done** |
 | 4 | Тесты: unit-тест десугаринга, e2e на функции с `T!E`, включая совместимость с `?`. | **done** |
-| 5 | Документация: `MLC.md` — `T!E` алиас; verify-gate + close. | pending |
-
-<!-- STEP=2 sub-steps: 1) `type_parser.rb` after base, before ARROW: if `!` then parse E + GenericType Result; 2) unit test parse ret/field; 3) no new AST node -->
-<!-- STEP=3 sub-steps: 1) `types.mlc` mirror after `parse_base_type`; 2) smoke `mlcc --check-only`; 3) parity fixtures -->
-<!-- STEP=4 sub-steps: 1) desugar unit; 2) e2e `T!E` + `?`; 3) `T!` without E → parse error -->
-<!-- STEP=5 sub-steps: 1) MLC.md; 2) REG 20/0; 3) self-host DIFF 0; archive → Critic -->
-
-## Токенизация — проверено, не блокер
-
-`compiler/frontend/lexer.mlc:430-431` уже различает `!=` (двухсимвольный
-`Op("!=")`) и одиночный `!` (`Op("!")` через `scan_op_single`) на уровне
-лексера — конфликта токенов нет.
+| 5 | Документация: `MLC.md` — `T!E` алиас; verify-gate + close. | **done** |
 
 ## Out of scope
 
