@@ -411,7 +411,7 @@ compiler/
 | **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **done** (2026-07-11) | [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) **closed** STEP=1–7; Critic OK (`8ffe67b8`…`8b21220a`). Residual: bridges/TcpStream |
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **done** (2026-07-11) | [TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) **closed** STEP=1–6; Critic OK; MLC EDT + mask bridge; MAE=0; REG 20/0; self-host identical |
 | **20c** WebSocket framing/handshake — порт на MLC | **closed** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **closed** 2026-07-11 (MLC bodies; hpp gone) |
-| **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open, active** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) **active** STEP=1 (Decision + bare-name plan) |
+| **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open, active** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) **active** STEP=2 (STEP=1 done: Decision locked; Env thin extern next) |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — заменяет отменённые `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` (superseded 2026-07-11: GLAD2/epoxy резолвят function pointers сами, каст/таблица на MLC не нужны) |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
 
@@ -538,7 +538,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → TEXT_MSDF_TO_MLC (**closed** 2026-07-11: Critic OK; STEP=1–6; MLC EDT; msdf_shim gone;
       MAE=0; REG 20/0; self-host identical
       → [archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md))
-  → **STDLIB_LOGIC_TO_MLC (**active** STEP=1 — Decision + bare-name plan;
+  → **STDLIB_LOGIC_TO_MLC (**active** STEP=2 — Decision locked; Env thin extern next;
       → [agent/TRACK_STDLIB_LOGIC_TO_MLC.md](agent/TRACK_STDLIB_LOGIC_TO_MLC.md)):**
   → GL_GLAD_MIGRATION (open: GLAD2 вендоренный вместо ручного
       `glfw_gl_dispatch.cpp`/`loader_shim.cpp`; заменяет отменённые

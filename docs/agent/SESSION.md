@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=1 |
-| test_gate | Planner: env/log/validate hpp on disk; Ruby-only gates |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=2 |
+| test_gate | Decision locked; env/log/validate APIs cited |
+
+### Turn 2026-07-11 24:10 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 24:00 |
+| elapsed | ~10 min |
+| done    | Locked Decision: keep string Env/Log/Validate APIs; delete three `.hpp`; Log MLC escape+eprintln; Validate pure MLC; bare names Env/Log/Validate at STEP=5. |
+| verify  | TRACK Decision **locked** + delete-target table; PLAN→STEP=2. |
+| result  | STEP=1 done. Plain: split is thin Env FFI vs pure Log/Validate MLC. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_LOGIC_TO_MLC — Env thin extern; delete env.hpp |
 
 ### Turn 2026-07-11 24:00 (Planner — activate TRACK_STDLIB_LOGIC_TO_MLC)
 
