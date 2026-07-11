@@ -4,11 +4,7 @@
 extern fn glyph_bitmap_packed(font_path: string, codepoint: i32, pixel_size: i32) -> i32
   = "mlc::text::glyph_bitmap_packed" from "mlc/text/freetype_shim.hpp"
 
-extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
-  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
-
-extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_byte_count() -> i32 = "mlc::text::msdf_byte_count" from "mlc/text/msdf_shim.hpp"
+import { msdf_generate, msdf_width, msdf_byte_count } from '../gui/msdf'
 
 // 0 = BitmapA8, 1 = MsdfRgb8
 type RenderMode = i32

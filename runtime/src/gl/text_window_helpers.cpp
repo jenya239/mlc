@@ -2,7 +2,7 @@
 
 #include "mlc/gl/glfw_gl_dispatch.hpp"
 #include "mlc/text/freetype_shim.hpp"
-#include "mlc/text/msdf_shim.hpp"
+#include "mlc/text/msdf_bridge.hpp"
 
 #include <cstdint>
 #include <vector>

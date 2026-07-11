@@ -1,9 +1,6 @@
 // MSDF median shader FBO + RGB8 atlas pack (TRACK_TEXT_RENDERING STEP=7.2).
 
-extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
-  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_shim.hpp"
+import { msdf_generate, msdf_width, msdf_height } from '../gui/msdf'
 
 extern fn msdf_renderer_fbo_smoke(
   font_path: string,

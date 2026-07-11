@@ -162,3 +162,53 @@ export fn msdf_sdf_rgb_from_mask(mask: [i32], field_size: i32, px_range: i32) ->
   end
   rgb
 end
+
+extern fn msdf_mask_render(font_path: string, codepoint: i32, field_size: i32) -> i32
+  = "mlc::text::msdf_mask_render" from "mlc/text/msdf_bridge.hpp"
+extern fn msdf_mask_size() -> i32 = "mlc::text::msdf_mask_size" from "mlc/text/msdf_bridge.hpp"
+extern fn msdf_mask_byte_at(index: i32) -> i32 = "mlc::text::msdf_mask_byte_at" from "mlc/text/msdf_bridge.hpp"
+extern fn msdf_cache_begin(width: i32, height: i32, px_range: i32) -> unit
+  = "mlc::text::msdf_cache_begin" from "mlc/text/msdf_bridge.hpp"
+extern fn msdf_cache_push_byte(value: i32) -> unit
+  = "mlc::text::msdf_cache_push_byte" from "mlc/text/msdf_bridge.hpp"
+extern fn msdf_cache_finish() -> unit = "mlc::text::msdf_cache_finish" from "mlc/text/msdf_bridge.hpp"
+
+export extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_bridge.hpp"
+export extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_bridge.hpp"
+export extern fn msdf_px_range() -> i32 = "mlc::text::msdf_px_range" from "mlc/text/msdf_bridge.hpp"
+export extern fn msdf_byte_count() -> i32 = "mlc::text::msdf_byte_count" from "mlc/text/msdf_bridge.hpp"
+export extern fn msdf_byte_at(index: i32) -> i32 = "mlc::text::msdf_byte_at" from "mlc/text/msdf_bridge.hpp"
+
+// Public entry: FreeType mask (FFI) + MLC EDT/SDF → RGB cache for C++/GL helpers.
+export fn msdf_generate(
+  font_path: string,
+  codepoint: i32,
+  field_size: i32,
+  px_range: i32
+) -> i32 = do
+  if field_size < 8 || field_size > 256 || px_range < 1 || px_range > 64 then
+    return -1
+  end
+  if msdf_mask_render(font_path, codepoint, field_size) != 0 then
+    return -2
+  end
+  let pixel_count = field_size * field_size
+  if msdf_mask_size() != pixel_count then
+    return -3
+  end
+  let mut mask: [i32] = []
+  let mut index = 0
+  while index < pixel_count do
+    mask.push(msdf_mask_byte_at(index))
+    index = index + 1
+  end
+  let rgb = msdf_sdf_rgb_from_mask(mask, field_size, px_range)
+  msdf_cache_begin(field_size, field_size, px_range)
+  index = 0
+  while index < rgb.length() do
+    msdf_cache_push_byte(rgb[index])
+    index = index + 1
+  end
+  msdf_cache_finish()
+  0
+end

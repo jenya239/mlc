@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=5 — retarget demos; delete `msdf_shim.*`.
+**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=6 — regression_gate + self-host; close → Critic.
 See [TRACK_TEXT_MSDF_TO_MLC.md](TRACK_TEXT_MSDF_TO_MLC.md).
 
 

@@ -1,5 +1,5 @@
 #include "mlc/gl/msdf_renderer_shim.hpp"
-#include "mlc/text/msdf_shim.hpp"
+#include "mlc/text/msdf_bridge.hpp"
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -144,9 +144,11 @@ int32_t msdf_renderer_fbo_smoke(
   int32_t field_size,
   int32_t px_range
 ) {
-  if (mlc::text::msdf_generate(font_path, codepoint, field_size, px_range) != 0) {
-    return -1;
-  }
+  (void)font_path;
+  (void)codepoint;
+  (void)field_size;
+  (void)px_range;
+  // RGB cache must already be filled by MLC msdf_generate (misc/gui/msdf.mlc).
   const int32_t width = mlc::text::msdf_width();
   const int32_t height = mlc::text::msdf_height();
   const uint8_t* rgb = mlc::text::msdf_rgb_data();
@@ -240,7 +242,7 @@ int32_t msdf_renderer_fbo_smoke(
     "  v_uv = a_uv;\n"
     "  gl_Position = vec4(a_pos, 0.0, 1.0);\n"
     "}\n";
-  // Median MSDF decode (works for SDF-in-RGB from msdf_shim).
+  // Median MSDF decode (works for SDF-in-RGB from MLC msdf_generate).
   const char* fragment_source =
     "precision mediump float;\n"
     "varying vec2 v_uv;\n"

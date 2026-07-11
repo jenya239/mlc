@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=5 |
-| test_gate | msdf MAE=0.0000 ≤8.0 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=6 |
+| test_gate | glyph/renderer/render_mode OK; MAE=0 |
+
+### Turn 2026-07-11 23:20 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=5 — delete shim)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 23:05 |
+| elapsed | ~15 min |
+| done    | `msdf_bridge.cpp`/`.hpp`; MLC `msdf_generate`; retarget smokes; deleted `msdf_shim.*`; `build_bin.sh`→bridge. |
+| verify  | `run_msdf_glyph_smoke`/`run_msdf_renderer_smoke`/`run_render_mode_smoke` OK; MAE=0. |
+| result  | STEP=5 done. Plain: EDT is MLC; FreeType mask is thin FFI only. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_TEXT_MSDF_TO_MLC — regression_gate + self-host; close → Critic |
 
 ### Turn 2026-07-11 23:05 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=4 — MAE gate)
 

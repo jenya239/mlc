@@ -25,7 +25,7 @@ TEXT_CFLAGS=()
 TEXT_LIBS=()
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
   RT_SRC+=("$ROOT_DIR/runtime/src/text/freetype_shim.cpp")
-  RT_SRC+=("$ROOT_DIR/runtime/src/text/msdf_shim.cpp")
+  RT_SRC+=("$ROOT_DIR/runtime/src/text/msdf_bridge.cpp")
   # shellcheck disable=SC2207
   TEXT_CFLAGS+=($(pkg-config --cflags freetype2))
   # shellcheck disable=SC2207

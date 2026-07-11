@@ -109,10 +109,8 @@ extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size:
   = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
-extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
-  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_shim.hpp"
+
+import { msdf_generate, msdf_width, msdf_height } from '../gui/msdf'
 
 fn gl_color_buffer_bit() -> i32 = 16384
 fn gl_triangles() -> i32 = 4

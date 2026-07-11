@@ -1,13 +1,13 @@
-// MSDF/SDF RGB8 shim smoke (TRACK_TEXT_RENDERING STEP=7.1). No GPU.
+// MSDF/SDF RGB8 smoke (TRACK_TEXT_MSDF_TO_MLC STEP=5). No GPU.
 
-extern fn msdf_generate(font_path: string, codepoint: i32, field_size: i32, px_range: i32) -> i32
-  = "mlc::text::msdf_generate" from "mlc/text/msdf_shim.hpp"
-
-extern fn msdf_width() -> i32 = "mlc::text::msdf_width" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_height() -> i32 = "mlc::text::msdf_height" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_px_range() -> i32 = "mlc::text::msdf_px_range" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_byte_count() -> i32 = "mlc::text::msdf_byte_count" from "mlc/text/msdf_shim.hpp"
-extern fn msdf_byte_at(index: i32) -> i32 = "mlc::text::msdf_byte_at" from "mlc/text/msdf_shim.hpp"
+import {
+  msdf_generate,
+  msdf_width,
+  msdf_height,
+  msdf_px_range,
+  msdf_byte_count,
+  msdf_byte_at
+} from '../gui/msdf'
 
 fn main() -> i32 = do
   const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -24,7 +24,6 @@ fn main() -> i32 = do
   if msdf_byte_count() != 32 * 32 * 3 then
     return 4
   end
-  // 'A' has a hole at the geometric center — scan for inside/outside extrema.
   let mut minimum = 255
   let mut maximum = 0
   let mut index = 0
@@ -38,14 +37,12 @@ fn main() -> i32 = do
     end
     index = index + 3
   end
-  // Outside corners high; some interior glyph pixels low.
   if maximum < 200 then
     return 5
   end
   if minimum > 80 then
     return 6
   end
-  // Channels equal for SDF-in-RGB layout.
   const red = msdf_byte_at(0)
   const green = msdf_byte_at(1)
   const blue = msdf_byte_at(2)

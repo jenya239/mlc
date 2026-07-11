@@ -6,7 +6,7 @@
 namespace mlc::gl {
 
 // MSDF/SDF RGB8 → median shader → offscreen FBO. Returns 0 on success.
-// Uses mlc::text::msdf_generate then GLES2 median distance decode.
+// Uses MLC msdf_generate (fills RGB cache) then GLES2 median distance decode.
 int32_t msdf_renderer_fbo_smoke(
   mlc::String font_path,
   int32_t codepoint,
