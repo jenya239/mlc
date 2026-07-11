@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GUI_FRAMEWORK` closed** 2026-07-11 — awaiting Critic `critique-audit`.
-See [GUI.md](../GUI.md).
+**Planner next** — `TRACK_GUI_FRAMEWORK` Critic OK. Choose next PLAN item
+(FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP / VM_TYPED_COLLECTIONS).
 
 
 ## Step sizing (good vs bad)

@@ -5,6 +5,11 @@ Parent: [../../PLAN.md](../../PLAN.md), [../../TEXT_RENDERING.md](../../TEXT_REN
 
 ## Status: **closed** (2026-07-11)
 
+**Critic 2026-07-11:** `critique-audit` — commits `20ba4cd3`…`f7710032` match
+STEP 0–6; PLAN §10b/queue/archive + `GUI.md` synced; re-ran layout/input/button
+smokes (OK). **reopen: none.** Residuals: Button label text undrawn (color-only);
+`text_window_demo` not on `misc/gui/`; fixed stale NATIVE→GUI archive link.
+
 **Driver 2026-07-11:** STEP=6 — `docs/GUI.md`; TEXT_RENDERING §8; verify smokes OK; archived.
 
 **Driver 2026-07-11:** STEP=5 — `misc/gui/button.mlc` + `ease_in_out_unit`;

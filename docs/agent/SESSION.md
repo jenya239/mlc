@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_GUI_FRAMEWORK **closed** (await Critic) |
-| test_gate | layout/input/button/gl/text smokes EXIT 0 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_GUI_FRAMEWORK closed (Critic done) |
+| test_gate | layout/input/button smokes re-OK |
+
+### Turn 2026-07-11 05:00 (Critic TRACK_GUI_FRAMEWORK — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:58 |
+| elapsed | ~2 min |
+| done    | Audited `20ba4cd3`…`f7710032` vs STEP 0–6; PLAN/archive/GUI.md synced; re-ran layout/input/button smokes; fixed NATIVE archive link to GUI. |
+| verify  | Smokes EXIT 0; no pending STEPs; archive path OK; no false-done. |
+| result  | **reopen: none**. Residuals: Button label undrawn; text_window_demo not on misc/gui. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — next PLAN item (FFI_SAFETY / ERROR_UNION / DEBUG_SOURCE_MAP / VM_TYPED_COLLECTIONS) |
 
 ### Turn 2026-07-11 04:55 (Driver TRACK_GUI_FRAMEWORK STEP=6 — docs+verify / close)
 

@@ -21,7 +21,7 @@ ABI gaps; demo rebuilds atlas twice; interactive demo optional (by Decision).
 `regression_gate` 20/0; `run_text_window_demo.sh` + native/gl smokes ok. Track archived.
 
 **Driver 2026-07-11:** STEP=7 — docs: `TEXT_RENDERING.md` §8 (windowed/MLC path);
-backlog [TRACK_GUI_FRAMEWORK.md](../../agent/TRACK_GUI_FRAMEWORK.md); PLAN §10b.
+backlog [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md); PLAN §10b.
 
 **Driver 2026-07-11:** STEP=6 — `text_window_demo.mlc`: ≥3 strings (Hi/MLC A8 via
 HB+FT, Aa MSDF); clear-color anim via `glfw_gl_anim_unit`; Esc/48-frame loop;
