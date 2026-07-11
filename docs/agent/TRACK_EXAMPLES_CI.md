@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md), [../GUI.md](../GUI.md).
 Trigger: 2026-07-11 — `gui_button_demo.mlc` not in regression_gate.
 See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 
-## Status: **active** — STEP=4 done; STEP=5 next
+## Status: **active** — STEP=5 done; STEP=6 next
 
 ## Next step
 
-**STEP=5** — docs: one line in README and/or DEVELOPMENT about the sweep-gate.
+**STEP=6** — verify-gate: `bash scripts/regression_gate.sh` exit 0.
 
 ## Steps
 
@@ -23,15 +23,16 @@ See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 | 10 | Fix cluster D | **done** (2026-07-12) |
 | 11 | Fix cluster E: `vm_*` | **done** (2026-07-12) |
 | 4 | Wire sweep в `scripts/regression_gate.sh` | **done** (2026-07-12) |
-| 5 | Docs: одна строка про sweep-gate | pending |
+| 5 | Docs: README + DEVELOPMENT sweep-gate line | **done** (2026-07-12) |
 | 6 | Verify-gate: `regression_gate.sh` exit 0 | pending |
 
-### STEP=4 done notes
+### STEP=5 done notes
 
-- After program PASS, `regression_gate.sh` runs `scripts/run_examples_compile_sweep.sh`.
-- Full sweep before wire: ok=106 fail=0 skip=1 (`dynrecord_demo` allowlist).
+- `README.md` §Тесты: `bash scripts/regression_gate.sh` + sweep note.
+- `DEVELOPMENT.md` Tier C: same.
 
-### STEP=5 sub-steps (Driver)
+### STEP=6 sub-steps (Driver)
 
-1. One line in `README.md` and/or `docs/agent/DEVELOPMENT.md` mentioning examples compile sweep in regression_gate.
-2. No code changes.
+1. `bash scripts/regression_gate.sh` (programs + full examples sweep).
+2. Exit 0 → mark STEP=6 done, track **closed**, `next` = Critic.
+3. On fail: fix or allowlist, do not close.

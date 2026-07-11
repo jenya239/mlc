@@ -155,6 +155,10 @@ bundle exec rake test_self_hosted_stack
 
 # E2E: 4 программы через mlcc + g++
 compiler/tests/e2e/run_e2e.sh compiler/out/mlcc
+
+# Regression: frozen stdout suite + misc/examples compile+link sweep
+# (scripts/run_examples_compile_sweep.sh; soft-skip missing glfw/sodium/libpq)
+bash scripts/regression_gate.sh
 ```
 
 ### Самопроверка mlcc (после правок checker/codegen)

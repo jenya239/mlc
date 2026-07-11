@@ -37,6 +37,7 @@ bash scripts/dev_gate_fast.sh
 4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
 
 **Tier C — CI / release:** `.github/workflows/build-mlcc-once.yml` or manual full Tier B on clean tree.
+Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/run_examples_compile_sweep.sh` (compile+link every `fn main` under `misc/examples`/`misc/gui`; soft-skips missing sysdeps).
 
 ## Current priority
 

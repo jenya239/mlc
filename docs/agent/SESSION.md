@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 4 |
+| driver_turns_since_plan | 10 |
+| step_last | 5 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=4: wired; full sweep ok=106 skip=1 |
+| test_gate | STEP=5: docs only |
+
+### Turn 2026-07-12 03:15 (Driver TRACK_EXAMPLES_CI STEP=5 — docs sweep-gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 03:13 |
+| elapsed | ~5 min |
+| done    | README §Тесты + DEVELOPMENT Tier C: `regression_gate.sh` runs examples compile sweep. |
+| verify  | Lines present in README.md and docs/agent/DEVELOPMENT.md. |
+| result  | STEP=5 done. Plain: docs mention the new gate step. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_EXAMPLES_CI — full `regression_gate.sh`; close → Critic |
 
 ### Turn 2026-07-12 03:10 (Driver TRACK_EXAMPLES_CI STEP=4 — wire sweep into gate)
 

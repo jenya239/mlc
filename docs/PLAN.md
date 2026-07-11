@@ -414,7 +414,7 @@ compiler/
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **done** (2026-07-11) | [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) **closed** STEP=1–6; Critic OK; env_abi + Log/Validate MLC; bare names; REG 20/0; DIFF 0 |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **done** (2026-07-11) | [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) **closed** STEP=1–7; Critic OK (`0b613af4`…`855c7485`); vendored glad; dispatch/shim deleted; REG 20/0; self-host DIFF 0 |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
-| **21** | Compile-smoke coverage для `misc/examples`/`misc/gui` (regression молчала на `gui_button_demo.mlc`) | **active** (2026-07-12) | [TRACK_EXAMPLES_CI](agent/TRACK_EXAMPLES_CI.md) **active** STEP=4 done (wired into regression_gate); STEP=5 docs next |
+| **21** | Compile-smoke coverage для `misc/examples`/`misc/gui` (regression молчала на `gui_button_demo.mlc`) | **active** (2026-07-12) | [TRACK_EXAMPLES_CI](agent/TRACK_EXAMPLES_CI.md) **active** STEP=5 done (docs); STEP=6 verify-gate next |
 | **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **open, средний приоритет** | [TRACK_FFI_EXTERN_DEDUP](agent/TRACK_FFI_EXTERN_DEDUP.md) — root cause бага из §21; checker/codegen dedup |
 | **23** | GUI input robustness (debounce клика, keyboard text, resize) | **open, средний приоритет** | [TRACK_GUI_INPUT_ROBUSTNESS](agent/TRACK_GUI_INPUT_ROBUSTNESS.md) — найдено вручную при демо 2026-07-11, STEP=1 сначала подтверждает репро |
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **open, средний приоритет** | [TRACK_STDLIB_HTTP_HARDENING](agent/TRACK_STDLIB_HTTP_HARDENING.md) |
@@ -566,7 +566,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   ↓ (2026-07-11, ~300-step horizon backlog — найдено вручную вне очереди
     при демо-сессии с пользователем, формализовано в треки для Grok)
 
-  → **EXAMPLES_CI (active 2026-07-12: STEP=11 done; STEP=4 wire gate next;
+  → **EXAMPLES_CI (active 2026-07-12: STEP=4 done; STEP=5 docs next;
       → [agent/TRACK_EXAMPLES_CI.md](agent/TRACK_EXAMPLES_CI.md)):**
   → FFI_EXTERN_DEDUP (средний приоритет: root cause дубликата extern-from-header
     в графе импортов — checker/codegen fix, не point-patch)
