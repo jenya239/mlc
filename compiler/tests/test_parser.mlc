@@ -3,7 +3,7 @@
 import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
-import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, Expr, ExprStr, ExprBin, ExprUn, ExprIf, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
+import { Decl, DeclFn, DeclType, DeclTypeAlias, DeclTrait, DeclExtend, DeclImport, DeclExported, TypeExpr, TyArray, TyString, TyNamed, TyGeneric, TyI32, TyBool, TyFn, Expr, ExprStr, ExprBin, ExprUn, ExprIf, ExprIdent, ExprCall, ExprMethod, ExprMatch, MatchArm, Pattern, PatternOr, PatternCtor, PatternWild, PatternIdent, PatternStringLit, pattern_span, span_unknown, ExprBlock, Stmt, StmtLetPattern } from '../frontend/ast'
 import { parse_expr } from '../frontend/parser/exprs'
 import { parse_type } from '../frontend/parser/types'
 import { parser_new } from '../frontend/parser/predicates'
@@ -370,6 +370,35 @@ export fn parser_tests() -> [TestResult] = do
       TyFn(parameters, _) => parameters.length() == 2,
       _ => false
     }))
+
+  results.push(assert_true('parse_type T!E desugars to Result',
+    match parse_type_source('i32!string') {
+      TyGeneric(name, type_arguments) =>
+        name == 'Result'
+        && type_arguments.length() == 2
+        && match type_arguments[0] { TyI32 => true, _ => false }
+        && match type_arguments[1] { TyString => true, _ => false },
+      _ => false
+    }))
+
+  results.push(assert_true('parse_type T!E -> U bang binds before arrow',
+    match parse_type_source('i32!string -> bool') {
+      TyFn(parameters, return_type) =>
+        parameters.length() == 1
+        && match parameters[0] {
+          TyGeneric(name, type_arguments) =>
+            name == 'Result' && type_arguments.length() == 2,
+          _ => false
+        }
+        && match return_type { TyBool => true, _ => false },
+      _ => false
+    }))
+
+  results.push(assert_eq_int('fn return T!E — 0 parse errors',
+    parse_source_errors('fn divide(a: i32, b: i32) -> i32!string = Ok(0)').length(), 0))
+
+  results.push(assert_eq_int('T! without E — parse error',
+    if parse_type(parser_new(tokenize('i32!').tokens)).parser.errors.length() > 0 then 1 else 0 end, 1))
 
   results.push(assert_eq_int('fn with parenthesized lambda - 1 decl',
     decl_count('fn f() -> i32 = (() => 7)()'), 1))

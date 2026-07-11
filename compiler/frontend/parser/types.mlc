@@ -5,7 +5,7 @@ import { comma_separated_types_suffix_from_first } from './comma_separated'
 import { TypeExpr, TyFn, TyGeneric, TyI32, TyString, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyAssoc } from '../ast'
 
 export fn parse_type(parser: Parser) -> TypeResult = do
-  const base_parsed = parse_base_type(parser)
+  const base_parsed = apply_error_union_sugar(parse_base_type(parser))
   if !base_parsed.parser.kind().is_arrow() then return base_parsed end
   const return_type_parsed = parse_type(base_parsed.parser.advance())
   const params: [Shared<TypeExpr>] = [base_parsed.value]
@@ -106,6 +106,33 @@ fn parse_base_type(parser: Parser) -> TypeResult = do
   end
   if kind.is_ident() then return parse_base_type_ident(parser, kind.ident()) end
   type_parse_result(Shared.new(TyUnit), parser.advance_by(2))
+end
+
+fn parser_at_error_union_bang(parser: Parser) -> bool =
+  parser.kind().is_op() && parser.kind().op_val() == "!"
+
+fn parser_starts_type_after_bang(parser: Parser) -> bool =
+  parser.kind().is_ident()
+  || parser.kind().is_lparen()
+  || parser.kind().is_lbracket()
+  || parser.kind().is_extern()
+
+// T!E → TyGeneric("Result", [T, E]). E = parse_base_type (no nested bang).
+fn apply_error_union_sugar(ok_parsed: TypeResult) -> TypeResult = do
+  if !parser_at_error_union_bang(ok_parsed.parser) then
+    return ok_parsed
+  end
+  const after_bang = ok_parsed.parser.advance()
+  if !parser_starts_type_after_bang(after_bang) then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      after_bang.record_parse_error('parse: expected type after ! in T!E'))
+  end
+  const error_parsed = parse_base_type(after_bang)
+  const type_arguments: [Shared<TypeExpr>] = [ok_parsed.value, error_parsed.value]
+  type_parse_result(
+    Shared.new(TyGeneric("Result", type_arguments)),
+    error_parsed.parser)
 end
 
 export fn parser_at_generic_close(parser: Parser) -> bool = do

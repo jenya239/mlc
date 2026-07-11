@@ -4,7 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §17 ("Zig — Error unions", применим�
 Предшественник: [../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md](../archive/tracks/TRACK_LANG_RESULT_COMBINATORS.md)
 (closed 2026-07-09 — `map`/`and_then`/`map_err`, `?` с `From`-конвертацией).
 
-## Status: **active** — STEP=3 next (self-hosted types.mlc desugar)
+## Status: **active** — STEP=4 next (tests e2e + `?` compat)
+
+**Driver 2026-07-11 STEP=3:** Self-hosted `types.mlc` —
+`apply_error_union_sugar` after `parse_base_type`, before `->`; smoke
+`run_error_union_sugar_smoke.sh` ok; tests in `test_parser.mlc`.
 
 **Driver 2026-07-11 STEP=2:** Ruby `type_parser.rb` — `T!E` →
 `GenericType(Result, [T,E])` via `apply_error_union_sugar` (after generics,
@@ -56,7 +60,7 @@ tighter than arrow). `i32!E -> bool` = `TyFn(Result<i32,E>, bool)`.
 |------|------|--------|
 | 1 | Design: грамматика / конфликты `?` / унарный `!`. | **done** |
 | 2 | Парсер (Ruby): `T!E` → десугаринг в `Result<T, E>` на этапе парсинга. | **done** |
-| 3 | Парсер (self-hosted, `compiler/frontend/parser/`): то же самое, после верификации на Ruby. | pending |
+| 3 | Парсер (self-hosted, `compiler/frontend/parser/`): то же самое, после верификации на Ruby. | **done** |
 | 4 | Тесты: unit-тест десугаринга, e2e на функции с `T!E`, включая совместимость с `?`. | pending |
 | 5 | Документация: `MLC.md` — `T!E` алиас; verify-gate + close. | pending |
 

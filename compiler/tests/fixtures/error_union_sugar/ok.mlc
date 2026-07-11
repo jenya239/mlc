@@ -1,0 +1,2 @@
+fn divide(a: i32, b: i32) -> i32!string = Ok(0)
+fn main() -> i32 = 0

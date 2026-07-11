@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_LANG_ERROR_UNION STEP=3 |
-| test_gate | STEP=2: error_union_sugar_test 4/0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_LANG_ERROR_UNION STEP=4 |
+| test_gate | STEP=3: error_union_sugar_smoke ok; mlcc rebuild |
+
+### Turn 2026-07-11 33:10 (Driver TRACK_LANG_ERROR_UNION STEP=3 — self-hosted desugar)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 32:50 |
+| elapsed | ~20 min |
+| done    | `types.mlc` `apply_error_union_sugar`; fixtures + `run_error_union_sugar_smoke.sh`; `test_parser.mlc` T!E cases; rebuilt `mlcc`. |
+| verify  | smoke ok; `ok.mlc` check-only clean; `bang_missing` → `expected type after ! in T!E`. |
+| result  | STEP=3 done. Plain: mlcc parses `i32!string` as `Result`. |
+| issues  | Foreign `compiler/out/*` left. Nested `else do` broke Ruby codegen — used early `return`. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_ERROR_UNION — e2e + `?` compat tests |
 
 ### Turn 2026-07-11 32:50 (Driver TRACK_LANG_ERROR_UNION STEP=2 — Ruby desugar)
 
