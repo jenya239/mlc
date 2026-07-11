@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_GUI_FRAMEWORK STEP=1 |
-| test_gate | docs-only (Planner activate) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_GUI_FRAMEWORK STEP=2 |
+| test_gate | docs-only (Decision lock) |
+
+### Turn 2026-07-11 04:20 (Driver TRACK_GUI_FRAMEWORK STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:18 |
+| elapsed | ~2 min |
+| done    | Decision locked: IM layout A; modules `misc/gui/`; widget `Button`; API sketch; PLAN §10b→STEP=2; TEXT_RENDERING GUI link active; DEVELOPMENT. |
+| verify  | TRACK STEP=1 done / STEP=2 pending; rejected retained tree + Label-only + lib/mlc path. |
+| result  | STEP=1 done. Plain: GUI v0 Decision locked. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=2 TRACK_GUI_FRAMEWORK — extract misc/gui GlRenderer+TextRenderer; rewire smokes |
 
 ### Turn 2026-07-11 04:15 (Planner — activate TRACK_GUI_FRAMEWORK)
 

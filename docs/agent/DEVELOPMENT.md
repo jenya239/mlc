@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GUI_FRAMEWORK` active** STEP=1 — Decision (layout A/B, module path,
-widget v0). See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
+**`TRACK_GUI_FRAMEWORK` active** STEP=2 — extract `misc/gui/gl_renderer.mlc` +
+`text_renderer.mlc`, rewire smokes. See
+[TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 
 
 ## Step sizing (good vs bad)

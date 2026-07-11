@@ -3,7 +3,9 @@
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
 [TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **open** — STEP=1 next (Decision) — **active**
+## Status: **open** — STEP=2 next (extract GlRenderer/TextRenderer) — **active**
+
+**Driver 2026-07-11:** STEP=1 — Decision **locked** (IM A; `misc/gui/`; Button v0).
 
 **Planner 2026-07-11:** promoted after NATIVE Critic OK (`05186e8c`). Queue next
 after closed `TRACK_TEXT_RENDERING_NATIVE`. v0 = extract reusable MLC render
@@ -21,61 +23,81 @@ was out of scope there.
 ## Goal (v0)
 
 1. Shared MLC modules for GlRenderer + TextRenderer (dedupe examples).
-2. Minimal immediate-mode or retained layout (Decision locks which).
+2. Minimal immediate-mode layout (locked).
 3. Input routing from GLFW (mouse + key) to one hit-tested widget.
 4. One animated parameter (easing) on that widget.
 5. Smoke/demo gate; headless text golden untouched.
 
-## Decision (STEP=1) — draft for Driver lock
+## Decision (STEP=1, 2026-07-11) — **locked**
 
-### Layout model (pick one)
+### Layout model
 
-| Вариант | Notes |
-|---------|-------|
-| **A. Immediate-mode** (Dear ImGui-like) | Simpler v0; layout each frame; fits current poll loop |
-| **B. Retained tree** | Nodes + dirty flags; heavier; better for complex UI later |
+| Вариант | Вердикт |
+|---------|---------|
+| **A. Immediate-mode** (Dear ImGui-like) | **locked** |
+| B. Retained tree | **rejected** (v0) |
 
-**Planner lean:** **A** for v0 (one frame = one layout pass).
+One frame = one layout/draw pass inside existing
+`poll → update → layout/draw → swap` loop. No widget tree persistence beyond
+frame-local IDs / hover-click edge state held by the app.
 
-### Event loop
+### Event loop / windowing
 
-- Keep NATIVE pattern: MLC main loop `poll → update → layout/draw → swap`.
-- No new windowing library; reuse `glfw_window_*` / `glfw_gl_*`.
+- Reuse NATIVE: `glfw_window_*` / `glfw_gl_*` (no new windowing lib).
+- Headless EGL golden path **untouched**.
 
-### Module extract (from Critic)
+### Module path
 
-- Move `GlRenderer` / `TextRenderer` (+ atlas/cache helpers used by both) out of
-  `misc/examples/*` into importable MLC modules under an agreed path
-  (Driver locks: e.g. `misc/gui/` or `stdlib`-style `compiler`/`lib` — prefer
-  **examples-adjacent shared `.mlc`** first to avoid stdlib/compiler churn).
-- C++ `text_window_helpers` stays thin ABI; do not move scene logic into C++.
+| Вариант | Вердикт |
+|---------|---------|
+| **`misc/gui/*.mlc`** (examples-adjacent shared modules) | **locked** |
+| `lib/mlc/` / stdlib / `compiler/` | **rejected** (v0 — avoid compiler/stdlib churn) |
+
+**v0 files (STEP=2 target names):**
+- `misc/gui/gl_renderer.mlc` — shaders/VBO/texture helpers (`GlRenderer`)
+- `misc/gui/text_renderer.mlc` — atlas/cache/quad batch (`TextRenderer` + deps)
+- Optional later: `misc/gui/layout.mlc`, `misc/gui/button.mlc`
+
+Smokes/demos under `misc/examples/` **import** these modules; no duplicated
+type bodies. C++ `text_window_helpers` stays thin ABI only.
 
 ### Widget v0
 
-- One `Button` or `Label` + click/hover via framebuffer coords.
-- Easing: reuse `glfw_gl_anim_unit` or small MLC `ease_in_out` on color/size.
+| Вариант | Вердикт |
+|---------|---------|
+| **`Button`** (label text + rect; hover/click) | **locked** |
+| Label-only | **rejected** as sole v0 widget (no click surface) |
 
-### Non-goals (v0)
+**API sketch (non-binding names; Driver STEP=3–5 refine):**
+```
+type Rect = { x: i32, y: i32, width: i32, height: i32 }
+type GuiInput = { mouse_x: i32, mouse_y: i32, mouse_down: i32, escape: i32 }
+fn gui_button(label: string, rect: Rect, input: GuiInput) -> i32
+  # returns 1 on click edge; draws via TextRenderer + solid/quad clear
+```
+Easing: `glfw_gl_anim_unit` and/or small MLC `ease_in_out` on button color.
 
-- Full widget set, CSS-like styling, focus ring polish, Wayland-only, Win/macOS
+### Non-goals (v0) — locked
+
+- Full widget set, CSS-like styling, focus rings, Wayland-only, Win/macOS
 - Replacing headless EGL golden path
-- Putting orchestration back into `text_renderer_shim.cpp`
+- Scene orchestration in `text_renderer_shim.cpp`
+- Retained UI tree / dirty flags
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 0 | Activate after NATIVE Critic OK. | **done** (2026-07-11 Planner) |
-| 1 | Decision: layout model (A/B); module path; widget v0 surface. | pending |
+| 1 | Decision: layout model (A/B); module path; widget v0 surface. | **done** (2026-07-11: IM A; `misc/gui/`; Button) |
 | 2 | Extract shared MLC `GlRenderer` + `TextRenderer` modules; rewire smokes. | pending |
-| 3 | Layout pass v0 (box/stack or IM row) + screen hit-test helper. | pending |
+| 3 | Layout pass v0 (IM row/column) + screen hit-test helper. | pending |
 | 4 | Input: mouse position/button + key via GLFW → widget hover/click. | pending |
-| 5 | Demo: one widget + easing anim; gate script (hidden window OK). | pending |
+| 5 | Demo: one Button + easing anim; gate script (hidden window OK). | pending |
 | 6 | Docs (`TEXT_RENDERING` or short `GUI.md`) + PLAN; verify-gate. | pending |
 
-<!-- sub-steps STEP=1: 1) lock A vs B; 2) lock module directory; 3) lock Button vs Label API sketch -->
-<!-- sub-steps STEP=2: 1) shared .mlc module(s); 2) gl_renderer_smoke + text_renderer_native_smoke import; 3) text_window_demo import or thin wrapper -->
-<!-- sub-steps STEP=3: 1) Rect/Point types; 2) layout row/column; 3) point-in-rect -->
+<!-- sub-steps STEP=2: 1) misc/gui/gl_renderer.mlc + text_renderer.mlc; 2) rewire gl_renderer_smoke + text_renderer_native_smoke; 3) text_window_demo import or thin wrapper; 4) smokes EXIT 0 -->
+<!-- sub-steps STEP=3: 1) Rect/Point in misc/gui; 2) IM row/column; 3) point-in-rect -->
 <!-- sub-steps STEP=4: 1) glfw cursor/button externs if missing; 2) hover state; 3) click edge -->
-<!-- sub-steps STEP=5: 1) demo.mlc; 2) run_*_gate.sh; 3) Esc/N-frame -->
-<!-- sub-steps STEP=6: 1) docs; 2) self-host+regression if compiler touched else smokes; 3) close -->
+<!-- sub-steps STEP=5: 1) gui_button_demo.mlc; 2) run_gui_button_demo.sh; 3) Esc/N-frame -->
+<!-- sub-steps STEP=6: 1) docs; 2) smokes (+ self-host if compiler touched); 3) close -->
