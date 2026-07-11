@@ -4,7 +4,11 @@ Parent: [../PLAN.md](../../PLAN.md), [../GUI.md](../../GUI.md).
 Trigger: 2026-07-11 — `gui_button_demo.mlc` not in regression_gate.
 See [TRACK_FFI_EXTERN_DEDUP](../../agent/TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 
-## Status: **closed** (2026-07-12) — awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
+
+**Critic 2026-07-12:** STEP=1–6 / 7–11 vs `cd598a50`…`d48ec41c`; sweep script + gate wire + docs;
+archived; PLAN §21 done; DRY gui_button_demo=1 skip=1; STEP=6 log REG 20/0 sweep 106/0/1.
+**reopen: none**. Residual: `dynrecord_demo.mlc` allowlisted (mlcc segfault on dynrecord graph).
 
 **Driver 2026-07-12 STEP=6:** `regression_gate.sh` EXIT=0 — programs 20/0; examples sweep ok=106 fail=0 skip=1 (`dynrecord_demo`). TRACK archived. Close → Critic.
 

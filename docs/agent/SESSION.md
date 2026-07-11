@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 6 |
-| active_track | TRACK_EXAMPLES_CI closed → Critic |
-| test_gate | STEP=6: REG 20/0; sweep ok=106 skip=1; EXIT=0 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none) — Planner next |
+| test_gate | Critic: DRY gui_button=1; STEP=6 REG 20/0 sweep 106/0/1 |
+
+### Turn 2026-07-12 03:45 (Critic TRACK_EXAMPLES_CI — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 03:45 |
+| elapsed | ~10 min |
+| done    | Audited STEP=1–11 (`cd598a50`…`d48ec41c`); sweep+gate+docs+archive/PLAN; DRY ok. **reopen: none**. |
+| verify  | DRY run=106 skip=1 gui_button_demo=1; `test ! -f docs/agent/TRACK_EXAMPLES_CI.md`; PLAN §21 Critic OK. |
+| result  | Critic OK. Residual: dynrecord_demo allowlisted (mlcc segfault). |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate FFI_EXTERN_DEDUP (§22) |
 
 ### Turn 2026-07-12 03:40 (Driver TRACK_EXAMPLES_CI STEP=6 — verify-gate close)
 
