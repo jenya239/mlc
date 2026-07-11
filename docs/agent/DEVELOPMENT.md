@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=3 — port Felzenszwalb EDT/SDF to MLC.
+**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=4 — MAE gate MLC vs `msdf_A_32_4.rgb`.
 See [TRACK_TEXT_MSDF_TO_MLC.md](TRACK_TEXT_MSDF_TO_MLC.md).
 
 

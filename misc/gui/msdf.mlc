@@ -1,0 +1,164 @@
+// TRACK_TEXT_MSDF_TO_MLC STEP=3 — Felzenszwalb EDT + SDF pack (1:1 with msdf_shim.cpp).
+// FreeType mask stays outside; this module owns math only.
+
+extern fn sqrt(x: f64) -> f64 = "std::sqrt" from "<cmath>"
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn f64_to_i32(value: f64) -> i32 = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+extern fn f64_infinity() -> f64 = "mlc::math::f64_infinity" from "mlc/math/math.hpp"
+
+fn seed_infinity() -> f64 = do
+  // 1e20 — same seed as msdf_shim.cpp (not IEEE infinity).
+  i32_to_f64(1000000000) * i32_to_f64(1000000000) * i32_to_f64(100)
+end
+
+fn make_f64_array(length: i32, fill: f64) -> [f64] = do
+  let mut values: [f64] = []
+  let mut index = 0
+  while index < length do
+    values.push(fill)
+    index = index + 1
+  end
+  values
+end
+
+fn make_i32_array(length: i32, fill: i32) -> [i32] = do
+  let mut values: [i32] = []
+  let mut index = 0
+  while index < length do
+    values.push(fill)
+    index = index + 1
+  end
+  values
+end
+
+// 1D squared EDT (Felzenszwalb & Huttenlocher) — matches msdf_shim distance_transform_1d.
+fn distance_transform_1d(input: [f64], length: i32) -> [f64] = do
+  let positive_infinity = f64_infinity()
+  let negative_infinity = 0.0 - positive_infinity
+  let mut parabola_index = make_i32_array(length, 0)
+  let mut parabola_boundary = make_f64_array(length + 1, 0.0)
+  let mut envelope_size = 0
+  parabola_index.set(0, 0)
+  parabola_boundary.set(0, negative_infinity)
+  parabola_boundary.set(1, positive_infinity)
+  let mut query = 1
+  while query < length do
+    let mut intersection = positive_infinity
+    let mut shrinking = true
+    while shrinking do
+      let envelope = parabola_index[envelope_size]
+      let query_f = i32_to_f64(query)
+      let envelope_f = i32_to_f64(envelope)
+      intersection = (
+        (input[query] + query_f * query_f)
+        - (input[envelope] + envelope_f * envelope_f)
+      ) / (i32_to_f64(2) * query_f - i32_to_f64(2) * envelope_f)
+      if intersection > parabola_boundary[envelope_size] then
+        shrinking = false
+      else
+        envelope_size = envelope_size - 1
+      end
+    end
+    envelope_size = envelope_size + 1
+    parabola_index.set(envelope_size, query)
+    parabola_boundary.set(envelope_size, intersection)
+    parabola_boundary.set(envelope_size + 1, positive_infinity)
+    query = query + 1
+  end
+  envelope_size = 0
+  let mut output = make_f64_array(length, 0.0)
+  query = 0
+  while query < length do
+    while parabola_boundary[envelope_size + 1] < i32_to_f64(query) do
+      envelope_size = envelope_size + 1
+    end
+    let envelope = parabola_index[envelope_size]
+    let delta = i32_to_f64(query - envelope)
+    output.set(query, delta * delta + input[envelope])
+    query = query + 1
+  end
+  output
+end
+
+fn distance_transform_2d(field: [f64], width: i32, height: i32) -> [f64] = do
+  let mut working = field
+  let mut column = 0
+  while column < width do
+    let mut column_input = make_f64_array(height, 0.0)
+    let mut row = 0
+    while row < height do
+      column_input.set(row, working[row * width + column])
+      row = row + 1
+    end
+    let column_output = distance_transform_1d(column_input, height)
+    row = 0
+    while row < height do
+      working.set(row * width + column, column_output[row])
+      row = row + 1
+    end
+    column = column + 1
+  end
+  let mut row_index = 0
+  while row_index < height do
+    let mut row_input = make_f64_array(width, 0.0)
+    let mut column_index = 0
+    while column_index < width do
+      row_input.set(column_index, working[row_index * width + column_index])
+      column_index = column_index + 1
+    end
+    let row_output = distance_transform_1d(row_input, width)
+    column_index = 0
+    while column_index < width do
+      working.set(row_index * width + column_index, row_output[column_index])
+      column_index = column_index + 1
+    end
+    row_index = row_index + 1
+  end
+  working
+end
+
+fn clamp_unit(value: f64) -> f64 = do
+  if value < 0.0 then
+    0.0
+  else if value > 1.0 then
+    1.0
+  else
+    value
+  end
+end
+
+// mask: 0/1 per pixel, length == field_size*field_size. Returns RGB interleaved 0..255.
+export fn msdf_sdf_rgb_from_mask(mask: [i32], field_size: i32, px_range: i32) -> [i32] = do
+  let pixel_count = field_size * field_size
+  let infinity = seed_infinity()
+  let mut outside = make_f64_array(pixel_count, 0.0)
+  let mut inside = make_f64_array(pixel_count, 0.0)
+  let mut index = 0
+  while index < pixel_count do
+    if mask[index] != 0 then
+      outside.set(index, 0.0)
+      inside.set(index, infinity)
+    else
+      outside.set(index, infinity)
+      inside.set(index, 0.0)
+    end
+    index = index + 1
+  end
+  outside = distance_transform_2d(outside, field_size, field_size)
+  inside = distance_transform_2d(inside, field_size, field_size)
+  let range = i32_to_f64(px_range)
+  let mut rgb: [i32] = []
+  index = 0
+  while index < pixel_count do
+    let outside_distance = sqrt(outside[index])
+    let inside_distance = sqrt(inside[index])
+    let signed_distance = outside_distance - inside_distance
+    let mapped = clamp_unit(signed_distance / range * 0.5 + 0.5)
+    let byte_value = f64_to_i32(mapped * 255.0 + 0.5)
+    rgb.push(byte_value)
+    rgb.push(byte_value)
+    rgb.push(byte_value)
+    index = index + 1
+  end
+  rgb
+end

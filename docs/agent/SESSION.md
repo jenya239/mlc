@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=3 |
-| test_gate | dump_msdf_golden.rb --check ok |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=4 |
+| test_gate | msdf_mlc_math_smoke EXIT 0 |
+
+### Turn 2026-07-11 22:50 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=3 — MLC EDT)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 22:35 |
+| elapsed | ~15 min |
+| done    | `misc/gui/msdf.mlc` (`msdf_sdf_rgb_from_mask`); `math.hpp` `i32_to_f64`/`f64_to_i32`/`f64_infinity`; smoke `msdf_mlc_math_smoke.mlc`. |
+| verify  | mlcc+build_bin smoke EXIT 0 (R=G=B, extrema). |
+| result  | STEP=3 done. Plain: Felzenszwalb EDT/SDF runs as pure MLC. |
+| issues  | Foreign `compiler/out/*` left. Golden MAE deferred to STEP=4. |
+| next    | ROLE=Driver STEP=4 TRACK_TEXT_MSDF_TO_MLC — MAE vs `msdf_A_32_4.rgb` (≤8.0/255) |
 
 ### Turn 2026-07-11 22:35 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=2 — golden fixture)
 

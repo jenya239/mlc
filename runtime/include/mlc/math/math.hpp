@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <algorithm>
 
 namespace mlc::math {
@@ -39,6 +40,19 @@ inline float pow_f(float base, float exp) {
 
 inline float sqrt_f(float x) {
     return std::sqrt(x);
+}
+
+// Cast/helpers for MLC numeric ports (f32 ops emit broken f32_mul; use f64).
+inline double i32_to_f64(int32_t value) {
+    return static_cast<double>(value);
+}
+
+inline double f64_infinity() {
+    return std::numeric_limits<double>::infinity();
+}
+
+inline int32_t f64_to_i32(double value) {
+    return static_cast<int32_t>(value);
 }
 
 // Trigonometric functions

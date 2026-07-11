@@ -1,0 +1,47 @@
+// TRACK_TEXT_MSDF_TO_MLC STEP=3 — smoke msdf_sdf_rgb_from_mask on a synthetic mask.
+
+import { msdf_sdf_rgb_from_mask } from '../gui/msdf'
+
+fn main() -> i32 = do
+  let field_size = 8
+  let px_range = 4
+  let mut mask: [i32] = []
+  let mut index = 0
+  while index < field_size * field_size do
+    mask.push(0)
+    index = index + 1
+  end
+  // 2x2 ink block in the center.
+  mask.set(3 * field_size + 3, 1)
+  mask.set(3 * field_size + 4, 1)
+  mask.set(4 * field_size + 3, 1)
+  mask.set(4 * field_size + 4, 1)
+
+  let rgb = msdf_sdf_rgb_from_mask(mask, field_size, px_range)
+  if rgb.length() != field_size * field_size * 3 then
+    return 1
+  end
+  if rgb[0] != rgb[1] || rgb[1] != rgb[2] then
+    return 2
+  end
+  let mut minimum = 255
+  let mut maximum = 0
+  index = 0
+  while index < rgb.length() do
+    let value = rgb[index]
+    if value < minimum then
+      minimum = value
+    end
+    if value > maximum then
+      maximum = value
+    end
+    index = index + 3
+  end
+  if maximum < 200 then
+    return 3
+  end
+  if minimum > 200 then
+    return 4
+  end
+  0
+end
