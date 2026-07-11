@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_GUI_FRAMEWORK STEP=2 |
-| test_gate | docs-only (Decision lock) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_GUI_FRAMEWORK STEP=3 |
+| test_gate | gl_renderer + text_renderer_native smokes EXIT 0 |
+
+### Turn 2026-07-11 04:30 (Driver TRACK_GUI_FRAMEWORK STEP=2 — extract misc/gui)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:22 |
+| elapsed | ~8 min |
+| done    | `misc/gui/gl_renderer.mlc` + `text_renderer.mlc` (export API); smokes import `../gui/*`; PLAN→STEP=3. |
+| verify  | `run_gl_renderer_smoke.sh` ok; `run_text_renderer_native_smoke.sh` ok. |
+| result  | STEP=2 done. Plain: shared GUI render modules; smokes thin. Residual: `text_window_demo` still local (STEP=5). |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_FRAMEWORK — IM layout + point-in-rect hit-test |
 
 ### Turn 2026-07-11 04:20 (Driver TRACK_GUI_FRAMEWORK STEP=1 — Decision)
 

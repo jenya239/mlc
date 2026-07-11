@@ -1,0 +1,481 @@
+// Shared TextRenderer + atlas/cache (TRACK_GUI_FRAMEWORK STEP=2).
+extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_should_close() -> i32
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+extern fn gl_clear(mask: i32) -> unit
+  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_enable(capability: i32) -> unit
+  = "mlc::gl::gl_enable" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
+  = "mlc::gl::gl_blend_func" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_shader(shader_type: i32) -> i32
+  = "mlc::gl::gl_create_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_shader_source_string(shader: i32, source: string) -> unit
+  = "mlc::gl::gl_shader_source_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_compile_shader(shader: i32) -> unit
+  = "mlc::gl::gl_compile_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_shader_iv_value(shader: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_shader_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_create_program() -> i32
+  = "mlc::gl::gl_create_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_attach_shader(program: i32, shader: i32) -> unit
+  = "mlc::gl::gl_attach_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_link_program(program: i32) -> unit
+  = "mlc::gl::gl_link_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_program_iv_value(program: i32, parameter_name: i32) -> i32
+  = "mlc::gl::gl_get_program_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_use_program(program: i32) -> unit
+  = "mlc::gl::gl_use_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_shader(shader: i32) -> unit
+  = "mlc::gl::gl_delete_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_program(program: i32) -> unit
+  = "mlc::gl::gl_delete_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_attrib_location_string(program: i32, name: string) -> i32
+  = "mlc::gl::gl_get_attrib_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_get_uniform_location_string(program: i32, name: string) -> i32
+  = "mlc::gl::gl_get_uniform_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_uniform_1i(location: i32, value: i32) -> unit
+  = "mlc::gl::gl_uniform_1i" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_gen_buffer() -> i32
+  = "mlc::gl::gl_gen_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_buffer(buffer: i32) -> unit
+  = "mlc::gl::gl_delete_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_bind_buffer(target: i32, buffer: i32) -> unit
+  = "mlc::gl::gl_bind_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_f32_clear() -> unit
+  = "mlc::gl::gl_scratch_f32_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_push_glyph_quad(
+  left: f64, bottom: f64, right: f64, top: f64,
+  atlas_size: i32, slot_x: i32, slot_y: i32, slot_width: i32, slot_height: i32
+) -> unit
+  = "mlc::gl::gl_scratch_push_glyph_quad" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_buffer_data_scratch(target: i32, usage: i32) -> i32
+  = "mlc::gl::gl_buffer_data_scratch" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
+  = "mlc::gl::gl_enable_vertex_attrib_array" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_vertex_attrib_pointer_offset(
+  index: i32, size: i32, attribute_type: i32, normalized: i32, stride: i32, byte_offset: i32
+) -> unit
+  = "mlc::gl::gl_vertex_attrib_pointer_offset" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
+  = "mlc::gl::gl_draw_arrays" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_gen_texture() -> i32
+  = "mlc::gl::gl_gen_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_delete_texture(texture: i32) -> unit
+  = "mlc::gl::gl_delete_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_bind_texture(target: i32, texture: i32) -> unit
+  = "mlc::gl::gl_bind_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_active_texture(texture_unit: i32) -> unit
+  = "mlc::gl::gl_active_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_u8_clear() -> unit
+  = "mlc::gl::gl_scratch_u8_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_u8_resize_zero(byte_count: i32) -> unit
+  = "mlc::gl::gl_scratch_u8_resize_zero" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_scratch_u8_fill_rect(
+  atlas_width: i32, x: i32, y: i32, width: i32, height: i32, value: i32
+) -> unit
+  = "mlc::gl::gl_scratch_u8_fill_rect" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn gl_tex_image_2d_scratch_luminance(width: i32, height: i32) -> i32
+  = "mlc::gl::gl_tex_image_2d_scratch_luminance" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+fn gl_color_buffer_bit() -> i32 = 16384
+fn gl_triangles() -> i32 = 4
+fn gl_float() -> i32 = 5126
+fn gl_array_buffer() -> i32 = 34962
+fn gl_dynamic_draw() -> i32 = 35048
+fn gl_fragment_shader() -> i32 = 35632
+fn gl_vertex_shader() -> i32 = 35633
+fn gl_compile_status() -> i32 = 35713
+fn gl_link_status() -> i32 = 35714
+fn gl_texture_2d() -> i32 = 3553
+fn gl_texture0() -> i32 = 33984
+fn gl_blend() -> i32 = 3042
+fn gl_src_alpha() -> i32 = 770
+fn gl_one_minus_src_alpha() -> i32 = 771
+
+fn vertex_shader_source() -> string =
+  "attribute vec2 a_pos;\nattribute vec2 a_uv;\nvarying vec2 v_uv;\nvoid main() {\n  v_uv = a_uv;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
+
+fn fragment_shader_source() -> string =
+  "varying vec2 v_uv;\nuniform sampler2D u_tex;\nvoid main() {\n  float alpha = texture2D(u_tex, v_uv).r;\n  gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);\n}\n"
+
+export type AtlasSlot = {
+  page_index: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type AtlasPage = {
+  mode: i32,
+  width: i32,
+  height: i32,
+  shelf_x: i32,
+  shelf_y: i32,
+  shelf_height: i32
+}
+
+export type GlyphAtlas = {
+  page_size: i32,
+  pages: [AtlasPage]
+}
+
+export type GlyphAtlasPackOk = {
+  atlas: GlyphAtlas,
+  slot: AtlasSlot,
+  error_code: i32
+}
+
+export type GlyphCacheKey = {
+  font_id: i32,
+  glyph_index: i32,
+  size_px: i32,
+  mode: i32
+}
+
+export type GlyphCacheEntry = {
+  key: GlyphCacheKey,
+  slot: AtlasSlot
+}
+
+export type GlyphCache = {
+  capacity: i32,
+  entries: [GlyphCacheEntry]
+}
+
+export type GlyphCacheOp = {
+  cache: GlyphCache,
+  found: i32,
+  slot: AtlasSlot
+}
+
+export type TextRenderer = {
+  program: i32,
+  vertex_buffer: i32,
+  atlas_texture: i32,
+  position_location: i32,
+  uv_location: i32,
+  atlas_size: i32,
+  vertex_count: i32
+}
+
+export fn glyph_atlas_new(page_size: i32) -> GlyphAtlas =
+  GlyphAtlas { page_size: page_size, pages: [] }
+
+fn atlas_page_empty(mode: i32, page_size: i32) -> AtlasPage =
+  AtlasPage {
+    mode: mode, width: page_size, height: page_size,
+    shelf_x: 0, shelf_y: 0, shelf_height: 0
+  }
+
+fn atlas_page_with_shelf(page: AtlasPage, shelf_x: i32, shelf_y: i32, shelf_height: i32) -> AtlasPage =
+  AtlasPage {
+    mode: page.mode, width: page.width, height: page.height,
+    shelf_x: shelf_x, shelf_y: shelf_y, shelf_height: shelf_height
+  }
+
+fn atlas_pages_replace(pages: [AtlasPage], page_index: i32, page: AtlasPage) -> [AtlasPage] = do
+  let mut rebuilt: [AtlasPage] = []
+  let mut index = 0
+  while index < pages.length() do
+    if index == page_index then rebuilt.push(page)
+    else rebuilt.push(pages[index])
+    end
+    index = index + 1
+  end
+  rebuilt
+end
+
+fn glyph_atlas_find_last_page(atlas: GlyphAtlas, mode: i32) -> i32 = do
+  let mut index = atlas.pages.length() - 1
+  while index >= 0 do
+    if atlas.pages[index].mode == mode then
+      return index
+    end
+    index = index - 1
+  end
+  -1
+end
+
+export fn glyph_atlas_pack_fail(atlas: GlyphAtlas, error_code: i32) -> GlyphAtlasPackOk =
+  GlyphAtlasPackOk {
+    atlas: atlas,
+    slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
+    error_code: error_code
+  }
+
+export fn glyph_atlas_pack(
+  atlas: GlyphAtlas, mode: i32, glyph_width: i32, glyph_height: i32
+) -> GlyphAtlasPackOk = do
+  if glyph_width <= 0 || glyph_height <= 0 then
+    return glyph_atlas_pack_fail(atlas, 1)
+  end
+  if glyph_width > atlas.page_size || glyph_height > atlas.page_size then
+    return glyph_atlas_pack_fail(atlas, 2)
+  end
+  let mut pages = atlas.pages
+  let mut page_index = glyph_atlas_find_last_page(atlas, mode)
+  let mut placed = false
+  let mut slot_x = 0
+  let mut slot_y = 0
+  if page_index >= 0 then
+    const page = pages[page_index]
+    if page.shelf_height == 0 then
+      pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(page, glyph_width, 0, glyph_height))
+      slot_x = 0
+      slot_y = 0
+      placed = true
+    else if page.shelf_x + glyph_width <= page.width && glyph_height <= page.shelf_height then
+      pages = atlas_pages_replace(
+        pages, page_index,
+        atlas_page_with_shelf(page, page.shelf_x + glyph_width, page.shelf_y, page.shelf_height))
+      slot_x = page.shelf_x
+      slot_y = page.shelf_y
+      placed = true
+    else
+      const next_shelf_y = page.shelf_y + page.shelf_height
+      if next_shelf_y + glyph_height <= page.height then
+        pages = atlas_pages_replace(
+          pages, page_index,
+          atlas_page_with_shelf(page, glyph_width, next_shelf_y, glyph_height))
+        slot_x = 0
+        slot_y = next_shelf_y
+        placed = true
+      end
+    end
+  end
+  if !placed then
+    page_index = pages.length()
+    pages.push(atlas_page_empty(mode, atlas.page_size))
+    const page = pages[page_index]
+    pages = atlas_pages_replace(pages, page_index, atlas_page_with_shelf(page, glyph_width, 0, glyph_height))
+    slot_x = 0
+    slot_y = 0
+  end
+  GlyphAtlasPackOk {
+    atlas: GlyphAtlas { page_size: atlas.page_size, pages: pages },
+    slot: AtlasSlot {
+      page_index: page_index, x: slot_x, y: slot_y,
+      width: glyph_width, height: glyph_height
+    },
+    error_code: 0
+  }
+end
+
+export fn glyph_cache_new(capacity: i32) -> GlyphCache =
+  GlyphCache { capacity: capacity, entries: [] }
+
+fn glyph_cache_key_equal(left: GlyphCacheKey, right: GlyphCacheKey) -> bool =
+  left.font_id == right.font_id
+  && left.glyph_index == right.glyph_index
+  && left.size_px == right.size_px
+  && left.mode == right.mode
+
+fn glyph_cache_find_index(cache: GlyphCache, key: GlyphCacheKey) -> i32 = do
+  let mut index = 0
+  while index < cache.entries.length() do
+    if glyph_cache_key_equal(cache.entries[index].key, key) then
+      return index
+    end
+    index = index + 1
+  end
+  -1
+end
+
+fn glyph_cache_entries_without(entries: [GlyphCacheEntry], remove_index: i32) -> [GlyphCacheEntry] = do
+  let mut rebuilt: [GlyphCacheEntry] = []
+  let mut index = 0
+  while index < entries.length() do
+    if index != remove_index then
+      rebuilt.push(entries[index])
+    end
+    index = index + 1
+  end
+  rebuilt
+end
+
+fn empty_slot() -> AtlasSlot =
+  AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 }
+
+export fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheOp = do
+  const found_index = glyph_cache_find_index(cache, key)
+  if found_index < 0 then
+    return GlyphCacheOp { cache: cache, found: 0, slot: empty_slot() }
+  end
+  const entry = cache.entries[found_index]
+  let mut entries = glyph_cache_entries_without(cache.entries, found_index)
+  entries.push(entry)
+  GlyphCacheOp {
+    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    found: 1,
+    slot: entry.slot
+  }
+end
+
+export fn glyph_cache_insert(cache: GlyphCache, key: GlyphCacheKey, slot: AtlasSlot) -> GlyphCacheOp = do
+  const found_index = glyph_cache_find_index(cache, key)
+  if found_index >= 0 then
+    let mut entries = glyph_cache_entries_without(cache.entries, found_index)
+    entries.push(GlyphCacheEntry { key: key, slot: slot })
+    return GlyphCacheOp {
+      cache: GlyphCache { capacity: cache.capacity, entries: entries },
+      found: 1,
+      slot: slot
+    }
+  end
+  let mut entries = cache.entries
+  if entries.length() >= cache.capacity && cache.capacity > 0 then
+    entries = glyph_cache_entries_without(entries, 0)
+  end
+  entries.push(GlyphCacheEntry { key: key, slot: slot })
+  GlyphCacheOp {
+    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    found: 0,
+    slot: slot
+  }
+end
+
+export fn push_quad(
+  left: f64, bottom: f64, right: f64, top: f64,
+  atlas_size: i32, slot: AtlasSlot
+) -> i32 = do
+  gl_scratch_push_glyph_quad(
+    left, bottom, right, top,
+    atlas_size, slot.x, slot.y, slot.width, slot.height
+  )
+  6
+end
+
+export fn text_renderer_create(atlas_size: i32) -> TextRenderer = do
+  const vertex_shader = gl_create_shader(gl_vertex_shader())
+  gl_shader_source_string(vertex_shader, vertex_shader_source())
+  gl_compile_shader(vertex_shader)
+  if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
+    return TextRenderer {
+      program: -12, vertex_buffer: 0, atlas_texture: 0,
+      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+    }
+  end
+  const fragment_shader = gl_create_shader(gl_fragment_shader())
+  gl_shader_source_string(fragment_shader, fragment_shader_source())
+  gl_compile_shader(fragment_shader)
+  if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    return TextRenderer {
+      program: -13, vertex_buffer: 0, atlas_texture: 0,
+      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+    }
+  end
+  const program = gl_create_program()
+  gl_attach_shader(program, vertex_shader)
+  gl_attach_shader(program, fragment_shader)
+  gl_link_program(program)
+  gl_delete_shader(vertex_shader)
+  gl_delete_shader(fragment_shader)
+  if gl_get_program_iv_value(program, gl_link_status()) == 0 then
+    gl_delete_program(program)
+    return TextRenderer {
+      program: -14, vertex_buffer: 0, atlas_texture: 0,
+      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+    }
+  end
+  const position_location = gl_get_attrib_location_string(program, "a_pos")
+  const uv_location = gl_get_attrib_location_string(program, "a_uv")
+  const texture_location = gl_get_uniform_location_string(program, "u_tex")
+  if position_location < 0 || uv_location < 0 || texture_location < 0 then
+    gl_delete_program(program)
+    return TextRenderer {
+      program: -15, vertex_buffer: 0, atlas_texture: 0,
+      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+    }
+  end
+  const vertex_buffer = gl_gen_buffer()
+  const atlas_texture = gl_gen_texture()
+  if vertex_buffer == 0 || atlas_texture == 0 then
+    gl_delete_buffer(vertex_buffer)
+    gl_delete_texture(atlas_texture)
+    gl_delete_program(program)
+    return TextRenderer {
+      program: -16, vertex_buffer: 0, atlas_texture: 0,
+      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+    }
+  end
+  gl_use_program(program)
+  gl_uniform_1i(texture_location, 0)
+  TextRenderer {
+    program: program,
+    vertex_buffer: vertex_buffer,
+    atlas_texture: atlas_texture,
+    position_location: position_location,
+    uv_location: uv_location,
+    atlas_size: atlas_size,
+    vertex_count: 0
+  }
+end
+
+export fn text_renderer_upload_atlas(renderer: TextRenderer) -> i32 = do
+  gl_active_texture(gl_texture0())
+  gl_bind_texture(gl_texture_2d(), renderer.atlas_texture)
+  gl_tex_image_2d_scratch_luminance(renderer.atlas_size, renderer.atlas_size)
+end
+
+export fn text_renderer_set_batch(renderer: TextRenderer, vertex_count: i32) -> TextRenderer =
+  TextRenderer {
+    program: renderer.program,
+    vertex_buffer: renderer.vertex_buffer,
+    atlas_texture: renderer.atlas_texture,
+    position_location: renderer.position_location,
+    uv_location: renderer.uv_location,
+    atlas_size: renderer.atlas_size,
+    vertex_count: vertex_count
+  }
+
+export fn text_renderer_draw(renderer: TextRenderer, width: i32, height: i32) -> i32 = do
+  gl_viewport(0, 0, width, height)
+  gl_clear_color_f64(0.05, 0.07, 0.12, 1.0)
+  gl_clear(gl_color_buffer_bit())
+  gl_enable(gl_blend())
+  gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
+  gl_use_program(renderer.program)
+  gl_active_texture(gl_texture0())
+  gl_bind_texture(gl_texture_2d(), renderer.atlas_texture)
+  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  gl_enable_vertex_attrib_array(renderer.position_location)
+  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 16, 0)
+  gl_enable_vertex_attrib_array(renderer.uv_location)
+  gl_vertex_attrib_pointer_offset(renderer.uv_location, 2, gl_float(), 0, 16, 8)
+  gl_draw_arrays(gl_triangles(), 0, renderer.vertex_count)
+  0
+end
+
+export fn text_renderer_destroy(renderer: TextRenderer) -> i32 = do
+  gl_delete_buffer(renderer.vertex_buffer)
+  gl_delete_texture(renderer.atlas_texture)
+  gl_delete_program(renderer.program)
+  0
+end
+
+export fn text_scratch_u8_clear() -> unit = gl_scratch_u8_clear()
+export fn text_scratch_u8_resize_zero(byte_count: i32) -> unit = gl_scratch_u8_resize_zero(byte_count)
+export fn text_scratch_u8_fill_rect(
+  atlas_width: i32, x: i32, y: i32, width: i32, height: i32, value: i32
+) -> unit = gl_scratch_u8_fill_rect(atlas_width, x, y, width, height, value)
+export fn text_scratch_f32_clear() -> unit = gl_scratch_f32_clear()
+export fn text_bind_array_buffer(buffer: i32) -> unit = gl_bind_buffer(gl_array_buffer(), buffer)
+export fn text_upload_dynamic_scratch() -> i32 =
+  gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw())
+export fn text_context_begin(width: i32, height: i32) -> i32 = glfw_gl_context_begin(width, height)
+export fn text_context_should_close() -> i32 = glfw_gl_context_should_close()
+export fn text_context_swap_poll() -> unit = glfw_gl_context_swap_poll()
+export fn text_context_end() -> unit = glfw_gl_context_end()
