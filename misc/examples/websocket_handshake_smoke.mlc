@@ -1,0 +1,101 @@
+// TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 — handshake via HttpServer + Accept.
+
+import {
+  check_websocket_upgrade,
+  build_websocket_upgrade_from_raw,
+  sec_websocket_accept,
+  WsUpgradeOk,
+  WsUpgradeErr,
+  WsHandshakeOk,
+  WsHandshakeErr
+} from '../../lib/mlc/common/stdlib/net/websocket.mlc'
+
+import {
+  HttpRequest,
+  HttpHeader
+} from 'HttpServer'
+
+fn rfc_upgrade_raw() -> string =
+  "GET /chat HTTP/1.1\r\n" +
+  "Host: server.example.com\r\n" +
+  "Upgrade: websocket\r\n" +
+  "Connection: Upgrade\r\n" +
+  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+  "Sec-WebSocket-Version: 13\r\n\r\n"
+
+fn main() -> i32 = do
+  let request = HttpRequest {
+    method: "GET",
+    path: "/chat",
+    headers: [
+      HttpHeader { name: "Upgrade", value: "websocket" },
+      HttpHeader { name: "Connection", value: "keep-alive, Upgrade" },
+      HttpHeader { name: "Sec-WebSocket-Version", value: "13" },
+      HttpHeader { name: "Sec-WebSocket-Key", value: "dGhlIHNhbXBsZSBub25jZQ==" }
+    ],
+    body: ""
+  }
+
+  let check_status = match check_websocket_upgrade(request) {
+    WsUpgradeOk(key) =>
+      if key != "dGhlIHNhbXBsZSBub25jZQ==" then 1 else 0 end
+    WsUpgradeErr(_) => 2
+  }
+  if check_status != 0 then
+    return check_status
+  end
+
+  let bad = HttpRequest {
+    method: "POST",
+    path: "/",
+    headers: [],
+    body: ""
+  }
+  let bad_status = match check_websocket_upgrade(bad) {
+    WsUpgradeErr(_) => 0
+    WsUpgradeOk(_) => 3
+  }
+  if bad_status != 0 then
+    return bad_status
+  end
+
+  let expected_accept = sec_websocket_accept("dGhlIHNhbXBsZSBub25jZQ==")
+  if expected_accept != "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" then
+    return 4
+  end
+
+  let handshake_status = match build_websocket_upgrade_from_raw(rfc_upgrade_raw()) {
+    WsHandshakeOk(response) => do
+      if !response.starts_with("HTTP/1.1 101 Switching Protocols\r\n") then
+        return 5
+      end
+      if !response.contains("Upgrade: websocket\r\n") then
+        return 6
+      end
+      if !response.contains("Connection: Upgrade\r\n") then
+        return 7
+      end
+      if !response.contains("Sec-WebSocket-Accept: " + expected_accept + "\r\n") then
+        return 8
+      end
+      if !response.ends_with("\r\n\r\n") then
+        return 9
+      end
+      0
+    end
+    WsHandshakeErr(_) => 10
+  }
+  if handshake_status != 0 then
+    return handshake_status
+  end
+
+  let parse_fail = match build_websocket_upgrade_from_raw("NOTHTTP") {
+    WsHandshakeErr(_) => 0
+    WsHandshakeOk(_) => 11
+  }
+  if parse_fail != 0 then
+    return parse_fail
+  end
+
+  0
+end

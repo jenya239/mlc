@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 |
-| test_gate | websocket_frame_smoke + websocket_sha1_smoke + websocket_gate |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 |
+| test_gate | websocket_handshake_smoke + websocket_gate |
+
+### Turn 2026-07-11 18:25 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 — handshake)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 18:15 |
+| elapsed | ~10 min |
+| done    | MLC `check_websocket_upgrade`/`build_websocket_upgrade_from_raw` + HttpServer import; smoke `websocket_handshake_smoke.mlc` (RFC 101/Accept). |
+| verify  | handshake smoke EXIT 0; frame+sha1 smokes EXIT 0; `run_websocket_gate.sh` OK. |
+| result  | STEP=4 done. Plain: WS upgrade handshake is pure MLC over HttpServer. |
+| issues  | Queued prompt VM STEP=2 stale. Public `upgrade` still extern (STEP=5). Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_WEBSOCKET_TO_MLC — MLC bodies + delete websocket.hpp |
 
 ### Turn 2026-07-11 18:10 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 — frames)
 

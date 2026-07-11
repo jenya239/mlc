@@ -7,7 +7,13 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: **active** — STEP=4 next (handshake on HttpServer)
+## Status: **active** — STEP=5 next (delete websocket.hpp)
+
+**Driver 2026-07-11:** STEP=4 — MLC handshake on HttpServer types:
+`check_websocket_upgrade` / `format_websocket_upgrade_response` /
+`build_websocket_upgrade_from_raw` (`WsUpgradeCheck`/`WsHandshakeResult`);
+smoke `websocket_handshake_smoke.mlc` (RFC 101 + Accept) EXIT 0; gate OK.
+Response bytes are Tcp.write_all wire; public `upgrade` still extern.
 
 **Driver 2026-07-11:** STEP=3 — MLC `encode_unmasked_frame` /
 `encode_masked_frame` / `try_decode_frame` (`WsFrameDecode`);
@@ -89,7 +95,7 @@ already documents «SHA1 + base64 local (no libsodium)».
 | 1 | Decision + libsodium SHA1 availability check. | **done** (2026-07-11: locked; 0 sodium sha1 hits) |
 | 2 | MLC SHA1 + base64. | **done** (2026-07-11: sha1_hex + sec_websocket_accept; RFC smoke) |
 | 3 | Frame parser/writer на MLC. | **done** (2026-07-11: encode/decode + mask XOR smoke) |
-| 4 | Handshake на MLC (HttpServer types). | pending |
+| 4 | Handshake на MLC (HttpServer types). | **done** (2026-07-11: check/format/from_raw + RFC smoke) |
 | 5 | Удалить `websocket.hpp`; переключить модуль. | pending |
 | 6 | Regression + self-host diff; close. | pending |
 
