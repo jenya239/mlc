@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=5 |
-| test_gate | run_http_server_curl_gate.sh EXIT 0 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=6 |
+| test_gate | curl+parse gates EXIT 0; websocket smoke 19/0 |
+
+### Turn 2026-07-11 12:33 (Driver TRACK_STDLIB_HTTP_MLC STEP=5 — delete C++ HTTP)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:33 |
+| elapsed | ~12 min |
+| done    | Deleted `http_{request,router,server}.hpp` + `test_http_*.cpp`; `websocket_http.hpp` for WS upgrade; `mlc.hpp` updated; `serve_http_with_thread_pool` removed. |
+| verify  | `test_websocket` 19/0; `run_http_server_curl_gate.sh` EXIT 0; parse smoke EXIT 0. |
+| result  | STEP=5 done. Plain: public C++ HTTP server API gone; WS keeps private parse. |
+| issues  | Queued prompt VM STEP=2 stale. Residual: `websocket_http.hpp` until WEBSOCKET_TO_MLC. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_HTTP_MLC — STDLIB_BACKEND/docs sync |
 
 ### Turn 2026-07-11 12:31 (Driver TRACK_STDLIB_HTTP_MLC STEP=4 — curl demo)
 

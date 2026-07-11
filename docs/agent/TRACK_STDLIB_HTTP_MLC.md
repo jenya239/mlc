@@ -21,7 +21,13 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=5 next (delete C++ http_*.hpp) — **active**
+## Status: **open** — STEP=6 next (docs) — **active**
+
+**Driver 2026-07-11:** STEP=5 — deleted public C++ `http_request.hpp`/
+`http_router.hpp`/`http_server.hpp` + `test_http_*.cpp`; moved parse/
+`read_http_message` to `websocket_http.hpp` (WS handshake only until
+`TRACK_STDLIB_WEBSOCKET_TO_MLC`); `mlc.hpp` drops HTTP includes;
+`serve_http_with_thread_pool` gone (was only used by deleted test).
 
 **Driver 2026-07-11:** STEP=4 — `http_server_curl_demo.mlc` (Tcp+spawn+route
 `GET /`/`/health`); `run_http_server_curl_gate.sh` curl ok.
@@ -144,7 +150,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | 2 | `record HttpRequest`/`HttpResponse` + чистый MLC-парсер (byte-scan, без regex). | **done** (2026-07-11: http_server.mlc + parse smoke) |
 | 3 | Bare-name резолвинг в `mlcc` для нового модуля (без поломки `Tcp`). | **done** (2026-07-11: path_normalize + smoke bare import) |
 | 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | **done** (2026-07-11: curl gate EXIT 0) |
-| 5 | Удалить `http_request.hpp`/`http_router.hpp` (+ проверить `serve_http_with_thread_pool` usage). | pending |
+| 5 | Удалить `http_request.hpp`/`http_router.hpp` (+ проверить `serve_http_with_thread_pool` usage). | **done** (2026-07-11: deleted + http_server.hpp; WS uses `websocket_http.hpp`) |
 | 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | pending |
 | 7 | Verify-gate: self-host diff, regression_gate, close. | pending |
 

@@ -66,9 +66,6 @@
 
 // Net
 #include "mlc/net/tcp.hpp"
-#include "mlc/net/http_request.hpp"
-#include "mlc/net/http_router.hpp"
-#include "mlc/net/http_server.hpp"
 #include "mlc/net/websocket.hpp"
 
 // DB (optional — requires libpq-fe.h)

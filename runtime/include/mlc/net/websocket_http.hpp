@@ -1,11 +1,12 @@
 #pragma once
 
-// HTTP/1.1 request parser (TRACK_STDLIB_NET_SERVER STEP=5).
-// Request-line + headers; optional body via Content-Length (cap 1 MiB).
-// Header block cap 64 KiB. No chunked / trailers / HTTP/2.
+// Temporary HTTP parse helpers for WebSocket upgrade handshake only
+// (TRACK_STDLIB_HTTP_MLC STEP=5). Public C++ HTTP server/router removed;
+// MLC path is lib/.../http_server.mlc. Delete with TRACK_STDLIB_WEBSOCKET_TO_MLC.
 
 #include "mlc/core/result.hpp"
 #include "mlc/core/string.hpp"
+#include "mlc/net/tcp.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -206,6 +207,93 @@ inline result::Result<HttpRequest, String> parse_http_request(const String& raw_
   }
 
   return result::ok(std::move(request));
+}
+
+inline constexpr std::int32_t kHttpReadChunkBytes = 4096;
+
+// Read one HTTP message (headers + optional Content-Length body) from stream.
+inline result::Result<String, String> read_http_message(TcpStream& stream) {
+  std::string buffer;
+  buffer.reserve(1024);
+  while (true) {
+    if (buffer.size() > kHttpHeaderBlockMaxBytes + 4) {
+      return result::err(String("read_http_message: header block exceeds 64 KiB"));
+    }
+    auto chunk_result = stream.read(kHttpReadChunkBytes);
+    if (std::holds_alternative<result::Err<String>>(chunk_result)) {
+      return result::err(std::get<result::Err<String>>(chunk_result)._0);
+    }
+    const String chunk = std::get<result::Ok<String>>(chunk_result)._0;
+    if (chunk.is_empty()) {
+      if (buffer.empty()) {
+        return result::err(String("read_http_message: connection closed"));
+      }
+      break;
+    }
+    buffer.append(chunk.view());
+    const std::string_view view(buffer);
+    const auto header_end = detail::find_header_end(view);
+    if (!header_end.has_value()) {
+      continue;
+    }
+    const std::size_t separator = detail::header_separator_length(view, *header_end);
+    const std::size_t body_offset = *header_end + separator;
+    std::optional<std::size_t> content_length;
+    std::size_t line_start = 0;
+    const std::string_view head = view.substr(0, *header_end);
+    const std::size_t first_nl = head.find('\n');
+    if (first_nl != std::string_view::npos) {
+      line_start = first_nl + 1;
+    }
+    while (line_start < head.size()) {
+      std::size_t line_end = head.find('\n', line_start);
+      if (line_end == std::string_view::npos) {
+        line_end = head.size();
+      }
+      std::string_view line = head.substr(line_start, line_end - line_start);
+      if (!line.empty() && line.back() == '\r') {
+        line.remove_suffix(1);
+      }
+      line_start = line_end + 1;
+      const std::size_t colon = line.find(':');
+      if (colon == std::string_view::npos) {
+        continue;
+      }
+      const std::string_view name = detail::trim_spaces(line.substr(0, colon));
+      const std::string_view value = detail::trim_spaces(line.substr(colon + 1));
+      if (detail::starts_with_ignore_case(name, "Content-Length") && name.size() == 14) {
+        std::size_t length = 0;
+        if (!detail::parse_content_length(value, length)) {
+          return result::err(String("read_http_message: invalid Content-Length"));
+        }
+        content_length = length;
+        break;
+      }
+    }
+    if (!content_length.has_value()) {
+      return result::ok(String(std::move(buffer)));
+    }
+    if (*content_length > kHttpBodyMaxBytes) {
+      return result::err(String("read_http_message: body exceeds 1 MiB cap"));
+    }
+    const std::size_t needed = body_offset + *content_length;
+    while (buffer.size() < needed) {
+      auto more_result = stream.read(kHttpReadChunkBytes);
+      if (std::holds_alternative<result::Err<String>>(more_result)) {
+        return result::err(std::get<result::Err<String>>(more_result)._0);
+      }
+      const String more = std::get<result::Ok<String>>(more_result)._0;
+      if (more.is_empty()) {
+        return result::err(String("read_http_message: truncated body"));
+      }
+      buffer.append(more.view());
+    }
+    if (buffer.size() > needed) {
+      buffer.resize(needed);
+    }
+    return result::ok(String(std::move(buffer)));
+  }
+  return result::err(String("read_http_message: incomplete headers"));
 }
 
 } // namespace net
