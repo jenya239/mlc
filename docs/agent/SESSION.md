@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none — TEXT_MSDF Critic OK; Planner next) |
-| test_gate | Critic: MAE=0 + glyph smoke OK |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=1 |
+| test_gate | Planner: env/log/validate hpp on disk; Ruby-only gates |
+
+### Turn 2026-07-11 24:00 (Planner — activate TRACK_STDLIB_LOGIC_TO_MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 23:50 |
+| elapsed | ~10 min |
+| done    | Chose §20d LOGIC over GL_GLAD (queue order). Status **active** STEP=1; sub-steps STEPs 1–6; PLAN §20d/queue + DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; env.hpp 35 / log.hpp 85 / validate.hpp 47; path_normalize lacks Env/Log/Validate. |
+| result  | Plan refresh done. Plain: next Driver work is Logic Decision lock. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_LOGIC_TO_MLC — lock Decision (bare names + Env/Log/Validate split) |
 
 ### Turn 2026-07-11 23:50 (Critic TRACK_TEXT_MSDF_TO_MLC — critique-audit)
 
