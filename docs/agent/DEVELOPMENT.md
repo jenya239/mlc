@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Planner next** — `TRACK_GUI_FRAMEWORK` Critic OK. Choose next PLAN item
-(FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP / VM_TYPED_COLLECTIONS).
+**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=1 — Design (Shared-indirection vs
+split VM/codegen types). See
+[TRACK_VM_TYPED_COLLECTIONS.md](TRACK_VM_TYPED_COLLECTIONS.md).
 
 
 ## Step sizing (good vs bad)

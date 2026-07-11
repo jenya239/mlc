@@ -8,7 +8,12 @@ Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value mode
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: open
+## Status: **open** — STEP=1 next (Design) — **active**
+
+**Planner 2026-07-11:** activated after GUI Critic OK (`92e15855`). Prefer over
+low-pri FFI_SAFETY/ERROR_UNION/DEBUG_SOURCE_MAP: concrete VM correctness gap
+(narrows Epic 3 STEP=8 claim). STEP=1 still open — Driver locks Shared vs
+split-types Decision before code.
 
 ## Проблема
 
@@ -90,10 +95,16 @@ value-модели контейнеров:
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | open |
-| 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | open |
-| 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | open |
-| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | open |
+| 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | pending |
+| 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | pending |
+| 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | pending |
+| 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | pending |
+
+<!-- sub-steps STEP=1: 1) compare Shared-indirection vs VM-only types vs boxed heap slots; 2) lock one in Decision section; 3) note impact on native.mlc / mir_eval -->
+<!-- sub-steps STEP=2: 1) change value.mlc types; 2) native push/set/get; 3) repro [string]/[Point] gate -->
+<!-- sub-steps STEP=3: 1) VmFieldSlot variants; 2) from/to value; 3) nested record smoke -->
+<!-- sub-steps STEP=4: 1) self-host diff; 2) regression_gate; 3) VM corpus -->
+
 
 ## Out of scope
 

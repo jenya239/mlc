@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_GUI_FRAMEWORK closed (Critic done) |
-| test_gate | layout/input/button smokes re-OK |
+| step_last | plan-refresh |
+| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=1 |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-11 05:05 (Planner — activate TRACK_VM_TYPED_COLLECTIONS)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 05:02 |
+| elapsed | ~3 min |
+| done    | Chose VM_TYPED_COLLECTIONS over low-pri FFI/ERROR_UNION/DEBUG (correctness gap). Status **active** STEP=1; sub-steps; PLAN §13c/§11 + queue; DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; PLAN links `agent/TRACK_VM_TYPED_COLLECTIONS.md` active. |
+| result  | plan-refresh done. Plain: VM typed collections activated. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=1 TRACK_VM_TYPED_COLLECTIONS — lock Design (Shared vs split types) |
 
 ### Turn 2026-07-11 05:00 (Critic TRACK_GUI_FRAMEWORK — critique-audit)
 
