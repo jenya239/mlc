@@ -1,9 +1,12 @@
 # Crypto SHA-256 demo (TRACK_STDLIB_CRYPTO).
-# Requires libsodium at link (`-lsodium`). Ruby pipeline: import Crypto.
+# Requires libsodium at link (`-lsodium`).
 # Gate: scripts/run_crypto_gate.sh
 
-import Crypto::{sha256, hmac_sha256, last_error}
-import IO::{println}
+import {
+  sha256,
+  hmac_sha256,
+  last_error
+} from '../../lib/mlc/common/stdlib/crypto/crypto.mlc'
 
 fn main() -> i32 = do
   let digest = sha256("")

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 7 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=3: sweep ok=77 fail=30 skip=0 |
+| test_gate | STEP=7: cluster A ONLY ok=3 skip=3 fail=0 |
+
+### Turn 2026-07-12 01:55 (Driver TRACK_EXAMPLES_CI STEP=7 — fix cluster A imports)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 01:53 |
+| elapsed | ~25 min |
+| done    | mlcc imports on A-demos; soft-skip sodium/libpq; dynrecord stdlib relative imports; allowlist dynrecord_demo (mlcc segfault). |
+| verify  | ONLY six → ok=3 fail=0 skip=3; no `misc/examples/.mlc` miss. |
+| result  | STEP=7 done. Plain: Ruby `import Env::` demos now mlcc-parse. |
+| issues  | Foreign `compiler/out/*` left. dynrecord allowlisted. |
+| next    | ROLE=Driver STEP=8 TRACK_EXAMPLES_CI — fix cluster B (`to_string`) |
 
 ### Turn 2026-07-12 01:45 (Driver TRACK_EXAMPLES_CI STEP=3 — full sweep inventory)
 

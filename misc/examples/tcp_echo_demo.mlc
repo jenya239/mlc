@@ -1,32 +1,26 @@
 # TCP echo demo (TRACK_STDLIB_NET_SERVER).
 # Bind 127.0.0.1:0, write port to ./tcp_echo_port.txt, echo one connection.
-# Build: mlc / MLC.build_project; client: runtime/test/tcp_echo_client.cpp
+# mlcc bare Tcp (aligned with tcp_echo_mlcc.mlc).
 
-import Tcp::{bind, accept, read, write_all, close_listener, close_stream, port, last_error}
-import Conv::{to_string_i32}
-import File::{write_string}
-import IO::{eprintln}
-
-fn unwrap_handle(value: Option<i32>) -> i32 =
-  match value { Some(handle) => handle, None => -1 }
-
-fn unwrap_text(value: Option<string>) -> string =
-  match value { Some(text) => text, None => "" }
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
 
 fn main() -> i32 = do
-  let listener = unwrap_handle(bind("127.0.0.1", 0))
-  if listener < 0 then
-    eprintln(last_error())
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
     return 1
   end
-  let _wrote = write_string("tcp_echo_port.txt", to_string_i32(port(listener)))
-  let stream = unwrap_handle(accept(listener))
-  if stream < 0 then
-    eprintln(last_error())
+  let listener = listener_option.unwrap()
+  File.write("tcp_echo_port.txt", `${port(listener)}`)
+  let stream_option = accept(listener)
+  if !stream_option.is_some() then
+    println(last_error())
     close_listener(listener)
     return 2
   end
-  let data = unwrap_text(read(stream, 64))
+  let stream = stream_option.unwrap()
+  let data_option = read(stream, 64)
+  let data = if data_option.is_some() then data_option.unwrap() else "" end
   let wrote = write_all(stream, data)
   close_stream(stream)
   close_listener(listener)

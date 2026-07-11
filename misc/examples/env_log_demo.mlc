@@ -1,9 +1,9 @@
 # Env + Log demo (TRACK_STDLIB_ENV_LOGGING).
-# Ruby pipeline: import Env / Log. Gate: scripts/run_env_log_gate.sh
+# mlcc: bare-name imports (see stdlib_logic_bare_smoke.mlc).
+# Gate: scripts/run_env_log_gate.sh
 
-import Env::{get_or, has}
-import Log::{info, warn}
-import IO::{println}
+import { get_or, has } from 'Env'
+import { info, warn } from 'Log'
 
 fn main() -> i32 = do
   let port = get_or("PORT", "8080")

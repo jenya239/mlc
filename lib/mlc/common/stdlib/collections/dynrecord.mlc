@@ -17,8 +17,10 @@
 // - -------- --- --------: Use DynRecord for external data (JSON, configs, plugins)
 // - ---- ------- - -------: Use shape_as<T>(dyn) to validate and convert
 
-import std/collections/map::{Map, Key, symbol_to_key, map_new, map_get, map_set, map_has, map_keys}
-import std/core/option::{Option, Some, None}
+import {
+  Map, Key, symbol_to_key, map_new, map_get, map_set, map_has, map_keys
+} from './map.mlc'
+import { Option, Some, None } from '../core/option.mlc'
 
 // =============================================================================
 // Variant Type - Union of possible field values

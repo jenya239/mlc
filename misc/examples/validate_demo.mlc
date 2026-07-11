@@ -1,22 +1,22 @@
 # Validate demo (TRACK_STDLIB_VALIDATION).
-# Ruby pipeline: import Validate. Gate: scripts/run_validate_gate.sh
+# mlcc: bare-name Validate (see stdlib_logic_bare_smoke.mlc).
+# Gate: scripts/run_validate_gate.sh
 
-import Validate::{non_empty, range_i32}
-import IO::{println}
+import { non_empty, range_i32, Result, Ok, Err } from 'Validate'
 
 fn main() -> i32 = do
-  match non_empty("name")
-    | Err(message) => do
+  match non_empty("name") {
+    Err(message) => do
       println(message)
       1
-    end
-    | Ok(_) =>
-      match range_i32(42, 1, 100)
-        | Ok(_) => 0
-        | Err(message) => do
+    end,
+    Ok(_) =>
+      match range_i32(42, 1, 100) {
+        Ok(_) => 0,
+        Err(message) => do
           println(message)
           2
         end
-      end
-  end
+      }
+  }
 end

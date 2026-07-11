@@ -68,6 +68,22 @@ soft_skip_reason() {
     fi
   fi
 
+  if grep -qE 'crypto/crypto\.mlc|sodium_abi|libsodium|/crypto/' "$path" \
+    || grep -qE "from ['\"]Crypto['\"]" "$path"; then
+    if ! has_pkg libsodium && [[ ! -f /usr/include/sodium.h ]]; then
+      printf 'missing libsodium (sodium.h)'
+      return 0
+    fi
+  fi
+
+  if grep -qE 'db/postgres\.mlc|postgres_abi|libpq' "$path" \
+    || grep -qE "from ['\"]Postgres['\"]" "$path"; then
+    if ! has_pkg libpq && [[ ! -f /usr/include/postgresql/libpq-fe.h ]] && [[ ! -f /usr/include/libpq-fe.h ]]; then
+      printf 'missing libpq'
+      return 0
+    fi
+  fi
+
   local font_path
   while IFS= read -r font_path; do
     [[ -n "$font_path" ]] || continue
