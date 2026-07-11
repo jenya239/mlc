@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-Next: Planner activates **`TRACK_GL_GLAD_MIGRATION`** (§20e) after LOGIC Critic OK.
+**`TRACK_GL_GLAD_MIGRATION` active** STEP=1 — Decision + vendor GLAD2 desktop/headless.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 

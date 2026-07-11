@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC Critic OK → Planner |
-| test_gate | Critic: hpp absent; gates mlcc re-OK; PLAN Critic OK |
+| step_last | plan-refresh |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=1 |
+| test_gate | Planner: dispatch 812/130; shim 117; no glad/ yet |
+
+### Turn 2026-07-11 25:30 (Planner — activate TRACK_GL_GLAD_MIGRATION)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 25:25 |
+| elapsed | ~5 min |
+| done    | Activated §20e after LOGIC Critic. Status **active** STEP=1; corrected shim size 117; sub-steps STEPs 1–7; PLAN/DEVELOPMENT. |
+| verify  | TRACK Status **active**; PLAN §20e **active** STEP=1; `test ! -d runtime/third_party/glad`. |
+| result  | STEP=plan-refresh done. Plain: next is vendor GLAD2, kill hand dispatch. |
+| issues  | Foreign `compiler/out/*` left unstaged. Docs-only (no compiler/). |
+| next    | ROLE=Driver STEP=1 TRACK_GL_GLAD_MIGRATION — Decision + generate/vendor glad desktop+EGL |
 
 ### Turn 2026-07-11 25:25 (Critic TRACK_STDLIB_LOGIC_TO_MLC — critique-audit)
 
