@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-11-runtime-stays-cpp` |
+| instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none) — Planner next |
-| test_gate | Critic: smoke ok; Ruby error_union 6/0; main check-only 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_EXAMPLES_CI |
+| test_gate | Planner: no code |
+
+### Turn 2026-07-12 01:10 (Planner — plan-refresh → EXAMPLES_CI)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 01:09 |
+| elapsed | ~10 min |
+| done    | Rev sync `2026-07-11-runtime-stays-cpp` → `2026-07-12-multi-track-order`. Activated §21 `TRACK_EXAMPLES_CI` (queue head after ERROR_UNION). STEP=1 sub-steps; PLAN §21 **active**; DEVELOPMENT pointer. |
+| verify  | TRACK Next=STEP=1; PLAN queue EXAMPLES_CI first; no `compiler/` edits. |
+| result  | Active track = EXAMPLES_CI. Plain: next work is examples compile sweep. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_EXAMPLES_CI — `scripts/run_examples_compile_sweep.sh` |
 
 ### Turn 2026-07-11 34:05 (Critic TRACK_LANG_ERROR_UNION — critique-audit)
 

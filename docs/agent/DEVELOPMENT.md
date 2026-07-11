@@ -40,14 +40,14 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**No active Driver track.** Last: `TRACK_LANG_ERROR_UNION` Critic OK.
-See [TRACK_LANG_ERROR_UNION.md](../archive/tracks/TRACK_LANG_ERROR_UNION.md). Next: Planner (DEBUG_SOURCE_MAP research or PLAN pick).
+**`TRACK_EXAMPLES_CI` active** — STEP=1 (`run_examples_compile_sweep.sh`).
+See [TRACK_EXAMPLES_CI.md](TRACK_EXAMPLES_CI.md). Queue: EXAMPLES_CI → FFI_EXTERN_DEDUP → …
 
 
 ## Step sizing (good vs bad)
 
 | Good | Bad |
-|------|-----|
+|------|------|
 | Step 9: one arm + tests | «Migrate all expr_eval» |
 | Planner adds steps 10–12 | Driver invents scope without TRACK |
 | Backlog flags uncommitted > 15 | Silent TRACK drift |
