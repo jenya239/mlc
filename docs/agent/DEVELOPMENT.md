@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**No active Driver track.** Next: Planner `plan-refresh` (§20a–e closed; low-pri queue).
-Last closed: [TRACK_GL_GLAD_MIGRATION](../archive/tracks/TRACK_GL_GLAD_MIGRATION.md) Critic OK.
+**`TRACK_FFI_SAFETY` active** STEP=1 — Design: `unsafe` marker vs diagnostics-only.
+See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). §20 initiative closed.
 
 
 ## Step sizing (good vs bad)

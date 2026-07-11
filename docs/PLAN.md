@@ -391,7 +391,7 @@ compiler/
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **done** | [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (STEP=1–8: GLFW+GL dispatch+GlRenderer+TextRenderer+demo; self-host identical; regression 20/0); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
 | **10b** GUI framework (layout/widgets/easing) | **done** | [TRACK_GUI_FRAMEWORK](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11 (STEP=0–6: IM layout/input/Button; `misc/gui/`; docs [GUI.md](GUI.md); smokes ok) |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION/HTTP_MLC/SPAWN_DETACH/MSDF/LOGIC/GL_GLAD **closed**. Next: низкий приор. §14/15/17 |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/…/GL_GLAD **closed**. §20 initiative **done**. Next: §14 FFI_SAFETY (**active**) |
 | **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **done** (2026-07-11) | [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) **closed** STEP=1–7; Critic OK (`2fdc8c83`…`34977011`; parse+curl EXIT 0). Residual: no `[HttpRoute]` API |
 | **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **done** (2026-07-11) | [TRACK_CONCURRENCY_SPAWN_DETACH](archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md) **closed** STEP=1–5; Critic OK; E089+`scope`→TaskScope; parallel sleep+accept-loop curl; REG 20/0; self-host identical |
 | **10c** Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas — один фреймворк) | **open, design-only, низкий приоритет** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — affine-transform tree + vector primitives, один фундамент для всех четырёх; v0 (screen-space, чистый IM) — прототип, не основа; активировать явной командой |
@@ -401,13 +401,13 @@ compiler/
 | **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **done** (2026-07-10) | [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) — STEP=1–4 **closed** (`MirRvalueUnary`; if-as-statement; if-as-rvalue; verify-gate) |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
 | **13c** VM: массив/map только `i32` (не point-fix, value-model) | **done** (2026-07-11) | [TRACK_VM_TYPED_COLLECTIONS](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md) **closed** STEP=1–4; Critic OK (`cf613f0b`…`cdffcbf8`; gate 6/0) |
-| **14** FFI safety contract | **open, низкий приоритет** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) — `extern`/`RawPointer` unsafe без маркера; диагностики + документация, без нового codegen |
+| **14** FFI safety contract | **open, active** | [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md) **active** STEP=1 (Design: unsafe marker vs diagnostics-only) |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
 | **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
 | **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
-| **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **open, высокий приоритет** | [FFI_LAYER.md](FFI_LAYER.md) §8 — граница: рантайм языка остаётся C++, FFI-адаптеры и дублирующая бизнес-логика на C++ убираются. 6 подчинённых треков ниже |
+| **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **done** (2026-07-11) | [FFI_LAYER.md](FFI_LAYER.md) §8; подтреки 20a–e **closed** (Critic OK где применимо). Рантайм языка остаётся C++ (won't-do self-host runtime). Residuals: bridges/TcpStream, thin abi, smoke names |
 | **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **done** (2026-07-11) | [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) **closed** STEP=1–7; Critic OK (`8ffe67b8`…`8b21220a`). Residual: bridges/TcpStream |
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **done** (2026-07-11) | [TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) **closed** STEP=1–6; Critic OK; MLC EDT + mask bridge; MAE=0; REG 20/0; self-host identical |
 | **20c** WebSocket framing/handshake — порт на MLC | **closed** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **closed** 2026-07-11 (MLC bodies; hpp gone) |
@@ -543,7 +543,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **GL_GLAD_MIGRATION (**closed** 2026-07-11: Critic OK; STEP=1–7; glad vendor;
       dispatch/shim gone; REG 20/0; self-host DIFF 0
       → [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)):**
-  → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
+  → **§20 initiative closed** (20a–e done; runtime stays C++)
+  → **FFI_SAFETY (**active** STEP=1 — Design marker vs diagnostics;
+      → [agent/TRACK_FFI_SAFETY.md](agent/TRACK_FFI_SAFETY.md)):**
+  → LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
     без отдельной команды пользователя)

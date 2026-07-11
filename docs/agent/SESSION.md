@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none) — Planner next |
-| test_gate | Critic: glad/loader/renderer/dispatch_smoke 0; dispatch/shim absent |
+| step_last | plan-refresh |
+| active_track | TRACK_FFI_SAFETY STEP=1 |
+| test_gate | docs-only plan-refresh; §20 done; FFI_SAFETY active |
+
+### Turn 2026-07-11 29:40 (Planner — activate TRACK_FFI_SAFETY)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 29:25 |
+| elapsed | ~15 min |
+| done    | §20 parent → **done** (20a–e closed); activated §14 `TRACK_FFI_SAFETY` **active** STEP=1 + sub-steps 1–5; PLAN queue/DEVELOPMENT. |
+| verify  | TRACK Status **active**; PLAN §14 **active** STEP=1; PLAN §20 **done**; `test -f docs/agent/TRACK_FFI_SAFETY.md`. |
+| result  | STEP=plan-refresh done. Plain: next is FFI safety Design (no new codegen). |
+| issues  | Foreign `compiler/out/*` left. ERROR_UNION/DEBUG_SOURCE_MAP stay queued. |
+| next    | ROLE=Driver STEP=1 TRACK_FFI_SAFETY — Design: unsafe marker vs diagnostics-only |
 
 ### Turn 2026-07-11 29:25 (Critic TRACK_GL_GLAD_MIGRATION — critique-audit)
 
