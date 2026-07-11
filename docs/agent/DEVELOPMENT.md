@@ -40,8 +40,11 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` closed** (STEP=1–7) — Critic next. Then max-pri
-[TRACK_LANG_SELF_HOSTED_RUNTIME](TRACK_LANG_SELF_HOSTED_RUNTIME.md).
+**`TRACK_STDLIB_HTTP_MLC` closed** (STEP=1–7) — Critic next. Then next pending
+step in the "no hand-written C++" group (`FFI_SHIM_MIGRATION`/
+`TEXT_MSDF_TO_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/
+`GL_GLAD_MIGRATION`), see `PLAN.md` §20. `TRACK_LANG_SELF_HOSTED_RUNTIME`
+rejected 2026-07-11, see `archive/tracks/`.
 
 
 ## Step sizing (good vs bad)

@@ -21,7 +21,14 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **closed** (2026-07-11) — STEP=1–7 done
+## Status: **closed** (2026-07-11)
+
+**Critic 2026-07-11:** `critique-audit` — commits `2fdc8c83`…`34977011`
+match STEP 1–7; `http_server.mlc`/path_normalize/examples/gates on disk;
+public `http_*.hpp` gone; re-ran parse+curl EXIT 0. PLAN §11a → archive.
+**reopen: none.** Residuals: Decision `[HttpRoute]` never shipped (demo
+if/else); `websocket_http.hpp` until WEBSOCKET_TO_MLC; Ruby `registry.rb`
+bare-name (mlcc `path_normalize` has it). TRACK «Проблема» is historical.
 
 **Driver 2026-07-11:** STEP=7 — verify-gate: self-host `mlcc`→`mlcc2`
 `DIFF_EXIT=0`; `regression_gate` 20/0; parse+curl gates EXIT 0. Track closed.
