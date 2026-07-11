@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` Critic OK** (archived). Planner next — activate
-next from «без C++» queue (`FFI_SHIM`/`MSDF`/`WEBSOCKET`/`LOGIC`/`GLAD`).
-`LANG_SELF_HOSTED_RUNTIME` won't-do.
+**`TRACK_FFI_SHIM_MIGRATION` active** STEP=1 — Decision + link check.
+See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
 
 
 ## Step sizing (good vs bad)

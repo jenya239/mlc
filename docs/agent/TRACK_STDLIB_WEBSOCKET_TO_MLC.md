@@ -1,10 +1,15 @@
 # Track: WebSocket framing/handshake — на MLC, не C++
 
-Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8, [TRACK_STDLIB_HTTP_MLC](TRACK_STDLIB_HTTP_MLC.md) (dependency), [../PLAN.md](../PLAN.md).
+Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
+[TRACK_STDLIB_HTTP_MLC](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md) (dependency closed),
+[../PLAN.md](../PLAN.md).
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: open — blocked on TRACK_STDLIB_HTTP_MLC (needs HttpRequest/HttpResponse on MLC)
+## Status: open — unblocked (HTTP_MLC closed); queue after FFI_SHIM Decision
+
+**Planner 2026-07-11:** HTTP dependency satisfied. Still prefer
+`TRACK_FFI_SHIM_MIGRATION` first (crypto/SHA1 notes in Goal). Not activated.
 
 ## Проблема
 

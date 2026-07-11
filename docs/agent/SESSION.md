@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-11-self-hosted-runtime-priority` |
+| instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | none — Planner (post HTTP Critic) |
-| test_gate | parse+curl EXIT 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=1 |
+| test_gate | docs-only |
+
+### Turn 2026-07-11 13:15 (Planner — activate TRACK_FFI_SHIM_MIGRATION)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 13:07 |
+| elapsed | ~8 min |
+| done    | Synced instructions_rev; archived LANG_SELF_HOSTED won't-do; activated FFI_SHIM STEP=1; WEBSOCKET unblocked (not active); PLAN §20a/queue + DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; PLAN links `agent/TRACK_FFI_SHIM_MIGRATION.md` active. |
+| result  | Plan refresh done. Plain: next Driver work is FFI shim Decision. |
+| issues  | Queued prompt VM STEP=2 stale; ran SESSION Planner. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_FFI_SHIM_MIGRATION — lock Decision (RawPointer/drop/link) |
 
 ### Turn 2026-07-11 13:10 (Critic TRACK_STDLIB_HTTP_MLC — critique-audit)
 
