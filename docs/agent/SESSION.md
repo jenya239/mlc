@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=5 |
-| test_gate | gl_renderer+gui_input+text_renderer_native smokes ok |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=6 |
+| test_gate | gl_renderer+loader+input+text+dispatch_smoke ok; dispatch/shim deleted |
+
+### Turn 2026-07-11 28:00 (Driver TRACK_GL_GLAD_MIGRATION STEP=5 — delete dispatch/shim)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 27:35 |
+| elapsed | ~25 min |
+| done    | Added `glfw_window_gl.*`; deleted `glfw_gl_dispatch.*`+`loader_shim.*`; helpers→glad_abi; demos retargeted; loader smoke=GLFW+glad. |
+| verify  | `run_gl_renderer_smoke`/`run_gl_loader_smoke`/`run_gui_input_smoke`/`run_text_renderer_native_smoke`/`run_glfw_gl_dispatch_smoke` ok. |
+| result  | STEP=5 done. Plain: no hand GL GetProcAddress table left. |
+| issues  | Foreign `compiler/out/*` left. TEXT_RENDERING.md still mentions old shim (STEP=7). |
+| next    | ROLE=Driver STEP=6 TRACK_GL_GLAD_MIGRATION — regression_gate + self-host + GUI smokes |
 
 ### Turn 2026-07-11 27:30 (Driver TRACK_GL_GLAD_MIGRATION STEP=4 — retarget gui)
 

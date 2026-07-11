@@ -3,86 +3,86 @@
 // Automated: hidden window, N frames. MLC_GLFW_VISIBLE=1 for interactive.
 
 extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
-  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_should_close() -> i32
-  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_swap_poll() -> unit
-  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_end() -> unit
-  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_anim_unit() -> f64
-  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_window_gl.hpp"
 
 extern fn gl_clear(mask: i32) -> unit
-  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_clear" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
-  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
-  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_viewport" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_enable(capability: i32) -> unit
-  = "mlc::gl::gl_enable" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_enable" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
-  = "mlc::gl::gl_blend_func" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_blend_func" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_create_shader(shader_type: i32) -> i32
-  = "mlc::gl::gl_create_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_create_shader" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_shader_source_string(shader: i32, source: string) -> unit
-  = "mlc::gl::gl_shader_source_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_shader_source_string" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_compile_shader(shader: i32) -> unit
-  = "mlc::gl::gl_compile_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_compile_shader" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_get_shader_iv_value(shader: i32, parameter_name: i32) -> i32
-  = "mlc::gl::gl_get_shader_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_get_shader_iv_value" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_create_program() -> i32
-  = "mlc::gl::gl_create_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_create_program" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_attach_shader(program: i32, shader: i32) -> unit
-  = "mlc::gl::gl_attach_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_attach_shader" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_link_program(program: i32) -> unit
-  = "mlc::gl::gl_link_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_link_program" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_get_program_iv_value(program: i32, parameter_name: i32) -> i32
-  = "mlc::gl::gl_get_program_iv_value" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_get_program_iv_value" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_use_program(program: i32) -> unit
-  = "mlc::gl::gl_use_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_use_program" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_delete_shader(shader: i32) -> unit
-  = "mlc::gl::gl_delete_shader" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_delete_shader" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_delete_program(program: i32) -> unit
-  = "mlc::gl::gl_delete_program" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_delete_program" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_get_attrib_location_string(program: i32, name: string) -> i32
-  = "mlc::gl::gl_get_attrib_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_get_attrib_location_string" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_get_uniform_location_string(program: i32, name: string) -> i32
-  = "mlc::gl::gl_get_uniform_location_string" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_get_uniform_location_string" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_uniform_1i(location: i32, value: i32) -> unit
-  = "mlc::gl::gl_uniform_1i" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_uniform_1i" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_gen_buffer() -> i32
-  = "mlc::gl::gl_gen_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_gen_buffer" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_delete_buffer(buffer: i32) -> unit
-  = "mlc::gl::gl_delete_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_delete_buffer" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_bind_buffer(target: i32, buffer: i32) -> unit
-  = "mlc::gl::gl_bind_buffer" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_bind_buffer" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_scratch_f32_clear() -> unit
-  = "mlc::gl::gl_scratch_f32_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_scratch_f32_clear" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_buffer_data_scratch(target: i32, usage: i32) -> i32
-  = "mlc::gl::gl_buffer_data_scratch" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_buffer_data_scratch" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
-  = "mlc::gl::gl_enable_vertex_attrib_array" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_enable_vertex_attrib_array" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_vertex_attrib_pointer_offset(
   index: i32, size: i32, attribute_type: i32, normalized: i32, stride: i32, byte_offset: i32
 ) -> unit
-  = "mlc::gl::gl_vertex_attrib_pointer_offset" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_vertex_attrib_pointer_offset" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
-  = "mlc::gl::gl_draw_arrays" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_draw_arrays" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_gen_texture() -> i32
-  = "mlc::gl::gl_gen_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_gen_texture" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_delete_texture(texture: i32) -> unit
-  = "mlc::gl::gl_delete_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_delete_texture" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_bind_texture(target: i32, texture: i32) -> unit
-  = "mlc::gl::gl_bind_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_bind_texture" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_active_texture(texture_unit: i32) -> unit
-  = "mlc::gl::gl_active_texture" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_active_texture" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_scratch_u8_clear() -> unit
-  = "mlc::gl::gl_scratch_u8_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_scratch_u8_clear" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_scratch_u8_resize_zero(byte_count: i32) -> unit
-  = "mlc::gl::gl_scratch_u8_resize_zero" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_scratch_u8_resize_zero" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_tex_image_2d_scratch_luminance(width: i32, height: i32) -> i32
-  = "mlc::gl::gl_tex_image_2d_scratch_luminance" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_tex_image_2d_scratch_luminance" from "mlc/gl/glad_gl_abi.hpp"
 
 extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
   = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"

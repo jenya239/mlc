@@ -1,14 +1,42 @@
-// GLFW GL dispatch clear smoke (TRACK_TEXT_RENDERING_NATIVE STEP=3).
-// Runtime loads locked GL set via glfwGetProcAddress after MakeContextCurrent;
-// smoke clears through exported mlc::gl::gl_* wrappers (not raw GetProcAddress).
+// Glad clear smoke (replaces glfw_gl_dispatch_clear_smoke).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gl_clear,
+  gl_clear_color_f64,
+  gl_viewport,
+  gl_gen_buffer,
+  gl_delete_buffer
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
-extern fn glfw_gl_dispatch_clear_smoke() -> i32
-  = "mlc::gl::glfw_gl_dispatch_clear_smoke" from "mlc/gl/glfw_gl_dispatch.hpp"
+fn gl_color_buffer_bit() -> i32 = 16384
 
 fn main() -> i32 = do
-  const status = glfw_gl_dispatch_clear_smoke()
-  if status != 0 then
-    return status
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
   end
+  const buffer = gl_gen_buffer()
+  if buffer == 0 then
+    glfw_gl_context_end()
+    return -4
+  end
+  gl_delete_buffer(buffer)
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    gl_viewport(0, 0, 800, 600)
+    gl_clear_color_f64(0.15, 0.25, 0.4, 1.0)
+    gl_clear(gl_color_buffer_bit())
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 8 then
+      break
+    end
+  end
+  glfw_gl_context_end()
   0
 end

@@ -39,7 +39,6 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
   fi
 fi
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-config --exists glesv2; then
-  RT_SRC+=("$ROOT_DIR/runtime/src/gl/loader_shim.cpp")
   # shellcheck disable=SC2207
   TEXT_CFLAGS+=($(pkg-config --cflags egl glesv2))
   # shellcheck disable=SC2207
@@ -51,13 +50,12 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_renderer_shim.cpp")
   fi
 fi
-# Optional GLFW window + GL dispatch (TRACK_TEXT_RENDERING_NATIVE STEP=2–3).
-# TRACK_GL_GLAD_MIGRATION STEP=3: vendored glad desktop `gl.c` (not gles2 — symbol clash).
+# Optional GLFW window + glad desktop (TRACK_GL_GLAD_MIGRATION).
 GLAD_DESKTOP=0
 GLAD_HEADLESS=0
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window.cpp")
-  RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_gl_dispatch.cpp")
+  RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window_gl.cpp")
   RT_SRC+=("$ROOT_DIR/runtime/third_party/glad/gl/src/gl.c")
   GLAD_DESKTOP=1
   # shellcheck disable=SC2207

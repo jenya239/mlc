@@ -8,21 +8,21 @@ import {
 import { gui_button, ease_in_out_unit } from '../gui/button'
 
 extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
-  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_should_close() -> i32
-  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_should_close" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_swap_poll() -> unit
-  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_end() -> unit
-  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_anim_unit() -> f64
-  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_window_gl.hpp"
 extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
-  = "mlc::gl::gl_viewport" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_viewport" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_clear(mask: i32) -> unit
-  = "mlc::gl::gl_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_clear" from "mlc/gl/glad_gl_abi.hpp"
 extern fn gl_clear_color_f64(red: f64, green: f64, blue: f64, alpha: f64) -> unit
-  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glfw_gl_dispatch.hpp"
+  = "mlc::gl::gl_clear_color_f64" from "mlc/gl/glad_gl_abi.hpp"
 
 fn gl_color_buffer_bit() -> i32 = 16384
 

@@ -163,6 +163,38 @@ inline void scratch_u8_resize_zero(int32_t byte_count) {
   }
   scratch_u8().assign(static_cast<size_t>(byte_count), 0);
 }
+inline uint8_t* scratch_u8_mutable_data() {
+  if (scratch_u8().empty()) {
+    return nullptr;
+  }
+  return scratch_u8().data();
+}
+inline int32_t scratch_u8_size() {
+  return static_cast<int32_t>(scratch_u8().size());
+}
+inline void tex_image_2d(
+  int32_t target,
+  int32_t level,
+  int32_t internal_format,
+  int32_t width,
+  int32_t height,
+  int32_t border,
+  int32_t format,
+  int32_t type,
+  const void* data
+) {
+  glTexImage2D(
+    static_cast<GLenum>(target),
+    level,
+    internal_format,
+    width,
+    height,
+    border,
+    static_cast<GLenum>(format),
+    static_cast<GLenum>(type),
+    data
+  );
+}
 inline void scratch_u8_fill_rect(
   int32_t atlas_width,
   int32_t x,
@@ -239,5 +271,137 @@ inline void scratch_push_glyph_quad(
 }
 
 } // namespace glad_abi
+
+// Compatibility names for demos / helpers still using mlc::gl::gl_*.
+inline void gl_clear(int32_t mask) { glad_abi::clear(mask); }
+inline void gl_clear_color_f64(double red, double green, double blue, double alpha) {
+  glad_abi::clear_color_f64(red, green, blue, alpha);
+}
+inline void gl_viewport(int32_t x, int32_t y, int32_t width, int32_t height) {
+  glad_abi::viewport(x, y, width, height);
+}
+inline void gl_enable(int32_t capability) { glad_abi::enable(capability); }
+inline void gl_blend_func(int32_t source_factor, int32_t destination_factor) {
+  glad_abi::blend_func(source_factor, destination_factor);
+}
+inline int32_t gl_create_shader(int32_t shader_type) {
+  return glad_abi::create_shader(shader_type);
+}
+inline void gl_shader_source_string(int32_t shader, String source) {
+  glad_abi::shader_source_string(shader, source);
+}
+inline void gl_compile_shader(int32_t shader) { glad_abi::compile_shader(shader); }
+inline int32_t gl_get_shader_iv_value(int32_t shader, int32_t parameter_name) {
+  return glad_abi::get_shader_iv_value(shader, parameter_name);
+}
+inline int32_t gl_create_program() { return glad_abi::create_program(); }
+inline void gl_attach_shader(int32_t program, int32_t shader) {
+  glad_abi::attach_shader(program, shader);
+}
+inline void gl_link_program(int32_t program) { glad_abi::link_program(program); }
+inline int32_t gl_get_program_iv_value(int32_t program, int32_t parameter_name) {
+  return glad_abi::get_program_iv_value(program, parameter_name);
+}
+inline void gl_use_program(int32_t program) { glad_abi::use_program(program); }
+inline void gl_delete_shader(int32_t shader) { glad_abi::delete_shader(shader); }
+inline void gl_delete_program(int32_t program) { glad_abi::delete_program(program); }
+inline int32_t gl_get_attrib_location_string(int32_t program, String name) {
+  return glad_abi::get_attrib_location_string(program, name);
+}
+inline int32_t gl_get_uniform_location_string(int32_t program, String name) {
+  return glad_abi::get_uniform_location_string(program, name);
+}
+inline void gl_uniform_1i(int32_t location, int32_t value) {
+  glad_abi::uniform_1i(location, value);
+}
+inline int32_t gl_gen_buffer() { return glad_abi::gen_buffer(); }
+inline void gl_delete_buffer(int32_t buffer) { glad_abi::delete_buffer(buffer); }
+inline void gl_bind_buffer(int32_t target, int32_t buffer) {
+  glad_abi::bind_buffer(target, buffer);
+}
+inline void gl_scratch_f32_clear() { glad_abi::scratch_f32_clear(); }
+inline void gl_scratch_f32_push(double value) { glad_abi::scratch_f32_push(value); }
+inline int32_t gl_buffer_data_scratch(int32_t target, int32_t usage) {
+  return glad_abi::buffer_data_scratch(target, usage);
+}
+inline void gl_enable_vertex_attrib_array(int32_t index) {
+  glad_abi::enable_vertex_attrib_array(index);
+}
+inline void gl_vertex_attrib_pointer_offset(
+  int32_t index,
+  int32_t size,
+  int32_t attribute_type,
+  int32_t normalized,
+  int32_t stride,
+  int32_t byte_offset
+) {
+  glad_abi::vertex_attrib_pointer_offset(
+    index, size, attribute_type, normalized, stride, byte_offset
+  );
+}
+inline void gl_draw_arrays(int32_t mode, int32_t first, int32_t count) {
+  glad_abi::draw_arrays(mode, first, count);
+}
+inline int32_t gl_gen_texture() { return glad_abi::gen_texture(); }
+inline void gl_delete_texture(int32_t texture) { glad_abi::delete_texture(texture); }
+inline void gl_bind_texture(int32_t target, int32_t texture) {
+  glad_abi::bind_texture(target, texture);
+}
+inline void gl_active_texture(int32_t texture_unit) {
+  glad_abi::active_texture(texture_unit);
+}
+inline void gl_tex_parameter_i(int32_t target, int32_t parameter_name, int32_t parameter_value) {
+  glad_abi::tex_parameter_i(target, parameter_name, parameter_value);
+}
+inline void gl_scratch_u8_clear() { glad_abi::scratch_u8_clear(); }
+inline void gl_scratch_u8_resize_zero(int32_t byte_count) {
+  glad_abi::scratch_u8_resize_zero(byte_count);
+}
+inline uint8_t* gl_scratch_u8_mutable_data() { return glad_abi::scratch_u8_mutable_data(); }
+inline int32_t gl_scratch_u8_size() { return glad_abi::scratch_u8_size(); }
+inline void gl_scratch_u8_fill_rect(
+  int32_t atlas_width,
+  int32_t x,
+  int32_t y,
+  int32_t width,
+  int32_t height,
+  int32_t value
+) {
+  glad_abi::scratch_u8_fill_rect(atlas_width, x, y, width, height, value);
+}
+inline int32_t gl_tex_image_2d_scratch_luminance(int32_t width, int32_t height) {
+  return glad_abi::tex_image_2d_scratch_luminance(width, height);
+}
+inline void gl_scratch_push_glyph_quad(
+  double left,
+  double bottom,
+  double right,
+  double top,
+  int32_t atlas_size,
+  int32_t slot_x,
+  int32_t slot_y,
+  int32_t slot_width,
+  int32_t slot_height
+) {
+  glad_abi::scratch_push_glyph_quad(
+    left, bottom, right, top, atlas_size, slot_x, slot_y, slot_width, slot_height
+  );
+}
+inline void gl_tex_image_2d(
+  int32_t target,
+  int32_t level,
+  int32_t internal_format,
+  int32_t width,
+  int32_t height,
+  int32_t border,
+  int32_t format,
+  int32_t type,
+  const void* data
+) {
+  glad_abi::tex_image_2d(
+    target, level, internal_format, width, height, border, format, type, data
+  );
+}
+
 } // namespace gl
 } // namespace mlc

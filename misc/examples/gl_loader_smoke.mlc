@@ -1,13 +1,24 @@
-// GL loader smoke (TRACK_TEXT_RENDERING STEP=5 / TEXT_RENDERING.md §5.2).
-// Runtime shim owns EGL context + eglGetProcAddress; MLC calls a plain extern fn.
-
-extern fn gl_loader_gen_buffers_smoke() -> i32
-  = "mlc::gl::gl_loader_gen_buffers_smoke" from "mlc/gl/loader_shim.hpp"
+// GL loader smoke — GLFW + glad genBuffers (TRACK_GL_GLAD_MIGRATION STEP=5).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gl_gen_buffer,
+  gl_delete_buffer
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
 fn main() -> i32 = do
-  const status = gl_loader_gen_buffers_smoke()
-  if status != 0 then
-    return status
+  const begin_status = glfw_gl_context_begin(64, 64)
+  if begin_status != 0 then
+    return begin_status
   end
+  const buffer = gl_gen_buffer()
+  if buffer == 0 then
+    glfw_gl_context_end()
+    return -4
+  end
+  gl_delete_buffer(buffer)
+  glfw_gl_context_end()
   0
 end

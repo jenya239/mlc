@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` active** STEP=5 — delete `glfw_gl_dispatch` GL table / `loader_shim`.
+**`TRACK_GL_GLAD_MIGRATION` active** STEP=6 — regression_gate + self-host + GUI smokes.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 

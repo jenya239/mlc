@@ -1,6 +1,6 @@
 #include "mlc/gl/text_window_helpers.hpp"
 
-#include "mlc/gl/glfw_gl_dispatch.hpp"
+#include "mlc/gl/glad_gl_abi.hpp"
 #include "mlc/text/freetype_shim.hpp"
 #include "mlc/text/msdf_bridge.hpp"
 
@@ -22,8 +22,8 @@ int32_t gl_scratch_u8_blit_glyph_a8(int32_t atlas_width, int32_t dest_x, int32_t
   const uint8_t* source = text::glyph_a8_data();
   const int32_t glyph_width = text::glyph_width();
   const int32_t glyph_rows = text::glyph_rows();
-  uint8_t* destination = gl_scratch_u8_mutable_data();
-  const int32_t destination_size = gl_scratch_u8_size();
+  uint8_t* destination = glad_abi::scratch_u8_mutable_data();
+  const int32_t destination_size = glad_abi::scratch_u8_size();
   if (source == nullptr || destination == nullptr || atlas_width <= 0
       || glyph_width <= 0 || glyph_rows <= 0) {
     return -1;
@@ -82,22 +82,22 @@ int32_t gl_scratch_rgb_blit_msdf(int32_t atlas_width, int32_t dest_x, int32_t de
 }
 
 int32_t gl_tex_image_2d_scratch_rgb(int32_t width, int32_t height) {
-  constexpr int32_t kGlTexture2d = 0x0DE1;
-  constexpr int32_t kGlRgb = 0x1907;
-  constexpr int32_t kGlUnsignedByte = 0x1401;
-  constexpr int32_t kGlTextureMinFilter = 0x2801;
-  constexpr int32_t kGlTextureMagFilter = 0x2800;
-  constexpr int32_t kGlLinear = 0x2601;
+  constexpr int32_t texture_2d = 0x0DE1;
+  constexpr int32_t rgb = 0x1907;
+  constexpr int32_t unsigned_byte = 0x1401;
+  constexpr int32_t texture_min_filter = 0x2801;
+  constexpr int32_t texture_mag_filter = 0x2800;
+  constexpr int32_t linear = 0x2601;
   const std::vector<uint8_t>& pixels = scratch_rgb();
   const size_t expected = static_cast<size_t>(width) * static_cast<size_t>(height) * 3;
   if (width <= 0 || height <= 0 || pixels.size() < expected) {
     return -1;
   }
-  gl_tex_image_2d(
-    kGlTexture2d, 0, kGlRgb, width, height, 0, kGlRgb, kGlUnsignedByte, pixels.data()
+  glad_abi::tex_image_2d(
+    texture_2d, 0, rgb, width, height, 0, rgb, unsigned_byte, pixels.data()
   );
-  gl_tex_parameter_i(kGlTexture2d, kGlTextureMinFilter, kGlLinear);
-  gl_tex_parameter_i(kGlTexture2d, kGlTextureMagFilter, kGlLinear);
+  glad_abi::tex_parameter_i(texture_2d, texture_min_filter, linear);
+  glad_abi::tex_parameter_i(texture_2d, texture_mag_filter, linear);
   return 0;
 }
 
@@ -125,7 +125,7 @@ void gl_scratch_push_screen_quad(
   const double top = 1.0 - (static_cast<double>(pixel_y) / height) * 2.0;
   const double bottom =
     1.0 - (static_cast<double>(pixel_y + pixel_height) / height) * 2.0;
-  gl_scratch_push_glyph_quad(
+  glad_abi::scratch_push_glyph_quad(
     left, bottom, right, top, atlas_size, slot_x, slot_y, slot_width, slot_height
   );
 }
