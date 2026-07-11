@@ -1,12 +1,10 @@
 //! @module std/net/websocket
 //! @category net
-//! @type extern
+//! @type mixed
 //! @namespace mlc::websocket
-
-# Server-side WebSocket over Tcp handles (TRACK_STDLIB_WEBSOCKET).
-# upgrade takes a Tcp stream handle (consumes it). Opaque i32 connection handles.
-# Errors: None / false + last_error() — Tcp pattern.
-# C++ namespace mlc::websocket (not mlc::net) so last_error ≠ Tcp.last_error.
+//!
+//! TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 — MLC SHA1 + base64 for Accept.
+//! Public upgrade/read/write still extern → websocket.hpp until later STEPs.
 
 module WebSocket
 
@@ -15,3 +13,200 @@ export extern fn read_text(connection: i32) -> Option<string> = "mlc::websocket:
 export extern fn write_text(connection: i32, data: string) -> bool = "mlc::websocket::write_text_mlc" from "mlc/net/websocket.hpp"
 export extern fn close(connection: i32) -> unit = "mlc::websocket::close_mlc" from "mlc/net/websocket.hpp"
 export extern fn last_error() -> string = "mlc::websocket::last_error_mlc" from "mlc/net/websocket.hpp"
+
+extern fn wrapping_add(left: i32, right: i32) -> i32 =
+  "mlc::int_arith::wrapping_add" from "mlc/core/int_arith.hpp"
+extern fn string_byte_u8(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp"
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+
+fn websocket_guid() -> string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+fn base64_alphabet() -> string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+fn logical_shr(value: i32, bits: i32) -> i32 = do
+  if bits <= 0 then
+    return value
+  end
+  if bits >= 32 then
+    return 0
+  end
+  let shifted = value >> bits
+  let mask_bits = 32 - bits
+  if mask_bits >= 32 then
+    return shifted
+  end
+  let mask = (1 << mask_bits) - 1
+  shifted & mask
+end
+
+fn rotate_left(value: i32, bits: i32) -> i32 =
+  (value << bits) | logical_shr(value, 32 - bits)
+
+fn byte_at(text: string, index: i32) -> i32 = do
+  let value = string_byte_u8(text, index)
+  if value < 0 then 0 else value end
+end
+
+fn append_byte(bytes: [i32], value: i32) -> [i32] = do
+  let mut out = bytes
+  out.push(value & 255)
+  out
+end
+
+fn sha1_digest_bytes(message: string) -> [i32] = do
+  let mut padded: [i32] = []
+  let message_size = message.byte_size()
+  let mut index = 0
+  while index < message_size do
+    padded = append_byte(padded, byte_at(message, index))
+    index = index + 1
+  end
+  padded = append_byte(padded, 128)
+  while (padded.length() % 64) != 56 do
+    padded = append_byte(padded, 0)
+  end
+  let bit_length_high = logical_shr(message_size, 29)
+  let bit_length_low = message_size << 3
+  padded = append_byte(padded, logical_shr(bit_length_high, 24) & 255)
+  padded = append_byte(padded, logical_shr(bit_length_high, 16) & 255)
+  padded = append_byte(padded, logical_shr(bit_length_high, 8) & 255)
+  padded = append_byte(padded, bit_length_high & 255)
+  padded = append_byte(padded, logical_shr(bit_length_low, 24) & 255)
+  padded = append_byte(padded, logical_shr(bit_length_low, 16) & 255)
+  padded = append_byte(padded, logical_shr(bit_length_low, 8) & 255)
+  padded = append_byte(padded, bit_length_low & 255)
+
+  let mut hash0 = 1732584193
+  let mut hash1 = -271733879
+  let mut hash2 = -1732584194
+  let mut hash3 = 271733878
+  let mut hash4 = -1009589776
+
+  let mut chunk = 0
+  while chunk < padded.length() do
+    let mut words: [i32] = []
+    let mut word_index = 0
+    while word_index < 16 do
+      let offset = chunk + word_index * 4
+      let word = (padded[offset] << 24) | (padded[offset + 1] << 16) | (padded[offset + 2] << 8) | padded[offset + 3]
+      words.push(word)
+      word_index = word_index + 1
+    end
+    while word_index < 80 do
+      let mixed = words[word_index - 3] ^ words[word_index - 8] ^ words[word_index - 14] ^ words[word_index - 16]
+      words.push(rotate_left(mixed, 1))
+      word_index = word_index + 1
+    end
+
+    let mut a = hash0
+    let mut b = hash1
+    let mut c = hash2
+    let mut d = hash3
+    let mut e = hash4
+    word_index = 0
+    while word_index < 80 do
+      let mut f = 0
+      let mut k = 0
+      if word_index < 20 then
+        f = (b & c) | ((~b) & d)
+        k = 1518500249
+      else if word_index < 40 then
+        f = b ^ c ^ d
+        k = 1859775393
+      else if word_index < 60 then
+        f = (b & c) | (b & d) | (c & d)
+        k = -1894007588
+      else
+        f = b ^ c ^ d
+        k = -899497514
+      end
+      let temp = wrapping_add(wrapping_add(wrapping_add(wrapping_add(rotate_left(a, 5), f), e), k), words[word_index])
+      e = d
+      d = c
+      c = rotate_left(b, 30)
+      b = a
+      a = temp
+      word_index = word_index + 1
+    end
+    hash0 = wrapping_add(hash0, a)
+    hash1 = wrapping_add(hash1, b)
+    hash2 = wrapping_add(hash2, c)
+    hash3 = wrapping_add(hash3, d)
+    hash4 = wrapping_add(hash4, e)
+    chunk = chunk + 64
+  end
+
+  let mut digest: [i32] = []
+  let hashes = [hash0, hash1, hash2, hash3, hash4]
+  let mut hash_index = 0
+  while hash_index < 5 do
+    let value = hashes[hash_index]
+    digest = append_byte(digest, logical_shr(value, 24) & 255)
+    digest = append_byte(digest, logical_shr(value, 16) & 255)
+    digest = append_byte(digest, logical_shr(value, 8) & 255)
+    digest = append_byte(digest, value & 255)
+    hash_index = hash_index + 1
+  end
+  digest
+end
+
+fn digest_to_raw_string(digest: [i32]) -> string = do
+  let mut raw = ""
+  let mut index = 0
+  while index < digest.length() do
+    raw = raw + string_from_byte_u8(digest[index])
+    index = index + 1
+  end
+  raw
+end
+
+fn base64_encode_bytes(digest: [i32]) -> string = do
+  let length = digest.length()
+  let mut output = ""
+  let mut index = 0
+  while index < length do
+    let byte0 = digest[index]
+    let byte1 = if index + 1 < length then digest[index + 1] else 0 end
+    let byte2 = if index + 2 < length then digest[index + 2] else 0 end
+    let triple = (byte0 << 16) | (byte1 << 8) | byte2
+    output = output + string_from_byte_u8(string_byte_u8(base64_alphabet(), logical_shr(triple, 18) & 63))
+    output = output + string_from_byte_u8(string_byte_u8(base64_alphabet(), logical_shr(triple, 12) & 63))
+    if index + 1 < length then
+      output = output + string_from_byte_u8(string_byte_u8(base64_alphabet(), logical_shr(triple, 6) & 63))
+    else
+      output = output + "="
+    end
+    if index + 2 < length then
+      output = output + string_from_byte_u8(string_byte_u8(base64_alphabet(), triple & 63))
+    else
+      output = output + "="
+    end
+    index = index + 3
+  end
+  output
+end
+
+fn nibble_hex(nibble: i32) -> string = do
+  let value = nibble & 15
+  if value < 10 then
+    string_from_byte_u8(48 + value)
+  else
+    string_from_byte_u8(87 + value)
+  end
+end
+
+export fn sha1_hex(message: string) -> string = do
+  let digest = sha1_digest_bytes(message)
+  let mut hex = ""
+  let mut index = 0
+  while index < digest.length() do
+    let value = digest[index]
+    hex = hex + nibble_hex(logical_shr(value, 4)) + nibble_hex(value)
+    index = index + 1
+  end
+  hex
+end
+
+export fn sec_websocket_accept(client_key: string) -> string =
+  base64_encode_bytes(sha1_digest_bytes(client_key + websocket_guid()))

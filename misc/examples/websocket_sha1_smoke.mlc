@@ -1,0 +1,15 @@
+// TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 — RFC 6455 Accept + empty SHA1.
+
+import { sha1_hex, sec_websocket_accept } from '../../lib/mlc/common/stdlib/net/websocket.mlc'
+
+fn main() -> i32 = do
+  // FIPS empty message
+  if sha1_hex("") != "da39a3ee5e6b4b0d3255bfef95601890afd80709" then
+    return 1
+  end
+  // RFC 6455 §1.3 example
+  if sec_websocket_accept("dGhlIHNhbXBsZSBub25jZQ==") != "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" then
+    return 2
+  end
+  0
+end

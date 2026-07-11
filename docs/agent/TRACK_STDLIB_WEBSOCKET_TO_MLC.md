@@ -7,7 +7,12 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: **active** — STEP=2 next (MLC SHA1 + base64)
+## Status: **active** — STEP=3 next (frame parser/writer)
+
+**Driver 2026-07-11:** STEP=2 — MLC `sha1_hex`/`sec_websocket_accept` in
+`websocket.mlc`; `websocket_abi.hpp` byte helpers; smoke
+`websocket_sha1_smoke.mlc` (empty SHA1 + RFC 6455 Accept) EXIT 0; websocket
+gate still OK. Public upgrade/read/write remain extern.
 
 **Driver 2026-07-11:** STEP=1 — Decision **locked**. Verified local
 `.tmp_libsodium/usr/include` — **0** `sha1` matches in sodium headers.
@@ -75,7 +80,7 @@ already documents «SHA1 + base64 local (no libsodium)».
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Decision + libsodium SHA1 availability check. | **done** (2026-07-11: locked; 0 sodium sha1 hits) |
-| 2 | MLC SHA1 + base64. | pending |
+| 2 | MLC SHA1 + base64. | **done** (2026-07-11: sha1_hex + sec_websocket_accept; RFC smoke) |
 | 3 | Frame parser/writer на MLC. | pending |
 | 4 | Handshake на MLC (HttpServer types). | pending |
 | 5 | Удалить `websocket.hpp`; переключить модуль. | pending |

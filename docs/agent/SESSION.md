@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 |
-| test_gate | sodium sha1 grep = 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=3 |
+| test_gate | websocket_sha1_smoke + websocket_gate |
+
+### Turn 2026-07-11 15:40 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=2 — SHA1/base64)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 15:30 |
+| elapsed | ~10 min |
+| done    | MLC `sha1_hex`/`sec_websocket_accept` in `websocket.mlc`; `websocket_abi.hpp`; smoke RFC+empty SHA1. |
+| verify  | `run_websocket_sha1_smoke.sh` EXIT 0; `run_websocket_gate.sh` OK. |
+| result  | STEP=2 done. Plain: Accept key is pure MLC SHA1+base64. |
+| issues  | Queued prompt VM STEP=2 stale. Module `const` codegen broken (used fns). Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_WEBSOCKET_TO_MLC — MLC frame parser/writer |
 
 ### Turn 2026-07-11 15:30 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=1 — Decision)
 
