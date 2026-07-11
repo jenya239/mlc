@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_FFI_SHIM_MIGRATION closed — Critic |
-| test_gate | self-host identical; regression_gate 20/0 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none — FFI_SHIM Critic OK; Planner next) |
+| test_gate | Critic re-ran pg/crypto/tcp smokes+gates EXIT 0 |
+
+### Turn 2026-07-11 15:20 (Critic TRACK_FFI_SHIM_MIGRATION — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 15:10 |
+| elapsed | ~10 min |
+| done    | Audited `8ffe67b8`…`8b21220a` vs STEP 1–7; shim `.hpp` gone; abi/bridges+smokes on disk; PLAN archive path; re-ran smokes+gates. |
+| verify  | PG_MLC/CRYPTO_MLC/TCP_MLC/CRYPTO/PG/MLCC_TCP all 0; no pending STEPs; no false-done. |
+| result  | **reopen: none**. Residuals: abi+bridge C++; Tcp Option extern; TcpStream. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate next «без C++» track from PLAN §20 |
 
 ### Turn 2026-07-11 15:10 (Driver TRACK_FFI_SHIM_MIGRATION STEP=7 — close)
 

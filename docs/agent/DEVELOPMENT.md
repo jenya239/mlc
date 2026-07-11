@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SHIM_MIGRATION` closed** — Critic next. Then Planner activates next
-«без C++» track (e.g. WEBSOCKET_TO_MLC). See
-[TRACK_FFI_SHIM_MIGRATION.md](../archive/tracks/TRACK_FFI_SHIM_MIGRATION.md).
+**No active Driver track** — FFI_SHIM Critic OK. Next: Planner activates §20
+candidate (WEBSOCKET_TO_MLC / MSDF / LOGIC / GLAD).
 
 
 ## Step sizing (good vs bad)
