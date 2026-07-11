@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=2 |
-| test_gate | docs-only |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=3 |
+| test_gate | postgres_mlc_abi_smoke + postgres_gate |
+
+### Turn 2026-07-11 13:45 (Driver TRACK_FFI_SHIM_MIGRATION STEP=2 — Postgres)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 13:12 |
+| elapsed | ~33 min |
+| done    | `postgres.mlc` MLC connect/exec/… + `postgres_abi.hpp`; thinned `postgres.hpp`; smoke+gate; Pg*Result/i64 residuals documented. |
+| verify  | `run_postgres_mlc_abi_smoke.sh` EXIT 0; `run_postgres_gate.sh` OK. |
+| result  | STEP=2 done. Plain: Postgres control flow is MLC over thin abi. |
+| issues  | Queued prompt VM STEP=2 stale. Residuals: Option codegen; Ruby extern type/lib; C++ table. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_FFI_SHIM_MIGRATION — Crypto externs + MLC hex |
 
 ### Turn 2026-07-11 13:20 (Driver TRACK_FFI_SHIM_MIGRATION STEP=1 — Decision)
 

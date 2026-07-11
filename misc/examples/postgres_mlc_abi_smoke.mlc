@@ -1,0 +1,44 @@
+// TRACK_FFI_SHIM_MIGRATION STEP=2 — mlcc Postgres MLC wrappers + abi (no live DB).
+
+import {
+  connect,
+  exec,
+  ntuples,
+  nfields,
+  getvalue,
+  clear,
+  finish,
+  last_error,
+  PgI32Result,
+  PgI32Ok,
+  PgI32Err,
+  PgStringResult,
+  PgStringOk,
+  PgStringErr
+} from '../../lib/mlc/common/stdlib/db/postgres.mlc'
+
+fn is_i32_ok(result: PgI32Result) -> bool =
+  match result {
+    PgI32Ok(_) => true,
+    PgI32Err => false
+  }
+
+fn is_string_ok(result: PgStringResult) -> bool =
+  match result {
+    PgStringOk(_) => true,
+    PgStringErr => false
+  }
+
+fn main() -> i32 = do
+  let bad = connect("host=127.0.0.1 port=1 dbname=no_such_db connect_timeout=1")
+  if is_i32_ok(bad) then return 1 end
+  if last_error().length() == 0 then return 2 end
+
+  let closed = exec(0, "SELECT 1")
+  if is_i32_ok(closed) then return 3 end
+  if ntuples(0) != 0 then return 4 end
+  if nfields(0) != 0 then return 5 end
+  let cell = getvalue(0, 0, 0)
+  if is_string_ok(cell) then return 6 end
+  0
+end

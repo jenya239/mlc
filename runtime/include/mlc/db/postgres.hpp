@@ -1,149 +1,75 @@
 #pragma once
 
-// Blocking Postgres client via libpq (TRACK_STDLIB_POSTGRES STEP=2).
-// MLC surface: opaque i32 handles + last_error (Tcp pattern).
+// Blocking Postgres client via libpq (Ruby / C++ path).
+// TRACK_FFI_SHIM_MIGRATION STEP=2: control flow mirrors postgres.mlc; storage
+// and String→cstr live in postgres_abi.hpp (shared with mlcc MLC wrappers).
 
 #include "mlc/core/string.hpp"
-
-#if __has_include(<libpq-fe.h>)
-#include <libpq-fe.h>
-#elif __has_include(<postgresql/libpq-fe.h>)
-#include <postgresql/libpq-fe.h>
-#else
-#error "mlc/db/postgres.hpp requires libpq-fe.h (install libpq-dev)"
-#endif
+#include "mlc/db/postgres_abi.hpp"
 
 #include <cstdint>
-#include <mutex>
 #include <optional>
-#include <string>
-#include <vector>
 
 namespace mlc {
 namespace db {
 
-namespace detail {
-
-struct PostgresHandleTable {
-  std::mutex mutex;
-  std::vector<PGconn*> connections;
-  std::vector<PGresult*> results;
-  String last_error;
-};
-
-inline PostgresHandleTable& postgres_handle_table() {
-  static PostgresHandleTable table;
-  return table;
-}
-
-inline void set_last_error_unlocked(String message) {
-  postgres_handle_table().last_error = std::move(message);
-}
-
-inline void set_last_error(String message) {
-  std::lock_guard<std::mutex> lock(postgres_handle_table().mutex);
-  set_last_error_unlocked(std::move(message));
-}
-
-inline String pq_error_message(PGconn* connection) {
-  const char* message = PQerrorMessage(connection);
-  if (message == nullptr || message[0] == '\0') {
-    return String("Postgres: unknown libpq error");
-  }
-  return String(message);
-}
-
-inline bool result_status_ok(ExecStatusType status) {
-  return status == PGRES_TUPLES_OK || status == PGRES_COMMAND_OK;
-}
-
-} // namespace detail
-
 inline String last_error() {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  return detail::postgres_handle_table().last_error;
+  return table_last_error();
 }
 
 inline std::optional<std::int32_t> connect(const String& conninfo) {
-  PGconn* connection = PQconnectdb(conninfo.c_str());
-  if (connection == nullptr) {
-    detail::set_last_error(String("Postgres.connect: PQconnectdb returned null"));
+  const std::int64_t connection = pq_connectdb_s(conninfo);
+  if (connection == 0) {
+    table_set_error(String("Postgres.connect: PQconnectdb returned null"));
     return std::nullopt;
   }
-  if (PQstatus(connection) != CONNECTION_OK) {
-    detail::set_last_error(detail::pq_error_message(connection));
-    PQfinish(connection);
+  if (pq_status_i(connection) != 0) {
+    table_set_error(pq_error_message_s(connection));
+    pq_finish_p(connection);
     return std::nullopt;
   }
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  detail::postgres_handle_table().connections.push_back(connection);
-  return static_cast<std::int32_t>(detail::postgres_handle_table().connections.size());
+  return table_push_conn(connection);
 }
 
 inline std::optional<std::int32_t> exec(std::int32_t connection_handle, const String& sql) {
-  PGconn* connection = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-    if (connection_handle <= 0 ||
-        static_cast<std::size_t>(connection_handle) >
-            detail::postgres_handle_table().connections.size()) {
-      detail::set_last_error_unlocked(String("Postgres.exec: invalid connection handle"));
-      return std::nullopt;
-    }
-    connection =
-        detail::postgres_handle_table().connections[static_cast<std::size_t>(connection_handle) - 1];
-  }
-  if (connection == nullptr) {
-    detail::set_last_error(String("Postgres.exec: connection closed"));
+  const std::int64_t connection = table_get_conn(connection_handle);
+  if (connection == 0) {
+    table_set_error(String("Postgres.exec: invalid or closed connection handle"));
     return std::nullopt;
   }
-  PGresult* result = PQexec(connection, sql.c_str());
-  if (result == nullptr) {
-    detail::set_last_error(detail::pq_error_message(connection));
+  const std::int64_t result = pq_exec_s(connection, sql);
+  if (result == 0) {
+    table_set_error(pq_error_message_s(connection));
     return std::nullopt;
   }
-  const ExecStatusType status = PQresultStatus(result);
-  if (!detail::result_status_ok(status)) {
-    const char* message = PQresultErrorMessage(result);
-    if (message == nullptr || message[0] == '\0') {
-      detail::set_last_error(detail::pq_error_message(connection));
+  const std::int32_t status = pq_result_status_i(result);
+  if (!(status == 2 || status == 1)) {
+    const String message = pq_result_error_message_s(result);
+    if (message.size() == 0) {
+      table_set_error(pq_error_message_s(connection));
     } else {
-      detail::set_last_error(String(message));
+      table_set_error(message);
     }
-    PQclear(result);
+    pq_clear_p(result);
     return std::nullopt;
   }
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  detail::postgres_handle_table().results.push_back(result);
-  return static_cast<std::int32_t>(detail::postgres_handle_table().results.size());
+  return table_push_result(result);
 }
 
 inline std::int32_t ntuples(std::int32_t result_handle) {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  if (result_handle <= 0 ||
-      static_cast<std::size_t>(result_handle) > detail::postgres_handle_table().results.size()) {
+  const std::int64_t result = table_get_result(result_handle);
+  if (result == 0) {
     return 0;
   }
-  PGresult* result =
-      detail::postgres_handle_table().results[static_cast<std::size_t>(result_handle) - 1];
-  if (result == nullptr) {
-    return 0;
-  }
-  return static_cast<std::int32_t>(PQntuples(result));
+  return pq_ntuples_i(result);
 }
 
 inline std::int32_t nfields(std::int32_t result_handle) {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  if (result_handle <= 0 ||
-      static_cast<std::size_t>(result_handle) > detail::postgres_handle_table().results.size()) {
+  const std::int64_t result = table_get_result(result_handle);
+  if (result == 0) {
     return 0;
   }
-  PGresult* result =
-      detail::postgres_handle_table().results[static_cast<std::size_t>(result_handle) - 1];
-  if (result == nullptr) {
-    return 0;
-  }
-  return static_cast<std::int32_t>(PQnfields(result));
+  return pq_nfields_i(result);
 }
 
 inline std::optional<String> getvalue(
@@ -151,59 +77,27 @@ inline std::optional<String> getvalue(
     std::int32_t row,
     std::int32_t column
 ) {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  if (result_handle <= 0 ||
-      static_cast<std::size_t>(result_handle) > detail::postgres_handle_table().results.size()) {
-    detail::set_last_error_unlocked(String("Postgres.getvalue: invalid result handle"));
+  const std::int64_t result = table_get_result(result_handle);
+  if (result == 0) {
+    table_set_error(String("Postgres.getvalue: invalid or cleared result handle"));
     return std::nullopt;
   }
-  PGresult* result =
-      detail::postgres_handle_table().results[static_cast<std::size_t>(result_handle) - 1];
-  if (result == nullptr) {
-    detail::set_last_error_unlocked(String("Postgres.getvalue: result cleared"));
+  if (row < 0 || column < 0 || row >= pq_ntuples_i(result) || column >= pq_nfields_i(result)) {
+    table_set_error(String("Postgres.getvalue: row/column out of range"));
     return std::nullopt;
   }
-  if (row < 0 || column < 0 || row >= PQntuples(result) || column >= PQnfields(result)) {
-    detail::set_last_error_unlocked(String("Postgres.getvalue: row/column out of range"));
+  if (pq_getisnull_i(result, row, column) != 0) {
     return std::nullopt;
   }
-  if (PQgetisnull(result, row, column) != 0) {
-    return std::nullopt;
-  }
-  const char* value = PQgetvalue(result, row, column);
-  if (value == nullptr) {
-    return std::nullopt;
-  }
-  return String(value);
+  return pq_getvalue_s(result, row, column);
 }
 
 inline void clear(std::int32_t result_handle) {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  if (result_handle <= 0 ||
-      static_cast<std::size_t>(result_handle) > detail::postgres_handle_table().results.size()) {
-    return;
-  }
-  PGresult*& result =
-      detail::postgres_handle_table().results[static_cast<std::size_t>(result_handle) - 1];
-  if (result != nullptr) {
-    PQclear(result);
-    result = nullptr;
-  }
+  table_clear_result(result_handle);
 }
 
 inline void finish(std::int32_t connection_handle) {
-  std::lock_guard<std::mutex> lock(detail::postgres_handle_table().mutex);
-  if (connection_handle <= 0 ||
-      static_cast<std::size_t>(connection_handle) >
-          detail::postgres_handle_table().connections.size()) {
-    return;
-  }
-  PGconn*& connection =
-      detail::postgres_handle_table().connections[static_cast<std::size_t>(connection_handle) - 1];
-  if (connection != nullptr) {
-    PQfinish(connection);
-    connection = nullptr;
-  }
+  table_finish_conn(connection_handle);
 }
 
 } // namespace db

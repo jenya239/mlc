@@ -1,19 +1,135 @@
 //! @module std/db/postgres
 //! @category db
-//! @type extern
+//! @type mixed
 //! @namespace mlc::db
-
-# Blocking Postgres client via libpq (TRACK_STDLIB_POSTGRES).
-# Handles are opaque positive i32 tokens (not raw PGconn*/PGresult*).
-# Errors: None + last_error() — Tcp shipping pattern.
+//!
+//! TRACK_FFI_SHIM_MIGRATION STEP=2 — control flow in MLC; thin ABI in
+//! postgres_abi.hpp. Residual: i64 pointer tokens (no Ruby `extern type`);
+//! C++ handle table; local Pg*Result sums (mlcc Option import codegen
+//! segfault). Ruby MLC.compile still calls mlc::db::* (postgres.hpp).
 
 module Postgres
 
-export extern fn connect(conninfo: string) -> Option<i32>
-export extern fn exec(connection: i32, sql: string) -> Option<i32>
-export extern fn ntuples(result: i32) -> i32
-export extern fn nfields(result: i32) -> i32
-export extern fn getvalue(result: i32, row: i32, column: i32) -> Option<string>
-export extern fn clear(result: i32) -> unit
-export extern fn finish(connection: i32) -> unit
-export extern fn last_error() -> string
+export type PgI32Result = PgI32Ok(i32) | PgI32Err
+export type PgStringResult = PgStringOk(string) | PgStringErr
+
+extern fn pq_connectdb_s(conninfo: string) -> i64 =
+  "mlc::db::pq_connectdb_s" from "mlc/db/postgres_abi.hpp"
+extern fn pq_status_i(connection: i64) -> i32 =
+  "mlc::db::pq_status_i" from "mlc/db/postgres_abi.hpp"
+extern fn pq_finish_p(connection: i64) -> unit =
+  "mlc::db::pq_finish_p" from "mlc/db/postgres_abi.hpp"
+extern fn pq_exec_s(connection: i64, sql: string) -> i64 =
+  "mlc::db::pq_exec_s" from "mlc/db/postgres_abi.hpp"
+extern fn pq_result_status_i(result: i64) -> i32 =
+  "mlc::db::pq_result_status_i" from "mlc/db/postgres_abi.hpp"
+extern fn pq_clear_p(result: i64) -> unit =
+  "mlc::db::pq_clear_p" from "mlc/db/postgres_abi.hpp"
+extern fn pq_ntuples_i(result: i64) -> i32 =
+  "mlc::db::pq_ntuples_i" from "mlc/db/postgres_abi.hpp"
+extern fn pq_nfields_i(result: i64) -> i32 =
+  "mlc::db::pq_nfields_i" from "mlc/db/postgres_abi.hpp"
+extern fn pq_getisnull_i(result: i64, row: i32, column: i32) -> i32 =
+  "mlc::db::pq_getisnull_i" from "mlc/db/postgres_abi.hpp"
+extern fn pq_getvalue_s(result: i64, row: i32, column: i32) -> string =
+  "mlc::db::pq_getvalue_s" from "mlc/db/postgres_abi.hpp"
+extern fn pq_error_message_s(connection: i64) -> string =
+  "mlc::db::pq_error_message_s" from "mlc/db/postgres_abi.hpp"
+extern fn pq_result_error_message_s(result: i64) -> string =
+  "mlc::db::pq_result_error_message_s" from "mlc/db/postgres_abi.hpp"
+
+extern fn table_push_conn(connection: i64) -> i32 =
+  "mlc::db::table_push_conn" from "mlc/db/postgres_abi.hpp"
+extern fn table_get_conn(handle: i32) -> i64 =
+  "mlc::db::table_get_conn" from "mlc/db/postgres_abi.hpp"
+extern fn table_finish_conn(handle: i32) -> unit =
+  "mlc::db::table_finish_conn" from "mlc/db/postgres_abi.hpp"
+extern fn table_push_result(result: i64) -> i32 =
+  "mlc::db::table_push_result" from "mlc/db/postgres_abi.hpp"
+extern fn table_get_result(handle: i32) -> i64 =
+  "mlc::db::table_get_result" from "mlc/db/postgres_abi.hpp"
+extern fn table_clear_result(handle: i32) -> unit =
+  "mlc::db::table_clear_result" from "mlc/db/postgres_abi.hpp"
+extern fn table_set_error(message: string) -> unit =
+  "mlc::db::table_set_error" from "mlc/db/postgres_abi.hpp"
+extern fn table_last_error() -> string =
+  "mlc::db::table_last_error" from "mlc/db/postgres_abi.hpp"
+
+fn pointer_is_null(pointer: i64) -> bool = pointer == 0
+
+fn result_status_ok(status: i32) -> bool =
+  status == 2 || status == 1
+
+export fn connect(conninfo: string) -> PgI32Result = do
+  let connection = pq_connectdb_s(conninfo)
+  if pointer_is_null(connection) then
+    table_set_error("Postgres.connect: PQconnectdb returned null")
+    return PgI32Err
+  end
+  if pq_status_i(connection) != 0 then
+    table_set_error(pq_error_message_s(connection))
+    pq_finish_p(connection)
+    return PgI32Err
+  end
+  PgI32Ok(table_push_conn(connection))
+end
+
+export fn exec(connection_handle: i32, sql: string) -> PgI32Result = do
+  let connection = table_get_conn(connection_handle)
+  if pointer_is_null(connection) then
+    table_set_error("Postgres.exec: invalid or closed connection handle")
+    return PgI32Err
+  end
+  let result = pq_exec_s(connection, sql)
+  if pointer_is_null(result) then
+    table_set_error(pq_error_message_s(connection))
+    return PgI32Err
+  end
+  let status = pq_result_status_i(result)
+  if !result_status_ok(status) then
+    let message = pq_result_error_message_s(result)
+    if message.length() == 0 then
+      table_set_error(pq_error_message_s(connection))
+    else
+      table_set_error(message)
+    end
+    pq_clear_p(result)
+    return PgI32Err
+  end
+  PgI32Ok(table_push_result(result))
+end
+
+export fn ntuples(result_handle: i32) -> i32 = do
+  let result = table_get_result(result_handle)
+  if pointer_is_null(result) then 0 else pq_ntuples_i(result) end
+end
+
+export fn nfields(result_handle: i32) -> i32 = do
+  let result = table_get_result(result_handle)
+  if pointer_is_null(result) then 0 else pq_nfields_i(result) end
+end
+
+export fn getvalue(result_handle: i32, row: i32, column: i32) -> PgStringResult = do
+  let result = table_get_result(result_handle)
+  if pointer_is_null(result) then
+    table_set_error("Postgres.getvalue: invalid or cleared result handle")
+    return PgStringErr
+  end
+  if row < 0 || column < 0 || row >= pq_ntuples_i(result) || column >= pq_nfields_i(result) then
+    table_set_error("Postgres.getvalue: row/column out of range")
+    return PgStringErr
+  end
+  if pq_getisnull_i(result, row, column) != 0 then
+    return PgStringErr
+  end
+  PgStringOk(pq_getvalue_s(result, row, column))
+end
+
+export fn clear(result_handle: i32) -> unit =
+  table_clear_result(result_handle)
+
+export fn finish(connection_handle: i32) -> unit =
+  table_finish_conn(connection_handle)
+
+export fn last_error() -> string =
+  table_last_error()

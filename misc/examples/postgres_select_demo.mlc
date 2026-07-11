@@ -3,14 +3,17 @@
 # Build via Ruby pipeline (import Postgres — not mlcc stdlib).
 # Gate: scripts/run_postgres_gate.sh
 
-import Postgres::{connect, exec, ntuples, nfields, getvalue, clear, finish, last_error}
+import Postgres::{
+  connect, exec, ntuples, nfields, getvalue, clear, finish, last_error,
+  PgI32Ok, PgI32Err, PgStringOk, PgStringErr, PgI32Result, PgStringResult
+}
 import IO::{eprintln, println}
 
-fn unwrap_handle(value: Option<i32>) -> i32 =
-  match value { Some(handle) => handle, None => -1 }
+fn unwrap_handle(value: PgI32Result) -> i32 =
+  match value { PgI32Ok(handle) => handle, PgI32Err => -1 }
 
-fn unwrap_text(value: Option<string>) -> string =
-  match value { Some(text) => text, None => "" }
+fn unwrap_text(value: PgStringResult) -> string =
+  match value { PgStringOk(text) => text, PgStringErr => "" }
 
 fn main() -> i32 = do
   let connection = unwrap_handle(connect("dbname=postgres"))
