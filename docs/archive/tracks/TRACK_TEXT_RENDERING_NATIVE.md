@@ -1,17 +1,20 @@
 # Track: текстовый рендеринг целиком на MLC + интерактивное окно (фундамент GUI-фреймворка)
 
-Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md),
-[../archive/tracks/TRACK_TEXT_RENDERING.md](../archive/tracks/TRACK_TEXT_RENDERING.md)
+Parent: [../PLAN.md](../../PLAN.md), [../TEXT_RENDERING.md](../../TEXT_RENDERING.md),
+[../archive/tracks/TRACK_TEXT_RENDERING.md](TRACK_TEXT_RENDERING.md)
 (закрыт — headless-пайплайн, шейпинг/раскладка/кэш на MLC, но GL-orchestration
 и вся сцена — внутри `text_renderer_shim.cpp`, C++).
 Trigger: пользователь 2026-07-10 — нужно реальное окно с разным текстом,
 основной код рендеринга на MLC, не в C++-шиме; это заготовка будущего GUI-
 фреймворка (нативные быстрые интерфейсы, анимации, эффекты).
 
-## Status: **open** — STEP=8 next (verify-gate)
+## Status: **closed** (2026-07-11)
+
+**Driver 2026-07-11:** STEP=8 — verify-gate: self-host `diff -rq p1 p2` identical;
+`regression_gate` 20/0; `run_text_window_demo.sh` + native/gl smokes ok. Track archived.
 
 **Driver 2026-07-11:** STEP=7 — docs: `TEXT_RENDERING.md` §8 (windowed/MLC path);
-backlog [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md); PLAN §10b.
+backlog [TRACK_GUI_FRAMEWORK.md](../../agent/TRACK_GUI_FRAMEWORK.md); PLAN §10b.
 
 **Driver 2026-07-11:** STEP=6 — `text_window_demo.mlc`: ≥3 strings (Hi/MLC A8 via
 HB+FT, Aa MSDF); clear-color anim via `glfw_gl_anim_unit`; Esc/48-frame loop;
@@ -150,8 +153,8 @@ From `text_renderer_shim.cpp` / TEXT_RENDERING §3.3, minus FBO/readback
 4. ~~`GlRenderer` on MLC~~ → **done** STEP=4
 5. ~~`TextRenderer` on MLC~~ → **done** STEP=5
 6. ~~Demo `text_window_demo.mlc`~~ → **done** STEP=6
-7. Docs
-8. Verify-gate + manual window demo
+7. ~~Docs~~ → **done** STEP=7
+8. ~~Verify-gate + manual window demo~~ → **done** STEP=8
 
 ## Out of scope (этот трек)
 
@@ -169,8 +172,8 @@ From `text_renderer_shim.cpp` / TEXT_RENDERING §3.3, minus FBO/readback
 | 4 | `GlRenderer` (шейдеры/буферы/текстуры) на MLC поверх STEP=3. | **done** (2026-07-11: MLC GlRenderer + triangle smoke ok) |
 | 5 | `TextRenderer` на MLC (batching, переиспользует Atlas/Cache/Shaper). | **done** (2026-07-11: TextRenderer + atlas/cache batch smoke ok; synthetic A8; FT/HB → STEP=6) |
 | 6 | Демо: окно, разный текст, анимированный параметр, выход по Esc. | **done** (2026-07-11: text_window_demo A8+MSDF+anim; gate ok) |
-| 7 | Docs (`TEXT_RENDERING.md`, `PLAN.md`) + ссылка на будущий GUI-фреймворк трек. | pending |
-| 8 | Verify-gate: self-host diff, regression_gate, ручная демонстрация окна. | pending |
+| 7 | Docs (`TEXT_RENDERING.md`, `PLAN.md`) + ссылка на будущий GUI-фреймворк трек. | **done** (2026-07-11: TEXT_RENDERING §8; TRACK_GUI_FRAMEWORK backlog; PLAN §10b) |
+| 8 | Verify-gate: self-host diff, regression_gate, ручная демонстрация окна. | **done** (2026-07-11: self-host identical; regression 20/0; demo+smokes ok) |
 
 <!-- sub-steps STEP=2: 1) optional -lglfw in build; 2) extern fn GLFW list; 3) smoke window 800x600 clear+Esc -->
 <!-- sub-steps STEP=3: 1) glfw_gl_loader after MakeContextCurrent; 2) export locked GL set; 3) MLC smoke clear -->

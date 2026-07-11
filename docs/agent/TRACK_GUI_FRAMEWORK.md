@@ -1,7 +1,7 @@
 # Track: GUI framework (native UI on MLC)
 
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
-[TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
+[TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
 ## Status: **backlog** (not active)
 

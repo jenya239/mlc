@@ -389,9 +389,9 @@ compiler/
 | **8c** Слить `Tcp` + `spawn` в одном компиляторе (многопоточный HTTP-сервер целиком на MLC) | **done** | [TRACK_PIPELINE_MERGE_TCP_SPAWN](archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md) **closed** 2026-07-10 (STEP=1–6: Decision A; bare `Tcp`; echo; Tcp+spawn e2e; docs; self-host identical; regression 20/0) |
 | **9** FFI-слой (RawPointer, extern codegen, линковка, C function pointer) | **done** | [FFI_LAYER.md](FFI_LAYER.md); [TRACK_FFI_LAYER](archive/tracks/TRACK_FFI_LAYER.md) **closed** 2026-07-09 (STEP=1–8: RawPointer, extern fn/lib/type, C fptr, concurrency attrs; self-host diff identical; regression_gate 20/0). Deferred: `owned` return-marker, ASan drop smoke |
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
-| **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **open, active** | [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) **active** STEP=8 (verify-gate); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
-| **10b** GUI framework (layout/widgets/easing) | **backlog** | [TRACK_GUI_FRAMEWORK](agent/TRACK_GUI_FRAMEWORK.md) — activate after 10a close |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**. Active Driver: [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) STEP=8 |
+| **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **done** | [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (STEP=1–8: GLFW+GL dispatch+GlRenderer+TextRenderer+demo; self-host identical; regression 20/0); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
+| **10b** GUI framework (layout/widgets/easing) | **backlog** | [TRACK_GUI_FRAMEWORK](agent/TRACK_GUI_FRAMEWORK.md) — activate after Critic OK on 10a / Planner promote |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION **closed**. Next after Critic on 10a: Planner / GUI backlog |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
@@ -501,8 +501,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_VALIDATION (**closed** 2026-07-11: `mlc::validate` + MLC `Validate`;
       gate `run_validate_gate.sh`; example `validate_demo.mlc`
       → [archive/tracks/TRACK_STDLIB_VALIDATION.md](archive/tracks/TRACK_STDLIB_VALIDATION.md))
-  → TEXT_RENDERING_NATIVE (**active** STEP=7 — docs
-      → [agent/TRACK_TEXT_RENDERING_NATIVE.md](agent/TRACK_TEXT_RENDERING_NATIVE.md))
+  → TEXT_RENDERING_NATIVE (**closed** 2026-07-11: self-host identical; regression 20/0;
+      demo+smokes ok
+      → [archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md))
+  → GUI_FRAMEWORK (**backlog** after Critic OK / Planner promote
+      → [agent/TRACK_GUI_FRAMEWORK.md](agent/TRACK_GUI_FRAMEWORK.md))
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию

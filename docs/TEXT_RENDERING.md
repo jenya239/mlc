@@ -10,7 +10,7 @@ Trigger: два референсных C++ прототипа в `~/workspaces/g
 
 **Статус headless-пайплайна:** [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (A8/MSDF FBO golden, MAE ≤ 8.0/255).
 
-**Статус windowed/MLC-оркестрации:** [TRACK_TEXT_RENDERING_NATIVE](agent/TRACK_TEXT_RENDERING_NATIVE.md) **active** (GLFW окно + `GlRenderer`/`TextRenderer` на MLC) — см. §8.
+**Статус windowed/MLC-оркестрации:** [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (GLFW окно + `GlRenderer`/`TextRenderer` на MLC) — см. §8.
 
 ## 1. Референсы (факты, не код)
 
@@ -199,7 +199,7 @@ GLFW + thin GL dispatch (glfwGetProcAddress → mlc::gl::*)
 
 | Артефакт | Путь |
 |----------|------|
-| Track | [agent/TRACK_TEXT_RENDERING_NATIVE.md](agent/TRACK_TEXT_RENDERING_NATIVE.md) |
+| Track | [archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) |
 | GL dispatch | `runtime/include/mlc/gl/glfw_gl_dispatch.hpp` |
 | Demo | `misc/examples/text_window_demo.mlc` (`scripts/run_text_window_demo.sh`) |
 | Smokes | `gl_renderer_smoke`, `text_renderer_native_smoke`, `glfw_*_smoke` |

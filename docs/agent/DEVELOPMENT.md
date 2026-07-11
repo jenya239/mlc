@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` active** STEP=8 — verify-gate (self-host diff,
-`regression_gate`, demo). See
-[TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
+**`TRACK_TEXT_RENDERING_NATIVE` closed** 2026-07-11 — awaiting Critic
+`critique-audit`. GUI backlog: [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 
 
 ## Step sizing (good vs bad)

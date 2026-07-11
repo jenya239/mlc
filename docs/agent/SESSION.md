@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE STEP=8 |
-| test_gate | docs-only (TEXT_RENDERING §8 + GUI backlog) |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
+| active_track | TRACK_TEXT_RENDERING_NATIVE **closed** (await Critic) |
+| test_gate | self-host identical; regression 20/0; demo+smokes ok |
+
+### Turn 2026-07-11 04:00 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=8 — verify-gate / close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 03:44 |
+| elapsed | ~16 min |
+| done    | Verify-gate: self-host p1→mlcc2→p2 `diff -rq` identical; `regression_gate` 20/0; `run_text_window_demo.sh` + native/gl smokes ok. Track → `docs/archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md`; PLAN §10a done + queue; TEXT_RENDERING §8 status; DEVELOPMENT. |
+| verify  | DIFF empty; regression 20 passed 0 failed; demo/native/gl EXIT 0. |
+| result  | STEP=8 done; TRACK **closed**. Plain: windowed MLC text path verified and archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_TEXT_RENDERING_NATIVE |
 
 ### Turn 2026-07-11 03:40 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=7 — docs)
 
