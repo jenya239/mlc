@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=4 |
-| test_gate | msdf_mlc_math_smoke EXIT 0 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=5 |
+| test_gate | msdf MAE=0.0000 ≤8.0 |
+
+### Turn 2026-07-11 23:05 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=4 — MAE gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 22:50 |
+| elapsed | ~15 min |
+| done    | `run_msdf_mlc_mae_gate.rb`; fixtures `msdf_A_32_4.mask.txt`/`_mask.mlc`; `msdf_mlc_mae_gate.mlc`. |
+| verify  | MAE=0.0000 (limit 8.0); mask live==committed. |
+| result  | STEP=4 done. Plain: MLC EDT matches C++ golden byte-for-byte. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_TEXT_MSDF_TO_MLC — retarget callers; delete msdf_shim.* |
 
 ### Turn 2026-07-11 22:50 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=3 — MLC EDT)
 

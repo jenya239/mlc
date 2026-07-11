@@ -1,0 +1,28 @@
+// TRACK_TEXT_MSDF_TO_MLC STEP=4 — MLC SDF vs C++ golden (MAE in Ruby gate).
+// Writes mlc.rgb.txt (one 0..255 per line) for scripts/run_msdf_mlc_mae_gate.rb.
+
+import { msdf_sdf_rgb_from_mask } from '../gui/msdf'
+import { msdf_a_32_4_mask } from './fixtures/msdf_A_32_4_mask'
+
+fn join_bytes(rgb: [i32]) -> string = do
+  let mut content = ""
+  let mut index = 0
+  while index < rgb.length() do
+    content = content + `${rgb[index]}` + "\n"
+    index = index + 1
+  end
+  content
+end
+
+fn main() -> i32 = do
+  let mask = msdf_a_32_4_mask()
+  if mask.length() != 32 * 32 then
+    return 1
+  end
+  let rgb = msdf_sdf_rgb_from_mask(mask, 32, 4)
+  if rgb.length() != 32 * 32 * 3 then
+    return 2
+  end
+  File.write("mlc.rgb.txt", join_bytes(rgb))
+  0
+end
