@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=2 |
-| test_gate | docs-only (Design lock) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_VM_TYPED_COLLECTIONS STEP=3 |
+| test_gate | run_vm_typed_collections_gate.sh EXIT 0 |
+
+### Turn 2026-07-11 05:35 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=2 — Shared elements)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_VM_TYPED_COLLECTIONS |
+| started | 2026-07-11 05:12 |
+| elapsed | ~23 min |
+| done    | `value.mlc`: array/map hold `[VmFieldSlot]`; `VmFieldRecord`/`Array`/`Map`; native push/set any value; examples + `run_vm_typed_collections_gate.sh`; rebuilt mlcc. |
+| verify  | gate ok (string exit 4, record exit 9, corpus exit 7); map-of-string smoke exit 2. |
+| result  | STEP=2 done. Plain: VM arrays/maps hold non-i32 via VmFieldSlot. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left; out/ regenerated locally not committed. |
+| next    | ROLE=Driver STEP=3 TRACK_VM_TYPED_COLLECTIONS — field-slot nested smokes (record↔array) |
 
 ### Turn 2026-07-11 05:10 (Driver TRACK_VM_TYPED_COLLECTIONS STEP=1 — Design)
 

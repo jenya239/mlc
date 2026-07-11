@@ -1,0 +1,7 @@
+// TRACK_VM_TYPED_COLLECTIONS STEP=2 repro: array of string via mlcc --run.
+fn main() -> i32 = do
+  let mut names: [string] = []
+  names.push("a")
+  names.push("bc")
+  names.length() + names[1].length()
+end

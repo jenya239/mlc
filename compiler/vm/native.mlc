@@ -2,7 +2,7 @@
 
 import { Result, Ok, Err } from '../frontend/ast'
 import {
-  VmValue, VmI32, VmBool, VmString, VmArrayValue, VmMapValue, VmVariantValue, VmRecordValue, VmUnit,
+  VmValue, VmI32, VmBool, VmString, VmArray, VmMap, VmArrayValue, VmMapValue, VmVariantValue, VmRecordValue, VmUnit,
   VmVariant, VmFieldSlot, vm_value_unit, vm_value_int_or_zero,
   vm_field_slot_from_value, vm_value_from_field_slot
 } from './value'
@@ -185,7 +185,7 @@ fn vm_native_println(arguments: [VmValue]) -> Result<VmValue, [string]> = do
 end
 
 fn vm_native_array_empty(arguments: [VmValue]) -> Result<VmValue, [string]> =
-  if arguments.length() == 0 then Ok(VmArray(VmArrayValue { integer_elements: [] }))
+  if arguments.length() == 0 then Ok(VmArray(VmArrayValue { elements: [] }))
   else Err(['vm: __mir_array_empty expects no arguments'])
 
 fn vm_native_value_as_i32(value: VmValue) -> Result<i32, [string]> =
@@ -199,12 +199,12 @@ fn vm_native_array_push(arguments: [VmValue]) -> Result<VmValue, [string]> =
   else
     match arguments[0] {
       VmArray(array) =>
-        match vm_native_value_as_i32(arguments[1]) {
+        match vm_field_slot_from_value(arguments[1]) {
           Err(errors) => Err(errors),
-          Ok(element) => do
-            let mut integer_elements = array.integer_elements
-            integer_elements.push(element)
-            Ok(VmArray(VmArrayValue { integer_elements: integer_elements }))
+          Ok(slot) => do
+            let mut elements = array.elements
+            elements.push(slot)
+            Ok(VmArray(VmArrayValue { elements: elements }))
           end
         },
       _ => Err(['vm: __mir_array_push expects array'])
@@ -216,16 +216,16 @@ fn vm_native_array_pop(arguments: [VmValue]) -> Result<VmValue, [string]> =
   else
     match arguments[0] {
       VmArray(array) =>
-        if array.integer_elements.length() == 0 then Err(['vm: pop from empty array'])
+        if array.elements.length() == 0 then Err(['vm: pop from empty array'])
         else do
-          let mut integer_elements: [i32] = []
+          let mut elements: [VmFieldSlot] = []
           let mut index = 0
-          const last = array.integer_elements.length() - 1
+          const last = array.elements.length() - 1
           while index < last do
-            integer_elements.push(array.integer_elements[index])
+            elements.push(array.elements[index])
             index = index + 1
           end
-          Ok(VmArray(VmArrayValue { integer_elements: integer_elements }))
+          Ok(VmArray(VmArrayValue { elements: elements }))
         end,
       _ => Err(['vm: __mir_array_pop expects array'])
     }
@@ -235,14 +235,14 @@ fn vm_native_array_length(arguments: [VmValue]) -> Result<VmValue, [string]> =
   if arguments.length() != 1 then Err(['vm: __mir_array_length expects 1 argument'])
   else
     match arguments[0] {
-      VmArray(array) => Ok(VmI32(array.integer_elements.length())),
+      VmArray(array) => Ok(VmI32(array.elements.length())),
       _ => Err(['vm: __mir_array_length expects array'])
     }
   end
 
 fn vm_native_array_at(array: VmArrayValue, index: i32) -> Result<VmValue, [string]> =
-  if index >= 0 && index < array.integer_elements.length() then
-    Ok(VmI32(array.integer_elements[index]))
+  if index >= 0 && index < array.elements.length() then
+    Ok(vm_value_from_field_slot(array.elements[index]))
   else
     Err(['vm: array index out of bounds'])
   end
@@ -262,7 +262,7 @@ fn vm_native_array_get(arguments: [VmValue]) -> Result<VmValue, [string]> =
 
 fn vm_native_map_empty(arguments: [VmValue]) -> Result<VmValue, [string]> =
   if arguments.length() == 0 then
-    Ok(VmMap(VmMapValue { keys: [], integer_values: [], entry_count: 0 }))
+    Ok(VmMap(VmMapValue { keys: [], values: [], entry_count: 0 }))
   else
     Err(['vm: __mir_map_empty expects no arguments'])
   end
@@ -276,14 +276,14 @@ fn vm_native_map_find_key_index(keys: [string], key: string) -> i32 = do
   -1
 end
 
-fn vm_native_map_replace_value(integer_values: [i32], index: i32, value: i32) -> [i32] = do
-  let mut rebuilt: [i32] = []
+fn vm_native_map_replace_slot(values: [VmFieldSlot], index: i32, slot: VmFieldSlot) -> [VmFieldSlot] = do
+  let mut rebuilt: [VmFieldSlot] = []
   let mut position = 0
-  while position < integer_values.length() do
+  while position < values.length() do
     if position == index then
-      rebuilt.push(value)
+      rebuilt.push(slot)
     else
-      rebuilt.push(integer_values[position])
+      rebuilt.push(values[position])
     end
     position = position + 1
   end
@@ -293,29 +293,29 @@ end
 fn vm_native_map_lookup(map_value: VmMapValue, key: string) -> VmValue = do
   const existing_index = vm_native_map_find_key_index(map_value.keys, key)
   if existing_index >= 0 then
-    VmI32(map_value.integer_values[existing_index])
+    vm_value_from_field_slot(map_value.values[existing_index])
   else
     VmI32(0)
   end
 end
 
-fn vm_native_map_insert_value(map_value: VmMapValue, key: string, integer_value: i32) -> VmValue = do
+fn vm_native_map_insert_slot(map_value: VmMapValue, key: string, slot: VmFieldSlot) -> VmValue = do
   let mut keys = map_value.keys
-  let mut integer_values = map_value.integer_values
+  let mut values = map_value.values
   keys.push(key)
-  integer_values.push(integer_value)
+  values.push(slot)
   VmMap(VmMapValue {
     keys: keys,
-    integer_values: integer_values,
+    values: values,
     entry_count: map_value.entry_count + 1
   })
 end
 
-fn vm_native_map_update_value(map_value: VmMapValue, key: string, integer_value: i32) -> VmValue = do
+fn vm_native_map_update_slot(map_value: VmMapValue, key: string, slot: VmFieldSlot) -> VmValue = do
   const existing_index = vm_native_map_find_key_index(map_value.keys, key)
   VmMap(VmMapValue {
     keys: map_value.keys,
-    integer_values: vm_native_map_replace_value(map_value.integer_values, existing_index, integer_value),
+    values: vm_native_map_replace_slot(map_value.values, existing_index, slot),
     entry_count: map_value.entry_count
   })
 end
@@ -327,13 +327,13 @@ fn vm_native_map_set(arguments: [VmValue]) -> Result<VmValue, [string]> =
       VmMap(map_value) =>
         match arguments[1] {
           VmString(key) =>
-            match vm_native_value_as_i32(arguments[2]) {
+            match vm_field_slot_from_value(arguments[2]) {
               Err(errors) => Err(errors),
-              Ok(integer_value) =>
+              Ok(slot) =>
                 if vm_native_map_find_key_index(map_value.keys, key) >= 0 then
-                  Ok(vm_native_map_update_value(map_value, key, integer_value))
+                  Ok(vm_native_map_update_slot(map_value, key, slot))
                 else
-                  Ok(vm_native_map_insert_value(map_value, key, integer_value))
+                  Ok(vm_native_map_insert_slot(map_value, key, slot))
                 end
             },
           _ => Err(['vm: __mir_map_set expects string key'])
@@ -430,7 +430,7 @@ fn vm_native_collection_length(arguments: [VmValue]) -> Result<VmValue, [string]
   if arguments.length() != 1 then Err(['vm: __mir_length expects 1 argument'])
   else
     match arguments[0] {
-      VmArray(array) => Ok(VmI32(array.integer_elements.length())),
+      VmArray(array) => Ok(VmI32(array.elements.length())),
       VmMap(map) => Ok(VmI32(map.entry_count)),
       VmString(text) => Ok(VmI32(text.length())),
       _ => Err(['vm: __mir_length expects array, map, or string'])

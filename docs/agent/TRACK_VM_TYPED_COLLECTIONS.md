@@ -8,7 +8,11 @@ Parent: [TRACK_MIR_VM_FULL.md](TRACK_MIR_VM_FULL.md) (§5.2 «Runtime value mode
 — это не баг лоуэринга и не CFG-баг, а архитектурное ограничение value-модели
 VM, зафиксированное в самом типе `VmArrayValue`/`VmMapValue`.
 
-## Status: **open** — STEP=2 next (array/map hold Shared VmValue) — **active**
+## Status: **open** — STEP=3 next (field-slot smokes) — **active**
+
+**Driver 2026-07-11:** STEP=2 — `VmArrayValue.elements` / `VmMapValue.values` as
+`[VmFieldSlot]`; added `VmFieldRecord`/`Array`/`Map` Shared arms; native push/set
+any value; gate `run_vm_typed_collections_gate.sh` (string/record/i32 corpus).
 
 **Driver 2026-07-11:** STEP=1 — Decision **locked**: Shared-indirection (same
 pattern as `VmFieldVariant`); reject bare `[VmValue]` and split-out VM tree.
@@ -28,17 +32,20 @@ low-pri FFI_SAFETY/ERROR_UNION/DEBUG_SOURCE_MAP: concrete VM correctness gap
 | C. Split VM types out of `compiler/` codegen path | VM still compiled into `mlcc` → C++; fake split — **rejected** |
 | D. New `VmBoxedValue` heap module only | Extra indirection layer; no gain over `Shared` already in language — **rejected** (v0) |
 
-### Locked shape (STEP=2 target)
+### Locked shape (STEP=2 — implemented)
+
+Carrier is **`VmFieldSlot`** (Shared-wrapped nested ADTs), not bare
+`Shared<VmValue>` — same Decision A, matches existing `VmFieldVariant` unwrap
+via record fields:
 
 ```mlc
-export type VmArrayValue = VmArrayValue {
-  elements: [Shared<VmValue>]
-}
+export type VmArrayValue = VmArrayValue { elements: [VmFieldSlot] }
 export type VmMapValue = VmMapValue {
   keys: [string],
-  values: [Shared<VmValue>],
+  values: [VmFieldSlot],
   entry_count: i32
 }
+// VmFieldSlot += VmFieldRecord/Array/Map(Shared<...>)
 ```
 
 - Keys stay `[string]` (unchanged).
@@ -151,7 +158,7 @@ value-модели контейнеров:
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design-решение: как обойти рекурсивный `VmValue` в контейнерах (Shared-индирекция vs раздельные VM/codegen типы) — записать решение в этот трек до кода | **done** (2026-07-11: Shared-indirection locked) |
-| 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | pending |
+| 2 | `VmArrayValue`/`VmMapValue` → произвольный `VmValue` элемент/значение; native-функции; regression на репро выше | **done** (2026-07-11: VmFieldSlot elements; gate string/record/corpus ok) |
 | 3 | `VmFieldSlot` — добавить `array`/`map`/nested `record` варианты (если п.1 это допускает) | pending |
 | 4 | Verify-gate: self-host (`mlcc`→`mlcc2`→`diff -rq`), `regression_gate.sh`, полный VM-корпус | pending |
 

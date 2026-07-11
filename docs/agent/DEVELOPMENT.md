@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=2 — `VmArrayValue`/`VmMapValue`
-hold `Shared<VmValue>`; native + repro gates. See
+**`TRACK_VM_TYPED_COLLECTIONS` active** STEP=3 — field-slot smokes (record holds
+array/map if needed) then STEP=4 verify-gate. See
 [TRACK_VM_TYPED_COLLECTIONS.md](TRACK_VM_TYPED_COLLECTIONS.md).
 
 

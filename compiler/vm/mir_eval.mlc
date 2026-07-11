@@ -28,7 +28,7 @@ fn vm_values_equal(left: VmValue, right: VmValue) -> bool =
     VmArray(left_array) =>
       match right {
         VmArray(right_array) =>
-          left_array.integer_elements.length() == right_array.integer_elements.length(),
+          left_array.elements.length() == right_array.elements.length(),
         _ => false
       },
     VmMap(_) => false,

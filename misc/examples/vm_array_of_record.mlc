@@ -1,0 +1,8 @@
+// TRACK_VM_TYPED_COLLECTIONS STEP=2 repro: array of records via mlcc --run.
+type Point = { x: i32, y: i32 }
+fn main() -> i32 = do
+  let mut points: [Point] = []
+  points.push(Point { x: 5, y: 6 })
+  points.push(Point { x: 1, y: 2 })
+  points[0].x + points[1].y + points.length()
+end
