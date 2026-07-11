@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_FFI_SAFETY STEP=5 |
-| test_gate | STEP=4: FFI_LAYER §9 rewritten; grep W-EXTERN-ATTR/ARITY in §9 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_FFI_SAFETY closed → Critic |
+| test_gate | STEP=5: REG 20/0; self-host DIFF 0; arity+concurrency smokes ok |
+
+### Turn 2026-07-11 31:50 (Driver TRACK_FFI_SAFETY STEP=5 — verify-gate + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 31:00 |
+| elapsed | ~50 min |
+| done    | `regression_gate` 20/0; self-host p1↔p2 DIFF 0; smokes ok; TRACK → `archive/tracks/`; PLAN §14 **done**; FFI_LAYER/DEVELOPMENT links. |
+| verify  | REG: `20 passed, 0 failed`; `diff -rq p1 p2 --exclude=obj` empty; `run_extern_*_smoke.sh` ok. |
+| result  | STEP=5 done; track **closed**. Plain: FFI safety diagnostics + docs gated. |
+| issues  | Foreign `compiler/out/*` left. Residuals: arity by C-name only; misc may warn. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_FFI_SAFETY |
 
 ### Turn 2026-07-11 31:00 (Driver TRACK_FFI_SAFETY STEP=4 — FFI_LAYER §9)
 

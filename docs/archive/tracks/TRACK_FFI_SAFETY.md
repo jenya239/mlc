@@ -1,10 +1,14 @@
 # Track: FFI safety contract
 
-Parent: [../PLAN.md](../PLAN.md) §14, [../FFI_LAYER.md](../FFI_LAYER.md) §9
+Parent: [../../PLAN.md](../../PLAN.md) §14, [../../FFI_LAYER.md](../../FFI_LAYER.md) §9
 (инфраструктура уже реализована, `TRACK_FFI_LAYER` closed 2026-07-09 — этот
 трек только про безопасность использования, без нового codegen).
 
-## Status: **active** — STEP=5 next (verify-gate + close)
+## Status: **closed** (2026-07-11) — awaiting Critic
+
+**Driver 2026-07-11 STEP=5:** `regression_gate` 20/0; self-host p1↔p2 DIFF 0
+(`mlcc`→`mlcc2` via `build_bin.sh`); arity+concurrency smokes ok. TRACK
+archived. Close → Critic.
 
 **Driver 2026-07-11 STEP=4:** Rewrote `FFI_LAYER.md` §9 — contract table
 (`W-EXTERN-ATTR` / `W-EXTERN-ARITY`; lifetime/null = author duty; Decision B).
@@ -55,11 +59,7 @@ concurrency attrs.
 | 2 | Checker warning missing concurrency attr + annotate full-form stdlib. | **done** |
 | 3 | Checker: базовая ABI sanity-проверка arity vs header_import (best-effort). | **done** |
 | 4 | Документация: Safety contract в `FFI_LAYER.md` §9. | **done** |
-| 5 | Verify-gate + close: self-host diff identical, `regression_gate.sh`. | pending |
-
-<!-- STEP=3 sub-steps: 1) only when header_import already loaded the header; 2) compare arity; 3) skip if header not imported -->
-<!-- STEP=4 sub-steps: 1) rewrite FFI_LAYER §9 from «не реализовано» to contract table; 2) cross-link TRACK; 3) note lifetime/null remain author duty -->
-<!-- STEP=5 sub-steps: 1) regression_gate 20/0; 2) self-host DIFF 0; 3) archive → Critic -->
+| 5 | Verify-gate + close: self-host diff identical, `regression_gate.sh`. | **done** |
 
 ## Out of scope
 
@@ -67,3 +67,9 @@ concurrency attrs.
 - Автогенерация ABI из `.h` без `header_import`.
 - Новый синтаксис `unsafe { ... }` / `unsafe extern fn`.
 - Mass-annotate shorthand `extern fn` (cannot carry attrs today).
+
+## Residuals (for Critic)
+
+- Arity lint best-effort by C symbol name only (no `from` path ↔ import path link).
+- `misc` full-form may still emit `W-EXTERN-ATTR` if unannotated.
+- Ruby `spawn_capture` parse / `build_tests_self` path pre-broken (not this track).

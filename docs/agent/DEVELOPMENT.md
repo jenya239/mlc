@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` active** STEP=5 — verify-gate + close (`regression_gate` + self-host).
-See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=4: `FFI_LAYER.md` §9 contract.
+**`TRACK_FFI_SAFETY` closed** (awaiting Critic) — STEP=1–5 done; REG 20/0; self-host DIFF 0.
+See [TRACK_FFI_SAFETY.md](../archive/tracks/TRACK_FFI_SAFETY.md). Next after Critic: Planner (ERROR_UNION / DEBUG_SOURCE_MAP low-pri).
 
 
 ## Step sizing (good vs bad)

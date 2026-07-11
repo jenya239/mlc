@@ -272,7 +272,7 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 - [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
   **won't-do** 2026-07-11 (рантайм остаётся C++).
 
-## 9. Safety contract ([TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
+## 9. Safety contract ([TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) — closed)
 
 Слой §2 даёт ABI-механизм. Safety — диагностики checker + соглашение автора
 биндинга. Синтаксический `unsafe` **не** вводится (Decision B, 2026-07-11).
