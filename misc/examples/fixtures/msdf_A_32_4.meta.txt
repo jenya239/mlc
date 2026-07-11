@@ -1,0 +1,8 @@
+font=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+codepoint=65
+field_size=32
+px_range=4
+byte_count=3072
+sha256=3c375283bcf629fc9ec950bea39bb34a823344b5db11f659825e0e60cc98bc50
+layout=RGB8 interleaved, R=G=B single-channel SDF (msdf_shim)
+source=runtime/src/text/msdf_shim.cpp

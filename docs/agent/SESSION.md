@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=2 |
-| test_gate | Decision locked; msdf_shim read 1:1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=3 |
+| test_gate | dump_msdf_golden.rb --check ok |
+
+### Turn 2026-07-11 22:35 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=2 — golden fixture)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 22:25 |
+| elapsed | ~10 min |
+| done    | `scripts/dump_msdf_golden.rb`; fixtures `msdf_A_32_4.rgb` (3072) + `.meta.txt` (DejaVu A/32/4). |
+| verify  | `ruby scripts/dump_msdf_golden.rb --check` EXIT 0; R=G=B; min=64 max=255. |
+| result  | STEP=2 done. Plain: C++ RGB golden frozen before MLC port. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_MSDF_TO_MLC — port EDT/SDF to MLC `msdf_sdf_rgb_from_mask` |
 
 ### Turn 2026-07-11 22:25 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=1 — Decision)
 
