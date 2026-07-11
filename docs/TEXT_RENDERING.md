@@ -99,12 +99,14 @@ closed):** EDT/SDF — `misc/gui/msdf.mlc`; FreeType→mask — thin
 
 Открытый риск: функции после OpenGL 1.1 на Linux не гарантированно
 экспортированы напрямую из `libGL.so` — обычно грузятся через
-`eglGetProcAddress` / `glXGetProcAddress` / loader (glad/epoxy в референсах).
-**Решение §5.2 (2026-07-10):** нового языкового примитива «runtime `extern fn`»
-нет. C++ runtime-шим владеет EGL-контекстом и function pointers; MLC вызывает
-обычный `extern fn` в шим (как FreeType/HarfBuzz). Headless CI — **EGL**
-(`eglGetProcAddress`), не GLX (`glXGetProcAddress` — display/X11-specific).
-Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
+`eglGetProcAddress` / `glXGetProcAddress` / loader (glad/epoxy).
+**Решение (обновлено TRACK_GL_GLAD_MIGRATION 2026-07-11):** нового языкового
+примитива «runtime `extern fn`» нет. GL entry points — **вендоренный GLAD2**
+(`runtime/third_party/glad/`); MLC вызывает через `glad_gl.mlc` /
+`glad_gl_abi.hpp` (макросы GLAD ломают `&symbol` — тонкий abi). Windowed:
+`gladLoadGL(glfwGetProcAddress)` после GLFW context. Headless CI: glad EGL/
+GLES2 trees (не ручной `loader_shim`). Smoke: `misc/examples/gl_loader_smoke.mlc`
++ `compiler/tests/run_gl_loader_smoke.sh`.
 
 ## 4. Фазы реализации (после закрытия FFI_LAYER)
 
@@ -112,9 +114,8 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
    headless, проверяется через дамп `ShapedGlyph[]` в тестах.
 2. `GlyphRasterizer` (A8 путь через FreeType) + `GlyphAtlas` (shelf packing,
    чистый MLC, без FFI) + `GlyphCache` (LRU, чистый MLC).
-3. OpenGL биндинг узкого набора функций (§3.3) через EGL loader shim
-   (`eglGetProcAddress`, §5.2), `TextRenderer` — A8-путь end-to-end
-   (glyph на экране / offscreen FBO).
+3. OpenGL биндинг узкого набора (§3.3) через GLAD2 (§5.2), `TextRenderer` —
+   A8-путь end-to-end (glyph на экране / offscreen FBO).
 4. MSDF-генерация (§3.2) + RGB8 atlas page + MSDF шейдер, `RenderMode`
    переключение по pixel size.
 5. Опционально далее (не проектировать сейчас): ICU (bidi/line-break),
@@ -132,21 +133,21 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
 - Граница копирования: один раз в `TextShaper.shape()` — собрать `Array[ShapedGlyph]` (owned MLC) из view; дальше pipeline работает только с `Array`/`ShapedGlyph`.
 - Hot path per frame = повторный `shape` → снова один copy на вызов; внутри shape — только индексный обход view.
 
-### 5.2 GL proc address → MLC — **decided** (2026-07-10, STEP=5)
+### 5.2 GL proc address → MLC — **done** (GLAD2, 2026-07-11)
 
-- **Нет** нового примитива «runtime-полученный `extern fn`».
-- Паттерн как FreeType/HarfBuzz: **C++ shim** (`runtime/src/gl/loader_shim.cpp`)
-  создаёт headless EGL context, грузит entry points через
-  **`eglGetProcAddress`**, экспортирует обычные C++ функции в namespace
-  `mlc::gl`. MLC: `extern fn … = "mlc::gl::…" from "mlc/gl/loader_shim.hpp"`.
-- **`glXGetProcAddress` не использовать в CI/headless** — GLX требует
-  display; для Mesa llvmpipe / surfaceless — EGL (pbuffer или
-  `EGL_PLATFORM_SURFACELESS_MESA`).
-- Desktop GLX-путь (если понадобится окно) — отдельный shim later; биндинг
-  STEP=6 строится на том же `eglGetProcAddress` + GLES2/compat.
-- Smoke: `gl_loader_gen_buffers_smoke()` → `glGenBuffers`/`glDeleteBuffers`
-  на одном буфере; gate `compiler/tests/run_gl_loader_smoke.sh`; CI job
-  `gl-loader-smoke` (Mesa/EGL packages).
+- **Нет** нового примитива «runtime-полученный `extern fn`» (решение 2026-07-10
+  сохраняется).
+- **Реализация:** вендоренный **GLAD2** (`runtime/third_party/glad/{gl,egl}/`,
+  Core 3.3 + EGL1.5/GLES2). Ручные `glfw_gl_dispatch.*` / `loader_shim.*`
+  **удалены** ([TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)).
+- MLC: `lib/mlc/common/stdlib/gl/glad_{gl,egl,gles2}.mlc` + thin
+  `runtime/include/mlc/gl/glad_*_abi.hpp` (compat `mlc::gl::gl_*` where needed).
+- Window/context/input: thin C++ `glfw_window_gl.*` + MLC `gl_window.mlc`;
+  load via `gladLoadGL(glfwGetProcAddress)`.
+- Desktop `gl.c` и headless `egl`/`gles2.c` **не** co-link (символ clash
+  `glad_gl*`).
+- Smoke: `gl_loader_smoke` (GLFW+glad genBuffers); `run_glad_link_smoke.sh`;
+  GUI smokes на glad.
 
 ### 5.3 MSDF/SDF (FreeType mask + MLC EDT) — **done** (2026-07-11)
 
@@ -169,7 +170,7 @@ Smoke: `runtime/src/gl/loader_shim.cpp` + `misc/examples/gl_loader_smoke.mlc`.
 2. Растеризация глифа в A8 bitmap, атлас-паковка, LRU cache hit/miss.
 3. Self-host: `mlcc` → `mlcc2` → `diff` идентичен (обычный гейт проекта).
 
-Фаза 3+ (GL offscreen) — §5.2 решён (EGL shim). **Tolerance golden/pixel-diff
+Фаза 3+ (GL offscreen) — §5.2 решён (GLAD2). **Tolerance golden/pixel-diff
 (зафиксировано STEP=8, 2026-07-10):** mean absolute error (MAE) по RGB
 каналам ≤ **8.0 / 255** между CPU-эталоном и GLES2 readback
 (`text_renderer_a8_*`, shaped-string golden exact на CPU-компози; GL vs CPU —
@@ -189,21 +190,23 @@ pixel-diff/SSIM допуском (не байт-в-байт — референс
 
 ## 8. Windowed path + MLC orchestration (2026-07-11)
 
-Headless EGL (`loader_shim` / `text_renderer_shim`) **остаётся** для CI golden.
-Additive windowed path (не замена headless):
+Headless golden path: `text_renderer_shim` (где ещё нужен) + glad EGL/GLES2
+vendor trees. Windowed path:
 
 ```
-GLFW + thin GL dispatch (glfwGetProcAddress → mlc::gl::*)
+GLFW window/input (glfw_window_gl) + GLAD2 (gladLoadGL)
   → GlRenderer / TextRenderer на MLC (шейдеры, VBO, atlas batch)
   → main loop на MLC (poll → draw → swap)
 ```
 
 | Артефакт | Путь |
 |----------|------|
-| Track | [archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) |
-| GL dispatch | `runtime/include/mlc/gl/glfw_gl_dispatch.hpp` |
+| Track (native) | [archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) |
+| GLAD migration | [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) |
+| GL entry points | `runtime/include/mlc/gl/glad_gl_abi.hpp` + `runtime/third_party/glad/gl/` |
+| Window ABI | `runtime/include/mlc/gl/glfw_window_gl.hpp` |
 | Demo | `misc/examples/text_window_demo.mlc` (`scripts/run_text_window_demo.sh`) |
-| Smokes | `gl_renderer_smoke`, `text_renderer_native_smoke`, `glfw_*_smoke` |
+| Smokes | `gl_renderer_smoke`, `text_renderer_native_smoke`, `glad_link` / `gl_loader` |
 
 **Не в этом треке (закрыто отдельно):** layout/widgets/easing v0 —
 [GUI.md](GUI.md), [archive/tracks/TRACK_GUI_FRAMEWORK.md](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11.

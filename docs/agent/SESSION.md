@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=7 |
-| test_gate | STEP=6: REG 20/0; self-host DIFF 0; GUI smokes ok |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_GL_GLAD_MIGRATION closed → Critic |
+| test_gate | STEP=7 docs; prior STEP=6 REG 20/0 + DIFF 0 |
+
+### Turn 2026-07-11 29:10 (Driver TRACK_GL_GLAD_MIGRATION STEP=7 — docs + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 28:50 |
+| elapsed | ~20 min |
+| done    | Updated `TEXT_RENDERING.md` §3.3/§5.2/§8, `GUI.md`, `FFI_LAYER.md` §8 to GLAD2; TRACK→`docs/archive/tracks/`; PLAN §20e/§11 + priority closed. |
+| verify  | `test ! -f docs/agent/TRACK_GL_GLAD_MIGRATION.md`; archive Status closed; PLAN §20e **done**; GUI.md has no live dispatch path. |
+| result  | Track closed. Plain: docs match glad; ready for Critic. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_GL_GLAD_MIGRATION |
 
 ### Turn 2026-07-11 28:50 (Driver TRACK_GL_GLAD_MIGRATION STEP=6 — regression + self-host)
 

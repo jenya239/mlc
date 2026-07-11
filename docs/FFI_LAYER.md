@@ -235,7 +235,7 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
 | Ядро рантайма (`core/`/`concurrency/`) — **исправлено 2026-07-11, было ошибочным исключением** | `core/string.hpp`, `core/array.hpp` (COW/growth policy), `core/hashmap.hpp`, `concurrency/{mutex,channel,task,thread_pool}.hpp` | **портировать на self-hosted MLC** поверх примитивов выше — «рантайм остаётся C++ навсегда» было неверной уступкой (пользователь: «ручного C++ не должно быть нигде вообще, иначе в MLC нет смысла») → [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) |
 | FFI-адаптер к сторонней C-библиотеке (в основном bookkeeping/error-handling, не алгоритм) | `db/postgres.hpp`, `crypto/sodium.hpp`, часть `net/tcp.hpp` (i32-handle-table) | **убрать**: прямой `extern fn ... = "c_name" from "<header>"` + `extern type`+`drop` (слой уже закрыт, инфраструктура не нужна) — bookkeeping-логика (hex-encode, handle-table) переписывается на MLC |
 | Бизнес-логика/алгоритм, написанный на C++ вместо MLC (не биндинг ни к чему) | WebSocket protocol **ported** 2026-07-11; MSDF EDT/SDF **ported** 2026-07-11 ([TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) closed — thin `msdf_bridge` FreeType mask only) | **портировать на MLC целиком**, без FFI вообще для этой части |
-| Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | `gl/glfw_gl_dispatch.cpp` (`glfwGetProcAddress`+`reinterpret_cast`), `gl/loader_shim.cpp` (EGL/GLES2) | **убрать своими руками вообще** — `GLAD2` (сгенерированный один раз через `glad.sh`, вендоренный `.c`) резолвит function pointers сама через `#define glDrawArrays glad_glDrawArrays`; уже закрытый `extern fn ... from "<header>"` вызывает её прозрачно, без нового примитива каста |
+| Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | ~~`gl/glfw_gl_dispatch.cpp` / `loader_shim.cpp`~~ **deleted** 2026-07-11 | **done** — вендоренный **GLAD2** (`runtime/third_party/glad/`); MLC `glad_*.mlc` + `glad_*_abi.hpp`; GLFW window thin `glfw_window_gl` ([TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)) |
 
 **Уточнение по итогам чтения кода (2026-07-11), меняет более раннюю оценку
 в чате**: `header_import.mlc` (авто-парсер `.h` в decl'ы) **не является
@@ -258,23 +258,19 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 - [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) —
   **closed** 2026-07-11: Postgres/Crypto/Tcp → `*_abi.hpp`/`*_bridge.hpp`;
   bookkeeping partial MLC; TcpStream residual for websocket.
-- [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — EDT/SDF
-  алгоритм на MLC, без C++.
-- [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) — HTTP-парсер/
-  роутер на MLC (пересмотрено: не обёртка, порт логики).
-- [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) —
-  framing/handshake на MLC.
-- [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) — Env/Log/
-  Validation: перевод пайплайна Ruby→mlcc + чистая MLC-логика где возможно (**closed** 2026-07-11).
-- [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — GL-вызовы
-  через вендоренный GLAD2, без ручного C++ dispatch (заменяет отменённые
-  `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`, см.
-  `archive/tracks/`).
-- [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
-  `core`/`concurrency` (~4500 строк) на self-hosted MLC поверх
-  `malloc`/atomics/`pthread` через `extern fn`; максимальный приоритет и
-  максимальный риск (весь компилятор и все MLC-программы зависят от
-  корректности).
+- [TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) —
+  **closed** 2026-07-11: EDT/SDF на MLC.
+- [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) — **closed**:
+  HTTP-парсер/роутер на MLC.
+- [TRACK_STDLIB_WEBSOCKET_TO_MLC](archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) —
+  **closed**: framing/handshake на MLC.
+- [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) —
+  **closed** 2026-07-11: Env/Log/Validation.
+- [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) —
+  **closed** 2026-07-11 (awaiting Critic): GL через вендоренный GLAD2; hand
+  dispatch/shim deleted (заменяет `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`).
+- [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
+  **won't-do** 2026-07-11 (рантайм остаётся C++).
 
 ## 9. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
 

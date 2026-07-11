@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` active** STEP=7 — docs TEXT_RENDERING/GUI + close → Critic.
-See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
+**`TRACK_GL_GLAD_MIGRATION` closed** — awaiting Critic (`critique-audit`).
+See [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](../archive/tracks/TRACK_GL_GLAD_MIGRATION.md).
 
 
 ## Step sizing (good vs bad)
