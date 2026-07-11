@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) open (гипотеза, дорогой прототип, низкий приоритет) |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **open, реализация авторизована 2026-07-11** — 3 design-вопроса закрыты, Steps 1-10 (parser/checker/codegen/tests/docs) |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. SUPERVISOR deferred. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -402,10 +402,10 @@ compiler/
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
 | **13c** VM: массив/map только `i32` (не point-fix, value-model) | **done** (2026-07-11) | [TRACK_VM_TYPED_COLLECTIONS](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md) **closed** STEP=1–4; Critic OK (`cf613f0b`…`cdffcbf8`; gate 6/0) |
 | **14** FFI safety contract | **done** (2026-07-11) | [TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) **closed** STEP=1–5; Critic OK (`e1db7d81`…`3806d49c`); W-EXTERN-ATTR/ARITY; FFI_LAYER §9; REG 20/0; self-host DIFF 0 |
-| **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
+| **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, приоритет поднят 2026-07-11** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — гейт снят (внешний `.mlc`-код вне компилятора уже есть); Steps 1-5 |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
 | **17** `T!E` error-union sugar | **done** (2026-07-11) | [TRACK_LANG_ERROR_UNION](archive/tracks/TRACK_LANG_ERROR_UNION.md) **closed** STEP=1–5; Critic OK (`57913a3f`…`4ee642cc`); Ruby+mlcc desugar; e2e+`?`; REG 20/0; self-host DIFF 0 |
-| **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
+| **18** Package manager | **open, реализация авторизована 2026-07-11** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — Steps 1-4 design (git+pinned-commit, `.mlc_packages/`, без реестра) затем Steps 5-10 implementation |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
 | **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **done** (2026-07-11) | [FFI_LAYER.md](FFI_LAYER.md) §8; подтреки 20a–e **closed** (Critic OK где применимо). Рантайм языка остаётся C++ (won't-do self-host runtime). Residuals: bridges/TcpStream, thin abi, smoke names |
 | **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **done** (2026-07-11) | [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) **closed** STEP=1–7; Critic OK (`8ffe67b8`…`8b21220a`). Residual: bridges/TcpStream |
@@ -414,6 +414,15 @@ compiler/
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **done** (2026-07-11) | [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) **closed** STEP=1–6; Critic OK; env_abi + Log/Validate MLC; bare names; REG 20/0; DIFF 0 |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **done** (2026-07-11) | [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) **closed** STEP=1–7; Critic OK (`0b613af4`…`855c7485`); vendored glad; dispatch/shim deleted; REG 20/0; self-host DIFF 0 |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
+| **21** | Compile-smoke coverage для `misc/examples`/`misc/gui` (regression молчала на `gui_button_demo.mlc`) | **open, высокий приоритет** | [TRACK_EXAMPLES_CI](agent/TRACK_EXAMPLES_CI.md) — обнаружено вручную 2026-07-11 (не Driver-турном); файл уже пофикшен вручную, трек — про покрытие, не про сам фикс |
+| **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **open, средний приоритет** | [TRACK_FFI_EXTERN_DEDUP](agent/TRACK_FFI_EXTERN_DEDUP.md) — root cause бага из §21; checker/codegen dedup |
+| **23** | GUI input robustness (debounce клика, keyboard text, resize) | **open, средний приоритет** | [TRACK_GUI_INPUT_ROBUSTNESS](agent/TRACK_GUI_INPUT_ROBUSTNESS.md) — найдено вручную при демо 2026-07-11, STEP=1 сначала подтверждает репро |
+| **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **open, средний приоритет** | [TRACK_STDLIB_HTTP_HARDENING](agent/TRACK_STDLIB_HTTP_HARDENING.md) |
+| **25** | Concurrency Supervisor — реализация (гейт снят) | **open** (2026-07-11: gate satisfied) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) — permanent/transient/temporary, one_for_one, restart storm |
+| **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **open** (2026-07-11: unblocked, Task/TaskScope/Isolate в продакшене) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) |
+| **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **open, средний приоритет** | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) |
+| **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **open, средний приоритет** | [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md) |
+| **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -477,8 +486,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     STEP=8 (**done** 2026-07-10: self-host identical; regression 20/0; MAE≤8;
       track **closed** → archive)
   → CONCURRENCY_SUPERVISOR (deferred; after chat-server gate)
-  → LANG_REGION_ARENA (ЗАБЛОКИРОВАН — 3 design-вопроса в самом треке не решены,
-    не начинать реализацию, максимум — отдельный design-turn)
+  → LANG_REGION_ARENA (2026-07-11: 3 design-вопроса закрыты, реализация
+    авторизована пользователем — Steps 1-10, parser→checker→codegen→tests→docs)
   → LANG_INT_OVERFLOW (**closed** 2026-07-10: signed debug-panic/release-UB;
       unsigned wrap; div0 panic; `mlc::int_arith` i32; tests + DIFF + regression 20/0)
   → STDLIB_NET_SERVER (**closed** 2026-07-10: TCP+HTTP parse/router/ThreadPool;
@@ -547,12 +556,59 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **FFI_SAFETY (**closed** 2026-07-11: Critic OK; STEP=1–5; W-EXTERN-ATTR/ARITY;
       FFI_LAYER §9; REG 20/0; self-host DIFF 0;
       → [archive/tracks/TRACK_FFI_SAFETY.md](archive/tracks/TRACK_FFI_SAFETY.md)):**
-  → **LANG_ERROR_UNION (**closed** 2026-07-11: STEP=1–5; T!E→Result; e2e+`?`;
-      REG 20/0; self-host DIFF 0; awaiting Critic;
+  → **LANG_ERROR_UNION (**closed** 2026-07-11: Critic OK; STEP=1–5; T!E→Result;
+      e2e+`?`; REG 20/0; self-host DIFF 0;
       → [archive/tracks/TRACK_LANG_ERROR_UNION.md](archive/tracks/TRACK_LANG_ERROR_UNION.md)):**
-  → DEBUG_SOURCE_MAP (низкий приоритет, research до внешнего MLC-проекта)
-  → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
-    без отдельной команды пользователя)
+  → LANG_AUTO_CYCLE (design-only, вероятный won't-do, не начинать реализацию
+    без отдельной команды пользователя — не выбран пользователем 2026-07-11
+    в списке активированных резервуаров, остаётся как есть)
+
+  ↓ (2026-07-11, ~300-step horizon backlog — найдено вручную вне очереди
+    при демо-сессии с пользователем, формализовано в треки для Grok)
+
+  → EXAMPLES_CI (высокий приоритет: regression молчала на gui_button_demo.mlc,
+    scripts/run_examples_compile_sweep.sh + wiring в regression_gate.sh)
+  → FFI_EXTERN_DEDUP (средний приоритет: root cause дубликата extern-from-header
+    в графе импортов — checker/codegen fix, не point-patch)
+  → GUI_INPUT_ROBUSTNESS (средний приоритет: STEP=1 репро debounce клика
+    ПЕРЕД фиксом; keyboard text input; window resize)
+  → STDLIB_HTTP_HARDENING (средний приоритет: keep-alive, лимиты, static files,
+    idle timeout, graceful shutdown doc, минимальный load-test)
+  → CONCURRENCY_SUPERVISOR (gate снят — permanent/transient/temporary,
+    one_for_one, restart storm protection; STEP=4 решает MLC-reachable или
+    C++-only ПЕРЕД реализацией API)
+  → CONCURRENCY_TEST_HARNESS T6 (nightly fuzz/chaos, отдельная non-blocking
+    CI job) + T7 (`TestRuntime` MLC-level, тем же способом решить
+    MLC-reachable/C++-only)
+  → LANG_DOCS (`docs/LANGUAGE_REFERENCE.md` — по разделам языка, примеры
+    только из существующих e2e/demo, verify-скрипт компилирует каждый пример)
+  → STDLIB_DOCS (`docs/STDLIB_REFERENCE.md` — по модулю, снипеты только
+    из существующих demo-файлов)
+
+  ↓ (2026-07-11, пользователь авторизовал 4 ранее гейтированных design-only
+    резервуара — активированы явной командой в чате, не самостоятельно)
+
+  → LANG_REGION_ARENA (3 design-вопроса закрыты в самом треке — phantom
+    RegionTag generic, полный запрет escape, тип целиком региональный или
+    нет; Steps 1-10 parser→checker→codegen→UB-repro-tests→docs)
+  → PACKAGE_MANAGER (Steps 1-4 design: git+pinned-commit, `.mlc_packages/`,
+    без реестра — закрыть design ПЕРЕД Steps 5-10 implementation)
+  → DEBUG_SOURCE_MAP (гейт снят — внешний `.mlc`-код вне компилятора уже
+    есть; Steps 1-5, `#line` directives)
+  → GUI_CANVAS_GRAPH (крупнейший резервуар, 100+ шагов) — Phase A: STEP=1
+    закрывает формат дерева/matrix/координатной точности (сам трек уже
+    называет референсы — Flash `DisplayObjectContainer`, Skia `SkCanvas`
+    save/restore, Godot `CanvasItem`, не переизобретать), затем retained
+    tree + affine transform + hit-test + batched draw заменяет `misc/gui/`
+    v0; Phase B: больше виджетов (label/rect/checkbox/slider/text-input,
+    последнее уже частично покрыто `TRACK_GUI_INPUT_ROBUSTNESS` keyboard
+    Step); Phase C: dirty-tracking + spatial index (quadtree) для больших
+    деревьев; Phase D: camera pan/zoom (трансформация корневого узла) +
+    vector-path bezier примитив (нужен и для blueprint-связей, и для
+    Flash-style форм) + node/wire canvas MVP. Planner дробит на under-track
+    файлы по фазам при старте (не пытаться держать 100+ шагов в одном
+    TRACK_GUI_CANVAS_GRAPH.md — см. правило SESSION.md > 600 строк, тот же
+    принцип применим к TRACK-файлам)
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

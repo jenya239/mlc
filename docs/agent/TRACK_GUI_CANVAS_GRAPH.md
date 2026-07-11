@@ -1,4 +1,4 @@
-# Track: Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas) — design-only
+# Track: Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas)
 
 Parent: [../GUI.md](../GUI.md), [../archive/tracks/TRACK_GUI_FRAMEWORK.md](../archive/tracks/TRACK_GUI_FRAMEWORK.md),
 [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §5.3.
@@ -7,7 +7,12 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: open, design-only, низкий приоритет
+## Status: open, активирован 2026-07-11 явной командой пользователя — крупнейший
+резервуар работы в текущем backlog (100+ потенциальных шагов). Дробится на
+4 фазы (A-D), каждая фаза — отдельный TRACK-файл при старте (Planner
+создаёт `TRACK_GUI_SCENE_PHASE_A.md` и т.д. по мере продвижения, не
+накапливает все шаги в этом файле — тот же принцип что ограничение размера
+`SESSION.md`).
 
 ## Ключевая коррекция (2026-07-11)
 
@@ -49,26 +54,44 @@ primitive рендерер с самого начала. v0 (`misc/gui/`, screen
 | 6 | Hit-testing/событийная модель через то же дерево | Нет (только `point_in_rect` для одной кнопки) | Event bubbling через transform-цепочку — общее для click в классике, hover в игре, drag узла в canvas |
 | 7 | Текст при произвольном масштабе | **Готово** — MSDF `RenderMode=MsdfRgb8`, single atlas entry per glyph | — |
 
-## Decision — отложено
-
-Не фиксировать API/структуры до решения строить: нужен отдельный design-
-STEP с разбором конкретной библиотеки-референса (структура matrix-стека,
-формат retained-tree — не переизобретать, посмотреть на существующие
-scene-graph 2D движки: Flash `DisplayObjectContainer`, Skia `SkCanvas`
-save/restore stack, Godot `CanvasItem`). Когда трек активируется — STEP=1
-должен закрыть: формат дерева (запись MLC vs указатели/индексы для
-кеш-локальности), формат matrix (2×3 affine достаточно, без перспективы),
-координатная точность на больших полях (camera-relative rendering —
-вычитать позицию камеры перед отправкой в GPU).
-
-## Out of scope (пока)
-
-- Реализация — трек фиксирует требование, не авторизует код.
-- v0 (`misc/gui/`) не трогать до решения строить — параллельный
-  прототип, не основа будущего фундамента.
-
-## Steps
+## Phase A: фундамент (retained tree + affine transform + hit-test + batched draw)
 
 | Step | Item | Status |
 |------|------|--------|
-| — | Design-only, не активирован. Активировать явной командой пользователя. | n/a |
+| 1 | Design decision (закрыть перед кодом, не переизобретать): формат дерева (record с явным `[NodeId]`/индексами для дочерних, не `Shared<Node>`-указатели — кеш-локальность и совместимо с `TRACK_LANG_REGION_ARENA` regional allocation если понадобится), формат matrix (2×3 affine, без перспективы — референс Flash `DisplayObjectContainer` matrix chain), координатная точность (camera-relative: вычитать позицию камеры из мировых координат перед отправкой в GPU, не полагаться на f32 точность на больших полях — референс Godot `CanvasItem`/large-world rendering practice). Написать решение в этот файл (заменить эту строку) до Step 2 | pending |
+| 2 | `misc/gui/scene.mlc`: `SceneNode` record (id, parent index, local transform 2×3, kind — leaf primitive vs container), `Scene` = flat array of nodes (не рекурсивная структура — обход по индексам) | pending |
+| 3 | World-transform pass: один проход по `Scene` в topological order (parent before child, гарантировано порядком вставки в flat array), накопление world = parent_world * local — reused buffer, не realloc каждый кадр | pending |
+| 4 | Hit-testing через дерево: point → world-to-local transform по цепочке предков (обратная matrix), assert на существующем `gui_button` case (мигрировать один смок как proof, не всё `misc/gui/` сразу) | pending |
+| 5 | Batched draw: один `draw_arrays` call на группу узлов одного примитива/материала (rect-fill вариант, reused из trick в `text_dashboard_demo.mlc` — solid rect как packed atlas glyph — переиспользовать для этой фазы, не изобретать новый шейдер) | pending |
+| 6 | Migration smoke: текущая v0 `gui_button_demo.mlc` кнопка воспроизведена на новом `scene.mlc` фундаменте бок-о-бок (не заменяя v0 сразу, чтобы не сломать `TRACK_GUI_INPUT_ROBUSTNESS` работу) — доказательство что фундамент действительно достаточен для существующего кейса | pending |
+| 7 | Verify: новый смок зелёный; self-host diff не требуется (misc/gui — не compiler/) | pending |
+
+## Phase B: виджеты (после Phase A closed)
+
+Label/rect/checkbox/slider как `SceneNode` kinds; text-input виджет
+переиспользует keyboard-input primitive из `TRACK_GUI_INPUT_ROBUSTNESS`
+Step 3 (не дублировать). Детальные steps — Planner расписывает при старте
+фазы (создать `TRACK_GUI_SCENE_PHASE_B.md`), не раньше Phase A closed.
+
+## Phase C: dirty-tracking + spatial index (после Phase B closed)
+
+Пересчёт world-transform/перетесселляция только для изменившихся узлов;
+опциональный quadtree culling, включается по порогу числа узлов (не
+структура данных по умолчанию для 20 классических виджетов). Detailed
+steps — отдельный `TRACK_GUI_SCENE_PHASE_C.md` при старте.
+
+## Phase D: camera + vector path + blueprint canvas (после Phase C closed)
+
+Camera pan/zoom = трансформация корневого узла. Vector-path bezier
+fill+stroke примитив (один примитив для blueprint-связей и Flash-style
+вычурных форм — не два). Node/wire canvas MVP (минимальный
+Figma/blueprint-подобный демо: N узлов, drag, кривая связь между двумя
+точками). Detailed steps — отдельный `TRACK_GUI_SCENE_PHASE_D.md` при
+старте; это конечная цель, ради которой трек создавался.
+
+## Out of scope
+
+- Полноценный дизайн-инструмент (Figma-класса продукт) — только
+  фундамент + минимальный MVP демо в Phase D, не продукт.
+- v0 (`misc/gui/`) не удаляется до explicit Phase A Step 6 миграционного
+  smoke — работает параллельно.

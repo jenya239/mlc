@@ -3,9 +3,9 @@
 Parent: [../PLAN.md](../PLAN.md) §6 ("Package manager — после Phase 3"), §8
 ("Что НЕ делать сейчас").
 
-## Status: **open, design-only, самый низкий приоритет** — явно отложено в
-`PLAN.md`; этот трек существует только чтобы зафиксировать вопрос и не
-потерять его, реализация не начинается без отдельной явной команды.
+## Status: **open, реализация авторизована 2026-07-11** — design (Steps 1-4)
+делается первым и полностью, реализация (Steps 5+) начинается только после
+того, как Steps 1-4 закрыты и решение зафиксировано в `docs/PACKAGE_MANAGER.md`.
 
 ## Проблема
 
@@ -31,14 +31,20 @@ Parent: [../PLAN.md](../PLAN.md) §6 ("Package manager — после Phase 3"),
 | 1 | Design: минимальная модель зависимостей. Кандидат — git-ссылка + pinned commit/tag в манифесте (`mlc.toml`/`mlc.json`, содержимое: имя, версия, список зависимостей как `{ git = "...", rev = "..." }`), без центрального реестра (аналог раннего Go modules, не npm/crates.io) — реестр требует инфраструктуры (хостинг, публикация, security review пакетов), непропорционально для текущего размера проекта. | pending |
 | 2 | Design: разрешение путей импорта для внешних пакетов — как `module_loader.mlc` отличает "модуль из текущего проекта" от "модуль из зависимости" (вероятно: отдельная директория типа `.mlc_packages/`, аналог `node_modules`/vendor-каталога, checked out явно, не resolved динамически при каждой компиляции). | pending |
 | 3 | Design: версионирование самого языка/stdlib относительно пакетов — если пакет A собран под другую версию `mlcc`, что происходит (ничего не происходит на этой стадии проекта — фиксировать как известное ограничение, не решать сейчас). | pending |
-| 4 | Документация решения STEP=1-3 в `PLAN.md`/новом `docs/PACKAGE_MANAGER.md`. **Реализация (CLI-команда `mlcc fetch`/аналог, парсинг манифеста) — отдельный трек, не открывать без явной команды пользователя.** | pending |
+| 4 | Документация решения STEP=1-3 в новом `docs/PACKAGE_MANAGER.md` (design frozen — после этого Steps 5+ реализуют ровно то, что здесь зафиксировано, не более) | pending |
+| 5 | Manifest parser (Ruby, per scripts-language rule — это tooling вокруг компилятора, не сам язык): читает `mlc.toml`/`mlc.json`, валидирует схему (name/version/deps `{git, rev}`) | pending |
+| 6 | `.mlc_packages/` layout: CLI-скрипт (`scripts/mlc_pkg_fetch.rb` или аналог) — `git clone` + `checkout <rev>` каждой зависимости в `.mlc_packages/<name>/`, идемпотентно (повторный запуск — no-op если rev совпадает) | pending |
+| 7 | `module_loader.mlc` (или его Ruby/self-hosted аналог) — резолвинг импортов: путь начинается не из текущего проекта → искать в `.mlc_packages/<name>/...` по имени пакета из манифеста, ошибка с понятным текстом если пакет не в manifest/не fetched | pending |
+| 8 | E2E smoke: фиктивный package-репозиторий (локальный git repo в `/tmp`, не реальный GitHub — не создавать внешних зависимостей для теста) с одним экспортируемым модулем; проект A подключает его через манифест, `mlc_pkg_fetch` + компиляция проходят | pending |
+| 9 | Docs: `docs/PACKAGE_MANAGER.md` — usage (`mlc.toml` пример, команда fetch, как добавить зависимость); `README.md` — одна строка + ссылка | pending |
+| 10 | Verify: self-host diff identical если `module_loader`-эквивалент в `compiler/` менялся; иначе (если резолвинг остался Ruby-side / tooling-only) — просто `scripts/regression_gate.sh` green | pending |
 
-## Out of scope (жёстко, до отдельной команды)
+## Out of scope (жёстко)
 
-- Любая реализация (CLI, манифест-парсер, resolver) — этот трек только
-  design.
 - Центральный реестр пакетов (crates.io-аналог) — не рассматривать вообще
   на этой стадии проекта.
-- Semver resolution / dependency diamond solving — если STEP=1 выберет
-  git+pinned-commit модель, эта проблема не возникает (по построению,
-  как в раннем vendoring-подходе).
+- Semver resolution / dependency diamond solving — git+pinned-commit модель
+  (Step 1) исключает эту проблему по построению, как в раннем
+  vendoring-подходе.
+- Публикация/discovery (нет способа "найти" пакет — только прямая
+  git-ссылка, известная заранее).

@@ -6,7 +6,7 @@ Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
 Смежный трек (closed): [../archive/tracks/TRACK_CONCURRENCY_V2.md](../archive/tracks/TRACK_CONCURRENCY_V2.md);
 [../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md).
 
-## Status: **open** — T1–T5 done; T6 deferred (optional); T7 later
+## Status: **open** — T1–T5 done; T6/T7 unblocked 2026-07-11 (Task/TaskScope/Isolate now in production use via HTTP demos, see `TRACK_CONCURRENCY_SUPERVISOR`)
 
 **Driver 2026-07-09:** T5 — `stress_channel.cpp` cancel-during-send/recv +
 many blocked receivers (StopToken). Isolate track unblocked.
@@ -37,8 +37,8 @@ scripts/concurrency_sanitize_gate.sh
 | 3 (T3) | Новые `runtime/test/stress_mutex.cpp` (high contention, exception-safety под lock), `stress_arc.cpp` (concurrent clone/drop), `stress_spawn.cpp` (много одновременных spawn, exception внутри spawn не роняет процесс). Добавить в `run_concurrency_smoke.sh`. | **done** |
 | 4 (T4) | `scripts/concurrency_sanitize_gate.sh` (asan/ubsan/tsan матрица по всем stress-тестам) + wiring в `.github/workflows/ci.yml` как обязательная job (не опциональный ручной `MLC_TSAN=1`). | **done** |
 | 5 (T5) | Cancel-during-send/recv в матрице Layer 2 (`stress_channel` + StopToken). | **done** |
-| 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. | **deferred** (optional; T1+T5 ready) |
-| 7 (T7) | `TestRuntime.new(seed:)` на уровне MLC (тонкая обёртка над `TestScheduler`). | CONCURRENCY_V2.md Фазы 6-8 (Task/TaskScope/Isolate) |
+| 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. Wire как отдельная (не блокирующая обычный PR) CI job — nightly cron, не на каждый push. | pending |
+| 7 (T7) | `TestRuntime.new(seed:)` на уровне MLC (тонкая обёртка над `TestScheduler`) — решить MLC-reachable или C++-only тем же способом что `STDLIB_JOB_QUEUE`/`CONCURRENCY_SUPERVISOR` Step 4 (не предполагать MLC-reachable по умолчанию). | pending |
 
 ### STEP=1 acceptance (Driver)
 

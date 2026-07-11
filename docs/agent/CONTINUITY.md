@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-11-runtime-stays-cpp` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-11-post-cpp-backlog` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-11-runtime-stays-cpp
+INSTRUCTIONS_REV=2026-07-11-post-cpp-backlog
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -56,7 +56,8 @@ INSTRUCTIONS_REV=2026-07-11-runtime-stays-cpp
 | **`TRACK_MIR_VM_FULL` STEP=12 done (Epic 4 закрыт)** | **STOP GATE, не Driver STEP=13.** Epic 5 не авторизован без явной команды пользователя в чате (см. HARD STOP GATE в самом треке). `next` = `ROLE=Planner` — выбрать следующий трек из очереди `PLAN.md`, не открывать Epic 5 |
 | **Этот turn закрыл трек (Driver STEP=N был последним pending, TRACK помечен closed)** | `next` = **`ROLE=Critic STEP=critique-audit TRACK=<только что закрытый>`** — обязательно, даже если следующий трек в очереди `PLAN.md` уже известен и есть pending шаг. Инцидент 2026-07-10: 5 закрытий подряд (TRAMPOLINE, BLOCK_ID_COLLISION, LOWERING_GAPS, CLI_STDIN, TEXT_RENDERING) — ни разу не запустился Critic, правило «Planner не повторяется» (см. ниже) съедало ротацию, потому что pending-шаг в следующем треке был всегда. Проверка на старте turn: если последняя запись `SESSION.md` содержит `close`/`closed` в `result` — этот HARD LIMIT применяется **раньше** любого другого выбора `next`, включая numbered pending step |
 | **`CONCURRENCY_SPAWN_DETACH`** (PLAN.md §11b) | **closed** 2026-07-11 (Critic). Was: bare `spawn` serialized via `~future`. Delivered: E089 + MLC `scope`→TaskScope + accept-loop curl gate. Do not reopen; Planner takes «без C++» (§20b/d/e) |
-| **«без hand-written C++» инициатива** (PLAN.md §20, треки `FFI_SHIM_MIGRATION`/`TEXT_MSDF_TO_MLC`/`STDLIB_HTTP_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/`GL_GLAD_MIGRATION`) | Пользователь 2026-07-11 — высокий приоритет, но без «максимальный приоритет» (в отличие от прошлого `PIPELINE_MERGE_TCP_SPAWN`). `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` superseded тем же днём (GLAD2/epoxy сами резолвят function pointers, свой каст/таблица не нужны) → `docs/archive/tracks/`, заменены на `GL_GLAD_MIGRATION`, не открывать их снова. `LANG_SELF_HOSTED_RUNTIME` рассмотрен и **отклонён** тем же днём (рантайм `core`/`concurrency` остаётся C++ — стандартная практика, риск/выгода не в пользу переписывания) → `docs/archive/tracks/`, не открывать снова. Planner берёт следующий pending шаг из этой группы **после** текущего активного трека, не прерывая его на середине; порядок между треками этой группы — по зависимостям (`STDLIB_HTTP_MLC` → `STDLIB_WEBSOCKET_TO_MLC`), остальное — любой |
+| **«без hand-written C++» инициатива** (PLAN.md §20, треки `FFI_SHIM_MIGRATION`/`TEXT_MSDF_TO_MLC`/`STDLIB_HTTP_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/`GL_GLAD_MIGRATION`) | **§20 initiative closed** 2026-07-11, все 20a-e done. `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` superseded тем же днём (GLAD2/epoxy сами резолвят function pointers) → `docs/archive/tracks/`, не открывать снова. `LANG_SELF_HOSTED_RUNTIME` рассмотрен и **отклонён** тем же днём → `docs/archive/tracks/`, не открывать снова |
+| **~300-step backlog (PLAN.md §21-29, построен 2026-07-11)** | Порядок: `EXAMPLES_CI` → `FFI_EXTERN_DEDUP` → `GUI_INPUT_ROBUSTNESS` → `STDLIB_HTTP_HARDENING` → `CONCURRENCY_SUPERVISOR` → `CONCURRENCY_TEST_HARNESS` T6/T7 → `LANG_DOCS` → `STDLIB_DOCS` → `LANG_REGION_ARENA` → `PACKAGE_MANAGER` → `DEBUG_SOURCE_MAP` → `GUI_CANVAS_GRAPH` (Phase A→B→C→D, под-треки `TRACK_GUI_SCENE_PHASE_{A,B,C,D}.md` создаются Planner'ом при старте каждой фазы). Все ungated — пользователь 2026-07-11 явно авторизовал реализацию `LANG_REGION_ARENA`/`PACKAGE_MANAGER`/`DEBUG_SOURCE_MAP`/`GUI_CANVAS_GRAPH` (ранее design-only/deferred/low-priority), Driver открывает Step 1 любого из них без доп. разрешения, по порядку очереди |
 
 ## When to stop (only these)
 

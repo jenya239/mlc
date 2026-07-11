@@ -1,0 +1,94 @@
+// Long-running HTTP demo server: serves until killed (Ctrl+C), logs each
+// request to console, responds with primitive HTML. Real concurrency via
+// scope.spawn (TRACK_CONCURRENCY_SPAWN_DETACH) — parallel connections handled
+// on separate OS threads, not serialized.
+
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+import {
+  parse_http_request,
+  format_http_response,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader,
+  HttpParseOk,
+  HttpParseErr
+} from 'HttpServer'
+
+fn html_page(title: string, body: string) -> string =
+  "<!doctype html><html><head><title>" + title + "</title></head>"
+    + "<body><h1>" + title + "</h1><p>" + body + "</p></body></html>"
+
+fn route_http(request: HttpRequest) -> HttpResponse = do
+  if request.path == "/" then
+    HttpResponse {
+      status: 200,
+      headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
+      body: html_page("MLC HTTP demo", "Try <code>/echo/something</code> or <code>/health</code>.")
+    }
+  else if request.path == "/health" then
+    HttpResponse {
+      status: 200,
+      headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
+      body: html_page("OK", "Server is alive.")
+    }
+  else
+    HttpResponse {
+      status: 200,
+      headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
+      body: html_page("You requested " + request.path, "Method: " + request.method)
+    }
+  end
+end
+
+fn handle_one(stream: i32) -> i32 = do
+  let raw_option = read(stream, 65536)
+  if !raw_option.is_some() then
+    close_stream(stream)
+    println("[mlc-http] <closed before request>")
+    return 1
+  end
+  let raw = raw_option.unwrap()
+  let response = match parse_http_request(raw) {
+    HttpParseErr => do
+      println("[mlc-http] <unparsable request> -> 400")
+      HttpResponse {
+        status: 400,
+        headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
+        body: html_page("400 Bad Request", "Could not parse request.")
+      }
+    end,
+    HttpParseOk(request) => do
+      let handled = route_http(request)
+      println("[mlc-http] " + request.method + " " + request.path + " -> " + handled.status.to_string())
+      handled
+    end
+  }
+  let wrote = write_all(stream, format_http_response(response))
+  close_stream(stream)
+  if wrote then 0 else 2 end
+end
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 8080)
+  if !listener_option.is_some() then
+    println("bind failed: " + last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  println("[mlc-http] listening on http://127.0.0.1:" + port(listener).to_string() + " (Ctrl+C to stop)")
+
+  scope |server_scope| do
+    while true do
+      let stream_option = accept(listener)
+      if !stream_option.is_some() then
+        println("[mlc-http] accept failed: " + last_error())
+      else
+        let stream = stream_option.unwrap()
+        server_scope.spawn do handle_one(stream) end
+      end
+    end
+  end
+
+  close_listener(listener)
+  0
+end
