@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SHIM_MIGRATION` active** STEP=6 — regression gates (postgres/crypto/tcp/ws).
+**`TRACK_FFI_SHIM_MIGRATION` active** STEP=7 — self-host diff + `regression_gate.sh`; close.
 See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
 
 

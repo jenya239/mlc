@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=6 |
-| test_gate | tcp/crypto/postgres/websocket gates + mlc abi smokes |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=7 |
+| test_gate | pg/crypto/tcp/spawn/ws/http + abi smokes OK |
+
+### Turn 2026-07-11 15:00 (Driver TRACK_FFI_SHIM_MIGRATION STEP=6 — regression)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 14:55 |
+| elapsed | ~5 min |
+| done    | Re-ran postgres/crypto/tcp/mlcc-tcp/spawn/websocket/http curl + three mlc abi smokes. |
+| verify  | All EXIT 0 / gate OK. |
+| result  | STEP=6 done. Plain: public API gates still green after shim delete. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_FFI_SHIM_MIGRATION — self-host diff + regression_gate; close |
 
 ### Turn 2026-07-11 14:55 (Driver TRACK_FFI_SHIM_MIGRATION STEP=5 — delete shims)
 
