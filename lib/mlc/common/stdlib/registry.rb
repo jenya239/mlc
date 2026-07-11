@@ -94,9 +94,9 @@ module MLC
         },
         "std/log/log" => {
           category: "log",
-          type: :extern,
+          type: :mixed,
           namespace: "mlc::log",
-          path: "log/log.mlc"
+          path: "log/logger.mlc"
         },
         "std/validate/validate" => {
           category: "validate",

@@ -21,10 +21,11 @@ class MLCEnvLogStdlibTest < Minitest::Test
     MLC
     cpp = MLC.compile(source).to_source
     assert_includes cpp, "mlc/env/env_abi.hpp"
-    assert_includes cpp, "mlc/log/log.hpp"
+    refute_includes cpp, "mlc/log/log.hpp"
     assert_includes cpp, "mlc::env::get"
     assert_includes cpp, "mlc::env::get_or"
     assert_includes cpp, "mlc::env::has"
+    # Ruby still maps Log.* → mlc::log::* (no body emit); Log logic is mlcc MLC.
     assert_includes cpp, "mlc::log::info"
     assert_includes cpp, "mlc::log::warn"
     assert_includes cpp, "mlc::log::error"

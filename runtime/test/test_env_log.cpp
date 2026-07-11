@@ -1,14 +1,11 @@
-// Env + Log smoke (TRACK_STDLIB_ENV_LOGGING STEP=2).
+// Env runtime smoke (TRACK_STDLIB_LOGIC_TO_MLC STEP=3).
+// Log JSON-lines moved to MLC — see misc/examples/log_mlc_smoke.mlc.
 // g++ -std=c++20 -I../include -o test_env_log test_env_log.cpp && ./test_env_log
 
 #include "mlc/env/env_abi.hpp"
-#include "mlc/log/log.hpp"
 
-#include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include <string>
-#include <unistd.h>
 
 static int passed = 0;
 static int failed = 0;
@@ -43,55 +40,8 @@ void test_env_get_has_get_or() {
         == mlc::String("default"));
 }
 
-std::string capture_stderr_log(void (*emit)()) {
-  int pipe_fds[2];
-  if (pipe(pipe_fds) != 0) {
-    return {};
-  }
-  int saved_stderr = dup(STDERR_FILENO);
-  dup2(pipe_fds[1], STDERR_FILENO);
-  close(pipe_fds[1]);
-  emit();
-  fflush(stderr);
-  dup2(saved_stderr, STDERR_FILENO);
-  close(saved_stderr);
-
-  std::string captured;
-  char buffer[512];
-  ssize_t bytes_read = 0;
-  while ((bytes_read = read(pipe_fds[0], buffer, sizeof(buffer))) > 0) {
-    captured.append(buffer, static_cast<size_t>(bytes_read));
-  }
-  close(pipe_fds[0]);
-  return captured;
-}
-
-void test_log_json_lines() {
-  std::string info_line = capture_stderr_log([] {
-    mlc::log::info(mlc::String("hello"));
-  });
-  CHECK(info_line == "{\"level\":\"info\",\"msg\":\"hello\"}\n");
-
-  std::string escaped_line = capture_stderr_log([] {
-    mlc::log::warn(mlc::String("a\"b\\c\nd"));
-  });
-  CHECK(escaped_line == "{\"level\":\"warn\",\"msg\":\"a\\\"b\\\\c\\nd\"}\n");
-
-  std::string error_line = capture_stderr_log([] {
-    mlc::log::error(mlc::String("boom"));
-  });
-  CHECK(error_line.find("\"level\":\"error\"") != std::string::npos);
-  CHECK(error_line.find("\"msg\":\"boom\"") != std::string::npos);
-
-  std::string debug_line = capture_stderr_log([] {
-    mlc::log::debug(mlc::String("trace"));
-  });
-  CHECK(debug_line.find("\"level\":\"debug\"") != std::string::npos);
-}
-
 int main() {
   test_env_get_has_get_or();
-  test_log_json_lines();
   std::cout << "env_log smoke: " << passed << " passed, " << failed << " failed\n";
   return failed == 0 ? 0 : 1;
 }

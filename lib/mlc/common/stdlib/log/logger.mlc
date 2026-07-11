@@ -1,0 +1,90 @@
+//! @module std/log/log
+//! @category log
+//! @type mixed
+//! @namespace mlc::log
+//!
+//! TRACK_STDLIB_LOGIC_TO_MLC STEP=3 — JSON-line logging in MLC; log.hpp deleted.
+//! File is logger.mlc (not log.mlc) so mlcc TU namespace is not `log` (math.h clash).
+//! Format: {"level":"<level>","msg":"<escaped>"}\n on stderr.
+
+module Log
+
+extern fn write_stderr_line(line: string) -> unit =
+  "mlc::log::write_stderr_line" from "mlc/log/log_abi.hpp"
+
+fn nibble_to_hex(nibble: i32) -> string = do
+  if nibble < 10 then
+    if nibble == 0 then "0"
+    else if nibble == 1 then "1"
+    else if nibble == 2 then "2"
+    else if nibble == 3 then "3"
+    else if nibble == 4 then "4"
+    else if nibble == 5 then "5"
+    else if nibble == 6 then "6"
+    else if nibble == 7 then "7"
+    else if nibble == 8 then "8"
+    else "9"
+    end
+  else if nibble == 10 then "a"
+  else if nibble == 11 then "b"
+  else if nibble == 12 then "c"
+  else if nibble == 13 then "d"
+  else if nibble == 14 then "e"
+  else "f"
+  end
+end
+
+fn control_byte_code(piece: string) -> i32 = do
+  const controls = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+  let mut code = 0
+  while code < 32 do
+    if controls.byte_at(code) == piece then
+      return code
+    end
+    code = code + 1
+  end
+  -1
+end
+
+fn append_json_escaped(text: string) -> string = do
+  let mut output = ""
+  let size = text.byte_size()
+  let mut index = 0
+  while index < size do
+    let piece = text.byte_at(index)
+    if piece == "\"" then
+      output = output + "\\\""
+    else if piece == "\\" then
+      output = output + "\\\\"
+    else if piece == "\b" then
+      output = output + "\\b"
+    else if piece == "\f" then
+      output = output + "\\f"
+    else if piece == "\n" then
+      output = output + "\\n"
+    else if piece == "\r" then
+      output = output + "\\r"
+    else if piece == "\t" then
+      output = output + "\\t"
+    else
+      let code = control_byte_code(piece)
+      if code >= 0 then
+        output = output + "\\u" + nibble_to_hex((code / 4096) % 16) + nibble_to_hex((code / 256) % 16) + nibble_to_hex((code / 16) % 16) + nibble_to_hex(code % 16)
+      else
+        output = output + piece
+      end
+    end
+    index = index + 1
+  end
+  output
+end
+
+fn write_line(level: string, message: string) -> unit = do
+  let line = "{\"level\":\"" + level + "\",\"msg\":\"" + append_json_escaped(message) + "\"}"
+  write_stderr_line(line)
+end
+
+export fn error(message: string) -> unit = write_line("error", message)
+export fn warn(message: string) -> unit = write_line("warn", message)
+export fn info(message: string) -> unit = write_line("info", message)
+export fn debug(message: string) -> unit = write_line("debug", message)

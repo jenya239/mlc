@@ -1,0 +1,11 @@
+// TRACK_STDLIB_LOGIC_TO_MLC STEP=3 — mlcc Log MLC JSON-lines on stderr.
+
+import { info, warn, error, debug } from '../../lib/mlc/common/stdlib/log/logger.mlc'
+
+fn main() -> i32 = do
+  info("hello")
+  warn("a\"b\\c\nd")
+  error("boom")
+  debug("trace")
+  0
+end

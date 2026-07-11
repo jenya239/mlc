@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=3 |
-| test_gate | env_abi + runtime/Ruby/mlcc Env smoke exit 0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=4 |
+| test_gate | log MLC stderr JSON lines match; log.hpp absent |
+
+### Turn 2026-07-11 24:35 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=3 — Log → MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 24:28 |
+| elapsed | ~20 min |
+| done    | Deleted `log.hpp`; `log/logger.mlc` escape+format; thin `log_abi.hpp` fwrite; smoke `log_mlc_smoke.mlc`. Bare-name target → `log/logger.mlc` (math.h clash). |
+| verify  | runtime env smoke 9/0; Ruby stdlib test OK; mlcc smoke stderr 4 JSON lines 1:1 with prior C++ (`a\"b\\c\nd`). `test -f …/log.hpp` → absent. |
+| result  | STEP=3 done. Plain: Log logic is MLC; only stderr write stays C++. |
+| issues  | Foreign `compiler/out/*` left unstaged. Ruby still maps `Log.*`→`mlc::log::*` without body emit. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_LOGIC_TO_MLC — Validate → pure MLC; delete validate.hpp |
 
 ### Turn 2026-07-11 24:20 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=2 — Env thin FFI)
 
