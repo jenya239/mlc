@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-self-hosted-runtime-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_STDLIB_HTTP_MLC closed — Critic |
-| test_gate | self-host + regression 20/0 + HTTP gates |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | none — Planner (post HTTP Critic) |
+| test_gate | parse+curl EXIT 0 |
+
+### Turn 2026-07-11 13:10 (Critic TRACK_STDLIB_HTTP_MLC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 13:00 |
+| elapsed | ~10 min |
+| done    | Audited `2fdc8c83`…`34977011` vs STEP 1–7; files/gates on disk; archive path + PLAN §11a; re-ran parse+curl EXIT 0. |
+| verify  | PARSE=0; CURL=0; no pending STEPs; no false-done. |
+| result  | **reopen: none**. Residuals: no `[HttpRoute]`; `websocket_http.hpp`; Ruby registry bare-name. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` + mid-flight LANG_SELF_HOSTED won't-do (`CONTINUITY`/`FFI_LAYER` dirty) left. Parallel `5457ef6d` already archived track. |
+| next    | ROLE=Planner STEP=plan-refresh — activate next «без C++» track from PLAN §20 |
 
 ### Turn 2026-07-11 13:00 (Driver TRACK_STDLIB_HTTP_MLC STEP=7 — verify-gate / close)
 

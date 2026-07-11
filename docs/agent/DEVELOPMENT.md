@@ -40,11 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_MLC` closed** (STEP=1–7) — Critic next. Then next pending
-step in the "no hand-written C++" group (`FFI_SHIM_MIGRATION`/
-`TEXT_MSDF_TO_MLC`/`STDLIB_WEBSOCKET_TO_MLC`/`STDLIB_LOGIC_TO_MLC`/
-`GL_GLAD_MIGRATION`), see `PLAN.md` §20. `TRACK_LANG_SELF_HOSTED_RUNTIME`
-rejected 2026-07-11, see `archive/tracks/`.
+**`TRACK_STDLIB_HTTP_MLC` Critic OK** (archived). Planner next — activate
+next from «без C++» queue (`FFI_SHIM`/`MSDF`/`WEBSOCKET`/`LOGIC`/`GLAD`).
+`LANG_SELF_HOSTED_RUNTIME` won't-do.
 
 
 ## Step sizing (good vs bad)
