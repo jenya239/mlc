@@ -40,7 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_MSDF_TO_MLC` closed** — awaiting Critic. Next Planner: §20d LOGIC / §20e GL_GLAD.
+**Next:** Planner — activate §20d `TRACK_STDLIB_LOGIC_TO_MLC` or §20e `TRACK_GL_GLAD_MIGRATION`.
+`TRACK_TEXT_MSDF_TO_MLC` **closed** (Critic OK).
 See [TRACK_TEXT_MSDF_TO_MLC.md](../archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md).
 
 

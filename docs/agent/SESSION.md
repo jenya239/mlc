@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 6 |
-| active_track | TRACK_TEXT_MSDF_TO_MLC closed (await Critic) |
-| test_gate | regression 20/0; self-host DIFF_EXIT=0 |
+| step_last | critique-audit |
+| active_track | (none — TEXT_MSDF Critic OK; Planner next) |
+| test_gate | Critic: MAE=0 + glyph smoke OK |
+
+### Turn 2026-07-11 23:50 (Critic TRACK_TEXT_MSDF_TO_MLC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 23:35 |
+| elapsed | ~15 min |
+| done    | Audited STEP1–6 vs `7b45afb2`…`633b9c2d`; shim absent; PLAN §20b/§11; re-ran MAE+glyph; fixed stale Problem wording in archive TRACK. |
+| verify  | MAE=0.0000; glyph smoke OK; PLAN Critic OK. |
+| result  | **reopen: none**. Residuals: R=G=B SDF (not true MSDF); golden dump no longer regenerates via C++ shim. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Planner STEP=plan-refresh — activate next «без C++» track (§20d LOGIC / §20e GL_GLAD) |
 
 ### Turn 2026-07-11 23:35 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=6 — close)
 
