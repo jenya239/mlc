@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=2: soft-skip pkg+allowlist ok |
+| test_gate | STEP=3: sweep ok=77 fail=30 skip=0 |
+
+### Turn 2026-07-12 01:45 (Driver TRACK_EXAMPLES_CI STEP=3 — full sweep inventory)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 01:34 |
+| elapsed | ~25 min |
+| done    | Full `run_examples_compile_sweep.sh`; recorded 30 failures; clusters A–E + STEPs 7–11 before wire. |
+| verify  | summary ok=77 fail=30 skip=0; failure list in TRACK. |
+| result  | STEP=3 done. Plain: sweep finds 30 broken examples; fix queue opened. |
+| issues  | Foreign `compiler/out/*` left. Log in `tmp/examples_sweep_full.log` (not committed). |
+| next    | ROLE=Driver STEP=7 TRACK_EXAMPLES_CI — fix cluster A (`…/.mlc` imports) |
 
 ### Turn 2026-07-12 01:28 (Driver TRACK_EXAMPLES_CI STEP=2 — sysdep soft-skip)
 
