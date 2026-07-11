@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=1 |
-| test_gate | Planner: msdf_shim.cpp 253 lines on disk |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=2 |
+| test_gate | Decision locked; msdf_shim read 1:1 |
+
+### Turn 2026-07-11 22:25 (Driver TRACK_TEXT_MSDF_TO_MLC STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 22:15 |
+| elapsed | ~10 min |
+| done    | Read `msdf_shim.cpp`/`.hpp`; locked Decision: Felzenszwalb EDT 1D→2D, dual fields, R=G=B SDF, `Array<f64>` buffers, MLC `msdf_sdf_rgb_from_mask`, MAE≤8.0/255, FreeType mask stays FFI. |
+| verify  | TRACK Decision **locked** + algorithm table cites shim lines; PLAN→STEP=2. |
+| result  | STEP=1 done. Plain: port target is exact EDT/SDF math, not true msdfgen. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_MSDF_TO_MLC — dump C++ golden RGB fixture for one glyph |
 
 ### Turn 2026-07-11 22:15 (Planner — activate TRACK_TEXT_MSDF_TO_MLC)
 

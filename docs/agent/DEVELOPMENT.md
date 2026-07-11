@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=1 — Decision + read `msdf_shim.cpp` 1:1.
+**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=2 — golden C++ RGB fixture (before MLC port).
 See [TRACK_TEXT_MSDF_TO_MLC.md](TRACK_TEXT_MSDF_TO_MLC.md).
 
 
