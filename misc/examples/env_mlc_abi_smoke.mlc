@@ -1,0 +1,19 @@
+// TRACK_STDLIB_LOGIC_TO_MLC STEP=2 — mlcc Env MLC+abi (getenv).
+// Avoid Option match (mlcc Option-import residual); exercise has/get_or.
+
+import { get_or, has } from '../../lib/mlc/common/stdlib/env/env.mlc'
+
+fn main() -> i32 = do
+  if !has("PATH") then
+    return 1
+  end
+  let path_value = get_or("PATH", "")
+  if path_value == "" then
+    return 2
+  end
+  let fallback = get_or("MLC_ENV_ABI_SMOKE_MISSING_KEY", "fallback")
+  if fallback != "fallback" then
+    return 3
+  end
+  0
+end

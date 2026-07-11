@@ -20,7 +20,7 @@ class MLCEnvLogStdlibTest < Minitest::Test
       end
     MLC
     cpp = MLC.compile(source).to_source
-    assert_includes cpp, "mlc/env/env.hpp"
+    assert_includes cpp, "mlc/env/env_abi.hpp"
     assert_includes cpp, "mlc/log/log.hpp"
     assert_includes cpp, "mlc::env::get"
     assert_includes cpp, "mlc::env::get_or"

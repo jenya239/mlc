@@ -1,7 +1,7 @@
 // Env + Log smoke (TRACK_STDLIB_ENV_LOGGING STEP=2).
 // g++ -std=c++20 -I../include -o test_env_log test_env_log.cpp && ./test_env_log
 
-#include "mlc/env/env.hpp"
+#include "mlc/env/env_abi.hpp"
 #include "mlc/log/log.hpp"
 
 #include <cstdio>

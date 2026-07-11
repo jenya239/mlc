@@ -46,7 +46,7 @@
 #include "mlc/io/buffer.hpp"
 
 // Env + structured log (no third-party deps)
-#include "mlc/env/env.hpp"
+#include "mlc/env/env_abi.hpp"
 #include "mlc/log/log.hpp"
 
 // Validation helpers (no third-party deps)

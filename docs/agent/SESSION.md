@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=2 |
-| test_gate | Decision locked; env/log/validate APIs cited |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=3 |
+| test_gate | env_abi + runtime/Ruby/mlcc Env smoke exit 0 |
+
+### Turn 2026-07-11 24:20 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=2 — Env thin FFI)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 24:15 |
+| elapsed | ~15 min |
+| done    | Deleted `env.hpp`; added `env_abi.hpp` (by-value getenv wrappers); `env.mlc` `from "mlc/env/env_abi.hpp"`; mlcc smoke `env_mlc_abi_smoke.mlc`. |
+| verify  | `run_env_log_runtime_smoke.sh` OK; `env_log_stdlib_test.rb` 18 assert; mlcc smoke exit 0. `test -f runtime/include/mlc/env/env.hpp` → absent. |
+| result  | STEP=2 done. Plain: Env is thin abi header, not business `.hpp`. |
+| issues  | Foreign `compiler/out/*` left unstaged. Option match avoided in smoke. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_LOGIC_TO_MLC — Log → MLC escape+eprintln; delete log.hpp |
 
 ### Turn 2026-07-11 24:10 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=1 — Decision)
 

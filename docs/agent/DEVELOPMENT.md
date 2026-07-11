@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=2 — Env thin FFI; delete `env.hpp`.
+**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=3 — Log → MLC JSON-lines; delete `log.hpp`.
 See [TRACK_STDLIB_LOGIC_TO_MLC.md](TRACK_STDLIB_LOGIC_TO_MLC.md).
 
 
