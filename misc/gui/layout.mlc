@@ -1,0 +1,117 @@
+// IM layout + hit-test (TRACK_GUI_FRAMEWORK STEP=3).
+// Immediate-mode: caller places items each frame via cursor; no retained tree.
+
+export type Point = {
+  x: i32,
+  y: i32
+}
+
+export type Rect = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+// Cursor for row-major IM layout (advance right; next_row drops down).
+export type LayoutCursor = {
+  origin_x: i32,
+  origin_y: i32,
+  x: i32,
+  y: i32,
+  row_height: i32,
+  gap: i32
+}
+
+export type LayoutPlace = {
+  cursor: LayoutCursor,
+  rect: Rect
+}
+
+export fn point_new(x: i32, y: i32) -> Point =
+  Point { x: x, y: y }
+
+export fn rect_new(x: i32, y: i32, width: i32, height: i32) -> Rect =
+  Rect { x: x, y: y, width: width, height: height }
+
+// Inclusive left/top, exclusive right/bottom. Returns 1 if inside.
+export fn point_in_rect(point: Point, rect: Rect) -> i32 = do
+  if point.x < rect.x then
+    return 0
+  end
+  if point.y < rect.y then
+    return 0
+  end
+  if point.x >= rect.x + rect.width then
+    return 0
+  end
+  if point.y >= rect.y + rect.height then
+    return 0
+  end
+  1
+end
+
+export fn layout_begin(origin_x: i32, origin_y: i32, gap: i32) -> LayoutCursor =
+  LayoutCursor {
+    origin_x: origin_x,
+    origin_y: origin_y,
+    x: origin_x,
+    y: origin_y,
+    row_height: 0,
+    gap: gap
+  }
+
+// Place next item on current row (advance x). Grows row_height to max height.
+export fn layout_row_item(
+  cursor: LayoutCursor,
+  width: i32,
+  height: i32
+) -> LayoutPlace = do
+  const rect = rect_new(cursor.x, cursor.y, width, height)
+  let mut next_row_height = cursor.row_height
+  if height > next_row_height then
+    next_row_height = height
+  end
+  LayoutPlace {
+    cursor: LayoutCursor {
+      origin_x: cursor.origin_x,
+      origin_y: cursor.origin_y,
+      x: cursor.x + width + cursor.gap,
+      y: cursor.y,
+      row_height: next_row_height,
+      gap: cursor.gap
+    },
+    rect: rect
+  }
+end
+
+// Start a new row under the tallest item of the previous row.
+export fn layout_next_row(cursor: LayoutCursor) -> LayoutCursor =
+  LayoutCursor {
+    origin_x: cursor.origin_x,
+    origin_y: cursor.origin_y,
+    x: cursor.origin_x,
+    y: cursor.y + cursor.row_height + cursor.gap,
+    row_height: 0,
+    gap: cursor.gap
+  }
+
+// Place next item in a vertical column (advance y).
+export fn layout_column_item(
+  cursor: LayoutCursor,
+  width: i32,
+  height: i32
+) -> LayoutPlace = do
+  const rect = rect_new(cursor.x, cursor.y, width, height)
+  LayoutPlace {
+    cursor: LayoutCursor {
+      origin_x: cursor.origin_x,
+      origin_y: cursor.origin_y,
+      x: cursor.x,
+      y: cursor.y + height + cursor.gap,
+      row_height: cursor.row_height,
+      gap: cursor.gap
+    },
+    rect: rect
+  }
+end

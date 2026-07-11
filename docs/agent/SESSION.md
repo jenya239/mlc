@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_GUI_FRAMEWORK STEP=3 |
-| test_gate | gl_renderer + text_renderer_native smokes EXIT 0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_GUI_FRAMEWORK STEP=4 |
+| test_gate | run_gui_layout_smoke.sh EXIT 0 |
+
+### Turn 2026-07-11 04:35 (Driver TRACK_GUI_FRAMEWORK STEP=3 — layout + hit-test)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:32 |
+| elapsed | ~3 min |
+| done    | `misc/gui/layout.mlc`: Point/Rect, `point_in_rect`, IM `layout_row_item`/`layout_next_row`/`layout_column_item`; smoke + `run_gui_layout_smoke.sh`. PLAN→STEP=4. |
+| verify  | `run_gui_layout_smoke.sh` ok (no GLFW). |
+| result  | STEP=3 done. Plain: IM layout + hit-test helpers. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_FRAMEWORK — GLFW mouse/key → hover/click |
 
 ### Turn 2026-07-11 04:30 (Driver TRACK_GUI_FRAMEWORK STEP=2 — extract misc/gui)
 

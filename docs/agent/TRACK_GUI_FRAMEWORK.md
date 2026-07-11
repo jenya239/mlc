@@ -3,7 +3,10 @@
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
 [TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **open** — STEP=3 next (layout + hit-test) — **active**
+## Status: **open** — STEP=4 next (GLFW input → hover/click) — **active**
+
+**Driver 2026-07-11:** STEP=3 — `misc/gui/layout.mlc` (Rect/Point, row/column IM,
+`point_in_rect`); smoke `gui_layout_smoke` (no GLFW) EXIT 0.
 
 **Driver 2026-07-11:** STEP=2 — `misc/gui/gl_renderer.mlc` + `text_renderer.mlc`;
 smokes rewired to `import` from `../gui/*`; both smokes EXIT 0.
@@ -95,7 +98,7 @@ Easing: `glfw_gl_anim_unit` and/or small MLC `ease_in_out` on button color.
 | 0 | Activate after NATIVE Critic OK. | **done** (2026-07-11 Planner) |
 | 1 | Decision: layout model (A/B); module path; widget v0 surface. | **done** (2026-07-11: IM A; `misc/gui/`; Button) |
 | 2 | Extract shared MLC `GlRenderer` + `TextRenderer` modules; rewire smokes. | **done** (2026-07-11: `misc/gui/*`; smokes import; demo deferred STEP=5) |
-| 3 | Layout pass v0 (IM row/column) + screen hit-test helper. | pending |
+| 3 | Layout pass v0 (IM row/column) + screen hit-test helper. | **done** (2026-07-11: `layout.mlc`; `run_gui_layout_smoke.sh` ok) |
 | 4 | Input: mouse position/button + key via GLFW → widget hover/click. | pending |
 | 5 | Demo: one Button + easing anim; gate script (hidden window OK). | pending |
 | 6 | Docs (`TEXT_RENDERING` or short `GUI.md`) + PLAN; verify-gate. | pending |

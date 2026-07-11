@@ -1,0 +1,62 @@
+// Layout smoke — pure MLC, no GLFW (TRACK_GUI_FRAMEWORK STEP=3).
+import {
+  point_new,
+  rect_new,
+  point_in_rect,
+  layout_begin,
+  layout_row_item,
+  layout_next_row,
+  layout_column_item
+} from '../gui/layout'
+
+fn main() -> i32 = do
+  const rect = rect_new(10, 20, 100, 40)
+  if point_in_rect(point_new(10, 20), rect) != 1 then
+    return -1
+  end
+  if point_in_rect(point_new(109, 59), rect) != 1 then
+    return -2
+  end
+  if point_in_rect(point_new(110, 20), rect) != 0 then
+    return -3
+  end
+  if point_in_rect(point_new(10, 60), rect) != 0 then
+    return -4
+  end
+  if point_in_rect(point_new(9, 20), rect) != 0 then
+    return -5
+  end
+
+  let mut cursor = layout_begin(0, 0, 8)
+  const a = layout_row_item(cursor, 50, 20)
+  cursor = a.cursor
+  if a.rect.x != 0 || a.rect.y != 0 || a.rect.width != 50 then
+    return -10
+  end
+  const b = layout_row_item(cursor, 30, 40)
+  cursor = b.cursor
+  if b.rect.x != 58 || b.rect.y != 0 then
+    return -11
+  end
+  cursor = layout_next_row(cursor)
+  if cursor.x != 0 || cursor.y != 48 then
+    return -12
+  end
+  const c = layout_row_item(cursor, 10, 10)
+  if c.rect.x != 0 || c.rect.y != 48 then
+    return -13
+  end
+
+  let mut column = layout_begin(100, 200, 4)
+  const d = layout_column_item(column, 80, 16)
+  column = d.cursor
+  if d.rect.x != 100 || d.rect.y != 200 then
+    return -20
+  end
+  const e = layout_column_item(column, 80, 16)
+  if e.rect.x != 100 || e.rect.y != 220 then
+    return -21
+  end
+
+  0
+end

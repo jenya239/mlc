@@ -205,4 +205,4 @@ GLFW + thin GL dispatch (glfwGetProcAddress → mlc::gl::*)
 | Smokes | `gl_renderer_smoke`, `text_renderer_native_smoke`, `glfw_*_smoke` |
 
 **Не в этом треке:** layout/widgets/easing — отдельный будущий GUI-фреймворк:
-[agent/TRACK_GUI_FRAMEWORK.md](agent/TRACK_GUI_FRAMEWORK.md) (**active** STEP=3).
+[agent/TRACK_GUI_FRAMEWORK.md](agent/TRACK_GUI_FRAMEWORK.md) (**active** STEP=4).
