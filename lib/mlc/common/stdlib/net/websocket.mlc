@@ -3,8 +3,8 @@
 //! @type mixed
 //! @namespace mlc::websocket
 //!
-//! TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 — MLC handshake (+ frames/SHA1).
-//! Public upgrade/read/write still extern → websocket.hpp until STEP=5.
+//! TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 — MLC upgrade/read/write; thin bridge for handles.
+//! Protocol is MLC; connection buffer/fd table in websocket_bridge.hpp.
 
 module WebSocket
 
@@ -15,18 +15,36 @@ import {
   HttpParseErr
 } from './http_server.mlc'
 
-export extern fn upgrade(stream: i32) -> Option<i32> = "mlc::websocket::upgrade_mlc" from "mlc/net/websocket.hpp"
-export extern fn read_text(connection: i32) -> Option<string> = "mlc::websocket::read_text_mlc" from "mlc/net/websocket.hpp"
-export extern fn write_text(connection: i32, data: string) -> bool = "mlc::websocket::write_text_mlc" from "mlc/net/websocket.hpp"
-export extern fn close(connection: i32) -> unit = "mlc::websocket::close_mlc" from "mlc/net/websocket.hpp"
-export extern fn last_error() -> string = "mlc::websocket::last_error_mlc" from "mlc/net/websocket.hpp"
-
 extern fn wrapping_add(left: i32, right: i32) -> i32 =
   "mlc::int_arith::wrapping_add" from "mlc/core/int_arith.hpp"
 extern fn string_byte_u8(text: string, index: i32) -> i32 =
   "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp"
 extern fn string_from_byte_u8(value: i32) -> string =
   "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+extern fn conn_open(file_descriptor: i32) -> i32 =
+  "mlc::websocket::conn_open" from "mlc/net/websocket_bridge.hpp"
+extern fn conn_fd(handle: i32) -> i32 =
+  "mlc::websocket::conn_fd" from "mlc/net/websocket_bridge.hpp"
+extern fn conn_is_open(handle: i32) -> i32 =
+  "mlc::websocket::conn_is_open" from "mlc/net/websocket_bridge.hpp"
+extern fn conn_get_buffer(handle: i32) -> string =
+  "mlc::websocket::conn_get_buffer" from "mlc/net/websocket_bridge.hpp"
+extern fn conn_set_buffer(handle: i32, buffer: string) -> unit =
+  "mlc::websocket::conn_set_buffer" from "mlc/net/websocket_bridge.hpp"
+extern fn conn_close(handle: i32) -> unit =
+  "mlc::websocket::conn_close" from "mlc/net/websocket_bridge.hpp"
+extern fn table_set_error(message: string) -> unit =
+  "mlc::websocket::table_set_error" from "mlc/net/websocket_bridge.hpp"
+extern fn table_last_error() -> string =
+  "mlc::websocket::table_last_error" from "mlc/net/websocket_bridge.hpp"
+extern fn clear_error() -> unit =
+  "mlc::websocket::clear_error" from "mlc/net/websocket_bridge.hpp"
+extern fn ws_tcp_read(file_descriptor: i32, max_bytes: i32) -> string =
+  "mlc::websocket::ws_tcp_read" from "mlc/net/websocket_bridge.hpp"
+extern fn ws_tcp_read_status() -> i32 =
+  "mlc::websocket::ws_tcp_read_status" from "mlc/net/websocket_bridge.hpp"
+extern fn ws_tcp_write_all(file_descriptor: i32, data: string) -> i32 =
+  "mlc::websocket::ws_tcp_write_all" from "mlc/net/websocket_bridge.hpp"
 
 fn websocket_guid() -> string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 fn base64_alphabet() -> string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -427,4 +445,194 @@ export fn build_websocket_upgrade_from_raw(raw: string) -> WsHandshakeResult = d
     HttpParseOk(request) => build_websocket_upgrade_response(request),
     HttpParseErr => WsHandshakeErr("websocket upgrade: invalid HTTP request")
   }
+end
+
+export type WsHandleResult = WsHandleOk(i32) | WsHandleNone
+export type WsTextResult = WsTextOk(string) | WsTextNone
+
+fn read_http_upgrade_request(stream: i32) -> string = do
+  let mut raw = ""
+  let mut rounds = 0
+  while rounds < 32 && raw.byte_size() < 65536 do
+    let chunk = ws_tcp_read(stream, 4096)
+    if ws_tcp_read_status() < 0 then
+      return raw
+    end
+    if chunk.byte_size() == 0 then
+      return raw
+    end
+    raw = raw + chunk
+    if raw.index_of("\r\n\r\n") >= 0 || raw.index_of("\n\n") >= 0 then
+      return raw
+    end
+    rounds = rounds + 1
+  end
+  raw
+end
+
+export fn last_error() -> string = table_last_error()
+
+export fn close(connection: i32) -> unit = do
+  if conn_is_open(connection) != 0 then
+    let file_descriptor = conn_fd(connection)
+    if file_descriptor >= 0 then
+      let _wrote = ws_tcp_write_all(file_descriptor, encode_close_frame())
+    end
+  end
+  conn_close(connection)
+end
+
+export fn write_text(connection: i32, data: string) -> bool = do
+  if conn_is_open(connection) == 0 then
+    table_set_error("websocket write_text: closed")
+    return false
+  end
+  if data.byte_size() > max_payload_bytes() then
+    table_set_error("websocket write_text: payload exceeds 1 MiB")
+    return false
+  end
+  let file_descriptor = conn_fd(connection)
+  if file_descriptor < 0 then
+    table_set_error("websocket write_text: closed")
+    return false
+  end
+  if ws_tcp_write_all(file_descriptor, encode_text_frame(data)) == 0 then
+    table_set_error("websocket write_text: send failed")
+    return false
+  end
+  true
+end
+
+export fn upgrade(stream: i32) -> WsHandleResult = do
+  if stream < 0 then
+    table_set_error("WebSocket.upgrade: invalid stream handle")
+    return WsHandleNone
+  end
+  let raw = read_http_upgrade_request(stream)
+  let mut response = ""
+  let mut failed = false
+  let mut error_message = ""
+  let _mark = match build_websocket_upgrade_from_raw(raw) {
+    WsHandshakeOk(body) => do
+      response = body
+      0
+    end,
+    WsHandshakeErr(message) => do
+      failed = true
+      error_message = message
+      0
+    end
+  }
+  if failed then
+    table_set_error(error_message)
+    return WsHandleNone
+  end
+  if ws_tcp_write_all(stream, response) == 0 then
+    table_set_error("websocket upgrade: write failed")
+    return WsHandleNone
+  end
+  let handle = conn_open(stream)
+  if handle < 0 then
+    return WsHandleNone
+  end
+  clear_error()
+  WsHandleOk(handle)
+end
+
+fn frame_status_need_more() -> i32 = 0
+fn frame_status_got_text() -> i32 = 1
+fn frame_status_fatal() -> i32 = 2
+fn frame_status_pong() -> i32 = 3
+
+fn read_text_handle_frame(connection: i32, buffer: string) -> i32 = do
+  match try_decode_frame(buffer) {
+    WsFrameIncomplete => frame_status_need_more(),
+    WsFrameTooLarge => do
+      table_set_error("websocket: payload exceeds 1 MiB")
+      close(connection)
+      frame_status_fatal()
+    end,
+    WsFrameOk(opcode, payload, consumed) => do
+      let fin = (byte_at(buffer, 0) & 128) != 0
+      let mut rest = ""
+      if consumed > 0 && consumed <= buffer.byte_size() then
+        rest = buffer.substring(consumed, buffer.byte_size() - consumed)
+      end
+      conn_set_buffer(connection, rest)
+      if !fin then
+        table_set_error("websocket: fragmented frames not supported")
+        close(connection)
+        frame_status_fatal()
+      else if opcode == 1 then
+        clear_error()
+        conn_set_buffer(connection, payload)
+        frame_status_got_text()
+      else if opcode == 9 then
+        let file_descriptor = conn_fd(connection)
+        if file_descriptor < 0 then
+          frame_status_fatal()
+        else if ws_tcp_write_all(file_descriptor, encode_unmasked_frame(10, payload)) == 0 then
+          table_set_error("websocket: pong write failed")
+          close(connection)
+          frame_status_fatal()
+        else
+          frame_status_pong()
+        end
+      else if opcode == 8 then
+        close(connection)
+        table_set_error("websocket: peer closed")
+        frame_status_fatal()
+      else if opcode == 2 then
+        table_set_error("websocket: binary frames not supported")
+        close(connection)
+        frame_status_fatal()
+      else
+        table_set_error("websocket: unsupported opcode")
+        close(connection)
+        frame_status_fatal()
+      end
+    end
+  }
+end
+
+export fn read_text(connection: i32) -> WsTextResult = do
+  if conn_is_open(connection) == 0 then
+    table_set_error("websocket read_text: closed")
+    return WsTextNone
+  end
+  let mut rounds = 0
+  while rounds < 1024 do
+    let buffer = conn_get_buffer(connection)
+    let status = read_text_handle_frame(connection, buffer)
+    if status == frame_status_got_text() then
+      return WsTextOk(conn_get_buffer(connection))
+    end
+    if status == frame_status_fatal() then
+      return WsTextNone
+    end
+    if status == frame_status_pong() then
+      rounds = rounds + 1
+    else
+      let file_descriptor = conn_fd(connection)
+      if file_descriptor < 0 then
+        table_set_error("websocket read_text: closed")
+        return WsTextNone
+      end
+      let chunk = ws_tcp_read(file_descriptor, 4096)
+      if ws_tcp_read_status() < 0 then
+        table_set_error("websocket read_text: recv failed")
+        close(connection)
+        return WsTextNone
+      end
+      if chunk.byte_size() == 0 then
+        table_set_error("websocket read_text: connection closed")
+        close(connection)
+        return WsTextNone
+      end
+      conn_set_buffer(connection, buffer + chunk)
+      rounds = rounds + 1
+    end
+  end
+  table_set_error("websocket read_text: too many rounds")
+  WsTextNone
 end

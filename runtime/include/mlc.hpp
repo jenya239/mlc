@@ -66,7 +66,7 @@
 
 // Net
 #include "mlc/net/tcp_bridge.hpp"
-#include "mlc/net/websocket.hpp"
+#include "mlc/net/websocket_bridge.hpp"
 
 // DB (optional — requires libpq-fe.h; API in postgres_bridge.hpp)
 #include "mlc/db/postgres_bridge.hpp"

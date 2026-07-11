@@ -4,7 +4,9 @@ require_relative "../test_helper"
 require_relative "../../lib/mlc/common/index"
 
 class MLCWebsocketStdlibTest < Minitest::Test
-  def test_websocket_extern_codegen
+  # Ruby MLC.compile still emits mlc::websocket::* calls (registry :extern),
+  # like Crypto→sodium_bridge. Real protocol bodies are MLC (mlcc path).
+  def test_websocket_bridge_codegen
     source = <<~MLC
       import WebSocket::{upgrade, read_text, write_text, close, last_error}
       fn main() -> i32 = do
@@ -23,5 +25,7 @@ class MLCWebsocketStdlibTest < Minitest::Test
     assert_includes cpp, "mlc::websocket::write_text"
     assert_includes cpp, "mlc::websocket::close"
     assert_includes cpp, "mlc::websocket::last_error"
+    refute_includes cpp, "mlc/net/websocket.hpp"
+    refute_includes cpp, "upgrade_mlc"
   end
 end

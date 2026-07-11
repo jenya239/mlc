@@ -1,38 +1,48 @@
-# WebSocket text-echo server sketch (TRACK_STDLIB_WEBSOCKET).
-# Ruby pipeline: import Tcp + WebSocket. Pair with a WS client after port print.
-# Verify: scripts/run_websocket_gate.sh (C++ in-process upgrade+echo).
+// TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 — MLC echo over Tcp.
+// Gate: scripts/run_websocket_runtime_smoke.sh
 
-import Tcp::{bind, accept, close_listener, port, last_error}
-import WebSocket::{upgrade, read_text, write_text, close}
-import Conv::{to_string_i32}
-import IO::{eprintln, println}
-
-fn unwrap_handle(value: Option<i32>) -> i32 =
-  match value { Some(handle) => handle, None => -1 }
-
-fn unwrap_text(value: Option<string>) -> string =
-  match value { Some(text) => text, None => "" }
+import { bind, accept, close_listener, port, last_error } from 'Tcp'
+import {
+  upgrade,
+  read_text,
+  write_text,
+  close,
+  WsHandleOk,
+  WsHandleNone,
+  WsTextOk,
+  WsTextNone
+} from '../../lib/mlc/common/stdlib/net/websocket.mlc'
 
 fn main() -> i32 = do
-  let listener = unwrap_handle(bind("127.0.0.1", 0))
-  if listener < 0 then
-    eprintln(last_error())
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
     return 1
   end
-  println(to_string_i32(port(listener)))
-  let stream = unwrap_handle(accept(listener))
-  if stream < 0 then
-    eprintln(last_error())
+  let listener = listener_option.unwrap()
+  File.write("websocket_echo_port.txt", `${port(listener)}`)
+
+  let stream_option = accept(listener)
+  if !stream_option.is_some() then
+    println(last_error())
     close_listener(listener)
     return 2
   end
-  let connection = unwrap_handle(upgrade(stream))
+  let stream = stream_option.unwrap()
+
+  let connection = match upgrade(stream) {
+    WsHandleOk(handle) => handle,
+    WsHandleNone => -1
+  }
   if connection < 0 then
-    eprintln("websocket upgrade failed")
+    println("websocket upgrade failed")
     close_listener(listener)
     return 3
   end
-  let text = unwrap_text(read_text(connection))
+  let text = match read_text(connection) {
+    WsTextOk(payload) => payload,
+    WsTextNone => ""
+  }
   let wrote = write_text(connection, text)
   close(connection)
   close_listener(listener)

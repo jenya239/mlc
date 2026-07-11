@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 |
-| test_gate | websocket_handshake_smoke + websocket_gate |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=6 |
+| test_gate | websocket_gate + handshake/frame/sha1 smokes |
+
+### Turn 2026-07-11 19:30 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=5 — MLC bodies + delete hpp)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 18:30 |
+| elapsed | ~60 min |
+| done    | MLC `upgrade`/`read_text`/`write_text`/`close`; thin `websocket_bridge.hpp`; deleted `websocket.hpp`/`websocket_http.hpp`/`test_websocket.cpp`; echo+Ruby client gate. |
+| verify  | `run_websocket_gate.sh` OK; handshake/frame/sha1 smokes EXIT 0. |
+| result  | STEP=5 done. Plain: WS protocol is MLC; named hpp gone. |
+| issues  | Ruby residual stubs in bridge (like Crypto). Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_WEBSOCKET_TO_MLC — regression_gate + self-host diff; close |
 
 ### Turn 2026-07-11 18:25 (Driver TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=4 — handshake)
 

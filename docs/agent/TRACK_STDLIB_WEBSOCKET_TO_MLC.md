@@ -7,7 +7,12 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: **active** — STEP=5 next (delete websocket.hpp)
+## Status: **active** — STEP=6 next (regression + self-host; close)
+
+**Driver 2026-07-11:** STEP=5 — MLC `upgrade`/`read_text`/`write_text`/`close`
+(`WsHandleResult`/`WsTextResult`); thin `websocket_bridge.hpp` (handles+I/O);
+deleted `websocket.hpp`/`websocket_http.hpp`/`test_websocket.cpp`; echo gate =
+MLC demo + Ruby client; Ruby residual stubs in bridge (like Crypto).
 
 **Driver 2026-07-11:** STEP=4 — MLC handshake on HttpServer types:
 `check_websocket_upgrade` / `format_websocket_upgrade_response` /
@@ -96,7 +101,7 @@ already documents «SHA1 + base64 local (no libsodium)».
 | 2 | MLC SHA1 + base64. | **done** (2026-07-11: sha1_hex + sec_websocket_accept; RFC smoke) |
 | 3 | Frame parser/writer на MLC. | **done** (2026-07-11: encode/decode + mask XOR smoke) |
 | 4 | Handshake на MLC (HttpServer types). | **done** (2026-07-11: check/format/from_raw + RFC smoke) |
-| 5 | Удалить `websocket.hpp`; переключить модуль. | pending |
+| 5 | Удалить `websocket.hpp`; переключить модуль. | **done** (2026-07-11: MLC bodies; hpp deleted; echo+Ruby client) |
 | 6 | Regression + self-host diff; close. | pending |
 
 <!-- STEP=2 sub-steps: 1) port sha1+base64 to websocket.mlc; 2) RFC 6455 key→accept vector smoke; 3) mlcc --check-only / link smoke -->

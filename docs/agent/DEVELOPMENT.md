@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=5 — delete websocket.hpp.
+**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=6 — regression + self-host; close.
 See [TRACK_STDLIB_WEBSOCKET_TO_MLC.md](TRACK_STDLIB_WEBSOCKET_TO_MLC.md).
 (`TRACK_CONCURRENCY_SPAWN_DETACH` still high priority for MT servers — separate.)
 
