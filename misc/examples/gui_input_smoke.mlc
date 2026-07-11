@@ -1,0 +1,92 @@
+// Input hover/click smoke (TRACK_GUI_FRAMEWORK STEP=4).
+import { rect_new } from '../gui/layout'
+import {
+  gui_input_new,
+  gui_input_poll,
+  gui_input_test_set,
+  gui_input_test_clear,
+  gui_is_hovered,
+  gui_click_edge
+} from '../gui/input'
+
+extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
+  = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_end() -> unit
+  = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_context_swap_poll() -> unit
+  = "mlc::gl::glfw_gl_context_swap_poll" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+fn main() -> i32 = do
+  const button = rect_new(100, 80, 120, 40)
+
+  // Pure logic (no GLFW): hover + click edge.
+  const outside = gui_input_new(10, 10, 1, 0)
+  if gui_is_hovered(outside, button) != 0 then
+    return -1
+  end
+  if gui_click_edge(outside, 0, button) != 0 then
+    return -2
+  end
+
+  const hover_up = gui_input_new(110, 90, 0, 0)
+  if gui_is_hovered(hover_up, button) != 1 then
+    return -3
+  end
+  if gui_click_edge(hover_up, 0, button) != 0 then
+    return -4
+  end
+
+  const hover_down = gui_input_new(110, 90, 1, 0)
+  if gui_click_edge(hover_down, 0, button) != 1 then
+    return -5
+  end
+  if gui_click_edge(hover_down, 1, button) != 0 then
+    return -6
+  end
+
+  // GLFW path: inject cursor over button, poll, verify.
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  gui_input_test_set(110, 90, 0, 0)
+  glfw_gl_context_swap_poll()
+  const polled_hover = gui_input_poll()
+  if gui_is_hovered(polled_hover, button) != 1 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -10
+  end
+  if gui_click_edge(polled_hover, 0, button) != 0 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -11
+  end
+
+  gui_input_test_set(110, 90, 1, 0)
+  glfw_gl_context_swap_poll()
+  const polled_click = gui_input_poll()
+  if gui_click_edge(polled_click, 0, button) != 1 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -12
+  end
+  if gui_click_edge(polled_click, 1, button) != 0 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -13
+  end
+
+  gui_input_test_set(10, 10, 1, 1)
+  const polled_escape = gui_input_poll()
+  if polled_escape.escape != 1 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -14
+  end
+
+  gui_input_test_clear()
+  glfw_gl_context_end()
+  0
+end

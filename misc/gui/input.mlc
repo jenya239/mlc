@@ -1,0 +1,72 @@
+// GLFW-polled GuiInput + hover/click edge (TRACK_GUI_FRAMEWORK STEP=4).
+
+import { Point, Rect, point_new, point_in_rect } from './layout'
+
+extern fn glfw_gl_mouse_x() -> i32
+  = "mlc::gl::glfw_gl_mouse_x" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_mouse_y() -> i32
+  = "mlc::gl::glfw_gl_mouse_y" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_mouse_left_down() -> i32
+  = "mlc::gl::glfw_gl_mouse_left_down" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_key_escape_down() -> i32
+  = "mlc::gl::glfw_gl_key_escape_down" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_input_test_set(
+  mouse_x: i32, mouse_y: i32, mouse_left_down: i32, escape_down: i32
+) -> unit
+  = "mlc::gl::glfw_gl_input_test_set" from "mlc/gl/glfw_gl_dispatch.hpp"
+extern fn glfw_gl_input_test_clear() -> unit
+  = "mlc::gl::glfw_gl_input_test_clear" from "mlc/gl/glfw_gl_dispatch.hpp"
+
+export type GuiInput = {
+  mouse_x: i32,
+  mouse_y: i32,
+  mouse_down: i32,
+  escape: i32
+}
+
+export fn gui_input_new(
+  mouse_x: i32, mouse_y: i32, mouse_down: i32, escape: i32
+) -> GuiInput =
+  GuiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    mouse_down: mouse_down,
+    escape: escape
+  }
+
+export fn gui_input_poll() -> GuiInput =
+  GuiInput {
+    mouse_x: glfw_gl_mouse_x(),
+    mouse_y: glfw_gl_mouse_y(),
+    mouse_down: glfw_gl_mouse_left_down(),
+    escape: glfw_gl_key_escape_down()
+  }
+
+export fn gui_input_test_set(
+  mouse_x: i32, mouse_y: i32, mouse_down: i32, escape: i32
+) -> unit =
+  glfw_gl_input_test_set(mouse_x, mouse_y, mouse_down, escape)
+
+export fn gui_input_test_clear() -> unit =
+  glfw_gl_input_test_clear()
+
+export fn gui_is_hovered(input: GuiInput, rect: Rect) -> i32 =
+  point_in_rect(point_new(input.mouse_x, input.mouse_y), rect)
+
+// Click edge: hovered, mouse down now, was up previous frame. Returns 1 on edge.
+export fn gui_click_edge(
+  input: GuiInput,
+  previous_mouse_down: i32,
+  rect: Rect
+) -> i32 = do
+  if gui_is_hovered(input, rect) == 0 then
+    return 0
+  end
+  if input.mouse_down == 0 then
+    return 0
+  end
+  if previous_mouse_down != 0 then
+    return 0
+  end
+  1
+end

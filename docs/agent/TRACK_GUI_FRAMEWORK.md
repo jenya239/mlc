@@ -3,7 +3,10 @@
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
 [TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **open** — STEP=4 next (GLFW input → hover/click) — **active**
+## Status: **open** — STEP=5 next (Button demo + easing) — **active**
+
+**Driver 2026-07-11:** STEP=4 — `misc/gui/input.mlc` (GuiInput poll/hover/click_edge);
+GLFW `glfw_gl_mouse_*` + test inject; `run_gui_input_smoke.sh` ok.
 
 **Driver 2026-07-11:** STEP=3 — `misc/gui/layout.mlc` (Rect/Point, row/column IM,
 `point_in_rect`); smoke `gui_layout_smoke` (no GLFW) EXIT 0.

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_GUI_FRAMEWORK STEP=4 |
-| test_gate | run_gui_layout_smoke.sh EXIT 0 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_GUI_FRAMEWORK STEP=5 |
+| test_gate | run_gui_input_smoke.sh EXIT 0 |
+
+### Turn 2026-07-11 04:40 (Driver TRACK_GUI_FRAMEWORK STEP=4 — GLFW input)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:37 |
+| elapsed | ~3 min |
+| done    | `glfw_gl_mouse_*`/`key_escape` + test inject; `misc/gui/input.mlc` (poll/hover/click_edge); `gui_input_smoke` + gate. PLAN→STEP=5. |
+| verify  | `run_gui_input_smoke.sh` ok (logic + GLFW inject). |
+| result  | STEP=4 done. Plain: hover/click wired to GLFW input. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_FRAMEWORK — Button demo + easing + gate |
 
 ### Turn 2026-07-11 04:35 (Driver TRACK_GUI_FRAMEWORK STEP=3 — layout + hit-test)
 

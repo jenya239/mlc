@@ -24,6 +24,22 @@ double glfw_gl_get_time();
 // 0..1 oscillating phase from sin(time); for demo color animation.
 double glfw_gl_anim_unit();
 
+// Window content coords (origin top-left, y down). Requires active context.
+int32_t glfw_gl_mouse_x();
+int32_t glfw_gl_mouse_y();
+// 1 if left mouse button currently pressed.
+int32_t glfw_gl_mouse_left_down();
+// 1 if Escape currently pressed.
+int32_t glfw_gl_key_escape_down();
+// Automated smoke: override polled input until cleared (1=on).
+void glfw_gl_input_test_set(
+  int32_t mouse_x,
+  int32_t mouse_y,
+  int32_t mouse_left_down,
+  int32_t escape_down
+);
+void glfw_gl_input_test_clear();
+
 // --- MLC-facing GL surface (int32_t / String) ---
 
 void gl_clear(int32_t mask);

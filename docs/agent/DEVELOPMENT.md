@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GUI_FRAMEWORK` active** STEP=4 — GLFW mouse/key → widget hover/click.
+**`TRACK_GUI_FRAMEWORK` active** STEP=5 — Button demo + easing anim + gate.
 See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 
 
