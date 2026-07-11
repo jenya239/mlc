@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-11-post-cpp-backlog` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-12-multi-track-order` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-11-post-cpp-backlog
+INSTRUCTIONS_REV=2026-07-12-multi-track-order
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -123,6 +123,28 @@ Cross-cutting work: prefer WIP branch (`feat/…`), not large dirty tree on `mai
 | **Critic** | Re-audit recent `done` steps vs git/tests; max skepticism | fix-only |
 | **Cleaner** | Junk files, stale docs, orphan dot-dirs; keep active agent docs | delete/docs |
 | **Orchestrator** | Roles, rotation cadence, ROLES.md + CONTINUITY | docs only |
+
+### Multiple tracks open simultaneously (since 2026-07-11 backlog, §21-29)
+
+Раньше почти всегда был открыт 1-2 трека. Теперь одновременно `pending`
+у 12+ треков (§21-29). Правило выбора, чтобы Driver не прыгал между
+треками каждый turn:
+
+1. Если в `SESSION.md next` уже указан `TRACK=`, и у этого трека остались
+   `pending` шаги — продолжать **этот же** трек, не переключаться на
+   "более интересный", даже если у другого трека шаг короче/проще.
+2. Трек считается доведённым до блокера/паузы (можно переключаться) только
+   если: (a) он закрылся (`closed` → следующий turn обязательно Critic, см.
+   HARD LIMIT ниже), либо (b) Driver уперся в реальный blocker (3 verify
+   fails, см. HARD LIMIT), либо (c) явный `deferred`/gate внутри самого
+   TRACK-файла.
+3. Выбор **нового** трека (нет текущего WIP) — строго по порядку очереди
+   из hard-limit-строки «~300-step backlog» ниже, не по алфавиту файлов и
+   не "что показалось проще с первого взгляда".
+4. `GUI_CANVAS_GRAPH` фазы (Phase A→B→C→D) — то же правило внутри трека:
+   Phase B не начинается, пока Phase A не закрыта; Planner создаёт
+   `TRACK_GUI_SCENE_PHASE_B.md` только в turn, где Phase A закрывается, не
+   заранее.
 
 ### Role rotation (same chat, alternate turns)
 
