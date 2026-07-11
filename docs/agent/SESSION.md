@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=1 |
-| test_gate | Planner: dispatch 812/130; shim 117; no glad/ yet |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=2 |
+| test_gate | glad vendored; all dispatch gl* in Core 3.3; eglGetPlatformDisplayEXT present |
+
+### Turn 2026-07-11 26:15 (Driver TRACK_GL_GLAD_MIGRATION STEP=1 — Decision + vendor)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 26:00 |
+| elapsed | ~15 min |
+| done    | Locked Decision (GL Core 3.3 + EGL1.5/GLES2); vendored `runtime/third_party/glad/{gl,egl}/` via glad2 2.0.8; README provenance (glad.sh POST 405). |
+| verify  | All 32 dispatch `gl*` in `gl/include/glad/gl.h`; EGL smoke symbols in `egl/`; `test -f …/gl/src/gl.c` + egl/gles2.c. |
+| result  | STEP=1 done. Plain: glad trees in repo; hand dispatch still used until STEP=4–5. |
+| issues  | Foreign `compiler/out/*` left unstaged. Web glad.sh generate endpoint broken — CLI lock. |
+| next    | ROLE=Driver STEP=2 TRACK_GL_GLAD_MIGRATION — extern fn bindings to glad headers |
 
 ### Turn 2026-07-11 25:30 (Planner — activate TRACK_GL_GLAD_MIGRATION)
 
