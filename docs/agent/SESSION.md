@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=3 |
-| test_gate | glad_bindings_smoke mlcc+g++ -fsyntax-only 0 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=4 |
+| test_gate | run_glad_link_smoke ok; gl_renderer smoke ok |
+
+### Turn 2026-07-11 27:00 (Driver TRACK_GL_GLAD_MIGRATION STEP=3 — link glad.c)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 26:50 |
+| elapsed | ~10 min |
+| done    | `build_bin.sh`: glfw→`gl.c`+`-I`+`-ldl`; headless egl/gles2 if no glfw; `.c` obj path + no-PCH; `run_glad_link_smoke.sh`; smoke desktop-only. |
+| verify  | `run_glad_link_smoke.sh` ok (nm gladLoaderLoadGL/glad_glClear); `run_gl_renderer_smoke.sh` ok. |
+| result  | STEP=3 done. Plain: GUI binaries link vendored glad. |
+| issues  | Foreign `compiler/out/*` left. Desktop+gles2 not co-linked (symbol clash). |
+| next    | ROLE=Driver STEP=4 TRACK_GL_GLAD_MIGRATION — retarget misc/gui from dispatch to glad |
 
 ### Turn 2026-07-11 26:45 (Driver TRACK_GL_GLAD_MIGRATION STEP=2 — extern fn)
 

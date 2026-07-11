@@ -52,17 +52,37 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
   fi
 fi
 # Optional GLFW window + GL dispatch (TRACK_TEXT_RENDERING_NATIVE STEP=2–3).
+# TRACK_GL_GLAD_MIGRATION STEP=3: vendored glad desktop `gl.c` (not gles2 — symbol clash).
+GLAD_DESKTOP=0
+GLAD_HEADLESS=0
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window.cpp")
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_gl_dispatch.cpp")
+  RT_SRC+=("$ROOT_DIR/runtime/third_party/glad/gl/src/gl.c")
+  GLAD_DESKTOP=1
   # shellcheck disable=SC2207
   TEXT_CFLAGS+=($(pkg-config --cflags glfw3))
+  TEXT_CFLAGS+=(-I "$ROOT_DIR/runtime/third_party/glad/gl/include")
   # shellcheck disable=SC2207
   TEXT_LIBS+=($(pkg-config --libs glfw3))
+  TEXT_LIBS+=(-ldl)
   if pkg-config --exists freetype2 && pkg-config --exists harfbuzz; then
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_window_helpers.cpp")
   fi
 fi
+# Headless glad (egl+gles2) only when desktop glad is absent — same glad_* GL symbols.
+if [ "$GLAD_DESKTOP" = "0" ] \
+  && command -v pkg-config >/dev/null 2>&1 \
+  && pkg-config --exists egl \
+  && pkg-config --exists glesv2; then
+  RT_SRC+=("$ROOT_DIR/runtime/third_party/glad/egl/src/egl.c")
+  RT_SRC+=("$ROOT_DIR/runtime/third_party/glad/egl/src/gles2.c")
+  GLAD_HEADLESS=1
+  TEXT_CFLAGS+=(-I "$ROOT_DIR/runtime/third_party/glad/egl/include")
+  TEXT_LIBS+=(-ldl)
+fi
+# Silence unused when neither glad tree linked (no pkg-config GL stack).
+: "${GLAD_HEADLESS}"
 
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 ENTRY_BASENAME="${MLCC_ENTRY_BASENAME:-main}"
@@ -117,7 +137,8 @@ mkdir -p "$OBJ_DIR"
 object_path_for_source() {
   local source_path="$1"
   local base_name
-  base_name="$(basename "$source_path" .cpp)"
+  base_name="$(basename "$source_path")"
+  base_name="${base_name%.*}"
   if [[ "$source_path" == "$CPP_DIR"/* ]]; then
     printf '%s/%s.o' "$OBJ_DIR" "$base_name"
   else
@@ -237,7 +258,12 @@ for cpp in "${ALL_CPP[@]}"; do
     continue
   fi
   dep_file="$(dep_file_for_object "$object_path")"
-  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" "${PCH_FLAGS[@]}" "${INC_FLAGS[@]}" -MMD -MF "$dep_file" -c "$cpp" -o "$object_path" &
+  # Vendored glad is `.c`; skip C++ PCH (incompatible with C TUs).
+  source_pch_flags=("${PCH_FLAGS[@]}")
+  if [[ "$cpp" == *.c ]]; then
+    source_pch_flags=()
+  fi
+  "${CXX_CMD[@]}" -std=c++20 "${CXX_OPTIMIZE_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" "${source_pch_flags[@]}" "${INC_FLAGS[@]}" -MMD -MF "$dep_file" -c "$cpp" -o "$object_path" &
   PIDS+=($!)
   if [ ${#PIDS[@]} -ge "$JOBS" ]; then
     for pid in "${PIDS[@]}"; do

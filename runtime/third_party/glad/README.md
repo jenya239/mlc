@@ -11,8 +11,8 @@ Loader sources for desktop OpenGL and headless EGL/GLES2.
 | Why not web POST | `POST https://gen.glad.sh/generate` returned 302→flash error / follow 405 (2026-07-11); vendored via CLI once |
 | Desktop | `gl:core=3.3`, no extensions, C + loader → `gl/` |
 | Headless | `egl=1.5,gles2=2.0` + `EGL_EXT_platform_base`, `EGL_MESA_platform_surfaceless`, `EGL_KHR_surfaceless_context` → `egl/` |
-| Link | compile `gl/src/gl.c` and `egl/src/{egl,gles2}.c` in `build_bin.sh` / GUI link (STEP=3) — not `extern lib` |
-| Include | `-I runtime/third_party/glad/gl/include` or `…/egl/include` |
+| Link | `build_bin.sh`: glfw3 → `gl/src/gl.c` + `-I gl/include` + `-ldl`; no-glfw EGL → `egl.c`+`gles2.c` (not both trees — `glad_gl*` clash) |
+| Include | MLC: `mlc/gl/glad_*_abi.hpp`; compile: `-I runtime/third_party/glad/{gl,egl}/include` via `build_bin.sh` |
 
 ## Regenerate
 

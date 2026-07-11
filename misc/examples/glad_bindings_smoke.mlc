@@ -1,5 +1,5 @@
-// TRACK_GL_GLAD_MIGRATION STEP=2 — extern fn → glad headers (codegen smoke).
-// No GL context; verifies #include + call emit for desktop + EGL unload + GLES2 loaders.
+// TRACK_GL_GLAD_MIGRATION STEP=2/3 — desktop glad extern + link smoke.
+// Headless egl/gles2 modules are separate (not linked alongside desktop gl.c).
 
 import {
   glad_loader_load_gl,
@@ -25,21 +25,12 @@ import {
   gl_enable_vertex_attrib_array
 } from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
-import {
-  glad_loader_unload_egl
-} from '../../lib/mlc/common/stdlib/gl/glad_egl.mlc'
-
-import {
-  glad_loader_load_gles2,
-  glad_loader_unload_gles2,
-  gles_clear,
-  gles_viewport,
-  gles_bind_buffer,
-  gles_draw_arrays
-} from '../../lib/mlc/common/stdlib/gl/glad_gles2.mlc'
-
 fn main() -> i32 = do
   let load_gl = glad_loader_load_gl()
+  if load_gl == 0 then
+    glad_loader_unload_gl()
+    return 1
+  end
   gl_clear(0)
   gl_viewport(0, 0, 1, 1)
   gl_enable(0)
@@ -60,13 +51,5 @@ fn main() -> i32 = do
   gl_delete_shader(shader)
   gl_delete_program(program)
   glad_loader_unload_gl()
-
-  let load_gles = glad_loader_load_gles2()
-  gles_clear(0)
-  gles_viewport(0, 0, 1, 1)
-  gles_bind_buffer(0, 0)
-  gles_draw_arrays(0, 0, 0)
-  glad_loader_unload_gles2()
-  glad_loader_unload_egl()
-  load_gl + load_gles
+  0
 end

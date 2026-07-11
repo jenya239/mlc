@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` active** STEP=3 — link vendored glad `.c` in build.
+**`TRACK_GL_GLAD_MIGRATION` active** STEP=4 — retarget `misc/gui` to glad bindings.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 

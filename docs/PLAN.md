@@ -412,7 +412,7 @@ compiler/
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **done** (2026-07-11) | [TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) **closed** STEP=1–6; Critic OK; MLC EDT + mask bridge; MAE=0; REG 20/0; self-host identical |
 | **20c** WebSocket framing/handshake — порт на MLC | **closed** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **closed** 2026-07-11 (MLC bodies; hpp gone) |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **done** (2026-07-11) | [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) **closed** STEP=1–6; Critic OK; env_abi + Log/Validate MLC; bare names; REG 20/0; DIFF 0 |
-| **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open, active** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) **active** STEP=3 (glad MLC extern+abi; link `.c` next) |
+| **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open, active** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) **active** STEP=4 (glad `.c` linked in build_bin; retarget GUI next) |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
