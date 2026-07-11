@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` closed** (awaiting Critic) — STEP=1–5 done; REG 20/0; self-host DIFF 0.
-See [TRACK_FFI_SAFETY.md](../archive/tracks/TRACK_FFI_SAFETY.md). Next after Critic: Planner (ERROR_UNION / DEBUG_SOURCE_MAP low-pri).
+**No active Driver track.** Last: `TRACK_FFI_SAFETY` Critic OK.
+See [TRACK_FFI_SAFETY.md](../archive/tracks/TRACK_FFI_SAFETY.md). Next: Planner (low-pri ERROR_UNION / DEBUG_SOURCE_MAP or PLAN pick).
 
 
 ## Step sizing (good vs bad)

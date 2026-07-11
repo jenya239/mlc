@@ -4,7 +4,14 @@ Parent: [../../PLAN.md](../../PLAN.md) §14, [../../FFI_LAYER.md](../../FFI_LAYE
 (инфраструктура уже реализована, `TRACK_FFI_LAYER` closed 2026-07-09 — этот
 трек только про безопасность использования, без нового codegen).
 
-## Status: **closed** (2026-07-11) — awaiting Critic
+## Status: **closed** (2026-07-11) — Critic OK
+
+**Critic 2026-07-11:** STEP=1–5 vs `e1db7d81`…`3806d49c`; Decision B (no
+`unsafe` syntax); `extern_concurrency_lint`/`extern_header_arity_lint` + hooks;
+env/tcp `blocking`; FFI_LAYER §9 contract; archived; PLAN §14 done; smokes
+concurrency+arity exit 0; `mlcc --check-only main` 0. **reopen: none**.
+Residuals: arity by C-name only; many stdlib full-form (websocket/glad/…) still
+lack concurrency attrs (warn if checked); Ruby `spawn_capture` parse pre-broken.
 
 **Driver 2026-07-11 STEP=5:** `regression_gate` 20/0; self-host p1↔p2 DIFF 0
 (`mlcc`→`mlcc2` via `build_bin.sh`); arity+concurrency smokes ok. TRACK

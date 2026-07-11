@@ -401,7 +401,7 @@ compiler/
 | **13a-3** VM lowering: unary операторы, `if` не в tail-позиции | **done** (2026-07-10) | [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) — STEP=1–4 **closed** (`MirRvalueUnary`; if-as-statement; if-as-rvalue; verify-gate) |
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
 | **13c** VM: массив/map только `i32` (не point-fix, value-model) | **done** (2026-07-11) | [TRACK_VM_TYPED_COLLECTIONS](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md) **closed** STEP=1–4; Critic OK (`cf613f0b`…`cdffcbf8`; gate 6/0) |
-| **14** FFI safety contract | **done** (2026-07-11) | [TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) **closed** STEP=1–5; W-EXTERN-ATTR/ARITY; FFI_LAYER §9; REG 20/0; self-host DIFF 0 (awaiting Critic) |
+| **14** FFI safety contract | **done** (2026-07-11) | [TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) **closed** STEP=1–5; Critic OK (`e1db7d81`…`3806d49c`); W-EXTERN-ATTR/ARITY; FFI_LAYER §9; REG 20/0; self-host DIFF 0 |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
 | **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
@@ -544,8 +544,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       dispatch/shim gone; REG 20/0; self-host DIFF 0
       → [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)):**
   → **§20 initiative closed** (20a–e done; runtime stays C++)
-  → **FFI_SAFETY (**closed** 2026-07-11: STEP=1–5; W-EXTERN-ATTR/ARITY;
-      FFI_LAYER §9; REG 20/0; self-host DIFF 0; awaiting Critic;
+  → **FFI_SAFETY (**closed** 2026-07-11: Critic OK; STEP=1–5; W-EXTERN-ATTR/ARITY;
+      FFI_LAYER §9; REG 20/0; self-host DIFF 0;
       → [archive/tracks/TRACK_FFI_SAFETY.md](archive/tracks/TRACK_FFI_SAFETY.md)):**
   → LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)

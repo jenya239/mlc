@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_FFI_SAFETY closed → Critic |
-| test_gate | STEP=5: REG 20/0; self-host DIFF 0; arity+concurrency smokes ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none) — Planner next |
+| test_gate | Critic: concurrency+arity smokes 0; main check-only 0; commits e1db7d81…3806d49c |
+
+### Turn 2026-07-11 32:05 (Critic TRACK_FFI_SAFETY — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 31:50 |
+| elapsed | ~15 min |
+| done    | Audited STEP=1–5 (`e1db7d81`…`3806d49c`); Decision B; lints+hooks; §9; archive/PLAN; re-ran both smokes + main check-only. **reopen: none**. |
+| verify  | smokes 0; main 0; `test ! -f docs/agent/TRACK_FFI_SAFETY.md`; PLAN §14 Critic OK. |
+| result  | Critic OK. Residuals: arity by C-name; websocket/glad/… full-form still unannotated (warn). |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — next after FFI_SAFETY (low-pri §15/§17 or PLAN pick) |
 
 ### Turn 2026-07-11 31:50 (Driver TRACK_FFI_SAFETY STEP=5 — verify-gate + close)
 
