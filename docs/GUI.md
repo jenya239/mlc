@@ -39,7 +39,8 @@ Interactive: `MLC_GLFW_VISIBLE=1 scripts/run_gui_button_demo.sh`.
 - Button label text draw (color-only demo)
 - `text_window_demo.mlc` still self-contained (FT/MSDF), not on `misc/gui/`
 - Full widget set / retained tree / CSS
-- Масштабируемое поле со связями (Figma/blueprint-подобное) — другая
-  архитектура, не расширение v0: camera/zoom, spatial culling, instancing,
-  retained scene graph. Design-only заметка:
+- Retained affine-transform scene graph + vector primitives — единый
+  фундамент для classic/game/Flash-rich/Figma-canvas (один tree+matrix,
+  разный контент). v0 (screen-space `Rect`, чистый IM) — прототип одной
+  кнопки, не основа. Design-only заметка:
   [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md)
