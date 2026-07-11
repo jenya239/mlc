@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=1 |
-| test_gate | (none yet — Decision) |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=2 |
+| test_gate | Decision lock (task_scope.hpp + CONCURRENCY_V2 §6) |
+
+### Turn 2026-07-11 20:05 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 20:00 |
+| elapsed | ~5 min |
+| done    | Decision locked: TaskScope model; keep spawn+block_on; bare spawn → E089; MLC scope → task_scope.hpp; verified hpp on disk. |
+| verify  | TRACK Decision section locked; `task_scope.hpp` has spawn/join; PLAN→STEP=2. |
+| result  | STEP=1 done. Plain: spawn fix path is scope + bare-spawn error. |
+| issues  | Queued prompt VM STEP=2 stale. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_SPAWN_DETACH — checker E089 on bare spawn statement |
 
 ### Turn 2026-07-11 20:00 (Planner — activate TRACK_CONCURRENCY_SPAWN_DETACH)
 

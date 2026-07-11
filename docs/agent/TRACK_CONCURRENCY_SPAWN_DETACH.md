@@ -8,7 +8,13 @@ Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже гот
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **active** — STEP=1 next (Decision)
+## Status: **active** — STEP=2 next (bare-spawn checker)
+
+**Driver 2026-07-11:** STEP=1 — Decision **locked**. Verified
+`runtime/include/mlc/concurrency/task_scope.hpp` (`TaskScope::spawn` /
+`join` / `~TaskScope` waits). CONCURRENCY_V2 §6 surface matches. Bare
+`spawn` statement → **error** (STEP=2); MLC `scope` → STEP=3 over existing
+C++ TaskScope (syntax deferred from closed TASKSCOPE track).
 
 **Planner 2026-07-11:** activated after WEBSOCKET_TO_MLC Critic OK (`2a53fa0c`).
 CONTINUITY hard limit: SPAWN_DETACH before remaining «без C++» queue (§20b/d/e).
@@ -68,22 +74,30 @@ end
 Tcp/HTTP/spawn по отдельности (все три готовы и стыкуются), а из-за этого
 рантайм-бага в `spawn`.
 
-## Decision (STEP=1) — pending lock
+## Decision (STEP=1, 2026-07-11) — **locked**
 
-| Вопрос | Вариант | Рекомендация |
-|--------|---------|--------------|
-| Модель | (a) `std::thread::detach()` — результат теряется; (b) `TaskScope` — явная коллекция, reap в конце scope (`task_scope.hpp` уже есть); (c) checker требует `.detach()`/discard | **(b)** — `CONCURRENCY_V2.md` §5-6 structured concurrency; (a) data race на panics |
-| Where | MLC `scope |s| { s.spawn { ... } }` поверх `task_scope.hpp` | не с нуля |
-| Совместимость | `spawn do ... end -> Task<T>` + `block_on`/`await` | **оставить**; `scope` = основной «spawn много, жди все» |
-| Shim до scope | checker/lint: bare `spawn` statement (результат не в `let`) → error/warning | **обязательно** до STEP=3, чтобы не плодить тихо-серийный код |
+Verified on disk: `runtime/include/mlc/concurrency/task_scope.hpp` —
+`TaskScope::spawn` / `spawn_with_token` / `join` / destructor waits for
+children + cancel. CONCURRENCY_V2 §6 sketches `scope |s| { s.spawn {…} }`;
+closed TASKSCOPE deferred MLC syntax (C++-only today).
 
-### Rejected (draft for Driver lock)
+| Вопрос | Locked |
+|--------|--------|
+| Модель | **TaskScope** (structured concurrency). Not detach-only. |
+| Where | MLC `scope \|s\| { s.spawn { … } }` codegen → existing `task_scope.hpp` (STEP=3) |
+| Совместимость | Keep `spawn do … end -> Task<T>` + explicit `block_on`/`await` |
+| Shim (STEP=2) | Bare `spawn` as expression-statement (result not bound by `let`) → **error** `E089` |
+| Diagnostic text (STEP=2) | `bare spawn discards Task and blocks in destructor; bind with let or use scope` |
+| Child errors / cancel (STEP=3+) | Scope join waits; cancel via `StopToken` already on C++ TaskScope; MLC error aggregation deferred if not in V2 MVP |
+
+### Rejected
 
 | Вариант | Почему |
 |---------|--------|
-| Только detach без scope | нет reap/error aggregation; против V2 §5-6 |
-| Менять `~Task` чтобы не ждать future | ломает memory-safety / silently drops running work |
-| Только docs, без checker | молчаливый серийный accept-loop остаётся ловушкой |
+| `std::thread::detach` as primary fix | no reap/error aggregation; against CONCURRENCY_V2 §5-6 |
+| Change `~Task` to not wait on `std::future` | drops running work / UB risk; still no structured join |
+| Docs-only / warning-only | silent serial accept-loop stays a trap |
+| New runtime from scratch | `task_scope.hpp` already implements the join invariant |
 
 ## Scope
 
@@ -110,7 +124,7 @@ Tcp/HTTP/spawn по отдельности (все три готовы и сты
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **pending** |
+| 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **done** (2026-07-11: locked TaskScope+E089; task_scope.hpp verified) |
 | 2 | Checker: диагностика bare `spawn do...end` statement. | pending |
 | 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | pending |
 | 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | pending |

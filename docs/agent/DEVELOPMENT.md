@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=1 — lock Decision (scope + bare-spawn lint).
+**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=2 — bare `spawn` statement → E089.
 See [TRACK_CONCURRENCY_SPAWN_DETACH.md](TRACK_CONCURRENCY_SPAWN_DETACH.md).
 
 
