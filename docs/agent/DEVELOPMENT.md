@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GUI_FRAMEWORK` active** STEP=6 — docs (`GUI.md` / TEXT_RENDERING) +
-verify-gate. See [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
+**`TRACK_GUI_FRAMEWORK` closed** 2026-07-11 — awaiting Critic `critique-audit`.
+See [GUI.md](../GUI.md).
 
 
 ## Step sizing (good vs bad)

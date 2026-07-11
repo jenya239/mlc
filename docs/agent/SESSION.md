@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_GUI_FRAMEWORK STEP=6 |
-| test_gate | run_gui_button_demo.sh EXIT 0 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_GUI_FRAMEWORK **closed** (await Critic) |
+| test_gate | layout/input/button/gl/text smokes EXIT 0 |
+
+### Turn 2026-07-11 04:55 (Driver TRACK_GUI_FRAMEWORK STEP=6 — docs+verify / close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_FRAMEWORK |
+| started | 2026-07-11 04:52 |
+| elapsed | ~3 min |
+| done    | `docs/GUI.md`; TEXT_RENDERING §8; verify layout/input/button/gl/text smokes; track → `docs/archive/tracks/TRACK_GUI_FRAMEWORK.md`; PLAN §10b done + queue. |
+| verify  | All 5 smokes EXIT 0; no `compiler/**` this track (self-host N/A). |
+| result  | STEP=6 done; TRACK **closed**. Plain: GUI v0 documented and archived. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. Residuals: label text draw; text_window_demo not on misc/gui. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_GUI_FRAMEWORK |
 
 ### Turn 2026-07-11 04:50 (Driver TRACK_GUI_FRAMEWORK STEP=5 — Button demo)
 

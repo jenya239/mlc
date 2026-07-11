@@ -1,9 +1,11 @@
 # Track: GUI framework (native UI on MLC)
 
-Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
-[TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
+Parent: [../../PLAN.md](../../PLAN.md), [../../TEXT_RENDERING.md](../../TEXT_RENDERING.md) §8,
+[TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **open** — STEP=6 next (docs + verify-gate) — **active**
+## Status: **closed** (2026-07-11)
+
+**Driver 2026-07-11:** STEP=6 — `docs/GUI.md`; TEXT_RENDERING §8; verify smokes OK; archived.
 
 **Driver 2026-07-11:** STEP=5 — `misc/gui/button.mlc` + `ease_in_out_unit`;
 `gui_button_demo.mlc` (layout button, inject click, clear-color easing);
@@ -108,7 +110,7 @@ Easing: `glfw_gl_anim_unit` and/or small MLC `ease_in_out` on button color.
 | 3 | Layout pass v0 (IM row/column) + screen hit-test helper. | **done** (2026-07-11: `layout.mlc`; `run_gui_layout_smoke.sh` ok) |
 | 4 | Input: mouse position/button + key via GLFW → widget hover/click. | **done** (2026-07-11: `input.mlc` + GLFW poll/inject; smoke ok) |
 | 5 | Demo: one Button + easing anim; gate script (hidden window OK). | **done** (2026-07-11: `button.mlc` + `run_gui_button_demo.sh` ok) |
-| 6 | Docs (`TEXT_RENDERING` or short `GUI.md`) + PLAN; verify-gate. | pending |
+| 6 | Docs (`TEXT_RENDERING` or short `GUI.md`) + PLAN; verify-gate. | **done** (2026-07-11: GUI.md; smokes 5/0; archived) |
 
 <!-- sub-steps STEP=2: 1) misc/gui/gl_renderer.mlc + text_renderer.mlc; 2) rewire gl_renderer_smoke + text_renderer_native_smoke; 3) text_window_demo import or thin wrapper; 4) smokes EXIT 0 -->
 <!-- sub-steps STEP=3: 1) Rect/Point in misc/gui; 2) IM row/column; 3) point-in-rect -->
