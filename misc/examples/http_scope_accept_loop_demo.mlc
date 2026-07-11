@@ -1,0 +1,79 @@
+// TRACK_CONCURRENCY_SPAWN_DETACH STEP=4 — accept-loop with scope.spawn (not bare spawn).
+// Accepts CONNECTION_COUNT clients; each handler sleeps then replies. Gate fires parallel curls.
+
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+import {
+  parse_http_request,
+  format_http_response,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader,
+  HttpParseOk,
+  HttpParseErr
+} from 'HttpServer'
+
+extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp"
+
+fn route_http(request: HttpRequest) -> HttpResponse = do
+  HttpResponse {
+    status: 200,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "ok"
+  }
+end
+
+fn handle_one(stream: i32) -> i32 = do
+  let raw_option = read(stream, 65536)
+  if !raw_option.is_some() then
+    close_stream(stream)
+    return 1
+  end
+  let raw = raw_option.unwrap()
+  sleep_ms_probe(250)
+  let response = match parse_http_request(raw) {
+    HttpParseErr =>
+      HttpResponse {
+        status: 400,
+        headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+        body: "Bad Request"
+      },
+    HttpParseOk(request) => route_http(request)
+  }
+  let wrote = write_all(stream, format_http_response(response))
+  close_stream(stream)
+  if wrote then 0 else 2 end
+end
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  File.write("http_scope_accept_port.txt", `${port(listener)}`)
+
+  let mut remaining = 4
+  let mut accept_failed = 0
+  scope |task_scope| do
+    while remaining > 0 do
+      let stream_option = accept(listener)
+      if !stream_option.is_some() then
+        accept_failed = 1
+        remaining = 0
+      else
+        let stream = stream_option.unwrap()
+        task_scope.spawn do handle_one(stream) end
+        remaining = remaining - 1
+      end
+    end
+  end
+
+  close_listener(listener)
+  if accept_failed != 0 then
+    println(last_error())
+    return 2
+  end
+  0
+end

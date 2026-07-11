@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 3 |
-| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=4 |
-| test_gate | scope_parallel_smoke 258ms&lt;511ms |
+| driver_turns_since_plan | 6 |
+| step_last | 4 |
+| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=5 |
+| test_gate | http_scope_accept_loop wall 292ms&lt;500ms |
+
+### Turn 2026-07-11 21:25 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=4 — accept-loop)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 21:15 |
+| elapsed | ~10 min |
+| done    | `http_scope_accept_loop_demo.mlc` (accept×4 + `scope.spawn` + sleep); `run_http_scope_accept_loop_gate.sh`. |
+| verify  | gate PASS wall_ms=292 max=500; TaskScope+.spawn in C++; 4× body=ok. |
+| result  | STEP=4 done. Plain: HTTP accept-loop runs handlers in parallel under scope. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=5 TRACK_CONCURRENCY_SPAWN_DETACH — regression_gate + self-host diff; close → Critic |
 
 ### Turn 2026-07-11 21:10 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — parallel smoke)
 

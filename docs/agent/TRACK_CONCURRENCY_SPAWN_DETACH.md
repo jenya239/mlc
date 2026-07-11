@@ -8,7 +8,11 @@ Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже гот
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **active** — STEP=4 next (HTTP accept-loop demo)
+## Status: **active** — STEP=5 next (regression + self-host → close)
+
+**Driver 2026-07-11:** STEP=4 — `http_scope_accept_loop_demo.mlc` (accept×4 +
+`scope.spawn` + 250ms sleep/handler); `run_http_scope_accept_loop_gate.sh`
+PASS wall 292ms &lt; 500ms (4 parallel curls). STEP=4 **done**.
 
 **Driver 2026-07-11:** STEP=3 parallel smoke — `scope_parallel_sleep.mlc` vs
 `scope_serial_sleep.mlc`; `run_scope_parallel_smoke.sh` PASS (258ms < 511ms).
@@ -144,7 +148,7 @@ closed TASKSCOPE deferred MLC syntax (C++-only today).
 | 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **done** (2026-07-11: locked TaskScope+E089; task_scope.hpp verified) |
 | 2 | Checker: диагностика bare `spawn do...end` statement. | **done** (2026-07-11: E089 in spawn_capture; test_spawn + check-only) |
 | 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | **done** (2026-07-11: parse+codegen+parallel smoke 258ms&lt;511ms) |
-| 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | pending |
+| 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | **done** (2026-07-11: 4 curls wall 292ms&lt;500ms) |
 | 5 | Self-host diff + `regression_gate.sh`; close. | pending |
 
 <!-- STEP=1 sub-steps: 1) lock Decision table (scope vs detach vs lint-only); 2) cite task_scope.hpp + CONCURRENCY_V2 §6 surface; 3) list STEP=2 diagnostic code/message; PLAN→STEP=2 -->
