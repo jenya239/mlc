@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 5 |
-| active_track | TRACK_CONCURRENCY_SPAWN_DETACH closed (await Critic) |
-| test_gate | regression 20/0; self-host DIFF_EXIT=0 |
+| step_last | critique-audit |
+| active_track | (none — SPAWN_DETACH Critic OK; Planner next) |
+| test_gate | Critic: E089 + smoke 253&lt;503 + curl 262&lt;500 |
+
+### Turn 2026-07-11 22:05 (Critic TRACK_CONCURRENCY_SPAWN_DETACH — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 21:50 |
+| elapsed | ~15 min |
+| done    | Audited STEP1–5 vs `c5e3cf87`…`b6d9c560`; PLAN/archive sync; re-ran E089/bound check-only, `run_scope_parallel_smoke`, `run_http_scope_accept_loop_gate`; fixed stale Impact/Decision; CONTINUITY §11b row→closed. |
+| verify  | E089 message match; BOUND_EXIT=0; smoke 253&lt;503; curl wall 262&lt;500; PLAN §11b done. |
+| result  | **reopen: none**. Residuals: child-error aggregation deferred; demo fixed-N accept (not infinite server). |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Planner STEP=plan-refresh — activate next «без C++» track (§20b/d/e) |
 
 ### Turn 2026-07-11 21:50 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=5 — close)
 

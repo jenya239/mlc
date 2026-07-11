@@ -8,7 +8,12 @@ Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже гот
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **closed** (2026-07-11)
+## Status: **closed** (2026-07-11) — Critic OK
+
+**Critic 2026-07-11:** STEP=1–5 vs commits `c5e3cf87`…`b6d9c560`; PLAN §11b/archive
+sync; re-ran E089 check-only, parallel smoke (253&lt;503), accept-loop curl
+(262&lt;500). **reopen: none**. Fixed stale Impact/Decision wording; CONTINUITY
+hard-limit row → closed.
 
 **Driver 2026-07-11:** STEP=5 — `regression_gate` 20/0; self-host p1↔p2
 DIFF_EXIT=0; TRACK archived. Close → Critic.
@@ -93,17 +98,17 @@ end
 после двух параллельных `accept()` (2 соединения, оба spawn до первого
 `block_on` — валидный частный случай, не accept-loop).
 
-**Итог: реальный многопоточный HTTP-сервер (accept-loop, N параллельных
-соединений) сегодня писать на MLC нельзя** — не из-за отсутствия
-Tcp/HTTP/spawn по отдельности (все три готовы и стыкуются), а из-за этого
-рантайм-бага в `spawn`.
+**Итог (до трека):** реального accept-loop на bare `spawn` не было.
+**После STEP=1–5:** `scope |s| { s.spawn … }` + E089; accept-loop demo + curl
+gate (wall ≈ один handler, не N×). Residual: MLC child-error aggregation
+deferred; demo accepts fixed N (gate), not infinite `while true` server.
 
 ## Decision (STEP=1, 2026-07-11) — **locked**
 
 Verified on disk: `runtime/include/mlc/concurrency/task_scope.hpp` —
 `TaskScope::spawn` / `spawn_with_token` / `join` / destructor waits for
 children + cancel. CONCURRENCY_V2 §6 sketches `scope |s| { s.spawn {…} }`;
-closed TASKSCOPE deferred MLC syntax (C++-only today).
+MLC syntax delivered in this track (STEP=3).
 
 | Вопрос | Locked |
 |--------|--------|
