@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
+| driver_turns_since_plan | 5 |
 | step_last | 3 |
-| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 |
-| test_gate | scope codegen TaskScope+spawn link+run |
+| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=4 |
+| test_gate | scope_parallel_smoke 258ms&lt;511ms |
+
+### Turn 2026-07-11 21:10 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — parallel smoke)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 21:00 |
+| elapsed | ~10 min |
+| done    | `test_sleep.hpp`; `scope_parallel_sleep.mlc` / `scope_serial_sleep.mlc`; `run_scope_parallel_smoke.sh`. |
+| verify  | smoke PASS parallel_ms=258 serial_ms=511; TaskScope+.spawn in C++. |
+| result  | STEP=3 done. Plain: scoped spawns overlap in wall time. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_SPAWN_DETACH — HTTP accept-loop demo + N-curl wall-time |
 
 ### Turn 2026-07-11 20:55 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — scope codegen)
 

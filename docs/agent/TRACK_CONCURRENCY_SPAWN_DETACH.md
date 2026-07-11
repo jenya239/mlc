@@ -8,7 +8,11 @@ Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже гот
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **active** — STEP=3 next (parallel smoke)
+## Status: **active** — STEP=4 next (HTTP accept-loop demo)
+
+**Driver 2026-07-11:** STEP=3 parallel smoke — `scope_parallel_sleep.mlc` vs
+`scope_serial_sleep.mlc`; `run_scope_parallel_smoke.sh` PASS (258ms < 511ms).
+`test_sleep.hpp` probe. STEP=3 **done**.
 
 **Driver 2026-07-11:** STEP=3 codegen — `ExprScope` → `let x = TaskScope()` +
 `.spawn`; `__task_scope_new` builtin; `scope` is contextual Ident (not
@@ -139,7 +143,7 @@ closed TASKSCOPE deferred MLC syntax (C++-only today).
 |------|------|--------|
 | 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **done** (2026-07-11: locked TaskScope+E089; task_scope.hpp verified) |
 | 2 | Checker: диагностика bare `spawn do...end` statement. | **done** (2026-07-11: E089 in spawn_capture; test_spawn + check-only) |
-| 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | pending (parse+codegen 2026-07-11; parallel smoke next) |
+| 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | **done** (2026-07-11: parse+codegen+parallel smoke 258ms&lt;511ms) |
 | 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | pending |
 | 5 | Self-host diff + `regression_gate.sh`; close. | pending |
 

@@ -1,0 +1,17 @@
+// TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — two scoped spawns must overlap in wall time.
+
+extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp"
+
+fn slow_work(token: i32) -> i32 = do
+  sleep_ms_probe(250)
+  token
+end
+
+fn main() -> i32 = do
+  scope |task_scope| do
+    task_scope.spawn do slow_work(1) end
+    task_scope.spawn do slow_work(2) end
+  end
+  0
+end

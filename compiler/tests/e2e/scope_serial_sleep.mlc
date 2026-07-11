@@ -1,0 +1,10 @@
+// Serial control for scope_parallel_sleep gate (no spawn — two sleeps back-to-back).
+
+extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp"
+
+fn main() -> i32 = do
+  sleep_ms_probe(250)
+  sleep_ms_probe(250)
+  0
+end
