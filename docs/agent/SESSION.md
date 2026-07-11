@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none) — Planner next |
-| test_gate | Critic: DRY gui_button=1; STEP=6 REG 20/0 sweep 106/0/1 |
+| step_last | plan-refresh |
+| active_track | TRACK_FFI_EXTERN_DEDUP |
+| test_gate | Planner: no code |
+
+### Turn 2026-07-12 03:50 (Planner — plan-refresh → FFI_EXTERN_DEDUP)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 03:49 |
+| elapsed | ~10 min |
+| done    | Activated §22 after EXAMPLES_CI Critic OK. STEP=1 sub-steps; PLAN §22 **active**; DEVELOPMENT pointer; fixed EXAMPLES_CI archive link in TRACK. |
+| verify  | TRACK Next=STEP=1; PLAN queue FFI_EXTERN_DEDUP first open; no `compiler/` edits. |
+| result  | Active track = FFI_EXTERN_DEDUP. Plain: next is design pick for extern dedup. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_FFI_EXTERN_DEDUP — design decision (options 1/2/3) |
 
 ### Turn 2026-07-12 03:45 (Critic TRACK_EXAMPLES_CI — critique-audit)
 
