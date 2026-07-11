@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**No active Driver track.** Last: `TRACK_FFI_SAFETY` Critic OK.
-See [TRACK_FFI_SAFETY.md](../archive/tracks/TRACK_FFI_SAFETY.md). Next: Planner (low-pri ERROR_UNION / DEBUG_SOURCE_MAP or PLAN pick).
+**`TRACK_LANG_ERROR_UNION` active** STEP=1 — Design: grammar `-> T!E` only.
+See [TRACK_LANG_ERROR_UNION.md](TRACK_LANG_ERROR_UNION.md). Chose over DEBUG_SOURCE_MAP (research).
 
 
 ## Step sizing (good vs bad)

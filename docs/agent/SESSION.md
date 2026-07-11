@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none) — Planner next |
-| test_gate | Critic: concurrency+arity smokes 0; main check-only 0; commits e1db7d81…3806d49c |
+| step_last | plan-refresh |
+| active_track | TRACK_LANG_ERROR_UNION STEP=1 |
+| test_gate | Planner: activated §17; TRACK Status active STEP=1 |
+
+### Turn 2026-07-11 32:20 (Planner — activate TRACK_LANG_ERROR_UNION)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_LANG_ERROR_UNION |
+| started | 2026-07-11 32:05 |
+| elapsed | ~10 min |
+| done    | After FFI Critic OK: activated §17 `TRACK_LANG_ERROR_UNION` **active** STEP=1 + sub-steps 1–5; skipped §15 DEBUG (research); PLAN queue/DEVELOPMENT. |
+| verify  | TRACK Status **active**; PLAN §17 **active** STEP=1; `test -f docs/agent/TRACK_LANG_ERROR_UNION.md`. |
+| result  | STEP=plan-refresh done. Plain: next is Design for `-> T!E` sugar. |
+| issues  | Foreign `compiler/out/*` left. DEBUG/PACKAGE/AUTO_CYCLE stay queued. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_ERROR_UNION — Design: lock `-> T!E` grammar |
 
 ### Turn 2026-07-11 32:05 (Critic TRACK_FFI_SAFETY — critique-audit)
 

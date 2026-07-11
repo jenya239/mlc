@@ -404,7 +404,7 @@ compiler/
 | **14** FFI safety contract | **done** (2026-07-11) | [TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) **closed** STEP=1–5; Critic OK (`e1db7d81`…`3806d49c`); W-EXTERN-ATTR/ARITY; FFI_LAYER §9; REG 20/0; self-host DIFF 0 |
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, низкий приоритет, research** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — поднять приоритет когда появится первый внешний проект на MLC |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
-| **17** `T!E` error-union sugar | **open, низкий приоритет, чистый сахар** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) — desugar в `Result<T,E>`, без зависимостей |
+| **17** `T!E` error-union sugar | **open, active** | [TRACK_LANG_ERROR_UNION](agent/TRACK_LANG_ERROR_UNION.md) **active** STEP=1 (Design: `-> T!E` only; desugar → `Result<T,E>`) |
 | **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
 | **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **done** (2026-07-11) | [FFI_LAYER.md](FFI_LAYER.md) §8; подтреки 20a–e **closed** (Critic OK где применимо). Рантайм языка остаётся C++ (won't-do self-host runtime). Residuals: bridges/TcpStream, thin abi, smoke names |
@@ -547,8 +547,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **FFI_SAFETY (**closed** 2026-07-11: Critic OK; STEP=1–5; W-EXTERN-ATTR/ARITY;
       FFI_LAYER §9; REG 20/0; self-host DIFF 0;
       → [archive/tracks/TRACK_FFI_SAFETY.md](archive/tracks/TRACK_FFI_SAFETY.md)):**
-  → LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
-    без зависимостей друг от друга)
+  → **LANG_ERROR_UNION (**active** STEP=1 — Design `-> T!E`;
+      → [agent/TRACK_LANG_ERROR_UNION.md](agent/TRACK_LANG_ERROR_UNION.md)):**
+  → DEBUG_SOURCE_MAP (низкий приоритет, research до внешнего MLC-проекта)
   → PACKAGE_MANAGER / LANG_AUTO_CYCLE (design-only, не начинать реализацию
     без отдельной команды пользователя)
 ```
