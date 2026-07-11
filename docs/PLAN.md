@@ -412,7 +412,7 @@ compiler/
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **done** (2026-07-11) | [TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) **closed** STEP=1–6; Critic OK; MLC EDT + mask bridge; MAE=0; REG 20/0; self-host identical |
 | **20c** WebSocket framing/handshake — порт на MLC | **closed** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **closed** 2026-07-11 (MLC bodies; hpp gone) |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **done** (2026-07-11) | [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) **closed** STEP=1–6; Critic OK; env_abi + Log/Validate MLC; bare names; REG 20/0; DIFF 0 |
-| **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **done** (2026-07-11) | [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) **closed** STEP=1–7; awaiting Critic; vendored glad; dispatch/shim deleted; REG 20/0; self-host DIFF 0 |
+| **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **done** (2026-07-11) | [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) **closed** STEP=1–7; Critic OK (`0b613af4`…`855c7485`); vendored glad; dispatch/shim deleted; REG 20/0; self-host DIFF 0 |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -540,8 +540,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md))
   → **STDLIB_LOGIC_TO_MLC (**closed** 2026-07-11: Critic OK; STEP=1–6;
       → [archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md)):**
-  → **GL_GLAD_MIGRATION (**closed** 2026-07-11: STEP=1–7; glad vendor; dispatch/shim gone;
-      REG 20/0; self-host DIFF 0; docs; awaiting Critic
+  → **GL_GLAD_MIGRATION (**closed** 2026-07-11: Critic OK; STEP=1–7; glad vendor;
+      dispatch/shim gone; REG 20/0; self-host DIFF 0
       → [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)):**
   → FFI_SAFETY / LANG_ERROR_UNION / DEBUG_SOURCE_MAP (низкий приоритет,
     без зависимостей друг от друга)

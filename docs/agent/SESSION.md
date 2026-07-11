@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_GL_GLAD_MIGRATION closed → Critic |
-| test_gate | STEP=7 docs; prior STEP=6 REG 20/0 + DIFF 0 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | (none) — Planner next |
+| test_gate | Critic: glad/loader/renderer/dispatch_smoke 0; dispatch/shim absent |
+
+### Turn 2026-07-11 29:25 (Critic TRACK_GL_GLAD_MIGRATION — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 29:10 |
+| elapsed | ~15 min |
+| done    | Audited STEP=1–7 (`0b613af4`…`855c7485`); deletes/vendor/abi/`build_bin` ok; re-ran glad_link+loader+renderer+dispatch_smoke exit 0; PLAN/archive Critic OK. **reopen: none**. |
+| verify  | `test ! -f` dispatch/shim; `test -f` glad `gl.c`+egl/gles2; smokes 0; PLAN §20e Critic OK. |
+| result  | Critic OK. Residuals: smoke name `glfw_gl_dispatch_*`; §20 parent still open; no co-link desktop+egl glad. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — next after §20e (low-pri §14/15/17 or §20 parent close) |
 
 ### Turn 2026-07-11 29:10 (Driver TRACK_GL_GLAD_MIGRATION STEP=7 — docs + close)
 

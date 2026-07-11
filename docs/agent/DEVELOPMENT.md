@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_GL_GLAD_MIGRATION` closed** — awaiting Critic (`critique-audit`).
-See [archive/tracks/TRACK_GL_GLAD_MIGRATION.md](../archive/tracks/TRACK_GL_GLAD_MIGRATION.md).
+**No active Driver track.** Next: Planner `plan-refresh` (§20a–e closed; low-pri queue).
+Last closed: [TRACK_GL_GLAD_MIGRATION](../archive/tracks/TRACK_GL_GLAD_MIGRATION.md) Critic OK.
 
 
 ## Step sizing (good vs bad)

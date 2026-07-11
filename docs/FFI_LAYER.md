@@ -267,7 +267,7 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 - [TRACK_STDLIB_LOGIC_TO_MLC](archive/tracks/TRACK_STDLIB_LOGIC_TO_MLC.md) —
   **closed** 2026-07-11: Env/Log/Validation.
 - [TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md) —
-  **closed** 2026-07-11 (awaiting Critic): GL через вендоренный GLAD2; hand
+  **closed** 2026-07-11 (Critic OK): GL через вендоренный GLAD2; hand
   dispatch/shim deleted (заменяет `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`).
 - [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
   **won't-do** 2026-07-11 (рантайм остаётся C++).
