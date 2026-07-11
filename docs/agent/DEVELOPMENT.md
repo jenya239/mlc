@@ -40,9 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Next:** Planner `plan-refresh` — activate
-[TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md) (queue after VM typed
-collections Critic OK).
+**`TRACK_STDLIB_HTTP_MLC` active** STEP=1 — Decision (module path, records,
+parse grammar, router; pure MLC, not `extern` wrap). See
+[TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md).
 
 
 ## Step sizing (good vs bad)

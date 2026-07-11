@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_VM_TYPED_COLLECTIONS archived (Critic OK) |
-| test_gate | run_vm_typed_collections_gate.sh 6/0 |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=1 |
+| test_gate | — |
+
+### Turn 2026-07-11 12:14 (Planner — activate TRACK_STDLIB_HTTP_MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:14 |
+| elapsed | ~2 min |
+| done    | Activated after VM typed Critic OK. Status **active** STEP=1; STEP=1 sub-steps; PLAN §11/§11a + queue; DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; PLAN links `agent/TRACK_STDLIB_HTTP_MLC.md` active. |
+| result  | Plan refresh done. Plain: HTTP-on-MLC is next Driver work. |
+| issues  | Queued prompt STEP=2 VM_TYPED stale; ran SESSION Planner. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_HTTP_MLC — lock Decision (module/records/parse/router) |
 
 ### Turn 2026-07-11 12:10 (Critic TRACK_VM_TYPED_COLLECTIONS — critique-audit)
 

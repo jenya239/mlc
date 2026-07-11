@@ -21,7 +21,12 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=1 next (Decision)
+## Status: **open** — STEP=1 next (Decision) — **active**
+
+**Planner 2026-07-11:** activated after VM_TYPED_COLLECTIONS Critic OK
+(`8dfa2e42`). First in «без hand-written C++» HTTP path; blocks
+`TRACK_STDLIB_WEBSOCKET_TO_MLC`. Prefer over FFI_SHIM/MSDF/LOGIC/GLAD until
+STEP=1 Decision locked.
 
 ## Проблема (проверено 2026-07-11)
 
@@ -109,6 +114,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | pending |
 | 7 | Verify-gate: self-host diff, regression_gate, close. | pending |
 
+<!-- sub-steps STEP=1: 1) lock module path + bare-name key; 2) lock HttpRequest/HttpResponse fields; 3) lock parse grammar (request-line/headers/CL) + router shape; write Decision section -->
 <!-- sub-steps STEP=2: 1) HttpRequest/HttpResponse record types; 2) parse_http_request byte-scan (request-line, headers до пустой строки, body по Content-Length); 3) unit smoke без сети (строковый вход) -->
 <!-- sub-steps STEP=4: 1) reuse tcp_spawn_echo_mlcc.mlc accept-loop shape; 2) роутер на 2 хендлера; 3) run_*_gate.sh с curl -->
 
