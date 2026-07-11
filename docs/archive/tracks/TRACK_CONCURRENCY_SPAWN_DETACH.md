@@ -1,14 +1,17 @@
 # Track: `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`)
 
 Parent: [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §5-6,
-[../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md),
-[../archive/tracks/TRACK_STDLIB_HTTP_MLC.md](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md),
+[TRACK_CONCURRENCY_TASKSCOPE.md](TRACK_CONCURRENCY_TASKSCOPE.md),
+[TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md),
 [../PLAN.md](../PLAN.md) §11b.
 Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже готов? можем сделать
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **active** — STEP=5 next (regression + self-host → close)
+## Status: **closed** (2026-07-11)
+
+**Driver 2026-07-11:** STEP=5 — `regression_gate` 20/0; self-host p1↔p2
+DIFF_EXIT=0; TRACK archived. Close → Critic.
 
 **Driver 2026-07-11:** STEP=4 — `http_scope_accept_loop_demo.mlc` (accept×4 +
 `scope.spawn` + 250ms sleep/handler); `run_http_scope_accept_loop_gate.sh`
@@ -149,7 +152,7 @@ closed TASKSCOPE deferred MLC syntax (C++-only today).
 | 2 | Checker: диагностика bare `spawn do...end` statement. | **done** (2026-07-11: E089 in spawn_capture; test_spawn + check-only) |
 | 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | **done** (2026-07-11: parse+codegen+parallel smoke 258ms&lt;511ms) |
 | 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | **done** (2026-07-11: 4 curls wall 292ms&lt;500ms) |
-| 5 | Self-host diff + `regression_gate.sh`; close. | pending |
+| 5 | Self-host diff + `regression_gate.sh`; close. | **done** (2026-07-11: REG 20/0; DIFF_EXIT=0; closed) |
 
 <!-- STEP=1 sub-steps: 1) lock Decision table (scope vs detach vs lint-only); 2) cite task_scope.hpp + CONCURRENCY_V2 §6 surface; 3) list STEP=2 diagnostic code/message; PLAN→STEP=2 -->
 <!-- STEP=2 sub-steps: 1) find spawn stmt in checker; 2) error if result unused; 3) unit test + mlcc --check-only repro -->

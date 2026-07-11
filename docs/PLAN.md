@@ -391,9 +391,9 @@ compiler/
 | **10** Text rendering (HarfBuzz+FreeType+OpenGL) | **done** | [TEXT_RENDERING.md](TEXT_RENDERING.md); [TRACK_TEXT_RENDERING](archive/tracks/TRACK_TEXT_RENDERING.md) **closed** 2026-07-10 (STEP=0–8; MAE ≤ 8.0/255) |
 | **10a** Text rendering целиком на MLC + окно (фундамент GUI-фреймворка) | **done** | [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (STEP=1–8: GLFW+GL dispatch+GlRenderer+TextRenderer+demo; self-host identical; regression 20/0); docs §8 in [TEXT_RENDERING.md](TEXT_RENDERING.md) |
 | **10b** GUI framework (layout/widgets/easing) | **done** | [TRACK_GUI_FRAMEWORK](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11 (STEP=0–6: IM layout/input/Button; `misc/gui/`; docs [GUI.md](GUI.md); smokes ok) |
-| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION/HTTP_MLC **closed**. Next: «без C++» queue (§20a–e) |
+| **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/POSTGRES/CRYPTO/WEBSOCKET/JOB_QUEUE/ENV_LOGGING/VALIDATION/HTTP_MLC/SPAWN_DETACH **closed**. Next: «без C++» queue (§20b/d/e) |
 | **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **done** (2026-07-11) | [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) **closed** STEP=1–7; Critic OK (`2fdc8c83`…`34977011`; parse+curl EXIT 0). Residual: no `[HttpRoute]` API |
-| **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **open, active** | [TRACK_CONCURRENCY_SPAWN_DETACH](agent/TRACK_CONCURRENCY_SPAWN_DETACH.md) **active** STEP=5 (STEP=4 done: accept-loop+curl; regression/self-host next) |
+| **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **done** (2026-07-11) | [TRACK_CONCURRENCY_SPAWN_DETACH](archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md) **closed** STEP=1–5; E089+`scope`→TaskScope; parallel sleep+accept-loop curl; REG 20/0; self-host identical |
 | **10c** Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas — один фреймворк) | **open, design-only, низкий приоритет** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — affine-transform tree + vector primitives, один фундамент для всех четырёх; v0 (screen-space, чистый IM) — прототип, не основа; активировать явной командой |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
@@ -523,10 +523,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → STDLIB_HTTP_MLC (**closed** 2026-07-11: Critic OK; STEP=1–7; self-host
       identical; REG 20/0; parse+curl
       → [archive/tracks/TRACK_STDLIB_HTTP_MLC.md](archive/tracks/TRACK_STDLIB_HTTP_MLC.md))
-  → **CONCURRENCY_SPAWN_DETACH (**active** STEP=5 — accept-loop curl gate done; regression+self-host next;
-    → [agent/TRACK_CONCURRENCY_SPAWN_DETACH.md](agent/TRACK_CONCURRENCY_SPAWN_DETACH.md)):**
-  → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
-    после SPAWN_DETACH / between independent tracks; `LANG_SELF_HOSTED_RUNTIME` = won't-do):**
+  → CONCURRENCY_SPAWN_DETACH (**closed** 2026-07-11: STEP=1–5; E089+scope TaskScope;
+      parallel sleep+accept-loop curl; REG 20/0; self-host identical
+      → [archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md](archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md))
+  → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет;
+    `LANG_SELF_HOSTED_RUNTIME` = won't-do):**
   → FFI_SHIM_MIGRATION (**closed** 2026-07-11: STEP=1–7; abi+bridges; self-host
       identical; regression 20/0
       → [archive/tracks/TRACK_FFI_SHIM_MIGRATION.md](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md))

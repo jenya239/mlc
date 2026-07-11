@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=5 — regression_gate + self-host diff; close.
-See [TRACK_CONCURRENCY_SPAWN_DETACH.md](TRACK_CONCURRENCY_SPAWN_DETACH.md).
+**`TRACK_CONCURRENCY_SPAWN_DETACH` closed** — awaiting Critic. Next Planner: «без C++» (§20b/d/e).
+See [TRACK_CONCURRENCY_SPAWN_DETACH.md](../archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md).
 
 
 ## Step sizing (good vs bad)
