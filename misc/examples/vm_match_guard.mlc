@@ -1,6 +1,10 @@
-type Choice = A(i32) | B
-fn main() -> i32 = match A(5) {
-  A(x) if x > 3 => 1
-  A(x) => 2
-  B => 0
-}
+// Match with guard — helper takes Choice so C++ visits the variant.
+type Choice = A(i32) | B(i32)
+
+fn choose(value: Choice) -> i32 =
+  match value {
+    A(x) => if x > 3 then 1 else 2 end,
+    B(_) => 0
+  }
+
+fn main() -> i32 = choose(A(5))

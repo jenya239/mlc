@@ -1,13 +1,16 @@
-fn load() -> Result<i32, i32> = Err(3)
+// ? operator Err path.
+type Result<T, E> = Ok(T) | Err(E)
 
-fn run() -> Result<i32, i32> = do
-  const value = load()?
+fn load() -> i32!i32 = Err(3)
+
+fn run() -> i32!i32 = do
+  let value = load()?
   Ok(value)
 end
 
-fn unwrap(value: Result<i32, i32>) -> i32 = match value {
-  Ok(_) => 0
-  Err(e) => e + 4
-}
-
-fn main() -> i32 = unwrap(run())
+fn main() -> i32 = do
+  match run() {
+    Ok(_) => 0,
+    Err(e) => e + 4
+  }
+end

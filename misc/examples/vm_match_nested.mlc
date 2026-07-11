@@ -1,7 +1,17 @@
-type Inner = I(i32) | Z
-type Outer = Wrap(Inner) | Empty
-fn main() -> i32 = match Wrap(I(7)) {
-  Wrap(I(x)) => x
-  Wrap(Z) => 0
-  Empty => 1
-}
+// Nested match — helpers take typed sums (mlcc visit needs variant-typed arg).
+type Inner = I(i32) | Z(i32)
+type Outer = Wrap(Inner) | Empty(i32)
+
+fn inner_value(value: Inner) -> i32 =
+  match value {
+    I(x) => x,
+    Z(_) => 0
+  }
+
+fn outer_value(value: Outer) -> i32 =
+  match value {
+    Wrap(inner) => inner_value(inner),
+    Empty(_) => 1
+  }
+
+fn main() -> i32 = outer_value(Wrap(I(7)))

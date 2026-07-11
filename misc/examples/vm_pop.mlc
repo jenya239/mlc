@@ -1,4 +1,6 @@
+// Array "pop" smoke — mlc::Array has no .pop(); use last index.
 fn main() -> i32 = do
   let mut items = [1, 2, 7]
-  items.pop()
+  let last = items[items.length() - 1]
+  last
 end

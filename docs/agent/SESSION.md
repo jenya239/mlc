@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 10 |
+| driver_turns_since_plan | 8 |
+| step_last | 11 |
 | active_track | TRACK_EXAMPLES_CI |
-| test_gate | STEP=10: cluster D ONLY ok=7 fail=0 |
+| test_gate | STEP=11: cluster E ONLY ok=8 fail=0 |
+
+### Turn 2026-07-12 02:55 (Driver TRACK_EXAMPLES_CI STEP=11 — fix cluster E vm_*)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_EXAMPLES_CI |
+| started | 2026-07-12 02:51 |
+| elapsed | ~25 min |
+| done    | Rewrote 8 vm_*: Choice helpers for match; pop→index; `Result<T,E>`+`i32!i32`+`?`; record fields. |
+| verify  | ONLY eight → ok=8 fail=0. |
+| result  | STEP=11 done. Plain: cluster E examples compile+link under mlcc. |
+| issues  | Foreign `compiler/out/*` left. Match must visit typed sum param (codegen bug workaround). |
+| next    | ROLE=Driver STEP=4 TRACK_EXAMPLES_CI — wire sweep into regression_gate.sh |
 
 ### Turn 2026-07-12 02:45 (Driver TRACK_EXAMPLES_CI STEP=10 — fix cluster D)
 

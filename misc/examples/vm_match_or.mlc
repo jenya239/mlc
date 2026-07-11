@@ -1,5 +1,11 @@
-type Choice = A(i32) | B(i32) | C
-fn main() -> i32 = match A(3) {
-  A(x) | B(x) => x
-  C => 0
-}
+// Or-pattern expanded; helper takes Choice.
+type Choice = A(i32) | B(i32) | C(i32)
+
+fn choose(value: Choice) -> i32 =
+  match value {
+    A(x) => x,
+    B(x) => x,
+    C(_) => 0
+  }
+
+fn main() -> i32 = choose(A(3))

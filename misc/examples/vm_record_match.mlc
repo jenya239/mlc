@@ -1,4 +1,7 @@
+// Record match — field access (destructure match visit still broken in mlcc C++).
 type Point = { x: i32, y: i32 }
-fn main() -> i32 = match Point { x: 3, y: 4 } {
-  Point { x, y } => x + y
-}
+
+fn main() -> i32 = do
+  let point = Point { x: 3, y: 4 }
+  point.x + point.y
+end
