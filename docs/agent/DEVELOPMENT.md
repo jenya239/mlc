@@ -40,9 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**Next:** Planner — activate next «без C++» track (§20b TEXT_MSDF / §20d LOGIC / §20e GL_GLAD).
-`TRACK_CONCURRENCY_SPAWN_DETACH` **closed** (Critic OK).
-See [TRACK_CONCURRENCY_SPAWN_DETACH.md](../archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md).
+**`TRACK_TEXT_MSDF_TO_MLC` active** STEP=1 — Decision + read `msdf_shim.cpp` 1:1.
+See [TRACK_TEXT_MSDF_TO_MLC.md](TRACK_TEXT_MSDF_TO_MLC.md).
 
 
 ## Step sizing (good vs bad)

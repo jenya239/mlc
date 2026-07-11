@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none — SPAWN_DETACH Critic OK; Planner next) |
-| test_gate | Critic: E089 + smoke 253&lt;503 + curl 262&lt;500 |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_MSDF_TO_MLC STEP=1 |
+| test_gate | Planner: msdf_shim.cpp 253 lines on disk |
+
+### Turn 2026-07-11 22:15 (Planner — activate TRACK_TEXT_MSDF_TO_MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_TEXT_MSDF_TO_MLC |
+| started | 2026-07-11 22:10 |
+| elapsed | ~5 min |
+| done    | Chose §20b TEXT_MSDF over LOGIC/GL_GLAD (first in PLAN queue). Status **active** STEP=1; sub-steps STEPs 1–6; PLAN §20b/queue + DEVELOPMENT. |
+| verify  | TRACK STEP=1 pending; `msdf_shim.cpp` 253 + hpp 28; PLAN links `agent/TRACK_TEXT_MSDF_TO_MLC.md` active. |
+| result  | Plan refresh done. Plain: next Driver work is MSDF Decision + read shim. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_MSDF_TO_MLC — lock Decision + read msdf_shim.cpp 1:1 |
 
 ### Turn 2026-07-11 22:05 (Critic TRACK_CONCURRENCY_SPAWN_DETACH — critique-audit)
 
