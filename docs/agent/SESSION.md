@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC closed → Critic |
-| test_gate | env_log+validate mlcc gates OK; REG 20/0; DIFF 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC Critic OK → Planner |
+| test_gate | Critic: hpp absent; gates mlcc re-OK; PLAN Critic OK |
+
+### Turn 2026-07-11 25:25 (Critic TRACK_STDLIB_LOGIC_TO_MLC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 25:20 |
+| elapsed | ~10 min |
+| done    | Audited STEP=1–6 (`9d690c96`…`495f6679`); delete targets absent; bare names + mlcc gates; PLAN/archive Critic OK. **reopen: none**. |
+| verify  | `test ! -f` env/log/validate `.hpp`; re-ran env_log+validate gates OK; PLAN §20d Critic OK. |
+| result  | Critic OK. Residuals: Ruby no-body emit; ValidateSuccess; local Result; thin abi. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Planner STEP=plan-refresh — activate TRACK_GL_GLAD_MIGRATION (§20e) |
 
 ### Turn 2026-07-11 25:15 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=6 — close)
 

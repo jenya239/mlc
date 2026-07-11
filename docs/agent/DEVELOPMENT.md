@@ -40,8 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_LOGIC_TO_MLC` closed** — awaiting Critic. After Critic OK:
-**`TRACK_GL_GLAD_MIGRATION`** (§20e).
+Next: Planner activates **`TRACK_GL_GLAD_MIGRATION`** (§20e) after LOGIC Critic OK.
 See [TRACK_GL_GLAD_MIGRATION.md](TRACK_GL_GLAD_MIGRATION.md).
 
 
