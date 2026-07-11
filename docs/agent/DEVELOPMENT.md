@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SHIM_MIGRATION` active** STEP=1 — Decision + link check.
-See [TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
+**`TRACK_FFI_SHIM_MIGRATION` active** STEP=2 — Postgres `extern type`/
+`RawPointer` + MLC handle table. See
+[TRACK_FFI_SHIM_MIGRATION.md](TRACK_FFI_SHIM_MIGRATION.md).
 
 
 ## Step sizing (good vs bad)

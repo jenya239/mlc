@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=1 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=2 |
 | test_gate | docs-only |
+
+### Turn 2026-07-11 13:20 (Driver TRACK_FFI_SHIM_MIGRATION STEP=1 — Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 13:09 |
+| elapsed | ~11 min |
+| done    | Decision locked: RawPointer+explicit finish; public i32 API freeze; MLC handles/hex; `extern lib pq/sodium`; HMAC via statebytes+malloc; Tcp fd-as-token; PLAN→STEP=2. |
+| verify  | TRACK Decision section + STEP=1 done; link path = mlc_link_libs.txt; statebytes confirmed in sodium header. |
+| result  | STEP=1 done. Plain: FFI shim removal strategy locked. |
+| issues  | Queued prompt VM STEP=2 stale; ran SESSION Driver STEP=1. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_FFI_SHIM_MIGRATION — Postgres extern type/fn + MLC handle table |
 
 ### Turn 2026-07-11 13:15 (Planner — activate TRACK_FFI_SHIM_MIGRATION)
 

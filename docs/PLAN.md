@@ -406,7 +406,7 @@ compiler/
 | **18** Package manager (design) | **open, design-only, самый низкий приоритет** | [TRACK_PACKAGE_MANAGER](agent/TRACK_PACKAGE_MANAGER.md) — реализация не авторизована без отдельной команды |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
 | **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **open, высокий приоритет** | [FFI_LAYER.md](FFI_LAYER.md) §8 — граница: рантайм языка остаётся C++, FFI-адаптеры и дублирующая бизнес-логика на C++ убираются. 6 подчинённых треков ниже |
-| **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **open, active** | [TRACK_FFI_SHIM_MIGRATION](agent/TRACK_FFI_SHIM_MIGRATION.md) **active** STEP=1 (Decision + link check) |
+| **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **open, active** | [TRACK_FFI_SHIM_MIGRATION](agent/TRACK_FFI_SHIM_MIGRATION.md) **active** STEP=2 (Decision locked; Postgres RawPointer next) |
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **open** | [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — не биндинг, собственная математика |
 | **20c** WebSocket framing/handshake — порт на MLC | **open** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) — HTTP_MLC closed; not active (after FFI_SHIM) |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
@@ -524,7 +524,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
     после STDLIB_HTTP_MLC closed, порядок между собой не строгий, независимые
     треки; `LANG_SELF_HOSTED_RUNTIME` = won't-do):**
-  → FFI_SHIM_MIGRATION (**active** STEP=1 — Decision + link check
+  → FFI_SHIM_MIGRATION (**active** STEP=2 — Postgres RawPointer after Decision
       → [agent/TRACK_FFI_SHIM_MIGRATION.md](agent/TRACK_FFI_SHIM_MIGRATION.md))
   → TEXT_MSDF_TO_MLC (open: EDT/SDF алгоритм на MLC
       → [agent/TRACK_TEXT_MSDF_TO_MLC.md](agent/TRACK_TEXT_MSDF_TO_MLC.md))
