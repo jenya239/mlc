@@ -3,10 +3,10 @@
 Parent: [../PLAN.md](../PLAN.md), [../TEXT_RENDERING.md](../TEXT_RENDERING.md) §8,
 [TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
 
-## Status: **backlog** (not active)
+## Status: **backlog** (not active) — NATIVE Critic OK 2026-07-11
 
 Opened as a pointer from `TRACK_TEXT_RENDERING_NATIVE` STEP=7 (2026-07-11).
-Do not activate until NATIVE track is closed (or Planner explicitly promotes).
+NATIVE closed + Critic OK; activate only via Planner promote.
 
 ## Problem
 

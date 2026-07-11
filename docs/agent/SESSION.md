@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-10-pipeline-merge-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
-| active_track | TRACK_TEXT_RENDERING_NATIVE **closed** (await Critic) |
-| test_gate | self-host identical; regression 20/0; demo+smokes ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_TEXT_RENDERING_NATIVE closed (Critic done) |
+| test_gate | demo+native/gl+headless A8 OK; prior self-host/regression green |
+
+### Turn 2026-07-11 04:10 (Critic TRACK_TEXT_RENDERING_NATIVE — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_TEXT_RENDERING_NATIVE |
+| started | 2026-07-11 04:06 |
+| elapsed | ~4 min |
+| done    | Audited `1b647480`…`07c0ccdb` vs STEP 1–8; PLAN/archive/TEXT_RENDERING synced; re-ran demo + native/gl + headless A8 smokes. |
+| verify  | All smokes EXIT 0; artifacts present; no false-done; archive path OK. |
+| result  | **reopen: none**. Residuals: GlRenderer/TextRenderer only in examples (not stdlib); `text_window_helpers` UV/blit; demo double atlas rebuild; interactive demo optional. |
+| issues  | Foreign dirty `literals.cpp`/`module.cpp`/`type_gen.cpp` left. |
+| next    | ROLE=Planner STEP=plan-refresh — promote TRACK_GUI_FRAMEWORK or next PLAN item |
 
 ### Turn 2026-07-11 04:00 (Driver TRACK_TEXT_RENDERING_NATIVE STEP=8 — verify-gate / close)
 

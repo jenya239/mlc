@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_TEXT_RENDERING_NATIVE` closed** 2026-07-11 — awaiting Critic
-`critique-audit`. GUI backlog: [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
+**Planner next** — `TRACK_TEXT_RENDERING_NATIVE` Critic OK. Decide:
+promote [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md) or next PLAN low-pri item.
 
 
 ## Step sizing (good vs bad)
