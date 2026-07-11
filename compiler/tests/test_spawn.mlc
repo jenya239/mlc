@@ -1,7 +1,7 @@
 import { TestResult, assert_eq_int } from './test_runner'
 import { assert_code_contains, assert_type_generates } from './codegen_test_helpers'
 import { tokenize } from '../frontend/lexer'
-import { parse_program } from '../frontend/parser/decls'
+import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
 import { create_codegen_context } from '../codegen/context'
@@ -10,7 +10,7 @@ import {
   SemanticExpressionCall, SemanticExpressionIdent, SemanticExpressionLambda,
   SemanticExpressionBlock, SemanticExpressionInt
 } from '../ir/semantic_ir'
-import { span_unknown, TyI32, TyGeneric } from '../frontend/ast'
+import { span_unknown, TyI32, TyGeneric, ExprScope, ExprMethod, Expr, ExprUnit, StmtExpr, DeclFn } from '../frontend/ast'
 import { TI32, TUnit, TFn, TGeneric } from '../checker/registry'
 import { diagnostic_code_e087, diagnostic_code_e088, diagnostic_code_e089 } from '../checker/diagnostic_codes'
 
@@ -26,10 +26,61 @@ fn first_error_line(source: string) -> string =
     Err(errors) => if errors.length() > 0 then errors[0] else '' end
   }
 
+fn parse_error_count(source: string) -> i32 =
+  parse_program_with_errors(tokenize(source).tokens, '').errors.length()
+
+fn main_body_expression(source: string) -> Shared<Expr> = do
+  const program = parse_program(tokenize(source).tokens)
+  if program.decls.length() == 0 then return Shared.new(ExprUnit(span_unknown())) end
+  match program.decls[0] {
+    DeclFn(_, _, _, _, _, body, _) => body,
+    _ => Shared.new(ExprUnit(span_unknown()))
+  }
+end
+
+fn expression_is_scope(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprScope(_, _, _) => true,
+    _ => false
+  }
+
+fn scope_body_has_spawn_method(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprScope(_, statements, _) => do
+      if statements.length() == 0 then return false end
+      match statements[0] {
+        StmtExpr(inner, _) =>
+          match inner {
+            ExprMethod(_, method_name, _, _) => method_name == 'spawn',
+            _ => false
+          },
+        _ => false
+      }
+    end,
+    _ => false
+  }
+
 fn integer_type() -> Shared<Type> = Shared.new(TI32)
 
 export fn spawn_tests() -> [TestResult] = do
   let results: [TestResult] = []
+
+  results.push(assert_eq_int('scope |s| do parses',
+    parse_error_count('fn main() -> i32 = scope |s| do\n  0\nend'),
+    0))
+
+  results.push(assert_eq_int('scope body is ExprScope',
+    if expression_is_scope(
+      main_body_expression('fn main() -> i32 = scope |s| do\n  0\nend')
+    ) then 1 else 0 end,
+    1))
+
+  results.push(assert_eq_int('scope s.spawn do parses as method',
+    if scope_body_has_spawn_method(
+      main_body_expression(
+        'fn main() -> i32 = scope |s| do\n  s.spawn do 1 end\n  0\nend')
+    ) then 1 else 0 end,
+    1))
 
   results.push(assert_eq_int('spawn do return checks',
     check_error_count('fn main() -> Task<i32> = spawn do return 7 end'), 0))

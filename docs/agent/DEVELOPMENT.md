@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=3 — MLC `scope` → `task_scope.hpp`.
+**`TRACK_CONCURRENCY_SPAWN_DETACH` active** STEP=3 — codegen `scope` → `task_scope.hpp`.
 See [TRACK_CONCURRENCY_SPAWN_DETACH.md](TRACK_CONCURRENCY_SPAWN_DETACH.md).
 
 

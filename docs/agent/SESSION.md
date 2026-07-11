@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 |
-| test_gate | E089 bare-spawn check-only + test_spawn cases |
+| test_gate | scope parse/infer check-only probes |
+
+### Turn 2026-07-11 20:35 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 — scope parse)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 20:20 |
+| elapsed | ~15 min |
+| done    | `KScope`/`ExprScope`; parse `scope \|s\| do`; `.spawn do`→`ExprMethod`; infer `TaskScope` binder; exhaustive Expr arms; `test_spawn` parse cases. |
+| verify  | `mlcc --check-only` scope+spawn → past parse (E004 unit); bad `scope do` → parse error `expected \|binder\|`. |
+| result  | STEP=3 parse/infer slice done; codegen pending. Plain: scope syntax parses. |
+| issues  | Codegen/transform for ExprScope not yet; foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_SPAWN_DETACH — codegen ExprScope → task_scope.hpp |
 
 ### Turn 2026-07-11 20:20 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=2 — E089 bare spawn)
 

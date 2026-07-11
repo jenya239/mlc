@@ -251,7 +251,9 @@ fn free_mutable_capture_in_expr(
     ExprWith(resource, binder, body, _) =>
       diagnostics_append(
         free_mutable_capture_in_expr(resource, local_bound, outer_mutable),
-        free_mutable_capture_in_stmts(body, names_add(local_bound, binder), outer_mutable))
+        free_mutable_capture_in_stmts(body, names_add(local_bound, binder), outer_mutable)),
+    ExprScope(binder, body, _) =>
+      free_mutable_capture_in_stmts(body, names_add(local_bound, binder), outer_mutable)
   }
 
 fn free_mutable_capture_in_expr_list(
@@ -454,7 +456,9 @@ fn walk_spawn_sites_in_expr(
     ExprWith(resource, _, body, _) =>
       diagnostics_append(
         walk_spawn_sites_in_expr(resource, mutable_scope, capture_context),
-        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context))
+        walk_spawn_sites_in_stmts(body, mutable_scope, capture_context)),
+    ExprScope(_, body, _) =>
+      walk_spawn_sites_in_stmts(body, mutable_scope, capture_context)
   }
 
 fn walk_spawn_sites_in_expr_list(
@@ -790,7 +794,9 @@ fn bare_spawn_diagnostics_in_expr(
     ExprWith(resource, _, body, _) =>
       diagnostics_append(
         bare_spawn_diagnostics_in_expr(resource, false),
-        bare_spawn_diagnostics_in_stmts(body, false))
+        bare_spawn_diagnostics_in_stmts(body, false)),
+    ExprScope(_, body, _) =>
+      bare_spawn_diagnostics_in_stmts(body, false)
   }
 
 export fn spawn_mutable_capture_diagnostics(

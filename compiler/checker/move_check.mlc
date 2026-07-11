@@ -186,7 +186,9 @@ fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkSt
         diagnostics: diagnostics_append(resource_state.diagnostics, body_state.diagnostics),
         moved: body_state.moved
       }
-    end
+    end,
+    ExprScope(_, body, _) =>
+      move_check_stmts(body, moved)
   }
 
 fn move_check_expr_list(

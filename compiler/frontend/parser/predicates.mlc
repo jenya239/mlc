@@ -140,6 +140,7 @@ export extend TokenKind {
   fn is_while(self)    -> bool = match self { KWhile    => true, _ => false }
   fn is_for(self)      -> bool = match self { KFor      => true, _ => false }
   fn is_with(self)     -> bool = match self { KWith     => true, _ => false }
+  fn is_scope(self)    -> bool = match self { KScope    => true, _ => false }
   fn is_spawn(self)    -> bool = match self { KSpawn    => true, _ => false }
   fn is_move(self)     -> bool = match self { KMove     => true, _ => false }
   fn is_match(self)    -> bool = match self { KMatch    => true, _ => false }

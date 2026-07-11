@@ -222,6 +222,14 @@ fn verify_ast_expression(expression: Shared<Expr>) -> [string] = do
       end
       errors
     end,
+    ExprScope(_, statements, _) => do
+      let mut index = 0
+      while index < statements.length() do
+        errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index]))
+        index = index + 1
+      end
+      errors
+    end,
     _ => errors
   }
 end

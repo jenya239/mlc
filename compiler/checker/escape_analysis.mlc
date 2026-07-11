@@ -202,7 +202,9 @@ fn visit_expr(expression: Shared<Expr>, watched: [string], escaping: [string]) -
     ExprSpawn(_, _) => mark_all_watched(watched, escaping),
     ExprNamedArg(_, value, _) => visit_expr(value, watched, escaping),
     ExprWith(resource, _, body, _) =>
-      visit_stmt_list(body, watched, visit_expr(resource, watched, escaping))
+      visit_stmt_list(body, watched, visit_expr(resource, watched, escaping)),
+    ExprScope(_, body, _) =>
+      visit_stmt_list(body, watched, escaping)
   }
 
 export fn non_escaping_params(
@@ -357,7 +359,9 @@ fn collect_idents_used_as_values_in_expr(expression: Shared<Expr>, names: [strin
     ExprSpawn(body, _) => collect_idents_used_as_values_in_stmts(body, names),
     ExprNamedArg(_, value, _) => collect_idents_used_as_values_in_expr(value, names),
     ExprWith(resource, _, body, _) =>
-      collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names))
+      collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names)),
+    ExprScope(_, body, _) =>
+      collect_idents_used_as_values_in_stmts(body, names)
   }
 
 fn collect_idents_used_as_values_in_stmts(statements: [Shared<Stmt>], names: [string]) -> [string] = do
