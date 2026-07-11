@@ -410,7 +410,7 @@ compiler/
 | **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **open, высокий приоритет** | [FFI_LAYER.md](FFI_LAYER.md) §8 — граница: рантайм языка остаётся C++, FFI-адаптеры и дублирующая бизнес-логика на C++ убираются. 6 подчинённых треков ниже |
 | **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **done** (2026-07-11) | [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) **closed** STEP=1–7; Critic OK (`8ffe67b8`…`8b21220a`). Residual: bridges/TcpStream |
 | **20b** MSDF (EDT/SDF) алгоритм — порт на MLC | **open** | [TRACK_TEXT_MSDF_TO_MLC](agent/TRACK_TEXT_MSDF_TO_MLC.md) — не биндинг, собственная математика |
-| **20c** WebSocket framing/handshake — порт на MLC | **open, active** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **active** STEP=1 (HTTP+FFI_SHIM closed) |
+| **20c** WebSocket framing/handshake — порт на MLC | **open, active** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) **active** STEP=2 (Decision locked; SHA1=MLC) |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — заменяет отменённые `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` (superseded 2026-07-11: GLAD2/epoxy резолвят function pointers сами, каст/таблица на MLC не нужны) |
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
@@ -533,12 +533,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → FFI_SHIM_MIGRATION (**closed** 2026-07-11: STEP=1–7; abi+bridges; self-host
       identical; regression 20/0
       → [archive/tracks/TRACK_FFI_SHIM_MIGRATION.md](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md))
+  → STDLIB_WEBSOCKET_TO_MLC (**active** STEP=2 — MLC SHA1+base64 after Decision
+      → [agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md))
   → TEXT_MSDF_TO_MLC (open: EDT/SDF алгоритм на MLC
       → [agent/TRACK_TEXT_MSDF_TO_MLC.md](agent/TRACK_TEXT_MSDF_TO_MLC.md))
   → STDLIB_LOGIC_TO_MLC (open: Env/Log/Validation на mlcc + порт логики
       → [agent/TRACK_STDLIB_LOGIC_TO_MLC.md](agent/TRACK_STDLIB_LOGIC_TO_MLC.md))
-  → STDLIB_WEBSOCKET_TO_MLC (open, unblocked; next «без C++» candidate
-      → [agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md))
   → GL_GLAD_MIGRATION (open: GLAD2 вендоренный вместо ручного
       `glfw_gl_dispatch.cpp`/`loader_shim.cpp`; заменяет отменённые
       FFI_POINTER_CAST/GL_LOADER_TO_MLC (superseded 2026-07-11)

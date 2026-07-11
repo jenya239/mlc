@@ -7,66 +7,82 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8,
 Trigger: пользователь 2026-07-11 — без ручного C++ везде. `websocket.hpp` —
 RFC 6455 framing/handshake, не биндинг к внешней библиотеке.
 
-## Status: **active** — STEP=1 next (Decision + SHA1 check)
+## Status: **active** — STEP=2 next (MLC SHA1 + base64)
+
+**Driver 2026-07-11:** STEP=1 — Decision **locked**. Verified local
+`.tmp_libsodium/usr/include` — **0** `sha1` matches in sodium headers.
+Current C++ already has local SHA1+base64 in `websocket.hpp` (no sodium).
+Public API freeze; SHA1/base64 → private fns in `websocket.mlc` (not Crypto).
 
 **Planner 2026-07-11:** activated after FFI_SHIM Critic OK (`effde300`).
-Dependencies satisfied (HTTP_MLC + FFI_SHIM). Prefer over MSDF/LOGIC/GLAD
-(§20 order: WebSocket was queued after shim). Note: `TRACK_CONCURRENCY_SPAWN_DETACH`
-remains higher for real MT HTTP accept-loops — not this track.
 
 ## Проблема
 
-`runtime/include/mlc/net/websocket.hpp` (`#include` — только внутренние
-`http_request.hpp`/`http_server.hpp`/`tcp_bridge.hpp` + STL, ни одной внешней
-библиотеки): upgrade handshake (`Sec-WebSocket-Accept` = base64(SHA1(key +
-GUID))), frame parsing (opcode/mask/payload length varints), text-frame
-read/write. Всё — байтовая логика, портируемая на MLC.
+`runtime/include/mlc/net/websocket.hpp` (~564 LOC) + `websocket_http.hpp`
+(~300 LOC): upgrade handshake (`Sec-WebSocket-Accept` = base64(SHA1(key +
+GUID))), frame parsing, text-frame read/write. Не биндинг к внешней
+библиотеке — байтовая логика на C++. `websocket.mlc` сегодня `export extern`
+→ `websocket.hpp`.
 
 ## Цель
 
-`std/net/websocket.mlc` работает через чистый MLC frame parser/writer +
-handshake, поверх `Tcp` + MLC `HttpRequest`/`HttpResponse`. SHA1 для
-`Sec-WebSocket-Accept`: libsodium не даёт SHA1 — **MLC SHA1** (~80 LOC).
+`std/net/websocket.mlc` — чистый MLC frame parser/writer + handshake поверх
+`Tcp` + MLC `HttpRequest`/`HttpResponse`. SHA1/base64 на MLC (libsodium без
+SHA1). Удалить `websocket.hpp` / `websocket_http.hpp` на STEP=5.
 
-## Decision (STEP=1) — lock on Driver turn
+## Decision (STEP=1, 2026-07-11) — **locked**
 
-| Вопрос | Вариант | Рекомендация |
-|--------|---------|--------------|
-| SHA1 для handshake | (a) чистый MLC; (b) внешняя зависимость | (a) — libsodium без SHA1; RFC 6455 требует |
-| Base64 | MLC encode | да, ~30 строк |
-| Frame masking | XOR на byte string/`Array` | паритет с C++ |
-| Public API | Freeze `upgrade`/`read_text`/`write_text`/`close`/`last_error` i32 handles | да |
-| `websocket_http.hpp` | Keep until handshake uses MLC HttpServer types | delete with `.hpp` on STEP=5 if unused |
+Verified: `rg -i sha1` on `.tmp_libsodium/usr/include/**/*.h` → **0 hits**.
+`crypto.mlc` exposes only SHA-256/HMAC/pwhash. Existing `websocket.hpp`
+already documents «SHA1 + base64 local (no libsodium)».
+
+| Вопрос | Locked |
+|--------|--------|
+| SHA1 | **MLC** — port compact SHA-1 from `websocket.hpp` (no new dep) |
+| Base64 | **MLC encode** (accept-header only; decode not required for server) |
+| Placement | Private fns in `websocket.mlc` (not `Crypto` public API) |
+| Frame masking | Byte XOR parity with current C++ |
+| Public API | **Freeze** `upgrade`/`read_text`/`write_text`/`close`/`last_error` + i32 handles |
+| Option returns | Same residual as Tcp — prefer keep Option extern until MLC bodies; local sum if Option import segfaults |
+| `websocket_http.hpp` | Delete with `websocket.hpp` on STEP=5 (HTTP parse moves to HttpServer MLC) |
+| Порядок | 2 SHA1+b64 → 3 frames → 4 handshake → 5 delete hpp → 6 gates/close |
+
+### Rejected
+
+| Вариант | Почему |
+|---------|--------|
+| libsodium / OpenSSL SHA1 | sodium has no SHA1; new dep out of scope |
+| Expose `Crypto.sha1` public | handshake-only; keep Crypto = sodium surface |
+| Expand to binary/ping/pong | parity with current C++ only |
 
 ## Scope
 
-1. Decision + verify no `crypto_hash_sha1` in local sodium headers.
-2. MLC SHA1 + base64 (module or private fns in websocket.mlc).
-3. Frame parser/writer (opcode, mask, payload length 7/16/64-bit) на MLC.
-4. Handshake на MLC поверх `HttpRequest`/`HttpResponse`.
-5. Удалить `websocket.hpp` (+ thin bridge if any); переключить `websocket.mlc`.
-6. Regression: `run_websocket_gate.sh`; self-host diff; close.
+1. Decision + sodium SHA1 check — **done**.
+2. MLC SHA1 + base64 + RFC 6455 known-answer (`dGhlIHNhbXBsZSBub25jZQ==` → accept).
+3. Frame parser/writer на MLC.
+4. Handshake на MLC поверх HttpServer.
+5. Удалить `websocket.hpp`/`websocket_http.hpp`; переключить модуль.
+6. `run_websocket_gate.sh` + self-host; close.
 
 ## Out of scope
 
-- Binary frames, ping/pong, close-frame edge cases — паритет с текущим C++.
+- Binary frames, ping/pong, close-frame edge cases beyond current C++.
 - Compression (`permessage-deflate`).
-- Fixing `spawn` fire-and-forget (`TRACK_CONCURRENCY_SPAWN_DETACH`).
+- `TRACK_CONCURRENCY_SPAWN_DETACH`.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Decision + libsodium SHA1 availability check. | pending |
+| 1 | Decision + libsodium SHA1 availability check. | **done** (2026-07-11: locked; 0 sodium sha1 hits) |
 | 2 | MLC SHA1 + base64. | pending |
 | 3 | Frame parser/writer на MLC. | pending |
 | 4 | Handshake на MLC (HttpServer types). | pending |
 | 5 | Удалить `websocket.hpp`; переключить модуль. | pending |
 | 6 | Regression + self-host diff; close. | pending |
 
-<!-- STEP=1 sub-steps: 1) grep sodium headers / docs for sha1; 2) lock Decision table in TRACK; 3) note API freeze + SHA1=MLC; 4) PLAN/DEVELOPMENT already active -->
-<!-- STEP=2 sub-steps: 1) `sha1`/`base64_encode` in crypto or websocket.mlc; 2) known-answer vectors (RFC 6455 key→accept); 3) mlcc smoke -->
-<!-- STEP=3 sub-steps: 1) port frame parse/write from websocket.hpp; 2) text frame roundtrip smoke; 3) mask XOR parity -->
-<!-- STEP=4 sub-steps: 1) upgrade via HttpServer parse + Sec-WebSocket-Accept; 2) wire Tcp fd; 3) demo/gate path -->
-<!-- STEP=5 sub-steps: 1) websocket.mlc → MLC bodies / thin externs only; 2) delete websocket.hpp; 3) fix includes -->
-<!-- STEP=6 sub-steps: 1) run_websocket_gate.sh; 2) self-host diff; 3) regression_gate; close → Critic -->
+<!-- STEP=2 sub-steps: 1) port sha1+base64 to websocket.mlc; 2) RFC 6455 key→accept vector smoke; 3) mlcc --check-only / link smoke -->
+<!-- STEP=3 sub-steps: 1) port frame parse/write; 2) text frame roundtrip; 3) mask XOR parity -->
+<!-- STEP=4 sub-steps: 1) upgrade via HttpServer + Accept; 2) Tcp fd wire; 3) demo/gate -->
+<!-- STEP=5 sub-steps: 1) MLC bodies; 2) delete hpp; 3) fix includes/bridge -->
+<!-- STEP=6 sub-steps: 1) websocket gate; 2) self-host; 3) close → Critic -->

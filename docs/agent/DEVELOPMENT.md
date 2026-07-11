@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=1 — Decision + libsodium SHA1 check.
+**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=2 — MLC SHA1 + base64 (+ RFC vector).
 See [TRACK_STDLIB_WEBSOCKET_TO_MLC.md](TRACK_STDLIB_WEBSOCKET_TO_MLC.md).
 (`TRACK_CONCURRENCY_SPAWN_DETACH` still high priority for MT servers — separate.)
 
