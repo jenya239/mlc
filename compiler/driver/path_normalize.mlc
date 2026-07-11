@@ -83,7 +83,10 @@ fn is_bare_module_import_name(import_path: string) -> bool =
   && !import_path_contains_slash(import_path)
 
 fn stdlib_module_relative_path(module_name: string) -> string =
-  if module_name == "Tcp" then "net/tcp.mlc" else "" end
+  if module_name == "Tcp" then "net/tcp.mlc"
+  else if module_name == "HttpServer" then "net/http_server.mlc"
+  else ""
+  end
 
 fn parent_directory(path: string) -> string = do
   if path == "" || path == "." then

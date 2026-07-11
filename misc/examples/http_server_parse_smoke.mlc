@@ -1,5 +1,4 @@
-// TRACK_STDLIB_HTTP_MLC STEP=2 — parse/format smoke (no network).
-// Relative import until STEP=3 bare-name HttpServer.
+// TRACK_STDLIB_HTTP_MLC STEP=2/3 — parse/format smoke (no network; bare HttpServer).
 
 import {
   parse_http_request,
@@ -9,7 +8,7 @@ import {
   HttpParseResult,
   HttpParseOk,
   HttpParseErr
-} from '../../lib/mlc/common/stdlib/net/http_server'
+} from 'HttpServer'
 
 fn parse_ok(result: HttpParseResult) -> bool =
   match result {

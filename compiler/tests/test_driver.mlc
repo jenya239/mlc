@@ -15,6 +15,11 @@ export fn driver_tests() -> [TestResult] = do
     'lib/mlc/common/stdlib/net/tcp.mlc'
   ))
   results.push(assert_eq_str(
+    'resolve_import_path bare HttpServer to stdlib net/http_server.mlc',
+    resolve_import_path('tmp/probe.mlc', 'HttpServer'),
+    'lib/mlc/common/stdlib/net/http_server.mlc'
+  ))
+  results.push(assert_eq_str(
     'resolve_import_path relative ./foo unchanged',
     resolve_import_path('tmp/probe.mlc', './foo'),
     'tmp/foo.mlc'
