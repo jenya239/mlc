@@ -70,17 +70,17 @@ fn area(s: Shape) -> i32 =
 | `spawn` / `Mutex` / `Channel` / `Task` / `TaskScope` / `Isolate` | нет | да |
 | `block_on` / `is_ready` | нет | да (checker + codegen, 2026-07-10) |
 | `Tcp` (`lib/mlc/common/stdlib/net/tcp.mlc`) | да (`import Tcp::{…}`) | да (`import { … } from 'Tcp'`; bare-name → stdlib) |
-| `Postgres` / `Crypto` / `WebSocket` / `Env` / `Log` / `Validate` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` в v1 table) |
-| HTTP parse/router/`ThreadPool` serve (C++ `mlc::net`) | через runtime headers | через runtime headers |
+| `Postgres` / `Crypto` / `WebSocket` / `Env` / `Log` / `Validate` и прочий `common/stdlib/` | да (registry/scanner) | нет (только `Tcp` / `HttpServer` в v1 table) |
+| HTTP parse/format (`HttpServer`, pure MLC) | path import / future registry | да (`import { … } from 'HttpServer'`) |
 | Языковой TCP-сервер на `spawn` + `Tcp` в одном бинаре | нельзя (нет `spawn`) | **да** (2026-07-10; gate `scripts/run_mlcc_tcp_spawn_echo_gate.sh`) |
 
 **Следствие:** многопоточный echo/accept на MLC — через **`mlcc`** + `import … from 'Tcp'`
-+ `spawn` (пример `misc/examples/tcp_spawn_echo_mlcc.mlc`). C++
-`serve_http_with_thread_pool` остаётся альтернативой для HTTP/`ThreadPool`
-без языкового `spawn`. Ruby по-прежнему без concurrency builtins.
++ `spawn` (пример `misc/examples/tcp_spawn_echo_mlcc.mlc`). HTTP/1.1 parse+route —
+`import … from 'HttpServer'` + Tcp/spawn (`misc/examples/http_server_curl_demo.mlc`).
+C++ `serve_http_with_thread_pool` **удалён** (2026-07-11). Ruby по-прежнему без concurrency builtins.
 
 **Остаток split:** полный скан `common/stdlib/` в `mlcc` (Postgres/Crypto/…) —
-не в этом треке; v1 table только `"Tcp" => "net/tcp.mlc"`.
+не в этом треке; v1 bare table: `"Tcp"`, `"HttpServer"`.
 
 ---
 
@@ -415,19 +415,22 @@ connect("localhost", port: 5432, timeout: 30)  // можно смешивать 
 
 #### TCP / HTTP server (stdlib runtime)
 
-Зафиксировано 2026-07-10 (`TRACK_STDLIB_NET_SERVER`). Runtime (`mlc::net`):
+TCP зафиксировано 2026-07-10 (`TRACK_STDLIB_NET_SERVER` / `TRACK_PIPELINE_MERGE_TCP_SPAWN`).
+HTTP parse/route на MLC — 2026-07-11 (`TRACK_STDLIB_HTTP_MLC`):
 
 - `TcpListener` / `TcpStream` — blocking IPv4, `SO_REUSEADDR`, `Result` errors.
 - MLC module `Tcp` (`std/net/tcp`): opaque `i32` handles + `Option`/`last_error`.
-  Ruby: `import Tcp::{…}`. **mlcc** (2026-07-10): `import { … } from 'Tcp'`
+  Ruby: `import Tcp::{…}`. **mlcc**: `import { … } from 'Tcp'`
   (bare-name resolve + FFI `*_mlc`); with `spawn` —
   `misc/examples/tcp_spawn_echo_mlcc.mlc`, gate
-  `scripts/run_mlcc_tcp_spawn_echo_gate.sh`. Runtime C++ headers shared.
-- `parse_http_request` — HTTP/1.1 request-line + headers; body via `Content-Length`
-  (caps: headers 64 KiB, body 1 MiB).
-- `HttpRouter` — exact method+path match; `http_not_found` / `write_http_response`.
-- `serve_http_with_thread_pool` — accept loop submits connections to `ThreadPool`
-  (C++ path; language `spawn`+`Tcp` is the MLC alternative under mlcc).
+  `scripts/run_mlcc_tcp_spawn_echo_gate.sh`.
+- MLC module `HttpServer` (`std/net/http_server`): pure-MLC `parse_http_request` /
+  `format_http_response` / `http_not_found`; bare `from 'HttpServer'`;
+  demo `misc/examples/http_server_curl_demo.mlc`; gates
+  `run_http_server_parse_smoke.sh` / `run_http_server_curl_gate.sh`.
+- Public C++ `http_request.hpp` / `http_router.hpp` / `http_server.hpp` and
+  `serve_http_with_thread_pool` **removed** (2026-07-11). WS handshake still
+  uses private `websocket_http.hpp` until `TRACK_STDLIB_WEBSOCKET_TO_MLC`.
 
 Не в v1: TLS, HTTP/2, epoll reactor.
 

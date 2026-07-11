@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-no-cpp-shim-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_STDLIB_HTTP_MLC STEP=6 |
-| test_gate | curl+parse gates EXIT 0; websocket smoke 19/0 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_STDLIB_HTTP_MLC STEP=7 |
+| test_gate | docs-only |
+
+### Turn 2026-07-11 12:39 (Driver TRACK_STDLIB_HTTP_MLC STEP=6 — docs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_HTTP_MLC |
+| started | 2026-07-11 12:39 |
+| elapsed | ~5 min |
+| done    | `STDLIB_BACKEND.md` §1/§2/§5; `MLC.md` Tcp/HTTP + bare table; `FFI_LAYER.md` §8; PLAN→STEP=7. |
+| verify  | Docs state matches `HttpServer` + deleted public C++ HTTP. |
+| result  | STEP=6 done. Plain: docs say HTTP server is MLC-native. |
+| issues  | Queued prompt VM STEP=2 stale. |
+| next    | ROLE=Driver STEP=7 TRACK_STDLIB_HTTP_MLC — verify-gate (self-host, regression_gate, close) |
 
 ### Turn 2026-07-11 12:33 (Driver TRACK_STDLIB_HTTP_MLC STEP=5 — delete C++ HTTP)
 

@@ -21,7 +21,10 @@ C++-логику в `extern fn` не убирает C++, только даёт M
 на уровне пользовательского кода, не через C-биндинг). Ниже Decision/Scope
 переписаны под этот подход, старая версия (`extern fn` над `.hpp`) отменена.
 
-## Status: **open** — STEP=6 next (docs) — **active**
+## Status: **open** — STEP=7 next (verify-gate) — **active**
+
+**Driver 2026-07-11:** STEP=6 — `STDLIB_BACKEND.md` §1/§2/§5, `MLC.md`
+Tcp/HTTP + bare table, `FFI_LAYER.md` §8 row; examples already in place.
 
 **Driver 2026-07-11:** STEP=5 — deleted public C++ `http_request.hpp`/
 `http_router.hpp`/`http_server.hpp` + `test_http_*.cpp`; moved parse/
@@ -151,7 +154,7 @@ HTTP/1.1 request-line + headers + body парсинг, роутинг, response-
 | 3 | Bare-name резолвинг в `mlcc` для нового модуля (без поломки `Tcp`). | **done** (2026-07-11: path_normalize + smoke bare import) |
 | 4 | Демо: `Tcp`+`spawn`+HTTP-парсинг+роутинг в одном `.mlc`; `curl`-гейт. | **done** (2026-07-11: curl gate EXIT 0) |
 | 5 | Удалить `http_request.hpp`/`http_router.hpp` (+ проверить `serve_http_with_thread_pool` usage). | **done** (2026-07-11: deleted + http_server.hpp; WS uses `websocket_http.hpp`) |
-| 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | pending |
+| 6 | Docs (`STDLIB_BACKEND.md` §1 fix, `PLAN.md`) + example. | **done** (2026-07-11: STDLIB_BACKEND/MLC/FFI_LAYER) |
 | 7 | Verify-gate: self-host diff, regression_gate, close. | pending |
 
 <!-- sub-steps STEP=1: 1) lock module path + bare-name key; 2) lock HttpRequest/HttpResponse fields; 3) lock parse grammar (request-line/headers/CL) + router shape; write Decision section -->
