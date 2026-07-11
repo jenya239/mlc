@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=3 |
-| test_gate | postgres_mlc_abi_smoke + postgres_gate |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=4 |
+| test_gate | crypto_mlc_abi_smoke + crypto_gate |
+
+### Turn 2026-07-11 14:30 (Driver TRACK_FFI_SHIM_MIGRATION STEP=3 — Crypto)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 13:50 |
+| elapsed | ~40 min |
+| done    | `crypto.mlc` MLC hex + HMAC malloc/statebytes; `sodium_abi.hpp`; thinned `sodium.hpp`; smoke+`string_from_byte_u8` (no `\xHH`). |
+| verify  | `run_crypto_mlc_abi_smoke.sh` EXIT 0; `run_crypto_gate.sh` OK. |
+| result  | STEP=3 done. Plain: Crypto control flow/hex is MLC over thin abi. |
+| issues  | Queued prompt VM STEP=2 stale. Residuals: CryptoStringResult; C++ last_error; no `\xHH`. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_FFI_SHIM_MIGRATION — Tcp libc externs + fd-as-token |
 
 ### Turn 2026-07-11 13:45 (Driver TRACK_FFI_SHIM_MIGRATION STEP=2 — Postgres)
 

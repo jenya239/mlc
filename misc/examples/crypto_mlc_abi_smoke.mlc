@@ -1,0 +1,54 @@
+// TRACK_FFI_SHIM_MIGRATION STEP=3 — mlcc Crypto MLC+abi (known SHA-256 empty).
+
+import {
+  sha256,
+  hmac_sha256,
+  random_bytes,
+  last_error,
+  CryptoStringResult,
+  CryptoStringOk,
+  CryptoStringErr
+} from '../../lib/mlc/common/stdlib/crypto/crypto.mlc'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::crypto::string_from_byte_u8" from "mlc/crypto/sodium_abi.hpp"
+
+fn is_string_ok(result: CryptoStringResult) -> bool =
+  match result {
+    CryptoStringOk(_) => true,
+    CryptoStringErr => false
+  }
+
+fn string_ok_value(result: CryptoStringResult) -> string =
+  match result {
+    CryptoStringOk(text) => text,
+    CryptoStringErr => ""
+  }
+
+fn main() -> i32 = do
+  const empty_digest = sha256("")
+  if empty_digest != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" then
+    return 1
+  end
+
+  // RFC 4231 case 1: key = 20 × 0x0b (no \xHH escapes in MLC strings)
+  let mut key = ""
+  let mut index = 0
+  while index < 20 do
+    key = key + string_from_byte_u8(11)
+    index = index + 1
+  end
+  const hmac_digest = hmac_sha256(key, "Hi There")
+  if hmac_digest != "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7" then
+    return 2
+  end
+
+  let random = random_bytes(16)
+  if !is_string_ok(random) then return 3 end
+  if string_ok_value(random).byte_size() != 32 then return 4 end
+
+  let bad = random_bytes(0)
+  if is_string_ok(bad) then return 5 end
+  if last_error().length() == 0 then return 6 end
+  0
+end
