@@ -40,8 +40,9 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**No active Driver track** — FFI_SHIM Critic OK. Next: Planner activates §20
-candidate (WEBSOCKET_TO_MLC / MSDF / LOGIC / GLAD).
+**`TRACK_STDLIB_WEBSOCKET_TO_MLC` active** STEP=1 — Decision + libsodium SHA1 check.
+See [TRACK_STDLIB_WEBSOCKET_TO_MLC.md](TRACK_STDLIB_WEBSOCKET_TO_MLC.md).
+(`TRACK_CONCURRENCY_SPAWN_DETACH` still high priority for MT servers — separate.)
 
 
 ## Step sizing (good vs bad)

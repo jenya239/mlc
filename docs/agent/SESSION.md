@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none — FFI_SHIM Critic OK; Planner next) |
-| test_gate | Critic re-ran pg/crypto/tcp smokes+gates EXIT 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_WEBSOCKET_TO_MLC STEP=1 |
+| test_gate | — |
+
+### Turn 2026-07-11 15:25 (Planner — activate TRACK_STDLIB_WEBSOCKET_TO_MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_WEBSOCKET_TO_MLC |
+| started | 2026-07-11 15:20 |
+| elapsed | ~5 min |
+| done    | Activated WEBSOCKET_TO_MLC STEP=1 after FFI_SHIM Critic; sub-steps on STEPs 1–6; PLAN §20c/queue + DEVELOPMENT. |
+| verify  | TRACK active STEP=1 pending; PLAN links `agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md`. |
+| result  | Plan refresh done. Plain: next Driver work is WS Decision + SHA1 check. |
+| issues  | Queued prompt VM STEP=2 stale. SPAWN_DETACH still high priority (not activated). Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_WEBSOCKET_TO_MLC — lock Decision + verify no sodium SHA1 |
 
 ### Turn 2026-07-11 15:20 (Critic TRACK_FFI_SHIM_MIGRATION — critique-audit)
 
