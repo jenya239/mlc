@@ -4,7 +4,10 @@ Parent: [../PLAN.md](../PLAN.md) §14, [../FFI_LAYER.md](../FFI_LAYER.md) §9
 (инфраструктура уже реализована, `TRACK_FFI_LAYER` closed 2026-07-09 — этот
 трек только про безопасность использования, без нового codegen).
 
-## Status: **active** — STEP=4 next (Safety contract docs in FFI_LAYER §9)
+## Status: **active** — STEP=5 next (verify-gate + close)
+
+**Driver 2026-07-11 STEP=4:** Rewrote `FFI_LAYER.md` §9 — contract table
+(`W-EXTERN-ATTR` / `W-EXTERN-ARITY`; lifetime/null = author duty; Decision B).
 
 **Driver 2026-07-11 STEP=3:** `W-EXTERN-ARITY` in `extern_header_arity_lint.mlc`
 (hook after concurrency lint). Header stubs tagged
@@ -51,7 +54,7 @@ concurrency attrs.
 | 1 | Design-решение: marker vs diagnostics-only. | **done** |
 | 2 | Checker warning missing concurrency attr + annotate full-form stdlib. | **done** |
 | 3 | Checker: базовая ABI sanity-проверка arity vs header_import (best-effort). | **done** |
-| 4 | Документация: Safety contract в `FFI_LAYER.md` §9. | pending |
+| 4 | Документация: Safety contract в `FFI_LAYER.md` §9. | **done** |
 | 5 | Verify-gate + close: self-host diff identical, `regression_gate.sh`. | pending |
 
 <!-- STEP=3 sub-steps: 1) only when header_import already loaded the header; 2) compare arity; 3) skip if header not imported -->

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` active** STEP=4 — Safety contract docs in `FFI_LAYER.md` §9.
-See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=3: `W-EXTERN-ARITY` smoke ok.
+**`TRACK_FFI_SAFETY` active** STEP=5 — verify-gate + close (`regression_gate` + self-host).
+See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=4: `FFI_LAYER.md` §9 contract.
 
 
 ## Step sizing (good vs bad)

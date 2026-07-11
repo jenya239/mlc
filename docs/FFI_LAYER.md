@@ -272,14 +272,23 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 - [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
   **won't-do** 2026-07-11 (рантайм остаётся C++).
 
-## 9. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
+## 9. Safety contract ([TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
 
-Слой §2 даёт ABI-механизм, не даёт safety-гарантий. `extern fn`/
-`RawPointer[T]`/`extern type` — unsafe escape hatch без синтаксического
-маркера (в отличие от Rust `unsafe fn`/`unsafe {}`): lifetime, null-checks
-и реальная ABI-сверка сигнатуры остаются на совести автора биндинга,
-компилятор их не проверяет. Concurrency-атрибуты (§2.7) реализованы, но
-ничто не требует их указывать — дефолт при отсутствии атрибута не
-зафиксирован явно. Детали, открытые вопросы и план — в
-`agent/TRACK_FFI_SAFETY.md`, отдельный трек, не блокирует использование
-слоя как есть.
+Слой §2 даёт ABI-механизм. Safety — диагностики checker + соглашение автора
+биндинга. Синтаксический `unsafe` **не** вводится (Decision B, 2026-07-11).
+
+| Обязанность | Кто | Механизм |
+|-------------|-----|----------|
+| Concurrency attr на full-form `extern … from "…"` | Checker | `W-EXTERN-ATTR` — warning, если нет `blocking` / `thread_safe` / `thread_affine` (§2.7). Shorthand без `from` attrs нести не может — пропуск. |
+| Arity vs imported `.h` stub | Checker | `W-EXTERN-ARITY` — best-effort: если `import` уже загрузил header (`header_import`), сравнить число параметров full-form `extern fn` с stub того же C-символа. Нет import → нет warning. |
+| Lifetime `RawPointer[T]` | Автор | Нет borrow checker; указатель жив, пока жив C-объект. |
+| Null | Автор | Нет null-check; `null`/`nullptr` — обязанность биндинга/`Result`. |
+| Полная ABI-сверка типов (не только arity) | Автор / future | Checker не сравнивает C types с MLC types побайтно. |
+
+**Stdlib:** full-form `env`/`tcp` annotated `blocking`. Mass-annotate shorthand
+(255+) out of scope — attrs на shorthand сегодня синтаксически невозможны.
+
+**Verify:** smokes `run_extern_concurrency_attr_smoke.sh`,
+`run_extern_header_arity_smoke.sh`. Close-gate трека — STEP=5
+(`regression_gate` + self-host).
+

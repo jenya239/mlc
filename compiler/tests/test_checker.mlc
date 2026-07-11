@@ -6,7 +6,7 @@ import { parse_program, parse_program_with_source_path } from '../frontend/parse
 import { Program, Decl } from '../frontend/ast'
 import { check, check_with_context, program_diagnostics } from '../checker/check/check'
 import { build_registry } from '../checker/registry'
-import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_w_extern_attr, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
+import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_w_extern_attr, diagnostic_code_w_extern_arity, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
