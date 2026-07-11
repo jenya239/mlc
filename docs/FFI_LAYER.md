@@ -231,7 +231,8 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
 
 | Тип | Пример | Судьба |
 |-----|--------|--------|
-| Рантайм языка (то, во что компилируется MLC) | `core/string.hpp`, `core/array.hpp`, `concurrency/{mutex,channel,task}.hpp` | **остаётся C++** — MLC компилируется в C++, у языка не может не быть рантайма на целевом языке. Не предмет этой инициативы |
+| Истинно неустранимый примитив ОС/libc | аллокация (`malloc`/`realloc`), атомарный inc/dec, `pthread_create`/`pthread_mutex_*` | **остаётся** как `extern fn ... from "<cstdlib>"/"<stdatomic.h>"/"<pthread.h>"` — прямой импорт реального заголовка, не наша логика |
+| Ядро рантайма (`core/`/`concurrency/`) — **исправлено 2026-07-11, было ошибочным исключением** | `core/string.hpp`, `core/array.hpp` (COW/growth policy), `core/hashmap.hpp`, `concurrency/{mutex,channel,task,thread_pool}.hpp` | **портировать на self-hosted MLC** поверх примитивов выше — «рантайм остаётся C++ навсегда» было неверной уступкой (пользователь: «ручного C++ не должно быть нигде вообще, иначе в MLC нет смысла») → [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) |
 | FFI-адаптер к сторонней C-библиотеке (в основном bookkeeping/error-handling, не алгоритм) | `db/postgres.hpp`, `crypto/sodium.hpp`, часть `net/tcp.hpp` (i32-handle-table) | **убрать**: прямой `extern fn ... = "c_name" from "<header>"` + `extern type`+`drop` (слой уже закрыт, инфраструктура не нужна) — bookkeeping-логика (hex-encode, handle-table) переписывается на MLC |
 | Бизнес-логика/алгоритм, написанный на C++ вместо MLC (не биндинг ни к чему) | `text/msdf_shim.cpp` (EDT/SDF-алгоритм), `net/websocket.hpp` (+ temporary `websocket_http.hpp` for upgrade; public `http_*.hpp` removed 2026-07-11 via [TRACK_STDLIB_HTTP_MLC](agent/TRACK_STDLIB_HTTP_MLC.md)) | **портировать на MLC целиком**, без FFI вообще для этой части |
 | Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | `gl/glfw_gl_dispatch.cpp` (`glfwGetProcAddress`+`reinterpret_cast`), `gl/loader_shim.cpp` (EGL/GLES2) | **убрать своими руками вообще** — `GLAD2` (сгенерированный один раз через `glad.sh`, вендоренный `.c`) резолвит function pointers сама через `#define glDrawArrays glad_glDrawArrays`; уже закрытый `extern fn ... from "<header>"` вызывает её прозрачно, без нового примитива каста |
@@ -269,6 +270,11 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
   через вендоренный GLAD2, без ручного C++ dispatch (заменяет отменённые
   `TRACK_FFI_POINTER_CAST`/`TRACK_GL_LOADER_TO_MLC`, см.
   `archive/tracks/`).
+- [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
+  `core`/`concurrency` (~4500 строк) на self-hosted MLC поверх
+  `malloc`/atomics/`pthread` через `extern fn`; максимальный приоритет и
+  максимальный риск (весь компилятор и все MLC-программы зависят от
+  корректности).
 
 ## 9. Safety contract — не реализовано (см. [TRACK_FFI_SAFETY](agent/TRACK_FFI_SAFETY.md))
 

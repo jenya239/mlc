@@ -411,6 +411,7 @@ compiler/
 | **20c** WebSocket framing/handshake — порт на MLC | **open, blocked on 11a** | [TRACK_STDLIB_WEBSOCKET_TO_MLC](agent/TRACK_STDLIB_WEBSOCKET_TO_MLC.md) — зависит от `HttpRequest`/`HttpResponse` на MLC |
 | **20d** Env/Log/Validation — mlcc-пайплайн + порт логики | **open** | [TRACK_STDLIB_LOGIC_TO_MLC](agent/TRACK_STDLIB_LOGIC_TO_MLC.md) — сейчас только Ruby-тесты, нет `mlcc`-пути |
 | **20e** GL-вызовы через GLAD2, без ручного C++ dispatch | **open** | [TRACK_GL_GLAD_MIGRATION](agent/TRACK_GL_GLAD_MIGRATION.md) — заменяет отменённые `FFI_POINTER_CAST`/`GL_LOADER_TO_MLC` (superseded 2026-07-11: GLAD2/epoxy резолвят function pointers сами, каст/таблица на MLC не нужны) |
+| **20f** `core`/`concurrency` (~4500 строк) — self-hosted MLC вместо hand-written C++ рантайма | **open, максимальный приоритет и максимальный риск** | [TRACK_LANG_SELF_HOSTED_RUNTIME](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — исправляет ошибочную границу §20 («рантайм языка остаётся C++ навсегда»: пользователь 2026-07-11 — «ручного C++ не должно быть нигде вообще, иначе в MLC нет смысла»); `Array`/`String`/`HashMap`/`Shared`/`Mutex`/`Channel`/`Task` на MLC поверх `malloc`/atomics/`pthread` через `extern fn`; STEP=1 — decision only, реализация по одному типу с A/B verify-gate (весь компилятор зависит от корректности) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -519,6 +520,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md))
   → STDLIB_HTTP_MLC (**active** STEP=7 — verify-gate / close
       → [agent/TRACK_STDLIB_HTTP_MLC.md](agent/TRACK_STDLIB_HTTP_MLC.md))
+  → **LANG_SELF_HOSTED_RUNTIME (2026-07-11, максимальный приоритет — после
+    STDLIB_HTTP_MLC, перед остальной «без C++» группой: исправляет
+    ошибочную границу, что рантайм языка «остаётся C++ навсегда»; STEP=1
+    decision-only, не блокирует остальные треки группы, но начинать
+    следующим по важности
+    → [agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md](agent/TRACK_LANG_SELF_HOSTED_RUNTIME.md)):**
   → **«без hand-written C++» инициатива (2026-07-11, высокий приоритет,
     после STDLIB_HTTP_MLC, порядок между собой не строгий, независимые
     треки):**
