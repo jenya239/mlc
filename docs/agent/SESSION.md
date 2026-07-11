@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_FFI_SHIM_MIGRATION STEP=5 |
-| test_gate | tcp_mlc_abi_smoke + tcp_echo + mlcc_tcp_echo + websocket |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_FFI_SHIM_MIGRATION STEP=6 |
+| test_gate | tcp/crypto/postgres/websocket gates + mlc abi smokes |
+
+### Turn 2026-07-11 14:55 (Driver TRACK_FFI_SHIM_MIGRATION STEP=5 — delete shims)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_FFI_SHIM_MIGRATION |
+| started | 2026-07-11 14:45 |
+| elapsed | ~10 min |
+| done    | Deleted `postgres.hpp`/`sodium.hpp`/`tcp.hpp`; APIs in `*_bridge.hpp`; `tcp.mlc`→`tcp_bridge.hpp`; retarget `mlc.hpp`/codegen/tests. |
+| verify  | tcp/crypto/postgres/websocket gates + mlc abi smokes EXIT 0. |
+| result  | STEP=5 done. Plain: named shim `.hpp` files gone. |
+| issues  | Queued prompt VM STEP=2 stale. Residual: bridges hold Ruby flow + TcpStream. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_FFI_SHIM_MIGRATION — full regression gates |
 
 ### Turn 2026-07-11 14:45 (Driver TRACK_FFI_SHIM_MIGRATION STEP=4 — Tcp)
 

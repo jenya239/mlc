@@ -65,15 +65,11 @@
 #include "mlc/json/json.hpp"
 
 // Net
-#include "mlc/net/tcp.hpp"
+#include "mlc/net/tcp_bridge.hpp"
 #include "mlc/net/websocket.hpp"
 
-// DB (optional — requires libpq-fe.h)
-#if __has_include(<libpq-fe.h>) || __has_include(<postgresql/libpq-fe.h>)
-#include "mlc/db/postgres.hpp"
-#endif
+// DB (optional — requires libpq-fe.h; API in postgres_bridge.hpp)
+#include "mlc/db/postgres_bridge.hpp"
 
-// Crypto (optional — requires sodium.h)
-#if __has_include(<sodium.h>)
-#include "mlc/crypto/sodium.hpp"
-#endif
+// Crypto (optional — requires sodium.h; API in sodium_bridge.hpp)
+#include "mlc/crypto/sodium_bridge.hpp"

@@ -4,7 +4,7 @@
 // Text frames only; client→server masked; server→client unmasked.
 // SHA1 + base64 local (no libsodium). Errors: nullopt/false + last_error().
 
-#include "mlc/net/tcp.hpp"
+#include "mlc/net/tcp_bridge.hpp"
 #include "mlc/net/websocket_http.hpp"
 
 #include <array>

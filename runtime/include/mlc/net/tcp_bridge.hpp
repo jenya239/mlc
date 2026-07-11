@@ -1,8 +1,8 @@
 #pragma once
 
-// Blocking IPv4 TCP (Ruby / C++ path).
-// TRACK_FFI_SHIM_MIGRATION STEP=4: handle API is fd-as-token over tcp_abi.hpp;
-// TcpListener/TcpStream RAII kept for websocket.hpp / test_tcp until STEP=5.
+// Ruby/C++ TCP surface (TRACK_FFI_SHIM_MIGRATION STEP=5).
+// Former tcp.hpp — fd-as-token handle API + TcpListener/TcpStream over tcp_abi.hpp.
+// Residual RAII classes for websocket until WEBSOCKET track.
 
 #include "mlc/core/result.hpp"
 #include "mlc/core/string.hpp"

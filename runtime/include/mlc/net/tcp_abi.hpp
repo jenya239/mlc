@@ -1,7 +1,7 @@
 #pragma once
 
 // Thin POSIX TCP ABI for TRACK_FFI_SHIM_MIGRATION STEP=4.
-// Tokens are real fds (fd-as-token). Control flow lives in tcp.mlc / tcp.hpp.
+// Tokens are real fds (fd-as-token). Control flow / Ruby surface: tcp_bridge.hpp.
 
 #include "mlc/core/string.hpp"
 

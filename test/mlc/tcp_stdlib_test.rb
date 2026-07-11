@@ -23,7 +23,7 @@ class MLCTcpStdlibTest < Minitest::Test
       end
     MLC
     cpp = MLC.compile(source).to_source
-    assert_includes cpp, "mlc/net/tcp.hpp"
+    assert_includes cpp, "mlc/net/tcp_bridge.hpp"
     assert_includes cpp, "mlc::net::bind"
     assert_includes cpp, "mlc::net::accept"
     assert_includes cpp, "mlc::net::read"

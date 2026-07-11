@@ -6,7 +6,7 @@
 //! TRACK_FFI_SHIM_MIGRATION STEP=2 — control flow in MLC; thin ABI in
 //! postgres_abi.hpp. Residual: i64 pointer tokens (no Ruby `extern type`);
 //! C++ handle table; local Pg*Result sums (mlcc Option import codegen
-//! segfault). Ruby MLC.compile still calls mlc::db::* (postgres.hpp).
+//! segfault). Ruby MLC.compile still calls mlc::db::* (postgres_bridge.hpp).
 
 module Postgres
 

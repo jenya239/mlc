@@ -6,7 +6,7 @@
 
 #include "mlc/core/result.hpp"
 #include "mlc/core/string.hpp"
-#include "mlc/net/tcp.hpp"
+#include "mlc/net/tcp_bridge.hpp"
 
 #include <algorithm>
 #include <cctype>

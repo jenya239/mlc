@@ -1,7 +1,7 @@
 // TCP listener/stream smoke (TRACK_STDLIB_NET_SERVER STEP=2).
 // g++ -std=c++20 -pthread -I../include -o test_tcp test_tcp.cpp && ./test_tcp
 
-#include "mlc/net/tcp.hpp"
+#include "mlc/net/tcp_bridge.hpp"
 
 #include <chrono>
 #include <iostream>

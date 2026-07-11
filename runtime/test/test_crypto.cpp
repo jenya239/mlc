@@ -1,7 +1,7 @@
 // libsodium crypto smoke (TRACK_STDLIB_CRYPTO STEP=2).
 // Prefer: scripts/run_crypto_runtime_smoke.sh
 
-#include "mlc/crypto/sodium.hpp"
+#include "mlc/crypto/sodium_bridge.hpp"
 
 #include <iostream>
 #include <string>

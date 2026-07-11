@@ -5,7 +5,7 @@
 //!
 //! TRACK_FFI_SHIM_MIGRATION STEP=3 — control flow + hex in MLC; thin ABI in
 //! sodium_abi.hpp. Residual: CryptoStringResult (Option codegen); no Ruby
-//! `extern lib`. Ruby MLC.compile still calls mlc::crypto::* (sodium.hpp).
+//! `extern lib`. Ruby MLC.compile still calls mlc::crypto::* (sodium_bridge.hpp).
 
 module Crypto
 

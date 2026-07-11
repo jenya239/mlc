@@ -1,7 +1,7 @@
 // Postgres libpq smoke (TRACK_STDLIB_POSTGRES STEP=2).
 // Prefer: scripts/run_postgres_runtime_smoke.sh
 
-#include "mlc/db/postgres.hpp"
+#include "mlc/db/postgres_bridge.hpp"
 
 #include <cstdlib>
 #include <iostream>
