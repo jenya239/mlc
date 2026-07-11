@@ -6,7 +6,7 @@ import { parse_program, parse_program_with_source_path } from '../frontend/parse
 import { Program, Decl } from '../frontend/ast'
 import { check, check_with_context, program_diagnostics } from '../checker/check/check'
 import { build_registry } from '../checker/registry'
-import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
+import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_w_extern_attr, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
@@ -133,6 +133,44 @@ export fn checker_tests() -> [TestResult] = do
   results.push(assert_eq_int('Shared cycle with Weak back edge — CheckOut.warnings empty',
     check_warning_count(
       'type Parent2 = { children: [Shared<Child2>] }\ntype Child2 = { parent: Weak<Parent2> }\nfn main() -> i32 = 0'),
+    0))
+
+  results.push(assert_eq_str('diagnostic code W-EXTERN-ATTR catalog',
+    diagnostic_code_w_extern_attr(), 'W-EXTERN-ATTR'))
+
+  results.push(assert_eq_int('extern fn from header without attr — check Ok (warning)',
+    check_error_count(
+      'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"\nfn main() -> i32 = 0'),
+    0))
+
+  results.push(assert_eq_int('extern fn from header without attr — one W-EXTERN-ATTR',
+    check_warning_count(
+      'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"\nfn main() -> i32 = 0'),
+    1))
+
+  results.push(assert_true('extern fn from header without attr — warning[W-EXTERN-ATTR] text',
+    first_checker_warning_line(
+      'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"\nfn main() -> i32 = 0'
+    ).contains('warning[W-EXTERN-ATTR]')))
+
+  results.push(assert_eq_int('extern fn with blocking — no W-EXTERN-ATTR',
+    check_warning_count(
+      'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>" blocking\nfn main() -> i32 = 0'),
+    0))
+
+  results.push(assert_eq_int('extern type without attr — one W-EXTERN-ATTR',
+    check_warning_count(
+      'extern type Handle = "Handle" from "<stdio.h>"\nfn main() -> i32 = 0'),
+    1))
+
+  results.push(assert_eq_int('extern type thread_safe — no W-EXTERN-ATTR',
+    check_warning_count(
+      'extern type Handle = "Handle" from "<stdio.h>" thread_safe\nfn main() -> i32 = 0'),
+    0))
+
+  results.push(assert_eq_int('shorthand extern fn (no from) — no W-EXTERN-ATTR',
+    check_warning_count(
+      'extern fn abs(x: i32) -> i32\nfn main() -> i32 = 0'),
     0))
 
   results.push(assert_true('check_only pipeline Shared cycle still Ok',

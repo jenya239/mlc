@@ -12,11 +12,11 @@ module Tcp
 
 # Opaque i32 tokens are real fds (fd-as-token). Errors: None/false + last_error().
 
-export extern fn bind(host: string, port: i32) -> Option<i32> = "mlc::net::bind_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn accept(listener: i32) -> Option<i32> = "mlc::net::accept_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn read(stream: i32, max_bytes: i32) -> Option<string> = "mlc::net::read_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn write_all(stream: i32, data: string) -> bool = "mlc::net::write_all_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn close_listener(listener: i32) -> unit = "mlc::net::close_listener_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn close_stream(stream: i32) -> unit = "mlc::net::close_stream_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn port(listener: i32) -> i32 = "mlc::net::port_mlc" from "mlc/net/tcp_bridge.hpp"
-export extern fn last_error() -> string = "mlc::net::last_error_mlc" from "mlc/net/tcp_bridge.hpp"
+export extern fn bind(host: string, port: i32) -> Option<i32> = "mlc::net::bind_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn accept(listener: i32) -> Option<i32> = "mlc::net::accept_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn read(stream: i32, max_bytes: i32) -> Option<string> = "mlc::net::read_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn write_all(stream: i32, data: string) -> bool = "mlc::net::write_all_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn close_listener(listener: i32) -> unit = "mlc::net::close_listener_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn close_stream(stream: i32) -> unit = "mlc::net::close_stream_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn port(listener: i32) -> i32 = "mlc::net::port_mlc" from "mlc/net/tcp_bridge.hpp" blocking
+export extern fn last_error() -> string = "mlc::net::last_error_mlc" from "mlc/net/tcp_bridge.hpp" blocking

@@ -40,8 +40,8 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_FFI_SAFETY` active** STEP=2 — checker warning missing concurrency attr (+ stdlib annotate).
-See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). Decision B locked (STEP=1).
+**`TRACK_FFI_SAFETY` active** STEP=3 — ABI arity sanity when header imported.
+See [TRACK_FFI_SAFETY.md](TRACK_FFI_SAFETY.md). STEP=2: `W-EXTERN-ATTR` + env/tcp `blocking`.
 
 
 ## Step sizing (good vs bad)

@@ -172,6 +172,8 @@ export fn diagnostic_code_e083() -> string = 'E083'
 export fn diagnostic_code_e084() -> string = 'E084'
 // W-CYCLE: Shared type reachability cycle without Weak on a back edge
 export fn diagnostic_code_w_cycle() -> string = 'W-CYCLE'
+// W-EXTERN-ATTR: extern fn/type with from "<header>" missing concurrency attr
+export fn diagnostic_code_w_extern_attr() -> string = 'W-EXTERN-ATTR'
 // E085: ? operator Result error type mismatches enclosing function Result error type
 export fn diagnostic_code_e085() -> string = 'E085'
 // E086: orphan extend Type : Trait (neither Type nor Trait defined in this module)

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_FFI_SAFETY STEP=2 |
-| test_gate | STEP=1: inventory 255 extern/0 attrs; Decision B locked |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_FFI_SAFETY STEP=3 |
+| test_gate | STEP=2: W-EXTERN-ATTR smoke ok; env_log gate OK; mlcc --check-only main 0 |
+
+### Turn 2026-07-11 30:20 (Driver TRACK_FFI_SAFETY STEP=2 — W-EXTERN-ATTR)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_FFI_SAFETY |
+| started | 2026-07-11 29:55 |
+| elapsed | ~25 min |
+| done    | `extern_concurrency_lint.mlc` + `W-EXTERN-ATTR`; hook in `check.mlc`; env+tcp full-form → `blocking`; smoke `run_extern_concurrency_attr_smoke.sh`; tests in `test_checker.mlc`. |
+| verify  | smoke ok; `mlcc --check-only` missing→warning / blocking+shorthand→clean; `run_env_log_gate.sh` OK; `mlcc --check-only compiler/main.mlc` 0. |
+| result  | STEP=2 done. Plain: missing concurrency attr warns; stdlib full-form annotated. |
+| issues  | Foreign `compiler/out/*`. Ruby `spawn_capture` parse still blocks `rake test_compiler_mlc`; `build_tests_self` path pre-broken. misc full-form may still warn. |
+| next    | ROLE=Driver STEP=3 TRACK_FFI_SAFETY — ABI arity sanity vs header_import |
 
 ### Turn 2026-07-11 29:55 (Driver TRACK_FFI_SAFETY STEP=1 — Design)
 

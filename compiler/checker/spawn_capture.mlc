@@ -15,16 +15,20 @@ import { type_is_sync } from './send_safe'
 
 // Sync-safe sharing across spawn: Mutex (always) or Arc<T> when T is Sync.
 // Plain Sync scalars (i32, …) still need `move` for `let mut` capture.
-fn type_is_sync_safe_shared(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
+fn type_is_sync_safe_shared(type_value: Shared<Type>, registry: TypeRegistry) -> bool = do
   match type_value {
-    TGeneric(type_name, type_arguments) =>
-      if type_name == 'Mutex' && type_arguments.length() == 1 then true
+    TGeneric(type_name, type_arguments) => do
+      if type_name == 'Mutex' && type_arguments.length() == 1 then
+        true
       else if type_name == 'Arc' && type_arguments.length() == 1 then
         type_is_sync(type_arguments[0], registry)
-      else false
-      end,
+      else
+        false
+      end
+    end,
     _ => false
   }
+end
 
 type SpawnCaptureStmtWalkState = SpawnCaptureStmtWalkState {
   diagnostics: [Diagnostic],

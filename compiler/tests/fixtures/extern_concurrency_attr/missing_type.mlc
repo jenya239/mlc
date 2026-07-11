@@ -1,0 +1,2 @@
+extern type Handle = "Handle" from "<stdio.h>"
+fn main() -> i32 = 0

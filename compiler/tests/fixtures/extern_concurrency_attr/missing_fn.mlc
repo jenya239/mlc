@@ -1,0 +1,2 @@
+extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"
+fn main() -> i32 = 0

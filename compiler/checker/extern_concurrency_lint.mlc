@@ -1,0 +1,74 @@
+// Extern concurrency-attribute lint (TRACK_FFI_SAFETY STEP=2).
+// Warning when `extern fn`/`extern type` has `from "<header>"` but no
+// blocking/thread_safe/thread_affine. Shorthand extern (no from) cannot
+// carry attrs — skipped.
+
+import {
+  Program, Decl, Diagnostic, Span, diagnostic_new_with_code, diagnostics_append,
+  decl_inner, decl_span, Expr, ExprExtern
+} from '../frontend/ast'
+import { diagnostic_code_w_extern_attr } from './diagnostic_codes'
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty: [Diagnostic] = []
+  empty
+end
+
+fn missing_concurrency_attribute_message(kind_label: string) -> string =
+  kind_label +
+    ' with from "<header>" should declare blocking, thread_safe, or thread_affine'
+
+fn warning_for_missing_concurrency_attribute(
+  kind_label: string,
+  source_span: Span
+) -> [Diagnostic] =
+  [diagnostic_new_with_code(
+    'warning',
+    missing_concurrency_attribute_message(kind_label),
+    source_span,
+    diagnostic_code_w_extern_attr())]
+
+fn diagnostics_for_extern_fn_body(body: Shared<Expr>) -> [Diagnostic] = do
+  match body {
+    ExprExtern(_c_name, header, attributes, source_span) => do
+      if header.length() == 0 then
+        empty_diagnostic_list()
+      else if attributes.length() > 0 then
+        empty_diagnostic_list()
+      else
+        warning_for_missing_concurrency_attribute('extern fn', source_span)
+      end
+    end,
+    _ => empty_diagnostic_list()
+  }
+end
+
+fn diagnostics_for_one_declaration(declaration: Shared<Decl>) -> [Diagnostic] = do
+  match decl_inner(declaration) {
+    DeclFn(_name, _type_parameters, _trait_bounds, _parameters, _return_type, body, _where_clause) =>
+      diagnostics_for_extern_fn_body(body),
+    DeclExternType(_name, _c_type, header, _drop_function, attributes, _span) => do
+      if header.length() == 0 then
+        empty_diagnostic_list()
+      else if attributes.length() > 0 then
+        empty_diagnostic_list()
+      else
+        warning_for_missing_concurrency_attribute('extern type', decl_span(declaration))
+      end
+    end,
+    DeclExported(inner) => diagnostics_for_one_declaration(inner),
+    _ => empty_diagnostic_list()
+  }
+end
+
+export fn extern_concurrency_attr_diagnostics(program: Program) -> [Diagnostic] = do
+  let mut diagnostics = empty_diagnostic_list()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    diagnostics = diagnostics_append(
+      diagnostics,
+      diagnostics_for_one_declaration(program.decls[declaration_index]))
+    declaration_index = declaration_index + 1
+  end
+  diagnostics
+end
