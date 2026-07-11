@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_GL_GLAD_MIGRATION STEP=6 |
-| test_gate | gl_renderer+loader+input+text+dispatch_smoke ok; dispatch/shim deleted |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
+| active_track | TRACK_GL_GLAD_MIGRATION STEP=7 |
+| test_gate | STEP=6: REG 20/0; self-host DIFF 0; GUI smokes ok |
+
+### Turn 2026-07-11 28:50 (Driver TRACK_GL_GLAD_MIGRATION STEP=6 — regression + self-host)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GL_GLAD_MIGRATION |
+| started | 2026-07-11 28:00 |
+| elapsed | ~50 min |
+| done    | `regression_gate` 20/0; `mlcc`→p1→`mlcc2`→p2 DIFF 0; GUI smokes (glad_link, loader, renderer, input, text, dispatch) ok. |
+| verify  | `scripts/regression_gate.sh` 20/0; `diff -rq p1 p2 --exclude=obj` empty; smokes exit 0. |
+| result  | STEP=6 done. Plain: glad migration does not break self-host or gates. |
+| issues  | Foreign `compiler/out/*` left. Docs still mention old shim (STEP=7). |
+| next    | ROLE=Driver STEP=7 TRACK_GL_GLAD_MIGRATION — docs TEXT_RENDERING/GUI + close → Critic |
 
 ### Turn 2026-07-11 28:00 (Driver TRACK_GL_GLAD_MIGRATION STEP=5 — delete dispatch/shim)
 
