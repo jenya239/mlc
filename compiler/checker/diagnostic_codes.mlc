@@ -180,3 +180,5 @@ export fn diagnostic_code_e086() -> string = 'E086'
 export fn diagnostic_code_e087() -> string = 'E087'
 // E088: use of binding after move
 export fn diagnostic_code_e088() -> string = 'E088'
+// E089: bare spawn expression-statement discards Task (destructor blocks)
+export fn diagnostic_code_e089() -> string = 'E089'

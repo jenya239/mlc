@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=2 |
-| test_gate | Decision lock (task_scope.hpp + CONCURRENCY_V2 §6) |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
+| active_track | TRACK_CONCURRENCY_SPAWN_DETACH STEP=3 |
+| test_gate | E089 bare-spawn check-only + test_spawn cases |
+
+### Turn 2026-07-11 20:20 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=2 — E089 bare spawn)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_SPAWN_DETACH |
+| started | 2026-07-11 20:05 |
+| elapsed | ~15 min |
+| done    | `diagnostic_code_e089`; `bare_spawn_diagnostics_in_*` in `spawn_capture.mlc`; `test_spawn.mlc` bare/while/code cases; rebuilt `mlcc`. |
+| verify  | `mlcc --check-only` bare → `error[E089]`; bound `let`+`block_on` clean. |
+| result  | STEP=2 done. Plain: discarded spawn statement is a hard error. |
+| issues  | `build_tests_self` pre-broken (`tests/frontend/ast`); Ruby parse of spawn_capture pre-broken. Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_SPAWN_DETACH — MLC `scope` syntax → task_scope.hpp |
 
 ### Turn 2026-07-11 20:05 (Driver TRACK_CONCURRENCY_SPAWN_DETACH STEP=1 — Decision)
 

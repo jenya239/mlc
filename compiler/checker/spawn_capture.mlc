@@ -9,7 +9,7 @@ import {
   diagnostic_error_with_code, diagnostics_append, TyUnit
 } from '../frontend/ast'
 import { pattern_bindings } from './names'
-import { diagnostic_code_e087 } from './diagnostic_codes'
+import { diagnostic_code_e087, diagnostic_code_e089 } from './diagnostic_codes'
 import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, type_from_annotation_with_registry } from './registry'
 import { type_is_sync } from './send_safe'
 
@@ -69,6 +69,12 @@ fn mutable_capture_diagnostic(binding_name: string, source_span: Span) -> Diagno
     'mutable value \'' + binding_name + '\' crosses concurrency boundary (spawn); use move or Sync-safe sharing',
     source_span,
     diagnostic_code_e087())
+
+fn bare_spawn_diagnostic(source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'bare spawn discards Task and blocks in destructor; bind with let or use scope',
+    source_span,
+    diagnostic_code_e089())
 
 fn type_annotation_is_elided(type_expression: Shared<TypeExpr>) -> bool =
   match type_expression { TyUnit => true, _ => false }
@@ -609,6 +615,184 @@ fn walk_spawn_sites_in_stmts(
 ) -> [Diagnostic] =
   walk_spawn_sites_in_stmts_state(statements, mutable_scope, capture_context).diagnostics
 
+fn bare_spawn_diagnostics_in_expr_list(
+  expressions: [Shared<Expr>],
+  value_discarded: bool
+) -> [Diagnostic] =
+  expressions.fold(
+    empty_diagnostics(),
+    (diagnostics, expression) =>
+      diagnostics_append(diagnostics, bare_spawn_diagnostics_in_expr(expression, value_discarded)))
+
+fn bare_spawn_diagnostics_in_field_values(
+  field_values: [Shared<FieldVal>],
+  value_discarded: bool
+) -> [Diagnostic] =
+  field_values.fold(
+    empty_diagnostics(),
+    (diagnostics, field_value) =>
+      diagnostics_append(diagnostics, bare_spawn_diagnostics_in_expr(field_value.value, value_discarded)))
+
+fn bare_spawn_diagnostics_in_record_parts(
+  parts: [RecordLitPart],
+  value_discarded: bool
+) -> [Diagnostic] =
+  parts.fold(
+    empty_diagnostics(),
+    (diagnostics, part) =>
+      match part {
+        RecordLitFields(field_values) =>
+          diagnostics_append(diagnostics, bare_spawn_diagnostics_in_field_values(field_values, value_discarded)),
+        RecordLitSpread(spread_expression) =>
+          diagnostics_append(diagnostics, bare_spawn_diagnostics_in_expr(spread_expression, value_discarded))
+      })
+
+fn bare_spawn_diagnostics_in_match_arms(
+  arms: [Shared<MatchArm>],
+  value_discarded: bool
+) -> [Diagnostic] =
+  arms.fold(
+    empty_diagnostics(),
+    (diagnostics, arm) => do
+      const guard_diagnostics =
+        if arm.has_guard then bare_spawn_diagnostics_in_expr(arm.when_condition, false)
+        else empty_diagnostics()
+        end
+      diagnostics_append(
+        diagnostics,
+        diagnostics_append(guard_diagnostics, bare_spawn_diagnostics_in_expr(arm.body, value_discarded)))
+    end)
+
+fn bare_spawn_statement_diagnostics(
+  statement: Shared<Stmt>,
+  statement_value_discarded: bool
+) -> [Diagnostic] =
+  match statement {
+    StmtLet(_, _, _, value, _) =>
+      bare_spawn_diagnostics_in_expr(value, false),
+    StmtLetPattern(_, _, _, value, _, else_expression, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(value, false),
+        bare_spawn_diagnostics_in_expr(else_expression, false)),
+    StmtLetConst(_, _, value, _) =>
+      bare_spawn_diagnostics_in_expr(value, false),
+    StmtExpr(expression, _) =>
+      bare_spawn_diagnostics_in_expr(expression, statement_value_discarded),
+    StmtBreak(_) => empty_diagnostics(),
+    StmtContinue(_) => empty_diagnostics(),
+    StmtReturn(expression, _) =>
+      bare_spawn_diagnostics_in_expr(expression, false)
+  }
+
+fn bare_spawn_diagnostics_in_stmts(
+  statements: [Shared<Stmt>],
+  last_provides_value: bool
+) -> [Diagnostic] = do
+  let mut diagnostics: [Diagnostic] = []
+  let mut index = 0
+  const count = statements.length()
+  while index < count do
+    const is_last = index == count - 1
+    const statement_value_discarded = !(last_provides_value && is_last)
+    diagnostics = diagnostics_append(
+      diagnostics,
+      bare_spawn_statement_diagnostics(statements[index], statement_value_discarded))
+    index = index + 1
+  end
+  diagnostics
+end
+
+fn bare_spawn_diagnostics_in_expr(
+  expression: Shared<Expr>,
+  value_discarded: bool
+) -> [Diagnostic] =
+  match expression {
+    ExprSpawn(body, source_span) => do
+      const self_diagnostics =
+        if value_discarded then do
+          let diagnostics: [Diagnostic] = []
+          diagnostics.push(bare_spawn_diagnostic(source_span))
+          diagnostics
+        end
+        else empty_diagnostics()
+        end
+      diagnostics_append(self_diagnostics, bare_spawn_diagnostics_in_stmts(body, true))
+    end,
+    ExprInt(_, _) => empty_diagnostics(),
+    ExprStr(_, _) => empty_diagnostics(),
+    ExprBool(_, _) => empty_diagnostics(),
+    ExprUnit(_) => empty_diagnostics(),
+    ExprFloat(_, _) => empty_diagnostics(),
+    ExprI64(_, _) => empty_diagnostics(),
+    ExprU8(_, _) => empty_diagnostics(),
+    ExprUsize(_, _) => empty_diagnostics(),
+    ExprChar(_, _) => empty_diagnostics(),
+    ExprExtern(_, _, _, _) => empty_diagnostics(),
+    ExprIdent(_, _) => empty_diagnostics(),
+    ExprBin(_, left, right, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(left, false),
+        bare_spawn_diagnostics_in_expr(right, false)),
+    ExprUn(_, operand, _) =>
+      bare_spawn_diagnostics_in_expr(operand, false),
+    ExprCall(callee, arguments, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(callee, false),
+        bare_spawn_diagnostics_in_expr_list(arguments, false)),
+    ExprMethod(receiver, _, arguments, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(receiver, false),
+        bare_spawn_diagnostics_in_expr_list(arguments, false)),
+    ExprField(object, _, _) =>
+      bare_spawn_diagnostics_in_expr(object, false),
+    ExprIndex(object, index_expression, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(object, false),
+        bare_spawn_diagnostics_in_expr(index_expression, false)),
+    ExprIf(condition, then_branch, else_branch, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(condition, false),
+        diagnostics_append(
+          bare_spawn_diagnostics_in_expr(then_branch, value_discarded),
+          bare_spawn_diagnostics_in_expr(else_branch, value_discarded))),
+    ExprBlock(statements, result_expression, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_stmts(statements, false),
+        bare_spawn_diagnostics_in_expr(result_expression, value_discarded)),
+    ExprWhile(condition, body, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(condition, false),
+        bare_spawn_diagnostics_in_stmts(body, false)),
+    ExprFor(_, iterable, body, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(iterable, false),
+        bare_spawn_diagnostics_in_stmts(body, false)),
+    ExprMatch(scrutinee, arms, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(scrutinee, false),
+        bare_spawn_diagnostics_in_match_arms(arms, value_discarded)),
+    ExprRecord(_, parts, _) =>
+      bare_spawn_diagnostics_in_record_parts(parts, false),
+    ExprRecordUpdate(_, base, field_values, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(base, false),
+        bare_spawn_diagnostics_in_field_values(field_values, false)),
+    ExprArray(elements, _) =>
+      bare_spawn_diagnostics_in_expr_list(elements, false),
+    ExprTuple(elements, _) =>
+      bare_spawn_diagnostics_in_expr_list(elements, false),
+    ExprQuestion(inner, _) =>
+      bare_spawn_diagnostics_in_expr(inner, false),
+    ExprLambda(_, body, _) =>
+      bare_spawn_diagnostics_in_expr(body, false),
+    ExprNamedArg(_, value, _) =>
+      bare_spawn_diagnostics_in_expr(value, false),
+    ExprWith(resource, _, body, _) =>
+      diagnostics_append(
+        bare_spawn_diagnostics_in_expr(resource, false),
+        bare_spawn_diagnostics_in_stmts(body, false))
+  }
+
 export fn spawn_mutable_capture_diagnostics(
   parameters: [Shared<Param>],
   body: Shared<Expr>,
@@ -618,8 +802,10 @@ export fn spawn_mutable_capture_diagnostics(
     registry: registry,
     type_environment: type_environment_from_parameters(parameters, registry)
   }
-  walk_spawn_sites_in_expr(
-    body,
-    mutable_scope_from_parameters(parameters, registry),
-    capture_context)
+  diagnostics_append(
+    bare_spawn_diagnostics_in_expr(body, false),
+    walk_spawn_sites_in_expr(
+      body,
+      mutable_scope_from_parameters(parameters, registry),
+      capture_context))
 end

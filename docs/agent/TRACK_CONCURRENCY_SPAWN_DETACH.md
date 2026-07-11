@@ -8,7 +8,11 @@ Trigger: пользователь 2026-07-11 — «STDLIB_HTTP_MLC уже гот
 мини многопоточный http сервер?». Проверка на бинаре обнаружила блокирующий
 баг в `spawn`, не задокументированный ни в одном треке.
 
-## Status: **active** — STEP=2 next (bare-spawn checker)
+## Status: **active** — STEP=3 next (`scope` syntax)
+
+**Driver 2026-07-11:** STEP=2 — E089 bare-spawn checker done
+(`spawn_capture.mlc` + `diagnostic_code_e089`; `test_spawn.mlc` cases;
+`mlcc --check-only` repro). STEP=3 next: MLC `scope` → `task_scope.hpp`.
 
 **Driver 2026-07-11:** STEP=1 — Decision **locked**. Verified
 `runtime/include/mlc/concurrency/task_scope.hpp` (`TaskScope::spawn` /
@@ -125,7 +129,7 @@ closed TASKSCOPE deferred MLC syntax (C++-only today).
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Decision: синтаксис `scope`, checker-диагностика на bare `spawn`. | **done** (2026-07-11: locked TaskScope+E089; task_scope.hpp verified) |
-| 2 | Checker: диагностика bare `spawn do...end` statement. | pending |
+| 2 | Checker: диагностика bare `spawn do...end` statement. | **done** (2026-07-11: E089 in spawn_capture; test_spawn + check-only) |
 | 3 | `scope |s| { s.spawn {...} }` MLC-синтаксис поверх `task_scope.hpp`. | pending |
 | 4 | Демо: параллельный accept-loop HTTP-сервер + замер конкурентности. | pending |
 | 5 | Self-host diff + `regression_gate.sh`; close. | pending |
