@@ -48,9 +48,7 @@
 // Env (thin getenv FFI; Log is pure MLC — no C++ header)
 #include "mlc/env/env_abi.hpp"
 
-// Validation helpers (no third-party deps)
-#include "mlc/validate/validate.hpp"
-
+// Validation is pure MLC (validate.hpp deleted)
 // Text processing
 #include "mlc/text/regex.hpp"
 

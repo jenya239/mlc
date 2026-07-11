@@ -1,15 +1,46 @@
 //! @module std/validate/validate
 //! @category validate
-//! @type extern
+//! @type mixed
 //! @namespace mlc::validate
-
-# Explicit validation helpers (TRACK_STDLIB_VALIDATION).
-# First-failure Result<(), string> — no schema DSL / derive.
-# Bodies in runtime validate.hpp (Ruby codegen does not inline pure stdlib).
+//!
+//! TRACK_STDLIB_LOGIC_TO_MLC STEP=4 — pure MLC; validate.hpp deleted.
+//! Local Result sum (mlcc builtin Result lacks Ok/Err usings in module TU).
+//! Ok payload is ValidateSuccess {} (mlcc cannot emit Result<(),E> as Ok<void>).
+//! Error messages unchanged vs former validate.hpp.
 
 module Validate
 
-export extern fn non_empty(value: string) -> Result<(), string>
-export extern fn min_length(value: string, minimum: i32) -> Result<(), string>
-export extern fn max_length(value: string, maximum: i32) -> Result<(), string>
-export extern fn range_i32(value: i32, minimum: i32, maximum: i32) -> Result<(), string>
+export type Result<T, E> = Ok(T) | Err(E)
+export type ValidateSuccess = {}
+
+export fn non_empty(value: string) -> Result<ValidateSuccess, string> = do
+  if value.byte_size() > 0 then
+    Ok(ValidateSuccess {})
+  else
+    Err("must be non-empty")
+  end
+end
+
+export fn min_length(value: string, minimum: i32) -> Result<ValidateSuccess, string> = do
+  if value.byte_size() >= minimum then
+    Ok(ValidateSuccess {})
+  else
+    Err("length below minimum")
+  end
+end
+
+export fn max_length(value: string, maximum: i32) -> Result<ValidateSuccess, string> = do
+  if value.byte_size() <= maximum then
+    Ok(ValidateSuccess {})
+  else
+    Err("length above maximum")
+  end
+end
+
+export fn range_i32(value: i32, minimum: i32, maximum: i32) -> Result<ValidateSuccess, string> = do
+  if value >= minimum && value <= maximum then
+    Ok(ValidateSuccess {})
+  else
+    Err("value out of range")
+  end
+end

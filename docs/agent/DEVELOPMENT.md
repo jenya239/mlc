@@ -40,7 +40,7 @@ bash scripts/dev_gate_fast.sh
 
 ## Current priority
 
-**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=4 — Validate → pure MLC; delete `validate.hpp`.
+**`TRACK_STDLIB_LOGIC_TO_MLC` active** STEP=5 — bare-name Env/Log/Validate in `path_normalize.mlc`.
 See [TRACK_STDLIB_LOGIC_TO_MLC.md](TRACK_STDLIB_LOGIC_TO_MLC.md).
 
 

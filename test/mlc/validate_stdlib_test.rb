@@ -16,7 +16,8 @@ class MLCValidateStdlibTest < Minitest::Test
       end
     MLC
     cpp = MLC.compile(source).to_source
-    assert_includes cpp, "mlc/validate/validate.hpp"
+    refute_includes cpp, "mlc/validate/validate.hpp"
+    # Ruby still maps Validate.* → mlc::validate::* (no body emit); logic is mlcc MLC.
     assert_includes cpp, "mlc::validate::non_empty"
     assert_includes cpp, "mlc::validate::min_length"
     assert_includes cpp, "mlc::validate::max_length"

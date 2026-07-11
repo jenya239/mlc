@@ -100,7 +100,7 @@ module MLC
         },
         "std/validate/validate" => {
           category: "validate",
-          type: :extern,
+          type: :mixed,
           namespace: "mlc::validate",
           path: "validate/validate.mlc"
         },

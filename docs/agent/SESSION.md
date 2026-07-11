@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-11-runtime-stays-cpp` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=4 |
-| test_gate | log MLC stderr JSON lines match; log.hpp absent |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
+| active_track | TRACK_STDLIB_LOGIC_TO_MLC STEP=5 |
+| test_gate | validate MLC smoke exit 0; validate.hpp absent |
+
+### Turn 2026-07-11 24:50 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=4 — Validate → MLC)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_LOGIC_TO_MLC |
+| started | 2026-07-11 24:35 |
+| elapsed | ~20 min |
+| done    | Deleted `validate.hpp`/`test_validate.cpp`; pure MLC `validate.mlc` (ValidateSuccess + local Result); mlcc `validate_mlc_smoke.mlc`. Decision: Ok payload not `()`. |
+| verify  | `run_validate_gate.sh` OK; mlcc smoke exit 0 (11 fixtures). `test -f …/validate.hpp` → absent. |
+| result  | STEP=4 done. Plain: Validate logic is MLC; messages 1:1. |
+| issues  | Foreign `compiler/out/*` left unstaged. Ruby still maps Validate.* without body emit. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_LOGIC_TO_MLC — path_normalize bare Env/Log/Validate |
 
 ### Turn 2026-07-11 24:35 (Driver TRACK_STDLIB_LOGIC_TO_MLC STEP=3 — Log → MLC)
 

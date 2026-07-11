@@ -1,0 +1,39 @@
+// TRACK_STDLIB_LOGIC_TO_MLC STEP=4 — mlcc Validate pure MLC (valid/invalid).
+
+import {
+  non_empty,
+  min_length,
+  max_length,
+  range_i32,
+  ValidateSuccess,
+  Result,
+  Ok,
+  Err
+} from '../../lib/mlc/common/stdlib/validate/validate.mlc'
+
+fn expect_ok(result: Result<ValidateSuccess, string>) -> bool =
+  match result {
+    Ok(_) => true,
+    Err(_) => false
+  }
+
+fn expect_err(result: Result<ValidateSuccess, string>, expected: string) -> bool =
+  match result {
+    Ok(_) => false,
+    Err(message) => message == expected
+  }
+
+fn main() -> i32 = do
+  if !expect_ok(non_empty("x")) then return 1 end
+  if !expect_err(non_empty(""), "must be non-empty") then return 2 end
+  if !expect_ok(min_length("ab", 2)) then return 3 end
+  if !expect_err(min_length("a", 2), "length below minimum") then return 4 end
+  if !expect_ok(max_length("ab", 2)) then return 5 end
+  if !expect_err(max_length("abc", 2), "length above maximum") then return 6 end
+  if !expect_ok(range_i32(5, 1, 10)) then return 7 end
+  if !expect_ok(range_i32(1, 1, 10)) then return 8 end
+  if !expect_ok(range_i32(10, 1, 10)) then return 9 end
+  if !expect_err(range_i32(0, 1, 10), "value out of range") then return 10 end
+  if !expect_err(range_i32(11, 1, 10), "value out of range") then return 11 end
+  0
+end

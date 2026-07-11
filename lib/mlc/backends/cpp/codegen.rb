@@ -256,7 +256,6 @@ module MLC
             CppAst::Nodes::IncludeDirective.new(path: "mlc/db/postgres_bridge.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/crypto/sodium_bridge.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/env/env_abi.hpp", system: false),
-            CppAst::Nodes::IncludeDirective.new(path: "mlc/validate/validate.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/profile.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/match.hpp", system: false),
             CppAst::Nodes::IncludeDirective.new(path: "mlc/core/result.hpp", system: false),
