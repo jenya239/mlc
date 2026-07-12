@@ -7,16 +7,30 @@ Parent: [../PLAN.md](../PLAN.md) §7 / queue after STDLIB_DOCS,
 связных графов, не просто сахар).
 Predecessor closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
+TEXT_GL override closed (Critic OK 2026-07-12):
+[../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **paused** (2026-07-12) — STEP=1 done; STEP=2+ after TEXT_GL_PERF_BASELINE
-
-Was **active** until Planner activated [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
-(CONTINUITY one-shot queue override).
+## Status: **active** (Planner 2026-07-12) — resumed after TEXT_GL Critic OK
 
 ## Next step
 
-**STEP=2** — Checker: phantom `RegionTag` + `r.alloc` typing (paused until
-`TRACK_TEXT_GL_PERF_BASELINE` closes — PLAN queue override 2026-07-12).
+**STEP=2** — Checker: phantom `RegionTag` + `r.alloc` typing.
+
+### STEP=2 sub-steps (Driver)
+
+1. Read existing `visit_region` in `compiler/checker/transform/transform.mlc`
+   (already binds binder as `TNamed('RegionHandle')`) and phantom machinery in
+   `compiler/checker/registry.mlc` (`compute_phantom_type_params`).
+2. Synthesize a unique per-block phantom tag type (`RegionTag_N` or equivalent)
+   for each `ExprRegion`; type the binder as `RegionHandle<Tag>` (Decision 1 —
+   no user `'r` syntax).
+3. Typecheck `r.alloc(value)` → `Region<Tag, T>` (method or intrinsic on the
+   handle); reject unknown methods on the binder for now if not `alloc`.
+4. Smoke: extend `compiler/tests/test_region.mlc` (or check-only fixture) so
+   `region r do r.alloc(0) end` typechecks; empty `region r do 0 end` still OK.
+5. Do **not** implement escape diagnostics (STEP=3) or codegen/pmr (STEP=4).
+6. Verify: `bundle exec rake test_compiler_mlc` (or targeted region suite)
+   green; TRACK Next=STEP=3.
 
 ## Зачем
 
@@ -133,8 +147,10 @@ end   // весь буфер r освобождается разом
   `ExprRegion` + parse; Decisions 1–3 unchanged.
 - **Driver STEP=1** (2026-07-12): `ExprRegion` in `ast.mlc`; `parse_region_expr`
   in `exprs.mlc`; mirror arms in infer/transform/escape/move/spawn/verify;
-  `test_region.mlc` parse smoke; `mlcc --check-only` region smoke OK. STEP=2+
-  after TEXT_GL_PERF_BASELINE.
+  `test_region.mlc` parse smoke; `mlcc --check-only` region smoke OK.
+- **Planner** (2026-07-12): resumed after TEXT_GL Critic OK (CONTINUITY one-shot
+  override complete); TEXT_SHIM_TO_MLC stays **open** queued after this track;
+  Next=STEP=2 checker phantom tag + `r.alloc`.
 
 ## Verify gate (когда дойдёт до реализации)
 
@@ -147,6 +163,8 @@ compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
 diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
 ```
 
-Плюс обязательный UB-репро тест: региональная ссылка, вынесенная за `end` —
-должна быть **compile error**, не runtime UB (если checker пропустил это в
-рантайм — тест должен явно упасть в CI, не просто "не крашнуться").
+## Out of scope
+
+- Full borrow checker / overlapping mutable borrows across regions.
+- Multi-region graphs with cross-region pointers (use ids, Decision 3).
+- GC / tracing collector as alternative to arenas.

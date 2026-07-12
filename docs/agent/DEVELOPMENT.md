@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GL_PERF_BASELINE` closed** — Critic OK 2026-07-12. Planner next
-(TEXT_SHIM_TO_MLC and/or REGION STEP=2). See
-[archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
+**`TRACK_LANG_REGION_ARENA` active** — STEP=2 checker (`RegionTag` + `r.alloc`).
+Resumed after TEXT_GL Critic OK. See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
+`TRACK_TEXT_SHIM_TO_MLC` remains open, queued after REGION.
 
 ## Step sizing (good vs bad)
 

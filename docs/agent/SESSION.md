@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | — (TEXT_GL Critic OK) |
-| test_gate | regression_gate 20/0 + sweep 113/0/1 |
+| step_last | plan-refresh |
+| active_track | TRACK_LANG_REGION_ARENA |
+| test_gate | docs-only (Planner) |
+
+### Turn 2026-07-12 16:06 (Planner — plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 15:59 |
+| elapsed | ~7 min |
+| done    | Chose REGION STEP=2 over TEXT_SHIM (CONTINUITY one-shot after TEXT_GL). TRACK active + STEP=2 sub-steps; PLAN §7/§30/queue; DEVELOPMENT priority. |
+| verify  | TRACK Status=active Next=STEP=2; PLAN REGION active / TEXT_SHIM queued; no compiler/ this turn. |
+| result  | plan-refresh done. Plain: REGION resumes; TEXT_SHIM stays open queued. |
+| issues  | Foreign `FFI_LAYER.md` / untracked `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_REGION_ARENA — phantom RegionTag + `r.alloc` typing |
 
 ### Turn 2026-07-12 15:53 (Critic TRACK_TEXT_GL_PERF_BASELINE — critique-audit)
 
