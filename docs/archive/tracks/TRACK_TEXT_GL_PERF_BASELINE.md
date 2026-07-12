@@ -1,6 +1,6 @@
 # Track: GL text pipeline — per-frame FreeType/HarfBuzz re-init (CPU load) + missing baseline bearing
 
-Parent: [../TEXT_RENDERING.md](../TEXT_RENDERING.md), [../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md](../archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md).
+Parent: [../../TEXT_RENDERING.md](../../TEXT_RENDERING.md), [TRACK_TEXT_RENDERING_NATIVE.md](TRACK_TEXT_RENDERING_NATIVE.md).
 Trigger: 2026-07-12, user observation on `misc/examples/text_dashboard_demo.mlc`
 (2 issues): (1) demo feels laggy/loads the CPU despite vsync being off and
 FPS "should be huge"; (2) glyph baseline misaligned — letters with
@@ -9,11 +9,11 @@ even though a C++ reference project the user looked at has this solved.
 Both root-caused below **before** handing to Driver — no design-step
 needed, go straight to implementation.
 
-## Status: **active** (Planner 2026-07-12) — queue head after REGION STEP=1
+## Status: **closed** (2026-07-12) — awaiting Critic
 
 ## Next step
 
-**STEP=14** — `scripts/regression_gate.sh` green; close track.
+**closed** — Critic `critique-audit` next.
 
 ### STEP=1 sub-steps (Driver)
 
@@ -106,7 +106,7 @@ exact formula into the GL live path — do not re-derive it.
 | 11 | Visual re-check: re-run `text_dashboard_demo.mlc`/`text_window_demo.mlc` visibly (`MLC_GLFW_VISIBLE=1`), screenshot, confirm mixed-case text now sits on one visible baseline | **done** (2026-07-12; screenshots in `docs/agent/fixtures/text_*_baseline_step11.png`; line `Hxpjy Agq`) |
 | 12 | Docs: `TEXT_RENDERING.md` — note the bearing fix + which files were affected; `GUI.md` if it references glyph positioning assumptions | **done** (2026-07-12; TEXT_RENDERING §9; GUI.md text-field note) |
 | 13 | Self-host verify: N/A (this track only touches `runtime/` C++ + `misc/`, not `compiler/`) unless a `.mlc` stdlib module under `lib/mlc/common/stdlib/` needs a signature change — check before closing | **done** (2026-07-12; `c270ee16..80e7d241`: no `lib/mlc/common/stdlib/`; only `compiler/tests/run_text_renderer_a8_string_smoke.sh`) |
-| 14 | `scripts/regression_gate.sh` green; close track | pending |
+| 14 | `scripts/regression_gate.sh` green; close track | **done** (2026-07-12; EXIT=0; programs 20/0; examples sweep ok=113 fail=0 skip=1) |
 
 ## Progress
 
@@ -148,22 +148,25 @@ exact formula into the GL live path — do not re-derive it.
   `c270ee16..80e7d241` touches `runtime/`, `misc/`, `docs/` only; no
   `lib/mlc/common/stdlib/`; sole `compiler/` path is test script
   `run_text_renderer_a8_string_smoke.sh` (not `compiler/**/*.mlc`).
+- **Driver STEP=14** (2026-07-12): `scripts/regression_gate.sh` EXIT=0 —
+  programs **20/0**; examples sweep **ok=113 fail=0 skip=1** (`dynrecord_demo`);
+  TRACK closed → archive; Critic next.
 
 ## Out of scope
 
 - Subpixel positioning / hinting quality tuning — bearing (integer pixel
   offset) is the correctness bug here, not sub-pixel rendering quality.
 - Rewriting the naive shim into the retained scene-graph
-  ([TRACK_GUI_CANVAS_GRAPH](TRACK_GUI_CANVAS_GRAPH.md)) — that track's own
+  ([TRACK_GUI_CANVAS_GRAPH](../../agent/TRACK_GUI_CANVAS_GRAPH.md)) — that track's own
   Phase A/B will consume whatever text primitive exists at the time; this
   track only fixes the primitive itself (perf + correctness), does not
   restructure the GUI architecture.
 - **Перенос bookkeeping-логики (`CachedFontFace`/`CachedShapingFont`
-  lookup) на MLC** per [../FFI_LAYER.md](../FFI_LAYER.md) §8
+  lookup) на MLC** per [../../FFI_LAYER.md](../../FFI_LAYER.md) §8
   («без hand-written C++») — STEP=1/2 добавили C++ кеш как residual
   pragmatic fix (тот же паттерн, что допущенный residual в
-  [TRACK_FFI_SHIM_MIGRATION](../archive/tracks/TRACK_FFI_SHIM_MIGRATION.md)
+  [TRACK_FFI_SHIM_MIGRATION](TRACK_FFI_SHIM_MIGRATION.md)
   — «abi+bridge C++ remains»). Полная миграция bookkeeping + pitch-copy на
   MLC + экспозиция bearing через ABI (не хардкод в GL-путь) —
-  [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md), отдельный трек,
+  [TRACK_TEXT_SHIM_TO_MLC](../../agent/TRACK_TEXT_SHIM_TO_MLC.md), отдельный трек,
   идёт **после** закрытия этого (не блокирует STEP=3+ здесь).

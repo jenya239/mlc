@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **paused** (STEP=1 done; STEP=2+ after TEXT_GL_PERF_BASELINE) — Decisions 1–3 closed; Steps 1-10 |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **paused** (STEP=1 done; STEP=2+ after TEXT_GL Critic) — Decisions 1–3 closed; Steps 1-10 |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -422,7 +422,7 @@ compiler/
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **done** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) **closed** Critic OK (`24486b14`…`0d362257`); T7 C++-only; fuzz gate re-OK |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_LANG_DOCS](archive/tracks/TRACK_LANG_DOCS.md) **closed** Critic OK (`328cb686`…`022402ad`); `lang_ref_lint` 33/0 |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
-| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **active** (2026-07-12) STEP=1–13 **done**; STEP=14 regression_gate + close next | [TRACK_TEXT_GL_PERF_BASELINE](agent/TRACK_TEXT_GL_PERF_BASELINE.md) — root cause найден (не design-степ, сразу implementation): `freetype_shim.cpp`/`harfbuzz_shim.cpp` делают `FT_Init_FreeType`+`FT_New_Face` на каждый вызов (тысячи раз/сек); `runtime/src/gl/text_renderer_shim.cpp` уже правильно считает bearing (`bitmap_top`/`bitmap_left`), просто не перенесено в GL live-путь |
+| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) STEP=1–14; REG 20/0; sweep 113/0/1; awaiting Critic | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **open, gated** (после TEXT_GL_PERF_BASELINE) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — bookkeeping (handle-кеш по `(font_path,pixel_size)`) и glyph pitch-copy на MLC поверх тонкого `*_abi.hpp`; bearing ABI не дублируется (уже STEP=7 в GL_PERF_BASELINE) |
 
@@ -594,11 +594,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     12:37) — дать ему завершиться и закоммититься, **не откатывать**, но
     следующий Planner-выбор — этот трек, не `LANG_REGION_ARENA` STEP=2)
 
-  → **TEXT_GL_PERF_BASELINE (active 2026-07-12: STEP=1–13 done; STEP=14
-    regression_gate + close next;
-    → [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md))**
+  → **TEXT_GL_PERF_BASELINE (**closed** 2026-07-12: STEP=1–14; REG 20/0;
+    sweep ok=113 fail=0 skip=1; Critic next;
+    → [archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md))**
 
-  → **TEXT_SHIM_TO_MLC (open, gated: после закрытия TEXT_GL_PERF_BASELINE;
+  → **TEXT_SHIM_TO_MLC (open, gated: после Critic TEXT_GL / Planner;
     §8 «без hand-written C++» пропустил HarfBuzz/FreeType шимы — bookkeeping
     (face/font handle-кеш) + pitch-copy loop переносятся на MLC, bearing ABI
     переиспользуется из TEXT_GL_PERF_BASELINE STEP=7, не дублируется;
@@ -607,8 +607,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   ↓ (2026-07-11, пользователь авторизовал 4 ранее гейтированных design-only
     резервуара — активированы явной командой в чате, не самостоятельно)
 
-  → **LANG_REGION_ARENA (paused 2026-07-12: STEP=1 done — ExprRegion +
-      parse_region_expr; STEP=2+ resumes AFTER TEXT_GL_PERF_BASELINE closes;
+  → **LANG_REGION_ARENA (paused until Critic TEXT_GL then Planner resume:
+      STEP=1 done — ExprRegion + parse_region_expr; STEP=2+ after TEXT_GL Critic;
       → [agent/TRACK_LANG_REGION_ARENA.md](agent/TRACK_LANG_REGION_ARENA.md)):**
     3 design-вопроса закрыты — phantom RegionTag generic, полный запрет escape,
     тип целиком региональный или нет; Steps 1-10 parser→checker→codegen→

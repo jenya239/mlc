@@ -10,7 +10,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Status: **paused** (2026-07-12) — STEP=1 done; STEP=2+ after TEXT_GL_PERF_BASELINE
 
-Was **active** until Planner activated [TRACK_TEXT_GL_PERF_BASELINE](TRACK_TEXT_GL_PERF_BASELINE.md)
+Was **active** until Planner activated [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 (CONTINUITY one-shot queue override).
 
 ## Next step

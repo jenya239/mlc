@@ -213,7 +213,7 @@ GLFW window/input (glfw_window_gl) + GLAD2 (gladLoadGL)
 
 ## 9. GL live path: face cache + baseline bearing (2026-07-12)
 
-Track: [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md)
+Track: [archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 (Part A perf + Part B bearing; STEPs 1–11 done).
 
 ### 9.1 Per-call FreeType/HarfBuzz re-init (fixed)
