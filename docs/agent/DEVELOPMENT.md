@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_REGION_ARENA` active** — STEP=4 codegen (pmr + `r.alloc`).
-STEP=3 done (E091 escape). See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
+**`TRACK_LANG_REGION_ARENA` active** — STEP=5 escape e2e fixtures.
+STEP=4 done (pmr `RegionHandle` + `r.alloc`). See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
 `TRACK_TEXT_SHIM_TO_MLC` remains open, queued after REGION.
 
 ## Step sizing (good vs bad)

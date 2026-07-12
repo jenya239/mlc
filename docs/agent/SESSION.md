@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 3 |
+| driver_turns_since_plan | 3 |
+| step_last | 4 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | E091 smokes + main check-only; self-host DIFF=0 |
+| test_gate | region_alloc link+run; self-host DIFF=0 |
+
+### Turn 2026-07-12 20:28 (Driver TRACK_LANG_REGION_ARENA STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 19:44 |
+| elapsed | ~44 min |
+| done    | `mlc/memory/region.hpp` RegionHandle/RegionPtr; type_gen+cpp_naming maps; `e2e/region_alloc.mlc` smoke. |
+| verify  | gen has `RegionHandle()`+`r.alloc(42)`; link+run `region_ok`; no shared_ptr in TU; self-host DIFF_EXIT=0. |
+| result  | STEP=4 done. Plain: region allocates via pmr placement-new. |
+| issues  | Foreign FFI_LAYER / TEXT_SHIM / extern_concurrency_lint left. |
+| next    | ROLE=Driver STEP=5 TRACK_LANG_REGION_ARENA — escape e2e fixtures (return/closure/field) |
 
 ### Turn 2026-07-12 19:34 (Driver TRACK_LANG_REGION_ARENA STEP=3)
 

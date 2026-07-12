@@ -41,6 +41,10 @@ mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String t
     return mlc::String("mlc::concurrency::Mutex", 23);
   } else if ((type_name == mlc::String("TaskScope", 9)))   {
     return mlc::String("mlc::concurrency::TaskScope", 27);
+  } else if ((type_name == mlc::String("RegionHandle", 12)))   {
+    return mlc::String("mlc::memory::RegionHandle", 25);
+  } else if ((type_name == mlc::String("Region", 6)))   {
+    return mlc::String("mlc::memory::RegionPtr", 22);
   } else   {
     return context::CodegenContext_resolve(context, type_name);
   }
@@ -58,14 +62,14 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
 [&](const registry::TUnknown& tUnknown) { return mlc::String("auto", 4); },
 [&](const registry::TArray& tArray) { auto [inner] = tArray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
 [&](const registry::TShared& tShared) { auto [inner] = tShared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
-[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return ((type_name == mlc::String("TaskScope", 9)) ? (mlc::String("mlc::concurrency::TaskScope", 27)) : (context::CodegenContext_resolve(context, type_name))); },
+[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return ((type_name == mlc::String("TaskScope", 9)) ? (mlc::String("mlc::concurrency::TaskScope", 27)) : ((((type_name.length() >= 10) && (type_name.substring(0, 10) == mlc::String("RegionTag_", 10))) ? (mlc::String("void", 4)) : (context::CodegenContext_resolve(context, type_name))))); },
 [&](const registry::TTuple& tTuple) { auto [types] = tTuple; return ((mlc::String("std::tuple<", 11) + mlc::to_string(types.map([=](std::shared_ptr<registry::Type> type_value) mutable { return sem_type_to_cpp(context, type_value); }).join(mlc::String(", ", 2)))) + mlc::String(">", 1)); },
 [&](const registry::TPair& tPair) { auto [left, right] = tPair; return ((((mlc::String("std::pair<", 10) + mlc::to_string(sem_type_to_cpp(context, left))) + mlc::String(", ", 2)) + mlc::to_string(sem_type_to_cpp(context, right))) + mlc::String(">", 1)); },
-[&](const registry::TGeneric& tGeneric) { auto [type_name, type_arguments] = tGeneric; return [&]() -> mlc::String {
-  if (((type_name == mlc::String("Option", 6)) && (type_arguments.length() == 1)))   {
-    return ((mlc::String("std::optional<", 14) + mlc::to_string(sem_type_to_cpp(context, type_arguments[0]))) + mlc::String(">", 1));
+[&](const registry::TGeneric& tGeneric) { auto [type_name, type_arguments] = tGeneric; return (((type_name == mlc::String("Option", 6)) && (type_arguments.length() == 1)) ? (((mlc::String("std::optional<", 14) + mlc::to_string(sem_type_to_cpp(context, type_arguments[0]))) + mlc::String(">", 1))) : ([&]() -> mlc::String {
+  if ((type_name == mlc::String("RegionHandle", 12)))   {
+    return mlc::String("mlc::memory::RegionHandle", 25);
   } else   {
-    return (((type_name == mlc::String("RawPointer", 10)) && (type_arguments.length() == 1)) ? (expr::cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))) : ([&]() -> auto {
+    return (((type_name == mlc::String("Region", 6)) && (type_arguments.length() == 2)) ? (expr::cpp_template_single_type_argument(mlc::String("mlc::memory::RegionPtr", 22), sem_type_to_cpp(context, type_arguments[1]))) : ((((type_name == mlc::String("RawPointer", 10)) && (type_arguments.length() == 1)) ? (expr::cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))) : ([&]() -> auto {
   if (((type_name == mlc::String("__ExternFn", 10)) && (type_arguments.length() >= 1)))   {
     return [&]() {
 auto return_type_cpp = sem_type_to_cpp(context, type_arguments[0]);
@@ -89,9 +93,9 @@ return expr::cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv);
   }
 }();
   }
-}()));
+}()))));
   }
-}(); },
+}())); },
 [&](const registry::TFn& tFn) { auto [param_types, return_type] = tFn; return expr::cpp_std_function_type(sem_type_to_cpp(context, return_type), param_types.map([=](std::shared_ptr<registry::Type> type_value) mutable { return sem_type_to_cpp(context, type_value); }).join(mlc::String(", ", 2))); },
 [&](const registry::TAssoc& tAssoc) { auto [param, assoc] = tAssoc; return ((((mlc::String("typename ", 9) + mlc::to_string(cpp_naming::cpp_safe(param))) + mlc::String("::", 2)) + mlc::to_string(assoc)) + mlc::String("", 0)); }
 }, (*semantic_type));

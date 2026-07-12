@@ -10,18 +10,23 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=3 done 2026-07-12) — STEP=4 codegen next
+## Status: **active** (STEP=4 done 2026-07-12) — STEP=5 escape e2e next
 
 ## Next step
 
-**STEP=4** — Codegen: `region` → pmr arena; `r.alloc` → placement-new.
+**STEP=5** — UB-repro negative e2e fixtures (return/closure/field → compile error).
+
+### STEP=4 done (2026-07-12)
+
+- Runtime: `runtime/include/mlc/memory/region.hpp` (`RegionHandle` + `RegionPtr<T>`, pmr + placement new).
+- Codegen: `__region_handle_new` → `mlc::memory::RegionHandle`; `RegionHandle`/`Region` type map; included from `mlc.hpp`.
+- Smoke: `compiler/tests/e2e/region_alloc.mlc` → `RegionHandle()` + `r.alloc(42)`; link+run prints `region_ok`; no `shared_ptr` in TU.
 
 ### STEP=3 done (2026-07-12)
 
 - `region_escape.mlc` + E091: return / closure capture / outer assign / Region field type.
 - Wired in `check.mlc` (`region_escape_diagnostics`, `region_field_type_diagnostics`).
 - Smoke: `mlcc --check-only` ok/alloc green; ret/closure/assign/field → E091.
-- Codegen (STEP=4) and e2e fixtures (STEP=5) not in this turn.
 
 ### STEP=2 done (2026-07-12)
 
@@ -114,7 +119,7 @@ end   // весь буфер r освобождается разом
 | 1 | Parser: `region <name> do ... end` block syntax → AST node (`ExprRegion(name, [Stmt], Span)` parallel to `ExprScope`; reuse `parse_statements_until_end` / keyword dispatch like `scope`) | **done** (2026-07-12) |
 | 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | **done** (2026-07-12) |
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | **done** (2026-07-12) E091 |
-| 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | pending |
+| 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | **done** (2026-07-12) |
 | 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | pending |
 | 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | pending |
 | 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | pending |

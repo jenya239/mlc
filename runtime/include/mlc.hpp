@@ -38,6 +38,7 @@
 #include "mlc/concurrency/job_queue.hpp"
 #include "mlc/concurrency/isolate.hpp"
 #include "mlc/concurrency/supervisor.hpp"
+#include "mlc/memory/region.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

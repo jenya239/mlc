@@ -1,0 +1,7 @@
+fn main() -> i32 = do
+  region r do
+    let value = r.alloc(42)
+    print("region_ok")
+  end
+  0
+end
