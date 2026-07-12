@@ -46,7 +46,7 @@ mlc::String char_literal_printable_codepoint(mlc::String character) noexcept{
   auto printable = (((((((mlc::String(" !\"#$%&'()*+,-./0123456789:;", 28) + mlc::String("<", 1)) + mlc::String("=", 1)) + mlc::String(">", 1)) + mlc::String("?", 1)) + mlc::String("@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_", 32)) + mlc::String("`", 1)) + mlc::String("abcdefghijklmnopqrstuvwxyz{|}~", 30));
   auto found_index = printable.index_of(character);
   if ((found_index >= 0))   {
-    return mlc::to_string(mlc::arith::checked_add(32, found_index));
+    return mlc::to_string((32 + found_index));
   }
   return mlc::String("0", 1);
 }

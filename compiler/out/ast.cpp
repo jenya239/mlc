@@ -182,6 +182,14 @@ if (std::holds_alternative<ExprWith>((*__match_subject))) {
 const ExprWith& exprWith = std::get<ExprWith>((*__match_subject));
 auto [__0, __1, __2, source_span] = exprWith; return source_span;
 }
+if (std::holds_alternative<ExprScope>((*__match_subject))) {
+const ExprScope& exprScope = std::get<ExprScope>((*__match_subject));
+auto [__0, __1, source_span] = exprScope; return source_span;
+}
+if (std::holds_alternative<ExprRegion>((*__match_subject))) {
+const ExprRegion& exprRegion = std::get<ExprRegion>((*__match_subject));
+auto [__0, __1, source_span] = exprRegion; return source_span;
+}
 return span_unknown();
 std::abort();
 }();

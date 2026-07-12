@@ -15,6 +15,9 @@ predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_ref_type(predicate
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type_after_ident_name(predicates::Parser parser, mlc::String name) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_base_type_ident(predicates::Parser parser, mlc::String name) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_base_type(predicates::Parser parser) noexcept;
+bool parser_at_error_union_bang(predicates::Parser parser) noexcept;
+bool parser_starts_type_after_bang(predicates::Parser parser) noexcept;
+predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> apply_error_union_sugar(predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> ok_parsed) noexcept;
 bool parser_at_generic_close(predicates::Parser parser) noexcept;
 predicates::Parser parser_advance_generic_close(predicates::Parser parser) noexcept;
 predicates::ParseResult<mlc::Array<std::shared_ptr<ast::TypeExpr>>> parse_type_args(predicates::Parser parser) noexcept;

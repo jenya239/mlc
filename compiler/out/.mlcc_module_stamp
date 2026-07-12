@@ -1,4 +1,4 @@
-7c72365a7d25bb0b42277bfe7259eaaa9c7e2bc5861f2ebe21a56b5d1b7700b1
+0b778ecb403ac83cc2d467de3c6f63d24d008a6b4d753b82b7306c127d4053d3
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -46,6 +46,9 @@ expr_visitor.cpp
 expr_visitor_cpp.cpp
 expression_support.cpp
 exprs.cpp
+extern_concurrency_lint.cpp
+extern_dedup_lint.cpp
+extern_header_arity_lint.cpp
 format_cli.cpp
 frame.cpp
 hash_stmt_helpers.cpp

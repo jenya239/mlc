@@ -25,6 +25,7 @@ CppParameterParts split_cpp_parameter_string(mlc::String parameter_string) noexc
 mlc::Array<std::shared_ptr<ast::Param>> cpp_parameter_strings_to_params(mlc::Array<mlc::String> parameter_strings) noexcept;
 mlc::Array<std::shared_ptr<ast::Param>> cpp_cpp_parameters_to_mlc_params(mlc::Array<std::shared_ptr<cpp_ast::CppParam>> parameters) noexcept;
 mlc::Array<std::shared_ptr<ast::Decl>> cpp_function_prototype_to_mlc_decls(cpp_ast::CppFunctionPrototype prototype) noexcept;
+mlc::String header_import_extern_marker() noexcept;
 mlc::Array<std::shared_ptr<ast::FieldDef>> cpp_fields_to_field_definitions(mlc::Array<std::shared_ptr<cpp_ast::CppField>> fields) noexcept;
 mlc::Array<std::shared_ptr<ast::TypeVariant>> cpp_enum_arms_to_variants(mlc::Array<std::shared_ptr<cpp_ast::CppVariantArm>> arms) noexcept;
 mlc::String cpp_class_member_field_name(cpp_ast::CppClassMember member) noexcept;

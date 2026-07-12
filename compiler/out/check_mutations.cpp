@@ -52,27 +52,27 @@ MutationCheckResult MutationsPass_visit_question(MutationsPass self, std::shared
 MutationCheckResult MutationsPass_visit_lambda(MutationsPass self, mlc::Array<mlc::String> _parameter_names, std::shared_ptr<semantic_ir::SemanticExpression> body_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept;
 MutationCheckResult MutationsPass_visit_with(MutationsPass self, std::shared_ptr<semantic_ir::SemanticExpression> resource, mlc::String _binder, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept;
 MutationCheckResult MutationsPass_visit_unsupported(MutationsPass self, std::shared_ptr<semantic_ir::SemanticExpression> _expression) noexcept;
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept{
-  return scope.any([=](mlc::String scope_entry) mutable { return (scope_entry == sought_name); });
+bool scope_has(mlc::Array<mlc::String> binding_scope, mlc::String sought_name) noexcept{
+  return binding_scope.any([=](mlc::String scope_entry) mutable { return (scope_entry == sought_name); });
 }
-mlc::Array<mlc::String> mutable_scope_with_binding(mlc::Array<mlc::String> scope, mlc::String binding_name) noexcept{
-  return scope.concat(mlc::Array<mlc::String>{binding_name});
+mlc::Array<mlc::String> mutable_scope_with_binding(mlc::Array<mlc::String> binding_scope, mlc::String binding_name) noexcept{
+  return binding_scope.concat(mlc::Array<mlc::String>{binding_name});
 }
-mlc::Array<mlc::String> mutable_scope_with_bindings(mlc::Array<mlc::String> scope, mlc::Array<mlc::String> binding_names) noexcept{
-  return binding_names.fold(scope, [=](mlc::Array<mlc::String> accumulated_scope, mlc::String binding_name) mutable { return accumulated_scope.concat(mlc::Array<mlc::String>{binding_name}); });
+mlc::Array<mlc::String> mutable_scope_with_bindings(mlc::Array<mlc::String> binding_scope, mlc::Array<mlc::String> binding_names) noexcept{
+  return binding_names.fold(binding_scope, [=](mlc::Array<mlc::String> accumulated_scope, mlc::String binding_name) mutable { return accumulated_scope.concat(mlc::Array<mlc::String>{binding_name}); });
 }
-mlc::Array<mlc::String> mutable_scope_after_let(mlc::Array<mlc::String> scope, mlc::String name, bool is_mut) noexcept{
+mlc::Array<mlc::String> mutable_scope_after_let(mlc::Array<mlc::String> binding_scope, mlc::String name, bool is_mut) noexcept{
   if (is_mut)   {
-    return mutable_scope_with_binding(scope, name);
+    return mutable_scope_with_binding(binding_scope, name);
   } else   {
-    return scope;
+    return binding_scope;
   }
 }
-mlc::Array<mlc::String> mutable_scope_after_pattern_let(mlc::Array<mlc::String> scope, std::shared_ptr<ast::Pattern> pattern, bool is_mut) noexcept{
+mlc::Array<mlc::String> mutable_scope_after_pattern_let(mlc::Array<mlc::String> binding_scope, std::shared_ptr<ast::Pattern> pattern, bool is_mut) noexcept{
   if (is_mut)   {
-    return mutable_scope_with_bindings(scope, names::pattern_bindings(pattern));
+    return mutable_scope_with_bindings(binding_scope, names::pattern_bindings(pattern));
   } else   {
-    return scope;
+    return binding_scope;
   }
 }
 MutationsPass mutations_pass_new(mlc::Array<mlc::String> mutable_locals) noexcept{

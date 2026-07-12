@@ -93,6 +93,8 @@ std::shared_ptr<ast::Expr> statements_result_to_block_expr(predicates::ParseResu
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_while_expr(predicates::Parser parser, ast::Span header_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_for_expr(predicates::Parser parser, ast::Span header_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_with_expr(predicates::Parser parser, ast::Span header_span) noexcept;
+predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_scope_expr(predicates::Parser parser, ast::Span header_span) noexcept;
+predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_region_expr(predicates::Parser parser, ast::Span header_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_match_scrutinee(predicates::Parser parser) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_match_expr(predicates::Parser parser, ast::Span header_span) noexcept;
 predicates::ParseResult<std::shared_ptr<ast::MatchArm>> match_arm_parse_result(std::shared_ptr<ast::MatchArm> arm, predicates::Parser parser) noexcept;

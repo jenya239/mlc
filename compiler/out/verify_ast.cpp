@@ -305,6 +305,28 @@ while ((index < statements.length())) {
 return errors;
 }();
 }
+if (std::holds_alternative<ast::ExprScope>((*__match_subject))) {
+const ast::ExprScope& exprScope = std::get<ast::ExprScope>((*__match_subject));
+auto [__0, statements, __2] = exprScope; return [&]() {
+auto index = 0;
+while ((index < statements.length())) {
+  (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
+  (index = mlc::arith::checked_add(index, 1));
+}
+return errors;
+}();
+}
+if (std::holds_alternative<ast::ExprRegion>((*__match_subject))) {
+const ast::ExprRegion& exprRegion = std::get<ast::ExprRegion>((*__match_subject));
+auto [__0, statements, __2] = exprRegion; return [&]() {
+auto index = 0;
+while ((index < statements.length())) {
+  (errors = verify_ast_append_errors(errors, verify_ast_statement(statements[index])));
+  (index = mlc::arith::checked_add(index, 1));
+}
+return errors;
+}();
+}
 return errors;
 std::abort();
 }();

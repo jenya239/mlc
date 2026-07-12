@@ -299,6 +299,14 @@ return PartialPair{std::make_shared<ast::Expr>(ast::ExprNamedArg{label, inner_pa
 auto resource_pair = partial_application_desugar_inner(resource_expression, serial);
 auto stmts_pair = partial_application_desugar_statements_block(statements, resource_pair.next_serial);
 return PartialPair{std::make_shared<ast::Expr>(ast::ExprWith{resource_pair.expression, binder_name, stmts_pair.statements, span_with}), stmts_pair.next_serial};
+}(); },
+[&](const ast::ExprScope& exprScope) -> PartialPair { auto [binder_name, statements, span_scope] = exprScope; return [&]() {
+auto stmts_pair = partial_application_desugar_statements_block(statements, serial);
+return PartialPair{std::make_shared<ast::Expr>(ast::ExprScope{binder_name, stmts_pair.statements, span_scope}), stmts_pair.next_serial};
+}(); },
+[&](const ast::ExprRegion& exprRegion) -> PartialPair { auto [binder_name, statements, span_region] = exprRegion; return [&]() {
+auto stmts_pair = partial_application_desugar_statements_block(statements, serial);
+return PartialPair{std::make_shared<ast::Expr>(ast::ExprRegion{binder_name, stmts_pair.statements, span_region}), stmts_pair.next_serial};
 }(); }
 }, (*expression));
 }

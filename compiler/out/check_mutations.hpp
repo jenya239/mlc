@@ -21,11 +21,11 @@ struct MutationsPass {
   mlc::Array<mlc::String> mutable_locals;
   int seed;
 };
-bool scope_has(mlc::Array<mlc::String> scope, mlc::String sought_name) noexcept;
-mlc::Array<mlc::String> mutable_scope_with_binding(mlc::Array<mlc::String> scope, mlc::String binding_name) noexcept;
-mlc::Array<mlc::String> mutable_scope_with_bindings(mlc::Array<mlc::String> scope, mlc::Array<mlc::String> binding_names) noexcept;
-mlc::Array<mlc::String> mutable_scope_after_let(mlc::Array<mlc::String> scope, mlc::String name, bool is_mut) noexcept;
-mlc::Array<mlc::String> mutable_scope_after_pattern_let(mlc::Array<mlc::String> scope, std::shared_ptr<ast::Pattern> pattern, bool is_mut) noexcept;
+bool scope_has(mlc::Array<mlc::String> binding_scope, mlc::String sought_name) noexcept;
+mlc::Array<mlc::String> mutable_scope_with_binding(mlc::Array<mlc::String> binding_scope, mlc::String binding_name) noexcept;
+mlc::Array<mlc::String> mutable_scope_with_bindings(mlc::Array<mlc::String> binding_scope, mlc::Array<mlc::String> binding_names) noexcept;
+mlc::Array<mlc::String> mutable_scope_after_let(mlc::Array<mlc::String> binding_scope, mlc::String name, bool is_mut) noexcept;
+mlc::Array<mlc::String> mutable_scope_after_pattern_let(mlc::Array<mlc::String> binding_scope, std::shared_ptr<ast::Pattern> pattern, bool is_mut) noexcept;
 MutationsPass mutations_pass_new(mlc::Array<mlc::String> mutable_locals) noexcept;
 mlc::Array<ast::Diagnostic> mutation_check_empty() noexcept;
 mlc::Array<ast::Diagnostic> ident_assignment_mutation_errors(mlc::String binding_name, mlc::Array<mlc::String> mutable_locals, ast::Span source_span) noexcept;

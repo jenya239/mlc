@@ -329,6 +329,13 @@ fn infer_expr_scope(binder: string, statements: [Shared<Stmt>], inference_contex
   infer_ok(Shared.new(TUnit)).absorb_stmt(statements_parsed)
 end
 
+fn infer_expr_region(binder: string, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+  const region_body_environment = inference_context.type_env
+  region_body_environment.set(binder, Shared.new(TNamed('RegionHandle')))
+  const statements_parsed = infer_statements(statements, check_context_child(inference_context, region_body_environment))
+  infer_ok(Shared.new(TUnit)).absorb_stmt(statements_parsed)
+end
+
 fn infer_expr_for_loop(variable_name: string, iterator: Shared<Expr>, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
   const iterator_base_parsed = infer_expr(iterator, inference_context)
   const iterator_parsed = infer_for_iterator_with_range_rules(iterator_base_parsed, iterator)
@@ -494,6 +501,8 @@ fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> Infer
       infer_pass.visit_spawn(statements),
     ExprScope(binder, statements, _) =>
       infer_pass.visit_scope(binder, statements),
+    ExprRegion(binder, statements, _) =>
+      infer_pass.visit_region(binder, statements),
     _ =>
       infer_pass.visit_unsupported()
   }
@@ -620,6 +629,8 @@ extend InferPass {
     infer_expr_spawn(statements, self.inference_context)
   fn visit_scope(self: InferPass, binder: string, statements: [Shared<Stmt>]) -> InferResult =
     infer_expr_scope(binder, statements, self.inference_context)
+  fn visit_region(self: InferPass, binder: string, statements: [Shared<Stmt>]) -> InferResult =
+    infer_expr_region(binder, statements, self.inference_context)
   fn visit_unsupported(self: InferPass) -> InferResult =
     infer_ok(Shared.new(TUnknown))
 }

@@ -618,15 +618,32 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_postfix(predicates::Pa
   while (go)   {
     auto kind = predicates::Parser_kind(state);
     if (predicates::TokenKind_is_dot(kind))     {
-      auto dot_span = predicates::Parser_span_at_cursor(state);
-      auto field_name = predicates::TokenKind_ident(predicates::Parser_kind(predicates::Parser_advance(state)));
-      if ((predicates::TokenKind_is_lparen(predicates::Parser_kind(predicates::Parser_advance_by(state, 2))) && (predicates::Parser_span_at_cursor(predicates::Parser_advance_by(state, 2)).line == predicates::Parser_span_at_cursor(predicates::Parser_advance_by(state, 1)).line)))       {
-        auto margs = parse_arg_list(predicates::Parser_advance_by(state, 3));
-        (expression = std::make_shared<ast::Expr>(ast::ExprMethod{expression, field_name, margs.value, dot_span}));
-        (state = margs.parser);
+      auto after_dot = predicates::Parser_advance(state);
+      if (predicates::TokenKind_is_spawn(predicates::Parser_kind(after_dot)))       {
+        auto spawn_span = predicates::Parser_span_at_cursor(after_dot);
+        auto after_spawn = predicates::Parser_advance(after_dot);
+        if (predicates::TokenKind_is_do(predicates::Parser_kind(after_spawn)))         {
+          auto body_parsed = parse_statements_until_end(predicates::Parser_advance(after_spawn));
+          auto lambda_body = statements_result_to_block_expr(body_parsed, spawn_span);
+          auto spawn_lambda = std::make_shared<ast::Expr>(ast::ExprLambda{{}, lambda_body, spawn_span});
+          auto spawn_arguments = mlc::Array<std::shared_ptr<ast::Expr>>{spawn_lambda};
+          (expression = std::make_shared<ast::Expr>(ast::ExprMethod{expression, mlc::String("spawn", 5), spawn_arguments, spawn_span}));
+          (state = body_parsed.parser);
+        } else         {
+          auto error_parser = predicates::Parser_record_parse_error(after_spawn, mlc::String("spawn method: expected do", 25));
+          (state = error_parser);
+          (go = false);
+        }
       } else       {
-        (expression = std::make_shared<ast::Expr>(ast::ExprField{expression, field_name, dot_span}));
-        (state = predicates::Parser_advance_by(state, 2));
+        auto field_name = predicates::TokenKind_ident(predicates::Parser_kind(after_dot));
+        if ((predicates::TokenKind_is_lparen(predicates::Parser_kind(predicates::Parser_advance(after_dot))) && (predicates::Parser_span_at_cursor(predicates::Parser_advance(after_dot)).line == predicates::Parser_span_at_cursor(after_dot).line)))         {
+          auto margs = parse_arg_list(predicates::Parser_advance(predicates::Parser_advance(after_dot)));
+          (expression = std::make_shared<ast::Expr>(ast::ExprMethod{expression, field_name, margs.value, predicates::Parser_span_at_cursor(state)}));
+          (state = margs.parser);
+        } else         {
+          (expression = std::make_shared<ast::Expr>(ast::ExprField{expression, field_name, predicates::Parser_span_at_cursor(state)}));
+          (state = predicates::Parser_advance(after_dot));
+        }
       }
     } else if ((predicates::TokenKind_is_lparen(kind) && (predicates::Parser_span_at_cursor(state).line == predicates::Parser_prev_line(state))))     {
       auto call_span = predicates::Parser_span_at_cursor(state);
@@ -861,6 +878,12 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_primary(predicates::Pa
     return parse_primary_spawn(parser);
   } else if (predicates::TokenKind_is_return(kind))   {
     return parse_primary_return_as_block(parser);
+  } else if (((predicates::TokenKind_is_ident(kind) && (predicates::TokenKind_ident(kind) == mlc::String("scope", 5))) && predicates::TokenKind_is_bar(predicates::Parser_kind(predicates::Parser_advance(parser)))))   {
+    auto header_span = predicates::Parser_span_at_cursor(parser);
+    return parse_scope_expr(predicates::Parser_advance(parser), header_span);
+  } else if (((predicates::TokenKind_is_ident(kind) && (predicates::TokenKind_ident(kind) == mlc::String("region", 6))) && predicates::TokenKind_is_ident(predicates::Parser_kind(predicates::Parser_advance(parser)))))   {
+    auto header_span = predicates::Parser_span_at_cursor(parser);
+    return parse_region_expr(predicates::Parser_advance(parser), header_span);
   } else if (predicates::TokenKind_is_ident(kind))   {
     return parse_primary_identifier(parser, predicates::TokenKind_ident(kind));
   } else   {
@@ -1083,6 +1106,38 @@ predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_with_expr(predicates::
   auto body_parsed = parse_statements_until_end(predicates::Parser_advance(predicates::Parser_advance(after_as)));
   auto block_statements = body_parsed.value;
   return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprWith{expression, binder, block_statements, header_span}), body_parsed.parser);
+}
+predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_scope_expr(predicates::Parser parser, ast::Span header_span) noexcept{
+  if ((!predicates::TokenKind_is_bar(predicates::Parser_kind(parser))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(parser, mlc::String("scope: expected |binder|", 24)));
+  }
+  auto after_open_bar = predicates::Parser_advance(parser);
+  if ((!predicates::TokenKind_is_ident(predicates::Parser_kind(after_open_bar))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(after_open_bar, mlc::String("scope: expected binder name", 27)));
+  }
+  auto binder = predicates::TokenKind_ident(predicates::Parser_kind(after_open_bar));
+  auto after_binder = predicates::Parser_advance(after_open_bar);
+  if ((!predicates::TokenKind_is_bar(predicates::Parser_kind(after_binder))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(after_binder, mlc::String("scope: expected closing |", 25)));
+  }
+  auto after_close_bar = predicates::Parser_advance(after_binder);
+  if ((!predicates::TokenKind_is_do(predicates::Parser_kind(after_close_bar))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(after_close_bar, mlc::String("scope: expected do", 18)));
+  }
+  auto body_parsed = parse_statements_until_end(predicates::Parser_advance(after_close_bar));
+  return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprScope{binder, body_parsed.value, header_span}), body_parsed.parser);
+}
+predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_region_expr(predicates::Parser parser, ast::Span header_span) noexcept{
+  if ((!predicates::TokenKind_is_ident(predicates::Parser_kind(parser))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(parser, mlc::String("region: expected binder name", 28)));
+  }
+  auto binder = predicates::TokenKind_ident(predicates::Parser_kind(parser));
+  auto after_binder = predicates::Parser_advance(parser);
+  if ((!predicates::TokenKind_is_do(predicates::Parser_kind(after_binder))))   {
+    return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprUnit{header_span}), predicates::Parser_record_parse_error(after_binder, mlc::String("region: expected do", 19)));
+  }
+  auto body_parsed = parse_statements_until_end(predicates::Parser_advance(after_binder));
+  return predicates::expression_parse_result(std::make_shared<ast::Expr>(ast::ExprRegion{binder, body_parsed.value, header_span}), body_parsed.parser);
 }
 predicates::ParseResult<std::shared_ptr<ast::Expr>> parse_match_scrutinee(predicates::Parser parser) noexcept{
   return parse_comparison_relational(parser);

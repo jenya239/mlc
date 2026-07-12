@@ -56,6 +56,10 @@ infer_result::InferResult infer_explicit_record_literal_field_name_errors(infer_
 infer_result::InferResult infer_expr_binary(mlc::String operation, std::shared_ptr<ast::Expr> left, std::shared_ptr<ast::Expr> right, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_unary(mlc::String operation, std::shared_ptr<ast::Expr> inner_expression, ast::Span source_span, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span method_span, check_context::CheckContext inference_context, std::function<infer_result::InferResult(std::shared_ptr<ast::Expr>, check_context::CheckContext)> infer_expr_fn) noexcept;
+bool type_is_task_scope(std::shared_ptr<registry::Type> type_value) noexcept;
+bool is_task_scope_spawn_method(std::shared_ptr<registry::Type> receiver_type, mlc::String method_name) noexcept;
+template<typename __F4>
+infer_result::InferResult infer_task_scope_spawn_call(infer_result::InferResult object_parsed, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span _method_span, check_context::CheckContext inference_context, __F4 _infer_expr_fn) noexcept;
 infer_result::InferResult infer_expr_field(std::shared_ptr<ast::Expr> object, mlc::String field_name, ast::Span field_source_span, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_index(std::shared_ptr<ast::Expr> object, std::shared_ptr<ast::Expr> index_expression, ast::Span bracket_source_span, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_conditional(std::shared_ptr<ast::Expr> condition, std::shared_ptr<ast::Expr> then_expression, std::shared_ptr<ast::Expr> else_expression, check_context::CheckContext inference_context) noexcept;
@@ -63,6 +67,8 @@ infer_result::InferResult infer_expr_block(mlc::Array<std::shared_ptr<ast::Stmt>
 infer_result::InferResult infer_expr_with(std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_while_loop(std::shared_ptr<ast::Expr> condition, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_spawn(mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
+infer_result::InferResult infer_expr_scope(mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
+infer_result::InferResult infer_expr_region(mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_for_loop(mlc::String variable_name, std::shared_ptr<ast::Expr> iterator, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept;
 infer_result::InferResult infer_expr_record_update(mlc::String type_name, std::shared_ptr<ast::Expr> base, mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, check_context::CheckContext inference_context) noexcept;
 Infer_tuple_literal_fold_state infer_tuple_literal_element_fold_step(Infer_tuple_literal_fold_state state, std::shared_ptr<ast::Expr> tuple_element, check_context::CheckContext inference_context) noexcept;
@@ -105,6 +111,8 @@ infer_result::InferResult InferPass_visit_lambda(InferPass self, mlc::Array<mlc:
 infer_result::InferResult InferPass_visit_named_arg(InferPass self, std::shared_ptr<ast::Expr> inner_expression) noexcept;
 infer_result::InferResult InferPass_visit_with(InferPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_spawn(InferPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_scope(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_unsupported(InferPass self) noexcept;
 infer_result::InferResult infer_expr(std::shared_ptr<ast::Expr> expression, check_context::CheckContext inference_context) noexcept;
 Record_literal_spread_inference_fold_state accumulate_record_literal_spread_inference_for_literal_part(Record_literal_spread_inference_fold_state fold_state, ast::RecordLitPart literal_part_under_inference, check_context::CheckContext inference_context) noexcept;
@@ -143,7 +151,14 @@ infer_result::InferResult InferPass_visit_lambda(InferPass self, mlc::Array<mlc:
 infer_result::InferResult InferPass_visit_named_arg(InferPass self, std::shared_ptr<ast::Expr> inner_expression) noexcept;
 infer_result::InferResult InferPass_visit_with(InferPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_spawn(InferPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_scope(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_unsupported(InferPass self) noexcept;
+template<typename __F4>
+infer_result::InferResult infer_task_scope_spawn_call(infer_result::InferResult object_parsed, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, ast::Span _method_span, check_context::CheckContext inference_context, __F4 _infer_expr_fn) noexcept{
+  auto with_arguments = infer_arguments_errors(object_parsed, method_arguments, inference_context);
+  return infer_result::InferResult_with_type(with_arguments, std::make_shared<registry::Type>(registry::TUnit{}));
+}
 
 } // namespace infer
 

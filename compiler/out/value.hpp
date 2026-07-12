@@ -10,7 +10,10 @@ struct VmFieldI32;
 struct VmFieldBool;
 struct VmFieldString;
 struct VmFieldVariant;
-using VmFieldSlot = std::variant<VmFieldI32, VmFieldBool, VmFieldString, VmFieldVariant>;
+struct VmFieldRecord;
+struct VmFieldArray;
+struct VmFieldMap;
+using VmFieldSlot = std::variant<VmFieldI32, VmFieldBool, VmFieldString, VmFieldVariant, VmFieldRecord, VmFieldArray, VmFieldMap>;
 struct VmI32;
 struct VmBool;
 struct VmString;
@@ -21,11 +24,11 @@ struct VmRecord;
 struct VmUnit;
 using VmValue = std::variant<VmI32, VmBool, VmString, VmArray, VmMap, VmVariant, VmRecord, VmUnit>;
 struct VmArrayValue {
-  mlc::Array<int> integer_elements;
+  mlc::Array<VmFieldSlot> elements;
 };
 struct VmMapValue {
   mlc::Array<mlc::String> keys;
-  mlc::Array<int> integer_values;
+  mlc::Array<VmFieldSlot> values;
   int entry_count;
 };
 struct VmVariantValue {
@@ -48,6 +51,15 @@ struct VmFieldString {
 };
 struct VmFieldVariant {
   std::shared_ptr<VmVariantValue> field0;
+};
+struct VmFieldRecord {
+  std::shared_ptr<VmRecordValue> field0;
+};
+struct VmFieldArray {
+  std::shared_ptr<VmArrayValue> field0;
+};
+struct VmFieldMap {
+  std::shared_ptr<VmMapValue> field0;
 };
 struct VmI32 {
   int field0;

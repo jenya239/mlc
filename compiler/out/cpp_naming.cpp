@@ -86,6 +86,8 @@ mlc::String map_builtin(mlc::String name) noexcept{
     return mlc::String("mlc::io::read_all", 17);
   } else if ((name == mlc::String("spawn_task", 10)))   {
     return mlc::String("mlc::concurrency::spawn_task", 28);
+  } else if ((name == mlc::String("__task_scope_new", 16)))   {
+    return mlc::String("mlc::concurrency::TaskScope", 27);
   } else if ((name == mlc::String("make_channel", 12)))   {
     return mlc::String("mlc::concurrency::make_channel", 30);
   } else if ((name == mlc::String("is_ready", 8)))   {

@@ -54,7 +54,7 @@ std::abort();
 auto __match_subject = right;
 if (std::holds_alternative<value::VmArray>(__match_subject)) {
 const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
-auto [right_array] = vmArray; return (left_array.integer_elements.length() == right_array.integer_elements.length());
+auto [right_array] = vmArray; return (left_array.elements.length() == right_array.elements.length());
 }
 return false;
 std::abort();

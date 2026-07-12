@@ -188,6 +188,8 @@ fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkSt
       }
     end,
     ExprScope(_, body, _) =>
+      move_check_stmts(body, moved),
+    ExprRegion(_, body, _) =>
       move_check_stmts(body, moved)
   }
 

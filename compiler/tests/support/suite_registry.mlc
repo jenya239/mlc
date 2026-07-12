@@ -24,6 +24,7 @@ import { mir_bootstrap_report_tests } from '../test_mir_bootstrap_report'
 import { mir_interpreter_tests } from '../test_mir_interpreter'
 import { mir_vm_smoke_tests } from '../test_mir_vm_smoke'
 import { spawn_tests } from '../test_spawn'
+import { region_tests } from '../test_region'
 import { channel_syntax_tests } from '../test_channel_syntax'
 import { arc_syntax_tests } from '../test_arc_syntax'
 import { raw_pointer_syntax_tests } from '../test_raw_pointer_syntax'
@@ -144,6 +145,7 @@ export fn integration_suite_results() -> [TestResult] = do
   results = append_suite_results(results, mir_interpreter_tests())
   results = append_suite_results(results, mir_vm_smoke_tests())
   results = append_suite_results(results, spawn_tests())
+  results = append_suite_results(results, region_tests())
   results = append_suite_results(results, channel_syntax_tests())
   results = append_suite_results(results, arc_syntax_tests())
   results = append_suite_results(results, raw_pointer_syntax_tests())

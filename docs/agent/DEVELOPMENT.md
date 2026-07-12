@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_REGION_ARENA` active** — STEP=1 (`ExprRegion` parser) next.
-See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
+**`TRACK_LANG_REGION_ARENA` active** — STEP=1 done; STEP=2+ after
+`TRACK_TEXT_GL_PERF_BASELINE`. See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)
 

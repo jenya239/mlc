@@ -295,12 +295,12 @@ auto __match_subject = arguments[0];
 if (std::holds_alternative<value::VmArray>(__match_subject)) {
 const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
 auto [array] = vmArray; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
-[&](const ast::Ok<int>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [element] = ok; return [&]() {
-auto integer_elements = array.integer_elements;
-integer_elements.push_back(element);
-return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{integer_elements}}};
+[&](const ast::Ok<value::VmFieldSlot>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [slot] = ok; return [&]() {
+auto elements = array.elements;
+elements.push_back(slot);
+return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{elements}}};
 }(); }
-}, vm_native_value_as_i32(arguments[1]));
+}, value::vm_field_slot_from_value(arguments[1]));
 }
 return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_array_push expects array", 34)}};
 std::abort();
@@ -316,18 +316,18 @@ auto __match_subject = arguments[0];
 if (std::holds_alternative<value::VmArray>(__match_subject)) {
 const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
 auto [array] = vmArray; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
-  if ((array.integer_elements.length() == 0))   {
+  if ((array.elements.length() == 0))   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: pop from empty array", 24)}};
   } else   {
     return [&]() {
-auto integer_elements = mlc::Array<int>{};
+auto elements = mlc::Array<value::VmFieldSlot>{};
 auto index = 0;
-auto last = mlc::arith::checked_sub(array.integer_elements.length(), 1);
+auto last = mlc::arith::checked_sub(array.elements.length(), 1);
 while ((index < last)) {
-  integer_elements.push_back(array.integer_elements[index]);
+  elements.push_back(array.elements[index]);
   (index = mlc::arith::checked_add(index, 1));
 }
-return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{integer_elements}}};
+return ast::Ok<value::VmValue>{value::VmArray{value::VmArrayValue{elements}}};
 }();
   }
 }();
@@ -345,7 +345,7 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_length(mlc:
 auto __match_subject = arguments[0];
 if (std::holds_alternative<value::VmArray>(__match_subject)) {
 const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
-auto [array] = vmArray; return ast::Ok<value::VmValue>{value::VmI32{array.integer_elements.length()}};
+auto [array] = vmArray; return ast::Ok<value::VmValue>{value::VmI32{array.elements.length()}};
 }
 return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_array_length expects array", 36)}};
 std::abort();
@@ -353,8 +353,8 @@ std::abort();
   }
 }
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_array_at(value::VmArrayValue array, int index) noexcept{
-  if (((index >= 0) && (index < array.integer_elements.length())))   {
-    return ast::Ok<value::VmValue>{value::VmI32{array.integer_elements[index]}};
+  if (((index >= 0) && (index < array.elements.length())))   {
+    return ast::Ok<value::VmValue>{value::vm_value_from_field_slot(array.elements[index])};
   } else   {
     return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: array index out of bounds", 29)}};
   }
@@ -393,14 +393,14 @@ int vm_native_map_find_key_index(mlc::Array<mlc::String> keys, mlc::String key) 
   }
   return (-1);
 }
-mlc::Array<int> vm_native_map_replace_value(mlc::Array<int> integer_values, int index, int value) noexcept{
-  auto rebuilt = mlc::Array<int>{};
+mlc::Array<value::VmFieldSlot> vm_native_map_replace_slot(mlc::Array<value::VmFieldSlot> values, int index, value::VmFieldSlot slot) noexcept{
+  auto rebuilt = mlc::Array<value::VmFieldSlot>{};
   auto position = 0;
-  while ((position < integer_values.length()))   {
+  while ((position < values.length()))   {
     if ((position == index))     {
-      rebuilt.push_back(value);
+      rebuilt.push_back(slot);
     } else     {
-      rebuilt.push_back(integer_values[position]);
+      rebuilt.push_back(values[position]);
     }
     (position = mlc::arith::checked_add(position, 1));
   }
@@ -409,21 +409,21 @@ mlc::Array<int> vm_native_map_replace_value(mlc::Array<int> integer_values, int 
 value::VmValue vm_native_map_lookup(value::VmMapValue map_value, mlc::String key) noexcept{
   auto existing_index = vm_native_map_find_key_index(map_value.keys, key);
   if ((existing_index >= 0))   {
-    return value::VmI32{map_value.integer_values[existing_index]};
+    return value::vm_value_from_field_slot(map_value.values[existing_index]);
   } else   {
     return value::VmI32{0};
   }
 }
-value::VmValue vm_native_map_insert_value(value::VmMapValue map_value, mlc::String key, int integer_value) noexcept{
+value::VmValue vm_native_map_insert_slot(value::VmMapValue map_value, mlc::String key, value::VmFieldSlot slot) noexcept{
   auto keys = map_value.keys;
-  auto integer_values = map_value.integer_values;
+  auto values = map_value.values;
   keys.push_back(key);
-  integer_values.push_back(integer_value);
-  return value::VmMap{value::VmMapValue{keys, integer_values, mlc::arith::checked_add(map_value.entry_count, 1)}};
+  values.push_back(slot);
+  return value::VmMap{value::VmMapValue{keys, values, mlc::arith::checked_add(map_value.entry_count, 1)}};
 }
-value::VmValue vm_native_map_update_value(value::VmMapValue map_value, mlc::String key, int integer_value) noexcept{
+value::VmValue vm_native_map_update_slot(value::VmMapValue map_value, mlc::String key, value::VmFieldSlot slot) noexcept{
   auto existing_index = vm_native_map_find_key_index(map_value.keys, key);
-  return value::VmMap{value::VmMapValue{map_value.keys, vm_native_map_replace_value(map_value.integer_values, existing_index, integer_value), map_value.entry_count}};
+  return value::VmMap{value::VmMapValue{map_value.keys, vm_native_map_replace_slot(map_value.values, existing_index, slot), map_value.entry_count}};
 }
 ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_map_set(mlc::Array<value::VmValue> arguments) noexcept{
   if ((arguments.length() != 3))   {
@@ -438,14 +438,14 @@ auto __match_subject = arguments[1];
 if (std::holds_alternative<value::VmString>(__match_subject)) {
 const value::VmString& vmString = std::get<value::VmString>(__match_subject);
 auto [key] = vmString; return std::visit(overloaded{[&](const ast::Err<mlc::Array<mlc::String>>& err) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [errors] = err; return ast::Err<mlc::Array<mlc::String>>{errors}; },
-[&](const ast::Ok<int>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [integer_value] = ok; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
+[&](const ast::Ok<value::VmFieldSlot>& ok) -> ast::Result<value::VmValue, mlc::Array<mlc::String>> { auto [slot] = ok; return [&]() -> ast::Result<value::VmValue, mlc::Array<mlc::String>> {
   if ((vm_native_map_find_key_index(map_value.keys, key) >= 0))   {
-    return ast::Ok<value::VmValue>{vm_native_map_update_value(map_value, key, integer_value)};
+    return ast::Ok<value::VmValue>{vm_native_map_update_slot(map_value, key, slot)};
   } else   {
-    return ast::Ok<value::VmValue>{vm_native_map_insert_value(map_value, key, integer_value)};
+    return ast::Ok<value::VmValue>{vm_native_map_insert_slot(map_value, key, slot)};
   }
 }(); }
-}, vm_native_value_as_i32(arguments[2]));
+}, value::vm_field_slot_from_value(arguments[2]));
 }
 return ast::Err<mlc::Array<mlc::String>>{mlc::Array<mlc::String>{mlc::String("vm: __mir_map_set expects string key", 36)}};
 std::abort();
@@ -595,7 +595,7 @@ ast::Result<value::VmValue, mlc::Array<mlc::String>> vm_native_collection_length
 auto __match_subject = arguments[0];
 if (std::holds_alternative<value::VmArray>(__match_subject)) {
 const value::VmArray& vmArray = std::get<value::VmArray>(__match_subject);
-auto [array] = vmArray; return ast::Ok<value::VmValue>{value::VmI32{array.integer_elements.length()}};
+auto [array] = vmArray; return ast::Ok<value::VmValue>{value::VmI32{array.elements.length()}};
 }
 if (std::holds_alternative<value::VmMap>(__match_subject)) {
 const value::VmMap& vmMap = std::get<value::VmMap>(__match_subject);

@@ -16,7 +16,7 @@ struct SpawnCaptureStmtWalkState {
 };
 struct SpawnCaptureMutableWalkState {
   mlc::Array<ast::Diagnostic> diagnostics;
-  mlc::Array<mlc::String> scope;
+  mlc::Array<mlc::String> binding_scope;
   mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment;
 };
 struct SpawnCaptureContext {
@@ -30,6 +30,7 @@ mlc::Array<mlc::String> names_add(mlc::Array<mlc::String> names, mlc::String nam
 mlc::Array<mlc::String> names_add_all(mlc::Array<mlc::String> names, mlc::Array<mlc::String> additions) noexcept;
 mlc::Array<ast::Diagnostic> empty_diagnostics() noexcept;
 ast::Diagnostic mutable_capture_diagnostic(mlc::String binding_name, ast::Span source_span) noexcept;
+ast::Diagnostic bare_spawn_diagnostic(ast::Span source_span) noexcept;
 bool type_annotation_is_elided(std::shared_ptr<ast::TypeExpr> type_expression) noexcept;
 std::shared_ptr<registry::Type> type_hint_from_value(std::shared_ptr<ast::Expr> value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
 std::shared_ptr<registry::Type> resolve_binding_type(std::shared_ptr<ast::TypeExpr> type_expression, std::shared_ptr<ast::Expr> value, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
@@ -48,9 +49,16 @@ mlc::Array<ast::Diagnostic> walk_spawn_sites_in_expr_list(mlc::Array<std::shared
 mlc::Array<ast::Diagnostic> walk_spawn_sites_in_field_values(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, mlc::Array<mlc::String> mutable_scope, SpawnCaptureContext capture_context) noexcept;
 mlc::Array<ast::Diagnostic> walk_spawn_sites_in_record_parts(mlc::Array<ast::RecordLitPart> parts, mlc::Array<mlc::String> mutable_scope, SpawnCaptureContext capture_context) noexcept;
 mlc::Array<ast::Diagnostic> walk_spawn_sites_in_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, mlc::Array<mlc::String> mutable_scope, SpawnCaptureContext capture_context) noexcept;
-SpawnCaptureMutableWalkState apply_statement_to_mutable_scope(std::shared_ptr<ast::Stmt> statement, mlc::Array<mlc::String> scope, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
+SpawnCaptureMutableWalkState apply_statement_to_mutable_scope(std::shared_ptr<ast::Stmt> statement, mlc::Array<mlc::String> binding_scope, mlc::HashMap<mlc::String, std::shared_ptr<registry::Type>> type_environment, registry::TypeRegistry registry) noexcept;
 SpawnCaptureMutableWalkState walk_spawn_sites_in_stmts_state(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> mutable_scope, SpawnCaptureContext capture_context) noexcept;
 mlc::Array<ast::Diagnostic> walk_spawn_sites_in_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> mutable_scope, SpawnCaptureContext capture_context) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_expr_list(mlc::Array<std::shared_ptr<ast::Expr>> expressions, bool value_discarded) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_field_values(mlc::Array<std::shared_ptr<ast::FieldVal>> field_values, bool value_discarded) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_record_parts(mlc::Array<ast::RecordLitPart> parts, bool value_discarded) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_match_arms(mlc::Array<std::shared_ptr<ast::MatchArm>> arms, bool value_discarded) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_statement_diagnostics(std::shared_ptr<ast::Stmt> statement, bool statement_value_discarded) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, bool last_provides_value) noexcept;
+mlc::Array<ast::Diagnostic> bare_spawn_diagnostics_in_expr(std::shared_ptr<ast::Expr> expression, bool value_discarded) noexcept;
 mlc::Array<ast::Diagnostic> spawn_mutable_capture_diagnostics(mlc::Array<std::shared_ptr<ast::Param>> parameters, std::shared_ptr<ast::Expr> body, registry::TypeRegistry registry) noexcept;
 
 } // namespace spawn_capture

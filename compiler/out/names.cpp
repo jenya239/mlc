@@ -54,8 +54,8 @@ NameCheckResult NamesPass_visit_question(NamesPass self, std::shared_ptr<semanti
 NameCheckResult NamesPass_visit_lambda(NamesPass self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<semantic_ir::SemanticExpression> body_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept;
 NameCheckResult NamesPass_visit_with(NamesPass self, std::shared_ptr<semantic_ir::SemanticExpression> resource, mlc::String binder, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept;
 NameCheckResult NamesPass_visit_unsupported(NamesPass self, std::shared_ptr<semantic_ir::SemanticExpression> _expression) noexcept;
-bool scope_contains(mlc::Array<mlc::String> scope, mlc::String name) noexcept{
-  return scope.any([=](mlc::String scope_entry) mutable { return (scope_entry == name); });
+bool scope_contains(mlc::Array<mlc::String> binding_scope, mlc::String name) noexcept{
+  return binding_scope.any([=](mlc::String scope_entry) mutable { return (scope_entry == name); });
 }
 mlc::Array<mlc::String> pattern_bindings(std::shared_ptr<ast::Pattern> pattern) noexcept{
   auto empty_pattern_bindings = mlc::Array<mlc::String>{};
@@ -152,8 +152,8 @@ mlc::Array<ast::Diagnostic> check_names_empty() noexcept{
 mlc::Array<mlc::String> append_binding_name_to_scope(mlc::Array<mlc::String> accumulated_scope, mlc::String binding_name) noexcept{
   return accumulated_scope.concat(mlc::Array<mlc::String>{binding_name});
 }
-mlc::Array<mlc::String> scope_with_bindings(mlc::Array<mlc::String> scope, mlc::Array<mlc::String> binding_names) noexcept{
-  return binding_names.fold(scope, append_binding_name_to_scope);
+mlc::Array<mlc::String> scope_with_bindings(mlc::Array<mlc::String> binding_scope, mlc::Array<mlc::String> binding_names) noexcept{
+  return binding_names.fold(binding_scope, append_binding_name_to_scope);
 }
 mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept;
 NameCheckResult NameCheckResult_append_diagnostics(NameCheckResult self, mlc::Array<ast::Diagnostic> extra_diagnostics) noexcept;
@@ -163,19 +163,19 @@ mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(NameCh
 return ast::diagnostics_append(self.diagnostics, expression_diagnostics);
 }
 NameCheckResult NameCheckResult_append_diagnostics(NameCheckResult self, mlc::Array<ast::Diagnostic> extra_diagnostics) noexcept{
-return NameCheckResult{ast::diagnostics_append(self.diagnostics, extra_diagnostics), self.scope};
+return NameCheckResult{ast::diagnostics_append(self.diagnostics, extra_diagnostics), self.binding_scope};
 }
 NameCheckResult NameCheckResult_with_scope(NameCheckResult self, mlc::Array<mlc::String> new_scope) noexcept{
 return NameCheckResult{self.diagnostics, new_scope};
 }
 NameCheckResult NameCheckResult_merge(NameCheckResult self, NameCheckResult other) noexcept{
-return NameCheckResult{ast::diagnostics_append(self.diagnostics, other.diagnostics), other.scope};
+return NameCheckResult{ast::diagnostics_append(self.diagnostics, other.diagnostics), other.binding_scope};
 }
 NamesPass names_pass_new(mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
   return NamesPass{locals, globals, 0};
 }
-NameCheckResult name_check_ok(mlc::Array<mlc::String> scope) noexcept{
-  return NameCheckResult{check_names_empty(), scope};
+NameCheckResult name_check_ok(mlc::Array<mlc::String> binding_scope) noexcept{
+  return NameCheckResult{check_names_empty(), binding_scope};
 }
 NameCheckResult merge_name_check_results(NameCheckResult first, NameCheckResult second) noexcept{
   return NameCheckResult_merge(first, second);
@@ -231,9 +231,9 @@ NameCheckResult check_names_semantic_elements(mlc::Array<std::shared_ptr<semanti
   return accumulator;
 }
 NameCheckResult check_names_semantic_statements(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
-  return statements.fold(NameCheckResult{{}, locals}, [=](NameCheckResult accumulator, std::shared_ptr<semantic_ir::SemanticStatement> statement_under_walk) mutable { return std::visit(overloaded{[&](const semantic_ir::SemanticStatementLet& semanticStatementLet) -> NameCheckResult { auto [name, __1, value, __3, __4] = semanticStatementLet; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.scope, globals)), accumulator.scope.concat(mlc::Array<mlc::String>{name})}; },
+  return statements.fold(NameCheckResult{{}, locals}, [=](NameCheckResult accumulator, std::shared_ptr<semantic_ir::SemanticStatement> statement_under_walk) mutable { return std::visit(overloaded{[&](const semantic_ir::SemanticStatementLet& semanticStatementLet) -> NameCheckResult { auto [name, __1, value, __3, __4] = semanticStatementLet; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.binding_scope, globals)), accumulator.binding_scope.concat(mlc::Array<mlc::String>{name})}; },
 [&](const semantic_ir::SemanticStatementLetPattern& semanticStatementLetPattern) -> NameCheckResult { auto [pattern, __1, value, __3, has_else, else_body, __6] = semanticStatementLetPattern; return [&]() {
-auto scope_after_value = accumulator.scope;
+auto scope_after_value = accumulator.binding_scope;
 auto diagnostics_after_pattern = ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, scope_after_value, globals));
 auto scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern));
 if (has_else) {
@@ -241,9 +241,9 @@ if (has_else) {
 }
 return NameCheckResult{diagnostics_after_pattern, scope_after_bindings};
 }(); },
-[&](const semantic_ir::SemanticStatementLetConst& semanticStatementLetConst) -> NameCheckResult { auto [name, value, __2, __3] = semanticStatementLetConst; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.scope, globals)), accumulator.scope.concat(mlc::Array<mlc::String>{name})}; },
-[&](const semantic_ir::SemanticStatementExpr& semanticStatementExpr) -> NameCheckResult { auto [expression, __1] = semanticStatementExpr; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.scope, globals)), accumulator.scope}; },
-[&](const semantic_ir::SemanticStatementReturn& semanticStatementReturn) -> NameCheckResult { auto [expression, __1] = semanticStatementReturn; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.scope, globals)), accumulator.scope}; },
+[&](const semantic_ir::SemanticStatementLetConst& semanticStatementLetConst) -> NameCheckResult { auto [name, value, __2, __3] = semanticStatementLetConst; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(value, accumulator.binding_scope, globals)), accumulator.binding_scope.concat(mlc::Array<mlc::String>{name})}; },
+[&](const semantic_ir::SemanticStatementExpr& semanticStatementExpr) -> NameCheckResult { auto [expression, __1] = semanticStatementExpr; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.binding_scope, globals)), accumulator.binding_scope}; },
+[&](const semantic_ir::SemanticStatementReturn& semanticStatementReturn) -> NameCheckResult { auto [expression, __1] = semanticStatementReturn; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_semantic_expression(expression, accumulator.binding_scope, globals)), accumulator.binding_scope}; },
 [&](const semantic_ir::SemanticStatementBreak& semanticStatementBreak) -> NameCheckResult { auto [__0] = semanticStatementBreak; return accumulator; },
 [&](const semantic_ir::SemanticStatementContinue& semanticStatementContinue) -> NameCheckResult { auto [__0] = semanticStatementContinue; return accumulator; }
 }, (*statement_under_walk)); });
@@ -364,7 +364,7 @@ return merge_name_check_results(dispatch_names_pass(self, condition), merge_name
 }
 NameCheckResult NamesPass_visit_block(NamesPass self, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<semantic_ir::SemanticExpression> result_expression, std::shared_ptr<registry::Type> _semantic_type) noexcept{
 auto statements_check = check_names_semantic_statements(statements, self.locals, self.globals);
-auto result_check = dispatch_names_pass(names_pass_new(statements_check.scope, self.globals), result_expression);
+auto result_check = dispatch_names_pass(names_pass_new(statements_check.binding_scope, self.globals), result_expression);
 return NameCheckResult_merge(statements_check, result_check);
 }
 NameCheckResult NamesPass_visit_while(NamesPass self, std::shared_ptr<semantic_ir::SemanticExpression> condition, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, std::shared_ptr<registry::Type> _semantic_type) noexcept{
@@ -435,9 +435,9 @@ mlc::Array<ast::Diagnostic> check_names_expr(std::shared_ptr<ast::Expr> expressi
   return check_names_semantic_expression(transform_parser_expression_for_names(expression), locals, globals);
 }
 NameCheckResult check_names_statements(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept{
-  return statements.fold(NameCheckResult{{}, locals}, [=](NameCheckResult accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{[&](const ast::StmtLet& stmtLet) -> NameCheckResult { auto [name, __1, __2, value, __4] = stmtLet; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)), accumulator.scope.concat(mlc::Array<mlc::String>{name})}; },
+  return statements.fold(NameCheckResult{{}, locals}, [=](NameCheckResult accumulator, std::shared_ptr<ast::Stmt> statement_under_walk) mutable { return std::visit(overloaded{[&](const ast::StmtLet& stmtLet) -> NameCheckResult { auto [name, __1, __2, value, __4] = stmtLet; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.binding_scope, globals)), accumulator.binding_scope.concat(mlc::Array<mlc::String>{name})}; },
 [&](const ast::StmtLetPattern& stmtLetPattern) -> NameCheckResult { auto [pattern, __1, __2, value, has_else, else_body, __6] = stmtLetPattern; return [&]() {
-auto scope_after_value = accumulator.scope;
+auto scope_after_value = accumulator.binding_scope;
 auto diagnostics_after_pattern = ast::diagnostics_append(accumulator.diagnostics, check_names_expr(value, scope_after_value, globals));
 auto scope_after_bindings = scope_with_bindings(scope_after_value, pattern_bindings(pattern));
 if (has_else) {
@@ -445,9 +445,9 @@ if (has_else) {
 }
 return NameCheckResult{diagnostics_after_pattern, scope_after_bindings};
 }(); },
-[&](const ast::StmtLetConst& stmtLetConst) -> NameCheckResult { auto [name, __1, value, __3] = stmtLetConst; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.scope, globals)), accumulator.scope.concat(mlc::Array<mlc::String>{name})}; },
-[&](const ast::StmtExpr& stmtExpr) -> NameCheckResult { auto [expression, __1] = stmtExpr; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)), accumulator.scope}; },
-[&](const ast::StmtReturn& stmtReturn) -> NameCheckResult { auto [expression, __1] = stmtReturn; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.scope, globals)), accumulator.scope}; },
+[&](const ast::StmtLetConst& stmtLetConst) -> NameCheckResult { auto [name, __1, value, __3] = stmtLetConst; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(value, accumulator.binding_scope, globals)), accumulator.binding_scope.concat(mlc::Array<mlc::String>{name})}; },
+[&](const ast::StmtExpr& stmtExpr) -> NameCheckResult { auto [expression, __1] = stmtExpr; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.binding_scope, globals)), accumulator.binding_scope}; },
+[&](const ast::StmtReturn& stmtReturn) -> NameCheckResult { auto [expression, __1] = stmtReturn; return NameCheckResult{ast::diagnostics_append(accumulator.diagnostics, check_names_expr(expression, accumulator.binding_scope, globals)), accumulator.binding_scope}; },
 [&](const ast::StmtBreak& stmtBreak) -> NameCheckResult { auto [__0] = stmtBreak; return accumulator; },
 [&](const ast::StmtContinue& stmtContinue) -> NameCheckResult { auto [__0] = stmtContinue; return accumulator; }
 }, (*statement_under_walk)); });

@@ -125,6 +125,7 @@ export type Expr =
   | ExprNamedArg(string, Shared<Expr>, Span)
   | ExprWith(Shared<Expr>, string, [Shared<Stmt>], Span)
   | ExprScope(string, [Shared<Stmt>], Span)
+  | ExprRegion(string, [Shared<Stmt>], Span)
 
 export fn expr_span(expression: Shared<Expr>) -> Span =
   match expression {
@@ -160,6 +161,7 @@ export fn expr_span(expression: Shared<Expr>) -> Span =
     ExprNamedArg(_, _, source_span) => source_span,
     ExprWith(_, _, _, source_span)  => source_span,
     ExprScope(_, _, source_span)    => source_span,
+    ExprRegion(_, _, source_span)   => source_span,
     _                               => span_unknown()
   }
 

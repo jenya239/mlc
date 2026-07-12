@@ -14,14 +14,14 @@ namespace names {
 
 struct NameCheckResult {
   mlc::Array<ast::Diagnostic> diagnostics;
-  mlc::Array<mlc::String> scope;
+  mlc::Array<mlc::String> binding_scope;
 };
 struct NamesPass {
   mlc::Array<mlc::String> locals;
   mlc::HashMap<mlc::String, bool> globals;
   int seed;
 };
-bool scope_contains(mlc::Array<mlc::String> scope, mlc::String name) noexcept;
+bool scope_contains(mlc::Array<mlc::String> binding_scope, mlc::String name) noexcept;
 mlc::Array<mlc::String> pattern_bindings(std::shared_ptr<ast::Pattern> pattern) noexcept;
 mlc::Array<mlc::String> collect_pattern_bindings_fold_step(mlc::Array<mlc::String> accumulator, std::shared_ptr<ast::Pattern> sub_pattern) noexcept;
 mlc::Array<mlc::String> collect_pattern_array_bindings(mlc::Array<std::shared_ptr<ast::Pattern>> sub_patterns, mlc::String rest, mlc::Array<mlc::String> bindings_so_far) noexcept;
@@ -34,13 +34,13 @@ mlc::Array<mlc::String> collect_pattern_bindings(std::shared_ptr<ast::Pattern> p
 mlc::Array<ast::Diagnostic> check_names_identifier(mlc::String name, mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals, ast::Span source_span) noexcept;
 mlc::Array<ast::Diagnostic> check_names_empty() noexcept;
 mlc::Array<mlc::String> append_binding_name_to_scope(mlc::Array<mlc::String> accumulated_scope, mlc::String binding_name) noexcept;
-mlc::Array<mlc::String> scope_with_bindings(mlc::Array<mlc::String> scope, mlc::Array<mlc::String> binding_names) noexcept;
+mlc::Array<mlc::String> scope_with_bindings(mlc::Array<mlc::String> binding_scope, mlc::Array<mlc::String> binding_names) noexcept;
 mlc::Array<ast::Diagnostic> NameCheckResult_append_expression_diagnostics(NameCheckResult self, mlc::Array<ast::Diagnostic> expression_diagnostics) noexcept;
 NameCheckResult NameCheckResult_append_diagnostics(NameCheckResult self, mlc::Array<ast::Diagnostic> extra_diagnostics) noexcept;
 NameCheckResult NameCheckResult_with_scope(NameCheckResult self, mlc::Array<mlc::String> new_scope) noexcept;
 NameCheckResult NameCheckResult_merge(NameCheckResult self, NameCheckResult other) noexcept;
 NamesPass names_pass_new(mlc::Array<mlc::String> locals, mlc::HashMap<mlc::String, bool> globals) noexcept;
-NameCheckResult name_check_ok(mlc::Array<mlc::String> scope) noexcept;
+NameCheckResult name_check_ok(mlc::Array<mlc::String> binding_scope) noexcept;
 NameCheckResult merge_name_check_results(NameCheckResult first, NameCheckResult second) noexcept;
 NameCheckResult dispatch_names_pass(NamesPass names_pass, std::shared_ptr<semantic_ir::SemanticExpression> expression) noexcept;
 NameCheckResult check_names_semantic_field_values(mlc::Array<std::shared_ptr<semantic_ir::SemanticFieldVal>> field_values, NamesPass names_pass) noexcept;

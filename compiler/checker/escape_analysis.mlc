@@ -204,6 +204,8 @@ fn visit_expr(expression: Shared<Expr>, watched: [string], escaping: [string]) -
     ExprWith(resource, _, body, _) =>
       visit_stmt_list(body, watched, visit_expr(resource, watched, escaping)),
     ExprScope(_, body, _) =>
+      visit_stmt_list(body, watched, escaping),
+    ExprRegion(_, body, _) =>
       visit_stmt_list(body, watched, escaping)
   }
 
@@ -361,6 +363,8 @@ fn collect_idents_used_as_values_in_expr(expression: Shared<Expr>, names: [strin
     ExprWith(resource, _, body, _) =>
       collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names)),
     ExprScope(_, body, _) =>
+      collect_idents_used_as_values_in_stmts(body, names),
+    ExprRegion(_, body, _) =>
       collect_idents_used_as_values_in_stmts(body, names)
   }
 

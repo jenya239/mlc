@@ -177,7 +177,9 @@ mlc::Array<mlc::String> visit_expr(std::shared_ptr<ast::Expr> expression, mlc::A
 [&](const ast::ExprLambda& exprLambda) { auto [__0, body, __2] = exprLambda; return visit_expr(body, watched, escaping); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return mark_all_watched(watched, escaping); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, value, __2] = exprNamedArg; return visit_expr(value, watched, escaping); },
-[&](const ast::ExprWith& exprWith) { auto [resource, __1, body, __3] = exprWith; return visit_stmt_list(body, watched, visit_expr(resource, watched, escaping)); }
+[&](const ast::ExprWith& exprWith) { auto [resource, __1, body, __3] = exprWith; return visit_stmt_list(body, watched, visit_expr(resource, watched, escaping)); },
+[&](const ast::ExprScope& exprScope) { auto [__0, body, __2] = exprScope; return visit_stmt_list(body, watched, escaping); },
+[&](const ast::ExprRegion& exprRegion) { auto [__0, body, __2] = exprRegion; return visit_stmt_list(body, watched, escaping); }
 }, (*expression));
 }
 mlc::Array<mlc::String> non_escaping_params(std::shared_ptr<ast::Expr> body, mlc::Array<mlc::String> function_typed_names) noexcept{
@@ -331,7 +333,9 @@ return result;
 [&](const ast::ExprLambda& exprLambda) { auto [__0, body, __2] = exprLambda; return collect_idents_used_as_values_in_expr(body, names); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [body, __1] = exprSpawn; return collect_idents_used_as_values_in_stmts(body, names); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, value, __2] = exprNamedArg; return collect_idents_used_as_values_in_expr(value, names); },
-[&](const ast::ExprWith& exprWith) { auto [resource, __1, body, __3] = exprWith; return collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names)); }
+[&](const ast::ExprWith& exprWith) { auto [resource, __1, body, __3] = exprWith; return collect_idents_used_as_values_in_stmts(body, collect_idents_used_as_values_in_expr(resource, names)); },
+[&](const ast::ExprScope& exprScope) { auto [__0, body, __2] = exprScope; return collect_idents_used_as_values_in_stmts(body, names); },
+[&](const ast::ExprRegion& exprRegion) { auto [__0, body, __2] = exprRegion; return collect_idents_used_as_values_in_stmts(body, names); }
 }, (*expression));
 }
 mlc::Array<mlc::String> collect_idents_used_as_values_in_stmts(mlc::Array<std::shared_ptr<ast::Stmt>> statements, mlc::Array<mlc::String> names) noexcept{

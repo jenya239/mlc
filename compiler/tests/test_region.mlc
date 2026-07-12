@@ -1,0 +1,24 @@
+import { TestResult, assert_eq_int } from './test_runner'
+import { tokenize } from '../frontend/lexer'
+import { parse_program_with_errors } from '../frontend/parser/decls'
+
+fn parse_error_count(source: string) -> i32 =
+  parse_program_with_errors(tokenize(source).tokens, '').errors.length()
+
+export fn region_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_int('region r do parses',
+    parse_error_count('fn main() -> () = region r do\n  0\nend'),
+    0))
+
+  results.push(assert_eq_int('region binder arena parses',
+    parse_error_count('fn main() -> () = region arena do\n  0\nend'),
+    0))
+
+  results.push(assert_eq_int('region without do is parse error',
+    if parse_error_count('fn main() -> () = region r\n  0\nend') > 0 then 1 else 0 end,
+    1))
+
+  results
+end

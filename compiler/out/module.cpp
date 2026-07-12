@@ -158,7 +158,7 @@ ModuleGenerationContext prepare_module_generation(semantic_ir::SemanticLoadItem 
   auto context = context::CodegenContext_with_struct_using_data(base_context, build_struct_using_data(load_item.decls, base_context));
   auto module_namespace = ((base == mlc::String("main", 4)) ? (mlc::String("mlc_main", 8)) : (base));
   auto is_entry = decl::decls_have_main(load_item.decls);
-  auto std_includes = mlc::arith::checked_add((expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(load_item.imports)), mlc::String("\n", 1));
+  auto std_includes = ((expr::standard_translation_unit_runtime_headers() + cpp_naming::include_lines(load_item.imports)) + mlc::String("\n", 1));
   auto ffi_includes = decl_cpp::collect_ffi_include_lines(load_item.decls);
   auto decl_parts = decl_cpp::collect_all_decl_parts_cpp(load_item.decls, context);
   auto guard = (base.upper() + mlc::String("_HPP", 4));

@@ -39,6 +39,8 @@ mlc::String cpp_generic_base_name(context::CodegenContext context, mlc::String t
     return mlc::String("mlc::concurrency::Arc", 21);
   } else if ((type_name == mlc::String("Mutex", 5)))   {
     return mlc::String("mlc::concurrency::Mutex", 23);
+  } else if ((type_name == mlc::String("TaskScope", 9)))   {
+    return mlc::String("mlc::concurrency::TaskScope", 27);
   } else   {
     return context::CodegenContext_resolve(context, type_name);
   }
@@ -56,7 +58,7 @@ mlc::String sem_type_to_cpp(context::CodegenContext context, std::shared_ptr<reg
 [&](const registry::TUnknown& tUnknown) { return mlc::String("auto", 4); },
 [&](const registry::TArray& tArray) { auto [inner] = tArray; return expr::cpp_array_type_element(sem_type_to_cpp(context, inner)); },
 [&](const registry::TShared& tShared) { auto [inner] = tShared; return expr::cpp_shared_pointer_type(sem_type_to_cpp(context, inner)); },
-[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return context::CodegenContext_resolve(context, type_name); },
+[&](const registry::TNamed& tNamed) { auto [type_name] = tNamed; return ((type_name == mlc::String("TaskScope", 9)) ? (mlc::String("mlc::concurrency::TaskScope", 27)) : (context::CodegenContext_resolve(context, type_name))); },
 [&](const registry::TTuple& tTuple) { auto [types] = tTuple; return ((mlc::String("std::tuple<", 11) + mlc::to_string(types.map([=](std::shared_ptr<registry::Type> type_value) mutable { return sem_type_to_cpp(context, type_value); }).join(mlc::String(", ", 2)))) + mlc::String(">", 1)); },
 [&](const registry::TPair& tPair) { auto [left, right] = tPair; return ((((mlc::String("std::pair<", 10) + mlc::to_string(sem_type_to_cpp(context, left))) + mlc::String(", ", 2)) + mlc::to_string(sem_type_to_cpp(context, right))) + mlc::String(">", 1)); },
 [&](const registry::TGeneric& tGeneric) { auto [type_name, type_arguments] = tGeneric; return [&]() -> mlc::String {
@@ -251,7 +253,7 @@ mlc::Array<mlc::String> type_phantom_params_for_variants(mlc::Array<mlc::String>
 mlc::String field_def_member_declaration(context::CodegenContext context, std::shared_ptr<ast::FieldDef> field_definition) noexcept{
   auto base = expr::struct_named_field_declaration(type_to_cpp(context, field_definition->type_value), cpp_naming::cpp_safe(field_definition->name));
   if ((field_definition->has_default_expression && record_field_default_validate::record_field_default_expression_is_static_initializer(field_definition->default_expression)))   {
-    return mlc::arith::checked_add((base + mlc::String(" = ", 3)), record_field_default_emit::record_field_default_expression_cpp_initializer(field_definition->default_expression, context));
+    return ((base + mlc::String(" = ", 3)) + record_field_default_emit::record_field_default_expression_cpp_initializer(field_definition->default_expression, context));
   } else   {
     return base;
   }

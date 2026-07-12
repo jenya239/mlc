@@ -12,8 +12,8 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=1** — Parser: `region <name> do ... end` → AST (`ExprRegion` parallel to
-`ExprScope`; TRACK historically said `RegionBlock`).
+**STEP=2** — Checker: phantom `RegionTag` + `r.alloc` typing (paused until
+`TRACK_TEXT_GL_PERF_BASELINE` closes — PLAN queue override 2026-07-12).
 
 ## Зачем
 
@@ -96,7 +96,7 @@ end   // весь буфер r освобождается разом
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Parser: `region <name> do ... end` block syntax → AST node (`ExprRegion(name, [Stmt], Span)` parallel to `ExprScope`; reuse `parse_statements_until_end` / keyword dispatch like `scope`) | pending |
+| 1 | Parser: `region <name> do ... end` block syntax → AST node (`ExprRegion(name, [Stmt], Span)` parallel to `ExprScope`; reuse `parse_statements_until_end` / keyword dispatch like `scope`) | **done** (2026-07-12) |
 | 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | pending |
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | pending |
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | pending |
@@ -128,6 +128,10 @@ end   // весь буфер r освобождается разом
 
 - **Planner** (2026-07-12): activated after STDLIB_DOCS Critic OK; STEP=1 =
   `ExprRegion` + parse; Decisions 1–3 unchanged.
+- **Driver STEP=1** (2026-07-12): `ExprRegion` in `ast.mlc`; `parse_region_expr`
+  in `exprs.mlc`; mirror arms in infer/transform/escape/move/spawn/verify;
+  `test_region.mlc` parse smoke; `mlcc --check-only` region smoke OK. STEP=2+
+  after TEXT_GL_PERF_BASELINE.
 
 ## Verify gate (когда дойдёт до реализации)
 

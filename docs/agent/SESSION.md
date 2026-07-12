@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | docs-only (Planner activate) |
+| test_gate | mlcc --check-only region smoke + main.mlc |
+
+### Turn 2026-07-12 12:55 (Driver TRACK_LANG_REGION_ARENA STEP=1 — ExprRegion parse)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 12:25 |
+| elapsed | ~30 min |
+| done    | `ExprRegion` in `ast.mlc`; `parse_region_expr` in `exprs.mlc`; match arms infer/transform/escape/move/spawn/verify/partial_application; `test_region.mlc` + suite_registry; rebuild `compiler/out/mlcc`. |
+| verify  | `mlcc --check-only` `region r do 0 end` (unit) exit 0; without `do` → `region: expected do`; `mlcc --check-only compiler/main.mlc` exit 0. Ruby `rake test_compiler_mlc` blocked pre-existing (MATCH parse on spawn_capture); full `build_tests_self` blocked pre-existing `../frontend/ast` resolve. |
+| result  | STEP=1 done. Plain: `region name do…end` parses to ExprRegion. |
+| issues  | Foreign `compiler/out/extern_concurrency_lint.*` left untracked. Next queue: TEXT_GL not REGION STEP=2 (CONTINUITY override). |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_TEXT_GL_PERF_BASELINE — activate; REGION STEP=2 paused |
 
 ### Turn 2026-07-12 12:26 (Planner TRACK_LANG_REGION_ARENA — activate)
 

@@ -146,7 +146,9 @@ return MoveCheckWalkState{body_state.diagnostics, body_state.moved};
 auto resource_state = move_check_expr(resource, moved);
 auto body_state = move_check_stmts(body, resource_state.moved);
 return MoveCheckWalkState{ast::diagnostics_append(resource_state.diagnostics, body_state.diagnostics), body_state.moved};
-}(); }
+}(); },
+[&](const ast::ExprScope& exprScope) -> MoveCheckWalkState { auto [__0, body, __2] = exprScope; return move_check_stmts(body, moved); },
+[&](const ast::ExprRegion& exprRegion) -> MoveCheckWalkState { auto [__0, body, __2] = exprRegion; return move_check_stmts(body, moved); }
 }, (*expression));
 }
 MoveCheckWalkState move_check_expr_list(mlc::Array<std::shared_ptr<ast::Expr>> expressions, MoveCheckWalkState state) noexcept{

@@ -6,7 +6,7 @@ import {
   ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex,
   ExprIf, ExprBlock, ExprWhile, ExprSpawn, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
   ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
-  ExprScope,
+  ExprScope, ExprRegion,
   StmtLet, StmtLetPattern, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   Span
 } from '../../frontend/ast'
@@ -555,6 +555,13 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
       const stmts_pair = partial_application_desugar_statements_block(statements, serial)
       PartialPair {
         expression: Shared.new(ExprScope(binder_name, stmts_pair.statements, span_scope)),
+        next_serial: stmts_pair.next_serial
+      }
+    end,
+    ExprRegion(binder_name, statements, span_region) => do
+      const stmts_pair = partial_application_desugar_statements_block(statements, serial)
+      PartialPair {
+        expression: Shared.new(ExprRegion(binder_name, stmts_pair.statements, span_region)),
         next_serial: stmts_pair.next_serial
       }
     end

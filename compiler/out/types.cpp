@@ -13,7 +13,7 @@ using namespace ast;
 using namespace ast_tokens;
 
 predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_type(predicates::Parser parser) noexcept{
-  auto base_parsed = parse_base_type(parser);
+  auto base_parsed = apply_error_union_sugar(parse_base_type(parser));
   if ((!predicates::TokenKind_is_arrow(predicates::Parser_kind(base_parsed.parser))))   {
     return base_parsed;
   }
@@ -118,6 +118,24 @@ predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> parse_base_type(predicat
     return parse_base_type_ident(parser, predicates::TokenKind_ident(kind));
   }
   return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyUnit{}), predicates::Parser_advance_by(parser, 2));
+}
+bool parser_at_error_union_bang(predicates::Parser parser) noexcept{
+  return (predicates::TokenKind_is_op(predicates::Parser_kind(parser)) && (predicates::TokenKind_op_val(predicates::Parser_kind(parser)) == mlc::String("!", 1)));
+}
+bool parser_starts_type_after_bang(predicates::Parser parser) noexcept{
+  return (((predicates::TokenKind_is_ident(predicates::Parser_kind(parser)) || predicates::TokenKind_is_lparen(predicates::Parser_kind(parser))) || predicates::TokenKind_is_lbracket(predicates::Parser_kind(parser))) || predicates::TokenKind_is_extern(predicates::Parser_kind(parser)));
+}
+predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> apply_error_union_sugar(predicates::ParseResult<std::shared_ptr<ast::TypeExpr>> ok_parsed) noexcept{
+  if ((!parser_at_error_union_bang(ok_parsed.parser)))   {
+    return ok_parsed;
+  }
+  auto after_bang = predicates::Parser_advance(ok_parsed.parser);
+  if ((!parser_starts_type_after_bang(after_bang)))   {
+    return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyUnit{}), predicates::Parser_record_parse_error(after_bang, mlc::String("parse: expected type after ! in T!E", 35)));
+  }
+  auto error_parsed = parse_base_type(after_bang);
+  auto type_arguments = mlc::Array<std::shared_ptr<ast::TypeExpr>>{ok_parsed.value, error_parsed.value};
+  return predicates::type_parse_result(std::make_shared<ast::TypeExpr>(ast::TyGeneric{mlc::String("Result", 6), type_arguments}), error_parsed.parser);
 }
 bool parser_at_generic_close(predicates::Parser parser) noexcept{
   if ((!predicates::TokenKind_is_op(predicates::Parser_kind(parser))))   {

@@ -63,6 +63,8 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_question(Tr
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_lambda(TransformPass self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_named_arg(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_with(TransformPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_scope(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_region(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 mlc::String receiver_type_key_for_method_dispatch(std::shared_ptr<registry::Type> receiver_semantic_type) noexcept{
   return [&]() -> mlc::String {
@@ -344,7 +346,9 @@ mlc::String call_callee_ident_name(std::shared_ptr<ast::Expr> function) noexcept
 [&](const ast::ExprLambda& exprLambda) { auto [__0, __1, __2] = exprLambda; return mlc::String("", 0); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return mlc::String("", 0); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return mlc::String("", 0); },
-[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return mlc::String("", 0); }
+[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return mlc::String("", 0); },
+[&](const ast::ExprScope& exprScope) { auto [__0, __1, __2] = exprScope; return mlc::String("", 0); },
+[&](const ast::ExprRegion& exprRegion) { auto [__0, __1, __2] = exprRegion; return mlc::String("", 0); }
 }, (*function));
 }
 bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noexcept{
@@ -378,7 +382,9 @@ bool call_argument_is_lambda(std::shared_ptr<ast::Expr> argument_expression) noe
 [&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return false; },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return false; },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return false; },
-[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return false; }
+[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return false; },
+[&](const ast::ExprScope& exprScope) { auto [__0, __1, __2] = exprScope; return false; },
+[&](const ast::ExprRegion& exprRegion) { auto [__0, __1, __2] = exprRegion; return false; }
 }, (*argument_expression));
 }
 std::shared_ptr<registry::Type> binary_result_type_for_operator(registry::TypeRegistry registry, std::shared_ptr<registry::Type> left_type, mlc::String operation, mlc::String method) noexcept{
@@ -744,7 +750,9 @@ std::shared_ptr<semantic_ir::SemanticExpression> transform_one_call_argument_usi
 [&](const ast::ExprExtern& exprExtern) { auto [__0, __1, __2, __3] = exprExtern; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprSpawn& exprSpawn) { auto [__0, __1] = exprSpawn; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
 [&](const ast::ExprNamedArg& exprNamedArg) { auto [__0, __1, __2] = exprNamedArg; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
-[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); }
+[&](const ast::ExprWith& exprWith) { auto [__0, __1, __2, __3] = exprWith; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+[&](const ast::ExprScope& exprScope) { auto [__0, __1, __2] = exprScope; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); },
+[&](const ast::ExprRegion& exprRegion) { auto [__0, __1, __2] = exprRegion; return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type); }
 }, (*argument_partially_desugared_shared_expression));
   } else   {
     return coerce_expr_to_type(transform_expr(argument_expression_shared, transform_context, stmts_fn), expected_formal_parameter_type);
@@ -992,6 +1000,14 @@ if (std::holds_alternative<ast::ExprSpawn>((*__match_subject))) {
 const ast::ExprSpawn& exprSpawn = std::get<ast::ExprSpawn>((*__match_subject));
 auto [statements, source_span] = exprSpawn; return TransformPass_visit_spawn(transform_pass, statements, source_span, stmts_fn);
 }
+if (std::holds_alternative<ast::ExprScope>((*__match_subject))) {
+const ast::ExprScope& exprScope = std::get<ast::ExprScope>((*__match_subject));
+auto [binder, statements, source_span] = exprScope; return TransformPass_visit_scope(transform_pass, binder, statements, source_span, stmts_fn);
+}
+if (std::holds_alternative<ast::ExprRegion>((*__match_subject))) {
+const ast::ExprRegion& exprRegion = std::get<ast::ExprRegion>((*__match_subject));
+auto [binder, statements, source_span] = exprRegion; return TransformPass_visit_region(transform_pass, binder, statements, source_span, stmts_fn);
+}
 return TransformPass_visit_unsupported(transform_pass, expression, stmts_fn);
 std::abort();
 }();
@@ -1027,6 +1043,8 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_question(Tr
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_lambda(TransformPass self, mlc::Array<mlc::String> parameter_names, std::shared_ptr<ast::Expr> body, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_named_arg(TransformPass self, std::shared_ptr<ast::Expr> inner_expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_with(TransformPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_scope(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_region(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_int(TransformPass self, int value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionInt{value, std::make_shared<registry::Type>(registry::TI32{}), source_span});
@@ -1218,6 +1236,30 @@ with_body_environment.set(binder, semantic_ir::sexpr_type(typed_resource));
 auto with_body_context = transform_context_with_env(self.transform_context, with_body_environment);
 auto statements_parsed = stmts_fn(statements, with_body_context);
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionWith{typed_resource, binder, statements_parsed.statements, std::make_shared<registry::Type>(registry::TUnit{}), source_span});
+}
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_scope(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
+auto scope_type = std::make_shared<registry::Type>(registry::TNamed{mlc::String("TaskScope", 9)});
+auto scope_body_environment = self.transform_context.type_env;
+scope_body_environment.set(binder, scope_type);
+auto scope_body_context = transform_context_with_env(self.transform_context, scope_body_environment);
+auto statements_parsed = stmts_fn(statements, scope_body_context);
+auto scope_init = std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionCall{std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIdent{mlc::String("__task_scope_new", 16), scope_type, source_span}), {}, {}, scope_type, source_span});
+auto scope_let = std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementLet{binder, false, scope_init, scope_type, source_span});
+auto block_statements = mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{scope_let};
+auto statement_index = 0;
+while ((statement_index < statements_parsed.statements.length())) {
+  block_statements.push_back(statements_parsed.statements[statement_index]);
+  (statement_index = mlc::arith::checked_add(statement_index, 1));
+}
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{block_statements, std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), source_span}), std::make_shared<registry::Type>(registry::TUnit{}), source_span});
+}
+std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_region(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
+auto region_type = std::make_shared<registry::Type>(registry::TNamed{mlc::String("RegionHandle", 12)});
+auto region_body_environment = self.transform_context.type_env;
+region_body_environment.set(binder, region_type);
+auto region_body_context = transform_context_with_env(self.transform_context, region_body_environment);
+auto statements_parsed = stmts_fn(statements, region_body_context);
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{statements_parsed.statements, std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), source_span}), std::make_shared<registry::Type>(registry::TUnit{}), source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), ast::expr_span(expression)});

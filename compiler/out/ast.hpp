@@ -64,7 +64,9 @@ struct ExprLambda;
 struct ExprSpawn;
 struct ExprNamedArg;
 struct ExprWith;
-using Expr = std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprSpawn, ExprNamedArg, ExprWith>;
+struct ExprScope;
+struct ExprRegion;
+using Expr = std::variant<ExprInt, ExprStr, ExprBool, ExprUnit, ExprFloat, ExprI64, ExprU8, ExprUsize, ExprChar, ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex, ExprIf, ExprBlock, ExprWhile, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate, ExprArray, ExprTuple, ExprQuestion, ExprExtern, ExprLambda, ExprSpawn, ExprNamedArg, ExprWith, ExprScope, ExprRegion>;
 struct StmtLet;
 struct StmtLetPattern;
 struct StmtLetConst;
@@ -348,6 +350,16 @@ struct ExprWith {
   mlc::String field1;
   mlc::Array<std::shared_ptr<Stmt>> field2;
   Span field3;
+};
+struct ExprScope {
+  mlc::String field0;
+  mlc::Array<std::shared_ptr<Stmt>> field1;
+  Span field2;
+};
+struct ExprRegion {
+  mlc::String field0;
+  mlc::Array<std::shared_ptr<Stmt>> field1;
+  Span field2;
 };
 struct StmtLet {
   mlc::String field0;
