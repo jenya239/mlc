@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 10 |
-| active_track | TRACK_LANG_REGION_ARENA (closed, pending Critic) |
-| test_gate | STEP=10 skipped; track archived |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_REGION_ARENA (Critic OK) |
+| test_gate | escape 3/3; cycle ok; region_alloc check-only 0 |
+
+### Turn 2026-07-12 22:55 (Critic TRACK_LANG_REGION_ARENA critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 22:55 |
+| elapsed | ~8 min |
+| done    | Audit STEP=1–9 vs `3b4df688`…`ca431a70`; close `9fc9c890`; re-smoke escape+cycle; sync LANGUAGE_AUDIT §8. |
+| verify  | escape 3/3; cycle ok; region_alloc check-only 0; artifacts present; **reopen: none**. |
+| result  | Critic OK. Plain: region arena shipped; queue → TEXT_SHIM. |
+| issues  | residual: no assign-escape e2e fixture; STEP=10 deferred by design |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_TEXT_SHIM_TO_MLC — ungated activate STEP=1 |
 
 ### Turn 2026-07-12 22:37 (Driver TRACK_LANG_REGION_ARENA STEP=10)
 

@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **done** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 8/8 треков closed; [TRACK_LANG_REGION_ARENA](archive/tracks/TRACK_LANG_REGION_ARENA.md) **closed** (STEP=1–9 done; STEP=10 skipped; pending Critic) |
+| **7** Language design audit (2026-07) | **done** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 8/8 треков closed; [TRACK_LANG_REGION_ARENA](archive/tracks/TRACK_LANG_REGION_ARENA.md) **closed** Critic OK (`3b4df688`…`9fc9c890`; STEP=10 skipped) |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -424,7 +424,7 @@ compiler/
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
 | **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) Critic OK; STEP=1–14; REG 20/0; sweep 113/0/1 | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
-| **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **open** (REGION closed; next after Critic) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — bookkeeping (handle-кеш по `(font_path,pixel_size)`) и glyph pitch-copy на MLC поверх тонкого `*_abi.hpp`; bearing ABI не дублируется (уже STEP=7 в GL_PERF_BASELINE) |
+| **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **open** (queue head; REGION Critic OK) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — bookkeeping (handle-кеш по `(font_path,pixel_size)`) и glyph pitch-copy на MLC поверх тонкого `*_abi.hpp`; bearing ABI не дублируется (уже STEP=7 в GL_PERF_BASELINE) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -488,8 +488,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     STEP=8 (**done** 2026-07-10: self-host identical; regression 20/0; MAE≤8;
       track **closed** → archive)
   → CONCURRENCY_SUPERVISOR (**closed** 2026-07-12: Critic OK; STEP=1–7; C++-only)
-  → LANG_REGION_ARENA (**closed** 2026-07-12: STEP=1–9; STEP=10 skipped;
-      pending Critic → [archive/tracks/TRACK_LANG_REGION_ARENA.md](archive/tracks/TRACK_LANG_REGION_ARENA.md))
+  → LANG_REGION_ARENA (**closed** 2026-07-12: Critic OK; STEP=1–9; STEP=10 skipped
+      → [archive/tracks/TRACK_LANG_REGION_ARENA.md](archive/tracks/TRACK_LANG_REGION_ARENA.md))
   → LANG_INT_OVERFLOW (**closed** 2026-07-10: signed debug-panic/release-UB;
       unsigned wrap; div0 panic; `mlc::int_arith` i32; tests + DIFF + regression 20/0)
   → STDLIB_NET_SERVER (**closed** 2026-07-10: TCP+HTTP parse/router/ThreadPool;
@@ -598,11 +598,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     REG 20/0; sweep ok=113 fail=0 skip=1;
     → [archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md))**
 
-  → **LANG_REGION_ARENA (**closed** 2026-07-12: STEP=1–9; STEP=10 skipped —
-      ast.mlc hot-path deferred; pending Critic;
+  → **LANG_REGION_ARENA (**closed** 2026-07-12: Critic OK; STEP=1–9; STEP=10 skipped;
       → [archive/tracks/TRACK_LANG_REGION_ARENA.md](archive/tracks/TRACK_LANG_REGION_ARENA.md))**
 
-  → **TEXT_SHIM_TO_MLC (open — queue head after REGION Critic;
+  → **TEXT_SHIM_TO_MLC (open — queue head; REGION Critic OK;
     §8 «без hand-written C++» пропустил HarfBuzz/FreeType шимы — bookkeeping
     (face/font handle-кеш) + pitch-copy loop переносятся на MLC, bearing ABI
     переиспользуется из TEXT_GL_PERF_BASELINE STEP=7, не дублируется;

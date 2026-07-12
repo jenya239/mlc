@@ -10,7 +10,16 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **closed** (2026-07-12) — pending Critic
+## Status: **closed** (2026-07-12) — Critic OK
+
+**Critic 2026-07-12:** STEP=1–9 vs `3b4df688`…`ca431a70`; close `9fc9c890`
+(STEP=10 skipped). Artifacts: `ExprRegion`, `infer_region_method`,
+`region_escape`+E091, `region.hpp`, escape/cycle e2e+smokes, MLC.md §C1.
+Re-verify: `run_region_escape_smoke` 3/3; `run_region_cycle_smoke` ok;
+`mlcc --check-only region_alloc` exit 0. PLAN §7 → done 8/8; archived.
+**reopen: none**. Residuals: no dedicated e2e for assign-escape (covered in
+checker + `test_region.mlc`); STEP=10 ast.mlc hot-path deferred by design;
+`LANGUAGE_AUDIT` row 8 synced to shipped.
 
 **Driver** (2026-07-12): STEP=1–9 done; STEP=10 **skipped** (risky: rewriting
 `compiler/frontend/ast.mlc` Shared graph onto `region` would destabilize
@@ -18,7 +27,7 @@ self-hosted parser — TRACK explicitly allows defer/skip).
 
 ## Next step
 
-**closed** — awaiting `ROLE=Critic STEP=critique-audit`.
+**closed** — Critic OK. Queue: `TRACK_TEXT_SHIM_TO_MLC` (Planner activate).
 
 ### STEP=10 skipped (2026-07-12)
 
