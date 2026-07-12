@@ -1,0 +1,129 @@
+// TRACK_TEXT_SHIM_TO_MLC STEP=5 — golden: text_shaping vs legacy shim (byte-exact).
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_glyph_advance_at,
+  text_shaping_rasterize_glyph
+} from '../gui/text_shaping'
+
+extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
+  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp" thread_affine
+extern fn shape_glyph_id_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp" thread_affine
+extern fn shape_glyph_advance_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp" thread_affine
+
+extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_width() -> i32
+  = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_rows() -> i32
+  = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_bearing_x() -> i32
+  = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_bearing_y() -> i32
+  = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_byte_count() -> i32
+  = "mlc::text::glyph_byte_count" from "mlc/text/freetype_shim.hpp" thread_affine
+extern fn glyph_byte_at(index: i32) -> i32
+  = "mlc::text::glyph_byte_at" from "mlc/text/freetype_shim.hpp" thread_affine
+
+fn compare_shape(font_path: string, text: string, pixel_size: i32) -> i32 = do
+  const shim_count = shape_glyph_count(font_path, text, pixel_size)
+  if shim_count < 0 then
+    return 10
+  end
+  let state = text_shaping_new()
+  const shaped = text_shaping_shape(state, font_path, pixel_size, text)
+  if shaped.error_code != 0 then
+    return 11
+  end
+  if shaped.glyph_count != shim_count then
+    return 12
+  end
+  let mut index = 0
+  while index < shim_count do
+    if text_shaping_glyph_id_at(index) != shape_glyph_id_at(index) then
+      return 13
+    end
+    if text_shaping_glyph_advance_at(index) != shape_glyph_advance_at(index) then
+      return 14
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn compare_raster(
+  font_path: string,
+  pixel_size: i32,
+  glyph_index: i32
+) -> i32 = do
+  const packed = glyph_bitmap_by_index(font_path, glyph_index, pixel_size)
+  if packed < 0 then
+    return 20
+  end
+  const shim_width = glyph_width()
+  const shim_rows = glyph_rows()
+  const shim_bearing_x = glyph_bearing_x()
+  const shim_bearing_y = glyph_bearing_y()
+  const shim_byte_count = glyph_byte_count()
+  let mut shim_pixels: [i32] = []
+  let mut byte_index = 0
+  while byte_index < shim_byte_count do
+    shim_pixels.push(glyph_byte_at(byte_index))
+    byte_index = byte_index + 1
+  end
+
+  let state = text_shaping_new()
+  const raster = text_shaping_rasterize_glyph(state, font_path, pixel_size, glyph_index)
+  if raster.error_code != 0 then
+    return 21
+  end
+  if raster.width != shim_width || raster.rows != shim_rows then
+    return 22
+  end
+  if raster.bearing_x != shim_bearing_x || raster.bearing_y != shim_bearing_y then
+    return 23
+  end
+  if raster.pixels.length() != shim_pixels.length() then
+    return 24
+  end
+  let mut index = 0
+  while index < shim_pixels.length() do
+    if raster.pixels[index] != shim_pixels[index] then
+      return 25
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const pixel_size = 32
+  const shape_latin = compare_shape(font_path, "Hi", pixel_size)
+  if shape_latin != 0 then
+    return shape_latin
+  end
+  const shape_cyrillic = compare_shape(font_path, "Привет", pixel_size)
+  if shape_cyrillic != 0 then
+    return shape_cyrillic
+  end
+  // Re-shape via shim to get a stable glyph id for raster compare.
+  const shim_count = shape_glyph_count(font_path, "A", pixel_size)
+  if shim_count < 1 then
+    return 30
+  end
+  const glyph_index = shape_glyph_id_at(0)
+  if glyph_index <= 0 then
+    return 31
+  end
+  const raster_match = compare_raster(font_path, pixel_size, glyph_index)
+  if raster_match != 0 then
+    return raster_match
+  end
+  print("text_shaping_vs_shim_ok")
+  0
+end

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | text_shaping_smoke → text_shaping_ok |
+| test_gate | text_shaping_vs_shim_ok |
+
+### Turn 2026-07-13 00:04 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 00:04 |
+| elapsed | ~10 min |
+| done    | `text_shaping_vs_shim_gate.mlc` — shape+raster byte-exact vs legacy shim. |
+| verify  | run prints `text_shaping_vs_shim_ok` exit 0 (`Hi`/`Привет`/`A`). |
+| result  | STEP=5 done. Plain: MLC path matches shim output. |
+| issues  | none |
+| next    | ROLE=Driver STEP=6 TRACK_TEXT_SHIM_TO_MLC — switch demos to text_shaping |
 
 ### Turn 2026-07-12 23:36 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=4)
 
