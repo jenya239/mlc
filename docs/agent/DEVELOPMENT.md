@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=7 (verify smokes) next; STEP=6 `GUI.md` done.
-See [TRACK_GUI_INPUT_ROBUSTNESS.md](TRACK_GUI_INPUT_ROBUSTNESS.md). Queue: GUI_INPUT → HTTP_HARDENING → …
+**`TRACK_GUI_INPUT_ROBUSTNESS` closed** — STEP=7 verify green; awaiting Critic.
+See [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](../archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md).
+Queue after Critic: HTTP_HARDENING → …
 
 
 

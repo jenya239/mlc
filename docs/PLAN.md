@@ -416,7 +416,7 @@ compiler/
 | — | самохостинг `core`/`concurrency` рантайма | **won't-do** | [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) — рассмотрен и отклонён 2026-07-11 (рантайм остаётся C++, стандартная практика, риск/выгода не в пользу переписывания) |
 | **21** | Compile-smoke coverage для `misc/examples`/`misc/gui` (regression молчала на `gui_button_demo.mlc`) | **done** (2026-07-12) | [TRACK_EXAMPLES_CI](archive/tracks/TRACK_EXAMPLES_CI.md) **closed** STEP=1–6; Critic OK (`cd598a50`…`d48ec41c`); REG 20/0; sweep ok=106 skip=1 |
 | **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **done** (2026-07-12) | [TRACK_FFI_EXTERN_DEDUP](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md) **closed** Critic OK; Hybrid + E090; REG 20/0; sweep 106/0/1; DIFF=0 |
-| **23** | GUI input robustness (debounce клика, keyboard text, resize) | **active** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](agent/TRACK_GUI_INPUT_ROBUSTNESS.md) **active** STEP=6 done (GUI.md); STEP=7 verify next |
+| **23** | GUI input robustness (debounce клика, keyboard text, resize) | **done** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md) **closed** STEP=1–7; verify smokes ok; awaiting Critic |
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **open, средний приоритет** | [TRACK_STDLIB_HTTP_HARDENING](agent/TRACK_STDLIB_HTTP_HARDENING.md) |
 | **25** | Concurrency Supervisor — реализация (гейт снят) | **open** (2026-07-11: gate satisfied) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) — permanent/transient/temporary, one_for_one, restart storm |
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **open** (2026-07-11: unblocked, Task/TaskScope/Isolate в продакшене) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) |
@@ -571,10 +571,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EXAMPLES_CI.md](archive/tracks/TRACK_EXAMPLES_CI.md)):**
   → FFI_EXTERN_DEDUP (**done** 2026-07-12: Hybrid skip-emit + E090;
       → [archive/tracks/TRACK_FFI_EXTERN_DEDUP.md](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md))
-  → **GUI_INPUT_ROBUSTNESS (active 2026-07-12: STEP=5 done; STEP=6 GUI.md next;
-      → [agent/TRACK_GUI_INPUT_ROBUSTNESS.md](agent/TRACK_GUI_INPUT_ROBUSTNESS.md)):**
-  → STDLIB_HTTP_HARDENING (средний приоритет: keep-alive, лимиты, static files,
-    idle timeout, graceful shutdown doc, минимальный load-test)
+  → GUI_INPUT_ROBUSTNESS (**done** 2026-07-12: STEP=1–7; click-edge OK / keyboard /
+      resize; verify smokes green; awaiting Critic;
+      → [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md))
+  → **STDLIB_HTTP_HARDENING (next after Critic; средний приоритет: keep-alive, лимиты, static files,
+    idle timeout, graceful shutdown doc, минимальный load-test)**
   → CONCURRENCY_SUPERVISOR (gate снят — permanent/transient/temporary,
     one_for_one, restart storm protection; STEP=4 решает MLC-reachable или
     C++-only ПЕРЕД реализацией API)

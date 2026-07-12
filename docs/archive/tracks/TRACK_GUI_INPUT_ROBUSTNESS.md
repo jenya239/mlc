@@ -1,6 +1,6 @@
 # Track: GUI input robustness (click debounce, keyboard text, resize)
 
-Parent: [../GUI.md](../GUI.md), [../archive/tracks/TRACK_GUI_FRAMEWORK.md](../archive/tracks/TRACK_GUI_FRAMEWORK.md).
+Parent: [../../GUI.md](../../GUI.md), [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md).
 Trigger: 2026-07-11 (несвязанная задача — демо для пользователя).
 `misc/examples/text_dashboard_demo.mlc` manual test: one `xdotool
 mousedown`/`mouseup` pair (held ~200ms) registered as **9** separate clicks
@@ -10,11 +10,15 @@ press/release pairs, or a genuine debounce gap in `gui_click_edge`
 (`misc/gui/input.mlc`). STEP=1 below must reproduce with a controlled input
 source before fixing anything.
 
-## Status: **active** (Planner 2026-07-12) — очередь §23
+## Status: **closed** (2026-07-12) — Driver STEP=7 verify green; awaiting Critic
+
+**Driver 2026-07-12 STEP=7:** all GUI smokes ok (button, input, click_edge, text_input,
+text_field, window_size, layout). Self-host N/A (no `compiler/` changes). TRACK archived.
+Close → Critic.
 
 ## Next step
 
-**STEP=7** — verify: `run_gui_button_demo.sh` + new smokes green (self-host N/A unless compiler touched).
+— (closed; Critic critique-audit)
 
 ## Goal
 
@@ -34,8 +38,8 @@ against a hardcoded `width`/`height`, not the live framebuffer size).
 | 3 | Keyboard text input: extend `glfw_gl_*` bindings (`runtime/src/gl/glfw_window_gl.cpp`) with a UTF-8 text-input callback (`glfwSetCharCallback`) + backspace/enter key polling; expose via `gl_window.mlc`/`gui/input.mlc` as `GuiInput.text_buffer: string` (accumulated since last frame) | **done** (2026-07-12) — `take_text`/`text_test_push`/`keys_test_set`; `GuiInput.text_buffer`/`backspace`/`enter`; `misc/examples/gui_text_input_smoke.mlc` + `scripts/run_gui_text_input_smoke.sh` |
 | 4 | One smoke demo: single-line text field (box + live typed text via A8 `TextRenderer`, reusing `text_dashboard_demo.mlc` patterns) — proves the keyboard path end-to-end | **done** (2026-07-12) — `misc/examples/gui_text_field_demo.mlc` + `scripts/run_gui_text_field_demo.sh` (inject H+ix+BS→Hi, enter; TextRenderer box+glyphs) |
 | 5 | Window resize: `glfw_gl_context_should_close`/`swap_poll` family gains a `glfw_gl_window_width()`/`glfw_gl_window_height()` pair (or a single `glfw_gl_framebuffer_size()` returning both via out-params/scratch) so demos stop hardcoding `800x600`; update `misc/gui/layout.mlc` callers to read live size instead of a `const width/height` at top of `main()` | **done** (2026-07-12) — `glfw_gl_window_width`/`height`/`set_size` + size callback/cache; `gui_window_size_smoke`; `gui_button_demo`/`gui_text_field_demo` read live size |
-| 6 | Docs: `GUI.md` — note debounce finding (or its absence) + new keyboard/resize primitives | pending |
-| 7 | Verify: existing `run_gui_button_demo.sh` + new smokes green; self-host diff identical (touches `runtime/` C++ + `misc/gui/*.mlc`, not `compiler/`, so self-host diff only needed if `compiler/checker` extern signatures change) | pending |
+| 6 | Docs: `GUI.md` — note debounce finding (or its absence) + new keyboard/resize primitives | **done** (2026-07-12) — `docs/GUI.md` Input robustness section + gate list |
+| 7 | Verify: existing `run_gui_button_demo.sh` + new smokes green; self-host diff identical (touches `runtime/` C++ + `misc/gui/*.mlc`, not `compiler/`, so self-host diff only needed if `compiler/checker` extern signatures change) | **done** (2026-07-12) — button/input/click_edge/text_input/window_size/text_field/layout all ok; self-host N/A |
 
 ### STEP=1 sub-steps (Driver)
 
@@ -50,11 +54,13 @@ against a hardcoded `width`/`height`, not the live framebuffer size).
 - **STEP=3** (2026-07-12): `glfwSetCharCallback` + `glfw_gl_take_text` / keys; `GuiInput.text_buffer`/`backspace`/`enter`; `scripts/run_gui_text_input_smoke.sh` ok.
 - **STEP=4** (2026-07-12): text field demo + TextRenderer; inject → `Hi` + enter; `run_gui_text_field_demo.sh` ok.
 - **STEP=5** (2026-07-12): live window size APIs + set_size smoke; button/text-field demos use live size each frame.
+- **STEP=6** (2026-07-12): `docs/GUI.md` — click-edge finding, keyboard, window size, gate scripts.
+- **STEP=7** (2026-07-12): verify smokes green; archived → `docs/archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md`.
 
 ## Out of scope
 
 - IME / composed input (CJK) — plain ASCII/Latin-1 typed text only for now.
 - Multi-touch / gamepad — not requested, no driving use case yet.
-- The retained scene-graph rewrite ([TRACK_GUI_CANVAS_GRAPH](TRACK_GUI_CANVAS_GRAPH.md),
+- The retained scene-graph rewrite ([TRACK_GUI_CANVAS_GRAPH](../TRACK_GUI_CANVAS_GRAPH.md),
   still design-only, not activated) — this track works within the existing
   v0 immediate-mode `misc/gui/` architecture, does not migrate it.

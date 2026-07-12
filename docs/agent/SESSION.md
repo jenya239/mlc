@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 6 |
-| active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | docs: `GUI.md` Input robustness |
+| driver_turns_since_plan | 6 |
+| step_last | 7 |
+| active_track | TRACK_GUI_INPUT_ROBUSTNESS (closed, awaiting Critic) |
+| test_gate | STEP=7: 7 GUI smokes ok |
+
+### Turn 2026-07-12 07:15 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=7 — verify close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 07:11 |
+| elapsed | ~8 min |
+| done    | Verified smokes: button, input, click_edge, text_input, window_size, text_field, layout — all ok. Archived TRACK; PLAN §23 **done**; self-host N/A. |
+| verify  | seven `scripts/run_gui_*.sh` → ok lines; `test ! -f docs/agent/TRACK_GUI_INPUT_ROBUSTNESS.md`. |
+| result  | STEP=7 done; track **closed**. Plain: GUI input track shipped; next Critic. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_GUI_INPUT_ROBUSTNESS |
 
 ### Turn 2026-07-12 07:08 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=6 — GUI.md)
 
