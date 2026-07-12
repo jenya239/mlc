@@ -23,6 +23,10 @@ int32_t glyph_bitmap_by_index(mlc::String font_path, int32_t glyph_index, int32_
 
 int32_t glyph_width();
 int32_t glyph_rows();
+// FreeType bearing of the last successful glyph_bitmap_* call
+// (bitmap_left / bitmap_top). Same cache slot as glyph_width/glyph_rows.
+int32_t glyph_bearing_x();
+int32_t glyph_bearing_y();
 int32_t glyph_byte_count();
 int32_t glyph_byte_at(int32_t index);
 const uint8_t* glyph_a8_data();

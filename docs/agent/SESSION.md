@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 13:35 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=7 — bearing ABI)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:21 |
+| elapsed | ~14 min |
+| done    | `glyph_bearing_x`/`glyph_bearing_y` in freetype_shim; store `bitmap_left`/`bitmap_top` on last glyph buffer. |
+| verify  | `CCACHE_DISABLE=1 compiler/tests/run_freetype_glyph_smoke.sh` → ok. Call sites not wired (STEP=8). |
+| result  | STEP=7 done. Plain: bearing readable after glyph_bitmap_*; demos still top-aligned until STEP=8. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. Default ccache+PCH can stale-mtime fail smokes — use `CCACHE_DISABLE=1` if needed. |
+| next    | ROLE=Driver STEP=8 TRACK_TEXT_GL_PERF_BASELINE — wire append_line dest_x/y with bearing |
 
 ### Turn 2026-07-12 13:18 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=6 — smokes)
 

@@ -16,6 +16,8 @@ struct GlyphPixelBuffer {
   std::vector<uint8_t> pixels;
   int32_t width = 0;
   int32_t rows = 0;
+  int32_t bearing_x = 0;
+  int32_t bearing_y = 0;
 };
 
 GlyphPixelBuffer& glyph_pixel_buffer() {
@@ -83,6 +85,8 @@ int32_t render_face_glyph(FT_Face face) {
   GlyphPixelBuffer& buffer = glyph_pixel_buffer();
   buffer.width = width;
   buffer.rows = rows;
+  buffer.bearing_x = face->glyph->bitmap_left;
+  buffer.bearing_y = face->glyph->bitmap_top;
   buffer.pixels.assign(static_cast<size_t>(width * rows), 0);
   const int pitch = face->glyph->bitmap.pitch;
   for (int32_t row = 0; row < rows; row += 1) {
@@ -146,6 +150,8 @@ int32_t glyph_bitmap_by_index(mlc::String font_path, int32_t glyph_index, int32_
 
 int32_t glyph_width() { return glyph_pixel_buffer().width; }
 int32_t glyph_rows() { return glyph_pixel_buffer().rows; }
+int32_t glyph_bearing_x() { return glyph_pixel_buffer().bearing_x; }
+int32_t glyph_bearing_y() { return glyph_pixel_buffer().bearing_y; }
 
 int32_t glyph_byte_count() {
   return static_cast<int32_t>(glyph_pixel_buffer().pixels.size());
