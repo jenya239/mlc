@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | dashboard compile+link+run |
+| test_gate | dashboard compile+link+timeout run |
+
+### Turn 2026-07-12 13:10 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=4 — atlas_dirty)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:07 |
+| elapsed | ~4 min |
+| done    | `LineDrawResult.atlas_dirty`; upload only on glyph miss or box-brightness change; `fill_rect` skipped when brightness unchanged. |
+| verify  | `mlcc`+`build_bin` ok; headless run timeout 124 (alive); gated `text_renderer_upload_atlas`. |
+| result  | STEP=4 done. Plain: GPU atlas upload skipped on clean frames. |
+| issues  | Foreign `extern_concurrency_lint.*` / `TRACK_TEXT_SHIM_TO_MLC.md` / `.tmp/` left. |
+| next    | ROLE=Driver STEP=5 TRACK_TEXT_GL_PERF_BASELINE — bench 300 frames CPU time |
 
 ### Turn 2026-07-12 13:05 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=3 — GlyphCache wire)
 

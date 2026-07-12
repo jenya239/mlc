@@ -13,8 +13,8 @@ needed, go straight to implementation.
 
 ## Next step
 
-**STEP=4** — Skip atlas zero/upload when GlyphCache had no misses this frame
-(`atlas_dirty` bool).
+**STEP=5** — Benchmark before/after CPU time for ~300 frames of
+`text_dashboard_demo.mlc` (record numbers in this track).
 
 ### STEP=1 sub-steps (Driver)
 
@@ -129,3 +129,12 @@ exact formula into the GL live path — do not re-derive it.
   Phase A/B will consume whatever text primitive exists at the time; this
   track only fixes the primitive itself (perf + correctness), does not
   restructure the GUI architecture.
+- **Перенос bookkeeping-логики (`CachedFontFace`/`CachedShapingFont`
+  lookup) на MLC** per [FFI_LAYER.md §8](../FFI_LAYER.md#8-стратегия-без-hand-written-c-2026-07-11)
+  («без hand-written C++») — STEP=1/2 добавили C++ кеш как residual
+  pragmatic fix (тот же паттерн, что допущенный residual в
+  [TRACK_FFI_SHIM_MIGRATION](../archive/tracks/TRACK_FFI_SHIM_MIGRATION.md)
+  — «abi+bridge C++ remains»). Полная миграция bookkeeping + pitch-copy на
+  MLC + экспозиция bearing через ABI (не хардкод в GL-путь) —
+  [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md), отдельный трек,
+  идёт **после** закрытия этого (не блокирует STEP=3+ здесь).

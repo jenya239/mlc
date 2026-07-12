@@ -3,7 +3,8 @@
 // real mouse input. Everything drawn through the shared TextRenderer
 // (misc/gui/text_renderer.mlc) — the "button" is a plain rect blitted into
 // the same luminance atlas as the glyphs (no second shader needed).
-// GlyphCache + GlyphAtlas persist across frames (TRACK_TEXT_GL_PERF_BASELINE STEP=3).
+// GlyphCache + GlyphAtlas persist across frames; upload GPU atlas only when
+// dirty (TRACK_TEXT_GL_PERF_BASELINE STEP=3–4).
 // Run with: MLC_GLFW_VISIBLE=1 ./bin
 
 import { rect_new } from '../gui/layout'
@@ -63,11 +64,13 @@ type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32 }
 type LineDrawResult = {
   atlas: GlyphAtlas,
   cache: GlyphCache,
-  vertex_count: i32
+  vertex_count: i32,
+  atlas_dirty: i32
 }
 
 // Append one shaped line using persistent GlyphCache/GlyphAtlas.
 // Cache miss → rasterize + pack + blit; hit → reuse atlas slot.
+// atlas_dirty=1 if any glyph was newly packed into the atlas this call.
 fn append_line(
   font_path: string, font_id: i32, line: Line,
   window_width: i32, window_height: i32,
@@ -75,13 +78,16 @@ fn append_line(
 ) -> LineDrawResult = do
   const count = shape_glyph_count(font_path, line.text, line.pixel_size)
   if count < 0 then
-    return LineDrawResult { atlas: atlas, cache: cache, vertex_count: 0 }
+    return LineDrawResult {
+      atlas: atlas, cache: cache, vertex_count: 0, atlas_dirty: 0
+    }
   end
   let mut working_atlas = atlas
   let mut working_cache = cache
   let mut cursor_x = line.pen_x
   let mut index = 0
   let mut vertices = 0
+  let mut atlas_dirty = 0
   while index < count do
     const glyph_id = shape_glyph_id_at(index)
     const key = GlyphCacheKey {
@@ -106,6 +112,7 @@ fn append_line(
               slot = pack.slot
               const inserted = glyph_cache_insert(working_cache, key, slot)
               working_cache = inserted.cache
+              atlas_dirty = 1
             end
           end
         end
@@ -124,7 +131,8 @@ fn append_line(
   LineDrawResult {
     atlas: working_atlas,
     cache: working_cache,
-    vertex_count: vertices
+    vertex_count: vertices,
+    atlas_dirty: atlas_dirty
   }
 end
 
@@ -179,6 +187,7 @@ fn main() -> i32 = do
   let mut previous_mouse_down = 0
   let mut click_count = 0
   let mut frame_index = 0
+  let mut previous_box_brightness = -1
 
   while text_context_should_close() == 0 do
     const input = gui_input_poll()
@@ -207,6 +216,7 @@ fn main() -> i32 = do
 
     text_scratch_f32_clear()
     let mut vertex_count = 0
+    let mut atlas_dirty = 0
 
     let mut line_index = 0
     while line_index < lines.length() do
@@ -217,16 +227,23 @@ fn main() -> i32 = do
       atlas = result.atlas
       cache = result.cache
       vertex_count = vertex_count + result.vertex_count
+      if result.atlas_dirty == 1 then
+        atlas_dirty = 1
+      end
       line_index = line_index + 1
     end
 
     let mut box_brightness = 70
     if hovered == 1 then box_brightness = 170 end
     if click_count > 0 then box_brightness = box_brightness + 40 end
-    text_scratch_u8_fill_rect(
-      atlas_size, box_slot.x, box_slot.y,
-      button_rect.width, button_rect.height, box_brightness
-    )
+    if box_brightness != previous_box_brightness then
+      text_scratch_u8_fill_rect(
+        atlas_size, box_slot.x, box_slot.y,
+        button_rect.width, button_rect.height, box_brightness
+      )
+      previous_box_brightness = box_brightness
+      atlas_dirty = 1
+    end
     gl_scratch_push_screen_quad(
       width, height,
       button_rect.x, button_rect.y, button_rect.width, button_rect.height,
@@ -234,7 +251,14 @@ fn main() -> i32 = do
     )
     vertex_count = vertex_count + 6
 
-    text_renderer_upload_atlas(renderer)
+    if atlas_dirty == 1 then
+      const upload_status = text_renderer_upload_atlas(renderer)
+      if upload_status != 0 then
+        text_renderer_destroy(renderer)
+        text_context_end()
+        return upload_status
+      end
+    end
     text_bind_array_buffer(renderer.vertex_buffer)
     text_upload_dynamic_scratch()
     renderer = text_renderer_set_batch(renderer, vertex_count)

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1–3 done; STEP=4 (atlas_dirty
-skip upload) next. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
+**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1–4 done; STEP=5 (bench)
+next. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
 
 ## Step sizing (good vs bad)
 
