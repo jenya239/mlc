@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** — STEP=1 **done**; STEP=2 next
+## Status: **active** — STEP=1–2 **done**; STEP=3 next
 
 ## Next step
 
-**STEP=2** — repro corpus: two-module e2e (identical signature redeclare) — fails clang today.
+**STEP=3** — implement Hybrid dedup (skip second emit / bind to import; mismatch later in STEP=4).
 
 ## Problem
 
@@ -38,19 +38,25 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design decision — read codegen/checker for `extern fn ... from`; pick option 1/2/3; write 2–3 sentences here | **done** (option 3 Hybrid) |
-| 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | **pending** |
-| 3 | Implement chosen dedup/diagnostic in checker and/or codegen | pending |
+| 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | **done** (`fixtures/extern_dedup/` + `run_extern_dedup_repro.sh` expects enclose-namespace fail) |
+| 3 | Implement chosen dedup/diagnostic in checker and/or codegen | **pending** |
 | 4 | Negative case: same key, different signatures → mlcc error with both sites | pending |
 | 5 | Re-check examples sweep / button demos still OK | pending |
 | 6 | Self-host verify (mlcc → mlcc2 diff identical) | pending |
 | 7 | `scripts/regression_gate.sh` green | pending |
 | 8 | Docs: `FFI_LAYER.md` one paragraph on dedup rule | pending |
 
-### STEP=2 sub-steps (Driver)
+### STEP=2 baseline (recorded)
 
-1. Add two-module fixture under `compiler/tests/` (or `misc/` smoke): module A exports `extern fn … = "c" from "h"`; module B imports A and redeclares same key+sig.
-2. Document/script: today `mlcc` + `build_bin` → clang fail (or note current failure mode).
-3. No fix yet — `next` = STEP=3 after commit.
+- Fixture: `compiler/tests/fixtures/extern_dedup/provider.mlc` + `redeclare.mlc`
+- Failure: `redeclare.hpp` emits `int provider::sleep_ms_probe(...)` **inside** `namespace redeclare` → clang `does not enclose namespace 'provider'`
+- Gate: `compiler/tests/run_extern_dedup_repro.sh` (expects fail until STEP=3)
+
+### STEP=3 sub-steps (Driver)
+
+1. On identical `(c_name, header)+sig` when import already owns key: skip local `gen_ffi_fn_decl_cpp` / fix import proto emit so no `provider::` inside consumer namespace.
+2. Flip `run_extern_dedup_repro.sh` to expect build+run ok.
+3. No mismatch diagnostic yet — that is STEP=4.
 
 ## Out of scope
 

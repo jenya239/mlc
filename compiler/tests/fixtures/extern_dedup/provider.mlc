@@ -1,0 +1,3 @@
+// Module A: owns the FFI binding (TRACK_FFI_EXTERN_DEDUP STEP=2).
+export extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp" blocking

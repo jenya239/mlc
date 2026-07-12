@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | STEP=1 docs-only; option 3 Hybrid |
+| test_gate | `run_extern_dedup_repro.sh` ok (expects clang fail) |
+
+### Turn 2026-07-12 04:05 (Driver TRACK_FFI_EXTERN_DEDUP STEP=2 — repro fixture)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 04:04 |
+| elapsed | ~8 min |
+| done    | `fixtures/extern_dedup/{provider,redeclare}.mlc`; `run_extern_dedup_repro.sh` — clang `does not enclose namespace 'provider'` on `provider::sleep_ms_probe` inside `namespace redeclare`. |
+| verify  | `TMPDIR=$PWD/tmp compiler/tests/run_extern_dedup_repro.sh` → exit 0 (baseline fail). |
+| result  | STEP=2 done. Plain: repro locked; STEP=3 flips script to pass. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_FFI_EXTERN_DEDUP — Hybrid: skip second FFI emit / fix import proto |
 
 ### Turn 2026-07-12 03:55 (Driver TRACK_FFI_EXTERN_DEDUP STEP=1 — design Hybrid)
 

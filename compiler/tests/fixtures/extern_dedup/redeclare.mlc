@@ -1,0 +1,10 @@
+// Identical (c_name, header)+sig redeclare while importing provider — clang fail today.
+import { sleep_ms_probe } from './provider.mlc'
+
+extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp" blocking
+
+fn main() -> i32 = do
+  sleep_ms_probe(0)
+  0
+end
