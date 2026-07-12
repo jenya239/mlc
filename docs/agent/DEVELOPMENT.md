@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**No active Driver track.** Last: `TRACK_FFI_EXTERN_DEDUP` closed (awaiting Critic).
-See [TRACK_FFI_EXTERN_DEDUP.md](../archive/tracks/TRACK_FFI_EXTERN_DEDUP.md). Queue next after Critic: GUI_INPUT → …
+**No active Driver track.** Last: `TRACK_FFI_EXTERN_DEDUP` Critic OK.
+See [TRACK_FFI_EXTERN_DEDUP.md](../archive/tracks/TRACK_FFI_EXTERN_DEDUP.md). Next: Planner → GUI_INPUT_ROBUSTNESS (§23).
 
 
 

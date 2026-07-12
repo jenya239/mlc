@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 8 |
-| active_track | (none) — Critic next |
-| test_gate | STEP=8 docs; REG 20/0 from STEP=7 |
+| step_last | critique-audit |
+| active_track | (none) — Planner next |
+| test_gate | Critic: DRY repro+mismatch ok; gui_button DRY=1 |
+
+### Turn 2026-07-12 05:56 (Critic TRACK_FFI_EXTERN_DEDUP — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 05:56 |
+| elapsed | ~8 min |
+| done    | Audited STEP=1–8 (`d1e6d0fb`…`a5bbe9c2`); archive/PLAN/FFI_LAYER §10; DRY smokes + gui_button DRY. **reopen: none**. |
+| verify  | `run_extern_dedup_repro.sh` ok; `run_extern_dedup_mismatch_smoke.sh` ok; `test ! -f docs/agent/TRACK_FFI_EXTERN_DEDUP.md`; PLAN §22 Critic OK. |
+| result  | Critic OK. Residual: skip-emit by MLC name, not full `(c_name, header)`. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate GUI_INPUT_ROBUSTNESS (§23) |
 
 ### Turn 2026-07-12 05:50 (Driver TRACK_FFI_EXTERN_DEDUP STEP=8 — docs close)
 
