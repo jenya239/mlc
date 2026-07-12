@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Traits) |
+| test_gate | docs-only (LANGUAGE_REFERENCE Errors) |
+
+### Turn 2026-07-12 11:52 (Driver TRACK_LANG_DOCS STEP=5 — Error handling)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:46 |
+| elapsed | ~5 min |
+| done    | Error handling: Result+`?` (`result.mlc`); `T!E` (`with_question.mlc`); Option (`vm_option.mlc`); ERROR_UNION link. |
+| verify  | Cited paths exist; TRACK Next=STEP=6. |
+| result  | STEP=5 done. Plain: Result/Option/?/T!E documented from fixtures. |
+| issues  | Foreign `compiler/out/*` left; no e2e for Option. |
+| next    | ROLE=Driver STEP=6 TRACK_LANG_DOCS — Closures + escape analysis |
 
 ### Turn 2026-07-12 11:50 (Driver TRACK_LANG_DOCS STEP=4 — Traits + orphan rule)
 

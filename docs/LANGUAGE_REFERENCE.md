@@ -262,13 +262,55 @@ Details:
 
 ## Error handling
 
-Status: pending — filled in STEP=5.
+Fallible work uses `Result<T, E>` (or the `T!E` sugar for the same type).
+`?` unwraps `Ok` or early-returns `Err` from the enclosing function. `Option`
+is a sum for optional values (`Some` / `None`).
 
-Planned topics:
+### `Result` + `?`
 
-- `Result` / `Option`
-- `?` early-return operator
-- `T!E` sugar (if documented as shipping)
+Source: [`compiler/tests/e2e/result.mlc`](../compiler/tests/e2e/result.mlc)
+
+```mlc
+type Result<T, E> = Ok(T) | Err(E)
+
+fn safe_div(a: i32, b: i32) -> Result<i32, string> =
+  if b == 0 then Err('division by zero') else Ok(a / b) end
+
+fn compute(divisor: i32) -> Result<i32, string> =
+  Ok(safe_div(10, divisor)? + 1)
+```
+
+Callers typically `match` on `Ok` / `Err` (see `main` in the same file).
+
+### `T!E` sugar
+
+`T!E` desugars to `Result<T, E>` in type position. Source:
+[`compiler/tests/fixtures/error_union_sugar/with_question.mlc`](../compiler/tests/fixtures/error_union_sugar/with_question.mlc)
+
+```mlc
+type Result<T, E> = Ok(T) | Err(E)
+
+fn safe_div(a: i32, b: i32) -> i32!string =
+  if b == 0 then Err('division by zero') else Ok(a / b) end
+
+fn compute(divisor: i32) -> i32!string =
+  Ok(safe_div(10, divisor)? + 1)
+```
+
+Track: [archive/tracks/TRACK_LANG_ERROR_UNION.md](archive/tracks/TRACK_LANG_ERROR_UNION.md).
+
+### `Option`
+
+No e2e fixture. Source: [`misc/examples/vm_option.mlc`](../misc/examples/vm_option.mlc)
+
+```mlc
+type Option = Some(i32) | None
+
+fn unwrap_option(value: Option) -> i32 = match value {
+  Some(x) => x
+  None => 0
+}
+```
 
 ## Closures
 

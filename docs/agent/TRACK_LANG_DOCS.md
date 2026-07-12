@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=5** — Error handling (`Result`/`Option`/`?`/`T!E`) from e2e `result.mlc` (+ Option fixture if any).
+**STEP=6** — Closures + escape analysis (link `TRACK_LANG_CLOSURE_ESCAPE`; cite e2e/demo fixture).
 
 ## Goal
 
@@ -34,7 +34,7 @@ narrative) — a reference, skimmable, accurate.
 | 2 | Section: bindings + functions — examples sourced from `compiler/tests/e2e/` (grep for the simplest matching fixture, do not write new prose-only examples) | **done** (2026-07-12) — `const`/`let` from e2e; `let mut` from `loops_demo`; `fn` one-line/multi-line from e2e; `export fn` from `golden_harness` |
 | 3 | Section: types (record/sum/generic) + pattern matching | **done** (2026-07-12) — record/sum/Result e2e; match+guards e2e; or-pattern from `test_mir_vm_smoke` string fixture |
 | 4 | Section: traits + orphan rule | **done** (2026-07-12) — inherent extend / trait impl / trait param from e2e; orphan E086 → TRACK_LANG_ORPHAN_RULE |
-| 5 | Section: error handling (`Result`/`Option`/`?`/`T!E`) | pending |
+| 5 | Section: error handling (`Result`/`Option`/`?`/`T!E`) | **done** (2026-07-12) — Result+`?` e2e; `T!E` from error_union fixture; Option from `vm_option` |
 | 6 | Section: closures + escape analysis (link `archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md` for the "why") | pending |
 | 7 | Section: arrays/maps/strings + HOFs (`map`/`filter`/`fold`) | pending |
 | 8 | Section: concurrency — link `CONCURRENCY_V2.md` for the full spec, this section is the condensed "how to use it" version with the accept-loop demo as the canonical example | pending |
@@ -56,6 +56,7 @@ narrative) — a reference, skimmable, accurate.
 - **STEP=2** (2026-07-12): Bindings + Functions filled from e2e / cited fixtures.
 - **STEP=3** (2026-07-12): Types + Pattern matching filled from e2e / mir smoke fixture.
 - **STEP=4** (2026-07-12): Traits + orphan rule from e2e + archive track link.
+- **STEP=5** (2026-07-12): Error handling Result/`?`/`T!E`/Option from fixtures.
 
 ## Out of scope
 
