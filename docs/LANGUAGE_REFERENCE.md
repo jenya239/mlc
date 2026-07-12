@@ -1,13 +1,16 @@
 # MLC Language Reference
 
 Parent: [PLAN.md](PLAN.md) §27; track:
-[agent/TRACK_LANG_DOCS.md](agent/TRACK_LANG_DOCS.md).
+[archive/tracks/TRACK_LANG_DOCS.md](archive/tracks/TRACK_LANG_DOCS.md).
 
 This is a **language reference**, not a tutorial. Each section will hold:
 syntax, a short semantics note, and one runnable example taken from an
 existing `compiler/tests/e2e/` or `misc/examples/` fixture (path cited —
 examples are never invented for this document). Stdlib module APIs belong
 in [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md), not here.
+
+Fenced examples: `mlc` must compile via `scripts/lang_ref_lint.rb`; `mlc excerpt`
+compiles the cited Source `.mlc` (truncated fence body is not the compile unit).
 
 ## Contents
 
@@ -35,7 +38,7 @@ for this section until a dedicated e2e fixture is cited.
 
 Source: [`compiler/tests/e2e/record_update.mlc`](../compiler/tests/e2e/record_update.mlc)
 
-```mlc
+```mlc excerpt
 fn main() -> i32 = do
   const origin = Point { x: 0, y: 0 }
   const moved = move_x(origin, 5)
@@ -53,7 +56,7 @@ end
 
 Source: [`compiler/tests/e2e/spawn_side_effect.mlc`](../compiler/tests/e2e/spawn_side_effect.mlc)
 
-```mlc
+```mlc excerpt
 fn main() -> i32 = do
   let task_a = spawn do side() end
   block_on(task_a)
@@ -65,7 +68,7 @@ end
 No e2e fixture uses `let mut` yet. Source (excerpt from `main`):
 [`misc/examples/loops_demo.mlc`](../misc/examples/loops_demo.mlc)
 
-```mlc
+```mlc excerpt
   let numbers = [1, 2, 3, 4, 5]
   let mut sum = 0
   for n in numbers do
@@ -104,8 +107,12 @@ end
 
 Not used in `compiler/tests/e2e/`. Source:
 [`compiler/tests/support/golden_harness.mlc`](../compiler/tests/support/golden_harness.mlc)
+(Source is a support module, not a standalone entry — listing stubs the
+helper so the fence compiles; body matches Source.)
 
 ```mlc
+fn test_relative_path_is_safe(relative_path: string) -> bool = true
+
 export fn golden_relative_path_is_safe(relative_path: string) -> bool = do
   if !test_relative_path_is_safe(relative_path) then
     false
@@ -241,7 +248,7 @@ fn id<T: Display>(x: T) -> T = x
 
 Source: [`compiler/tests/e2e/trait_as_param.mlc`](../compiler/tests/e2e/trait_as_param.mlc)
 
-```mlc
+```mlc excerpt
 fn f(x: Display) -> unit = ()
 
 fn main() -> i32 = do
@@ -342,7 +349,7 @@ fn main() -> i32 = ((x: i32) => x + 1)(6)
 
 Source: [`misc/examples/array_hof_demo.mlc`](../misc/examples/array_hof_demo.mlc)
 
-```mlc
+```mlc excerpt
   let doubled = numbers.map(x => x * 2)
   let evens = more.filter(x => x % 2 == 0)
 ```
@@ -434,7 +441,7 @@ cases. Full design (Send/Sync, channels, cancellation, supervisors):
 
 Source: [`compiler/tests/e2e/spawn_side_effect.mlc`](../compiler/tests/e2e/spawn_side_effect.mlc)
 
-```mlc
+```mlc excerpt
 fn main() -> i32 = do
   let task_a = spawn do side() end
   block_on(task_a)
@@ -445,7 +452,7 @@ end
 
 Source: [`compiler/tests/e2e/scope_parallel_sleep.mlc`](../compiler/tests/e2e/scope_parallel_sleep.mlc)
 
-```mlc
+```mlc excerpt
 fn main() -> i32 = do
   scope |task_scope| do
     task_scope.spawn do slow_work(1) end
@@ -462,7 +469,7 @@ end
 Bounded accept + per-connection `scope.spawn` (not bare detached `spawn`).
 Source: [`misc/examples/http_scope_accept_loop_demo.mlc`](../misc/examples/http_scope_accept_loop_demo.mlc)
 
-```mlc
+```mlc excerpt
   scope |task_scope| do
     while remaining > 0 do
       let stream_option = accept(listener)

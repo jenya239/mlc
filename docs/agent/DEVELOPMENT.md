@@ -41,11 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_DOCS` active** — STEP=11 (example compile lint) next; STEP=1–10 done.
-See [TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md). Queue: LANG_DOCS → STDLIB_DOCS → …
-
-
-
+**`TRACK_LANG_DOCS` closed** (2026-07-12) — awaiting Critic; then Planner →
+`TRACK_STDLIB_DOCS` §28. See [archive/tracks/TRACK_LANG_DOCS.md](../archive/tracks/TRACK_LANG_DOCS.md).
 
 ## Step sizing (good vs bad)
 

@@ -1,22 +1,27 @@
 # Track: Language reference manual
 
-Parent: [../PLAN.md](../PLAN.md) §27.
+Parent: [../../PLAN.md](../../PLAN.md) §27.
 Trigger: 2026-07-11 backlog review for ~300-step planning horizon. No single
 document describes the MLC language end-to-end — syntax cheatsheet exists
 only as a compressed block in `CLAUDE.md` (for agent consumption); no
 prose reference for a human reader (future external contributor, the gate
-condition already named in [TRACK_DEBUG_SOURCE_MAP](TRACK_DEBUG_SOURCE_MAP.md)).
+condition already named in [TRACK_DEBUG_SOURCE_MAP](../TRACK_DEBUG_SOURCE_MAP.md)).
 Language features are individually documented across ~15 scattered docs
 (`FFI_LAYER.md`, `CONCURRENCY_V2.md`, `LANGUAGE_AUDIT_2026_07.md`, ...) with
 no single entry point.
 Predecessor closed (Critic OK 2026-07-12):
-[../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md).
+[TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md).
 
-## Status: **active** (Planner 2026-07-12) — очередь §27
+## Status: **closed** (2026-07-12) — awaiting Critic
+
+**Planner** (2026-07-12): activated after TEST_HARNESS Critic OK.
+**Driver** (2026-07-12): STEP=1–11 done — `docs/LANGUAGE_REFERENCE.md` filled
+from e2e/demo fixtures; cross-links; `scripts/lang_ref_lint.rb` (33 fences,
+8 excerpts→Source). Docs-only; regression_gate N/A.
 
 ## Next step
 
-**STEP=11** — verify script: extract fenced `mlc` blocks and compile each with mlcc.
+— (closed; `ROLE=Critic STEP=critique-audit` then Planner → `TRACK_STDLIB_DOCS` §28)
 
 ## Goal
 
@@ -39,32 +44,18 @@ narrative) — a reference, skimmable, accurate.
 | 7 | Section: arrays/maps/strings + HOFs (`map`/`filter`/`fold`) | **done** (2026-07-12) — `empty_array` e2e; `array_hof_demo`; `vm_map`; `string_operations_demo` |
 | 8 | Section: concurrency — link `CONCURRENCY_V2.md` for the full spec, this section is the condensed "how to use it" version with the accept-loop demo as the canonical example | **done** (2026-07-12) — spawn/scope e2e; accept-loop demo; Mutex from test string; CONCURRENCY_V2 link |
 | 9 | Section: FFI — link `FFI_LAYER.md`, condensed version + the safety contract (`unsafe` framing from `TRACK_FFI_SAFETY`) | **done** (2026-07-12) — extern fn/type from fixtures; blocking from env.mlc; safety table + FFI_LAYER/SAFETY links |
-| 10 | Cross-link from `README.md` + `AGENTS.md`/`docs/specs/index.md` so it is discoverable | pending |
-| 11 | Verify: every code example in the doc actually compiles (`mlcc -o /tmp/lang_ref_check <extracted example>`) — write a tiny extraction script (Ruby, per scripts-language rule) that pulls fenced ` ```mlc ` blocks and compiles each; wire as a doc-lint, not full regression_gate (docs-only, no self-host diff needed) | pending |
-
-### STEP=1 sub-steps (Driver)
-
-1. Create `docs/LANGUAGE_REFERENCE.md` with title, one-paragraph scope (reference not tutorial; examples must cite real e2e/demo paths), and a TOC linking to the section headings below.
-2. Add stub `##` headings only (no filled prose yet) for: Bindings; Functions; Types; Pattern matching; Traits; Error handling; Closures; Arrays, maps, strings; Concurrency; FFI. Under each stub: `Status: pending — filled in STEP=N` and a bullet list of planned topics from the Steps table.
-3. Do **not** invent example code in STEP=1; do **not** edit README/AGENTS (STEP=10). Point parent link to PLAN §27.
-4. Verify: file exists; TOC anchors match headings; TRACK Status stays **active**, Next=STEP=2 after mark STEP=1 done.
+| 10 | Cross-link from `README.md` + `AGENTS.md`/`docs/specs/index.md` so it is discoverable | **done** (2026-07-12) — README Roadmap; AGENTS On-demand; specs index row |
+| 11 | Verify: every code example in the doc actually compiles (`mlcc -o /tmp/lang_ref_check <extracted example>`) — write a tiny extraction script (Ruby, per scripts-language rule) that pulls fenced ` ```mlc ` blocks and compiles each; wire as a doc-lint, not full regression_gate (docs-only, no self-host diff needed) | **done** (2026-07-12) — `scripts/lang_ref_lint.rb`; `mlc` wrap-compile; `mlc excerpt`→Source; 33/0 |
 
 ## Progress
 
 - **Planner** (2026-07-12): activated after TEST_HARNESS Critic OK; STEP=1 next.
-- **STEP=1** (2026-07-12): `docs/LANGUAGE_REFERENCE.md` skeleton + TOC + stubs; no invented examples.
-- **STEP=2** (2026-07-12): Bindings + Functions filled from e2e / cited fixtures.
-- **STEP=3** (2026-07-12): Types + Pattern matching filled from e2e / mir smoke fixture.
-- **STEP=4** (2026-07-12): Traits + orphan rule from e2e + archive track link.
-- **STEP=5** (2026-07-12): Error handling Result/`?`/`T!E`/Option from fixtures.
-- **STEP=6** (2026-07-12): Closures from demos + escape-analysis track link; SESSION archived older turns.
-- **STEP=7** (2026-07-12): Arrays/maps/strings + HOFs from e2e/demos.
-- **STEP=8** (2026-07-12): Concurrency condensed — spawn/scope/accept-loop + CONCURRENCY_V2.
-- **STEP=9** (2026-07-12): FFI condensed — extern forms + safety contract (no `unsafe` keyword).
+- **STEP=1–10** (2026-07-12): reference filled + cross-links (see prior SESSION turns).
+- **STEP=11** (2026-07-12): `scripts/lang_ref_lint.rb`; excerpt fences for truncated listings; golden_harness stub helper in fence (support module not a standalone entry).
 
 ## Out of scope
 
 - Tutorial/getting-started narrative (separate concern if ever requested).
-- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](TRACK_STDLIB_DOCS.md).
+- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](../TRACK_STDLIB_DOCS.md).
 - Auto-generated docs from source comments (no doc-comment convention exists
   yet in MLC; not introducing one speculatively).

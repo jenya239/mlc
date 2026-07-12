@@ -1,6 +1,6 @@
 # Track: Stdlib module reference
 
-Parent: [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md), [TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
+Parent: [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md), [TRACK_LANG_DOCS](../archive/tracks/TRACK_LANG_DOCS.md).
 Trigger: 2026-07-11 backlog review. Every stdlib module (`Tcp`, `HttpServer`,
 `WebSocket`, `Postgres`, `Crypto`, `Log`, `Env`, `Validate`, `Json`) has a
 working demo under `misc/examples/` but no one-page API reference —
@@ -29,5 +29,5 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 
 ## Out of scope
 
-- Full language reference — see [TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
+- Full language reference — see [TRACK_LANG_DOCS](../archive/tracks/TRACK_LANG_DOCS.md).
 - Generated/automated doc extraction — manual curation only, same as that track.

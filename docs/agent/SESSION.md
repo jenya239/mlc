@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 10 |
-| active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (cross-links) |
+| driver_turns_since_plan | 11 |
+| step_last | 11 |
+| active_track | TRACK_LANG_DOCS (closed, awaiting Critic) |
+| test_gate | docs-only (`lang_ref_lint.rb` 33/0) |
+
+### Turn 2026-07-12 12:05 (Driver TRACK_LANG_DOCS STEP=11 — lang_ref_lint; track close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 12:00 |
+| elapsed | ~8 min |
+| done    | `scripts/lang_ref_lint.rb`; marked truncated fences `mlc excerpt` (Source compile); golden_harness stub helper; TRACK archived; PLAN §27 done. |
+| verify  | `ruby scripts/lang_ref_lint.rb` → ok (33 fences, 8 excerpts→Source). |
+| result  | STEP=11 done; TRACK **closed**. Plain: every listed example compiles (body or Source). |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_LANG_DOCS |
 
 ### Turn 2026-07-12 12:02 (Driver TRACK_LANG_DOCS STEP=10 — cross-links)
 
