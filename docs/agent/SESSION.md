@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | E090 smoke ok; arity smoke ok; dedup repro ok |
+| test_gate | examples sweep ok=106 fail=0 skip=1 |
+
+### Turn 2026-07-12 05:20 (Driver TRACK_FFI_EXTERN_DEDUP STEP=5 — examples sweep)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 05:17 |
+| elapsed | ~5 min |
+| done    | Full `run_examples_compile_sweep.sh` after E090/Hybrid; gui_button demos included. |
+| verify  | summary **ok=106 fail=0 skip=1** (dynrecord); `gui_button_demo` OK. |
+| result  | STEP=5 done. Plain: examples still green post-dedup. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_FFI_EXTERN_DEDUP — mlcc→mlcc2 self-host diff |
 
 ### Turn 2026-07-12 05:10 (Driver TRACK_FFI_EXTERN_DEDUP STEP=4 — E090 mismatch)
 

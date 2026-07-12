@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** — STEP=1–4 **done**; STEP=5 next
+## Status: **active** — STEP=1–5 **done**; STEP=6 next
 
 ## Next step
 
-**STEP=5** — re-check examples sweep / button demos still OK.
+**STEP=6** — self-host verify (mlcc → mlcc2 diff identical).
 
 ## Problem
 
