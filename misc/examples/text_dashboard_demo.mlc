@@ -6,9 +6,11 @@
 // GlyphCache + GlyphAtlas persist across frames; upload GPU atlas only when
 // dirty (TRACK_TEXT_GL_PERF_BASELINE STEP=3–4).
 // Run with: MLC_GLFW_VISIBLE=1 ./bin
+// Bench: MLC_TEXT_DASHBOARD_BENCH=1 → 300 frames, no sleep_ms (STEP=5).
 
 import { rect_new } from '../gui/layout'
 import { gui_input_poll, gui_is_hovered, gui_click_edge } from '../gui/input'
+import { has } from 'Env'
 import {
   GlyphAtlas,
   AtlasSlot,
@@ -167,6 +169,13 @@ fn main() -> i32 = do
 
   println("[mlc-text] window open — move the mouse, click the box, Esc to quit")
 
+  let mut max_frames = 1800
+  let mut frame_sleep_ms = 16
+  if has("MLC_TEXT_DASHBOARD_BENCH") then
+    max_frames = 300
+    frame_sleep_ms = 0
+  end
+
   text_scratch_u8_clear()
   text_scratch_u8_resize_zero(atlas_size * atlas_size)
   let mut atlas = glyph_atlas_new(atlas_size)
@@ -265,10 +274,12 @@ fn main() -> i32 = do
 
     text_renderer_draw(renderer, width, height)
     text_context_swap_poll()
-    sleep_ms(16)
+    if frame_sleep_ms > 0 then
+      sleep_ms(frame_sleep_ms)
+    end
 
     frame_index = frame_index + 1
-    if frame_index >= 1800 then
+    if frame_index >= max_frames then
       break
     end
   end

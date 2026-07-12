@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | dashboard compile+link+timeout run |
+| test_gate | bench before/after 300 frames |
+
+### Turn 2026-07-12 13:15 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=5 — bench)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:10 |
+| elapsed | ~5 min |
+| done    | `MLC_TEXT_DASHBOARD_BENCH=1` (300 frames, no sleep); timed before (pre-STEP1 shims+pre-STEP3 demo) vs after (STEPS 1–4). |
+| verify  | `/usr/bin/time -v`: before User 8.97s / Elapsed 11.42s; after User 0.19s / Elapsed 0.36s (~47× user CPU). |
+| result  | STEP=5 done. Plain: Part A cache stack ~47× cheaper on CPU. |
+| issues  | Foreign `extern_concurrency_lint.*` / `TRACK_TEXT_SHIM_TO_MLC.md` / `.tmp/` left. |
+| next    | ROLE=Driver STEP=6 TRACK_TEXT_GL_PERF_BASELINE — text smokes / golden MAE |
 
 ### Turn 2026-07-12 13:10 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=4 — atlas_dirty)
 
