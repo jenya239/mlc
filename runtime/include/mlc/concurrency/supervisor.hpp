@@ -1,13 +1,18 @@
 #pragma once
 
-// Supervisor (TRACK_CONCURRENCY_SUPERVISOR STEP=1–2).
-// Register children, start all, stop all via StopToken + join.
+// Supervisor (TRACK_CONCURRENCY_SUPERVISOR STEP=1–3).
+// Register children, start/stop via StopToken + join.
 // Restart policies: permanent / transient / temporary (one_for_one).
-// Restart storm limits: STEP=3 (not here).
+// Restart storm: max restarts within a rolling window → stop supervisor.
 
 #include "mlc/concurrency/stop.hpp"
 
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <deque>
 #include <functional>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -22,6 +27,11 @@ enum class RestartPolicy {
   Temporary   // never restart
 };
 
+struct RestartIntensity {
+  std::size_t max_restarts = 0; // 0 = unlimited
+  std::chrono::milliseconds within{0};
+};
+
 class Supervisor {
   struct ChildSpec {
     std::string name;
@@ -32,13 +42,35 @@ class Supervisor {
   StopSource stop_;
   std::vector<ChildSpec> children_;
   std::vector<std::thread> running_;
+  RestartIntensity intensity_{};
+  std::mutex intensity_mutex_;
+  std::deque<std::chrono::steady_clock::time_point> restart_times_;
+  std::atomic<bool> storm_tripped_{false};
   bool started_ = false;
   bool stopped_ = false;
 
-  static void run_child_one_for_one(
-      const ChildSpec& child,
-      StopToken supervisor_token
-  ) {
+  // Record a restart attempt. false → intensity exceeded; supervisor stop requested.
+  bool allow_restart() {
+    if (intensity_.max_restarts == 0) {
+      return true;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    std::lock_guard<std::mutex> lock(intensity_mutex_);
+    while (!restart_times_.empty() &&
+           (now - restart_times_.front()) > intensity_.within) {
+      restart_times_.pop_front();
+    }
+    if (restart_times_.size() >= intensity_.max_restarts) {
+      storm_tripped_.store(true);
+      stop_.request();
+      return false;
+    }
+    restart_times_.push_back(now);
+    return true;
+  }
+
+  void run_child_one_for_one(const ChildSpec& child) {
+    const StopToken supervisor_token = token();
     while (true) {
       bool abnormal = false;
       try {
@@ -53,6 +85,9 @@ class Supervisor {
           child.policy == RestartPolicy::Permanent ||
           (child.policy == RestartPolicy::Transient && abnormal);
       if (!should_restart) {
+        break;
+      }
+      if (!allow_restart()) {
         break;
       }
     }
@@ -79,6 +114,25 @@ public:
   [[nodiscard]] StopToken token() const noexcept { return stop_.token(); }
 
   [[nodiscard]] bool cancel_requested() const noexcept { return stop_.requested(); }
+
+  [[nodiscard]] bool storm_tripped() const noexcept { return storm_tripped_.load(); }
+
+  // max_restarts=0 disables intensity (unlimited). Call before start().
+  void set_restart_intensity(
+      std::size_t max_restarts,
+      std::chrono::milliseconds within
+  ) {
+    if (started_) {
+      throw std::logic_error("Supervisor::set_restart_intensity after start");
+    }
+    if (max_restarts > 0 && within.count() <= 0) {
+      throw std::invalid_argument(
+          "Supervisor::set_restart_intensity: within must be > 0 when max > 0"
+      );
+    }
+    intensity_.max_restarts = max_restarts;
+    intensity_.within = within;
+  }
 
   void add(
       std::string name,
@@ -118,7 +172,6 @@ public:
 
   [[nodiscard]] std::size_t child_count() const noexcept { return children_.size(); }
 
-  // Launch every registered child (one thread each; one_for_one restart loops).
   void start() {
     if (started_) {
       throw std::logic_error("Supervisor::start called twice");
@@ -128,11 +181,8 @@ public:
     }
     started_ = true;
     running_.reserve(children_.size());
-    StopToken child_token = token();
     for (const auto& child : children_) {
-      running_.emplace_back(
-          [child, child_token]() { run_child_one_for_one(child, child_token); }
-      );
+      running_.emplace_back([this, child]() { run_child_one_for_one(child); });
     }
   }
 

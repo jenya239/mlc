@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | `test_supervisor` 9/9 |
+| test_gate | `test_supervisor` 17/17 |
+
+### Turn 2026-07-12 10:40 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=3 — restart storm)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:32 |
+| elapsed | ~10 min |
+| done    | `set_restart_intensity` / `storm_tripped`; rolling `max`/`within`; storm requests supervisor stop. |
+| verify  | `test_supervisor` ALL 17 PASSED (×2). |
+| result  | STEP=3 done. Plain: storm stops spinning permanent; next MLC vs C++ decision. |
+| issues  | Foreign `compiler/out/*` left; exponential backoff still deferred. |
+| next    | ROLE=Driver STEP=4 TRACK_CONCURRENCY_SUPERVISOR — MLC-reachable vs C++-only |
 
 ### Turn 2026-07-12 10:25 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=2 — restart policies)
 

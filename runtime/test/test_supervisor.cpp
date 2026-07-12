@@ -140,6 +140,54 @@ void test_transient_no_restart_on_clean_exit() {
   CHECK(runs.load() == 1);
 }
 
+void test_storm_trips_permanent_spinner() {
+  std::atomic<int> runs{0};
+  mlc::concurrency::Supervisor supervisor;
+  supervisor.set_restart_intensity(3, std::chrono::milliseconds(1000));
+  supervisor.add(
+      "spin",
+      mlc::concurrency::RestartPolicy::Permanent,
+      [&] { runs.fetch_add(1); }
+  );
+  supervisor.start();
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  CHECK(supervisor.storm_tripped());
+  CHECK(supervisor.cancel_requested());
+  const int total = runs.load();
+  CHECK(total >= 4);
+  CHECK(total <= 5);
+  supervisor.stop();
+  CHECK(runs.load() == total);
+}
+
+void test_storm_stops_sibling() {
+  std::atomic<int> spinner_runs{0};
+  std::atomic<bool> sibling_saw_cancel{false};
+  mlc::concurrency::Supervisor supervisor;
+  supervisor.set_restart_intensity(2, std::chrono::milliseconds(1000));
+  supervisor.add(
+      "spin",
+      mlc::concurrency::RestartPolicy::Permanent,
+      [&] { spinner_runs.fetch_add(1); }
+  );
+  supervisor.add(
+      "sibling",
+      mlc::concurrency::RestartPolicy::Temporary,
+      [&](mlc::concurrency::StopToken token) {
+        while (!token.requested()) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        sibling_saw_cancel.store(true);
+      }
+  );
+  supervisor.start();
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  CHECK(supervisor.storm_tripped());
+  supervisor.stop();
+  CHECK(sibling_saw_cancel.load());
+  CHECK(spinner_runs.load() >= 3);
+}
+
 int main() {
   test_start_stop_runs_children();
   test_destructor_stops_token_child();
@@ -148,6 +196,8 @@ int main() {
   test_temporary_does_not_restart();
   test_transient_restarts_only_on_exception();
   test_transient_no_restart_on_clean_exit();
+  test_storm_trips_permanent_spinner();
+  test_storm_stops_sibling();
   if (failed == 0) {
     std::cout << "ALL " << passed << " checks PASSED\n";
   } else {

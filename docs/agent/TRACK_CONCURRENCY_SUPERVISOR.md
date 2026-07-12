@@ -12,7 +12,7 @@ HTTP hardening closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=3** — restart storm protection (`max` / `within`).
+**STEP=4** — decide MLC-reachable vs C++-only API (before STEP=5 smoke expansion).
 
 ## Goal
 
@@ -25,7 +25,7 @@ Library-first child supervision: `permanent|transient|temporary`, start with
 |------|------|--------|
 | 1 | `Supervisor` runtime skeleton in `runtime/include/mlc/concurrency/supervisor.hpp`: register child (a `std::function<void()>`-style spawn closure, matching how `scope.spawn` bodies are already shaped), start all children, stop all children (cooperative via existing `StopToken`) | **done** (2026-07-12) — `supervisor.hpp` add/start/stop; `test_supervisor.cpp` + smoke hook |
 | 2 | Restart policies: `permanent` (always restart on exit, including clean exit), `transient` (restart only on abnormal/exception exit), `temporary` (never restart); default child strategy `one_for_one` (only the failed child restarts, siblings untouched) | **done** (2026-07-12) — `RestartPolicy` + per-child loop; tests permanent/transient/temporary + sibling isolation |
-| 3 | Restart storm protection: `max` restarts `within` a rolling time window (per `CONCURRENCY_V2.md` §29) — exceeding it stops the whole supervisor (propagate failure up, do not restart forever) | pending |
+| 3 | Restart storm protection: `max` restarts `within` a rolling time window (per `CONCURRENCY_V2.md` §29) — exceeding it stops the whole supervisor (propagate failure up, do not restart forever) | **done** (2026-07-12) — `set_restart_intensity` / `storm_tripped`; rolling window; trips request supervisor stop |
 | 4 | MLC-facing API sketch: does this need to be reachable from MLC source (`extern fn`-based, like `Tcp`) or is it C++-runtime-only for now (like `JobQueue`, per `STDLIB_JOB_QUEUE` decision)? Decide before Step 5, follow the same reasoning as that track — do not assume MLC-reachable by default | pending |
 | 5 | Smoke test: 3 children, one deliberately panics/exits abnormally twice then succeeds — assert only that child restarts, siblings' state (call count) unaffected; one child configured `permanent` + always-fails → assert restart-storm stop after `max`/`within` | pending |
 | 6 | Docs: `CONCURRENCY_V2.md` §28-29 — mark implemented; `STDLIB_BACKEND.md` — one row if MLC-reachable | pending |
@@ -43,6 +43,7 @@ Library-first child supervision: `permanent|transient|temporary`, start with
 - **Planner** (2026-07-12): activated after HTTP Critic OK; STEP=1 next.
 - **STEP=1** (2026-07-12): `Supervisor` add/start/stop + `test_supervisor` (4 checks); wired into `run_concurrency_smoke.sh`.
 - **STEP=2** (2026-07-12): `RestartPolicy` permanent/transient/temporary; one_for_one loops; 9 checks.
+- **STEP=3** (2026-07-12): restart intensity `max`/`within`; storm stops supervisor + siblings; 17 checks. Backoff deferred.
 
 ## Out of scope
 
