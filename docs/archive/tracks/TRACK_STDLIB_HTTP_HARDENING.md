@@ -11,15 +11,22 @@ that never returns (the forever-demo's `scope |s| { while true { ... } }`
 never joins its spawned tasks during normal operation — only on process
 kill/panic).
 
-## Status: **closed** (2026-07-12) — awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
+
+**Critic 2026-07-12:** STEP=1–8 vs `aa5721f1`…`8e2d1b30`; archive/PLAN/STDLIB_BACKEND;
+smokes re-run (parse, static, keepalive, 413, idle, load) ok.
+**reopen: none**. Residual: forever/scope demos still one-shot `Connection: close`
+(helpers exist, demos not wired); load wall gate is soft (&lt;5s, no handler sleep —
+hard parallel proof remains `run_http_scope_accept_loop_gate.sh`); `serve_static`
+rejects `..` by substring only (no realpath); no MLC drain/shutdown API.
 
 **Driver 2026-07-12 STEP=8:** `regression_gate.sh` 20/0 + examples sweep ok=113 fail=0 skip=1;
-HTTP smokes (parse/static/keepalive/413/idle/load) ok. Self-host N/A (stdlib/`runtime` only,
-no `compiler/`). Fix: WebSocket reused `HttpServer.find_header_value` (name clash after STEP=1 export).
+HTTP smokes ok. Self-host N/A (stdlib/`runtime` only, no `compiler/`). Fix: WebSocket
+reused `HttpServer.find_header_value` (name clash after STEP=1 export).
 
 ## Next step
 
-— (closed; Critic critique-audit)
+— (closed; Critic OK)
 
 ## Goal
 

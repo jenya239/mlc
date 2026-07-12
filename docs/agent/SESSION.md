@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
-| active_track | TRACK_STDLIB_HTTP_HARDENING (closed) |
-| test_gate | REG 20/0; sweep 113/0/1; HTTP smokes ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_HTTP_HARDENING (Critic OK) |
+| test_gate | Critic re-ran 6 HTTP smokes ok |
+
+### Turn 2026-07-12 10:00 (Critic TRACK_STDLIB_HTTP_HARDENING critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 09:54 |
+| elapsed | ~8 min |
+| done    | Audited STEP=1–8 vs `aa5721f1`…`8e2d1b30`; PLAN/archive/STDLIB_BACKEND links; re-ran 6 HTTP smokes. |
+| verify  | parse/static/keepalive/413/idle/load ok; no missing STEP artifacts. |
+| result  | Critic OK. reopen: none. Plain: hardening stands; Planner activates SUPERVISOR. |
+| issues  | Residual: forever/scope demos not on keep-alive; soft load wall; `..` substring guard only. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_CONCURRENCY_SUPERVISOR — activate §25 |
 
 ### Turn 2026-07-12 09:45 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=8 — verify + close)
 
