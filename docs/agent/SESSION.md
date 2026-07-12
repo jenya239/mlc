@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_CONCURRENCY_SUPERVISOR (Critic OK) |
-| test_gate | test_supervisor 26 re-OK |
+| step_last | plan-refresh |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-12 11:21 (Planner — plan-refresh → CONCURRENCY_TEST_HARNESS)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-12 11:21 |
+| elapsed | ~5 min |
+| done    | Activated §26; STEP=6 (T6) sub-steps (fuzz binary, gate script, nightly workflow); PLAN/DEVELOPMENT. |
+| verify  | TRACK Status **active** Next=STEP=6; PLAN §26 **active**. |
+| result  | Active track = TEST_HARNESS. Plain: next is fuzz_scheduler + nightly cron. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_CONCURRENCY_TEST_HARNESS — fuzz_scheduler + concurrency_fuzz_gate + nightly workflow |
 
 ### Turn 2026-07-12 11:18 (Critic TRACK_CONCURRENCY_SUPERVISOR critique-audit)
 

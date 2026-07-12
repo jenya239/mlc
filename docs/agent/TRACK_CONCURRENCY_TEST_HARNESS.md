@@ -1,15 +1,21 @@
 # Track: Concurrency test harness (deterministic scheduler + stress matrix + sanitizer CI)
 
-Parent: [../PLAN.md](../PLAN.md) Фаза 8; спецификация:
+Parent: [../PLAN.md](../PLAN.md) §26 / Фаза 8; спецификация:
 [../CONCURRENCY_TEST_HARNESS.md](../CONCURRENCY_TEST_HARNESS.md) (архитектура,
 4 слоя, полная stress-матрица, читать перед началом).
 Смежный трек (closed): [../archive/tracks/TRACK_CONCURRENCY_V2.md](../archive/tracks/TRACK_CONCURRENCY_V2.md);
-[../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md).
+[../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md](../archive/tracks/TRACK_CONCURRENCY_TASKSCOPE.md);
+[../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md)
+(Critic OK 2026-07-12 — queue predecessor).
 
-## Status: **open** — T1–T5 done; T6/T7 unblocked 2026-07-11 (Task/TaskScope/Isolate now in production use via HTTP demos, see `TRACK_CONCURRENCY_SUPERVISOR`)
+## Status: **active** (Planner 2026-07-12) — очередь §26; T1–T5 done; T6 next
 
-**Driver 2026-07-09:** T5 — `stress_channel.cpp` cancel-during-send/recv +
-many blocked receivers (StopToken). Isolate track unblocked.
+**Driver 2026-07-09:** T1–T5 done (scheduler, stress matrix, sanitize CI, cancel).
+**Planner 2026-07-12:** activated after SUPERVISOR Critic OK; T6/T7 remaining.
+
+## Next step
+
+**STEP=6 (T6)** — nightly fuzz/chaos over `TestScheduler` seeds + non-blocking CI cron.
 
 ## Goal
 
@@ -17,7 +23,7 @@ many blocked receivers (StopToken). Isolate track unblocked.
 (`Channel`/`Mutex`/`Arc`/`spawn`, TRACK_CONCURRENCY MVP) стресс-тестами и
 sanitizer-gate в CI. T1-T4 не зависят от `TRACK_CONCURRENCY_V2` — тестируют то,
 что уже есть в коде сегодня. T5+ зависят от `StopToken`/`Task`/`Isolate` из
-того трека.
+того трека. **This activation:** finish Layer 4 (T6) + decide T7 surface.
 
 ## Verify gate
 
@@ -26,6 +32,8 @@ runtime/test/run_concurrency_smoke.sh
 MLC_TSAN=1 runtime/test/run_concurrency_smoke.sh
 # после T4:
 scripts/concurrency_sanitize_gate.sh
+# после T6:
+scripts/concurrency_fuzz_gate.sh
 ```
 
 ## Steps
@@ -40,24 +48,21 @@ scripts/concurrency_sanitize_gate.sh
 | 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. Wire как отдельная (не блокирующая обычный PR) CI job — nightly cron, не на каждый push. | pending |
 | 7 (T7) | `TestRuntime.new(seed:)` на уровне MLC (тонкая обёртка над `TestScheduler`) — решить MLC-reachable или C++-only тем же способом что `STDLIB_JOB_QUEUE`/`CONCURRENCY_SUPERVISOR` Step 4 (не предполагать MLC-reachable по умолчанию). | pending |
 
-### STEP=1 acceptance (Driver)
+### STEP=6 (T6) sub-steps (Driver)
 
-**Файлы (только `runtime/`, не `compiler/` / не `lib/mlc/`):**
-- `runtime/include/mlc/concurrency/testing/scheduler.hpp` — `TestScheduler(seed)`:
-  register virtual threads, `yield` / `park` / `unpark`, pick next runnable via
-  seeded PRNG; same seed → same schedule.
-- `runtime/include/mlc/concurrency/testing/mutex.hpp` — `TestMutex<T>` with
-  `lock(callback)` matching `mlc::concurrency::Mutex` API; yield to scheduler
-  around critical section.
-- `runtime/include/mlc/concurrency/testing/channel.hpp` — `TestChannel<T>` with
-  `send`/`recv`/`close`/`size` matching production `Channel` (capacity ≥1);
-  yield on block points.
-- `runtime/test/test_scheduler.cpp` — unit: two virtual threads + mutex or
-  channel; run twice with same seed, assert identical event log / outcome;
-  different seed may differ.
-- Wire `test_scheduler` into `runtime/test/run_concurrency_smoke.sh`.
+1. Add `runtime/test/fuzz_scheduler.cpp`: one fixed `TestScheduler` scenario (e.g. 2–3 virtual threads + `TestMutex` and/or `TestChannel`); accept seed via argv/`MLC_SCHEDULER_SEED`; on failure print seed and exit non-zero; deterministic for a given seed.
+2. Add `scripts/concurrency_fuzz_gate.sh`: first re-run seeds from `runtime/test/fuzz_corpus/scheduler_seeds.txt` (create file with header comment if empty); then N random seeds (default ~64–128, overridable); on fail append seed to corpus and fail the gate.
+3. Add `.github/workflows/concurrency-fuzz-nightly.yml` with `on.schedule` (cron) + `workflow_dispatch`; call the fuzz gate only — **do not** add to PR-blocking `ci.yml`.
+4. Smoke: run gate locally once (small N) exit 0; note corpus path in TRACK Progress. Do **not** implement T7 / MLC `TestRuntime` here.
 
-**Verify:** `runtime/test/run_concurrency_smoke.sh` exit 0 (includes new test).
+### STEP=7 (T7) note (after T6)
+
+Decision-first (like Supervisor STEP=4 / JobQueue): MLC `TestRuntime.new(seed:)` vs C++-only harness docs. Prefer C++-only if closures/`extern` gap blocks a real MLC surface — document in TRACK Decision; no half MLC API.
+
+## Progress
+
+- **T1–T5** (2026-07-09): done (scheduler, stress, sanitize CI, cancel).
+- **Planner** (2026-07-12): activated after SUPERVISOR Critic OK; STEP=6 (T6) next.
 
 ## Out of scope (этот трек)
 
@@ -66,12 +71,14 @@ scripts/concurrency_sanitize_gate.sh
   того как gate для runtime-тестов заработает (T4), отдельный шаг, не блокер.
 - Clang Thread Safety Analysis annotations в generated C++ (`CONCURRENCY_V2.md`
   §37) — второй эшелон, отдельный трек позже.
+- Fault-injection cancel at random mid-schedule (nice-to-have inside T6 if cheap;
+  not a blocker if seed exploration alone lands).
 
 ## Per-turn template
 
 ```
-| step | <1-7> |
+| step | <6-7> |
 | done | <one line> |
-| verify | run_concurrency_smoke.sh ok; MLC_TSAN=1 ok |
+| verify | concurrency_fuzz_gate / Decision doc |
 | next | ROLE=Driver STEP=<n+1> |
 ```
