@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (WebSocket section) |
+| test_gate | docs-only (Postgres + Crypto sections) |
+
+### Turn 2026-07-12 12:17 (Driver TRACK_STDLIB_DOCS STEP=4 — Postgres + Crypto)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:14 |
+| elapsed | ~4 min |
+| done    | Filled Postgres + Crypto in `STDLIB_REFERENCE.md` — APIs from `postgres.mlc`/`crypto.mlc`; excerpts from `postgres_select_demo` + `crypto_sha256_demo`; §1 limitations. |
+| verify  | Key demo lines via `rg`; TRACK Next=STEP=5. |
+| result  | STEP=4 done. Plain: DB + crypto modules documented. |
+| issues  | Foreign `compiler/out/*` left. Postgres excerpt omits `ntuples` check (noted helpers). |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_DOCS — Log + Env + Validate + Json |
 
 ### Turn 2026-07-12 12:16 (Driver TRACK_STDLIB_DOCS STEP=3 — WebSocket)
 

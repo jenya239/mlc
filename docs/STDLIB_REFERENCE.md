@@ -209,21 +209,95 @@ MLC echo + Ruby client (`run_websocket_gate.sh`). No TLS. Payload size capped
 
 ## Postgres
 
-Status: pending — filled in STEP=4.
+Module: [`lib/mlc/common/stdlib/db/postgres.mlc`](../lib/mlc/common/stdlib/db/postgres.mlc).
+Handle-based libpq wrapper (connection / result as `i32` tokens). Demo imports
+the `.mlc` path directly.
 
-Pinned source: [`misc/examples/postgres_select_demo.mlc`](../misc/examples/postgres_select_demo.mlc).
+Demo: [`misc/examples/postgres_select_demo.mlc`](../misc/examples/postgres_select_demo.mlc).
+Gate: `scripts/run_postgres_gate.sh` (needs libpq + `DATABASE_URL` / `PGHOST`).
 
-Planned: API table; snippet from select demo; limitations from STDLIB_BACKEND §1
-(blocking libpq; Postgres only).
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `PgI32Result` | `PgI32Ok(i32) \| PgI32Err` | Connection or result handle |
+| `PgStringResult` | `PgStringOk(string) \| PgStringErr` | Cell text |
+| `connect` | `(conninfo: string) -> PgI32Result` | `PQconnectdb`-style connect |
+| `exec` | `(connection_handle: i32, sql: string) -> PgI32Result` | Run SQL; returns result handle |
+| `ntuples` | `(result_handle: i32) -> i32` | Row count |
+| `nfields` | `(result_handle: i32) -> i32` | Column count |
+| `getvalue` | `(result_handle: i32, row: i32, column: i32) -> PgStringResult` | Cell as string |
+| `clear` | `(result_handle: i32) -> unit` | Free result |
+| `finish` | `(connection_handle: i32) -> unit` | Close connection |
+| `last_error` | `() -> string` | Last error string |
+
+### Example (excerpt from demo)
+
+Source: [`misc/examples/postgres_select_demo.mlc`](../misc/examples/postgres_select_demo.mlc)
+
+```mlc
+  let connection = unwrap_handle(connect("dbname=postgres"))
+  if connection < 0 then
+    println(last_error())
+    return 1
+  end
+  let result = unwrap_handle(exec(connection, "SELECT 1 AS one"))
+  if result < 0 then
+    println(last_error())
+    finish(connection)
+    return 2
+  end
+  let cell = unwrap_text(getvalue(result, 0, 0))
+  println(cell)
+  clear(result)
+  finish(connection)
+```
+
+(`unwrap_handle` / `unwrap_text` are local helpers in the same demo file.)
+
+### Limitations (from STDLIB_BACKEND §1)
+
+Postgres only; blocking libpq. PoC-level API (no prepared statements / pool in
+this module). Link requires libpq.
 
 ## Crypto
 
-Status: pending — filled in STEP=4.
+Module: [`lib/mlc/common/stdlib/crypto/crypto.mlc`](../lib/mlc/common/stdlib/crypto/crypto.mlc)
+(libsodium). Demo imports the `.mlc` path directly.
 
-Pinned source: [`misc/examples/crypto_sha256_demo.mlc`](../misc/examples/crypto_sha256_demo.mlc).
+Demo: [`misc/examples/crypto_sha256_demo.mlc`](../misc/examples/crypto_sha256_demo.mlc).
+Gate: `scripts/run_crypto_gate.sh` (`-lsodium`).
 
-Planned: API table; snippet from sha256 demo; limitations from STDLIB_BACKEND §1
-(SHA-256/HMAC/random/pwhash; JWT/TLS out).
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `CryptoStringResult` | `CryptoStringOk(string) \| CryptoStringErr` | Fallible string (random / pwhash) |
+| `sha256` | `(data: string) -> string` | SHA-256 hex digest |
+| `hmac_sha256` | `(key: string, data: string) -> string` | HMAC-SHA-256 hex |
+| `random_bytes` | `(count: i32) -> CryptoStringResult` | Cryptographic random bytes |
+| `pwhash` | `(password: string) -> CryptoStringResult` | Password hash (argon2 via sodium) |
+| `pwhash_verify` | `(hashed: string, password: string) -> bool` | Verify password hash |
+| `last_error` | `() -> string` | Last error string |
+
+### Example (from demo)
+
+Source: [`misc/examples/crypto_sha256_demo.mlc`](../misc/examples/crypto_sha256_demo.mlc)
+
+```mlc
+fn main() -> i32 = do
+  let digest = sha256("")
+  println(digest)
+  let mac = hmac_sha256("key", "message")
+  println(mac)
+  let _err = last_error()
+  if digest == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" then
+    0
+  else
+    1
+  end
+end
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+SHA-256 / HMAC / random / `pwhash` present. JWT and TLS are out of scope.
 
 ## Log
 
