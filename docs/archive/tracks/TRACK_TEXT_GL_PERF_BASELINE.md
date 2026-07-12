@@ -175,5 +175,5 @@ exact formula into the GL live path — do not re-derive it.
   [TRACK_FFI_SHIM_MIGRATION](TRACK_FFI_SHIM_MIGRATION.md)
   — «abi+bridge C++ remains»). Полная миграция bookkeeping + pitch-copy на
   MLC + экспозиция bearing через ABI (не хардкод в GL-путь) —
-  [TRACK_TEXT_SHIM_TO_MLC](../../agent/TRACK_TEXT_SHIM_TO_MLC.md), отдельный трек,
+  [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md), отдельный трек,
   идёт **после** закрытия этого (не блокирует STEP=3+ здесь).
