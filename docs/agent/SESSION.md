@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 7 |
-| active_track | TRACK_GUI_INPUT_ROBUSTNESS (closed, awaiting Critic) |
-| test_gate | STEP=7: 7 GUI smokes ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | — (GUI_INPUT Critic OK; next Planner → HTTP_HARDENING) |
+| test_gate | Critic: 7 GUI smokes re-ok |
+
+### Turn 2026-07-12 07:25 (Critic TRACK_GUI_INPUT_ROBUSTNESS — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 07:21 |
+| elapsed | ~8 min |
+| done    | Audited STEP=1–7 (`e86090cd`…`a4ec69f1`); archive/PLAN/GUI.md; re-ran 7 smokes. **reopen: none**. |
+| verify  | `test ! -f docs/agent/TRACK_GUI_INPUT_ROBUSTNESS.md`; smokes ok; PLAN §23 Critic OK. |
+| result  | Critic OK. Residual: not all demos use live window size; size cache forced under invisible GLFW. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate STDLIB_HTTP_HARDENING (§24) |
 
 ### Turn 2026-07-12 07:15 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=7 — verify close)
 

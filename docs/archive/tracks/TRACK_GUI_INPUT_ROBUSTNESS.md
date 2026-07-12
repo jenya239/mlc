@@ -10,11 +10,16 @@ press/release pairs, or a genuine debounce gap in `gui_click_edge`
 (`misc/gui/input.mlc`). STEP=1 below must reproduce with a controlled input
 source before fixing anything.
 
-## Status: **closed** (2026-07-12) — Driver STEP=7 verify green; awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
 
-**Driver 2026-07-12 STEP=7:** all GUI smokes ok (button, input, click_edge, text_input,
-text_field, window_size, layout). Self-host N/A (no `compiler/` changes). TRACK archived.
-Close → Critic.
+**Critic 2026-07-12:** STEP=1–7 vs `e86090cd`…`a4ec69f1`; archive/PLAN/GUI.md; smokes re-run
+(button, input, click_edge, text_input, text_field, window_size, layout) ok.
+**reopen: none**. Residual: live size wired in `gui_button_demo`/`gui_text_field_demo` only —
+`gui_button_interactive_demo`/`text_window_demo`/etc. still hardcode 800×600; window-size
+cache forced after `set_size` because invisible GLFW may ignore resize; char path covered by
+inject, not real `glfwSetCharCallback` events.
+
+**Driver 2026-07-12 STEP=7:** all GUI smokes ok. Self-host N/A (no `compiler/`). TRACK archived.
 
 ## Next step
 
