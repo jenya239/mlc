@@ -26,22 +26,101 @@ in [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md), not here.
 
 ## Bindings
 
-Status: pending — filled in STEP=2.
+Immutable and mutable name bindings. `const` and `let` introduce immutable
+bindings; `let mut` is required for assignment and for mutating methods such
+as `.push` / `.set` on that binding. Compile-time `let const` is out of scope
+for this section until a dedicated e2e fixture is cited.
 
-Planned topics:
+### `const` (immutable)
 
-- `let` / `const` (stmt) / `let mut` / `let const`
-- Immutability vs mutation (`.push` / `.set` require `let mut`)
+Source: [`compiler/tests/e2e/record_update.mlc`](../compiler/tests/e2e/record_update.mlc)
+
+```mlc
+fn main() -> i32 = do
+  const origin = Point { x: 0, y: 0 }
+  const moved = move_x(origin, 5)
+  const moved_again = Point { ...moved, y: 3 }
+  println(origin.to_string())
+  println(moved.to_string())
+  println(moved_again.to_string())
+  0
+end
+```
+
+(`Point` / `move_x` are defined earlier in the same file.)
+
+### `let` (immutable)
+
+Source: [`compiler/tests/e2e/spawn_side_effect.mlc`](../compiler/tests/e2e/spawn_side_effect.mlc)
+
+```mlc
+fn main() -> i32 = do
+  let task_a = spawn do side() end
+  block_on(task_a)
+end
+```
+
+### `let mut` (mutable)
+
+No e2e fixture uses `let mut` yet. Source (excerpt from `main`):
+[`misc/examples/loops_demo.mlc`](../misc/examples/loops_demo.mlc)
+
+```mlc
+  let numbers = [1, 2, 3, 4, 5]
+  let mut sum = 0
+  for n in numbers do
+    sum = sum + n
+  end
+  println("For loop sum [1..5]: " + sum.to_string())
+```
 
 ## Functions
 
-Status: pending — filled in STEP=2.
+Functions are declared with `fn`. A one-line body uses `= expr`; a multi-line
+body uses `= do ... end` (not `{ ... }`). Parameters may carry types; the
+return type follows `->`.
 
-Planned topics:
+### One-line body
 
-- `fn name(args) -> RetType = expr` (one-line)
-- `fn name(args) -> RetType = do ... end` (multi-line; not `{ ... }`)
-- `export fn` for module public API
+Source: [`compiler/tests/e2e/fibonacci.mlc`](../compiler/tests/e2e/fibonacci.mlc)
+
+```mlc
+fn fib(n: i32) -> i32 =
+  if n <= 1 then n else fib(n - 1) + fib(n - 2) end
+```
+
+### Multi-line `do` / `end`
+
+Source: [`compiler/tests/e2e/hello.mlc`](../compiler/tests/e2e/hello.mlc)
+
+```mlc
+fn main() -> i32 = do
+  println('hello world')
+  0
+end
+```
+
+### `export fn` (module public API)
+
+Not used in `compiler/tests/e2e/`. Source:
+[`compiler/tests/support/golden_harness.mlc`](../compiler/tests/support/golden_harness.mlc)
+
+```mlc
+export fn golden_relative_path_is_safe(relative_path: string) -> bool = do
+  if !test_relative_path_is_safe(relative_path) then
+    false
+  else if relative_path.length() < 16 then
+    false
+  else if relative_path.substring(0, 16) != "fixtures/golden/" then
+    false
+  else
+    true
+  end
+end
+```
+
+(`test_relative_path_is_safe` is imported in the same file; `export` marks the
+function as the module’s public surface for importers.)
 
 ## Types
 

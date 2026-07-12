@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE skeleton) |
+| test_gate | docs-only (LANGUAGE_REFERENCE Bindings+Functions) |
+
+### Turn 2026-07-12 11:45 (Driver TRACK_LANG_DOCS STEP=2 — Bindings + Functions)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:40 |
+| elapsed | ~5 min |
+| done    | Filled Bindings (`const`/`let` e2e; `let mut` loops_demo) + Functions (fib/hello e2e; export golden_harness). |
+| verify  | Cited paths exist; no invented example bodies; TRACK Next=STEP=3. |
+| result  | STEP=2 done. Plain: bindings+functions documented from fixtures. |
+| issues  | Foreign `compiler/out/*` left; no e2e for `let mut`/`export`/`let const`. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_DOCS — Types + Pattern matching from e2e |
 
 ### Turn 2026-07-12 11:42 (Driver TRACK_LANG_DOCS STEP=1 — LANGUAGE_REFERENCE skeleton)
 
