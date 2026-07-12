@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | Planner: no code |
+| test_gate | STEP=1 docs-only; option 3 Hybrid |
+
+### Turn 2026-07-12 03:55 (Driver TRACK_FFI_EXTERN_DEDUP STEP=1 — design Hybrid)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 03:54 |
+| elapsed | ~8 min |
+| done    | Read `decl_cpp.mlc:694-729` (`gen_ffi_fn_decl_cpp`), `module.mlc:184-213` (per-TU namespace), `extern_header_arity_lint.mlc` (no cross-module key). **Decision: option 3 Hybrid.** PLAN/DEVELOPMENT/TRACK updated. |
+| verify  | TRACK Decision section + STEP=1 done; no `compiler/` edits. |
+| result  | STEP=1 done. Plain: identical key+sig reuse; mismatch → mlcc error. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_FFI_EXTERN_DEDUP — two-module identical-redeclare repro |
 
 ### Turn 2026-07-12 03:50 (Planner — plan-refresh → FFI_EXTERN_DEDUP)
 

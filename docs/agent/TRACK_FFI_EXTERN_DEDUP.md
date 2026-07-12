@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** (Planner 2026-07-12) — очередь §22
+## Status: **active** — STEP=1 **done**; STEP=2 next
 
 ## Next step
 
-**STEP=1** — design decision among root-cause options 1/2/3 (docs only; no `compiler/` yet).
+**STEP=2** — repro corpus: two-module e2e (identical signature redeclare) — fails clang today.
 
 ## Problem
 
@@ -16,18 +16,29 @@ Codegen emits `extern fn ... from "<header>"` inside each declaring MLC module's
 Two modules declaring the same `(c_name, header)` → clang: redeclaration across namespaces.
 No mlcc diagnostic; failure only at C++ compile.
 
-## Root cause candidates (STEP=1 must pick one)
+## Decision (STEP=1, 2026-07-12) — **option 3 Hybrid**
+
+Facts from read:
+- Emit: `gen_ffi_fn_decl_cpp` in `compiler/codegen/decl_cpp.mlc:694-729` — per-module wrapper + `static_cast<…>(&::<c_name>)`; includes via `collect_ffi_include_lines` / `ffi_header_include_line` (~603–618).
+- Namespace wrap: `module.mlc:184-213` — each TU opens `namespace <module_base>`; FFI defs land inside that namespace (`assemble_*` + `collect_fn_defs_cpp`).
+- Existing checker: `extern_header_arity_lint.mlc` only vs header-import stubs (`W-EXTERN-ARITY`); no cross-module `(c_name, header)` index.
+
+Why not 1: STEP=2 acceptance is identical redeclare **passes** after fix — pure checker-error on every duplicate would fail that gate and break copy-paste leaf demos that also transitively import `gl_window.mlc`.
+Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast radius (placement of includes, call resolution, self-host surface) without buying mismatch diagnostics.
+**Hybrid:** index `(c_name, header)` across the load graph; matching signatures → silent reuse (skip second `gen_ffi_fn_decl_cpp` / bind to first export); mismatch → mlcc error with both sites (STEP=4). Prefer reuse-via-import when an imported export already owns the key.
+
+## Root cause candidates (STEP=1 picked 3)
 
 1. Checker: detect duplicate `(c_name, header)` → merge or error pointing both sites.
 2. Codegen: emit once into shared/global namespace keyed by `(c_name, header)` (prefer if low-risk).
-3. Hybrid: silent reuse when signatures match; mlcc error when same key, different signature.
+3. Hybrid: silent reuse when signatures match; mlcc error when same key, different signature. **← chosen**
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design decision — read codegen/checker for `extern fn ... from`; pick option 1/2/3; write 2–3 sentences here | **pending** |
-| 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | pending |
+| 1 | Design decision — read codegen/checker for `extern fn ... from`; pick option 1/2/3; write 2–3 sentences here | **done** (option 3 Hybrid) |
+| 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | **pending** |
 | 3 | Implement chosen dedup/diagnostic in checker and/or codegen | pending |
 | 4 | Negative case: same key, different signatures → mlcc error with both sites | pending |
 | 5 | Re-check examples sweep / button demos still OK | pending |
@@ -35,12 +46,11 @@ No mlcc diagnostic; failure only at C++ compile.
 | 7 | `scripts/regression_gate.sh` green | pending |
 | 8 | Docs: `FFI_LAYER.md` one paragraph on dedup rule | pending |
 
-### STEP=1 sub-steps (Driver)
+### STEP=2 sub-steps (Driver)
 
-1. Grep `from_header` / `extern` emit in `compiler/codegen/` + `compiler/checker/` (and Ruby parity if needed for notes only).
-2. Note how per-module C++ namespaces wrap extern decls today (file:line).
-3. Pick option **1 / 2 / 3** with risk rationale; update this TRACK Status/Decision section.
-4. No code change this step — `next` = STEP=2 after commit.
+1. Add two-module fixture under `compiler/tests/` (or `misc/` smoke): module A exports `extern fn … = "c" from "h"`; module B imports A and redeclares same key+sig.
+2. Document/script: today `mlcc` + `build_bin` → clang fail (or note current failure mode).
+3. No fix yet — `next` = STEP=3 after commit.
 
 ## Out of scope
 
