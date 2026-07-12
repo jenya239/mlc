@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | STEP=1 Decision frozen (docs) |
+| test_gate | ft_abi_smoke → ft_abi_ok |
+
+### Turn 2026-07-12 23:16 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-12 23:16 |
+| elapsed | ~10 min |
+| done    | `freetype_abi.hpp`/`.cpp` (i64 face, raw pitch slot, `ft_glyph_pitch`/`byte_at`); `build_bin.sh` wire. |
+| verify  | `/tmp/ft_abi_smoke` prints `ft_abi_ok` (DejaVuSans). Old shim untouched. |
+| result  | STEP=2 done. Plain: thin FT ABI ready for MLC cache. |
+| issues  | shim cache strip deferred to STEP=8 (per Decision migration) |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_SHIM_TO_MLC — `harfbuzz_abi.hpp` thin HB wrappers |
 
 ### Turn 2026-07-12 23:10 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=1)
 
