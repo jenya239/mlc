@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=10** — Cross-link from `README.md` + `AGENTS.md` / `docs/specs/index.md`.
+**STEP=11** — verify script: extract fenced `mlc` blocks and compile each with mlcc.
 
 ## Goal
 
@@ -38,7 +38,7 @@ narrative) — a reference, skimmable, accurate.
 | 6 | Section: closures + escape analysis (link `archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md` for the "why") | **done** (2026-07-12) — `vm_lambda` / `vm_lambda_immediate` / HOF lambdas; escape track link |
 | 7 | Section: arrays/maps/strings + HOFs (`map`/`filter`/`fold`) | **done** (2026-07-12) — `empty_array` e2e; `array_hof_demo`; `vm_map`; `string_operations_demo` |
 | 8 | Section: concurrency — link `CONCURRENCY_V2.md` for the full spec, this section is the condensed "how to use it" version with the accept-loop demo as the canonical example | **done** (2026-07-12) — spawn/scope e2e; accept-loop demo; Mutex from test string; CONCURRENCY_V2 link |
-| 9 | Section: FFI — link `FFI_LAYER.md`, condensed version + the safety contract (`unsafe` framing from `TRACK_FFI_SAFETY`) | pending |
+| 9 | Section: FFI — link `FFI_LAYER.md`, condensed version + the safety contract (`unsafe` framing from `TRACK_FFI_SAFETY`) | **done** (2026-07-12) — extern fn/type from fixtures; blocking from env.mlc; safety table + FFI_LAYER/SAFETY links |
 | 10 | Cross-link from `README.md` + `AGENTS.md`/`docs/specs/index.md` so it is discoverable | pending |
 | 11 | Verify: every code example in the doc actually compiles (`mlcc -o /tmp/lang_ref_check <extracted example>`) — write a tiny extraction script (Ruby, per scripts-language rule) that pulls fenced ` ```mlc ` blocks and compiles each; wire as a doc-lint, not full regression_gate (docs-only, no self-host diff needed) | pending |
 
@@ -60,6 +60,7 @@ narrative) — a reference, skimmable, accurate.
 - **STEP=6** (2026-07-12): Closures from demos + escape-analysis track link; SESSION archived older turns.
 - **STEP=7** (2026-07-12): Arrays/maps/strings + HOFs from e2e/demos.
 - **STEP=8** (2026-07-12): Concurrency condensed — spawn/scope/accept-loop + CONCURRENCY_V2.
+- **STEP=9** (2026-07-12): FFI condensed — extern forms + safety contract (no `unsafe` keyword).
 
 ## Out of scope
 

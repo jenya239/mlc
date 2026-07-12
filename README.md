@@ -177,6 +177,9 @@ diff -rq "$TMPDIR/mlc_p1" "$TMPDIR/mlc_p2"   # должно быть пусто
 
 `docs/PLAN.md` — архитектурный план, целевая структура файлов, паттерны, Reddit-презентация.
 
+Language reference (syntax by area, examples from e2e/demos):
+[docs/LANGUAGE_REFERENCE.md](docs/LANGUAGE_REFERENCE.md).
+
 ## Community demo
 
 Reproducible commands: `scripts/reddit_demo.sh` (`--run`, `--record-baseline`).

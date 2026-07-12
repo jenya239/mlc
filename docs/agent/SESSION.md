@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
+| driver_turns_since_plan | 10 |
+| step_last | 10 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE FFI) |
+| test_gate | docs-only (cross-links) |
+
+### Turn 2026-07-12 12:02 (Driver TRACK_LANG_DOCS STEP=10 — cross-links)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:57 |
+| elapsed | ~5 min |
+| done    | Linked `LANGUAGE_REFERENCE.md` from README Roadmap, AGENTS On-demand specs, `docs/specs/index.md` row. |
+| verify  | Three paths contain link; TRACK Next=STEP=11. |
+| result  | STEP=10 done. Plain: reference is discoverable. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=11 TRACK_LANG_DOCS — Ruby extract+compile fenced mlc blocks |
 
 ### Turn 2026-07-12 12:00 (Driver TRACK_LANG_DOCS STEP=9 — FFI)
 

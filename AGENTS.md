@@ -7,6 +7,9 @@ Development: [docs/agent/DEVELOPMENT.md](docs/agent/DEVELOPMENT.md)
 
 Read [docs/specs/index.md](docs/specs/index.md) before loading product docs. Load only rows whose **tags** match the active track; do not bulk-read `docs/`.
 
+Language syntax reference (human-oriented, not agent cheatsheet):
+[docs/LANGUAGE_REFERENCE.md](docs/LANGUAGE_REFERENCE.md).
+
 ## Regression gate (`compiler/**` tracks)
 
 Before marking **closed** any track that touched `compiler/**`, run:

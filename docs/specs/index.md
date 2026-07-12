@@ -7,6 +7,7 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | Document | Tags | Load when |
 |----------|------|-----------|
 | [../PLAN.md](../PLAN.md) | roadmap, architecture, phase | Planner, new track, north-star scope |
+| [../LANGUAGE_REFERENCE.md](../LANGUAGE_REFERENCE.md) | language, syntax, reference, semantics | Language features, syntax questions, LANG_DOCS |
 | [../MLC.md](../MLC.md) | language, syntax, semantics, overview | Language features, syntax changes |
 | [../LANGUAGE_DESIGN.md](../LANGUAGE_DESIGN.md) | language, design, principles, planned | New language constructs, design rationale |
 | [../mlc2.md](../mlc2.md) | parity, ruby, mlcc, checker, codegen | Ruby ⇄ mlcc parity, edge cases |
