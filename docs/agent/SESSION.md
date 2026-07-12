@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_REGION_ARENA (Critic OK) |
-| test_gate | escape 3/3; cycle ok; region_alloc check-only 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_SHIM_TO_MLC |
+| test_gate | Planner activate; STEP=1 pending |
+
+### Turn 2026-07-12 23:03 (Planner TRACK_TEXT_SHIM_TO_MLC plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-12 23:03 |
+| elapsed | ~5 min |
+| done    | Ungated+activated TRACK; STEP=1 sub-steps; bearing note; PLAN/DEVELOPMENT sync; file tracked. |
+| verify  | Status active; STEP=1 pending with sub-steps; PLAN §30 active; bearing exists in shim. |
+| result  | Track active. Plain: next Driver freezes ABI Decision. |
+| issues  | no MLC RawPointer byte-index found — prefer ABI `*_byte_at` |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_SHIM_TO_MLC — freeze ABI Decision |
 
 ### Turn 2026-07-12 22:55 (Critic TRACK_LANG_REGION_ARENA critique-audit)
 

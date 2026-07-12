@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_REGION_ARENA` closed** — Critic OK 2026-07-12
-([archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md)).
-**Queue head:** [TRACK_TEXT_SHIM_TO_MLC.md](TRACK_TEXT_SHIM_TO_MLC.md) (Planner activate).
+**`TRACK_TEXT_SHIM_TO_MLC` active** — STEP=1 Decision (ABI freeze + byte-read).
+See [TRACK_TEXT_SHIM_TO_MLC.md](TRACK_TEXT_SHIM_TO_MLC.md).
+REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)
 
