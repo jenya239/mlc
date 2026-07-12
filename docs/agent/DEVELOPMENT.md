@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` active** — STEP=7 (snippet grep-verify) next; STEP=1–6 done.
-See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
+**`TRACK_STDLIB_DOCS` closed** (2026-07-12) — awaiting Critic; then Planner →
+next PLAN queue (§29 / LANG_REGION_ARENA …). See
+[archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
 
 ## Step sizing (good vs bad)
 

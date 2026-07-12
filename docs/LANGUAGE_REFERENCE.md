@@ -7,7 +7,7 @@ This is a **language reference**, not a tutorial. Each section will hold:
 syntax, a short semantics note, and one runnable example taken from an
 existing `compiler/tests/e2e/` or `misc/examples/` fixture (path cited —
 examples are never invented for this document). Stdlib module APIs belong
-in [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md), not here.
+in [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md), not here.
 
 Fenced examples: `mlc` must compile via `scripts/lang_ref_lint.rb`; `mlc excerpt`
 compiles the cited Source `.mlc` (truncated fence body is not the compile unit).

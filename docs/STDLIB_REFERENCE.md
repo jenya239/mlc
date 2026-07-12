@@ -1,7 +1,7 @@
 # MLC Stdlib Reference
 
 Parent: [PLAN.md](PLAN.md) §28; [STDLIB_BACKEND.md](STDLIB_BACKEND.md);
-track: [agent/TRACK_STDLIB_DOCS.md](agent/TRACK_STDLIB_DOCS.md).
+track: [archive/tracks/TRACK_STDLIB_DOCS.md](archive/tracks/TRACK_STDLIB_DOCS.md).
 
 This is a **module API reference**, not a tutorial and not the language
 manual ([LANGUAGE_REFERENCE.md](LANGUAGE_REFERENCE.md)). Each section will
@@ -128,13 +128,15 @@ Source: [`misc/examples/http_server_forever_demo.mlc`](../misc/examples/http_ser
   end
 ```
 
-Parse + format path inside `handle_one` (same file):
+Parse + format path inside `handle_one` (same file; Err/TooLarge arms
+omitted — see demo for full `match`):
 
 ```mlc
-  let response = match parse_http_request(raw) {
-    HttpParseErr => …,
-    HttpParseTooLarge => …,
-    HttpParseOk(request) => route_http(request)
+    HttpParseOk(request) => do
+      let handled = route_http(request)
+      println("[mlc-http] " + request.method + " " + request.path + " -> " + handled.status.to_string())
+      handled
+    end
   }
   let wrote = write_all(stream, format_http_response(response))
 ```

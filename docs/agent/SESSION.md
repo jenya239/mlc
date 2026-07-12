@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (STDLIB_BACKEND §1 cross-links) |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_STDLIB_DOCS (closed, awaiting Critic) |
+| test_gate | docs-only (snippet grep-verify 10/0) |
+
+### Turn 2026-07-12 12:22 (Driver TRACK_STDLIB_DOCS STEP=7 — snippet verify; track close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:19 |
+| elapsed | ~6 min |
+| done    | Grep-verified 10 `mlc` fences vs Sources (fixed HttpServer Ok-arm); TRACK archived; PLAN §28 done; link fixes in LANGUAGE_REFERENCE + LANG_DOCS archive. |
+| verify  | Ruby check: checked=10 failures=0; TRACK Status closed. |
+| result  | STEP=7 done; TRACK **closed**. Plain: all listed snippets match sources. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_DOCS |
 
 ### Turn 2026-07-12 12:20 (Driver TRACK_STDLIB_DOCS STEP=6 — STDLIB_BACKEND cross-link)
 

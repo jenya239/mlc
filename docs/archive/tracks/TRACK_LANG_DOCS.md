@@ -61,6 +61,6 @@ narrative) — a reference, skimmable, accurate.
 ## Out of scope
 
 - Tutorial/getting-started narrative (separate concern if ever requested).
-- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](../../agent/TRACK_STDLIB_DOCS.md).
+- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](TRACK_STDLIB_DOCS.md).
 - Auto-generated docs from source comments (no doc-comment convention exists
   yet in MLC; not introducing one speculatively).

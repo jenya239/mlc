@@ -1,20 +1,25 @@
 # Track: Stdlib module reference
 
-Parent: [../PLAN.md](../PLAN.md) §28, [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md),
-[TRACK_LANG_DOCS](../archive/tracks/TRACK_LANG_DOCS.md).
+Parent: [../../PLAN.md](../../PLAN.md) §28, [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md),
+[TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
 Trigger: 2026-07-11 backlog review. Every stdlib module (`Tcp`, `HttpServer`,
 `WebSocket`, `Postgres`, `Crypto`, `Log`, `Env`, `Validate`, `Json`) has a
 working demo under `misc/examples/` (Json: no misc demo — see STEP=5) but no
 one-page API reference — discoverability relies on reading the `.mlc` source
 directly.
 Predecessor closed (Critic OK 2026-07-12):
-[TRACK_LANG_DOCS](../archive/tracks/TRACK_LANG_DOCS.md).
+[TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
 
-## Status: **active** (Planner 2026-07-12) — очередь §28
+## Status: **closed** (2026-07-12) — awaiting Critic
+
+**Planner** (2026-07-12): activated after LANG_DOCS Critic OK; demo paths pinned.
+**Driver** (2026-07-12): STEP=1–7 done — `docs/STDLIB_REFERENCE.md` filled;
+`STDLIB_BACKEND.md` §1 cross-links; snippet grep-verify 10/0. Docs-only;
+regression_gate N/A.
 
 ## Next step
 
-**STEP=7** — verify snippets vs attributed sources (grep-check).
+— (closed; `ROLE=Critic STEP=critique-audit` then Planner → next PLAN queue item)
 
 ## Goal
 
@@ -33,37 +38,17 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 | 4 | `Postgres` + `Crypto` — `misc/examples/postgres_select_demo.mlc` + `misc/examples/crypto_sha256_demo.mlc` | **done** (2026-07-12) — API tables + demo excerpts |
 | 5 | `Log` + `Env` + `Validate` + `Json` — Log/Env: `misc/examples/env_log_demo.mlc`; Validate: `misc/examples/validate_demo.mlc`; Json: **no** `misc/examples/*json*` — API table from `lib/mlc/common/stdlib/data/json.mlc`, snippet from program string in `test/mlc/derive_json_test.rb` (cite path; do not invent) | **done** (2026-07-12) — four sections filled |
 | 6 | Cross-link from `STDLIB_BACKEND.md` §1 table (replace inline snippets with links to this doc where it gets long) | **done** (2026-07-12) — §1 intro + per-module API links; HTTP row condensed |
-| 7 | Verify: every snippet appears verbatim (or near-verbatim, noted if trimmed) in the attributed file — grep-check, not visual-only | pending |
-
-### STEP=1 sub-steps (Driver)
-
-1. Create `docs/STDLIB_REFERENCE.md` with title, one-paragraph scope (module API
-   reference; snippets only from cited demos/fixtures; limitations from
-   `STDLIB_BACKEND.md` §1), parent links to PLAN §28 + STDLIB_BACKEND + this TRACK.
-2. TOC + stub `##` headings only (no filled API tables yet) for: Tcp; HttpServer;
-   WebSocket; Postgres; Crypto; Log; Env; Validate; Json. Under each: `Status:
-   pending — filled in STEP=N` and the pinned Source path from the Steps table.
-3. Do **not** invent example code in STEP=1; do **not** edit STDLIB_BACKEND /
-   README (STEP=6). Limitations prose waits for filled sections.
-4. Verify: file exists; TOC anchors match headings; TRACK Status **active**,
-   Next=STEP=2 after mark STEP=1 done.
+| 7 | Verify: every snippet appears verbatim (or near-verbatim, noted if trimmed) in the attributed file — grep-check, not visual-only | **done** (2026-07-12) — 10 fences / 0 missing lines; fixed HttpServer Ok-arm excerpt |
 
 ## Progress
 
 - **Planner** (2026-07-12): activated after LANG_DOCS Critic OK; demo paths
   pinned; Json exception documented; STEP=1 next.
-- **STEP=1** (2026-07-12): `docs/STDLIB_REFERENCE.md` skeleton + TOC + 9 stubs;
-  no invented examples; STDLIB_BACKEND untouched.
-- **STEP=2** (2026-07-12): Tcp + HttpServer API tables + demo excerpts;
-  limitations from STDLIB_BACKEND §1.
-- **STEP=3** (2026-07-12): WebSocket API table + upgrade/echo excerpt from
-  `websocket_echo_demo.mlc`.
-- **STEP=4** (2026-07-12): Postgres + Crypto API tables + demo excerpts.
-- **STEP=5** (2026-07-12): Log, Env, Validate, Json sections filled.
-- **STEP=6** (2026-07-12): `STDLIB_BACKEND.md` §1 → `STDLIB_REFERENCE` section links.
+- **STEP=1–6** (2026-07-12): reference filled + STDLIB_BACKEND cross-links.
+- **STEP=7** (2026-07-12): snippet grep-verify 10/0; track closed.
 
 ## Out of scope
 
-- Full language reference — see [TRACK_LANG_DOCS](../archive/tracks/TRACK_LANG_DOCS.md).
+- Full language reference — see [TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
 - Generated/automated doc extraction — manual curation only, same as that track.
 - JobQueue / Supervisor MLC modules (C++-only; no MLC surface to document here).
