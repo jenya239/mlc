@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | Decision doc (C++-only; no code) |
+| test_gate | test_supervisor 26 + concurrency smoke ok |
+
+### Turn 2026-07-12 10:50 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=5 — 3-child + storm smoke)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:46 |
+| elapsed | ~5 min |
+| done    | Added `test_three_children_transient_sibling_isolation` + `test_permanent_always_fails_trips_storm`; 26 checks. |
+| verify  | `./test_supervisor` ALL 26 PASSED; `run_concurrency_smoke.sh` ok (includes test_supervisor). |
+| result  | STEP=5 done. Plain: 3-child one_for_one + permanent storm covered; next docs STEP=6. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_CONCURRENCY_SUPERVISOR — CONCURRENCY_V2 §28–29 + STDLIB_BACKEND C++-only note |
 
 ### Turn 2026-07-12 10:45 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=4 — C++-only Decision)
 

@@ -12,7 +12,7 @@ HTTP hardening closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=5** — expand smoke: 3-child transient+sibling + permanent storm (may already partially exist in `test_supervisor`).
+**STEP=6** — docs: `CONCURRENCY_V2.md` §28–29 implemented (C++ v1); `STDLIB_BACKEND.md` C++-only note (JobQueue-style, no MLC row).
 
 ## Goal
 
@@ -57,7 +57,7 @@ that construct supervisors in `.mlc`.
 | 2 | Restart policies: `permanent` (always restart on exit, including clean exit), `transient` (restart only on abnormal/exception exit), `temporary` (never restart); default child strategy `one_for_one` (only the failed child restarts, siblings untouched) | **done** (2026-07-12) — `RestartPolicy` + per-child loop; tests permanent/transient/temporary + sibling isolation |
 | 3 | Restart storm protection: `max` restarts `within` a rolling time window (per `CONCURRENCY_V2.md` §29) — exceeding it stops the whole supervisor (propagate failure up, do not restart forever) | **done** (2026-07-12) — `set_restart_intensity` / `storm_tripped`; rolling window; trips request supervisor stop |
 | 4 | MLC-facing API sketch: does this need to be reachable from MLC source (`extern fn`-based, like `Tcp`) or is it C++-runtime-only for now (like `JobQueue`, per `STDLIB_JOB_QUEUE` decision)? Decide before Step 5, follow the same reasoning as that track — do not assume MLC-reachable by default | **done** (2026-07-12) — **C++-only v1; MLC deferred** (see Decision above) |
-| 5 | Smoke test: 3 children, one deliberately panics/exits abnormally twice then succeeds — assert only that child restarts, siblings' state (call count) unaffected; one child configured `permanent` + always-fails → assert restart-storm stop after `max`/`within` | pending |
+| 5 | Smoke test: 3 children, one deliberately panics/exits abnormally twice then succeeds — assert only that child restarts, siblings' state (call count) unaffected; one child configured `permanent` + always-fails → assert restart-storm stop after `max`/`within` | **done** (2026-07-12) — `test_three_children_transient_sibling_isolation` + `test_permanent_always_fails_trips_storm`; 26 checks |
 | 6 | Docs: `CONCURRENCY_V2.md` §28-29 — mark implemented; `STDLIB_BACKEND.md` — one row if MLC-reachable | pending — C++-only docs (no MLC row); align wording with JobQueue |
 | 7 | Verify: `runtime/test/run_concurrency_smoke.sh` includes new supervisor test; sanitizer gate (`scripts/concurrency_sanitize_gate.sh`) green; self-host diff only if MLC-reachable (Step 4 decided yes) | pending — self-host N/A per Decision |
 
@@ -68,6 +68,7 @@ that construct supervisors in `.mlc`.
 - **STEP=2** (2026-07-12): `RestartPolicy` permanent/transient/temporary; one_for_one loops; 9 checks.
 - **STEP=3** (2026-07-12): restart intensity `max`/`within`; storm stops supervisor + siblings; 17 checks. Backoff deferred.
 - **STEP=4** (2026-07-12): Decision — C++-only v1; MLC module deferred (JobQueue pattern).
+- **STEP=5** (2026-07-12): 3-child transient isolation + permanent always-fail storm; 26 checks; smoke green.
 
 ## Out of scope
 
