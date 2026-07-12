@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | bench before/after 300 frames |
+| test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 13:18 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=6 — smokes)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:16 |
+| elapsed | ~3 min |
+| done    | Ran Part A verify smokes after cache changes (no code edits). |
+| verify  | `run_text_renderer_native_smoke.sh` ok; `run_gui_text_field_demo.sh` ok; `run_text_renderer_a8_string_smoke.sh` ok (golden); `run_freetype_glyph_smoke.sh` ok; `run_harfbuzz_shape_smoke.sh` ok. |
+| result  | STEP=6 done. Plain: Part A did not regress text correctness. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_TEXT_GL_PERF_BASELINE — glyph_bearing_x/y in freetype_shim |
 
 ### Turn 2026-07-12 13:15 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=5 — bench)
 

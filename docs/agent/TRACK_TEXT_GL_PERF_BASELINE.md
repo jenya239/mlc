@@ -13,8 +13,8 @@ needed, go straight to implementation.
 
 ## Next step
 
-**STEP=6** — Re-run text-rendering smokes (native / gui text field / golden
-MAE) after Part A cache changes.
+**STEP=7** — Expose `glyph_bearing_x`/`glyph_bearing_y` from `freetype_shim`
+(Part B baseline).
 
 ### STEP=1 sub-steps (Driver)
 
@@ -94,7 +94,7 @@ exact formula into the GL live path — do not re-derive it.
 | 3 | Wire `text_dashboard_demo.mlc` (and, if trivial, `text_window_demo.mlc`) to use the existing `misc/gui/text_renderer.mlc` `GlyphCache` (`glyph_cache_new` once at startup, `glyph_cache_get`/`glyph_cache_insert` per glyph per frame) instead of calling `glyph_atlas_new`/unconditional `glyph_atlas_pack` fresh every frame — persist `GlyphCache` + `GlyphAtlas` across frames in `main()`'s loop state | **done** (2026-07-12; dashboard only — `text_window_demo` has inline atlas, not trivial) |
 | 4 | Skip `text_scratch_u8_resize_zero`/`text_renderer_upload_atlas` on frames where the glyph cache had no misses (nothing new packed) — track a simple "atlas dirty" bool for the frame | **done** (2026-07-12; `resize_zero` already once at startup; upload gated on glyph miss or box-brightness change) |
 | 5 | Benchmark before/after: wall-clock CPU time (`/usr/bin/time -v` or `perf stat`) for 300 frames of `text_dashboard_demo.mlc`, headless (no `MLC_GLFW_VISIBLE`) if possible via existing smoke harness, or visible with a fixed frame count — record both numbers in this track, not just "feels faster" | **done** (2026-07-12) |
-| 6 | Verify: existing text-rendering smokes (`run_text_renderer_native_smoke.sh`, `run_gui_text_field_demo.sh`, golden `text_a8_privet_24.rgba` MAE check) still pass after the cache changes — no regression in correctness while fixing perf | pending |
+| 6 | Verify: existing text-rendering smokes (`run_text_renderer_native_smoke.sh`, `run_gui_text_field_demo.sh`, golden `text_a8_privet_24.rgba` MAE check) still pass after the cache changes — no regression in correctness while fixing perf | **done** (2026-07-12) |
 
 ### Part B — baseline bearing in the GL live path
 

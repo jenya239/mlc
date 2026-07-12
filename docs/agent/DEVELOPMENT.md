@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1–5 done; STEP=6 (smokes)
-next. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
+**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1–6 done (Part A); STEP=7
+(bearing) next. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
 
 ## Step sizing (good vs bad)
 
