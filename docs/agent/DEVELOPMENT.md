@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_DOCS` active** — STEP=6 (closures + escape) next; STEP=1–5 done.
+**`TRACK_LANG_DOCS` active** — STEP=7 (arrays/maps/strings + HOFs) next; STEP=1–6 done.
 See [TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md). Queue: LANG_DOCS → STDLIB_DOCS → …
 
 

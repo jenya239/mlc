@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=6** — Closures + escape analysis (link `TRACK_LANG_CLOSURE_ESCAPE`; cite e2e/demo fixture).
+**STEP=7** — Arrays, maps, strings + HOFs from demos (`array_hof_demo`, e2e `empty_array`).
 
 ## Goal
 
@@ -35,7 +35,7 @@ narrative) — a reference, skimmable, accurate.
 | 3 | Section: types (record/sum/generic) + pattern matching | **done** (2026-07-12) — record/sum/Result e2e; match+guards e2e; or-pattern from `test_mir_vm_smoke` string fixture |
 | 4 | Section: traits + orphan rule | **done** (2026-07-12) — inherent extend / trait impl / trait param from e2e; orphan E086 → TRACK_LANG_ORPHAN_RULE |
 | 5 | Section: error handling (`Result`/`Option`/`?`/`T!E`) | **done** (2026-07-12) — Result+`?` e2e; `T!E` from error_union fixture; Option from `vm_option` |
-| 6 | Section: closures + escape analysis (link `archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md` for the "why") | pending |
+| 6 | Section: closures + escape analysis (link `archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md` for the "why") | **done** (2026-07-12) — `vm_lambda` / `vm_lambda_immediate` / HOF lambdas; escape track link |
 | 7 | Section: arrays/maps/strings + HOFs (`map`/`filter`/`fold`) | pending |
 | 8 | Section: concurrency — link `CONCURRENCY_V2.md` for the full spec, this section is the condensed "how to use it" version with the accept-loop demo as the canonical example | pending |
 | 9 | Section: FFI — link `FFI_LAYER.md`, condensed version + the safety contract (`unsafe` framing from `TRACK_FFI_SAFETY`) | pending |
@@ -57,6 +57,7 @@ narrative) — a reference, skimmable, accurate.
 - **STEP=3** (2026-07-12): Types + Pattern matching filled from e2e / mir smoke fixture.
 - **STEP=4** (2026-07-12): Traits + orphan rule from e2e + archive track link.
 - **STEP=5** (2026-07-12): Error handling Result/`?`/`T!E`/Option from fixtures.
+- **STEP=6** (2026-07-12): Closures from demos + escape-analysis track link; SESSION archived older turns.
 
 ## Out of scope
 

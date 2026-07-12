@@ -314,13 +314,48 @@ fn unwrap_option(value: Option) -> i32 = match value {
 
 ## Closures
 
-Status: pending — filled in STEP=6.
+Anonymous functions use `(params) => body` or the short form `x => body`.
+They capture by value (`[=]` in codegen). Non-escaping closures (do not outlive
+the call that creates them) can be lowered without `std::function` type
+erasure — see escape analysis.
 
-Planned topics:
+### Binding a closure
 
-- Closure syntax and capture
-- Escape analysis (why) — see
-  [archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md)
+Source: [`misc/examples/vm_lambda.mlc`](../misc/examples/vm_lambda.mlc)
+
+```mlc
+fn main() -> i32 = do
+  const add = (x: i32, y: i32) => x + y
+  add(3, 4)
+end
+```
+
+### Immediate call
+
+Source: [`misc/examples/vm_lambda_immediate.mlc`](../misc/examples/vm_lambda_immediate.mlc)
+
+```mlc
+fn main() -> i32 = ((x: i32) => x + 1)(6)
+```
+
+### Passed to array HOF (typically non-escaping)
+
+Source: [`misc/examples/array_hof_demo.mlc`](../misc/examples/array_hof_demo.mlc)
+
+```mlc
+  let doubled = numbers.map(x => x * 2)
+  let evens = more.filter(x => x % 2 == 0)
+```
+
+(Excerpts from `main` in that file.)
+
+### Escape analysis
+
+Closures that must outlive their creating scope (stored in a field, sent across
+threads, put in a heterogeneous collection) stay type-erased. Closures that
+statically do not escape can use a cheaper C++ template lowering. Full rule and
+codegen notes:
+[archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md).
 
 ## Arrays, maps, strings
 
