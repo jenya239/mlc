@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` closed** (2026-07-12) — awaiting Critic; then Planner →
-next PLAN queue (§29 / LANG_REGION_ARENA …). See
-[archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
+**`TRACK_STDLIB_DOCS` Critic OK** (2026-07-12). Next: Planner activates
+`TRACK_LANG_REGION_ARENA`. See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)
 

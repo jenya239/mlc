@@ -10,17 +10,20 @@ directly.
 Predecessor closed (Critic OK 2026-07-12):
 [TRACK_LANG_DOCS](TRACK_LANG_DOCS.md).
 
-## Status: **closed** (2026-07-12) — awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
 
 **Planner** (2026-07-12): activated after LANG_DOCS Critic OK; demo paths pinned.
 **Driver** (2026-07-12): STEP=1–7 done — `docs/STDLIB_REFERENCE.md` filled;
 `STDLIB_BACKEND.md` §1 cross-links; snippet grep-verify 10/0. Docs-only;
 regression_gate N/A.
+**Critic** (2026-07-12): STEP=1–7 vs `e47e22c5`…`8b2ae9a8` (+ Planner
+`8b2e046f`); PLAN/archive/TOC/backend anchors aligned; snippet re-OK 10/0;
+**reopen: none**. Residuals: no README/AGENTS/specs index link (track STEP=6
+was STDLIB_BACKEND only); Json has no misc demo (documented).
 
 ## Next step
 
-— (closed; `ROLE=Critic STEP=critique-audit` then Planner → next PLAN queue item)
-
+— (closed; Planner activates `TRACK_LANG_REGION_ARENA` per PLAN queue)
 ## Goal
 
 `docs/STDLIB_REFERENCE.md` — one section per module: exported functions/types

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_STDLIB_DOCS (closed, awaiting Critic) |
-| test_gate | docs-only (snippet grep-verify 10/0) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_STDLIB_DOCS (Critic OK) → Planner LANG_REGION_ARENA |
+| test_gate | docs-only (snippet 10/0) |
+
+### Turn 2026-07-12 12:24 (Critic TRACK_STDLIB_DOCS — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:21 |
+| elapsed | ~5 min |
+| done    | Audited STEP=1–7 vs `e47e22c5`…`8b2ae9a8`; PLAN/archive/TOC/backend `#` anchors; snippet re-OK 10/0. |
+| verify  | fences=10 fails=0; archive links ok; 9 backend anchors resolve. |
+| result  | **reopen: none**. Residuals: no README/AGENTS/specs link; Json no misc demo. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_LANG_REGION_ARENA — activate per PLAN queue |
 
 ### Turn 2026-07-12 12:22 (Driver TRACK_STDLIB_DOCS STEP=7 — snippet verify; track close)
 
