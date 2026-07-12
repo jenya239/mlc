@@ -14,7 +14,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=3** — fill `WebSocket` from `websocket_echo_demo.mlc`.
+**STEP=4** — fill `Postgres` + `Crypto` from pinned demos.
 
 ## Goal
 
@@ -29,7 +29,7 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 |------|------|--------|
 | 1 | Skeleton + module list; one stub section per module (table placeholder: `fn`/`type` name, signature, one-line description) | **done** (2026-07-12) — `docs/STDLIB_REFERENCE.md` TOC + 9 stubs |
 | 2 | `Tcp` + `HttpServer` — snippets from `misc/examples/tcp_echo_demo.mlc` + `misc/examples/http_server_forever_demo.mlc` (Tcp+spawn: `tcp_spawn_echo_mlcc.mlc` optional cross-cite) | **done** (2026-07-12) — API tables + demos; limitations from STDLIB_BACKEND §1 |
-| 3 | `WebSocket` — snippet from `misc/examples/websocket_echo_demo.mlc` (filename verified 2026-07-12) | pending |
+| 3 | `WebSocket` — snippet from `misc/examples/websocket_echo_demo.mlc` (filename verified 2026-07-12) | **done** (2026-07-12) — API table + upgrade/echo excerpt |
 | 4 | `Postgres` + `Crypto` — `misc/examples/postgres_select_demo.mlc` + `misc/examples/crypto_sha256_demo.mlc` | pending |
 | 5 | `Log` + `Env` + `Validate` + `Json` — Log/Env: `misc/examples/env_log_demo.mlc`; Validate: `misc/examples/validate_demo.mlc`; Json: **no** `misc/examples/*json*` — API table from `lib/mlc/common/stdlib/data/json.mlc`, snippet from program string in `test/mlc/derive_json_test.rb` (cite path; do not invent) | pending |
 | 6 | Cross-link from `STDLIB_BACKEND.md` §1 table (replace inline snippets with links to this doc where it gets long) | pending |
@@ -56,6 +56,8 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
   no invented examples; STDLIB_BACKEND untouched.
 - **STEP=2** (2026-07-12): Tcp + HttpServer API tables + demo excerpts;
   limitations from STDLIB_BACKEND §1.
+- **STEP=3** (2026-07-12): WebSocket API table + upgrade/echo excerpt from
+  `websocket_echo_demo.mlc`.
 
 ## Out of scope
 

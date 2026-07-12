@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (Tcp + HttpServer sections) |
+| test_gate | docs-only (WebSocket section) |
+
+### Turn 2026-07-12 12:16 (Driver TRACK_STDLIB_DOCS STEP=3 — WebSocket)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:13 |
+| elapsed | ~4 min |
+| done    | Filled WebSocket in `STDLIB_REFERENCE.md` — API from `websocket.mlc`; upgrade/read_text/write_text excerpt from `websocket_echo_demo.mlc`; §1 limitations. |
+| verify  | `rg` matches excerpt lines in demo; TRACK Next=STEP=4. |
+| result  | STEP=3 done. Plain: WebSocket module documented. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_DOCS — Postgres + Crypto from pinned demos |
 
 ### Turn 2026-07-12 12:14 (Driver TRACK_STDLIB_DOCS STEP=2 — Tcp + HttpServer)
 

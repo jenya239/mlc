@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` active** — STEP=3 (WebSocket) next; STEP=1–2 done.
+**`TRACK_STDLIB_DOCS` active** — STEP=4 (Postgres + Crypto) next; STEP=1–3 done.
 See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
 
 ## Step sizing (good vs bad)

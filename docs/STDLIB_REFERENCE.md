@@ -149,11 +149,63 @@ shutdown subsection). TLS / HTTP/2 out of scope.
 
 ## WebSocket
 
-Status: pending — filled in STEP=3.
+Module: [`lib/mlc/common/stdlib/net/websocket.mlc`](../lib/mlc/common/stdlib/net/websocket.mlc).
+Upgrade / frames / handshake in MLC; thin `websocket_bridge.hpp` for connection
+table + TCP write. Demo imports the `.mlc` path directly (not `from 'WebSocket'`).
 
-Pinned source: [`misc/examples/websocket_echo_demo.mlc`](../misc/examples/websocket_echo_demo.mlc).
+Demo: [`misc/examples/websocket_echo_demo.mlc`](../misc/examples/websocket_echo_demo.mlc).
+Gate: `scripts/run_websocket_gate.sh`.
 
-Planned: API table; snippet from echo demo; limitations from STDLIB_BACKEND §1.
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `WsHandleResult` | `WsHandleOk(i32) \| WsHandleNone` | Connection handle after upgrade |
+| `WsTextResult` | `WsTextOk(string) \| WsTextNone` | One text frame payload |
+| `WsFrameDecode` | `WsFrameIncomplete \| WsFrameOk(opcode, payload, consumed) \| WsFrameTooLarge` | Incremental frame decode |
+| `WsUpgradeCheck` | `WsUpgradeOk(key) \| WsUpgradeErr(message)` | Header validation |
+| `WsHandshakeResult` | `WsHandshakeOk(response) \| WsHandshakeErr(message)` | 101 response body or error |
+| `upgrade` | `(stream: i32) -> WsHandleResult` | Read HTTP upgrade on Tcp stream → WS handle |
+| `read_text` | `(connection: i32) -> WsTextResult` | Blocking read of next text payload |
+| `write_text` | `(connection: i32, data: string) -> bool` | Send text frame (payload ≤ 1 MiB) |
+| `close` | `(connection: i32) -> unit` | Close frame + release handle |
+| `last_error` | `() -> string` | Last bridge/table error |
+| `check_websocket_upgrade` | `(request: HttpRequest) -> WsUpgradeCheck` | Validate upgrade headers |
+| `build_websocket_upgrade_response` | `(request: HttpRequest) -> WsHandshakeResult` | Build 101 response |
+| `build_websocket_upgrade_from_raw` | `(raw: string) -> WsHandshakeResult` | Parse raw HTTP then upgrade |
+| `format_websocket_upgrade_response` | `(accept_key: string) -> string` | Format 101 bytes |
+| `sec_websocket_accept` | `(client_key: string) -> string` | `Sec-WebSocket-Accept` value |
+| `try_decode_frame` | `(buffer: string) -> WsFrameDecode` | Decode one frame from buffer |
+| `encode_text_frame` | `(payload: string) -> string` | Unmasked text frame bytes |
+| `encode_close_frame` | `() -> string` | Close frame bytes |
+| `encode_unmasked_frame` / `encode_masked_frame` | `(opcode, payload[, mask]) -> string` | Low-level frame encode |
+| `sha1_hex` | `(message: string) -> string` | SHA-1 hex (handshake helper) |
+
+### Example (from demo)
+
+Source: [`misc/examples/websocket_echo_demo.mlc`](../misc/examples/websocket_echo_demo.mlc)
+
+```mlc
+  let connection = match upgrade(stream) {
+    WsHandleOk(handle) => handle,
+    WsHandleNone => -1
+  }
+  if connection < 0 then
+    println("websocket upgrade failed")
+    close_listener(listener)
+    return 3
+  end
+  let text = match read_text(connection) {
+    WsTextOk(payload) => payload,
+    WsTextNone => ""
+  }
+  let wrote = write_text(connection, text)
+  close(connection)
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+Protocol on MLC; thin bridge residual includes Ruby `:extern` stubs. Gate is
+MLC echo + Ruby client (`run_websocket_gate.sh`). No TLS. Payload size capped
+(1 MiB on `write_text` / decode path).
 
 ## Postgres
 
