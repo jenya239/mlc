@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 7 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS (closed) |
-| test_gate | Decision doc (C++-only T7; no code) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS (Critic OK) |
+| test_gate | concurrency_fuzz_gate 8 re-OK |
+
+### Turn 2026-07-12 11:38 (Critic TRACK_CONCURRENCY_TEST_HARNESS critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-12 11:33 |
+| elapsed | ~5 min |
+| done    | Audited T6–T7 (`24486b14`…`0d362257`); PLAN stale «T6 deferred» fixed; archive/§34/fuzz nightly vs PR CI. |
+| verify  | fuzz gate 8 seeds ok; no agent TRACK; nightly workflow separate from `ci.yml`. |
+| result  | Critic OK. reopen: none. Plain: harness stands; Planner → LANG_DOCS. |
+| issues  | Residual: MLC TestRuntime deferred; design-doc preamble historical. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_LANG_DOCS — activate §27 |
 
 ### Turn 2026-07-12 11:35 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=7 — T7 Decision + close)
 

@@ -8,16 +8,22 @@ Parent: [../../PLAN.md](../../PLAN.md) §26 / Фаза 8; спецификаци
 [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md)
 (Critic OK 2026-07-12 — queue predecessor).
 
-## Status: **closed** (2026-07-12) — T1–T7 **done**; awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
 
 **Driver 2026-07-09:** T1–T5 done (scheduler, stress matrix, sanitize CI, cancel).
 **Planner 2026-07-12:** activated after SUPERVISOR Critic OK.
-**Driver 2026-07-12:** T6 fuzz nightly (`24486b14`); T7 Decision C++-only (this commit).
+**Driver 2026-07-12:** T6 fuzz nightly (`24486b14`); T7 Decision C++-only (`898d5e0c`);
+archive link fix (`0d362257`).
 No `compiler/**` for T6/T7 (regression_gate N/A).
+
+**Critic 2026-07-12:** T6–T7 vs `24486b14`…`0d362257`; PLAN/archive/CONCURRENCY_V2 §34
+aligned; fuzz gate re-OK (8 seeds); nightly workflow separate from PR `ci.yml`;
+**reopen: none**. Residuals: MLC `TestRuntime` deferred; design-doc «проблема сегодня»
+preamble in `CONCURRENCY_TEST_HARNESS.md` is historical (T1–T4 already fixed it).
 
 ## Next step
 
-**Critic** — `critique-audit` (HARD LIMIT after close).
+— (closed; Planner activates `TRACK_LANG_DOCS` §27)
 
 ## Goal
 

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_TEST_HARNESS` closed** (T1–T7, C++-only T7) — Critic next, then
-[TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md).
+**`TRACK_CONCURRENCY_TEST_HARNESS` Critic OK** — Planner next:
+[TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md) (§27).
 Archive: [../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md).
 
 
