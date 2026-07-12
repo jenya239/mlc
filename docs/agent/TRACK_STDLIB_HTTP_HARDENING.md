@@ -15,7 +15,7 @@ kill/panic).
 
 ## Next step
 
-**STEP=6** — minimal load-test script (N concurrent requests vs forever-demo).
+**STEP=7** — update `STDLIB_BACKEND.md` §1 HTTP row (keep-alive / static / timeout).
 
 ## Goal
 

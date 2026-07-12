@@ -78,12 +78,13 @@ fn handle_one(stream: i32) -> i32 = do
 end
 
 fn main() -> i32 = do
-  let listener_option = bind("127.0.0.1", 8080)
+  let listener_option = bind("127.0.0.1", 0)
   if !listener_option.is_some() then
     println("bind failed: " + last_error())
     return 1
   end
   let listener = listener_option.unwrap()
+  File.write("http_forever_port.txt", `${port(listener)}`)
   println("[mlc-http] listening on http://127.0.0.1:" + port(listener).to_string() + " (Ctrl+C to stop)")
 
   scope |server_scope| do

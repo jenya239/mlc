@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_HARDENING` active** — STEP=6 (load-test script) next; STEP=1–5 done.
+**`TRACK_STDLIB_HTTP_HARDENING` active** — STEP=7 (`STDLIB_BACKEND.md` §1 HTTP row) next; STEP=1–6 done.
 See [TRACK_STDLIB_HTTP_HARDENING.md](TRACK_STDLIB_HTTP_HARDENING.md). Queue: HTTP_HARDENING → SUPERVISOR → …
 
 

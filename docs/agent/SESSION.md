@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | `rg` STDLIB_BACKEND shutdown subsection |
+| test_gate | `run_http_load_smoke.rb` ok (8 concurrent, 9ms) |
+
+### Turn 2026-07-12 08:55 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=6 — load smoke)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 08:48 |
+| elapsed | ~8 min |
+| done    | forever demo bind port 0 + `http_forever_port.txt`; `scripts/run_http_load_smoke.rb` (N=8 `/health`). |
+| verify  | load smoke ok (wall 9ms); TaskScope present in codegen. |
+| result  | STEP=6 done. Plain: concurrent load vs forever accept; next §1 docs row. |
+| issues  | Foreign `compiler/out/*` left; no handler sleep so wall gate is generous (&lt;5s). |
+| next    | ROLE=Driver STEP=7 TRACK_STDLIB_HTTP_HARDENING — update STDLIB_BACKEND §1 HTTP row |
 
 ### Turn 2026-07-12 08:45 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=5 — shutdown doc)
 
