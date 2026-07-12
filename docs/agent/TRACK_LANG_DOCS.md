@@ -1,6 +1,6 @@
 # Track: Language reference manual
 
-Parent: [../PLAN.md](../PLAN.md).
+Parent: [../PLAN.md](../PLAN.md) §27.
 Trigger: 2026-07-11 backlog review for ~300-step planning horizon. No single
 document describes the MLC language end-to-end — syntax cheatsheet exists
 only as a compressed block in `CLAUDE.md` (for agent consumption); no
@@ -9,8 +9,14 @@ condition already named in [TRACK_DEBUG_SOURCE_MAP](TRACK_DEBUG_SOURCE_MAP.md)).
 Language features are individually documented across ~15 scattered docs
 (`FFI_LAYER.md`, `CONCURRENCY_V2.md`, `LANGUAGE_AUDIT_2026_07.md`, ...) with
 no single entry point.
+Predecessor closed (Critic OK 2026-07-12):
+[../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md).
 
-## Status: open, средний приоритет
+## Status: **active** (Planner 2026-07-12) — очередь §27
+
+## Next step
+
+**STEP=1** — create `docs/LANGUAGE_REFERENCE.md` skeleton + section TOC (stubs only).
 
 ## Goal
 
@@ -35,6 +41,17 @@ narrative) — a reference, skimmable, accurate.
 | 9 | Section: FFI — link `FFI_LAYER.md`, condensed version + the safety contract (`unsafe` framing from `TRACK_FFI_SAFETY`) | pending |
 | 10 | Cross-link from `README.md` + `AGENTS.md`/`docs/specs/index.md` so it is discoverable | pending |
 | 11 | Verify: every code example in the doc actually compiles (`mlcc -o /tmp/lang_ref_check <extracted example>`) — write a tiny extraction script (Ruby, per scripts-language rule) that pulls fenced ` ```mlc ` blocks and compiles each; wire as a doc-lint, not full regression_gate (docs-only, no self-host diff needed) | pending |
+
+### STEP=1 sub-steps (Driver)
+
+1. Create `docs/LANGUAGE_REFERENCE.md` with title, one-paragraph scope (reference not tutorial; examples must cite real e2e/demo paths), and a TOC linking to the section headings below.
+2. Add stub `##` headings only (no filled prose yet) for: Bindings; Functions; Types; Pattern matching; Traits; Error handling; Closures; Arrays, maps, strings; Concurrency; FFI. Under each stub: `Status: pending — filled in STEP=N` and a bullet list of planned topics from the Steps table.
+3. Do **not** invent example code in STEP=1; do **not** edit README/AGENTS (STEP=10). Point parent link to PLAN §27.
+4. Verify: file exists; TOC anchors match headings; TRACK Status stays **active**, Next=STEP=2 after mark STEP=1 done.
+
+## Progress
+
+- **Planner** (2026-07-12): activated after TEST_HARNESS Critic OK; STEP=1 next.
 
 ## Out of scope
 

@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_TEST_HARNESS` Critic OK** — Planner next:
-[TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md) (§27).
-Archive: [../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md).
+**`TRACK_LANG_DOCS` active** — STEP=1 (LANGUAGE_REFERENCE skeleton) next.
+See [TRACK_LANG_DOCS.md](TRACK_LANG_DOCS.md). Queue: LANG_DOCS → STDLIB_DOCS → …
 
 
 

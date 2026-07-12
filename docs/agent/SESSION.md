@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS (Critic OK) |
-| test_gate | concurrency_fuzz_gate 8 re-OK |
+| step_last | plan-refresh |
+| active_track | TRACK_LANG_DOCS |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-12 11:40 (Planner — plan-refresh → LANG_DOCS)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:36 |
+| elapsed | ~5 min |
+| done    | Activated §27; STEP=1 sub-steps (LANGUAGE_REFERENCE skeleton + TOC stubs); PLAN/DEVELOPMENT. |
+| verify  | TRACK Status **active** Next=STEP=1; PLAN §27 **active**. |
+| result  | Active track = LANG_DOCS. Plain: next is LANGUAGE_REFERENCE.md skeleton. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_DOCS — create LANGUAGE_REFERENCE.md skeleton + TOC stubs |
 
 ### Turn 2026-07-12 11:38 (Critic TRACK_CONCURRENCY_TEST_HARNESS critique-audit)
 
