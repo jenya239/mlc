@@ -11,6 +11,7 @@ module WebSocket
 import {
   HttpRequest,
   parse_http_request,
+  find_header_value,
   HttpParseOk,
   HttpParseErr,
   HttpParseTooLarge
@@ -356,21 +357,6 @@ export fn encode_text_frame(payload: string) -> string =
 export fn encode_close_frame() -> string =
   encode_unmasked_frame(8, "")
 
-fn header_names_equal(left: string, right: string) -> bool =
-  left.lower() == right.lower()
-
-fn find_header_value(request: HttpRequest, name: string) -> string = do
-  let mut index = 0
-  while index < request.headers.length() do
-    let header = request.headers[index]
-    if header_names_equal(header.name, name) then
-      return header.value
-    end
-    index = index + 1
-  end
-  ""
-end
-
 fn header_has_token(value: string, token: string) -> bool = do
   let mut rest = value
   while rest.length() > 0 do
@@ -408,19 +394,19 @@ export fn check_websocket_upgrade(request: HttpRequest) -> WsUpgradeCheck = do
   if request.method != "GET" then
     return WsUpgradeErr("websocket upgrade: method must be GET")
   end
-  let upgrade = find_header_value(request, "Upgrade")
+  let upgrade = find_header_value(request.headers, "Upgrade")
   if upgrade.lower() != "websocket" then
     return WsUpgradeErr("websocket upgrade: missing Upgrade: websocket")
   end
-  let connection = find_header_value(request, "Connection")
+  let connection = find_header_value(request.headers, "Connection")
   if !header_has_token(connection, "Upgrade") then
     return WsUpgradeErr("websocket upgrade: Connection must include Upgrade")
   end
-  let version = find_header_value(request, "Sec-WebSocket-Version")
+  let version = find_header_value(request.headers, "Sec-WebSocket-Version")
   if version != "13" then
     return WsUpgradeErr("websocket upgrade: Sec-WebSocket-Version must be 13")
   end
-  let key = find_header_value(request, "Sec-WebSocket-Key")
+  let key = find_header_value(request.headers, "Sec-WebSocket-Key")
   if key.length() == 0 then
     return WsUpgradeErr("websocket upgrade: missing Sec-WebSocket-Key")
   end

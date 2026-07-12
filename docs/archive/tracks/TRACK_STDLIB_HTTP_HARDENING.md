@@ -1,7 +1,7 @@
 # Track: HTTP server hardening (keep-alive, limits, static files, graceful shutdown)
 
-Parent: [../STDLIB_BACKEND.md](../STDLIB_BACKEND.md), [../archive/tracks/TRACK_STDLIB_HTTP_MLC.md](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md),
-[../archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md](../archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md).
+Parent: [../../STDLIB_BACKEND.md](../../STDLIB_BACKEND.md), [TRACK_STDLIB_HTTP_MLC.md](TRACK_STDLIB_HTTP_MLC.md),
+[TRACK_CONCURRENCY_SPAWN_DETACH.md](TRACK_CONCURRENCY_SPAWN_DETACH.md).
 Trigger: 2026-07-11 — user demo session built `misc/examples/http_scope_accept_loop_demo.mlc`
 (4-connection scope+spawn accept loop) and `misc/examples/http_server_forever_demo.mlc`
 (unbounded accept loop, `Connection: close` on every response). Both work,
@@ -11,11 +11,15 @@ that never returns (the forever-demo's `scope |s| { while true { ... } }`
 never joins its spawned tasks during normal operation — only on process
 kill/panic).
 
-## Status: **active** (Planner 2026-07-12) — очередь §24
+## Status: **closed** (2026-07-12) — awaiting Critic
+
+**Driver 2026-07-12 STEP=8:** `regression_gate.sh` 20/0 + examples sweep ok=113 fail=0 skip=1;
+HTTP smokes (parse/static/keepalive/413/idle/load) ok. Self-host N/A (stdlib/`runtime` only,
+no `compiler/`). Fix: WebSocket reused `HttpServer.find_header_value` (name clash after STEP=1 export).
 
 ## Next step
 
-**STEP=8** — verify: `scripts/regression_gate.sh` green (+ note stdlib-only: no compiler self-host delta required).
+— (closed; Critic critique-audit)
 
 ## Goal
 
@@ -36,7 +40,7 @@ readiness (out of scope, see below).
 | 5 | Graceful shutdown doc + pattern: since `scope |s| { while true { accept... } }` never returns during normal operation, document the actual shutdown story (process kill = OS closes sockets, in-flight `scope`-spawned tasks are abandoned, not joined) in `STDLIB_BACKEND.md`; if a bounded-iteration variant is wanted for tests, that's what `http_scope_accept_loop_demo.mlc` already demonstrates — do not conflate the two patterns in docs | **done** (2026-07-12) — `STDLIB_BACKEND.md` §1 subsection “HTTP accept-loop shutdown” |
 | 6 | Minimal load-test script (`scripts/http_load_smoke.sh` or Ruby, per scripts-language rule): N concurrent short-lived curl-equivalent requests against the forever-demo, assert all succeed and wall time roughly matches expected parallelism (same style as `scripts/run_http_scope_accept_loop_gate.sh`) | **done** (2026-07-12) — forever demo port-0 + `http_forever_port.txt`; `run_http_load_smoke.rb` (N=8 concurrent `/health`, wall &lt;5s) |
 | 7 | Docs: `STDLIB_BACKEND.md` §1 table — update HTTP server row with keep-alive/static-file/timeout status | **done** (2026-07-12) — §1 HTTP row + shutdown cross-link |
-| 8 | Verify: self-host diff identical if `lib/mlc/common/stdlib/net/http_server.mlc` changes propagate through `compiler/`; `scripts/regression_gate.sh` green | pending |
+| 8 | Verify: self-host diff identical if `lib/mlc/common/stdlib/net/http_server.mlc` changes propagate through `compiler/`; `scripts/regression_gate.sh` green | **done** (2026-07-12) — REG 20/0; sweep 113/0/1; self-host N/A (no `compiler/`); WS `find_header_value` clash fixed |
 
 ### STEP=1 sub-steps (Driver)
 
@@ -61,6 +65,7 @@ readiness (out of scope, see below).
 - **STEP=5** (2026-07-12): forever vs bounded accept shutdown documented in `STDLIB_BACKEND.md`.
 - **STEP=6** (2026-07-12): `run_http_load_smoke.rb` vs forever-demo (8 concurrent `/health`).
 - **STEP=7** (2026-07-12): §1 HTTP row updated for keep-alive / 413 / idle / static / load.
+- **STEP=8** (2026-07-12): regression gate + HTTP smokes green; track closed.
 
 ## Out of scope
 

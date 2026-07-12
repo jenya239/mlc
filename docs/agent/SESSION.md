@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | `rg` STDLIB_BACKEND §1 keep-alive/serve_static |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
+| active_track | TRACK_STDLIB_HTTP_HARDENING (closed) |
+| test_gate | REG 20/0; sweep 113/0/1; HTTP smokes ok |
+
+### Turn 2026-07-12 09:45 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=8 — verify + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 09:03 |
+| elapsed | ~40 min |
+| done    | `regression_gate.sh` green; WS uses `HttpServer.find_header_value`; TRACK archived; PLAN §24 done. |
+| verify  | REG 20/0; sweep ok=113 fail=0 skip=1; parse/static/keepalive/413/idle/load ok. |
+| result  | Track **closed**. Plain: HTTP hardening verified; Critic next (HARD LIMIT). |
+| issues  | Foreign `compiler/out/*` left; first gate fail fixed (WS name clash). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_STDLIB_HTTP_HARDENING |
 
 ### Turn 2026-07-12 09:00 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=7 — §1 HTTP row)
 
