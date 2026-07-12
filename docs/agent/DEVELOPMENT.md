@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SUPERVISOR` active** — STEP=2 (restart policies) next; STEP=1 done.
+**`TRACK_CONCURRENCY_SUPERVISOR` active** — STEP=3 (restart storm) next; STEP=1–2 done.
 See [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md). Queue: SUPERVISOR → TEST_HARNESS → …
 
 

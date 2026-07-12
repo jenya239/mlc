@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | `test_supervisor` 4/4; concurrency smoke ok |
+| test_gate | `test_supervisor` 9/9 |
+
+### Turn 2026-07-12 10:25 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=2 — restart policies)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:14 |
+| elapsed | ~12 min |
+| done    | `RestartPolicy` + one_for_one child loops; `std::thread` workers; tests permanent/transient/temporary. |
+| verify  | `test_supervisor` ALL 9 PASSED (×2). |
+| result  | STEP=2 done. Plain: restart policies work; next storm limits. |
+| issues  | Foreign `compiler/out/*` left; Permanent can spin until STEP=3. |
+| next    | ROLE=Driver STEP=3 TRACK_CONCURRENCY_SUPERVISOR — restart storm `max`/`within` |
 
 ### Turn 2026-07-12 10:15 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=1 — skeleton)
 
