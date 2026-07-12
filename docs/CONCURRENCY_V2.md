@@ -463,9 +463,16 @@ Per-source quotas, bounded ingress queues, batch limits, yield points — что
 ## 34. Deterministic `TestRuntime`
 
 Развёрнутый дизайн (deterministic scheduler, полная stress-матрица, sanitizer
-CI gate) — отдельный документ: [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md),
-трек: [agent/TRACK_CONCURRENCY_TEST_HARNESS.md](agent/TRACK_CONCURRENCY_TEST_HARNESS.md).
-Ниже — исходная формулировка требования (§34-37 из research-запроса).
+CI gate) — [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md);
+трек: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md)
+(**closed** 2026-07-12, awaiting Critic).
+
+**Статус (2026-07-12):** C++ v1 **implemented** —
+`runtime/include/mlc/concurrency/testing/scheduler.hpp` (`TestScheduler`) +
+`TestMutex`/`TestChannel`; smoke + sanitize + nightly seed fuzz
+(`scripts/concurrency_fuzz_gate.sh`). MLC `TestRuntime.new(seed:)` **deferred**
+(same closure gap as JobQueue/Supervisor; see track Decision T7). Sketch below
+is long-term MLC shape, not shipped syntax.
 
 ```mlc
 let rt = TestRuntime.new(seed: 918271)

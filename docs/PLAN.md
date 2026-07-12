@@ -419,7 +419,7 @@ compiler/
 | **23** | GUI input robustness (debounce клика, keyboard text, resize) | **done** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md) **closed** Critic OK (`e86090cd`…`a4ec69f1`); STEP=2 N/A; 7 smokes ok |
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **done** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md) **closed** Critic OK (`aa5721f1`…`8e2d1b30`); REG 20/0; sweep 113/0/1 |
 | **25** | Concurrency Supervisor — реализация (гейт снят) | **done** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK (`149899a2`…`44334e2d`); smoke+sanitize; C++-only |
-| **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **active** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) **active** T1–T6 done; STEP=7 (T7 Decision) next |
+| **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **done** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) **closed** T1–T7; T7 C++-only Decision; awaiting Critic |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **open, средний приоритет** | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **open, средний приоритет** | [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md) |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
@@ -578,10 +578,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md))
   → CONCURRENCY_SUPERVISOR (**done** 2026-07-12: Critic OK; STEP=1–7; C++-only; smoke+sanitize;
       → [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md))
-  → **CONCURRENCY_TEST_HARNESS (active 2026-07-12: T1–T6 done; STEP=7 T7 Decision next;
-      → [agent/TRACK_CONCURRENCY_TEST_HARNESS.md](agent/TRACK_CONCURRENCY_TEST_HARNESS.md)):**
-    Layer 4 seed fuzz + corpus landed; T7 Decision (MLC vs C++-only)
-  → LANG_DOCS (`docs/LANGUAGE_REFERENCE.md` — по разделам языка, примеры
+  → CONCURRENCY_TEST_HARNESS (**done** 2026-07-12: T1–T7; T7 C++-only Decision; fuzz nightly;
+      awaiting Critic;
+      → [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md))
+  → **LANG_DOCS** (`docs/LANGUAGE_REFERENCE.md` — по разделам языка, примеры
     только из существующих e2e/demo, verify-скрипт компилирует каждый пример)
   → STDLIB_DOCS (`docs/STDLIB_REFERENCE.md` — по модулю, снипеты только
     из существующих demo-файлов)

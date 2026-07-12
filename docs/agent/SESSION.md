@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 6 |
-| active_track | TRACK_CONCURRENCY_TEST_HARNESS |
-| test_gate | concurrency_fuzz_gate 32 ok |
+| driver_turns_since_plan | 2 |
+| step_last | 7 |
+| active_track | TRACK_CONCURRENCY_TEST_HARNESS (closed) |
+| test_gate | Decision doc (C++-only T7; no code) |
+
+### Turn 2026-07-12 11:35 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=7 — T7 Decision + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-12 11:30 |
+| elapsed | ~5 min |
+| done    | Decision: C++-only `TestScheduler` harness; MLC `TestRuntime` deferred. TRACK archived; PLAN §26 done. |
+| verify  | Decision in archive TRACK; CONCURRENCY_V2 §34 + CONCURRENCY_TEST_HARNESS status updated; no MLC registry. |
+| result  | Track **closed**. Plain: no MLC TestRuntime this track; Critic next. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_CONCURRENCY_TEST_HARNESS |
 
 ### Turn 2026-07-12 11:30 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=6 — T6 fuzz nightly)
 
