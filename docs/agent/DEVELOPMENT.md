@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SUPERVISOR` active** — STEP=7 (verify/smoke+sanitizer) next; STEP=1–6 done.
-See [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md). Queue: SUPERVISOR → TEST_HARNESS → …
+**`TRACK_CONCURRENCY_SUPERVISOR` closed** (STEP=1–7) — Critic next, then
+[TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md).
+Archive: [../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md).
 
 
 

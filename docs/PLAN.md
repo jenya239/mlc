@@ -383,7 +383,7 @@ compiler/
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
 | **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **open, реализация авторизована 2026-07-11** — 3 design-вопроса закрыты, Steps 1-10 (parser/checker/codegen/tests/docs) |
-| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) **active** 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
+| **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** 2026-07-12 (awaiting Critic). MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
 | **8c** Слить `Tcp` + `spawn` в одном компиляторе (многопоточный HTTP-сервер целиком на MLC) | **done** | [TRACK_PIPELINE_MERGE_TCP_SPAWN](archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md) **closed** 2026-07-10 (STEP=1–6: Decision A; bare `Tcp`; echo; Tcp+spawn e2e; docs; self-host identical; regression 20/0) |
@@ -418,7 +418,7 @@ compiler/
 | **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **done** (2026-07-12) | [TRACK_FFI_EXTERN_DEDUP](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md) **closed** Critic OK; Hybrid + E090; REG 20/0; sweep 106/0/1; DIFF=0 |
 | **23** | GUI input robustness (debounce клика, keyboard text, resize) | **done** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md) **closed** Critic OK (`e86090cd`…`a4ec69f1`); STEP=2 N/A; 7 smokes ok |
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **done** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md) **closed** Critic OK (`aa5721f1`…`8e2d1b30`); REG 20/0; sweep 113/0/1 |
-| **25** | Concurrency Supervisor — реализация (гейт снят) | **active** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) **active** STEP=1–6 done; STEP=7 verify next |
+| **25** | Concurrency Supervisor — реализация (гейт снят) | **done** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** STEP=1–7; smoke+sanitize ok; awaiting Critic |
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **open** (2026-07-11: unblocked, Task/TaskScope/Isolate в продакшене) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **open, средний приоритет** | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **open, средний приоритет** | [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md) |
@@ -576,12 +576,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md))
   → STDLIB_HTTP_HARDENING (**done** 2026-07-12: Critic OK; STEP=1–8; REG 20/0; sweep 113/0/1;
       → [archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md))
-  → **CONCURRENCY_SUPERVISOR (active 2026-07-12: STEP=1–6 done; C++-only; STEP=7 verify next;
-      → [agent/TRACK_CONCURRENCY_SUPERVISOR.md](agent/TRACK_CONCURRENCY_SUPERVISOR.md)):**
-    permanent/transient/temporary, one_for_one, restart storm; MLC deferred
-  → CONCURRENCY_TEST_HARNESS T6 (nightly fuzz/chaos, отдельная non-blocking
+  → CONCURRENCY_SUPERVISOR (**done** 2026-07-12: STEP=1–7; C++-only; smoke+sanitize;
+      awaiting Critic;
+      → [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md))
+  → **CONCURRENCY_TEST_HARNESS** T6 (nightly fuzz/chaos, отдельная non-blocking
     CI job) + T7 (`TestRuntime` MLC-level, тем же способом решить
-    MLC-reachable/C++-only)
+    MLC-reachable/C++-only) — next after Critic OK
   → LANG_DOCS (`docs/LANGUAGE_REFERENCE.md` — по разделам языка, примеры
     только из существующих e2e/demo, verify-скрипт компилирует каждый пример)
   → STDLIB_DOCS (`docs/STDLIB_REFERENCE.md` — по модулю, снипеты только

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | docs-only (CONCURRENCY_V2 / STDLIB_BACKEND) |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_CONCURRENCY_SUPERVISOR (closed) |
+| test_gate | smoke ok + sanitize ASan/UBSan/TSan ok |
+
+### Turn 2026-07-12 11:10 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=7 — verify + close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 11:04 |
+| elapsed | ~8 min |
+| done    | Smoke + `concurrency_sanitize_gate.sh` green; STEP=7 done; TRACK archived closed; PLAN §25 done. |
+| verify  | `run_concurrency_smoke.sh` ok (test_supervisor 26); sanitize address/undefined/thread ok; self-host N/A. |
+| result  | Track **closed**. Plain: Supervisor C++ v1 verified under sanitizers. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_CONCURRENCY_SUPERVISOR |
 
 ### Turn 2026-07-12 10:55 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=6 — docs §28–29 + STDLIB)
 

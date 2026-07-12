@@ -393,7 +393,7 @@ fn update(widget: GtkWidget) { ... }
 `runtime/include/mlc/concurrency/supervisor.hpp` (`mlc::concurrency::Supervisor`);
 smoke `runtime/test/test_supervisor.cpp` + `run_concurrency_smoke.sh`.
 MLC surface **deferred** (same closure gap as JobQueue; see
-[TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) Decision).
+[TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) Decision).
 Sketch below is the long-term MLC shape, not shipped syntax.
 
 ```mlc
@@ -579,7 +579,7 @@ Checker → SemanticIR → C++20`)
 | 7 | Cancellation propagation (scope failure/cancel) | runtime + checker | нет |
 | 8 | `Isolate[State, Msg]` (сначала библиотечно) | нет (library) | нет |
 | 9 | **Стоп. Не добавлять фичи, пока эталонное приложение (чат, см. north star) не выдержит:** 1000 connections, 100k messages, slow clients, random disconnect, SIGTERM, DB delays, worker crashes, TSan | — | — |
-| 10 | `Supervisor` | library | **есть** C++ v1 (2026-07-12): `supervisor.hpp`; policies + one_for_one + storm intensity; MLC deferred ([TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md)) |
+| 10 | `Supervisor` | library | **есть** C++ v1 (2026-07-12): `supervisor.hpp`; policies + one_for_one + storm intensity; MLC deferred ([TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed**) |
 | 11 | async I/O (`Future`/`async`/`await`/`IoReactor`) | язык + runtime | нет |
 
 ## Критерий приёмки ("MLC умеет стабильную многопоточность")
