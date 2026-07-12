@@ -14,7 +14,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=6** — cross-link from `STDLIB_BACKEND.md` §1 table.
+**STEP=7** — verify snippets vs attributed sources (grep-check).
 
 ## Goal
 
@@ -32,7 +32,7 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 | 3 | `WebSocket` — snippet from `misc/examples/websocket_echo_demo.mlc` (filename verified 2026-07-12) | **done** (2026-07-12) — API table + upgrade/echo excerpt |
 | 4 | `Postgres` + `Crypto` — `misc/examples/postgres_select_demo.mlc` + `misc/examples/crypto_sha256_demo.mlc` | **done** (2026-07-12) — API tables + demo excerpts |
 | 5 | `Log` + `Env` + `Validate` + `Json` — Log/Env: `misc/examples/env_log_demo.mlc`; Validate: `misc/examples/validate_demo.mlc`; Json: **no** `misc/examples/*json*` — API table from `lib/mlc/common/stdlib/data/json.mlc`, snippet from program string in `test/mlc/derive_json_test.rb` (cite path; do not invent) | **done** (2026-07-12) — four sections filled |
-| 6 | Cross-link from `STDLIB_BACKEND.md` §1 table (replace inline snippets with links to this doc where it gets long) | pending |
+| 6 | Cross-link from `STDLIB_BACKEND.md` §1 table (replace inline snippets with links to this doc where it gets long) | **done** (2026-07-12) — §1 intro + per-module API links; HTTP row condensed |
 | 7 | Verify: every snippet appears verbatim (or near-verbatim, noted if trimmed) in the attributed file — grep-check, not visual-only | pending |
 
 ### STEP=1 sub-steps (Driver)
@@ -59,6 +59,8 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 - **STEP=3** (2026-07-12): WebSocket API table + upgrade/echo excerpt from
   `websocket_echo_demo.mlc`.
 - **STEP=4** (2026-07-12): Postgres + Crypto API tables + demo excerpts.
+- **STEP=5** (2026-07-12): Log, Env, Validate, Json sections filled.
+- **STEP=6** (2026-07-12): `STDLIB_BACKEND.md` §1 → `STDLIB_REFERENCE` section links.
 
 ## Out of scope
 

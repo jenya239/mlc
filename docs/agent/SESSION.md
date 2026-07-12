@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (Log/Env/Validate/Json) |
+| test_gate | docs-only (STDLIB_BACKEND §1 cross-links) |
+
+### Turn 2026-07-12 12:20 (Driver TRACK_STDLIB_DOCS STEP=6 — STDLIB_BACKEND cross-link)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:18 |
+| elapsed | ~4 min |
+| done    | `STDLIB_BACKEND.md` §1: intro → `STDLIB_REFERENCE`; condensed HTTP row; per-module API anchors (Tcp/HttpServer/WebSocket/Postgres/Crypto/Log/Env/Validate/Json). |
+| verify  | `rg 'STDLIB_REFERENCE.md#' docs/STDLIB_BACKEND.md` ≥9; TRACK Next=STEP=7. |
+| result  | STEP=6 done. Plain: backend overview points at API reference. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_STDLIB_DOCS — grep-verify all snippets vs sources |
 
 ### Turn 2026-07-12 12:18 (Driver TRACK_STDLIB_DOCS STEP=5 — Log/Env/Validate/Json)
 
