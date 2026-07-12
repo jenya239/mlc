@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 9 |
-| active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | docs STEP=9 (MLC.md region/E091) |
+| driver_turns_since_plan | 9 |
+| step_last | 10 |
+| active_track | TRACK_LANG_REGION_ARENA (closed, pending Critic) |
+| test_gate | STEP=10 skipped; track archived |
+
+### Turn 2026-07-12 22:37 (Driver TRACK_LANG_REGION_ARENA STEP=10)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 22:37 |
+| elapsed | ~5 min |
+| done    | STEP=10 skipped (ast.mlc region migration risky); track **closed** + archived. |
+| verify  | TRACK Status closed; PLAN §7 done 8/8; `docs/archive/tracks/TRACK_LANG_REGION_ARENA.md`. |
+| result  | Track closed. Plain: region feature done without parser AST rewrite. |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK_LANG_REGION_ARENA |
 
 ### Turn 2026-07-12 22:22 (Driver TRACK_LANG_REGION_ARENA STEP=9)
 

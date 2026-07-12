@@ -1,20 +1,30 @@
 # Track: scoped region/arena (`region r do ... end`)
 
-Parent: [../PLAN.md](../PLAN.md) §7 / queue after STDLIB_DOCS,
-[../MLC.md](../MLC.md) §C1 (phantom types — прямая зависимость). Source:
-[../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md), §1.4
+Parent: [../../PLAN.md](../../PLAN.md) §7 / queue after STDLIB_DOCS,
+[../../MLC.md](../../MLC.md) §C1 (phantom types — прямая зависимость). Source:
+[../../LANGUAGE_AUDIT_2026_07.md](../../LANGUAGE_AUDIT_2026_07.md), §1.4
 (единственная рекомендация аудита, реально *расширяющая* выразительность
 связных графов, не просто сахар).
 Predecessor closed (Critic OK 2026-07-12):
-[../archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
+[TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
 TEXT_GL override closed (Critic OK 2026-07-12):
-[../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
+[TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=9 done 2026-07-12) — STEP=10 optional hot-path next
+## Status: **closed** (2026-07-12) — pending Critic
+
+**Driver** (2026-07-12): STEP=1–9 done; STEP=10 **skipped** (risky: rewriting
+`compiler/frontend/ast.mlc` Shared graph onto `region` would destabilize
+self-hosted parser — TRACK explicitly allows defer/skip).
 
 ## Next step
 
-**STEP=10** — Optional/stretch: apply `region` to a real internal hot path, or skip if risky.
+**closed** — awaiting `ROLE=Critic STEP=critique-audit`.
+
+### STEP=10 skipped (2026-07-12)
+
+- Optional proof-of-value on `ast.mlc` parse-pass hot path deferred.
+- Feature surface (parser/checker/codegen/E091/e2e/docs/self-host/REG) complete
+  without that migration.
 
 ### STEP=9 done (2026-07-12)
 
@@ -136,7 +146,7 @@ end   // весь буфер r освобождается разом
    региона — поле хранит примитивный идентификатор (индекс/`i32` id), не
    `Shared<T>`-хендл, и разрешение id→объект происходит explicit через
    внешнюю таблицу вне региона (тот же паттерн camera-relative addressing,
-   уже отмеченный в [TRACK_GUI_CANVAS_GRAPH](TRACK_GUI_CANVAS_GRAPH.md) для
+   уже отмеченный в [TRACK_GUI_CANVAS_GRAPH](../agent/TRACK_GUI_CANVAS_GRAPH.md) для
    больших координатных полей — не переизобретать отдельно).
 
 ## Steps (реализация)
@@ -152,7 +162,7 @@ end   // весь буфер r освобождается разом
 | 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | **done** (2026-07-12) |
 | 8 | `scripts/regression_gate.sh` green | **done** (2026-07-12) 20/0; sweep ok=113 fail=0 skip=1 |
 | 9 | Docs: `MLC.md` §C1 area — document `region`/`RegionHandle`/`Region<Tag,T>`; note the three escape-prohibition vectors explicitly | **done** (2026-07-12) |
-| 10 | Optional/stretch: apply `region` to a real internal hot path with a mutable cyclic graph (`compiler/frontend/ast.mlc` node construction during one parse pass, as named in "Зачем" above) as a proof-of-value, **only if** Steps 1-9 are stable and this doesn't risk destabilizing the self-hosted parser — separate sub-step, easy to defer/skip if risky | pending |
+| 10 | Optional/stretch: apply `region` to a real internal hot path with a mutable cyclic graph (`compiler/frontend/ast.mlc` node construction during one parse pass, as named in "Зачем" above) as a proof-of-value, **only if** Steps 1-9 are stable and this doesn't risk destabilizing the self-hosted parser — separate sub-step, easy to defer/skip if risky | **skipped** (2026-07-12) — risk to self-hosted AST/parser |
 
 ### STEP=1 sub-steps (Driver)
 

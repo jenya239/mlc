@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_REGION_ARENA` active** — STEP=7 self-host mlcc↔mlcc2 diff.
-STEP=6 done (cycle smoke, no Shared atomic). See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
-`TRACK_TEXT_SHIM_TO_MLC` remains open, queued after REGION.
+**`TRACK_LANG_REGION_ARENA` closed** (STEP=1–9; STEP=10 skipped) — pending Critic;
+see [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
+Next queue: [TRACK_TEXT_SHIM_TO_MLC.md](TRACK_TEXT_SHIM_TO_MLC.md).
 
 ## Step sizing (good vs bad)
 
