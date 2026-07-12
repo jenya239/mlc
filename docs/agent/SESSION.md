@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | mlcc --check-only region smoke + main.mlc |
+| driver_turns_since_plan | 0 |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_GL_PERF_BASELINE |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-12 12:58 (Planner TRACK_TEXT_GL_PERF_BASELINE — activate)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 12:53 |
+| elapsed | ~5 min |
+| done    | Status **active**; Next=STEP=1 face/font cache sub-steps; REGION → **paused**; PLAN §21b + queue; DEVELOPMENT; CONTINUITY override row committed. |
+| verify  | `FT_Init_FreeType` in `freetype_shim.cpp:56,89` + `harfbuzz_shim.cpp:28`; REGION STEP=1 commit `3b4df688` present. |
+| result  | Track activated. Plain: Driver caches FT/HB faces. |
+| issues  | Foreign `compiler/out/extern_concurrency_lint.*` + `.tmp/` left. |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_GL_PERF_BASELINE — process-local FT/HB face cache |
 
 ### Turn 2026-07-12 12:55 (Driver TRACK_LANG_REGION_ARENA STEP=1 — ExprRegion parse)
 

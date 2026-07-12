@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **active** (2026-07-12) STEP=1 **done** (ExprRegion parse); STEP=2+ after TEXT_GL_PERF_BASELINE — Decisions 1–3 closed; Steps 1-10 |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **paused** (STEP=1 done; STEP=2+ after TEXT_GL_PERF_BASELINE) — Decisions 1–3 closed; Steps 1-10 |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -422,7 +422,7 @@ compiler/
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **done** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) **closed** Critic OK (`24486b14`…`0d362257`); T7 C++-only; fuzz gate re-OK |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_LANG_DOCS](archive/tracks/TRACK_LANG_DOCS.md) **closed** Critic OK (`328cb686`…`022402ad`); `lang_ref_lint` 33/0 |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
-| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **open, приоритет — голова очереди** | [TRACK_TEXT_GL_PERF_BASELINE](agent/TRACK_TEXT_GL_PERF_BASELINE.md) — root cause найден (не design-степ, сразу implementation): `freetype_shim.cpp`/`harfbuzz_shim.cpp` делают `FT_Init_FreeType`+`FT_New_Face` на каждый вызов (тысячи раз/сек); `runtime/src/gl/text_renderer_shim.cpp` уже правильно считает bearing (`bitmap_top`/`bitmap_left`), просто не перенесено в GL live-путь |
+| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **active** (2026-07-12) STEP=1 next — face/font cache | [TRACK_TEXT_GL_PERF_BASELINE](agent/TRACK_TEXT_GL_PERF_BASELINE.md) — root cause найден (не design-степ, сразу implementation): `freetype_shim.cpp`/`harfbuzz_shim.cpp` делают `FT_Init_FreeType`+`FT_New_Face` на каждый вызов (тысячи раз/сек); `runtime/src/gl/text_renderer_shim.cpp` уже правильно считает bearing (`bitmap_top`/`bitmap_left`), просто не перенесено в GL live-путь |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -593,7 +593,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     12:37) — дать ему завершиться и закоммититься, **не откатывать**, но
     следующий Planner-выбор — этот трек, не `LANG_REGION_ARENA` STEP=2)
 
-  → TEXT_GL_PERF_BASELINE (Part A: `FT_Library`/`FT_Face`/`hb_font` кешируются
+  → **TEXT_GL_PERF_BASELINE (active 2026-07-12: STEP=1 face/font cache next;
+    Part A: `FT_Library`/`FT_Face`/`hb_font` кешируются
     по `(font_path, pixel_size)` вместо `FT_Init_FreeType`+`FT_New_Face` на
     каждый вызов (тысячи раз/сек — вот источник CPU-нагрузки, не vsync);
     wire существующий `misc/gui/text_renderer.mlc` `GlyphCache` LRU в demo
@@ -601,12 +602,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     bearing-формулу (`destination_y = baseline_y - pen_y - bitmap_top`) из
     `runtime/src/gl/text_renderer_shim.cpp` в GL live-путь `freetype_shim` —
     6 затронутых `.mlc`-файлов
-    → [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md))
+    → [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md))**
 
   ↓ (2026-07-11, пользователь авторизовал 4 ранее гейтированных design-only
     резервуара — активированы явной командой в чате, не самостоятельно)
 
-  → **LANG_REGION_ARENA (active 2026-07-12: STEP=1 done — ExprRegion +
+  → **LANG_REGION_ARENA (paused 2026-07-12: STEP=1 done — ExprRegion +
       parse_region_expr; STEP=2+ resumes AFTER TEXT_GL_PERF_BASELINE closes;
       → [agent/TRACK_LANG_REGION_ARENA.md](agent/TRACK_LANG_REGION_ARENA.md)):**
     3 design-вопроса закрыты — phantom RegionTag generic, полный запрет escape,

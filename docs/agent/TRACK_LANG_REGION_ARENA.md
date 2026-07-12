@@ -8,7 +8,10 @@ Parent: [../PLAN.md](../PLAN.md) §7 / queue after STDLIB_DOCS,
 Predecessor closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
 
-## Status: **active** (Planner 2026-07-12) — очередь после STDLIB_DOCS
+## Status: **paused** (2026-07-12) — STEP=1 done; STEP=2+ after TEXT_GL_PERF_BASELINE
+
+Was **active** until Planner activated [TRACK_TEXT_GL_PERF_BASELINE](TRACK_TEXT_GL_PERF_BASELINE.md)
+(CONTINUITY one-shot queue override).
 
 ## Next step
 
