@@ -14,7 +14,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=2** — fill `Tcp` + `HttpServer` sections from pinned demos.
+**STEP=3** — fill `WebSocket` from `websocket_echo_demo.mlc`.
 
 ## Goal
 
@@ -28,7 +28,7 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Skeleton + module list; one stub section per module (table placeholder: `fn`/`type` name, signature, one-line description) | **done** (2026-07-12) — `docs/STDLIB_REFERENCE.md` TOC + 9 stubs |
-| 2 | `Tcp` + `HttpServer` — snippets from `misc/examples/tcp_echo_demo.mlc` + `misc/examples/http_server_forever_demo.mlc` (Tcp+spawn: `tcp_spawn_echo_mlcc.mlc` optional cross-cite) | pending |
+| 2 | `Tcp` + `HttpServer` — snippets from `misc/examples/tcp_echo_demo.mlc` + `misc/examples/http_server_forever_demo.mlc` (Tcp+spawn: `tcp_spawn_echo_mlcc.mlc` optional cross-cite) | **done** (2026-07-12) — API tables + demos; limitations from STDLIB_BACKEND §1 |
 | 3 | `WebSocket` — snippet from `misc/examples/websocket_echo_demo.mlc` (filename verified 2026-07-12) | pending |
 | 4 | `Postgres` + `Crypto` — `misc/examples/postgres_select_demo.mlc` + `misc/examples/crypto_sha256_demo.mlc` | pending |
 | 5 | `Log` + `Env` + `Validate` + `Json` — Log/Env: `misc/examples/env_log_demo.mlc`; Validate: `misc/examples/validate_demo.mlc`; Json: **no** `misc/examples/*json*` — API table from `lib/mlc/common/stdlib/data/json.mlc`, snippet from program string in `test/mlc/derive_json_test.rb` (cite path; do not invent) | pending |
@@ -54,6 +54,8 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
   pinned; Json exception documented; STEP=1 next.
 - **STEP=1** (2026-07-12): `docs/STDLIB_REFERENCE.md` skeleton + TOC + 9 stubs;
   no invented examples; STDLIB_BACKEND untouched.
+- **STEP=2** (2026-07-12): Tcp + HttpServer API tables + demo excerpts;
+  limitations from STDLIB_BACKEND §1.
 
 ## Out of scope
 

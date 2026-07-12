@@ -26,22 +26,126 @@ module surface — out of scope here.
 
 ## Tcp
 
-Status: pending — filled in STEP=2.
+Module: [`lib/mlc/common/stdlib/net/tcp.mlc`](../lib/mlc/common/stdlib/net/tcp.mlc)
+(`import … from 'Tcp'`). Opaque `i32` tokens are real fds (fd-as-token).
 
-Pinned source: [`misc/examples/tcp_echo_demo.mlc`](../misc/examples/tcp_echo_demo.mlc)
-(optional cross-cite: [`tcp_spawn_echo_mlcc.mlc`](../misc/examples/tcp_spawn_echo_mlcc.mlc)).
+Demo: [`misc/examples/tcp_echo_demo.mlc`](../misc/examples/tcp_echo_demo.mlc).
+Tcp+`spawn` under mlcc: [`tcp_spawn_echo_mlcc.mlc`](../misc/examples/tcp_spawn_echo_mlcc.mlc).
 
-Planned: API table (`fn`/`type`, signature, one-line description); snippet from
-pinned demo; limitations from STDLIB_BACKEND §1 (blocking TCP; no TLS).
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `bind` | `(host: string, port: i32) -> Option<i32>` | Listen socket; `None` → `last_error()` |
+| `accept` | `(listener: i32) -> Option<i32>` | Blocking accept |
+| `read` | `(stream: i32, max_bytes: i32) -> Option<string>` | Blocking read up to `max_bytes` |
+| `set_recv_timeout` | `(stream: i32, timeout_seconds: i32) -> bool` | `SO_RCVTIMEO` idle timeout |
+| `write_all` | `(stream: i32, data: string) -> bool` | Write full buffer |
+| `close_listener` | `(listener: i32) -> unit` | Close listen fd |
+| `close_stream` | `(stream: i32) -> unit` | Close connection fd |
+| `port` | `(listener: i32) -> i32` | Bound port (useful after `port: 0`) |
+| `last_error` | `() -> string` | Last bridge error string |
+
+All listed fns are `export extern` + `blocking` via `mlc/net/tcp_bridge.hpp`.
+
+### Example (excerpt from demo)
+
+Source: [`misc/examples/tcp_echo_demo.mlc`](../misc/examples/tcp_echo_demo.mlc)
+
+```mlc
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+
+fn main() -> i32 = do
+  let listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  let listener = listener_option.unwrap()
+  File.write("tcp_echo_port.txt", `${port(listener)}`)
+  let stream_option = accept(listener)
+  if !stream_option.is_some() then
+    println(last_error())
+    close_listener(listener)
+    return 2
+  end
+  let stream = stream_option.unwrap()
+  let data_option = read(stream, 64)
+  let data = if data_option.is_some() then data_option.unwrap() else "" end
+  let wrote = write_all(stream, data)
+  close_stream(stream)
+  close_listener(listener)
+  if wrote then 0 else 3 end
+end
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+Blocking TCP only; reachable from Ruby and mlcc. No TLS. Errors surface as
+`None`/`false` plus `last_error()`.
 
 ## HttpServer
 
-Status: pending — filled in STEP=2.
+Module: [`lib/mlc/common/stdlib/net/http_server.mlc`](../lib/mlc/common/stdlib/net/http_server.mlc)
+(`import … from 'HttpServer'`). Pure MLC HTTP/1.1 parse + response format;
+I/O stays on `Tcp`.
 
-Pinned source: [`misc/examples/http_server_forever_demo.mlc`](../misc/examples/http_server_forever_demo.mlc).
+Demo: [`misc/examples/http_server_forever_demo.mlc`](../misc/examples/http_server_forever_demo.mlc).
+Bounded accept (joins on scope end):
+[`http_scope_accept_loop_demo.mlc`](../misc/examples/http_scope_accept_loop_demo.mlc).
 
-Planned: API table; snippet from forever demo; limitations from STDLIB_BACKEND §1
-(keep-alive / limits / no TLS/HTTP/2; shutdown story for forever vs bounded).
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `HttpHeader` | `{ name: string, value: string }` | One header line |
+| `HttpRequest` | `{ method, path, headers, body }` | Parsed request |
+| `HttpResponse` | `{ status: i32, headers, body }` | Response to format |
+| `HttpParseResult` | `HttpParseOk(HttpRequest) \| HttpParseErr \| HttpParseTooLarge` | Parse outcome |
+| `parse_http_request` | `(raw: string) -> HttpParseResult` | Parse HTTP/1.1 request bytes |
+| `format_http_response` | `(response: HttpResponse) -> string` | Serialize response |
+| `find_header_value` | `(headers: [HttpHeader], name: string) -> string` | Case-insensitive header lookup |
+| `http_request_wants_keep_alive` | `(request: HttpRequest) -> i32` | Keep-alive preference |
+| `http_response_with_connection` | `(response, keep_alive: i32) -> HttpResponse` | Set `Connection` header |
+| `serve_static` | `(directory: string, request: HttpRequest) -> HttpResponse` | Static files (`GET`; traversal → 400; missing → 404) |
+| `http_bad_request` | `() -> HttpResponse` | 400 |
+| `http_payload_too_large` | `() -> HttpResponse` | 413 |
+| `http_not_found` | `() -> HttpResponse` | 404 |
+| `http_method_not_allowed` | `() -> HttpResponse` | 405 |
+
+### Example (excerpt from forever demo)
+
+Source: [`misc/examples/http_server_forever_demo.mlc`](../misc/examples/http_server_forever_demo.mlc)
+(accept loop + `scope.spawn`; `handle_one` / `route_http` in the same file.)
+
+```mlc
+  scope |server_scope| do
+    while true do
+      let stream_option = accept(listener)
+      if !stream_option.is_some() then
+        println("[mlc-http] accept failed: " + last_error())
+      else
+        let stream = stream_option.unwrap()
+        server_scope.spawn do handle_one(stream) end
+      end
+    end
+  end
+```
+
+Parse + format path inside `handle_one` (same file):
+
+```mlc
+  let response = match parse_http_request(raw) {
+    HttpParseErr => …,
+    HttpParseTooLarge => …,
+    HttpParseOk(request) => route_http(request)
+  }
+  let wrote = write_all(stream, format_http_response(response))
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+HTTP/1.1 only; keep-alive, body limit → `HttpParseTooLarge` (413), idle recv
+timeout via `Tcp.set_recv_timeout`, `serve_static` with traversal/`404`/
+`Content-Type`. No `[HttpRoute]` table API. Forever accept has no MLC drain
+API (process signal abandons in-flight handlers — see STDLIB_BACKEND §1
+shutdown subsection). TLS / HTTP/2 out of scope.
 
 ## WebSocket
 

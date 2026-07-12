@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (STDLIB_REFERENCE skeleton) |
+| test_gate | docs-only (Tcp + HttpServer sections) |
+
+### Turn 2026-07-12 12:14 (Driver TRACK_STDLIB_DOCS STEP=2 — Tcp + HttpServer)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:11 |
+| elapsed | ~5 min |
+| done    | Filled Tcp + HttpServer in `STDLIB_REFERENCE.md` — API tables from `tcp.mlc`/`http_server.mlc`; snippets from `tcp_echo_demo` + forever accept loop; §1 limitations. |
+| verify  | Key demo lines present via `rg`; TRACK Next=STEP=3. |
+| result  | STEP=2 done. Plain: net server modules documented. |
+| issues  | Foreign `compiler/out/*` left. HttpServer parse match excerpt trimmed (ellipsis for Err/TooLarge arms). |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_DOCS — WebSocket from websocket_echo_demo |
 
 ### Turn 2026-07-12 12:12 (Driver TRACK_STDLIB_DOCS STEP=1 — STDLIB_REFERENCE skeleton)
 
