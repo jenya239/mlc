@@ -206,13 +206,59 @@ in `compiler/tests/test_checker.mlc`.)
 
 ## Traits
 
-Status: pending — filled in STEP=4.
+Traits declare method requirements. `extend Type { ... }` adds inherent
+methods. `extend Type : Trait { ... }` implements a trait for a type.
+Trait bounds appear on generics (`T: Display`) or as trait-typed parameters.
 
-Planned topics:
+### Inherent `extend`
 
-- `extend Type { ... }` (inherent methods)
-- `extend Type : Trait { ... }` (trait impl)
-- Orphan rule
+Source: [`compiler/tests/e2e/record_update.mlc`](../compiler/tests/e2e/record_update.mlc)
+
+```mlc
+type Point = { x: i32, y: i32 }
+
+extend Point {
+  fn to_string(self: Point) -> string =
+    "(" + self.x.to_string() + ', ' + self.y.to_string() + ")"
+}
+```
+
+### Trait declaration + `extend Type : Trait`
+
+Source: [`compiler/tests/e2e/trait_e2e.mlc`](../compiler/tests/e2e/trait_e2e.mlc)
+
+```mlc
+type Display { fn to_string(self: Self) -> string }
+
+extend i32 : Display {
+  fn to_string(self: i32) -> string = extern
+}
+
+fn id<T: Display>(x: T) -> T = x
+```
+
+### Trait as parameter type
+
+Source: [`compiler/tests/e2e/trait_as_param.mlc`](../compiler/tests/e2e/trait_as_param.mlc)
+
+```mlc
+fn f(x: Display) -> unit = ()
+
+fn main() -> i32 = do
+  f(42)
+  println("ok")
+  0
+end
+```
+
+(`Display` / `extend i32 : Display` are the same as in `trait_e2e.mlc`.)
+
+### Orphan rule
+
+`extend T : Trait` is allowed only in the module that defines **T** or
+**Trait** (diagnostic E086). Bare `extend T` (inherent methods) is unchanged.
+Details:
+[archive/tracks/TRACK_LANG_ORPHAN_RULE.md](archive/tracks/TRACK_LANG_ORPHAN_RULE.md).
 
 ## Error handling
 

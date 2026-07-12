@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Types+Match) |
+| test_gate | docs-only (LANGUAGE_REFERENCE Traits) |
+
+### Turn 2026-07-12 11:50 (Driver TRACK_LANG_DOCS STEP=4 — Traits + orphan rule)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:45 |
+| elapsed | ~5 min |
+| done    | Traits: inherent extend (`record_update`), trait impl + bound (`trait_e2e`), trait param (`trait_as_param`); orphan → E086 archive track. |
+| verify  | Cited e2e paths exist; TRACK Next=STEP=5. |
+| result  | STEP=4 done. Plain: traits documented from e2e. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_LANG_DOCS — Error handling Result/Option/?/T!E |
 
 ### Turn 2026-07-12 11:48 (Driver TRACK_LANG_DOCS STEP=3 — Types + Pattern matching)
 

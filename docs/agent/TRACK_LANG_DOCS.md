@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=4** — Traits + orphan rule from e2e (`trait_e2e`, `trait_as_param`) + orphan track link.
+**STEP=5** — Error handling (`Result`/`Option`/`?`/`T!E`) from e2e `result.mlc` (+ Option fixture if any).
 
 ## Goal
 
@@ -33,7 +33,7 @@ narrative) — a reference, skimmable, accurate.
 | 1 | Skeleton + sections list: bindings (`let`/`const`/`let mut`/`let const`), functions, types (record/sum/generic), pattern matching (`match`, or-patterns, guards), traits (`extend`, orphan rule), error handling (`Result`/`Option`, `?`, `T!E`), closures + escape analysis, arrays/maps/strings + HOFs, concurrency (`spawn`/`Mutex`/`Channel`/`scope`), FFI (`extern fn`/`extern type`/`extern lib`) | **done** (2026-07-12) — `docs/LANGUAGE_REFERENCE.md` TOC + 10 section stubs |
 | 2 | Section: bindings + functions — examples sourced from `compiler/tests/e2e/` (grep for the simplest matching fixture, do not write new prose-only examples) | **done** (2026-07-12) — `const`/`let` from e2e; `let mut` from `loops_demo`; `fn` one-line/multi-line from e2e; `export fn` from `golden_harness` |
 | 3 | Section: types (record/sum/generic) + pattern matching | **done** (2026-07-12) — record/sum/Result e2e; match+guards e2e; or-pattern from `test_mir_vm_smoke` string fixture |
-| 4 | Section: traits + orphan rule | pending |
+| 4 | Section: traits + orphan rule | **done** (2026-07-12) — inherent extend / trait impl / trait param from e2e; orphan E086 → TRACK_LANG_ORPHAN_RULE |
 | 5 | Section: error handling (`Result`/`Option`/`?`/`T!E`) | pending |
 | 6 | Section: closures + escape analysis (link `archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md` for the "why") | pending |
 | 7 | Section: arrays/maps/strings + HOFs (`map`/`filter`/`fold`) | pending |
@@ -55,6 +55,7 @@ narrative) — a reference, skimmable, accurate.
 - **STEP=1** (2026-07-12): `docs/LANGUAGE_REFERENCE.md` skeleton + TOC + stubs; no invented examples.
 - **STEP=2** (2026-07-12): Bindings + Functions filled from e2e / cited fixtures.
 - **STEP=3** (2026-07-12): Types + Pattern matching filled from e2e / mir smoke fixture.
+- **STEP=4** (2026-07-12): Traits + orphan rule from e2e + archive track link.
 
 ## Out of scope
 
