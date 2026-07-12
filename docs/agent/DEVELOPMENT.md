@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**No active Driver track.** Last: `TRACK_FFI_EXTERN_DEDUP` Critic OK.
-See [TRACK_FFI_EXTERN_DEDUP.md](../archive/tracks/TRACK_FFI_EXTERN_DEDUP.md). Next: Planner → GUI_INPUT_ROBUSTNESS (§23).
+**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=1 (controlled `gui_click_edge` repro) next.
+See [TRACK_GUI_INPUT_ROBUSTNESS.md](TRACK_GUI_INPUT_ROBUSTNESS.md). Queue: GUI_INPUT → HTTP_HARDENING → …
 
 
 
