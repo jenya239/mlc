@@ -124,23 +124,85 @@ function as the module’s public surface for importers.)
 
 ## Types
 
-Status: pending — filled in STEP=3.
+Nominal type declarations: records (product), sums (variants), and generics.
 
-Planned topics:
+### Record
 
-- Record types (`type Name = { field: Type }`)
-- Sum types (`type Name = Variant1(Type) | Variant2`)
-- Generics (`type Result<T, E> = Ok(T) | Err(E)`)
+Source: [`compiler/tests/e2e/record_update.mlc`](../compiler/tests/e2e/record_update.mlc)
+
+```mlc
+type Point = { x: i32, y: i32 }
+
+fn move_x(p: Point, dx: i32) -> Point = Point { ...p, x: p.x + dx }
+```
+
+(Field update uses `Point { ...p, x: ... }` — see the same file’s `main`.)
+
+### Sum
+
+Source: [`compiler/tests/e2e/sum_types.mlc`](../compiler/tests/e2e/sum_types.mlc)
+
+```mlc
+type Shape = Circle(i32) | Rect(i32, i32)
+```
+
+Variants are constructed as `Circle(5)` / `Rect(3, 4)` in that file’s `main`.
+
+### Generic sum
+
+Source: [`compiler/tests/e2e/result.mlc`](../compiler/tests/e2e/result.mlc)
+
+```mlc
+type Result<T, E> = Ok(T) | Err(E)
+```
 
 ## Pattern matching
 
-Status: pending — filled in STEP=3.
+`match` selects an arm by pattern. Wildcards use `_`. Guards use `if` on an
+arm. Or-patterns share one body across alternatives (same bound names).
 
-Planned topics:
+### `match` (sum variants)
 
-- `match` expressions
-- Or-patterns
-- Guards
+Source: [`compiler/tests/e2e/sum_types.mlc`](../compiler/tests/e2e/sum_types.mlc)
+
+```mlc
+fn area(s: Shape) -> i32 =
+  match s {
+    Circle(r) => r * r * 3,
+    Rect(w, h) => w * h
+  }
+```
+
+### Guards
+
+Source: [`compiler/tests/e2e/match_guard.mlc`](../compiler/tests/e2e/match_guard.mlc)
+
+```mlc
+type Answer = Yes(i32) | No
+
+fn pick(answer: Answer) -> i32 =
+  match answer {
+    Yes(n) if n > 0 => n,
+    Yes(_) => 0,
+    No => -1
+  }
+```
+
+### Or-patterns
+
+No standalone e2e file. Source (program string under test):
+[`compiler/tests/test_mir_vm_smoke.mlc`](../compiler/tests/test_mir_vm_smoke.mlc)
+
+```mlc
+type Choice = A(i32) | B(i32) | C
+fn main() -> i32 = match A(3) {
+  A(x) | B(x) => x
+  C => 0
+}
+```
+
+(Alternatives in an or-pattern must bind the same names — see checker E083
+in `compiler/tests/test_checker.mlc`.)
 
 ## Traits
 

@@ -420,7 +420,7 @@ compiler/
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **done** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md) **closed** Critic OK (`aa5721f1`…`8e2d1b30`); REG 20/0; sweep 113/0/1 |
 | **25** | Concurrency Supervisor — реализация (гейт снят) | **done** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK (`149899a2`…`44334e2d`); smoke+sanitize; C++-only |
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **done** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) **closed** Critic OK (`24486b14`…`0d362257`); T7 C++-only; fuzz gate re-OK |
-| **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **active** (2026-07-12) | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) **active** STEP=1–2 done; STEP=3 types+match next |
+| **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **active** (2026-07-12) | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) **active** STEP=1–3 done; STEP=4 traits next |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **open, средний приоритет** | [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md) |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 
@@ -580,7 +580,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md))
   → CONCURRENCY_TEST_HARNESS (**done** 2026-07-12: Critic OK; T1–T7; T7 C++-only; fuzz nightly;
       → [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md))
-  → **LANG_DOCS (active 2026-07-12: STEP=1–2 done; STEP=3 types+match next;
+  → **LANG_DOCS (active 2026-07-12: STEP=1–3 done; STEP=4 traits next;
       → [agent/TRACK_LANG_DOCS.md](agent/TRACK_LANG_DOCS.md)):**
     `docs/LANGUAGE_REFERENCE.md` by language area; examples from e2e/demo only
   → STDLIB_DOCS (`docs/STDLIB_REFERENCE.md` — по модулю, снипеты только

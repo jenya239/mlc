@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Bindings+Functions) |
+| test_gate | docs-only (LANGUAGE_REFERENCE Types+Match) |
+
+### Turn 2026-07-12 11:48 (Driver TRACK_LANG_DOCS STEP=3 — Types + Pattern matching)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:42 |
+| elapsed | ~5 min |
+| done    | Types (record/sum/Result e2e) + match/guards e2e; or-pattern from `test_mir_vm_smoke` fixture string. |
+| verify  | Cited paths exist; TRACK Next=STEP=4. |
+| result  | STEP=3 done. Plain: types+match documented from fixtures. |
+| issues  | Foreign `compiler/out/*` left; no standalone e2e for or-patterns. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_DOCS — Traits + orphan rule from e2e |
 
 ### Turn 2026-07-12 11:45 (Driver TRACK_LANG_DOCS STEP=2 — Bindings + Functions)
 
