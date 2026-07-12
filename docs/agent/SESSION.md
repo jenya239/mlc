@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 6 |
+| driver_turns_since_plan | 6 |
+| step_last | 7 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | run_region_cycle_smoke ok |
+| test_gate | mlcc→mlcc2 diff identical |
+
+### Turn 2026-07-12 21:25 (Driver TRACK_LANG_REGION_ARENA STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 21:03 |
+| elapsed | ~22 min |
+| done    | Self-host: mlcc→`.tmp/mlc_p1` → `build_bin` →`.tmp/mlcc2` →`.tmp/mlc_p2`. |
+| verify  | `diff -rq .tmp/mlc_p1 .tmp/mlc_p2 --exclude=obj` exit 0 (identical). |
+| result  | STEP=7 done. Plain: region codegen/checker deterministic across mlcc2. |
+| issues  | none |
+| next    | ROLE=Driver STEP=8 TRACK_LANG_REGION_ARENA — `scripts/regression_gate.sh` |
 
 ### Turn 2026-07-12 20:57 (Driver TRACK_LANG_REGION_ARENA STEP=6)
 

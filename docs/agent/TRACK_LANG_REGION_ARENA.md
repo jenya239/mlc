@@ -10,11 +10,18 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=6 done 2026-07-12) — STEP=7 self-host next
+## Status: **active** (STEP=7 done 2026-07-12) — STEP=8 regression_gate next
 
 ## Next step
 
-**STEP=7** — Self-host verify: mlcc → mlcc2, diff identical.
+**STEP=8** — `scripts/regression_gate.sh` green.
+
+### STEP=7 done (2026-07-12)
+
+- `compiler/out/mlcc -o .tmp/mlc_p1 compiler/main.mlc` (~8s).
+- `MLC_CXX=g++ compiler/build_bin.sh .tmp/mlc_p1 .tmp/mlcc2`.
+- `.tmp/mlcc2 -o .tmp/mlc_p2 compiler/main.mlc` (~6s).
+- `diff -rq .tmp/mlc_p1 .tmp/mlc_p2 --exclude=obj` → identical (exit 0).
 
 ### STEP=6 done (2026-07-12)
 
@@ -132,7 +139,7 @@ end   // весь буфер r освобождается разом
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | **done** (2026-07-12) |
 | 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | **done** (2026-07-12) `run_region_escape_smoke.sh` |
 | 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | **done** (2026-07-12) `run_region_cycle_smoke.sh` |
-| 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | pending |
+| 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | **done** (2026-07-12) |
 | 8 | `scripts/regression_gate.sh` green | pending |
 | 9 | Docs: `MLC.md` §C1 area — document `region`/`RegionHandle`/`Region<Tag,T>`; note the three escape-prohibition vectors explicitly | pending |
 | 10 | Optional/stretch: apply `region` to a real internal hot path with a mutable cyclic graph (`compiler/frontend/ast.mlc` node construction during one parse pass, as named in "Зачем" above) as a proof-of-value, **only if** Steps 1-9 are stable and this doesn't risk destabilizing the self-hosted parser — separate sub-step, easy to defer/skip if risky | pending |
