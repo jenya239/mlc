@@ -14,7 +14,7 @@ source before fixing anything.
 
 ## Next step
 
-**STEP=1** — controlled repro of `gui_click_edge` (no xdotool); docs/assert only until verified.
+**STEP=3** — keyboard text input (`glfwSetCharCallback` + `GuiInput.text_buffer`).
 
 ## Goal
 
@@ -29,8 +29,8 @@ against a hardcoded `width`/`height`, not the live framebuffer size).
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Repro: minimal MLC program, no `xdotool`, uses `gui_input_test_set` to simulate a controlled down→up→down sequence at known frame boundaries; assert `gui_click_edge` fires exactly once per down-edge. If this passes cleanly, the 9-vs-1 observation was an `xdotool`/X11 synthetic-event artifact, not a real bug — close this step as "not reproducible under controlled input", downgrade rest of track priority accordingly, still keep Steps 3-5 (keyboard/resize are real gaps regardless) | **pending** |
-| 2 | If Step 1 reproduces a real double-fire: fix `gui_click_edge` in `misc/gui/input.mlc` (likely needs a minimum-hold-frames debounce or edge-latch that survives a single `glfwPollEvents` call returning multiple queued button events) | pending |
+| 1 | Repro: minimal MLC program, no `xdotool`, uses `gui_input_test_set` to simulate a controlled down→up→down sequence at known frame boundaries; assert `gui_click_edge` fires exactly once per down-edge. If this passes cleanly, the 9-vs-1 observation was an `xdotool`/X11 synthetic-event artifact, not a real bug — close this step as "not reproducible under controlled input", downgrade rest of track priority accordingly, still keep Steps 3-5 (keyboard/resize are real gaps regardless) | **done** (2026-07-12) — not reproducible under controlled input; `misc/examples/gui_click_edge_repro.mlc` + `scripts/run_gui_click_edge_repro.sh` (pure+glfw: exactly 2 edges on down→hold→up→down) |
+| 2 | If Step 1 reproduces a real double-fire: fix `gui_click_edge` in `misc/gui/input.mlc` (likely needs a minimum-hold-frames debounce or edge-latch that survives a single `glfwPollEvents` call returning multiple queued button events) | **N/A** (STEP=1 passed) |
 | 3 | Keyboard text input: extend `glfw_gl_*` bindings (`runtime/src/gl/glfw_window_gl.cpp`) with a UTF-8 text-input callback (`glfwSetCharCallback`) + backspace/enter key polling; expose via `gl_window.mlc`/`gui/input.mlc` as `GuiInput.text_buffer: string` (accumulated since last frame) | pending |
 | 4 | One smoke demo: single-line text field (box + live typed text via A8 `TextRenderer`, reusing `text_dashboard_demo.mlc` patterns) — proves the keyboard path end-to-end | pending |
 | 5 | Window resize: `glfw_gl_context_should_close`/`swap_poll` family gains a `glfw_gl_window_width()`/`glfw_gl_window_height()` pair (or a single `glfw_gl_framebuffer_size()` returning both via out-params/scratch) so demos stop hardcoding `800x600`; update `misc/gui/layout.mlc` callers to read live size instead of a `const width/height` at top of `main()` | pending |
@@ -43,6 +43,10 @@ against a hardcoded `width`/`height`, not the live framebuffer size).
 2. Add fixture/smoke under `misc/examples/` or `compiler/tests/` that drives `gui_input_test_set` across frames and counts edges (expect 1 per down-edge).
 3. Record pass/fail in TRACK; if pass → mark STEP=1 done as "not reproducible under controlled input", skip STEP=2 (or mark N/A), proceed STEP=3.
 4. No debounce fix in STEP=1.
+
+### Progress
+
+- **STEP=1** (2026-07-12): controlled repro green. 9-vs-1 under xdotool treated as synthetic-event artifact, not `gui_click_edge` bug. STEP=2 skipped.
 
 ## Out of scope
 

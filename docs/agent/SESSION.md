@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | Planner: no code |
+| test_gate | `run_gui_click_edge_repro.sh` ok |
+
+### Turn 2026-07-12 06:12 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=1 — click-edge repro)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 06:09 |
+| elapsed | ~5 min |
+| done    | `misc/examples/gui_click_edge_repro.mlc` + `scripts/run_gui_click_edge_repro.sh`: pure+glfw down→hold→up→down → exactly 2 edges. STEP=2 **N/A**. |
+| verify  | `scripts/run_gui_click_edge_repro.sh` → `ok (pure+glfw: 2 edges…)`. |
+| result  | STEP=1 done — not reproducible under controlled input (9-vs-1 = xdotool artifact). Plain: click edge ok; next keyboard. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_INPUT_ROBUSTNESS — keyboard text (`glfwSetCharCallback` + `GuiInput.text_buffer`) |
 
 ### Turn 2026-07-12 06:05 (Planner — plan-refresh → GUI_INPUT_ROBUSTNESS)
 
