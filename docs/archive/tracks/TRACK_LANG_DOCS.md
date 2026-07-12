@@ -5,23 +5,28 @@ Trigger: 2026-07-11 backlog review for ~300-step planning horizon. No single
 document describes the MLC language end-to-end — syntax cheatsheet exists
 only as a compressed block in `CLAUDE.md` (for agent consumption); no
 prose reference for a human reader (future external contributor, the gate
-condition already named in [TRACK_DEBUG_SOURCE_MAP](../TRACK_DEBUG_SOURCE_MAP.md)).
+condition already named in [TRACK_DEBUG_SOURCE_MAP](../../agent/TRACK_DEBUG_SOURCE_MAP.md)).
 Language features are individually documented across ~15 scattered docs
 (`FFI_LAYER.md`, `CONCURRENCY_V2.md`, `LANGUAGE_AUDIT_2026_07.md`, ...) with
 no single entry point.
 Predecessor closed (Critic OK 2026-07-12):
 [TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md).
 
-## Status: **closed** (2026-07-12) — awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
 
 **Planner** (2026-07-12): activated after TEST_HARNESS Critic OK.
 **Driver** (2026-07-12): STEP=1–11 done — `docs/LANGUAGE_REFERENCE.md` filled
 from e2e/demo fixtures; cross-links; `scripts/lang_ref_lint.rb` (33 fences,
 8 excerpts→Source). Docs-only; regression_gate N/A.
+**Critic** (2026-07-12): STEP=1–11 vs `328cb686`…`022402ad`; PLAN/archive/
+cross-links aligned; `lang_ref_lint` re-OK 33/0; archive relative links fixed;
+**reopen: none**. Residuals: golden_harness fence stubs helper (support module
+not an entry); `extern lib "pq"` form-only (FFI_LAYER); Mutex listing is
+pretty-print of `test_mutex_syntax` program string.
 
 ## Next step
 
-— (closed; `ROLE=Critic STEP=critique-audit` then Planner → `TRACK_STDLIB_DOCS` §28)
+— (closed; Planner activates `TRACK_STDLIB_DOCS` §28)
 
 ## Goal
 
@@ -56,6 +61,6 @@ narrative) — a reference, skimmable, accurate.
 ## Out of scope
 
 - Tutorial/getting-started narrative (separate concern if ever requested).
-- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](../TRACK_STDLIB_DOCS.md).
+- API docs for stdlib modules (`Tcp`/`HttpServer`/...) — see [TRACK_STDLIB_DOCS](../../agent/TRACK_STDLIB_DOCS.md).
 - Auto-generated docs from source comments (no doc-comment convention exists
   yet in MLC; not introducing one speculatively).

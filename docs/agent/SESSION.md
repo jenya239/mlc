@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 11 |
-| active_track | TRACK_LANG_DOCS (closed, awaiting Critic) |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_LANG_DOCS (Critic OK) → Planner STDLIB_DOCS |
 | test_gate | docs-only (`lang_ref_lint.rb` 33/0) |
+
+### Turn 2026-07-12 12:08 (Critic TRACK_LANG_DOCS — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 12:06 |
+| elapsed | ~5 min |
+| done    | Audited STEP=1–11 vs `328cb686`…`022402ad`; PLAN/archive/README/AGENTS/specs; fixed archive links to DEBUG_SOURCE_MAP + STDLIB_DOCS. |
+| verify  | `ruby scripts/lang_ref_lint.rb` → ok 33/0; 25 Source `.mlc` paths exist; TOC matches headings; no false-done. |
+| result  | **reopen: none**. Residuals: golden stub helper; `extern lib` form-only; Mutex pretty-print of test string. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_STDLIB_DOCS — activate §28 |
 
 ### Turn 2026-07-12 12:05 (Driver TRACK_LANG_DOCS STEP=11 — lang_ref_lint; track close)
 

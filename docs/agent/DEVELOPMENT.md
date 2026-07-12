@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_DOCS` closed** (2026-07-12) — awaiting Critic; then Planner →
-`TRACK_STDLIB_DOCS` §28. See [archive/tracks/TRACK_LANG_DOCS.md](../archive/tracks/TRACK_LANG_DOCS.md).
+**`TRACK_LANG_DOCS` Critic OK** (2026-07-12). Next: Planner activates
+`TRACK_STDLIB_DOCS` §28. See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
 
 ## Step sizing (good vs bad)
 
