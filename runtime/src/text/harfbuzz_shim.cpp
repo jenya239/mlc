@@ -19,7 +19,7 @@ struct ShapedGlyphCacheEntry {
 std::vector<ShapedGlyphCacheEntry> g_shape_cache;
 
 // Process-local shaping font cache keyed by (font_path, pixel_size).
-// Single-threaded render loop only — not safe for concurrent callers (STEP=2).
+// Process-global mutable state, no mutex — main/GL thread only (see header).
 struct CachedShapingFont {
   std::string font_path;
   int32_t pixel_size = 0;

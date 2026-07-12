@@ -10,8 +10,12 @@ namespace text {
 // On success: returns (width << 16) | rows; pixels cached for glyph_byte_*.
 // On failure: returns a negative error code.
 //
-// FreeType faces are cached process-locally by (font_path, pixel_size).
-// Single-threaded render loop only — not safe for concurrent callers.
+// FreeType faces are cached process-locally by (font_path, pixel_size) and
+// never torn down until process exit. That cache is process-global mutable
+// state with no mutex: safe only when all glyph_* / shaping calls run on the
+// same thread as today's demos (main/GL render loop). If a caller ever moves
+// rasterization off that thread, add a mutex around the face cache first —
+// do not treat this API as thread-safe without that change.
 int32_t glyph_bitmap_packed(mlc::String font_path, int32_t codepoint, int32_t pixel_size);
 
 // Same as glyph_bitmap_packed but FreeType glyph index (HarfBuzz shape id).

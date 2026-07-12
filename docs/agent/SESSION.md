@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | freetype+harfbuzz smokes ok |
+| test_gate | comment/grep (no mutex) |
+
+### Turn 2026-07-12 13:02 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=2 — concurrency note)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:01 |
+| elapsed | ~2 min |
+| done    | Expanded concurrency docs in `freetype_shim.hpp`/`harfbuzz_shim.hpp` + matching `.cpp` cache comments (process-global, main/GL only, mutex before off-thread). |
+| verify  | Headers mention mutex requirement; `rg std::mutex` on shim `.cpp` empty. |
+| result  | STEP=2 done. Plain: thread constraint documented; no speculative lock. |
+| issues  | Foreign `extern_concurrency_lint.*` + `.tmp/` left. |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_GL_PERF_BASELINE — wire GlyphCache across frames in text_dashboard_demo |
 
 ### Turn 2026-07-12 13:00 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=1 — FT/HB face cache)
 
