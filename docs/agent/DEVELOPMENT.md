@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` active** — STEP=5 (Log/Env/Validate/Json) next; STEP=1–4 done.
+**`TRACK_STDLIB_DOCS` active** — STEP=6 (STDLIB_BACKEND cross-link) next; STEP=1–5 done.
 See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
 
 ## Step sizing (good vs bad)

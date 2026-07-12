@@ -301,36 +301,158 @@ SHA-256 / HMAC / random / `pwhash` present. JWT and TLS are out of scope.
 
 ## Log
 
-Status: pending — filled in STEP=5.
+Module: [`lib/mlc/common/stdlib/log/logger.mlc`](../lib/mlc/common/stdlib/log/logger.mlc)
+(`import … from 'Log'`). Structured JSON lines via thin `log_abi.hpp` (fwrite).
 
-Pinned source: [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc).
+Demo (shared with Env): [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc).
+Gate: `scripts/run_env_log_gate.sh`.
 
-Planned: API table; snippet from env_log demo; limitations from STDLIB_BACKEND §1.
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `error` | `(message: string) -> unit` | Log level `error` |
+| `warn` | `(message: string) -> unit` | Log level `warn` |
+| `info` | `(message: string) -> unit` | Log level `info` |
+| `debug` | `(message: string) -> unit` | Log level `debug` |
+
+### Example (excerpt from demo)
+
+Source: [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc)
+
+```mlc
+import { info, warn } from 'Log'
+
+  info("env_log demo start")
+  warn("using port " + port)
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+JSON-line logging in MLC; thin fwrite ABI. No log levels filter / sinks beyond
+stderr-style write.
 
 ## Env
 
-Status: pending — filled in STEP=5.
+Module: [`lib/mlc/common/stdlib/env/env.mlc`](../lib/mlc/common/stdlib/env/env.mlc)
+(`import … from 'Env'`). Thin `getenv` via `env_abi.hpp`.
 
-Pinned source: [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc).
+Demo (shared with Log): [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc).
 
-Planned: API table; snippet from env_log demo; limitations from STDLIB_BACKEND §1.
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `get` | `(key: string) -> Option<string>` | Lookup env var |
+| `get_or` | `(key: string, default: string) -> string` | Lookup or default |
+| `has` | `(key: string) -> bool` | Presence check |
+
+All three are `export extern` + `blocking`.
+
+### Example (from demo)
+
+Source: [`misc/examples/env_log_demo.mlc`](../misc/examples/env_log_demo.mlc)
+
+```mlc
+import { get_or, has } from 'Env'
+
+fn main() -> i32 = do
+  let port = get_or("PORT", "8080")
+  info("env_log demo start")
+  warn("using port " + port)
+  println(port)
+  if has("PATH") then
+    0
+  else
+    1
+  end
+end
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+Thin getenv wrapper only (no typed config files / dotenv loader in this module).
 
 ## Validate
 
-Status: pending — filled in STEP=5.
+Module: [`lib/mlc/common/stdlib/validate/validate.mlc`](../lib/mlc/common/stdlib/validate/validate.mlc)
+(`import … from 'Validate'`). Pure MLC predicates.
 
-Pinned source: [`misc/examples/validate_demo.mlc`](../misc/examples/validate_demo.mlc).
+Demo: [`misc/examples/validate_demo.mlc`](../misc/examples/validate_demo.mlc).
+Gate: `scripts/run_validate_gate.sh`.
 
-Planned: API table; snippet from validate demo; limitations from STDLIB_BACKEND §1.
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `Result<T, E>` | `Ok(T) \| Err(E)` | Local result type in this module |
+| `ValidateSuccess` | `{}` | Empty success payload |
+| `non_empty` | `(value: string) -> Result<ValidateSuccess, string>` | Reject empty string |
+| `min_length` | `(value: string, minimum: i32) -> Result<…>` | Min string length |
+| `max_length` | `(value: string, maximum: i32) -> Result<…>` | Max string length |
+| `range_i32` | `(value: i32, minimum: i32, maximum: i32) -> Result<…>` | Inclusive i32 range |
+
+### Example (from demo)
+
+Source: [`misc/examples/validate_demo.mlc`](../misc/examples/validate_demo.mlc)
+
+```mlc
+fn main() -> i32 = do
+  match non_empty("name") {
+    Err(message) => do
+      println(message)
+      1
+    end,
+    Ok(_) =>
+      match range_i32(42, 1, 100) {
+        Ok(_) => 0,
+        Err(message) => do
+          println(message)
+          2
+        end
+      }
+  }
+end
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+No derive / JSON Schema. Small predicate set only.
 
 ## Json
 
-Status: pending — filled in STEP=5.
+Module: [`lib/mlc/common/stdlib/data/json.mlc`](../lib/mlc/common/stdlib/data/json.mlc)
+(`import … from "Json"`). Runtime: `mlc/json/json.hpp`. No `misc/examples/*json*`
+demo — snippet from program string in
+[`test/mlc/derive_json_test.rb`](../test/mlc/derive_json_test.rb).
 
-Pinned sources: API table from
-[`lib/mlc/common/stdlib/data/json.mlc`](../lib/mlc/common/stdlib/data/json.mlc);
-snippet from program string in
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `JsonError` | `MissingField(string) \| TypeMismatch(string, string)` | Typed decode errors for `derive { Json }` |
+| `JsonValue` | `JsonNull \| JsonBool \| JsonNumber(f64) \| JsonString \| JsonArray \| JsonObject` | JSON AST |
+| `parse_json` | `(json_str: str) -> JsonValue` | Parse |
+| `stringify_json` | `(value: JsonValue) -> str` | Compact serialize |
+| `stringify_json_pretty` | `(value: JsonValue, indent: i32) -> str` | Pretty serialize |
+| `json_get` / `json_set` / `json_has_key` / `json_keys` | object helpers | Object field access |
+| `json_array_length` / `json_array_get` / `json_array_push` | array helpers | Array access |
+| `is_*` / `as_*` | predicates / extractors | Type tests and Option unwraps |
+| `json_null` / `json_bool` / `json_number` / `json_string` / `json_array` / `json_object` | constructors | Build `JsonValue` |
+
+### Example (from derive test fixture)
+
+Source: program string in
 [`test/mlc/derive_json_test.rb`](../test/mlc/derive_json_test.rb)
-(no `misc/examples/*json*` demo).
+(`test_derive_json_round_trip_option_and_array`):
 
-Planned: API table; cited test fixture snippet; limitations from STDLIB_BACKEND §1.
+```mlc
+type User = {
+  id: i64,
+  name: string,
+  email: Option<string>,
+  tags: string[]
+} derive { Json }
+
+fn main() -> i32 = 0
+```
+
+(Generates `User_to_json` / `User_from_json`; see also [API_CLIENT.md](API_CLIENT.md).)
+
+### Limitations (from STDLIB_BACKEND §1)
+
+Core `JsonValue` parse/stringify in C++ runtime. Typed record/sum (de)serialization
+via `derive { Json }` (API_CLIENT track closed). No dedicated misc demo for
+manual `parse_json` calls.

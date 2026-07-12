@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (Postgres + Crypto sections) |
+| test_gate | docs-only (Log/Env/Validate/Json) |
+
+### Turn 2026-07-12 12:18 (Driver TRACK_STDLIB_DOCS STEP=5 — Log/Env/Validate/Json)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:16 |
+| elapsed | ~5 min |
+| done    | Filled Log/Env (`env_log_demo`), Validate (`validate_demo`), Json (`json.mlc` + `derive_json_test.rb` User derive fixture) in `STDLIB_REFERENCE.md`. |
+| verify  | Demo/`rg` lines match; derive fixture string present in test file; TRACK Next=STEP=6. |
+| result  | STEP=5 done. Plain: remaining modules documented. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_DOCS — cross-link STDLIB_BACKEND §1 |
 
 ### Turn 2026-07-12 12:17 (Driver TRACK_STDLIB_DOCS STEP=4 — Postgres + Crypto)
 
