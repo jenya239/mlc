@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
+| driver_turns_since_plan | 4 |
+| step_last | 5 |
 | active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | `run_gui_text_field_demo.sh` ok |
+| test_gate | `run_gui_window_size_smoke.sh` ok |
+
+### Turn 2026-07-12 06:55 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=5 — window size)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 06:49 |
+| elapsed | ~10 min |
+| done    | `glfw_gl_window_width`/`height`/`set_size` + size callback/cache; smoke 800→640; `gui_button_demo`/`gui_text_field_demo` live size; `text_window_*` wrappers. |
+| verify  | `run_gui_window_size_smoke.sh` ok; `run_gui_button_demo.sh` ok; `run_gui_text_field_demo.sh` ok. |
+| result  | STEP=5 done. Plain: live window size wired; next GUI.md. |
+| issues  | Foreign `compiler/out/*` left; invisible GLFW may ignore SetWindowSize — cache forced after poll. |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_INPUT_ROBUSTNESS — `GUI.md` debounce + keyboard/resize notes |
 
 ### Turn 2026-07-12 06:40 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=4 — text field demo)
 

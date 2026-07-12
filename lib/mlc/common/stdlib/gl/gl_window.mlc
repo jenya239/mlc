@@ -11,6 +11,12 @@ export extern fn glfw_gl_context_end() -> unit
   = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_anim_unit() -> f64
   = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_window_width() -> i32
+  = "mlc::gl::glfw_gl_window_width" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_window_height() -> i32
+  = "mlc::gl::glfw_gl_window_height" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_window_set_size(width: i32, height: i32) -> unit
+  = "mlc::gl::glfw_gl_window_set_size" from "mlc/gl/glfw_window_gl.hpp"
 
 export extern fn glfw_gl_mouse_x() -> i32
   = "mlc::gl::glfw_gl_mouse_x" from "mlc/gl/glfw_window_gl.hpp"

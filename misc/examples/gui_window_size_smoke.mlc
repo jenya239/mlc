@@ -1,0 +1,32 @@
+// TRACK_GUI_INPUT_ROBUSTNESS STEP=5 — live window size after set_size.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll,
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_window_set_size
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  if glfw_gl_window_width() != 800 || glfw_gl_window_height() != 600 then
+    glfw_gl_context_end()
+    return -1
+  end
+
+  glfw_gl_window_set_size(640, 480)
+  glfw_gl_context_swap_poll()
+
+  if glfw_gl_window_width() != 640 || glfw_gl_window_height() != 480 then
+    glfw_gl_context_end()
+    return -2
+  end
+
+  glfw_gl_context_end()
+  0
+end

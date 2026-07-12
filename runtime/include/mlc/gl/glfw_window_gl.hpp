@@ -16,6 +16,9 @@ void glfw_gl_context_swap_poll();
 void glfw_gl_context_end();
 double glfw_gl_get_time();
 double glfw_gl_anim_unit();
+int32_t glfw_gl_window_width();
+int32_t glfw_gl_window_height();
+void glfw_gl_window_set_size(int32_t width, int32_t height);
 
 int32_t glfw_gl_mouse_x();
 int32_t glfw_gl_mouse_y();

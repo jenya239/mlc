@@ -11,16 +11,16 @@ import {
   glfw_gl_context_should_close,
   glfw_gl_context_swap_poll,
   glfw_gl_context_end,
-  glfw_gl_anim_unit
+  glfw_gl_anim_unit,
+  glfw_gl_window_width,
+  glfw_gl_window_height
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { gl_viewport, gl_clear, gl_clear_color_f64 } from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
 fn gl_color_buffer_bit() -> i32 = 16384
 
 fn main() -> i32 = do
-  const width = 800
-  const height = 600
-  const begin_status = glfw_gl_context_begin(width, height)
+  const begin_status = glfw_gl_context_begin(800, 600)
   if begin_status != 0 then
     return begin_status
   end
@@ -54,6 +54,8 @@ fn main() -> i32 = do
     if click_count > 0 then
       green = green + 0.15
     end
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
     gl_viewport(0, 0, width, height)
     gl_clear_color_f64(0.08, green, 0.18, 1.0)
     gl_clear(gl_color_buffer_bit())

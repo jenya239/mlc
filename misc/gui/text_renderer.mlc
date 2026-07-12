@@ -3,7 +3,10 @@ import {
   glfw_gl_context_begin,
   glfw_gl_context_should_close,
   glfw_gl_context_swap_poll,
-  glfw_gl_context_end
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_window_set_size
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 import {
@@ -436,3 +439,7 @@ export fn text_context_begin(width: i32, height: i32) -> i32 = glfw_gl_context_b
 export fn text_context_should_close() -> i32 = glfw_gl_context_should_close()
 export fn text_context_swap_poll() -> unit = glfw_gl_context_swap_poll()
 export fn text_context_end() -> unit = glfw_gl_context_end()
+export fn text_window_width() -> i32 = glfw_gl_window_width()
+export fn text_window_height() -> i32 = glfw_gl_window_height()
+export fn text_window_set_size(width: i32, height: i32) -> unit =
+  glfw_gl_window_set_size(width, height)

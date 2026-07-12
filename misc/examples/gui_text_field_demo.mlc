@@ -30,7 +30,9 @@ import {
   text_context_begin,
   text_context_should_close,
   text_context_swap_poll,
-  text_context_end
+  text_context_end,
+  text_window_width,
+  text_window_height
 } from '../gui/text_renderer'
 
 extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
@@ -133,13 +135,11 @@ fn drop_last_char(text: string) -> string = do
 end
 
 fn main() -> i32 = do
-  const width = 800
-  const height = 400
   const atlas_size = 512
   const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
   const field_rect = rect_new(40, 120, 400, 48)
 
-  const begin_status = text_context_begin(width, height)
+  const begin_status = text_context_begin(800, 400)
   if begin_status != 0 then
     return begin_status
   end
@@ -156,6 +156,8 @@ fn main() -> i32 = do
   let mut enter_seen = 0
 
   while text_context_should_close() == 0 do
+    const width = text_window_width()
+    const height = text_window_height()
     // Scripted inject (headless smoke): "H" + "ix" + backspace → "Hi", then enter.
     if frame_index == 1 then
       gui_input_text_test_push("H")

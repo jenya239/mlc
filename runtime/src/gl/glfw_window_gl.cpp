@@ -60,6 +60,16 @@ std::string& pending_text() {
   return buffer;
 }
 
+int32_t& cached_window_width() {
+  static int32_t width = 0;
+  return width;
+}
+
+int32_t& cached_window_height() {
+  static int32_t height = 0;
+  return height;
+}
+
 void append_utf8(std::string& out, unsigned int codepoint) {
   // ASCII / BMP Latin text only (TRACK_GUI_INPUT_ROBUSTNESS out-of-scope: IME/CJK).
   if (codepoint <= 0x7Fu) {
@@ -76,6 +86,11 @@ void append_utf8(std::string& out, unsigned int codepoint) {
 
 void on_char(GLFWwindow* /*window*/, unsigned int codepoint) {
   append_utf8(pending_text(), codepoint);
+}
+
+void on_window_size(GLFWwindow* /*window*/, int width, int height) {
+  cached_window_width() = width;
+  cached_window_height() = height;
 }
 
 } // namespace
@@ -109,7 +124,10 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     return -3;
   }
   pending_text().clear();
+  cached_window_width() = window_width;
+  cached_window_height() = window_height;
   glfwSetCharCallback(window, on_char);
+  glfwSetWindowSizeCallback(window, on_window_size);
   context_window() = window;
   return 0;
 }
@@ -141,6 +159,8 @@ void glfw_gl_context_end() {
   }
   glfw_gl_input_test_clear();
   pending_text().clear();
+  cached_window_width() = 0;
+  cached_window_height() = 0;
   glfwDestroyWindow(window);
   context_window() = nullptr;
   glfwTerminate();
@@ -150,6 +170,29 @@ double glfw_gl_get_time() { return glfwGetTime(); }
 
 double glfw_gl_anim_unit() {
   return 0.5 + 0.5 * std::sin(glfwGetTime() * 2.0);
+}
+
+int32_t glfw_gl_window_width() {
+  return cached_window_width();
+}
+
+int32_t glfw_gl_window_height() {
+  return cached_window_height();
+}
+
+void glfw_gl_window_set_size(int32_t width, int32_t height) {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return;
+  }
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+  glfwSetWindowSize(window, width, height);
+  glfwPollEvents();
+  // Invisible windows may report the old size in the size callback; keep request.
+  cached_window_width() = width;
+  cached_window_height() = height;
 }
 
 int32_t glfw_gl_mouse_x() {
@@ -275,6 +318,9 @@ void glfw_gl_context_swap_poll() {}
 void glfw_gl_context_end() {}
 double glfw_gl_get_time() { return 0.0; }
 double glfw_gl_anim_unit() { return 0.0; }
+int32_t glfw_gl_window_width() { return 0; }
+int32_t glfw_gl_window_height() { return 0; }
+void glfw_gl_window_set_size(int32_t, int32_t) {}
 int32_t glfw_gl_mouse_x() { return 0; }
 int32_t glfw_gl_mouse_y() { return 0; }
 int32_t glfw_gl_mouse_left_down() { return 0; }
