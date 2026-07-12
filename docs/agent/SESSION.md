@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_STDLIB_DOCS |
-| test_gate | docs-only (Planner activate) |
+| test_gate | docs-only (STDLIB_REFERENCE skeleton) |
+
+### Turn 2026-07-12 12:12 (Driver TRACK_STDLIB_DOCS STEP=1 — STDLIB_REFERENCE skeleton)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:10 |
+| elapsed | ~3 min |
+| done    | Created `docs/STDLIB_REFERENCE.md` — TOC + 9 module stubs with pinned Source paths; no invented code; STDLIB_BACKEND untouched. |
+| verify  | File exists; TOC anchors match `##` headings; TRACK Next=STEP=2. |
+| result  | STEP=1 done. Plain: skeleton ready for Tcp/HttpServer fill. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_DOCS — Tcp + HttpServer from pinned demos |
 
 ### Turn 2026-07-12 12:10 (Planner TRACK_STDLIB_DOCS — activate §28)
 

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` active** — STEP=1 (STDLIB_REFERENCE skeleton) next.
-See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md). Queue: STDLIB_DOCS → …
+**`TRACK_STDLIB_DOCS` active** — STEP=2 (Tcp + HttpServer) next; STEP=1 done.
+See [TRACK_STDLIB_DOCS.md](TRACK_STDLIB_DOCS.md).
 
 ## Step sizing (good vs bad)
 

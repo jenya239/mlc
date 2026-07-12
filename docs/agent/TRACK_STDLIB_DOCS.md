@@ -14,7 +14,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=1** — create `docs/STDLIB_REFERENCE.md` skeleton + per-module section stubs.
+**STEP=2** — fill `Tcp` + `HttpServer` sections from pinned demos.
 
 ## Goal
 
@@ -27,7 +27,7 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Skeleton + module list; one stub section per module (table placeholder: `fn`/`type` name, signature, one-line description) | pending |
+| 1 | Skeleton + module list; one stub section per module (table placeholder: `fn`/`type` name, signature, one-line description) | **done** (2026-07-12) — `docs/STDLIB_REFERENCE.md` TOC + 9 stubs |
 | 2 | `Tcp` + `HttpServer` — snippets from `misc/examples/tcp_echo_demo.mlc` + `misc/examples/http_server_forever_demo.mlc` (Tcp+spawn: `tcp_spawn_echo_mlcc.mlc` optional cross-cite) | pending |
 | 3 | `WebSocket` — snippet from `misc/examples/websocket_echo_demo.mlc` (filename verified 2026-07-12) | pending |
 | 4 | `Postgres` + `Crypto` — `misc/examples/postgres_select_demo.mlc` + `misc/examples/crypto_sha256_demo.mlc` | pending |
@@ -52,6 +52,8 @@ accurately from `STDLIB_BACKEND.md` §1, do not re-derive).
 
 - **Planner** (2026-07-12): activated after LANG_DOCS Critic OK; demo paths
   pinned; Json exception documented; STEP=1 next.
+- **STEP=1** (2026-07-12): `docs/STDLIB_REFERENCE.md` skeleton + TOC + 9 stubs;
+  no invented examples; STDLIB_BACKEND untouched.
 
 ## Out of scope
 
