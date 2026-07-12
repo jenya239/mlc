@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_SHIM_TO_MLC` active** — STEP=8 shim cache deprecated; STEP=9 self-host+docs.
+**`TRACK_TEXT_SHIM_TO_MLC` active** — STEP=9 REG/docs/self-host done; STEP=10 CPU%/close.
 See [TRACK_TEXT_SHIM_TO_MLC.md](TRACK_TEXT_SHIM_TO_MLC.md).
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 

@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-13) — STEP=8 done; STEP=9 self-host+docs next
+## Status: **active** (2026-07-13) — STEP=9 done; STEP=10 CPU%/visual+close next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,7 +20,14 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=9** — Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8.
+**STEP=10** — CPU%/visual before/after; close track → Critic.
+
+### STEP=9 done (2026-07-13)
+
+- Docs: `TEXT_RENDERING.md` §3.1/§9.1 + file table; `FFI_LAYER.md` §8 row + track list
+  (bookkeeping on MLC; shim deprecated).
+- Self-host: `mlcc`→`mlcc2` `diff -rq p1 p2 --exclude=obj` identical.
+- `regression_gate.sh`: 20/0; examples sweep ok=115 fail=0 skip=1 (`dynrecord_demo`).
 
 ### STEP=8 done (2026-07-13)
 
@@ -224,5 +231,5 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 | 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | **done** (2026-07-13) dashboard+field+window A8 |
 | 7 | Dirty-flag atlas: skip rebuild/upload when lines unchanged | **done** (2026-07-13) field+dashboard |
 | 8 | Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers | **done** (2026-07-13) thin wrappers over abi |
-| 9 | Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8 | pending |
+| 9 | Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8 | **done** (2026-07-13) REG 20/0 sweep 115/0/1; p1≡p2 |
 | 10 | CPU%/visual before/after; close track | pending |

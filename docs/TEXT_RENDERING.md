@@ -72,12 +72,21 @@ mlc::gl::Renderer           — batched quads, A8/MSDF шейдеры
 референс-системах. Не требует bindgen — ручная разметка укладывается в объём
 одного трека (сравнимо с libpq proof-of-concept из `FFI_LAYER.md` §5).
 
+**Статус 2026-07-13 ([TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md)
+STEP=1–8):** публичный путь — thin `freetype_abi.hpp` / `harfbuzz_abi.hpp`
+(i64 handles, last-glyph/last-shape slots) + MLC `misc/gui/text_shaping.mlc`
+(face/font `Map` cache, pitch→flat copy). Legacy `freetype_shim` /
+`harfbuzz_shim` — deprecated thin wrappers over abi (no process face cache).
+Live demos use `text_shaping`; golden `text_shaping_vs_shim_gate`.
+
 Требует решения не покрытого текущим `FFI_LAYER.md`: `hb_buffer_get_glyph_infos`
 возвращает `hb_glyph_info_t*` + `unsigned int* length` (C-массив через
 out-параметр, не через `RawPointer[T]` одного значения) — нужен паттерн
 "C array view": `RawPointer[T]` + отдельный `length: UInt32`, без copy в
 `Array[T]` на каждый вызов (копия допустима для не-hot-path, но шейпинг —
 hot path per frame). Зафиксировать как открытый вопрос §5.
+**(Практический обход STEP=2–4):** abi accessors `hb_shape_glyph_*` /
+`ft_glyph_byte_at` — без `RawPointer` byte deref из MLC.
 
 ### 3.2 MSDF-генерация (средний риск)
 
@@ -132,6 +141,9 @@ GLES2 trees (не ручной `loader_shim`). Smoke: `misc/examples/gl_loader_s
 - Конвенция библиотеки `mlc::text`: пара `(ptr: RawPointer[T], length: u32)` = view на буфер HarfBuzz; **не** копировать в `Array[T]` на каждый доступ к глифу.
 - Граница копирования: один раз в `TextShaper.shape()` — собрать `Array[ShapedGlyph]` (owned MLC) из view; дальше pipeline работает только с `Array`/`ShapedGlyph`.
 - Hot path per frame = повторный `shape` → снова один copy на вызов; внутри shape — только индексный обход view.
+- **Практический путь 2026-07-13 ([TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md)):**
+  `harfbuzz_abi` fills last-shape slot; MLC reads via `hb_shape_glyph_id_at` /
+  `hb_shape_glyph_advance_at` (no `RawPointer` glyph-info view from MLC yet).
 
 ### 5.2 GL proc address → MLC — **done** (GLAD2, 2026-07-11)
 
@@ -220,9 +232,14 @@ Track: [archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](archive/tracks/TRACK_TEXT
 
 `freetype_shim` / `harfbuzz_shim` used to `FT_Init_FreeType` + `FT_New_Face`
 (and HB font create) on **every** glyph/shape call. Process-local caches keyed
-by `(font_path, pixel_size)` now reuse `FT_Face` / `hb_font_t` until process
-exit. **Single-threaded main/GL only** — no mutex; document constraint before
-off-thread use.
+by `(font_path, pixel_size)` reused `FT_Face` / `hb_font_t` until process
+exit (**TRACK_TEXT_GL_PERF_BASELINE**).
+
+**Update 2026-07-13 ([TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md)):**
+face/font bookkeeping moved to MLC `text_shaping.mlc` (`Map` cache). Shim
+cache removed (STEP=8) — deprecated wrappers open/close via `*_abi` per call.
+Live demos must use `text_shaping` (STEP=6), not raw shim, for the cache win.
+**Single-threaded main/GL only** for abi last-glyph/last-shape slots.
 
 ### 9.2 Baseline bearing (fixed)
 
@@ -242,12 +259,15 @@ Same formula as CPU reference in `text_renderer_shim.cpp`
 
 | File | Change |
 |------|--------|
-| `runtime/include/mlc/text/freetype_shim.hpp` + `.cpp` | bearing ABI + face cache |
-| `runtime/src/text/harfbuzz_shim.cpp` | shaping font cache |
+| `runtime/include/mlc/text/freetype_abi.hpp` + `.cpp` | thin FT (STEP=2 TEXT_SHIM) |
+| `runtime/include/mlc/text/harfbuzz_abi.hpp` + `.cpp` | thin HB (STEP=3) |
+| `misc/gui/text_shaping.mlc` | MLC face/font cache + pitch flatten |
+| `runtime/include/mlc/text/freetype_shim.hpp` + `.cpp` | deprecated thin wrappers; bearing accessors |
+| `runtime/src/text/harfbuzz_shim.cpp` | deprecated thin wrappers over abi |
 | `misc/gui/text_renderer.mlc` | `GlyphCache` stores `bearing_x`/`bearing_y` |
-| `misc/examples/text_dashboard_demo.mlc` | `append_line` + persistent cache/atlas |
-| `misc/examples/text_window_demo.mlc` | `append_shaped_a8` |
-| `misc/examples/gui_text_field_demo.mlc` | `append_line` |
+| `misc/examples/text_dashboard_demo.mlc` | `append_line` + persistent cache/atlas + dirty |
+| `misc/examples/text_window_demo.mlc` | `append_shaped_a8` via text_shaping |
+| `misc/examples/gui_text_field_demo.mlc` | dirty-flag atlas (STEP=7) |
 
 Regression: `"Hxpjy Agq"` via `text_renderer_a8_string_smoke` + golden
 `misc/examples/fixtures/text_a8_hxpjy_24.rgba` (MAE ≤ 8/255 vs CPU).
