@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** — STEP=1–3 **done**; STEP=4 next
+## Status: **active** — STEP=1–4 **done**; STEP=5 next
 
 ## Next step
 
-**STEP=4** — negative case: same `(c_name, header)`, different signatures → mlcc error both sites.
+**STEP=5** — re-check examples sweep / button demos still OK.
 
 ## Problem
 
@@ -40,8 +40,8 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 | 1 | Design decision — read codegen/checker for `extern fn ... from`; pick option 1/2/3; write 2–3 sentences here | **done** (option 3 Hybrid) |
 | 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | **done** (`fixtures/extern_dedup/` + `run_extern_dedup_repro.sh` expects enclose-namespace fail) |
 | 3 | Implement chosen dedup/diagnostic in checker and/or codegen | **done** (`ffi_extern_reuses_imported_binding` skip emit in `decl_cpp.mlc`) |
-| 4 | Negative case: same key, different signatures → mlcc error with both sites | **pending** |
-| 5 | Re-check examples sweep / button demos still OK | pending |
+| 4 | Negative case: same key, different signatures → mlcc error with both sites | **done** (E090; later site + earlier label in message) |
+| 5 | Re-check examples sweep / button demos still OK | **pending** |
 | 6 | Self-host verify (mlcc → mlcc2 diff identical) | pending |
 | 7 | `scripts/regression_gate.sh` green | pending |
 | 8 | Docs: `FFI_LAYER.md` one paragraph on dedup rule | pending |
@@ -51,11 +51,18 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 - `compiler/codegen/decl_cpp.mlc`: `ffi_extern_reuses_imported_binding` — if `context.qualified.has(name)`, skip FFI proto/def; local emit uses `cpp_safe(name)` not `resolve`.
 - `run_extern_dedup_repro.sh` expects build+run exit 0.
 
-### STEP=4 sub-steps (Driver)
+### STEP=4 delivery
 
-1. Fixture: import + redeclare same `(c_name, header)` with different arity/types.
-2. Checker diagnostic (new code) with both sites; smoke expects fail.
-3. No codegen change required if STEP=3 already skips same-name — may need `(c_name, header)` index when MLC names differ.
+- `extern_dedup_lint.mlc` + E090; wired in `check.mlc`.
+- Fixture `fixtures/extern_dedup/mismatch.mlc`; `run_extern_dedup_mismatch_smoke.sh`.
+- Identical redeclare stays clean; message names earlier site (`provider.mlc:…`).
+- Also: `extern_header_arity_lint` index via `let mut result` (avoid match→HashMap codegen void bug).
+
+### STEP=5 sub-steps (Driver)
+
+1. `scripts/run_examples_compile_sweep.sh` (or gated subset with gui_button_demo).
+2. Confirm no new fails vs STEP=3 baseline.
+3. `next` = STEP=6.
 
 ## Out of scope
 

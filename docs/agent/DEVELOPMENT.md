@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_FFI_EXTERN_DEDUP` active** — STEP=3 done; STEP=4 (signature mismatch diagnostic) next.
+**`TRACK_FFI_EXTERN_DEDUP` active** — STEP=4 E090 done; STEP=5 (examples sweep) next.
 See [TRACK_FFI_EXTERN_DEDUP.md](TRACK_FFI_EXTERN_DEDUP.md). Queue: FFI_EXTERN_DEDUP → GUI_INPUT → …
 
 

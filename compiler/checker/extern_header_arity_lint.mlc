@@ -62,6 +62,7 @@ fn record_header_stub_arity(
   arity_by_c_name: Map<string, i32>,
   declaration: Shared<Decl>
 ) -> Map<string, i32> = do
+  let mut result = arity_by_c_name
   match decl_inner(declaration) {
     DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, where_clause) => do
       const unused_name = name
@@ -69,11 +70,14 @@ fn record_header_stub_arity(
       const unused_trait_bounds = trait_bounds
       const unused_return_type = return_type
       const unused_where_clause = where_clause
-      maybe_record_stub_from_extern_body(arity_by_c_name, parameters.length(), body)
+      result = maybe_record_stub_from_extern_body(result, parameters.length(), body)
     end,
-    DeclExported(inner) => record_header_stub_arity(arity_by_c_name, inner),
-    _ => arity_by_c_name
+    DeclExported(inner) => do
+      result = record_header_stub_arity(result, inner)
+    end,
+    _ => ()
   }
+  result
 end
 
 fn build_header_import_arity_index(program: Program) -> Map<string, i32> = do

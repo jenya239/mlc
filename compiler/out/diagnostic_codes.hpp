@@ -91,10 +91,14 @@ mlc::String diagnostic_code_e082() noexcept;
 mlc::String diagnostic_code_e083() noexcept;
 mlc::String diagnostic_code_e084() noexcept;
 mlc::String diagnostic_code_w_cycle() noexcept;
+mlc::String diagnostic_code_w_extern_attr() noexcept;
+mlc::String diagnostic_code_w_extern_arity() noexcept;
 mlc::String diagnostic_code_e085() noexcept;
 mlc::String diagnostic_code_e086() noexcept;
 mlc::String diagnostic_code_e087() noexcept;
 mlc::String diagnostic_code_e088() noexcept;
+mlc::String diagnostic_code_e089() noexcept;
+mlc::String diagnostic_code_e090() noexcept;
 
 } // namespace diagnostic_codes
 

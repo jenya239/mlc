@@ -1,0 +1,195 @@
+// TRACK_FFI_EXTERN_DEDUP STEP=4 — conflicting full-form extern signatures.
+// Same (c_name, header) with different arity → E090.
+
+import {
+  Program, Decl, Diagnostic, Span, diagnostic_new_with_code, diagnostics_append,
+  decl_inner, Expr, ExprExtern
+} from '../frontend/ast'
+import { diagnostic_code_e090 } from './diagnostic_codes'
+
+fn header_import_extern_marker() -> string = "__mlc_header_import__"
+
+fn empty_diagnostic_list() -> [Diagnostic] = do
+  let empty: [Diagnostic] = []
+  empty
+end
+
+fn ffi_binding_key(c_name: string, header: string) -> string =
+  c_name + "#" + header
+
+fn span_site_label(source_span: Span) -> string =
+  if source_span.file.length() > 0 then
+    source_span.file + ":" + source_span.line.to_string() + ":" + source_span.column.to_string()
+  else
+    "line " + source_span.line.to_string() + ":" + source_span.column.to_string()
+  end
+
+fn encode_binding(arity: i32, site_label: string) -> string =
+  arity.to_string() + "|" + site_label
+
+fn decode_arity(encoded: string) -> i32 = do
+  let mut index = 0
+  while index < encoded.length() && encoded.substring(index, 1) != "|" do
+    index = index + 1
+  end
+  if index == 0 then 0
+  else encoded.substring(0, index).to_i()
+  end
+end
+
+fn decode_label(encoded: string) -> string = do
+  let mut index = 0
+  while index < encoded.length() && encoded.substring(index, 1) != "|" do
+    index = index + 1
+  end
+  if index >= encoded.length() then ""
+  else encoded.substring(index + 1, encoded.length() - index - 1)
+  end
+end
+
+fn mismatch_message(
+  c_name: string,
+  header: string,
+  later_arity: i32,
+  earlier_arity: i32,
+  earlier_label: string
+) -> string =
+  "extern fn C symbol '" + c_name + "' from \"" + header + "\" arity " +
+    later_arity.to_string() + " conflicts with earlier arity " + earlier_arity.to_string() +
+    " at " + earlier_label
+
+fn maybe_record_stub_from_extern_body(
+  binding_by_key: Map<string, string>,
+  parameters_length: i32,
+  body: Shared<Expr>
+) -> Map<string, string> = do
+  match body {
+    ExprExtern(c_name, header, attributes, source_span) => do
+      const unused_attributes = attributes
+      if header.length() > 0
+         && header != header_import_extern_marker()
+         && c_name.length() > 0 then
+        const key = ffi_binding_key(c_name, header)
+        if !binding_by_key.has(key) then
+          binding_by_key.set(
+            key,
+            encode_binding(parameters_length, span_site_label(source_span)))
+        end
+      end
+      binding_by_key
+    end,
+    _ => binding_by_key
+  }
+end
+
+fn record_declaration(
+  binding_by_key: Map<string, string>,
+  declaration: Shared<Decl>
+) -> Map<string, string> = do
+  let mut result = binding_by_key
+  match decl_inner(declaration) {
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, where_clause) => do
+      const unused_name = name
+      const unused_type_parameters = type_parameters
+      const unused_trait_bounds = trait_bounds
+      const unused_return_type = return_type
+      const unused_where_clause = where_clause
+      result = maybe_record_stub_from_extern_body(result, parameters.length(), body)
+    end,
+    DeclExported(inner) => do
+      result = record_declaration(result, inner)
+    end,
+    _ => ()
+  }
+  result
+end
+
+fn error_for_conflict(
+  c_name: string,
+  header: string,
+  later_arity: i32,
+  earlier_arity: i32,
+  earlier_label: string,
+  source_span: Span
+) -> [Diagnostic] =
+  [diagnostic_new_with_code(
+    "error",
+    mismatch_message(c_name, header, later_arity, earlier_arity, earlier_label),
+    source_span,
+    diagnostic_code_e090())]
+
+fn diagnostics_from_extern_body(
+  parameters_length: i32,
+  body: Shared<Expr>,
+  binding_by_key: Map<string, string>
+) -> [Diagnostic] = do
+  match body {
+    ExprExtern(c_name, header, attributes, source_span) => do
+      const unused_attributes = attributes
+      if header.length() == 0 then
+        empty_diagnostic_list()
+      else if header == header_import_extern_marker() then
+        empty_diagnostic_list()
+      else if c_name.length() == 0 then
+        empty_diagnostic_list()
+      else if binding_by_key.has(ffi_binding_key(c_name, header)) then do
+        const key = ffi_binding_key(c_name, header)
+        const encoded = binding_by_key.get(key)
+        const earlier_arity = decode_arity(encoded)
+        const earlier_label = decode_label(encoded)
+        if parameters_length == earlier_arity then
+          empty_diagnostic_list()
+        else if earlier_label == span_site_label(source_span) then
+          empty_diagnostic_list()
+        else
+          error_for_conflict(
+            c_name, header, parameters_length, earlier_arity, earlier_label, source_span)
+        end
+      end
+      else
+        empty_diagnostic_list()
+      end
+    end,
+    _ => empty_diagnostic_list()
+  }
+end
+
+fn diagnostics_for_declaration(
+  declaration: Shared<Decl>,
+  binding_by_key: Map<string, string>
+) -> [Diagnostic] = do
+  match decl_inner(declaration) {
+    DeclFn(name, type_parameters, trait_bounds, parameters, return_type, body, where_clause) => do
+      const unused_name = name
+      const unused_type_parameters = type_parameters
+      const unused_trait_bounds = trait_bounds
+      const unused_return_type = return_type
+      const unused_where_clause = where_clause
+      diagnostics_from_extern_body(parameters.length(), body, binding_by_key)
+    end,
+    DeclExported(inner) => diagnostics_for_declaration(inner, binding_by_key),
+    _ => empty_diagnostic_list()
+  }
+end
+
+export fn extern_dedup_diagnostics(program: Program) -> [Diagnostic] = do
+  let mut binding_by_key: Map<string, string> = Map.new()
+  let mut declaration_index = 0
+  while declaration_index < program.decls.length() do
+    binding_by_key = record_declaration(
+      binding_by_key,
+      program.decls[declaration_index])
+    declaration_index = declaration_index + 1
+  end
+  let mut diagnostics = empty_diagnostic_list()
+  declaration_index = 0
+  while declaration_index < program.decls.length() do
+    diagnostics = diagnostics_append(
+      diagnostics,
+      diagnostics_for_declaration(
+        program.decls[declaration_index],
+        binding_by_key))
+    declaration_index = declaration_index + 1
+  end
+  diagnostics
+end

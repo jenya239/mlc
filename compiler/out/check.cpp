@@ -19,6 +19,9 @@
 #include "partial_application_desugar.hpp"
 #include "cycle_lint.hpp"
 #include "orphan_lint.hpp"
+#include "extern_concurrency_lint.hpp"
+#include "extern_header_arity_lint.hpp"
+#include "extern_dedup_lint.hpp"
 
 namespace check {
 
@@ -40,6 +43,9 @@ using namespace record_field_default_validate;
 using namespace partial_application_desugar;
 using namespace cycle_lint;
 using namespace orphan_lint;
+using namespace extern_concurrency_lint;
+using namespace extern_header_arity_lint;
+using namespace extern_dedup_lint;
 using namespace ast_tokens;
 
 bool CheckOut_has_errors(CheckOut self) noexcept;
@@ -277,6 +283,7 @@ mlc::HashMap<mlc::String, bool> collect_globals(ast::Program program) noexcept{
   names.set(mlc::String("read_line", 9), true);
   names.set(mlc::String("read_all", 8), true);
   names.set(mlc::String("spawn_task", 10), true);
+  names.set(mlc::String("__task_scope_new", 16), true);
   names.set(mlc::String("block_on", 8), true);
   names.set(mlc::String("is_ready", 8), true);
   names.set(mlc::String("make_channel", 12), true);
@@ -435,6 +442,9 @@ Program_check_gathered gather_program_check(ast::Program entry, ast::Program ful
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, type_alias_cycle_diagnostics(destructured_full_program, registry)));
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, cycle_lint::shared_cycle_lint_diagnostics(destructured_full_program, registry)));
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, orphan_lint::orphan_impl_diagnostics(destructured_full_program, registry)));
+  (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_concurrency_lint::extern_concurrency_attr_diagnostics(destructured_full_program)));
+  (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_header_arity_lint::extern_header_arity_diagnostics(destructured_full_program)));
+  (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_dedup_lint::extern_dedup_diagnostics(destructured_full_program)));
   auto declaration_index = 0;
   while ((declaration_index < expanded_entry_program.decls.length()))   {
     std::visit(overloaded{[&](const ast::DeclFn& declFn) -> void { auto [name, type_parameters, trait_bounds, parameters, return_type_annotation, body, where_clause_bounds_entries] = declFn; [&]() {

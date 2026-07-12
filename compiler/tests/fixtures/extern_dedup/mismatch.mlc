@@ -1,0 +1,7 @@
+// Same (c_name, header) as provider, wrong arity — expect E090.
+import { sleep_ms_probe } from './provider.mlc'
+
+extern fn sleep_ms_probe(milliseconds: i32, unused: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp" blocking
+
+fn main() -> i32 = 0

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | `run_extern_dedup_repro.sh` ok (build+run) |
+| test_gate | E090 smoke ok; arity smoke ok; dedup repro ok |
+
+### Turn 2026-07-12 05:10 (Driver TRACK_FFI_EXTERN_DEDUP STEP=4 — E090 mismatch)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 04:28 |
+| elapsed | ~40 min |
+| done    | `extern_dedup_lint.mlc` E090; `check.mlc` wire; `mismatch.mlc` + smoke; arity lint `let mut result` index fix. |
+| verify  | `run_extern_dedup_mismatch_smoke.sh` ok; `run_extern_header_arity_smoke.sh` ok; `run_extern_dedup_repro.sh` ok. |
+| result  | STEP=4 done. Plain: arity conflict → E090 with earlier site in message. |
+| issues  | Foreign `compiler/out/*` left; Map-return match codegen void bug worked around. |
+| next    | ROLE=Driver STEP=5 TRACK_FFI_EXTERN_DEDUP — examples compile sweep |
 
 ### Turn 2026-07-12 04:20 (Driver TRACK_FFI_EXTERN_DEDUP STEP=3 — Hybrid skip-emit)
 

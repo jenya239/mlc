@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 90
+export fn diagnostic_code_catalog_count() -> i32 = 91
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -186,3 +186,5 @@ export fn diagnostic_code_e087() -> string = 'E087'
 export fn diagnostic_code_e088() -> string = 'E088'
 // E089: bare spawn expression-statement discards Task (destructor blocks)
 export fn diagnostic_code_e089() -> string = 'E089'
+// E090: duplicate extern fn from header with conflicting arity
+export fn diagnostic_code_e090() -> string = 'E090'
