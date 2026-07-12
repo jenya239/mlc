@@ -60,6 +60,12 @@ import { type_is_mutex } from '../semantic_type_structure'
 import { is_channel_method } from '../check/method_types/channel_method_types'
 import { infer_result_option_hof_method_call } from './infer_result_option_method'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver } from '../hof_method_spec'
+import {
+  region_tag_type_from_span,
+  region_handle_type,
+  is_region_handle_method,
+  infer_region_handle_method_call
+} from './infer_region_method'
 import * as record_lit_merge from '../transform/record_lit_merge'
 import { partial_application_desugar_expr } from '../transform/partial_application_desugar'
 import {
@@ -242,6 +248,9 @@ fn infer_expr_method(
   else if is_task_scope_spawn_method(object_parsed.inferred_type, method_name) then
     infer_task_scope_spawn_call(
       object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_region_handle_method(object_parsed.inferred_type, method_name) then
+    infer_region_handle_method_call(
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_array_hof_method_on_receiver(object_parsed.inferred_type, method_name) then
     infer_array_hof_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
@@ -329,9 +338,16 @@ fn infer_expr_scope(binder: string, statements: [Shared<Stmt>], inference_contex
   infer_ok(Shared.new(TUnit)).absorb_stmt(statements_parsed)
 end
 
-fn infer_expr_region(binder: string, statements: [Shared<Stmt>], inference_context: CheckContext) -> InferResult = do
+fn infer_expr_region(
+  binder: string,
+  statements: [Shared<Stmt>],
+  source_span: Span,
+  inference_context: CheckContext
+) -> InferResult = do
   const region_body_environment = inference_context.type_env
-  region_body_environment.set(binder, Shared.new(TNamed('RegionHandle')))
+  region_body_environment.set(
+    binder,
+    region_handle_type(region_tag_type_from_span(source_span)))
   const statements_parsed = infer_statements(statements, check_context_child(inference_context, region_body_environment))
   infer_ok(Shared.new(TUnit)).absorb_stmt(statements_parsed)
 end
@@ -501,8 +517,8 @@ fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> Infer
       infer_pass.visit_spawn(statements),
     ExprScope(binder, statements, _) =>
       infer_pass.visit_scope(binder, statements),
-    ExprRegion(binder, statements, _) =>
-      infer_pass.visit_region(binder, statements),
+    ExprRegion(binder, statements, source_span) =>
+      infer_pass.visit_region(binder, statements, source_span),
     _ =>
       infer_pass.visit_unsupported()
   }
@@ -629,8 +645,13 @@ extend InferPass {
     infer_expr_spawn(statements, self.inference_context)
   fn visit_scope(self: InferPass, binder: string, statements: [Shared<Stmt>]) -> InferResult =
     infer_expr_scope(binder, statements, self.inference_context)
-  fn visit_region(self: InferPass, binder: string, statements: [Shared<Stmt>]) -> InferResult =
-    infer_expr_region(binder, statements, self.inference_context)
+  fn visit_region(
+    self: InferPass,
+    binder: string,
+    statements: [Shared<Stmt>],
+    source_span: Span
+  ) -> InferResult =
+    infer_expr_region(binder, statements, source_span, self.inference_context)
   fn visit_unsupported(self: InferPass) -> InferResult =
     infer_ok(Shared.new(TUnknown))
 }

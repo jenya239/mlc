@@ -8,6 +8,7 @@
 #include "semantic_type_structure.hpp"
 #include "hof_method_spec.hpp"
 #include "infer_weak_method.hpp"
+#include "infer_region_method.hpp"
 #include "pattern_env.hpp"
 #include "substitution.hpp"
 #include "infer.hpp"
@@ -133,6 +134,7 @@ std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_scope(Trans
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_region(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> transform_method_call_after_object(registry::TypeRegistry registry, std::shared_ptr<ast::Expr> object, mlc::String method_name, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, TransformPass transform_pass, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
+std::shared_ptr<semantic_ir::SemanticExpression> transform_region_alloc_method_call(std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> transform_expr(std::shared_ptr<ast::Expr> expression, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_int(TransformPass self, int value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_str(TransformPass self, mlc::String value, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept;

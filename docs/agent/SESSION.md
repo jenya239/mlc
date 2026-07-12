@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 2 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | docs-only (Planner) |
+| test_gate | mlcc check-only region fixtures + main; self-host DIFF=0; Ruby rake blocked MATCH |
+
+### Turn 2026-07-12 18:07 (Driver TRACK_LANG_REGION_ARENA STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 16:11 |
+| elapsed | ~116 min |
+| done    | `infer_region_method.mlc` RegionTag/Handle/alloc; infer+transform wire; `__region_handle_new` let binder; registry/globals; `test_region.mlc` check smokes. |
+| verify  | `mlcc --check-only` empty/alloc/bind exit 0; `r.nope`→E082; `main.mlc` exit 0; self-host p1↔p2 DIFF_EXIT=0. |
+| result  | STEP=2 done. Plain: `r.alloc` types as `Region<Tag,T>`; binder names-visible. |
+| issues  | Ruby `rake test_compiler_mlc` still blocked pre-existing MATCH parse; used mlcc verify. |
+| next    | ROLE=Driver STEP=3 TRACK_LANG_REGION_ARENA — escape diagnostic for Region\<Tag,T\> |
 
 ### Turn 2026-07-12 16:06 (Planner — plan-refresh)
 

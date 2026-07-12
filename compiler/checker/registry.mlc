@@ -250,6 +250,10 @@ export fn empty_registry() -> TypeRegistry = do
     Shared.new(TFn([], Shared.new(TNamed('TaskScope')))))
   builtin_required_arity.set('__task_scope_new', 0)
   builtin_function_types.set(
+    '__region_handle_new',
+    Shared.new(TFn([], Shared.new(TGeneric('RegionHandle', [Shared.new(TUnknown)])))))
+  builtin_required_arity.set('__region_handle_new', 0)
+  builtin_function_types.set(
     'block_on',
     Shared.new(TFn([Shared.new(TGeneric('Task', [Shared.new(TUnknown)]))], Shared.new(TUnknown))))
   builtin_required_arity.set('block_on', 1)

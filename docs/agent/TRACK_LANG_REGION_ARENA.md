@@ -10,27 +10,19 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (Planner 2026-07-12) — resumed after TEXT_GL Critic OK
+## Status: **active** (STEP=2 done 2026-07-12) — STEP=3 escape next
 
 ## Next step
 
-**STEP=2** — Checker: phantom `RegionTag` + `r.alloc` typing.
+**STEP=3** — Checker: escape diagnostic for `Region<Tag, T>`.
 
-### STEP=2 sub-steps (Driver)
+### STEP=2 done (2026-07-12)
 
-1. Read existing `visit_region` in `compiler/checker/transform/transform.mlc`
-   (already binds binder as `TNamed('RegionHandle')`) and phantom machinery in
-   `compiler/checker/registry.mlc` (`compute_phantom_type_params`).
-2. Synthesize a unique per-block phantom tag type (`RegionTag_N` or equivalent)
-   for each `ExprRegion`; type the binder as `RegionHandle<Tag>` (Decision 1 —
-   no user `'r` syntax).
-3. Typecheck `r.alloc(value)` → `Region<Tag, T>` (method or intrinsic on the
-   handle); reject unknown methods on the binder for now if not `alloc`.
-4. Smoke: extend `compiler/tests/test_region.mlc` (or check-only fixture) so
-   `region r do r.alloc(0) end` typechecks; empty `region r do 0 end` still OK.
-5. Do **not** implement escape diagnostics (STEP=3) or codegen/pmr (STEP=4).
-6. Verify: `bundle exec rake test_compiler_mlc` (or targeted region suite)
-   green; TRACK Next=STEP=3.
+- `infer_region_method.mlc`: `RegionTag_L_C` phantom, `RegionHandle<Tag>`, `r.alloc(v) -> Region<Tag,T>`, reject non-`alloc`.
+- `infer.mlc` / `transform.mlc`: binder via `__region_handle_new` let (names-visible).
+- `registry.mlc` + `check.mlc` globals for `__region_handle_new`.
+- Smoke: `mlcc --check-only` empty/`alloc`/bind exit 0; `r.nope()` → E082.
+- Escape (STEP=3) and pmr codegen (STEP=4) not in this turn.
 
 ## Зачем
 
@@ -114,7 +106,7 @@ end   // весь буфер r освобождается разом
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Parser: `region <name> do ... end` block syntax → AST node (`ExprRegion(name, [Stmt], Span)` parallel to `ExprScope`; reuse `parse_statements_until_end` / keyword dispatch like `scope`) | **done** (2026-07-12) |
-| 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | pending |
+| 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | **done** (2026-07-12) |
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | pending |
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | pending |
 | 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | pending |

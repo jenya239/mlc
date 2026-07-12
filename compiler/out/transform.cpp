@@ -6,6 +6,7 @@
 #include "semantic_type_structure.hpp"
 #include "hof_method_spec.hpp"
 #include "infer_weak_method.hpp"
+#include "infer_region_method.hpp"
 #include "pattern_env.hpp"
 #include "substitution.hpp"
 #include "infer.hpp"
@@ -22,6 +23,7 @@ using namespace registry;
 using namespace semantic_type_structure;
 using namespace hof_method_spec;
 using namespace infer_weak_method;
+using namespace infer_region_method;
 using namespace pattern_env;
 using namespace substitution;
 using namespace infer;
@@ -408,6 +410,8 @@ auto [__0, type_arguments] = tGeneric; return ((type_arguments.length() == 1) ? 
 return std::make_shared<registry::Type>(registry::TUnknown{});
 std::abort();
 }();
+  } else if (infer_region_method::is_region_handle_alloc_method(receiver_type, method_name))   {
+    return std::make_shared<registry::Type>(registry::TUnknown{});
   } else if (semantic_type_structure::type_is_unknown(semantic_type_structure::builtin_method_return_type(method_name)))   {
     return registry::method_return_type_from_object(receiver_type, method_name, registry);
   } else   {
@@ -1254,12 +1258,20 @@ while ((statement_index < statements_parsed.statements.length())) {
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{block_statements, std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), source_span}), std::make_shared<registry::Type>(registry::TUnit{}), source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_region(TransformPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
-auto region_type = std::make_shared<registry::Type>(registry::TNamed{mlc::String("RegionHandle", 12)});
+auto region_type = infer_region_method::region_handle_type(infer_region_method::region_tag_type_from_span(source_span));
 auto region_body_environment = self.transform_context.type_env;
 region_body_environment.set(binder, region_type);
 auto region_body_context = transform_context_with_env(self.transform_context, region_body_environment);
 auto statements_parsed = stmts_fn(statements, region_body_context);
-return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{statements_parsed.statements, std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), source_span}), std::make_shared<registry::Type>(registry::TUnit{}), source_span});
+auto region_init = std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionCall{std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionIdent{mlc::String("__region_handle_new", 19), region_type, source_span}), {}, {}, region_type, source_span});
+auto region_let = std::make_shared<semantic_ir::SemanticStatement>(semantic_ir::SemanticStatementLet{binder, false, region_init, region_type, source_span});
+auto block_statements = mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>>{region_let};
+auto statement_index = 0;
+while ((statement_index < statements_parsed.statements.length())) {
+  block_statements.push_back(statements_parsed.statements[statement_index]);
+  (statement_index = mlc::arith::checked_add(statement_index, 1));
+}
+return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionBlock{block_statements, std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), source_span}), std::make_shared<registry::Type>(registry::TUnit{}), source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> TransformPass_visit_unsupported(TransformPass self, std::shared_ptr<ast::Expr> expression, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
 return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionUnit{std::make_shared<registry::Type>(registry::TUnit{}), ast::expr_span(expression)});
@@ -1271,9 +1283,18 @@ std::shared_ptr<semantic_ir::SemanticExpression> transform_method_call_after_obj
     return transform_result_option_hof_method_call(registry, typed_object, method_name, method_arguments, receiver_type, transform_pass.transform_context, source_span, stmts_fn);
   } else if (hof_method_spec::is_array_hof_method_on_receiver(receiver_type, method_name))   {
     return transform_array_hof_method_call(registry, typed_object, method_name, method_arguments, receiver_type, transform_pass.transform_context, source_span, stmts_fn);
+  } else if (infer_region_method::is_region_handle_alloc_method(receiver_type, method_name))   {
+    return transform_region_alloc_method_call(typed_object, method_arguments, receiver_type, transform_pass.transform_context, source_span, stmts_fn);
   } else   {
     return transform_regular_method_call(registry, typed_object, method_name, method_arguments, receiver_type, transform_pass.transform_context, source_span, stmts_fn);
   }
+}
+std::shared_ptr<semantic_ir::SemanticExpression> transform_region_alloc_method_call(std::shared_ptr<semantic_ir::SemanticExpression> typed_object, mlc::Array<std::shared_ptr<ast::Expr>> method_arguments, std::shared_ptr<registry::Type> receiver_type, TransformContext transform_context, ast::Span source_span, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
+  auto typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn);
+  auto value_type = ((typed_arguments.length() == 1) ? (semantic_ir::sexpr_type(typed_arguments[0])) : (std::make_shared<registry::Type>(registry::TUnknown{})));
+  auto result_type = infer_region_method::region_pointer_type(infer_region_method::region_handle_tag_type(receiver_type), value_type);
+  auto empty_mutability = mlc::Array<int>{};
+  return std::make_shared<semantic_ir::SemanticExpression>(semantic_ir::SemanticExpressionMethod{typed_object, mlc::String("alloc", 5), typed_arguments, empty_mutability, result_type, source_span});
 }
 std::shared_ptr<semantic_ir::SemanticExpression> transform_expr(std::shared_ptr<ast::Expr> expression, TransformContext transform_context, std::function<TransformStmtsResult(mlc::Array<std::shared_ptr<ast::Stmt>>, TransformContext)> stmts_fn) noexcept{
   auto expression_partial_application = partial_application_desugar::partial_application_desugar_expr(expression);

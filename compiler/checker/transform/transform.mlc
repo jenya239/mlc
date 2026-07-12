@@ -22,6 +22,13 @@ import {
   is_shared_weak_method_on_receiver,
   is_weak_upgrade_method_on_receiver
 } from '../infer/infer_weak_method'
+import {
+  region_tag_type_from_span,
+  region_handle_type,
+  region_handle_tag_type,
+  region_pointer_type,
+  is_region_handle_alloc_method
+} from '../infer/infer_region_method'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
 import { infer_expr } from '../infer/infer'
@@ -340,6 +347,8 @@ fn method_result_type_for_dispatch(
         else Shared.new(TUnknown) end,
       _ => Shared.new(TUnknown)
     }
+  else if is_region_handle_alloc_method(receiver_type, method_name) then
+    Shared.new(TUnknown)
   else if type_is_unknown(builtin_method_return_type(method_name)) then
     method_return_type_from_object(receiver_type, method_name, registry)
   else
@@ -1662,13 +1671,27 @@ extend TransformPass {
     source_span: Span,
     stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
   ) -> Shared<SemanticExpression> = do
-    const region_type = Shared.new(TNamed('RegionHandle'))
+    const region_type = region_handle_type(region_tag_type_from_span(source_span))
     let region_body_environment = self.transform_context.type_env
     region_body_environment.set(binder, region_type)
     const region_body_context = transform_context_with_env(self.transform_context, region_body_environment)
     const statements_parsed = stmts_fn(statements, region_body_context)
+    const region_init = Shared.new(SemanticExpressionCall(
+      Shared.new(SemanticExpressionIdent('__region_handle_new', region_type, source_span)),
+      [],
+      [],
+      region_type,
+      source_span))
+    const region_let = Shared.new(SemanticStatementLet(
+      binder, false, region_init, region_type, source_span))
+    let block_statements: [Shared<SemanticStatement>] = [region_let]
+    let mut statement_index = 0
+    while statement_index < statements_parsed.statements.length() do
+      block_statements.push(statements_parsed.statements[statement_index])
+      statement_index = statement_index + 1
+    end
     Shared.new(SemanticExpressionBlock(
-      statements_parsed.statements,
+      block_statements,
       Shared.new(SemanticExpressionUnit(Shared.new(TUnit), source_span)),
       Shared.new(TUnit),
       source_span))
@@ -1698,11 +1721,32 @@ fn transform_method_call_after_object(
     transform_array_hof_method_call(
       registry, typed_object, method_name, method_arguments, receiver_type,
       transform_pass.transform_context, source_span, stmts_fn)
+  else if is_region_handle_alloc_method(receiver_type, method_name) then
+    transform_region_alloc_method_call(
+      typed_object, method_arguments, receiver_type,
+      transform_pass.transform_context, source_span, stmts_fn)
   else
     transform_regular_method_call(
       registry, typed_object, method_name, method_arguments, receiver_type,
       transform_pass.transform_context, source_span, stmts_fn)
   end
+end
+
+fn transform_region_alloc_method_call(
+  typed_object: Shared<SemanticExpression>,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs(method_arguments, transform_context, stmts_fn)
+  const value_type =
+    if typed_arguments.length() == 1 then sexpr_type(typed_arguments[0]) else Shared.new(TUnknown) end
+  const result_type = region_pointer_type(region_handle_tag_type(receiver_type), value_type)
+  const empty_mutability: [i32] = []
+  Shared.new(SemanticExpressionMethod(
+    typed_object, 'alloc', typed_arguments, empty_mutability, result_type, source_span))
 end
 
 export fn transform_expr(expression: Shared<Expr>, transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do

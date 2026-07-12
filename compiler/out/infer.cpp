@@ -25,6 +25,7 @@
 #include "channel_method_types.hpp"
 #include "infer_result_option_method.hpp"
 #include "hof_method_spec.hpp"
+#include "infer_region_method.hpp"
 #include "record_lit_merge.hpp"
 #include "partial_application_desugar.hpp"
 #include "diagnostic_codes.hpp"
@@ -55,6 +56,7 @@ using namespace semantic_type_structure;
 using namespace channel_method_types;
 using namespace infer_result_option_method;
 using namespace hof_method_spec;
+using namespace infer_region_method;
 using namespace record_lit_merge;
 using namespace partial_application_desugar;
 using namespace diagnostic_codes;
@@ -92,7 +94,7 @@ infer_result::InferResult InferPass_visit_named_arg(InferPass self, std::shared_
 infer_result::InferResult InferPass_visit_with(InferPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_spawn(InferPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_scope(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
-infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span) noexcept;
 infer_result::InferResult InferPass_visit_unsupported(InferPass self) noexcept;
 infer_result::InferResult infer_arguments_errors(infer_result::InferResult initial, mlc::Array<std::shared_ptr<ast::Expr>> expressions, check_context::CheckContext inference_context) noexcept{
   return expressions.fold(initial, [=](infer_result::InferResult accumulated_inference, std::shared_ptr<ast::Expr> expression_under_inference) mutable { return infer_result::InferResult_absorb(accumulated_inference, infer_expr(expression_under_inference, inference_context)); });
@@ -158,6 +160,8 @@ infer_result::InferResult infer_expr_method(std::shared_ptr<ast::Expr> object, m
     return infer_mutex_method::infer_mutex_method_call(object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn);
   } else if (is_task_scope_spawn_method(object_parsed.inferred_type, method_name))   {
     return infer_task_scope_spawn_call(object_parsed, method_arguments, method_span, inference_context, infer_expr_fn);
+  } else if (infer_region_method::is_region_handle_method(object_parsed.inferred_type, method_name))   {
+    return infer_region_method::infer_region_handle_method_call(object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn);
   } else if (hof_method_spec::is_array_hof_method_on_receiver(object_parsed.inferred_type, method_name))   {
     return infer_array_method::infer_array_hof_method_call(object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn);
   } else   {
@@ -218,9 +222,9 @@ infer_result::InferResult infer_expr_scope(mlc::String binder, mlc::Array<std::s
   auto statements_parsed = infer_statements(statements, check_context::check_context_child(inference_context, scope_body_environment));
   return infer_result::InferResult_absorb_stmt(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TUnit{})), statements_parsed);
 }
-infer_result::InferResult infer_expr_region(mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, check_context::CheckContext inference_context) noexcept{
+infer_result::InferResult infer_expr_region(mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span, check_context::CheckContext inference_context) noexcept{
   auto region_body_environment = inference_context.type_env;
-  region_body_environment.set(binder, std::make_shared<registry::Type>(registry::TNamed{mlc::String("RegionHandle", 12)}));
+  region_body_environment.set(binder, infer_region_method::region_handle_type(infer_region_method::region_tag_type_from_span(source_span)));
   auto statements_parsed = infer_statements(statements, check_context::check_context_child(inference_context, region_body_environment));
   return infer_result::InferResult_absorb_stmt(infer_result::infer_ok(std::make_shared<registry::Type>(registry::TUnit{})), statements_parsed);
 }
@@ -408,7 +412,7 @@ auto [binder, statements, __2] = exprScope; return InferPass_visit_scope(infer_p
 }
 if (std::holds_alternative<ast::ExprRegion>((*__match_subject))) {
 const ast::ExprRegion& exprRegion = std::get<ast::ExprRegion>((*__match_subject));
-auto [binder, statements, __2] = exprRegion; return InferPass_visit_region(infer_pass, binder, statements);
+auto [binder, statements, source_span] = exprRegion; return InferPass_visit_region(infer_pass, binder, statements, source_span);
 }
 return InferPass_visit_unsupported(infer_pass);
 std::abort();
@@ -446,7 +450,7 @@ infer_result::InferResult InferPass_visit_named_arg(InferPass self, std::shared_
 infer_result::InferResult InferPass_visit_with(InferPass self, std::shared_ptr<ast::Expr> resource, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_spawn(InferPass self, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
 infer_result::InferResult InferPass_visit_scope(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
-infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept;
+infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span) noexcept;
 infer_result::InferResult InferPass_visit_unsupported(InferPass self) noexcept;
 infer_result::InferResult InferPass_visit_int(InferPass self) noexcept{
 return infer_literals::infer_expr_integer_literal();
@@ -544,8 +548,8 @@ return infer_expr_spawn(statements, self.inference_context);
 infer_result::InferResult InferPass_visit_scope(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept{
 return infer_expr_scope(binder, statements, self.inference_context);
 }
-infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements) noexcept{
-return infer_expr_region(binder, statements, self.inference_context);
+infer_result::InferResult InferPass_visit_region(InferPass self, mlc::String binder, mlc::Array<std::shared_ptr<ast::Stmt>> statements, ast::Span source_span) noexcept{
+return infer_expr_region(binder, statements, source_span, self.inference_context);
 }
 infer_result::InferResult InferPass_visit_unsupported(InferPass self) noexcept{
 return infer_result::infer_ok(std::make_shared<registry::Type>(registry::TUnknown{}));

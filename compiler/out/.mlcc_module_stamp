@@ -1,4 +1,4 @@
-0b778ecb403ac83cc2d467de3c6f63d24d008a6b4d753b82b7306c127d4053d3
+2fe4f4df0442942c2642da6e0eb0e384a5520fb9a2d60e7e2325428df81ad1fb
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -70,6 +70,7 @@ infer_match.cpp
 infer_mutex_method.cpp
 infer_operand_combine.cpp
 infer_question_expression.cpp
+infer_region_method.cpp
 infer_result.cpp
 infer_result_option_method.cpp
 infer_trait_bounds.cpp

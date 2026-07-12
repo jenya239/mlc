@@ -1,0 +1,95 @@
+// RegionHandle / r.alloc type inference (TRACK_LANG_REGION_ARENA STEP=2).
+
+import {
+  Expr,
+  Span,
+  diagnostic_error_with_code,
+  diagnostics_append
+} from '../../frontend/ast'
+import { Type, TNamed, TGeneric, TUnknown } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import { diagnostic_code_e014, diagnostic_code_e082 } from '../diagnostic_codes'
+
+export fn region_tag_type_from_span(source_span: Span) -> Shared<Type> =
+  Shared.new(TNamed(
+    'RegionTag_'
+      + source_span.line.to_string()
+      + "_"
+      + source_span.column.to_string()))
+
+export fn region_handle_type(tag_type: Shared<Type>) -> Shared<Type> =
+  Shared.new(TGeneric('RegionHandle', [tag_type]))
+
+export fn region_pointer_type(tag_type: Shared<Type>, value_type: Shared<Type>) -> Shared<Type> =
+  Shared.new(TGeneric('Region', [tag_type, value_type]))
+
+export fn type_is_region_handle(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TGeneric(name, type_arguments) => name == 'RegionHandle' && type_arguments.length() == 1,
+    _ => false
+  }
+
+export fn region_handle_tag_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TGeneric(_, type_arguments) =>
+      if type_arguments.length() == 1 then type_arguments[0] else Shared.new(TUnknown) end,
+    _ => Shared.new(TUnknown)
+  }
+
+export fn is_region_handle_method(receiver_type: Shared<Type>, method_name: string) -> bool =
+  type_is_region_handle(receiver_type)
+
+export fn is_region_handle_alloc_method(receiver_type: Shared<Type>, method_name: string) -> bool =
+  type_is_region_handle(receiver_type) && method_name == 'alloc'
+
+export fn infer_region_handle_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  if method_name != 'alloc' then
+    InferResult {
+      inferred_type: Shared.new(TUnknown),
+      errors: diagnostics_append(object_parsed.errors, [
+        diagnostic_error_with_code(
+          'undefined method: ' + method_name + ' on RegionHandle',
+          method_span,
+          diagnostic_code_e082())
+      ])
+    }
+  else
+    infer_region_alloc_call(
+      object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
+  end
+end
+
+fn infer_region_alloc_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  if method_arguments.length() != 1 then
+    InferResult {
+      inferred_type: Shared.new(TUnknown),
+      errors: diagnostics_append(object_parsed.errors, [
+        diagnostic_error_with_code(
+          'expected 1 arguments, got ' + method_arguments.length().to_string(),
+          method_span,
+          diagnostic_code_e014())
+      ])
+    }
+  else
+    const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    const tag_type = region_handle_tag_type(object_parsed.inferred_type)
+    InferResult {
+      inferred_type: region_pointer_type(tag_type, argument_parsed.inferred_type),
+      errors: diagnostics_append(object_parsed.errors, argument_parsed.errors)
+    }
+  end
+end
