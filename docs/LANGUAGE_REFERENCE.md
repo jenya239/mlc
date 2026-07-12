@@ -359,12 +359,69 @@ codegen notes:
 
 ## Arrays, maps, strings
 
-Status: pending — filled in STEP=7.
+`[T]` is an array (COW `mlc::Array`). `Map<K, V>` is a hash map (COW
+`mlc::HashMap`). `string` is the language string type. Mutating methods
+(`.push` / `.set`) need a `let mut` binding.
 
-Planned topics:
+### Array type and length
 
-- `Array` / `Map` / `string`
-- Higher-order methods (`map` / `filter` / `fold`)
+Source: [`compiler/tests/e2e/empty_array.mlc`](../compiler/tests/e2e/empty_array.mlc)
+
+```mlc
+fn count(items: [i32]) -> i32 = items.length()
+
+fn main() -> i32 = do
+  println(count([]).to_string())
+  0
+end
+```
+
+### Array HOF (`map` / `filter` / `fold`)
+
+Source: [`misc/examples/array_hof_demo.mlc`](../misc/examples/array_hof_demo.mlc)
+
+```mlc
+  let numbers = [1, 2, 3, 4, 5]
+  let doubled = numbers.map(x => x * 2)
+  let more = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  let evens = more.filter(x => x % 2 == 0)
+  let sum = numbers.fold(0, (acc, x) => acc + x)
+  let composed = more
+    .filter(x => x % 2 == 0)
+    .map(y => y * y)
+    .fold(0, (acc, z) => acc + z)
+```
+
+(Excerpts from `main` in that file.)
+
+### Map
+
+Source: [`misc/examples/vm_map.mlc`](../misc/examples/vm_map.mlc)
+
+```mlc
+fn main() -> i32 = do
+  let mut table: Map<string, i32> = Map.new()
+  table.set("k", 3)
+  table.set("m", 4)
+  table.get("k") + table.get("m")
+end
+```
+
+### String
+
+Source: [`misc/examples/string_operations_demo.mlc`](../misc/examples/string_operations_demo.mlc)
+
+```mlc
+  let greeting = "Hello" + ", " + "World" + "!"
+  let text = "MiXeD CaSe TeXt"
+  println("Upper: \"" + text.upper() + "\"")
+  println("Lower: \"" + text.lower() + "\"")
+  let padded = "   spaces around   "
+  let trimmed = padded.trim()
+```
+
+(Excerpts from `main`; the file also covers `contains` / `starts_with` /
+`ends_with` / `is_empty`.)
 
 ## Concurrency
 

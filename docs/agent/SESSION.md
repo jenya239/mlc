@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Closures); SESSION archived |
+| test_gate | docs-only (LANGUAGE_REFERENCE Arrays) |
+
+### Turn 2026-07-12 11:56 (Driver TRACK_LANG_DOCS STEP=7 — Arrays/maps/strings + HOFs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:51 |
+| elapsed | ~5 min |
+| done    | Arrays (`empty_array` + `array_hof_demo`); Map (`vm_map`); string (`string_operations_demo`). |
+| verify  | Cited paths exist; TRACK Next=STEP=8. |
+| result  | STEP=7 done. Plain: collections/strings documented from fixtures. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=8 TRACK_LANG_DOCS — Concurrency condensed + accept-loop demo |
 
 ### Turn 2026-07-12 11:55 (Driver TRACK_LANG_DOCS STEP=6 — Closures + escape)
 
