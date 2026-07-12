@@ -605,9 +605,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       `75263977`…`21b33afb`; vs_shim+field re-OK; REG 20/0; p1≡p2;
       → [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md))**
 
-  → **PACKAGE_MANAGER (**active** 2026-07-13: STEP=1 design deps model next;
+  → **PACKAGE_MANAGER (**active** 2026-07-13: STEP=1 done — `mlc.json`+git+SHA;
+      STEP=2 import-path design next;
       → [agent/TRACK_PACKAGE_MANAGER.md](agent/TRACK_PACKAGE_MANAGER.md)):**
-    Steps 1–4 design (`mlc.json`+git+rev, `.mlc_packages/`) then 5–10 impl
+    Steps 1–4 design then 5–10 impl
   → DEBUG_SOURCE_MAP (гейт снят — внешний `.mlc`-код вне компилятора уже
     есть; Steps 1-5, `#line` directives)
   → GUI_CANVAS_GRAPH (крупнейший резервуар, 100+ шагов) — Phase A: STEP=1
