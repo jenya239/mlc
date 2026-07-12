@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** — STEP=1–6 **done**; STEP=7 next
+## Status: **active** — STEP=1–7 **done**; STEP=8 next
 
 ## Next step
 
-**STEP=7** — `scripts/regression_gate.sh` green.
+**STEP=8** — Docs: `FFI_LAYER.md` one paragraph on dedup rule; then close → Critic.
 
 ## Problem
 
@@ -42,8 +42,8 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 | 3 | Implement chosen dedup/diagnostic in checker and/or codegen | **done** (`ffi_extern_reuses_imported_binding` skip emit in `decl_cpp.mlc`) |
 | 4 | Negative case: same key, different signatures → mlcc error with both sites | **done** (E090; later site + earlier label in message) |
 | 5 | Re-check examples sweep / button demos still OK | **done** (ok=106 fail=0 skip=1; gui_button_demo OK) |
-| 6 | Self-host verify (mlcc → mlcc2 diff identical) | **pending** |
-| 7 | `scripts/regression_gate.sh` green | pending |
+| 6 | Self-host verify (mlcc → mlcc2 diff identical) | **done** (DIFF_LINES=0; p1~5s, build_bin~7m, p2~5s) |
+| 7 | `scripts/regression_gate.sh` green | **pending** |
 | 8 | Docs: `FFI_LAYER.md` one paragraph on dedup rule | pending |
 
 ### STEP=3 delivery
@@ -63,12 +63,18 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 - `TMPDIR=$PWD/tmp scripts/run_examples_compile_sweep.sh` → **ok=106 fail=0 skip=1** (dynrecord allowlisted).
 - `gui_button_demo.mlc` / `gui_button_interactive_demo.mlc` OK.
 
-### STEP=6 sub-steps (Driver)
+### STEP=6 delivery
 
-1. `compiler/out/mlcc -o tmp/mlc_p1 compiler/main.mlc`
-2. `MLC_CXX=g++ compiler/build_bin.sh tmp/mlc_p1 tmp/mlcc2`
-3. `tmp/mlcc2 -o tmp/mlc_p2 compiler/main.mlc` then `diff -r tmp/mlc_p1 tmp/mlc_p2 --exclude=obj`
-4. `next` = STEP=7 on identical.
+- `compiler/out/mlcc -o tmp/mlc_p1 compiler/main.mlc`
+- `MLC_CXX=g++ compiler/build_bin.sh tmp/mlc_p1 tmp/mlcc2`
+- `tmp/mlcc2 -o tmp/mlc_p2 compiler/main.mlc`
+- `diff -r tmp/mlc_p1 tmp/mlc_p2 --exclude=obj` → **empty** (`DIFF_LINES=0`)
+
+### STEP=7 sub-steps (Driver)
+
+1. `scripts/regression_gate.sh` (includes examples sweep).
+2. Exit 0 required; log PASS counts in SESSION.
+3. `next` = STEP=8.
 
 ## Out of scope
 

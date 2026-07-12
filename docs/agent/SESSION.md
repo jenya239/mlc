@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | self-host DIFF_LINES=0 |
+| test_gate | REG 20/0; sweep 106/0/1 |
+
+### Turn 2026-07-12 05:45 (Driver TRACK_FFI_EXTERN_DEDUP STEP=7 — regression_gate)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 05:36 |
+| elapsed | ~10 min |
+| done    | `scripts/regression_gate.sh` EXIT=0. |
+| verify  | `regression_gate: 20 passed, 0 failed`; sweep ok=106 fail=0 skip=1. |
+| result  | STEP=7 done. Plain: gate green after FFI dedup. |
+| issues  | Foreign `compiler/out/*` left; log fully buffered until end. |
+| next    | ROLE=Driver STEP=8 TRACK_FFI_EXTERN_DEDUP — FFI_LAYER.md paragraph; close → Critic |
 
 ### Turn 2026-07-12 05:35 (Driver TRACK_FFI_EXTERN_DEDUP STEP=6 — self-host diff)
 

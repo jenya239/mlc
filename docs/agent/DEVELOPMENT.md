@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_FFI_EXTERN_DEDUP` active** — STEP=6 done; STEP=7 (`regression_gate.sh`) next.
+**`TRACK_FFI_EXTERN_DEDUP` active** — STEP=7 done; STEP=8 (FFI_LAYER.md + close → Critic) next.
 See [TRACK_FFI_EXTERN_DEDUP.md](TRACK_FFI_EXTERN_DEDUP.md). Queue: FFI_EXTERN_DEDUP → GUI_INPUT → …
 
 
