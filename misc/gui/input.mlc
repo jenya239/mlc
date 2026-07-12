@@ -1,4 +1,5 @@
 // GLFW-polled GuiInput + hover/click edge (TRACK_GUI_FRAMEWORK STEP=4).
+// Keyboard text: TRACK_GUI_INPUT_ROBUSTNESS STEP=3.
 
 import { Point, Rect, point_new, point_in_rect } from './layout'
 import {
@@ -6,6 +7,11 @@ import {
   glfw_gl_mouse_y,
   glfw_gl_mouse_left_down,
   glfw_gl_key_escape_down,
+  glfw_gl_key_backspace_down,
+  glfw_gl_key_enter_down,
+  glfw_gl_take_text,
+  glfw_gl_text_test_push,
+  glfw_gl_keys_test_set,
   glfw_gl_input_test_set,
   glfw_gl_input_test_clear
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
@@ -14,7 +20,10 @@ export type GuiInput = {
   mouse_x: i32,
   mouse_y: i32,
   mouse_down: i32,
-  escape: i32
+  escape: i32,
+  text_buffer: string,
+  backspace: i32,
+  enter: i32
 }
 
 export fn gui_input_new(
@@ -24,7 +33,10 @@ export fn gui_input_new(
     mouse_x: mouse_x,
     mouse_y: mouse_y,
     mouse_down: mouse_down,
-    escape: escape
+    escape: escape,
+    text_buffer: "",
+    backspace: 0,
+    enter: 0
   }
 
 export fn gui_input_poll() -> GuiInput =
@@ -32,7 +44,10 @@ export fn gui_input_poll() -> GuiInput =
     mouse_x: glfw_gl_mouse_x(),
     mouse_y: glfw_gl_mouse_y(),
     mouse_down: glfw_gl_mouse_left_down(),
-    escape: glfw_gl_key_escape_down()
+    escape: glfw_gl_key_escape_down(),
+    text_buffer: glfw_gl_take_text(),
+    backspace: glfw_gl_key_backspace_down(),
+    enter: glfw_gl_key_enter_down()
   }
 
 export fn gui_input_test_set(
@@ -42,6 +57,12 @@ export fn gui_input_test_set(
 
 export fn gui_input_test_clear() -> unit =
   glfw_gl_input_test_clear()
+
+export fn gui_input_text_test_push(text: string) -> unit =
+  glfw_gl_text_test_push(text)
+
+export fn gui_input_keys_test_set(backspace: i32, enter: i32) -> unit =
+  glfw_gl_keys_test_set(backspace, enter)
 
 export fn gui_is_hovered(input: GuiInput, rect: Rect) -> i32 =
   point_in_rect(point_new(input.mouse_x, input.mouse_y), rect)

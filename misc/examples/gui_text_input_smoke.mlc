@@ -1,0 +1,52 @@
+// TRACK_GUI_INPUT_ROBUSTNESS STEP=3 — keyboard text_buffer + backspace/enter inject.
+import {
+  gui_input_poll,
+  gui_input_test_clear,
+  gui_input_text_test_push,
+  gui_input_keys_test_set
+} from '../gui/input'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  gui_input_text_test_push("ab")
+  glfw_gl_context_swap_poll()
+  const first = gui_input_poll()
+  if first.text_buffer != "ab" then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -1
+  end
+  if first.backspace != 0 || first.enter != 0 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -2
+  end
+
+  const second = gui_input_poll()
+  if second.text_buffer != "" then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -3
+  end
+
+  gui_input_keys_test_set(1, 1)
+  const keys = gui_input_poll()
+  if keys.backspace != 1 || keys.enter != 1 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return -4
+  end
+
+  gui_input_test_clear()
+  glfw_gl_context_end()
+  0
+end

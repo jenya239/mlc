@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 3 |
 | active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | `run_gui_click_edge_repro.sh` ok |
+| test_gate | `run_gui_text_input_smoke.sh` ok |
+
+### Turn 2026-07-12 06:25 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=3 — keyboard text)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 06:19 |
+| elapsed | ~8 min |
+| done    | `glfwSetCharCallback` + `take_text`/`text_test_push`/`keys_test_set`; `GuiInput.text_buffer`/`backspace`/`enter`; `gui_text_input_smoke` + script. |
+| verify  | `run_gui_text_input_smoke.sh` ok; `run_gui_input_smoke.sh` ok; `run_gui_click_edge_repro.sh` ok. |
+| result  | STEP=3 done. Plain: keyboard buffer wired; next text-field demo. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_INPUT_ROBUSTNESS — single-line text field smoke (box + live text) |
 
 ### Turn 2026-07-12 06:12 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=1 — click-edge repro)
 

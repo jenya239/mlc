@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 namespace mlc {
 namespace gl {
@@ -40,15 +41,41 @@ bool env_flag_enabled(const char* name) {
 
 struct InputTestOverride {
   bool active = false;
+  bool keys_active = false;
   int32_t mouse_x = 0;
   int32_t mouse_y = 0;
   int32_t mouse_left_down = 0;
   int32_t escape_down = 0;
+  int32_t backspace_down = 0;
+  int32_t enter_down = 0;
 };
 
 InputTestOverride& input_test_override() {
   static InputTestOverride override_state;
   return override_state;
+}
+
+std::string& pending_text() {
+  static std::string buffer;
+  return buffer;
+}
+
+void append_utf8(std::string& out, unsigned int codepoint) {
+  // ASCII / BMP Latin text only (TRACK_GUI_INPUT_ROBUSTNESS out-of-scope: IME/CJK).
+  if (codepoint <= 0x7Fu) {
+    out.push_back(static_cast<char>(codepoint));
+  } else if (codepoint <= 0x7FFu) {
+    out.push_back(static_cast<char>(0xC0u | (codepoint >> 6)));
+    out.push_back(static_cast<char>(0x80u | (codepoint & 0x3Fu)));
+  } else if (codepoint <= 0xFFFFu) {
+    out.push_back(static_cast<char>(0xE0u | (codepoint >> 12)));
+    out.push_back(static_cast<char>(0x80u | ((codepoint >> 6) & 0x3Fu)));
+    out.push_back(static_cast<char>(0x80u | (codepoint & 0x3Fu)));
+  }
+}
+
+void on_char(GLFWwindow* /*window*/, unsigned int codepoint) {
+  append_utf8(pending_text(), codepoint);
 }
 
 } // namespace
@@ -81,6 +108,8 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     glfwTerminate();
     return -3;
   }
+  pending_text().clear();
+  glfwSetCharCallback(window, on_char);
   context_window() = window;
   return 0;
 }
@@ -111,6 +140,7 @@ void glfw_gl_context_end() {
     return;
   }
   glfw_gl_input_test_clear();
+  pending_text().clear();
   glfwDestroyWindow(window);
   context_window() = nullptr;
   glfwTerminate();
@@ -176,6 +206,48 @@ int32_t glfw_gl_key_escape_down() {
   return glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS ? 1 : 0;
 }
 
+int32_t glfw_gl_key_backspace_down() {
+  const InputTestOverride& override_state = input_test_override();
+  if (override_state.keys_active) {
+    return override_state.backspace_down;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  return glfwGetKey(window, GLFW_KEY_BACKSPACE) == GLFW_PRESS ? 1 : 0;
+}
+
+int32_t glfw_gl_key_enter_down() {
+  const InputTestOverride& override_state = input_test_override();
+  if (override_state.keys_active) {
+    return override_state.enter_down;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  return glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ? 1 : 0;
+}
+
+String glfw_gl_take_text() {
+  std::string& buffer = pending_text();
+  String taken(buffer);
+  buffer.clear();
+  return taken;
+}
+
+void glfw_gl_text_test_push(String text) {
+  pending_text().append(text.raw_data(), text.size());
+}
+
+void glfw_gl_keys_test_set(int32_t backspace_down, int32_t enter_down) {
+  InputTestOverride& override_state = input_test_override();
+  override_state.keys_active = true;
+  override_state.backspace_down = backspace_down;
+  override_state.enter_down = enter_down;
+}
+
 void glfw_gl_input_test_set(
   int32_t mouse_x,
   int32_t mouse_y,
@@ -192,6 +264,7 @@ void glfw_gl_input_test_set(
 
 void glfw_gl_input_test_clear() {
   input_test_override() = InputTestOverride{};
+  pending_text().clear();
 }
 
 #else
@@ -206,6 +279,11 @@ int32_t glfw_gl_mouse_x() { return 0; }
 int32_t glfw_gl_mouse_y() { return 0; }
 int32_t glfw_gl_mouse_left_down() { return 0; }
 int32_t glfw_gl_key_escape_down() { return 0; }
+int32_t glfw_gl_key_backspace_down() { return 0; }
+int32_t glfw_gl_key_enter_down() { return 0; }
+String glfw_gl_take_text() { return String(); }
+void glfw_gl_text_test_push(String) {}
+void glfw_gl_keys_test_set(int32_t, int32_t) {}
 void glfw_gl_input_test_set(int32_t, int32_t, int32_t, int32_t) {}
 void glfw_gl_input_test_clear() {}
 

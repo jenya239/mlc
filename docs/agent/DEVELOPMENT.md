@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=3 (keyboard text input) next; STEP=1 not reproducible / STEP=2 N/A.
+**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=4 (single-line text field demo) next; STEP=3 keyboard plumbing done.
 See [TRACK_GUI_INPUT_ROBUSTNESS.md](TRACK_GUI_INPUT_ROBUSTNESS.md). Queue: GUI_INPUT → HTTP_HARDENING → …
 
 

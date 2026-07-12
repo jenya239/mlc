@@ -20,6 +20,16 @@ export extern fn glfw_gl_mouse_left_down() -> i32
   = "mlc::gl::glfw_gl_mouse_left_down" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_key_escape_down() -> i32
   = "mlc::gl::glfw_gl_key_escape_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_key_backspace_down() -> i32
+  = "mlc::gl::glfw_gl_key_backspace_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_key_enter_down() -> i32
+  = "mlc::gl::glfw_gl_key_enter_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_take_text() -> string
+  = "mlc::gl::glfw_gl_take_text" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_text_test_push(text: string) -> unit
+  = "mlc::gl::glfw_gl_text_test_push" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_keys_test_set(backspace_down: i32, enter_down: i32) -> unit
+  = "mlc::gl::glfw_gl_keys_test_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_input_test_set(
   mouse_x: i32, mouse_y: i32, mouse_left_down: i32, escape_down: i32
 ) -> unit

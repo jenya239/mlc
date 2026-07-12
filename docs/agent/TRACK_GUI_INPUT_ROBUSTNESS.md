@@ -14,7 +14,7 @@ source before fixing anything.
 
 ## Next step
 
-**STEP=3** — keyboard text input (`glfwSetCharCallback` + `GuiInput.text_buffer`).
+**STEP=4** — single-line text field smoke demo (box + live typed text).
 
 ## Goal
 

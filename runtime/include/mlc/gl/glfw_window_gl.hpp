@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mlc/core/string.hpp"
+
 #include <cstdint>
 
 namespace mlc {
@@ -19,6 +21,11 @@ int32_t glfw_gl_mouse_x();
 int32_t glfw_gl_mouse_y();
 int32_t glfw_gl_mouse_left_down();
 int32_t glfw_gl_key_escape_down();
+int32_t glfw_gl_key_backspace_down();
+int32_t glfw_gl_key_enter_down();
+String glfw_gl_take_text();
+void glfw_gl_text_test_push(String text);
+void glfw_gl_keys_test_set(int32_t backspace_down, int32_t enter_down);
 void glfw_gl_input_test_set(
   int32_t mouse_x,
   int32_t mouse_y,
