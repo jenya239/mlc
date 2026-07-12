@@ -2,7 +2,7 @@
 
 Parent: [../PLAN.md](../../PLAN.md), [../GUI.md](../../GUI.md).
 Trigger: 2026-07-11 — `gui_button_demo.mlc` not in regression_gate.
-See [TRACK_FFI_EXTERN_DEDUP](../../agent/TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
+See [TRACK_FFI_EXTERN_DEDUP](TRACK_FFI_EXTERN_DEDUP.md). This track = coverage.
 
 ## Status: **closed** (2026-07-12) — Critic OK
 
