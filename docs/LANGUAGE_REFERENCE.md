@@ -503,10 +503,58 @@ Channels, TaskScope cancellation, Isolate, and Supervisor: see
 
 ## FFI
 
-Status: pending — filled in STEP=9.
+Import C/C++ symbols with `extern fn` / `extern type` / `extern lib`. Full-form
+bindings name the C symbol and header; optional concurrency attributes
+(`blocking` / `thread_safe` / `thread_affine`) apply when `from "<header>"` is
+present. There is **no** `unsafe` keyword (Decision B). Spec:
+[FFI_LAYER.md](FFI_LAYER.md); safety contract track:
+[archive/tracks/TRACK_FFI_SAFETY.md](archive/tracks/TRACK_FFI_SAFETY.md).
 
-Planned topics:
+### `extern fn` (full form)
 
-- `extern fn` / `extern type` / `extern lib`
-- Safety contract (`unsafe` framing) — see [FFI_LAYER.md](FFI_LAYER.md)
-  and related FFI tracks
+Source: [`compiler/tests/e2e/scope_parallel_sleep.mlc`](../compiler/tests/e2e/scope_parallel_sleep.mlc)
+
+```mlc
+extern fn sleep_ms_probe(milliseconds: i32) -> i32
+  = "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp"
+```
+
+### `export extern fn` + `blocking`
+
+Source: [`lib/mlc/common/stdlib/env/env.mlc`](../lib/mlc/common/stdlib/env/env.mlc)
+
+```mlc
+export extern fn get(key: string) -> Option<string>
+  = "mlc::env::get" from "mlc/env/env_abi.hpp" blocking
+```
+
+(Tcp uses the same pattern — see `lib/mlc/common/stdlib/net/tcp.mlc`.)
+
+### `extern type`
+
+Source: [`compiler/tests/fixtures/extern_concurrency_attr/missing_type.mlc`](../compiler/tests/fixtures/extern_concurrency_attr/missing_type.mlc)
+
+```mlc
+extern type Handle = "Handle" from "<stdio.h>"
+```
+
+### `extern lib`
+
+Declares a link library (`-lname` via `build_bin.sh`). Documented in
+[FFI_LAYER.md](FFI_LAYER.md) §2.3; example form:
+
+```mlc
+extern lib "pq"
+```
+
+### Safety contract (no `unsafe` syntax)
+
+| Concern | Who | Notes |
+|---------|-----|-------|
+| Concurrency attrs on full-form `extern` | Checker | `W-EXTERN-ATTR` if `from` present without `blocking`/`thread_safe`/`thread_affine` |
+| Arity vs imported header stub | Checker | `W-EXTERN-ARITY` when header import is available |
+| `RawPointer[T]` lifetime / null | Author | No borrow checker; pointer valid while C object lives |
+| Shorthand `extern fn` (no `from`) | — | Marker only; cannot carry concurrency attrs |
+
+Details: [FFI_LAYER.md](FFI_LAYER.md) §9; track
+[archive/tracks/TRACK_FFI_SAFETY.md](archive/tracks/TRACK_FFI_SAFETY.md).

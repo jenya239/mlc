@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=9** — FFI condensed section; link `FFI_LAYER.md` + safety/`unsafe` framing.
+**STEP=10** — Cross-link from `README.md` + `AGENTS.md` / `docs/specs/index.md`.
 
 ## Goal
 

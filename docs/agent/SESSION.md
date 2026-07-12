@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
+| driver_turns_since_plan | 9 |
+| step_last | 9 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Concurrency) |
+| test_gate | docs-only (LANGUAGE_REFERENCE FFI) |
+
+### Turn 2026-07-12 12:00 (Driver TRACK_LANG_DOCS STEP=9 — FFI)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:56 |
+| elapsed | ~5 min |
+| done    | FFI: full-form extern e2e; `blocking` env.mlc; extern type fixture; safety table (no `unsafe`); FFI_LAYER/SAFETY links. |
+| verify  | Cited paths exist; TRACK Next=STEP=10. |
+| result  | STEP=9 done. Plain: FFI condensed with Decision B safety contract. |
+| issues  | Foreign `compiler/out/*` left; `extern lib` shown as form from FFI_LAYER (no live .mlc hit). |
+| next    | ROLE=Driver STEP=10 TRACK_LANG_DOCS — cross-link README/AGENTS/specs index |
 
 ### Turn 2026-07-12 11:58 (Driver TRACK_LANG_DOCS STEP=8 — Concurrency)
 
