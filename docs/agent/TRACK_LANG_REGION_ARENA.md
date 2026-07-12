@@ -10,11 +10,16 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=7 done 2026-07-12) — STEP=8 regression_gate next
+## Status: **active** (STEP=8 done 2026-07-12) — STEP=9 docs next
 
 ## Next step
 
-**STEP=8** — `scripts/regression_gate.sh` green.
+**STEP=9** — Docs: `MLC.md` §C1 area — `region`/`RegionHandle`/`Region<Tag,T>`; three escape vectors.
+
+### STEP=8 done (2026-07-12)
+
+- `scripts/regression_gate.sh` exit 0: **20 passed, 0 failed**.
+- Examples sweep: **ok=113 fail=0 skip=1** (`dynrecord_demo.mlc`).
 
 ### STEP=7 done (2026-07-12)
 
@@ -140,7 +145,7 @@ end   // весь буфер r освобождается разом
 | 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | **done** (2026-07-12) `run_region_escape_smoke.sh` |
 | 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | **done** (2026-07-12) `run_region_cycle_smoke.sh` |
 | 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | **done** (2026-07-12) |
-| 8 | `scripts/regression_gate.sh` green | pending |
+| 8 | `scripts/regression_gate.sh` green | **done** (2026-07-12) 20/0; sweep ok=113 fail=0 skip=1 |
 | 9 | Docs: `MLC.md` §C1 area — document `region`/`RegionHandle`/`Region<Tag,T>`; note the three escape-prohibition vectors explicitly | pending |
 | 10 | Optional/stretch: apply `region` to a real internal hot path with a mutable cyclic graph (`compiler/frontend/ast.mlc` node construction during one parse pass, as named in "Зачем" above) as a proof-of-value, **only if** Steps 1-9 are stable and this doesn't risk destabilizing the self-hosted parser — separate sub-step, easy to defer/skip if risky | pending |
 

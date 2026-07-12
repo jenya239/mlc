@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 7 |
+| driver_turns_since_plan | 7 |
+| step_last | 8 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | mlcc→mlcc2 diff identical |
+| test_gate | regression_gate 20/0; sweep ok=113 fail=0 skip=1 |
+
+### Turn 2026-07-12 21:45 (Driver TRACK_LANG_REGION_ARENA STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 21:39 |
+| elapsed | ~34 min |
+| done    | `scripts/regression_gate.sh` (specs + examples sweep). |
+| verify  | 20 passed, 0 failed; examples ok=113 fail=0 skip=1. |
+| result  | STEP=8 done. Plain: region changes do not break frozen stdout gate. |
+| issues  | none |
+| next    | ROLE=Driver STEP=9 TRACK_LANG_REGION_ARENA — docs MLC.md region/E091 |
 
 ### Turn 2026-07-12 21:25 (Driver TRACK_LANG_REGION_ARENA STEP=7)
 
