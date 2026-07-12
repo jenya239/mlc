@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 11 |
+| driver_turns_since_plan | 12 |
+| step_last | 12 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 14:53 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=12 — docs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 12 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 14:49 |
+| elapsed | ~4 min |
+| done    | `TEXT_RENDERING.md` §9 (face cache + bearing formula + file table); `GUI.md` text-field bearing note. |
+| verify  | Docs cite `glyph_bearing_*`, `dest_y = pen_y - bearing_y`, affected demos/shims; links to TRACK + fixtures. |
+| result  | STEP=12 done. Plain: positioning contract documented for GL live path. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=13 TRACK_TEXT_GL_PERF_BASELINE — confirm no stdlib/compiler signature change (self-host N/A) |
 
 ### Turn 2026-07-12 14:47 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=11 — visual)
 

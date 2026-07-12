@@ -210,3 +210,45 @@ GLFW window/input (glfw_window_gl) + GLAD2 (gladLoadGL)
 
 **Не в этом треке (закрыто отдельно):** layout/widgets/easing v0 —
 [GUI.md](GUI.md), [archive/tracks/TRACK_GUI_FRAMEWORK.md](archive/tracks/TRACK_GUI_FRAMEWORK.md) **closed** 2026-07-11.
+
+## 9. GL live path: face cache + baseline bearing (2026-07-12)
+
+Track: [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md)
+(Part A perf + Part B bearing; STEPs 1–11 done).
+
+### 9.1 Per-call FreeType/HarfBuzz re-init (fixed)
+
+`freetype_shim` / `harfbuzz_shim` used to `FT_Init_FreeType` + `FT_New_Face`
+(and HB font create) on **every** glyph/shape call. Process-local caches keyed
+by `(font_path, pixel_size)` now reuse `FT_Face` / `hb_font_t` until process
+exit. **Single-threaded main/GL only** — no mutex; document constraint before
+off-thread use.
+
+### 9.2 Baseline bearing (fixed)
+
+`glyph_bearing_x` / `glyph_bearing_y` expose FreeType `bitmap_left` /
+`bitmap_top` from the last `glyph_bitmap_*` (same slot as `glyph_width` /
+`glyph_rows`).
+
+GL demos treat `pen_y` as the **baseline**, not the bitmap top:
+
+```
+dest_x = cursor_x + glyph_bearing_x()
+dest_y = pen_y - glyph_bearing_y()
+```
+
+Same formula as CPU reference in `text_renderer_shim.cpp`
+(`destination_y = baseline_y - glyph.pen_y - glyph.top`).
+
+| File | Change |
+|------|--------|
+| `runtime/include/mlc/text/freetype_shim.hpp` + `.cpp` | bearing ABI + face cache |
+| `runtime/src/text/harfbuzz_shim.cpp` | shaping font cache |
+| `misc/gui/text_renderer.mlc` | `GlyphCache` stores `bearing_x`/`bearing_y` |
+| `misc/examples/text_dashboard_demo.mlc` | `append_line` + persistent cache/atlas |
+| `misc/examples/text_window_demo.mlc` | `append_shaped_a8` |
+| `misc/examples/gui_text_field_demo.mlc` | `append_line` |
+
+Regression: `"Hxpjy Agq"` via `text_renderer_a8_string_smoke` + golden
+`misc/examples/fixtures/text_a8_hxpjy_24.rgba` (MAE ≤ 8/255 vs CPU).
+Screenshots: `docs/agent/fixtures/text_*_baseline_step11.png`.

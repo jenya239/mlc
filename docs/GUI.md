@@ -46,6 +46,8 @@ extra debounce latch was added.
 - Inject: `glfw_gl_text_test_push`, `glfw_gl_keys_test_set`.
 - `GuiInput`: `text_buffer`, `backspace`, `enter` filled by `gui_input_poll`.
 - Demo: `scripts/run_gui_text_field_demo.sh` (box + TextRenderer glyphs).
+  Glyph quads use FreeType bearing: `pen_y` is baseline
+  (`dest_y = pen_y - glyph_bearing_y()`); see [TEXT_RENDERING.md](TEXT_RENDERING.md) §9.
 
 ### Window size
 
