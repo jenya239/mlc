@@ -1,0 +1,5 @@
+// TRACK_LANG_REGION_ARENA STEP=5 — escape via return must be a compile error (E091).
+fn main() -> i32 = region r do
+  let value = r.alloc(0)
+  return value
+end

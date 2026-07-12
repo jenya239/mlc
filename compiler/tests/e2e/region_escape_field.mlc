@@ -1,0 +1,4 @@
+// TRACK_LANG_REGION_ARENA STEP=5 — Region as record field must be a compile error (E091).
+type BadNode = { child: Region<i32, i32> }
+
+fn main() -> i32 = 0

@@ -10,11 +10,16 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=4 done 2026-07-12) — STEP=5 escape e2e next
+## Status: **active** (STEP=5 done 2026-07-12) — STEP=6 cyclic positive next
 
 ## Next step
 
-**STEP=5** — UB-repro negative e2e fixtures (return/closure/field → compile error).
+**STEP=6** — Positive cyclic graph inside `region`; grep generated C++ for no Shared atomic.
+
+### STEP=5 done (2026-07-12)
+
+- Fixtures: `e2e/region_escape_{return,closure,field}.mlc` — each must fail check with E091.
+- Smoke: `compiler/tests/run_region_escape_smoke.sh` (3/3 ok).
 
 ### STEP=4 done (2026-07-12)
 
@@ -120,7 +125,7 @@ end   // весь буфер r освобождается разом
 | 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | **done** (2026-07-12) |
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | **done** (2026-07-12) E091 |
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | **done** (2026-07-12) |
-| 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | pending |
+| 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | **done** (2026-07-12) `run_region_escape_smoke.sh` |
 | 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | pending |
 | 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | pending |
 | 8 | `scripts/regression_gate.sh` green | pending |

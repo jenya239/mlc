@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 4 |
+| driver_turns_since_plan | 4 |
+| step_last | 5 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | region_alloc link+run; self-host DIFF=0 |
+| test_gate | run_region_escape_smoke 3/3 E091 |
+
+### Turn 2026-07-12 20:40 (Driver TRACK_LANG_REGION_ARENA STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 20:32 |
+| elapsed | ~8 min |
+| done    | `e2e/region_escape_{return,closure,field}.mlc` + `run_region_escape_smoke.sh`. |
+| verify  | smoke 3/3: each `--check-only` non-zero + `error[E091]` + vector message. |
+| result  | STEP=5 done. Plain: three escape vectors are compile errors. |
+| issues  | Foreign FFI_LAYER / TEXT_SHIM / extern_concurrency_lint left. |
+| next    | ROLE=Driver STEP=6 TRACK_LANG_REGION_ARENA — cyclic graph positive; no Shared atomic in gen |
 
 ### Turn 2026-07-12 20:28 (Driver TRACK_LANG_REGION_ARENA STEP=4)
 

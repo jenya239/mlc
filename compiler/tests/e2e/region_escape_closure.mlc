@@ -1,0 +1,6 @@
+// TRACK_LANG_REGION_ARENA STEP=5 — escape via closure capture must be a compile error (E091).
+fn main() -> () = region r do
+  let value = r.alloc(0)
+  let capture = () => value
+  0
+end
