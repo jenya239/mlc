@@ -11,6 +11,7 @@
 #include <cstring>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 namespace mlc {
@@ -60,6 +61,17 @@ inline std::int32_t tcp_set_reuseaddr(std::int32_t file_descriptor) {
   }
   const int reuse = 1;
   return ::setsockopt(file_descriptor, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+}
+
+// 0 ok; -1 error. timeout_seconds=0 clears the receive deadline.
+inline std::int32_t tcp_set_recv_timeout(std::int32_t file_descriptor, std::int32_t timeout_seconds) {
+  if (file_descriptor < 0 || timeout_seconds < 0) {
+    return -1;
+  }
+  timeval timeout{};
+  timeout.tv_sec = static_cast<time_t>(timeout_seconds);
+  timeout.tv_usec = 0;
+  return ::setsockopt(file_descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 }
 
 // 0 ok; -1 invalid host (sets last_error); -2 bind errno (sets last_error).

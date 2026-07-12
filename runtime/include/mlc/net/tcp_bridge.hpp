@@ -212,6 +212,14 @@ inline std::optional<String> read(std::int32_t stream_fd, std::int32_t max_bytes
   return data;
 }
 
+inline bool set_recv_timeout(std::int32_t stream_fd, std::int32_t timeout_seconds) {
+  if (tcp_set_recv_timeout(stream_fd, timeout_seconds) < 0) {
+    table_set_error(tcp_errno_message(String("Tcp.set_recv_timeout")));
+    return false;
+  }
+  return true;
+}
+
 inline bool write_all(std::int32_t stream_fd, const String& data) {
   return tcp_send_all(stream_fd, data) != 0;
 }
@@ -237,6 +245,9 @@ inline std::optional<std::int32_t> accept_mlc(std::int32_t listener_fd) {
 }
 inline std::optional<String> read_mlc(std::int32_t stream_fd, std::int32_t max_bytes) {
   return read(stream_fd, max_bytes);
+}
+inline bool set_recv_timeout_mlc(std::int32_t stream_fd, std::int32_t timeout_seconds) {
+  return set_recv_timeout(stream_fd, timeout_seconds);
 }
 inline bool write_all_mlc(std::int32_t stream_fd, String data) {
   return write_all(stream_fd, data);

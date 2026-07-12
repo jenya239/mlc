@@ -1,0 +1,93 @@
+// TRACK_STDLIB_HTTP_HARDENING STEP=3 — keep-alive idle closes via SO_RCVTIMEO.
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error, set_recv_timeout } from 'Tcp'
+import {
+  parse_http_request,
+  format_http_response,
+  http_request_wants_keep_alive,
+  http_response_with_connection,
+  http_bad_request,
+  http_payload_too_large,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader,
+  HttpParseOk,
+  HttpParseErr,
+  HttpParseTooLarge
+} from 'HttpServer'
+
+fn route_http(request: HttpRequest) -> HttpResponse =
+  HttpResponse {
+    status: 200,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: request.path
+  }
+
+fn serve_first(stream: i32) -> i32 = do
+  const raw_option = read(stream, 65536)
+  if !raw_option.is_some() then
+    return 4
+  end
+  const raw = raw_option.unwrap()
+  let mut code = 0
+  match parse_http_request(raw) {
+    HttpParseErr => do
+      write_all(stream, format_http_response(http_response_with_connection(http_bad_request(), 0)))
+      code = 5
+    end,
+    HttpParseTooLarge => do
+      write_all(stream, format_http_response(http_response_with_connection(http_payload_too_large(), 0)))
+      code = 6
+    end,
+    HttpParseOk(request) => do
+      const keep_alive = http_request_wants_keep_alive(request)
+      if keep_alive == 0 then
+        code = 7
+      else
+        const response = http_response_with_connection(route_http(request), keep_alive)
+        if !write_all(stream, format_http_response(response)) then
+          code = 8
+        end
+      end
+    end
+  }
+  code
+end
+
+fn handle_connection(stream: i32) -> i32 = do
+  if !set_recv_timeout(stream, 1) then
+    close_stream(stream)
+    return 10
+  end
+  const first = serve_first(stream)
+  if first != 0 then
+    close_stream(stream)
+    return first
+  end
+  // Second read: idle timeout yields None.
+  const idle = read(stream, 65536)
+  close_stream(stream)
+  if idle.is_some() then
+    return 9
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  const listener = listener_option.unwrap()
+  File.write("http_idle_timeout_port.txt", `${port(listener)}`)
+
+  const stream_option = accept(listener)
+  if !stream_option.is_some() then
+    close_listener(listener)
+    println(last_error())
+    return 2
+  end
+  const code = handle_connection(stream_option.unwrap())
+  close_listener(listener)
+  code
+end

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | parse + keepalive + 413 + curl ok |
+| test_gate | idle timeout + keepalive ok |
+
+### Turn 2026-07-12 08:20 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=3 — idle timeout)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 08:09 |
+| elapsed | ~12 min |
+| done    | `tcp_set_recv_timeout` / `Tcp.set_recv_timeout` (`SO_RCVTIMEO`); `http_idle_timeout_smoke.mlc` + `run_http_idle_timeout_smoke.rb`. |
+| verify  | idle smoke ok (~1.09s); keepalive still ok. |
+| result  | STEP=3 done. Plain: idle keep-alive closes via recv timeout; next static files. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_HTTP_HARDENING — `serve_static` |
 
 ### Turn 2026-07-12 08:05 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=2 — 413 body limit)
 
