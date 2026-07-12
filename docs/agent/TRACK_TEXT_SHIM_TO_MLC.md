@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-13) — STEP=7 done; STEP=8 deprecate shim cache next
+## Status: **active** (2026-07-13) — STEP=8 done; STEP=9 self-host+docs next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,7 +20,14 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=8** — Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers.
+**STEP=9** — Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8.
+
+### STEP=8 done (2026-07-13)
+
+- `freetype_shim`/`harfbuzz_shim`: removed `CachedFontFace`/`CachedShapingFont`;
+  thin wrappers over `freetype_abi`/`harfbuzz_abi` (open/shape/close per call).
+- Headers marked DEPRECATED; keep API for smokes + `text_shaping_vs_shim_gate`.
+- Verify: `text_shaping_vs_shim_ok`; `freetype_glyph_smoke`/`harfbuzz_shape_smoke` exit 0.
 
 ### STEP=7 done (2026-07-13)
 
@@ -216,6 +223,6 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 | 5 | Golden-регрессия: new MLC path vs current `glyph_bitmap_*` / shape output | **done** (2026-07-12) `text_shaping_vs_shim_gate` byte-exact |
 | 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | **done** (2026-07-13) dashboard+field+window A8 |
 | 7 | Dirty-flag atlas: skip rebuild/upload when lines unchanged | **done** (2026-07-13) field+dashboard |
-| 8 | Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers | pending |
+| 8 | Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers | **done** (2026-07-13) thin wrappers over abi |
 | 9 | Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8 | pending |
 | 10 | CPU%/visual before/after; close track | pending |

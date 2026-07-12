@@ -6,7 +6,7 @@ namespace mlc {
 namespace gl {
 
 // Blit FreeType A8 cache into luminance scratch at atlas slot (STEP=6).
-// Requires prior glyph_bitmap_* call. Returns 0 on success.
+// Requires prior ft_face_render_glyph (or deprecated glyph_bitmap_*). Returns 0 on success.
 int32_t gl_scratch_u8_blit_glyph_a8(int32_t atlas_width, int32_t dest_x, int32_t dest_y);
 
 // RGB scratch for MSDF atlas pages.

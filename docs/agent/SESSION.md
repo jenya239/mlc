@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | gui_text_field_demo 0 (dirty asserts); dashboard check-only 0 |
+| test_gate | text_shaping_vs_shim_ok; ft/hb smoke 0 |
+
+### Turn 2026-07-13 00:47 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 00:40 |
+| elapsed | ~15 min |
+| done    | Shim cache removed; `freetype_shim`/`harfbuzz_shim` thin wrappers over abi. |
+| verify  | `text_shaping_vs_shim_ok`; freetype/harfbuzz smokes exit 0. |
+| result  | STEP=8 done. Plain: no C++ path/size face cache; MLC owns bookkeeping. |
+| issues  | — |
+| next    | ROLE=Driver STEP=9 TRACK_TEXT_SHIM_TO_MLC — self-host + REG + docs |
 
 ### Turn 2026-07-13 00:37 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=7)
 

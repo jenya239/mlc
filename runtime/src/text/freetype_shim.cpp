@@ -1,17 +1,19 @@
 #include "mlc/text/freetype_shim.hpp"
 
+#include "mlc/text/freetype_abi.hpp"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
 namespace mlc {
 namespace text {
 namespace {
 
-// Raster pixel buffer for the last successful glyph_bitmap_* call.
+// Flat A8 copy of last glyph_bitmap_* (legacy accessors). Deprecated path —
+// prefer freetype_abi + MLC text_shaping (TRACK_TEXT_SHIM_TO_MLC STEP=8).
 struct GlyphPixelBuffer {
   std::vector<uint8_t> pixels;
   int32_t width = 0;
@@ -25,102 +27,49 @@ GlyphPixelBuffer& glyph_pixel_buffer() {
   return buffer;
 }
 
-// Process-local FreeType face cache keyed by (font_path, pixel_size).
-// Process-global mutable state, no mutex — main/GL thread only (see header).
-struct CachedFontFace {
-  std::string font_path;
-  int32_t pixel_size = 0;
-  FT_Face face = nullptr;
-};
-
-FT_Library shared_free_type_library() {
-  static FT_Library library = nullptr;
-  if (library == nullptr) {
-    if (FT_Init_FreeType(&library) != 0) {
-      return nullptr;
-    }
-  }
-  return library;
-}
-
-CachedFontFace* cached_font_face(const char* font_path, int32_t pixel_size) {
-  if (font_path == nullptr || pixel_size <= 0) {
-    return nullptr;
-  }
-  static std::vector<CachedFontFace> faces;
-  for (CachedFontFace& entry : faces) {
-    if (entry.pixel_size == pixel_size && entry.font_path == font_path) {
-      return &entry;
-    }
-  }
-  FT_Library library = shared_free_type_library();
-  if (library == nullptr) {
-    return nullptr;
-  }
-  FT_Face face = nullptr;
-  if (FT_New_Face(library, font_path, 0, &face) != 0) {
-    return nullptr;
-  }
-  if (FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(pixel_size)) != 0) {
-    FT_Done_Face(face);
-    return nullptr;
-  }
-  CachedFontFace entry;
-  entry.font_path = font_path;
-  entry.pixel_size = pixel_size;
-  entry.face = face;
-  faces.push_back(entry);
-  return &faces.back();
-}
-
-int32_t render_face_glyph(FT_Face face) {
-  if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL) != 0) {
-    return -7;
-  }
-  const int32_t width = static_cast<int32_t>(face->glyph->bitmap.width);
-  const int32_t rows = static_cast<int32_t>(face->glyph->bitmap.rows);
-  if (width < 0 || rows < 0 || width > 0xffff || rows > 0xffff) {
-    return -8;
-  }
+void sync_shim_buffer_from_abi() {
   GlyphPixelBuffer& buffer = glyph_pixel_buffer();
-  buffer.width = width;
-  buffer.rows = rows;
-  buffer.bearing_x = face->glyph->bitmap_left;
-  buffer.bearing_y = face->glyph->bitmap_top;
-  buffer.pixels.assign(static_cast<size_t>(width * rows), 0);
-  const int pitch = face->glyph->bitmap.pitch;
-  for (int32_t row = 0; row < rows; row += 1) {
-    for (int32_t column = 0; column < width; column += 1) {
-      buffer.pixels[static_cast<size_t>(row * width + column)] =
-        face->glyph->bitmap.buffer[static_cast<size_t>(row * pitch + column)];
-    }
+  buffer.width = ft_glyph_width();
+  buffer.rows = ft_glyph_rows();
+  buffer.bearing_x = ft_glyph_bearing_x();
+  buffer.bearing_y = ft_glyph_bearing_y();
+  const uint8_t* flat = ft_glyph_a8_data();
+  const std::size_t count =
+    static_cast<std::size_t>(buffer.width) * static_cast<std::size_t>(buffer.rows);
+  if (flat == nullptr || count == 0) {
+    buffer.pixels.clear();
+    return;
   }
-  return (width << 16) | rows;
+  buffer.pixels.assign(flat, flat + count);
 }
 
-int32_t with_face(
-  const char* font_path,
-  int32_t pixel_size,
-  FT_UInt glyph_index
-) {
+int32_t render_glyph_index(String font_path, int32_t glyph_index, int32_t pixel_size) {
   if (pixel_size <= 0) {
     return -1;
   }
-  if (shared_free_type_library() == nullptr) {
-    return -2;
-  }
-  CachedFontFace* cached = cached_font_face(font_path, pixel_size);
-  if (cached == nullptr || cached->face == nullptr) {
-    return -3;
-  }
-  if (glyph_index == 0) {
+  if (glyph_index <= 0) {
     return -5;
   }
-  FT_Face face = cached->face;
-  if (FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT) != 0) {
+  const std::int64_t library = ft_library_get();
+  if (library == 0) {
+    return -2;
+  }
+  const std::int64_t face = ft_face_open(library, font_path);
+  if (face == 0) {
+    return -3;
+  }
+  if (ft_face_set_pixel_size(face, pixel_size) != 0) {
+    ft_face_close(face);
+    return -4;
+  }
+  if (ft_face_load_glyph(face, glyph_index) != 0) {
+    ft_face_close(face);
     return -6;
   }
-  return render_face_glyph(face);
+  const int32_t packed = ft_face_render_glyph(face);
+  sync_shim_buffer_from_abi();
+  ft_face_close(face);
+  return packed;
 }
 
 } // namespace
@@ -129,23 +78,30 @@ int32_t glyph_bitmap_packed(mlc::String font_path, int32_t codepoint, int32_t pi
   if (pixel_size <= 0) {
     return -1;
   }
-  if (shared_free_type_library() == nullptr) {
+  const std::int64_t library = ft_library_get();
+  if (library == 0) {
     return -2;
   }
-  CachedFontFace* cached = cached_font_face(font_path.c_str(), pixel_size);
-  if (cached == nullptr || cached->face == nullptr) {
+  const std::int64_t face = ft_face_open(library, font_path);
+  if (face == 0) {
     return -3;
   }
+  if (ft_face_set_pixel_size(face, pixel_size) != 0) {
+    ft_face_close(face);
+    return -4;
+  }
+  FT_Face free_type_face = reinterpret_cast<FT_Face>(face);
   const FT_UInt glyph_index =
-    FT_Get_Char_Index(cached->face, static_cast<FT_ULong>(codepoint));
-  return with_face(font_path.c_str(), pixel_size, glyph_index);
+    FT_Get_Char_Index(free_type_face, static_cast<FT_ULong>(codepoint));
+  ft_face_close(face);
+  if (glyph_index == 0) {
+    return -5;
+  }
+  return render_glyph_index(font_path, static_cast<int32_t>(glyph_index), pixel_size);
 }
 
 int32_t glyph_bitmap_by_index(mlc::String font_path, int32_t glyph_index, int32_t pixel_size) {
-  if (glyph_index <= 0) {
-    return -5;
-  }
-  return with_face(font_path.c_str(), pixel_size, static_cast<FT_UInt>(glyph_index));
+  return render_glyph_index(font_path, glyph_index, pixel_size);
 }
 
 int32_t glyph_width() { return glyph_pixel_buffer().width; }

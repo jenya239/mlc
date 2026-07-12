@@ -424,7 +424,7 @@ compiler/
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
 | **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) Critic OK; STEP=1–14; REG 20/0; sweep 113/0/1 | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
-| **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **active** (STEP=7 done; STEP=8 deprecate shim) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — dirty atlas done; Steps 8–10 |
+| **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **active** (STEP=8 done; STEP=9 self-host+docs) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — shim cache stripped; Steps 9–10 |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -601,8 +601,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **LANG_REGION_ARENA (**closed** 2026-07-12: Critic OK; STEP=1–9; STEP=10 skipped;
       → [archive/tracks/TRACK_LANG_REGION_ARENA.md](archive/tracks/TRACK_LANG_REGION_ARENA.md))**
 
-  → **TEXT_SHIM_TO_MLC (**active** 2026-07-13: STEP=1–7 done — abi +
-      text_shaping + golden + demos + dirty atlas; STEP=8 deprecate shim next;
+  → **TEXT_SHIM_TO_MLC (**active** 2026-07-13: STEP=1–8 done — abi +
+      text_shaping + golden + demos + dirty atlas + shim deprecate;
+      STEP=9 self-host+docs next;
       → [agent/TRACK_TEXT_SHIM_TO_MLC.md](agent/TRACK_TEXT_SHIM_TO_MLC.md)):**
     bookkeeping (face/font cache + pitch-copy) → MLC; thin `*_abi.hpp`;
     bearing reuse; Steps 1–10
