@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (Planner activate) |
+| test_gate | docs-only (LANGUAGE_REFERENCE skeleton) |
+
+### Turn 2026-07-12 11:42 (Driver TRACK_LANG_DOCS STEP=1 — LANGUAGE_REFERENCE skeleton)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:38 |
+| elapsed | ~4 min |
+| done    | Created `docs/LANGUAGE_REFERENCE.md`: scope, TOC, 10 section stubs (no invented examples). |
+| verify  | File exists; TOC links match `##` headings; TRACK Next=STEP=2. |
+| result  | STEP=1 done. Plain: reference skeleton ready; next fill bindings+functions. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=2 TRACK_LANG_DOCS — Bindings + Functions from e2e fixtures |
 
 ### Turn 2026-07-12 11:40 (Planner — plan-refresh → LANG_DOCS)
 

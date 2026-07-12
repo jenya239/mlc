@@ -16,7 +16,7 @@ Predecessor closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=1** — create `docs/LANGUAGE_REFERENCE.md` skeleton + section TOC (stubs only).
+**STEP=2** — fill Bindings + Functions from `compiler/tests/e2e/` fixtures.
 
 ## Goal
 
@@ -30,7 +30,7 @@ narrative) — a reference, skimmable, accurate.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Skeleton + sections list: bindings (`let`/`const`/`let mut`/`let const`), functions, types (record/sum/generic), pattern matching (`match`, or-patterns, guards), traits (`extend`, orphan rule), error handling (`Result`/`Option`, `?`, `T!E`), closures + escape analysis, arrays/maps/strings + HOFs, concurrency (`spawn`/`Mutex`/`Channel`/`scope`), FFI (`extern fn`/`extern type`/`extern lib`) | pending |
+| 1 | Skeleton + sections list: bindings (`let`/`const`/`let mut`/`let const`), functions, types (record/sum/generic), pattern matching (`match`, or-patterns, guards), traits (`extend`, orphan rule), error handling (`Result`/`Option`, `?`, `T!E`), closures + escape analysis, arrays/maps/strings + HOFs, concurrency (`spawn`/`Mutex`/`Channel`/`scope`), FFI (`extern fn`/`extern type`/`extern lib`) | **done** (2026-07-12) — `docs/LANGUAGE_REFERENCE.md` TOC + 10 section stubs |
 | 2 | Section: bindings + functions — examples sourced from `compiler/tests/e2e/` (grep for the simplest matching fixture, do not write new prose-only examples) | pending |
 | 3 | Section: types (record/sum/generic) + pattern matching | pending |
 | 4 | Section: traits + orphan rule | pending |
@@ -52,6 +52,7 @@ narrative) — a reference, skimmable, accurate.
 ## Progress
 
 - **Planner** (2026-07-12): activated after TEST_HARNESS Critic OK; STEP=1 next.
+- **STEP=1** (2026-07-12): `docs/LANGUAGE_REFERENCE.md` skeleton + TOC + stubs; no invented examples.
 
 ## Out of scope
 
