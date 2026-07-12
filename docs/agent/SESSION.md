@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | static + parse smoke ok |
+| test_gate | `rg` STDLIB_BACKEND shutdown subsection |
+
+### Turn 2026-07-12 08:45 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=5 — shutdown doc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 08:41 |
+| elapsed | ~5 min |
+| done    | `docs/STDLIB_BACKEND.md` §1 “HTTP accept-loop shutdown”: forever vs bounded; kill=abandon, not join. |
+| verify  | `rg` finds forever/bounded demos + abandoned wording. |
+| result  | STEP=5 done. Plain: shutdown story documented; next load-test. |
+| issues  | Foreign `compiler/out/*` left; §1 HTTP status row deferred to STEP=7. |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_HTTP_HARDENING — load-test script |
 
 ### Turn 2026-07-12 08:40 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=4 — serve_static)
 
