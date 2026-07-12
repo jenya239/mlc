@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_LANG_DOCS (Critic OK) → Planner STDLIB_DOCS |
-| test_gate | docs-only (`lang_ref_lint.rb` 33/0) |
+| step_last | plan-refresh |
+| active_track | TRACK_STDLIB_DOCS |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-12 12:10 (Planner TRACK_STDLIB_DOCS — activate §28)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_DOCS |
+| started | 2026-07-12 12:08 |
+| elapsed | ~3 min |
+| done    | Status **active**; Next=STEP=1; pinned demos (tcp/http/ws/postgres/crypto/env_log/validate); Json → `data/json.mlc` + `derive_json_test.rb`; PLAN §28 + DEVELOPMENT. |
+| verify  | Demo paths exist under `misc/examples/`; websocket_echo_demo.mlc present; no misc json demo (documented). |
+| result  | Track activated. Plain: Driver fills STDLIB_REFERENCE skeleton next. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_DOCS — STDLIB_REFERENCE skeleton + module stubs |
 
 ### Turn 2026-07-12 12:08 (Critic TRACK_LANG_DOCS — critique-audit)
 
