@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=6 (`GUI.md` keyboard/resize notes) next; STEP=5 window size APIs done.
+**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=7 (verify smokes) next; STEP=6 `GUI.md` done.
 See [TRACK_GUI_INPUT_ROBUSTNESS.md](TRACK_GUI_INPUT_ROBUSTNESS.md). Queue: GUI_INPUT → HTTP_HARDENING → …
 
 

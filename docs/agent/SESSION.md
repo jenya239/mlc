@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 5 |
+| driver_turns_since_plan | 5 |
+| step_last | 6 |
 | active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | `run_gui_window_size_smoke.sh` ok |
+| test_gate | docs: `GUI.md` Input robustness |
+
+### Turn 2026-07-12 07:08 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=6 — GUI.md)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 07:06 |
+| elapsed | ~4 min |
+| done    | `docs/GUI.md`: click-edge not-a-bug finding; keyboard/`text_buffer`; window size APIs; gate scripts. Synced leftover STEP=5 TRACK/PLAN markers. |
+| verify  | `grep -n 'Input robustness\\|run_gui_click_edge\\|glfw_gl_window' docs/GUI.md` non-empty. |
+| result  | STEP=6 done. Plain: GUI.md updated; next verify smokes. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_GUI_INPUT_ROBUSTNESS — verify button + new smokes; close → Critic |
 
 ### Turn 2026-07-12 06:55 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=5 — window size)
 
