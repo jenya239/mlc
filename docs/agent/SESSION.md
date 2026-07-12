@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | (Planner docs-only) |
+| test_gate | Decision block in TRACK; no PACKAGE_MANAGER.md yet |
+
+### Turn 2026-07-13 02:02 (Driver TRACK_PACKAGE_MANAGER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 02:02 |
+| elapsed | ~8 min |
+| done    | Froze Decision: `mlc.json` + `{git,rev}` SHA; cited path_normalize/module_loader; rejected alts table. |
+| verify  | TRACK Decision present; no `docs/PACKAGE_MANAGER.md`; PLAN §18 STEP=1 done. |
+| result  | STEP=1 done. Plain: deps model is git+SHA pins in `mlc.json`. |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK_PACKAGE_MANAGER — `.mlc_packages/` + import form |
 
 ### Turn 2026-07-13 01:59 (Planner TRACK_PACKAGE_MANAGER plan-refresh)
 

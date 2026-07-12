@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_PACKAGE_MANAGER` active** — STEP=1 design deps model (`mlc.json`+git+rev).
+**`TRACK_PACKAGE_MANAGER` active** — STEP=1 Decision frozen (`mlc.json`+git+SHA); STEP=2 next.
 See [TRACK_PACKAGE_MANAGER.md](TRACK_PACKAGE_MANAGER.md).
-TEXT_SHIM Critic OK: [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md).
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)
