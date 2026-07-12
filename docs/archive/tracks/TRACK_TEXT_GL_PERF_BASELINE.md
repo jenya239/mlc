@@ -9,11 +9,18 @@ even though a C++ reference project the user looked at has this solved.
 Both root-caused below **before** handing to Driver — no design-step
 needed, go straight to implementation.
 
-## Status: **closed** (2026-07-12) — awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
+
+**Critic 2026-07-12:** STEP=1–14 vs `c270ee16`…`4aaf5a5b`; face/font caches;
+bearing ABI + 3 GL demos; MAE hxpjy + privet; REG 20/0; sweep 113/0/1; archived.
+**reopen: none**. Residuals: STEP=8 only 3 `append_line` demos (smokes had no
+placement); STEP=9 MAE is `text_renderer_shim` FBO path (as TRACK specified),
+demo freetype_shim path covered by STEP=11 visual + compile sweep; separate
+FT libraries in FT vs HB caches; TEXT_SHIM_TO_MLC remains out of scope.
 
 ## Next step
 
-**closed** — Critic `critique-audit` next.
+**closed** — Critic OK.
 
 ### STEP=1 sub-steps (Driver)
 

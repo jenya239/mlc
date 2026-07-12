@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 14 |
-| active_track | TRACK_TEXT_GL_PERF_BASELINE (closed) |
+| step_last | critique-audit |
+| active_track | — (TEXT_GL Critic OK) |
 | test_gate | regression_gate 20/0 + sweep 113/0/1 |
+
+### Turn 2026-07-12 15:53 (Critic TRACK_TEXT_GL_PERF_BASELINE — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 15:48 |
+| elapsed | ~5 min |
+| done    | Audited STEP=1–14 vs `c270ee16`…`4aaf5a5b`; caches/bearing/demos/docs/gate; PLAN/archive links. |
+| verify  | `CachedFontFace`/`CachedShapingFont` present; `glyph_bearing_*` + 3 demos; fixtures hxpjy/privet/screenshots; REG 20/0 sweep 113/0/1 recorded at close. |
+| result  | **reopen: none**. Residuals: STEP=8 3/6 placement files; STEP=9 MAE is shim FBO path (TRACK-specified); dual FT libs in FT/HB caches; TEXT_SHIM deferred. |
+| issues  | Foreign `FFI_LAYER.md` / untracked `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Planner STEP=plan-refresh — choose TEXT_SHIM_TO_MLC vs LANG_REGION_ARENA STEP=2 |
 
 ### Turn 2026-07-12 15:44 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=14 — close)
 
