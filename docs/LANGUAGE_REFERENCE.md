@@ -425,13 +425,81 @@ Source: [`misc/examples/string_operations_demo.mlc`](../misc/examples/string_ope
 
 ## Concurrency
 
-Status: pending — filled in STEP=8.
+Structured concurrency: prefer `scope |s| { s.spawn … }` so children are
+joined when the scope ends. Bare `spawn` + `block_on` still exists for simple
+cases. Full design (Send/Sync, channels, cancellation, supervisors):
+[CONCURRENCY_V2.md](CONCURRENCY_V2.md).
 
-Planned topics:
+### `spawn` + `block_on`
 
-- Condensed “how to use”: `spawn` / `Mutex` / `Channel` / `scope`
-- Canonical accept-loop demo path
-- Full spec: [CONCURRENCY_V2.md](CONCURRENCY_V2.md)
+Source: [`compiler/tests/e2e/spawn_side_effect.mlc`](../compiler/tests/e2e/spawn_side_effect.mlc)
+
+```mlc
+fn main() -> i32 = do
+  let task_a = spawn do side() end
+  block_on(task_a)
+end
+```
+
+### `scope` + `spawn` (parallel children)
+
+Source: [`compiler/tests/e2e/scope_parallel_sleep.mlc`](../compiler/tests/e2e/scope_parallel_sleep.mlc)
+
+```mlc
+fn main() -> i32 = do
+  scope |task_scope| do
+    task_scope.spawn do slow_work(1) end
+    task_scope.spawn do slow_work(2) end
+  end
+  0
+end
+```
+
+(Both children overlap in wall time; see file comments / gate.)
+
+### Canonical accept loop
+
+Bounded accept + per-connection `scope.spawn` (not bare detached `spawn`).
+Source: [`misc/examples/http_scope_accept_loop_demo.mlc`](../misc/examples/http_scope_accept_loop_demo.mlc)
+
+```mlc
+  scope |task_scope| do
+    while remaining > 0 do
+      let stream_option = accept(listener)
+      if !stream_option.is_some() then
+        accept_failed = 1
+        remaining = 0
+      else
+        let stream = stream_option.unwrap()
+        task_scope.spawn do handle_one(stream) end
+        remaining = remaining - 1
+      end
+    end
+  end
+```
+
+(Excerpt from `main`; Tcp/`HttpServer` imports and `handle_one` are in the
+same file.)
+
+### `Mutex` / `Channel`
+
+No e2e demo yet. Language surface is checked in unit tests; runtime lives under
+`runtime/include/mlc/concurrency/`. Example program string from
+[`compiler/tests/test_mutex_syntax.mlc`](../compiler/tests/test_mutex_syntax.mlc):
+
+```mlc
+fn main() -> i32 = do
+  let guarded = Mutex.new([])
+  guarded.lock(values => do
+    values.push(7)
+    values.length()
+  end)
+end
+```
+
+Channels, TaskScope cancellation, Isolate, and Supervisor: see
+[CONCURRENCY_V2.md](CONCURRENCY_V2.md) and closed tracks under
+`docs/archive/tracks/TRACK_CONCURRENCY_*`.
 
 ## FFI
 

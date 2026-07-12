@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
 | active_track | TRACK_LANG_DOCS |
-| test_gate | docs-only (LANGUAGE_REFERENCE Arrays) |
+| test_gate | docs-only (LANGUAGE_REFERENCE Concurrency) |
+
+### Turn 2026-07-12 11:58 (Driver TRACK_LANG_DOCS STEP=8 — Concurrency)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_LANG_DOCS |
+| started | 2026-07-12 11:53 |
+| elapsed | ~5 min |
+| done    | Concurrency: spawn/scope e2e; accept-loop demo excerpt; Mutex test-string; CONCURRENCY_V2 link. |
+| verify  | Cited paths exist; TRACK Next=STEP=9. |
+| result  | STEP=8 done. Plain: concurrency condensed; accept-loop is canonical. |
+| issues  | Foreign `compiler/out/*` left; no e2e Mutex/Channel demo. |
+| next    | ROLE=Driver STEP=9 TRACK_LANG_DOCS — FFI condensed + FFI_LAYER safety |
 
 ### Turn 2026-07-12 11:56 (Driver TRACK_LANG_DOCS STEP=7 — Arrays/maps/strings + HOFs)
 
