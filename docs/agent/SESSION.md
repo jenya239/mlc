@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
+| driver_turns_since_plan | 10 |
+| step_last | 10 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 14:14 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=10 — privet golden)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 14:11 |
+| elapsed | ~3 min |
+| done    | Confirmed `text_a8_privet_24.rgba` still valid; no regenerate. |
+| verify  | `git hash-object` == `HEAD:…/text_a8_privet_24.rgba` (`d9e1cfbb`); `CCACHE_DISABLE=1 run_text_renderer_a8_string_smoke.sh` ok. |
+| result  | STEP=10 done. Plain: Привет golden already matched bearing-aware CPU path; keep as-is. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=11 TRACK_TEXT_GL_PERF_BASELINE — visual MLC_GLFW_VISIBLE baseline check |
 
 ### Turn 2026-07-12 14:07 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=9 — mixed MAE)
 

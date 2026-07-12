@@ -13,7 +13,7 @@ needed, go straight to implementation.
 
 ## Next step
 
-**STEP=10** — Re-run golden `text_a8_privet_24.rgba` (confirm still valid).
+**STEP=11** — Visual re-check dashboard/window with `MLC_GLFW_VISIBLE=1`.
 
 ### STEP=1 sub-steps (Driver)
 
@@ -102,7 +102,7 @@ exact formula into the GL live path — do not re-derive it.
 | 7 | `freetype_shim.hpp`/`.cpp`: expose bearing — add `glyph_bearing_x()`/`glyph_bearing_y()` (mirroring the existing `glyph_width()`/`glyph_rows()` pattern) returning `face->glyph->bitmap_left`/`bitmap_top` from the last rendered glyph, same caching slot as `glyph_width`/`glyph_rows` | **done** (2026-07-12) |
 | 8 | Update every call site in the 6 affected `.mlc` files (`append_line`-shaped functions) to treat `line.pen_y` as the **baseline**, not the bitmap top: `dest_y = line.pen_y - glyph_bearing_y()` (and `dest_x = cursor_x + glyph_bearing_x()` for correctness, matching `text_renderer_shim.cpp`'s `destination_x = origin_x + glyph.pen_x + glyph.left` formula) | **done** (2026-07-12; 3 GL demos wired; smokes without quad placement unchanged) |
 | 9 | Regression fixture: a line mixing ascenders/descenders/caps/x-height (e.g. `"Hxpjy Agq"`) rendered through both the GL path and the existing CPU reference (`text_renderer_shim.cpp` via `text_renderer_a8_string_smoke.mlc`'s harness) — compare, MAE should now match the same tight tolerance already used for STEP 6.2 (`≤8/255`), not just visually "look right" | **done** (2026-07-12; `text_a8_hxpjy_24.rgba`; MAE≤8 via same harness) |
-| 10 | Re-run the golden `text_a8_privet_24.rgba` comparison — confirm it still passes (or, if the old golden was itself generated pre-bearing-fix and MAE was low only because "Привет" happens to have uniform-height Cyrillic glyphs, regenerate the golden and note why in this track — do not silently keep a stale golden) | pending |
+| 10 | Re-run the golden `text_a8_privet_24.rgba` comparison — confirm it still passes (or, if the old golden was itself generated pre-bearing-fix and MAE was low only because "Привет" happens to have uniform-height Cyrillic glyphs, regenerate the golden and note why in this track — do not silently keep a stale golden) | **done** (2026-07-12; no regenerate — blob `d9e1cfbb` matches HEAD; smoke exact + MAE ok) |
 | 11 | Visual re-check: re-run `text_dashboard_demo.mlc`/`text_window_demo.mlc` visibly (`MLC_GLFW_VISIBLE=1`), screenshot, confirm mixed-case text now sits on one visible baseline | pending |
 | 12 | Docs: `TEXT_RENDERING.md` — note the bearing fix + which files were affected; `GUI.md` if it references glyph positioning assumptions | pending |
 | 13 | Self-host verify: N/A (this track only touches `runtime/` C++ + `misc/`, not `compiler/`) unless a `.mlc` stdlib module under `lib/mlc/common/stdlib/` needs a signature change — check before closing | pending |
@@ -134,6 +134,10 @@ exact formula into the GL live path — do not re-derive it.
   for dashboard hits; wired: dashboard, text_window, gui_text_field.
 - **Driver STEP=9** (2026-07-12): `"Hxpjy Agq"` via `text_renderer_a8_string_smoke`
   + golden `text_a8_hxpjy_24.rgba`; GL FBO vs CPU composite MAE≤8/255.
+- **Driver STEP=10** (2026-07-12): `text_a8_privet_24.rgba` still valid — git blob
+  `d9e1cfbb` unchanged vs HEAD; harness exact memcmp + MAE≤8 without
+  `MLC_WRITE_GOLDEN`. No regenerate: CPU golden path already used `bitmap_top`
+  before Part B; STEP=7/8 only exposed that formula to GL demos via freetype_shim.
 
 ## Out of scope
 
