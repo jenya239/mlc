@@ -2,6 +2,8 @@
 // ≥3 strings, A8 + MSDF, clear-color anim via glfw_gl_anim_unit, Esc/timeout.
 // Automated: hidden window, N frames. MLC_GLFW_VISIBLE=1 for interactive.
 
+import { has } from 'Env'
+
 extern fn glfw_gl_context_begin(width: i32, height: i32) -> i32
   = "mlc::gl::glfw_gl_context_begin" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_context_should_close() -> i32
@@ -12,6 +14,8 @@ extern fn glfw_gl_context_end() -> unit
   = "mlc::gl::glfw_gl_context_end" from "mlc/gl/glfw_window_gl.hpp"
 extern fn glfw_gl_anim_unit() -> f64
   = "mlc::gl::glfw_gl_anim_unit" from "mlc/gl/glfw_window_gl.hpp"
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
 
 extern fn gl_clear(mask: i32) -> unit
   = "mlc::gl::gl_clear" from "mlc/gl/glad_gl_abi.hpp"
@@ -398,7 +402,7 @@ fn main() -> i32 = do
   let mut a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
 
   // String 1 + 2 (A8 via HarfBuzz shape)
-  const line1 = append_shaped_a8(font_path, "Hi", 28, width, height, 40, 40, a8_atlas, a8_atlas_size)
+  const line1 = append_shaped_a8(font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, a8_atlas_size)
   if line1.error_code != 0 then
     destroy_pass(a8_pass)
     destroy_pass(msdf_pass)
@@ -481,7 +485,7 @@ fn main() -> i32 = do
   a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
   gl_scratch_u8_clear()
   gl_scratch_u8_resize_zero(a8_atlas_size * a8_atlas_size)
-  const rebuild1 = append_shaped_a8(font_path, "Hi", 28, width, height, 40, 40, a8_atlas, a8_atlas_size)
+  const rebuild1 = append_shaped_a8(font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, a8_atlas_size)
   a8_atlas = rebuild1.atlas
   a8_vertices = rebuild1.slot.page_index
   const rebuild2 = append_shaped_a8(font_path, "MLC", 28, width, height, 40, 90, a8_atlas, a8_atlas_size)
@@ -560,6 +564,9 @@ fn main() -> i32 = do
     draw_pass(a8_pass, width, height)
     draw_pass(msdf_pass, width, height)
     glfw_gl_context_swap_poll()
+    if has("MLC_GLFW_VISIBLE") then
+      sleep_ms(50)
+    end
     frame_index = frame_index + 1
     if frame_index >= 48 then
       break

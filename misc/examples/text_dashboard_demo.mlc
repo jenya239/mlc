@@ -226,7 +226,8 @@ fn main() -> i32 = do
 
     const lines: [Line] = [
       Line { text: "MLC TEXT DASHBOARD", pixel_size: 40, pen_x: 40, pen_y: 60 },
-      Line { text: "Real HarfBuzz shaping + FreeType rasterization, every frame.", pixel_size: 20, pen_x: 40, pen_y: 110 },
+      Line { text: "Baseline check: Hxpjy Agq", pixel_size: 28, pen_x: 40, pen_y: 110 },
+      Line { text: "Real HarfBuzz shaping + FreeType rasterization, every frame.", pixel_size: 20, pen_x: 40, pen_y: 150 },
       Line { text: "Mouse: x=" + input.mouse_x.to_string() + " y=" + input.mouse_y.to_string(), pixel_size: 26, pen_x: 40, pen_y: 220 },
       Line { text: "Clicks: " + i32_to_padded_string(click_count), pixel_size: 26, pen_x: 40, pen_y: 260 },
       Line { text: "Frame: " + i32_to_padded_string(frame_index), pixel_size: 26, pen_x: 40, pen_y: 300 },

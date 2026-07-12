@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 10 |
+| driver_turns_since_plan | 11 |
+| step_last | 11 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 14:47 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=11 — visual)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 14:17 |
+| elapsed | ~30 min |
+| done    | Visible screenshots of dashboard + text_window with `Hxpjy Agq`; window sleeps 50ms/frame when `MLC_GLFW_VISIBLE`. |
+| verify  | `docs/agent/fixtures/text_dashboard_baseline_step11.png` (900×640), `text_window_baseline_step11.png` (800×600); `MLC_GLFW_VISIBLE=0 scripts/run_text_window_demo.sh` ok. |
+| result  | STEP=11 done. Plain: mixed ascender/descender line sits on one baseline in both demos. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=12 TRACK_TEXT_GL_PERF_BASELINE — docs TEXT_RENDERING.md bearing note |
 
 ### Turn 2026-07-12 14:14 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=10 — privet golden)
 
