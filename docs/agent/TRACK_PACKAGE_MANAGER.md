@@ -73,7 +73,7 @@ There is **no** third-party package identity in the resolver today.
 2. **No semver range solver** — pin is exact SHA; diamond conflicts are the
    author's problem (edit the pin).
 3. **Fetch is explicit** (STEP=6 CLI) — compile does not `git clone` on the fly.
-4. Vendor layout / import syntax → **STEP=2** (not frozen here).
+4. Vendor layout / import syntax → **STEP=2** (frozen below).
 
 ### Rejected alternatives
 
@@ -84,6 +84,79 @@ There is **no** third-party package identity in the resolver today.
 | Path-only vendor (`vendor/foo` without manifest) | No reproducible pin; no name→URL record |
 | `mlc.toml` | Extra Ruby dependency; JSON stdlib sufficient |
 | Live `git` at compile time | Non-hermetic builds; network in `mlcc` hot path |
+
+## Decision (STEP=2) — frozen 2026-07-13
+
+### Vendor layout
+
+- Directory: **`<project_root>/.mlc_packages/<pkg>/`**
+- `<pkg>` = key from `mlc.json` `dependencies` (same spelling).
+- That directory **is** the git clone root at the pinned `rev` (STEP=6 fetch).
+- Package sources live inside that tree (`foo.mlc`, `subdir/bar.mlc`, …).
+- `.mlc_packages/` is a **fetched artifact** — default `.gitignore` entry (STEP=4/6);
+  not committed to the app repo.
+- Reserved: dependency name must not be `mlc_packages` or empty.
+
+### Package name charset
+
+- Exact: **`[a-z][a-z0-9_]*`** (lowercase start; letters, digits, underscore).
+- Reject uppercase / `-` / `.` in keys at STEP=5 validate (keeps FS + import parsing simple).
+
+### Import form
+
+Existing syntax stays: `import { … } from '<path>'`.
+
+Resolution order for `<path>` (STEP=7 in `resolve_import_path` / loader):
+
+1. **Relative** — path starts with `.` (`./` or `../`) → current
+   `dirname(importer)+path` behavior unchanged.
+2. **Bare stdlib** — no `/` → current hard-coded `Tcp`/`HttpServer`/`Env`/`Log`/`Validate`
+   table unchanged.
+3. **Package** — path contains `/`, does **not** start with `.`, and the
+   **first segment** equals a key in root `mlc.json` `dependencies`:
+   - `from 'example_pkg/math'` → `.mlc_packages/example_pkg/math.mlc`
+   - `from 'example_pkg/util/hash'` → `.mlc_packages/example_pkg/util/hash.mlc`
+   - Append `.mlc` if missing (same as today).
+4. **Else** — treat as today (join with importer `dirname`). Backward compat for
+   accidental `foo/bar` relative imports without `./`.
+
+No new lexer tokens (`pkg:…`, `@pkg/…` rejected for v1 — would need parser work;
+slash + first-segment-in-deps is enough).
+
+### Distinguishing project vs dependency
+
+| Kind | How recognized |
+|------|----------------|
+| Project module | Relative import, or non-dep first segment under importer dir |
+| Stdlib | Bare name in the fixed table |
+| Dependency module | First path segment ∈ root `dependencies` → under `.mlc_packages/<pkg>/` |
+
+`module_loader` still loads by **filesystem path** after resolve; package identity
+exists only in the resolve step + manifest.
+
+### Security
+
+- After resolve, the normalized path for a package import **must** have prefix
+  `<project_root>/.mlc_packages/<pkg>/` (no `..` escape out of that package).
+- Reuse / extend `driver_source_path_is_safe` + `resolve_dotdot`; add explicit
+  prefix check in STEP=7.
+- Importing `../` from inside a package cannot leave `.mlc_packages/<pkg>/`.
+
+### Flat dependencies (v1)
+
+- Only the **root project** `mlc.json` `dependencies` are resolvable.
+- A package's own `mlc.json` (if present) is **ignored** for resolution in v1.
+- Transitive needs: list the transitive package in the root manifest too.
+- Nested `dependencies` of packages → later track; not STEP=2–10.
+
+### Rejected import alternatives (STEP=2)
+
+| Alternative | Why rejected |
+|-------------|--------------|
+| `from 'pkg:module'` / `@pkg/module` | New path grammar / lexer; slash form reuses existing strings |
+| Auto-clone on miss at compile | Violates STEP=1 “fetch is explicit” |
+| Nested per-package lock / recursive deps | Diamond + complexity; flat root pins only |
+| Committing `.mlc_packages/` by default | Noise; SHA pin in `mlc.json` is the source of truth |
 
 ## Problem
 
@@ -100,8 +173,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design: minimal deps model — `mlc.json` + `{git, rev}` pins, no registry | **done** (2026-07-13) Decision frozen |
-| 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | pending |
-| <!-- sub-steps: 1) define layout `.mlc_packages/<pkg>/` = clone root; 2) import form `Pkg/foo` or `pkg:foo` — pick one; 3) security: no escape above package root; 4) write Decision into TRACK --> | | |
+| 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | **done** (2026-07-13) `pkg/path` + flat deps |
 | 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | pending |
 | <!-- sub-steps: 1) state "no version check at compile"; 2) optional future `mlc_version` field deferred; 3) TRACK Decision only --> | | |
 | 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | pending |
