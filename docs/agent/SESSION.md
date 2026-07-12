@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
-| active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | REG 20/0; sweep 115/0/1; self-host p1≡p2 |
+| driver_turns_since_plan | 0 |
+| step_last | 10 |
+| active_track | TRACK_TEXT_SHIM_TO_MLC (closed; Critic) |
+| test_gate | bench User 0.33s; a8_string_smoke 0 |
+
+### Turn 2026-07-13 01:44 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=10 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 01:44 |
+| elapsed | ~15 min |
+| done    | Bench 300f User 0.33s (~27× vs 8.97s); a8 Hxpjy smoke 0; track archived. |
+| verify  | `/usr/bin/time -v` bench exit 0; `text_renderer_a8_string_smoke` exit 0. |
+| result  | STEP=10 done; track **closed**. Plain: MLC text_shaping path measured+archived. |
+| issues  | Foreign `text_ide_panels_demo.mlc` + lint leftovers left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_TEXT_SHIM_TO_MLC |
 
 ### Turn 2026-07-13 01:40 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=9)
 

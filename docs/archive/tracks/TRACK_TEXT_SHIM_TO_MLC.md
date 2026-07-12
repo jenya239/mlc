@@ -1,26 +1,39 @@
 # Track: HarfBuzz/FreeType shim — bookkeeping на MLC, GL-путь perf+baseline
 
-Parent: [../FFI_LAYER.md](../FFI_LAYER.md) §8, [../TEXT_RENDERING.md](../TEXT_RENDERING.md), [../PLAN.md](../PLAN.md).
+Parent: [../../FFI_LAYER.md](../../FFI_LAYER.md) §8, [../../TEXT_RENDERING.md](../../TEXT_RENDERING.md), [../../PLAN.md](../../PLAN.md).
 Trigger: пользователь 2026-07-12 — «разве мы не давали задачу переделать
 все такие шимы на чистый MLC?». Верно: §8 покрыл Postgres/Crypto/Tcp
-([TRACK_FFI_SHIM_MIGRATION](../archive/tracks/TRACK_FFI_SHIM_MIGRATION.md)),
-MSDF ([TRACK_TEXT_MSDF_TO_MLC](../archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md)),
+([TRACK_FFI_SHIM_MIGRATION](TRACK_FFI_SHIM_MIGRATION.md)),
+MSDF ([TRACK_TEXT_MSDF_TO_MLC](TRACK_TEXT_MSDF_TO_MLC.md)),
 WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Ранее
 предложенный (и удалённый) трек `TRACK_TEXT_GL_PERF_BASELINE` шёл в обратную
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-13) — STEP=9 done; STEP=10 CPU%/visual+close next
+## Status: **closed** (2026-07-13) — STEP=1–10 done; Critic next
 
-**Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
-Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
+**Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](TRACK_TEXT_GL_PERF_BASELINE.md)
+Critic OK; [TRACK_LANG_REGION_ARENA](TRACK_LANG_REGION_ARENA.md)
 Critic OK. Bearing API already shipped (`glyph_bearing_x`/`glyph_bearing_y` in
 `freetype_shim.hpp` — **do not duplicate**). This track: move face/font
 handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=10** — CPU%/visual before/after; close track → Critic.
+**closed** — `ROLE=Critic STEP=critique-audit TRACK_TEXT_SHIM_TO_MLC`.
+
+### STEP=10 done (2026-07-13)
+
+- Bench `MLC_TEXT_DASHBOARD_BENCH=1` × 300 frames, headless `/usr/bin/time -v`:
+  - **before** (GL_PERF pre-STEP1, archived): User **8.97s**, Elapsed **11.42s**
+  - **after GL_PERF** (C++ face cache): User **0.19s**, Elapsed **0.36s**
+  - **after TEXT_SHIM** (MLC `text_shaping` + dirty atlas): User **0.33s**,
+    Elapsed **0.92s**, RSS 85392 KB, ~46% CPU — still ≈**27×** user vs original
+    before; slight wall vs GL_PERF-after from Map/open cost when lines change
+    every frame (mouse/frame counters).
+- Visual: `text_renderer_a8_string_smoke` exit 0 (`Hxpjy Agq` + `Привет` MAE≤8);
+  baseline fixtures `docs/agent/fixtures/text_*_baseline_step11.png` unchanged.
+- Track closed → archive.
 
 ### STEP=9 done (2026-07-13)
 
@@ -232,4 +245,4 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 | 7 | Dirty-flag atlas: skip rebuild/upload when lines unchanged | **done** (2026-07-13) field+dashboard |
 | 8 | Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers | **done** (2026-07-13) thin wrappers over abi |
 | 9 | Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8 | **done** (2026-07-13) REG 20/0 sweep 115/0/1; p1≡p2 |
-| 10 | CPU%/visual before/after; close track | pending |
+| 10 | CPU%/visual before/after; close track | **done** (2026-07-13) User 0.33s; a8 smoke 0; archived |
