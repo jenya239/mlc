@@ -680,6 +680,12 @@ fn ffi_parameter_name_items(params: [Shared<Param>]) -> [string] = do
   name_items
 end
 
+// Hybrid FFI dedup (TRACK_FFI_EXTERN_DEDUP): if an import already exports this
+// MLC name, skip local FFI wrapper emit. Otherwise resolve() would emit
+// `imported_ns::name` inside the consumer namespace → clang enclose-namespace error.
+fn ffi_extern_reuses_imported_binding(name: string, context: CodegenContext) -> bool =
+  context.qualified.has(name)
+
 fn gen_ffi_fn_proto_cpp(
   name: string,
   type_params: [string],
@@ -689,7 +695,8 @@ fn gen_ffi_fn_proto_cpp(
   escape_info: FnEscapeInfo,
   context: CodegenContext
 ) -> Shared<CppDeclaration> =
-  gen_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, escape_info, context)
+  if ffi_extern_reuses_imported_binding(name, context) then empty_cpp_declaration()
+  else gen_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, escape_info, context)
 
 fn gen_ffi_fn_decl_cpp(
   name: string,
@@ -700,34 +707,37 @@ fn gen_ffi_fn_decl_cpp(
   body: Shared<SemanticExpression>,
   escape_info: FnEscapeInfo,
   context: CodegenContext
-) -> Shared<CppDeclaration> = do
-  const escape_context = context_with_fn_escape_cpp(context, escape_info)
-  const body_context = compute_fn_body_context(name, params, escape_context)
-    .with_enclosing_function_return_type(return_type)
-  const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else escape_context end
-  const safe_name = escape_context.resolve(name)
-  const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
-  const parameters = function_parameter_def_items(name, params, prototype_context)
-  const extern_c_name = semantic_extern_ffi_c_name(body)
-  const binder_name = "mlc_ffi_bind_" + cpp_safe(name)
-  const signature_params = ffi_parameter_type_items(params, prototype_context).join(', ')
-  const call_arguments = ffi_parameter_name_items(params).join(', ')
-  const binder_statement = emit_helpers.make_fragment_cpp_statement(
-    "static auto const " + binder_name + " = static_cast<" + return_type_cpp + "(*)(" + signature_params + ")>(&::" + extern_c_name + ");")
-  const call_expression =
-    if call_arguments.length() == 0 then binder_name + "()"
-    else binder_name + "(" + call_arguments + ")"
-    end
-  const return_statement = emit_helpers.make_fragment_cpp_statement("return " + call_expression + ";")
-  const all_type_params = merged_function_type_parameters_cpp(type_params, escape_info)
-  Shared.new(CppFnDef(
-    template_prefix(all_type_params) + requires_clause(type_params, type_bounds),
-    return_type_cpp,
-    safe_name,
-    parameters,
-    [binder_statement, return_statement],
-    1))
-end
+) -> Shared<CppDeclaration> =
+  if ffi_extern_reuses_imported_binding(name, context) then empty_cpp_declaration()
+  else do
+    const escape_context = context_with_fn_escape_cpp(context, escape_info)
+    const body_context = compute_fn_body_context(name, params, escape_context)
+      .with_enclosing_function_return_type(return_type)
+    const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else escape_context end
+    // Local definition must not use imported qualification (qualified map).
+    const safe_name = cpp_safe(name)
+    const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
+    const parameters = function_parameter_def_items(name, params, prototype_context)
+    const extern_c_name = semantic_extern_ffi_c_name(body)
+    const binder_name = "mlc_ffi_bind_" + cpp_safe(name)
+    const signature_params = ffi_parameter_type_items(params, prototype_context).join(', ')
+    const call_arguments = ffi_parameter_name_items(params).join(', ')
+    const binder_statement = emit_helpers.make_fragment_cpp_statement(
+      "static auto const " + binder_name + " = static_cast<" + return_type_cpp + "(*)(" + signature_params + ")>(&::" + extern_c_name + ");")
+    const call_expression =
+      if call_arguments.length() == 0 then binder_name + "()"
+      else binder_name + "(" + call_arguments + ")"
+      end
+    const return_statement = emit_helpers.make_fragment_cpp_statement("return " + call_expression + ";")
+    const all_type_params = merged_function_type_parameters_cpp(type_params, escape_info)
+    Shared.new(CppFnDef(
+      template_prefix(all_type_params) + requires_clause(type_params, type_bounds),
+      return_type_cpp,
+      safe_name,
+      parameters,
+      [binder_statement, return_statement],
+      1))
+  end
 
 fn semantic_fn_body_is_extern(method: Shared<SemanticDeclaration>) -> bool =
   match method {

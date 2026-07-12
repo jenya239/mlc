@@ -493,25 +493,36 @@ mlc::Array<mlc::String> ffi_parameter_name_items(mlc::Array<std::shared_ptr<ast:
   }
   return name_items;
 }
+bool ffi_extern_reuses_imported_binding(mlc::String name, context::CodegenContext context) noexcept{
+  return context.qualified.has(name);
+}
 std::shared_ptr<cpp_ast::CppDeclaration> gen_ffi_fn_proto_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, semantic_ir::FnEscapeInfo escape_info, context::CodegenContext context) noexcept{
-  return gen_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, escape_info, context);
+  if (ffi_extern_reuses_imported_binding(name, context))   {
+    return empty_cpp_declaration();
+  } else   {
+    return gen_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, escape_info, context);
+  }
 }
 std::shared_ptr<cpp_ast::CppDeclaration> gen_ffi_fn_decl_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, semantic_ir::FnEscapeInfo escape_info, context::CodegenContext context) noexcept{
-  auto escape_context = context_with_fn_escape_cpp(context, escape_info);
-  auto body_context = context::CodegenContext_with_enclosing_function_return_type(decl::compute_fn_body_context(name, params, escape_context), return_type);
-  auto prototype_context = (((params.length() > 0) && (params[0]->name == mlc::String("self", 4))) ? (body_context) : (escape_context));
-  auto safe_name = context::CodegenContext_resolve(escape_context, name);
-  auto return_type_cpp = type_gen::sem_type_to_cpp(prototype_context, return_type);
-  auto parameters = function_parameter_def_items(name, params, prototype_context);
-  auto extern_c_name = semantic_extern_ffi_c_name(body);
-  auto binder_name = (mlc::String("mlc_ffi_bind_", 13) + cpp_naming::cpp_safe(name));
-  auto signature_params = ffi_parameter_type_items(params, prototype_context).join(mlc::String(", ", 2));
-  auto call_arguments = ffi_parameter_name_items(params).join(mlc::String(", ", 2));
-  auto binder_statement = emit_helpers::make_fragment_cpp_statement(((((((((mlc::String("static auto const ", 18) + binder_name) + mlc::String(" = static_cast<", 15)) + return_type_cpp) + mlc::String("(*)(", 4)) + signature_params) + mlc::String(")>(&::", 6)) + extern_c_name) + mlc::String(");", 2)));
-  auto call_expression = ((call_arguments.length() == 0) ? ((binder_name + mlc::String("()", 2))) : ((((binder_name + mlc::String("(", 1)) + call_arguments) + mlc::String(")", 1))));
-  auto return_statement = emit_helpers::make_fragment_cpp_statement(((mlc::String("return ", 7) + call_expression) + mlc::String(";", 1)));
-  auto all_type_params = merged_function_type_parameters_cpp(type_params, escape_info);
-  return std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppFnDef{(cpp_naming::template_prefix(all_type_params) + type_gen::requires_clause(type_params, type_bounds)), return_type_cpp, safe_name, parameters, mlc::Array{binder_statement, return_statement}, 1});
+  if (ffi_extern_reuses_imported_binding(name, context))   {
+    return empty_cpp_declaration();
+  } else   {
+    auto escape_context = context_with_fn_escape_cpp(context, escape_info);
+    auto body_context = context::CodegenContext_with_enclosing_function_return_type(decl::compute_fn_body_context(name, params, escape_context), return_type);
+    auto prototype_context = (((params.length() > 0) && (params[0]->name == mlc::String("self", 4))) ? (body_context) : (escape_context));
+    auto safe_name = cpp_naming::cpp_safe(name);
+    auto return_type_cpp = type_gen::sem_type_to_cpp(prototype_context, return_type);
+    auto parameters = function_parameter_def_items(name, params, prototype_context);
+    auto extern_c_name = semantic_extern_ffi_c_name(body);
+    auto binder_name = (mlc::String("mlc_ffi_bind_", 13) + cpp_naming::cpp_safe(name));
+    auto signature_params = ffi_parameter_type_items(params, prototype_context).join(mlc::String(", ", 2));
+    auto call_arguments = ffi_parameter_name_items(params).join(mlc::String(", ", 2));
+    auto binder_statement = emit_helpers::make_fragment_cpp_statement(((((((((mlc::String("static auto const ", 18) + binder_name) + mlc::String(" = static_cast<", 15)) + return_type_cpp) + mlc::String("(*)(", 4)) + signature_params) + mlc::String(")>(&::", 6)) + extern_c_name) + mlc::String(");", 2)));
+    auto call_expression = ((call_arguments.length() == 0) ? ((binder_name + mlc::String("()", 2))) : ((((binder_name + mlc::String("(", 1)) + call_arguments) + mlc::String(")", 1))));
+    auto return_statement = emit_helpers::make_fragment_cpp_statement(((mlc::String("return ", 7) + call_expression) + mlc::String(";", 1)));
+    auto all_type_params = merged_function_type_parameters_cpp(type_params, escape_info);
+    return std::make_shared<cpp_ast::CppDeclaration>(cpp_ast::CppFnDef{(cpp_naming::template_prefix(all_type_params) + type_gen::requires_clause(type_params, type_bounds)), return_type_cpp, safe_name, parameters, mlc::Array{binder_statement, return_statement}, 1});
+  }
 }
 bool semantic_fn_body_is_extern(std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept{
   return [&]() -> bool {

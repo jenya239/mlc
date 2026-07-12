@@ -87,6 +87,7 @@ std::shared_ptr<cpp_ast::CppDeclaration> gen_extern_type_decl_cpp(mlc::String ty
 mlc::String collect_ffi_include_lines(mlc::Array<std::shared_ptr<semantic_ir::SemanticDeclaration>> declarations) noexcept;
 mlc::Array<mlc::String> ffi_parameter_type_items(mlc::Array<std::shared_ptr<ast::Param>> params, context::CodegenContext context) noexcept;
 mlc::Array<mlc::String> ffi_parameter_name_items(mlc::Array<std::shared_ptr<ast::Param>> params) noexcept;
+bool ffi_extern_reuses_imported_binding(mlc::String name, context::CodegenContext context) noexcept;
 std::shared_ptr<cpp_ast::CppDeclaration> gen_ffi_fn_proto_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, semantic_ir::FnEscapeInfo escape_info, context::CodegenContext context) noexcept;
 std::shared_ptr<cpp_ast::CppDeclaration> gen_ffi_fn_decl_cpp(mlc::String name, mlc::Array<mlc::String> type_params, mlc::Array<mlc::Array<mlc::String>> type_bounds, mlc::Array<std::shared_ptr<ast::Param>> params, std::shared_ptr<registry::Type> return_type, std::shared_ptr<semantic_ir::SemanticExpression> body, semantic_ir::FnEscapeInfo escape_info, context::CodegenContext context) noexcept;
 bool semantic_fn_body_is_extern(std::shared_ptr<semantic_ir::SemanticDeclaration> method) noexcept;

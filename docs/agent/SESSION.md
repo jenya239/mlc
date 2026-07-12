@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | `run_extern_dedup_repro.sh` ok (expects clang fail) |
+| test_gate | `run_extern_dedup_repro.sh` ok (build+run) |
+
+### Turn 2026-07-12 04:20 (Driver TRACK_FFI_EXTERN_DEDUP STEP=3 — Hybrid skip-emit)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 04:15 |
+| elapsed | ~15 min |
+| done    | `decl_cpp.mlc`: `ffi_extern_reuses_imported_binding` skips FFI proto/def when `qualified.has(name)`; local emit uses `cpp_safe`. Flipped `run_extern_dedup_repro.sh`. Rebuilt mlcc. |
+| verify  | `TMPDIR=$PWD/tmp compiler/tests/run_extern_dedup_repro.sh` → ok; hpp has only `main` proto. |
+| result  | STEP=3 done. Plain: import wins; no enclose-namespace. |
+| issues  | Foreign `compiler/out/*` left unstaged except if needed; rebuild refreshed out. |
+| next    | ROLE=Driver STEP=4 TRACK_FFI_EXTERN_DEDUP — mismatch signature → mlcc error |
 
 ### Turn 2026-07-12 04:05 (Driver TRACK_FFI_EXTERN_DEDUP STEP=2 — repro fixture)
 
