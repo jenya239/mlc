@@ -236,7 +236,7 @@ Isolate-context `blocking` lint — future (no Isolate call-site gate yet).
 | FFI-адаптер к сторонней C-библиотеке (в основном bookkeeping/error-handling, не алгоритм) | `db/postgres.hpp`, `crypto/sodium.hpp`, часть `net/tcp.hpp` (i32-handle-table) | **убрать**: прямой `extern fn ... = "c_name" from "<header>"` + `extern type`+`drop` (слой уже закрыт, инфраструктура не нужна) — bookkeeping-логика (hex-encode, handle-table) переписывается на MLC |
 | Бизнес-логика/алгоритм, написанный на C++ вместо MLC (не биндинг ни к чему) | WebSocket protocol **ported** 2026-07-11; MSDF EDT/SDF **ported** 2026-07-11 ([TRACK_TEXT_MSDF_TO_MLC](archive/tracks/TRACK_TEXT_MSDF_TO_MLC.md) closed — thin `msdf_bridge` FreeType mask only) | **портировать на MLC целиком**, без FFI вообще для этой части |
 | Runtime function-pointer loader (нужен из-за самого GL ABI, не биндинг конкретной функции) | ~~`gl/glfw_gl_dispatch.cpp` / `loader_shim.cpp`~~ **deleted** 2026-07-11 | **done** — вендоренный **GLAD2** (`runtime/third_party/glad/`); MLC `glad_*.mlc` + `glad_*_abi.hpp`; GLFW window thin `glfw_window_gl` ([TRACK_GL_GLAD_MIGRATION](archive/tracks/TRACK_GL_GLAD_MIGRATION.md)) |
-| FFI-адаптер к сторонней C-библиотеке (HarfBuzz/FreeType) — **пропущен при исходном 2026-07-11 sweep, найден 2026-07-12** | ~~`text/harfbuzz_shim`/`freetype_shim` face cache + pitch-copy~~ → thin `freetype_abi.hpp`/`harfbuzz_abi.hpp` + MLC `misc/gui/text_shaping.mlc` (Map face/font cache + pitch flatten); legacy `*_shim` = deprecated thin wrappers | **done** 2026-07-13 ([TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) STEP=1–10; Critic pending) |
+| FFI-адаптер к сторонней C-библиотеке (HarfBuzz/FreeType) — **пропущен при исходном 2026-07-11 sweep, найден 2026-07-12** | ~~`text/harfbuzz_shim`/`freetype_shim` face cache + pitch-copy~~ → thin `freetype_abi.hpp`/`harfbuzz_abi.hpp` + MLC `misc/gui/text_shaping.mlc` (Map face/font cache + pitch flatten); legacy `*_shim` = deprecated thin wrappers | **done** 2026-07-13 Critic OK ([TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) STEP=1–10) |
 
 **Уточнение по итогам чтения кода (2026-07-11), меняет более раннюю оценку
 в чате**: `header_import.mlc` (авто-парсер `.h` в decl'ы) **не является
@@ -273,7 +273,7 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 - [archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME](archive/tracks/TRACK_LANG_SELF_HOSTED_RUNTIME.md) —
   **won't-do** 2026-07-11 (рантайм остаётся C++).
 - [archive/tracks/TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) —
-  **closed** 2026-07-13 (STEP=1–10; Critic pending): thin `*_abi.hpp`;
+  **closed** 2026-07-13 Critic OK (STEP=1–10): thin `*_abi.hpp`;
   bookkeeping+pitch-copy in `text_shaping.mlc`; shim cache removed;
   REG 20/0; self-host p1≡p2; bench User 0.33s (~27× vs pre-cache).
 

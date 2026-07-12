@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_SHIM_TO_MLC` closed** (STEP=1–10) — Critic `critique-audit` next.
+**`TRACK_TEXT_SHIM_TO_MLC` closed** Critic OK — next Planner: `TRACK_PACKAGE_MANAGER`.
 Archive: [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md).
-Queue after Critic: `TRACK_PACKAGE_MANAGER`.
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)

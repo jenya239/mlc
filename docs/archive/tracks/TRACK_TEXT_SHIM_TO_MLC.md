@@ -10,17 +10,19 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **closed** (2026-07-13) — STEP=1–10 done; Critic next
+## Status: **closed** (2026-07-13) — Critic OK
 
-**Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](TRACK_TEXT_GL_PERF_BASELINE.md)
-Critic OK; [TRACK_LANG_REGION_ARENA](TRACK_LANG_REGION_ARENA.md)
-Critic OK. Bearing API already shipped (`glyph_bearing_x`/`glyph_bearing_y` in
-`freetype_shim.hpp` — **do not duplicate**). This track: move face/font
-handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
+**Critic 2026-07-13:** STEP=1–10 vs `75263977`…`21b33afb` (+ `39aeed57` link fix);
+abi+text_shaping+demos+dirty+shim thin wrappers; REG 20/0 (STEP=9); self-host
+p1≡p2; re-ran `text_shaping_vs_shim_ok` + `gui_text_field_demo` exit 0.
+**reopen: none**. Residuals: deprecated `*_shim` kept for smokes/gate; bench
+User 0.33s wall 0.92s slower than GL_PERF C++-cache after (0.19/0.36) because
+dashboard dynamic lines reshape every frame; `text_renderer_shim` oracle
+untouched (out of scope).
 
 ## Next step
 
-**closed** — `ROLE=Critic STEP=critique-audit TRACK_TEXT_SHIM_TO_MLC`.
+**closed** — Critic OK. Queue: `TRACK_PACKAGE_MANAGER` (Planner activate).
 
 ### STEP=10 done (2026-07-13)
 

@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 10 |
-| active_track | TRACK_TEXT_SHIM_TO_MLC (closed; Critic) |
-| test_gate | bench User 0.33s; a8_string_smoke 0 |
+| step_last | critique-audit |
+| active_track | (none; TEXT_SHIM Critic OK) |
+| test_gate | vs_shim_ok; field 0; Critic OK |
+
+### Turn 2026-07-13 01:55 (Critic TRACK_TEXT_SHIM_TO_MLC — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 01:52 |
+| elapsed | ~10 min |
+| done    | Audited STEP1–10 vs `75263977`…`21b33afb`; PLAN/FFI/archive; re-ran vs_shim+field. |
+| verify  | `text_shaping_vs_shim_ok`; `gui_text_field_demo` exit 0; no CachedFontFace; demos on text_shaping. |
+| result  | **reopen: none**. Residuals: deprecated shim; bench wall vs GL_PERF-after. |
+| issues  | Foreign `text_ide_panels_demo.mlc` / lint leftovers left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate TRACK_PACKAGE_MANAGER STEP=1 |
 
 ### Turn 2026-07-13 01:44 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=10 — close)
 
