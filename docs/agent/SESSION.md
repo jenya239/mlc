@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 6 |
 | active_track | TRACK_CONCURRENCY_TEST_HARNESS |
-| test_gate | docs-only (Planner activate) |
+| test_gate | concurrency_fuzz_gate 32 ok |
+
+### Turn 2026-07-12 11:30 (Driver TRACK_CONCURRENCY_TEST_HARNESS STEP=6 — T6 fuzz nightly)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_CONCURRENCY_TEST_HARNESS |
+| started | 2026-07-12 11:24 |
+| elapsed | ~10 min |
+| done    | `fuzz_scheduler.cpp` (--random); `concurrency_fuzz_gate.sh`; `fuzz_corpus/`; `concurrency-fuzz-nightly.yml`. |
+| verify  | `MLC_FUZZ_SEEDS=32 MLC_FUZZ_SEED0=1 scripts/concurrency_fuzz_gate.sh` ok. |
+| result  | STEP=6 done. Plain: nightly seed fuzz wired; next T7 Decision. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_CONCURRENCY_TEST_HARNESS — T7 Decision MLC TestRuntime vs C++-only |
 
 ### Turn 2026-07-12 11:21 (Planner — plan-refresh → CONCURRENCY_TEST_HARNESS)
 

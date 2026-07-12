@@ -23,6 +23,9 @@ runtime/test/stress_*
 !runtime/test/stress_*.cpp
 runtime/test/test_*
 !runtime/test/test_*.cpp
+runtime/test/fuzz_*
+!runtime/test/fuzz_*.cpp
+!runtime/test/fuzz_corpus/
 compiler/out/obj/
 build/obj/
 build/app

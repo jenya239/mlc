@@ -1,0 +1,25 @@
+# Nightly TestScheduler seed fuzz (TRACK_CONCURRENCY_TEST_HARNESS T6).
+# Non-blocking: not part of PR CI. Manual: workflow_dispatch.
+
+name: Concurrency fuzz nightly
+
+on:
+  schedule:
+    # 05:17 UTC daily
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  concurrency-fuzz:
+    runs-on: ubuntu-latest
+    env:
+      MLC_CXX: clang++
+      MLC_FUZZ_SEEDS: "128"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      - name: Concurrency fuzz gate (TestScheduler seeds)
+        run: scripts/concurrency_fuzz_gate.sh

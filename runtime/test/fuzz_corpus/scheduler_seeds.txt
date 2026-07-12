@@ -1,0 +1,2 @@
+# Regression seeds for TestScheduler fuzz (one uint64 per line).
+# Blank lines and # comments ignored. Gate appends failing seeds here.

@@ -3,9 +3,8 @@
 Источник: `CONCURRENCY_V2.md` §34-37 (deterministic TestRuntime, stress suites,
 sanitizers, Clang thread-safety analysis), развёрнуто в конкретный
 план — как добиться **полного автоматического покрытия** concurrency-примитивов,
-а не единичных smoke-тестов. Статус: **T1–T5 реализованы** (2026-07-09); **T6 active** 2026-07-12
-([TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md));
-T7 pending Decision.
+а не единичных smoke-тестов. Статус: **T1–T6 реализованы** (T6 2026-07-12); **T7 pending** Decision
+([TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md)).
 
 ## Проблема сегодня (проверено по коду)
 

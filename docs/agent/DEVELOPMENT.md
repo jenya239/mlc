@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_TEST_HARNESS` active** — STEP=6 (T6 nightly fuzz) next; T1–T5 done.
+**`TRACK_CONCURRENCY_TEST_HARNESS` active** — STEP=7 (T7 Decision) next; T1–T6 done.
 See [TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md). Queue: TEST_HARNESS → LANG_DOCS → …
 
 

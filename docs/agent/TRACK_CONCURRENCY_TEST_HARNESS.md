@@ -8,14 +8,14 @@ Parent: [../PLAN.md](../PLAN.md) §26 / Фаза 8; спецификация:
 [../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md)
 (Critic OK 2026-07-12 — queue predecessor).
 
-## Status: **active** (Planner 2026-07-12) — очередь §26; T1–T5 done; T6 next
+## Status: **active** (Planner 2026-07-12) — очередь §26; T1–T6 done; T7 next
 
 **Driver 2026-07-09:** T1–T5 done (scheduler, stress matrix, sanitize CI, cancel).
 **Planner 2026-07-12:** activated after SUPERVISOR Critic OK; T6/T7 remaining.
 
 ## Next step
 
-**STEP=6 (T6)** — nightly fuzz/chaos over `TestScheduler` seeds + non-blocking CI cron.
+**STEP=7 (T7)** — Decision: MLC `TestRuntime.new(seed:)` vs C++-only docs (JobQueue/Supervisor pattern).
 
 ## Goal
 
@@ -45,7 +45,7 @@ scripts/concurrency_fuzz_gate.sh
 | 3 (T3) | Новые `runtime/test/stress_mutex.cpp` (high contention, exception-safety под lock), `stress_arc.cpp` (concurrent clone/drop), `stress_spawn.cpp` (много одновременных spawn, exception внутри spawn не роняет процесс). Добавить в `run_concurrency_smoke.sh`. | **done** |
 | 4 (T4) | `scripts/concurrency_sanitize_gate.sh` (asan/ubsan/tsan матрица по всем stress-тестам) + wiring в `.github/workflows/ci.yml` как обязательная job (не опциональный ручной `MLC_TSAN=1`). | **done** |
 | 5 (T5) | Cancel-during-send/recv в матрице Layer 2 (`stress_channel` + StopToken). | **done** |
-| 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. Wire как отдельная (не блокирующая обычный PR) CI job — nightly cron, не на каждый push. | pending |
+| 6 (T6) | Nightly fuzz/chaos job (Layer 4): N случайных seed через `TestScheduler`, regression corpus при падении. Wire как отдельная (не блокирующая обычный PR) CI job — nightly cron, не на каждый push. | **done** (2026-07-12) — `fuzz_scheduler.cpp`, `concurrency_fuzz_gate.sh`, `fuzz_corpus/scheduler_seeds.txt`, `.github/workflows/concurrency-fuzz-nightly.yml` |
 | 7 (T7) | `TestRuntime.new(seed:)` на уровне MLC (тонкая обёртка над `TestScheduler`) — решить MLC-reachable или C++-only тем же способом что `STDLIB_JOB_QUEUE`/`CONCURRENCY_SUPERVISOR` Step 4 (не предполагать MLC-reachable по умолчанию). | pending |
 
 ### STEP=6 (T6) sub-steps (Driver)
@@ -63,6 +63,7 @@ Decision-first (like Supervisor STEP=4 / JobQueue): MLC `TestRuntime.new(seed:)`
 
 - **T1–T5** (2026-07-09): done (scheduler, stress, sanitize CI, cancel).
 - **Planner** (2026-07-12): activated after SUPERVISOR Critic OK; STEP=6 (T6) next.
+- **STEP=6 / T6** (2026-07-12): `fuzz_scheduler` + `scripts/concurrency_fuzz_gate.sh` + nightly workflow; corpus `runtime/test/fuzz_corpus/scheduler_seeds.txt`; gate ok (32 random, seed0=1).
 
 ## Out of scope (этот трек)
 
