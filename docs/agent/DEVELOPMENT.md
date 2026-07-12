@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_HTTP_HARDENING` closed Critic OK** — Planner activates SUPERVISOR next.
-See [archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md](../archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md).
-Queue: Planner → SUPERVISOR → …
+**`TRACK_CONCURRENCY_SUPERVISOR` active** — STEP=1 (`supervisor.hpp` skeleton) next.
+See [TRACK_CONCURRENCY_SUPERVISOR.md](TRACK_CONCURRENCY_SUPERVISOR.md). Queue: SUPERVISOR → TEST_HARNESS → …
 
 
 

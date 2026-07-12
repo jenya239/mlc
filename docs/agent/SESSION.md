@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_HTTP_HARDENING (Critic OK) |
-| test_gate | Critic re-ran 6 HTTP smokes ok |
+| step_last | plan-refresh |
+| active_track | TRACK_CONCURRENCY_SUPERVISOR |
+| test_gate | — (Planner; no code) |
+
+### Turn 2026-07-12 10:05 (Planner — plan-refresh → CONCURRENCY_SUPERVISOR)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:00 |
+| elapsed | ~5 min |
+| done    | Activated §25; STEP=1 sub-steps; PLAN/DEVELOPMENT; HTTP Critic OK → SUPERVISOR queue head. |
+| verify  | TRACK Status **active** Next=STEP=1; PLAN §25 **active**. |
+| result  | Active track = SUPERVISOR. Plain: next is supervisor.hpp skeleton. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_CONCURRENCY_SUPERVISOR — `supervisor.hpp` register/start/stop |
 
 ### Turn 2026-07-12 10:00 (Critic TRACK_STDLIB_HTTP_HARDENING critique-audit)
 

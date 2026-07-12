@@ -1,26 +1,18 @@
 # Track: Concurrency Supervisor
 
-Parent: [../PLAN.md](../PLAN.md) Фаза 8; spec:
+Parent: [../PLAN.md](../PLAN.md) §25 / Фаза 8; spec:
 [../CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §28–29 (Supervisor, restart storm).
 Predecessor closed:
 [../archive/tracks/TRACK_CONCURRENCY_ISOLATE.md](../archive/tracks/TRACK_CONCURRENCY_ISOLATE.md)
 (ThreadPool, Isolate, StopToken shutdown).
+HTTP hardening closed (Critic OK 2026-07-12):
+[../archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md](../archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md).
 
-## Status: **open** — gate satisfied 2026-07-11
+## Status: **active** (Planner 2026-07-12) — очередь §25
 
-**Gate satisfied (2026-07-11):** WebSocket stage reached —
-[TRACK_STDLIB_WEBSOCKET_TO_MLC](../archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md)
-closed, `TRACK_CONCURRENCY_SPAWN_DETACH` closed (real parallel
-`scope`+`spawn` accept loops verified with curl), HTTP server working
-end-to-end in MLC ([TRACK_STDLIB_HTTP_MLC](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md)).
-The originally-required "first realistic multi-connection app that exercises
-`Isolate`/`TaskScope` per-connection under real concurrent load" now exists
-(`misc/examples/http_scope_accept_loop_demo.mlc`,
-`misc/examples/http_server_forever_demo.mlc`). Driver may start STEP=1.
+## Next step
 
-**Driver 2026-07-09 (historical):** Created on ISOLATE close. `TRACK_FFI_LAYER` closed;
-queue head is [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md) (API_CLIENT closed). Supervisor needs Isolate/TaskScope
-in production use before heavy work.
+**STEP=1** — `Supervisor` runtime skeleton (`supervisor.hpp`): register / start / stop children.
 
 ## Goal
 
@@ -39,8 +31,31 @@ Library-first child supervision: `permanent|transient|temporary`, start with
 | 6 | Docs: `CONCURRENCY_V2.md` §28-29 — mark implemented; `STDLIB_BACKEND.md` — one row if MLC-reachable | pending |
 | 7 | Verify: `runtime/test/run_concurrency_smoke.sh` includes new supervisor test; sanitizer gate (`scripts/concurrency_sanitize_gate.sh`) green; self-host diff only if MLC-reachable (Step 4 decided yes) | pending |
 
+### STEP=1 sub-steps (Driver)
+
+1. Read `runtime/include/mlc/concurrency/task_scope.hpp` + `stop.hpp` — how spawn closures and `StopToken` cooperative stop work today.
+2. Add `runtime/include/mlc/concurrency/supervisor.hpp` (header-only if peers are): child registry (`id`/name + `std::function<void()>` body), `start()` launches children on `ThreadPool`/`std::thread` (match Isolate/TaskScope pattern — prefer existing pool), `stop()` requests stop via `StopToken` and joins.
+3. Minimal C++ unit under `runtime/test/` (or extend `run_concurrency_smoke.sh`) that registers 1–2 no-op children, start+stop without leak/hang.
+4. Do **not** implement restart policies here (STEP=2) or storm limits (STEP=3).
+
+### Progress
+
+- **Planner** (2026-07-12): activated after HTTP Critic OK; STEP=1 next.
+
 ## Out of scope
 
 - `one_for_all` / `rest_for_one` (later).
 - async I/O / `IoReactor`.
 - Full OTP actor model.
+
+## Gate (historical)
+
+**Gate satisfied (2026-07-11):** WebSocket stage reached —
+[TRACK_STDLIB_WEBSOCKET_TO_MLC](../archive/tracks/TRACK_STDLIB_WEBSOCKET_TO_MLC.md)
+closed, `TRACK_CONCURRENCY_SPAWN_DETACH` closed (real parallel
+`scope`+`spawn` accept loops verified with curl), HTTP server working
+end-to-end in MLC ([TRACK_STDLIB_HTTP_MLC](../archive/tracks/TRACK_STDLIB_HTTP_MLC.md)).
+The originally-required "first realistic multi-connection app that exercises
+`Isolate`/`TaskScope` per-connection under real concurrent load" now exists
+(`misc/examples/http_scope_accept_loop_demo.mlc`,
+`misc/examples/http_server_forever_demo.mlc`).
