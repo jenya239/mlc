@@ -13,8 +13,8 @@ needed, go straight to implementation.
 
 ## Next step
 
-**STEP=3** — Wire `text_dashboard_demo.mlc` to persistent `GlyphCache` /
-`GlyphAtlas` across frames (no fresh atlas every frame).
+**STEP=4** — Skip atlas zero/upload when GlyphCache had no misses this frame
+(`atlas_dirty` bool).
 
 ### STEP=1 sub-steps (Driver)
 
@@ -91,7 +91,7 @@ exact formula into the GL live path — do not re-derive it.
 |------|------|--------|
 | 1 | `runtime/src/text/freetype_shim.cpp` + `harfbuzz_shim.cpp`: introduce a small process-local cache keyed by `(font_path, pixel_size)` holding `FT_Library` + `FT_Face` (+ `hb_font_t*` for the harfbuzz side) — create once on first use, reuse on subsequent calls, never torn down until process exit (or an explicit `unload` if one already exists elsewhere — check first). This alone removes the dominant cost (disk font-file re-parse thousands of times/sec) | **done** (2026-07-12) |
 | 2 | Concurrency note: these caches are process-global mutable state — if any GL demo ever moves shaping/rasterization off the main/GL thread, this needs a mutex; for now (single-threaded render loop in every current demo) document the constraint in the header comment, do not over-engineer a lock-free cache speculatively | **done** (2026-07-12) |
-| 3 | Wire `text_dashboard_demo.mlc` (and, if trivial, `text_window_demo.mlc`) to use the existing `misc/gui/text_renderer.mlc` `GlyphCache` (`glyph_cache_new` once at startup, `glyph_cache_get`/`glyph_cache_insert` per glyph per frame) instead of calling `glyph_atlas_new`/unconditional `glyph_atlas_pack` fresh every frame — persist `GlyphCache` + `GlyphAtlas` across frames in `main()`'s loop state | pending |
+| 3 | Wire `text_dashboard_demo.mlc` (and, if trivial, `text_window_demo.mlc`) to use the existing `misc/gui/text_renderer.mlc` `GlyphCache` (`glyph_cache_new` once at startup, `glyph_cache_get`/`glyph_cache_insert` per glyph per frame) instead of calling `glyph_atlas_new`/unconditional `glyph_atlas_pack` fresh every frame — persist `GlyphCache` + `GlyphAtlas` across frames in `main()`'s loop state | **done** (2026-07-12; dashboard only — `text_window_demo` has inline atlas, not trivial) |
 | 4 | Skip `text_scratch_u8_resize_zero`/`text_renderer_upload_atlas` on frames where the glyph cache had no misses (nothing new packed) — track a simple "atlas dirty" bool for the frame | pending |
 | 5 | Benchmark before/after: wall-clock CPU time (`/usr/bin/time -v` or `perf stat`) for 300 frames of `text_dashboard_demo.mlc`, headless (no `MLC_GLFW_VISIBLE`) if possible via existing smoke harness, or visible with a fixed frame count — record both numbers in this track, not just "feels faster" | pending |
 | 6 | Verify: existing text-rendering smokes (`run_text_renderer_native_smoke.sh`, `run_gui_text_field_demo.sh`, golden `text_a8_privet_24.rgba` MAE check) still pass after the cache changes — no regression in correctness while fixing perf | pending |
@@ -117,6 +117,8 @@ exact formula into the GL live path — do not re-derive it.
   caches; no per-call Init/New_Face/Done; freetype+harfbuzz smokes ok.
 - **Driver STEP=2** (2026-07-12): expanded header + `.cpp` comments — process-global
   mutable cache, main/GL only, mutex required before off-thread use; no mutex added.
+- **Driver STEP=3** (2026-07-12): `text_dashboard_demo.mlc` — persistent `GlyphCache`/
+  `GlyphAtlas`; `append_line` get/insert; fixed box slot; atlas zero once at startup.
 
 ## Out of scope
 

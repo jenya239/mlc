@@ -3,6 +3,7 @@
 // real mouse input. Everything drawn through the shared TextRenderer
 // (misc/gui/text_renderer.mlc) — the "button" is a plain rect blitted into
 // the same luminance atlas as the glyphs (no second shader needed).
+// GlyphCache + GlyphAtlas persist across frames (TRACK_TEXT_GL_PERF_BASELINE STEP=3).
 // Run with: MLC_GLFW_VISIBLE=1 ./bin
 
 import { rect_new } from '../gui/layout'
@@ -10,10 +11,13 @@ import { gui_input_poll, gui_is_hovered, gui_click_edge } from '../gui/input'
 import {
   GlyphAtlas,
   AtlasSlot,
-  GlyphAtlasPackOk,
-  TextRenderer,
+  GlyphCache,
+  GlyphCacheKey,
   glyph_atlas_new,
   glyph_atlas_pack,
+  glyph_cache_new,
+  glyph_cache_get,
+  glyph_cache_insert,
   text_renderer_create,
   text_renderer_upload_atlas,
   text_renderer_set_batch,
@@ -30,8 +34,6 @@ import {
   text_context_swap_poll,
   text_context_end
 } from '../gui/text_renderer'
-
-extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 
 extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
   = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
@@ -58,74 +60,71 @@ extern fn sleep_ms(milliseconds: i32) -> unit
 
 type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32 }
 
-fn ndc_left(pixel_x: i32, window_width: i32) -> f64 =
-  2.0 * i32_to_f64(pixel_x) / i32_to_f64(window_width) - 1.0
+type LineDrawResult = {
+  atlas: GlyphAtlas,
+  cache: GlyphCache,
+  vertex_count: i32
+}
 
-fn ndc_top(pixel_y: i32, window_height: i32) -> f64 =
-  1.0 - 2.0 * i32_to_f64(pixel_y) / i32_to_f64(window_height)
-
-// Append one shaped line into `atlas`; blits glyphs into the u8 scratch and
-// pushes screen-space quads into the f32 vertex scratch. Returns updated
-// atlas + vertex count added (0 on shaping failure, skips the line).
+// Append one shaped line using persistent GlyphCache/GlyphAtlas.
+// Cache miss → rasterize + pack + blit; hit → reuse atlas slot.
 fn append_line(
-  font_path: string, line: Line, window_width: i32, window_height: i32,
-  atlas: GlyphAtlas, atlas_size: i32
-) -> GlyphAtlasPackOk = do
+  font_path: string, font_id: i32, line: Line,
+  window_width: i32, window_height: i32,
+  atlas: GlyphAtlas, cache: GlyphCache, atlas_size: i32
+) -> LineDrawResult = do
   const count = shape_glyph_count(font_path, line.text, line.pixel_size)
   if count < 0 then
-    return GlyphAtlasPackOk { atlas: atlas, slot: AtlasSlot { page_index: 0, x: 0, y: 0, width: 0, height: 0 }, error_code: 0 }
+    return LineDrawResult { atlas: atlas, cache: cache, vertex_count: 0 }
   end
-  let mut working = atlas
+  let mut working_atlas = atlas
+  let mut working_cache = cache
   let mut cursor_x = line.pen_x
   let mut index = 0
   let mut vertices = 0
   while index < count do
     const glyph_id = shape_glyph_id_at(index)
-    const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
-    if packed >= 0 then
-      const width = glyph_width()
-      const rows = glyph_rows()
-      if width > 0 && rows > 0 then
-        const pack = glyph_atlas_pack(working, 0, width, rows)
-        if pack.error_code == 0 then
-          working = pack.atlas
-          if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
-            gl_scratch_push_screen_quad(
-              window_width, window_height, cursor_x, line.pen_y, width, rows,
-              atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
-            )
-            vertices = vertices + 6
+    const key = GlyphCacheKey {
+      font_id: font_id,
+      glyph_index: glyph_id,
+      size_px: line.pixel_size,
+      mode: 0
+    }
+    const cached = glyph_cache_get(working_cache, key)
+    working_cache = cached.cache
+    let mut slot = cached.slot
+    if cached.found == 0 then
+      const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
+      if packed >= 0 then
+        const width = glyph_width()
+        const rows = glyph_rows()
+        if width > 0 && rows > 0 then
+          const pack = glyph_atlas_pack(working_atlas, 0, width, rows)
+          if pack.error_code == 0 then
+            working_atlas = pack.atlas
+            if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
+              slot = pack.slot
+              const inserted = glyph_cache_insert(working_cache, key, slot)
+              working_cache = inserted.cache
+            end
           end
         end
       end
     end
+    if slot.width > 0 && slot.height > 0 then
+      gl_scratch_push_screen_quad(
+        window_width, window_height, cursor_x, line.pen_y, slot.width, slot.height,
+        atlas_size, slot.x, slot.y, slot.width, slot.height
+      )
+      vertices = vertices + 6
+    end
     cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
     index = index + 1
   end
-  GlyphAtlasPackOk {
-    atlas: working,
-    slot: AtlasSlot { page_index: vertices, x: 0, y: 0, width: 0, height: 0 },
-    error_code: 0
-  }
-end
-
-fn append_box(
-  window_width: i32, window_height: i32, atlas: GlyphAtlas, atlas_size: i32,
-  box_x: i32, box_y: i32, box_width: i32, box_height: i32, brightness: i32
-) -> GlyphAtlasPackOk = do
-  const pack = glyph_atlas_pack(atlas, 0, box_width, box_height)
-  if pack.error_code != 0 then
-    return GlyphAtlasPackOk { atlas: atlas, slot: AtlasSlot { page_index: 0, x: 0, y: 0, width: 0, height: 0 }, error_code: 0 }
-  end
-  text_scratch_u8_fill_rect(atlas_size, pack.slot.x, pack.slot.y, box_width, box_height, brightness)
-  gl_scratch_push_screen_quad(
-    window_width, window_height, box_x, box_y, box_width, box_height,
-    atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
-  )
-  GlyphAtlasPackOk {
-    atlas: pack.atlas,
-    slot: AtlasSlot { page_index: 6, x: 0, y: 0, width: 0, height: 0 },
-    error_code: 0
+  LineDrawResult {
+    atlas: working_atlas,
+    cache: working_cache,
+    vertex_count: vertices
   }
 end
 
@@ -144,6 +143,7 @@ fn main() -> i32 = do
   const height = 640
   const atlas_size = 1024
   const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const font_id = 1
   const button_rect = rect_new(40, 420, 260, 64)
 
   const begin_status = text_context_begin(width, height)
@@ -158,6 +158,23 @@ fn main() -> i32 = do
   end
 
   println("[mlc-text] window open — move the mouse, click the box, Esc to quit")
+
+  text_scratch_u8_clear()
+  text_scratch_u8_resize_zero(atlas_size * atlas_size)
+  let mut atlas = glyph_atlas_new(atlas_size)
+  let mut cache = glyph_cache_new(512)
+
+  // Reserve a fixed atlas slot for the hover/click box (refilled each frame).
+  const box_pack = glyph_atlas_pack(
+    atlas, 0, button_rect.width, button_rect.height
+  )
+  if box_pack.error_code != 0 then
+    text_renderer_destroy(renderer)
+    text_context_end()
+    return -30
+  end
+  atlas = box_pack.atlas
+  const box_slot = box_pack.slot
 
   let mut previous_mouse_down = 0
   let mut click_count = 0
@@ -188,29 +205,34 @@ fn main() -> i32 = do
       Line { text: status_line, pixel_size: 24, pen_x: 40, pen_y: 400 }
     ]
 
-    text_scratch_u8_clear()
-    text_scratch_u8_resize_zero(atlas_size * atlas_size)
     text_scratch_f32_clear()
-    let mut atlas = glyph_atlas_new(atlas_size)
     let mut vertex_count = 0
 
     let mut line_index = 0
     while line_index < lines.length() do
-      const result = append_line(font_path, lines[line_index], width, height, atlas, atlas_size)
+      const result = append_line(
+        font_path, font_id, lines[line_index], width, height,
+        atlas, cache, atlas_size
+      )
       atlas = result.atlas
-      vertex_count = vertex_count + result.slot.page_index
+      cache = result.cache
+      vertex_count = vertex_count + result.vertex_count
       line_index = line_index + 1
     end
 
     let mut box_brightness = 70
     if hovered == 1 then box_brightness = 170 end
     if click_count > 0 then box_brightness = box_brightness + 40 end
-    const box_result = append_box(
-      width, height, atlas, atlas_size,
-      button_rect.x, button_rect.y, button_rect.width, button_rect.height, box_brightness
+    text_scratch_u8_fill_rect(
+      atlas_size, box_slot.x, box_slot.y,
+      button_rect.width, button_rect.height, box_brightness
     )
-    atlas = box_result.atlas
-    vertex_count = vertex_count + box_result.slot.page_index
+    gl_scratch_push_screen_quad(
+      width, height,
+      button_rect.x, button_rect.y, button_rect.width, button_rect.height,
+      atlas_size, box_slot.x, box_slot.y, box_slot.width, box_slot.height
+    )
+    vertex_count = vertex_count + 6
 
     text_renderer_upload_atlas(renderer)
     text_bind_array_buffer(renderer.vertex_buffer)

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | comment/grep (no mutex) |
+| test_gate | dashboard compile+link+run |
+
+### Turn 2026-07-12 13:05 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=3 — GlyphCache wire)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:03 |
+| elapsed | ~5 min |
+| done    | `text_dashboard_demo.mlc`: persistent `glyph_cache_new(512)` + atlas; `append_line` via get/insert; box slot packed once; `resize_zero` once at startup. Skipped `text_window_demo` (inline atlas). |
+| verify  | `mlcc`+`build_bin.sh` ok; `MLC_GLFW_VISIBLE=0` run prints window open, no crash. |
+| result  | STEP=3 done. Plain: glyphs reuse atlas slots across frames. |
+| issues  | Foreign `extern_concurrency_lint.*` + `.tmp/` left. |
+| next    | ROLE=Driver STEP=4 TRACK_TEXT_GL_PERF_BASELINE — atlas_dirty skip zero/upload |
 
 ### Turn 2026-07-12 13:02 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=2 — concurrency note)
 
