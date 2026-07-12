@@ -281,6 +281,7 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 |-------------|-----|----------|
 | Concurrency attr на full-form `extern … from "…"` | Checker | `W-EXTERN-ATTR` — warning, если нет `blocking` / `thread_safe` / `thread_affine` (§2.7). Shorthand без `from` attrs нести не может — пропуск. |
 | Arity vs imported `.h` stub | Checker | `W-EXTERN-ARITY` — best-effort: если `import` уже загрузил header (`header_import`), сравнить число параметров full-form `extern fn` с stub того же C-символа. Нет import → нет warning. |
+| Duplicate `(c_name, header)` across load graph | Checker + codegen | Identical arity → silent reuse (skip second emit). Conflicting arity → **E090** (see §10). |
 | Lifetime `RawPointer[T]` | Автор | Нет borrow checker; указатель жив, пока жив C-объект. |
 | Null | Автор | Нет null-check; `null`/`nullptr` — обязанность биндинга/`Result`. |
 | Полная ABI-сверка типов (не только arity) | Автор / future | Checker не сравнивает C types с MLC types побайтно. |
@@ -291,4 +292,14 @@ function pointers **внутри себя** (`#define glDrawArrays glad_glDrawAr
 **Verify:** smokes `run_extern_concurrency_attr_smoke.sh`,
 `run_extern_header_arity_smoke.sh`. Close-gate трека — STEP=5
 (`regression_gate` + self-host).
+
+## 10. Duplicate `extern … from "<header>"` across imports ([TRACK_FFI_EXTERN_DEDUP](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md) — closed)
+
+Key is `(c_name, header)`. Hybrid rule: if an import already exports the same MLC
+name, codegen skips a second FFI wrapper (`ffi_extern_reuses_imported_binding` in
+`decl_cpp.mlc`) so clang never sees `imported_ns::fn` defined inside the consumer
+namespace. Same key with a different arity → checker **E090** (`extern_dedup_lint.mlc`),
+message points at the earlier site. Identical-arity redeclare is allowed (silent reuse).
+
+**Verify:** `run_extern_dedup_repro.sh`, `run_extern_dedup_mismatch_smoke.sh`.
 

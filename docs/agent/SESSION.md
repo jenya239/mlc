@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | REG 20/0; sweep 106/0/1 |
+| driver_turns_since_plan | 0 |
+| step_last | 8 |
+| active_track | (none) — Critic next |
+| test_gate | STEP=8 docs; REG 20/0 from STEP=7 |
+
+### Turn 2026-07-12 05:50 (Driver TRACK_FFI_EXTERN_DEDUP STEP=8 — docs close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 05:48 |
+| elapsed | ~5 min |
+| done    | `FFI_LAYER.md` §10 + safety table E090 row; TRACK → `archive/tracks/`; PLAN §22 **done**. |
+| verify  | `test ! -f docs/agent/TRACK_FFI_EXTERN_DEDUP.md`; archive + §10 present. |
+| result  | STEP=8 done; track **closed**. Plain: dedup rule documented. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Critic STEP=critique-audit TRACK_FFI_EXTERN_DEDUP |
 
 ### Turn 2026-07-12 05:45 (Driver TRACK_FFI_EXTERN_DEDUP STEP=7 — regression_gate)
 

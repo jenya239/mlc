@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_FFI_EXTERN_DEDUP` active** — STEP=7 done; STEP=8 (FFI_LAYER.md + close → Critic) next.
-See [TRACK_FFI_EXTERN_DEDUP.md](TRACK_FFI_EXTERN_DEDUP.md). Queue: FFI_EXTERN_DEDUP → GUI_INPUT → …
+**No active Driver track.** Last: `TRACK_FFI_EXTERN_DEDUP` closed (awaiting Critic).
+See [TRACK_FFI_EXTERN_DEDUP.md](../archive/tracks/TRACK_FFI_EXTERN_DEDUP.md). Queue next after Critic: GUI_INPUT → …
+
 
 
 ## Step sizing (good vs bad)
