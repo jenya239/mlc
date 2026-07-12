@@ -4,7 +4,8 @@
 // (misc/gui/text_renderer.mlc) — the "button" is a plain rect blitted into
 // the same luminance atlas as the glyphs (no second shader needed).
 // GlyphCache + GlyphAtlas persist across frames; upload GPU atlas only when
-// dirty (TRACK_TEXT_GL_PERF_BASELINE STEP=3–4).
+// dirty (TRACK_TEXT_GL_PERF_BASELINE STEP=3–4). TRACK_TEXT_SHIM_TO_MLC STEP=7:
+// skip reshape/rebuild/upload entirely when lines_key unchanged.
 // Run with: MLC_GLFW_VISIBLE=1 ./bin
 // Bench: MLC_TEXT_DASHBOARD_BENCH=1 → 300 frames, no sleep_ms (STEP=5).
 
@@ -208,6 +209,8 @@ fn main() -> i32 = do
   let mut click_count = 0
   let mut frame_index = 0
   let mut previous_box_brightness = -1
+  let mut previous_lines_key = ""
+  let mut previous_vertex_count = 0
 
   while text_context_should_close() == 0 do
     const input = gui_input_poll()
@@ -235,56 +238,69 @@ fn main() -> i32 = do
       Line { text: status_line, pixel_size: 24, pen_x: 40, pen_y: 400 }
     ]
 
-    text_scratch_f32_clear()
-    let mut vertex_count = 0
-    let mut atlas_dirty = 0
-
-    let mut line_index = 0
-    while line_index < lines.length() do
-      const result = append_line(
-        font_path, font_id, lines[line_index], width, height,
-        atlas, cache, shaping, atlas_size
-      )
-      atlas = result.atlas
-      cache = result.cache
-      shaping = result.shaping
-      vertex_count = vertex_count + result.vertex_count
-      if result.atlas_dirty == 1 then
-        atlas_dirty = 1
-      end
-      line_index = line_index + 1
-    end
-
     let mut box_brightness = 70
     if hovered == 1 then box_brightness = 170 end
     if click_count > 0 then box_brightness = box_brightness + 40 end
-    if box_brightness != previous_box_brightness then
-      text_scratch_u8_fill_rect(
-        atlas_size, box_slot.x, box_slot.y,
-        button_rect.width, button_rect.height, box_brightness
-      )
-      previous_box_brightness = box_brightness
-      atlas_dirty = 1
-    end
-    gl_scratch_push_screen_quad(
-      width, height,
-      button_rect.x, button_rect.y, button_rect.width, button_rect.height,
-      atlas_size, box_slot.x, box_slot.y, box_slot.width, box_slot.height
-    )
-    vertex_count = vertex_count + 6
 
-    if atlas_dirty == 1 then
-      const upload_status = text_renderer_upload_atlas(renderer)
-      if upload_status != 0 then
-        text_renderer_destroy(renderer)
-        text_context_end()
-        return upload_status
+    // STEP=7: skip reshape/rebuild/upload when line texts + box unchanged.
+    let mut lines_key = box_brightness.to_string()
+    let mut key_index = 0
+    while key_index < lines.length() do
+      lines_key = lines_key + "\n" + lines[key_index].text
+      key_index = key_index + 1
+    end
+
+    if lines_key != previous_lines_key then
+      text_scratch_f32_clear()
+      let mut vertex_count = 0
+      let mut atlas_dirty = 0
+
+      let mut line_index = 0
+      while line_index < lines.length() do
+        const result = append_line(
+          font_path, font_id, lines[line_index], width, height,
+          atlas, cache, shaping, atlas_size
+        )
+        atlas = result.atlas
+        cache = result.cache
+        shaping = result.shaping
+        vertex_count = vertex_count + result.vertex_count
+        if result.atlas_dirty == 1 then
+          atlas_dirty = 1
+        end
+        line_index = line_index + 1
       end
-    end
-    text_bind_array_buffer(renderer.vertex_buffer)
-    text_upload_dynamic_scratch()
-    renderer = text_renderer_set_batch(renderer, vertex_count)
 
+      if box_brightness != previous_box_brightness then
+        text_scratch_u8_fill_rect(
+          atlas_size, box_slot.x, box_slot.y,
+          button_rect.width, button_rect.height, box_brightness
+        )
+        previous_box_brightness = box_brightness
+        atlas_dirty = 1
+      end
+      gl_scratch_push_screen_quad(
+        width, height,
+        button_rect.x, button_rect.y, button_rect.width, button_rect.height,
+        atlas_size, box_slot.x, box_slot.y, box_slot.width, box_slot.height
+      )
+      vertex_count = vertex_count + 6
+
+      if atlas_dirty == 1 then
+        const upload_status = text_renderer_upload_atlas(renderer)
+        if upload_status != 0 then
+          text_renderer_destroy(renderer)
+          text_context_end()
+          return upload_status
+        end
+      end
+      text_bind_array_buffer(renderer.vertex_buffer)
+      text_upload_dynamic_scratch()
+      previous_lines_key = lines_key
+      previous_vertex_count = vertex_count
+    end
+
+    renderer = text_renderer_set_batch(renderer, previous_vertex_count)
     text_renderer_draw(renderer, width, height)
     text_context_swap_poll()
     if frame_sleep_ms > 0 then

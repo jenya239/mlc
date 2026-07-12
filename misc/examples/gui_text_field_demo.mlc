@@ -1,4 +1,6 @@
 // TRACK_GUI_INPUT_ROBUSTNESS STEP=4 — single-line text field via TextRenderer.
+// TRACK_TEXT_SHIM_TO_MLC STEP=7 — dirty-flag atlas: persistent GlyphCache;
+// skip reshape/rebuild/upload when display text unchanged.
 // Headless: inject chars + backspace edge; assert field ends as "Hi".
 // Interactive: MLC_GLFW_VISIBLE=1 (skip auto inject after frame script).
 
@@ -12,10 +14,15 @@ import {
 import {
   GlyphAtlas,
   AtlasSlot,
+  GlyphCache,
+  GlyphCacheKey,
   GlyphAtlasPackOk,
   TextRenderer,
   glyph_atlas_new,
   glyph_atlas_pack,
+  glyph_cache_new,
+  glyph_cache_get,
+  glyph_cache_insert,
   text_renderer_create,
   text_renderer_upload_atlas,
   text_renderer_set_batch,
@@ -56,60 +63,90 @@ type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32 }
 
 type AppendLineResult = {
   atlas: GlyphAtlas,
+  cache: GlyphCache,
   shaping: TextShapingState,
-  vertex_count: i32
+  vertex_count: i32,
+  atlas_dirty: i32
 }
 
 fn append_line(
-  font_path: string, line: Line, window_width: i32, window_height: i32,
-  atlas: GlyphAtlas, shaping: TextShapingState, atlas_size: i32
+  font_path: string, font_id: i32, line: Line,
+  window_width: i32, window_height: i32,
+  atlas: GlyphAtlas, cache: GlyphCache, shaping: TextShapingState, atlas_size: i32
 ) -> AppendLineResult = do
   const shaped = text_shaping_shape(shaping, font_path, line.pixel_size, line.text)
   if shaped.error_code != 0 then
     return AppendLineResult {
       atlas: atlas,
+      cache: cache,
       shaping: shaped.state,
-      vertex_count: 0
+      vertex_count: 0,
+      atlas_dirty: 0
     }
   end
-  let mut working = atlas
+  let mut working_atlas = atlas
+  let mut working_cache = cache
   let mut working_shaping = shaped.state
   let mut cursor_x = line.pen_x
   let mut index = 0
   let mut vertices = 0
+  let mut atlas_dirty = 0
   while index < shaped.glyph_count do
     const glyph_id = text_shaping_glyph_id_at(index)
-    const raster = text_shaping_rasterize_glyph(
-      working_shaping, font_path, line.pixel_size, glyph_id
-    )
-    if raster.error_code == 0 then
-      const width = raster.width
-      const rows = raster.rows
-      const bearing_x = raster.bearing_x
-      const bearing_y = raster.bearing_y
-      if width > 0 && rows > 0 then
-        const pack = glyph_atlas_pack(working, 0, width, rows)
-        if pack.error_code == 0 then
-          working = pack.atlas
-          if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
-            gl_scratch_push_screen_quad(
-              window_width, window_height,
-              cursor_x + bearing_x, line.pen_y - bearing_y,
-              width, rows,
-              atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
-            )
-            vertices = vertices + 6
+    const key = GlyphCacheKey {
+      font_id: font_id,
+      glyph_index: glyph_id,
+      size_px: line.pixel_size,
+      mode: 0
+    }
+    const cached = glyph_cache_get(working_cache, key)
+    working_cache = cached.cache
+    let mut slot = cached.slot
+    let mut bearing_x = cached.bearing_x
+    let mut bearing_y = cached.bearing_y
+    if cached.found == 0 then
+      const raster = text_shaping_rasterize_glyph(
+        working_shaping, font_path, line.pixel_size, glyph_id
+      )
+      if raster.error_code == 0 then
+        const width = raster.width
+        const rows = raster.rows
+        bearing_x = raster.bearing_x
+        bearing_y = raster.bearing_y
+        if width > 0 && rows > 0 then
+          const pack = glyph_atlas_pack(working_atlas, 0, width, rows)
+          if pack.error_code == 0 then
+            working_atlas = pack.atlas
+            if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
+              slot = pack.slot
+              const inserted = glyph_cache_insert(
+                working_cache, key, slot, bearing_x, bearing_y
+              )
+              working_cache = inserted.cache
+              atlas_dirty = 1
+            end
           end
         end
       end
+    end
+    if slot.width > 0 && slot.height > 0 then
+      gl_scratch_push_screen_quad(
+        window_width, window_height,
+        cursor_x + bearing_x, line.pen_y - bearing_y,
+        slot.width, slot.height,
+        atlas_size, slot.x, slot.y, slot.width, slot.height
+      )
+      vertices = vertices + 6
     end
     cursor_x = cursor_x + text_shaping_glyph_advance_at(index) / 64
     index = index + 1
   end
   AppendLineResult {
-    atlas: working,
+    atlas: working_atlas,
+    cache: working_cache,
     shaping: working_shaping,
-    vertex_count: vertices
+    vertex_count: vertices,
+    atlas_dirty: atlas_dirty
   }
 end
 
@@ -132,7 +169,7 @@ fn append_box(
   )
   GlyphAtlasPackOk {
     atlas: pack.atlas,
-    slot: AtlasSlot { page_index: 6, x: 0, y: 0, width: 0, height: 0 },
+    slot: pack.slot,
     error_code: 0
   }
 end
@@ -147,6 +184,7 @@ end
 fn main() -> i32 = do
   const atlas_size = 512
   const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const font_id = 1
   const field_rect = rect_new(40, 120, 400, 48)
 
   const begin_status = text_context_begin(800, 400)
@@ -160,15 +198,26 @@ fn main() -> i32 = do
     return error_code
   end
 
+  text_scratch_u8_clear()
+  text_scratch_u8_resize_zero(atlas_size * atlas_size)
+  let mut atlas = glyph_atlas_new(atlas_size)
+  let mut cache = glyph_cache_new(256)
+  let mut shaping = text_shaping_new()
+  let mut box_slot = AtlasSlot { page_index: 0, x: 0, y: 0, width: 0, height: 0 }
+  let mut box_ready = 0
+
   let mut field = ""
   let mut previous_backspace = 0
+  let mut previous_display = ""
+  let mut previous_vertex_count = 0
   let mut frame_index = 0
   let mut enter_seen = 0
+  let mut atlas_upload_count = 0
+  let mut content_rebuild_count = 0
 
   while text_context_should_close() == 0 do
     const width = text_window_width()
     const height = text_window_height()
-    // Scripted inject (headless smoke): "H" + "ix" + backspace → "Hi", then enter.
     if frame_index == 1 then
       gui_input_text_test_push("H")
     else if frame_index == 2 then
@@ -200,40 +249,62 @@ fn main() -> i32 = do
       display = " "
     end
 
-    const lines: [Line] = [
-      Line { text: "Text field", pixel_size: 28, pen_x: 40, pen_y: 48 },
-      Line { text: display, pixel_size: 26, pen_x: field_rect.x + 12, pen_y: field_rect.y + 30 }
-    ]
+    if display != previous_display || box_ready == 0 then
+      content_rebuild_count = content_rebuild_count + 1
+      text_scratch_f32_clear()
+      let mut vertex_count = 0
+      let mut atlas_dirty = 0
 
-    text_scratch_u8_clear()
-    text_scratch_u8_resize_zero(atlas_size * atlas_size)
-    text_scratch_f32_clear()
-    let mut atlas = glyph_atlas_new(atlas_size)
-    let mut shaping = text_shaping_new()
-    let mut vertex_count = 0
+      if box_ready == 0 then
+        const box_result = append_box(
+          width, height, atlas, atlas_size,
+          field_rect.x, field_rect.y, field_rect.width, field_rect.height, 40
+        )
+        atlas = box_result.atlas
+        box_slot = box_result.slot
+        box_ready = 1
+        atlas_dirty = 1
+        vertex_count = vertex_count + 6
+      else
+        gl_scratch_push_screen_quad(
+          width, height,
+          field_rect.x, field_rect.y, field_rect.width, field_rect.height,
+          atlas_size, box_slot.x, box_slot.y, box_slot.width, box_slot.height
+        )
+        vertex_count = vertex_count + 6
+      end
 
-    const box_result = append_box(
-      width, height, atlas, atlas_size,
-      field_rect.x, field_rect.y, field_rect.width, field_rect.height, 40
-    )
-    atlas = box_result.atlas
-    vertex_count = vertex_count + box_result.slot.page_index
+      const lines: [Line] = [
+        Line { text: "Text field", pixel_size: 28, pen_x: 40, pen_y: 48 },
+        Line { text: display, pixel_size: 26, pen_x: field_rect.x + 12, pen_y: field_rect.y + 30 }
+      ]
+      let mut line_index = 0
+      while line_index < lines.length() do
+        const result = append_line(
+          font_path, font_id, lines[line_index], width, height,
+          atlas, cache, shaping, atlas_size
+        )
+        atlas = result.atlas
+        cache = result.cache
+        shaping = result.shaping
+        vertex_count = vertex_count + result.vertex_count
+        if result.atlas_dirty == 1 then
+          atlas_dirty = 1
+        end
+        line_index = line_index + 1
+      end
 
-    let mut line_index = 0
-    while line_index < lines.length() do
-      const result = append_line(
-        font_path, lines[line_index], width, height, atlas, shaping, atlas_size
-      )
-      atlas = result.atlas
-      shaping = result.shaping
-      vertex_count = vertex_count + result.vertex_count
-      line_index = line_index + 1
+      if atlas_dirty == 1 then
+        text_renderer_upload_atlas(renderer)
+        atlas_upload_count = atlas_upload_count + 1
+      end
+      text_bind_array_buffer(renderer.vertex_buffer)
+      text_upload_dynamic_scratch()
+      previous_display = display
+      previous_vertex_count = vertex_count
     end
 
-    text_renderer_upload_atlas(renderer)
-    text_bind_array_buffer(renderer.vertex_buffer)
-    text_upload_dynamic_scratch()
-    renderer = text_renderer_set_batch(renderer, vertex_count)
+    renderer = text_renderer_set_batch(renderer, previous_vertex_count)
     text_renderer_draw(renderer, width, height)
     text_context_swap_poll()
 
@@ -252,6 +323,13 @@ fn main() -> i32 = do
   end
   if enter_seen != 1 then
     return -2
+  end
+  // Stable frames must skip rebuild/upload (STEP=7 dirty-flag).
+  if content_rebuild_count >= frame_index then
+    return -3
+  end
+  if atlas_upload_count >= frame_index then
+    return -4
   end
   0
 end

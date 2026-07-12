@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | gui_text_field_demo 0; vs_shim_ok |
+| test_gate | gui_text_field_demo 0 (dirty asserts); dashboard check-only 0 |
+
+### Turn 2026-07-13 00:37 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 00:33 |
+| elapsed | ~15 min |
+| done    | Dirty-flag atlas: field demo persistent cache + skip rebuild/upload; dashboard `lines_key` skip. |
+| verify  | `gui_text_field_demo` exit 0 (rebuild/upload < frames); dashboard `--check-only` 0. |
+| result  | STEP=7 done. Plain: unchanged lines skip atlas rebuild/upload. |
+| issues  | — |
+| next    | ROLE=Driver STEP=8 TRACK_TEXT_SHIM_TO_MLC — deprecate shim cache helpers |
 
 ### Turn 2026-07-13 00:11 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=6)
 
