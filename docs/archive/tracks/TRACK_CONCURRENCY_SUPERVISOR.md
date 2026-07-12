@@ -8,16 +8,21 @@ Predecessor closed:
 HTTP hardening closed (Critic OK 2026-07-12):
 [TRACK_STDLIB_HTTP_HARDENING.md](TRACK_STDLIB_HTTP_HARDENING.md).
 
-## Status: **closed** (2026-07-12) — STEP=1–7 **done**; awaiting Critic
+## Status: **closed** (2026-07-12) — Critic OK
 
 **Planner 2026-07-12:** activated after HTTP Critic OK.
-**Driver 2026-07-12:** STEP=1–7 (`149899a2`…this commit); C++-only v1;
+**Driver 2026-07-12:** STEP=1–7 (`149899a2`…`44334e2d`); C++-only v1;
 smoke + ASan/UBSan/TSan green; self-host N/A.
 No `compiler/**` (regression_gate N/A).
 
+**Critic 2026-07-12:** STEP=1–7 vs `149899a2`…`44334e2d`; archive/PLAN/STDLIB/
+CONCURRENCY_V2 aligned; `test_supervisor` 26 re-OK; soft-include in `mlc.hpp`;
+**reopen: none**. Residuals: MLC module deferred; exponential backoff deferred;
+`one_for_all`/`rest_for_one` out of scope.
+
 ## Next step
 
-**Critic** — `critique-audit` (HARD LIMIT after close).
+— (closed; Planner activates `TRACK_CONCURRENCY_TEST_HARNESS` T6/T7)
 
 ## Goal
 

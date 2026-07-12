@@ -37,6 +37,7 @@
 #include "mlc/concurrency/thread_pool.hpp"
 #include "mlc/concurrency/job_queue.hpp"
 #include "mlc/concurrency/isolate.hpp"
+#include "mlc/concurrency/supervisor.hpp"
 
 // I/O
 #include "mlc/io/io.hpp"

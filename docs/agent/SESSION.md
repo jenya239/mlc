@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
-| active_track | TRACK_CONCURRENCY_SUPERVISOR (closed) |
-| test_gate | smoke ok + sanitize ASan/UBSan/TSan ok |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | TRACK_CONCURRENCY_SUPERVISOR (Critic OK) |
+| test_gate | test_supervisor 26 re-OK |
+
+### Turn 2026-07-12 11:18 (Critic TRACK_CONCURRENCY_SUPERVISOR critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 11:18 |
+| elapsed | ~8 min |
+| done    | Audited STEP=1–7 (`149899a2`…`44334e2d`); PLAN/archive/STDLIB/CONCURRENCY_V2; soft-include `mlc.hpp`; fixed stale PLAN deferred line. |
+| verify  | `test_supervisor` ALL 26 PASSED; archive path ok; no agent TRACK file. |
+| result  | Critic OK. reopen: none. Plain: Supervisor C++ v1 stands; Planner → TEST_HARNESS. |
+| issues  | Residual: MLC deferred; backoff deferred; no one_for_all. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_CONCURRENCY_TEST_HARNESS — activate §26 T6/T7 |
 
 ### Turn 2026-07-12 11:10 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=7 — verify + close)
 

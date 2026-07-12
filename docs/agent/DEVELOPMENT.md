@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_CONCURRENCY_SUPERVISOR` closed** (STEP=1–7) — Critic next, then
-[TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md).
+**`TRACK_CONCURRENCY_SUPERVISOR` Critic OK** — Planner next:
+[TRACK_CONCURRENCY_TEST_HARNESS.md](TRACK_CONCURRENCY_TEST_HARNESS.md) T6/T7.
 Archive: [../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md).
 
 
