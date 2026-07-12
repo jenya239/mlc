@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**GUI_INPUT Critic OK** — next Planner activates `TRACK_STDLIB_HTTP_HARDENING` (§24).
-See [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](../archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md).
-Queue: HTTP_HARDENING → …
+**`TRACK_STDLIB_HTTP_HARDENING` active** — STEP=1 (keep-alive) next.
+See [TRACK_STDLIB_HTTP_HARDENING.md](TRACK_STDLIB_HTTP_HARDENING.md). Queue: HTTP_HARDENING → SUPERVISOR → …
+
 
 
 

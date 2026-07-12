@@ -11,7 +11,11 @@ that never returns (the forever-demo's `scope |s| { while true { ... } }`
 never joins its spawned tasks during normal operation — only on process
 kill/panic).
 
-## Status: open, средний приоритет
+## Status: **active** (Planner 2026-07-12) — очередь §24
+
+## Next step
+
+**STEP=1** — `Connection: keep-alive` loop in `HttpServer` / demo handle path.
 
 ## Goal
 
@@ -33,6 +37,13 @@ readiness (out of scope, see below).
 | 6 | Minimal load-test script (`scripts/http_load_smoke.sh` or Ruby, per scripts-language rule): N concurrent short-lived curl-equivalent requests against the forever-demo, assert all succeed and wall time roughly matches expected parallelism (same style as `scripts/run_http_scope_accept_loop_gate.sh`) | pending |
 | 7 | Docs: `STDLIB_BACKEND.md` §1 table — update HTTP server row with keep-alive/static-file/timeout status | pending |
 | 8 | Verify: self-host diff identical if `lib/mlc/common/stdlib/net/http_server.mlc` changes propagate through `compiler/`; `scripts/regression_gate.sh` green | pending |
+
+### STEP=1 sub-steps (Driver)
+
+1. Read `lib/mlc/common/stdlib/net/http_server.mlc` (`format_http_response` hardcodes `Connection: close`) + forever/scope demos' `handle_one`.
+2. Add helpers: read `Connection` header (case-insensitive token), decide keep-alive vs close; emit matching `Connection` response header from `format_http_response` (or a new overload).
+3. Add keep-alive read/parse/write loop helper (or update one demo + unit smoke) that serves ≥2 requests on one TCP connection without re-accept; smoke via curl `--keepalive` / second request on same socket (Ruby Net::HTTP persistent or `curl -v` twice with `--next` if available).
+4. Do not implement idle timeout here (STEP=3).
 
 ## Out of scope
 
