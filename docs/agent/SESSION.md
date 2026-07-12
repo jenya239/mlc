@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | Decision block in TRACK; no PACKAGE_MANAGER.md yet |
+| test_gate | STEP=2 Decision in TRACK; no PACKAGE_MANAGER.md |
+
+### Turn 2026-07-13 02:07 (Driver TRACK_PACKAGE_MANAGER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 02:07 |
+| elapsed | ~8 min |
+| done    | Froze `.mlc_packages/<pkg>/`, import `pkg/path`, security prefix, flat root deps. |
+| verify  | TRACK Decision STEP=2 present; PLAN §18 STEP=2 done. |
+| result  | STEP=2 done. Plain: deps resolve via first path segment → vendor dir. |
+| issues  | — |
+| next    | ROLE=Driver STEP=3 TRACK_PACKAGE_MANAGER — version skew limitation |
 
 ### Turn 2026-07-13 02:02 (Driver TRACK_PACKAGE_MANAGER STEP=1)
 

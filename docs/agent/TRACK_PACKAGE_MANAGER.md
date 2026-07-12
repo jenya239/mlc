@@ -3,15 +3,19 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=1 done; STEP=2 import-path design next
+## Status: **active** (2026-07-13) — STEP=2 done; STEP=3 version-skew design next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
 (Steps 5–10). No `compiler/`/`lib/mlc/` until Step 5+.
 
 ## Next step
 
-**STEP=2** — Design: `.mlc_packages/<name>/` layout + how `module_loader` distinguishes
-project vs dependency imports.
+**STEP=3** — Design: language/stdlib version skew as known limitation (no ABI gate).
+
+### STEP=2 done (2026-07-13)
+
+- Vendor layout + import form + security + flat-deps rule frozen (below).
+- No `docs/PACKAGE_MANAGER.md` yet (STEP=4).
 
 ### STEP=1 done (2026-07-13)
 
