@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | `run_http_keepalive_smoke.rb` ok |
+| test_gate | parse + keepalive + 413 + curl ok |
+
+### Turn 2026-07-12 08:05 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=2 — 413 body limit)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 07:50 |
+| elapsed | ~15 min |
+| done    | `HttpParseTooLarge` + `http_payload_too_large` (413); demos/websocket match arm; parse smoke + `scripts/run_http_413_smoke.rb`. |
+| verify  | `run_http_server_parse_smoke.sh` ok; keepalive ok; 413 smoke ok; `run_http_server_curl_gate.sh` ok. |
+| result  | STEP=2 done. Plain: oversized body → 413; next idle timeout. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_HTTP_HARDENING — idle timeout / `SO_RCVTIMEO` |
 
 ### Turn 2026-07-12 07:40 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=1 — keep-alive)
 

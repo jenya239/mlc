@@ -23,7 +23,7 @@ export type HttpResponse = {
   body: string
 }
 
-export type HttpParseResult = HttpParseOk(HttpRequest) | HttpParseErr
+export type HttpParseResult = HttpParseOk(HttpRequest) | HttpParseErr | HttpParseTooLarge
 
 fn trim_spaces(text: string) -> string = do
   let mut start = 0
@@ -188,7 +188,7 @@ export fn parse_http_request(raw: string) -> HttpParseResult = do
   const body_offset = header_end + separator_length
   let body = ""
   if content_length >= 0 then
-    if content_length > 1048576 then return HttpParseErr end
+    if content_length > 1048576 then return HttpParseTooLarge end
     if body_offset + content_length > raw.length() then return HttpParseErr end
     body = raw.substring(body_offset, content_length)
   end
@@ -208,9 +208,24 @@ fn http_status_text(status: i32) -> string =
   else if status == 400 then "Bad Request"
   else if status == 404 then "Not Found"
   else if status == 405 then "Method Not Allowed"
+  else if status == 413 then "Payload Too Large"
   else if status == 500 then "Internal Server Error"
   else "OK"
   end
+
+export fn http_bad_request() -> HttpResponse =
+  HttpResponse {
+    status: 400,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "Bad Request"
+  }
+
+export fn http_payload_too_large() -> HttpResponse =
+  HttpResponse {
+    status: 413,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "Payload Too Large"
+  }
 
 export fn http_not_found() -> HttpResponse =
   HttpResponse {

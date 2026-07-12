@@ -12,7 +12,8 @@ import {
   HttpRequest,
   parse_http_request,
   HttpParseOk,
-  HttpParseErr
+  HttpParseErr,
+  HttpParseTooLarge
 } from './http_server.mlc'
 
 extern fn wrapping_add(left: i32, right: i32) -> i32 =
@@ -443,7 +444,8 @@ end
 export fn build_websocket_upgrade_from_raw(raw: string) -> WsHandshakeResult = do
   match parse_http_request(raw) {
     HttpParseOk(request) => build_websocket_upgrade_response(request),
-    HttpParseErr => WsHandshakeErr("websocket upgrade: invalid HTTP request")
+    HttpParseErr => WsHandshakeErr("websocket upgrade: invalid HTTP request"),
+    HttpParseTooLarge => WsHandshakeErr("websocket upgrade: request too large")
   }
 end
 

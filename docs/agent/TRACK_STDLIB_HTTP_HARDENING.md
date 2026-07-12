@@ -15,7 +15,7 @@ kill/panic).
 
 ## Next step
 
-**STEP=2** — wire oversized body → 413 (verify parse limits + smoke).
+**STEP=3** — idle-connection timeout (`SO_RCVTIMEO` / timed `Tcp.read`).
 
 ## Goal
 
@@ -29,8 +29,8 @@ readiness (out of scope, see below).
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | `Connection: keep-alive` support in `HttpServer` (`lib/mlc/common/stdlib/net/http_server.mlc`): parse `Connection` request header, loop `read`/`parse`/`write_all` on the same `stream` while the client keeps it open and no `Connection: close` was requested, instead of one request per accepted connection | pending |
-| 2 | Request size limit enforcement already exists for header block (65536) and body (1MB) inside `parse_http_request` — verify these are actually wired to a `400`/`413` response in the demo/server loop, not just a parse-failure fallthrough; add explicit test for oversized body → `413` | pending |
+| 1 | `Connection: keep-alive` support in `HttpServer` (`lib/mlc/common/stdlib/net/http_server.mlc`): parse `Connection` request header, loop `read`/`parse`/`write_all` on the same `stream` while the client keeps it open and no `Connection: close` was requested, instead of one request per accepted connection | **done** (2026-07-12) — `http_request_wants_keep_alive` / `http_response_with_connection`; `http_keepalive_smoke` + `run_http_keepalive_smoke.rb` (2 GETs one conn) |
+| 2 | Request size limit enforcement already exists for header block (65536) and body (1MB) inside `parse_http_request` — verify these are actually wired to a `400`/`413` response in the demo/server loop, not just a parse-failure fallthrough; add explicit test for oversized body → `413` | **done** (2026-07-12) — `HttpParseTooLarge` + `http_payload_too_large`; demos match arm; parse smoke + `run_http_413_smoke.rb` |
 | 3 | Idle-connection timeout: a keep-alive connection with no next request within N seconds should close, not hang a thread forever (needs a `read` with timeout — check if `Tcp.read` supports one; if not, this sub-step first adds `SO_RCVTIMEO` to the `bind`/`accept`-returned socket via `runtime/include/mlc/net/tcp_bridge.hpp`) | pending |
 | 4 | Static file serving: a `serve_static(directory: string, request: HttpRequest) -> HttpResponse` helper in `HttpServer` — path traversal guard (`..` rejection), `Content-Type` by extension (small hardcoded table: html/css/js/json/png/svg/txt), `404` on missing file | pending |
 | 5 | Graceful shutdown doc + pattern: since `scope |s| { while true { accept... } }` never returns during normal operation, document the actual shutdown story (process kill = OS closes sockets, in-flight `scope`-spawned tasks are abandoned, not joined) in `STDLIB_BACKEND.md`; if a bounded-iteration variant is wanted for tests, that's what `http_scope_accept_loop_demo.mlc` already demonstrates — do not conflate the two patterns in docs | pending |
@@ -44,6 +44,18 @@ readiness (out of scope, see below).
 2. Add helpers: read `Connection` header (case-insensitive token), decide keep-alive vs close; emit matching `Connection` response header from `format_http_response` (or a new overload).
 3. Add keep-alive read/parse/write loop helper (or update one demo + unit smoke) that serves ≥2 requests on one TCP connection without re-accept; smoke via curl `--keepalive` / second request on same socket (Ruby Net::HTTP persistent or `curl -v` twice with `--next` if available).
 4. Do not implement idle timeout here (STEP=3).
+
+### STEP=2 sub-steps (Driver)
+
+1. Confirm body limit in `parse_http_request` returns a distinct variant (not generic `HttpParseErr`).
+2. Wire demos/helpers to emit `413 Payload Too Large` on that variant.
+3. Add parse + network smoke for `Content-Length: 1048577` → 413.
+4. Do not implement idle timeout here (STEP=3).
+
+### Progress
+
+- **STEP=1** (2026-07-12): keep-alive helpers + persistent-connection smoke green. Forever/scope demos still one-shot close (optional follow-up).
+- **STEP=2** (2026-07-12): `HttpParseTooLarge` → `http_payload_too_large` (413); parse + `run_http_413_smoke.rb` green.
 
 ## Out of scope
 

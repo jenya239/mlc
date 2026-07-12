@@ -5,11 +5,14 @@ import {
   format_http_response,
   http_request_wants_keep_alive,
   http_response_with_connection,
+  http_bad_request,
+  http_payload_too_large,
   HttpRequest,
   HttpResponse,
   HttpHeader,
   HttpParseOk,
-  HttpParseErr
+  HttpParseErr,
+  HttpParseTooLarge
 } from 'HttpServer'
 
 fn route_http(request: HttpRequest) -> HttpResponse =
@@ -30,15 +33,11 @@ fn handle_connection(stream: i32) -> i32 = do
     const raw = raw_option.unwrap()
     match parse_http_request(raw) {
       HttpParseErr => do
-        const bad = http_response_with_connection(
-          HttpResponse {
-            status: 400,
-            headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
-            body: "Bad Request"
-          },
-          0
-        )
-        write_all(stream, format_http_response(bad))
+        write_all(stream, format_http_response(http_response_with_connection(http_bad_request(), 0)))
+        keep_alive = 0
+      end,
+      HttpParseTooLarge => do
+        write_all(stream, format_http_response(http_response_with_connection(http_payload_too_large(), 0)))
         keep_alive = 0
       end,
       HttpParseOk(request) => do

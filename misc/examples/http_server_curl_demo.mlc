@@ -6,11 +6,14 @@ import {
   parse_http_request,
   format_http_response,
   http_not_found,
+  http_bad_request,
+  http_payload_too_large,
   HttpRequest,
   HttpResponse,
   HttpHeader,
   HttpParseOk,
-  HttpParseErr
+  HttpParseErr,
+  HttpParseTooLarge
 } from 'HttpServer'
 
 fn route_http(request: HttpRequest) -> HttpResponse = do
@@ -39,12 +42,8 @@ fn handle_one(stream: i32) -> i32 = do
   end
   let raw = raw_option.unwrap()
   let response = match parse_http_request(raw) {
-    HttpParseErr =>
-      HttpResponse {
-        status: 400,
-        headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
-        body: "Bad Request"
-      },
+    HttpParseErr => http_bad_request(),
+    HttpParseTooLarge => http_payload_too_large(),
     HttpParseOk(request) => route_http(request)
   }
   let wrote = write_all(stream, format_http_response(response))

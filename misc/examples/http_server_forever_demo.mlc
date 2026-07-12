@@ -11,7 +11,8 @@ import {
   HttpResponse,
   HttpHeader,
   HttpParseOk,
-  HttpParseErr
+  HttpParseErr,
+  HttpParseTooLarge
 } from 'HttpServer'
 
 fn html_page(title: string, body: string) -> string =
@@ -55,6 +56,14 @@ fn handle_one(stream: i32) -> i32 = do
         status: 400,
         headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
         body: html_page("400 Bad Request", "Could not parse request.")
+      }
+    end,
+    HttpParseTooLarge => do
+      println("[mlc-http] <payload too large> -> 413")
+      HttpResponse {
+        status: 413,
+        headers: [HttpHeader { name: "Content-Type", value: "text/html" }],
+        body: html_page("413 Payload Too Large", "Body exceeds 1 MiB limit.")
       }
     end,
     HttpParseOk(request) => do
