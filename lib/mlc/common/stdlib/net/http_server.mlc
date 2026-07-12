@@ -1,8 +1,9 @@
 //! @module std/net/http_server
 //! @category net
-//! @type pure
+//! @type mixed
 //!
 //! Pure-MLC HTTP/1.1 request parse + response format (TRACK_STDLIB_HTTP_MLC).
+//! Static file helper uses File.exists / File.read (TRACK_STDLIB_HTTP_HARDENING).
 //! No extern to http_request.hpp / http_router.hpp.
 //! Parse result is a local sum (not std Option — mlcc Option import unstable).
 
@@ -233,6 +234,80 @@ export fn http_not_found() -> HttpResponse =
     headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
     body: "Not Found"
   }
+
+export fn http_method_not_allowed() -> HttpResponse =
+  HttpResponse {
+    status: 405,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: "Method Not Allowed"
+  }
+
+fn path_contains_dot_dot(path: string) -> bool =
+  path.contains("..")
+
+fn strip_query(path: string) -> string = do
+  const question = path.index_of("?")
+  if question < 0 then
+    path
+  else
+    path.substring(0, question)
+  end
+end
+
+fn strip_leading_slashes(path: string) -> string = do
+  let mut relative = path
+  while relative.length() > 0 && relative.char_at(0) == "/" do
+    relative = relative.substring(1, relative.length() - 1)
+  end
+  relative
+end
+
+fn join_static_path(directory: string, request_path: string) -> string = do
+  let mut relative = strip_leading_slashes(strip_query(request_path))
+  if relative.length() == 0 then
+    relative = "index.html"
+  end
+  if directory.length() == 0 then
+    return relative
+  end
+  if directory.ends_with("/") then
+    directory + relative
+  else
+    directory + "/" + relative
+  end
+end
+
+fn content_type_for_path(path: string) -> string =
+  if path.ends_with(".html") || path.ends_with(".htm") then "text/html; charset=utf-8"
+  else if path.ends_with(".css") then "text/css; charset=utf-8"
+  else if path.ends_with(".js") then "application/javascript; charset=utf-8"
+  else if path.ends_with(".json") then "application/json; charset=utf-8"
+  else if path.ends_with(".png") then "image/png"
+  else if path.ends_with(".svg") then "image/svg+xml"
+  else if path.ends_with(".txt") then "text/plain; charset=utf-8"
+  else "application/octet-stream"
+  end
+
+export fn serve_static(directory: string, request: HttpRequest) -> HttpResponse = do
+  if request.method != "GET" then
+    return http_method_not_allowed()
+  end
+  if path_contains_dot_dot(request.path) then
+    return http_bad_request()
+  end
+  const full_path = join_static_path(directory, request.path)
+  if path_contains_dot_dot(full_path) then
+    return http_bad_request()
+  end
+  if !File.exists(full_path) then
+    return http_not_found()
+  end
+  HttpResponse {
+    status: 200,
+    headers: [HttpHeader { name: "Content-Type", value: content_type_for_path(full_path) }],
+    body: File.read(full_path)
+  }
+end
 
 fn i32_to_decimal_string(value: i32) -> string = do
   if value == 0 then return "0" end

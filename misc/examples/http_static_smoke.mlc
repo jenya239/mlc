@@ -1,0 +1,57 @@
+// TRACK_STDLIB_HTTP_HARDENING STEP=4 — serve_static (traversal, types, 404).
+import {
+  serve_static,
+  format_http_response,
+  HttpRequest
+} from 'HttpServer'
+
+fn get_request(path: string) -> HttpRequest =
+  HttpRequest {
+    method: "GET",
+    path: path,
+    headers: [],
+    body: ""
+  }
+
+fn post_request(path: string) -> HttpRequest =
+  HttpRequest {
+    method: "POST",
+    path: path,
+    headers: [],
+    body: ""
+  }
+
+fn main() -> i32 = do
+  File.write("static_root/hello.txt", "hello-static")
+  File.write("static_root/page.html", "<html>ok</html>")
+  File.write("static_root/data.json", "{\"a\":1}")
+
+  const ok_text = serve_static("static_root", get_request("/hello.txt"))
+  if ok_text.status != 200 then return 1 end
+  if ok_text.body != "hello-static" then return 2 end
+  if ok_text.headers.length() < 1 then return 3 end
+  if !ok_text.headers[0].value.contains("text/plain") then return 4 end
+
+  const ok_html = serve_static("static_root", get_request("/page.html"))
+  if ok_html.status != 200 then return 5 end
+  if !ok_html.headers[0].value.contains("text/html") then return 6 end
+
+  const ok_json = serve_static("static_root", get_request("/data.json"))
+  if ok_json.status != 200 then return 7 end
+  if !ok_json.headers[0].value.contains("application/json") then return 8 end
+
+  const missing = serve_static("static_root", get_request("/nope.txt"))
+  if missing.status != 404 then return 9 end
+
+  const traversal = serve_static("static_root", get_request("/../hello.txt"))
+  if traversal.status != 400 then return 10 end
+
+  const method = serve_static("static_root", post_request("/hello.txt"))
+  if method.status != 405 then return 11 end
+
+  const formatted = format_http_response(ok_text)
+  if !formatted.starts_with("HTTP/1.1 200") then return 12 end
+  if !formatted.contains("hello-static") then return 13 end
+
+  0
+end

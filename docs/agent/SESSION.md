@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | idle timeout + keepalive ok |
+| test_gate | static + parse smoke ok |
+
+### Turn 2026-07-12 08:40 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=4 — serve_static)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 08:30 |
+| elapsed | ~10 min |
+| done    | `serve_static` / `http_method_not_allowed` in `http_server.mlc`; `http_static_smoke.mlc` + `run_http_static_smoke.sh`. |
+| verify  | static smoke exit=0; parse smoke ok. |
+| result  | STEP=4 done. Plain: static files with ..→400 / missing→404; next shutdown doc. |
+| issues  | Foreign `compiler/out/*` left unstaged. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_HTTP_HARDENING — graceful shutdown doc in STDLIB_BACKEND.md |
 
 ### Turn 2026-07-12 08:20 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=3 — idle timeout)
 

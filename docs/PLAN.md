@@ -417,7 +417,7 @@ compiler/
 | **21** | Compile-smoke coverage для `misc/examples`/`misc/gui` (regression молчала на `gui_button_demo.mlc`) | **done** (2026-07-12) | [TRACK_EXAMPLES_CI](archive/tracks/TRACK_EXAMPLES_CI.md) **closed** STEP=1–6; Critic OK (`cd598a50`…`d48ec41c`); REG 20/0; sweep ok=106 skip=1 |
 | **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **done** (2026-07-12) | [TRACK_FFI_EXTERN_DEDUP](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md) **closed** Critic OK; Hybrid + E090; REG 20/0; sweep 106/0/1; DIFF=0 |
 | **23** | GUI input robustness (debounce клика, keyboard text, resize) | **done** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md) **closed** Critic OK (`e86090cd`…`a4ec69f1`); STEP=2 N/A; 7 smokes ok |
-| **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **active** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](agent/TRACK_STDLIB_HTTP_HARDENING.md) **active** STEP=1–3 done; STEP=4 static files next |
+| **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **active** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](agent/TRACK_STDLIB_HTTP_HARDENING.md) **active** STEP=1–4 done; STEP=5 shutdown doc next |
 | **25** | Concurrency Supervisor — реализация (гейт снят) | **open** (2026-07-11: gate satisfied) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) — permanent/transient/temporary, one_for_one, restart storm |
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **open** (2026-07-11: unblocked, Task/TaskScope/Isolate в продакшене) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **open, средний приоритет** | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) |
@@ -574,7 +574,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → GUI_INPUT_ROBUSTNESS (**done** 2026-07-12: Critic OK; STEP=1–7; click-edge OK /
       keyboard / resize; 7 smokes green;
       → [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md))
-  → **STDLIB_HTTP_HARDENING (active 2026-07-12: STEP=1–3 done; STEP=4 static files next;
+  → **STDLIB_HTTP_HARDENING (active 2026-07-12: STEP=1–4 done; STEP=5 shutdown doc next;
       → [agent/TRACK_STDLIB_HTTP_HARDENING.md](agent/TRACK_STDLIB_HTTP_HARDENING.md)):**
     keep-alive, лимиты, static files, idle timeout, graceful shutdown doc, load-test
   → CONCURRENCY_SUPERVISOR (gate снят — permanent/transient/temporary,
