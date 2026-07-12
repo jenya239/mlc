@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | TRACK_STDLIB_DOCS (Critic OK) → Planner LANG_REGION_ARENA |
-| test_gate | docs-only (snippet 10/0) |
+| step_last | plan-refresh |
+| active_track | TRACK_LANG_REGION_ARENA |
+| test_gate | docs-only (Planner activate) |
+
+### Turn 2026-07-12 12:26 (Planner TRACK_LANG_REGION_ARENA — activate)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 12:23 |
+| elapsed | ~4 min |
+| done    | Status **active**; Next=STEP=1; AST = `ExprRegion` (∥ `ExprScope`); STEP=1 sub-steps; PLAN §7 + queue; DEVELOPMENT. |
+| verify  | Decisions 1–3 present; `parse_scope_expr` cited as mirror; predecessor STDLIB_DOCS. |
+| result  | Track activated. Plain: Driver starts region parser. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=1 TRACK_LANG_REGION_ARENA — ExprRegion AST + parse_region_expr |
 
 ### Turn 2026-07-12 12:24 (Critic TRACK_STDLIB_DOCS — critique-audit)
 

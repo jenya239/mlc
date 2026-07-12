@@ -1,17 +1,19 @@
 # Track: scoped region/arena (`region r do ... end`)
 
-Parent: [../PLAN.md](../PLAN.md), [../MLC.md](../MLC.md) §C1 (phantom types —
-прямая зависимость). Source:
+Parent: [../PLAN.md](../PLAN.md) §7 / queue after STDLIB_DOCS,
+[../MLC.md](../MLC.md) §C1 (phantom types — прямая зависимость). Source:
 [../LANGUAGE_AUDIT_2026_07.md](../LANGUAGE_AUDIT_2026_07.md), §1.4
 (единственная рекомендация аудита, реально *расширяющая* выразительность
 связных графов, не просто сахар).
+Predecessor closed (Critic OK 2026-07-12):
+[../archive/tracks/TRACK_STDLIB_DOCS.md](../archive/tracks/TRACK_STDLIB_DOCS.md).
 
-## Status: **open, design вопросы закрыты 2026-07-11, реализация авторизована**
+## Status: **active** (Planner 2026-07-12) — очередь после STDLIB_DOCS
 
-Обе предпосылки (`TRACK_LANG_CLOSURE_ESCAPE`, `TRACK_LANG_ARRAY_HOF`) —
-**closed**. Пользователь 2026-07-11 явно авторизовал реализацию после
-закрытия 3 design-вопросов ниже (см. «Решения» — заменяет старую секцию
-«Открытые вопросы»). Driver может начинать STEP=1.
+## Next step
+
+**STEP=1** — Parser: `region <name> do ... end` → AST (`ExprRegion` parallel to
+`ExprScope`; TRACK historically said `RegionBlock`).
 
 ## Зачем
 
@@ -94,7 +96,7 @@ end   // весь буфер r освобождается разом
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Parser: `region <name> do ... end` block syntax → AST node (`RegionBlock(name, [Stmt])`), reuse existing `do...end` block parsing infra where possible | pending |
+| 1 | Parser: `region <name> do ... end` block syntax → AST node (`ExprRegion(name, [Stmt], Span)` parallel to `ExprScope`; reuse `parse_statements_until_end` / keyword dispatch like `scope`) | pending |
 | 2 | Checker: synthesize per-block phantom `RegionTag`; typecheck `r.alloc(value) -> Region<Tag, T>`; wire into existing phantom-type machinery (`compiler/checker/registry.mlc` `compute_phantom_type_params`) rather than a parallel mechanism | pending |
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | pending |
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | pending |
@@ -104,6 +106,28 @@ end   // весь буфер r освобождается разом
 | 8 | `scripts/regression_gate.sh` green | pending |
 | 9 | Docs: `MLC.md` §C1 area — document `region`/`RegionHandle`/`Region<Tag,T>`; note the three escape-prohibition vectors explicitly | pending |
 | 10 | Optional/stretch: apply `region` to a real internal hot path with a mutable cyclic graph (`compiler/frontend/ast.mlc` node construction during one parse pass, as named in "Зачем" above) as a proof-of-value, **only if** Steps 1-9 are stable and this doesn't risk destabilizing the self-hosted parser — separate sub-step, easy to defer/skip if risky | pending |
+
+### STEP=1 sub-steps (Driver)
+
+1. Lexer/keyword: ensure `region` is recognized (keyword or ident dispatch) so
+   `region name do` is not parsed as a call/ident.
+2. AST: add `ExprRegion(string, [Shared<Stmt>], Span)` next to `ExprScope` in
+   `compiler/frontend/ast.mlc`; update `expr_span` / printers / visitors as
+   required for compile (mirror every `ExprScope` match arm).
+3. Parser: `parse_region_expr` mirroring `parse_scope_expr` but binder is a bare
+   ident after `region` (no `|binder|`); body via `parse_statements_until_end`.
+4. Minimal smoke: one `compiler/tests/` or e2e parse-only / check fixture that
+   `region r do 0 end` parses (checker may still reject `alloc` until STEP=2 —
+   empty body / unit result OK if that typechecks today).
+5. Do **not** implement checker escape rules or codegen in STEP=1.
+6. Verify: self-host not required yet if only parser/AST; run
+   `bundle exec rake test_compiler_mlc` (or targeted parser test) green;
+   TRACK Next=STEP=2.
+
+## Progress
+
+- **Planner** (2026-07-12): activated after STDLIB_DOCS Critic OK; STEP=1 =
+  `ExprRegion` + parse; Decisions 1–3 unchanged.
 
 ## Verify gate (когда дойдёт до реализации)
 

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_DOCS` Critic OK** (2026-07-12). Next: Planner activates
-`TRACK_LANG_REGION_ARENA`. See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
+**`TRACK_LANG_REGION_ARENA` active** — STEP=1 (`ExprRegion` parser) next.
+See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)
 

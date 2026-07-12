@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed (ARRAY_HOF, OR_PATTERNS, WEAK_SUGAR, CYCLE_LINT, RESULT_COMBINATORS, ORPHAN_RULE, [TRACK_LANG_CLOSURE_ESCAPE](archive/tracks/TRACK_LANG_CLOSURE_ESCAPE.md) **closed** 2026-07-09); [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **open, реализация авторизована 2026-07-11** — 3 design-вопроса закрыты, Steps 1-10 (parser/checker/codegen/tests/docs) |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **active** (2026-07-12) STEP=1 parser next — Decisions 1–3 closed; Steps 1-10 |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -588,10 +588,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   ↓ (2026-07-11, пользователь авторизовал 4 ранее гейтированных design-only
     резервуара — активированы явной командой в чате, не самостоятельно)
 
-  → **LANG_REGION_ARENA (next Planner activate;** 3 design-вопроса закрыты в
-    самом треке — phantom RegionTag generic, полный запрет escape, тип
-    целиком региональный или нет; Steps 1-10 parser→checker→codegen→
-    UB-repro-tests→docs)
+  → **LANG_REGION_ARENA (active 2026-07-12: STEP=1 ExprRegion parser next;
+      → [agent/TRACK_LANG_REGION_ARENA.md](agent/TRACK_LANG_REGION_ARENA.md)):**
+    3 design-вопроса закрыты — phantom RegionTag generic, полный запрет escape,
+    тип целиком региональный или нет; Steps 1-10 parser→checker→codegen→
+    UB-repro-tests→docs
   → PACKAGE_MANAGER (Steps 1-4 design: git+pinned-commit, `.mlc_packages/`,
     без реестра — закрыть design ПЕРЕД Steps 5-10 implementation)
   → DEBUG_SOURCE_MAP (гейт снят — внешний `.mlc`-код вне компилятора уже
