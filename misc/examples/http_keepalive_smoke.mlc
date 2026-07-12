@@ -1,0 +1,80 @@
+// TRACK_STDLIB_HTTP_HARDENING STEP=1 — ≥2 requests on one TCP connection (keep-alive).
+import { bind, accept, read, write_all, close_listener, close_stream, port, last_error } from 'Tcp'
+import {
+  parse_http_request,
+  format_http_response,
+  http_request_wants_keep_alive,
+  http_response_with_connection,
+  HttpRequest,
+  HttpResponse,
+  HttpHeader,
+  HttpParseOk,
+  HttpParseErr
+} from 'HttpServer'
+
+fn route_http(request: HttpRequest) -> HttpResponse =
+  HttpResponse {
+    status: 200,
+    headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+    body: request.path
+  }
+
+fn handle_connection(stream: i32) -> i32 = do
+  let mut served = 0
+  let mut keep_alive = 1
+  while keep_alive != 0 && served < 8 do
+    const raw_option = read(stream, 65536)
+    if !raw_option.is_some() then
+      break
+    end
+    const raw = raw_option.unwrap()
+    match parse_http_request(raw) {
+      HttpParseErr => do
+        const bad = http_response_with_connection(
+          HttpResponse {
+            status: 400,
+            headers: [HttpHeader { name: "Content-Type", value: "text/plain" }],
+            body: "Bad Request"
+          },
+          0
+        )
+        write_all(stream, format_http_response(bad))
+        keep_alive = 0
+      end,
+      HttpParseOk(request) => do
+        keep_alive = http_request_wants_keep_alive(request)
+        const response = http_response_with_connection(route_http(request), keep_alive)
+        if !write_all(stream, format_http_response(response)) then
+          keep_alive = 0
+        else
+          served = served + 1
+        end
+      end
+    }
+  end
+  close_stream(stream)
+  served
+end
+
+fn main() -> i32 = do
+  const listener_option = bind("127.0.0.1", 0)
+  if !listener_option.is_some() then
+    println(last_error())
+    return 1
+  end
+  const listener = listener_option.unwrap()
+  File.write("http_keepalive_port.txt", `${port(listener)}`)
+
+  const stream_option = accept(listener)
+  if !stream_option.is_some() then
+    close_listener(listener)
+    println(last_error())
+    return 2
+  end
+  const served = handle_connection(stream_option.unwrap())
+  close_listener(listener)
+  if served < 2 then
+    return 3
+  end
+  0
+end

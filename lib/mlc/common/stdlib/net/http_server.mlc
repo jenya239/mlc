@@ -76,6 +76,55 @@ fn strip_trailing_cr(line: string) -> string =
 fn header_name_is_content_length(name: string) -> bool =
   name.lower() == "content-length"
 
+fn header_name_is_connection(name: string) -> bool =
+  name.lower() == "connection"
+
+export fn find_header_value(headers: [HttpHeader], name: string) -> string = do
+  const expected = name.lower()
+  let mut index = 0
+  while index < headers.length() do
+    if headers[index].name.lower() == expected then
+      return headers[index].value
+    end
+    index = index + 1
+  end
+  ""
+end
+
+// HTTP/1.1 default: keep-alive unless Connection contains "close".
+export fn http_request_wants_keep_alive(request: HttpRequest) -> i32 = do
+  const connection = find_header_value(request.headers, "Connection").lower()
+  if connection.contains("close") then
+    return 0
+  end
+  if connection.contains("keep-alive") then
+    return 1
+  end
+  1
+end
+
+export fn http_response_with_connection(
+  response: HttpResponse,
+  keep_alive: i32
+) -> HttpResponse = do
+  let mut headers: [HttpHeader] = []
+  let mut index = 0
+  while index < response.headers.length() do
+    const header = response.headers[index]
+    if !header_name_is_connection(header.name) then
+      headers.push(header)
+    end
+    index = index + 1
+  end
+  const value = if keep_alive != 0 then "keep-alive" else "close" end
+  headers.push(HttpHeader { name: "Connection", value: value })
+  HttpResponse {
+    status: response.status,
+    headers: headers,
+    body: response.body
+  }
+end
+
 fn http_version_ok(version: string) -> bool =
   version.length() >= 7 && version.substring(0, 7).lower() == "http/1."
 
@@ -202,16 +251,21 @@ end
 export fn format_http_response(response: HttpResponse) -> string = do
   let mut output = "HTTP/1.1 " + i32_to_decimal_string(response.status) + " " + http_status_text(response.status) + "\r\n"
   let mut has_content_length = false
+  let mut has_connection = false
   let mut index = 0
   while index < response.headers.length() do
     const header = response.headers[index]
     if header_name_is_content_length(header.name) then has_content_length = true end
+    if header_name_is_connection(header.name) then has_connection = true end
     output = output + header.name + ": " + header.value + "\r\n"
     index = index + 1
   end
   if !has_content_length then
     output = output + "Content-Length: " + i32_to_decimal_string(response.body.length()) + "\r\n"
   end
-  output = output + "Connection: close\r\n\r\n" + response.body
+  if !has_connection then
+    output = output + "Connection: close\r\n"
+  end
+  output = output + "\r\n" + response.body
   output
 end

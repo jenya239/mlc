@@ -15,7 +15,7 @@ kill/panic).
 
 ## Next step
 
-**STEP=1** — `Connection: keep-alive` loop in `HttpServer` / demo handle path.
+**STEP=2** — wire oversized body → 413 (verify parse limits + smoke).
 
 ## Goal
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | Planner: no code |
+| test_gate | `run_http_keepalive_smoke.rb` ok |
+
+### Turn 2026-07-12 07:40 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=1 — keep-alive)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 07:35 |
+| elapsed | ~10 min |
+| done    | `http_request_wants_keep_alive` / `http_response_with_connection`; format skips duplicate Connection; `http_keepalive_smoke.mlc` + Ruby gate (2 GETs one conn); parse smoke extended. |
+| verify  | `scripts/run_http_server_parse_smoke.sh` ok; `ruby scripts/run_http_keepalive_smoke.rb` ok. |
+| result  | STEP=1 done. Plain: keep-alive works; next 413 limits. |
+| issues  | Foreign `compiler/out/*` left; forever/scope demos still one-shot. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_HTTP_HARDENING — oversized body → 413 |
 
 ### Turn 2026-07-12 07:30 (Planner — plan-refresh → STDLIB_HTTP_HARDENING)
 
