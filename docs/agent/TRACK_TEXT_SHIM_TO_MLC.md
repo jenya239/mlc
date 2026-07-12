@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-12) — STEP=2 done; STEP=3 harfbuzz_abi next
+## Status: **active** (2026-07-12) — STEP=3 done; STEP=4 text_shaping.mlc next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,7 +20,16 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=3** — `harfbuzz_abi.hpp`/`.cpp`: thin HB wrappers; leave old shim until STEP=8.
+**STEP=4** — `misc/gui/text_shaping.mlc`: face/font handle-кеш + pitch-copy + bearing helpers on abi.
+
+### STEP=3 done (2026-07-12)
+
+- `runtime/include/mlc/text/harfbuzz_abi.hpp` + `runtime/src/text/harfbuzz_abi.cpp`.
+- `hb_font_create_from_face` / `hb_font_destroy` / `hb_shape_text`;
+  accessors `hb_shape_glyph_id_at` / `hb_shape_glyph_advance_at` (names avoid
+  clash with legacy `shape_glyph_*` shim).
+- Wired in `compiler/build_bin.sh`. Old `harfbuzz_shim` unchanged.
+- Smoke: `/tmp/hb_abi_smoke` → `hb_abi_ok` (FT face + shape `"Hi"`).
 
 ### STEP=2 done (2026-07-12)
 
@@ -107,9 +116,9 @@ existing `glyph_byte_at`), not `RawPointer[Byte]` row pointers.
 | `ft_face_render_glyph(face: i64) -> i32` | `FT_Render_Glyph` + fill last-glyph slot **without** pitch-flatten loop into `vector` if MLC copies; minimum: expose dimensions/bearing + bytes via accessors below. Packed `(width<<16)\|rows` on success |
 | `ft_glyph_width` / `ft_glyph_rows` / `ft_glyph_pitch` / `ft_glyph_bearing_x` / `ft_glyph_bearing_y` / `ft_glyph_byte_count` / `ft_glyph_byte_at` | last-glyph slot after render; raw pitch buffer (STEP=2); existing `glyph_*` shim names stay until STEP=8 |
 | `hb_font_create_from_face(face: i64) -> i64` | `hb_ft_font_create` (or current shim equivalent) |
-| `hb_font_destroy(font: i64) -> i32` | pair for MLC eviction |
+| `hb_font_destroy(font: i64) -> i32` | pair for MLC eviction (`::hb_font_destroy`) |
 | `hb_shape_text(font: i64, text: string) -> i32` | shape only; fills last-shape slot; **no** path/size lookup |
-| `shape_glyph_id_at` / `shape_glyph_advance_at` | keep; already thin |
+| `hb_shape_glyph_id_at` / `hb_shape_glyph_advance_at` | abi accessors (STEP=3); legacy `shape_glyph_*` shim kept until STEP=8 |
 
 ### Moves to MLC (`text_shaping.mlc`, STEP=4+)
 
@@ -173,7 +182,7 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 |------|------|--------|
 | 1 | Decision — freeze ABI table; byte-read = ABI `*_byte_at` if no MLC `RawPointer` deref | **done** (2026-07-12) |
 | 2 | `freetype_abi.hpp`/`.cpp` — thin FT wrappers; strip cache control-flow from shim | **done** (2026-07-12) abi added; shim cache deferred to STEP=8 |
-| 3 | `harfbuzz_abi.hpp`/`.cpp` — thin HB wrappers; strip cache control-flow from shim | pending |
+| 3 | `harfbuzz_abi.hpp`/`.cpp` — thin HB wrappers; strip cache control-flow from shim | **done** (2026-07-12) abi added; shim cache deferred to STEP=8 |
 | 4 | `misc/gui/text_shaping.mlc` — handle-кеш + pitch-copy + bearing composite helper | pending |
 | 5 | Golden-регрессия: new MLC path vs current `glyph_bitmap_*` / shape output | pending |
 | 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | pending |

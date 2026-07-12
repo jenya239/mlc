@@ -33,6 +33,7 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
   TEXT_LIBS+=($(pkg-config --libs freetype2))
   if pkg-config --exists harfbuzz; then
     RT_SRC+=("$ROOT_DIR/runtime/src/text/harfbuzz_shim.cpp")
+    RT_SRC+=("$ROOT_DIR/runtime/src/text/harfbuzz_abi.cpp")
     # shellcheck disable=SC2207
     TEXT_CFLAGS+=($(pkg-config --cflags harfbuzz))
     # shellcheck disable=SC2207

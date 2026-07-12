@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | ft_abi_smoke → ft_abi_ok |
+| test_gate | hb_abi_smoke → hb_abi_ok |
+
+### Turn 2026-07-12 23:26 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-12 23:26 |
+| elapsed | ~8 min |
+| done    | `harfbuzz_abi.hpp`/`.cpp` (create/destroy/shape + `hb_shape_glyph_*`); `build_bin.sh` wire. |
+| verify  | `/tmp/hb_abi_smoke` prints `hb_abi_ok`. Old shim untouched. |
+| result  | STEP=3 done. Plain: thin HB ABI ready for MLC shaping cache. |
+| issues  | accessors named `hb_shape_glyph_*` to avoid link clash with shim |
+| next    | ROLE=Driver STEP=4 TRACK_TEXT_SHIM_TO_MLC — `misc/gui/text_shaping.mlc` |
 
 ### Turn 2026-07-12 23:16 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=2)
 
