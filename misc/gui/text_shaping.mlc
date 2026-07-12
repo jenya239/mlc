@@ -1,0 +1,259 @@
+// TRACK_TEXT_SHIM_TO_MLC STEP=4 — face/font cache + pitch-copy on thin abi.
+// Legacy freetype_shim/harfbuzz_shim path caches stay until STEP=8.
+
+extern fn ft_library_get() -> i64 =
+  "mlc::text::ft_library_get" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_open(library: i64, path: string) -> i64 =
+  "mlc::text::ft_face_open" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_set_pixel_size(face: i64, pixel_size: i32) -> i32 =
+  "mlc::text::ft_face_set_pixel_size" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_load_glyph(face: i64, glyph_index: i32) -> i32 =
+  "mlc::text::ft_face_load_glyph" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_render_glyph(face: i64) -> i32 =
+  "mlc::text::ft_face_render_glyph" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_width() -> i32 =
+  "mlc::text::ft_glyph_width" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_rows() -> i32 =
+  "mlc::text::ft_glyph_rows" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_pitch() -> i32 =
+  "mlc::text::ft_glyph_pitch" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_bearing_x() -> i32 =
+  "mlc::text::ft_glyph_bearing_x" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_bearing_y() -> i32 =
+  "mlc::text::ft_glyph_bearing_y" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_glyph_byte_at(index: i32) -> i32 =
+  "mlc::text::ft_glyph_byte_at" from "mlc/text/freetype_abi.hpp" thread_affine
+
+extern fn hb_font_create_from_face(face: i64) -> i64 =
+  "mlc::text::hb_font_create_from_face" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+extern fn hb_shape_text(font: i64, text: string) -> i32 =
+  "mlc::text::hb_shape_text" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+extern fn hb_shape_glyph_id_at(index: i32) -> i32 =
+  "mlc::text::hb_shape_glyph_id_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+extern fn hb_shape_glyph_advance_at(index: i32) -> i32 =
+  "mlc::text::hb_shape_glyph_advance_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+
+export type TextShapingState = {
+  library: i64,
+  faces: Map<string, i64>,
+  fonts: Map<string, i64>
+}
+
+export type TextShapingFaceResult = {
+  state: TextShapingState,
+  face: i64,
+  error_code: i32
+}
+
+export type TextShapingFontResult = {
+  state: TextShapingState,
+  font: i64,
+  error_code: i32
+}
+
+export type TextShapingShapeResult = {
+  state: TextShapingState,
+  glyph_count: i32,
+  error_code: i32
+}
+
+export type GlyphRaster = {
+  width: i32,
+  rows: i32,
+  bearing_x: i32,
+  bearing_y: i32,
+  pixels: [i32],
+  error_code: i32
+}
+
+export type BaselinePoint = { x: i32, y: i32 }
+
+fn i64_from_i32(value: i32) -> i64 = value
+fn pointer_is_null(pointer: i64) -> bool = pointer == i64_from_i32(0)
+
+fn shaping_cache_key(font_path: string, pixel_size: i32) -> string =
+  font_path + "|" + pixel_size.to_string()
+
+export fn text_shaping_new() -> TextShapingState = do
+  let mut faces: Map<string, i64> = Map.new()
+  let mut fonts: Map<string, i64> = Map.new()
+  TextShapingState {
+    library: ft_library_get(),
+    faces: faces,
+    fonts: fonts
+  }
+end
+
+export fn text_shaping_ensure_face(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32
+) -> TextShapingFaceResult = do
+  const null_face = i64_from_i32(0)
+  if pointer_is_null(state.library) then
+    return TextShapingFaceResult { state: state, face: null_face, error_code: -1 }
+  end
+  if pixel_size <= 0 then
+    return TextShapingFaceResult { state: state, face: null_face, error_code: -2 }
+  end
+  const key = shaping_cache_key(font_path, pixel_size)
+  let mut faces = state.faces
+  let mut face = faces.get(key)
+  if !pointer_is_null(face) then
+    return TextShapingFaceResult { state: state, face: face, error_code: 0 }
+  end
+  face = ft_face_open(state.library, font_path)
+  if pointer_is_null(face) then
+    return TextShapingFaceResult { state: state, face: null_face, error_code: -3 }
+  end
+  if ft_face_set_pixel_size(face, pixel_size) != 0 then
+    return TextShapingFaceResult { state: state, face: null_face, error_code: -4 }
+  end
+  faces.set(key, face)
+  TextShapingFaceResult {
+    state: TextShapingState { library: state.library, faces: faces, fonts: state.fonts },
+    face: face,
+    error_code: 0
+  }
+end
+
+export fn text_shaping_ensure_font(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32
+) -> TextShapingFontResult = do
+  const null_font = i64_from_i32(0)
+  const key = shaping_cache_key(font_path, pixel_size)
+  let mut fonts = state.fonts
+  let cached_font = fonts.get(key)
+  if !pointer_is_null(cached_font) then
+    return TextShapingFontResult { state: state, font: cached_font, error_code: 0 }
+  end
+  const face_result = text_shaping_ensure_face(state, font_path, pixel_size)
+  if face_result.error_code != 0 then
+    return TextShapingFontResult {
+      state: face_result.state,
+      font: null_font,
+      error_code: face_result.error_code
+    }
+  end
+  const font = hb_font_create_from_face(face_result.face)
+  if pointer_is_null(font) then
+    return TextShapingFontResult { state: face_result.state, font: null_font, error_code: -5 }
+  end
+  fonts = face_result.state.fonts
+  fonts.set(key, font)
+  TextShapingFontResult {
+    state: TextShapingState {
+      library: face_result.state.library,
+      faces: face_result.state.faces,
+      fonts: fonts
+    },
+    font: font,
+    error_code: 0
+  }
+end
+
+export fn text_shaping_shape(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32,
+  text: string
+) -> TextShapingShapeResult = do
+  const font_result = text_shaping_ensure_font(state, font_path, pixel_size)
+  if font_result.error_code != 0 then
+    return TextShapingShapeResult {
+      state: font_result.state,
+      glyph_count: 0,
+      error_code: font_result.error_code
+    }
+  end
+  const glyph_count = hb_shape_text(font_result.font, text)
+  if glyph_count < 0 then
+    return TextShapingShapeResult {
+      state: font_result.state,
+      glyph_count: 0,
+      error_code: glyph_count
+    }
+  end
+  TextShapingShapeResult {
+    state: font_result.state,
+    glyph_count: glyph_count,
+    error_code: 0
+  }
+end
+
+export fn text_shaping_glyph_id_at(index: i32) -> i32 =
+  hb_shape_glyph_id_at(index)
+
+export fn text_shaping_glyph_advance_at(index: i32) -> i32 =
+  hb_shape_glyph_advance_at(index)
+
+fn copy_glyph_pixels_flattened() -> [i32] = do
+  const width = ft_glyph_width()
+  const rows = ft_glyph_rows()
+  const pitch = ft_glyph_pitch()
+  let mut pixels: [i32] = []
+  let mut row = 0
+  while row < rows do
+    let mut column = 0
+    while column < width do
+      pixels.push(ft_glyph_byte_at(row * pitch + column))
+      column = column + 1
+    end
+    row = row + 1
+  end
+  pixels
+end
+
+export fn text_shaping_rasterize_glyph(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32,
+  glyph_index: i32
+) -> GlyphRaster = do
+  const empty: [i32] = []
+  const face_result = text_shaping_ensure_face(state, font_path, pixel_size)
+  if face_result.error_code != 0 then
+    return GlyphRaster {
+      width: 0, rows: 0, bearing_x: 0, bearing_y: 0,
+      pixels: empty, error_code: face_result.error_code
+    }
+  end
+  if ft_face_load_glyph(face_result.face, glyph_index) != 0 then
+    return GlyphRaster {
+      width: 0, rows: 0, bearing_x: 0, bearing_y: 0,
+      pixels: empty, error_code: -6
+    }
+  end
+  const packed = ft_face_render_glyph(face_result.face)
+  if packed < 0 then
+    return GlyphRaster {
+      width: 0, rows: 0, bearing_x: 0, bearing_y: 0,
+      pixels: empty, error_code: packed
+    }
+  end
+  GlyphRaster {
+    width: ft_glyph_width(),
+    rows: ft_glyph_rows(),
+    bearing_x: ft_glyph_bearing_x(),
+    bearing_y: ft_glyph_bearing_y(),
+    pixels: copy_glyph_pixels_flattened(),
+    error_code: 0
+  }
+end
+
+// destination_x = origin_x + pen_x + bearing_x
+// destination_y = baseline_y - pen_y - bearing_y
+export fn text_baseline_destination(
+  origin_x: i32,
+  pen_x: i32,
+  bearing_x: i32,
+  baseline_y: i32,
+  pen_y: i32,
+  bearing_y: i32
+) -> BaselinePoint =
+  BaselinePoint {
+    x: origin_x + pen_x + bearing_x,
+    y: baseline_y - pen_y - bearing_y
+  }

@@ -1,0 +1,44 @@
+// TRACK_TEXT_SHIM_TO_MLC STEP=4 — smoke for text_shaping.mlc on thin abi.
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_rasterize_glyph,
+  text_baseline_destination
+} from '../gui/text_shaping'
+
+fn i64_from_i32(value: i32) -> i64 = value
+fn handle_is_null(pointer: i64) -> bool = pointer == i64_from_i32(0)
+
+fn main() -> i32 = do
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  let mut state = text_shaping_new()
+  if handle_is_null(state.library) then
+    return 1
+  end
+  const shaped = text_shaping_shape(state, font_path, 24, "Hi")
+  if shaped.error_code != 0 || shaped.glyph_count < 1 then
+    return 2
+  end
+  state = shaped.state
+  const glyph_id = text_shaping_glyph_id_at(0)
+  if glyph_id <= 0 then
+    return 3
+  end
+  const raster = text_shaping_rasterize_glyph(state, font_path, 24, glyph_id)
+  if raster.error_code != 0 then
+    return 4
+  end
+  if raster.width < 1 || raster.rows < 1 then
+    return 5
+  end
+  if raster.pixels.length() != raster.width * raster.rows then
+    return 6
+  end
+  const point = text_baseline_destination(10, 2, raster.bearing_x, 100, 0, raster.bearing_y)
+  if point.x != 10 + 2 + raster.bearing_x then
+    return 7
+  end
+  print("text_shaping_ok")
+  0
+end

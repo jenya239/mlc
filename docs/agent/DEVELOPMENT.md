@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_SHIM_TO_MLC` active** — STEP=3 `harfbuzz_abi` done; STEP=4 `text_shaping.mlc`.
+**`TRACK_TEXT_SHIM_TO_MLC` active** — STEP=4 `text_shaping.mlc` done; STEP=5 golden.
 See [TRACK_TEXT_SHIM_TO_MLC.md](TRACK_TEXT_SHIM_TO_MLC.md).
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 

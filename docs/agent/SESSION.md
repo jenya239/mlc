@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | hb_abi_smoke → hb_abi_ok |
+| test_gate | text_shaping_smoke → text_shaping_ok |
+
+### Turn 2026-07-12 23:36 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-12 23:36 |
+| elapsed | ~15 min |
+| done    | `misc/gui/text_shaping.mlc` + `text_shaping_smoke.mlc` (cache, pitch-copy, baseline). |
+| verify  | mlcc+build_bin; run prints `text_shaping_ok` exit 0. |
+| result  | STEP=4 done. Plain: MLC owns face/font cache over thin abi. |
+| issues  | i64 zero via `i64_from_i32(0)` (mlcc rejects bare `0` / `0_i64` in files) |
+| next    | ROLE=Driver STEP=5 TRACK_TEXT_SHIM_TO_MLC — golden vs shim glyph/shape output |
 
 ### Turn 2026-07-12 23:26 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=3)
 

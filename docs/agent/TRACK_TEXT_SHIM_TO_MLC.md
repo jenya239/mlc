@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-12) — STEP=3 done; STEP=4 text_shaping.mlc next
+## Status: **active** (2026-07-12) — STEP=4 done; STEP=5 golden regression next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,7 +20,15 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=4** — `misc/gui/text_shaping.mlc`: face/font handle-кеш + pitch-copy + bearing helpers on abi.
+**STEP=5** — Golden regression: new MLC path vs current `glyph_bitmap_*` / shape output.
+
+### STEP=4 done (2026-07-12)
+
+- `misc/gui/text_shaping.mlc`: `TextShapingState` face/font `Map` cache;
+  `text_shaping_shape` / `text_shaping_rasterize_glyph` (pitch-copy flatten);
+  `text_baseline_destination`.
+- Smoke: `misc/examples/text_shaping_smoke.mlc` → `text_shaping_ok`.
+- Legacy shims still used by demos until STEP=6.
 
 ### STEP=3 done (2026-07-12)
 
@@ -183,7 +191,7 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 | 1 | Decision — freeze ABI table; byte-read = ABI `*_byte_at` if no MLC `RawPointer` deref | **done** (2026-07-12) |
 | 2 | `freetype_abi.hpp`/`.cpp` — thin FT wrappers; strip cache control-flow from shim | **done** (2026-07-12) abi added; shim cache deferred to STEP=8 |
 | 3 | `harfbuzz_abi.hpp`/`.cpp` — thin HB wrappers; strip cache control-flow from shim | **done** (2026-07-12) abi added; shim cache deferred to STEP=8 |
-| 4 | `misc/gui/text_shaping.mlc` — handle-кеш + pitch-copy + bearing composite helper | pending |
+| 4 | `misc/gui/text_shaping.mlc` — handle-кеш + pitch-copy + bearing composite helper | **done** (2026-07-12) `text_shaping_smoke` ok |
 | 5 | Golden-регрессия: new MLC path vs current `glyph_bitmap_*` / shape output | pending |
 | 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | pending |
 | 7 | Dirty-flag atlas: skip rebuild/upload when lines unchanged | pending |
