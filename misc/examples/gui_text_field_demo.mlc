@@ -45,6 +45,8 @@ extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size:
   = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
 
 extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
   = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
@@ -79,13 +81,17 @@ fn append_line(
     if packed >= 0 then
       const width = glyph_width()
       const rows = glyph_rows()
+      const bearing_x = glyph_bearing_x()
+      const bearing_y = glyph_bearing_y()
       if width > 0 && rows > 0 then
         const pack = glyph_atlas_pack(working, 0, width, rows)
         if pack.error_code == 0 then
           working = pack.atlas
           if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
             gl_scratch_push_screen_quad(
-              window_width, window_height, cursor_x, line.pen_y, width, rows,
+              window_width, window_height,
+              cursor_x + bearing_x, line.pen_y - bearing_y,
+              width, rows,
               atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
             )
             vertices = vertices + 6

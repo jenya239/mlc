@@ -106,7 +106,9 @@ export type GlyphCacheKey = {
 
 export type GlyphCacheEntry = {
   key: GlyphCacheKey,
-  slot: AtlasSlot
+  slot: AtlasSlot,
+  bearing_x: i32,
+  bearing_y: i32
 }
 
 export type GlyphCache = {
@@ -117,7 +119,9 @@ export type GlyphCache = {
 export type GlyphCacheOp = {
   cache: GlyphCache,
   found: i32,
-  slot: AtlasSlot
+  slot: AtlasSlot,
+  bearing_x: i32,
+  bearing_y: i32
 }
 
 export type TextRenderer = {
@@ -271,7 +275,9 @@ fn empty_slot() -> AtlasSlot =
 export fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheOp = do
   const found_index = glyph_cache_find_index(cache, key)
   if found_index < 0 then
-    return GlyphCacheOp { cache: cache, found: 0, slot: empty_slot() }
+    return GlyphCacheOp {
+      cache: cache, found: 0, slot: empty_slot(), bearing_x: 0, bearing_y: 0
+    }
   end
   const entry = cache.entries[found_index]
   let mut entries = glyph_cache_entries_without(cache.entries, found_index)
@@ -279,30 +285,42 @@ export fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheOp
   GlyphCacheOp {
     cache: GlyphCache { capacity: cache.capacity, entries: entries },
     found: 1,
-    slot: entry.slot
+    slot: entry.slot,
+    bearing_x: entry.bearing_x,
+    bearing_y: entry.bearing_y
   }
 end
 
-export fn glyph_cache_insert(cache: GlyphCache, key: GlyphCacheKey, slot: AtlasSlot) -> GlyphCacheOp = do
+export fn glyph_cache_insert(
+  cache: GlyphCache, key: GlyphCacheKey, slot: AtlasSlot,
+  bearing_x: i32, bearing_y: i32
+) -> GlyphCacheOp = do
+  const entry = GlyphCacheEntry {
+    key: key, slot: slot, bearing_x: bearing_x, bearing_y: bearing_y
+  }
   const found_index = glyph_cache_find_index(cache, key)
   if found_index >= 0 then
     let mut entries = glyph_cache_entries_without(cache.entries, found_index)
-    entries.push(GlyphCacheEntry { key: key, slot: slot })
+    entries.push(entry)
     return GlyphCacheOp {
       cache: GlyphCache { capacity: cache.capacity, entries: entries },
       found: 1,
-      slot: slot
+      slot: slot,
+      bearing_x: bearing_x,
+      bearing_y: bearing_y
     }
   end
   let mut entries = cache.entries
   if entries.length() >= cache.capacity && cache.capacity > 0 then
     entries = glyph_cache_entries_without(entries, 0)
   end
-  entries.push(GlyphCacheEntry { key: key, slot: slot })
+  entries.push(entry)
   GlyphCacheOp {
     cache: GlyphCache { capacity: cache.capacity, entries: entries },
     found: 0,
-    slot: slot
+    slot: slot,
+    bearing_x: bearing_x,
+    bearing_y: bearing_y
   }
 end
 

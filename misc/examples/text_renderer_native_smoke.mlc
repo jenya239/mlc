@@ -65,7 +65,7 @@ fn main() -> i32 = do
       end
       atlas = packed.atlas
       slot = packed.slot
-      const inserted = glyph_cache_insert(cache, key, slot)
+      const inserted = glyph_cache_insert(cache, key, slot, 0, 0)
       cache = inserted.cache
       text_scratch_u8_fill_rect(atlas_size, slot.x, slot.y, slot.width, slot.height, 255)
     else

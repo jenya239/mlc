@@ -48,6 +48,8 @@ extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size:
   = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
 
 extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
   = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
@@ -101,18 +103,24 @@ fn append_line(
     const cached = glyph_cache_get(working_cache, key)
     working_cache = cached.cache
     let mut slot = cached.slot
+    let mut bearing_x = cached.bearing_x
+    let mut bearing_y = cached.bearing_y
     if cached.found == 0 then
       const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
       if packed >= 0 then
         const width = glyph_width()
         const rows = glyph_rows()
+        bearing_x = glyph_bearing_x()
+        bearing_y = glyph_bearing_y()
         if width > 0 && rows > 0 then
           const pack = glyph_atlas_pack(working_atlas, 0, width, rows)
           if pack.error_code == 0 then
             working_atlas = pack.atlas
             if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
               slot = pack.slot
-              const inserted = glyph_cache_insert(working_cache, key, slot)
+              const inserted = glyph_cache_insert(
+                working_cache, key, slot, bearing_x, bearing_y
+              )
               working_cache = inserted.cache
               atlas_dirty = 1
             end
@@ -122,7 +130,9 @@ fn append_line(
     end
     if slot.width > 0 && slot.height > 0 then
       gl_scratch_push_screen_quad(
-        window_width, window_height, cursor_x, line.pen_y, slot.width, slot.height,
+        window_width, window_height,
+        cursor_x + bearing_x, line.pen_y - bearing_y,
+        slot.width, slot.height,
         atlas_size, slot.x, slot.y, slot.width, slot.height
       )
       vertices = vertices + 6

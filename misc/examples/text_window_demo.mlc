@@ -109,6 +109,8 @@ extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size:
   = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
 extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
 
 import { msdf_generate, msdf_width, msdf_height } from '../gui/msdf'
 
@@ -332,6 +334,8 @@ fn append_shaped_a8(
     end
     const gw = glyph_width()
     const gh = glyph_rows()
+    const bearing_x = glyph_bearing_x()
+    const bearing_y = glyph_bearing_y()
     if gw > 0 && gh > 0 then
       const pack = glyph_atlas_pack(working, 0, gw, gh)
       if pack.error_code != 0 then
@@ -346,7 +350,9 @@ fn append_shaped_a8(
         }
       end
       gl_scratch_push_screen_quad(
-        window_width, window_height, cursor_x, pen_y, gw, gh,
+        window_width, window_height,
+        cursor_x + bearing_x, pen_y - bearing_y,
+        gw, gh,
         atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
       )
       vertices = vertices + 6

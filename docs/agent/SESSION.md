@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 13:57 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=8 — wire bearing)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 13:37 |
+| elapsed | ~20 min |
+| done    | `dest_x/y = cursor+bearing_x / pen_y-bearing_y` in dashboard, text_window, gui_text_field; GlyphCache stores bearings. |
+| verify  | `CCACHE_DISABLE=1 scripts/run_text_renderer_native_smoke.sh` ok; `run_gui_text_field_demo.sh` ok; `run_text_window_demo.sh` ok. |
+| result  | STEP=8 done. Plain: GL live path now baseline-aligns like CPU reference. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. Smokes without quad placement (freetype/harfbuzz/render_mode) unchanged. |
+| next    | ROLE=Driver STEP=9 TRACK_TEXT_GL_PERF_BASELINE — mixed ascender MAE vs CPU reference |
 
 ### Turn 2026-07-12 13:35 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=7 — bearing ABI)
 
