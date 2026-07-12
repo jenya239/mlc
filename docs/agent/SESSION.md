@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | `test_supervisor` 17/17 |
+| test_gate | Decision doc (C++-only; no code) |
+
+### Turn 2026-07-12 10:45 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=4 — C++-only Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:40 |
+| elapsed | ~5 min |
+| done    | Decision: C++-only v1 (`supervisor.hpp`); MLC deferred — same gap as JobQueue closures. |
+| verify  | TRACK Decision section + STEP=4 done; PLAN/DEVELOPMENT synced; no MLC registry. |
+| result  | STEP=4 done. Plain: no MLC Supervisor this track; next C++ smoke STEP=5. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_CONCURRENCY_SUPERVISOR — 3-child + storm smoke expansion |
 
 ### Turn 2026-07-12 10:40 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=3 — restart storm)
 
