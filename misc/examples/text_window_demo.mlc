@@ -103,20 +103,15 @@ extern fn gl_scratch_push_screen_quad(
 ) -> unit
   = "mlc::gl::gl_scratch_push_screen_quad" from "mlc/gl/text_window_helpers.hpp"
 
-extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
-  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
-extern fn shape_glyph_id_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
-extern fn shape_glyph_advance_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
-extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
-  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
-
 import { msdf_generate, msdf_width, msdf_height } from '../gui/msdf'
+import {
+  TextShapingState,
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_glyph_advance_at,
+  text_shaping_rasterize_glyph
+} from '../gui/text_shaping'
 
 fn gl_color_buffer_bit() -> i32 = 16384
 fn gl_triangles() -> i32 = 4
@@ -303,6 +298,13 @@ fn draw_pass(pass: Pass, width: i32, height: i32) -> i32 = do
   0
 end
 
+type ShapedAppendResult = {
+  atlas: GlyphAtlas,
+  shaping: TextShapingState,
+  slot: AtlasSlot,
+  error_code: i32
+}
+
 fn append_shaped_a8(
   font_path: string,
   text: string,
@@ -312,43 +314,55 @@ fn append_shaped_a8(
   pen_x: i32,
   pen_y: i32,
   atlas: GlyphAtlas,
+  shaping: TextShapingState,
   atlas_size: i32
-) -> GlyphAtlasPackOk = do
-  const count = shape_glyph_count(font_path, text, pixel_size)
-  if count < 0 then
-    return GlyphAtlasPackOk {
+) -> ShapedAppendResult = do
+  const shaped = text_shaping_shape(shaping, font_path, pixel_size, text)
+  if shaped.error_code != 0 then
+    return ShapedAppendResult {
       atlas: atlas,
+      shaping: shaped.state,
       slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
-      error_code: count
+      error_code: shaped.error_code
     }
   end
   let mut working = atlas
+  let mut working_shaping = shaped.state
   let mut cursor_x = pen_x
   let mut index = 0
   let mut vertices = 0
-  while index < count do
-    const glyph_id = shape_glyph_id_at(index)
-    const packed = glyph_bitmap_by_index(font_path, glyph_id, pixel_size)
-    if packed < 0 then
-      return GlyphAtlasPackOk {
+  while index < shaped.glyph_count do
+    const glyph_id = text_shaping_glyph_id_at(index)
+    const raster = text_shaping_rasterize_glyph(
+      working_shaping, font_path, pixel_size, glyph_id
+    )
+    if raster.error_code != 0 then
+      return ShapedAppendResult {
         atlas: working,
+        shaping: working_shaping,
         slot: AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 },
-        error_code: packed
+        error_code: raster.error_code
       }
     end
-    const gw = glyph_width()
-    const gh = glyph_rows()
-    const bearing_x = glyph_bearing_x()
-    const bearing_y = glyph_bearing_y()
-    if gw > 0 && gh > 0 then
-      const pack = glyph_atlas_pack(working, 0, gw, gh)
+    const glyph_width_value = raster.width
+    const glyph_height_value = raster.rows
+    const bearing_x = raster.bearing_x
+    const bearing_y = raster.bearing_y
+    if glyph_width_value > 0 && glyph_height_value > 0 then
+      const pack = glyph_atlas_pack(working, 0, glyph_width_value, glyph_height_value)
       if pack.error_code != 0 then
-        return pack
+        return ShapedAppendResult {
+          atlas: pack.atlas,
+          shaping: working_shaping,
+          slot: pack.slot,
+          error_code: pack.error_code
+        }
       end
       working = pack.atlas
       if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) != 0 then
-        return GlyphAtlasPackOk {
+        return ShapedAppendResult {
           atlas: working,
+          shaping: working_shaping,
           slot: pack.slot,
           error_code: -30
         }
@@ -356,16 +370,17 @@ fn append_shaped_a8(
       gl_scratch_push_screen_quad(
         window_width, window_height,
         cursor_x + bearing_x, pen_y - bearing_y,
-        gw, gh,
+        glyph_width_value, glyph_height_value,
         atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
       )
       vertices = vertices + 6
     end
-    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    cursor_x = cursor_x + text_shaping_glyph_advance_at(index) / 64
     index = index + 1
   end
-  GlyphAtlasPackOk {
+  ShapedAppendResult {
     atlas: working,
+    shaping: working_shaping,
     slot: AtlasSlot { page_index: vertices, x: 0, y: 0, width: 0, height: 0 },
     error_code: 0
   }
@@ -400,9 +415,12 @@ fn main() -> i32 = do
   gl_scratch_u8_resize_zero(a8_atlas_size * a8_atlas_size)
   gl_scratch_f32_clear()
   let mut a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
+  let mut shaping = text_shaping_new()
 
   // String 1 + 2 (A8 via HarfBuzz shape)
-  const line1 = append_shaped_a8(font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, a8_atlas_size)
+  const line1 = append_shaped_a8(
+    font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, shaping, a8_atlas_size
+  )
   if line1.error_code != 0 then
     destroy_pass(a8_pass)
     destroy_pass(msdf_pass)
@@ -410,9 +428,12 @@ fn main() -> i32 = do
     return line1.error_code
   end
   a8_atlas = line1.atlas
+  shaping = line1.shaping
   let mut a8_vertices = line1.slot.page_index
 
-  const line2 = append_shaped_a8(font_path, "MLC", 28, width, height, 40, 90, a8_atlas, a8_atlas_size)
+  const line2 = append_shaped_a8(
+    font_path, "MLC", 28, width, height, 40, 90, a8_atlas, shaping, a8_atlas_size
+  )
   if line2.error_code != 0 then
     destroy_pass(a8_pass)
     destroy_pass(msdf_pass)
@@ -420,6 +441,7 @@ fn main() -> i32 = do
     return line2.error_code
   end
   a8_atlas = line2.atlas
+  shaping = line2.shaping
   a8_vertices = a8_vertices + line2.slot.page_index
 
   // String 3 (MSDF codepoints)
@@ -485,11 +507,17 @@ fn main() -> i32 = do
   a8_atlas = GlyphAtlas { page_size: a8_atlas_size, pages: [] }
   gl_scratch_u8_clear()
   gl_scratch_u8_resize_zero(a8_atlas_size * a8_atlas_size)
-  const rebuild1 = append_shaped_a8(font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, a8_atlas_size)
+  const rebuild1 = append_shaped_a8(
+    font_path, "Hxpjy Agq", 28, width, height, 40, 48, a8_atlas, shaping, a8_atlas_size
+  )
   a8_atlas = rebuild1.atlas
+  shaping = rebuild1.shaping
   a8_vertices = rebuild1.slot.page_index
-  const rebuild2 = append_shaped_a8(font_path, "MLC", 28, width, height, 40, 90, a8_atlas, a8_atlas_size)
+  const rebuild2 = append_shaped_a8(
+    font_path, "MLC", 28, width, height, 40, 90, a8_atlas, shaping, a8_atlas_size
+  )
   a8_atlas = rebuild2.atlas
+  shaping = rebuild2.shaping
   a8_vertices = a8_vertices + rebuild2.slot.page_index
   gl_bind_buffer(gl_array_buffer(), a8_pass.buffer)
   if gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw()) != 0 then

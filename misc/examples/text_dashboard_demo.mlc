@@ -37,19 +37,14 @@ import {
   text_context_swap_poll,
   text_context_end
 } from '../gui/text_renderer'
-
-extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
-  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
-extern fn shape_glyph_id_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
-extern fn shape_glyph_advance_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
-extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
-  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
-extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
+import {
+  TextShapingState,
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_glyph_advance_at,
+  text_shaping_rasterize_glyph
+} from '../gui/text_shaping'
 
 extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
   = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
@@ -68,6 +63,7 @@ type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32 }
 type LineDrawResult = {
   atlas: GlyphAtlas,
   cache: GlyphCache,
+  shaping: TextShapingState,
   vertex_count: i32,
   atlas_dirty: i32
 }
@@ -78,22 +74,23 @@ type LineDrawResult = {
 fn append_line(
   font_path: string, font_id: i32, line: Line,
   window_width: i32, window_height: i32,
-  atlas: GlyphAtlas, cache: GlyphCache, atlas_size: i32
+  atlas: GlyphAtlas, cache: GlyphCache, shaping: TextShapingState, atlas_size: i32
 ) -> LineDrawResult = do
-  const count = shape_glyph_count(font_path, line.text, line.pixel_size)
-  if count < 0 then
+  const shaped = text_shaping_shape(shaping, font_path, line.pixel_size, line.text)
+  if shaped.error_code != 0 then
     return LineDrawResult {
-      atlas: atlas, cache: cache, vertex_count: 0, atlas_dirty: 0
+      atlas: atlas, cache: cache, shaping: shaped.state, vertex_count: 0, atlas_dirty: 0
     }
   end
   let mut working_atlas = atlas
   let mut working_cache = cache
+  let mut working_shaping = shaped.state
   let mut cursor_x = line.pen_x
   let mut index = 0
   let mut vertices = 0
   let mut atlas_dirty = 0
-  while index < count do
-    const glyph_id = shape_glyph_id_at(index)
+  while index < shaped.glyph_count do
+    const glyph_id = text_shaping_glyph_id_at(index)
     const key = GlyphCacheKey {
       font_id: font_id,
       glyph_index: glyph_id,
@@ -106,12 +103,14 @@ fn append_line(
     let mut bearing_x = cached.bearing_x
     let mut bearing_y = cached.bearing_y
     if cached.found == 0 then
-      const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
-      if packed >= 0 then
-        const width = glyph_width()
-        const rows = glyph_rows()
-        bearing_x = glyph_bearing_x()
-        bearing_y = glyph_bearing_y()
+      const raster = text_shaping_rasterize_glyph(
+        working_shaping, font_path, line.pixel_size, glyph_id
+      )
+      if raster.error_code == 0 then
+        const width = raster.width
+        const rows = raster.rows
+        bearing_x = raster.bearing_x
+        bearing_y = raster.bearing_y
         if width > 0 && rows > 0 then
           const pack = glyph_atlas_pack(working_atlas, 0, width, rows)
           if pack.error_code == 0 then
@@ -137,12 +136,13 @@ fn append_line(
       )
       vertices = vertices + 6
     end
-    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    cursor_x = cursor_x + text_shaping_glyph_advance_at(index) / 64
     index = index + 1
   end
   LineDrawResult {
     atlas: working_atlas,
     cache: working_cache,
+    shaping: working_shaping,
     vertex_count: vertices,
     atlas_dirty: atlas_dirty
   }
@@ -190,6 +190,7 @@ fn main() -> i32 = do
   text_scratch_u8_resize_zero(atlas_size * atlas_size)
   let mut atlas = glyph_atlas_new(atlas_size)
   let mut cache = glyph_cache_new(512)
+  let mut shaping = text_shaping_new()
 
   // Reserve a fixed atlas slot for the hover/click box (refilled each frame).
   const box_pack = glyph_atlas_pack(
@@ -242,10 +243,11 @@ fn main() -> i32 = do
     while line_index < lines.length() do
       const result = append_line(
         font_path, font_id, lines[line_index], width, height,
-        atlas, cache, atlas_size
+        atlas, cache, shaping, atlas_size
       )
       atlas = result.atlas
       cache = result.cache
+      shaping = result.shaping
       vertex_count = vertex_count + result.vertex_count
       if result.atlas_dirty == 1 then
         atlas_dirty = 1

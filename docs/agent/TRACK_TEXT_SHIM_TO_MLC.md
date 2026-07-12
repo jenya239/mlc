@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-12) — STEP=5 done; STEP=6 switch demos next
+## Status: **active** (2026-07-13) — STEP=6 done; STEP=7 dirty-flag atlas next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,7 +20,14 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=6** — Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc`.
+**STEP=7** — Dirty-flag atlas: skip rebuild/upload when lines unchanged.
+
+### STEP=6 done (2026-07-13)
+
+- Demos on `text_shaping.mlc`: `text_dashboard_demo`, `gui_text_field_demo`,
+  `text_window_demo` (A8 path).
+- `ft_glyph_a8_data` + blit prefers abi flat buffer (shim fallback).
+- Verify: `gui_text_field_demo` exit 0; `text_shaping_vs_shim_ok`; dashboard/window check-only ok.
 
 ### STEP=5 done (2026-07-12)
 
@@ -199,7 +206,7 @@ STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 | 3 | `harfbuzz_abi.hpp`/`.cpp` — thin HB wrappers; strip cache control-flow from shim | **done** (2026-07-12) abi added; shim cache deferred to STEP=8 |
 | 4 | `misc/gui/text_shaping.mlc` — handle-кеш + pitch-copy + bearing composite helper | **done** (2026-07-12) `text_shaping_smoke` ok |
 | 5 | Golden-регрессия: new MLC path vs current `glyph_bitmap_*` / shape output | **done** (2026-07-12) `text_shaping_vs_shim_gate` byte-exact |
-| 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | pending |
+| 6 | Switch `text_dashboard_demo.mlc` (+ other live demos) to `text_shaping.mlc` | **done** (2026-07-13) dashboard+field+window A8 |
 | 7 | Dirty-flag atlas: skip rebuild/upload when lines unchanged | pending |
 | 8 | Remove/deprecate old `freetype_shim`/`harfbuzz_shim` public cache helpers | pending |
 | 9 | Self-host diff + `regression_gate.sh`; update `TEXT_RENDERING.md` / `FFI_LAYER.md` §8 | pending |

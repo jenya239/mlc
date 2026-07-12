@@ -12,6 +12,7 @@ namespace {
 
 struct LastGlyphSlot {
   std::vector<std::uint8_t> pixels;
+  std::vector<std::uint8_t> flat_pixels;
   std::int32_t width = 0;
   std::int32_t rows = 0;
   std::int32_t pitch = 0;
@@ -117,10 +118,18 @@ std::int32_t ft_face_render_glyph(std::int64_t face) {
   slot.bearing_y = free_type_face->glyph->bitmap_top;
   if (width == 0 || rows == 0 || bitmap.buffer == nullptr) {
     slot.pixels.clear();
+    slot.flat_pixels.clear();
     return (width << 16) | rows;
   }
   const std::size_t byte_count = static_cast<std::size_t>(pitch) * static_cast<std::size_t>(rows);
   slot.pixels.assign(bitmap.buffer, bitmap.buffer + byte_count);
+  slot.flat_pixels.assign(static_cast<std::size_t>(width * rows), 0);
+  for (std::int32_t row = 0; row < rows; row += 1) {
+    for (std::int32_t column = 0; column < width; column += 1) {
+      slot.flat_pixels[static_cast<std::size_t>(row * width + column)] =
+        bitmap.buffer[static_cast<std::size_t>(row * pitch + column)];
+    }
+  }
   return (width << 16) | rows;
 }
 
@@ -140,6 +149,14 @@ std::int32_t ft_glyph_byte_at(std::int32_t index) {
     return -1;
   }
   return slot.pixels[static_cast<std::size_t>(index)];
+}
+
+const std::uint8_t* ft_glyph_a8_data() {
+  const LastGlyphSlot& slot = last_glyph_slot();
+  if (slot.flat_pixels.empty()) {
+    return nullptr;
+  }
+  return slot.flat_pixels.data();
 }
 
 } // namespace text

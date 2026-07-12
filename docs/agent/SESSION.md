@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | text_shaping_vs_shim_ok |
+| test_gate | gui_text_field_demo 0; vs_shim_ok |
+
+### Turn 2026-07-13 00:11 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-13 00:11 |
+| elapsed | ~25 min |
+| done    | Switched dashboard/field/window A8 to `text_shaping`; `ft_glyph_a8_data` + blit prefer abi. |
+| verify  | `gui_text_field_demo` exit 0; `text_shaping_vs_shim_ok`; dashboard/window check-only 0. |
+| result  | STEP=6 done. Plain: live demos use MLC face/font cache. |
+| issues  | shim smokes (`freetype_glyph_smoke`/`harfbuzz_shape_smoke`) kept for STEP=8 |
+| next    | ROLE=Driver STEP=7 TRACK_TEXT_SHIM_TO_MLC — dirty-flag atlas skip |
 
 ### Turn 2026-07-13 00:04 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=5)
 

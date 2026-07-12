@@ -38,6 +38,8 @@ std::int32_t ft_glyph_bearing_y();
 std::int32_t ft_glyph_byte_count();
 // Index into raw pitch buffer (pitch * rows). -1 out of range.
 std::int32_t ft_glyph_byte_at(std::int32_t index);
+// Flattened width*rows A8 (for GL atlas blit). Null if empty.
+const std::uint8_t* ft_glyph_a8_data();
 
 } // namespace text
 } // namespace mlc
