@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_STDLIB_HTTP_HARDENING |
-| test_gate | `run_http_load_smoke.rb` ok (8 concurrent, 9ms) |
+| test_gate | `rg` STDLIB_BACKEND §1 keep-alive/serve_static |
+
+### Turn 2026-07-12 09:00 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=7 — §1 HTTP row)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_STDLIB_HTTP_HARDENING |
+| started | 2026-07-12 08:56 |
+| elapsed | ~5 min |
+| done    | `STDLIB_BACKEND.md` §1 HTTP row: keep-alive / 413 / idle / `serve_static` / load; shutdown cross-link. |
+| verify  | `rg` keep-alive, serve_static, SO_RCVTIMEO, run_http_load_smoke in §1. |
+| result  | STEP=7 done. Plain: docs table matches hardening; next regression verify. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=8 TRACK_STDLIB_HTTP_HARDENING — regression_gate.sh |
 
 ### Turn 2026-07-12 08:55 (Driver TRACK_STDLIB_HTTP_HARDENING STEP=6 — load smoke)
 

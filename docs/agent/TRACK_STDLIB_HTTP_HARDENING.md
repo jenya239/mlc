@@ -15,7 +15,7 @@ kill/panic).
 
 ## Next step
 
-**STEP=7** — update `STDLIB_BACKEND.md` §1 HTTP row (keep-alive / static / timeout).
+**STEP=8** — verify: `scripts/regression_gate.sh` green (+ note stdlib-only: no compiler self-host delta required).
 
 ## Goal
 
@@ -34,8 +34,8 @@ readiness (out of scope, see below).
 | 3 | Idle-connection timeout: a keep-alive connection with no next request within N seconds should close, not hang a thread forever (needs a `read` with timeout — check if `Tcp.read` supports one; if not, this sub-step first adds `SO_RCVTIMEO` to the `bind`/`accept`-returned socket via `runtime/include/mlc/net/tcp_bridge.hpp`) | **done** (2026-07-12) — `Tcp.set_recv_timeout` (`SO_RCVTIMEO`); `http_idle_timeout_smoke` + `run_http_idle_timeout_smoke.rb` (~1s idle → exit 0) |
 | 4 | Static file serving: a `serve_static(directory: string, request: HttpRequest) -> HttpResponse` helper in `HttpServer` — path traversal guard (`..` rejection), `Content-Type` by extension (small hardcoded table: html/css/js/json/png/svg/txt), `404` on missing file | **done** (2026-07-12) — `serve_static` + `http_method_not_allowed`; `http_static_smoke` + `run_http_static_smoke.sh` |
 | 5 | Graceful shutdown doc + pattern: since `scope |s| { while true { accept... } }` never returns during normal operation, document the actual shutdown story (process kill = OS closes sockets, in-flight `scope`-spawned tasks are abandoned, not joined) in `STDLIB_BACKEND.md`; if a bounded-iteration variant is wanted for tests, that's what `http_scope_accept_loop_demo.mlc` already demonstrates — do not conflate the two patterns in docs | **done** (2026-07-12) — `STDLIB_BACKEND.md` §1 subsection “HTTP accept-loop shutdown” |
-| 6 | Minimal load-test script (`scripts/http_load_smoke.sh` or Ruby, per scripts-language rule): N concurrent short-lived curl-equivalent requests against the forever-demo, assert all succeed and wall time roughly matches expected parallelism (same style as `scripts/run_http_scope_accept_loop_gate.sh`) | pending |
-| 7 | Docs: `STDLIB_BACKEND.md` §1 table — update HTTP server row with keep-alive/static-file/timeout status | pending |
+| 6 | Minimal load-test script (`scripts/http_load_smoke.sh` or Ruby, per scripts-language rule): N concurrent short-lived curl-equivalent requests against the forever-demo, assert all succeed and wall time roughly matches expected parallelism (same style as `scripts/run_http_scope_accept_loop_gate.sh`) | **done** (2026-07-12) — forever demo port-0 + `http_forever_port.txt`; `run_http_load_smoke.rb` (N=8 concurrent `/health`, wall &lt;5s) |
+| 7 | Docs: `STDLIB_BACKEND.md` §1 table — update HTTP server row with keep-alive/static-file/timeout status | **done** (2026-07-12) — §1 HTTP row + shutdown cross-link |
 | 8 | Verify: self-host diff identical if `lib/mlc/common/stdlib/net/http_server.mlc` changes propagate through `compiler/`; `scripts/regression_gate.sh` green | pending |
 
 ### STEP=1 sub-steps (Driver)
@@ -59,6 +59,8 @@ readiness (out of scope, see below).
 - **STEP=3** (2026-07-12): `tcp_set_recv_timeout` / `Tcp.set_recv_timeout`; idle smoke green (~1s).
 - **STEP=4** (2026-07-12): `serve_static` (traversal→400, missing→404, types); static smoke green.
 - **STEP=5** (2026-07-12): forever vs bounded accept shutdown documented in `STDLIB_BACKEND.md`.
+- **STEP=6** (2026-07-12): `run_http_load_smoke.rb` vs forever-demo (8 concurrent `/health`).
+- **STEP=7** (2026-07-12): §1 HTTP row updated for keep-alive / 413 / idle / static / load.
 
 ## Out of scope
 
