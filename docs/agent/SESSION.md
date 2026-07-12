@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_FFI_EXTERN_DEDUP |
-| test_gate | examples sweep ok=106 fail=0 skip=1 |
+| test_gate | self-host DIFF_LINES=0 |
+
+### Turn 2026-07-12 05:35 (Driver TRACK_FFI_EXTERN_DEDUP STEP=6 — self-host diff)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_FFI_EXTERN_DEDUP |
+| started | 2026-07-12 05:23 |
+| elapsed | ~12 min |
+| done    | `mlcc→tmp/mlc_p1`; `build_bin.sh→tmp/mlcc2`; `mlcc2→tmp/mlc_p2`; `diff -r --exclude=obj`. |
+| verify  | **DIFF_LINES=0**; p1~5s; build_bin~7m; p2~5s. |
+| result  | STEP=6 done. Plain: mlcc2 output identical to mlcc. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_FFI_EXTERN_DEDUP — `scripts/regression_gate.sh` |
 
 ### Turn 2026-07-12 05:20 (Driver TRACK_FFI_EXTERN_DEDUP STEP=5 — examples sweep)
 

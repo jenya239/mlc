@@ -4,11 +4,11 @@ Parent: [../FFI_LAYER.md](../FFI_LAYER.md), [TRACK_EXAMPLES_CI](../archive/track
 Trigger: 2026-07-11 — `gui_button_demo.mlc` redeclared `extern fn glfw_gl_context_* from "…hpp"` while
 transitively importing `gl_window.mlc` with the same binding. Clang failed late; mlcc was silent.
 
-## Status: **active** — STEP=1–5 **done**; STEP=6 next
+## Status: **active** — STEP=1–6 **done**; STEP=7 next
 
 ## Next step
 
-**STEP=6** — self-host verify (mlcc → mlcc2 diff identical).
+**STEP=7** — `scripts/regression_gate.sh` green.
 
 ## Problem
 
@@ -41,8 +41,8 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 | 2 | Repro corpus: two-module e2e fixture (identical signature redeclare) — fails clang today, passes after fix | **done** (`fixtures/extern_dedup/` + `run_extern_dedup_repro.sh` expects enclose-namespace fail) |
 | 3 | Implement chosen dedup/diagnostic in checker and/or codegen | **done** (`ffi_extern_reuses_imported_binding` skip emit in `decl_cpp.mlc`) |
 | 4 | Negative case: same key, different signatures → mlcc error with both sites | **done** (E090; later site + earlier label in message) |
-| 5 | Re-check examples sweep / button demos still OK | **pending** |
-| 6 | Self-host verify (mlcc → mlcc2 diff identical) | pending |
+| 5 | Re-check examples sweep / button demos still OK | **done** (ok=106 fail=0 skip=1; gui_button_demo OK) |
+| 6 | Self-host verify (mlcc → mlcc2 diff identical) | **pending** |
 | 7 | `scripts/regression_gate.sh` green | pending |
 | 8 | Docs: `FFI_LAYER.md` one paragraph on dedup rule | pending |
 
@@ -58,11 +58,17 @@ Why not 2 alone: shared/global C++ namespace for all FFI binders is higher blast
 - Identical redeclare stays clean; message names earlier site (`provider.mlc:…`).
 - Also: `extern_header_arity_lint` index via `let mut result` (avoid match→HashMap codegen void bug).
 
-### STEP=5 sub-steps (Driver)
+### STEP=5 delivery
 
-1. `scripts/run_examples_compile_sweep.sh` (or gated subset with gui_button_demo).
-2. Confirm no new fails vs STEP=3 baseline.
-3. `next` = STEP=6.
+- `TMPDIR=$PWD/tmp scripts/run_examples_compile_sweep.sh` → **ok=106 fail=0 skip=1** (dynrecord allowlisted).
+- `gui_button_demo.mlc` / `gui_button_interactive_demo.mlc` OK.
+
+### STEP=6 sub-steps (Driver)
+
+1. `compiler/out/mlcc -o tmp/mlc_p1 compiler/main.mlc`
+2. `MLC_CXX=g++ compiler/build_bin.sh tmp/mlc_p1 tmp/mlcc2`
+3. `tmp/mlcc2 -o tmp/mlc_p2 compiler/main.mlc` then `diff -r tmp/mlc_p1 tmp/mlc_p2 --exclude=obj`
+4. `next` = STEP=7 on identical.
 
 ## Out of scope
 
