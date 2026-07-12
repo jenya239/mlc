@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
+| driver_turns_since_plan | 9 |
+| step_last | 9 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 14:07 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=9 — mixed MAE)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 14:00 |
+| elapsed | ~7 min |
+| done    | `"Hxpjy Agq"` in a8 string smoke + golden `text_a8_hxpjy_24.rgba` (GL vs CPU MAE≤8). |
+| verify  | `CCACHE_DISABLE=1 compiler/tests/run_text_renderer_a8_string_smoke.sh` ok (Привет + Hxpjy); privet golden bytes unchanged. |
+| result  | STEP=9 done. Plain: mixed ascender/descender baseline matches CPU reference within MAE. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=10 TRACK_TEXT_GL_PERF_BASELINE — confirm text_a8_privet_24.rgba still valid |
 
 ### Turn 2026-07-12 13:57 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=8 — wire bearing)
 

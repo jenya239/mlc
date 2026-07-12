@@ -1,4 +1,5 @@
-// TextRenderer A8 shaped-string smoke (TRACK_TEXT_RENDERING STEP=6.2).
+// TextRenderer A8 shaped-string smoke (TRACK_TEXT_RENDERING STEP=6.2;
+// TRACK_TEXT_GL_PERF_BASELINE STEP=9 mixed ascenders/descenders).
 // HarfBuzz shape → multi-quad FBO → MAE vs CPU; golden RGBA lock.
 
 extern fn text_renderer_a8_string_smoke(
@@ -11,10 +12,18 @@ extern fn text_renderer_a8_string_smoke(
 
 fn main() -> i32 = do
   const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-  const golden_path = "misc/examples/fixtures/text_a8_privet_24.rgba"
-  const status = text_renderer_a8_string_smoke(font_path, "Привет", 24, golden_path)
-  if status != 0 then
-    return status
+  const privet_status = text_renderer_a8_string_smoke(
+    font_path, "Привет", 24, "misc/examples/fixtures/text_a8_privet_24.rgba"
+  )
+  if privet_status != 0 then
+    return privet_status
+  end
+  // Caps + x-height + ascenders + descenders — baseline bearing regression.
+  const mixed_status = text_renderer_a8_string_smoke(
+    font_path, "Hxpjy Agq", 24, "misc/examples/fixtures/text_a8_hxpjy_24.rgba"
+  )
+  if mixed_status != 0 then
+    return mixed_status
   end
   0
 end

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Shaped-string A8 TextRenderer + golden fixture (TRACK_TEXT_RENDERING STEP=6.2).
+# Shaped-string A8 TextRenderer + golden fixtures (STEP=6.2 + TEXT_GL STEP=9).
+# Runs "Привет" and mixed "Hxpjy Agq" (MAE≤8 vs CPU; golden RGBA lock).
 set -e
 
 COMPILER_DIR="$(cd "$(dirname "$0")/.." && pwd)"
