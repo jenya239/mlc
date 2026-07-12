@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 8 |
+| driver_turns_since_plan | 8 |
+| step_last | 9 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | regression_gate 20/0; sweep ok=113 fail=0 skip=1 |
+| test_gate | docs STEP=9 (MLC.md region/E091) |
+
+### Turn 2026-07-12 22:22 (Driver TRACK_LANG_REGION_ARENA STEP=9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 22:22 |
+| elapsed | ~5 min |
+| done    | `docs/MLC.md` §C1 region/`RegionHandle`/`Region` + E091 vectors; table rows. |
+| verify  | grep MLC.md: `region` / E091 / RegionHandle present under C1. |
+| result  | STEP=9 done. Plain: language doc covers arena escape rules. |
+| issues  | none |
+| next    | ROLE=Driver STEP=10 TRACK_LANG_REGION_ARENA — optional hot-path or skip+close |
 
 ### Turn 2026-07-12 21:45 (Driver TRACK_LANG_REGION_ARENA STEP=8)
 

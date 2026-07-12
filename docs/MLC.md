@@ -59,6 +59,8 @@ fn area(s: Shape) -> i32 =
 | Диагностики с позицией (GCC-style) | ✓ |
 | Проверка иммутабельности при присвоении | ✓ |
 | Triple-bootstrap стабильность | ✓ |
+| Phantom types (C1) | ✓ |
+| `region` / `RegionHandle` / `Region<Tag,T>` (arena, E091) | ✓ |
 
 ### Что не работает / не реализовано в mlcc
 
@@ -348,8 +350,36 @@ codegen(parse(source)?)     // Ast<Unvalidated> передан в Ast<Validated>
 **C++ трансляция:** `template<typename Phase> struct Ast { ... };` — Phase не используется в
 полях, только в типовых параметрах. C++ поддерживает phantom type parameters нативно.
 
-**Checker:** phantom type parameters — параметры типа, не упомянутые в полях. Сейчас
-checker требует, чтобы все type params встречались в полях. Нужно снять это ограничение.
+**Checker:** phantom type parameters — параметры типа, не упомянутые в полях
+(`algebraic_decl_phantom_type_params` / `compute_phantom_type_params` в
+`compiler/checker/registry.mlc`). Реализовано.
+
+#### Region / arena (`region r do ... end`)
+
+Scoped arena без per-node refcount. Каждый блок синтезирует уникальный phantom-tag
+(`RegionTag_L_C`, невидимый пользователю). Binder `r` имеет тип `RegionHandle<Tag>`;
+`r.alloc(v)` → `Region<Tag, T>`. Циклы **внутри** блока допустимы (через индексы/`i32`
+id, не через поля типа `Region`/`Shared` — Decision 3: тип целиком региональный или нет).
+
+```mlc
+type GraphNode = { value: i32, next_index: i32 }
+
+region arena do
+  let root = arena.alloc(GraphNode { value: 1, next_index: 1 })
+  let leaf = arena.alloc(GraphNode { value: 2, next_index: 0 })
+  // ... work with root/leaf inside the block only
+end   // arena freed as one buffer
+```
+
+**Escape запрещён (E091)** — иначе UB после `end`. Три вектора:
+
+1. `return` значения с `Region<Tag, _>` из функции вне лексического `region`-блока
+2. захват замыканием, переживающим блок
+3. поле non-regional record с типом `Region<Tag, _>` (и assign наружу блока)
+
+**C++:** `mlc::memory::RegionHandle` над `std::pmr::monotonic_buffer_resource`;
+`Region<Tag,T>` → `RegionPtr<T>` (phantom Tag стирается). Runtime:
+`runtime/include/mlc/memory/region.hpp`. Fixtures: `compiler/tests/e2e/region_*.mlc`.
 
 ---
 
@@ -845,6 +875,7 @@ end
 | `derive { Ord }` | `operator<` (лексикографическое сравнение полей; `<=>` — позже) |
 | `derive { Hash }` | `std::hash<T>` специализация |
 | Phantom types | `template<typename Phase>` struct |
+| `region` / `RegionHandle` / `Region<Tag,T>` | `mlc::memory::RegionHandle` + `RegionPtr<T>` (pmr arena) |
 | `private` constructor | `private:` в struct + factory |
 | `with` block | RAII scope guard |
 | Associated types | `using Item = T` в struct |
