@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | test_supervisor 26 + concurrency smoke ok |
+| test_gate | docs-only (CONCURRENCY_V2 / STDLIB_BACKEND) |
+
+### Turn 2026-07-12 10:55 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=6 — docs §28–29 + STDLIB)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:55 |
+| elapsed | ~5 min |
+| done    | CONCURRENCY_V2 §28–29 C++ v1 status + phase-10 row; STDLIB_BACKEND Supervisor row + concurrency list (no MLC). |
+| verify  | Docs aligned with Decision/JobQueue pattern; no registry; grep §28/§29 status present. |
+| result  | STEP=6 done. Plain: docs mark Supervisor C++-only; next verify STEP=7. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=7 TRACK_CONCURRENCY_SUPERVISOR — concurrency smoke + sanitizer gate; self-host N/A |
 
 ### Turn 2026-07-12 10:50 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=5 — 3-child + storm smoke)
 

@@ -418,7 +418,7 @@ compiler/
 | **22** | Дублирующийся `extern fn ... from "<header>"` в графе импортов → clang error вместо диагностики mlcc | **done** (2026-07-12) | [TRACK_FFI_EXTERN_DEDUP](archive/tracks/TRACK_FFI_EXTERN_DEDUP.md) **closed** Critic OK; Hybrid + E090; REG 20/0; sweep 106/0/1; DIFF=0 |
 | **23** | GUI input robustness (debounce клика, keyboard text, resize) | **done** (2026-07-12) | [TRACK_GUI_INPUT_ROBUSTNESS](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md) **closed** Critic OK (`e86090cd`…`a4ec69f1`); STEP=2 N/A; 7 smokes ok |
 | **24** | HTTP server hardening (keep-alive, лимиты, static files, graceful shutdown doc) | **done** (2026-07-12) | [TRACK_STDLIB_HTTP_HARDENING](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md) **closed** Critic OK (`aa5721f1`…`8e2d1b30`); REG 20/0; sweep 113/0/1 |
-| **25** | Concurrency Supervisor — реализация (гейт снят) | **active** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) **active** STEP=1–5 done; STEP=6 docs next |
+| **25** | Concurrency Supervisor — реализация (гейт снят) | **active** (2026-07-12) | [TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) **active** STEP=1–6 done; STEP=7 verify next |
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **open** (2026-07-11: unblocked, Task/TaskScope/Isolate в продакшене) | [TRACK_CONCURRENCY_TEST_HARNESS](agent/TRACK_CONCURRENCY_TEST_HARNESS.md) |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **open, средний приоритет** | [TRACK_LANG_DOCS](agent/TRACK_LANG_DOCS.md) |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **open, средний приоритет** | [TRACK_STDLIB_DOCS](agent/TRACK_STDLIB_DOCS.md) |
@@ -576,7 +576,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md))
   → STDLIB_HTTP_HARDENING (**done** 2026-07-12: Critic OK; STEP=1–8; REG 20/0; sweep 113/0/1;
       → [archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md](archive/tracks/TRACK_STDLIB_HTTP_HARDENING.md))
-  → **CONCURRENCY_SUPERVISOR (active 2026-07-12: STEP=1–5 done; C++-only; STEP=6 docs next;
+  → **CONCURRENCY_SUPERVISOR (active 2026-07-12: STEP=1–6 done; C++-only; STEP=7 verify next;
       → [agent/TRACK_CONCURRENCY_SUPERVISOR.md](agent/TRACK_CONCURRENCY_SUPERVISOR.md)):**
     permanent/transient/temporary, one_for_one, restart storm; MLC deferred
   → CONCURRENCY_TEST_HARNESS T6 (nightly fuzz/chaos, отдельная non-blocking

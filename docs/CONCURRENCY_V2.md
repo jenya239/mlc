@@ -389,6 +389,13 @@ fn update(widget: GtkWidget) { ... }
 
 ## 28. `Supervisor` — после Isolate, не раньше
 
+**Статус (2026-07-12):** C++ v1 **implemented** —
+`runtime/include/mlc/concurrency/supervisor.hpp` (`mlc::concurrency::Supervisor`);
+smoke `runtime/test/test_supervisor.cpp` + `run_concurrency_smoke.sh`.
+MLC surface **deferred** (same closure gap as JobQueue; see
+[TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md) Decision).
+Sketch below is the long-term MLC shape, not shipped syntax.
+
 ```mlc
 supervisor {
   child("gateway", restart: .permanent) { run_gateway() }
@@ -397,17 +404,20 @@ supervisor {
 }
 ```
 
-Политики: `permanent | transient | temporary`. Стратегии: начать с
-`one_for_one`, `one_for_all`/`rest_for_one` — позже. Реализовывать только после
-того как channels/TaskScope/cancellation работают в проде (§9 в дорожной карте
-ниже).
+Политики: `permanent | transient | temporary` — в C++: `RestartPolicy`.
+Стратегии: v1 = `one_for_one` only; `one_for_all`/`rest_for_one` — позже.
+Prerequisite (channels/TaskScope/cancellation) met before this track.
 
 ## 29. Restart storm protection
+
+**Статус (2026-07-12):** C++ v1 **implemented** —
+`Supervisor::set_restart_intensity(max, within)`; exceeding the rolling window
+sets `storm_tripped()` and requests supervisor stop. Exponential **backoff**
+deferred. MLC sketch below is not shipped.
 
 ```mlc
 restart: max: 5, within: 30.sec, backoff: exponential
 ```
-
 ## 30. Shutdown — отдельная спецификация (будущий документ)
 
 `docs/concurrency/shutdown.md` (создать при подходе к Фазе 9):
@@ -551,7 +561,8 @@ ThreadPool
 Instant, Duration, Timer
 ```
 
-После v1: `Isolate[State, Msg]`, `Supervisor`, `Select`. После них: `Future`,
+После v1: `Isolate[State, Msg]` (**done** C++), `Supervisor` (**done** C++ v1;
+MLC deferred), `Select`. После них: `Future`,
 `async/await`, `IoReactor`, `AsyncSocket`.
 
 ## 44. Порядок реализации (маппинг на текущий pipeline `Lexer → Parser → AST →
@@ -568,7 +579,7 @@ Checker → SemanticIR → C++20`)
 | 7 | Cancellation propagation (scope failure/cancel) | runtime + checker | нет |
 | 8 | `Isolate[State, Msg]` (сначала библиотечно) | нет (library) | нет |
 | 9 | **Стоп. Не добавлять фичи, пока эталонное приложение (чат, см. north star) не выдержит:** 1000 connections, 100k messages, slow clients, random disconnect, SIGTERM, DB delays, worker crashes, TSan | — | — |
-| 10 | `Supervisor` | library | нет |
+| 10 | `Supervisor` | library | **есть** C++ v1 (2026-07-12): `supervisor.hpp`; policies + one_for_one + storm intensity; MLC deferred ([TRACK_CONCURRENCY_SUPERVISOR](agent/TRACK_CONCURRENCY_SUPERVISOR.md)) |
 | 11 | async I/O (`Future`/`async`/`await`/`IoReactor`) | язык + runtime | нет |
 
 ## Критерий приёмки ("MLC умеет стабильную многопоточность")
