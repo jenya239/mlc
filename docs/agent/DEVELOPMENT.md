@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=4 (single-line text field demo) next; STEP=3 keyboard plumbing done.
+**`TRACK_GUI_INPUT_ROBUSTNESS` active** — STEP=5 (window resize size APIs) next; STEP=4 text-field demo done.
 See [TRACK_GUI_INPUT_ROBUSTNESS.md](TRACK_GUI_INPUT_ROBUSTNESS.md). Queue: GUI_INPUT → HTTP_HARDENING → …
 
 

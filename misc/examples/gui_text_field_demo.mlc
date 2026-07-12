@@ -1,0 +1,241 @@
+// TRACK_GUI_INPUT_ROBUSTNESS STEP=4 — single-line text field via TextRenderer.
+// Headless: inject chars + backspace edge; assert field ends as "Hi".
+// Interactive: MLC_GLFW_VISIBLE=1 (skip auto inject after frame script).
+
+import { rect_new } from '../gui/layout'
+import {
+  gui_input_poll,
+  gui_input_text_test_push,
+  gui_input_keys_test_set,
+  gui_input_test_clear
+} from '../gui/input'
+import {
+  GlyphAtlas,
+  AtlasSlot,
+  GlyphAtlasPackOk,
+  TextRenderer,
+  glyph_atlas_new,
+  glyph_atlas_pack,
+  text_renderer_create,
+  text_renderer_upload_atlas,
+  text_renderer_set_batch,
+  text_renderer_draw,
+  text_renderer_destroy,
+  text_scratch_u8_clear,
+  text_scratch_u8_resize_zero,
+  text_scratch_u8_fill_rect,
+  text_scratch_f32_clear,
+  text_bind_array_buffer,
+  text_upload_dynamic_scratch,
+  text_context_begin,
+  text_context_should_close,
+  text_context_swap_poll,
+  text_context_end
+} from '../gui/text_renderer'
+
+extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
+  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_id_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_advance_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+
+extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
+  = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_push_screen_quad(
+  window_width: i32, window_height: i32,
+  pixel_x: i32, pixel_y: i32, pixel_width: i32, pixel_height: i32,
+  atlas_size: i32, slot_x: i32, slot_y: i32, slot_width: i32, slot_height: i32
+) -> unit
+  = "mlc::gl::gl_scratch_push_screen_quad" from "mlc/gl/text_window_helpers.hpp"
+
+type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32 }
+
+fn append_line(
+  font_path: string, line: Line, window_width: i32, window_height: i32,
+  atlas: GlyphAtlas, atlas_size: i32
+) -> GlyphAtlasPackOk = do
+  const count = shape_glyph_count(font_path, line.text, line.pixel_size)
+  if count < 0 then
+    return GlyphAtlasPackOk {
+      atlas: atlas,
+      slot: AtlasSlot { page_index: 0, x: 0, y: 0, width: 0, height: 0 },
+      error_code: 0
+    }
+  end
+  let mut working = atlas
+  let mut cursor_x = line.pen_x
+  let mut index = 0
+  let mut vertices = 0
+  while index < count do
+    const glyph_id = shape_glyph_id_at(index)
+    const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
+    if packed >= 0 then
+      const width = glyph_width()
+      const rows = glyph_rows()
+      if width > 0 && rows > 0 then
+        const pack = glyph_atlas_pack(working, 0, width, rows)
+        if pack.error_code == 0 then
+          working = pack.atlas
+          if gl_scratch_u8_blit_glyph_a8(atlas_size, pack.slot.x, pack.slot.y) == 0 then
+            gl_scratch_push_screen_quad(
+              window_width, window_height, cursor_x, line.pen_y, width, rows,
+              atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
+            )
+            vertices = vertices + 6
+          end
+        end
+      end
+    end
+    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    index = index + 1
+  end
+  GlyphAtlasPackOk {
+    atlas: working,
+    slot: AtlasSlot { page_index: vertices, x: 0, y: 0, width: 0, height: 0 },
+    error_code: 0
+  }
+end
+
+fn append_box(
+  window_width: i32, window_height: i32, atlas: GlyphAtlas, atlas_size: i32,
+  box_x: i32, box_y: i32, box_width: i32, box_height: i32, brightness: i32
+) -> GlyphAtlasPackOk = do
+  const pack = glyph_atlas_pack(atlas, 0, box_width, box_height)
+  if pack.error_code != 0 then
+    return GlyphAtlasPackOk {
+      atlas: atlas,
+      slot: AtlasSlot { page_index: 0, x: 0, y: 0, width: 0, height: 0 },
+      error_code: 0
+    }
+  end
+  text_scratch_u8_fill_rect(atlas_size, pack.slot.x, pack.slot.y, box_width, box_height, brightness)
+  gl_scratch_push_screen_quad(
+    window_width, window_height, box_x, box_y, box_width, box_height,
+    atlas_size, pack.slot.x, pack.slot.y, pack.slot.width, pack.slot.height
+  )
+  GlyphAtlasPackOk {
+    atlas: pack.atlas,
+    slot: AtlasSlot { page_index: 6, x: 0, y: 0, width: 0, height: 0 },
+    error_code: 0
+  }
+end
+
+fn drop_last_char(text: string) -> string = do
+  if text.length() <= 0 then
+    return ""
+  end
+  text.substring(0, text.length() - 1)
+end
+
+fn main() -> i32 = do
+  const width = 800
+  const height = 400
+  const atlas_size = 512
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const field_rect = rect_new(40, 120, 400, 48)
+
+  const begin_status = text_context_begin(width, height)
+  if begin_status != 0 then
+    return begin_status
+  end
+  let mut renderer = text_renderer_create(atlas_size)
+  if renderer.program < 0 then
+    const error_code = renderer.program
+    text_context_end()
+    return error_code
+  end
+
+  let mut field = ""
+  let mut previous_backspace = 0
+  let mut frame_index = 0
+  let mut enter_seen = 0
+
+  while text_context_should_close() == 0 do
+    // Scripted inject (headless smoke): "H" + "ix" + backspace → "Hi", then enter.
+    if frame_index == 1 then
+      gui_input_text_test_push("H")
+    else if frame_index == 2 then
+      gui_input_text_test_push("ix")
+    else if frame_index == 3 then
+      gui_input_keys_test_set(1, 0)
+    else if frame_index == 4 then
+      gui_input_keys_test_set(0, 0)
+    else if frame_index == 5 then
+      gui_input_keys_test_set(0, 1)
+    else
+      gui_input_keys_test_set(0, 0)
+    end
+
+    const input = gui_input_poll()
+    if input.text_buffer != "" then
+      field = field + input.text_buffer
+    end
+    if input.backspace != 0 && previous_backspace == 0 then
+      field = drop_last_char(field)
+    end
+    previous_backspace = input.backspace
+    if input.enter != 0 then
+      enter_seen = 1
+    end
+
+    let mut display = field
+    if display == "" then
+      display = " "
+    end
+
+    const lines: [Line] = [
+      Line { text: "Text field", pixel_size: 28, pen_x: 40, pen_y: 48 },
+      Line { text: display, pixel_size: 26, pen_x: field_rect.x + 12, pen_y: field_rect.y + 30 }
+    ]
+
+    text_scratch_u8_clear()
+    text_scratch_u8_resize_zero(atlas_size * atlas_size)
+    text_scratch_f32_clear()
+    let mut atlas = glyph_atlas_new(atlas_size)
+    let mut vertex_count = 0
+
+    const box_result = append_box(
+      width, height, atlas, atlas_size,
+      field_rect.x, field_rect.y, field_rect.width, field_rect.height, 40
+    )
+    atlas = box_result.atlas
+    vertex_count = vertex_count + box_result.slot.page_index
+
+    let mut line_index = 0
+    while line_index < lines.length() do
+      const result = append_line(font_path, lines[line_index], width, height, atlas, atlas_size)
+      atlas = result.atlas
+      vertex_count = vertex_count + result.slot.page_index
+      line_index = line_index + 1
+    end
+
+    text_renderer_upload_atlas(renderer)
+    text_bind_array_buffer(renderer.vertex_buffer)
+    text_upload_dynamic_scratch()
+    renderer = text_renderer_set_batch(renderer, vertex_count)
+    text_renderer_draw(renderer, width, height)
+    text_context_swap_poll()
+
+    frame_index = frame_index + 1
+    if frame_index >= 12 then
+      break
+    end
+  end
+
+  gui_input_test_clear()
+  text_renderer_destroy(renderer)
+  text_context_end()
+
+  if field != "Hi" then
+    return -1
+  end
+  if enter_seen != 1 then
+    return -2
+  end
+  0
+end

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 3 |
+| driver_turns_since_plan | 3 |
+| step_last | 4 |
 | active_track | TRACK_GUI_INPUT_ROBUSTNESS |
-| test_gate | `run_gui_text_input_smoke.sh` ok |
+| test_gate | `run_gui_text_field_demo.sh` ok |
+
+### Turn 2026-07-12 06:40 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=4 — text field demo)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_INPUT_ROBUSTNESS |
+| started | 2026-07-12 06:37 |
+| elapsed | ~8 min |
+| done    | `gui_text_field_demo.mlc` + script: TextRenderer box+glyphs; inject H+ix+BS→Hi + enter. Also fixed leftover STEP=3 TRACK/PLAN row status. |
+| verify  | `scripts/run_gui_text_field_demo.sh` → `ok (field=Hi, enter edge)`. |
+| result  | STEP=4 done. Plain: keyboard path drawn end-to-end; next resize APIs. |
+| issues  | Foreign `compiler/out/*` left. |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_INPUT_ROBUSTNESS — `glfw_gl_window_width`/`height` (live size) |
 
 ### Turn 2026-07-12 06:25 (Driver TRACK_GUI_INPUT_ROBUSTNESS STEP=3 — keyboard text)
 
