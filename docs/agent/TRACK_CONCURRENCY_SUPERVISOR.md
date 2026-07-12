@@ -12,7 +12,7 @@ HTTP hardening closed (Critic OK 2026-07-12):
 
 ## Next step
 
-**STEP=1** — `Supervisor` runtime skeleton (`supervisor.hpp`): register / start / stop children.
+**STEP=2** — restart policies (`permanent` / `transient` / `temporary`) + `one_for_one`.
 
 ## Goal
 

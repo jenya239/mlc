@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_CONCURRENCY_SUPERVISOR |
-| test_gate | — (Planner; no code) |
+| test_gate | `test_supervisor` 4/4; concurrency smoke ok |
+
+### Turn 2026-07-12 10:15 (Driver TRACK_CONCURRENCY_SUPERVISOR STEP=1 — skeleton)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR |
+| started | 2026-07-12 10:06 |
+| elapsed | ~10 min |
+| done    | `runtime/include/mlc/concurrency/supervisor.hpp` (add/start/stop); `test_supervisor.cpp`; smoke hook. |
+| verify  | `test_supervisor` ALL 4 PASSED; `run_concurrency_smoke.sh` ok. |
+| result  | STEP=1 done. Plain: supervisor skeleton works; next restart policies. |
+| issues  | Foreign `compiler/out/*` left; no restart yet (STEP=2). |
+| next    | ROLE=Driver STEP=2 TRACK_CONCURRENCY_SUPERVISOR — permanent/transient/temporary + one_for_one |
 
 ### Turn 2026-07-12 10:05 (Planner — plan-refresh → CONCURRENCY_SUPERVISOR)
 

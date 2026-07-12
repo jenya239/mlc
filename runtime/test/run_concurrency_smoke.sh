@@ -56,6 +56,8 @@ echo "[concurrency smoke] test_thread_pool"
 run_test test_thread_pool
 echo "[concurrency smoke] test_isolate"
 run_test test_isolate
+echo "[concurrency smoke] test_supervisor"
+run_test test_supervisor
 
 if [[ -n "${MLC_SANITIZE:-}" ]]; then
   echo "[concurrency smoke] stress_channel (${MLC_SANITIZE})"
