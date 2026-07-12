@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_TEXT_SHIM_TO_MLC |
-| test_gate | Planner activate; STEP=1 pending |
+| test_gate | STEP=1 Decision frozen (docs) |
+
+### Turn 2026-07-12 23:10 (Driver TRACK_TEXT_SHIM_TO_MLC STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_SHIM_TO_MLC |
+| started | 2026-07-12 23:10 |
+| elapsed | ~8 min |
+| done    | Froze ABI Decision: i64 FT/HB abi; pitch via `ft_glyph_byte_at`; no RawPointer row ptr. |
+| verify  | Cited shim lines; `memory.mlc` only null/is_null; TRACK Decision **frozen**. |
+| result  | STEP=1 done. Plain: Driver can implement `freetype_abi` next. |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_SHIM_TO_MLC — `freetype_abi.hpp` thin FT wrappers |
 
 ### Turn 2026-07-12 23:03 (Planner TRACK_TEXT_SHIM_TO_MLC plan-refresh)
 

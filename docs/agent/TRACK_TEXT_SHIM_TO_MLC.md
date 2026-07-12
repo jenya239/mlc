@@ -10,7 +10,7 @@ WebSocket, Env/Log — но **не** `harfbuzz_shim.cpp`/`freetype_shim.cpp`. Р
 сторону — предлагал добавить **больше** C++ (кеш `FT_Library`/`FT_Face`
 внутри шима), а не перенести bookkeeping на MLC. Эта версия исправляет это.
 
-## Status: **active** (2026-07-12) — STEP=1 Decision next
+## Status: **active** (2026-07-12) — STEP=1 done; STEP=2 freetype_abi next
 
 **Gates cleared:** [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
 Critic OK; [TRACK_LANG_REGION_ARENA](../archive/tracks/TRACK_LANG_REGION_ARENA.md)
@@ -20,19 +20,20 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 ## Next step
 
-**STEP=1** — Decision: freeze ABI table; verify byte-read pattern for pitch-copy.
+**STEP=2** — `runtime/include/mlc/text/freetype_abi.hpp` (+ `.cpp` if needed): thin FT wrappers per frozen Decision; leave old shim callable until STEP=8.
 
-### STEP=1 sub-steps (Driver)
+### STEP=1 done (2026-07-12)
 
-1. Confirm current public surface: `freetype_shim.hpp` /
-   `harfbuzz_shim.hpp` — which symbols stay thin wrappers vs move to
-   `*_abi.hpp` (cite lines). Note `glyph_bearing_*` already present.
-2. `RawPointer[Byte]` indexed read from MLC: grep stdlib/examples — if no
-   deref/`load_u8`, Decision must pick **ABI** `ft_glyph_byte_at(offset)`
-   (or row+col) mirroring existing `glyph_byte_at`, not invent pointer arithmetic.
-3. Write Decision block into this TRACK: final ABI function list (keep /
-   rename / add); reject list unchanged unless new evidence.
-4. Verify gate: docs-only; no `compiler/` edits this step.
+- Public surface cited: `freetype_shim.hpp:19-32`, `harfbuzz_shim.hpp:17-20`.
+- `RawPointer`: only `raw_pointer_null` / `raw_pointer_is_null` (`memory.mlc`) — **no** byte load → pitch-copy via ABI `ft_glyph_byte_at`.
+- Decision frozen below.
+
+### STEP=1 sub-steps (Driver) — done
+
+1. Confirm current public surface — done.
+2. RawPointer byte-read — absent; ABI `*_byte_at` chosen.
+3. Decision block frozen.
+4. Docs-only verify.
 
 ## Проверено в коде (2026-07-12, важная поправка к более раннему диагнозу)
 
@@ -66,54 +67,61 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
   — чистый data-marshalling loop без библиотечных вызовов внутри —
   кандидат на перенос на MLC через raw pointer доступ.
 
-## Decision (STEP=1) — draft below; Driver freezes in STEP=1 commit
+## Decision (STEP=1) — **frozen** 2026-07-12
 
-### ABI-граница (по прецеденту `postgres_abi.hpp`/`tcp_abi.hpp`)
+### Current public surface (cite)
 
-| Функция (новый `*_abi.hpp`, один вызов библиотеки, без control flow) | Заменяет |
-|---|---|
-| `ft_library_get() -> i64` (ленивый singleton, без per-key логики) | `shared_free_type_library()` |
-| `ft_face_open(library: i64, path: string) -> i64` (0/negative = error) | часть `cached_font_face` (создание) |
-| `ft_face_set_pixel_size(face: i64, size: i32) -> i32` | часть `cached_font_face` |
-| `ft_face_close(face: i64) -> i32` | — (сейчас лица не закрываются вообще, утечка допустима как singleton-кеш; закрытие — на MLC, если понадобится вытеснение) |
-| `ft_face_load_glyph(face: i64, glyph_index: i32) -> i32` | `FT_Load_Glyph` в `with_face` |
-| `ft_face_render_glyph(face: i64) -> i32` (packed width\<\<16\|rows) | `render_face_glyph` (без copy-loop) |
-| `glyph_bearing_x()`/`glyph_bearing_y()` | уже добавлены в `TRACK_TEXT_GL_PERF_BASELINE` STEP=7 — переиспользовать, не дублировать |
-| `ft_glyph_pitch() -> i32`, `ft_glyph_row_pointer(row: i32) -> RawPointer[Byte]` | заменяет copy-loop — MLC копирует по pitch сама |
-| `hb_font_create_from_face(face: i64) -> i64` | часть `cached_shaping_font` |
-| `hb_shape_text(font: i64, text: string) -> i32` (glyph count) | `shape_glyph_count` (без cache-lookup внутри) |
-| `shape_glyph_id_at(i32)`/`shape_glyph_advance_at(i32)` | без изменений, уже тонкие |
+| Header | Symbols | Role today |
+|--------|---------|------------|
+| `freetype_shim.hpp:19-32` | `glyph_bitmap_packed`, `glyph_bitmap_by_index`, `glyph_width`/`rows`/`bearing_x`/`bearing_y`/`byte_count`/`byte_at`, `glyph_a8_data` | path+size **cache** + load/render + last-glyph slot |
+| `harfbuzz_shim.hpp:17-20` | `shape_glyph_count`, `shape_glyph_id_at`, `shape_glyph_advance_at` | path+size **cache** + shape + last-shape slot |
 
-### Что переносится на MLC
+Cache control-flow lives in `freetype_shim.cpp` (`cached_font_face` ~46–74,
+`with_face` ~101–124) and `harfbuzz_shim.cpp` (`cached_shaping_font` /
+`shape_glyph_count`). Pitch-copy is `render_face_glyph` ~76–98.
 
-1. **Face/font handle-кеш** (`Map<string, i64>`, ключ `font_path + "|" +
-   pixel_size.to_string()`) — новый модуль `misc/gui/text_shaping.mlc`
-   (или расширение `text_renderer.mlc`). MLC решает: искать в кеше, открыть
-   через `ft_face_open`+`ft_face_set_pixel_size`, положить в `let mut` map.
-2. **Copy-по-pitch** — вместо C++ цикла, MLC читает `ft_glyph_row_pointer(row)`
-   через `RawPointer[Byte]` + существующий byte-read intrinsic (см.
-   `RawPointer[T]` в [FFI_LAYER.md §2.1](../FFI_LAYER.md)) построчно в свой
-   `Array<i32>`/scratch-буфer.
-3. **Bearing + baseline compositing math** (`destination_x = origin_x +
-   pen_x + bearing_x`, `destination_y = baseline_y - pen_y - bearing_y`) —
-   чистая арифметика, переносится в `append_line`
-   (`misc/examples/text_dashboard_demo.mlc` и аналоги) и/или в общую
-   MLC-функцию в `text_shaping.mlc`, используемую всеми демо.
-4. **Кеш атласа между кадрами** — демо переключается на существующий
-   `GlyphCache`/`glyph_atlas_pack` с lookup по `(font_path, glyph_id,
-   pixel_size)`: перестраивать/перезагружать только изменившиеся строки, не
-   весь атлас каждый кадр.
+### Byte-read pattern
 
-### Rejected
+`lib/mlc/common/stdlib/core/memory.mlc`: `RawPointer<T>` + `raw_pointer_null` /
+`raw_pointer_is_null` only — **no** indexed byte load. Therefore pitch-copy
+**must** use ABI `ft_glyph_byte_at(index: i32) -> i32` (same contract as
+existing `glyph_byte_at`), not `RawPointer[Byte]` row pointers.
 
-- Полный перенос `hb_shape`/`FT_Render_Glyph` вызовов на MLC — невозможно
-  без FFI, библиотека остаётся C.
-- Перенос `text_renderer_shim.cpp` (`text_renderer_a8_glyph_smoke`,
-  `text_renderer_a8_string_smoke`) — это golden-MAE test oracle
-  (EGL pbuffer + shader + `mean_absolute_error`), не runtime-путь; остаётся
-  C++ как тестовая инфраструктура (тот же прецедент — CPU-reference oracle
-  для MSDF golden-теста тоже не портировался).
+### Frozen ABI (`freetype_abi.hpp` / `harfbuzz_abi.hpp`, postgres-style `i64` handles)
 
+| ABI | Replaces / notes |
+|-----|------------------|
+| `ft_library_get() -> i64` | `shared_free_type_library()` singleton only |
+| `ft_face_open(library: i64, path: string) -> i64` | `FT_New_Face`; 0 = error |
+| `ft_face_set_pixel_size(face: i64, size: i32) -> i32` | `FT_Set_Pixel_Sizes`; 0 = ok |
+| `ft_face_close(face: i64) -> i32` | `FT_Done_Face` (MLC cache eviction) |
+| `ft_face_load_glyph(face: i64, glyph_index: i32) -> i32` | `FT_Load_Glyph` |
+| `ft_face_render_glyph(face: i64) -> i32` | `FT_Render_Glyph` + fill last-glyph slot **without** pitch-flatten loop into `vector` if MLC copies; minimum: expose dimensions/bearing + bytes via accessors below. Packed `(width<<16)\|rows` on success |
+| `ft_glyph_width` / `ft_glyph_rows` / `ft_glyph_bearing_x` / `ft_glyph_bearing_y` / `ft_glyph_byte_count` / `ft_glyph_byte_at` | last-glyph slot after render; **aliases OK** to keep existing `glyph_*` names as thin wrappers (do not duplicate bearing math) |
+| `hb_font_create_from_face(face: i64) -> i64` | `hb_ft_font_create` (or current shim equivalent) |
+| `hb_font_destroy(font: i64) -> i32` | pair for MLC eviction |
+| `hb_shape_text(font: i64, text: string) -> i32` | shape only; fills last-shape slot; **no** path/size lookup |
+| `shape_glyph_id_at` / `shape_glyph_advance_at` | keep; already thin |
+
+### Moves to MLC (`text_shaping.mlc`, STEP=4+)
+
+1. Face/font handle map keyed by `font_path + "|" + pixel_size`.
+2. Pitch-copy loop: after `ft_face_render_glyph`, read `ft_glyph_byte_at` into MLC buffer.
+3. Bearing/baseline arithmetic helpers (demos already call `glyph_bearing_*`).
+4. Atlas dirty/reuse (STEP=7) — separate from ABI.
+
+### Rejected (unchanged + new)
+
+- MLC `RawPointer` pitch-copy / `ft_glyph_row_pointer` — no byte deref intrinsic.
+- Porting `hb_shape` / `FT_Render_Glyph` bodies into MLC.
+- Touching `text_renderer_shim.cpp` (golden MAE oracle).
+- Duplicating `glyph_bearing_*` under new names without need.
+
+### Migration note
+
+Until STEP=8, old `glyph_bitmap_*` / `shape_glyph_count(path,…)` may remain as
+deprecated wrappers calling cache-in-C++ **or** thin wrappers over MLC path —
+STEP=2/3 add abi alongside; STEP=6 switches demos; STEP=8 deletes cache helpers.
 ## Scope
 
 1. Decision — зафиксировать ABI-таблицу выше, прочитать `RawPointer[T]`
@@ -155,7 +163,7 @@ handle-кеш + pitch-copy bookkeeping from C++ shims onto MLC per FFI §8.
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Decision — freeze ABI table; byte-read = ABI `*_byte_at` if no MLC `RawPointer` deref | pending |
+| 1 | Decision — freeze ABI table; byte-read = ABI `*_byte_at` if no MLC `RawPointer` deref | **done** (2026-07-12) |
 | 2 | `freetype_abi.hpp`/`.cpp` — thin FT wrappers; strip cache control-flow from shim | pending |
 | 3 | `harfbuzz_abi.hpp`/`.cpp` — thin HB wrappers; strip cache control-flow from shim | pending |
 | 4 | `misc/gui/text_shaping.mlc` — handle-кеш + pitch-copy + bearing composite helper | pending |
