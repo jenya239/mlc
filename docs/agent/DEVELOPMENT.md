@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_SHIM_TO_MLC` closed** Critic OK — next Planner: `TRACK_PACKAGE_MANAGER`.
-Archive: [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md).
+**`TRACK_PACKAGE_MANAGER` active** — STEP=1 design deps model (`mlc.json`+git+rev).
+See [TRACK_PACKAGE_MANAGER.md](TRACK_PACKAGE_MANAGER.md).
+TEXT_SHIM Critic OK: [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md).
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 
 ## Step sizing (good vs bad)

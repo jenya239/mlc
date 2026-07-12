@@ -1,50 +1,65 @@
-# Track: package manager (дизайн, не реализация)
+# Track: package manager (design → implementation)
 
-Parent: [../PLAN.md](../PLAN.md) §6 ("Package manager — после Phase 3"), §8
-("Что НЕ делать сейчас").
+Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
+Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **open, реализация авторизована 2026-07-11** — design (Steps 1-4)
-делается первым и полностью, реализация (Steps 5+) начинается только после
-того, как Steps 1-4 закрыты и решение зафиксировано в `docs/PACKAGE_MANAGER.md`.
+## Status: **active** (2026-07-13) — STEP=1 design deps model next
 
-## Проблема
+Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
+(Steps 5–10). No `compiler/`/`lib/mlc/` until Step 5+.
 
-Сегодня MLC-программа может импортировать только модули из того же
-дерева, что компилируется (`compiler/driver/module_loader.mlc` резолвит
-пути относительно корня проекта). Нет способа подключить сторонний
-`.mlc`-пакет (написанный кем-то ещё, версионированный, с транзитивными
-зависимостями). Практическая зона риска — уже начатые треки, которые
-создают первый реальный код на MLC вне самого компилятора
-(`TEXT_RENDERING`, `STDLIB_BACKEND`): по мере роста экосистемы вопрос "как
-поделиться `.mlc`-библиотекой между проектами" перестанет быть
-гипотетическим.
+## Next step
 
-## Задача трека (design-turn, STEP=1, ничего больше не авторизовано)
+**STEP=1** — Design: freeze minimal dependency model (manifest + git+rev, no registry).
 
-Зафиксировать минимальный дизайн, который не противоречит текущей
-архитектуре модулей, но не реализовывать до отдельной команды пользователя.
+### STEP=1 sub-steps (Driver)
+
+1. Cite current import surface: `compiler/driver/path_normalize.mlc` +
+   `module_loader.mlc` (project-relative only; no package root today).
+2. **Decision — freeze in TRACK** (copy into `PACKAGE_MANAGER.md` at STEP=4):
+   - Manifest file name: prefer **`mlc.json`** (stdlib JSON in Ruby tooling; no
+     new gem). Reject `mlc.toml` unless a toml parser is already vendored.
+   - Schema (minimal): `{ "name": string, "version": string, "dependencies": {
+     "<pkg>": { "git": "<url>", "rev": "<commit-sha>" } } }`.
+   - Pin = **full commit SHA** (tags allowed as fetch tip but stored/resolved
+     as SHA after first fetch — document in STEP=4).
+   - No registry, no semver range solver (out of scope already).
+3. Record rejected alternatives in one short table (Go modules proxy, crates.io,
+   path-only vendor without manifest).
+4. Docs-only verify: TRACK Decision block present; PLAN §18 says active STEP=1 done
+   after commit — no `docs/PACKAGE_MANAGER.md` yet (that is STEP=4).
+
+## Problem
+
+MLC imports only resolve inside the compile tree (`module_loader` +
+`path_normalize`). No way to attach a third-party `.mlc` package by git pin.
+
+## Task
+
+Minimal package model: git URL + pinned rev in a project manifest; explicit
+vendor dir; no central registry. Design 1–4, then implement 5–10.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design: минимальная модель зависимостей. Кандидат — git-ссылка + pinned commit/tag в манифесте (`mlc.toml`/`mlc.json`, содержимое: имя, версия, список зависимостей как `{ git = "...", rev = "..." }`), без центрального реестра (аналог раннего Go modules, не npm/crates.io) — реестр требует инфраструктуры (хостинг, публикация, security review пакетов), непропорционально для текущего размера проекта. | pending |
-| 2 | Design: разрешение путей импорта для внешних пакетов — как `module_loader.mlc` отличает "модуль из текущего проекта" от "модуль из зависимости" (вероятно: отдельная директория типа `.mlc_packages/`, аналог `node_modules`/vendor-каталога, checked out явно, не resolved динамически при каждой компиляции). | pending |
-| 3 | Design: версионирование самого языка/stdlib относительно пакетов — если пакет A собран под другую версию `mlcc`, что происходит (ничего не происходит на этой стадии проекта — фиксировать как известное ограничение, не решать сейчас). | pending |
-| 4 | Документация решения STEP=1-3 в новом `docs/PACKAGE_MANAGER.md` (design frozen — после этого Steps 5+ реализуют ровно то, что здесь зафиксировано, не более) | pending |
-| 5 | Manifest parser (Ruby, per scripts-language rule — это tooling вокруг компилятора, не сам язык): читает `mlc.toml`/`mlc.json`, валидирует схему (name/version/deps `{git, rev}`) | pending |
-| 6 | `.mlc_packages/` layout: CLI-скрипт (`scripts/mlc_pkg_fetch.rb` или аналог) — `git clone` + `checkout <rev>` каждой зависимости в `.mlc_packages/<name>/`, идемпотентно (повторный запуск — no-op если rev совпадает) | pending |
-| 7 | `module_loader.mlc` (или его Ruby/self-hosted аналог) — резолвинг импортов: путь начинается не из текущего проекта → искать в `.mlc_packages/<name>/...` по имени пакета из манифеста, ошибка с понятным текстом если пакет не в manifest/не fetched | pending |
-| 8 | E2E smoke: фиктивный package-репозиторий (локальный git repo в `/tmp`, не реальный GitHub — не создавать внешних зависимостей для теста) с одним экспортируемым модулем; проект A подключает его через манифест, `mlc_pkg_fetch` + компиляция проходят | pending |
-| 9 | Docs: `docs/PACKAGE_MANAGER.md` — usage (`mlc.toml` пример, команда fetch, как добавить зависимость); `README.md` — одна строка + ссылка | pending |
-| 10 | Verify: self-host diff identical если `module_loader`-эквивалент в `compiler/` менялся; иначе (если резолвинг остался Ruby-side / tooling-only) — просто `scripts/regression_gate.sh` green | pending |
+| 1 | Design: minimal deps model — `mlc.json` + `{git, rev}` pins, no registry | pending |
+| <!-- sub-steps: see STEP=1 above --> | | |
+| 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | pending |
+| <!-- sub-steps: 1) define layout `.mlc_packages/<pkg>/` = clone root; 2) import form `Pkg/foo` or `pkg:foo` — pick one; 3) security: no escape above package root; 4) write Decision into TRACK --> | | |
+| 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | pending |
+| <!-- sub-steps: 1) state "no version check at compile"; 2) optional future `mlc_version` field deferred; 3) TRACK Decision only --> | | |
+| 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | pending |
+| 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | pending |
+| 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | pending |
+| 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | pending |
+| 8 | E2E smoke: local git fixture package + fetch + compile | pending |
+| 9 | Docs usage in `PACKAGE_MANAGER.md` + README one-liner | pending |
+| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` | pending |
 
-## Out of scope (жёстко)
+## Out of scope (hard)
 
-- Центральный реестр пакетов (crates.io-аналог) — не рассматривать вообще
-  на этой стадии проекта.
-- Semver resolution / dependency diamond solving — git+pinned-commit модель
-  (Step 1) исключает эту проблему по построению, как в раннем
-  vendoring-подходе.
-- Публикация/discovery (нет способа "найти" пакет — только прямая
-  git-ссылка, известная заранее).
+- Central package registry (crates.io-like)
+- Semver range / diamond dependency solving
+- Package discovery/search (direct git URL only)
+- Implementing fetch/loader before STEP=4 design freeze

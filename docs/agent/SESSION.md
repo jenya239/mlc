@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | (none; TEXT_SHIM Critic OK) |
-| test_gate | vs_shim_ok; field 0; Critic OK |
+| step_last | plan-refresh |
+| active_track | TRACK_PACKAGE_MANAGER |
+| test_gate | (Planner docs-only) |
+
+### Turn 2026-07-13 01:59 (Planner TRACK_PACKAGE_MANAGER plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 01:59 |
+| elapsed | ~5 min |
+| done    | Activated PACKAGE_MANAGER; STEP=1 sub-steps + `mlc.json` candidate; PLAN/DEVELOPMENT synced. |
+| verify  | TRACK status active; PLAN §18 active; queue points at STEP=1. |
+| result  | plan-refresh done. Plain: package-manager design starts at STEP=1. |
+| issues  | Foreign `text_ide_panels_demo.mlc` / lint leftovers left. |
+| next    | ROLE=Driver STEP=1 TRACK_PACKAGE_MANAGER — freeze deps model Decision |
 
 ### Turn 2026-07-13 01:55 (Critic TRACK_TEXT_SHIM_TO_MLC — critique-audit)
 
