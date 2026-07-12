@@ -1,0 +1,12 @@
+// TRACK_LANG_REGION_ARENA STEP=6 — cyclic graph via arena alloc + index edges
+// (Decision 3: id addressing, no Shared fields).
+type GraphNode = { value: i32, next_index: i32 }
+
+fn main() -> i32 = do
+  region arena do
+    let root = arena.alloc(GraphNode { value: 1, next_index: 1 })
+    let leaf = arena.alloc(GraphNode { value: 2, next_index: 0 })
+    print("cycle_ok")
+  end
+  0
+end

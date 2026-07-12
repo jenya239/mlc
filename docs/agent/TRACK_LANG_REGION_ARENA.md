@@ -10,11 +10,16 @@ Predecessor closed (Critic OK 2026-07-12):
 TEXT_GL override closed (Critic OK 2026-07-12):
 [../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md).
 
-## Status: **active** (STEP=5 done 2026-07-12) — STEP=6 cyclic positive next
+## Status: **active** (STEP=6 done 2026-07-12) — STEP=7 self-host next
 
 ## Next step
 
-**STEP=6** — Positive cyclic graph inside `region`; grep generated C++ for no Shared atomic.
+**STEP=7** — Self-host verify: mlcc → mlcc2, diff identical.
+
+### STEP=6 done (2026-07-12)
+
+- Fixture: `e2e/region_cycle.mlc` — two `GraphNode` arena allocs with index cycle (Decision 3).
+- Smoke: `run_region_cycle_smoke.sh` — `RegionHandle`+`.alloc(` present; no `shared_ptr`/`make_shared`/`std::atomic`; run `cycle_ok`.
 
 ### STEP=5 done (2026-07-12)
 
@@ -126,7 +131,7 @@ end   // весь буфер r освобождается разом
 | 3 | Checker: escape diagnostic — reject `Region<Tag, T>` (or any type containing it) in `return`, in a closure capture that outlives the block, or as a field of a non-regional type. New diagnostic code (`E0XX`, pick next free in `compiler/checker/diagnostic_codes.mlc`) | **done** (2026-07-12) E091 |
 | 4 | Codegen: `region` → RAII wrapper over `std::pmr::monotonic_buffer_resource`; `r.alloc(...)` → placement-new into that resource; zero refcount overhead for regional values inside the block | **done** (2026-07-12) |
 | 5 | UB-repro negative test: regional reference smuggled past `end` via each of the three escape vectors (return/closure/field) — each must be a **compile error**, not a runtime crash; one e2e fixture per vector under `compiler/tests/e2e/` | **done** (2026-07-12) `run_region_escape_smoke.sh` |
-| 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | pending |
+| 6 | Positive test: cyclic mutable graph built entirely inside one `region` block (the motivating case — parser-style tree/graph construction), verify zero `Shared<T>`-style atomic refcount ops in generated C++ for the regional allocations (grep generated `.cpp`, not just "it compiles") | **done** (2026-07-12) `run_region_cycle_smoke.sh` |
 | 7 | Self-host verify: `compiler/out/mlcc` → `mlcc2`, diff identical (touches checker+codegen) | pending |
 | 8 | `scripts/regression_gate.sh` green | pending |
 | 9 | Docs: `MLC.md` §C1 area — document `region`/`RegionHandle`/`Region<Tag,T>`; note the three escape-prohibition vectors explicitly | pending |

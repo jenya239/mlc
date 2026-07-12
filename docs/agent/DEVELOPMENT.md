@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_LANG_REGION_ARENA` active** — STEP=6 cyclic positive inside region.
-STEP=5 done (E091 escape e2e). See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
+**`TRACK_LANG_REGION_ARENA` active** — STEP=7 self-host mlcc↔mlcc2 diff.
+STEP=6 done (cycle smoke, no Shared atomic). See [TRACK_LANG_REGION_ARENA.md](TRACK_LANG_REGION_ARENA.md).
 `TRACK_TEXT_SHIM_TO_MLC` remains open, queued after REGION.
 
 ## Step sizing (good vs bad)

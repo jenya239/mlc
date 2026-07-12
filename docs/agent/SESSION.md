@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 5 |
+| driver_turns_since_plan | 5 |
+| step_last | 6 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | run_region_escape_smoke 3/3 E091 |
+| test_gate | run_region_cycle_smoke ok |
+
+### Turn 2026-07-12 20:57 (Driver TRACK_LANG_REGION_ARENA STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 20:46 |
+| elapsed | ~11 min |
+| done    | `e2e/region_cycle.mlc` (index-cycle GraphNode allocs) + `run_region_cycle_smoke.sh`. |
+| verify  | smoke: RegionHandle+alloc present; no shared_ptr/make_shared/std::atomic; run `cycle_ok`. |
+| result  | STEP=6 done. Plain: cyclic graph in region without Shared refcount. |
+| issues  | Cycle via next_index (Decision 3), not Region-typed fields (still E091). |
+| next    | ROLE=Driver STEP=7 TRACK_LANG_REGION_ARENA — self-host mlcc→mlcc2 identical diff |
 
 ### Turn 2026-07-12 20:40 (Driver TRACK_LANG_REGION_ARENA STEP=5)
 
