@@ -13,7 +13,7 @@ needed, go straight to implementation.
 
 ## Next step
 
-**STEP=13** — Self-host verify N/A check (stdlib signature / compiler untouched).
+**STEP=14** — `scripts/regression_gate.sh` green; close track.
 
 ### STEP=1 sub-steps (Driver)
 
@@ -105,7 +105,7 @@ exact formula into the GL live path — do not re-derive it.
 | 10 | Re-run the golden `text_a8_privet_24.rgba` comparison — confirm it still passes (or, if the old golden was itself generated pre-bearing-fix and MAE was low only because "Привет" happens to have uniform-height Cyrillic glyphs, regenerate the golden and note why in this track — do not silently keep a stale golden) | **done** (2026-07-12; no regenerate — blob `d9e1cfbb` matches HEAD; smoke exact + MAE ok) |
 | 11 | Visual re-check: re-run `text_dashboard_demo.mlc`/`text_window_demo.mlc` visibly (`MLC_GLFW_VISIBLE=1`), screenshot, confirm mixed-case text now sits on one visible baseline | **done** (2026-07-12; screenshots in `docs/agent/fixtures/text_*_baseline_step11.png`; line `Hxpjy Agq`) |
 | 12 | Docs: `TEXT_RENDERING.md` — note the bearing fix + which files were affected; `GUI.md` if it references glyph positioning assumptions | **done** (2026-07-12; TEXT_RENDERING §9; GUI.md text-field note) |
-| 13 | Self-host verify: N/A (this track only touches `runtime/` C++ + `misc/`, not `compiler/`) unless a `.mlc` stdlib module under `lib/mlc/common/stdlib/` needs a signature change — check before closing | pending |
+| 13 | Self-host verify: N/A (this track only touches `runtime/` C++ + `misc/`, not `compiler/`) unless a `.mlc` stdlib module under `lib/mlc/common/stdlib/` needs a signature change — check before closing | **done** (2026-07-12; `c270ee16..80e7d241`: no `lib/mlc/common/stdlib/`; only `compiler/tests/run_text_renderer_a8_string_smoke.sh`) |
 | 14 | `scripts/regression_gate.sh` green; close track | pending |
 
 ## Progress
@@ -144,6 +144,10 @@ exact formula into the GL live path — do not re-derive it.
   window demo sleeps 50ms/frame only when visible.
 - **Driver STEP=12** (2026-07-12): `TEXT_RENDERING.md` §9 (face cache + bearing
   formula + affected files); `GUI.md` text-field bearing note.
+- **Driver STEP=13** (2026-07-12): self-host N/A confirmed — range
+  `c270ee16..80e7d241` touches `runtime/`, `misc/`, `docs/` only; no
+  `lib/mlc/common/stdlib/`; sole `compiler/` path is test script
+  `run_text_renderer_a8_string_smoke.sh` (not `compiler/**/*.mlc`).
 
 ## Out of scope
 

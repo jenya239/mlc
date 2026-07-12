@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 12 |
-| step_last | 12 |
+| driver_turns_since_plan | 13 |
+| step_last | 13 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
 | test_gate | text smokes + golden MAE |
+
+### Turn 2026-07-12 14:55 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=13 — self-host N/A)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 13 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 14:53 |
+| elapsed | ~2 min |
+| done    | Confirmed track range `c270ee16..80e7d241` needs no mlcc self-host rebuild. |
+| verify  | `git diff --name-only`: no `lib/mlc/common/stdlib/`; `compiler/` only `tests/run_text_renderer_a8_string_smoke.sh`; no `compiler/**/*.mlc`. |
+| result  | STEP=13 done. Plain: self-host gate N/A for this track. |
+| issues  | Foreign `FFI_LAYER.md` / `TRACK_TEXT_SHIM_TO_MLC.md` / `extern_concurrency_lint.*` left. |
+| next    | ROLE=Driver STEP=14 TRACK_TEXT_GL_PERF_BASELINE — regression_gate.sh green; close track |
 
 ### Turn 2026-07-12 14:53 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=12 — docs)
 

@@ -422,7 +422,7 @@ compiler/
 | **26** | Concurrency test harness T6 (nightly fuzz) + T7 (`TestRuntime` MLC-level) | **done** (2026-07-12) | [TRACK_CONCURRENCY_TEST_HARNESS](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) **closed** Critic OK (`24486b14`…`0d362257`); T7 C++-only; fuzz gate re-OK |
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_LANG_DOCS](archive/tracks/TRACK_LANG_DOCS.md) **closed** Critic OK (`328cb686`…`022402ad`); `lang_ref_lint` 33/0 |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
-| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **active** (2026-07-12) STEP=1–12 **done**; STEP=13 self-host N/A check next | [TRACK_TEXT_GL_PERF_BASELINE](agent/TRACK_TEXT_GL_PERF_BASELINE.md) — root cause найден (не design-степ, сразу implementation): `freetype_shim.cpp`/`harfbuzz_shim.cpp` делают `FT_Init_FreeType`+`FT_New_Face` на каждый вызов (тысячи раз/сек); `runtime/src/gl/text_renderer_shim.cpp` уже правильно считает bearing (`bitmap_top`/`bitmap_left`), просто не перенесено в GL live-путь |
+| **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **active** (2026-07-12) STEP=1–13 **done**; STEP=14 regression_gate + close next | [TRACK_TEXT_GL_PERF_BASELINE](agent/TRACK_TEXT_GL_PERF_BASELINE.md) — root cause найден (не design-степ, сразу implementation): `freetype_shim.cpp`/`harfbuzz_shim.cpp` делают `FT_Init_FreeType`+`FT_New_Face` на каждый вызов (тысячи раз/сек); `runtime/src/gl/text_renderer_shim.cpp` уже правильно считает bearing (`bitmap_top`/`bitmap_left`), просто не перенесено в GL live-путь |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **open, gated** (после TEXT_GL_PERF_BASELINE) | [TRACK_TEXT_SHIM_TO_MLC](agent/TRACK_TEXT_SHIM_TO_MLC.md) — bookkeeping (handle-кеш по `(font_path,pixel_size)`) и glyph pitch-copy на MLC поверх тонкого `*_abi.hpp`; bearing ABI не дублируется (уже STEP=7 в GL_PERF_BASELINE) |
 
@@ -594,8 +594,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     12:37) — дать ему завершиться и закоммититься, **не откатывать**, но
     следующий Planner-выбор — этот трек, не `LANG_REGION_ARENA` STEP=2)
 
-  → **TEXT_GL_PERF_BASELINE (active 2026-07-12: STEP=1–12 done; STEP=13
-    self-host N/A check next;
+  → **TEXT_GL_PERF_BASELINE (active 2026-07-12: STEP=1–13 done; STEP=14
+    regression_gate + close next;
     → [agent/TRACK_TEXT_GL_PERF_BASELINE.md](agent/TRACK_TEXT_GL_PERF_BASELINE.md))**
 
   → **TEXT_SHIM_TO_MLC (open, gated: после закрытия TEXT_GL_PERF_BASELINE;
