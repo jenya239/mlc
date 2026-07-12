@@ -655,4 +655,4 @@ spawn 50 threads {
 - Реализация: `runtime/include/mlc/concurrency/`, `compiler/checker/send_safe.mlc`
 - Дорожная карта: [PLAN.md](PLAN.md) Фаза 8
 - Первый исполняемый трек: [agent/TRACK_CONCURRENCY_V2.md](agent/TRACK_CONCURRENCY_V2.md)
-- Тестовый суперстенд: [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md), [agent/TRACK_CONCURRENCY_TEST_HARNESS.md](agent/TRACK_CONCURRENCY_TEST_HARNESS.md)
+- Тестовый суперстенд: [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md), [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md)
