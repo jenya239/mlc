@@ -382,7 +382,7 @@ compiler/
 | **4** Self-host bootstrap | **done** | [TRACK_SELF_HOST_BOOTSTRAP](archive/tracks/TRACK_SELF_HOST_BOOTSTRAP.md) |
 | **5** Reddit / demo | **done** | [TRACK_REDDIT_DEMO](archive/tracks/TRACK_REDDIT_DEMO.md) — closed |
 | **6** Concurrency | **done** | [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) — Channel, spawn, Arc, Mutex |
-| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **active** (STEP=1–2 done; STEP=3 escape next) — Decisions 1–3 closed; Steps 1-10 |
+| **7** Language design audit (2026-07) | **partial** | [LANGUAGE_AUDIT_2026_07.md](LANGUAGE_AUDIT_2026_07.md); 7/8 треков closed; [TRACK_LANG_REGION_ARENA](agent/TRACK_LANG_REGION_ARENA.md) **active** (STEP=1–3 done; STEP=4 codegen next) — Decisions 1–3 closed; Steps 1-10 |
 | **8** Concurrency v2 (Send/Sync, structured concurrency) | **partial** | [CONCURRENCY_V2.md](CONCURRENCY_V2.md); V2/TASKSCOPE/ISOLATE **closed**; SPAWN_DOUBLE_EXEC **closed**; [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10. [TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed** Critic OK 2026-07-12. MVP: [TRACK_CONCURRENCY](archive/tracks/TRACK_CONCURRENCY.md) closed |
 | **8a** `spawn do <tail-call> end` выполняет тело дважды (codegen) | **closed** | [TRACK_LANG_SPAWN_DOUBLE_EXEC](archive/tracks/TRACK_LANG_SPAWN_DOUBLE_EXEC.md) **closed** 2026-07-10 — `expr_spawn_body_statements`; e2e gate; self-host identical; regression 20/0 |
 | **8b** `spawn`/`Mutex`/`Channel` только self-hosted; `Tcp` stdlib только Ruby | **closed** | [TRACK_CONCURRENCY_RUBY_PARITY](archive/tracks/TRACK_CONCURRENCY_RUBY_PARITY.md) **closed** 2026-07-10 — Decision C; `block_on`/`is_ready`; MLC.md matrix |
@@ -598,8 +598,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
     REG 20/0; sweep ok=113 fail=0 skip=1;
     → [archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md))**
 
-  → **LANG_REGION_ARENA (**active** 2026-07-12: STEP=1–2 done — ExprRegion +
-      RegionHandle<Tag>/r.alloc; STEP=3 escape next;
+  → **LANG_REGION_ARENA (**active** 2026-07-12: STEP=1–3 done — ExprRegion +
+      RegionHandle/r.alloc + E091 escape; STEP=4 pmr codegen next;
       → [agent/TRACK_LANG_REGION_ARENA.md](agent/TRACK_LANG_REGION_ARENA.md)):**
     3 design-вопроса закрыты — phantom RegionTag generic, полный запрет escape,
     тип целиком региональный или нет; Steps 1-10 parser→checker→codegen→

@@ -92,7 +92,7 @@ export fn checker_tests() -> [TestResult] = do
     check_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
-    diagnostic_code_catalog_count(), 91))
+    diagnostic_code_catalog_count(), 92))
 
   results.push(assert_eq_str('diagnostic code E001 catalog',
     diagnostic_code_e001(), 'E001'))

@@ -1,0 +1,624 @@
+// Region escape diagnostics (TRACK_LANG_REGION_ARENA STEP=3).
+// Reject Region values leaving a `region` block via return, closure capture,
+// or assignment to an outer binding; reject Region as a record field type.
+
+import {
+  Program, Decl, Expr, Stmt, Param, MatchArm, FieldVal, RecordLitPart,
+  TypeExpr, TypeVariant, FieldDef, Diagnostic, Span,
+  diagnostic_error_with_code, diagnostics_append, decl_inner, param_name, span_unknown
+} from '../frontend/ast'
+import { pattern_bindings } from './names'
+import { diagnostic_code_e091 } from './diagnostic_codes'
+
+fn empty_names() -> [string] = do
+  let names: [string] = []
+  names
+end
+
+fn empty_diagnostics() -> [Diagnostic] = do
+  let diagnostics: [Diagnostic] = []
+  diagnostics
+end
+
+fn names_contains(names: [string], sought: string) -> bool =
+  names.any(entry => entry == sought)
+
+fn names_add(names: [string], name: string) -> [string] =
+  if name.length() == 0 then names
+  else if names_contains(names, name) then names
+  else names.concat([name])
+  end
+
+fn names_add_all(names: [string], additions: [string]) -> [string] =
+  additions.fold(names, (accumulated, addition) => names_add(accumulated, addition))
+
+fn region_escape_return_diagnostic(source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'region value escapes via return',
+    source_span,
+    diagnostic_code_e091())
+
+fn region_escape_closure_diagnostic(source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'region value escapes via closure capture',
+    source_span,
+    diagnostic_code_e091())
+
+fn region_escape_assign_diagnostic(source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'region value escapes via assignment outside region',
+    source_span,
+    diagnostic_code_e091())
+
+fn region_escape_field_diagnostic(type_name: string, field_name: string, source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'Region type not allowed as field \'' + field_name + '\' of ' + type_name,
+    source_span,
+    diagnostic_code_e091())
+
+export fn type_expression_contains_region(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyGeneric(name, type_arguments) =>
+      name == 'Region' || name == 'RegionHandle' ||
+        type_arguments.any(argument => type_expression_contains_region(argument)),
+    TyArray(element_type) => type_expression_contains_region(element_type),
+    TyFn(parameter_types, return_type) =>
+      type_expression_contains_region(return_type) ||
+        parameter_types.any(parameter => type_expression_contains_region(parameter)),
+    TyShared(inner_type) => type_expression_contains_region(inner_type),
+    TyNamed(_) => false,
+    TyAssoc(_, _) => false,
+    TyI32 => false,
+    TyString => false,
+    TyBool => false,
+    TyUnit => false
+  }
+
+fn expression_is_region_alloc(expression: Shared<Expr>, region_binder: string) -> bool =
+  match expression {
+    ExprMethod(receiver, method_name, _, _) =>
+      method_name == 'alloc' && match receiver {
+        ExprIdent(name, _) => name == region_binder,
+        _ => false
+      },
+    _ => false
+  }
+
+fn expression_mentions_region_value(
+  expression: Shared<Expr>,
+  region_values: [string],
+  region_binder: string
+) -> bool =
+  match expression {
+    ExprIdent(name, _) => names_contains(region_values, name),
+    ExprMethod(receiver, method_name, method_arguments, _) =>
+      expression_is_region_alloc(expression, region_binder) ||
+        expression_mentions_region_value(receiver, region_values, region_binder) ||
+        expression_list_mentions_region_value(method_arguments, region_values, region_binder),
+    ExprCall(callee, call_arguments, _) =>
+      expression_mentions_region_value(callee, region_values, region_binder) ||
+        expression_list_mentions_region_value(call_arguments, region_values, region_binder),
+    ExprBin(_, left, right, _) =>
+      expression_mentions_region_value(left, region_values, region_binder) ||
+        expression_mentions_region_value(right, region_values, region_binder),
+    ExprUn(_, inner, _) =>
+      expression_mentions_region_value(inner, region_values, region_binder),
+    ExprField(object, _, _) =>
+      expression_mentions_region_value(object, region_values, region_binder),
+    ExprIndex(object, index_expression, _) =>
+      expression_mentions_region_value(object, region_values, region_binder) ||
+        expression_mentions_region_value(index_expression, region_values, region_binder),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      expression_mentions_region_value(condition, region_values, region_binder) ||
+        expression_mentions_region_value(then_expression, region_values, region_binder) ||
+        expression_mentions_region_value(else_expression, region_values, region_binder),
+    ExprArray(elements, _) =>
+      expression_list_mentions_region_value(elements, region_values, region_binder),
+    ExprTuple(elements, _) =>
+      expression_list_mentions_region_value(elements, region_values, region_binder),
+    ExprNamedArg(_, value, _) =>
+      expression_mentions_region_value(value, region_values, region_binder),
+    ExprQuestion(inner, _) =>
+      expression_mentions_region_value(inner, region_values, region_binder),
+    _ => false
+  }
+
+fn expression_list_mentions_region_value(
+  expressions: [Shared<Expr>],
+  region_values: [string],
+  region_binder: string
+) -> bool =
+  expressions.any(expression =>
+    expression_mentions_region_value(expression, region_values, region_binder))
+
+fn lambda_captures_region_value(
+  parameter_names: [string],
+  body: Shared<Expr>,
+  region_values: [string]
+) -> bool =
+  region_values.any(region_value_name =>
+    !names_contains(parameter_names, region_value_name) &&
+      expression_uses_ident(body, region_value_name))
+
+fn expression_uses_ident(expression: Shared<Expr>, sought: string) -> bool =
+  match expression {
+    ExprIdent(name, _) => name == sought,
+    ExprMethod(receiver, _, method_arguments, _) =>
+      expression_uses_ident(receiver, sought) ||
+        expression_list_uses_ident(method_arguments, sought),
+    ExprCall(callee, call_arguments, _) =>
+      expression_uses_ident(callee, sought) ||
+        expression_list_uses_ident(call_arguments, sought),
+    ExprBin(_, left, right, _) =>
+      expression_uses_ident(left, sought) || expression_uses_ident(right, sought),
+    ExprUn(_, inner, _) => expression_uses_ident(inner, sought),
+    ExprField(object, _, _) => expression_uses_ident(object, sought),
+    ExprIndex(object, index_expression, _) =>
+      expression_uses_ident(object, sought) || expression_uses_ident(index_expression, sought),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      expression_uses_ident(condition, sought) ||
+        expression_uses_ident(then_expression, sought) ||
+        expression_uses_ident(else_expression, sought),
+    ExprLambda(parameter_names, body, _) =>
+      !names_contains(parameter_names, sought) && expression_uses_ident(body, sought),
+    ExprArray(elements, _) => expression_list_uses_ident(elements, sought),
+    ExprTuple(elements, _) => expression_list_uses_ident(elements, sought),
+    ExprBlock(statements, result_expression, _) =>
+      statements_use_ident(statements, sought) || expression_uses_ident(result_expression, sought),
+    ExprNamedArg(_, value, _) => expression_uses_ident(value, sought),
+    ExprQuestion(inner, _) => expression_uses_ident(inner, sought),
+    _ => false
+  }
+
+fn expression_list_uses_ident(expressions: [Shared<Expr>], sought: string) -> bool =
+  expressions.any(expression => expression_uses_ident(expression, sought))
+
+fn statements_use_ident(statements: [Shared<Stmt>], sought: string) -> bool =
+  statements.any(statement => match statement {
+    StmtLet(_, _, _, value, _) => expression_uses_ident(value, sought),
+    StmtLetConst(_, _, value, _) => expression_uses_ident(value, sought),
+    StmtLetPattern(_, _, _, value, _, else_body, _) =>
+      expression_uses_ident(value, sought) || expression_uses_ident(else_body, sought),
+    StmtExpr(expression, _) => expression_uses_ident(expression, sought),
+    StmtReturn(expression, _) => expression_uses_ident(expression, sought),
+    _ => false
+  })
+
+type RegionEscapeWalkState = RegionEscapeWalkState {
+  diagnostics: [Diagnostic],
+  region_values: [string],
+  region_locals: [string]
+}
+
+fn walk_region_expression(
+  expression: Shared<Expr>,
+  region_binder: string,
+  region_values: [string],
+  region_locals: [string],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  match expression {
+    ExprLambda(parameter_names, body, source_span) => do
+      let diagnostics = empty_diagnostics()
+      if lambda_captures_region_value(parameter_names, body, region_values) then
+        diagnostics = diagnostics.concat([region_escape_closure_diagnostic(source_span)])
+      end
+      diagnostics_append(
+        diagnostics,
+        walk_region_expression(body, region_binder, region_values, region_locals, outer_bound))
+    end,
+    ExprBin(operation, left, right, source_span) => do
+      let diagnostics = empty_diagnostics()
+      if operation == "=" then
+        match left {
+          ExprIdent(target_name, _) =>
+            if !names_contains(region_locals, target_name) &&
+               expression_mentions_region_value(right, region_values, region_binder) then
+              diagnostics = diagnostics.concat([region_escape_assign_diagnostic(source_span)])
+            end,
+          _ => ()
+        }
+      end
+      diagnostics_append(
+        diagnostics,
+        diagnostics_append(
+          walk_region_expression(left, region_binder, region_values, region_locals, outer_bound),
+          walk_region_expression(right, region_binder, region_values, region_locals, outer_bound)))
+    end,
+    ExprMethod(receiver, _, method_arguments, _) =>
+      diagnostics_append(
+        walk_region_expression(receiver, region_binder, region_values, region_locals, outer_bound),
+        walk_region_expression_list(method_arguments, region_binder, region_values, region_locals, outer_bound)),
+    ExprCall(callee, call_arguments, _) =>
+      diagnostics_append(
+        walk_region_expression(callee, region_binder, region_values, region_locals, outer_bound),
+        walk_region_expression_list(call_arguments, region_binder, region_values, region_locals, outer_bound)),
+    ExprUn(_, inner, _) =>
+      walk_region_expression(inner, region_binder, region_values, region_locals, outer_bound),
+    ExprField(object, _, _) =>
+      walk_region_expression(object, region_binder, region_values, region_locals, outer_bound),
+    ExprIndex(object, index_expression, _) =>
+      diagnostics_append(
+        walk_region_expression(object, region_binder, region_values, region_locals, outer_bound),
+        walk_region_expression(index_expression, region_binder, region_values, region_locals, outer_bound)),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      diagnostics_append(
+        walk_region_expression(condition, region_binder, region_values, region_locals, outer_bound),
+        diagnostics_append(
+          walk_region_expression(then_expression, region_binder, region_values, region_locals, outer_bound),
+          walk_region_expression(else_expression, region_binder, region_values, region_locals, outer_bound))),
+    ExprBlock(statements, result_expression, _) =>
+      diagnostics_append(
+        walk_region_statements(statements, region_binder, region_values, region_locals, outer_bound).diagnostics,
+        walk_region_expression(result_expression, region_binder, region_values, region_locals, outer_bound)),
+    ExprArray(elements, _) =>
+      walk_region_expression_list(elements, region_binder, region_values, region_locals, outer_bound),
+    ExprTuple(elements, _) =>
+      walk_region_expression_list(elements, region_binder, region_values, region_locals, outer_bound),
+    ExprMatch(subject, arms, _) =>
+      diagnostics_append(
+        walk_region_expression(subject, region_binder, region_values, region_locals, outer_bound),
+        walk_region_match_arms(arms, region_binder, region_values, region_locals, outer_bound)),
+    ExprRecord(_, parts, _) =>
+      walk_region_record_parts(parts, region_binder, region_values, region_locals, outer_bound),
+    ExprNamedArg(_, value, _) =>
+      walk_region_expression(value, region_binder, region_values, region_locals, outer_bound),
+    ExprQuestion(inner, _) =>
+      walk_region_expression(inner, region_binder, region_values, region_locals, outer_bound),
+    ExprWith(resource, binder, statements, _) =>
+      diagnostics_append(
+        walk_region_expression(resource, region_binder, region_values, region_locals, outer_bound),
+        walk_region_statements(
+          statements, region_binder, region_values, names_add(region_locals, binder), outer_bound).diagnostics),
+    ExprScope(binder, statements, _) =>
+      walk_region_statements(
+        statements, region_binder, region_values, names_add(region_locals, binder), outer_bound).diagnostics,
+    ExprRegion(inner_binder, statements, _) =>
+      walk_region_block(inner_binder, statements, names_add_all(outer_bound, region_locals)),
+    ExprSpawn(statements, _) =>
+      walk_region_statements(statements, region_binder, region_values, region_locals, outer_bound).diagnostics,
+    _ => empty_diagnostics()
+  }
+
+fn walk_region_expression_list(
+  expressions: [Shared<Expr>],
+  region_binder: string,
+  region_values: [string],
+  region_locals: [string],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  expressions.fold(
+    empty_diagnostics(),
+    (diagnostics, expression) =>
+      diagnostics_append(
+        diagnostics,
+        walk_region_expression(expression, region_binder, region_values, region_locals, outer_bound)))
+
+fn walk_region_record_parts(
+  parts: [RecordLitPart],
+  region_binder: string,
+  region_values: [string],
+  region_locals: [string],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  parts.fold(
+    empty_diagnostics(),
+    (diagnostics, part) =>
+      match part {
+        RecordLitFields(field_values) =>
+          diagnostics_append(
+            diagnostics,
+            field_values.fold(
+              empty_diagnostics(),
+              (field_diagnostics, field_value) =>
+                diagnostics_append(
+                  field_diagnostics,
+                  walk_region_expression(
+                    field_value.value, region_binder, region_values, region_locals, outer_bound)))),
+        RecordLitSpread(spread_expression) =>
+          diagnostics_append(
+            diagnostics,
+            walk_region_expression(
+              spread_expression, region_binder, region_values, region_locals, outer_bound))
+      })
+
+fn walk_region_match_arms(
+  arms: [Shared<MatchArm>],
+  region_binder: string,
+  region_values: [string],
+  region_locals: [string],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  arms.fold(
+    empty_diagnostics(),
+    (diagnostics, arm) => do
+      const arm_locals = names_add_all(region_locals, pattern_bindings(arm.pattern))
+      const guard_diagnostics =
+        if arm.has_guard then
+          walk_region_expression(
+            arm.when_condition, region_binder, region_values, arm_locals, outer_bound)
+        else empty_diagnostics()
+        end
+      diagnostics_append(
+        diagnostics,
+        diagnostics_append(
+          guard_diagnostics,
+          walk_region_expression(arm.body, region_binder, region_values, arm_locals, outer_bound)))
+    end)
+
+fn walk_region_statements(
+  statements: [Shared<Stmt>],
+  region_binder: string,
+  region_values: [string],
+  region_locals: [string],
+  outer_bound: [string]
+) -> RegionEscapeWalkState =
+  statements.fold(
+    RegionEscapeWalkState {
+      diagnostics: empty_diagnostics(),
+      region_values: region_values,
+      region_locals: region_locals
+    },
+    (state, statement) => walk_region_statement(statement, region_binder, state, outer_bound))
+
+fn walk_region_statement(
+  statement: Shared<Stmt>,
+  region_binder: string,
+  state: RegionEscapeWalkState,
+  outer_bound: [string]
+) -> RegionEscapeWalkState =
+  match statement {
+    StmtLet(name, _, _, value, _) => do
+      let diagnostics = diagnostics_append(
+        state.diagnostics,
+        walk_region_expression(
+          value, region_binder, state.region_values, state.region_locals, outer_bound))
+      let region_values = state.region_values
+      if expression_is_region_alloc(value, region_binder) ||
+         expression_mentions_region_value(value, state.region_values, region_binder) then
+        region_values = names_add(region_values, name)
+      end
+      RegionEscapeWalkState {
+        diagnostics: diagnostics,
+        region_values: region_values,
+        region_locals: names_add(state.region_locals, name)
+      }
+    end,
+    StmtLetConst(name, _, value, _) => do
+      let diagnostics = diagnostics_append(
+        state.diagnostics,
+        walk_region_expression(
+          value, region_binder, state.region_values, state.region_locals, outer_bound))
+      let region_values = state.region_values
+      if expression_is_region_alloc(value, region_binder) ||
+         expression_mentions_region_value(value, state.region_values, region_binder) then
+        region_values = names_add(region_values, name)
+      end
+      RegionEscapeWalkState {
+        diagnostics: diagnostics,
+        region_values: region_values,
+        region_locals: names_add(state.region_locals, name)
+      }
+    end,
+    StmtLetPattern(pattern, _, _, value, _, else_body, _) => do
+      const binding_names = pattern_bindings(pattern)
+      let diagnostics = diagnostics_append(
+        state.diagnostics,
+        diagnostics_append(
+          walk_region_expression(
+            value, region_binder, state.region_values, state.region_locals, outer_bound),
+          walk_region_expression(
+            else_body, region_binder, state.region_values, state.region_locals, outer_bound)))
+      let region_values = state.region_values
+      if expression_is_region_alloc(value, region_binder) ||
+         expression_mentions_region_value(value, state.region_values, region_binder) then
+        region_values = names_add_all(region_values, binding_names)
+      end
+      RegionEscapeWalkState {
+        diagnostics: diagnostics,
+        region_values: region_values,
+        region_locals: names_add_all(state.region_locals, binding_names)
+      }
+    end,
+    StmtExpr(expression, _) =>
+      RegionEscapeWalkState {
+        diagnostics: diagnostics_append(
+          state.diagnostics,
+          walk_region_expression(
+            expression, region_binder, state.region_values, state.region_locals, outer_bound)),
+        region_values: state.region_values,
+        region_locals: state.region_locals
+      },
+    StmtReturn(expression, source_span) => do
+      let diagnostics = state.diagnostics
+      if expression_mentions_region_value(expression, state.region_values, region_binder) then
+        diagnostics = diagnostics.concat([region_escape_return_diagnostic(source_span)])
+      end
+      RegionEscapeWalkState {
+        diagnostics: diagnostics_append(
+          diagnostics,
+          walk_region_expression(
+            expression, region_binder, state.region_values, state.region_locals, outer_bound)),
+        region_values: state.region_values,
+        region_locals: state.region_locals
+      }
+    end,
+    _ => state
+  }
+
+fn walk_region_block(
+  region_binder: string,
+  statements: [Shared<Stmt>],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  walk_region_statements(
+    statements,
+    region_binder,
+    empty_names(),
+    names_add(empty_names(), region_binder),
+    outer_bound).diagnostics
+
+fn walk_expression_for_regions(
+  expression: Shared<Expr>,
+  outer_bound: [string]
+) -> [Diagnostic] =
+  match expression {
+    ExprRegion(binder, statements, _) =>
+      walk_region_block(binder, statements, outer_bound),
+    ExprBlock(statements, result_expression, _) =>
+      diagnostics_append(
+        walk_statements_for_regions(statements, outer_bound),
+        walk_expression_for_regions(result_expression, outer_bound)),
+    ExprLambda(parameter_names, body, _) =>
+      walk_expression_for_regions(body, names_add_all(outer_bound, parameter_names)),
+    ExprMethod(receiver, _, method_arguments, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(receiver, outer_bound),
+        walk_expression_list_for_regions(method_arguments, outer_bound)),
+    ExprCall(callee, call_arguments, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(callee, outer_bound),
+        walk_expression_list_for_regions(call_arguments, outer_bound)),
+    ExprBin(_, left, right, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(left, outer_bound),
+        walk_expression_for_regions(right, outer_bound)),
+    ExprUn(_, inner, _) => walk_expression_for_regions(inner, outer_bound),
+    ExprField(object, _, _) => walk_expression_for_regions(object, outer_bound),
+    ExprIndex(object, index_expression, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(object, outer_bound),
+        walk_expression_for_regions(index_expression, outer_bound)),
+    ExprIf(condition, then_expression, else_expression, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(condition, outer_bound),
+        diagnostics_append(
+          walk_expression_for_regions(then_expression, outer_bound),
+          walk_expression_for_regions(else_expression, outer_bound))),
+    ExprArray(elements, _) => walk_expression_list_for_regions(elements, outer_bound),
+    ExprTuple(elements, _) => walk_expression_list_for_regions(elements, outer_bound),
+    ExprMatch(subject, arms, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(subject, outer_bound),
+        arms.fold(
+          empty_diagnostics(),
+          (diagnostics, arm) =>
+            diagnostics_append(
+              diagnostics,
+              walk_expression_for_regions(
+                arm.body, names_add_all(outer_bound, pattern_bindings(arm.pattern)))))),
+    ExprWith(resource, binder, statements, _) =>
+      diagnostics_append(
+        walk_expression_for_regions(resource, outer_bound),
+        walk_statements_for_regions(statements, names_add(outer_bound, binder))),
+    ExprScope(binder, statements, _) =>
+      walk_statements_for_regions(statements, names_add(outer_bound, binder)),
+    ExprSpawn(statements, _) => walk_statements_for_regions(statements, outer_bound),
+    ExprNamedArg(_, value, _) => walk_expression_for_regions(value, outer_bound),
+    ExprQuestion(inner, _) => walk_expression_for_regions(inner, outer_bound),
+    _ => empty_diagnostics()
+  }
+
+fn walk_expression_list_for_regions(
+  expressions: [Shared<Expr>],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  expressions.fold(
+    empty_diagnostics(),
+    (diagnostics, expression) =>
+      diagnostics_append(diagnostics, walk_expression_for_regions(expression, outer_bound)))
+
+fn walk_statements_for_regions(
+  statements: [Shared<Stmt>],
+  outer_bound: [string]
+) -> [Diagnostic] =
+  statements.fold(
+    RegionEscapeWalkState {
+      diagnostics: empty_diagnostics(),
+      region_values: empty_names(),
+      region_locals: outer_bound
+    },
+    (state, statement) => do
+      const value_diagnostics = match statement {
+        StmtLet(name, _, _, value, _) =>
+          walk_expression_for_regions(value, state.region_locals),
+        StmtLetConst(name, _, value, _) =>
+          walk_expression_for_regions(value, state.region_locals),
+        StmtLetPattern(_, _, _, value, _, else_body, _) =>
+          diagnostics_append(
+            walk_expression_for_regions(value, state.region_locals),
+            walk_expression_for_regions(else_body, state.region_locals)),
+        StmtExpr(expression, _) =>
+          walk_expression_for_regions(expression, state.region_locals),
+        StmtReturn(expression, _) =>
+          walk_expression_for_regions(expression, state.region_locals),
+        _ => empty_diagnostics()
+      }
+      const next_locals = match statement {
+        StmtLet(name, _, _, _, _) => names_add(state.region_locals, name),
+        StmtLetConst(name, _, _, _) => names_add(state.region_locals, name),
+        StmtLetPattern(pattern, _, _, _, _, _, _) =>
+          names_add_all(state.region_locals, pattern_bindings(pattern)),
+        _ => state.region_locals
+      }
+      RegionEscapeWalkState {
+        diagnostics: diagnostics_append(state.diagnostics, value_diagnostics),
+        region_values: state.region_values,
+        region_locals: next_locals
+      }
+    end).diagnostics
+
+fn field_def_region_diagnostics(
+  type_name: string,
+  fields: [Shared<FieldDef>]
+) -> [Diagnostic] =
+  fields.fold(
+    empty_diagnostics(),
+    (diagnostics, field) =>
+      if type_expression_contains_region(field.type_value) then
+        diagnostics.concat([
+          region_escape_field_diagnostic(type_name, field.name, span_unknown())
+        ])
+      else diagnostics
+      end)
+
+fn variant_region_field_diagnostics(
+  type_name: string,
+  variant: Shared<TypeVariant>
+) -> [Diagnostic] =
+  match variant {
+    VarRecord(_, fields, _) => field_def_region_diagnostics(type_name, fields),
+    VarTuple(_, payload_types, _) =>
+      if payload_types.any(payload => type_expression_contains_region(payload)) then
+        [region_escape_field_diagnostic(type_name, '<tuple>', span_unknown())]
+      else empty_diagnostics()
+      end,
+    VarUnit(_, _) => empty_diagnostics()
+  }
+
+export fn region_field_type_diagnostics(program: Program) -> [Diagnostic] =
+  program.decls.fold(
+    empty_diagnostics(),
+    (diagnostics, declaration) =>
+      match decl_inner(declaration) {
+        DeclType(type_name, _, variants, _, _) =>
+          diagnostics_append(
+            diagnostics,
+            variants.fold(
+              empty_diagnostics(),
+              (variant_diagnostics, variant) =>
+                diagnostics_append(
+                  variant_diagnostics,
+                  variant_region_field_diagnostics(type_name, variant)))),
+        _ => diagnostics
+      })
+
+export fn region_escape_diagnostics(
+  parameters: [Shared<Param>],
+  body: Shared<Expr>
+) -> [Diagnostic] = do
+  const outer_bound = parameters.fold(
+    empty_names(),
+    (names, parameter) => names_add(names, param_name(parameter)))
+  walk_expression_for_regions(body, outer_bound)
+end

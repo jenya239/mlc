@@ -99,6 +99,7 @@ mlc::String diagnostic_code_e087() noexcept;
 mlc::String diagnostic_code_e088() noexcept;
 mlc::String diagnostic_code_e089() noexcept;
 mlc::String diagnostic_code_e090() noexcept;
+mlc::String diagnostic_code_e091() noexcept;
 
 } // namespace diagnostic_codes
 

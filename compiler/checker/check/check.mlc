@@ -24,6 +24,7 @@ import { orphan_impl_diagnostics } from '../orphan_lint'
 import { extern_concurrency_attr_diagnostics } from '../extern_concurrency_lint'
 import { extern_header_arity_diagnostics } from '../extern_header_arity_lint'
 import { extern_dedup_diagnostics } from '../extern_dedup_lint'
+import { region_escape_diagnostics, region_field_type_diagnostics } from '../region_escape'
 
 fn param_defaults_in_tail(parameters: [Shared<Param>]) -> bool = do
   let mut optional_began = false
@@ -472,6 +473,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   all_diagnostics = diagnostics_append(all_diagnostics, extern_concurrency_attr_diagnostics(destructured_full_program))
   all_diagnostics = diagnostics_append(all_diagnostics, extern_header_arity_diagnostics(destructured_full_program))
   all_diagnostics = diagnostics_append(all_diagnostics, extern_dedup_diagnostics(destructured_full_program))
+  all_diagnostics = diagnostics_append(all_diagnostics, region_field_type_diagnostics(destructured_full_program))
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {
@@ -497,6 +499,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         all_diagnostics = diagnostics_append(all_diagnostics, check_fn_body_mutations(parameters, body_partial_application))
         all_diagnostics = diagnostics_append(all_diagnostics, spawn_mutable_capture_diagnostics(parameters, body_partial_application, registry))
         all_diagnostics = diagnostics_append(all_diagnostics, move_use_after_diagnostics(parameters, body_partial_application))
+        all_diagnostics = diagnostics_append(all_diagnostics, region_escape_diagnostics(parameters, body_partial_application))
         const expected_type = type_from_annotation_with_registry(return_type_annotation, registry)
         const inference_context = check_context_with_expected_return(type_environment, registry, expected_type)
         const body_parsed = infer_expr(body_partial_application, inference_context)

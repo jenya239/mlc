@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 2 |
+| driver_turns_since_plan | 2 |
+| step_last | 3 |
 | active_track | TRACK_LANG_REGION_ARENA |
-| test_gate | mlcc check-only region fixtures + main; self-host DIFF=0; Ruby rake blocked MATCH |
+| test_gate | E091 smokes + main check-only; self-host DIFF=0 |
+
+### Turn 2026-07-12 19:34 (Driver TRACK_LANG_REGION_ARENA STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_REGION_ARENA |
+| started | 2026-07-12 18:13 |
+| elapsed | ~81 min |
+| done    | `region_escape.mlc` + E091 (return/closure/assign/field); wired in `check.mlc`; catalog 92; `test_region` escape asserts. |
+| verify  | check-only ok=0; ret/closure/assign/field → E091; `main.mlc` 0; self-host DIFF_EXIT=0. |
+| result  | STEP=3 done. Plain: region values cannot escape the block. |
+| issues  | Ruby rake still MATCH-blocked; mlcc verify only. |
+| next    | ROLE=Driver STEP=4 TRACK_LANG_REGION_ARENA — pmr codegen for region/alloc |
 
 ### Turn 2026-07-12 18:07 (Driver TRACK_LANG_REGION_ARENA STEP=2)
 

@@ -1,4 +1,4 @@
-2fe4f4df0442942c2642da6e0eb0e384a5520fb9a2d60e7e2325428df81ad1fb
+28230710ae85854d849fe1e12137d1d2e4ef4b3b0f230df3711d3f0916b990ca
 array_method_types.cpp
 ast.cpp
 ast_printer.cpp
@@ -125,6 +125,7 @@ record_field_default_emit.cpp
 record_field_default_validate.cpp
 record_gen.cpp
 record_lit_merge.cpp
+region_escape.cpp
 registry.cpp
 result_option_method_types.cpp
 return_body.cpp

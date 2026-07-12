@@ -12,6 +12,12 @@ fn check_error_count(source: string) -> i32 =
     Err(errors) => errors.length()
   }
 
+fn first_check_error(source: string) -> string =
+  match check(parse_program(tokenize(source).tokens)) {
+    Ok(_) => '',
+    Err(errors) => if errors.length() > 0 then errors[0] else '' end
+  }
+
 export fn region_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
@@ -43,6 +49,18 @@ export fn region_tests() -> [TestResult] = do
   results.push(assert_true('region unknown method is error',
     check_error_count(
       'fn main() -> () = region r do\n  r.nope()\nend') > 0))
+
+  results.push(assert_true('region escape via return is E091',
+    first_check_error(
+      'fn main() -> i32 = region r do\n  let x = r.alloc(0)\n  return x\nend').contains('escapes via return')))
+
+  results.push(assert_true('region escape via closure is E091',
+    first_check_error(
+      'fn main() -> () = region r do\n  let x = r.alloc(0)\n  let f = () => x\n  0\nend').contains('closure')))
+
+  results.push(assert_true('region field type is E091',
+    first_check_error(
+      'type Bad = { slot: Region<i32, i32> }\nfn main() -> i32 = 0').contains('Region type not allowed')))
 
   results
 end

@@ -22,6 +22,7 @@
 #include "extern_concurrency_lint.hpp"
 #include "extern_header_arity_lint.hpp"
 #include "extern_dedup_lint.hpp"
+#include "region_escape.hpp"
 
 namespace check {
 
@@ -46,6 +47,7 @@ using namespace orphan_lint;
 using namespace extern_concurrency_lint;
 using namespace extern_header_arity_lint;
 using namespace extern_dedup_lint;
+using namespace region_escape;
 using namespace ast_tokens;
 
 bool CheckOut_has_errors(CheckOut self) noexcept;
@@ -446,6 +448,7 @@ Program_check_gathered gather_program_check(ast::Program entry, ast::Program ful
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_concurrency_lint::extern_concurrency_attr_diagnostics(destructured_full_program)));
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_header_arity_lint::extern_header_arity_diagnostics(destructured_full_program)));
   (all_diagnostics = ast::diagnostics_append(all_diagnostics, extern_dedup_lint::extern_dedup_diagnostics(destructured_full_program)));
+  (all_diagnostics = ast::diagnostics_append(all_diagnostics, region_escape::region_field_type_diagnostics(destructured_full_program)));
   auto declaration_index = 0;
   while ((declaration_index < expanded_entry_program.decls.length()))   {
     std::visit(overloaded{[&](const ast::DeclFn& declFn) -> void { auto [name, type_parameters, trait_bounds, parameters, return_type_annotation, body, where_clause_bounds_entries] = declFn; [&]() {
@@ -466,6 +469,7 @@ auto body_partial_application = partial_application_desugar::partial_application
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, check_mutations::check_fn_body_mutations(parameters, body_partial_application)));
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, spawn_capture::spawn_mutable_capture_diagnostics(parameters, body_partial_application, registry)));
 (all_diagnostics = ast::diagnostics_append(all_diagnostics, move_check::move_use_after_diagnostics(parameters, body_partial_application)));
+(all_diagnostics = ast::diagnostics_append(all_diagnostics, region_escape::region_escape_diagnostics(parameters, body_partial_application)));
 auto expected_type = registry::type_from_annotation_with_registry(return_type_annotation, registry);
 auto inference_context = check_context::check_context_with_expected_return(type_environment, registry, expected_type);
 auto body_parsed = infer::infer_expr(body_partial_application, inference_context);

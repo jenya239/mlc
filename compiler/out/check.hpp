@@ -24,6 +24,7 @@
 #include "extern_concurrency_lint.hpp"
 #include "extern_header_arity_lint.hpp"
 #include "extern_dedup_lint.hpp"
+#include "region_escape.hpp"
 namespace check {
 
 struct CheckOut {

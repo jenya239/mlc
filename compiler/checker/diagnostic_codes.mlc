@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 91
+export fn diagnostic_code_catalog_count() -> i32 = 92
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -188,3 +188,5 @@ export fn diagnostic_code_e088() -> string = 'E088'
 export fn diagnostic_code_e089() -> string = 'E089'
 // E090: duplicate extern fn from header with conflicting arity
 export fn diagnostic_code_e090() -> string = 'E090'
+// E091: region value escapes region block (return / closure / assign / field)
+export fn diagnostic_code_e091() -> string = 'E091'
