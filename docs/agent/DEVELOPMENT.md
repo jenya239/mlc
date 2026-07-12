@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1 (FT/HB face cache) next.
-REGION STEP=2 paused. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
+**`TRACK_TEXT_GL_PERF_BASELINE` active** — STEP=1 done; STEP=2 (concurrency
+note) next. See [TRACK_TEXT_GL_PERF_BASELINE.md](TRACK_TEXT_GL_PERF_BASELINE.md).
 
 ## Step sizing (good vs bad)
 

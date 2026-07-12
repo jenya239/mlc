@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_TEXT_GL_PERF_BASELINE |
-| test_gate | docs-only (Planner activate) |
+| test_gate | freetype+harfbuzz smokes ok |
+
+### Turn 2026-07-12 13:00 (Driver TRACK_TEXT_GL_PERF_BASELINE STEP=1 — FT/HB face cache)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_GL_PERF_BASELINE |
+| started | 2026-07-12 12:56 |
+| elapsed | ~5 min |
+| done    | `CachedFontFace` in `freetype_shim.cpp`; `CachedShapingFont` in `harfbuzz_shim.cpp`; shared `FT_Library` for FT path; headers note single-thread. |
+| verify  | `run_freetype_glyph_smoke.sh` exit 0; `run_harfbuzz_shape_smoke.sh` exit 0. |
+| result  | STEP=1 done. Plain: faces/fonts reused; no per-call Init/Done. |
+| issues  | Foreign `extern_concurrency_lint.*` + `.tmp/` left. |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_GL_PERF_BASELINE — document single-thread cache constraint |
 
 ### Turn 2026-07-12 12:58 (Planner TRACK_TEXT_GL_PERF_BASELINE — activate)
 

@@ -9,6 +9,9 @@ namespace text {
 // Load font at path, render one Unicode codepoint at pixel_size (A8).
 // On success: returns (width << 16) | rows; pixels cached for glyph_byte_*.
 // On failure: returns a negative error code.
+//
+// FreeType faces are cached process-locally by (font_path, pixel_size).
+// Single-threaded render loop only — not safe for concurrent callers.
 int32_t glyph_bitmap_packed(mlc::String font_path, int32_t codepoint, int32_t pixel_size);
 
 // Same as glyph_bitmap_packed but FreeType glyph index (HarfBuzz shape id).
