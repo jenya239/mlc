@@ -1,0 +1,97 @@
+// TRACK_GUI_SCENE_PHASE_A STEP=4 — hit-test vs gui_button rect geometry (no GL).
+import { rect_new, point_new, point_in_rect } from '../gui/layout'
+import {
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+
+fn main() -> i32 = do
+  // Same geometry as gui_button_demo: layout_begin(40,40,8) + 160×48 row item.
+  const button_rect = rect_new(40, 40, 160, 48)
+  const inside_point = point_new(48, 48)
+  const outside_point = point_new(10, 10)
+  if point_in_rect(inside_point, button_rect) != 1 then
+    return 1
+  end
+  if point_in_rect(outside_point, button_rect) != 0 then
+    return 2
+  end
+
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  const button = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 40.0),
+    scene_rect_fill_new(160.0, 48.0, 0.2, 0.4, 0.8, 1.0)
+  )
+  scene = button.scene
+  scene = scene_update_world(scene)
+
+  if scene_hit_test(scene, 48.0, 48.0) != button.node_id then
+    return 3
+  end
+  if scene_hit_test(scene, 10.0, 10.0) != 0 - 1 then
+    return 4
+  end
+  if scene_hit_test(scene, 199.0, 87.0) != button.node_id then
+    return 5
+  end
+  if scene_hit_test(scene, 200.0, 40.0) != 0 - 1 then
+    return 6
+  end
+
+  // Nested parent translation: local (0,0) under parent (40,40) == same rect.
+  let mut nested = scene_new()
+  const nested_root = scene_add_container(nested, -1, affine_translation(40.0, 40.0))
+  nested = nested_root.scene
+  const nested_button = scene_add_rect_fill(
+    nested,
+    nested_root.node_id,
+    affine_identity(),
+    scene_rect_fill_new(160.0, 48.0, 1.0, 0.0, 0.0, 1.0)
+  )
+  nested = nested_button.scene
+  nested = scene_update_world(nested)
+  if scene_hit_test(nested, 48.0, 48.0) != nested_button.node_id then
+    return 7
+  end
+  if scene_hit_test(nested, 10.0, 10.0) != 0 - 1 then
+    return 8
+  end
+
+  // Later RectFill wins (front).
+  let mut stack = scene_new()
+  const stack_root = scene_add_container(stack, -1, affine_identity())
+  stack = stack_root.scene
+  const back = scene_add_rect_fill(
+    stack,
+    stack_root.node_id,
+    affine_translation(0.0, 0.0),
+    scene_rect_fill_new(100.0, 100.0, 0.0, 0.0, 0.0, 1.0)
+  )
+  stack = back.scene
+  const front = scene_add_rect_fill(
+    stack,
+    stack_root.node_id,
+    affine_translation(10.0, 10.0),
+    scene_rect_fill_new(20.0, 20.0, 1.0, 1.0, 1.0, 1.0)
+  )
+  stack = front.scene
+  stack = scene_update_world(stack)
+  if scene_hit_test(stack, 15.0, 15.0) != front.node_id then
+    return 9
+  end
+  if scene_hit_test(stack, 50.0, 50.0) != back.node_id then
+    return 10
+  end
+
+  0
+end

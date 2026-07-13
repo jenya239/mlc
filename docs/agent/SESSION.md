@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=4: scene hit-test smoke |
+| test_gate | STEP=5: batched rect-fill draw |
+
+### Turn 2026-07-13 15:30 (Driver TRACK_GUI_SCENE_PHASE_A STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:28 |
+| elapsed | ~5 min |
+| done    | `scene_hit_test` + `scene_hit_smoke.mlc` (gui_button 40/40/160×48; nested; front wins). |
+| verify  | mlcc+build_bin; smoke exit 0. |
+| result  | STEP=4 done. Plain: screen→local hit via inverse world. |
+| issues  | — |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_SCENE_PHASE_A — batched rect-fill draw |
 
 ### Turn 2026-07-13 15:27 (Driver TRACK_GUI_SCENE_PHASE_A STEP=3)
 

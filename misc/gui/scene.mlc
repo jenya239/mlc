@@ -191,3 +191,45 @@ export fn scene_update_world(scene: Scene) -> Scene = do
     camera: scene.camera
   }
 end
+
+fn scene_point_in_rect_fill(local_x: f64, local_y: f64, fill: SceneRectFill) -> i32 = do
+  if local_x < 0.0 then
+    return 0
+  end
+  if local_y < 0.0 then
+    return 0
+  end
+  if local_x >= fill.width then
+    return 0
+  end
+  if local_y >= fill.height then
+    return 0
+  end
+  1
+end
+
+// Front-to-back: highest index first. Requires fresh `scene_update_world`.
+// Returns node id or -1. Screen → inverse(camera) → inverse(world) → local rect.
+export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
+  const scene_point = affine_transform_point(affine_invert(scene.camera), screen_x, screen_y)
+  let mut index = scene.nodes.length() - 1
+  while index >= 0 do
+    const node = scene.nodes[index]
+    const hit = match node.kind {
+      RectFill(fill) => do
+        const local = affine_transform_point(
+          affine_invert(scene.world[index]),
+          scene_point.x,
+          scene_point.y
+        )
+        scene_point_in_rect_fill(local.x, local.y, fill)
+      end,
+      Container => 0
+    }
+    if hit != 0 then
+      return index
+    end
+    index = index - 1
+  end
+  -1
+end

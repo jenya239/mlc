@@ -3,14 +3,21 @@
 Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Epic §29 / §10c
 in [PLAN.md](../PLAN.md).
 
-## Status: **active** (2026-07-13) — STEP=4 hit-test next
+## Status: **active** (2026-07-13) — STEP=5 batched draw next
 
 Created by Planner after DEBUG_SOURCE_MAP Critic OK. Phase B–D tracks stay
 uncreated until this file closes.
 
 ## Next step
 
-**STEP=4** — Hit-test via inverse world chain; smoke vs `gui_button` case.
+**STEP=5** — Batched rect-fill draw (reuse dashboard solid-rect trick).
+
+### STEP=4 done (2026-07-13)
+
+- `scene_hit_test`: inverse(camera) → inverse(world) → local `[0,w)×[0,h)`;
+  front-to-back (highest index).
+- `misc/examples/scene_hit_smoke.mlc`: parity with `gui_button` 40,40,160×48;
+  nested parent; later RectFill wins. Exit 0.
 
 ### STEP=3 done (2026-07-13)
 
@@ -79,7 +86,7 @@ Draw batching, hit-test algorithm details, widget kinds — STEPs 3–5 / Phase 
 | 1 | Design Decision: tree indices, Affine2×3, camera-relative f32 | **done** (2026-07-13; precision → f64 in STEP=2) |
 | 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** (2026-07-13: + `scene_types_smoke` exit 0) |
 | 3 | World-transform pass (topo order, reused buffer) | **done** (2026-07-13: `scene_update_world`) |
-| 4 | Hit-test via inverse chain; smoke vs `gui_button` case | pending |
+| 4 | Hit-test via inverse chain; smoke vs `gui_button` case | **done** (2026-07-13: `scene_hit_test` + `scene_hit_smoke`) |
 | 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | pending |
 | 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | pending |
 | 7 | Verify smoke green (no self-host; misc/gui only) | pending |

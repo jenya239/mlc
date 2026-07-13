@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_A` active** — STEP=3 `scene_update_world` done; STEP=4
-hit-test next. Epic: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
+**`TRACK_GUI_SCENE_PHASE_A` active** — STEP=4 `scene_hit_test` done; STEP=5
+batched draw next. Epic: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 DEBUG Critic OK: [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).
 TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 
