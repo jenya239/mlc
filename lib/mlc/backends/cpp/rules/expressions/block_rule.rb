@@ -106,7 +106,10 @@ module MLC
                   statements << lower_statement(MLC::SemanticIR::ExprStatement.new(expression: block_expr.result, origin: block_expr.result.origin))
                 else
                   result_expr = lower_expression(block_expr.result)
-                  statements << context.factory.expression_statement(expression: result_expr)
+                  statements << context.attach_line_directive(
+                    context.factory.expression_statement(expression: result_expr),
+                    block_expr.result
+                  )
                 end
               end
 
@@ -138,11 +141,12 @@ module MLC
                   statements << lower_statement(MLC::SemanticIR::ExprStatement.new(expression: block_expr.result, origin: block_expr.result.origin))
                 else
                   result_expr = lower_expression(block_expr.result)
-                  statements << if emit_return
-                                  context.factory.return_statement(expression: result_expr)
-                                else
-                                  context.factory.expression_statement(expression: result_expr)
-                                end
+                  result_statement = if emit_return
+                                       context.factory.return_statement(expression: result_expr)
+                                     else
+                                       context.factory.expression_statement(expression: result_expr)
+                                     end
+                  statements << context.attach_line_directive(result_statement, block_expr.result)
                 end
               end
 

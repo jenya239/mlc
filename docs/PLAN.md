@@ -402,7 +402,7 @@ compiler/
 | **13b** `mlcc --run` stdin (crash fix + `-` convention) | **done** (2026-07-10) | [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) — STEP=1–5 **closed** (streambuf; `read_all`; `-` stdin; gate; usage; verify) |
 | **13c** VM: массив/map только `i32` (не point-fix, value-model) | **done** (2026-07-11) | [TRACK_VM_TYPED_COLLECTIONS](archive/tracks/TRACK_VM_TYPED_COLLECTIONS.md) **closed** STEP=1–4; Critic OK (`cf613f0b`…`cdffcbf8`; gate 6/0) |
 | **14** FFI safety contract | **done** (2026-07-11) | [TRACK_FFI_SAFETY](archive/tracks/TRACK_FFI_SAFETY.md) **closed** STEP=1–5; Critic OK (`e1db7d81`…`3806d49c`); W-EXTERN-ATTR/ARITY; FFI_LAYER §9; REG 20/0; self-host DIFF 0 |
-| **15** Debugging story (`#line` → `.mlc` в stack trace) | **active** (2026-07-13) STEP=1 done; STEP=2 Ruby emit next | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — Decision frozen; Steps 2–5 |
+| **15** Debugging story (`#line` → `.mlc` в stack trace) | **active** (2026-07-13) STEP=2 done; STEP=3 mlcc emit next | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — Ruby `#line`; Decision frozen |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
 | **17** `T!E` error-union sugar | **done** (2026-07-11) | [TRACK_LANG_ERROR_UNION](archive/tracks/TRACK_LANG_ERROR_UNION.md) **closed** STEP=1–5; Critic OK (`57913a3f`…`4ee642cc`); Ruby+mlcc desugar; e2e+`?`; REG 20/0; self-host DIFF 0 |
 | **18** Package manager | **closed** (Critic OK 2026-07-13; STEP=1–10) | [TRACK_PACKAGE_MANAGER](archive/tracks/TRACK_PACKAGE_MANAGER.md) — `5e101b04`…`ad0ff1bf`; REG 20/0; p1≡p2; E2E 42 |
@@ -615,8 +615,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       `5e101b04`…`ad0ff1bf`; REG 20/0; p1≡p2; E2E 42;
       → [archive/tracks/TRACK_PACKAGE_MANAGER.md](archive/tracks/TRACK_PACKAGE_MANAGER.md))**
 
-  → **DEBUG_SOURCE_MAP (**active** 2026-07-13: STEP=1 Decision done; STEP=2 Ruby
-      `#line` emit next;
+  → **DEBUG_SOURCE_MAP (**active** 2026-07-13: STEP=2 Ruby `#line` done; STEP=3
+      self-hosted emit next;
       → [agent/TRACK_DEBUG_SOURCE_MAP.md](agent/TRACK_DEBUG_SOURCE_MAP.md))**
   → GUI_CANVAS_GRAPH (крупнейший резервуар, 100+ шагов) — Phase A: STEP=1
     закрывает формат дерева/matrix/координатной точности (сам трек уже

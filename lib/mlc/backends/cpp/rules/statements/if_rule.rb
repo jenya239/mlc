@@ -52,7 +52,10 @@ module MLC
                     stmts << context.lower_statement(MLC::SemanticIR::ExprStatement.new(expression: body_ir.result, origin: body_ir.result.origin))
                   else
                     result_expr = context.lower_expression(body_ir.result)
-                    stmts << context.factory.expression_statement(expression: result_expr)
+                    stmts << context.attach_line_directive(
+                      context.factory.expression_statement(expression: result_expr),
+                      body_ir.result
+                    )
                   end
                 end
                 context.factory.block_statement(

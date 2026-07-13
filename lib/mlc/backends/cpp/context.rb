@@ -156,7 +156,58 @@ module MLC
         def lower_statement(node)
           raise "RuleEngine not initialized" unless @container.rule_engine
 
-          @container.rule_engine.lower_statement(node)
+          attach_line_directive(@container.rule_engine.lower_statement(node), node)
+        end
+
+        # Prepend `#line N "file"` (TRACK_DEBUG_SOURCE_MAP Decision STEP=1).
+        def attach_line_directive(cpp_node, origin_carrier)
+          trivia = line_directive_trivia(resolve_source_origin(origin_carrier))
+          return cpp_node if trivia.nil?
+
+          prepend_line_directive(cpp_node, trivia)
+        end
+
+        def resolve_source_origin(carrier)
+          return nil if carrier.nil?
+
+          origin = carrier
+          # SemanticIR → AST → SourceOrigin (same unwrap as type_checker)
+          origin = origin.origin if origin.respond_to?(:origin) && !origin.respond_to?(:label)
+          origin = origin.origin if origin.respond_to?(:origin) && !origin.respond_to?(:label)
+          return nil unless origin.respond_to?(:line) && origin.respond_to?(:file)
+
+          origin
+        end
+
+        def line_directive_trivia(origin)
+          return nil if origin.nil?
+
+          line_number = origin.line
+          file_path = origin.file
+          return nil if line_number.nil? || line_number.to_i <= 0
+          return nil if file_path.nil? || file_path.to_s.empty?
+
+          escaped_path = file_path.to_s.gsub("\\", "\\\\").gsub('"', '\\"')
+          "#line #{line_number.to_i} \"#{escaped_path}\"\n"
+        end
+
+        def prepend_line_directive(cpp_node, trivia)
+          case cpp_node
+          when Array
+            return cpp_node if cpp_node.empty?
+
+            [prepend_line_directive(cpp_node.first, trivia)] + cpp_node.drop(1)
+          when CppAst::Nodes::Program
+            return cpp_node if cpp_node.statements.nil? || cpp_node.statements.empty?
+
+            cpp_node.statements[0] = prepend_line_directive(cpp_node.statements[0], trivia)
+            cpp_node
+          when CppAst::Nodes::Statement
+            cpp_node.leading_trivia = trivia + (cpp_node.leading_trivia || "")
+            cpp_node
+          else
+            cpp_node
+          end
         end
 
         # Variable tracking for rebinding detection

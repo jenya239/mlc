@@ -183,8 +183,10 @@ module MLC
                            )
                          else
                            body_expr = @context.lower_expression(func.body)
+                           return_statement = CppAst::Nodes::ReturnStatement.new(expression: body_expr)
+                           return_statement = @context.attach_line_directive(return_statement, func.body)
                            CppAst::Nodes::BlockStatement.new(
-                             statements: [CppAst::Nodes::ReturnStatement.new(expression: body_expr)],
+                             statements: [return_statement],
                              statement_trailings: [""],
                              lbrace_suffix: "",
                              rbrace_prefix: ""
@@ -522,11 +524,12 @@ module MLC
               statements << @context.lower_statement(block_expr.result)
             else
               result_expr = @context.lower_expression(block_expr.result)
-              statements << if emit_return
-                              CppAst::Nodes::ReturnStatement.new(expression: result_expr)
-                            else
-                              CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
-                            end
+              result_statement = if emit_return
+                                   CppAst::Nodes::ReturnStatement.new(expression: result_expr)
+                                 else
+                                   CppAst::Nodes::ExpressionStatement.new(expression: result_expr)
+                                 end
+              statements << @context.attach_line_directive(result_statement, block_expr.result)
             end
           end
 

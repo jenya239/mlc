@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-1
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **active** (2026-07-13) — STEP=2 Ruby `#line` emit next
+## Status: **active** (2026-07-13) — STEP=3 self-hosted `#line` emit next
 
 Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
 `GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
@@ -12,8 +12,15 @@ closes or blocks).
 
 ## Next step
 
-**STEP=2** — Codegen (Ruby): emit `#line` for statement-level nodes with span
-(see **Decision (STEP=1)** below).
+**STEP=3** — Codegen (self-hosted): emit `#line` in `compiler/codegen/` per
+Decision (STEP=1).
+
+### STEP=2 done (2026-07-13)
+
+- `Context#lower_statement` + `attach_line_directive` / `leading_trivia`.
+- Bypass paths: single-expr `return`, block result, `if_rule` / expr
+  `block_rule` result stmts.
+- Test: `test/mlc/line_directive_test.rb` (with/without `filename:`).
 
 ## Decision (STEP=1) — frozen 2026-07-13
 
@@ -89,7 +96,7 @@ crash. Сегодня:
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **done** (2026-07-13) |
-| 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | pending |
+| 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | **done** (2026-07-13: `Context#attach_line_directive`; `line_directive_test.rb`) |
 | 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | pending |
 | 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | pending |
 | 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | pending |

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_DEBUG_SOURCE_MAP |
-| test_gate | STEP=2: Ruby `#line` in generated .cpp |
+| test_gate | STEP=3: mlcc `#line` in generated .cpp |
+
+### Turn 2026-07-13 13:50 (Driver TRACK_DEBUG_SOURCE_MAP STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 13:32 |
+| elapsed | ~15 min |
+| done    | Ruby `Context#attach_line_directive`; codegen/if/block bypasses; `line_directive_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/line_directive_test.rb` → 2/0; sample cpp has `#line 2/3`. |
+| result  | STEP=2 done. Plain: Ruby emits `#line` per stmt when filename known. |
+| issues  | — |
+| next    | ROLE=Driver STEP=3 TRACK_DEBUG_SOURCE_MAP — self-hosted codegen `#line` emit |
 
 ### Turn 2026-07-13 13:45 (Driver TRACK_DEBUG_SOURCE_MAP STEP=1)
 
