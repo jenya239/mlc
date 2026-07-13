@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-1
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **active** (2026-07-13) — STEP=4 gdb/addr2line verify next
+## Status: **active** (2026-07-13) — STEP=5 docs + verify-gate + close next
 
 Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
 `GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
@@ -12,8 +12,17 @@ closes or blocks).
 
 ## Next step
 
-**STEP=4** — Verify: compile with `-g`, abort/panic, `gdb`/`addr2line` shows
-`.mlc` file+line.
+**STEP=5** — `docs/DEBUGGING.md` (or `docs/MLC.md`) + verify-gate + close →
+Critic.
+
+### STEP=4 done (2026-07-13)
+
+- Probe: `.tmp/line_debug/crash.mlc` (`1 / zero` on line 3); `mlcc` +
+  `MLCC_DEV=1 build_bin.sh` (`-O0 -g`).
+- gdb: break `mlc::io::panic` → frame `#2 crash::mlc_user_main` at
+  `.tmp/line_debug/crash.mlc:3` (`1 / zero`); `info line *$pc` same.
+- DWARF line table (`readelf --debug-dump=decodedline`) lists `crash.mlc`
+  lines 2–3.
 
 ### STEP=3 done (2026-07-13)
 
@@ -106,7 +115,7 @@ crash. Сегодня:
 | 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **done** (2026-07-13) |
 | 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | **done** (2026-07-13: `Context#attach_line_directive`; `line_directive_test.rb`) |
 | 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | **done** (2026-07-13: `sstmt_span` + `#line` fragments in stmt/return paths) |
-| 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | pending |
+| 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | **done** (2026-07-13: gdb bt → `crash.mlc:3`; DWARF line table) |
 | 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | pending |
 
 ## Out of scope (явно, не в этом треке)

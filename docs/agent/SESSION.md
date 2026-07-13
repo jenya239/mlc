@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_DEBUG_SOURCE_MAP |
-| test_gate | STEP=4: -g + gdb/addr2line → .mlc file+line |
+| test_gate | STEP=5: docs + verify-gate + close → Critic |
+
+### Turn 2026-07-13 14:02 (Driver TRACK_DEBUG_SOURCE_MAP STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 14:00 |
+| elapsed | ~5 min |
+| done    | Probe `.tmp/line_debug/crash.mlc` (`1/zero`); `MLCC_DEV=1` `-g`; gdb bt frame2 → `crash.mlc:3`. |
+| verify  | gdb `info line *$pc` → line 3 of `.tmp/line_debug/crash.mlc`; DWARF `decodedline` has crash.mlc:2–3. |
+| result  | STEP=4 done. Plain: `-g` backtrace maps panic to `.mlc` file+line. |
+| issues  | — |
+| next    | ROLE=Driver STEP=5 TRACK_DEBUG_SOURCE_MAP — docs + verify-gate + close → Critic |
 
 ### Turn 2026-07-13 13:59 (Driver TRACK_DEBUG_SOURCE_MAP STEP=3)
 
