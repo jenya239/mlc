@@ -41,10 +41,10 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue next:** Planner → `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH` (after
-TEXT_GLYPH Critic OK).
-TEXT_GLYPH closed: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
-PACKAGE_MANAGER Critic OK: [archive/tracks/TRACK_PACKAGE_MANAGER.md](../archive/tracks/TRACK_PACKAGE_MANAGER.md).
+**`TRACK_DEBUG_SOURCE_MAP` active** — STEP=1 Design Decision (`#line` format /
+granularity) next. See [TRACK_DEBUG_SOURCE_MAP.md](TRACK_DEBUG_SOURCE_MAP.md).
+TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
+After DEBUG closes: `GUI_CANVAS_GRAPH` Phase A.
 
 ## Step sizing (good vs bad)
 

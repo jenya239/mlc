@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | — |
-| test_gate | Planner: next queue |
+| step_last | plan-refresh |
+| active_track | TRACK_DEBUG_SOURCE_MAP |
+| test_gate | STEP=1: Decision section in TRACK |
+
+### Turn 2026-07-13 13:40 (Planner DEBUG_SOURCE_MAP plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 13:28 |
+| elapsed | ~8 min |
+| done    | Activated DEBUG_SOURCE_MAP; STEP=1 sub-steps; PLAN §15 + queue ahead of GUI_CANVAS. |
+| verify  | TRACK Status=active; PLAN queue STEP=1; no compiler/ edits. |
+| result  | plan-refresh done. Plain: Driver freezes `#line` Decision next. |
+| issues  | Left SCRIPT_VM/arkanoid/solid_renderer untracked foreign. |
+| next    | ROLE=Driver STEP=1 TRACK_DEBUG_SOURCE_MAP — Decision: `#line` format + granularity |
 
 ### Turn 2026-07-13 13:35 (Critic TRACK_TEXT_GLYPH_CACHE_SCALING — critique-audit)
 

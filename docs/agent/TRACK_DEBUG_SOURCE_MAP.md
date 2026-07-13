@@ -4,19 +4,35 @@ Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-1
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **open, приоритет поднят 2026-07-11** — гейт снят: и
-`TEXT_RENDERING`/`STDLIB_BACKEND` closed, и появился реальный корпус
-`.mlc`-кода вне самого компилятора (`misc/examples/`, `misc/gui/` — GUI
-демо, HTTP-серверы, text dashboard — десятки файлов, написанных в рамках
-пользовательских demo-сессий, не тестов компилятора). Пользователь явно
-авторизовал переход research → active.
+## Status: **active** (2026-07-13) — STEP=1 Design Decision next
+
+Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
+`GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
+closes or blocks).
+
+## Next step
+
+**STEP=1** — Design Decision: `#line` mapping format + emit granularity.
+
+Sub-steps for Driver (docs-only; **no** `compiler/` / `lib/mlc/` this step):
+1. Confirm span source of truth: self-hosted `Span { file, line, column, … }`
+   in `compiler/frontend/ast.mlc` (and SemanticIR `sexpr_span` / stmt spans);
+   note Ruby AST equivalent fields for STEP=2.
+2. Freeze emit rules in this TRACK under **Decision (STEP=1)**:
+   - form: `#line <N> "<path.mlc>"` (N = 1-based MLC line);
+   - granularity: **per statement** in function bodies (not per expression);
+   - skip when span is unknown (`line == 0` / empty file) — no bogus `#line`;
+   - path: use span `file` as stored by parser (relative or absolute as today).
+3. Explicit non-goals stay (full debugger, MIR VM stacks, IDE breakpoints).
+4. Gate: **Decision** section present in this file; PLAN §15 + queue say
+   STEP=1 done → Driver STEP=2.
 
 ## Проблема
 
 Сгенерированный C++ — единственный слой, который видит компилятор/ОС при
 crash. Сегодня:
 
-- `panic`/necaught exception → C++ stack trace (если вообще есть символы) —
+- `panic`/uncaught exception → C++ stack trace (если вообще есть символы) —
   строки/функции C++ codegen, не строки `.mlc`. Пользователь видит
   `mlc_main::Handler_process(Handler const&, ...)`, не строку в своём файле.
 - Нет `#line`-директив в сгенерированном `.cpp`, связывающих C++ строку с
@@ -35,11 +51,11 @@ crash. Сегодня:
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design: формат маппинга — `#line <N> "<original.mlc>"` перед каждым сгенерированным stmt/expr, у которого есть span в SemanticIR/AST. Решить гранулярность (per-statement, не per-expression — иначе объём `.cpp` и время компиляции растут). | pending |
-| 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/codegen.rb` для statement-level nodes, у которых есть `span`/`line`. | pending |
-| 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после верификации на Ruby-стороне. | pending |
-| 4 | Проверка: собрать программу с `-g`, вызвать `abort()`/panic внутри, `gdb`/`addr2line` на бинарнике — убедиться, что репортится `.mlc`-имя файла и строка, не `.cpp`. | pending |
-| 5 | Документация: раздел в `docs/MLC.md` или новый `docs/DEBUGGING.md` — как включить (`-g` уже должен работать "из коробки" после STEP=2-3, без флага компилятора mlc). Verify-gate + close. | pending |
+| 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **pending** (active) |
+| 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | pending |
+| 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | pending |
+| 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | pending |
+| 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | pending |
 
 ## Out of scope (явно, не в этом треке)
 
