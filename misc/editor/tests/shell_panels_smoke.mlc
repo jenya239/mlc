@@ -1,0 +1,90 @@
+// TRACK_EDITOR_MVP STEP=7 — shell panels + divider drag (pure + GLFW inject).
+import { rect_new } from '../../gui/layout'
+import {
+  gui_input_poll,
+  gui_input_test_set,
+  gui_input_test_clear
+} from '../../gui/input'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  shell_panels_new,
+  shell_panels_seed_tree,
+  shell_panels_drag_by_delta,
+  shell_panels_begin_drag,
+  shell_panels_drag_to,
+  shell_panels_end_drag,
+  shell_panels_divider_hit,
+  shell_panels_tree_rect,
+  shell_panels_editor_rect
+} from '../ui/shell_panels'
+
+fn main() -> i32 = do
+  // Denominator = usable width so ratio maps 1:1 to pixels.
+  let mut panels = shell_panels_new(rect_new(0, 0, 804, 400), 200, 800, 4, "/proj", "proj")
+  panels = shell_panels_seed_tree(panels)
+  if panels.tree.nodes.length() != 3 then
+    return 1
+  end
+  if shell_panels_tree_rect(panels).width != 200 then
+    return 2
+  end
+  if shell_panels_editor_rect(panels).width != 600 then
+    return 3
+  end
+
+  const dragged = shell_panels_drag_by_delta(panels, 100)
+  if dragged.panes.first.width != 300 then
+    return 4
+  end
+  if dragged.panes.second.width != 500 then
+    return 5
+  end
+
+  const begin_status = glfw_gl_context_begin(804, 400)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  let mut live = shell_panels_new(rect_new(0, 0, 804, 400), 200, 800, 4, "/proj", "proj")
+  live = shell_panels_seed_tree(live)
+  const divider_x = live.panes.divider.x + 1
+  const divider_y = 50
+
+  if shell_panels_divider_hit(live, divider_x, divider_y) != 1 then
+    glfw_gl_context_end()
+    return 10
+  end
+
+  gui_input_test_set(divider_x, divider_y, 1, 0)
+  glfw_gl_context_swap_poll()
+  const down = gui_input_poll()
+  live = shell_panels_begin_drag(live, down.mouse_x)
+
+  gui_input_test_set(divider_x + 100, divider_y, 1, 0)
+  glfw_gl_context_swap_poll()
+  const moved = gui_input_poll()
+  live = shell_panels_drag_to(live, moved.mouse_x)
+  if live.panes.first.width != 300 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return 11
+  end
+
+  gui_input_test_set(divider_x + 100, divider_y, 0, 0)
+  glfw_gl_context_swap_poll()
+  live = shell_panels_end_drag(live)
+  if live.dragging != 0 then
+    gui_input_test_clear()
+    glfw_gl_context_end()
+    return 12
+  end
+
+  gui_input_test_clear()
+  glfw_gl_context_end()
+  println("[mlc-editor] shell_panels ok")
+  0
+end

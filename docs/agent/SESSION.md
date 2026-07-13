@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 6 |
+| driver_turns_since_plan | 8 |
+| step_last | 7 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=7 wire panels next |
+| test_gate | STEP=8 ignore list next |
+
+### Turn 2026-07-14 00:30 (Driver TRACK_EDITOR_MVP STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 00:28 |
+| elapsed | ~5 min |
+| done    | `ui/shell_panels.mlc` + `shell_panels_smoke` (pure+inject); TRACK/PLAN. |
+| verify  | shell_panels smoke exit 0; `shell_panels ok`. |
+| result  | STEP=7 done. Plain: tree/editor split + divider drag green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=8 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 00:18 (Driver TRACK_EDITOR_MVP STEP=6)
 

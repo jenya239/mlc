@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=7** — Wire tree panel + editor placeholder + divider drag (inject smoke).
+**STEP=8** — Exclude `.git` + extensible ignore list (unit).
+
+### STEP=7 done (2026-07-14)
+
+- `misc/editor/ui/shell_panels.mlc`: tree|divider|editor + drag.
+- `tests/shell_panels_smoke.mlc` + `run_editor_shell_panels_smoke.sh` (pure + inject).
 
 ### STEP=6 done (2026-07-14)
 

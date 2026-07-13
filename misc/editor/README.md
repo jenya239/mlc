@@ -27,6 +27,9 @@ scripts/run_editor_layout_unit.sh
 
 # STEP=6 FileTree lazy expand unit (no GLFW)
 scripts/run_editor_file_tree_unit.sh
+
+# STEP=7 shell panels + divider drag
+MLC_GLFW_VISIBLE=0 scripts/run_editor_shell_panels_smoke.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -35,6 +38,7 @@ Clip unit requires `[mlc-editor] clip_unit ok`.
 Perf smoke requires `perf frames=3 …=0`.
 Layout unit requires `[mlc-editor] layout_unit ok`.
 FileTree unit requires `[mlc-editor] file_tree_unit ok`.
+Shell panels requires `[mlc-editor] shell_panels ok`.
 
 ## Layout (growing)
 

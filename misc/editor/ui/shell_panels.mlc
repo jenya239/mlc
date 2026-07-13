@@ -1,0 +1,169 @@
+// TRACK_EDITOR_MVP STEP=7 — tree | divider | editor placeholder + drag.
+import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
+import {
+  SplitLayout,
+  SplitPanes,
+  Horizontal,
+  split_layout_new,
+  split_layout_apply
+} from '../layout/shell'
+import {
+  FileTree,
+  file_tree_new,
+  file_tree_expand,
+  dir_entry_new
+} from '../workspace/file_tree'
+
+export type ShellPanels = {
+  bounds: Rect,
+  split: SplitLayout,
+  panes: SplitPanes,
+  tree: FileTree,
+  dragging: i32,
+  drag_origin_x: i32,
+  drag_origin_numerator: i32
+}
+
+export fn shell_panels_new(
+  bounds: Rect,
+  ratio_numerator: i32,
+  ratio_denominator: i32,
+  divider_thickness: i32,
+  root_path: string,
+  root_name: string
+) -> ShellPanels = do
+  const split = split_layout_new(
+    Horizontal, ratio_numerator, ratio_denominator, divider_thickness
+  )
+  ShellPanels {
+    bounds: bounds,
+    split: split,
+    panes: split_layout_apply(split, bounds),
+    tree: file_tree_new(root_path, root_name),
+    dragging: 0,
+    drag_origin_x: 0,
+    drag_origin_numerator: ratio_numerator
+  }
+end
+
+export fn shell_panels_relayout(panels: ShellPanels) -> ShellPanels =
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: split_layout_apply(panels.split, panels.bounds),
+    tree: panels.tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+
+export fn shell_panels_set_bounds(panels: ShellPanels, bounds: Rect) -> ShellPanels =
+  shell_panels_relayout(ShellPanels {
+    bounds: bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: panels.tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  })
+
+// Apply horizontal drag: delta pixels → new ratio numerator (denom fixed).
+export fn shell_panels_drag_by_delta(panels: ShellPanels, delta_x: i32) -> ShellPanels = do
+  const usable = panels.bounds.width - panels.split.divider_thickness
+  if usable <= 0 then
+    return panels
+  end
+  const denom = panels.split.ratio_denominator
+  let mut first_width = usable * panels.split.ratio_numerator / denom + delta_x
+  if first_width < 0 then
+    first_width = 0
+  end
+  if first_width > usable then
+    first_width = usable
+  end
+  const numerator = first_width * denom / usable
+  const split = split_layout_new(
+    Horizontal, numerator, denom, panels.split.divider_thickness
+  )
+  shell_panels_relayout(ShellPanels {
+    bounds: panels.bounds,
+    split: split,
+    panes: panels.panes,
+    tree: panels.tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  })
+end
+
+export fn shell_panels_begin_drag(panels: ShellPanels, mouse_x: i32) -> ShellPanels =
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: panels.tree,
+    dragging: 1,
+    drag_origin_x: mouse_x,
+    drag_origin_numerator: panels.split.ratio_numerator
+  }
+
+export fn shell_panels_end_drag(panels: ShellPanels) -> ShellPanels =
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: panels.tree,
+    dragging: 0,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+
+// While dragging: mouse_x relative to drag origin updates split.
+export fn shell_panels_drag_to(panels: ShellPanels, mouse_x: i32) -> ShellPanels = do
+  if panels.dragging == 0 then
+    return panels
+  end
+  const base = ShellPanels {
+    bounds: panels.bounds,
+    split: split_layout_new(
+      Horizontal,
+      panels.drag_origin_numerator,
+      panels.split.ratio_denominator,
+      panels.split.divider_thickness
+    ),
+    panes: panels.panes,
+    tree: panels.tree,
+    dragging: 1,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+  const with_base = shell_panels_relayout(base)
+  shell_panels_drag_by_delta(with_base, mouse_x - panels.drag_origin_x)
+end
+
+export fn shell_panels_divider_hit(panels: ShellPanels, mouse_x: i32, mouse_y: i32) -> i32 =
+  point_in_rect(point_new(mouse_x, mouse_y), panels.panes.divider)
+
+export fn shell_panels_seed_tree(panels: ShellPanels) -> ShellPanels = do
+  const entries = [
+    dir_entry_new("src", 1),
+    dir_entry_new("README.md", 0)
+  ]
+  const expanded = file_tree_expand(panels.tree, panels.tree.root_id, entries)
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: expanded.tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+end
+
+export fn shell_panels_tree_rect(panels: ShellPanels) -> Rect =
+  panels.panes.first
+
+export fn shell_panels_editor_rect(panels: ShellPanels) -> Rect =
+  panels.panes.second
