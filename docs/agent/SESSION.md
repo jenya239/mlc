@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | pre |
+| driver_turns_since_plan | 1 |
+| step_last | 0 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=0 scaffold next |
+| test_gate | STEP=1 theme/frame next |
+
+### Turn 2026-07-13 19:05 (Driver TRACK_EDITOR_MVP STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 19:04 |
+| elapsed | ~3 min |
+| done    | `misc/editor/{main.mlc,ARCHITECTURE.md,README.md}` + `run_editor_scaffold_smoke.sh`; PLAN/TRACK sync. |
+| verify  | `scripts/run_editor_scaffold_smoke.sh` exit 0; stdout `[mlc-editor] open`. |
+| result  | STEP=0 done. Plain: empty GLFW editor window scaffold green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 18:55 (Driver TRACK_EDITOR_MVP STEP=pre)
 

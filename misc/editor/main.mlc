@@ -1,0 +1,28 @@
+// TRACK_EDITOR_MVP STEP=0 — empty GLFW window scaffold.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  println("[mlc-editor] open")
+
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 3 then
+      break
+    end
+  end
+
+  glfw_gl_context_end()
+  0
+end

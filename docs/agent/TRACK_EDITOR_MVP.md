@@ -12,8 +12,15 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=0** — scaffold `misc/editor/` (`README`, `ARCHITECTURE.md`, `main.mlc`
-empty GLFW window → stdout `[mlc-editor] open`).
+**STEP=1** — Theme record + frame loop with theme bg via solid_renderer
+(headless N frames, exit 0).
+
+### STEP=0 done (2026-07-13)
+
+- `misc/editor/main.mlc`: empty GLFW window, `println("[mlc-editor] open")`,
+  3 headless frames.
+- `misc/editor/ARCHITECTURE.md` + README run cmds.
+- `scripts/run_editor_scaffold_smoke.sh` — exit 0, stdout gate.
 
 ### STEP=pre done (2026-07-13)
 
@@ -105,7 +112,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Create `misc/editor/{README,ARCHITECTURE}.md` stubs + `main.mlc` empty window reuse GLFW/scene; PLAN queue sync | `mlcc`+`build_bin` run; prints `[mlc-editor] open` |
+| 0 | Create `misc/editor/{README,ARCHITECTURE}.md` stubs + `main.mlc` empty window reuse GLFW/scene; PLAN queue sync | **done** (2026-07-13): `run_editor_scaffold_smoke.sh` exit 0 |
 
 ### E1 — Window / scene / static text / clip / DPI
 
@@ -214,4 +221,6 @@ and session restore expand — still smaller than inventing Script VM.
 - **Architecture review** (2026-07-13): frozen in
   [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md).
 - **STEP=pre done** (2026-07-13): bundle 85K tokens; Sonnet preflight;
-  Decision E = piece table; next **STEP=0**.
+  Decision E = piece table.
+- **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`; next
+  **STEP=1**.

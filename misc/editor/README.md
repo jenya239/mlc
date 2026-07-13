@@ -1,16 +1,22 @@
-# mlc editor (planned)
+# mlc editor
 
 Native text editor dogfooding MLC + `misc/gui`.
 
-**Do not implement here until** `TRACK_EDITOR_MVP` STEP=0 is activated
-(see [docs/EDITOR.md](../../docs/EDITOR.md) and
-[docs/agent/TRACK_EDITOR_MVP.md](../../docs/agent/TRACK_EDITOR_MVP.md)).
+Track: [docs/agent/TRACK_EDITOR_MVP.md](../../docs/agent/TRACK_EDITOR_MVP.md).
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Intended layout after STEP=0+:
+## Run (STEP=0 scaffold)
 
-```text
-document/  layout/  syntax/  workspace/  ui/  commands/  tests/  main.mlc
-ARCHITECTURE.md   # module boundaries (authoritative once work starts)
+```bash
+MLC_GLFW_VISIBLE=0 scripts/run_editor_scaffold_smoke.sh
 ```
 
-Run commands will land in this README when the binary exists.
+Expect stdout containing `[mlc-editor] open` and exit 0.
+
+## Layout (growing)
+
+```text
+main.mlc          # entry
+ARCHITECTURE.md
+document/ layout/ syntax/ workspace/ ui/ commands/ tests/   # later STEPs
+```
