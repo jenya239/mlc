@@ -1,16 +1,19 @@
 # Track: GUI scene Phase A — retained tree + affine + hit-test + batch
 
-Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Epic §29 / §10c
-in [PLAN.md](../PLAN.md).
+Parent: [../../agent/TRACK_GUI_CANVAS_GRAPH.md](../../agent/TRACK_GUI_CANVAS_GRAPH.md).
+Epic §29 / §10c in [../../PLAN.md](../../PLAN.md).
 
-## Status: **active** (2026-07-13) — STEP=7 verify next
-
-Created by Planner after DEBUG_SOURCE_MAP Critic OK. Phase B–D tracks stay
-uncreated until this file closes.
+## Status: **closed** (2026-07-13) — awaiting Critic
 
 ## Next step
 
-**STEP=7** — Verify smokes green; close Phase A → Critic.
+**closed** — Critic `critique-audit` next.
+
+### STEP=7 done (2026-07-13)
+
+- Re-ran: `scene_types_smoke`, `scene_hit_smoke`, `scene_batch_smoke`,
+  `scene_button_smoke`, v0 `gui_button_demo` — all exit 0.
+- No self-host (misc/gui only). Archived this track.
 
 ### STEP=6 done (2026-07-13)
 
@@ -102,7 +105,7 @@ Draw batching, hit-test algorithm details, widget kinds — STEPs 3–5 / Phase 
 | 4 | Hit-test via inverse chain; smoke vs `gui_button` case | **done** (2026-07-13: `scene_hit_test` + `scene_hit_smoke`) |
 | 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | **done** (2026-07-13: `scene_draw` + `solid_renderer` + `scene_batch_smoke`) |
 | 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | **done** (2026-07-13: `scene_button_smoke` + run script) |
-| 7 | Verify smoke green (no self-host; misc/gui only) | pending |
+| 7 | Verify smoke green (no self-host; misc/gui only) | **done** (2026-07-13: types/hit/batch/button/v0 all 0) |
 
 ## Bearing (existing v0 — do not patch into foundation)
 

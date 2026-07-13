@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
-| active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=7: verify smokes + close → Critic |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
+| active_track | TRACK_GUI_SCENE_PHASE_A (closed) |
+| test_gate | Critic critique-audit Phase A |
+
+### Turn 2026-07-13 15:47 (Driver TRACK_GUI_SCENE_PHASE_A STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:45 |
+| elapsed | ~5 min |
+| done    | Re-ran types/hit/batch/button + v0 button; archived PHASE_A; epic/PLAN close. |
+| verify  | RUN types/hit/batch/button/V0 all 0. |
+| result  | STEP=7 done; Phase A **closed**. Plain: foundation smokes green. |
+| issues  | — |
+| next    | ROLE=Critic STEP=critique-audit TRACK_GUI_SCENE_PHASE_A |
 
 ### Turn 2026-07-13 15:40 (Driver TRACK_GUI_SCENE_PHASE_A STEP=6)
 

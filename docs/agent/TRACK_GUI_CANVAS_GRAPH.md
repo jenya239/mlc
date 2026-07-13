@@ -7,16 +7,16 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **active** (2026-07-13) — Phase A under
-[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md)
+## Status: **active** (2026-07-13) — Phase A **closed** (awaiting Critic);
+Phase B not opened yet
 
-Epic activated 2026-07-11. Phases B–D: create `TRACK_GUI_SCENE_PHASE_{B,C,D}.md`
-only when the prior phase closes (Planner).
+Epic activated 2026-07-11. Phase A:
+[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
+Planner creates `TRACK_GUI_SCENE_PHASE_B.md` only after Phase A Critic OK.
 
 ## Next step
 
-**Phase A STEP=7** — verify + close in
-[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
+**Critic** on Phase A, then Planner → Phase B widgets track.
 
 ## Ключевая коррекция (2026-07-11)
 
@@ -61,17 +61,18 @@ primitive рендерер с самого начала. v0 (`misc/gui/`, screen
 ## Phase A: фундамент (retained tree + affine transform + hit-test + batched draw)
 
 Active work + STEP status:
-[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md) (STEP=1–7).
+[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)
+(**closed** 2026-07-13, awaiting Critic).
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design decision: tree indices, Affine2×3, camera-relative f32 | **done** → PHASE_A |
-| 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** → PHASE_A |
-| 3 | World-transform pass | **done** → PHASE_A |
-| 4 | Hit-testing through tree | **done** → PHASE_A |
-| 5 | Batched draw (rect-fill) | **done** → PHASE_A |
-| 6 | Migration smoke vs `gui_button_demo` | **done** → PHASE_A |
-| 7 | Verify | **→ PHASE_A** |
+| 1 | Design decision: tree indices, Affine2×3, camera-relative f32 | **done** |
+| 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** |
+| 3 | World-transform pass | **done** |
+| 4 | Hit-testing through tree | **done** |
+| 5 | Batched draw (rect-fill) | **done** |
+| 6 | Migration smoke vs `gui_button_demo` | **done** |
+| 7 | Verify | **done** |
 
 ## Phase B: виджеты (после Phase A closed)
 
