@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_DEBUG_SOURCE_MAP |
-| test_gate | STEP=1: Decision section in TRACK |
+| test_gate | STEP=2: Ruby `#line` in generated .cpp |
+
+### Turn 2026-07-13 13:45 (Driver TRACK_DEBUG_SOURCE_MAP STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 13:30 |
+| elapsed | ~8 min |
+| done    | TRACK **Decision (STEP=1)**: Span SoT (ast/SemanticIR/`SourceOrigin`); `#line N "path"`; per-stmt; skip unknown; hooks for Ruby/mlcc. |
+| verify  | `rg 'Decision \\(STEP=1\\)' docs/agent/TRACK_DEBUG_SOURCE_MAP.md`; STEP=1 done in table; PLAN §15 STEP=2. |
+| result  | STEP=1 done. Plain: `#line` mapping frozen before Ruby emit. |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK_DEBUG_SOURCE_MAP — Ruby codegen emit `#line` per statement |
 
 ### Turn 2026-07-13 13:40 (Planner DEBUG_SOURCE_MAP plan-refresh)
 

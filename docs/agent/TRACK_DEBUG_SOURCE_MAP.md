@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-1
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **active** (2026-07-13) — STEP=1 Design Decision next
+## Status: **active** (2026-07-13) — STEP=2 Ruby `#line` emit next
 
 Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
 `GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
@@ -12,20 +12,57 @@ closes or blocks).
 
 ## Next step
 
-**STEP=1** — Design Decision: `#line` mapping format + emit granularity.
+**STEP=2** — Codegen (Ruby): emit `#line` for statement-level nodes with span
+(see **Decision (STEP=1)** below).
 
-Sub-steps for Driver (docs-only; **no** `compiler/` / `lib/mlc/` this step):
-1. Confirm span source of truth: self-hosted `Span { file, line, column, … }`
-   in `compiler/frontend/ast.mlc` (and SemanticIR `sexpr_span` / stmt spans);
-   note Ruby AST equivalent fields for STEP=2.
-2. Freeze emit rules in this TRACK under **Decision (STEP=1)**:
-   - form: `#line <N> "<path.mlc>"` (N = 1-based MLC line);
-   - granularity: **per statement** in function bodies (not per expression);
-   - skip when span is unknown (`line == 0` / empty file) — no bogus `#line`;
-   - path: use span `file` as stored by parser (relative or absolute as today).
-3. Explicit non-goals stay (full debugger, MIR VM stacks, IDE breakpoints).
-4. Gate: **Decision** section present in this file; PLAN §15 + queue say
-   STEP=1 done → Driver STEP=2.
+## Decision (STEP=1) — frozen 2026-07-13
+
+### Span source of truth
+
+| Layer | Location | Fields used for `#line` |
+|-------|----------|-------------------------|
+| Self-hosted AST | `compiler/frontend/ast.mlc` `Span` | `file: string`, `line: i32` (1-based); unknown = `span_unknown()` → `file==""`, `line==0` |
+| Self-hosted SemanticIR | `compiler/ir/semantic_ir.mlc` | Every `SemanticStatement*` carries trailing `Span`; exprs via `sexpr_span`. No `sstmt_span` helper yet — STEP=3 may add one mirroring `sexpr_span` / `sdecl_span`. |
+| Ruby AST | `lib/mlc/source/ast/nodes.rb` `SourceOrigin` on nodes (`attr_reader :origin`) | `origin.file`, `origin.line` (1-based). Missing/`nil` line → treat as unknown (skip). |
+
+### Emit form
+
+```
+#line <N> "<path>"
+```
+
+- `<N>` = `span.line` (MLC 1-based line).
+- `"<path>"` = `span.file` as stored by the parser (relative or absolute — do not rewrite). Escape `\` and `"` for a valid C string literal.
+- One directive immediately **before** the C++ text for that statement (same indentation level as the statement is fine; preprocessor ignores leading whitespace).
+
+### Granularity
+
+- **Per `SemanticStatement`** in function / block bodies (Let, LetPattern, LetConst, Expr, Return, Break, Continue, and any future stmt variants with Span).
+- **Not** per subexpression inside a statement (avoids `#line` spam and compile-time bloat).
+- Nested blocks (`if`/`while`/`for`/`match` arms, expression-blocks lowered to stmts): still one `#line` per nested statement when that statement is emitted.
+- Single-expression function bodies lowered as `return <expr>;`: one `#line` from the **expression** span (or fn decl span if expr span unknown) immediately before that `return`.
+
+### Skip rules
+
+Emit **nothing** when:
+
+- `line <= 0`, or
+- `file` is empty / missing (`nil` on Ruby),
+
+i.e. `span_unknown()` and synthetic IR without source. Never emit `#line 0` or `#line 1 ""`.
+
+### Hook points (for STEP=2 / STEP=3)
+
+| Compiler | Insert `#line` when |
+|----------|---------------------|
+| Ruby | Lowering each statement in `lib/mlc/backends/cpp/` (statement rules / block lower that produce `raw_statement` or AST stmt nodes) — prepend directive string or a dedicated printer node. |
+| Self-hosted | `compiler/codegen/stmt_cpp.mlc` `gen_stmts_cpp` / `print_cpp_statement_line` (or new `CppLineDirective` in `compiler/cpp_ir/cpp_ast.mlc`) so every printed stmt can be preceded by `#line`. |
+
+Default: **always on** when span is known — no mlc CLI flag in this track (`-g` is a C++ compile flag for DWARF; `#line` is independent and cheap).
+
+### Non-goals (unchanged)
+
+Full debugger; MIR VM stacks; IDE breakpoint UI guarantees — see **Out of scope**.
 
 ## Проблема
 
@@ -51,7 +88,7 @@ crash. Сегодня:
 
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **pending** (active) |
+| 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **done** (2026-07-13) |
 | 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | pending |
 | 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | pending |
 | 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | pending |
