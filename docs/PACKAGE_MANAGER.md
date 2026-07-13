@@ -1,7 +1,7 @@
 # Package manager
 
-Parent: [PLAN.md](PLAN.md) §18, [agent/TRACK_PACKAGE_MANAGER.md](agent/TRACK_PACKAGE_MANAGER.md).
-Status: **implemented** 2026-07-13 (TRACK STEPs 1–8; STEP=9 usage docs; STEP=10 verify).
+Parent: [PLAN.md](PLAN.md) §18, [archive/tracks/TRACK_PACKAGE_MANAGER.md](archive/tracks/TRACK_PACKAGE_MANAGER.md).
+Status: **closed** 2026-07-13 (TRACK STEPs 1–10; Critic pending).
 
 Design freeze (STEPs 1–4) is still the source of truth for scope. Do not expand
 without a new TRACK step.
@@ -119,7 +119,7 @@ Only the **root** `mlc.json` `dependencies` are resolvable. A package’s own
 | 7 | Resolver: first-segment dep → vendor path + prefix check — **done:** `path_normalize.mlc` |
 | 8 | E2E: local git fixture + fetch + compile — **done:** `compiler/tests/e2e/package_manager/run_e2e.rb` |
 | 9 | Usage section + README one-liner — **done** (this section + README link) |
-| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` |
+| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` — **done:** p1≡p2; REG 20/0; sweep 117/0/1 |
 
 ## 8. Out of scope
 

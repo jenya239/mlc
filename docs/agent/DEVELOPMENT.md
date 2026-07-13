@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_PACKAGE_MANAGER` active** — STEP=9 done (docs); STEP=10 verify next.
-See [TRACK_PACKAGE_MANAGER.md](TRACK_PACKAGE_MANAGER.md).
-REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
+**`TRACK_PACKAGE_MANAGER` closed** — STEP=1–10; Critic next.
+See [archive/tracks/TRACK_PACKAGE_MANAGER.md](../archive/tracks/TRACK_PACKAGE_MANAGER.md).
 
 ## Step sizing (good vs bad)
 

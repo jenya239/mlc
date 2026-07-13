@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
-| active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | rg Usage PACKAGE_MANAGER.md; README link |
+| driver_turns_since_plan | 10 |
+| step_last | 10 |
+| active_track | TRACK_PACKAGE_MANAGER (closed; Critic) |
+| test_gate | p1≡p2; REG 20/0; sweep 117/0/1 |
+
+### Turn 2026-07-13 12:15 (Driver TRACK_PACKAGE_MANAGER STEP=10)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 12:15 |
+| elapsed | ~45 min |
+| done    | Self-host p1≡p2; REG 20/0; examples sweep 117/0/1; TRACK archived closed. |
+| verify  | `diff -rq p1 p2 --exclude=obj` empty; `regression_gate.sh` exit 0. |
+| result  | STEP=10 done; track **closed**. Plain: package manager verify gate green. |
+| issues  | — |
+| next    | ROLE=Critic STEP=critique-audit TRACK_PACKAGE_MANAGER |
 
 ### Turn 2026-07-13 12:12 (Driver TRACK_PACKAGE_MANAGER STEP=9)
 

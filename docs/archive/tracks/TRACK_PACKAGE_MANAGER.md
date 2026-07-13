@@ -1,20 +1,22 @@
 # Track: package manager (design → implementation)
 
-Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
-Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
+Parent: [../../PLAN.md](../../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
+Queue after [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=9 done; STEP=10 verify next
-
-Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
-(Steps 5–10). No `compiler/` until Step 7.
+## Status: **closed** (2026-07-13) — STEP=1–10 done; awaiting Critic
 
 ## Next step
 
-**STEP=10** — Verify: self-host if `compiler/` touched; else `regression_gate.sh`.
+**Critic** — `ROLE=Critic STEP=critique-audit TRACK_PACKAGE_MANAGER`.
+
+### STEP=10 done (2026-07-13)
+
+- Self-host: `mlcc` → p1 → `mlcc2` → p2; `diff -rq` (exclude obj) empty.
+- `scripts/regression_gate.sh`: REG 20/0; examples sweep ok=117 fail=0 skip=1.
 
 ### STEP=9 done (2026-07-13)
 
-- Usage section in [../PACKAGE_MANAGER.md](../PACKAGE_MANAGER.md) §2.
+- Usage section in [../../PACKAGE_MANAGER.md](../../PACKAGE_MANAGER.md) §2.
 - README one-liner linking to that doc.
 
 ### STEP=8 done (2026-07-13)
@@ -47,7 +49,7 @@ Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementatio
 
 ### STEP=4 done (2026-07-13)
 
-- Wrote [../PACKAGE_MANAGER.md](../PACKAGE_MANAGER.md) freezing STEP=1–3 Decisions.
+- Wrote [../../PACKAGE_MANAGER.md](../../PACKAGE_MANAGER.md) freezing STEP=1–3 Decisions.
 - Design closed for v1; Steps 5–10 implement only what that doc states.
 
 ### STEP=3 done (2026-07-13)
@@ -257,7 +259,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | **done** (2026-07-13) `path_normalize` |
 | 8 | E2E smoke: local git fixture package + fetch + compile | **done** (2026-07-13) `run_e2e.rb` → 42 |
 | 9 | Docs usage in `PACKAGE_MANAGER.md` + README one-liner | **done** (2026-07-13) usage §2 + README |
-| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` | pending |
+| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` | **done** (2026-07-13) p1≡p2; REG 20/0; sweep 117/0/1 |
 
 ## Out of scope (hard)
 
