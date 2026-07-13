@@ -24,6 +24,8 @@ export extern fn glfw_gl_mouse_y() -> i32
   = "mlc::gl::glfw_gl_mouse_y" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_mouse_left_down() -> i32
   = "mlc::gl::glfw_gl_mouse_left_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_take_scroll_y() -> f64
+  = "mlc::gl::glfw_gl_take_scroll_y" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_key_escape_down() -> i32
   = "mlc::gl::glfw_gl_key_escape_down" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_key_backspace_down() -> i32

@@ -1,0 +1,1554 @@
+// Arkanoid+: particles, trail, combo, multi-hit, powerups, shake, levels.
+// Mouse = paddle, click = launch, Esc = quit. MLC_GLFW_VISIBLE=1 for window.
+
+import {
+  solid_renderer_create,
+  solid_renderer_begin,
+  solid_renderer_rect,
+  solid_renderer_flush,
+  solid_renderer_destroy,
+  SolidRenderer
+} from '../gui/solid_renderer'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_mouse_x,
+  glfw_gl_mouse_y,
+  glfw_gl_mouse_left_down,
+  glfw_gl_take_scroll_y,
+  glfw_gl_key_escape_down,
+  glfw_gl_input_test_set,
+  glfw_gl_input_test_clear,
+  glfw_gl_anim_unit
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn f64_to_i32(value: f64) -> i32 = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+
+fn window_width() -> i32 = 800
+fn window_height() -> i32 = 600
+fn play_right() -> i32 = 668
+fn panel_x() -> i32 = 672
+fn panel_width() -> i32 = 120
+fn level_count() -> i32 = 8
+fn base_paddle_width() -> i32 = 96
+fn paddle_height() -> i32 = 14
+fn ball_size() -> i32 = 12
+fn brick_cols() -> i32 = 10
+fn brick_rows() -> i32 = 6
+fn brick_width() -> i32 = 58
+fn brick_height() -> i32 = 20
+fn brick_gap() -> i32 = 4
+fn brick_top() -> i32 = 64
+fn trail_len() -> i32 = 10
+fn max_particles() -> i32 = 64
+fn level_button_height() -> i32 = 36
+fn level_button_gap() -> i32 = 8
+fn level_button_top() -> i32 = 56
+
+type Brick = {
+  x: i32,
+  y: i32,
+  hits: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  drops: i32
+}
+
+type Particle = {
+  x: f64,
+  y: f64,
+  velocity_x: f64,
+  velocity_y: f64,
+  life: i32,
+  red: f64,
+  green: f64,
+  blue: f64
+}
+
+type Powerup = {
+  x: f64,
+  y: f64,
+  kind: i32,
+  alive: i32
+}
+
+type Bullet = {
+  x: f64,
+  y: f64,
+  alive: i32
+}
+
+type TrailDot = {
+  x: f64,
+  y: f64
+}
+
+type Game = {
+  paddle_x: i32,
+  paddle_w: i32,
+  ball_x: f64,
+  ball_y: f64,
+  velocity_x: f64,
+  velocity_y: f64,
+  launched: i32,
+  bricks: [Brick],
+  bricks_left: i32,
+  lives: i32,
+  score: i32,
+  combo: i32,
+  combo_timer: i32,
+  level: i32,
+  wide_timer: i32,
+  slow_timer: i32,
+  turret_timer: i32,
+  turret_cooldown: i32,
+  shake: i32,
+  particles: [Particle],
+  powerups: [Powerup],
+  bullets: [Bullet],
+  trail: [TrailDot],
+  previous_mouse_down: i32,
+  bricks_broken: i32
+}
+
+fn clamp_i32(value: i32, minimum: i32, maximum: i32) -> i32 = do
+  if value < minimum then
+    return minimum
+  end
+  if value > maximum then
+    return maximum
+  end
+  value
+end
+
+fn abs_f64(value: f64) -> f64 = do
+  if value < 0.0 then
+    return 0.0 - value
+  end
+  value
+end
+
+fn clamp_f64(value: f64, minimum: f64, maximum: f64) -> f64 = do
+  if value < minimum then
+    return minimum
+  end
+  if value > maximum then
+    return maximum
+  end
+  value
+end
+
+fn launch_speed(level: i32) -> f64 =
+  3.3 + i32_to_f64(level - 1) * 0.2
+
+// Up through open space: faster. Down near paddle (approach): slower.
+fn flight_speed_factor(ball_y: f64, velocity_y: f64) -> f64 = do
+  if velocity_y < 0.0 then
+    return 1.4
+  end
+  const paddle_y = i32_to_f64(window_height() - 42 - paddle_height())
+  const distance = paddle_y - (ball_y + i32_to_f64(ball_size()))
+  if distance < 0.0 then
+    return 0.55
+  end
+  if distance < 150.0 then
+    return 0.5 + 0.5 * (distance / 150.0)
+  end
+  1.0
+end
+
+// Classic 5-slot paddle angles — predictable, fixed speed.
+fn paddle_bounce_velocity(
+  ball_center_x: f64,
+  paddle_x: i32,
+  paddle_w: i32,
+  speed: f64
+) -> TrailDot = do
+  let mut slot = 2
+  const relative = (ball_center_x - i32_to_f64(paddle_x)) / i32_to_f64(paddle_w)
+  if relative < 0.2 then
+    slot = 0
+  end
+  if relative >= 0.2 && relative < 0.4 then
+    slot = 1
+  end
+  if relative >= 0.4 && relative < 0.6 then
+    slot = 2
+  end
+  if relative >= 0.6 && relative < 0.8 then
+    slot = 3
+  end
+  if relative >= 0.8 then
+    slot = 4
+  end
+  let mut velocity_x = 0.0
+  if slot == 0 then
+    velocity_x = 0.0 - speed * 0.85
+  end
+  if slot == 1 then
+    velocity_x = 0.0 - speed * 0.45
+  end
+  if slot == 2 then
+    velocity_x = speed * 0.12
+  end
+  if slot == 3 then
+    velocity_x = speed * 0.45
+  end
+  if slot == 4 then
+    velocity_x = speed * 0.85
+  end
+  TrailDot { x: velocity_x, y: 0.0 - speed }
+end
+
+fn level_button_y(level_index: i32) -> i32 =
+  level_button_top() + level_index * (level_button_height() + level_button_gap())
+
+fn pick_level(mouse_x: i32, mouse_y: i32) -> i32 = do
+  if mouse_x < panel_x() then
+    return 0
+  end
+  if mouse_x > panel_x() + panel_width() - 8 then
+    return 0
+  end
+  let mut level_index = 0
+  while level_index < level_count() do
+    const top = level_button_y(level_index)
+    if mouse_y >= top && mouse_y < top + level_button_height() then
+      return level_index + 1
+    end
+    level_index = level_index + 1
+  end
+  0
+end
+
+fn hue_color(row: i32, column: i32, level: i32) -> Brick = do
+  let mut red = 0.4
+  let mut green = 0.4
+  let mut blue = 0.9
+  if row == 0 then
+    red = 1.0
+    green = 0.25
+    blue = 0.45
+  end
+  if row == 1 then
+    red = 1.0
+    green = 0.55
+    blue = 0.2
+  end
+  if row == 2 then
+    red = 1.0
+    green = 0.88
+    blue = 0.25
+  end
+  if row == 3 then
+    red = 0.35
+    green = 0.9
+    blue = 0.45
+  end
+  if row == 4 then
+    red = 0.3
+    green = 0.75
+    blue = 1.0
+  end
+  if row == 5 then
+    red = 0.7
+    green = 0.4
+    blue = 1.0
+  end
+  // Bottom soft, top armored; later levels add HP.
+  let mut hits = 1 + (level - 1) / 2
+  if row <= 4 then
+    hits = 2 + (level - 1) / 2
+  end
+  if row <= 2 then
+    hits = 3 + (level - 1) / 2
+  end
+  if row <= 1 then
+    hits = 4 + (level - 1) / 2
+  end
+  if row == 0 then
+    hits = 5 + (level - 1) / 2
+  end
+  if row == 0 && column % 3 == 1 then
+    hits = hits + 2
+    red = 0.95
+    green = 0.95
+    blue = 0.85
+  end
+  let mut drops = 0
+  if (row + column * 2 + level) % 6 == 0 then
+    drops = 1
+  end
+  if (row * 3 + column + level) % 9 == 0 then
+    drops = 2
+  end
+  if (row + column + level * 2) % 11 == 0 then
+    drops = 3
+  end
+  if row <= 1 && (column + level) % 5 == 0 then
+    drops = 4
+  end
+  Brick { x: 0, y: 0, hits: hits, red: red, green: green, blue: blue, drops: drops }
+end
+
+fn brick_skip(row: i32, column: i32, level: i32) -> i32 = do
+  const center = brick_cols() / 2
+  const dist = abs_f64(i32_to_f64(column - center)) + abs_f64(i32_to_f64(row - 2))
+  if level == 1 then
+    return 0
+  end
+  if level == 2 then
+    if dist > 5.0 then
+      return 1
+    end
+    return 0
+  end
+  if level == 3 then
+    if (row + column) % 2 == 0 then
+      return 1
+    end
+    return 0
+  end
+  if level == 4 then
+    if column < row then
+      return 1
+    end
+    return 0
+  end
+  if level == 5 then
+    if column + row > 8 then
+      return 1
+    end
+    if column < 2 then
+      return 1
+    end
+    return 0
+  end
+  if level == 6 then
+    if row == 2 then
+      if column > 1 && column < 8 then
+        return 1
+      end
+    end
+    if row == 3 then
+      if column > 1 && column < 8 then
+        return 1
+      end
+    end
+    return 0
+  end
+  if level == 7 then
+    if (row * 3 + column) % 4 == 0 then
+      return 1
+    end
+    return 0
+  end
+  if dist > 4.0 && (row + column + level) % 3 == 0 then
+    return 1
+  end
+  0
+end
+
+fn build_bricks(level: i32) -> [Brick] = do
+  let mut bricks: [Brick] = []
+  let mut row = 0
+  while row < brick_rows() do
+    let mut column = 0
+    while column < brick_cols() do
+      if brick_skip(row, column, level) == 0 then
+        const sample = hue_color(row, column, level)
+        const x = 18 + column * (brick_width() + brick_gap())
+        const y = brick_top() + row * (brick_height() + brick_gap())
+        bricks.push(Brick {
+          x: x,
+          y: y,
+          hits: sample.hits,
+          red: sample.red,
+          green: sample.green,
+          blue: sample.blue,
+          drops: sample.drops
+        })
+      end
+      column = column + 1
+    end
+    row = row + 1
+  end
+  bricks
+end
+
+fn count_alive(bricks: [Brick]) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < bricks.length() do
+    if bricks[index].hits > 0 then
+      total = total + 1
+    end
+    index = index + 1
+  end
+  total
+end
+
+fn empty_particles() -> [Particle] = do
+  let mut particles: [Particle] = []
+  let mut index = 0
+  while index < max_particles() do
+    particles.push(Particle {
+      x: 0.0, y: 0.0, velocity_x: 0.0, velocity_y: 0.0,
+      life: 0, red: 1.0, green: 1.0, blue: 1.0
+    })
+    index = index + 1
+  end
+  particles
+end
+
+fn empty_trail() -> [TrailDot] = do
+  let mut trail: [TrailDot] = []
+  let mut index = 0
+  while index < trail_len() do
+    trail.push(TrailDot { x: 0.0, y: 0.0 })
+    index = index + 1
+  end
+  trail
+end
+
+fn game_new(level: i32, lives: i32, score: i32) -> Game = do
+  const bricks = build_bricks(level)
+  const paddle_x = (play_right() - base_paddle_width()) / 2
+  Game {
+    paddle_x: paddle_x,
+    paddle_w: base_paddle_width(),
+    ball_x: i32_to_f64(paddle_x + base_paddle_width() / 2 - ball_size() / 2),
+    ball_y: i32_to_f64(window_height() - 42 - paddle_height() - ball_size()),
+    velocity_x: 0.0,
+    velocity_y: 0.0,
+    launched: 0,
+    bricks: bricks,
+    bricks_left: count_alive(bricks),
+    lives: lives,
+    score: score,
+    combo: 0,
+    combo_timer: 0,
+    level: level,
+    wide_timer: 0,
+    slow_timer: 0,
+    turret_timer: 0,
+    turret_cooldown: 0,
+    shake: 0,
+    particles: empty_particles(),
+    powerups: [],
+    bullets: [],
+    trail: empty_trail(),
+    previous_mouse_down: 0,
+    bricks_broken: 0
+  }
+end
+
+fn switch_level(game: Game, level: i32) -> Game = do
+  let mut lives = game.lives
+  if lives <= 0 then
+    lives = 5
+  end
+  const fresh = game_new(level, lives, game.score)
+  Game {
+    paddle_x: fresh.paddle_x,
+    paddle_w: fresh.paddle_w,
+    ball_x: fresh.ball_x,
+    ball_y: fresh.ball_y,
+    velocity_x: 0.0,
+    velocity_y: 0.0,
+    launched: 0,
+    bricks: fresh.bricks,
+    bricks_left: fresh.bricks_left,
+    lives: fresh.lives,
+    score: fresh.score,
+    combo: 0,
+    combo_timer: 0,
+    level: fresh.level,
+    wide_timer: 0,
+    slow_timer: 0,
+    turret_timer: 0,
+    turret_cooldown: 0,
+    shake: 10,
+    particles: fresh.particles,
+    powerups: [],
+    bullets: [],
+    trail: empty_trail(),
+    previous_mouse_down: game.previous_mouse_down,
+    bricks_broken: game.bricks_broken
+  }
+end
+
+fn rects_overlap(
+  ax: i32, ay: i32, aw: i32, ah: i32,
+  bx: i32, by: i32, bw: i32, bh: i32
+) -> i32 = do
+  if ax + aw <= bx then
+    return 0
+  end
+  if bx + bw <= ax then
+    return 0
+  end
+  if ay + ah <= by then
+    return 0
+  end
+  if by + bh <= ay then
+    return 0
+  end
+  1
+end
+
+fn spawn_burst(
+  particles: [Particle],
+  origin_x: f64,
+  origin_y: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  seed: i32
+) -> [Particle] = do
+  let mut next = particles
+  let mut spawned = 0
+  let mut index = 0
+  while index < next.length() do
+    if spawned >= 10 then
+      break
+    end
+    if next[index].life <= 0 then
+      const speed = 1.5 + i32_to_f64(spawned) * 0.35
+      let mut vx = speed
+      let mut vy = speed
+      if spawned % 2 == 0 then
+        vx = 0.0 - speed
+      end
+      if spawned % 3 == 0 then
+        vy = 0.0 - speed * 1.2
+      end
+      if spawned % 4 == 0 then
+        vx = speed * 0.4
+        vy = 0.0 - speed * 1.6
+      end
+      next.set(index, Particle {
+        x: origin_x,
+        y: origin_y,
+        velocity_x: vx,
+        velocity_y: vy,
+        life: 18 + spawned,
+        red: red,
+        green: green,
+        blue: blue
+      })
+      spawned = spawned + 1
+    end
+    index = index + 1
+  end
+  next
+end
+
+fn push_trail(trail: [TrailDot], ball_x: f64, ball_y: f64) -> [TrailDot] = do
+  let mut next = trail
+  let mut index = trail_len() - 1
+  while index > 0 do
+    const previous = next[index - 1]
+    next.set(index, TrailDot { x: previous.x, y: previous.y })
+    index = index - 1
+  end
+  next.set(0, TrailDot { x: ball_x, y: ball_y })
+  next
+end
+
+fn reset_ball(game: Game) -> Game =
+  Game {
+    paddle_x: game.paddle_x,
+    paddle_w: game.paddle_w,
+    ball_x: i32_to_f64(game.paddle_x + game.paddle_w / 2 - ball_size() / 2),
+    ball_y: i32_to_f64(window_height() - 42 - paddle_height() - ball_size()),
+    velocity_x: 0.0,
+    velocity_y: 0.0,
+    launched: 0,
+    bricks: game.bricks,
+    bricks_left: game.bricks_left,
+    lives: game.lives,
+    score: game.score,
+    combo: 0,
+    combo_timer: 0,
+    level: game.level,
+    wide_timer: game.wide_timer,
+    slow_timer: game.slow_timer,
+    turret_timer: game.turret_timer,
+    turret_cooldown: game.turret_cooldown,
+    shake: game.shake,
+    particles: game.particles,
+    powerups: game.powerups,
+    bullets: game.bullets,
+    trail: empty_trail(),
+    previous_mouse_down: game.previous_mouse_down,
+    bricks_broken: game.bricks_broken
+  }
+
+fn update_game(
+  game: Game,
+  mouse_x: i32,
+  mouse_y: i32,
+  mouse_down: i32,
+  speed_scale: f64,
+  previous_speed_scale: f64
+) -> Game = do
+  if mouse_down != 0 && game.previous_mouse_down == 0 then
+    const selected = pick_level(mouse_x, mouse_y)
+    if selected > 0 then
+      const switched = switch_level(game, selected)
+      return Game {
+        paddle_x: switched.paddle_x,
+        paddle_w: switched.paddle_w,
+        ball_x: switched.ball_x,
+        ball_y: switched.ball_y,
+        velocity_x: switched.velocity_x,
+        velocity_y: switched.velocity_y,
+        launched: switched.launched,
+        bricks: switched.bricks,
+        bricks_left: switched.bricks_left,
+        lives: switched.lives,
+        score: switched.score,
+        combo: switched.combo,
+        combo_timer: switched.combo_timer,
+        level: switched.level,
+        wide_timer: switched.wide_timer,
+        slow_timer: switched.slow_timer,
+        turret_timer: switched.turret_timer,
+        turret_cooldown: switched.turret_cooldown,
+        shake: switched.shake,
+        particles: switched.particles,
+        powerups: switched.powerups,
+        bullets: switched.bullets,
+        trail: switched.trail,
+        previous_mouse_down: mouse_down,
+        bricks_broken: switched.bricks_broken
+      }
+    end
+  end
+
+  let mut paddle_w = base_paddle_width()
+  if game.wide_timer > 0 then
+    paddle_w = base_paddle_width() + 56
+  end
+  let mut aim_x = mouse_x
+  if aim_x >= panel_x() then
+    aim_x = game.paddle_x + paddle_w / 2
+  end
+  const paddle_x = clamp_i32(
+    aim_x - paddle_w / 2,
+    6,
+    play_right() - paddle_w - 6
+  )
+
+  let mut particles = game.particles
+  let mut particle_index = 0
+  while particle_index < particles.length() do
+    const particle = particles[particle_index]
+    if particle.life > 0 then
+      particles.set(particle_index, Particle {
+        x: particle.x + particle.velocity_x,
+        y: particle.y + particle.velocity_y,
+        velocity_x: particle.velocity_x * 0.96,
+        velocity_y: particle.velocity_y + 0.18,
+        life: particle.life - 1,
+        red: particle.red,
+        green: particle.green,
+        blue: particle.blue
+      })
+    end
+    particle_index = particle_index + 1
+  end
+
+  let mut wide_timer = game.wide_timer
+  if wide_timer > 0 then
+    wide_timer = wide_timer - 1
+  end
+  let mut slow_timer = game.slow_timer
+  if slow_timer > 0 then
+    slow_timer = slow_timer - 1
+  end
+  let mut turret_timer = game.turret_timer
+  if turret_timer > 0 then
+    turret_timer = turret_timer - 1
+  end
+  let mut turret_cooldown = game.turret_cooldown
+  if turret_cooldown > 0 then
+    turret_cooldown = turret_cooldown - 1
+  end
+  let mut bullets = game.bullets
+  let mut combo_timer = game.combo_timer
+  let mut combo = game.combo
+  if combo_timer > 0 then
+    combo_timer = combo_timer - 1
+  else
+    combo = 0
+  end
+  let mut shake = game.shake
+  if shake > 0 then
+    shake = shake - 1
+  end
+
+  let mut powerups = game.powerups
+  let mut power_index = 0
+  let mut score = game.score
+  let mut lives = game.lives
+  while power_index < powerups.length() do
+    const powerup = powerups[power_index]
+    if powerup.alive != 0 then
+      const next_y = powerup.y + 2.4
+      let mut alive = 1
+      if next_y > i32_to_f64(window_height()) then
+        alive = 0
+      end
+      const paddle_y = window_height() - 42 - paddle_height()
+      if alive != 0 then
+        if rects_overlap(
+          f64_to_i32(powerup.x), f64_to_i32(next_y), 18, 18,
+          paddle_x, paddle_y, paddle_w, paddle_height()
+        ) != 0 then
+          alive = 0
+          if powerup.kind == 1 then
+            wide_timer = 420
+          end
+          if powerup.kind == 2 then
+            slow_timer = 300
+            score = score + 40
+          end
+          if powerup.kind == 3 then
+            if lives < 8 then
+              lives = lives + 1
+            end
+            score = score + 80
+          end
+          if powerup.kind == 4 then
+            turret_timer = 560
+            turret_cooldown = 0
+            score = score + 60
+          end
+          shake = 8
+        end
+      end
+      powerups.set(power_index, Powerup {
+        x: powerup.x,
+        y: next_y,
+        kind: powerup.kind,
+        alive: alive
+      })
+    end
+    power_index = power_index + 1
+  end
+
+  // Built-in paddle turret: fire while powered.
+  if turret_timer > 0 then
+    if turret_cooldown <= 0 then
+      const paddle_y = window_height() - 42 - paddle_height()
+      bullets.push(Bullet {
+        x: i32_to_f64(paddle_x + paddle_w / 2 - 2),
+        y: i32_to_f64(paddle_y - 8),
+        alive: 1
+      })
+      turret_cooldown = 14
+    end
+  end
+
+  let mut bricks = game.bricks
+  let mut bricks_left = game.bricks_left
+  let mut bricks_broken = game.bricks_broken
+  let mut bullet_index = 0
+  while bullet_index < bullets.length() do
+    const bullet = bullets[bullet_index]
+    if bullet.alive != 0 then
+      const next_y = bullet.y - 9.0
+      let mut alive = 1
+      if next_y < 0.0 then
+        alive = 0
+      end
+      if alive != 0 then
+        let mut brick_index = 0
+        while brick_index < bricks.length() do
+          const brick = bricks[brick_index]
+          if brick.hits > 0 && alive != 0 then
+            if rects_overlap(
+              f64_to_i32(bullet.x), f64_to_i32(next_y), 4, 10,
+              brick.x, brick.y, brick_width(), brick_height()
+            ) != 0 then
+              alive = 0
+              const remaining = brick.hits - 1
+              score = score + 8
+              shake = shake + 2
+              if remaining <= 0 then
+                bricks_left = bricks_left - 1
+                bricks_broken = bricks_broken + 1
+                particles = spawn_burst(
+                  particles,
+                  i32_to_f64(brick.x + brick_width() / 2),
+                  i32_to_f64(brick.y + brick_height() / 2),
+                  brick.red, brick.green, brick.blue,
+                  brick_index + score
+                )
+                if brick.drops != 0 then
+                  powerups.push(Powerup {
+                    x: i32_to_f64(brick.x + brick_width() / 2 - 9),
+                    y: i32_to_f64(brick.y),
+                    kind: brick.drops,
+                    alive: 1
+                  })
+                end
+              end
+              bricks.set(brick_index, Brick {
+                x: brick.x,
+                y: brick.y,
+                hits: remaining,
+                red: brick.red * 0.82 + 0.1,
+                green: brick.green * 0.82 + 0.1,
+                blue: brick.blue * 0.82 + 0.1,
+                drops: brick.drops
+              })
+            end
+          end
+          brick_index = brick_index + 1
+        end
+      end
+      bullets.set(bullet_index, Bullet {
+        x: bullet.x,
+        y: next_y,
+        alive: alive
+      })
+    end
+    bullet_index = bullet_index + 1
+  end
+
+  let mut next = Game {
+    paddle_x: paddle_x,
+    paddle_w: paddle_w,
+    ball_x: game.ball_x,
+    ball_y: game.ball_y,
+    velocity_x: game.velocity_x,
+    velocity_y: game.velocity_y,
+    launched: game.launched,
+    bricks: bricks,
+    bricks_left: bricks_left,
+    lives: lives,
+    score: score,
+    combo: combo,
+    combo_timer: combo_timer,
+    level: game.level,
+    wide_timer: wide_timer,
+    slow_timer: slow_timer,
+    turret_timer: turret_timer,
+    turret_cooldown: turret_cooldown,
+    shake: shake,
+    particles: particles,
+    powerups: powerups,
+    bullets: bullets,
+    trail: game.trail,
+    previous_mouse_down: game.previous_mouse_down,
+    bricks_broken: bricks_broken
+  }
+
+  if next.launched == 0 then
+    next = Game {
+      paddle_x: next.paddle_x,
+      paddle_w: next.paddle_w,
+      ball_x: i32_to_f64(next.paddle_x + next.paddle_w / 2 - ball_size() / 2),
+      ball_y: i32_to_f64(window_height() - 42 - paddle_height() - ball_size()),
+      velocity_x: next.velocity_x,
+      velocity_y: next.velocity_y,
+      launched: next.launched,
+      bricks: next.bricks,
+      bricks_left: next.bricks_left,
+      lives: next.lives,
+      score: next.score,
+      combo: next.combo,
+      combo_timer: next.combo_timer,
+      level: next.level,
+      wide_timer: next.wide_timer,
+      slow_timer: next.slow_timer,
+      turret_timer: next.turret_timer,
+      turret_cooldown: next.turret_cooldown,
+      shake: next.shake,
+      particles: next.particles,
+      powerups: next.powerups,
+      bullets: next.bullets,
+      trail: next.trail,
+      previous_mouse_down: next.previous_mouse_down,
+      bricks_broken: next.bricks_broken
+    }
+    if mouse_down != 0 && next.previous_mouse_down == 0 then
+      if mouse_x < panel_x() then
+        const bounce = paddle_bounce_velocity(
+          next.ball_x + i32_to_f64(ball_size() / 2),
+          next.paddle_x,
+          next.paddle_w,
+          launch_speed(next.level) * speed_scale
+        )
+        next = Game {
+          paddle_x: next.paddle_x,
+          paddle_w: next.paddle_w,
+          ball_x: next.ball_x,
+          ball_y: next.ball_y,
+          velocity_x: bounce.x,
+          velocity_y: bounce.y,
+          launched: 1,
+          bricks: next.bricks,
+          bricks_left: next.bricks_left,
+          lives: next.lives,
+          score: next.score,
+          combo: next.combo,
+          combo_timer: next.combo_timer,
+          level: next.level,
+          wide_timer: next.wide_timer,
+          slow_timer: next.slow_timer,
+          turret_timer: next.turret_timer,
+          turret_cooldown: next.turret_cooldown,
+          shake: next.shake,
+          particles: next.particles,
+          powerups: next.powerups,
+          bullets: next.bullets,
+          trail: next.trail,
+          previous_mouse_down: next.previous_mouse_down,
+          bricks_broken: next.bricks_broken
+        }
+      end
+    end
+  else
+    let mut velocity_x = next.velocity_x
+    let mut velocity_y = next.velocity_y
+    if previous_speed_scale > 0.05 then
+      if abs_f64(speed_scale - previous_speed_scale) > 0.0001 then
+        const ratio = speed_scale / previous_speed_scale
+        velocity_x = velocity_x * ratio
+        velocity_y = velocity_y * ratio
+      end
+    end
+    let mut step = flight_speed_factor(next.ball_y, velocity_y)
+    if next.slow_timer > 0 then
+      step = step * 0.55
+    end
+    let mut ball_x = next.ball_x + velocity_x * step
+    let mut ball_y = next.ball_y + velocity_y * step
+
+    if ball_x < 0.0 then
+      ball_x = 0.0
+      velocity_x = abs_f64(velocity_x)
+    end
+    if ball_x > i32_to_f64(play_right() - ball_size()) then
+      ball_x = i32_to_f64(play_right() - ball_size())
+      velocity_x = 0.0 - abs_f64(velocity_x)
+    end
+    if ball_y < 0.0 then
+      ball_y = 0.0
+      velocity_y = abs_f64(velocity_y)
+    end
+
+    const ball_xi = f64_to_i32(ball_x)
+    const ball_yi = f64_to_i32(ball_y)
+    const paddle_y = window_height() - 42 - paddle_height()
+    if rects_overlap(
+      ball_xi, ball_yi, ball_size(), ball_size(),
+      next.paddle_x, paddle_y, next.paddle_w, paddle_height()
+    ) != 0 && velocity_y > 0.0 then
+      ball_y = i32_to_f64(paddle_y - ball_size())
+      const bounce = paddle_bounce_velocity(
+        ball_x + i32_to_f64(ball_size() / 2),
+        next.paddle_x,
+        next.paddle_w,
+        launch_speed(next.level) * speed_scale
+      )
+      velocity_x = bounce.x
+      velocity_y = bounce.y
+      combo = 0
+      combo_timer = 0
+      shake = shake + 3
+      particles = spawn_burst(
+        particles, ball_x, ball_y, 0.85, 0.95, 1.0, next.score
+      )
+    end
+
+    let mut bricks = next.bricks
+    let mut bricks_left = next.bricks_left
+    let mut bricks_broken = next.bricks_broken
+    let mut hit_once = 0
+    let mut index = 0
+    while index < bricks.length() do
+      const brick = bricks[index]
+      if brick.hits > 0 && hit_once == 0 then
+        if rects_overlap(
+          ball_xi, ball_yi, ball_size(), ball_size(),
+          brick.x, brick.y, brick_width(), brick_height()
+        ) != 0 then
+          hit_once = 1
+          const remaining = brick.hits - 1
+          const ball_center_x = ball_x + i32_to_f64(ball_size() / 2)
+          const ball_center_y = ball_y + i32_to_f64(ball_size() / 2)
+          const brick_center_x = i32_to_f64(brick.x) + i32_to_f64(brick_width()) / 2.0
+          const brick_center_y = i32_to_f64(brick.y) + i32_to_f64(brick_height()) / 2.0
+          const overlap_x = abs_f64(ball_center_x - brick_center_x)
+            / (i32_to_f64(brick_width() + ball_size()) / 2.0)
+          const overlap_y = abs_f64(ball_center_y - brick_center_y)
+            / (i32_to_f64(brick_height() + ball_size()) / 2.0)
+          if overlap_x > overlap_y then
+            velocity_x = 0.0 - velocity_x
+            if ball_center_x < brick_center_x then
+              ball_x = i32_to_f64(brick.x - ball_size())
+            else
+              ball_x = i32_to_f64(brick.x + brick_width())
+            end
+          else
+            velocity_y = 0.0 - velocity_y
+            if ball_center_y < brick_center_y then
+              ball_y = i32_to_f64(brick.y - ball_size())
+            else
+              ball_y = i32_to_f64(brick.y + brick_height())
+            end
+          end
+          combo = combo + 1
+          combo_timer = 90
+          const points = (10 + remaining * 5) * (1 + combo / 2)
+          score = score + points
+          shake = 4 + combo / 2
+          if remaining <= 0 then
+            bricks_left = bricks_left - 1
+            bricks_broken = bricks_broken + 1
+            particles = spawn_burst(
+              particles,
+              i32_to_f64(brick.x + brick_width() / 2),
+              i32_to_f64(brick.y + brick_height() / 2),
+              brick.red, brick.green, brick.blue,
+              index + score
+            )
+            if brick.drops != 0 then
+              powerups.push(Powerup {
+                x: i32_to_f64(brick.x + brick_width() / 2 - 9),
+                y: i32_to_f64(brick.y),
+                kind: brick.drops,
+                alive: 1
+              })
+            end
+          end
+          bricks.set(index, Brick {
+            x: brick.x,
+            y: brick.y,
+            hits: remaining,
+            red: brick.red * 0.75 + 0.15,
+            green: brick.green * 0.75 + 0.15,
+            blue: brick.blue * 0.75 + 0.15,
+            drops: brick.drops
+          })
+        end
+      end
+      index = index + 1
+    end
+
+    let mut trail = push_trail(next.trail, ball_x, ball_y)
+    next = Game {
+      paddle_x: next.paddle_x,
+      paddle_w: next.paddle_w,
+      ball_x: ball_x,
+      ball_y: ball_y,
+      velocity_x: velocity_x,
+      velocity_y: velocity_y,
+      launched: next.launched,
+      bricks: bricks,
+      bricks_left: bricks_left,
+      lives: next.lives,
+      score: score,
+      combo: combo,
+      combo_timer: combo_timer,
+      level: next.level,
+      wide_timer: next.wide_timer,
+      slow_timer: next.slow_timer,
+      turret_timer: next.turret_timer,
+      turret_cooldown: next.turret_cooldown,
+      shake: shake,
+      particles: particles,
+      powerups: powerups,
+      bullets: bullets,
+      trail: trail,
+      previous_mouse_down: next.previous_mouse_down,
+      bricks_broken: bricks_broken
+    }
+
+    if ball_y > i32_to_f64(window_height() + 20) then
+      let mut next_lives = next.lives - 1
+      if next_lives <= 0 then
+        next_lives = 5
+      end
+      next = Game {
+        paddle_x: next.paddle_x,
+        paddle_w: next.paddle_w,
+        ball_x: next.ball_x,
+        ball_y: next.ball_y,
+        velocity_x: next.velocity_x,
+        velocity_y: next.velocity_y,
+        launched: next.launched,
+        bricks: next.bricks,
+        bricks_left: next.bricks_left,
+        lives: next_lives,
+        score: next.score,
+        combo: 0,
+        combo_timer: 0,
+        level: next.level,
+        wide_timer: 0,
+        slow_timer: 0,
+        turret_timer: 0,
+        turret_cooldown: 0,
+        shake: 14,
+        particles: next.particles,
+        powerups: [],
+        bullets: [],
+        trail: empty_trail(),
+        previous_mouse_down: next.previous_mouse_down,
+        bricks_broken: next.bricks_broken
+      }
+      next = reset_ball(next)
+    end
+
+    if next.bricks_left == 0 then
+      let mut next_level = next.level + 1
+      if next_level > level_count() then
+        next_level = 1
+      end
+      next = switch_level(next, next_level)
+      next = Game {
+        paddle_x: next.paddle_x,
+        paddle_w: next.paddle_w,
+        ball_x: next.ball_x,
+        ball_y: next.ball_y,
+        velocity_x: next.velocity_x,
+        velocity_y: next.velocity_y,
+        launched: next.launched,
+        bricks: next.bricks,
+        bricks_left: next.bricks_left,
+        lives: next.lives,
+        score: next.score + 250,
+        combo: next.combo,
+        combo_timer: next.combo_timer,
+        level: next.level,
+        wide_timer: next.wide_timer,
+        slow_timer: next.slow_timer,
+        turret_timer: next.turret_timer,
+        turret_cooldown: next.turret_cooldown,
+        shake: 18,
+        particles: next.particles,
+        powerups: next.powerups,
+        bullets: next.bullets,
+        trail: next.trail,
+        previous_mouse_down: next.previous_mouse_down,
+        bricks_broken: next.bricks_broken
+      }
+    end
+  end
+
+  Game {
+    paddle_x: next.paddle_x,
+    paddle_w: next.paddle_w,
+    ball_x: next.ball_x,
+    ball_y: next.ball_y,
+    velocity_x: next.velocity_x,
+    velocity_y: next.velocity_y,
+    launched: next.launched,
+    bricks: next.bricks,
+    bricks_left: next.bricks_left,
+    lives: next.lives,
+    score: next.score,
+    combo: next.combo,
+    combo_timer: next.combo_timer,
+    level: next.level,
+    wide_timer: next.wide_timer,
+    slow_timer: next.slow_timer,
+    turret_timer: next.turret_timer,
+    turret_cooldown: next.turret_cooldown,
+    shake: next.shake,
+    particles: next.particles,
+    powerups: next.powerups,
+    bullets: next.bullets,
+    trail: next.trail,
+    previous_mouse_down: mouse_down,
+    bricks_broken: next.bricks_broken
+  }
+end
+
+fn draw_game(renderer: SolidRenderer, game: Game, phase: f64, speed_scale: f64) -> i32 = do
+  let mut batch = solid_renderer_begin(renderer)
+  let mut shake_x = 0
+  let mut shake_y = 0
+  if game.shake > 0 then
+    shake_x = (game.shake % 5) - 2
+    shake_y = ((game.shake * 3) % 5) - 2
+  end
+
+  // Animated backdrop bands
+  let mut band = 0
+  while band < 8 do
+    const offset = f64_to_i32(phase * 40.0) % 40
+    const y = band * 80 + offset - 40
+    const pulse = 0.04 + phase * 0.03
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      0 + shake_x, y + shake_y, window_width(), 36,
+      0.05 + pulse, 0.06, 0.12 + pulse, 0.55
+    )
+    band = band + 1
+  end
+
+  // Score bar
+  const score_width = clamp_i32(game.score / 4, 4, play_right() - 40)
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    20 + shake_x, 14 + shake_y, score_width, 8,
+    0.3 + phase * 0.4, 0.85, 0.55, 0.95
+  )
+  // Speed scale bar (wheel)
+  const speed_width = clamp_i32(f64_to_i32(speed_scale * 60.0), 8, play_right() - 40)
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    20 + shake_x, 40 + shake_y, speed_width, 6,
+    1.0, 0.75, 0.25, 0.9
+  )
+  // Combo pips
+  let mut pip = 0
+  while pip < game.combo do
+    if pip >= 12 then
+      break
+    end
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      20 + pip * 14 + shake_x, 28 + shake_y, 10, 10,
+      1.0, 0.45 + phase * 0.3, 0.2, 0.9
+    )
+    pip = pip + 1
+  end
+  // Lives
+  let mut life = 0
+  while life < game.lives do
+    if life >= 8 then
+      break
+    end
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      window_width() - 30 - life * 22 + shake_x, 16 + shake_y, 16, 8,
+      0.95, 0.55, 0.7, 1.0
+    )
+    life = life + 1
+  end
+  // Level ticks
+  let mut tick = 0
+  while tick < game.level do
+    if tick >= 10 then
+      break
+    end
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      window_width() / 2 - 40 + tick * 10 + shake_x, 16 + shake_y, 6, 6,
+      0.6, 0.8, 1.0, 1.0
+    )
+    tick = tick + 1
+  end
+
+  let mut index = 0
+  while index < game.bricks.length() do
+    const brick = game.bricks[index]
+    if brick.hits > 0 then
+      const glow = 0.08 * phase
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        brick.x - 2 + shake_x, brick.y - 2 + shake_y,
+        brick_width() + 4, brick_height() + 4,
+        brick.red, brick.green, brick.blue, 0.25
+      )
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        brick.x + shake_x, brick.y + shake_y, brick_width(), brick_height(),
+        brick.red + glow, brick.green + glow, brick.blue, 1.0
+      )
+      // HP pips: one white dash per remaining hit (capped).
+      let mut pip_hits = brick.hits
+      if pip_hits > 6 then
+        pip_hits = 6
+      end
+      let mut pip_index = 0
+      while pip_index < pip_hits do
+        batch = solid_renderer_rect(
+          batch, window_width(), window_height(),
+          brick.x + 4 + pip_index * 8 + shake_x, brick.y + 6 + shake_y,
+          5, 3,
+          1.0, 1.0, 1.0, 0.45
+        )
+        pip_index = pip_index + 1
+      end
+    end
+    index = index + 1
+  end
+
+  // Powerups
+  index = 0
+  while index < game.powerups.length() do
+    const powerup = game.powerups[index]
+    if powerup.alive != 0 then
+      let mut red = 0.3
+      let mut green = 0.9
+      let mut blue = 1.0
+      if powerup.kind == 1 then
+        red = 0.3
+        green = 1.0
+        blue = 0.55
+      end
+      if powerup.kind == 2 then
+        red = 0.4
+        green = 0.6
+        blue = 1.0
+      end
+      if powerup.kind == 3 then
+        red = 1.0
+        green = 0.4
+        blue = 0.7
+      end
+      if powerup.kind == 4 then
+        red = 1.0
+        green = 0.55
+        blue = 0.15
+      end
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        f64_to_i32(powerup.x) + shake_x, f64_to_i32(powerup.y) + shake_y,
+        18, 18, red, green, blue, 0.9
+      )
+    end
+    index = index + 1
+  end
+
+  // Turret bullets
+  index = 0
+  while index < game.bullets.length() do
+    const bullet = game.bullets[index]
+    if bullet.alive != 0 then
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        f64_to_i32(bullet.x) + shake_x, f64_to_i32(bullet.y) + shake_y,
+        4, 10, 1.0, 0.85, 0.25, 1.0
+      )
+    end
+    index = index + 1
+  end
+
+  // Trail
+  index = 0
+  while index < game.trail.length() do
+    const dot = game.trail[index]
+    if game.launched != 0 then
+      const fade = 0.55 - i32_to_f64(index) * 0.05
+      const size = ball_size() - index
+      if size > 2 then
+        batch = solid_renderer_rect(
+          batch, window_width(), window_height(),
+          f64_to_i32(dot.x) + shake_x, f64_to_i32(dot.y) + shake_y,
+          size, size, 1.0, 0.8, 0.35, fade
+        )
+      end
+    end
+    index = index + 1
+  end
+
+  // Particles
+  index = 0
+  while index < game.particles.length() do
+    const particle = game.particles[index]
+    if particle.life > 0 then
+      const size = 3 + particle.life / 6
+      const alpha = i32_to_f64(particle.life) / 22.0
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        f64_to_i32(particle.x) + shake_x, f64_to_i32(particle.y) + shake_y,
+        size, size, particle.red, particle.green, particle.blue, alpha
+      )
+    end
+    index = index + 1
+  end
+
+  const paddle_y = window_height() - 42 - paddle_height()
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    game.paddle_x - 4 + shake_x, paddle_y - 3 + shake_y,
+    game.paddle_w + 8, paddle_height() + 6,
+    0.35, 0.75, 1.0, 0.35
+  )
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    game.paddle_x + shake_x, paddle_y + shake_y,
+    game.paddle_w, paddle_height(),
+    0.9, 0.95, 1.0, 1.0
+  )
+  if game.turret_timer > 0 then
+    const mount_x = game.paddle_x + game.paddle_w / 2 - 6
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      mount_x + shake_x, paddle_y - 10 + shake_y,
+      12, 10, 1.0, 0.55, 0.15, 1.0
+    )
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      mount_x + 2 + shake_x, paddle_y - 18 + shake_y,
+      3, 10, 1.0, 0.85, 0.3, 1.0
+    )
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      mount_x + 7 + shake_x, paddle_y - 18 + shake_y,
+      3, 10, 1.0, 0.85, 0.3, 1.0
+    )
+  end
+
+  if game.lives > 0 then
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      f64_to_i32(game.ball_x) - 4 + shake_x, f64_to_i32(game.ball_y) - 4 + shake_y,
+      ball_size() + 8, ball_size() + 8,
+      1.0, 0.7, 0.2, 0.35
+    )
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      f64_to_i32(game.ball_x) + shake_x, f64_to_i32(game.ball_y) + shake_y,
+      ball_size(), ball_size(),
+      1.0, 0.95, 0.45, 1.0
+    )
+  end
+
+  // Level panel
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    panel_x(), 0, panel_width(), window_height(),
+    0.08, 0.09, 0.14, 0.95
+  )
+  batch = solid_renderer_rect(
+    batch, window_width(), window_height(),
+    panel_x() + 8, 18, panel_width() - 16, 10,
+    0.55, 0.7, 1.0, 0.9
+  )
+  let mut level_index = 0
+  while level_index < level_count() do
+    const top = level_button_y(level_index)
+    let mut red = 0.18
+    let mut green = 0.22
+    let mut blue = 0.32
+    if level_index + 1 == game.level then
+      red = 0.25
+      green = 0.55
+      blue = 0.95
+    end
+    batch = solid_renderer_rect(
+      batch, window_width(), window_height(),
+      panel_x() + 10, top, panel_width() - 20, level_button_height(),
+      red, green, blue, 1.0
+    )
+    let mut mark = 0
+    while mark <= level_index do
+      batch = solid_renderer_rect(
+        batch, window_width(), window_height(),
+        panel_x() + 18 + mark * 10, top + 12, 7, 10,
+        0.95, 0.95, 1.0, 0.95
+      )
+      mark = mark + 1
+    end
+    level_index = level_index + 1
+  end
+
+  solid_renderer_flush(batch, window_width(), window_height(), 0.03, 0.035, 0.06)
+end
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(window_width(), window_height())
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const renderer = solid_renderer_create()
+  if renderer.program < 0 then
+    const error_code = renderer.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  let mut visible_flag = 0
+  if get_or("MLC_GLFW_VISIBLE", "") == "1" then
+    visible_flag = 1
+  end
+  println("[arkanoid+] wheel=speed | orange drop=turret | Esc=quit")
+
+  let mut game = game_new(1, 5, 0)
+  let mut frame_index = 0
+  let mut speed_scale = 1.0
+
+  while glfw_gl_context_should_close() == 0 do
+    if visible_flag == 0 then
+      if frame_index == 2 then
+        glfw_gl_input_test_set(play_right() / 2, window_height() - 20, 1, 0)
+      end
+      if frame_index == 3 then
+        glfw_gl_input_test_set(play_right() / 2, window_height() - 20, 0, 0)
+      end
+      if frame_index > 3 then
+        if frame_index < 260 then
+          const follow_x = f64_to_i32(game.ball_x) + ball_size() / 2
+          glfw_gl_input_test_set(follow_x, window_height() - 20, 0, 0)
+        end
+      end
+    end
+
+    if glfw_gl_key_escape_down() != 0 then
+      break
+    end
+
+    const previous_speed_scale = speed_scale
+    const scroll = glfw_gl_take_scroll_y()
+    speed_scale = clamp_f64(speed_scale + scroll * 0.12, 0.55, 2.0)
+
+    game = update_game(
+      game,
+      glfw_gl_mouse_x(),
+      glfw_gl_mouse_y(),
+      glfw_gl_mouse_left_down(),
+      speed_scale,
+      previous_speed_scale
+    )
+
+    const phase = glfw_gl_anim_unit()
+    const draw_status = draw_game(renderer, game, phase, speed_scale)
+    if draw_status != 0 then
+      solid_renderer_destroy(renderer)
+      glfw_gl_input_test_clear()
+      glfw_gl_context_end()
+      return draw_status
+    end
+    glfw_gl_context_swap_poll()
+    sleep_ms(16)
+
+    frame_index = frame_index + 1
+    // Headless smoke only — visible mode runs until Esc / window close.
+    if visible_flag == 0 && frame_index >= 450 then
+      break
+    end
+  end
+
+  solid_renderer_destroy(renderer)
+  glfw_gl_input_test_clear()
+  glfw_gl_context_end()
+
+  const summary =
+    "[arkanoid+] frames=" + frame_index.to_string()
+      + " score=" + game.score.to_string()
+      + " broken=" + game.bricks_broken.to_string()
+      + " level=" + game.level.to_string()
+  println(summary)
+  if visible_flag == 0 && game.bricks_broken < 1 then
+    return -40
+  end
+  0
+end

@@ -23,6 +23,7 @@ void glfw_gl_window_set_size(int32_t width, int32_t height);
 int32_t glfw_gl_mouse_x();
 int32_t glfw_gl_mouse_y();
 int32_t glfw_gl_mouse_left_down();
+double glfw_gl_take_scroll_y();
 int32_t glfw_gl_key_escape_down();
 int32_t glfw_gl_key_backspace_down();
 int32_t glfw_gl_key_enter_down();

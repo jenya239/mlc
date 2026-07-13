@@ -60,6 +60,11 @@ std::string& pending_text() {
   return buffer;
 }
 
+double& pending_scroll_y() {
+  static double scroll_y = 0.0;
+  return scroll_y;
+}
+
 int32_t& cached_window_width() {
   static int32_t width = 0;
   return width;
@@ -86,6 +91,10 @@ void append_utf8(std::string& out, unsigned int codepoint) {
 
 void on_char(GLFWwindow* /*window*/, unsigned int codepoint) {
   append_utf8(pending_text(), codepoint);
+}
+
+void on_scroll(GLFWwindow* /*window*/, double /*offset_x*/, double offset_y) {
+  pending_scroll_y() += offset_y;
 }
 
 void on_window_size(GLFWwindow* /*window*/, int width, int height) {
@@ -124,9 +133,11 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     return -3;
   }
   pending_text().clear();
+  pending_scroll_y() = 0.0;
   cached_window_width() = window_width;
   cached_window_height() = window_height;
   glfwSetCharCallback(window, on_char);
+  glfwSetScrollCallback(window, on_scroll);
   glfwSetWindowSizeCallback(window, on_window_size);
   context_window() = window;
   return 0;
@@ -159,6 +170,7 @@ void glfw_gl_context_end() {
   }
   glfw_gl_input_test_clear();
   pending_text().clear();
+  pending_scroll_y() = 0.0;
   cached_window_width() = 0;
   cached_window_height() = 0;
   glfwDestroyWindow(window);
@@ -237,6 +249,12 @@ int32_t glfw_gl_mouse_left_down() {
   return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ? 1 : 0;
 }
 
+double glfw_gl_take_scroll_y() {
+  const double value = pending_scroll_y();
+  pending_scroll_y() = 0.0;
+  return value;
+}
+
 int32_t glfw_gl_key_escape_down() {
   const InputTestOverride& override_state = input_test_override();
   if (override_state.active) {
@@ -308,6 +326,7 @@ void glfw_gl_input_test_set(
 void glfw_gl_input_test_clear() {
   input_test_override() = InputTestOverride{};
   pending_text().clear();
+  pending_scroll_y() = 0.0;
 }
 
 #else
@@ -324,6 +343,7 @@ void glfw_gl_window_set_size(int32_t, int32_t) {}
 int32_t glfw_gl_mouse_x() { return 0; }
 int32_t glfw_gl_mouse_y() { return 0; }
 int32_t glfw_gl_mouse_left_down() { return 0; }
+double glfw_gl_take_scroll_y() { return 0.0; }
 int32_t glfw_gl_key_escape_down() { return 0; }
 int32_t glfw_gl_key_backspace_down() { return 0; }
 int32_t glfw_gl_key_enter_down() { return 0; }

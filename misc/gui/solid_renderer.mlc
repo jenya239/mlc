@@ -3,6 +3,8 @@ import {
   gl_clear,
   gl_clear_color_f64,
   gl_viewport,
+  gl_enable,
+  gl_blend_func,
   gl_create_shader,
   gl_shader_source_string,
   gl_compile_shader,
@@ -37,6 +39,9 @@ fn gl_fragment_shader() -> i32 = 35632
 fn gl_vertex_shader() -> i32 = 35633
 fn gl_compile_status() -> i32 = 35713
 fn gl_link_status() -> i32 = 35714
+fn gl_blend() -> i32 = 3042
+fn gl_src_alpha() -> i32 = 770
+fn gl_one_minus_src_alpha() -> i32 = 771
 
 fn vertex_shader_source() -> string =
   "attribute vec2 a_pos;\nattribute vec4 a_color;\nvarying vec4 v_color;\nvoid main() {\n  v_color = a_color;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
@@ -227,6 +232,8 @@ export fn solid_renderer_flush(
   gl_viewport(0, 0, window_width, window_height)
   gl_clear_color_f64(clear_red, clear_green, clear_blue, 1.0)
   gl_clear(gl_color_buffer_bit())
+  gl_enable(gl_blend())
+  gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
   if renderer.vertex_count <= 0 then
     return 0
   end
