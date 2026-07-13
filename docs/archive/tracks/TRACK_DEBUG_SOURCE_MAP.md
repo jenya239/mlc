@@ -4,14 +4,19 @@ Parent: [../../PLAN.md](../../PLAN.md). Trigger: обзор пробелов 202
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **closed** (2026-07-13) — awaiting Critic
+## Status: **closed** (2026-07-13) — Critic OK
 
-Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue next:
-`GUI_CANVAS_GRAPH` Phase A (after Critic OK).
+**Critic 2026-07-13:** STEP=1–5 vs `195d48a0`…`b7b6d878` (+ activate
+`860c001f`); artifacts in HEAD (`attach_line_directive` + `\n#line`,
+`sstmt_span`/`line_directive_*`, `docs/DEBUGGING.md`);
+`line_directive_test.rb` 3/0; gdb `crash.mlc:3` still maps; REG claimed in
+STEP=5. **reopen: none**. Residuals: TRACK «Проблема» still says no `#line`;
+mlcc `#line` on if/match leaf returns not before `if`; STEP=4 probe uncommitted
+`.tmp`; PIE `addr2line` absolute VMA flaky (gdb SoT).
 
 ## Next step
 
-**closed** — Critic `critique-audit` next.
+**closed** — Critic OK. Queue: Planner → `GUI_CANVAS_GRAPH` Phase A.
 
 ### STEP=5 done (2026-07-13)
 

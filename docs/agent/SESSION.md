@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
-| active_track | TRACK_DEBUG_SOURCE_MAP (closed) |
-| test_gate | Critic critique-audit |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | — (DEBUG closed; next GUI_CANVAS_GRAPH) |
+| test_gate | Planner → GUI_CANVAS_GRAPH Phase A |
+
+### Turn 2026-07-13 14:54 (Critic TRACK_DEBUG_SOURCE_MAP — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 14:47 |
+| elapsed | ~7 min |
+| done    | Audited STEP1–5 vs `195d48a0`…`b7b6d878`; PLAN/archive; re-ran line_directive + gdb + if_body #line. |
+| verify  | test 3/0; NOJAM; gdb `crash.mlc:3`; mlcc if leaf `#line`; DEBUGGING.md in HEAD. |
+| result  | **reopen: none**. Residuals: stale TRACK «Проблема»; mlcc #line on if leaves not before `if`; PIE addr2line. |
+| issues  | Foreign SCRIPT_VM/arkanoid/solid_renderer left. |
+| next    | ROLE=Planner STEP=plan-refresh — activate GUI_CANVAS_GRAPH Phase A |
 
 ### Turn 2026-07-13 14:44 (Driver TRACK_DEBUG_SOURCE_MAP STEP=5)
 

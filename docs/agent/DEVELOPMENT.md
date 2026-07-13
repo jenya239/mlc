@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_DEBUG_SOURCE_MAP` closed** (2026-07-13) — awaiting Critic. See
+**Queue next:** Planner → `GUI_CANVAS_GRAPH` Phase A. DEBUG Critic OK:
 [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).
-After Critic OK: Planner → `GUI_CANVAS_GRAPH` Phase A.
+TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 
 ## Step sizing (good vs bad)
 
