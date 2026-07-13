@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
+| driver_turns_since_plan | 9 |
+| step_last | 9 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | package_manager/run_e2e.rb PASS → 42 |
+| test_gate | rg Usage PACKAGE_MANAGER.md; README link |
+
+### Turn 2026-07-13 12:12 (Driver TRACK_PACKAGE_MANAGER STEP=9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 12:12 |
+| elapsed | ~5 min |
+| done    | PACKAGE_MANAGER.md §2 Usage; README Roadmap one-liner → that doc. |
+| verify  | `rg -n '## 2. Usage|mlc_pkg_fetch' docs/PACKAGE_MANAGER.md README.md`; both hit. |
+| result  | STEP=9 done. Plain: fetch/import/compile workflow is documented. |
+| issues  | — |
+| next    | ROLE=Driver STEP=10 TRACK_PACKAGE_MANAGER — verify gate; close → Critic |
 
 ### Turn 2026-07-13 12:05 (Driver TRACK_PACKAGE_MANAGER STEP=8)
 

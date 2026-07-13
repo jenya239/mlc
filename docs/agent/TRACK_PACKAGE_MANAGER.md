@@ -3,14 +3,19 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=8 done; STEP=9 docs next
+## Status: **active** (2026-07-13) — STEP=9 done; STEP=10 verify next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
 (Steps 5–10). No `compiler/` until Step 7.
 
 ## Next step
 
-**STEP=9** — Docs usage in `PACKAGE_MANAGER.md` + README one-liner.
+**STEP=10** — Verify: self-host if `compiler/` touched; else `regression_gate.sh`.
+
+### STEP=9 done (2026-07-13)
+
+- Usage section in [../PACKAGE_MANAGER.md](../PACKAGE_MANAGER.md) §2.
+- README one-liner linking to that doc.
 
 ### STEP=8 done (2026-07-13)
 
@@ -251,7 +256,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | **done** (2026-07-13) Fetcher + CLI |
 | 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | **done** (2026-07-13) `path_normalize` |
 | 8 | E2E smoke: local git fixture package + fetch + compile | **done** (2026-07-13) `run_e2e.rb` → 42 |
-| 9 | Docs usage in `PACKAGE_MANAGER.md` + README one-liner | pending |
+| 9 | Docs usage in `PACKAGE_MANAGER.md` + README one-liner | **done** (2026-07-13) usage §2 + README |
 | 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` | pending |
 
 ## Out of scope (hard)

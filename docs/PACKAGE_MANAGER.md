@@ -1,17 +1,46 @@
-# Package manager (design freeze)
+# Package manager
 
 Parent: [PLAN.md](PLAN.md) §18, [agent/TRACK_PACKAGE_MANAGER.md](agent/TRACK_PACKAGE_MANAGER.md).
-Status: **design frozen** 2026-07-13 (TRACK STEPs 1–4). Implementation = STEPs 5–10.
+Status: **implemented** 2026-07-13 (TRACK STEPs 1–8; STEP=9 usage docs; STEP=10 verify).
 
-This document is the source of truth for what Steps 5–10 may build. Do not
-expand scope here without a new TRACK step.
+Design freeze (STEPs 1–4) is still the source of truth for scope. Do not expand
+without a new TRACK step.
 
 ## 1. Goal
 
 Attach third-party `.mlc` packages by **git URL + pinned commit SHA**, without a
 central registry. Fetch is explicit; compile stays hermetic.
 
-## 2. Manifest — `mlc.json`
+## 2. Usage
+
+1. Add project-root `mlc.json` with pinned deps (full 40-char `rev` SHA).
+2. Fetch into `.mlc_packages/` (do not commit that tree):
+
+```bash
+ruby scripts/mlc_pkg_fetch.rb [project_root]
+# default project_root = cwd
+```
+
+3. Import by package name as the first path segment:
+
+```mlc
+import { add } from 'example_pkg/math'
+
+fn main() -> i32 = do
+  println(`${add(40, 2)}`)
+  0
+end
+```
+
+4. Compile with `mlcc` from the project root (so `mlc.json` is found):
+
+```bash
+compiler/out/mlcc -o out main.mlc
+```
+
+Smoke: `bundle exec ruby compiler/tests/e2e/package_manager/run_e2e.rb`.
+
+## 3. Manifest — `mlc.json`
 
 - Location: **project root** (directory treated as compile root).
 - Format: JSON (not TOML — no extra Ruby gem).
@@ -42,18 +71,19 @@ central registry. Fetch is explicit; compile stays hermetic.
 
 No registry. No semver range solver. Diamond conflicts = author edits the pin.
 
-## 3. Vendor layout — `.mlc_packages/`
+## 4. Vendor layout — `.mlc_packages/`
 
 - Path: **`<project_root>/.mlc_packages/<pkg>/`** = git clone root at pinned `rev`.
-- Fetched artifact — add to `.gitignore` (implement with STEP=6); do not commit by default.
-- Fetch CLI (STEP=6): `scripts/mlc_pkg_fetch.rb` (name may vary) — clone + checkout,
-  idempotent if already at `rev`. Compile must **not** `git clone` on the fly.
+- Fetched artifact — listed in root `.gitignore` as `/.mlc_packages/`; do not commit by default.
+- Fetch CLI: `scripts/mlc_pkg_fetch.rb` — clone + checkout, idempotent if already at
+  `rev`. Compile does **not** `git clone` on the fly.
+- Ruby API: `MLC::PackageManager::Manifest`, `MLC::PackageManager::Fetcher`.
 
-## 4. Import resolution
+## 5. Import resolution
 
 Syntax unchanged: `import { … } from '<path>'`.
 
-Order (STEP=7 in `resolve_import_path` / loader):
+Order (`resolve_import_path` in `compiler/driver/path_normalize.mlc`):
 
 1. Path starts with `.` → relative to importer (unchanged).
 2. No `/` → bare stdlib table (`Tcp`, `HttpServer`, `Env`, `Log`, `Validate`) unchanged.
@@ -74,18 +104,11 @@ Resolved package path must stay under `<project_root>/.mlc_packages/<pkg>/`
 Only the **root** `mlc.json` `dependencies` are resolvable. A package’s own
 `mlc.json` is ignored. Transitive packages must be listed at the root.
 
-## 5. Version skew
+## 6. Version skew
 
 **No compile-time language/stdlib version gate.** Optional future
-`"mlc_version"` is deferred; STEP=5 must not require it. Stdlib bare names always
-come from the consumer’s `lib/mlc/common/stdlib`, never from `.mlc_packages/`.
-
-## 6. Status quo (before Steps 5–7)
-
-| File | Today |
-|------|--------|
-| `compiler/driver/path_normalize.mlc` | Relative + bare stdlib only |
-| `compiler/driver/module_loader.mlc` | Loads by filesystem path; no manifest |
+`"mlc_version"` is deferred. Stdlib bare names always come from the consumer’s
+`lib/mlc/common/stdlib`, never from `.mlc_packages/`.
 
 ## 7. Implementation map (Steps 5–10)
 
@@ -95,8 +118,8 @@ come from the consumer’s `lib/mlc/common/stdlib`, never from `.mlc_packages/`.
 | 6 | Fetch script → `.mlc_packages/`; `.gitignore` — **done:** `Fetcher` + `scripts/mlc_pkg_fetch.rb` |
 | 7 | Resolver: first-segment dep → vendor path + prefix check — **done:** `path_normalize.mlc` |
 | 8 | E2E: local git fixture + fetch + compile — **done:** `compiler/tests/e2e/package_manager/run_e2e.rb` |
-| 9 | Usage section + README one-liner (this file expanded) |
-| 10 | Self-host if `compiler/` touched; else `regression_gate.sh` |
+| 9 | Usage section + README one-liner — **done** (this section + README link) |
+| 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` |
 
 ## 8. Out of scope
 

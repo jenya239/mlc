@@ -177,6 +177,8 @@ diff -rq "$TMPDIR/mlc_p1" "$TMPDIR/mlc_p2"   # должно быть пусто
 
 `docs/PLAN.md` — архитектурный план, целевая структура файлов, паттерны, Reddit-презентация.
 
+Packages (git URL + SHA pin, `mlc.json`, `scripts/mlc_pkg_fetch.rb`): [docs/PACKAGE_MANAGER.md](docs/PACKAGE_MANAGER.md).
+
 Language reference (syntax by area, examples from e2e/demos):
 [docs/LANGUAGE_REFERENCE.md](docs/LANGUAGE_REFERENCE.md).
 
