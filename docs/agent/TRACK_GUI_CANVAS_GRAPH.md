@@ -7,16 +7,17 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **active** (2026-07-13) — Phase A **closed** (awaiting Critic);
-Phase B not opened yet
+## Status: **deferred** (2026-07-13) — Phase A Critic OK; Phase B behind EDITOR
 
 Epic activated 2026-07-11. Phase A:
-[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-Planner creates `TRACK_GUI_SCENE_PHASE_B.md` only after Phase A Critic OK.
+[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)
+(**closed**, Critic OK, reopen: none). Do not open Phase B while
+`TRACK_EDITOR_MVP` priority override is active (CONTINUITY).
 
 ## Next step
 
-**Critic** on Phase A, then Planner → Phase B widgets track.
+Yield to **TRACK_EDITOR_MVP STEP=pre**. Resume Phase B only after EDITOR
+closes or explicit user command.
 
 ## Ключевая коррекция (2026-07-11)
 
@@ -62,7 +63,7 @@ primitive рендерер с самого начала. v0 (`misc/gui/`, screen
 
 Active work + STEP status:
 [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)
-(**closed** 2026-07-13, awaiting Critic).
+(**closed** 2026-07-13, Critic OK).
 
 | Step | Item | Status |
 |------|------|--------|

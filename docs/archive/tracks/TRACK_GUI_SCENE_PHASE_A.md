@@ -3,11 +3,21 @@
 Parent: [../../agent/TRACK_GUI_CANVAS_GRAPH.md](../../agent/TRACK_GUI_CANVAS_GRAPH.md).
 Epic §29 / §10c in [../../PLAN.md](../../PLAN.md).
 
-## Status: **closed** (2026-07-13) — awaiting Critic
+## Status: **closed** (2026-07-13) — Critic OK
+
+**Critic 2026-07-13:** STEP=1–7 vs `9d1fd06e`…`1a010299` (+ activate
+`c2a1ef8f`); artifacts in HEAD (`misc/gui/scene.mlc` Affine2x3/`Scene` f64,
+`scene_update_world`, `scene_hit_test`, `scene_draw.mlc` + `solid_renderer.mlc`,
+smokes types/hit/batch/button + v0 `gui_button_demo`); Decision precision
+amendment f64 documented. Re-ran: types/hit/batch/button/v0 all exit 0.
+**reopen: none**. Residuals: Decision STEP=1 text still says camera-relative
+f32 for local/world (amended f64 in STEP=2); no self-host (misc/gui only, by
+design); W-EXTERN-ATTR noise on GL stubs.
 
 ## Next step
 
-**closed** — Critic `critique-audit` next.
+**closed** — Critic OK. Queue: CONTINUITY priority → `TRACK_EDITOR_MVP`
+STEP=pre (not Phase B until EDITOR closes or user resumes canvas).
 
 ### STEP=7 done (2026-07-13)
 

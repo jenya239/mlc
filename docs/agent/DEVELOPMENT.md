@@ -41,10 +41,11 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_A` closed** (2026-07-13) — awaiting Critic. Epic:
-[TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Archive:
+**`TRACK_GUI_SCENE_PHASE_A` Critic OK** (2026-07-13). Epic deferred behind
+EDITOR: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Archive:
 [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-DEBUG Critic OK: [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).
+Next: `TRACK_EDITOR_MVP` STEP=pre (CONTINUITY priority). DEBUG Critic OK:
+[archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).
 TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 
 ## Step sizing (good vs bad)
