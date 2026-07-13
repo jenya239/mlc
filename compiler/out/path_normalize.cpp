@@ -211,25 +211,28 @@ bool manifest_lists_dependency(mlc::String manifest_text, mlc::String package_na
   }
   auto key_token = ((mlc::String("\"", 1) + mlc::to_string(package_name)) + mlc::String("\"", 1));
   auto index = dependencies_index;
-  while ((mlc::arith::checked_add(index, key_token.length()) <= manifest_text.length()))   {
+  auto found = false;
+  while (((mlc::arith::checked_add(index, key_token.length()) <= manifest_text.length()) && (!found)))   {
     if ((manifest_text.substring(index, key_token.length()) == key_token))     {
       auto after = mlc::arith::checked_add(index, key_token.length());
+      auto scan_done = false;
       [&]() {
-while ((after < manifest_text.length())) {
+while (((after < manifest_text.length()) && (!scan_done))) {
 auto character = manifest_text.char_at(after);
 if (((((character == mlc::String(" ", 1)) || (character == mlc::String("\n", 1))) || (character == mlc::String("\r", 1))) || (character == mlc::String("\t", 1)))) {
   (after = mlc::arith::checked_add(after, 1));
 } else if ((character == mlc::String(":", 1))) {
-  return true;
+  (found = true);
+  (scan_done = true);
 } else {
-  break;
+  (scan_done = true);
 }
 }
 }();
     }
     (index = mlc::arith::checked_add(index, 1));
   }
-  return false;
+  return found;
 }
 mlc::String append_mlc_extension_if_needed(mlc::String module_path) noexcept{
   if (header_import::is_cpp_header_path(module_path))   {

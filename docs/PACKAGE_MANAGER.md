@@ -94,7 +94,7 @@ come from the consumer’s `lib/mlc/common/stdlib`, never from `.mlc_packages/`.
 | 5 | Ruby: parse/validate `mlc.json` — **done:** `lib/mlc/package_manager/manifest.rb` |
 | 6 | Fetch script → `.mlc_packages/`; `.gitignore` — **done:** `Fetcher` + `scripts/mlc_pkg_fetch.rb` |
 | 7 | Resolver: first-segment dep → vendor path + prefix check — **done:** `path_normalize.mlc` |
-| 8 | E2E: local git fixture + fetch + compile |
+| 8 | E2E: local git fixture + fetch + compile — **done:** `compiler/tests/e2e/package_manager/run_e2e.rb` |
 | 9 | Usage section + README one-liner (this file expanded) |
 | 10 | Self-host if `compiler/` touched; else `regression_gate.sh` |
 

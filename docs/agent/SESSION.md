@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | pkg_resolve_probe ok (mlcc); Ruby build_tests broken on test_parser pre-existing |
+| test_gate | package_manager/run_e2e.rb PASS → 42 |
+
+### Turn 2026-07-13 12:05 (Driver TRACK_PACKAGE_MANAGER STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 12:05 |
+| elapsed | ~15 min |
+| done    | `compiler/tests/e2e/package_manager/run_e2e.rb`; rebuilt mlcc with STEP=7 fix. |
+| verify  | `bundle exec ruby compiler/tests/e2e/package_manager/run_e2e.rb` → PASS → 42. |
+| result  | STEP=8 done. Plain: fetch+resolve+compile works end-to-end on local git pin. |
+| issues  | First mlcc binary lacked manifest-scan fix; rebuilt before E2E green. |
+| next    | ROLE=Driver STEP=9 TRACK_PACKAGE_MANAGER — usage docs in PACKAGE_MANAGER.md + README |
 
 ### Turn 2026-07-13 11:24 (Driver TRACK_PACKAGE_MANAGER STEP=7)
 
