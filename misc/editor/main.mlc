@@ -1,4 +1,4 @@
-// TRACK_EDITOR_MVP STEP=1 — Theme + solid_renderer frame loop.
+// TRACK_EDITOR_MVP STEP=2 — static mono text on baseline (GlyphCache).
 import {
   glfw_gl_context_begin,
   glfw_gl_context_should_close,
@@ -8,13 +8,11 @@ import {
   glfw_gl_window_height
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import {
-  solid_renderer_create,
-  solid_renderer_begin,
-  solid_renderer_rect,
-  solid_renderer_flush,
-  solid_renderer_destroy
-} from '../gui/solid_renderer'
-import { theme_solarized_light } from './ui/theme'
+  StaticTextLine,
+  static_text_create,
+  static_text_draw_line,
+  static_text_destroy
+} from './ui/static_text'
 
 fn main() -> i32 = do
   const begin_status = glfw_gl_context_begin(800, 600)
@@ -24,44 +22,40 @@ fn main() -> i32 = do
 
   println("[mlc-editor] open")
 
-  const theme = theme_solarized_light()
-  const renderer = solid_renderer_create()
-  if renderer.program < 0 then
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  let mut text_state = static_text_create(512, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
     glfw_gl_context_end()
-    return renderer.program
+    return error_code
   end
 
+  const label = StaticTextLine {
+    text: "mlc-editor",
+    pixel_size: 28,
+    pen_x: 56,
+    pen_y: 92
+  }
+
   let mut frame_index = 0
+  let mut last_vertex_count = 0
   while glfw_gl_context_should_close() == 0 do
     const width = glfw_gl_window_width()
     const height = glfw_gl_window_height()
-    let mut batch = solid_renderer_begin(renderer)
-    batch = solid_renderer_rect(
-      batch,
-      width,
-      height,
-      40,
-      40,
-      240,
-      80,
-      theme.panel_red,
-      theme.panel_green,
-      theme.panel_blue,
-      1.0
-    )
-    const flush_status = solid_renderer_flush(
-      batch,
-      width,
-      height,
-      theme.background_red,
-      theme.background_green,
-      theme.background_blue
-    )
-    if flush_status != 0 then
-      solid_renderer_destroy(renderer)
+    const drawn = static_text_draw_line(text_state, label, width, height)
+    text_state = drawn.state
+    if drawn.error_code != 0 then
+      static_text_destroy(text_state)
       glfw_gl_context_end()
-      return flush_status
+      return drawn.error_code
     end
+    last_vertex_count = drawn.vertex_count
+    if last_vertex_count < 6 then
+      static_text_destroy(text_state)
+      glfw_gl_context_end()
+      return 2
+    end
+
     glfw_gl_context_swap_poll()
     frame_index = frame_index + 1
     if frame_index >= 3 then
@@ -69,7 +63,8 @@ fn main() -> i32 = do
     end
   end
 
-  solid_renderer_destroy(renderer)
+  println("[mlc-editor] glyphs=" + last_vertex_count.to_string())
+  static_text_destroy(text_state)
   glfw_gl_context_end()
   0
 end

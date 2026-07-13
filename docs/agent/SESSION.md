@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
+| driver_turns_since_plan | 3 |
+| step_last | 2 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=2 static text next |
+| test_gate | STEP=3 clip next |
+
+### Turn 2026-07-13 23:36 (Driver TRACK_EDITOR_MVP STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 23:35 |
+| elapsed | ~4 min |
+| done    | `ui/static_text.mlc` + main mono line; `run_editor_text_smoke.sh`; TRACK/PLAN. |
+| verify  | text smoke exit 0; `glyphs=60`. |
+| result  | STEP=2 done. Plain: static mono text on baseline green. |
+| issues  | text_renderer_draw clears FB (theme panel not composited this STEP). |
+| next    | ROLE=Driver STEP=3 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 23:30 (Driver TRACK_EDITOR_MVP STEP=1)
 

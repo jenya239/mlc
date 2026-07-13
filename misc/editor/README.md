@@ -13,9 +13,12 @@ MLC_GLFW_VISIBLE=0 scripts/run_editor_scaffold_smoke.sh
 
 # STEP=1 theme + solid panel
 MLC_GLFW_VISIBLE=0 scripts/run_editor_theme_smoke.sh
+# STEP=2 static mono text
+MLC_GLFW_VISIBLE=0 scripts/run_editor_text_smoke.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
+Text smoke also requires `[mlc-editor] glyphs=N` with N>0.
 
 ## Layout (growing)
 

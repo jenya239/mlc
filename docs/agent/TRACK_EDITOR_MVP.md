@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=2** — Static mono text via text_renderer / GlyphCache (glyphs on baseline).
+**STEP=3** — Clip rect helper; no full-file work yet (unit + smoke).
+
+### STEP=2 done (2026-07-13)
+
+- `misc/editor/ui/static_text.mlc`: GlyphCache/atlas line draw (baseline bearing).
+- `main.mlc`: DejaVuSansMono `"mlc-editor"`; stdout `glyphs=N`.
+- `scripts/run_editor_text_smoke.sh` — exit 0, open + glyphs>0.
 
 ### STEP=1 done (2026-07-13)
 
@@ -124,7 +130,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | Step | Item | Gate |
 |------|------|------|
 | 1 | Frame loop + theme colors + solid panels via scene | **done** (2026-07-13): `theme.mlc` + `run_editor_theme_smoke.sh` |
-| 2 | Static mono text via text_renderer (reuse GlyphCache) | glyphs on baseline |
+| 2 | Static mono text via text_renderer (reuse GlyphCache) | **done** (2026-07-13): `static_text.mlc` + `run_editor_text_smoke.sh` glyphs=60 |
 | 3 | Clip rect helper + no full-file work yet | unit + smoke |
 | 4 | Perf counters stub (`MLC_EDITOR_PERF`) | flag prints zeros |
 
@@ -228,4 +234,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=pre done** (2026-07-13): bundle 85K tokens; Sonnet preflight;
   Decision E = piece table.
 - **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`.
-- **STEP=1 done** (2026-07-13): Theme + solid_renderer frame; next **STEP=2**.
+- **STEP=1 done** (2026-07-13): Theme + solid_renderer frame.
+- **STEP=2 done** (2026-07-13): static mono text; next **STEP=3**.

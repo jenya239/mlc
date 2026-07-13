@@ -37,7 +37,8 @@ fragments → flatten → render`.
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
 
-## STEP=0 / STEP=1 status
+## STEP=0…2 status
 
 - STEP=0: empty GLFW window; stdout `[mlc-editor] open`.
-- STEP=1: `ui/theme.mlc` + solid_renderer clear/panel. No text yet (STEP=2).
+- STEP=1: `ui/theme.mlc` + solid_renderer (theme smoke).
+- STEP=2: `ui/static_text.mlc` mono GlyphCache line; `glyphs=N`. Clip = STEP=3.

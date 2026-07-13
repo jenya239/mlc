@@ -1,0 +1,227 @@
+// TRACK_EDITOR_MVP STEP=2 — shape one line into GlyphCache/atlas + GPU quads.
+import {
+  GlyphAtlas,
+  GlyphCache,
+  GlyphCacheKey,
+  TextRenderer,
+  glyph_atlas_new,
+  glyph_atlas_pack,
+  glyph_cache_new,
+  glyph_cache_get,
+  glyph_cache_insert,
+  text_renderer_create,
+  text_renderer_upload_atlas,
+  text_renderer_set_batch,
+  text_renderer_draw,
+  text_renderer_destroy,
+  text_scratch_u8_clear,
+  text_scratch_u8_resize_zero,
+  text_scratch_f32_clear,
+  text_bind_array_buffer,
+  text_upload_dynamic_scratch
+} from '../../gui/text_renderer'
+import {
+  TextShapingState,
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_glyph_advance_at,
+  text_shaping_rasterize_glyph
+} from '../../gui/text_shaping'
+
+extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
+  = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_push_screen_quad(
+  window_width: i32, window_height: i32,
+  pixel_x: i32, pixel_y: i32, pixel_width: i32, pixel_height: i32,
+  atlas_size: i32, slot_x: i32, slot_y: i32, slot_width: i32, slot_height: i32
+) -> unit
+  = "mlc::gl::gl_scratch_push_screen_quad" from "mlc/gl/text_window_helpers.hpp"
+
+export type StaticTextLine = {
+  text: string,
+  pixel_size: i32,
+  pen_x: i32,
+  pen_y: i32
+}
+
+export type StaticTextState = {
+  renderer: TextRenderer,
+  atlas: GlyphAtlas,
+  cache: GlyphCache,
+  shaping: TextShapingState,
+  atlas_size: i32,
+  font_path: string,
+  font_id: i32
+}
+
+export type StaticTextDrawResult = {
+  state: StaticTextState,
+  vertex_count: i32,
+  error_code: i32
+}
+
+fn append_static_line(
+  state: StaticTextState,
+  line: StaticTextLine,
+  window_width: i32,
+  window_height: i32
+) -> StaticTextDrawResult = do
+  const shaped = text_shaping_shape(
+    state.shaping, state.font_path, line.pixel_size, line.text
+  )
+  if shaped.error_code != 0 then
+    return StaticTextDrawResult {
+      state: StaticTextState {
+        renderer: state.renderer,
+        atlas: state.atlas,
+        cache: state.cache,
+        shaping: shaped.state,
+        atlas_size: state.atlas_size,
+        font_path: state.font_path,
+        font_id: state.font_id
+      },
+      vertex_count: 0,
+      error_code: shaped.error_code
+    }
+  end
+  let mut working_atlas = state.atlas
+  let mut working_cache = state.cache
+  let mut working_shaping = shaped.state
+  let mut cursor_x = line.pen_x
+  let mut index = 0
+  let mut vertices = 0
+  let mut atlas_dirty = 0
+  while index < shaped.glyph_count do
+    const glyph_id = text_shaping_glyph_id_at(index)
+    const key = GlyphCacheKey {
+      font_id: state.font_id,
+      glyph_index: glyph_id,
+      size_px: line.pixel_size,
+      mode: 0
+    }
+    const cached = glyph_cache_get(working_cache, key)
+    working_cache = cached.cache
+    let mut slot = cached.slot
+    let mut bearing_x = cached.bearing_x
+    let mut bearing_y = cached.bearing_y
+    if cached.found == 0 then
+      const raster = text_shaping_rasterize_glyph(
+        working_shaping, state.font_path, line.pixel_size, glyph_id
+      )
+      if raster.error_code == 0 then
+        bearing_x = raster.bearing_x
+        bearing_y = raster.bearing_y
+        if raster.width > 0 && raster.rows > 0 then
+          const pack = glyph_atlas_pack(working_atlas, 0, raster.width, raster.rows)
+          if pack.error_code == 0 then
+            working_atlas = pack.atlas
+            if gl_scratch_u8_blit_glyph_a8(state.atlas_size, pack.slot.x, pack.slot.y) == 0 then
+              slot = pack.slot
+              const inserted = glyph_cache_insert(
+                working_cache, key, slot, bearing_x, bearing_y
+              )
+              working_cache = inserted.cache
+              atlas_dirty = 1
+            end
+          end
+        end
+      end
+    end
+    if slot.width > 0 && slot.height > 0 then
+      // pen_y is baseline; FreeType bearing_y lifts glyph to baseline.
+      gl_scratch_push_screen_quad(
+        window_width, window_height,
+        cursor_x + bearing_x, line.pen_y - bearing_y,
+        slot.width, slot.height,
+        state.atlas_size, slot.x, slot.y, slot.width, slot.height
+      )
+      vertices = vertices + 6
+    end
+    cursor_x = cursor_x + text_shaping_glyph_advance_at(index) / 64
+    index = index + 1
+  end
+  let mut next_renderer = state.renderer
+  if atlas_dirty == 1 then
+    const upload_status = text_renderer_upload_atlas(state.renderer)
+    if upload_status != 0 then
+      return StaticTextDrawResult {
+        state: StaticTextState {
+          renderer: state.renderer,
+          atlas: working_atlas,
+          cache: working_cache,
+          shaping: working_shaping,
+          atlas_size: state.atlas_size,
+          font_path: state.font_path,
+          font_id: state.font_id
+        },
+        vertex_count: 0,
+        error_code: upload_status
+      }
+    end
+  end
+  StaticTextDrawResult {
+    state: StaticTextState {
+      renderer: next_renderer,
+      atlas: working_atlas,
+      cache: working_cache,
+      shaping: working_shaping,
+      atlas_size: state.atlas_size,
+      font_path: state.font_path,
+      font_id: state.font_id
+    },
+    vertex_count: vertices,
+    error_code: 0
+  }
+end
+
+export fn static_text_create(
+  atlas_size: i32,
+  font_path: string,
+  font_id: i32
+) -> StaticTextState = do
+  text_scratch_u8_clear()
+  text_scratch_u8_resize_zero(atlas_size * atlas_size)
+  StaticTextState {
+    renderer: text_renderer_create(atlas_size),
+    atlas: glyph_atlas_new(atlas_size),
+    cache: glyph_cache_new(256),
+    shaping: text_shaping_new(),
+    atlas_size: atlas_size,
+    font_path: font_path,
+    font_id: font_id
+  }
+end
+
+export fn static_text_draw_line(
+  state: StaticTextState,
+  line: StaticTextLine,
+  window_width: i32,
+  window_height: i32
+) -> StaticTextDrawResult = do
+  text_scratch_f32_clear()
+  const drawn = append_static_line(state, line, window_width, window_height)
+  if drawn.error_code != 0 then
+    return drawn
+  end
+  text_bind_array_buffer(drawn.state.renderer.vertex_buffer)
+  text_upload_dynamic_scratch()
+  const batched = text_renderer_set_batch(drawn.state.renderer, drawn.vertex_count)
+  const draw_status = text_renderer_draw(batched, window_width, window_height)
+  StaticTextDrawResult {
+    state: StaticTextState {
+      renderer: batched,
+      atlas: drawn.state.atlas,
+      cache: drawn.state.cache,
+      shaping: drawn.state.shaping,
+      atlas_size: drawn.state.atlas_size,
+      font_path: drawn.state.font_path,
+      font_id: drawn.state.font_id
+    },
+    vertex_count: drawn.vertex_count,
+    error_code: draw_status
+  }
+end
+
+export fn static_text_destroy(state: StaticTextState) -> i32 =
+  text_renderer_destroy(state.renderer)
