@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | critique-audit |
-| active_track | TRACK_GUI_SCENE_PHASE_A (Critic OK) |
-| test_gate | EDITOR_MVP STEP=pre next |
+| driver_turns_since_plan | 0 |
+| step_last | pre |
+| active_track | TRACK_EDITOR_MVP |
+| test_gate | STEP=0 scaffold next |
+
+### Turn 2026-07-13 18:55 (Driver TRACK_EDITOR_MVP STEP=pre)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | pre |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 18:44 |
+| elapsed | ~11 min |
+| done    | Bundle script + 85K-token dry-run; Sonnet preflight; Decision E=piece table; fold TRACK/PLAN; commit design docs. |
+| verify  | count_tokens 85214 OK; review ~$0.23 saved `editor_mvp_preflight_20260713_185418.md`. |
+| result  | STEP=pre done. Plain: preflight green, buffer=piece table, STEP=0 next. |
+| issues  | — |
+| next    | ROLE=Driver STEP=0 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 18:40 (Critic TRACK_GUI_SCENE_PHASE_A critique-audit)
 

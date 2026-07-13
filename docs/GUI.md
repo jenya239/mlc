@@ -77,6 +77,13 @@ compiler/tests/run_gl_loader_smoke.sh
 
 Interactive: `MLC_GLFW_VISIBLE=1 scripts/run_gui_button_demo.sh`.
 
+## Native editor (planned)
+
+Dogfood editor: [EDITOR.md](EDITOR.md), architecture
+[GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md),
+[agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md) — `misc/editor/`,
+editor-first hybrid runtime; not `text_ide_panels_demo`.
+
 ## Residuals (not v0)
 
 - Button label text draw (color-only demo)

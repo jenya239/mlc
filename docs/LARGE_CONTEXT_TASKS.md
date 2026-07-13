@@ -60,6 +60,46 @@
    `specs/regression/`) по существующим паттернам — плохие тесты просто не
    проходят gate, ничего не ломают.
 
+7. **`TRACK_EDITOR_MVP` / native editor** — хороший кандидат на **1–2
+   дорогих запроса с большим контекстом**, не на «сгенерировать весь
+   редактор одним ответом».
+
+   **Что класть в бандл (порядок величины << 1M, если не тащить весь
+   `compiler/`):**
+   - `docs/EDITOR.md`, `docs/agent/TRACK_EDITOR_MVP.md`, `docs/GUI.md`,
+     `docs/TEXT_RENDERING.md`, scene Phase A archive track;
+   - `misc/gui/**/*.mlc`, релевантные `misc/examples/text_*` /
+     `scene_*` / `gui_*`;
+   - `lib/mlc/common/stdlib/gl/`, `io/file.mlc`, `env/`;
+   - тонкий runtime: `runtime/include/mlc/gl/`, `runtime/src/gl/glfw_window*.cpp`
+     (только API-поверхность, не весь runtime);
+   - **не** весь `compiler/` и **не** Script VM — шум и риск упереться в
+     лимит токенов без пользы.
+
+   **Что просить у модели (вывод укладывается в max output):**
+   - ревью границ модулей `misc/editor/` vs gaps stdlib (list_dir, clipboard);
+   - Decision: piece table vs rope + UTF-8 column rules;
+   - дробление E1–E6 на leaf STEPs с gate-командами под существующие
+     `scripts/run_*` / inject API;
+   - список моков/фикстур и обязательных unit tests;
+   - риски относительно future ProjectionView / multi-view (без реализации);
+   - сверка с уже зафиксированным [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md)
+     (если ответ противоречит — править только с явной пометкой Deviation).
+
+   **Архитектурный обзор framework landscape (GPUI/Xilem/Qt/…)** уже
+   проведён 2026-07-13 и **заморожен** в `GUI_ARCHITECTURE.md` — не
+   повторять полный survey в каждом STEP=pre; preflight уточняет leaf
+   STEPs и buffer Decision, не переоткрывает «брать ли Qt».
+   **Что не просить одним запросом:** полный исходник редактора
+   (output << input; всё равно нужен TDD + `mlcc` + GLFW smokes). После
+   ответа — `apply_response.rb` только на docs/track steps или мелкие
+   скелеты; реализация — итеративно Driver'ом / Grok.
+
+   Перед платным вызовом: `--dry-run` / `count_tokens.rb` на фактический
+   бандл. Референс стоимости большого бандла: `mlc2` parity ~873K in /
+   ~$4.56 (`claude-opus-4-8`); editor-бандл ожидаемо меньше, если не
+   тащить compiler.
+
 ## Где НЕ имеет смысла
 
 `compiler/checker/`, `compiler/codegen/`, `compiler/mir/` — ядро семантики и

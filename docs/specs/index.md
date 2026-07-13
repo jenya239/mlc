@@ -18,6 +18,9 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../BINDINGS_SEMANTICS_MRFC.md](../BINDINGS_SEMANTICS_MRFC.md) | bindings, let, migration, draft | Future `let`/`const` semantics (no compiler change) |
 | [../CODE_REVIEW_2026_06.md](../CODE_REVIEW_2026_06.md) | audit, compiler, structure, debt | Large refactors, folder layout, hotspots |
 | [../LARGE_CONTEXT_TASKS.md](../LARGE_CONTEXT_TASKS.md) | agent, external-model, batch, mlc-support | Deciding between batch LLM request vs iterative TDD for a track |
+| [../EDITOR.md](../EDITOR.md) | editor, gui, text, workspace, dogfood | Native editor MVP / `misc/editor/`; TRACK_EDITOR_MVP |
+| [../GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) | gui, architecture, editor, hybrid, scene, platform | Editor-first runtime decisions; reference map GPUI/Xilem/… |
+| [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) | vm, script, dyn, embed, bytecode, jit, design-only | Script-profile VM. **Not** MIR VM / `mlcc --run` — see doc §0 |
 
 ## Verification
 

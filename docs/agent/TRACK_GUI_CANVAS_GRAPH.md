@@ -7,18 +7,17 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **deferred** (2026-07-13) — Phase A Critic OK; Phase B behind EDITOR
+## Status: **deferred** (2026-07-13) — Phase A closed; Phase B behind EDITOR_MVP
 
-Epic activated 2026-07-11. Phase A:
-[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)
-(**closed**, Critic OK, reopen: none). Do not open Phase B while
-`TRACK_EDITOR_MVP` priority override is active (CONTINUITY).
+Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
+User priority override: [TRACK_EDITOR_MVP](TRACK_EDITOR_MVP.md) is head of
+queue. **Do not open Phase B** until EDITOR closes or user resumes canvas.
 
 ## Next step
 
-Yield to **TRACK_EDITOR_MVP STEP=pre**. Resume Phase B only after EDITOR
-closes or explicit user command.
-
+Phase A Critic OK. Yield to
+**TRACK_EDITOR_MVP STEP=pre**. Resume this epic only after EDITOR or explicit
+user command.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
