@@ -1,0 +1,57 @@
+// TRACK_EDITOR_MVP STEP=3 — clip rect math (half-open [x,x+w)×[y,y+h)).
+// SceneNodeKind::Clip for GPU scissor lands when draw needs it (ARCHITECTURE).
+import { Point, Rect, rect_new, point_in_rect } from '../../gui/layout'
+
+export type ClipRect = Rect
+
+export fn clip_rect_new(x: i32, y: i32, width: i32, height: i32) -> ClipRect =
+  rect_new(x, y, width, height)
+
+export fn clip_rect_is_empty(clip: ClipRect) -> i32 = do
+  if clip.width <= 0 then
+    return 1
+  end
+  if clip.height <= 0 then
+    return 1
+  end
+  0
+end
+
+// Intersection; empty (w/h <= 0) if no overlap.
+export fn clip_rect_intersect(a: ClipRect, b: ClipRect) -> ClipRect = do
+  let mut left = a.x
+  if b.x > left then
+    left = b.x
+  end
+  let mut top = a.y
+  if b.y > top then
+    top = b.y
+  end
+  let mut right = a.x + a.width
+  if b.x + b.width < right then
+    right = b.x + b.width
+  end
+  let mut bottom = a.y + a.height
+  if b.y + b.height < bottom then
+    bottom = b.y + b.height
+  end
+  if right <= left then
+    return rect_new(left, top, 0, 0)
+  end
+  if bottom <= top then
+    return rect_new(left, top, 0, 0)
+  end
+  rect_new(left, top, right - left, bottom - top)
+end
+
+// 1 if point inside clip (empty clip → never).
+export fn clip_rect_contains_point(clip: ClipRect, point: Point) -> i32 = do
+  if clip_rect_is_empty(clip) == 1 then
+    return 0
+  end
+  point_in_rect(point, clip)
+end
+
+// Clip a source rect to the clip region (same as intersect).
+export fn clip_rect_clip_child(clip: ClipRect, child: Rect) -> ClipRect =
+  clip_rect_intersect(clip, child)

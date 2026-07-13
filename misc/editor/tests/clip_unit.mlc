@@ -1,0 +1,56 @@
+// TRACK_EDITOR_MVP STEP=3 — pure clip unit (no GLFW).
+import { point_new, rect_new } from '../../gui/layout'
+import {
+  clip_rect_new,
+  clip_rect_is_empty,
+  clip_rect_intersect,
+  clip_rect_contains_point,
+  clip_rect_clip_child
+} from '../ui/clip'
+
+fn main() -> i32 = do
+  const viewport = clip_rect_new(0, 0, 800, 600)
+  const panel = clip_rect_new(40, 40, 240, 80)
+  const overlap = clip_rect_intersect(viewport, panel)
+  if overlap.x != 40 || overlap.y != 40 then
+    return 1
+  end
+  if overlap.width != 240 || overlap.height != 80 then
+    return 2
+  end
+
+  const outside = clip_rect_intersect(panel, clip_rect_new(400, 400, 10, 10))
+  if clip_rect_is_empty(outside) != 1 then
+    return 3
+  end
+
+  const partial = clip_rect_intersect(panel, clip_rect_new(200, 60, 100, 100))
+  if partial.x != 200 || partial.y != 60 then
+    return 4
+  end
+  if partial.width != 80 || partial.height != 60 then
+    return 5
+  end
+
+  if clip_rect_contains_point(panel, point_new(40, 40)) != 1 then
+    return 6
+  end
+  if clip_rect_contains_point(panel, point_new(280, 40)) != 0 then
+    return 7
+  end
+  if clip_rect_contains_point(outside, point_new(0, 0)) != 0 then
+    return 8
+  end
+
+  const child = rect_new(20, 20, 50, 50)
+  const clipped = clip_rect_clip_child(panel, child)
+  if clipped.x != 40 || clipped.y != 40 then
+    return 9
+  end
+  if clipped.width != 30 || clipped.height != 30 then
+    return 10
+  end
+
+  println("[mlc-editor] clip_unit ok")
+  0
+end

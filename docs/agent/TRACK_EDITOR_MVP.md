@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=3** — Clip rect helper; no full-file work yet (unit + smoke).
+**STEP=4** — `MLC_EDITOR_PERF` counter stub (frame count, zeros).
+
+### STEP=3 done (2026-07-13)
+
+- `misc/editor/ui/clip.mlc`: intersect / empty / contains / clip_child (half-open).
+- `misc/editor/tests/clip_unit.mlc` + `scripts/run_editor_clip_unit.sh` exit 0.
+- GPU `SceneNodeKind::Clip` deferred until draw needs scissor (ARCHITECTURE).
 
 ### STEP=2 done (2026-07-13)
 
@@ -131,7 +137,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 |------|------|------|
 | 1 | Frame loop + theme colors + solid panels via scene | **done** (2026-07-13): `theme.mlc` + `run_editor_theme_smoke.sh` |
 | 2 | Static mono text via text_renderer (reuse GlyphCache) | **done** (2026-07-13): `static_text.mlc` + `run_editor_text_smoke.sh` glyphs=60 |
-| 3 | Clip rect helper + no full-file work yet | unit + smoke |
+| 3 | Clip rect helper + no full-file work yet | **done** (2026-07-13): `ui/clip.mlc` + `run_editor_clip_unit.sh` |
 | 4 | Perf counters stub (`MLC_EDITOR_PERF`) | flag prints zeros |
 
 ### E2 — Layout shell: tree + editor + split
@@ -235,4 +241,5 @@ and session restore expand — still smaller than inventing Script VM.
   Decision E = piece table.
 - **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`.
 - **STEP=1 done** (2026-07-13): Theme + solid_renderer frame.
-- **STEP=2 done** (2026-07-13): static mono text; next **STEP=3**.
+- **STEP=2 done** (2026-07-13): static mono text.
+- **STEP=3 done** (2026-07-13): clip math unit; next **STEP=4**.

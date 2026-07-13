@@ -15,10 +15,14 @@ MLC_GLFW_VISIBLE=0 scripts/run_editor_scaffold_smoke.sh
 MLC_GLFW_VISIBLE=0 scripts/run_editor_theme_smoke.sh
 # STEP=2 static mono text
 MLC_GLFW_VISIBLE=0 scripts/run_editor_text_smoke.sh
+
+# STEP=3 clip unit (no GLFW)
+scripts/run_editor_clip_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
 Text smoke also requires `[mlc-editor] glyphs=N` with N>0.
+Clip unit requires `[mlc-editor] clip_unit ok`.
 
 ## Layout (growing)
 

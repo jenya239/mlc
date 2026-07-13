@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 2 |
+| driver_turns_since_plan | 4 |
+| step_last | 3 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=3 clip next |
+| test_gate | STEP=4 perf stub next |
+
+### Turn 2026-07-13 23:50 (Driver TRACK_EDITOR_MVP STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 23:49 |
+| elapsed | ~3 min |
+| done    | `ui/clip.mlc` + `tests/clip_unit.mlc` + `run_editor_clip_unit.sh`; TRACK/PLAN. |
+| verify  | clip unit exit 0; `clip_unit ok`. |
+| result  | STEP=3 done. Plain: clip rect intersect unit green. |
+| issues  | Scene Clip kind deferred until scissor draw. |
+| next    | ROLE=Driver STEP=4 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 23:36 (Driver TRACK_EDITOR_MVP STEP=2)
 
