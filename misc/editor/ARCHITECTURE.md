@@ -37,6 +37,7 @@ fragments → flatten → render`.
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
 
-## STEP=0 status
+## STEP=0 / STEP=1 status
 
-Empty GLFW window via `main.mlc`; stdout `[mlc-editor] open`. No panels yet.
+- STEP=0: empty GLFW window; stdout `[mlc-editor] open`.
+- STEP=1: `ui/theme.mlc` + solid_renderer clear/panel. No text yet (STEP=2).

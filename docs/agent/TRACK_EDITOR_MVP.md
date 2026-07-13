@@ -12,8 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=1** — Theme record + frame loop with theme bg via solid_renderer
-(headless N frames, exit 0).
+**STEP=2** — Static mono text via text_renderer / GlyphCache (glyphs on baseline).
+
+### STEP=1 done (2026-07-13)
+
+- `misc/editor/ui/theme.mlc`: `Theme` + `theme_solarized_light()`.
+- `main.mlc`: theme bg clear + panel rect via `solid_renderer_*`, 3 frames.
+- `scripts/run_editor_theme_smoke.sh` — exit 0, `[mlc-editor] open`.
 
 ### STEP=0 done (2026-07-13)
 
@@ -118,7 +123,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 
 | Step | Item | Gate |
 |------|------|------|
-| 1 | Frame loop + theme colors + solid panels via scene | visible or headless N frames |
+| 1 | Frame loop + theme colors + solid panels via scene | **done** (2026-07-13): `theme.mlc` + `run_editor_theme_smoke.sh` |
 | 2 | Static mono text via text_renderer (reuse GlyphCache) | glyphs on baseline |
 | 3 | Clip rect helper + no full-file work yet | unit + smoke |
 | 4 | Perf counters stub (`MLC_EDITOR_PERF`) | flag prints zeros |
@@ -222,5 +227,5 @@ and session restore expand — still smaller than inventing Script VM.
   [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md).
 - **STEP=pre done** (2026-07-13): bundle 85K tokens; Sonnet preflight;
   Decision E = piece table.
-- **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`; next
-  **STEP=1**.
+- **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`.
+- **STEP=1 done** (2026-07-13): Theme + solid_renderer frame; next **STEP=2**.

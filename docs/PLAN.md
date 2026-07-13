@@ -426,7 +426,7 @@ compiler/
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **deferred behind §33** (2026-07-13) Phase A closed; Phase B **после** EDITOR_MVP или явной команды | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A → archive; Phase B не открывать, пока EDITOR в приоритете |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
-| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **priority / active** (2026-07-13) STEP=pre+0 **done**; **STEP=1** next (theme/frame) | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](agent/TRACK_EDITOR_MVP.md); GLFW PlatformBackend v1; GUI Phase B deferred |
+| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **priority / active** (2026-07-13) STEP=pre…1 **done**; **STEP=2** next (static text) | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](agent/TRACK_EDITOR_MVP.md); GLFW PlatformBackend v1; GUI Phase B deferred |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -622,7 +622,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **GUI_CANVAS_GRAPH Phase A (**closed** 2026-07-13: STEP=1–7; Critic OK (`9d1fd06e`…`1a010299`); reopen: none;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md))**
   → **EDITOR_MVP (**PRIORITY** 2026-07-13 — голова очереди;
-      STEP=pre+0 **done**; **STEP=1** theme/frame next;
+      STEP=pre…1 **done**; **STEP=2** static text next;
       GUI Phase B–D **deferred** until EDITOR acceptance or explicit user
       command to resume canvas;
       → [EDITOR.md](EDITOR.md), [agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md),

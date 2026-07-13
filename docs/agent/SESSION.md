@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=1 theme/frame next |
+| test_gate | STEP=2 static text next |
+
+### Turn 2026-07-13 23:30 (Driver TRACK_EDITOR_MVP STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 23:29 |
+| elapsed | ~3 min |
+| done    | Finished uncommitted WIP: `ui/theme.mlc`, theme frame in `main.mlc`, `run_editor_theme_smoke.sh`; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_theme_smoke.sh` exit 0; `[mlc-editor] open`. |
+| result  | STEP=1 done. Plain: Solarized theme + solid panel frames green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 19:05 (Driver TRACK_EDITOR_MVP STEP=0)
 

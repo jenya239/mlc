@@ -1,0 +1,26 @@
+// TRACK_EDITOR_MVP STEP=1 — Theme (Solarized Light–like).
+export type Theme = {
+  background_red: f64,
+  background_green: f64,
+  background_blue: f64,
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64,
+  accent_red: f64,
+  accent_green: f64,
+  accent_blue: f64
+}
+
+// Solarized Light: base3 / base2 / blue.
+export fn theme_solarized_light() -> Theme =
+  Theme {
+    background_red: 0.992,
+    background_green: 0.965,
+    background_blue: 0.890,
+    panel_red: 0.933,
+    panel_green: 0.910,
+    panel_blue: 0.835,
+    accent_red: 0.149,
+    accent_green: 0.545,
+    accent_blue: 0.824
+  }

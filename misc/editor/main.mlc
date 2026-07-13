@@ -1,10 +1,20 @@
-// TRACK_EDITOR_MVP STEP=0 — empty GLFW window scaffold.
+// TRACK_EDITOR_MVP STEP=1 — Theme + solid_renderer frame loop.
 import {
   glfw_gl_context_begin,
   glfw_gl_context_should_close,
   glfw_gl_context_swap_poll,
-  glfw_gl_context_end
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  solid_renderer_create,
+  solid_renderer_begin,
+  solid_renderer_rect,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import { theme_solarized_light } from './ui/theme'
 
 fn main() -> i32 = do
   const begin_status = glfw_gl_context_begin(800, 600)
@@ -14,8 +24,44 @@ fn main() -> i32 = do
 
   println("[mlc-editor] open")
 
+  const theme = theme_solarized_light()
+  const renderer = solid_renderer_create()
+  if renderer.program < 0 then
+    glfw_gl_context_end()
+    return renderer.program
+  end
+
   let mut frame_index = 0
   while glfw_gl_context_should_close() == 0 do
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    let mut batch = solid_renderer_begin(renderer)
+    batch = solid_renderer_rect(
+      batch,
+      width,
+      height,
+      40,
+      40,
+      240,
+      80,
+      theme.panel_red,
+      theme.panel_green,
+      theme.panel_blue,
+      1.0
+    )
+    const flush_status = solid_renderer_flush(
+      batch,
+      width,
+      height,
+      theme.background_red,
+      theme.background_green,
+      theme.background_blue
+    )
+    if flush_status != 0 then
+      solid_renderer_destroy(renderer)
+      glfw_gl_context_end()
+      return flush_status
+    end
     glfw_gl_context_swap_poll()
     frame_index = frame_index + 1
     if frame_index >= 3 then
@@ -23,6 +69,7 @@ fn main() -> i32 = do
     end
   end
 
+  solid_renderer_destroy(renderer)
   glfw_gl_context_end()
   0
 end
