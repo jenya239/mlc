@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=1: freeze Phase A Decision (docs only) |
+| test_gate | STEP=2: misc/gui/scene.mlc types |
+
+### Turn 2026-07-13 15:01 (Driver TRACK_GUI_SCENE_PHASE_A STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:00 |
+| elapsed | ~5 min |
+| done    | TRACK **Decision (STEP=1)**: flat `nodes`+`parent`/`children`; `Affine2x3` Flash map; camera-relative f32 GPU. |
+| verify  | `rg 'Decision \\(STEP=1\\)' docs/agent/TRACK_GUI_SCENE_PHASE_A.md`; STEP=1 done; PLAN §29 STEP=2. |
+| result  | STEP=1 done. Plain: foundation shape frozen before `scene.mlc`. |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK_GUI_SCENE_PHASE_A — `misc/gui/scene.mlc` types + constructors |
 
 ### Turn 2026-07-13 14:55 (Planner GUI_SCENE_PHASE_A plan-refresh)
 
