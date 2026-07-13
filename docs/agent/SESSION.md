@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | — (DEBUG closed; next GUI_CANVAS_GRAPH) |
-| test_gate | Planner → GUI_CANVAS_GRAPH Phase A |
+| step_last | plan-refresh |
+| active_track | TRACK_GUI_SCENE_PHASE_A |
+| test_gate | STEP=1: freeze Phase A Decision (docs only) |
+
+### Turn 2026-07-13 14:55 (Planner GUI_SCENE_PHASE_A plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 14:55 |
+| elapsed | ~5 min |
+| done    | Created `TRACK_GUI_SCENE_PHASE_A.md`; epic → Phase A; PLAN §10c/§29 + queue; DEVELOPMENT. |
+| verify  | Status=active; STEP=1 pending + sub-steps; no compiler/lib edits. |
+| result  | plan-refresh done. Plain: Driver freezes tree/matrix/precision Decision. |
+| issues  | Foreign SCRIPT_VM/arkanoid/solid_renderer left. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PHASE_A — Decision: tree / Affine2×3 / camera-relative |
 
 ### Turn 2026-07-13 14:54 (Critic TRACK_DEBUG_SOURCE_MAP — critique-audit)
 

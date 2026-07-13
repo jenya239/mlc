@@ -41,7 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue next:** Planner → `GUI_CANVAS_GRAPH` Phase A. DEBUG Critic OK:
+**`TRACK_GUI_SCENE_PHASE_A` active** — STEP=1 Design Decision next (tree /
+Affine2×3 / camera-relative). Epic:
+[TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). DEBUG Critic OK:
 [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).
 TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 

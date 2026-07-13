@@ -7,12 +7,17 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: open, активирован 2026-07-11 явной командой пользователя — крупнейший
-резервуар работы в текущем backlog (100+ потенциальных шагов). Дробится на
-4 фазы (A-D), каждая фаза — отдельный TRACK-файл при старте (Planner
-создаёт `TRACK_GUI_SCENE_PHASE_A.md` и т.д. по мере продвижения, не
-накапливает все шаги в этом файле — тот же принцип что ограничение размера
-`SESSION.md`).
+## Status: **active** (2026-07-13) — Phase A under
+[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md)
+
+Epic activated 2026-07-11. Phases B–D: create `TRACK_GUI_SCENE_PHASE_{B,C,D}.md`
+only when the prior phase closes (Planner).
+
+## Next step
+
+**Phase A STEP=1** — Driver freezes Decision in
+[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md) (tree / Affine2×3 /
+camera-relative). Do not implement `scene.mlc` until Decision done.
 
 ## Ключевая коррекция (2026-07-11)
 
@@ -56,15 +61,18 @@ primitive рендерер с самого начала. v0 (`misc/gui/`, screen
 
 ## Phase A: фундамент (retained tree + affine transform + hit-test + batched draw)
 
+Active work + STEP status:
+[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md) (STEP=1–7).
+
 | Step | Item | Status |
 |------|------|--------|
-| 1 | Design decision (закрыть перед кодом, не переизобретать): формат дерева (record с явным `[NodeId]`/индексами для дочерних, не `Shared<Node>`-указатели — кеш-локальность и совместимо с `TRACK_LANG_REGION_ARENA` regional allocation если понадобится), формат matrix (2×3 affine, без перспективы — референс Flash `DisplayObjectContainer` matrix chain), координатная точность (camera-relative: вычитать позицию камеры из мировых координат перед отправкой в GPU, не полагаться на f32 точность на больших полях — референс Godot `CanvasItem`/large-world rendering practice). Написать решение в этот файл (заменить эту строку) до Step 2 | pending |
-| 2 | `misc/gui/scene.mlc`: `SceneNode` record (id, parent index, local transform 2×3, kind — leaf primitive vs container), `Scene` = flat array of nodes (не рекурсивная структура — обход по индексам) | pending |
-| 3 | World-transform pass: один проход по `Scene` в topological order (parent before child, гарантировано порядком вставки в flat array), накопление world = parent_world * local — reused buffer, не realloc каждый кадр | pending |
-| 4 | Hit-testing через дерево: point → world-to-local transform по цепочке предков (обратная matrix), assert на существующем `gui_button` case (мигрировать один смок как proof, не всё `misc/gui/` сразу) | pending |
-| 5 | Batched draw: один `draw_arrays` call на группу узлов одного примитива/материала (rect-fill вариант, reused из trick в `text_dashboard_demo.mlc` — solid rect как packed atlas glyph — переиспользовать для этой фазы, не изобретать новый шейдер) | pending |
-| 6 | Migration smoke: текущая v0 `gui_button_demo.mlc` кнопка воспроизведена на новом `scene.mlc` фундаменте бок-о-бок (не заменяя v0 сразу, чтобы не сломать `TRACK_GUI_INPUT_ROBUSTNESS` работу) — доказательство что фундамент действительно достаточен для существующего кейса | pending |
-| 7 | Verify: новый смок зелёный; self-host diff не требуется (misc/gui — не compiler/) | pending |
+| 1 | Design decision: tree indices, Affine2×3, camera-relative f32 | **→ PHASE_A** |
+| 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **→ PHASE_A** |
+| 3 | World-transform pass | **→ PHASE_A** |
+| 4 | Hit-testing through tree | **→ PHASE_A** |
+| 5 | Batched draw (rect-fill) | **→ PHASE_A** |
+| 6 | Migration smoke vs `gui_button_demo` | **→ PHASE_A** |
+| 7 | Verify | **→ PHASE_A** |
 
 ## Phase B: виджеты (после Phase A closed)
 
