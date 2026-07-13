@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
-| active_track | TRACK_DEBUG_SOURCE_MAP |
-| test_gate | STEP=5: docs + verify-gate + close → Critic |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
+| active_track | TRACK_DEBUG_SOURCE_MAP (closed) |
+| test_gate | Critic critique-audit |
+
+### Turn 2026-07-13 14:44 (Driver TRACK_DEBUG_SOURCE_MAP STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 14:04 |
+| elapsed | ~40 min |
+| done    | `docs/DEBUGGING.md` + MLC/specs links; Ruby `\n#line` fix (`context.rb`); archive TRACK; close. |
+| verify  | `line_directive_test.rb` 3/0; `regression_gate.sh` 20/0; examples sweep ok=117 fail=0 skip=1. |
+| result  | STEP=5 done; track **closed**. Plain: docs+gate green; compact `#line` jam fixed. |
+| issues  | first gate 12 fail on `{#line` mid-line — fixed before close |
+| next    | ROLE=Critic STEP=critique-audit TRACK_DEBUG_SOURCE_MAP |
 
 ### Turn 2026-07-13 14:02 (Driver TRACK_DEBUG_SOURCE_MAP STEP=4)
 

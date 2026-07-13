@@ -61,6 +61,7 @@ fn area(s: Shape) -> i32 =
 | Triple-bootstrap стабильность | ✓ |
 | Phantom types (C1) | ✓ |
 | `region` / `RegionHandle` / `Region<Tag,T>` (arena, E091) | ✓ |
+| `#line` → `.mlc` в DWARF/gdb backtrace ([DEBUGGING.md](DEBUGGING.md)) | ✓ |
 
 ### Что не работает / не реализовано в mlcc
 

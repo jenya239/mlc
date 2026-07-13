@@ -34,4 +34,16 @@ class MLCLineDirectiveTest < Minitest::Test
 
     refute_includes cpp, "#line"
   end
+
+  def test_line_directive_not_jammed_after_brace
+    source = <<~MLC
+      fn fib(n: i32) -> i32 = if n < 2 then n else fib(n - 1) + fib(n - 2)
+      fn main() -> i32 = fib(5)
+    MLC
+
+    cpp = MLC.to_cpp(source, filename: "fib.mlc")
+
+    refute_match(/\{#line/, cpp)
+    assert_match(/#line \d+ "fib\.mlc"/, cpp)
+  end
 end

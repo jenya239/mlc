@@ -188,7 +188,9 @@ module MLC
           return nil if file_path.nil? || file_path.to_s.empty?
 
           escaped_path = file_path.to_s.gsub("\\", "\\\\").gsub('"', '\\"')
-          "#line #{line_number.to_i} \"#{escaped_path}\"\n"
+          # Leading newline: compact bodies print `noexcept{` then stmt trivia
+          # mid-line; `#` must start a preprocessing line.
+          "\n#line #{line_number.to_i} \"#{escaped_path}\"\n"
         end
 
         def prepend_line_directive(cpp_node, trivia)

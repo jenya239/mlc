@@ -1,19 +1,24 @@
 # Track: debugging story (stack trace → MLC source)
 
-Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-10 — нет
+Parent: [../../PLAN.md](../../PLAN.md). Trigger: обзор пробелов 2026-07-10 — нет
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **active** (2026-07-13) — STEP=5 docs + verify-gate + close next
+## Status: **closed** (2026-07-13) — awaiting Critic
 
-Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
-`GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
-closes or blocks).
+Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue next:
+`GUI_CANVAS_GRAPH` Phase A (after Critic OK).
 
 ## Next step
 
-**STEP=5** — `docs/DEBUGGING.md` (or `docs/MLC.md`) + verify-gate + close →
-Critic.
+**closed** — Critic `critique-audit` next.
+
+### STEP=5 done (2026-07-13)
+
+- `docs/DEBUGGING.md`; link from `docs/MLC.md` + `docs/specs/index.md`.
+- Ruby fix: `#line` trivia leading `\n` (compact `noexcept{#line` broke gate).
+- `line_directive_test.rb` 3/0; `regression_gate.sh` 20/0; examples sweep
+  ok=117 fail=0 skip=1.
 
 ### STEP=4 done (2026-07-13)
 
@@ -116,7 +121,7 @@ crash. Сегодня:
 | 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | **done** (2026-07-13: `Context#attach_line_directive`; `line_directive_test.rb`) |
 | 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | **done** (2026-07-13: `sstmt_span` + `#line` fragments in stmt/return paths) |
 | 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | **done** (2026-07-13: gdb bt → `crash.mlc:3`; DWARF line table) |
-| 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | pending |
+| 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | **done** (2026-07-13: DEBUGGING.md; REG 20/0; examples 117/0/1; Ruby `\n#line` fix) |
 
 ## Out of scope (явно, не в этом треке)
 

@@ -5,7 +5,7 @@ Trigger: 2026-07-11 backlog review for ~300-step planning horizon. No single
 document describes the MLC language end-to-end — syntax cheatsheet exists
 only as a compressed block in `CLAUDE.md` (for agent consumption); no
 prose reference for a human reader (future external contributor, the gate
-condition already named in [TRACK_DEBUG_SOURCE_MAP](../../agent/TRACK_DEBUG_SOURCE_MAP.md)).
+condition already named in [TRACK_DEBUG_SOURCE_MAP](TRACK_DEBUG_SOURCE_MAP.md)).
 Language features are individually documented across ~15 scattered docs
 (`FFI_LAYER.md`, `CONCURRENCY_V2.md`, `LANGUAGE_AUDIT_2026_07.md`, ...) with
 no single entry point.
