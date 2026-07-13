@@ -3,14 +3,20 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=2 done; STEP=3 version-skew design next
+## Status: **active** (2026-07-13) — STEP=3 done; STEP=4 write PACKAGE_MANAGER.md next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
 (Steps 5–10). No `compiler/`/`lib/mlc/` until Step 5+.
 
 ## Next step
 
-**STEP=3** — Design: language/stdlib version skew as known limitation (no ABI gate).
+**STEP=4** — Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions.
+
+### STEP=3 done (2026-07-13)
+
+- Version skew Decision frozen (below): no compile-time `mlc`/`stdlib` gate;
+  optional `mlc_version` deferred.
+- No `docs/PACKAGE_MANAGER.md` yet (STEP=4).
 
 ### STEP=2 done (2026-07-13)
 
@@ -158,6 +164,38 @@ exists only in the resolve step + manifest.
 | Nested per-package lock / recursive deps | Diamond + complexity; flat root pins only |
 | Committing `.mlc_packages/` by default | Noise; SHA pin in `mlc.json` is the source of truth |
 
+## Decision (STEP=3) — frozen 2026-07-13
+
+### Language / stdlib version skew
+
+**Problem:** a dependency may have been authored against a different `mlcc` /
+stdlib than the consumer. Mismatch can mean missing APIs, different semantics,
+or codegen that no longer type-checks.
+
+**Decision (v1):**
+
+1. **No compile-time version gate.** `mlcc` does **not** read or enforce any
+   language/stdlib version field from `mlc.json` or from packages.
+2. **Author responsibility.** If a package does not compile with the consumer’s
+   toolchain, fix the pin, fork the package, or upgrade `mlcc` — same as today
+   for in-tree modules.
+3. **Optional future field (deferred):** a root-level `"mlc_version": "<semver>"`
+   (or per-dep) may be added later for warnings only. **Not** in the STEP=1
+   minimal schema; STEP=5 parser must not require it. Do not implement the
+   warning in Steps 5–10.
+4. **Stdlib is not a package.** Built-in bare names (`Tcp`, …) always come from
+   the consumer’s `lib/mlc/common/stdlib` tree, never from `.mlc_packages/`.
+5. **Package↔package ABI:** flat root deps only (STEP=2); no separate ABI
+   contract between packages in v1.
+
+### Rejected (STEP=3)
+
+| Alternative | Why rejected |
+|-------------|--------------|
+| Hard-fail if package `mlc_version` ≠ toolchain | No versioning scheme for `mlcc` releases yet; blocks adoption |
+| Embed compiler hash in every package | Unstable; forces rebuild of all pins on every `mlcc` commit |
+| Ship stdlib inside each package | Duplicates runtime; conflicts with bare-name stdlib resolve |
+
 ## Problem
 
 MLC imports only resolve inside the compile tree (`module_loader` +
@@ -174,8 +212,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 |------|------|--------|
 | 1 | Design: minimal deps model — `mlc.json` + `{git, rev}` pins, no registry | **done** (2026-07-13) Decision frozen |
 | 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | **done** (2026-07-13) `pkg/path` + flat deps |
-| 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | pending |
-| <!-- sub-steps: 1) state "no version check at compile"; 2) optional future `mlc_version` field deferred; 3) TRACK Decision only --> | | |
+| 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | **done** (2026-07-13) no version gate; `mlc_version` deferred |
 | 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | pending |
 | 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | pending |
 | 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | pending |

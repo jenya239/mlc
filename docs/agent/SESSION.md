@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | STEP=2 Decision in TRACK; no PACKAGE_MANAGER.md |
+| test_gate | STEP=3 Decision in TRACK; no PACKAGE_MANAGER.md |
+
+### Turn 2026-07-13 10:44 (Driver TRACK_PACKAGE_MANAGER STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 10:44 |
+| elapsed | ~10 min |
+| done    | Froze version-skew Decision: no compile gate; `mlc_version` deferred; stdlib not a package. |
+| verify  | TRACK Decision STEP=3 present; no `docs/PACKAGE_MANAGER.md`; PLAN §18 STEP=3 done. |
+| result  | STEP=3 done. Plain: packages have no toolchain version check in v1. |
+| issues  | Stashed foreign PLAN/CONTINUITY/… during commit; restored after. Untracked GLYPH_CACHE/SCRIPT_VM left. |
+| next    | ROLE=Driver STEP=4 TRACK_PACKAGE_MANAGER — write `docs/PACKAGE_MANAGER.md` |
 
 ### Turn 2026-07-13 02:07 (Driver TRACK_PACKAGE_MANAGER STEP=2)
 

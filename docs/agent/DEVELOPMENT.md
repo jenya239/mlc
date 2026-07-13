@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_PACKAGE_MANAGER` active** — STEP=2 Decision frozen (`.mlc_packages/` + `pkg/path`); STEP=3 next.
+**`TRACK_PACKAGE_MANAGER` active** — STEP=3 Decision frozen (no version gate); STEP=4 next.
 See [TRACK_PACKAGE_MANAGER.md](TRACK_PACKAGE_MANAGER.md).
 REGION Critic OK: [archive/tracks/TRACK_LANG_REGION_ARENA.md](../archive/tracks/TRACK_LANG_REGION_ARENA.md).
 
