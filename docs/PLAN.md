@@ -622,7 +622,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **GUI_CANVAS_GRAPH Phase A (**closed** 2026-07-13: STEP=1–7; Critic OK (`9d1fd06e`…`1a010299`); reopen: none;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md))**
   → **EDITOR_MVP (**PRIORITY** 2026-07-13 — голова очереди;
-      STEP=pre…5 **done**; **STEP=6** FileTree next;
+      STEP=pre…6 **done**; **STEP=7** wire panels next;
       GUI Phase B–D **deferred** until EDITOR acceptance or explicit user
       command to resume canvas;
       → [EDITOR.md](EDITOR.md), [agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md),

@@ -162,7 +162,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | Step | Item | Gate |
 |------|------|------|
 | 5 | UI primitives: row/col/fixed/flex/scroll/split (value types) | **done** (2026-07-14): `layout/shell.mlc` + `run_editor_layout_unit.sh` |
-| 6 | FileTree model + lazy expand (needs P1) | unit: no recursive full scan |
+| 6 | FileTree model + lazy expand (needs P1) | **done** (2026-07-14): mock DirEntry expand; `run_editor_file_tree_unit.sh` |
 | 7 | Wire tree panel + editor placeholder + divider drag | interactive smoke |
 | 8 | Exclude `.git` + extensible ignore list | unit |
 
@@ -261,4 +261,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=2 done** (2026-07-13): static mono text.
 - **STEP=3 done** (2026-07-13): clip math unit.
 - **STEP=4 done** (2026-07-13): perf stub.
-- **STEP=5 done** (2026-07-13): shell layout unit; next **STEP=6**.
+- **STEP=5 done** (2026-07-13): shell layout unit.
+- **STEP=6 done** (2026-07-14): FileTree lazy expand; next **STEP=7**.
