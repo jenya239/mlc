@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=5: batched rect-fill draw |
+| test_gate | STEP=6: gui_button on scene migration smoke |
+
+### Turn 2026-07-13 15:36 (Driver TRACK_GUI_SCENE_PHASE_A STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:32 |
+| elapsed | ~10 min |
+| done    | `scene_draw.mlc` + adopt `solid_renderer.mlc`; `scene_batch_smoke` (12 verts + GL flush). |
+| verify  | `MLC_GLFW_VISIBLE=0` smoke exit 0. |
+| result  | STEP=5 done. Plain: one solid batch for all RectFill nodes. |
+| issues  | solid_renderer was foreign untracked — adopted for STEP=5 |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_SCENE_PHASE_A — gui_button scene migration smoke |
 
 ### Turn 2026-07-13 15:30 (Driver TRACK_GUI_SCENE_PHASE_A STEP=4)
 

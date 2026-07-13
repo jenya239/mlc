@@ -1,0 +1,110 @@
+// Scene → one solid-color triangle batch (TRACK_GUI_SCENE_PHASE_A STEP=5).
+// Camera-relative: model_view = invert(camera) ∘ world; pixel space → NDC.
+
+import {
+  Affine2x3,
+  AffinePoint,
+  Scene,
+  SceneRectFill,
+  affine_invert,
+  affine_multiply,
+  affine_transform_point
+} from './scene'
+import {
+  SolidRenderer,
+  solid_renderer_begin,
+  solid_renderer_add_vertex
+} from './solid_renderer'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+fn pixel_to_ndc_x(pixel_x: f64, window_width: i32) -> f64 =
+  pixel_x / i32_to_f64(window_width) * 2.0 - 1.0
+
+fn pixel_to_ndc_y(pixel_y: f64, window_height: i32) -> f64 =
+  1.0 - pixel_y / i32_to_f64(window_height) * 2.0
+
+fn push_ndc_vertex(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  pixel: AffinePoint,
+  fill: SceneRectFill
+) -> SolidRenderer =
+  solid_renderer_add_vertex(
+    renderer,
+    pixel_to_ndc_x(pixel.x, window_width),
+    pixel_to_ndc_y(pixel.y, window_height),
+    fill.red,
+    fill.green,
+    fill.blue,
+    fill.alpha
+  )
+
+fn push_rect_fill_triangles(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  model_view: Affine2x3,
+  fill: SceneRectFill
+) -> SolidRenderer = do
+  const corner0 = affine_transform_point(model_view, 0.0, 0.0)
+  const corner1 = affine_transform_point(model_view, fill.width, 0.0)
+  const corner2 = affine_transform_point(model_view, fill.width, fill.height)
+  const corner3 = affine_transform_point(model_view, 0.0, fill.height)
+  let mut batch = renderer
+  batch = push_ndc_vertex(batch, window_width, window_height, corner0, fill)
+  batch = push_ndc_vertex(batch, window_width, window_height, corner1, fill)
+  batch = push_ndc_vertex(batch, window_width, window_height, corner2, fill)
+  batch = push_ndc_vertex(batch, window_width, window_height, corner0, fill)
+  batch = push_ndc_vertex(batch, window_width, window_height, corner2, fill)
+  batch = push_ndc_vertex(batch, window_width, window_height, corner3, fill)
+  batch
+end
+
+// 6 vertices per RectFill (two triangles). No GL.
+export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < scene.nodes.length() do
+    match scene.nodes[index].kind {
+      RectFill(_) => do
+        count = count + 6
+      end,
+      Container => do
+      end
+    }
+    index = index + 1
+  end
+  count
+end
+
+// One gl_draw_arrays after flush. Requires fresh scene_update_world.
+export fn scene_draw_rect_fills(
+  scene: Scene,
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32
+) -> SolidRenderer = do
+  let mut batch = solid_renderer_begin(renderer)
+  const view = affine_invert(scene.camera)
+  let mut index = 0
+  while index < scene.nodes.length() do
+    const node = scene.nodes[index]
+    match node.kind {
+      RectFill(fill) => do
+        batch = push_rect_fill_triangles(
+          batch,
+          window_width,
+          window_height,
+          affine_multiply(view, scene.world[index]),
+          fill
+        )
+      end,
+      Container => do
+      end
+    }
+    index = index + 1
+  end
+  batch
+end

@@ -1,0 +1,250 @@
+// Colored solid quads (screen-space, top-left origin) via vertex colors.
+import {
+  gl_clear,
+  gl_clear_color_f64,
+  gl_viewport,
+  gl_create_shader,
+  gl_shader_source_string,
+  gl_compile_shader,
+  gl_get_shader_iv_value,
+  gl_create_program,
+  gl_attach_shader,
+  gl_link_program,
+  gl_get_program_iv_value,
+  gl_use_program,
+  gl_delete_shader,
+  gl_delete_program,
+  gl_get_attrib_location_string,
+  gl_gen_buffer,
+  gl_delete_buffer,
+  gl_bind_buffer,
+  gl_scratch_f32_clear,
+  gl_scratch_f32_push,
+  gl_buffer_data_scratch,
+  gl_enable_vertex_attrib_array,
+  gl_vertex_attrib_pointer_offset,
+  gl_draw_arrays
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+fn gl_color_buffer_bit() -> i32 = 16384
+fn gl_triangles() -> i32 = 4
+fn gl_float() -> i32 = 5126
+fn gl_array_buffer() -> i32 = 34962
+fn gl_dynamic_draw() -> i32 = 35048
+fn gl_fragment_shader() -> i32 = 35632
+fn gl_vertex_shader() -> i32 = 35633
+fn gl_compile_status() -> i32 = 35713
+fn gl_link_status() -> i32 = 35714
+
+fn vertex_shader_source() -> string =
+  "attribute vec2 a_pos;\nattribute vec4 a_color;\nvarying vec4 v_color;\nvoid main() {\n  v_color = a_color;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
+
+fn fragment_shader_source() -> string =
+  "varying vec4 v_color;\nvoid main() {\n  gl_FragColor = v_color;\n}\n"
+
+export type SolidRenderer = {
+  program: i32,
+  vertex_buffer: i32,
+  position_location: i32,
+  color_location: i32,
+  vertex_count: i32
+}
+
+export fn solid_renderer_create() -> SolidRenderer = do
+  const vertex_shader = gl_create_shader(gl_vertex_shader())
+  gl_shader_source_string(vertex_shader, vertex_shader_source())
+  gl_compile_shader(vertex_shader)
+  if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
+    return SolidRenderer {
+      program: -12,
+      vertex_buffer: 0,
+      position_location: -1,
+      color_location: -1,
+      vertex_count: 0
+    }
+  end
+
+  const fragment_shader = gl_create_shader(gl_fragment_shader())
+  gl_shader_source_string(fragment_shader, fragment_shader_source())
+  gl_compile_shader(fragment_shader)
+  if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    return SolidRenderer {
+      program: -13,
+      vertex_buffer: 0,
+      position_location: -1,
+      color_location: -1,
+      vertex_count: 0
+    }
+  end
+
+  const program = gl_create_program()
+  gl_attach_shader(program, vertex_shader)
+  gl_attach_shader(program, fragment_shader)
+  gl_link_program(program)
+  if gl_get_program_iv_value(program, gl_link_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    gl_delete_shader(fragment_shader)
+    gl_delete_program(program)
+    return SolidRenderer {
+      program: -14,
+      vertex_buffer: 0,
+      position_location: -1,
+      color_location: -1,
+      vertex_count: 0
+    }
+  end
+
+  gl_delete_shader(vertex_shader)
+  gl_delete_shader(fragment_shader)
+
+  const position_location = gl_get_attrib_location_string(program, "a_pos")
+  const color_location = gl_get_attrib_location_string(program, "a_color")
+  if position_location < 0 || color_location < 0 then
+    gl_delete_program(program)
+    return SolidRenderer {
+      program: -15,
+      vertex_buffer: 0,
+      position_location: -1,
+      color_location: -1,
+      vertex_count: 0
+    }
+  end
+
+  const vertex_buffer = gl_gen_buffer()
+  if vertex_buffer == 0 then
+    gl_delete_program(program)
+    return SolidRenderer {
+      program: -16,
+      vertex_buffer: 0,
+      position_location: -1,
+      color_location: -1,
+      vertex_count: 0
+    }
+  end
+
+  SolidRenderer {
+    program: program,
+    vertex_buffer: vertex_buffer,
+    position_location: position_location,
+    color_location: color_location,
+    vertex_count: 0
+  }
+end
+
+fn push_vertex(
+  position_x: f64,
+  position_y: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> unit = do
+  gl_scratch_f32_push(position_x)
+  gl_scratch_f32_push(position_y)
+  gl_scratch_f32_push(red)
+  gl_scratch_f32_push(green)
+  gl_scratch_f32_push(blue)
+  gl_scratch_f32_push(alpha)
+end
+
+export fn solid_renderer_add_vertex(
+  renderer: SolidRenderer,
+  position_x: f64,
+  position_y: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SolidRenderer = do
+  push_vertex(position_x, position_y, red, green, blue, alpha)
+  SolidRenderer {
+    program: renderer.program,
+    vertex_buffer: renderer.vertex_buffer,
+    position_location: renderer.position_location,
+    color_location: renderer.color_location,
+    vertex_count: renderer.vertex_count + 1
+  }
+end
+
+export fn solid_renderer_begin(renderer: SolidRenderer) -> SolidRenderer = do
+  gl_scratch_f32_clear()
+  SolidRenderer {
+    program: renderer.program,
+    vertex_buffer: renderer.vertex_buffer,
+    position_location: renderer.position_location,
+    color_location: renderer.color_location,
+    vertex_count: 0
+  }
+end
+
+export fn solid_renderer_rect(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  pixel_x: i32,
+  pixel_y: i32,
+  pixel_width: i32,
+  pixel_height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SolidRenderer = do
+  const width = i32_to_f64(window_width)
+  const height = i32_to_f64(window_height)
+  const left = i32_to_f64(pixel_x) / width * 2.0 - 1.0
+  const right = i32_to_f64(pixel_x + pixel_width) / width * 2.0 - 1.0
+  const top = 1.0 - i32_to_f64(pixel_y) / height * 2.0
+  const bottom = 1.0 - i32_to_f64(pixel_y + pixel_height) / height * 2.0
+
+  push_vertex(left, bottom, red, green, blue, alpha)
+  push_vertex(right, bottom, red, green, blue, alpha)
+  push_vertex(left, top, red, green, blue, alpha)
+  push_vertex(right, bottom, red, green, blue, alpha)
+  push_vertex(right, top, red, green, blue, alpha)
+  push_vertex(left, top, red, green, blue, alpha)
+
+  SolidRenderer {
+    program: renderer.program,
+    vertex_buffer: renderer.vertex_buffer,
+    position_location: renderer.position_location,
+    color_location: renderer.color_location,
+    vertex_count: renderer.vertex_count + 6
+  }
+end
+
+export fn solid_renderer_flush(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  clear_red: f64,
+  clear_green: f64,
+  clear_blue: f64
+) -> i32 = do
+  gl_viewport(0, 0, window_width, window_height)
+  gl_clear_color_f64(clear_red, clear_green, clear_blue, 1.0)
+  gl_clear(gl_color_buffer_bit())
+  if renderer.vertex_count <= 0 then
+    return 0
+  end
+  gl_use_program(renderer.program)
+  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  if gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw()) != 0 then
+    return -17
+  end
+  gl_enable_vertex_attrib_array(renderer.position_location)
+  gl_enable_vertex_attrib_array(renderer.color_location)
+  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 24, 0)
+  gl_vertex_attrib_pointer_offset(renderer.color_location, 4, gl_float(), 0, 24, 8)
+  gl_draw_arrays(gl_triangles(), 0, renderer.vertex_count)
+  0
+end
+
+export fn solid_renderer_destroy(renderer: SolidRenderer) -> i32 = do
+  gl_delete_buffer(renderer.vertex_buffer)
+  gl_delete_program(renderer.program)
+  0
+end

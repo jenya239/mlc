@@ -1,0 +1,90 @@
+// TRACK_GUI_SCENE_PHASE_A STEP=5 — rect-fill batch vertex count + one GL flush.
+import {
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world
+} from '../gui/scene'
+import {
+  scene_rect_fill_batch_vertex_count,
+  scene_draw_rect_fills
+} from '../gui/scene_draw'
+import {
+  solid_renderer_create,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  const rect_a = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 40.0),
+    scene_rect_fill_new(160.0, 48.0, 0.2, 0.5, 0.9, 1.0)
+  )
+  scene = rect_a.scene
+  const rect_b = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(80.0, 120.0),
+    scene_rect_fill_new(64.0, 64.0, 0.9, 0.3, 0.2, 1.0)
+  )
+  scene = rect_b.scene
+  scene = scene_update_world(scene)
+
+  if scene_rect_fill_batch_vertex_count(scene) != 12 then
+    return 1
+  end
+
+  const begin_status = glfw_gl_context_begin(400, 300)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const renderer = solid_renderer_create()
+  if renderer.program < 0 then
+    glfw_gl_context_end()
+    return renderer.program
+  end
+
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const batch = scene_draw_rect_fills(scene, renderer, width, height)
+    if batch.vertex_count != 12 then
+      solid_renderer_destroy(renderer)
+      glfw_gl_context_end()
+      return 2
+    end
+    const flush_status = solid_renderer_flush(batch, width, height, 0.08, 0.08, 0.1)
+    if flush_status != 0 then
+      solid_renderer_destroy(renderer)
+      glfw_gl_context_end()
+      return flush_status
+    end
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 3 then
+      break
+    end
+  end
+
+  solid_renderer_destroy(renderer)
+  glfw_gl_context_end()
+  0
+end

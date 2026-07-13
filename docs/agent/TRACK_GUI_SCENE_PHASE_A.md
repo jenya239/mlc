@@ -3,14 +3,22 @@
 Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Epic §29 / §10c
 in [PLAN.md](../PLAN.md).
 
-## Status: **active** (2026-07-13) — STEP=5 batched draw next
+## Status: **active** (2026-07-13) — STEP=6 migration smoke next
 
 Created by Planner after DEBUG_SOURCE_MAP Critic OK. Phase B–D tracks stay
 uncreated until this file closes.
 
 ## Next step
 
-**STEP=5** — Batched rect-fill draw (reuse dashboard solid-rect trick).
+**STEP=6** — Migration smoke: `gui_button_demo` geometry on scene (+ draw);
+v0 demo kept.
+
+### STEP=5 done (2026-07-13)
+
+- Adopted `misc/gui/solid_renderer.mlc` (+ `solid_renderer_add_vertex`).
+- `misc/gui/scene_draw.mlc`: `scene_draw_rect_fills` (camera-relative NDC
+  triangles, one flush batch); `scene_rect_fill_batch_vertex_count`.
+- `misc/examples/scene_batch_smoke.mlc`: count=12 + 3-frame GL flush exit 0.
 
 ### STEP=4 done (2026-07-13)
 
@@ -87,7 +95,7 @@ Draw batching, hit-test algorithm details, widget kinds — STEPs 3–5 / Phase 
 | 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** (2026-07-13: + `scene_types_smoke` exit 0) |
 | 3 | World-transform pass (topo order, reused buffer) | **done** (2026-07-13: `scene_update_world`) |
 | 4 | Hit-test via inverse chain; smoke vs `gui_button` case | **done** (2026-07-13: `scene_hit_test` + `scene_hit_smoke`) |
-| 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | pending |
+| 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | **done** (2026-07-13: `scene_draw` + `solid_renderer` + `scene_batch_smoke`) |
 | 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | pending |
 | 7 | Verify smoke green (no self-host; misc/gui only) | pending |
 

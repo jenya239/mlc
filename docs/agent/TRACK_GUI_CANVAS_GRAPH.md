@@ -15,7 +15,7 @@ only when the prior phase closes (Planner).
 
 ## Next step
 
-**Phase A STEP=5** — batched draw in
+**Phase A STEP=6** — migration smoke in
 [TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
 
 ## Ключевая коррекция (2026-07-11)
@@ -69,7 +69,7 @@ Active work + STEP status:
 | 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** → PHASE_A |
 | 3 | World-transform pass | **done** → PHASE_A |
 | 4 | Hit-testing through tree | **done** → PHASE_A |
-| 5 | Batched draw (rect-fill) | **→ PHASE_A** |
+| 5 | Batched draw (rect-fill) | **done** → PHASE_A |
 | 6 | Migration smoke vs `gui_button_demo` | **→ PHASE_A** |
 | 7 | Verify | **→ PHASE_A** |
 
