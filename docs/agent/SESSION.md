@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | docs/PACKAGE_MANAGER.md exists; design freeze |
+| test_gate | test/mlc/package_manager/manifest_test.rb 9/0 |
+
+### Turn 2026-07-13 11:01 (Driver TRACK_PACKAGE_MANAGER STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 11:01 |
+| elapsed | ~8 min |
+| done    | Added `lib/mlc/package_manager/manifest.rb` + `test/mlc/package_manager/manifest_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/package_manager/manifest_test.rb` → 9 runs, 0 failures. |
+| result  | STEP=5 done. Plain: Ruby loads/validates `mlc.json` per design freeze. |
+| issues  | Foreign PLAN stashed for edit; will restore after commit. |
+| next    | ROLE=Driver STEP=6 TRACK_PACKAGE_MANAGER — `scripts/mlc_pkg_fetch.rb` |
 
 ### Turn 2026-07-13 10:53 (Driver TRACK_PACKAGE_MANAGER STEP=4)
 

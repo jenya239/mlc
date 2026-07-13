@@ -3,14 +3,21 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=4 done; design frozen; STEP=5 manifest parser next
+## Status: **active** (2026-07-13) — STEP=5 done; STEP=6 fetch script next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
-(Steps 5–10). No `compiler/`/`lib/mlc/` until Step 5+.
+(Steps 5–10). No `compiler/` until Step 7.
 
 ## Next step
 
-**STEP=5** — Manifest parser (Ruby): read/validate `mlc.json` schema.
+**STEP=6** — `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent.
+
+### STEP=5 done (2026-07-13)
+
+- Ruby: `lib/mlc/package_manager/manifest.rb` — `MLC::PackageManager::Manifest`
+  load/parse/validate (`[a-z][a-z0-9_]*`, full SHA `rev`, reserved `mlc_packages`,
+  missing file → empty deps; unknown keys ignored).
+- Tests: `test/mlc/package_manager/manifest_test.rb` (9 runs).
 
 ### STEP=4 done (2026-07-13)
 
@@ -219,7 +226,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | **done** (2026-07-13) `pkg/path` + flat deps |
 | 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | **done** (2026-07-13) no version gate; `mlc_version` deferred |
 | 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | **done** (2026-07-13) design freeze doc |
-| 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | pending |
+| 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | **done** (2026-07-13) `Manifest.load` |
 | 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | pending |
 | 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | pending |
 | 8 | E2E smoke: local git fixture package + fetch + compile | pending |

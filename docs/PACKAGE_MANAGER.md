@@ -91,7 +91,7 @@ come from the consumer’s `lib/mlc/common/stdlib`, never from `.mlc_packages/`.
 
 | Step | Deliverable |
 |------|-------------|
-| 5 | Ruby: parse/validate `mlc.json` |
+| 5 | Ruby: parse/validate `mlc.json` — **done:** `lib/mlc/package_manager/manifest.rb` |
 | 6 | Fetch script → `.mlc_packages/`; `.gitignore` |
 | 7 | Resolver: first-segment dep → vendor path + prefix check |
 | 8 | E2E: local git fixture + fetch + compile |
