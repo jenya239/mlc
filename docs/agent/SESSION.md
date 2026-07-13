@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | test/mlc/package_manager/manifest_test.rb 9/0 |
+| test_gate | fetcher_test 3/0; manifest_test 9/0 |
+
+### Turn 2026-07-13 11:13 (Driver TRACK_PACKAGE_MANAGER STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 11:13 |
+| elapsed | ~8 min |
+| done    | `Fetcher` + `scripts/mlc_pkg_fetch.rb`; `.gitignore` `.mlc_packages/`; `fetcher_test.rb`. |
+| verify  | `bundle exec ruby -Ilib:test test/mlc/package_manager/fetcher_test.rb` → 3 runs, 0 failures. |
+| result  | STEP=6 done. Plain: deps clone/checkout into `.mlc_packages/` idempotently. |
+| issues  | Foreign PLAN stashed for edit. |
+| next    | ROLE=Driver STEP=7 TRACK_PACKAGE_MANAGER — resolve `pkg/path` under `.mlc_packages/` |
 
 ### Turn 2026-07-13 11:01 (Driver TRACK_PACKAGE_MANAGER STEP=5)
 

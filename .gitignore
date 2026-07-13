@@ -64,3 +64,6 @@ compiler/out/bootstrap*/
 .cursor/
 .tmp_checker_split*.py
 tmp/
+
+# Package manager vendor dir (mlc.json pins are source of truth)
+.mlc_packages/
