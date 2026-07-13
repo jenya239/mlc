@@ -3,14 +3,22 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=6 done; STEP=7 resolver next
+## Status: **active** (2026-07-13) — STEP=7 done; STEP=8 E2E next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
 (Steps 5–10). No `compiler/` until Step 7.
 
 ## Next step
 
-**STEP=7** — `module_loader` / resolve path — look up deps under `.mlc_packages/`.
+**STEP=8** — E2E smoke: local git fixture package + fetch + compile.
+
+### STEP=7 done (2026-07-13)
+
+- `compiler/driver/path_normalize.mlc`: `pkg/rest` → `.mlc_packages/<pkg>/…`
+  when first segment ∈ root `mlc.json` `dependencies`; prefix check after
+  `resolve_dotdot`; unknown/escape → relative fallback.
+- Tests: `compiler/tests/test_driver.mlc` + `compiler/tests/pkg_resolve_probe.mlc`.
+- `.gitignore`: `/.mlc_packages/` (repo root only).
 
 ### STEP=6 done (2026-07-13)
 
@@ -235,7 +243,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | **done** (2026-07-13) design freeze doc |
 | 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | **done** (2026-07-13) `Manifest.load` |
 | 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | **done** (2026-07-13) Fetcher + CLI |
-| 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | pending |
+| 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | **done** (2026-07-13) `path_normalize` |
 | 8 | E2E smoke: local git fixture package + fetch + compile | pending |
 | 9 | Docs usage in `PACKAGE_MANAGER.md` + README one-liner | pending |
 | 10 | Verify: self-host if `compiler/` touched; else `regression_gate.sh` | pending |

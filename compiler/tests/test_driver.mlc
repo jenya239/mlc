@@ -40,6 +40,29 @@ export fn driver_tests() -> [TestResult] = do
     'tmp/foo.mlc'
   ))
 
+  const package_project_root = File.make_temp_directory('pkg_resolve_')
+  File.write(`${package_project_root}/mlc.json`,
+    "{\"name\":\"app\",\"dependencies\":{\"demo_pkg\":{\"git\":\"https://example.com/demo.git\",\"rev\":\"0123456789abcdef0123456789abcdef01234567\"}}}")
+  File.write(`${package_project_root}/app.mlc`, "fn main() -> i32 = 0\n")
+  File.write(`${package_project_root}/.mlc_packages/demo_pkg/math.mlc`, "export fn add(a: i32, b: i32) -> i32 = a + b\n")
+  results.push(assert_eq_str(
+    'resolve_import_path package demo_pkg/math',
+    resolve_import_path(`${package_project_root}/app.mlc`, 'demo_pkg/math'),
+    `${package_project_root}/.mlc_packages/demo_pkg/math.mlc`
+  ))
+  results.push(assert_eq_str(
+    'resolve_import_path unknown package falls back relative',
+    resolve_import_path(`${package_project_root}/app.mlc`, 'other_pkg/math'),
+    `${package_project_root}/other_pkg/math.mlc`
+  ))
+  const escape_resolved = resolve_import_path(`${package_project_root}/app.mlc`, 'demo_pkg/../../outside')
+  const package_prefix = `${package_project_root}/.mlc_packages/`
+  results.push(assert_true(
+    'resolve_import_path package escape not under .mlc_packages',
+    !(escape_resolved.length() >= package_prefix.length()
+      && escape_resolved.substring(0, package_prefix.length()) == package_prefix)
+  ))
+
   const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false, false, false, false, false)
   results.push(assert_true('compile_modular rejects unsafe entry path',
     match unsafe_compile { Err(_) => true, Ok(_) => false }))

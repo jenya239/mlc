@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 6 |
+| driver_turns_since_plan | 7 |
+| step_last | 7 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | fetcher_test 3/0; manifest_test 9/0 |
+| test_gate | pkg_resolve_probe ok (mlcc); Ruby build_tests broken on test_parser pre-existing |
+
+### Turn 2026-07-13 11:24 (Driver TRACK_PACKAGE_MANAGER STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 11:24 |
+| elapsed | ~40 min |
+| done    | `path_normalize` package resolve + prefix check; probe + test_driver; `/.mlc_packages/` gitignore. |
+| verify  | rebuilt `compiler/out/mlcc`; `/tmp/pkg_resolve_probe` → `pkg_resolve_probe ok`. |
+| result  | STEP=7 done. Plain: `demo_pkg/math` resolves under `.mlc_packages/` when listed in `mlc.json`. |
+| issues  | Ruby `test_parser` parse fail blocks `build_tests_fast` (pre-existing); verify via mlcc probe. |
+| next    | ROLE=Driver STEP=8 TRACK_PACKAGE_MANAGER — E2E local git fixture + fetch + compile |
 
 ### Turn 2026-07-13 11:13 (Driver TRACK_PACKAGE_MANAGER STEP=6)
 

@@ -128,6 +128,158 @@ mlc::String find_stdlib_root(mlc::String from_path) noexcept{
   }
   return mlc::String("", 0);
 }
+mlc::String find_project_root(mlc::String from_path) noexcept{
+  auto directory = dirname(from_path);
+  if ((directory == mlc::String("", 0)))   {
+    (directory = mlc::String(".", 1));
+  }
+  auto attempts = 0;
+  while (((attempts < 48) && (directory != mlc::String("", 0))))   {
+    auto manifest_path = ((directory == mlc::String(".", 1)) ? (mlc::String("mlc.json", 8)) : (((mlc::String("", 0) + mlc::to_string(directory)) + mlc::String("/mlc.json", 9))));
+    if (mlc::file::exists(manifest_path))     {
+      return directory;
+    }
+    (directory = parent_directory(directory));
+    (attempts = mlc::arith::checked_add(attempts, 1));
+  }
+  return mlc::String("", 0);
+}
+int string_index_of(mlc::String haystack, mlc::String needle) noexcept{
+  if ((needle.length() == 0))   {
+    return 0;
+  }
+  if ((needle.length() > haystack.length()))   {
+    return (-1);
+  }
+  auto index = 0;
+  while ((mlc::arith::checked_add(index, needle.length()) <= haystack.length()))   {
+    if ((haystack.substring(index, needle.length()) == needle))     {
+      return index;
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return (-1);
+}
+bool path_has_prefix(mlc::String path, mlc::String prefix) noexcept{
+  return ((path.length() >= prefix.length()) && (path.substring(0, prefix.length()) == prefix));
+}
+bool is_package_name_charset(mlc::String package_name) noexcept{
+  if ((package_name.length() == 0))   {
+    return false;
+  }
+  if ((package_name == mlc::String("mlc_packages", 12)))   {
+    return false;
+  }
+  auto first_character = package_name.char_at(0);
+  if ((!((first_character >= mlc::String("a", 1)) && (first_character <= mlc::String("z", 1)))))   {
+    return false;
+  }
+  auto index = 1;
+  while ((index < package_name.length()))   {
+    auto character = package_name.char_at(index);
+    if ((!((((character >= mlc::String("a", 1)) && (character <= mlc::String("z", 1))) || ((character >= mlc::String("0", 1)) && (character <= mlc::String("9", 1)))) || (character == mlc::String("_", 1)))))     {
+      return false;
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return true;
+}
+mlc::String first_path_segment(mlc::String import_path) noexcept{
+  auto index = 0;
+  while ((index < import_path.length()))   {
+    if ((import_path.char_at(index) == mlc::String("/", 1)))     {
+      return import_path.substring(0, index);
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return import_path;
+}
+mlc::String path_after_first_segment(mlc::String import_path) noexcept{
+  auto index = 0;
+  while ((index < import_path.length()))   {
+    if ((import_path.char_at(index) == mlc::String("/", 1)))     {
+      return import_path.substring(mlc::arith::checked_add(index, 1), mlc::arith::checked_sub(mlc::arith::checked_sub(import_path.length(), index), 1));
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return mlc::String("", 0);
+}
+bool manifest_lists_dependency(mlc::String manifest_text, mlc::String package_name) noexcept{
+  auto dependencies_index = string_index_of(manifest_text, mlc::String("\"dependencies\"", 14));
+  if ((dependencies_index < 0))   {
+    return false;
+  }
+  auto key_token = ((mlc::String("\"", 1) + mlc::to_string(package_name)) + mlc::String("\"", 1));
+  auto index = dependencies_index;
+  while ((mlc::arith::checked_add(index, key_token.length()) <= manifest_text.length()))   {
+    if ((manifest_text.substring(index, key_token.length()) == key_token))     {
+      auto after = mlc::arith::checked_add(index, key_token.length());
+      [&]() {
+while ((after < manifest_text.length())) {
+auto character = manifest_text.char_at(after);
+if (((((character == mlc::String(" ", 1)) || (character == mlc::String("\n", 1))) || (character == mlc::String("\r", 1))) || (character == mlc::String("\t", 1)))) {
+  (after = mlc::arith::checked_add(after, 1));
+} else if ((character == mlc::String(":", 1))) {
+  return true;
+} else {
+  break;
+}
+}
+}();
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return false;
+}
+mlc::String append_mlc_extension_if_needed(mlc::String module_path) noexcept{
+  if (header_import::is_cpp_header_path(module_path))   {
+    return module_path;
+  } else if (((module_path.length() >= 4) && (module_path.substring(mlc::arith::checked_sub(module_path.length(), 4), 4) == mlc::String(".mlc", 4))))   {
+    return module_path;
+  } else   {
+    return ((mlc::String("", 0) + mlc::to_string(module_path)) + mlc::String(".mlc", 4));
+  }
+}
+mlc::String try_resolve_package_import(mlc::String base_path, mlc::String import_path) noexcept{
+  if ((import_path.length() == 0))   {
+    return mlc::String("", 0);
+  }
+  if ((import_path.char_at(0) == mlc::String(".", 1)))   {
+    return mlc::String("", 0);
+  }
+  if ((!import_path_contains_slash(import_path)))   {
+    return mlc::String("", 0);
+  }
+  auto package_name = first_path_segment(import_path);
+  if ((!is_package_name_charset(package_name)))   {
+    return mlc::String("", 0);
+  }
+  auto project_root = find_project_root(base_path);
+  if ((project_root == mlc::String("", 0)))   {
+    return mlc::String("", 0);
+  }
+  auto manifest_path = ((project_root == mlc::String(".", 1)) ? (mlc::String("mlc.json", 8)) : (((mlc::String("", 0) + mlc::to_string(project_root)) + mlc::String("/mlc.json", 9))));
+  if ((!mlc::file::exists(manifest_path)))   {
+    return mlc::String("", 0);
+  }
+  auto manifest_text = mlc::file::read_to_string(manifest_path);
+  if ((!manifest_lists_dependency(manifest_text, package_name)))   {
+    return mlc::String("", 0);
+  }
+  auto module_rest = path_after_first_segment(import_path);
+  if ((module_rest.length() == 0))   {
+    return mlc::String("", 0);
+  }
+  auto with_extension = append_mlc_extension_if_needed(module_rest);
+  auto package_root = ((project_root == mlc::String(".", 1)) ? (((mlc::String(".mlc_packages/", 14) + mlc::to_string(package_name)) + mlc::String("", 0))) : (((((mlc::String("", 0) + mlc::to_string(project_root)) + mlc::String("/.mlc_packages/", 15)) + mlc::to_string(package_name)) + mlc::String("", 0))));
+  auto normalized = resolve_dotdot(((((mlc::String("", 0) + mlc::to_string(package_root)) + mlc::String("/", 1)) + mlc::to_string(with_extension)) + mlc::String("", 0)));
+  auto required_prefix = ((mlc::String("", 0) + mlc::to_string(package_root)) + mlc::String("/", 1));
+  if (path_has_prefix(normalized, required_prefix))   {
+    return normalized;
+  } else   {
+    return mlc::String("", 0);
+  }
+}
 mlc::String resolve_import_path(mlc::String base_path, mlc::String import_path) noexcept{
   if (is_bare_module_import_name(import_path))   {
     auto relative_path = stdlib_module_relative_path(import_path);
@@ -138,9 +290,13 @@ mlc::String resolve_import_path(mlc::String base_path, mlc::String import_path) 
       }
     }
   }
+  auto package_resolved = try_resolve_package_import(base_path, import_path);
+  if ((package_resolved != mlc::String("", 0)))   {
+    return package_resolved;
+  }
   auto base_dir = dirname(base_path);
   auto rest = (((import_path.length() >= 2) && (import_path.substring(0, 2) == mlc::String("./", 2))) ? (import_path.substring(2, mlc::arith::checked_sub(import_path.length(), 2))) : (import_path));
-  auto with_extension = (header_import::is_cpp_header_path(rest) ? (rest) : ((((rest.length() >= 4) && (rest.substring(mlc::arith::checked_sub(rest.length(), 4), 4) == mlc::String(".mlc", 4))) ? (rest) : (((mlc::String("", 0) + mlc::to_string(rest)) + mlc::String(".mlc", 4))))));
+  auto with_extension = append_mlc_extension_if_needed(rest);
   auto combined_before_normalization = ((base_dir == mlc::String("", 0)) ? (with_extension) : (((((mlc::String("", 0) + mlc::to_string(base_dir)) + mlc::String("/", 1)) + mlc::to_string(with_extension)) + mlc::String("", 0))));
   return resolve_dotdot(combined_before_normalization);
 }

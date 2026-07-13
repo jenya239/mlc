@@ -1,0 +1,46 @@
+// STEP=7 smoke: package import resolve under .mlc_packages/
+import { resolve_import_path } from '../driver/path_normalize'
+
+fn main() -> i32 = do
+  const project_root = File.make_temp_directory('pkg_resolve_')
+  if project_root == "" then
+    print("FAIL make_temp_directory\n")
+    return 1
+  end
+  File.write(`${project_root}/mlc.json`,
+    "{\"name\":\"app\",\"dependencies\":{\"demo_pkg\":{\"git\":\"https://example.com/demo.git\",\"rev\":\"0123456789abcdef0123456789abcdef01234567\"}}}")
+  File.write(`${project_root}/app.mlc`, "fn main() -> i32 = 0\n")
+  File.write(`${project_root}/.mlc_packages/demo_pkg/math.mlc`, "export fn add(a: i32, b: i32) -> i32 = a + b\n")
+
+  const package_path = resolve_import_path(`${project_root}/app.mlc`, 'demo_pkg/math')
+  const expected_package = `${project_root}/.mlc_packages/demo_pkg/math.mlc`
+  if package_path != expected_package then
+    print(`FAIL package got=${package_path} expected=${expected_package}\n`)
+    return 1
+  end
+
+  const unknown_path = resolve_import_path(`${project_root}/app.mlc`, 'other_pkg/math')
+  const expected_unknown = `${project_root}/other_pkg/math.mlc`
+  if unknown_path != expected_unknown then
+    print(`FAIL unknown got=${unknown_path} expected=${expected_unknown}\n`)
+    return 1
+  end
+
+  const escape_path = resolve_import_path(`${project_root}/app.mlc`, 'demo_pkg/../../outside')
+  const package_prefix = `${project_root}/.mlc_packages/`
+  if escape_path.length() >= package_prefix.length()
+    && escape_path.substring(0, package_prefix.length()) == package_prefix then
+    print(`FAIL escape under packages: ${escape_path}\n`)
+    return 1
+  end
+
+  const relative_path = resolve_import_path(`${project_root}/app.mlc`, './local')
+  const expected_relative = `${project_root}/local.mlc`
+  if relative_path != expected_relative then
+    print(`FAIL relative got=${relative_path} expected=${expected_relative}\n`)
+    return 1
+  end
+
+  print("pkg_resolve_probe ok\n")
+  0
+end

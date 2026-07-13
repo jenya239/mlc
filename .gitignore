@@ -65,5 +65,5 @@ compiler/out/bootstrap*/
 .tmp_checker_split*.py
 tmp/
 
-# Package manager vendor dir (mlc.json pins are source of truth)
-.mlc_packages/
+# Package manager vendor dir at project root (mlc.json pins are source of truth)
+/.mlc_packages/
