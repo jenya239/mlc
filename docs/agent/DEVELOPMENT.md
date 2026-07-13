@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GLYPH_CACHE_SCALING` closed** (STEP=1–3) — Critic next.
-Archive: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
-Queue after Critic: `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH`.
+**Queue next:** Planner → `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH` (after
+TEXT_GLYPH Critic OK).
+TEXT_GLYPH closed: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 PACKAGE_MANAGER Critic OK: [archive/tracks/TRACK_PACKAGE_MANAGER.md](../archive/tracks/TRACK_PACKAGE_MANAGER.md).
 
 ## Step sizing (good vs bad)

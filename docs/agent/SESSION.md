@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
-| active_track | TRACK_TEXT_GLYPH_CACHE_SCALING |
-| test_gate | Critic: critique-audit |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | — |
+| test_gate | Planner: next queue |
+
+### Turn 2026-07-13 13:35 (Critic TRACK_TEXT_GLYPH_CACHE_SCALING — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| started | 2026-07-13 13:26 |
+| elapsed | ~8 min |
+| done    | Audited STEP1–3 vs `c323556f`…`14972c49`; PLAN/archive links; re-ran corpus. |
+| verify  | corpus PASS ide 1.14s / dash 0.26s; Map/LayoutCache/script in HEAD. |
+| result  | **reopen: none**. Residuals: layout cache demo-only; corpus not in REG; stale TRACK snippet. |
+| issues  | Left SCRIPT_VM/arkanoid/solid_renderer untracked foreign. |
+| next    | ROLE=Planner STEP=plan-refresh — next queue (DEBUG_SOURCE_MAP / GUI_CANVAS_GRAPH) |
 
 ### Turn 2026-07-13 13:30 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=3)
 

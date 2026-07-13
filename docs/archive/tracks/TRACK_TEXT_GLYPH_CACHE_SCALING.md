@@ -8,11 +8,18 @@ Trigger: пользователь 2026-07-13, `misc/examples/text_ide_panels_dem
 заметно тормозит несмотря на «космический» ожидаемый FPS после закрытия
 обоих треков выше.
 
-## Status: **closed** (2026-07-13) — awaiting Critic
+## Status: **closed** (2026-07-13) — Critic OK
+
+**Critic 2026-07-13:** STEP=1–3 vs `c323556f`…`14972c49` (+ activate `ef927fcc`);
+artifacts in HEAD (`Map<i64>` GlyphCache, ide `LayoutCache`,
+`run_text_gl_perf_corpus.rb`); re-ran corpus → PASS ide 1.14s / dash 0.26s.
+**reopen: none**. Residuals: layout cache only in ide demo (not lib/dashboard);
+corpus not wired into `regression_gate.sh`; TRACK root-cause snippet still
+shows removed `glyph_cache_entries_without`.
 
 ## Next step
 
-**closed** — STEP=1–3 done. `next` = Critic critique-audit.
+**closed** — Critic OK. Queue: Planner → `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH`.
 
 ### STEP=3 done (2026-07-13)
 
