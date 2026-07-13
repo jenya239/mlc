@@ -1,0 +1,169 @@
+// Retained scene graph foundation (TRACK_GUI_SCENE_PHASE_A STEP=2).
+// Flat nodes + Affine2x3; world pass = STEP=3.
+// Precision: f64 in MLC (mlcc f32 arith incomplete); GPU upload casts to f32 in STEP=5.
+
+export type Affine2x3 = {
+  a: f64,
+  b: f64,
+  c: f64,
+  d: f64,
+  tx: f64,
+  ty: f64
+}
+
+export type SceneRectFill = {
+  width: f64,
+  height: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export type SceneNodeKind = Container | RectFill(SceneRectFill)
+
+export type SceneNode = {
+  parent: i32,
+  local: Affine2x3,
+  kind: SceneNodeKind,
+  children: [i32]
+}
+
+export type Scene = {
+  nodes: [SceneNode],
+  world: [Affine2x3],
+  camera: Affine2x3
+}
+
+export type SceneAddResult = {
+  scene: Scene,
+  node_id: i32
+}
+
+export type AffinePoint = {
+  x: f64,
+  y: f64
+}
+
+export fn affine_identity() -> Affine2x3 =
+  Affine2x3 { a: 1.0, b: 0.0, c: 0.0, d: 1.0, tx: 0.0, ty: 0.0 }
+
+export fn affine_translation(tx: f64, ty: f64) -> Affine2x3 =
+  Affine2x3 { a: 1.0, b: 0.0, c: 0.0, d: 1.0, tx: tx, ty: ty }
+
+// world = parent ∘ local (local first, then parent). Flash / DOMMatrix 2D.
+export fn affine_multiply(parent: Affine2x3, local: Affine2x3) -> Affine2x3 =
+  Affine2x3 {
+    a: parent.a * local.a + parent.c * local.b,
+    b: parent.b * local.a + parent.d * local.b,
+    c: parent.a * local.c + parent.c * local.d,
+    d: parent.b * local.c + parent.d * local.d,
+    tx: parent.a * local.tx + parent.c * local.ty + parent.tx,
+    ty: parent.b * local.tx + parent.d * local.ty + parent.ty
+  }
+
+export fn affine_transform_point(matrix: Affine2x3, x: f64, y: f64) -> AffinePoint =
+  AffinePoint {
+    x: matrix.a * x + matrix.c * y + matrix.tx,
+    y: matrix.b * x + matrix.d * y + matrix.ty
+  }
+
+// Inverse; identity if |det| too small.
+export fn affine_invert(matrix: Affine2x3) -> Affine2x3 = do
+  const determinant = matrix.a * matrix.d - matrix.c * matrix.b
+  if determinant > 0.0 - 0.0000001 && determinant < 0.0000001 then
+    return affine_identity()
+  end
+  Affine2x3 {
+    a: matrix.d / determinant,
+    b: (0.0 - matrix.b) / determinant,
+    c: (0.0 - matrix.c) / determinant,
+    d: matrix.a / determinant,
+    tx: (matrix.c * matrix.ty - matrix.d * matrix.tx) / determinant,
+    ty: (matrix.b * matrix.tx - matrix.a * matrix.ty) / determinant
+  }
+end
+
+export fn scene_rect_fill_new(
+  width: f64,
+  height: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SceneRectFill =
+  SceneRectFill {
+    width: width,
+    height: height,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+export fn scene_new() -> Scene =
+  Scene {
+    nodes: [],
+    world: [],
+    camera: affine_identity()
+  }
+
+fn scene_node_new(parent: i32, local: Affine2x3, kind: SceneNodeKind) -> SceneNode =
+  SceneNode {
+    parent: parent,
+    local: local,
+    kind: kind,
+    children: []
+  }
+
+fn scene_attach_child(scene: Scene, parent: i32, child_id: i32) -> Scene = do
+  if parent < 0 then
+    return scene
+  end
+  let mut nodes = scene.nodes
+  let mut parent_node = nodes[parent]
+  let mut children = parent_node.children
+  children.push(child_id)
+  parent_node = SceneNode {
+    parent: parent_node.parent,
+    local: parent_node.local,
+    kind: parent_node.kind,
+    children: children
+  }
+  nodes.set(parent, parent_node)
+  Scene {
+    nodes: nodes,
+    world: scene.world,
+    camera: scene.camera
+  }
+end
+
+fn scene_push_node(scene: Scene, node: SceneNode) -> SceneAddResult = do
+  let mut nodes = scene.nodes
+  let mut world = scene.world
+  const node_id = nodes.length()
+  const parent = node.parent
+  if parent >= node_id then
+    return SceneAddResult { scene: scene, node_id: -1 }
+  end
+  nodes.push(node)
+  world.push(affine_identity())
+  let mut next_scene = Scene {
+    nodes: nodes,
+    world: world,
+    camera: scene.camera
+  }
+  next_scene = scene_attach_child(next_scene, parent, node_id)
+  SceneAddResult { scene: next_scene, node_id: node_id }
+end
+
+export fn scene_add_container(scene: Scene, parent: i32, local: Affine2x3) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, Container))
+
+export fn scene_add_rect_fill(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  fill: SceneRectFill
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, RectFill(fill)))

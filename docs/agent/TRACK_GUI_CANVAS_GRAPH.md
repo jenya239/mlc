@@ -15,7 +15,7 @@ only when the prior phase closes (Planner).
 
 ## Next step
 
-**Phase A STEP=2** — `misc/gui/scene.mlc` per Decision in
+**Phase A STEP=3** — world-transform pass in
 [TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
 
 ## Ключевая коррекция (2026-07-11)
@@ -66,7 +66,7 @@ Active work + STEP status:
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Design decision: tree indices, Affine2×3, camera-relative f32 | **done** → PHASE_A |
-| 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **→ PHASE_A** |
+| 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** → PHASE_A |
 | 3 | World-transform pass | **→ PHASE_A** |
 | 4 | Hit-testing through tree | **→ PHASE_A** |
 | 5 | Batched draw (rect-fill) | **→ PHASE_A** |

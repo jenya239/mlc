@@ -1,0 +1,76 @@
+// TRACK_GUI_SCENE_PHASE_A STEP=2 — types/constructors smoke (no GL).
+import {
+  affine_identity,
+  affine_translation,
+  affine_multiply,
+  affine_transform_point,
+  affine_invert,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new
+} from '../gui/scene'
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  if root.node_id != 0 then
+    return 1
+  end
+
+  const child = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(10.0, 20.0),
+    scene_rect_fill_new(40.0, 16.0, 1.0, 0.0, 0.0, 1.0)
+  )
+  scene = child.scene
+  if child.node_id != 1 then
+    return 2
+  end
+  if scene.nodes.length() != 2 then
+    return 3
+  end
+  if scene.nodes[0].children.length() != 1 then
+    return 4
+  end
+  if scene.nodes[0].children[0] != 1 then
+    return 5
+  end
+
+  const composed = affine_multiply(
+    affine_translation(1.0, 2.0),
+    affine_translation(3.0, 4.0)
+  )
+  const point = affine_transform_point(composed, 0.0, 0.0)
+  if point.x < 3.9 then
+    return 6
+  end
+  if point.x > 4.1 then
+    return 6
+  end
+  if point.y < 5.9 then
+    return 7
+  end
+  if point.y > 6.1 then
+    return 7
+  end
+
+  const inverse = affine_invert(affine_translation(5.0, 7.0))
+  const back = affine_transform_point(inverse, 5.0, 7.0)
+  if back.x < 0.0 - 0.1 then
+    return 8
+  end
+  if back.x > 0.1 then
+    return 8
+  end
+  if back.y < 0.0 - 0.1 then
+    return 9
+  end
+  if back.y > 0.1 then
+    return 9
+  end
+
+  0
+end
