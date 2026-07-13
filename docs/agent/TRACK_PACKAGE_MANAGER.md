@@ -3,14 +3,19 @@
 Parent: [../PLAN.md](../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **active** (2026-07-13) — STEP=3 done; STEP=4 write PACKAGE_MANAGER.md next
+## Status: **active** (2026-07-13) — STEP=4 done; design frozen; STEP=5 manifest parser next
 
 Design Steps **1–4** freeze `docs/PACKAGE_MANAGER.md` before any implementation
 (Steps 5–10). No `compiler/`/`lib/mlc/` until Step 5+.
 
 ## Next step
 
-**STEP=4** — Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions.
+**STEP=5** — Manifest parser (Ruby): read/validate `mlc.json` schema.
+
+### STEP=4 done (2026-07-13)
+
+- Wrote [../PACKAGE_MANAGER.md](../PACKAGE_MANAGER.md) freezing STEP=1–3 Decisions.
+- Design closed for v1; Steps 5–10 implement only what that doc states.
 
 ### STEP=3 done (2026-07-13)
 
@@ -213,7 +218,7 @@ vendor dir; no central registry. Design 1–4, then implement 5–10.
 | 1 | Design: minimal deps model — `mlc.json` + `{git, rev}` pins, no registry | **done** (2026-07-13) Decision frozen |
 | 2 | Design: import path resolution — `.mlc_packages/<name>/` vendor layout vs project root; how `module_loader` distinguishes | **done** (2026-07-13) `pkg/path` + flat deps |
 | 3 | Design: language/stdlib version skew — document as known limitation (no ABI gate yet) | **done** (2026-07-13) no version gate; `mlc_version` deferred |
-| 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | pending |
+| 4 | Write `docs/PACKAGE_MANAGER.md` freezing STEP=1–3 Decisions | **done** (2026-07-13) design freeze doc |
 | 5 | Manifest parser (Ruby): read/validate `mlc.json` schema | pending |
 | 6 | `scripts/mlc_pkg_fetch.rb` — clone+checkout into `.mlc_packages/`, idempotent | pending |
 | 7 | `module_loader` / resolve path — look up deps under `.mlc_packages/` | pending |

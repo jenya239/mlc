@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_PACKAGE_MANAGER |
-| test_gate | STEP=3 Decision in TRACK; no PACKAGE_MANAGER.md |
+| test_gate | docs/PACKAGE_MANAGER.md exists; design freeze |
+
+### Turn 2026-07-13 10:53 (Driver TRACK_PACKAGE_MANAGER STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 10:53 |
+| elapsed | ~8 min |
+| done    | Wrote `docs/PACKAGE_MANAGER.md` freezing STEP=1–3; TRACK/PLAN mark design frozen. |
+| verify  | `test -f docs/PACKAGE_MANAGER.md`; cites mlc.json, `.mlc_packages/`, `pkg/path`, no version gate. |
+| result  | STEP=4 done. Plain: package-manager design is frozen for Steps 5–10. |
+| issues  | Foreign dirty stashed/restored; untracked GLYPH_CACHE/SCRIPT_VM left. |
+| next    | ROLE=Driver STEP=5 TRACK_PACKAGE_MANAGER — Ruby `mlc.json` manifest parser |
 
 ### Turn 2026-07-13 10:44 (Driver TRACK_PACKAGE_MANAGER STEP=3)
 
