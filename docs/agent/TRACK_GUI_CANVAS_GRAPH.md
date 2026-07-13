@@ -15,7 +15,7 @@ only when the prior phase closes (Planner).
 
 ## Next step
 
-**Phase A STEP=6** — migration smoke in
+**Phase A STEP=7** — verify + close in
 [TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
 
 ## Ключевая коррекция (2026-07-11)
@@ -70,7 +70,7 @@ Active work + STEP status:
 | 3 | World-transform pass | **done** → PHASE_A |
 | 4 | Hit-testing through tree | **done** → PHASE_A |
 | 5 | Batched draw (rect-fill) | **done** → PHASE_A |
-| 6 | Migration smoke vs `gui_button_demo` | **→ PHASE_A** |
+| 6 | Migration smoke vs `gui_button_demo` | **done** → PHASE_A |
 | 7 | Verify | **→ PHASE_A** |
 
 ## Phase B: виджеты (после Phase A closed)

@@ -3,15 +3,20 @@
 Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Epic §29 / §10c
 in [PLAN.md](../PLAN.md).
 
-## Status: **active** (2026-07-13) — STEP=6 migration smoke next
+## Status: **active** (2026-07-13) — STEP=7 verify next
 
 Created by Planner after DEBUG_SOURCE_MAP Critic OK. Phase B–D tracks stay
 uncreated until this file closes.
 
 ## Next step
 
-**STEP=6** — Migration smoke: `gui_button_demo` geometry on scene (+ draw);
-v0 demo kept.
+**STEP=7** — Verify smokes green; close Phase A → Critic.
+
+### STEP=6 done (2026-07-13)
+
+- `misc/examples/scene_button_smoke.mlc`: same `layout_row_item(40,40,160×48)`
+  as `gui_button_demo`; `scene_hit_test` click edge; `scene_draw` flush.
+- `scripts/run_scene_button_smoke.sh`; v0 `gui_button_demo` unchanged.
 
 ### STEP=5 done (2026-07-13)
 
@@ -96,7 +101,7 @@ Draw batching, hit-test algorithm details, widget kinds — STEPs 3–5 / Phase 
 | 3 | World-transform pass (topo order, reused buffer) | **done** (2026-07-13: `scene_update_world`) |
 | 4 | Hit-test via inverse chain; smoke vs `gui_button` case | **done** (2026-07-13: `scene_hit_test` + `scene_hit_smoke`) |
 | 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | **done** (2026-07-13: `scene_draw` + `solid_renderer` + `scene_batch_smoke`) |
-| 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | pending |
+| 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | **done** (2026-07-13: `scene_button_smoke` + run script) |
 | 7 | Verify smoke green (no self-host; misc/gui only) | pending |
 
 ## Bearing (existing v0 — do not patch into foundation)

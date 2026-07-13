@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=6: gui_button on scene migration smoke |
+| test_gate | STEP=7: verify smokes + close → Critic |
+
+### Turn 2026-07-13 15:40 (Driver TRACK_GUI_SCENE_PHASE_A STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:39 |
+| elapsed | ~5 min |
+| done    | `scene_button_smoke.mlc` + `run_scene_button_smoke.sh`; v0 `gui_button_demo` intact. |
+| verify  | scene script ok; `run_gui_button_demo.sh` ok. |
+| result  | STEP=6 done. Plain: button case on scene hit+draw beside v0. |
+| issues  | — |
+| next    | ROLE=Driver STEP=7 TRACK_GUI_SCENE_PHASE_A — verify smokes + close → Critic |
 
 ### Turn 2026-07-13 15:36 (Driver TRACK_GUI_SCENE_PHASE_A STEP=5)
 

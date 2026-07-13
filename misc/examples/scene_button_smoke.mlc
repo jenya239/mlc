@@ -1,0 +1,127 @@
+// TRACK_GUI_SCENE_PHASE_A STEP=6 — gui_button_demo geometry on scene (v0 kept).
+// Same layout rect; click inject frame 4; hit-test + scene_draw batch.
+import { layout_begin, layout_row_item } from '../gui/layout'
+import {
+  gui_input_poll,
+  gui_input_test_set,
+  gui_input_test_clear
+} from '../gui/input'
+import {
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { scene_draw_rect_fills } from '../gui/scene_draw'
+import {
+  solid_renderer_create,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(800, 600)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const place = layout_row_item(layout_begin(40, 40, 8), 160, 48)
+  const button_rect = place.rect
+
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  const button = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(i32_to_f64(button_rect.x), i32_to_f64(button_rect.y)),
+    scene_rect_fill_new(
+      i32_to_f64(button_rect.width),
+      i32_to_f64(button_rect.height),
+      0.20,
+      0.45,
+      0.70,
+      1.0
+    )
+  )
+  scene = button.scene
+  scene = scene_update_world(scene)
+
+  const renderer = solid_renderer_create()
+  if renderer.program < 0 then
+    glfw_gl_context_end()
+    return renderer.program
+  end
+
+  let mut previous_mouse_down = 0
+  let mut click_count = 0
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    if frame_index == 4 then
+      gui_input_test_set(button_rect.x + 8, button_rect.y + 8, 1, 0)
+    else
+      gui_input_test_set(button_rect.x + 8, button_rect.y + 8, 0, 0)
+    end
+
+    const input = gui_input_poll()
+    const hit = scene_hit_test(
+      scene,
+      i32_to_f64(input.mouse_x),
+      i32_to_f64(input.mouse_y)
+    )
+    const hovered = if hit == button.node_id then 1 else 0
+    if hovered == 1 && previous_mouse_down == 0 && input.mouse_down == 1 then
+      click_count = click_count + 1
+    end
+    previous_mouse_down = input.mouse_down
+
+    let mut clear_green = 0.08
+    if hovered == 1 then
+      clear_green = 0.22
+    end
+    if click_count > 0 then
+      clear_green = clear_green + 0.12
+    end
+
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const batch = scene_draw_rect_fills(scene, renderer, width, height)
+    const flush_status = solid_renderer_flush(
+      batch, width, height, 0.08, clear_green, 0.12
+    )
+    if flush_status != 0 then
+      solid_renderer_destroy(renderer)
+      gui_input_test_clear()
+      glfw_gl_context_end()
+      return flush_status
+    end
+    glfw_gl_context_swap_poll()
+
+    frame_index = frame_index + 1
+    if frame_index >= 24 then
+      break
+    end
+  end
+
+  solid_renderer_destroy(renderer)
+  gui_input_test_clear()
+  glfw_gl_context_end()
+  if click_count != 1 then
+    return 0 - 30
+  end
+  0
+end
