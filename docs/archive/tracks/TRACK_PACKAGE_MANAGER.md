@@ -3,11 +3,18 @@
 Parent: [../../PLAN.md](../../PLAN.md) §18. Authorized 2026-07-11 (CONTINUITY backlog).
 Queue after [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md) Critic OK.
 
-## Status: **closed** (2026-07-13) — STEP=1–10 done; awaiting Critic
+## Status: **closed** (2026-07-13) — Critic OK
+
+**Critic 2026-07-13:** STEP=1–10 vs `5e101b04`…`ad0ff1bf`; artifacts in HEAD
+(Manifest/Fetcher/`path_normalize`/E2E/docs); re-ran unit 9+3/0 and
+`run_e2e.rb` → 42; STEP=10 claims REG 20/0 + p1≡p2 accepted from close commit.
+**reopen: none**. Residuals: Ruby `ModuleGraph` still relative-only (package
+resolve is mlcc `path_normalize`); nested package `mlc.json` ignored (v1 flat).
 
 ## Next step
 
-**Critic** — `ROLE=Critic STEP=critique-audit TRACK_PACKAGE_MANAGER`.
+**closed** — Critic OK. Queue: Planner → next PLAN item (TEXT_GLYPH_CACHE_SCALING
+priority insert, else DEBUG_SOURCE_MAP).
 
 ### STEP=10 done (2026-07-13)
 

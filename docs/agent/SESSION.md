@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 10 |
-| active_track | TRACK_PACKAGE_MANAGER (closed; Critic) |
-| test_gate | p1≡p2; REG 20/0; sweep 117/0/1 |
+| driver_turns_since_plan | 0 |
+| step_last | critique-audit |
+| active_track | — (PACKAGE_MANAGER Critic OK) |
+| test_gate | manifest 9/0; fetcher 3/0; e2e → 42 |
+
+### Turn 2026-07-13 13:00 (Critic TRACK_PACKAGE_MANAGER — critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_PACKAGE_MANAGER |
+| started | 2026-07-13 13:00 |
+| elapsed | ~8 min |
+| done    | Audited STEP1–10 vs `5e101b04`…`ad0ff1bf`; PLAN/archive links; re-ran unit+E2E. |
+| verify  | manifest 9/0; fetcher 3/0; `run_e2e.rb` PASS → 42; all claimed paths in HEAD. |
+| result  | **reopen: none**. Residuals: Ruby ModuleGraph no pkg resolve; flat deps only. |
+| issues  | Foreign PLAN/GLYPH/SCRIPT_VM leftovers left. |
+| next    | ROLE=Planner STEP=plan-refresh — next queue (TEXT_GLYPH_CACHE_SCALING / DEBUG_SOURCE_MAP) |
 
 ### Turn 2026-07-13 12:15 (Driver TRACK_PACKAGE_MANAGER STEP=10)
 

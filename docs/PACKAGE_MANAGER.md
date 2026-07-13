@@ -1,7 +1,7 @@
 # Package manager
 
 Parent: [PLAN.md](PLAN.md) §18, [archive/tracks/TRACK_PACKAGE_MANAGER.md](archive/tracks/TRACK_PACKAGE_MANAGER.md).
-Status: **closed** 2026-07-13 (TRACK STEPs 1–10; Critic pending).
+Status: **closed** 2026-07-13 (TRACK STEPs 1–10; Critic OK).
 
 Design freeze (STEPs 1–4) is still the source of truth for scope. Do not expand
 without a new TRACK step.

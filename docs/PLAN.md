@@ -405,7 +405,7 @@ compiler/
 | **15** Debugging story (`#line` → `.mlc` в stack trace) | **open, приоритет поднят 2026-07-11** | [TRACK_DEBUG_SOURCE_MAP](agent/TRACK_DEBUG_SOURCE_MAP.md) — гейт снят (внешний `.mlc`-код вне компилятора уже есть); Steps 1-5 |
 | **16** Integer overflow semantics | **closed** | [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed** 2026-07-10 — signed debug-panic/release-UB; unsigned wrap; div0 panic; `mlc::int_arith` i32 |
 | **17** `T!E` error-union sugar | **done** (2026-07-11) | [TRACK_LANG_ERROR_UNION](archive/tracks/TRACK_LANG_ERROR_UNION.md) **closed** STEP=1–5; Critic OK (`57913a3f`…`4ee642cc`); Ruby+mlcc desugar; e2e+`?`; REG 20/0; self-host DIFF 0 |
-| **18** Package manager | **closed** (STEP=1–10; Critic pending) | [TRACK_PACKAGE_MANAGER](archive/tracks/TRACK_PACKAGE_MANAGER.md) — p1≡p2; REG 20/0; sweep 117/0/1 |
+| **18** Package manager | **closed** (Critic OK 2026-07-13; STEP=1–10) | [TRACK_PACKAGE_MANAGER](archive/tracks/TRACK_PACKAGE_MANAGER.md) — `5e101b04`…`ad0ff1bf`; REG 20/0; p1≡p2; E2E 42 |
 | **19** Автоматическое обнаружение циклов в рантайме | **open, design-only, вероятный won't-do** | [TRACK_LANG_AUTO_CYCLE](agent/TRACK_LANG_AUTO_CYCLE.md) — одна design-сессия закрывает вопрос из §10, противоречит принципу "без GC" |
 | **20** Стратегия «без hand-written C++» (FFI-shim/бизнес-логика → mlcc/MLC) | **done** (2026-07-11) | [FFI_LAYER.md](FFI_LAYER.md) §8; подтреки 20a–e **closed** (Critic OK где применимо). Рантайм языка остаётся C++ (won't-do self-host runtime). Residuals: bridges/TcpStream, thin abi, smoke names |
 | **20a** Postgres/Crypto/Tcp — прямой `extern fn` вместо `.hpp`-shim | **done** (2026-07-11) | [TRACK_FFI_SHIM_MIGRATION](archive/tracks/TRACK_FFI_SHIM_MIGRATION.md) **closed** STEP=1–7; Critic OK (`8ffe67b8`…`8b21220a`). Residual: bridges/TcpStream |
@@ -605,8 +605,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       `75263977`…`21b33afb`; vs_shim+field re-OK; REG 20/0; p1≡p2;
       → [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md))**
 
-  → **PACKAGE_MANAGER (**closed** 2026-07-13: STEP=1–10; p1≡p2; REG 20/0;
-      sweep 117/0/1; Critic pending;
+  → **PACKAGE_MANAGER (**closed** 2026-07-13: Critic OK; STEP=1–10;
+      `5e101b04`…`ad0ff1bf`; REG 20/0; p1≡p2; E2E 42;
       → [archive/tracks/TRACK_PACKAGE_MANAGER.md](archive/tracks/TRACK_PACKAGE_MANAGER.md))**
 
   → DEBUG_SOURCE_MAP (гейт снят — внешний `.mlc`-код вне компилятора уже

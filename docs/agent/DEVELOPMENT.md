@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_PACKAGE_MANAGER` closed** — STEP=1–10; Critic next.
+**`TRACK_PACKAGE_MANAGER` Critic OK** — archived.
+Queue next: Planner (TEXT_GLYPH_CACHE_SCALING priority / DEBUG_SOURCE_MAP).
 See [archive/tracks/TRACK_PACKAGE_MANAGER.md](../archive/tracks/TRACK_PACKAGE_MANAGER.md).
 
 ## Step sizing (good vs bad)
