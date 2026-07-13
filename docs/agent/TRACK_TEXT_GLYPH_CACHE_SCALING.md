@@ -8,14 +8,15 @@ Trigger: пользователь 2026-07-13, `misc/examples/text_ide_panels_dem
 заметно тормозит несмотря на «космический» ожидаемый FPS после закрытия
 обоих треков выше.
 
-## Status: **active** (2026-07-13) — STEP=2 layout cache next
+## Status: **active** (2026-07-13) — STEP=3 re-bench + corpus next
 
 Activated by Planner after PACKAGE_MANAGER Critic OK. Priority ahead of
 `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH`.
 
 ## Next step
 
-**STEP=2** — Per-line layout cache (skip reshape+lookup for unchanged text).
+**STEP=3** — Re-bench `text_dashboard_demo` + add both demos to perf-regression
+corpus (time thresholds).
 
 ## Measurement (2026-07-13)
 
@@ -29,6 +30,13 @@ After STEP=1 HashMap+FIFO (`Map<i64, GlyphCacheEntry>`, packed key, no hit reord
 
 ```
 Elapsed: 14.40s        →  ~48ms/frame
+```
+
+After STEP=2 per-line layout cache in `text_ide_panels_demo.mlc`
+(`LayoutCache` / `GlyphRun`; skip reshape+lookup when text+font+size hit):
+
+```
+Elapsed: 0.97s         →  ~3.2ms/frame  (gate &lt;3s)
 ```
 
 O(n) scan+rebuild removed. Residual (~14s) is per-frame HarfBuzz reshape of
@@ -112,7 +120,7 @@ Design-ready, не gated — Planner может открыть STEP=1.
 | Step | Deliverable | Gate | Status |
 |------|-------------|------|--------|
 | 1 | `HashMap`-backed `GlyphCache` (`Map<i64,…>` + FIFO order), без per-access reorder | ide bench wall &lt;16s (revised; was &lt;3s) | **done** (2026-07-13: 21.65→14.40s) |
-| 2 | Per-line layout cache в демо (или в `text_renderer.mlc` как переиспользуемый helper) — skip reshape+lookup для неизменного текста | тот же bench &lt; 3s wall | pending |
+| 2 | Per-line layout cache в демо — skip reshape+lookup для неизменного текста | тот же bench &lt; 3s wall | **done** (2026-07-13: 14.40→0.97s) |
 | 3 | Re-bench `text_dashboard_demo.mlc` + добавить оба демо в perf-regression corpus (порог по времени, не только `error:`-grep как в `TRACK_EXAMPLES_CI`) | оба демо в geo corpus, порог зафиксирован | pending |
 
 ## Verify template

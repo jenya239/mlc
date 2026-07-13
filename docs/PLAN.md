@@ -425,7 +425,7 @@ compiler/
 | **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) Critic OK; STEP=1–14; REG 20/0; sweep 113/0/1 | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open, активирован 2026-07-11** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — крупнейший источник работы (100+ шагов); Phase A-D (retained tree → widgets → dirty-tracking/batching → camera+blueprint primitives) |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
-| **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache.glyph_cache_get` O(n) scan+rebuild на каждый глиф | **active** (STEP=1 done 14.4s; STEP=2 layout cache next) | [TRACK_TEXT_GLYPH_CACHE_SCALING](agent/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO; residual = reshape |
+| **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **active** (STEP=1–2 done 0.97s; STEP=3 corpus next) | [TRACK_TEXT_GLYPH_CACHE_SCALING](agent/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -606,8 +606,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       `75263977`…`21b33afb`; vs_shim+field re-OK; REG 20/0; p1≡p2;
       → [archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md))**
 
-  → **TEXT_GLYPH_CACHE_SCALING (**active** 2026-07-13: STEP=1 done (21.65→14.40s);
-      STEP=2 layout cache next, gate &lt;3s;
+  → **TEXT_GLYPH_CACHE_SCALING (**active** 2026-07-13: STEP=1–2 done (21.65→0.97s);
+      STEP=3 dashboard re-bench + perf corpus next;
       → [agent/TRACK_TEXT_GLYPH_CACHE_SCALING.md](agent/TRACK_TEXT_GLYPH_CACHE_SCALING.md))**
 
   → **PACKAGE_MANAGER (**closed** 2026-07-13: Critic OK; STEP=1–10;

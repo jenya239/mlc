@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_TEXT_GLYPH_CACHE_SCALING |
-| test_gate | STEP=2: ide bench wall &lt;3s |
+| test_gate | STEP=3: dashboard re-bench + corpus |
+
+### Turn 2026-07-13 13:25 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| started | 2026-07-13 13:16 |
+| elapsed | ~10 min |
+| done    | `text_ide_panels_demo`: `LayoutCache`/`GlyphRun`; skip reshape on key hit. |
+| verify  | ide bench 300f: **0.97s** (&lt;3s). |
+| result  | STEP=2 done. Plain: static lines reshape once; status/prompt still miss. |
+| issues  | — |
+| next    | ROLE=Driver STEP=3 TRACK_TEXT_GLYPH_CACHE_SCALING — dashboard re-bench + perf corpus |
 
 ### Turn 2026-07-13 13:20 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=1)
 

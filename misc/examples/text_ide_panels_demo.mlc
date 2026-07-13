@@ -79,9 +79,22 @@ fn font_id_mono() -> i32 = 2
 
 type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32, font_id: i32 }
 
+// Cached shaped glyphs for one line text+font+size (TRACK_TEXT_GLYPH_CACHE_SCALING STEP=2).
+type GlyphRun = {
+  slot: AtlasSlot,
+  bearing_x: i32,
+  bearing_y: i32,
+  advance: i32
+}
+
+type LayoutCache = {
+  by_key: Map<string, [GlyphRun]>
+}
+
 type LineDrawResult = {
   atlas: GlyphAtlas,
   cache: GlyphCache,
+  layouts: LayoutCache,
   vertex_count: i32,
   atlas_dirty: i32
 }
@@ -91,23 +104,61 @@ fn font_path_for(font_id: i32) -> string = do
   font_sans()
 end
 
-// Append one shaped line using the persistent GlyphCache/GlyphAtlas. Same
-// mechanics as text_dashboard_demo.mlc's append_line, generalized to carry
-// font_id per line (sidebar/status = proportional, editor/terminal = mono).
+fn layout_cache_new() -> LayoutCache = do
+  let mut by_key: Map<string, [GlyphRun]> = Map.new()
+  LayoutCache { by_key: by_key }
+end
+
+fn line_layout_key(line: Line) -> string =
+  line.font_id.to_string() + "\t" + line.pixel_size.to_string() + "\t" + line.text
+
+fn push_glyph_runs(line: Line, runs: [GlyphRun]) -> i32 = do
+  let mut cursor_x = line.pen_x
+  let mut vertices = 0
+  let mut index = 0
+  while index < runs.length() do
+    const run = runs[index]
+    if run.slot.width > 0 && run.slot.height > 0 then
+      gl_scratch_push_screen_quad(
+        window_width(), window_height(),
+        cursor_x + run.bearing_x, line.pen_y - run.bearing_y,
+        run.slot.width, run.slot.height,
+        atlas_size(), run.slot.x, run.slot.y, run.slot.width, run.slot.height
+      )
+      vertices = vertices + 6
+    end
+    cursor_x = cursor_x + run.advance
+    index = index + 1
+  end
+  vertices
+end
+
+// Shape+atlas once per distinct line text; later frames only push quads.
 fn append_line(
-  line: Line, atlas: GlyphAtlas, cache: GlyphCache
+  line: Line, atlas: GlyphAtlas, cache: GlyphCache, layouts: LayoutCache
 ) -> LineDrawResult = do
+  const layout_key = line_layout_key(line)
+  if layouts.by_key.has(layout_key) then
+    return LineDrawResult {
+      atlas: atlas,
+      cache: cache,
+      layouts: layouts,
+      vertex_count: push_glyph_runs(line, layouts.by_key.get(layout_key)),
+      atlas_dirty: 0
+    }
+  end
   const font_path = font_path_for(line.font_id)
   const count = shape_glyph_count(font_path, line.text, line.pixel_size)
   if count < 0 then
-    return LineDrawResult { atlas: atlas, cache: cache, vertex_count: 0, atlas_dirty: 0 }
+    return LineDrawResult {
+      atlas: atlas, cache: cache, layouts: layouts, vertex_count: 0, atlas_dirty: 0
+    }
   end
   let mut working_atlas = atlas
   let mut working_cache = cache
-  let mut cursor_x = line.pen_x
-  let mut index = 0
-  let mut vertices = 0
+  let mut runs: [GlyphRun] = []
   let mut atlas_dirty = 0
+  let mut index = 0
   while index < count do
     const glyph_id = shape_glyph_id_at(index)
     const key = GlyphCacheKey {
@@ -139,38 +190,50 @@ fn append_line(
         end
       end
     end
-    if slot.width > 0 && slot.height > 0 then
-      gl_scratch_push_screen_quad(
-        window_width(), window_height(),
-        cursor_x + bearing_x, line.pen_y - bearing_y,
-        slot.width, slot.height,
-        atlas_size(), slot.x, slot.y, slot.width, slot.height
-      )
-      vertices = vertices + 6
-    end
-    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    runs.push(GlyphRun {
+      slot: slot,
+      bearing_x: bearing_x,
+      bearing_y: bearing_y,
+      advance: shape_glyph_advance_at(index) / 64
+    })
     index = index + 1
   end
-  LineDrawResult { atlas: working_atlas, cache: working_cache, vertex_count: vertices, atlas_dirty: atlas_dirty }
+  let mut by_key = layouts.by_key
+  by_key.set(layout_key, runs)
+  LineDrawResult {
+    atlas: working_atlas,
+    cache: working_cache,
+    layouts: LayoutCache { by_key: by_key },
+    vertex_count: push_glyph_runs(line, runs),
+    atlas_dirty: atlas_dirty
+  }
 end
 
 fn draw_lines(
-  entries: [Line], atlas: GlyphAtlas, cache: GlyphCache
+  entries: [Line], atlas: GlyphAtlas, cache: GlyphCache, layouts: LayoutCache
 ) -> LineDrawResult = do
   let mut working_atlas = atlas
   let mut working_cache = cache
+  let mut working_layouts = layouts
   let mut vertices = 0
   let mut atlas_dirty = 0
   let mut index = 0
   while index < entries.length() do
-    const result = append_line(entries[index], working_atlas, working_cache)
+    const result = append_line(entries[index], working_atlas, working_cache, working_layouts)
     working_atlas = result.atlas
     working_cache = result.cache
+    working_layouts = result.layouts
     vertices = vertices + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
     index = index + 1
   end
-  LineDrawResult { atlas: working_atlas, cache: working_cache, vertex_count: vertices, atlas_dirty: atlas_dirty }
+  LineDrawResult {
+    atlas: working_atlas,
+    cache: working_cache,
+    layouts: working_layouts,
+    vertex_count: vertices,
+    atlas_dirty: atlas_dirty
+  }
 end
 
 fn build_rows(entries: [string], pixel_size: i32, pen_x: i32, font_id: i32, top: i32, row_height: i32, baseline_offset: i32) -> [Line] = do
@@ -227,6 +290,7 @@ fn main() -> i32 = do
   text_scratch_u8_resize_zero(atlas_size() * atlas_size())
   let mut atlas = glyph_atlas_new(atlas_size())
   let mut cache = glyph_cache_new(512)
+  let mut layouts = layout_cache_new()
 
   // Solid-fill atlas slots (separators / row highlight / active tab), packed
   // and painted once — screen position can move every frame for free (only
@@ -390,39 +454,45 @@ fn main() -> i32 = do
       }
     ]
 
-    let mut result = draw_lines(header_lines, atlas, cache)
+    let mut result = draw_lines(header_lines, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 
-    result = draw_lines(sidebar_lines, atlas, cache)
+    result = draw_lines(sidebar_lines, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 
-    result = draw_lines(editor_lines, atlas, cache)
+    result = draw_lines(editor_lines, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 
-    result = draw_lines(terminal_lines, atlas, cache)
+    result = draw_lines(terminal_lines, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 
-    result = draw_lines(prompt_line, atlas, cache)
+    result = draw_lines(prompt_line, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 
-    result = draw_lines(status_line, atlas, cache)
+    result = draw_lines(status_line, atlas, cache, layouts)
     atlas = result.atlas
     cache = result.cache
+    layouts = result.layouts
     vertex_count = vertex_count + result.vertex_count
     if result.atlas_dirty == 1 then atlas_dirty = 1 end
 

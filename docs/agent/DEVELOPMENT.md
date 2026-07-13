@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_TEXT_GLYPH_CACHE_SCALING` active** — STEP=1 done (HashMap+FIFO, 14.4s);
-STEP=2 layout cache next (gate &lt;3s).
+**`TRACK_TEXT_GLYPH_CACHE_SCALING` active** — STEP=1–2 done (ide bench 0.97s);
+STEP=3 dashboard re-bench + perf corpus next.
 See [TRACK_TEXT_GLYPH_CACHE_SCALING.md](TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 PACKAGE_MANAGER Critic OK: [archive/tracks/TRACK_PACKAGE_MANAGER.md](../archive/tracks/TRACK_PACKAGE_MANAGER.md).
 
