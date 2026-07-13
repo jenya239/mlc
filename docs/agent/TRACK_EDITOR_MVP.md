@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=6** — FileTree model + lazy expand (needs P1 `list_dir` or mock DirEntry[]).
+**STEP=7** — Wire tree panel + editor placeholder + divider drag (inject smoke).
+
+### STEP=6 done (2026-07-14)
+
+- `misc/editor/workspace/file_tree.mlc`: lazy expand via inject `DirEntry[]`
+  (no recursive scan; P1 `list_dir` still deferred).
+- `tests/file_tree_unit.mlc` + `scripts/run_editor_file_tree_unit.sh` exit 0.
 
 ### STEP=5 done (2026-07-13)
 

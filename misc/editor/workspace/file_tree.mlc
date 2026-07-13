@@ -1,0 +1,147 @@
+// TRACK_EDITOR_MVP STEP=6 — FileTree model, lazy expand (FS via inject/mock).
+export type DirEntry = {
+  name: string,
+  is_directory: i32
+}
+
+export type FileTreeNode = {
+  path: string,
+  name: string,
+  is_directory: i32,
+  expanded: i32,
+  children_loaded: i32,
+  parent: i32,
+  children: [i32]
+}
+
+export type FileTree = {
+  nodes: [FileTreeNode],
+  root_id: i32
+}
+
+export type FileTreeExpandResult = {
+  tree: FileTree,
+  node_id: i32
+}
+
+export fn dir_entry_new(name: string, is_directory: i32) -> DirEntry =
+  DirEntry { name: name, is_directory: is_directory }
+
+fn path_join(parent_path: string, name: string) -> string = do
+  if parent_path.length() == 0 then
+    return name
+  end
+  if parent_path == "/" then
+    return "/" + name
+  end
+  parent_path + "/" + name
+end
+
+export fn file_tree_new(root_path: string, root_name: string) -> FileTree = do
+  let mut nodes: [FileTreeNode] = []
+  nodes.push(FileTreeNode {
+    path: root_path,
+    name: root_name,
+    is_directory: 1,
+    expanded: 0,
+    children_loaded: 0,
+    parent: -1,
+    children: []
+  })
+  FileTree { nodes: nodes, root_id: 0 }
+end
+
+// Attach one level of children; does not recurse into subdirectories.
+export fn file_tree_expand(
+  tree: FileTree,
+  node_id: i32,
+  entries: [DirEntry]
+) -> FileTreeExpandResult = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return FileTreeExpandResult { tree: tree, node_id: node_id }
+  end
+  const node = tree.nodes[node_id]
+  if node.is_directory == 0 then
+    return FileTreeExpandResult { tree: tree, node_id: node_id }
+  end
+  if node.children_loaded == 1 then
+    let mut nodes_already = tree.nodes
+    nodes_already.set(node_id, FileTreeNode {
+      path: node.path,
+      name: node.name,
+      is_directory: node.is_directory,
+      expanded: 1,
+      children_loaded: 1,
+      parent: node.parent,
+      children: node.children
+    })
+    return FileTreeExpandResult {
+      tree: FileTree { nodes: nodes_already, root_id: tree.root_id },
+      node_id: node_id
+    }
+  end
+
+  let mut nodes = tree.nodes
+  let mut child_ids: [i32] = []
+  let mut entry_index = 0
+  while entry_index < entries.length() do
+    const entry = entries[entry_index]
+    const child_id = nodes.length()
+    nodes.push(FileTreeNode {
+      path: path_join(node.path, entry.name),
+      name: entry.name,
+      is_directory: entry.is_directory,
+      expanded: 0,
+      children_loaded: 0,
+      parent: node_id,
+      children: []
+    })
+    child_ids.push(child_id)
+    entry_index = entry_index + 1
+  end
+  nodes.set(node_id, FileTreeNode {
+    path: node.path,
+    name: node.name,
+    is_directory: 1,
+    expanded: 1,
+    children_loaded: 1,
+    parent: node.parent,
+    children: child_ids
+  })
+  FileTreeExpandResult {
+    tree: FileTree { nodes: nodes, root_id: tree.root_id },
+    node_id: node_id
+  }
+end
+
+export fn file_tree_collapse(tree: FileTree, node_id: i32) -> FileTree = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return tree
+  end
+  const node = tree.nodes[node_id]
+  let mut nodes = tree.nodes
+  nodes.set(node_id, FileTreeNode {
+    path: node.path,
+    name: node.name,
+    is_directory: node.is_directory,
+    expanded: 0,
+    children_loaded: node.children_loaded,
+    parent: node.parent,
+    children: node.children
+  })
+  FileTree { nodes: nodes, root_id: tree.root_id }
+end
+
+export fn file_tree_child_count(tree: FileTree, node_id: i32) -> i32 = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return 0
+  end
+  tree.nodes[node_id].children.length()
+end
+
+export fn file_tree_is_expanded(tree: FileTree, node_id: i32) -> i32 = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return 0
+  end
+  tree.nodes[node_id].expanded
+end

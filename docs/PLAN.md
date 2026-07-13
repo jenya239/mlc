@@ -426,7 +426,7 @@ compiler/
 | **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **deferred behind §33** (2026-07-13) Phase A closed; Phase B **после** EDITOR_MVP или явной команды | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A → archive; Phase B не открывать, пока EDITOR в приоритете |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
-| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **priority / active** (2026-07-14) STEP=pre…5 **done**; **STEP=6** next (FileTree) | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](agent/TRACK_EDITOR_MVP.md); GLFW PlatformBackend v1; GUI Phase B deferred |
+| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **priority / active** (2026-07-14) STEP=pre…6 **done**; **STEP=7** next (wire panels) | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](agent/TRACK_EDITOR_MVP.md); GLFW PlatformBackend v1; GUI Phase B deferred |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 

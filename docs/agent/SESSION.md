@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 6 |
-| step_last | 5 |
+| driver_turns_since_plan | 7 |
+| step_last | 6 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=6 FileTree next |
+| test_gate | STEP=7 wire panels next |
+
+### Turn 2026-07-14 00:18 (Driver TRACK_EDITOR_MVP STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 00:17 |
+| elapsed | ~4 min |
+| done    | `workspace/file_tree.mlc` + `tests/file_tree_unit.mlc` + run script; TRACK/PLAN. |
+| verify  | file_tree unit exit 0; `file_tree_unit ok`. |
+| result  | STEP=6 done. Plain: lazy FileTree expand (mock entries) green. |
+| issues  | P1 list_dir still deferred; STEP=8 ignore list next after wire. |
+| next    | ROLE=Driver STEP=7 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 00:10 (Driver TRACK_EDITOR_MVP STEP=5)
 

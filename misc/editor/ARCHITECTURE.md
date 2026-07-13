@@ -37,7 +37,7 @@ fragments → flatten → render`.
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
 
-## STEP=0…5 status
+## STEP=0…6 status
 
-- STEP=0–4: window / theme / text / clip / perf (see prior notes).
-- STEP=5: `layout/shell.mlc` Fixed/Row/Col/Flex/Scroll/Split (pure).
+- STEP=0–5: window / theme / text / clip / perf / shell layout.
+- STEP=6: `workspace/file_tree.mlc` lazy expand (inject DirEntry; P1 later).

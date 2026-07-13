@@ -1,0 +1,88 @@
+// TRACK_EDITOR_MVP STEP=6 — FileTree lazy expand unit (mock DirEntry[], no FS).
+import {
+  dir_entry_new,
+  file_tree_new,
+  file_tree_expand,
+  file_tree_collapse,
+  file_tree_child_count,
+  file_tree_is_expanded
+} from '../workspace/file_tree'
+
+fn main() -> i32 = do
+  let mut tree = file_tree_new("/proj", "proj")
+  if tree.nodes.length() != 1 then
+    return 1
+  end
+  if file_tree_is_expanded(tree, 0) != 0 then
+    return 2
+  end
+
+  // Nested dir listed only as a leaf until its own expand — no deep scan.
+  const root_entries = [
+    dir_entry_new("src", 1),
+    dir_entry_new("README.md", 0),
+    dir_entry_new(".git", 1)
+  ]
+  const expanded = file_tree_expand(tree, 0, root_entries)
+  tree = expanded.tree
+  if tree.nodes.length() != 4 then
+    return 3
+  end
+  if file_tree_child_count(tree, 0) != 3 then
+    return 4
+  end
+  if file_tree_is_expanded(tree, 0) != 1 then
+    return 5
+  end
+  // src node exists but has no children until expand(src).
+  const source_id = tree.nodes[0].children[0]
+  if tree.nodes[source_id].name != "src" then
+    return 6
+  end
+  if file_tree_child_count(tree, source_id) != 0 then
+    return 7
+  end
+  if tree.nodes[source_id].children_loaded != 0 then
+    return 8
+  end
+
+  const source_entries = [
+    dir_entry_new("main.mlc", 0),
+    dir_entry_new("deep", 1)
+  ]
+  const source_expanded = file_tree_expand(tree, source_id, source_entries)
+  tree = source_expanded.tree
+  if file_tree_child_count(tree, source_id) != 2 then
+    return 9
+  end
+  // deep still unloaded
+  const deep_id = tree.nodes[source_id].children[1]
+  if tree.nodes[deep_id].children_loaded != 0 then
+    return 10
+  end
+  if tree.nodes.length() != 6 then
+    return 11
+  end
+
+  // Re-expand root with empty list must not duplicate children.
+  const again = file_tree_expand(tree, 0, [])
+  tree = again.tree
+  if tree.nodes.length() != 6 then
+    return 12
+  end
+  if file_tree_child_count(tree, 0) != 3 then
+    return 13
+  end
+
+  tree = file_tree_collapse(tree, 0)
+  if file_tree_is_expanded(tree, 0) != 0 then
+    return 14
+  end
+  // Children retained after collapse (lazy cache).
+  if file_tree_child_count(tree, 0) != 3 then
+    return 15
+  end
+
+  println("[mlc-editor] file_tree_unit ok")
+  0
+end
