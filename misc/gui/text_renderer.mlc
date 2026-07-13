@@ -113,7 +113,8 @@ export type GlyphCacheEntry = {
 
 export type GlyphCache = {
   capacity: i32,
-  entries: [GlyphCacheEntry]
+  by_key: Map<i64, GlyphCacheEntry>,
+  order: [i64]
 }
 
 export type GlyphCacheOp = {
@@ -237,33 +238,26 @@ export fn glyph_atlas_pack(
   }
 end
 
-export fn glyph_cache_new(capacity: i32) -> GlyphCache =
-  GlyphCache { capacity: capacity, entries: [] }
-
-fn glyph_cache_key_equal(left: GlyphCacheKey, right: GlyphCacheKey) -> bool =
-  left.font_id == right.font_id
-  && left.glyph_index == right.glyph_index
-  && left.size_px == right.size_px
-  && left.mode == right.mode
-
-fn glyph_cache_find_index(cache: GlyphCache, key: GlyphCacheKey) -> i32 = do
-  let mut index = 0
-  while index < cache.entries.length() do
-    if glyph_cache_key_equal(cache.entries[index].key, key) then
-      return index
-    end
-    index = index + 1
-  end
-  -1
+export fn glyph_cache_new(capacity: i32) -> GlyphCache = do
+  let mut by_key: Map<i64, GlyphCacheEntry> = Map.new()
+  GlyphCache { capacity: capacity, by_key: by_key, order: [] }
 end
 
-fn glyph_cache_entries_without(entries: [GlyphCacheEntry], remove_index: i32) -> [GlyphCacheEntry] = do
-  let mut rebuilt: [GlyphCacheEntry] = []
-  let mut index = 0
-  while index < entries.length() do
-    if index != remove_index then
-      rebuilt.push(entries[index])
-    end
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn glyph_cache_pack_key(key: GlyphCacheKey) -> i64 = do
+  const font_part = i64_from_i32(key.font_id & 255) << 48
+  const glyph_part = i64_from_i32(key.glyph_index & 16777215) << 24
+  const size_part = i64_from_i32(key.size_px & 65535) << 8
+  const mode_part = i64_from_i32(key.mode & 255)
+  font_part | glyph_part | size_part | mode_part
+end
+
+fn glyph_cache_order_drop_first(order: [i64]) -> [i64] = do
+  let mut rebuilt: [i64] = []
+  let mut index = 1
+  while index < order.length() do
+    rebuilt.push(order[index])
     index = index + 1
   end
   rebuilt
@@ -273,17 +267,15 @@ fn empty_slot() -> AtlasSlot =
   AtlasSlot { page_index: -1, x: 0, y: 0, width: 0, height: 0 }
 
 export fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheOp = do
-  const found_index = glyph_cache_find_index(cache, key)
-  if found_index < 0 then
+  const map_key = glyph_cache_pack_key(key)
+  if !cache.by_key.has(map_key) then
     return GlyphCacheOp {
       cache: cache, found: 0, slot: empty_slot(), bearing_x: 0, bearing_y: 0
     }
   end
-  const entry = cache.entries[found_index]
-  let mut entries = glyph_cache_entries_without(cache.entries, found_index)
-  entries.push(entry)
+  const entry = cache.by_key.get(map_key)
   GlyphCacheOp {
-    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    cache: cache,
     found: 1,
     slot: entry.slot,
     bearing_x: entry.bearing_x,
@@ -298,25 +290,28 @@ export fn glyph_cache_insert(
   const entry = GlyphCacheEntry {
     key: key, slot: slot, bearing_x: bearing_x, bearing_y: bearing_y
   }
-  const found_index = glyph_cache_find_index(cache, key)
-  if found_index >= 0 then
-    let mut entries = glyph_cache_entries_without(cache.entries, found_index)
-    entries.push(entry)
+  const map_key = glyph_cache_pack_key(key)
+  let mut by_key = cache.by_key
+  let mut order = cache.order
+  if by_key.has(map_key) then
+    by_key.set(map_key, entry)
     return GlyphCacheOp {
-      cache: GlyphCache { capacity: cache.capacity, entries: entries },
+      cache: GlyphCache { capacity: cache.capacity, by_key: by_key, order: order },
       found: 1,
       slot: slot,
       bearing_x: bearing_x,
       bearing_y: bearing_y
     }
   end
-  let mut entries = cache.entries
-  if entries.length() >= cache.capacity && cache.capacity > 0 then
-    entries = glyph_cache_entries_without(entries, 0)
+  if order.length() >= cache.capacity && cache.capacity > 0 then
+    const oldest_key = order[0]
+    by_key.remove(oldest_key)
+    order = glyph_cache_order_drop_first(order)
   end
-  entries.push(entry)
+  by_key.set(map_key, entry)
+  order.push(map_key)
   GlyphCacheOp {
-    cache: GlyphCache { capacity: cache.capacity, entries: entries },
+    cache: GlyphCache { capacity: cache.capacity, by_key: by_key, order: order },
     found: 0,
     slot: slot,
     bearing_x: bearing_x,

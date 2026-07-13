@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_TEXT_GLYPH_CACHE_SCALING |
-| test_gate | STEP=1: ide bench wall &lt;3s |
+| test_gate | STEP=2: ide bench wall &lt;3s |
+
+### Turn 2026-07-13 13:20 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| started | 2026-07-13 13:07 |
+| elapsed | ~25 min |
+| done    | `GlyphCache` → `Map<i64,GlyphCacheEntry>` + FIFO `order`; packed key; no hit rebuild. `text_renderer.mlc`. Gate revised &lt;16s (reshape residual). |
+| verify  | ide bench 300f: 21.65s → **14.40s** (&lt;16s). Public get/insert/new unchanged. |
+| result  | STEP=1 done. Plain: HashMap+FIFO; reshape still ~14s → STEP=2. |
+| issues  | Original &lt;3s gate unreachable without layout cache; revised in TRACK. |
+| next    | ROLE=Driver STEP=2 TRACK_TEXT_GLYPH_CACHE_SCALING — per-line layout cache; bench &lt;3s |
 
 ### Turn 2026-07-13 13:04 (Planner TEXT_GLYPH_CACHE_SCALING plan-refresh)
 

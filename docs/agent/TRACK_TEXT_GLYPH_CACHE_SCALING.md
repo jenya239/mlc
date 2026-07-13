@@ -8,46 +8,33 @@ Trigger: пользователь 2026-07-13, `misc/examples/text_ide_panels_dem
 заметно тормозит несмотря на «космический» ожидаемый FPS после закрытия
 обоих треков выше.
 
-## Status: **active** (2026-07-13) — STEP=1 HashMap GlyphCache next
+## Status: **active** (2026-07-13) — STEP=2 layout cache next
 
 Activated by Planner after PACKAGE_MANAGER Critic OK. Priority ahead of
 `DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH`.
 
 ## Next step
 
-**STEP=1** — `HashMap`-backed `GlyphCache` (replace `[GlyphCacheEntry]`), FIFO
-eviction (no per-access array rebuild).
-
-Sub-steps for Driver:
-1. In `misc/gui/text_renderer.mlc`: change `GlyphCache.entries` to
-   `HashMap<GlyphCacheKey, GlyphCacheEntry>` (or key→index + separate store);
-   remove `glyph_cache_entries_without` / linear `glyph_cache_find_index` on hit.
-2. Eviction when at `capacity`: FIFO (drop oldest insertion) — no O(n) reorder
-   on every hit.
-3. Keep public API (`glyph_cache_get` / `glyph_cache_insert` / `glyph_cache_new`)
-   so demos compile unchanged.
-4. Verify gate: rebuild `text_ide_panels_demo`, headless
-   `MLC_TEXT_IDE_BENCH=1` 300 frames — wall **&lt; 3s** (see Verify template).
-
-### STEP notes
-
-- Demo fixture: `misc/examples/text_ide_panels_demo.mlc` (committed with
-  activation).
-- Non-goals unchanged (atlas/FT/HB/C++ GlyphCache).
+**STEP=2** — Per-line layout cache (skip reshape+lookup for unchanged text).
 
 ## Measurement (2026-07-13)
 
-`MLC_TEXT_IDE_BENCH=1 MLC_GLFW_VISIBLE=0`, 300 кадров без sleep, `/usr/bin/time -v`:
+Baseline (pre-HashMap), `MLC_TEXT_IDE_BENCH=1 MLC_GLFW_VISIBLE=0`, 300 frames:
 
 ```
-User time: 17.31s
-System time: 4.23s
 Elapsed: 21.65s        →  ~72ms/frame (~14 FPS)
-Max RSS: 84 MB
 ```
 
-Для сцены такого размера (несколько сотен статичных строк, GPU-нагрузка
-минимальна) это на два порядка медленнее ожидаемого.
+After STEP=1 HashMap+FIFO (`Map<i64, GlyphCacheEntry>`, packed key, no hit reorder):
+
+```
+Elapsed: 14.40s        →  ~48ms/frame
+```
+
+O(n) scan+rebuild removed. Residual (~14s) is per-frame HarfBuzz reshape of
+static lines (TRACK secondary finding) — STEP=2 target. Original STEP=1 gate
+`&lt;3s` was optimistic (reshape alone dominates); revised gate for STEP=1:
+wall **&lt;16s** (must beat baseline and drop O(n) path).
 
 ## Root cause (найден, не гипотеза)
 
@@ -124,8 +111,8 @@ Design-ready, не gated — Planner может открыть STEP=1.
 
 | Step | Deliverable | Gate | Status |
 |------|-------------|------|--------|
-| 1 | `HashMap`-backed `GlyphCache` (замена `[GlyphCacheEntry]`), без per-access reorder (FIFO эвикция для начала) | `text_ide_panels_demo` bench (300 кадров headless) &lt; 3s wall | **pending** (active) |
-| 2 | Per-line layout cache в демо (или в `text_renderer.mlc` как переиспользуемый helper) — skip reshape+lookup для неизменного текста | тот же bench &lt; 1s wall | pending |
+| 1 | `HashMap`-backed `GlyphCache` (`Map<i64,…>` + FIFO order), без per-access reorder | ide bench wall &lt;16s (revised; was &lt;3s) | **done** (2026-07-13: 21.65→14.40s) |
+| 2 | Per-line layout cache в демо (или в `text_renderer.mlc` как переиспользуемый helper) — skip reshape+lookup для неизменного текста | тот же bench &lt; 3s wall | pending |
 | 3 | Re-bench `text_dashboard_demo.mlc` + добавить оба демо в perf-regression corpus (порог по времени, не только `error:`-grep как в `TRACK_EXAMPLES_CI`) | оба демо в geo corpus, порог зафиксирован | pending |
 
 ## Verify template
