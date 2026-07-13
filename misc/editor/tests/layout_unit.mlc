@@ -1,0 +1,76 @@
+// TRACK_EDITOR_MVP STEP=5 — shell layout unit (no GLFW).
+import { rect_new } from '../../gui/layout'
+import {
+  fixed_size_new,
+  fixed_place,
+  layout_row_equal,
+  layout_column_equal,
+  layout_flex_sizes,
+  FlexChild,
+  scroll_state_new,
+  scroll_state_set_offset,
+  scroll_clamp,
+  scroll_visible_rect,
+  split_layout_new,
+  split_layout_apply
+} from '../layout/shell'
+
+fn main() -> i32 = do
+  const fixed = fixed_place(10, 20, fixed_size_new(100, 40))
+  if fixed.x != 10 || fixed.y != 20 || fixed.width != 100 || fixed.height != 40 then
+    return 1
+  end
+
+  const row = layout_row_equal(rect_new(0, 0, 300, 50), 3, 0)
+  if row.length() != 3 then
+    return 2
+  end
+  if row[0].width != 100 || row[1].x != 100 || row[2].x != 200 then
+    return 3
+  end
+
+  const column = layout_column_equal(rect_new(0, 0, 80, 300), 3, 0)
+  if column[0].height != 100 || column[2].y != 200 then
+    return 4
+  end
+
+  const flex_children: [FlexChild] = [
+    FlexChild { weight: 1, min_size: 20 },
+    FlexChild { weight: 3, min_size: 20 }
+  ]
+  const flex = layout_flex_sizes(flex_children, 100)
+  // remain=60 → 15+45; sizes 35 and 65
+  if flex[0] != 35 || flex[1] != 65 then
+    return 5
+  end
+
+  let mut scroll = scroll_state_new(1000, 2000)
+  scroll = scroll_state_set_offset(scroll, 900, -10)
+  const viewport = rect_new(0, 0, 200, 100)
+  const clamped = scroll_clamp(scroll, viewport)
+  if clamped.offset_x != 800 || clamped.offset_y != 0 then
+    return 6
+  end
+  const visible = scroll_visible_rect(clamped, viewport)
+  if visible.x != 800 || visible.width != 200 || visible.height != 100 then
+    return 7
+  end
+
+  const split = split_layout_apply(
+    split_layout_new(Horizontal, 1, 4, 4),
+    rect_new(0, 0, 404, 100)
+  )
+  // usable=400 → first=100, divider=4, second=300
+  if split.first.width != 100 then
+    return 8
+  end
+  if split.divider.x != 100 || split.divider.width != 4 then
+    return 9
+  end
+  if split.second.x != 104 || split.second.width != 300 then
+    return 10
+  end
+
+  println("[mlc-editor] layout_unit ok")
+  0
+end

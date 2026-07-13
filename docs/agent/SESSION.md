@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 4 |
+| driver_turns_since_plan | 6 |
+| step_last | 5 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=5 layout next |
+| test_gate | STEP=6 FileTree next |
+
+### Turn 2026-07-14 00:10 (Driver TRACK_EDITOR_MVP STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 00:09 |
+| elapsed | ~4 min |
+| done    | `layout/shell.mlc` + `tests/layout_unit.mlc` + `run_editor_layout_unit.sh`; TRACK/PLAN. |
+| verify  | layout unit exit 0; `layout_unit ok`. |
+| result  | STEP=5 done. Plain: shell layout primitives unit green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=6 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 23:59 (Driver TRACK_EDITOR_MVP STEP=4)
 

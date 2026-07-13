@@ -21,12 +21,16 @@ scripts/run_editor_clip_unit.sh
 
 # STEP=4 perf stub
 MLC_GLFW_VISIBLE=0 scripts/run_editor_perf_smoke.sh
+
+# STEP=5 shell layout unit (no GLFW)
+scripts/run_editor_layout_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
 Text smoke also requires `[mlc-editor] glyphs=N` with N>0.
 Clip unit requires `[mlc-editor] clip_unit ok`.
 Perf smoke requires `perf frames=3 …=0`.
+Layout unit requires `[mlc-editor] layout_unit ok`.
 
 ## Layout (growing)
 

@@ -37,10 +37,7 @@ fragments → flatten → render`.
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
 
-## STEP=0…4 status
+## STEP=0…5 status
 
-- STEP=0: empty GLFW window; stdout `[mlc-editor] open`.
-- STEP=1: `ui/theme.mlc` + solid_renderer (theme smoke).
-- STEP=2: `ui/static_text.mlc` mono GlyphCache line; `glyphs=N`.
-- STEP=3: `ui/clip.mlc` intersect math (unit). GPU `Scene` Clip kind — later.
-- STEP=4: `ui/perf.mlc` + `MLC_EDITOR_PERF=1` prints frames + zero timings.
+- STEP=0–4: window / theme / text / clip / perf (see prior notes).
+- STEP=5: `layout/shell.mlc` Fixed/Row/Col/Flex/Scroll/Split (pure).

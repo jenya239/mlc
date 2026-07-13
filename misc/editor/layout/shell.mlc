@@ -1,0 +1,242 @@
+// TRACK_EDITOR_MVP STEP=5 — shell layout value types (pure, no GLFW).
+import { Rect, rect_new } from '../../gui/layout'
+
+export type FixedSize = { width: i32, height: i32 }
+
+export type FlexChild = {
+  weight: i32,
+  min_size: i32
+}
+
+export type ScrollState = {
+  content_width: i32,
+  content_height: i32,
+  offset_x: i32,
+  offset_y: i32
+}
+
+export type SplitAxis = Horizontal | Vertical
+
+export type SplitLayout = {
+  axis: SplitAxis,
+  ratio_numerator: i32,
+  ratio_denominator: i32,
+  divider_thickness: i32
+}
+
+export type SplitPanes = {
+  first: Rect,
+  second: Rect,
+  divider: Rect
+}
+
+export fn fixed_size_new(width: i32, height: i32) -> FixedSize =
+  FixedSize { width: width, height: height }
+
+export fn fixed_place(origin_x: i32, origin_y: i32, size: FixedSize) -> Rect =
+  rect_new(origin_x, origin_y, size.width, size.height)
+
+// Place `count` equal-width children in a horizontal row inside `bounds`.
+export fn layout_row_equal(bounds: Rect, count: i32, gap: i32) -> [Rect] = do
+  let mut out: [Rect] = []
+  if count <= 0 then
+    return out
+  end
+  const total_gap = gap * (count - 1)
+  let mut cell_width = 0
+  if bounds.width > total_gap then
+    cell_width = (bounds.width - total_gap) / count
+  end
+  let mut index = 0
+  let mut x = bounds.x
+  while index < count do
+    out.push(rect_new(x, bounds.y, cell_width, bounds.height))
+    x = x + cell_width + gap
+    index = index + 1
+  end
+  out
+end
+
+// Place `count` equal-height children in a vertical column inside `bounds`.
+export fn layout_column_equal(bounds: Rect, count: i32, gap: i32) -> [Rect] = do
+  let mut out: [Rect] = []
+  if count <= 0 then
+    return out
+  end
+  const total_gap = gap * (count - 1)
+  let mut cell_height = 0
+  if bounds.height > total_gap then
+    cell_height = (bounds.height - total_gap) / count
+  end
+  let mut index = 0
+  let mut y = bounds.y
+  while index < count do
+    out.push(rect_new(bounds.x, y, bounds.width, cell_height))
+    y = y + cell_height + gap
+    index = index + 1
+  end
+  out
+end
+
+// Distribute `available` along one axis by flex weights (min_size floor).
+export fn layout_flex_sizes(children: [FlexChild], available: i32) -> [i32] = do
+  let mut sizes: [i32] = []
+  let mut total_weight = 0
+  let mut total_min = 0
+  let mut index = 0
+  while index < children.length() do
+    const child = children[index]
+    let mut weight = child.weight
+    if weight < 0 then
+      weight = 0
+    end
+    total_weight = total_weight + weight
+    total_min = total_min + child.min_size
+    index = index + 1
+  end
+  let mut remain = available - total_min
+  if remain < 0 then
+    remain = 0
+  end
+  index = 0
+  while index < children.length() do
+    const child = children[index]
+    let mut weight = child.weight
+    if weight < 0 then
+      weight = 0
+    end
+    let mut extra = 0
+    if total_weight > 0 then
+      extra = remain * weight / total_weight
+    end
+    sizes.push(child.min_size + extra)
+    index = index + 1
+  end
+  sizes
+end
+
+export fn scroll_state_new(
+  content_width: i32,
+  content_height: i32
+) -> ScrollState =
+  ScrollState {
+    content_width: content_width,
+    content_height: content_height,
+    offset_x: 0,
+    offset_y: 0
+  }
+
+export fn scroll_state_set_offset(
+  state: ScrollState,
+  offset_x: i32,
+  offset_y: i32
+) -> ScrollState =
+  ScrollState {
+    content_width: state.content_width,
+    content_height: state.content_height,
+    offset_x: offset_x,
+    offset_y: offset_y
+  }
+
+export fn scroll_clamp(state: ScrollState, viewport: Rect) -> ScrollState = do
+  let mut max_x = state.content_width - viewport.width
+  if max_x < 0 then
+    max_x = 0
+  end
+  let mut max_y = state.content_height - viewport.height
+  if max_y < 0 then
+    max_y = 0
+  end
+  let mut offset_x = state.offset_x
+  if offset_x < 0 then
+    offset_x = 0
+  end
+  if offset_x > max_x then
+    offset_x = max_x
+  end
+  let mut offset_y = state.offset_y
+  if offset_y < 0 then
+    offset_y = 0
+  end
+  if offset_y > max_y then
+    offset_y = max_y
+  end
+  ScrollState {
+    content_width: state.content_width,
+    content_height: state.content_height,
+    offset_x: offset_x,
+    offset_y: offset_y
+  }
+end
+
+// Visible slice of content in content-space coordinates.
+export fn scroll_visible_rect(state: ScrollState, viewport: Rect) -> Rect = do
+  const clamped = scroll_clamp(state, viewport)
+  rect_new(clamped.offset_x, clamped.offset_y, viewport.width, viewport.height)
+end
+
+export fn split_layout_new(
+  axis: SplitAxis,
+  ratio_numerator: i32,
+  ratio_denominator: i32,
+  divider_thickness: i32
+) -> SplitLayout =
+  SplitLayout {
+    axis: axis,
+    ratio_numerator: ratio_numerator,
+    ratio_denominator: ratio_denominator,
+    divider_thickness: divider_thickness
+  }
+
+export fn split_layout_apply(layout: SplitLayout, bounds: Rect) -> SplitPanes = do
+  let mut numerator = layout.ratio_numerator
+  let mut denominator = layout.ratio_denominator
+  if denominator <= 0 then
+    denominator = 1
+  end
+  if numerator < 0 then
+    numerator = 0
+  end
+  if numerator > denominator then
+    numerator = denominator
+  end
+  match layout.axis
+  | Horizontal => do
+    const usable = bounds.width - layout.divider_thickness
+    let mut first_width = 0
+    if usable > 0 then
+      first_width = usable * numerator / denominator
+    end
+    const second_width = usable - first_width
+    const divider_x = bounds.x + first_width
+    SplitPanes {
+      first: rect_new(bounds.x, bounds.y, first_width, bounds.height),
+      divider: rect_new(divider_x, bounds.y, layout.divider_thickness, bounds.height),
+      second: rect_new(
+        divider_x + layout.divider_thickness,
+        bounds.y,
+        second_width,
+        bounds.height
+      )
+    }
+  end
+  | Vertical => do
+    const usable = bounds.height - layout.divider_thickness
+    let mut first_height = 0
+    if usable > 0 then
+      first_height = usable * numerator / denominator
+    end
+    const second_height = usable - first_height
+    const divider_y = bounds.y + first_height
+    SplitPanes {
+      first: rect_new(bounds.x, bounds.y, bounds.width, first_height),
+      divider: rect_new(bounds.x, divider_y, bounds.width, layout.divider_thickness),
+      second: rect_new(
+        bounds.x,
+        divider_y + layout.divider_thickness,
+        bounds.width,
+        second_height
+      )
+    }
+  end
+end

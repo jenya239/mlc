@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=5** — Row/Col/Fixed/Flex/Scroll/Split value types (pure layout unit, no GLFW).
+**STEP=6** — FileTree model + lazy expand (needs P1 `list_dir` or mock DirEntry[]).
+
+### STEP=5 done (2026-07-13)
+
+- `misc/editor/layout/shell.mlc`: Fixed/Row/Col/Flex/Scroll/Split pure layout.
+- `tests/layout_unit.mlc` + `scripts/run_editor_layout_unit.sh` exit 0.
 
 ### STEP=4 done (2026-07-13)
 
@@ -150,7 +155,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 
 | Step | Item | Gate |
 |------|------|------|
-| 5 | UI primitives: row/col/fixed/flex/scroll/split (value types) | pure layout tests |
+| 5 | UI primitives: row/col/fixed/flex/scroll/split (value types) | **done** (2026-07-14): `layout/shell.mlc` + `run_editor_layout_unit.sh` |
 | 6 | FileTree model + lazy expand (needs P1) | unit: no recursive full scan |
 | 7 | Wire tree panel + editor placeholder + divider drag | interactive smoke |
 | 8 | Exclude `.git` + extensible ignore list | unit |
@@ -249,4 +254,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=1 done** (2026-07-13): Theme + solid_renderer frame.
 - **STEP=2 done** (2026-07-13): static mono text.
 - **STEP=3 done** (2026-07-13): clip math unit.
-- **STEP=4 done** (2026-07-13): perf stub; next **STEP=5** (E2 layout).
+- **STEP=4 done** (2026-07-13): perf stub.
+- **STEP=5 done** (2026-07-13): shell layout unit; next **STEP=6**.
