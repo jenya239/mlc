@@ -78,6 +78,16 @@ ast::Span sexpr_span(std::shared_ptr<SemanticExpression> expression) noexcept{
 [&](const SemanticExpressionWith& semanticExpressionWith) -> ast::Span { auto [__0, __1, __2, __3, span_value] = semanticExpressionWith; return span_value; }
 }, (*expression));
 }
+ast::Span sstmt_span(std::shared_ptr<SemanticStatement> statement) noexcept{
+  return std::visit(overloaded{[&](const SemanticStatementLet& semanticStatementLet) -> ast::Span { auto [__0, __1, __2, __3, span_value] = semanticStatementLet; return span_value; },
+[&](const SemanticStatementLetPattern& semanticStatementLetPattern) -> ast::Span { auto [__0, __1, __2, __3, __4, __5, span_value] = semanticStatementLetPattern; return span_value; },
+[&](const SemanticStatementLetConst& semanticStatementLetConst) -> ast::Span { auto [__0, __1, __2, span_value] = semanticStatementLetConst; return span_value; },
+[&](const SemanticStatementExpr& semanticStatementExpr) -> ast::Span { auto [__0, span_value] = semanticStatementExpr; return span_value; },
+[&](const SemanticStatementReturn& semanticStatementReturn) -> ast::Span { auto [__0, span_value] = semanticStatementReturn; return span_value; },
+[&](const SemanticStatementBreak& semanticStatementBreak) -> ast::Span { auto [span_value] = semanticStatementBreak; return span_value; },
+[&](const SemanticStatementContinue& semanticStatementContinue) -> ast::Span { auto [span_value] = semanticStatementContinue; return span_value; }
+}, (*statement));
+}
 std::shared_ptr<SemanticDeclaration> sdecl_inner(std::shared_ptr<SemanticDeclaration> declaration) noexcept{
   return [&]() -> std::shared_ptr<SemanticDeclaration> {
 auto __match_subject = declaration;

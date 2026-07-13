@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_DEBUG_SOURCE_MAP` active** — STEP=2 Ruby `#line` done; STEP=3 self-hosted
-emit next. See [TRACK_DEBUG_SOURCE_MAP.md](TRACK_DEBUG_SOURCE_MAP.md).
+**`TRACK_DEBUG_SOURCE_MAP` active** — STEP=3 mlcc `#line` done; STEP=4 gdb/
+addr2line verify next. See [TRACK_DEBUG_SOURCE_MAP.md](TRACK_DEBUG_SOURCE_MAP.md).
 TEXT_GLYPH Critic OK: [archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md](../archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md).
 After DEBUG closes: `GUI_CANVAS_GRAPH` Phase A.
 

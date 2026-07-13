@@ -174,7 +174,7 @@ const semantic_ir::SemanticExpressionQuestion& semanticExpressionQuestion = std:
 auto [inner_expression, __1, __2] = semanticExpressionQuestion; return gen_try_unwrap_return_statements_cpp(inner_expression, context);
 }
 return [&]() {
-auto statements = mlc::Array<std::shared_ptr<cpp_ast::CppStatement>>{};
+auto statements = stmt_cpp::line_directive_cpp_statements(semantic_ir::sexpr_span(body_expression));
 statements.push_back(emit_helpers::make_return_cpp_statement(gen_expr_for_return_body_cpp(body_expression, context)));
 return statements;
 }();
@@ -271,6 +271,12 @@ return output_statements;
 }();
 }
 return [&]() {
+auto directive_index = 0;
+auto directives = stmt_cpp::line_directive_cpp_statements(semantic_ir::sexpr_span(result_expression));
+while ((directive_index < directives.length())) {
+  output_statements.push_back(directives[directive_index]);
+  (directive_index = mlc::arith::checked_add(directive_index, 1));
+}
 output_statements.push_back(emit_helpers::make_return_cpp_statement(gen_expr_for_return_body_cpp(result_expression, final_context)));
 return output_statements;
 }();

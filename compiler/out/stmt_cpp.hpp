@@ -4,6 +4,7 @@
 #include "mlc.hpp"
 #include <variant>
 #include "semantic_ir.hpp"
+#include "ast.hpp"
 #include "registry.hpp"
 #include "cpp_ast.hpp"
 #include "print.hpp"
@@ -39,6 +40,9 @@ GenStmtsCppWithContext gen_stmts_cpp_with_context(mlc::Array<std::shared_ptr<sem
 std::shared_ptr<cpp_ast::CppStatement> cpp_stmt_from_string_output(mlc::String output) noexcept;
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> cpp_stmts_from_string_output(mlc::String output) noexcept;
 mlc::String print_cpp_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept;
+mlc::String escape_line_directive_path(mlc::String path) noexcept;
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> line_directive_cpp_statements(ast::Span span) noexcept;
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> push_line_directive_for_span(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> output_statements, ast::Span span) noexcept;
 mlc::String print_cpp_statement_fragment_line(mlc::String fragment) noexcept;
 mlc::String print_cpp_statement_default_line(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept;
 mlc::String print_cpp_statement_line(std::shared_ptr<cpp_ast::CppStatement> statement) noexcept;

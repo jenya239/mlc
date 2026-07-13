@@ -351,6 +351,7 @@ struct SemanticLoadItem {
 FnEscapeInfo empty_fn_escape_info() noexcept;
 std::shared_ptr<registry::Type> sexpr_type(std::shared_ptr<SemanticExpression> expression) noexcept;
 ast::Span sexpr_span(std::shared_ptr<SemanticExpression> expression) noexcept;
+ast::Span sstmt_span(std::shared_ptr<SemanticStatement> statement) noexcept;
 std::shared_ptr<SemanticDeclaration> sdecl_inner(std::shared_ptr<SemanticDeclaration> declaration) noexcept;
 ast::Span sdecl_span(std::shared_ptr<SemanticDeclaration> declaration) noexcept;
 

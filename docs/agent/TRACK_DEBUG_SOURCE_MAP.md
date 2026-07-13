@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md). Trigger: обзор пробелов 2026-07-1
 ни одного упоминания debugger/source map/stack trace во всей документации
 проекта, при том что кодовая база на MLC (сам `compiler/`) уже 50+ модулей.
 
-## Status: **active** (2026-07-13) — STEP=3 self-hosted `#line` emit next
+## Status: **active** (2026-07-13) — STEP=4 gdb/addr2line verify next
 
 Activated by Planner after TEXT_GLYPH_CACHE_SCALING Critic OK. Queue ahead of
 `GUI_CANVAS_GRAPH` (Phase A still pending; do not start until this track
@@ -12,8 +12,16 @@ closes or blocks).
 
 ## Next step
 
-**STEP=3** — Codegen (self-hosted): emit `#line` in `compiler/codegen/` per
-Decision (STEP=1).
+**STEP=4** — Verify: compile with `-g`, abort/panic, `gdb`/`addr2line` shows
+`.mlc` file+line.
+
+### STEP=3 done (2026-07-13)
+
+- `sstmt_span` in `compiler/ir/semantic_ir.mlc`.
+- `line_directive_cpp_statements` + emit in `eval_stmts_cpp_with_try` /
+  `append_block_trailing_cpp` / `gen_return_body_*` (`stmt_cpp.mlc`,
+  `return_body.mlc`).
+- Probe: `mlcc` → `#line 2/3 ".tmp/line_probe/probe.mlc"` before let/return.
 
 ### STEP=2 done (2026-07-13)
 
@@ -29,7 +37,7 @@ Decision (STEP=1).
 | Layer | Location | Fields used for `#line` |
 |-------|----------|-------------------------|
 | Self-hosted AST | `compiler/frontend/ast.mlc` `Span` | `file: string`, `line: i32` (1-based); unknown = `span_unknown()` → `file==""`, `line==0` |
-| Self-hosted SemanticIR | `compiler/ir/semantic_ir.mlc` | Every `SemanticStatement*` carries trailing `Span`; exprs via `sexpr_span`. No `sstmt_span` helper yet — STEP=3 may add one mirroring `sexpr_span` / `sdecl_span`. |
+| Self-hosted SemanticIR | `compiler/ir/semantic_ir.mlc` | Every `SemanticStatement*` carries trailing `Span`; `sstmt_span` / `sexpr_span`. |
 | Ruby AST | `lib/mlc/source/ast/nodes.rb` `SourceOrigin` on nodes (`attr_reader :origin`) | `origin.file`, `origin.line` (1-based). Missing/`nil` line → treat as unknown (skip). |
 
 ### Emit form
@@ -97,7 +105,7 @@ crash. Сегодня:
 |------|------|--------|
 | 1 | Design: формат `#line <N> "<original.mlc>"`; гранулярность per-statement; skip unknown span. Записать **Decision** в этот TRACK. | **done** (2026-07-13) |
 | 2 | Codegen (Ruby): эмит `#line` в `lib/mlc/backends/cpp/` для statement-level nodes со span. | **done** (2026-07-13: `Context#attach_line_directive`; `line_directive_test.rb`) |
-| 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | pending |
+| 3 | Codegen (self-hosted): аналогично в `compiler/codegen/`, после Ruby. | **done** (2026-07-13: `sstmt_span` + `#line` fragments in stmt/return paths) |
 | 4 | Проверка: программа с `-g`, `abort()`/panic, `gdb`/`addr2line` → `.mlc` file+line. | pending |
 | 5 | Документация (`docs/DEBUGGING.md` или `docs/MLC.md`) + verify-gate + close → Critic. | pending |
 

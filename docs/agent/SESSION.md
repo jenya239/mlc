@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_DEBUG_SOURCE_MAP |
-| test_gate | STEP=3: mlcc `#line` in generated .cpp |
+| test_gate | STEP=4: -g + gdb/addr2line → .mlc file+line |
+
+### Turn 2026-07-13 13:59 (Driver TRACK_DEBUG_SOURCE_MAP STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_DEBUG_SOURCE_MAP |
+| started | 2026-07-13 13:40 |
+| elapsed | ~20 min |
+| done    | `sstmt_span`; `line_directive_cpp_statements` + emit in `eval_stmts_cpp_with_try` / `append_block_trailing_cpp` / `gen_return_body_*`. |
+| verify  | probe: `#line 2/3 ".tmp/line_probe/probe.mlc"`; self-host p1≡p2 `DIFF_EXIT:0`. |
+| result  | STEP=3 done. Plain: mlcc emits `#line` per stmt when span known. |
+| issues  | — |
+| next    | ROLE=Driver STEP=4 TRACK_DEBUG_SOURCE_MAP — `-g` + abort/panic + gdb/addr2line → `.mlc` |
 
 ### Turn 2026-07-13 13:50 (Driver TRACK_DEBUG_SOURCE_MAP STEP=2)
 

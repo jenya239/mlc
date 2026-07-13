@@ -2,14 +2,14 @@
 // Imports gen_expr / gen_stmts_str / gen_try_unwrap from eval; not called back by eval.
 
 import { Type } from '../../checker/registry'
-import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticMatchArm, Span, sexpr_type } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticMatchArm, Span, sexpr_type, sexpr_span } from '../../ir/semantic_ir'
 import { CppExpression, CppStatement, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
 import * as expression_output from '../expr/expr'
 import { question_from_converter_name } from '../expr/expression_support'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
-import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements } from '../stmt_cpp'
+import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements, line_directive_cpp_statements } from '../stmt_cpp'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
@@ -139,7 +139,7 @@ fn gen_return_body_leaf_cpp(body_expression: Shared<SemanticExpression>, context
     SemanticExpressionQuestion(inner_expression, _, _) =>
       gen_try_unwrap_return_statements_cpp(inner_expression, context),
     _ => do
-      let statements: [Shared<CppStatement>] = []
+      let mut statements: [Shared<CppStatement>] = line_directive_cpp_statements(sexpr_span(body_expression))
       statements.push(emit_helpers.make_return_cpp_statement(
         gen_expr_for_return_body_cpp(body_expression, context)))
       statements
@@ -231,6 +231,12 @@ fn gen_return_block_body_cpp(
       output_statements
     end,
     _ => do
+      let mut directive_index = 0
+      const directives = line_directive_cpp_statements(sexpr_span(result_expression))
+      while directive_index < directives.length() do
+        output_statements.push(directives[directive_index])
+        directive_index = directive_index + 1
+      end
       output_statements.push(emit_helpers.make_return_cpp_statement(
         gen_expr_for_return_body_cpp(result_expression, final_context)))
       output_statements

@@ -169,6 +169,17 @@ export fn sexpr_span(expression: Shared<SemanticExpression>) -> Span =
     SemanticExpressionWith(_, _, _, _, span_value)           => span_value
   }
 
+export fn sstmt_span(statement: Shared<SemanticStatement>) -> Span =
+  match statement {
+    SemanticStatementLet(_, _, _, _, span_value) => span_value,
+    SemanticStatementLetPattern(_, _, _, _, _, _, span_value) => span_value,
+    SemanticStatementLetConst(_, _, _, span_value) => span_value,
+    SemanticStatementExpr(_, span_value) => span_value,
+    SemanticStatementReturn(_, span_value) => span_value,
+    SemanticStatementBreak(span_value) => span_value,
+    SemanticStatementContinue(span_value) => span_value
+  }
+
 export fn sdecl_inner(declaration: Shared<SemanticDeclaration>) -> Shared<SemanticDeclaration> =
   match declaration {
     SemanticDeclarationExported(inner_declaration) => inner_declaration,

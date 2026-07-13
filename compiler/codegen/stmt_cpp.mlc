@@ -10,8 +10,10 @@ import {
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile, SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
   SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion,
-  SemanticExpressionLambda, SemanticExpressionWith
+  SemanticExpressionLambda, SemanticExpressionWith,
+  sstmt_span, sexpr_span
 } from '../ir/semantic_ir'
+import { Span } from '../frontend/ast'
 import {
   Type, TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
   TArray, TShared, TNamed, TGeneric, TPair, TTuple, TFn, TAssoc, TUnknown
@@ -88,6 +90,44 @@ export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStatement>]
 
 export fn print_cpp_statements(statements: [Shared<CppStatement>]) -> string =
   statements.map(statement => print_cpp_statement_line(statement)).join('')
+
+fn escape_line_directive_path(path: string) -> string = do
+  let mut escaped = ""
+  let mut index = 0
+  while index < path.length() do
+    const character = path.char_at(index)
+    if character == "\\" then
+      escaped = escaped + "\\\\"
+    else if character == "\"" then
+      escaped = escaped + "\\\""
+    else
+      escaped = escaped + character
+    end
+    index = index + 1
+  end
+  escaped
+end
+
+export fn line_directive_cpp_statements(span: Span) -> [Shared<CppStatement>] = do
+  let statements: [Shared<CppStatement>] = []
+  if span.line <= 0 || span.file.length() == 0 then
+    return statements
+  end
+  statements.push(Shared.new(CppStatementFragment(
+    "#line " + span.line.to_string() + " \"" + escape_line_directive_path(span.file) + "\"")))
+  statements
+end
+
+fn push_line_directive_for_span(output_statements: [Shared<CppStatement>], span: Span) -> [Shared<CppStatement>] = do
+  let mut output = output_statements
+  const directives = line_directive_cpp_statements(span)
+  let mut index = 0
+  while index < directives.length() do
+    output.push(directives[index])
+    index = index + 1
+  end
+  output
+end
 
 fn print_cpp_statement_fragment_line(fragment: string) -> string =
   if fragment.length() >= 1 && fragment.char_at(fragment.length() - 1) == "\n" then fragment
@@ -222,11 +262,13 @@ fn append_block_trailing_cpp(
   match result_expression {
     SemanticExpressionUnit(_, _) => output,
     SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) => do
+      output = push_line_directive_for_span(output, sexpr_span(result_expression))
       output.push(gen_unit_if_statement_cpp(
         condition, then_expression, else_expression, semantic_type, final_context, try_counter).statement)
       output
     end,
     _ => do
+      output = push_line_directive_for_span(output, sexpr_span(result_expression))
       output.push(emit_helpers.make_expression_cpp_statement(
         gen_expr_cpp_for_stmt_codegen(result_expression, final_context)))
       output
@@ -586,6 +628,7 @@ fn eval_stmts_cpp_with_try(statements: [Shared<SemanticStatement>], context: Cod
   let mut index = 0
   while index < statements.length() do
     const statement = statements[index]
+    output_statements = push_line_directive_for_span(output_statements, sstmt_span(statement))
     const statement_parsed = eval_stmt_cpp(statement, codegen_context, next_try)
     output_statements.push(statement_parsed.statement)
     codegen_context = statement_parsed.codegen_context

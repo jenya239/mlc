@@ -2,6 +2,7 @@
 #include "stmt_cpp.hpp"
 
 #include "semantic_ir.hpp"
+#include "ast.hpp"
 #include "registry.hpp"
 #include "cpp_ast.hpp"
 #include "print.hpp"
@@ -17,6 +18,7 @@
 namespace stmt_cpp {
 
 using namespace semantic_ir;
+using namespace ast;
 using namespace registry;
 using namespace cpp_ast;
 using namespace print;
@@ -28,6 +30,7 @@ using namespace semantic_type_structure;
 using namespace let_pat_cpp;
 using namespace statement_context;
 using namespace expr_visitor_cpp;
+using namespace ast_tokens;
 
 mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> CodegenContext_gen_stmts_cpp(context::CodegenContext self, mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements) noexcept;
 mlc::String gen_stmts_for_cpp_codegen(mlc::Array<std::shared_ptr<semantic_ir::SemanticStatement>> statements, context::CodegenContext context) noexcept{
@@ -61,6 +64,40 @@ mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> cpp_stmts_from_string_output(
 }
 mlc::String print_cpp_statements(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> statements) noexcept{
   return statements.map([=](std::shared_ptr<cpp_ast::CppStatement> statement) mutable { return print_cpp_statement_line(statement); }).join(mlc::String("", 0));
+}
+mlc::String escape_line_directive_path(mlc::String path) noexcept{
+  auto escaped = mlc::String("", 0);
+  auto index = 0;
+  while ((index < path.length()))   {
+    auto character = path.char_at(index);
+    if ((character == mlc::String("\\", 1)))     {
+      (escaped = (escaped + mlc::String("\\\\", 2)));
+    } else if ((character == mlc::String("\"", 1)))     {
+      (escaped = (escaped + mlc::String("\\\"", 2)));
+    } else     {
+      (escaped = (escaped + character));
+    }
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return escaped;
+}
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> line_directive_cpp_statements(ast::Span span) noexcept{
+  auto statements = mlc::Array<std::shared_ptr<cpp_ast::CppStatement>>{};
+  if (((span.line <= 0) || (span.file.length() == 0)))   {
+    return statements;
+  }
+  statements.push_back(std::make_shared<cpp_ast::CppStatement>(cpp_ast::CppStatementFragment{((((mlc::String("#line ", 6) + mlc::to_string(span.line)) + mlc::String(" \"", 2)) + escape_line_directive_path(span.file)) + mlc::String("\"", 1))}));
+  return statements;
+}
+mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> push_line_directive_for_span(mlc::Array<std::shared_ptr<cpp_ast::CppStatement>> output_statements, ast::Span span) noexcept{
+  auto output = output_statements;
+  auto directives = line_directive_cpp_statements(span);
+  auto index = 0;
+  while ((index < directives.length()))   {
+    output.push_back(directives[index]);
+    (index = mlc::arith::checked_add(index, 1));
+  }
+  return output;
 }
 mlc::String print_cpp_statement_fragment_line(mlc::String fragment) noexcept{
   if (((fragment.length() >= 1) && (fragment.char_at(mlc::arith::checked_sub(fragment.length(), 1)) == mlc::String("\n", 1))))   {
@@ -177,11 +214,13 @@ auto [__0, __1] = semanticExpressionUnit; return output;
 if (std::holds_alternative<semantic_ir::SemanticExpressionIf>((*__match_subject))) {
 const semantic_ir::SemanticExpressionIf& semanticExpressionIf = std::get<semantic_ir::SemanticExpressionIf>((*__match_subject));
 auto [condition, then_expression, else_expression, semantic_type, __4] = semanticExpressionIf; return [&]() {
+(output = push_line_directive_for_span(output, semantic_ir::sexpr_span(result_expression)));
 output.push_back(gen_unit_if_statement_cpp(condition, then_expression, else_expression, semantic_type, final_context, try_counter).statement);
 return output;
 }();
 }
 return [&]() {
+(output = push_line_directive_for_span(output, semantic_ir::sexpr_span(result_expression)));
 output.push_back(emit_helpers::make_expression_cpp_statement(gen_expr_cpp_for_stmt_codegen(result_expression, final_context)));
 return output;
 }();
@@ -411,6 +450,7 @@ StmtsCppAccumState eval_stmts_cpp_with_try(mlc::Array<std::shared_ptr<semantic_i
   auto index = 0;
   while ((index < statements.length()))   {
     auto statement = statements[index];
+    (output_statements = push_line_directive_for_span(output_statements, semantic_ir::sstmt_span(statement)));
     auto statement_parsed = eval_stmt_cpp(statement, codegen_context, next_try);
     output_statements.push_back(statement_parsed.statement);
     (codegen_context = statement_parsed.codegen_context);
