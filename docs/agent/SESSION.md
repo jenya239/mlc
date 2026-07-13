@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_TEXT_GLYPH_CACHE_SCALING |
-| test_gate | STEP=3: dashboard re-bench + corpus |
+| test_gate | Critic: critique-audit |
+
+### Turn 2026-07-13 13:30 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| started | 2026-07-13 13:20 |
+| elapsed | ~12 min |
+| done    | Dashboard re-bench 0.29s; `scripts/run_text_gl_perf_corpus.rb` (ide≤3s, dash≤1s); TRACK archived closed. |
+| verify  | corpus PASS: ide 0.98s, dashboard 0.21s. |
+| result  | STEP=3 done; track **closed**. Plain: wall-time corpus gates both demos. |
+| issues  | — |
+| next    | ROLE=Critic STEP=critique-audit TRACK_TEXT_GLYPH_CACHE_SCALING |
 
 ### Turn 2026-07-13 13:25 (Driver TRACK_TEXT_GLYPH_CACHE_SCALING STEP=2)
 

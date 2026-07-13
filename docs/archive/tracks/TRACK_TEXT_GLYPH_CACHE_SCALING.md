@@ -1,22 +1,25 @@
 # Track: GlyphCache O(n) LRU touch — IDE-panels demo lag
 
-Parent: [TRACK_TEXT_GL_PERF_BASELINE](../archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md)
-(closed — fixed FT/HB re-init + atlas dirty flag + bearing), [TRACK_TEXT_SHIM_TO_MLC](../archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md)
+Parent: [TRACK_TEXT_GL_PERF_BASELINE](TRACK_TEXT_GL_PERF_BASELINE.md)
+(closed — fixed FT/HB re-init + atlas dirty flag + bearing), [TRACK_TEXT_SHIM_TO_MLC](TRACK_TEXT_SHIM_TO_MLC.md)
 (closed — moved shim bookkeeping to MLC, kept same `GlyphCache` structure).
 
 Trigger: пользователь 2026-07-13, `misc/examples/text_ide_panels_demo.mlc`
 заметно тормозит несмотря на «космический» ожидаемый FPS после закрытия
 обоих треков выше.
 
-## Status: **active** (2026-07-13) — STEP=3 re-bench + corpus next
-
-Activated by Planner after PACKAGE_MANAGER Critic OK. Priority ahead of
-`DEBUG_SOURCE_MAP` / `GUI_CANVAS_GRAPH`.
+## Status: **closed** (2026-07-13) — awaiting Critic
 
 ## Next step
 
-**STEP=3** — Re-bench `text_dashboard_demo` + add both demos to perf-regression
-corpus (time thresholds).
+**closed** — STEP=1–3 done. `next` = Critic critique-audit.
+
+### STEP=3 done (2026-07-13)
+
+- Re-bench `text_dashboard_demo`: `MLC_TEXT_DASHBOARD_BENCH=1` wall **0.29s**
+  (corpus run **0.21s**).
+- Gate corpus: `scripts/run_text_gl_perf_corpus.rb` — ide max 3.0s, dashboard
+  max 1.0s; PASS (ide 0.98s, dashboard 0.21s).
 
 ## Measurement (2026-07-13)
 
@@ -121,7 +124,7 @@ Design-ready, не gated — Planner может открыть STEP=1.
 |------|-------------|------|--------|
 | 1 | `HashMap`-backed `GlyphCache` (`Map<i64,…>` + FIFO order), без per-access reorder | ide bench wall &lt;16s (revised; was &lt;3s) | **done** (2026-07-13: 21.65→14.40s) |
 | 2 | Per-line layout cache в демо — skip reshape+lookup для неизменного текста | тот же bench &lt; 3s wall | **done** (2026-07-13: 14.40→0.97s) |
-| 3 | Re-bench `text_dashboard_demo.mlc` + добавить оба демо в perf-regression corpus (порог по времени, не только `error:`-grep как в `TRACK_EXAMPLES_CI`) | оба демо в geo corpus, порог зафиксирован | pending |
+| 3 | Re-bench `text_dashboard_demo.mlc` + perf corpus (`scripts/run_text_gl_perf_corpus.rb`) | ide &lt;3s, dashboard &lt;1s | **done** (2026-07-13: corpus PASS 0.98s / 0.21s) |
 
 ## Verify template
 
