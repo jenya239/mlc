@@ -1,5 +1,5 @@
 // Retained scene graph foundation (TRACK_GUI_SCENE_PHASE_A STEP=2).
-// Flat nodes + Affine2x3; world pass = STEP=3.
+// Flat nodes + Affine2x3; world pass = scene_update_world (STEP=3).
 // Precision: f64 in MLC (mlcc f32 arith incomplete); GPU upload casts to f32 in STEP=5.
 
 export type Affine2x3 = {
@@ -167,3 +167,27 @@ export fn scene_add_rect_fill(
   fill: SceneRectFill
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, RectFill(fill)))
+
+// Topo order = index order (parent < child). Reuses `world[]` in place.
+export fn scene_update_world(scene: Scene) -> Scene = do
+  let mut world = scene.world
+  const node_count = scene.nodes.length()
+  while world.length() < node_count do
+    world.push(affine_identity())
+  end
+  let mut index = 0
+  while index < node_count do
+    const node = scene.nodes[index]
+    if node.parent < 0 then
+      world.set(index, node.local)
+    else
+      world.set(index, affine_multiply(world[node.parent], node.local))
+    end
+    index = index + 1
+  end
+  Scene {
+    nodes: scene.nodes,
+    world: world,
+    camera: scene.camera
+  }
+end

@@ -1,4 +1,4 @@
-// TRACK_GUI_SCENE_PHASE_A STEP=2 — types/constructors smoke (no GL).
+// TRACK_GUI_SCENE_PHASE_A STEP=2–3 — types + world-transform smoke (no GL).
 import {
   affine_identity,
   affine_translation,
@@ -8,12 +8,13 @@ import {
   scene_new,
   scene_add_container,
   scene_add_rect_fill,
-  scene_rect_fill_new
+  scene_rect_fill_new,
+  scene_update_world
 } from '../gui/scene'
 
 fn main() -> i32 = do
   let mut scene = scene_new()
-  const root = scene_add_container(scene, -1, affine_identity())
+  const root = scene_add_container(scene, -1, affine_translation(100.0, 200.0))
   scene = root.scene
   if root.node_id != 0 then
     return 1
@@ -70,6 +71,45 @@ fn main() -> i32 = do
   end
   if back.y > 0.1 then
     return 9
+  end
+
+  scene = scene_update_world(scene)
+  const root_origin = affine_transform_point(scene.world[0], 0.0, 0.0)
+  if root_origin.x < 99.9 then
+    return 10
+  end
+  if root_origin.x > 100.1 then
+    return 10
+  end
+  if root_origin.y < 199.9 then
+    return 11
+  end
+  if root_origin.y > 200.1 then
+    return 11
+  end
+
+  const child_origin = affine_transform_point(scene.world[1], 0.0, 0.0)
+  if child_origin.x < 109.9 then
+    return 12
+  end
+  if child_origin.x > 110.1 then
+    return 12
+  end
+  if child_origin.y < 219.9 then
+    return 13
+  end
+  if child_origin.y > 220.1 then
+    return 13
+  end
+
+  // Second pass reuses world[] (same length, same result).
+  scene = scene_update_world(scene)
+  const again = affine_transform_point(scene.world[1], 0.0, 0.0)
+  if again.x < 109.9 then
+    return 14
+  end
+  if again.x > 110.1 then
+    return 14
   end
 
   0

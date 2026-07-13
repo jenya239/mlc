@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_GUI_SCENE_PHASE_A |
-| test_gate | STEP=3: scene_update_world pass |
+| test_gate | STEP=4: scene hit-test smoke |
+
+### Turn 2026-07-13 15:27 (Driver TRACK_GUI_SCENE_PHASE_A STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_SCENE_PHASE_A |
+| started | 2026-07-13 15:25 |
+| elapsed | ~5 min |
+| done    | `scene_update_world` (topo `.set` reuse); smoke nested (100,200)+(10,20)→(110,220). |
+| verify  | mlcc+build_bin; `scene_types_smoke` exit 0. |
+| result  | STEP=3 done. Plain: world = parent∘local in index order. |
+| issues  | — |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_SCENE_PHASE_A — hit-test via inverse world |
 
 ### Turn 2026-07-13 15:22 (Driver TRACK_GUI_SCENE_PHASE_A STEP=2)
 

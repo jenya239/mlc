@@ -3,14 +3,21 @@
 Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md). Epic §29 / §10c
 in [PLAN.md](../PLAN.md).
 
-## Status: **active** (2026-07-13) — STEP=3 world-transform pass next
+## Status: **active** (2026-07-13) — STEP=4 hit-test next
 
 Created by Planner after DEBUG_SOURCE_MAP Critic OK. Phase B–D tracks stay
 uncreated until this file closes.
 
 ## Next step
 
-**STEP=3** — World-transform pass over `Scene` (topo order, reuse `world[]`).
+**STEP=4** — Hit-test via inverse world chain; smoke vs `gui_button` case.
+
+### STEP=3 done (2026-07-13)
+
+- `scene_update_world`: topo index order, `world[i] = parent∘local`, reuse
+  `world[]` via `.set`.
+- Smoke extended: nested tx (100,200)+(10,20) → child origin (110,220); second
+  pass same.
 
 ### STEP=2 done (2026-07-13)
 
@@ -71,7 +78,7 @@ Draw batching, hit-test algorithm details, widget kinds — STEPs 3–5 / Phase 
 |------|------|--------|
 | 1 | Design Decision: tree indices, Affine2×3, camera-relative f32 | **done** (2026-07-13; precision → f64 in STEP=2) |
 | 2 | `misc/gui/scene.mlc`: `SceneNode` + flat `Scene` | **done** (2026-07-13: + `scene_types_smoke` exit 0) |
-| 3 | World-transform pass (topo order, reused buffer) | pending |
+| 3 | World-transform pass (topo order, reused buffer) | **done** (2026-07-13: `scene_update_world`) |
 | 4 | Hit-test via inverse chain; smoke vs `gui_button` case | pending |
 | 5 | Batched rect-fill draw (reuse dashboard solid-rect trick) | pending |
 | 6 | Migration smoke: `gui_button_demo` on scene (v0 kept) | pending |
