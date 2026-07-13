@@ -1,0 +1,37 @@
+// TRACK_EDITOR_MVP STEP=4 — perf counter stub (real timings later).
+export type EditorPerfCounters = {
+  frames: i32,
+  layout_us: i32,
+  shaping_us: i32,
+  draw_us: i32,
+  lines_touched: i32,
+  primitives: i32
+}
+
+export fn editor_perf_new() -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: 0,
+    layout_us: 0,
+    shaping_us: 0,
+    draw_us: 0,
+    lines_touched: 0,
+    primitives: 0
+  }
+
+export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames + 1,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives
+  }
+
+export fn editor_perf_format(counters: EditorPerfCounters) -> string =
+  "[mlc-editor] perf frames=" + counters.frames.to_string()
+    + " layout_us=" + counters.layout_us.to_string()
+    + " shaping_us=" + counters.shaping_us.to_string()
+    + " draw_us=" + counters.draw_us.to_string()
+    + " lines_touched=" + counters.lines_touched.to_string()
+    + " primitives=" + counters.primitives.to_string()

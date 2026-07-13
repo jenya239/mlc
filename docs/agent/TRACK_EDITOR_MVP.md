@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=4** — `MLC_EDITOR_PERF` counter stub (frame count, zeros).
+**STEP=5** — Row/Col/Fixed/Flex/Scroll/Split value types (pure layout unit, no GLFW).
+
+### STEP=4 done (2026-07-13)
+
+- `misc/editor/ui/perf.mlc`: `EditorPerfCounters` stub (zeros).
+- `main.mlc`: `MLC_EDITOR_PERF` → print frames + zero timings.
+- `scripts/run_editor_perf_smoke.sh` — exit 0; `perf frames=3 …=0`.
 
 ### STEP=3 done (2026-07-13)
 
@@ -138,7 +144,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 1 | Frame loop + theme colors + solid panels via scene | **done** (2026-07-13): `theme.mlc` + `run_editor_theme_smoke.sh` |
 | 2 | Static mono text via text_renderer (reuse GlyphCache) | **done** (2026-07-13): `static_text.mlc` + `run_editor_text_smoke.sh` glyphs=60 |
 | 3 | Clip rect helper + no full-file work yet | **done** (2026-07-13): `ui/clip.mlc` + `run_editor_clip_unit.sh` |
-| 4 | Perf counters stub (`MLC_EDITOR_PERF`) | flag prints zeros |
+| 4 | Perf counters stub (`MLC_EDITOR_PERF`) | **done** (2026-07-13): `ui/perf.mlc` + `run_editor_perf_smoke.sh` |
 
 ### E2 — Layout shell: tree + editor + split
 
@@ -242,4 +248,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`.
 - **STEP=1 done** (2026-07-13): Theme + solid_renderer frame.
 - **STEP=2 done** (2026-07-13): static mono text.
-- **STEP=3 done** (2026-07-13): clip math unit; next **STEP=4**.
+- **STEP=3 done** (2026-07-13): clip math unit.
+- **STEP=4 done** (2026-07-13): perf stub; next **STEP=5** (E2 layout).

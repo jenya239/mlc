@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 3 |
+| driver_turns_since_plan | 5 |
+| step_last | 4 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=4 perf stub next |
+| test_gate | STEP=5 layout next |
+
+### Turn 2026-07-13 23:59 (Driver TRACK_EDITOR_MVP STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-13 23:58 |
+| elapsed | ~3 min |
+| done    | `ui/perf.mlc` + `MLC_EDITOR_PERF` in main; `run_editor_perf_smoke.sh`; TRACK/PLAN. |
+| verify  | perf smoke exit 0; `frames=3` + zero timings. |
+| result  | STEP=4 done (E1 complete). Plain: perf stub green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=5 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-13 23:50 (Driver TRACK_EDITOR_MVP STEP=3)
 
