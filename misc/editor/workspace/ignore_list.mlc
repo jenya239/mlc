@@ -1,0 +1,34 @@
+// TRACK_EDITOR_MVP STEP=8 — ignore names for FileTree listing (.git, …).
+export type IgnoreList = {
+  names: [string]
+}
+
+export fn ignore_list_new() -> IgnoreList =
+  IgnoreList { names: [] }
+
+export fn ignore_list_default() -> IgnoreList = do
+  let mut names: [string] = []
+  names.push(".git")
+  names.push("node_modules")
+  IgnoreList { names: names }
+end
+
+export fn ignore_list_add(list: IgnoreList, name: string) -> IgnoreList = do
+  let mut names = list.names
+  names.push(name)
+  IgnoreList { names: names }
+end
+
+export fn ignore_list_contains(list: IgnoreList, name: string) -> i32 = do
+  let mut index = 0
+  while index < list.names.length() do
+    if list.names[index] == name then
+      return 1
+    end
+    index = index + 1
+  end
+  0
+end
+
+export fn ignore_list_should_ignore(list: IgnoreList, name: string) -> i32 =
+  ignore_list_contains(list, name)

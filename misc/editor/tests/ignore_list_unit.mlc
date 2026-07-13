@@ -1,0 +1,54 @@
+// TRACK_EDITOR_MVP STEP=8 — ignore list unit (.git / extensible).
+import {
+  ignore_list_default,
+  ignore_list_add,
+  ignore_list_should_ignore
+} from '../workspace/ignore_list'
+import {
+  dir_entry_new,
+  file_tree_new,
+  file_tree_expand_filtered,
+  file_tree_child_count
+} from '../workspace/file_tree'
+
+fn main() -> i32 = do
+  let mut ignore = ignore_list_default()
+  if ignore_list_should_ignore(ignore, ".git") != 1 then
+    return 1
+  end
+  if ignore_list_should_ignore(ignore, "node_modules") != 1 then
+    return 2
+  end
+  if ignore_list_should_ignore(ignore, "src") != 0 then
+    return 3
+  end
+
+  ignore = ignore_list_add(ignore, ".mlc_packages")
+  if ignore_list_should_ignore(ignore, ".mlc_packages") != 1 then
+    return 4
+  end
+
+  let mut tree = file_tree_new("/proj", "proj")
+  const entries = [
+    dir_entry_new("src", 1),
+    dir_entry_new(".git", 1),
+    dir_entry_new("node_modules", 1),
+    dir_entry_new("README.md", 0),
+    dir_entry_new(".mlc_packages", 1)
+  ]
+  const expanded = file_tree_expand_filtered(tree, 0, entries, ignore)
+  tree = expanded.tree
+  // src + README only
+  if file_tree_child_count(tree, 0) != 2 then
+    return 5
+  end
+  if tree.nodes[tree.nodes[0].children[0]].name != "src" then
+    return 6
+  end
+  if tree.nodes[tree.nodes[0].children[1]].name != "README.md" then
+    return 7
+  end
+
+  println("[mlc-editor] ignore_list_unit ok")
+  0
+end

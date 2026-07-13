@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=8** — Exclude `.git` + extensible ignore list (unit).
+**STEP=9** — `TextDocument` piece-table load from file (unit; mock/path fixture).
+
+### STEP=8 done (2026-07-14)
+
+- `workspace/ignore_list.mlc`: default `.git`/`node_modules` + extensible add.
+- `file_tree_expand_filtered` + `tests/ignore_list_unit.mlc` exit 0.
 
 ### STEP=7 done (2026-07-14)
 
@@ -168,7 +173,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 |------|------|------|
 | 5 | UI primitives: row/col/fixed/flex/scroll/split (value types) | **done** (2026-07-14): `layout/shell.mlc` + `run_editor_layout_unit.sh` |
 | 6 | FileTree model + lazy expand (needs P1) | **done** (2026-07-14): mock DirEntry expand; `run_editor_file_tree_unit.sh` |
-| 7 | Wire tree panel + editor placeholder + divider drag | interactive smoke |
+| 7 | Wire tree panel + editor placeholder + divider drag | **done** (2026-07-14): `shell_panels.mlc` + inject smoke |
 | 8 | Exclude `.git` + extensible ignore list | unit |
 
 ### E3 — Open file / line index / visible lines / scroll / gutter
@@ -267,4 +272,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=3 done** (2026-07-13): clip math unit.
 - **STEP=4 done** (2026-07-13): perf stub.
 - **STEP=5 done** (2026-07-13): shell layout unit.
-- **STEP=6 done** (2026-07-14): FileTree lazy expand; next **STEP=7**.
+- **STEP=6 done** (2026-07-14): FileTree lazy expand.
+- **STEP=7 done** (2026-07-14): shell panels + divider drag; next **STEP=8**.

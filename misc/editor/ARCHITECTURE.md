@@ -37,7 +37,7 @@ fragments → flatten → render`.
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
 
-## STEP=0…7 status
+## STEP=0…8 status
 
-- STEP=0–6: window / theme / text / clip / perf / layout / FileTree.
-- STEP=7: `ui/shell_panels.mlc` tree|divider|editor + inject drag.
+- STEP=0–7: window / theme / text / clip / perf / layout / FileTree / panels.
+- STEP=8: `workspace/ignore_list.mlc` + filtered expand (`.git` default).

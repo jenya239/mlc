@@ -1,4 +1,8 @@
 // TRACK_EDITOR_MVP STEP=6 — FileTree model, lazy expand (FS via inject/mock).
+import {
+  IgnoreList,
+  ignore_list_should_ignore
+} from './ignore_list'
 export type DirEntry = {
   name: string,
   is_directory: i32
@@ -49,6 +53,19 @@ export fn file_tree_new(root_path: string, root_name: string) -> FileTree = do
     children: []
   })
   FileTree { nodes: nodes, root_id: 0 }
+end
+
+export fn filter_dir_entries(entries: [DirEntry], ignore: IgnoreList) -> [DirEntry] = do
+  let mut kept: [DirEntry] = []
+  let mut index = 0
+  while index < entries.length() do
+    const entry = entries[index]
+    if ignore_list_should_ignore(ignore, entry.name) == 0 then
+      kept.push(entry)
+    end
+    index = index + 1
+  end
+  kept
 end
 
 // Attach one level of children; does not recurse into subdirectories.
@@ -113,6 +130,14 @@ export fn file_tree_expand(
     node_id: node_id
   }
 end
+
+export fn file_tree_expand_filtered(
+  tree: FileTree,
+  node_id: i32,
+  entries: [DirEntry],
+  ignore: IgnoreList
+) -> FileTreeExpandResult =
+  file_tree_expand(tree, node_id, filter_dir_entries(entries, ignore))
 
 export fn file_tree_collapse(tree: FileTree, node_id: i32) -> FileTree = do
   if node_id < 0 || node_id >= tree.nodes.length() then

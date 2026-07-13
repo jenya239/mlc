@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 7 |
+| driver_turns_since_plan | 9 |
+| step_last | 8 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=8 ignore list next |
+| test_gate | STEP=9 piece table next |
+
+### Turn 2026-07-14 00:37 (Driver TRACK_EDITOR_MVP STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 00:36 |
+| elapsed | ~4 min |
+| done    | `ignore_list.mlc` + `file_tree_expand_filtered` + unit; TRACK/PLAN (+STEP=7 table sync). |
+| verify  | ignore_list unit exit 0; `ignore_list_unit ok`. |
+| result  | STEP=8 done (E2 complete). Plain: .git ignore filter green. |
+| issues  | — |
+| next    | ROLE=Driver STEP=9 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 00:30 (Driver TRACK_EDITOR_MVP STEP=7)
 

@@ -30,6 +30,9 @@ scripts/run_editor_file_tree_unit.sh
 
 # STEP=7 shell panels + divider drag
 MLC_GLFW_VISIBLE=0 scripts/run_editor_shell_panels_smoke.sh
+
+# STEP=8 ignore list unit (no GLFW)
+scripts/run_editor_ignore_list_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -39,6 +42,7 @@ Perf smoke requires `perf frames=3 …=0`.
 Layout unit requires `[mlc-editor] layout_unit ok`.
 FileTree unit requires `[mlc-editor] file_tree_unit ok`.
 Shell panels requires `[mlc-editor] shell_panels ok`.
+Ignore list requires `[mlc-editor] ignore_list_unit ok`.
 
 ## Layout (growing)
 
