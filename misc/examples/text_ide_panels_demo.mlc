@@ -1,0 +1,508 @@
+// IDE-look demo: sidebar file tree + editor with line numbers + terminal log
+// + status bar — lots of small real-shaped text across several panels, one
+// shared GlyphCache/GlyphAtlas (TRACK_TEXT_GL_PERF_BASELINE). Interactivity:
+// hovered row (sidebar or editor) highlighted from real mouse input; a
+// blinking prompt cursor in the terminal panel.
+// Run with: MLC_GLFW_VISIBLE=1 ./bin
+
+import { rect_new } from '../gui/layout'
+import { gui_input_poll, gui_is_hovered } from '../gui/input'
+import { has } from 'Env'
+import {
+  GlyphAtlas,
+  AtlasSlot,
+  GlyphCache,
+  GlyphCacheKey,
+  glyph_atlas_new,
+  glyph_atlas_pack,
+  glyph_cache_new,
+  glyph_cache_get,
+  glyph_cache_insert,
+  text_renderer_create,
+  text_renderer_upload_atlas,
+  text_renderer_set_batch,
+  text_renderer_draw,
+  text_renderer_destroy,
+  text_scratch_u8_clear,
+  text_scratch_u8_resize_zero,
+  text_scratch_u8_fill_rect,
+  text_scratch_f32_clear,
+  text_bind_array_buffer,
+  text_upload_dynamic_scratch,
+  text_context_begin,
+  text_context_should_close,
+  text_context_swap_poll,
+  text_context_end
+} from '../gui/text_renderer'
+
+extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
+  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_id_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn shape_glyph_advance_at(index: i32) -> i32
+  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
+extern fn glyph_bitmap_by_index(font_path: string, glyph_index: i32, pixel_size: i32) -> i32
+  = "mlc::text::glyph_bitmap_by_index" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_width() -> i32 = "mlc::text::glyph_width" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_rows() -> i32 = "mlc::text::glyph_rows" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_x() -> i32 = "mlc::text::glyph_bearing_x" from "mlc/text/freetype_shim.hpp"
+extern fn glyph_bearing_y() -> i32 = "mlc::text::glyph_bearing_y" from "mlc/text/freetype_shim.hpp"
+
+extern fn gl_scratch_u8_blit_glyph_a8(atlas_width: i32, dest_x: i32, dest_y: i32) -> i32
+  = "mlc::gl::gl_scratch_u8_blit_glyph_a8" from "mlc/gl/text_window_helpers.hpp"
+extern fn gl_scratch_push_screen_quad(
+  window_width: i32, window_height: i32,
+  pixel_x: i32, pixel_y: i32, pixel_width: i32, pixel_height: i32,
+  atlas_size: i32, slot_x: i32, slot_y: i32, slot_width: i32, slot_height: i32
+) -> unit
+  = "mlc::gl::gl_scratch_push_screen_quad" from "mlc/gl/text_window_helpers.hpp"
+
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
+
+fn window_width() -> i32 = 1200
+fn window_height() -> i32 = 760
+fn atlas_size() -> i32 = 1024
+fn sidebar_width() -> i32 = 220
+fn header_height() -> i32 = 30
+fn content_bottom() -> i32 = 600
+fn terminal_top() -> i32 = 600
+fn status_top() -> i32 = 732
+fn sidebar_row_height() -> i32 = 18
+fn editor_row_height() -> i32 = 20
+fn terminal_row_height() -> i32 = 16
+
+fn font_sans() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+fn font_mono() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+fn font_id_sans() -> i32 = 1
+fn font_id_mono() -> i32 = 2
+
+type Line = { text: string, pixel_size: i32, pen_x: i32, pen_y: i32, font_id: i32 }
+
+type LineDrawResult = {
+  atlas: GlyphAtlas,
+  cache: GlyphCache,
+  vertex_count: i32,
+  atlas_dirty: i32
+}
+
+fn font_path_for(font_id: i32) -> string = do
+  if font_id == font_id_mono() then return font_mono() end
+  font_sans()
+end
+
+// Append one shaped line using the persistent GlyphCache/GlyphAtlas. Same
+// mechanics as text_dashboard_demo.mlc's append_line, generalized to carry
+// font_id per line (sidebar/status = proportional, editor/terminal = mono).
+fn append_line(
+  line: Line, atlas: GlyphAtlas, cache: GlyphCache
+) -> LineDrawResult = do
+  const font_path = font_path_for(line.font_id)
+  const count = shape_glyph_count(font_path, line.text, line.pixel_size)
+  if count < 0 then
+    return LineDrawResult { atlas: atlas, cache: cache, vertex_count: 0, atlas_dirty: 0 }
+  end
+  let mut working_atlas = atlas
+  let mut working_cache = cache
+  let mut cursor_x = line.pen_x
+  let mut index = 0
+  let mut vertices = 0
+  let mut atlas_dirty = 0
+  while index < count do
+    const glyph_id = shape_glyph_id_at(index)
+    const key = GlyphCacheKey {
+      font_id: line.font_id, glyph_index: glyph_id, size_px: line.pixel_size, mode: 0
+    }
+    const cached = glyph_cache_get(working_cache, key)
+    working_cache = cached.cache
+    let mut slot = cached.slot
+    let mut bearing_x = cached.bearing_x
+    let mut bearing_y = cached.bearing_y
+    if cached.found == 0 then
+      const packed = glyph_bitmap_by_index(font_path, glyph_id, line.pixel_size)
+      if packed >= 0 then
+        const width = glyph_width()
+        const rows = glyph_rows()
+        bearing_x = glyph_bearing_x()
+        bearing_y = glyph_bearing_y()
+        if width > 0 && rows > 0 then
+          const pack = glyph_atlas_pack(working_atlas, 0, width, rows)
+          if pack.error_code == 0 then
+            working_atlas = pack.atlas
+            if gl_scratch_u8_blit_glyph_a8(atlas_size(), pack.slot.x, pack.slot.y) == 0 then
+              slot = pack.slot
+              const inserted = glyph_cache_insert(working_cache, key, slot, bearing_x, bearing_y)
+              working_cache = inserted.cache
+              atlas_dirty = 1
+            end
+          end
+        end
+      end
+    end
+    if slot.width > 0 && slot.height > 0 then
+      gl_scratch_push_screen_quad(
+        window_width(), window_height(),
+        cursor_x + bearing_x, line.pen_y - bearing_y,
+        slot.width, slot.height,
+        atlas_size(), slot.x, slot.y, slot.width, slot.height
+      )
+      vertices = vertices + 6
+    end
+    cursor_x = cursor_x + shape_glyph_advance_at(index) / 64
+    index = index + 1
+  end
+  LineDrawResult { atlas: working_atlas, cache: working_cache, vertex_count: vertices, atlas_dirty: atlas_dirty }
+end
+
+fn draw_lines(
+  entries: [Line], atlas: GlyphAtlas, cache: GlyphCache
+) -> LineDrawResult = do
+  let mut working_atlas = atlas
+  let mut working_cache = cache
+  let mut vertices = 0
+  let mut atlas_dirty = 0
+  let mut index = 0
+  while index < entries.length() do
+    const result = append_line(entries[index], working_atlas, working_cache)
+    working_atlas = result.atlas
+    working_cache = result.cache
+    vertices = vertices + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+    index = index + 1
+  end
+  LineDrawResult { atlas: working_atlas, cache: working_cache, vertex_count: vertices, atlas_dirty: atlas_dirty }
+end
+
+fn build_rows(entries: [string], pixel_size: i32, pen_x: i32, font_id: i32, top: i32, row_height: i32, baseline_offset: i32) -> [Line] = do
+  let mut result: [Line] = []
+  let mut row = 0
+  while row < entries.length() do
+    result.push(Line {
+      text: entries[row], pixel_size: pixel_size, pen_x: pen_x, font_id: font_id,
+      pen_y: top + row * row_height + baseline_offset
+    })
+    row = row + 1
+  end
+  result
+end
+
+fn line_number_label(n: i32) -> string = do
+  const text = n.to_string()
+  if text.length() >= 2 then return text end
+  " " + text
+end
+
+fn i32_padded4(value: i32) -> string = do
+  const text = value.to_string()
+  if text.length() >= 4 then return text end
+  let mut padded = text
+  while padded.length() < 4 do
+    padded = "0" + padded
+  end
+  padded
+end
+
+fn main() -> i32 = do
+  const begin_status = text_context_begin(window_width(), window_height())
+  if begin_status != 0 then
+    return begin_status
+  end
+  let mut renderer = text_renderer_create(atlas_size())
+  if renderer.program < 0 then
+    const error_code = renderer.program
+    text_context_end()
+    return error_code
+  end
+
+  println("[mlc-ide] window open — hover the sidebar/editor rows, Esc to quit")
+
+  let mut max_frames = 3600
+  let mut frame_sleep_ms = 16
+  if has("MLC_TEXT_IDE_BENCH") then
+    max_frames = 300
+    frame_sleep_ms = 0
+  end
+
+  text_scratch_u8_clear()
+  text_scratch_u8_resize_zero(atlas_size() * atlas_size())
+  let mut atlas = glyph_atlas_new(atlas_size())
+  let mut cache = glyph_cache_new(512)
+
+  // Solid-fill atlas slots (separators / row highlight / active tab), packed
+  // and painted once — screen position can move every frame for free (only
+  // the destination quad changes; the atlas texture itself never changes).
+  const border_pack = glyph_atlas_pack(atlas, 0, 6, 6)
+  if border_pack.error_code != 0 then
+    text_renderer_destroy(renderer)
+    text_context_end()
+    return -30
+  end
+  atlas = border_pack.atlas
+  const border_slot = border_pack.slot
+  text_scratch_u8_fill_rect(atlas_size(), border_slot.x, border_slot.y, 6, 6, 60)
+
+  const highlight_pack = glyph_atlas_pack(atlas, 0, 6, 6)
+  if highlight_pack.error_code != 0 then
+    text_renderer_destroy(renderer)
+    text_context_end()
+    return -31
+  end
+  atlas = highlight_pack.atlas
+  const highlight_slot = highlight_pack.slot
+  text_scratch_u8_fill_rect(atlas_size(), highlight_slot.x, highlight_slot.y, 6, 6, 40)
+
+  const tab_active_pack = glyph_atlas_pack(atlas, 0, 6, 6)
+  if tab_active_pack.error_code != 0 then
+    text_renderer_destroy(renderer)
+    text_context_end()
+    return -32
+  end
+  atlas = tab_active_pack.atlas
+  const tab_active_slot = tab_active_pack.slot
+  text_scratch_u8_fill_rect(atlas_size(), tab_active_slot.x, tab_active_slot.y, 6, 6, 50)
+
+  const initial_upload = text_renderer_upload_atlas(renderer)
+  if initial_upload != 0 then
+    text_renderer_destroy(renderer)
+    text_context_end()
+    return initial_upload
+  end
+
+  const sidebar_files: [string] = [
+    "▾ src",
+    "  ▾ compiler",
+    "    lexer.mlc",
+    "    parser.mlc",
+    "    checker.mlc",
+    "    ▾ codegen",
+    "      expr.mlc",
+    "      decl.mlc",
+    "      module.mlc",
+    "    ▾ mir",
+    "      lower_fn.mlc",
+    "      lower_stmt.mlc",
+    "  ▾ runtime",
+    "    ▾ include/mlc",
+    "      text/",
+    "      gl/",
+    "    ▾ src",
+    "      core/",
+    "▾ docs",
+    "  PLAN.md",
+    "  FFI_LAYER.md",
+    "  TEXT_RENDERING.md",
+    "▾ misc",
+    "main.mlc"
+  ]
+
+  const editor_code: [string] = [
+    "fn glyph_cache_get(cache: GlyphCache, key: GlyphCacheKey) -> GlyphCacheHit = do",
+    "  let mut index = 0",
+    "  while index < cache.length() do",
+    "    if cache[index].key.font_id == key.font_id",
+    "        && cache[index].key.glyph_index == key.glyph_index",
+    "        && cache[index].key.size_px == key.size_px then",
+    "      return GlyphCacheHit {",
+    "        found: 1,",
+    "        cache: cache,",
+    "        slot: cache[index].slot,",
+    "        bearing_x: cache[index].bearing_x,",
+    "        bearing_y: cache[index].bearing_y",
+    "      }",
+    "    end",
+    "    index = index + 1",
+    "  end",
+    "  GlyphCacheHit { found: 0, cache: cache, slot: empty_slot(), bearing_x: 0, bearing_y: 0 }",
+    "end",
+    "",
+    "fn main() -> i32 = do",
+    "  let mut frame = 0",
+    "  while frame < max_frames do",
+    "    const input = gui_input_poll()",
+    "    draw_panels(input, frame)",
+    "    frame = frame + 1",
+    "  end",
+    "  0",
+    "end"
+  ]
+
+  const terminal_log: [string] = [
+    "$ mlcc -o out compiler/main.mlc",
+    "[build] modular compile: 58 modules",
+    "[build] clang++ -O2 link ... 4.7s",
+    "[test] rake test_compiler_mlc: 447 passed, 0 failed",
+    "[gate] regression_gate.sh: 20 program(s), 0 fail",
+    "[gl] glyph cache warm -- atlas upload skipped"
+  ]
+
+  const sidebar_lines = build_rows(sidebar_files, 13, 10, font_id_sans(), header_height(), sidebar_row_height(), 13)
+
+  let mut editor_lines: [Line] = []
+  let mut code_row = 0
+  while code_row < editor_code.length() do
+    editor_lines.push(Line {
+      text: line_number_label(code_row + 1) + "  " + editor_code[code_row],
+      pixel_size: 14, pen_x: sidebar_width() + 12, font_id: font_id_mono(),
+      pen_y: header_height() + code_row * editor_row_height() + 14
+    })
+    code_row = code_row + 1
+  end
+
+  const terminal_lines = build_rows(terminal_log, 13, 10, font_id_mono(), terminal_top() + 24, terminal_row_height(), 12)
+
+  let mut frame_index = 0
+  while text_context_should_close() == 0 do
+    const input = gui_input_poll()
+    if input.escape != 0 then
+      break
+    end
+
+    text_scratch_f32_clear()
+    let mut vertex_count = 0
+    let mut atlas_dirty = 0
+
+    // Header row: sidebar "EXPLORER" label + editor tab strip.
+    const header_lines: [Line] = [
+      Line { text: "EXPLORER", pixel_size: 14, pen_x: 10, pen_y: 20, font_id: font_id_sans() },
+      Line { text: "main.mlc ×", pixel_size: 14, pen_x: sidebar_width() + 14, pen_y: 20, font_id: font_id_sans() },
+      Line { text: "text_renderer.mlc", pixel_size: 14, pen_x: sidebar_width() + 120, pen_y: 20, font_id: font_id_sans() },
+      Line { text: "README.md", pixel_size: 14, pen_x: sidebar_width() + 280, pen_y: 20, font_id: font_id_sans() },
+      Line { text: "TERMINAL", pixel_size: 14, pen_x: 10, pen_y: terminal_top() + 18, font_id: font_id_sans() }
+    ]
+
+    let mut blink_cursor = " "
+    if frame_index % 30 < 15 then
+      blink_cursor = "_"
+    end
+    const prompt_line: [Line] = [
+      Line {
+        text: "mlc> " + blink_cursor, pixel_size: 13,
+        pen_x: 10, font_id: font_id_mono(),
+        pen_y: terminal_top() + 24 + terminal_log.length() * terminal_row_height() + 12
+      }
+    ]
+
+    const status_line: [Line] = [
+      Line {
+        text: "Ln 1, Col 1  |  UTF-8  MLC  |  frame " + i32_padded4(frame_index)
+          + "  |  mouse x=" + input.mouse_x.to_string() + " y=" + input.mouse_y.to_string(),
+        pixel_size: 14, pen_x: 10, pen_y: status_top() + 20, font_id: font_id_sans()
+      }
+    ]
+
+    let mut result = draw_lines(header_lines, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    result = draw_lines(sidebar_lines, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    result = draw_lines(editor_lines, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    result = draw_lines(terminal_lines, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    result = draw_lines(prompt_line, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    result = draw_lines(status_line, atlas, cache)
+    atlas = result.atlas
+    cache = result.cache
+    vertex_count = vertex_count + result.vertex_count
+    if result.atlas_dirty == 1 then atlas_dirty = 1 end
+
+    // Separators (single shared border_slot, only destination rect changes).
+    gl_scratch_push_screen_quad(
+      window_width(), window_height(), sidebar_width(), 0, 2, content_bottom(),
+      atlas_size(), border_slot.x, border_slot.y, border_slot.width, border_slot.height
+    )
+    gl_scratch_push_screen_quad(
+      window_width(), window_height(), 0, header_height(), window_width(), 2,
+      atlas_size(), border_slot.x, border_slot.y, border_slot.width, border_slot.height
+    )
+    gl_scratch_push_screen_quad(
+      window_width(), window_height(), 0, terminal_top(), window_width(), 2,
+      atlas_size(), border_slot.x, border_slot.y, border_slot.width, border_slot.height
+    )
+    gl_scratch_push_screen_quad(
+      window_width(), window_height(), 0, status_top(), window_width(), 2,
+      atlas_size(), border_slot.x, border_slot.y, border_slot.width, border_slot.height
+    )
+    vertex_count = vertex_count + 24
+
+    // Active-tab highlight, static position.
+    gl_scratch_push_screen_quad(
+      window_width(), window_height(), sidebar_width() + 6, 4, 96, 22,
+      atlas_size(), tab_active_slot.x, tab_active_slot.y, tab_active_slot.width, tab_active_slot.height
+    )
+    vertex_count = vertex_count + 6
+
+    // Hover row highlight — sidebar or editor, whichever the mouse is over.
+    const sidebar_zone = rect_new(0, header_height(), sidebar_width(), content_bottom() - header_height())
+    const editor_zone = rect_new(sidebar_width(), header_height(), window_width() - sidebar_width(), content_bottom() - header_height())
+    if gui_is_hovered(input, sidebar_zone) == 1 then
+      const row = (input.mouse_y - header_height()) / sidebar_row_height()
+      if row >= 0 && row < sidebar_files.length() then
+        gl_scratch_push_screen_quad(
+          window_width(), window_height(), 0, header_height() + row * sidebar_row_height(),
+          sidebar_width(), sidebar_row_height(),
+          atlas_size(), highlight_slot.x, highlight_slot.y, highlight_slot.width, highlight_slot.height
+        )
+        vertex_count = vertex_count + 6
+      end
+    else if gui_is_hovered(input, editor_zone) == 1 then
+      const row = (input.mouse_y - header_height()) / editor_row_height()
+      if row >= 0 && row < editor_code.length() then
+        gl_scratch_push_screen_quad(
+          window_width(), window_height(), sidebar_width(), header_height() + row * editor_row_height(),
+          window_width() - sidebar_width(), editor_row_height(),
+          atlas_size(), highlight_slot.x, highlight_slot.y, highlight_slot.width, highlight_slot.height
+        )
+        vertex_count = vertex_count + 6
+      end
+    end
+
+    if atlas_dirty == 1 then
+      const upload_status = text_renderer_upload_atlas(renderer)
+      if upload_status != 0 then
+        text_renderer_destroy(renderer)
+        text_context_end()
+        return upload_status
+      end
+    end
+    text_bind_array_buffer(renderer.vertex_buffer)
+    text_upload_dynamic_scratch()
+    renderer = text_renderer_set_batch(renderer, vertex_count)
+
+    text_renderer_draw(renderer, window_width(), window_height())
+    text_context_swap_poll()
+    if frame_sleep_ms > 0 then
+      sleep_ms(frame_sleep_ms)
+    end
+
+    frame_index = frame_index + 1
+    if frame_index >= max_frames then
+      break
+    end
+  end
+
+  text_renderer_destroy(renderer)
+  text_context_end()
+  println("[mlc-ide] closed")
+  0
+end

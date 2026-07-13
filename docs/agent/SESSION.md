@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | critique-audit |
-| active_track | — (PACKAGE_MANAGER Critic OK) |
-| test_gate | manifest 9/0; fetcher 3/0; e2e → 42 |
+| step_last | plan-refresh |
+| active_track | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| test_gate | STEP=1: ide bench wall &lt;3s |
+
+### Turn 2026-07-13 13:04 (Planner TEXT_GLYPH_CACHE_SCALING plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_TEXT_GLYPH_CACHE_SCALING |
+| started | 2026-07-13 13:04 |
+| elapsed | ~6 min |
+| done    | Activated GLYPH track; STEP=1 sub-steps; PLAN §32; committed demo fixture. |
+| verify  | TRACK Status=active; PLAN queue STEP=1; `text_ide_panels_demo.mlc` tracked. |
+| result  | plan-refresh done. Plain: Driver starts HashMap GlyphCache next. |
+| issues  | Left SCRIPT_VM/arkanoid/solid_renderer untracked foreign. |
+| next    | ROLE=Driver STEP=1 TRACK_TEXT_GLYPH_CACHE_SCALING — HashMap GlyphCache + FIFO |
 
 ### Turn 2026-07-13 13:00 (Critic TRACK_PACKAGE_MANAGER — critique-audit)
 
