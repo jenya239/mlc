@@ -1,0 +1,150 @@
+// TRACK_EDITOR_MVP STEP=20 — editor tabs (one path ↔ one OpenBuffer).
+import {
+  OpenBuffer,
+  open_buffer_from_text,
+  open_buffer_is_dirty
+} from '../document/save'
+
+export type EditorTab = {
+  path: string,
+  name: string,
+  buffer: OpenBuffer
+}
+
+export type TabSet = {
+  tabs: [EditorTab],
+  active_index: i32
+}
+
+export fn tab_display_name(path: string) -> string = do
+  let mut slash = 0 - 1
+  let mut index = 0
+  const length = path.byte_size()
+  while index < length do
+    if path.byte_at(index) == "/" then
+      slash = index
+    end
+    index = index + 1
+  end
+  if slash < 0 then
+    return path
+  end
+  path.byte_substring(slash + 1, length - slash - 1)
+end
+
+export fn tab_set_new() -> TabSet =
+  TabSet { tabs: [], active_index: 0 - 1 }
+
+export fn tab_set_count(tabs: TabSet) -> i32 =
+  tabs.tabs.length()
+
+export fn tab_set_has_active(tabs: TabSet) -> bool =
+  tabs.active_index >= 0 && tabs.active_index < tabs.tabs.length()
+
+export fn tab_set_active(tabs: TabSet) -> EditorTab =
+  tabs.tabs[tabs.active_index]
+
+export fn tab_is_dirty(tab: EditorTab) -> bool =
+  open_buffer_is_dirty(tab.buffer)
+
+fn find_path_index(tabs: TabSet, path: string) -> i32 = do
+  let mut index = 0
+  while index < tabs.tabs.length() do
+    if tabs.tabs[index].path == path then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn tab_set_index_of_path(tabs: TabSet, path: string) -> i32 =
+  find_path_index(tabs, path)
+
+// Open path: reuse existing tab if same path, else append. One path ↔ one tab.
+export fn tab_set_open(
+  tabs: TabSet,
+  path: string,
+  text: string
+) -> TabSet = do
+  const existing = find_path_index(tabs, path)
+  if existing >= 0 then
+    return TabSet { tabs: tabs.tabs, active_index: existing }
+  end
+  let mut next_tabs = tabs.tabs
+  next_tabs.push(EditorTab {
+    path: path,
+    name: tab_display_name(path),
+    buffer: open_buffer_from_text(path, text)
+  })
+  TabSet {
+    tabs: next_tabs,
+    active_index: next_tabs.length() - 1
+  }
+end
+
+export fn tab_set_set_active(tabs: TabSet, index: i32) -> TabSet = do
+  if index < 0 || index >= tabs.tabs.length() then
+    return tabs
+  end
+  TabSet { tabs: tabs.tabs, active_index: index }
+end
+
+export fn tab_set_update_active_buffer(
+  tabs: TabSet,
+  buffer: OpenBuffer
+) -> TabSet = do
+  if !tab_set_has_active(tabs) then
+    return tabs
+  end
+  let mut next_tabs: [EditorTab] = []
+  let mut index = 0
+  while index < tabs.tabs.length() do
+    if index == tabs.active_index then
+      next_tabs.push(EditorTab {
+        path: tabs.tabs[index].path,
+        name: tabs.tabs[index].name,
+        buffer: buffer
+      })
+    else
+      next_tabs.push(tabs.tabs[index])
+    end
+    index = index + 1
+  end
+  TabSet { tabs: next_tabs, active_index: tabs.active_index }
+end
+
+fn array_without_index(entries: [EditorTab], remove_index: i32) -> [EditorTab] = do
+  let mut out: [EditorTab] = []
+  let mut index = 0
+  while index < entries.length() do
+    if index != remove_index then
+      out.push(entries[index])
+    end
+    index = index + 1
+  end
+  out
+end
+
+// Close tab by index; adjust active. Empty set → active_index = -1.
+export fn tab_set_close(tabs: TabSet, index: i32) -> TabSet = do
+  if index < 0 || index >= tabs.tabs.length() then
+    return tabs
+  end
+  const next_tabs = array_without_index(tabs.tabs, index)
+  if next_tabs.length() == 0 then
+    return TabSet { tabs: next_tabs, active_index: 0 - 1 }
+  end
+  let mut active = tabs.active_index
+  if index < active then
+    active = active - 1
+  else if index == active then
+    if active >= next_tabs.length() then
+      active = next_tabs.length() - 1
+    end
+  end
+  TabSet { tabs: next_tabs, active_index: active }
+end
+
+export fn tab_set_close_active(tabs: TabSet) -> TabSet =
+  tab_set_close(tabs, tabs.active_index)

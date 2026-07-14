@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…19 status
+## STEP=0…20 status
 
-- STEP=0–18: scaffold through undo/redo.
-- STEP=19: `document/save.mlc` + `file_abi.hpp` — dirty/save/reload/errors.
+- STEP=0–19: scaffold through dirty/save.
+- STEP=20: `workspace/tabs.mlc` — TabSet (name/dirty/active/close).

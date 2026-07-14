@@ -68,6 +68,9 @@ scripts/run_editor_history_unit.sh
 
 # STEP=19 dirty + save (temp fixture)
 scripts/run_editor_save_unit.sh
+
+# STEP=20 tabs unit (no GLFW)
+scripts/run_editor_tabs_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -91,6 +94,7 @@ Navigation inject requires `navigation_inject ok`.
 Clipboard requires `[mlc-editor] clipboard_unit ok`.
 History requires `[mlc-editor] history_unit ok`.
 Save requires `[mlc-editor] save_unit ok`.
+Tabs requires `[mlc-editor] tabs_unit ok`.
 
 ## Layout (growing)
 

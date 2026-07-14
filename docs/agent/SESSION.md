@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 20 |
-| step_last | 19 |
+| driver_turns_since_plan | 21 |
+| step_last | 20 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=20 tabs next |
+| test_gate | STEP=21 dirty-close next |
+
+### Turn 2026-07-14 13:30 (Driver TRACK_EDITOR_MVP STEP=20)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 20 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 13:26 |
+| elapsed | ~4 min |
+| done    | `workspace/tabs.mlc` + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_tabs_unit.sh` exit 0; `tabs_unit ok count=0`. |
+| result  | STEP=20 done. Plain: TabSet open/reuse path/close/dirty. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=21 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 13:20 (Driver TRACK_EDITOR_MVP STEP=19)
 

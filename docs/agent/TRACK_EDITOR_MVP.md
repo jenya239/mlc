@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=20** — Tabs: name, dirty, active, close; one path ↔ one document.
+**STEP=21** — Ctrl+W / middle-click close; dirty overlay confirm.
+
+### STEP=20 done (2026-07-14)
+
+- `workspace/tabs.mlc`: TabSet open/activate/close; one path ↔ one tab.
+- `tests/tabs_unit.mlc` + script exit 0.
 
 ### STEP=19 done (2026-07-14)
 
@@ -260,7 +265,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 
 | Step | Item | Gate |
 |------|------|------|
-| 20 | Tabs: name, dirty, active, close; one path ↔ one document | unit |
+| 20 | Tabs: name, dirty, active, close; one path ↔ one document | **done** (2026-07-14): `tabs.mlc` + unit |
 | 21 | Ctrl+W / middle-click close; dirty overlay confirm | smoke |
 | 22 | Ctrl+Tab next/prev predictable order | unit |
 | 23 | Command bus: CommandId, KeyBinding, focus (tree vs editor) | unit all listed commands |
@@ -342,4 +347,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=16 done** (2026-07-14): navigation.
 - **STEP=17 done** (2026-07-14): clipboard edit.
 - **STEP=18 done** (2026-07-14): undo/redo.
-- **STEP=19 done** (2026-07-14): dirty/save (E4 complete); next **STEP=20**.
+- **STEP=19 done** (2026-07-14): dirty/save (E4 complete).
+- **STEP=20 done** (2026-07-14): tabs; next **STEP=21**.

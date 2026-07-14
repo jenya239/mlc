@@ -1,0 +1,101 @@
+// TRACK_EDITOR_MVP STEP=20 — tabs unit (name/dirty/active/close, one path).
+import { open_buffer_set_document } from '../document/save'
+import { document_from_string } from '../document/piece_table'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_count,
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_index_of_path,
+  tab_set_set_active,
+  tab_set_update_active_buffer,
+  tab_set_close,
+  tab_set_close_active,
+  tab_is_dirty,
+  tab_display_name
+} from '../workspace/tabs'
+
+fn main() -> i32 = do
+  if tab_display_name("/proj/a.mlc") != "a.mlc" then
+    return 1
+  end
+  if tab_display_name("solo.txt") != "solo.txt" then
+    return 2
+  end
+
+  let mut tabs = tab_set_new()
+  if tab_set_count(tabs) != 0 || tab_set_has_active(tabs) then
+    return 3
+  end
+
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "aaa")
+  if tab_set_count(tabs) != 1 then
+    return 4
+  end
+  if tab_set_active(tabs).name != "a.mlc" then
+    return 5
+  end
+  if tab_is_dirty(tab_set_active(tabs)) then
+    return 6
+  end
+
+  // Same path reuses tab (one path ↔ one document).
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "ignored")
+  if tab_set_count(tabs) != 1 then
+    return 7
+  end
+  if tab_set_index_of_path(tabs, "/proj/a.mlc") != 0 then
+    return 8
+  end
+
+  tabs = tab_set_open(tabs, "/proj/b.mlc", "bbb")
+  if tab_set_count(tabs) != 2 then
+    return 9
+  end
+  if tab_set_active(tabs).name != "b.mlc" then
+    return 10
+  end
+
+  tabs = tab_set_set_active(tabs, 0)
+  if tab_set_active(tabs).path != "/proj/a.mlc" then
+    return 11
+  end
+
+  // Dirty on active
+  const dirty_buffer = open_buffer_set_document(
+    tab_set_active(tabs).buffer,
+    document_from_string("AAA")
+  )
+  tabs = tab_set_update_active_buffer(tabs, dirty_buffer)
+  if !tab_is_dirty(tab_set_active(tabs)) then
+    return 12
+  end
+
+  // Close active (a) → b becomes active
+  tabs = tab_set_close_active(tabs)
+  if tab_set_count(tabs) != 1 then
+    return 13
+  end
+  if tab_set_active(tabs).name != "b.mlc" then
+    return 14
+  end
+
+  tabs = tab_set_open(tabs, "/proj/c.mlc", "ccc")
+  tabs = tab_set_set_active(tabs, 0)
+  // Close non-active first tab
+  tabs = tab_set_close(tabs, 0)
+  if tab_set_count(tabs) != 1 || tab_set_active(tabs).name != "c.mlc" then
+    return 15
+  end
+
+  tabs = tab_set_close_active(tabs)
+  if tab_set_count(tabs) != 0 || tab_set_has_active(tabs) then
+    return 16
+  end
+
+  println(
+    "[mlc-editor] tabs_unit ok count=" + tab_set_count(tabs).to_string()
+  )
+  0
+end
