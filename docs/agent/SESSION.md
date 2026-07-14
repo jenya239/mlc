@@ -4,102 +4,42 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-12-multi-track-order` |
+| instructions_rev | `2026-07-15-phase-c-critic` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 6 |
-| active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=7 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 7 |
+| active_track | TRACK_GUI_CANVAS_GRAPH (Phase C closed) |
+| test_gate | Phase C Critic OK; Phase D Planner next |
 
-### Turn 2026-07-14 23:05 (Driver TRACK_GUI_SCENE_PHASE_C STEP=6)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 6 |
-| track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 22:48 |
-| elapsed | ~17 min |
-| done    | `scene_spatial.mlc` threshold+hit; draw candidates; `scene_hit_node`/`_linear`; smoke+script. |
-| verify  | `run_scene_spatial_smoke.sh` → `scene_spatial_ok`; form+quadtree ok. |
-| result  | STEP=6 done. Plain: <64 linear; >=64 quadtree hit ≡ linear; cull <63. |
-| issues  | Left foreign dirty untouched. |
-| next    | ROLE=Critic STEP=7 TRACK_GUI_SCENE_PHASE_C |
-
-### Turn 2026-07-14 22:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=5)
+### Turn 2026-07-15 02:00 (Critic TRACK_GUI_SCENE_PHASE_C STEP=7)
 
 | field   | value |
 |---------|-------|
-| role    | Driver |
-| step    | 5 |
+| role    | Critic |
+| step    | 7 |
 | track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 22:25 |
+| started | 2026-07-15 01:50 |
 | elapsed | ~10 min |
-| done    | `misc/gui/scene_quadtree.mlc` insert/query/`build_from_scene`; smoke+script; PLAN/TRACK sync. |
-| verify  | `bash scripts/run_scene_quadtree_smoke.sh` → `scene_quadtree_ok`. |
-| result  | STEP=5 done. Plain: 5 AABBs; point hits one id; miss empty. |
-| issues  | Nested if/else in build_from_scene truncated codegen; simplified root AABB 800×600. |
-| next    | ROLE=Driver STEP=6 TRACK_GUI_SCENE_PHASE_C |
+| done    | Re-ran dirty/world_dirty/aabb/quadtree/spatial+form/label; Decision audit; archived TRACK; PLAN §10c/§29 sync. |
+| verify  | All listed smokes exit 0; no sleep; `d0a3996f`…`64014467`. |
+| result  | STEP=7 done; track **closed**. Residuals: spatial hit via `scene_hit_test_spatial`; fixed quadtree root 800×600. |
+| issues  | Restored uncommitted Phase C rollback in `scene.mlc`/`scene_draw.mlc`+deleted smoke scripts from HEAD for verify; left foreign live/demo/.tmp. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_GUI_CANVAS_GRAPH |
 
-### Turn 2026-07-14 22:10 (Driver TRACK_GUI_SCENE_PHASE_C STEP=4)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 4 |
-| track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 22:04 |
-| elapsed | ~6 min |
-| done    | `SceneAabb`/`world_bounds` + `scene_update_world_bounds`; `scene_aabb_smoke` + script. |
-| verify  | `bash scripts/run_scene_aabb_smoke.sh` → `scene_aabb_ok`; dirty+world_dirty still ok. |
-| result  | STEP=4 done. Plain: translated 100×20 rect → AABB [40,50]–[140,70]. |
-| issues  | Left foreign dirty untouched. |
-| next    | ROLE=Driver STEP=5 TRACK_GUI_SCENE_PHASE_C |
-
-### Turn 2026-07-14 21:55 (Driver TRACK_GUI_SCENE_PHASE_C STEP=3)
+### Turn 2026-07-15 01:40 (Sync TRACK_GUI_SCENE_PHASE_C — docs lagged git)
 
 | field   | value |
 |---------|-------|
-| role    | Driver |
-| step    | 3 |
+| role    | Sync |
+| step    | sync-docs |
 | track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 21:52 |
-| elapsed | ~3 min |
-| done    | `scene_update_world_dirty` + `scene_set_node_local`; `scene_world_dirty_smoke` + script. |
-| verify  | `bash scripts/run_scene_world_dirty_smoke.sh` → `scene_world_dirty_ok`. |
-| result  | STEP=3 done. Plain: dirty pass ≡ full; clean sibling world stable. |
-| issues  | Left foreign dirty untouched. |
-| next    | ROLE=Driver STEP=4 TRACK_GUI_SCENE_PHASE_C |
-
-### Turn 2026-07-14 21:40 (Driver TRACK_GUI_SCENE_PHASE_C STEP=2)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 2 |
-| track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 21:36 |
-| elapsed | ~4 min |
-| done    | `Scene.dirty` + mark/clear/all; add/set hooks; `scene_dirty_smoke` + script. |
-| verify  | `bash scripts/run_scene_dirty_smoke.sh` → `scene_dirty_ok`; label+form still ok. |
-| result  | STEP=2 done. Plain: mark node marks descendants; sibling stays clean. |
-| issues  | Left foreign dirty untouched. |
-| next    | ROLE=Driver STEP=3 TRACK_GUI_SCENE_PHASE_C |
-
-### Turn 2026-07-14 21:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=1)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_GUI_SCENE_PHASE_C |
-| started | 2026-07-14 21:30 |
-| elapsed | ~5 min |
-| done    | Froze Decision: dirty/AABB/threshold=64/API; PLAN+epic sync. |
-| verify  | TRACK Decision marked frozen; STEP=2 is Next; no code (doc gate). |
-| result  | STEP=1 done. Plain: Scene.dirty + world_bounds; spatial off below 64. |
-| issues  | Left foreign dirty untouched. |
-| next    | ROLE=Driver STEP=2 TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-15 01:37 |
+| elapsed | — |
+| done    | Noted git already has STEP=1…6 (`d0a3996f`…`64014467`); SESSION/TRACK/PLAN were stale at STEP=1. CONTINUITY rev → `2026-07-15-phase-c-critic` (anti-stale-docs + foreign live demos). |
+| verify  | `git log --oneline` shows step 1…6; smokes present under `misc/examples/scene_*`. |
+| result  | Docs/prompt sync for Grok queue. Next = Critic close Phase C. |
+| issues  | Foreign dirty (`demo_live.mlc`, live scripts, `.tmp/`) left untouched. |
+| next    | ROLE=Critic STEP=7 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 19:55 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
 

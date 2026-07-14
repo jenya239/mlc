@@ -7,16 +7,16 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **priority / active** (2026-07-14) — Phase C open (queue head)
+## Status: **priority / active** (2026-07-15) — Phase C Critic STEP=7 next
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** 2026-07-14, Critic OK).
-Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md).
+Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (Driver STEPs 1–6 in git).
 
 ## Next step
 
-**Phase C STEP=5** — quadtree. See `TRACK_GUI_SCENE_PHASE_C.md`.
+**Phase C STEP=7** — Critic close. See `TRACK_GUI_SCENE_PHASE_C.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -80,14 +80,13 @@ Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_S
 (**closed** Critic OK; `c28c620b`…`31d9299a`).
 Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
-## Phase C: dirty-tracking + spatial index — **active** (2026-07-14)
+## Phase C: dirty-tracking + spatial index — **closed** (2026-07-15)
 
-Пересчёт world-transform/перетесселляция только для изменившихся узлов;
-опциональный quadtree culling, включается по порогу числа узлов (не
-структура данных по умолчанию для 20 классических виджетов).
-Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=6 done; STEP=7 Critic next).
+Пересчёт world-transform только для dirty-узлов; AABB + optional quadtree
+(порог 64). Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
+(**closed** Critic OK; `d0a3996f`…`64014467`).
 
-## Phase D: camera + vector path + blueprint canvas (после Phase C closed)
+## Phase D: camera + vector path + blueprint canvas — **eligible** (после Phase C closed)
 
 Camera pan/zoom = трансформация корневого узла. Vector-path bezier
 fill+stroke примитив (один примитив для blueprint-связей и Flash-style
