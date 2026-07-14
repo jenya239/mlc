@@ -73,12 +73,11 @@ Active work + STEP status:
 | 6 | Migration smoke vs `gui_button_demo` | **done** |
 | 7 | Verify | **done** |
 
-## Phase B: виджеты (после Phase A closed)
+## Phase B: виджеты — **active** (2026-07-14)
 
-Label/rect/checkbox/slider как `SceneNode` kinds; text-input виджет
-переиспользует keyboard-input primitive из `TRACK_GUI_INPUT_ROBUSTNESS`
-Step 3 (не дублировать). Детальные steps — Planner расписывает при старте
-фазы (создать `TRACK_GUI_SCENE_PHASE_B.md`), не раньше Phase A closed.
+Label / checkbox / slider / text-field as `SceneNode` kinds.
+Track: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md) (STEP=1 next).
+Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 ## Phase C: dirty-tracking + spatial index (после Phase B closed)
 
