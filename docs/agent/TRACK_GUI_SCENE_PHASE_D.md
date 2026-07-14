@@ -14,7 +14,12 @@ on the same flat `Scene` (not a second toolkit).
 
 ## Next step
 
-**STEP=2** — Camera pan/zoom helpers + smoke.
+**STEP=3** — Path kind + cubic tessellation.
+
+### STEP=2 done (2026-07-15)
+
+- `affine_scale`; `scene_camera_pan` / `scene_camera_zoom_at` (+ `scene_mark_all_dirty`).
+- `misc/examples/scene_camera_smoke.mlc` + script → `scene_camera_ok`.
 
 ### STEP=1 done (2026-07-15)
 

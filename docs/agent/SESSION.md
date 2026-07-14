@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-c-critic` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=2 camera next |
+| test_gate | Phase D STEP=3 Path tess next |
+
+### Turn 2026-07-15 02:20 (Driver TRACK_GUI_SCENE_PHASE_D STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-15 02:15 |
+| elapsed | ~5 min |
+| done    | `affine_scale` + `scene_camera_pan`/`zoom_at`; `scene_camera_smoke` + script. |
+| verify  | `bash scripts/run_scene_camera_smoke.sh` → `scene_camera_ok`. |
+| result  | STEP=2 done. Plain: pan shifts hit; zoom_at keeps pivot hit. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-15 02:12 (Driver TRACK_GUI_SCENE_PHASE_D STEP=1)
 

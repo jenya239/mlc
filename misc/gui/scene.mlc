@@ -111,6 +111,9 @@ export fn affine_identity() -> Affine2x3 =
 export fn affine_translation(tx: f64, ty: f64) -> Affine2x3 =
   Affine2x3 { a: 1.0, b: 0.0, c: 0.0, d: 1.0, tx: tx, ty: ty }
 
+export fn affine_scale(scale_x: f64, scale_y: f64) -> Affine2x3 =
+  Affine2x3 { a: scale_x, b: 0.0, c: 0.0, d: scale_y, tx: 0.0, ty: 0.0 }
+
 // world = parent ∘ local (local first, then parent). Flash / DOMMatrix 2D.
 export fn affine_multiply(parent: Affine2x3, local: Affine2x3) -> Affine2x3 =
   Affine2x3 {
@@ -418,6 +421,42 @@ export fn scene_clear_dirty(scene: Scene) -> Scene = do
     index = index + 1
   end
   scene_with(scene.nodes, scene.world, scene.camera, dirty, scene.world_bounds)
+end
+
+// Phase D: camera maps scene → screen. Pan shifts screen image by (dx, dy).
+export fn scene_camera_pan(scene: Scene, delta_x: f64, delta_y: f64) -> Scene = do
+  const next_camera = affine_multiply(
+    affine_translation(delta_x, delta_y),
+    scene.camera
+  )
+  scene_mark_all_dirty(
+    scene_with(scene.nodes, scene.world, next_camera, scene.dirty, scene.world_bounds)
+  )
+end
+
+// Zoom about a screen-space pivot: T(p) ∘ S(factor) ∘ T(-p) ∘ camera.
+export fn scene_camera_zoom_at(
+  scene: Scene,
+  screen_x: f64,
+  screen_y: f64,
+  factor: f64
+) -> Scene = do
+  if factor <= 0.0 then
+    return scene
+  end
+  const next_camera = affine_multiply(
+    affine_translation(screen_x, screen_y),
+    affine_multiply(
+      affine_scale(factor, factor),
+      affine_multiply(
+        affine_translation(0.0 - screen_x, 0.0 - screen_y),
+        scene.camera
+      )
+    )
+  )
+  scene_mark_all_dirty(
+    scene_with(scene.nodes, scene.world, next_camera, scene.dirty, scene.world_bounds)
+  )
 end
 
 fn scene_node_new(parent: i32, local: Affine2x3, kind: SceneNodeKind) -> SceneNode =

@@ -1,0 +1,56 @@
+// TRACK_GUI_SCENE_PHASE_D STEP=2 — camera pan/zoom hit (no GL).
+import {
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_hit_test,
+  scene_camera_pan,
+  scene_camera_zoom_at
+} from '../gui/scene'
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  const rect = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 50.0),
+    scene_rect_fill_new(100.0, 20.0, 0.2, 0.4, 0.8, 1.0)
+  )
+  scene = rect.scene
+  scene = scene_update_world(scene)
+
+  if scene_hit_test(scene, 50.0, 55.0) != rect.node_id then
+    return 1
+  end
+  if scene_hit_test(scene, 10.0, 10.0) != 0 - 1 then
+    return 2
+  end
+
+  scene = scene_camera_pan(scene, 100.0, 0.0)
+  if scene_hit_test(scene, 50.0, 55.0) != 0 - 1 then
+    return 3
+  end
+  if scene_hit_test(scene, 150.0, 55.0) != rect.node_id then
+    return 4
+  end
+
+  // Zoom 2× about the current hit screen point — same pixel still hits.
+  scene = scene_camera_zoom_at(scene, 150.0, 55.0, 2.0)
+  if scene_hit_test(scene, 150.0, 55.0) != rect.node_id then
+    return 5
+  end
+
+  // Far from pivot after zoom: old far screen point should miss.
+  if scene_hit_test(scene, 50.0, 55.0) != 0 - 1 then
+    return 6
+  end
+
+  println("scene_camera_ok")
+  0
+end
