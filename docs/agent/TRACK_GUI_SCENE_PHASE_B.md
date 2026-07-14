@@ -11,28 +11,59 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ## Next step
 
-**STEP=1** — Decision: widget kinds, local state storage, hit/draw contract.
+**STEP=2** — `Label` kind + smoke.
+
+### STEP=1 done (2026-07-14)
+
+- Decision frozen below (payload fields + hit/draw/input).
+- PLAN §10c/§29 → STEP=2 next.
 
 ### STEP=0 done (2026-07-14)
 
 - Planner opened this track; PLAN §10c/§29 → Phase B active.
 
-## Decision (STEP=1) — draft until Driver freezes
+## Decision (STEP=1) — **frozen** 2026-07-14
 
-| Item | Direction |
-|------|-----------|
-| Kinds | Extend `SceneNodeKind`: `Label`, `Checkbox`, `Slider`, `TextField` (+ keep `Container`/`RectFill`) |
-| State | Per-kind payload on the variant (checked, value, text buffer) — no parallel widget array |
-| Hit | Reuse `scene_hit_test`; kind-specific local hit boxes |
-| Draw | Batch rect fills via existing `scene_draw`; text via existing text path / stub glyph until MSDF wire |
-| Input | Pointer from scene hit; keyboard for TextField via `gui_input` inject (`TRACK_GUI_INPUT_ROBUSTNESS`) |
-| Precision | Keep `f64` affine (Phase A amendment) |
+Grounded in Phase A: flat `Scene.nodes`, `SceneNodeKind` sum type, `scene_hit_test`
+front-to-back, `scene_draw` rect-fill batch, `f64` affine.
+
+| Item | Choice |
+|------|--------|
+| Kinds | Extend `SceneNodeKind` only — no parallel widget store |
+| Keep | `Container` \| `RectFill(SceneRectFill)` unchanged |
+| Add | `Label(SceneLabel)` \| `Checkbox(SceneCheckbox)` \| `Slider(SceneSlider)` \| `TextField(SceneTextField)` |
+| Hit | Extend `scene_hit_test` match arms; local AABB `[0,w)×[0,h)` like `RectFill` |
+| Draw | Widgets emit rect fills via `scene_draw` batch; **text glyphs deferred** (Label/TextField Phase B = colored rect + `string` in payload for model/smoke; MSDF draw = follow-up, not STEP=2–6 blocker) |
+| Pointer | Click/drag on hit node id; mutate payload via `scene_set_*` helpers returning new `Scene` |
+| Keyboard | `TextField` only: apply `GuiInput.text_buffer` / backspace when `focused==1`; inject via `gui_input_*_test_*` |
+| Focus | At most one `TextField` with `focused=1` per scene (clear others on focus) |
+| Precision | `f64` affine + sizes; slider `value` in `[0.0, 1.0]` |
+
+### Payload fields (exact)
+
+```text
+SceneLabel     { width, height: f64; text: string; red, green, blue, alpha: f64 }
+SceneCheckbox  { width, height: f64; checked: i32; /* 0|1 */ red, green, blue, alpha: f64 }
+SceneSlider    { width, height: f64; value: f64; /* clamp 0..1 */ red, green, blue, alpha: f64 }
+SceneTextField { width, height: f64; text: string; focused: i32; caret: i32; red, green, blue, alpha: f64 }
+```
+
+### API surface (STEPs 2–5)
+
+- `scene_add_label` / `scene_add_checkbox` / `scene_add_slider` / `scene_add_text_field`
+- `scene_checkbox_toggle(scene, node_id)`, `scene_slider_set_value`, `scene_text_field_apply_input`
+- Smokes: no `sleep`; `MLC_GLFW_VISIBLE=0` when GL flush used
+
+### Non-goals (Decision)
+
+Phase C dirty/quadtree; Phase D camera/bezier/wires; deleting v0 demos; full MSDF
+label rendering in Phase B smokes.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 1 | Decision: kinds + state + hit/draw/input contract (freeze in this file) | doc + PLAN sync |
+| 1 | Decision: kinds + state + hit/draw/input contract (freeze in this file) | **done** (2026-07-14): Decision frozen |
 | 2 | `Label` kind: add + layout size + draw smoke (string → rect/text stub) | `scene_label_smoke` exit 0 |
 | 3 | `Checkbox` kind: hit toggles checked; draw box+mark | `scene_checkbox_smoke` exit 0 |
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | `scene_slider_smoke` exit 0 |
@@ -42,10 +73,10 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Freeze Decision table in this file (amend if scene API forces change).
-2. List new `SceneNodeKind` variants + payload fields.
-3. Note non-goals: Phase C dirty/quadtree; Phase D camera/bezier.
+**STEP=1** — **done**
+1. Freeze Decision table — done.
+2. Payload fields listed — done.
+3. Non-goals noted — done.
 
 **STEP=2**
 1. Extend `SceneNodeKind` + `scene_add_label` in `misc/gui/scene.mlc`.

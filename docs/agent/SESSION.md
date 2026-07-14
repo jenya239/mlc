@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=1 Decision next |
+| test_gate | Phase B STEP=2 Label next |
+
+### Turn 2026-07-14 19:12 (Driver TRACK_GUI_SCENE_PHASE_B STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:10 |
+| elapsed | ~2 min |
+| done    | Froze Decision: kinds/payloads/hit/draw/input; PLAN+epic sync. |
+| verify  | TRACK Decision marked frozen; STEP=2 is Next; no code (doc gate). |
+| result  | STEP=1 done. Plain: Label/Checkbox/Slider/TextField payloads locked. |
+| issues  | Text glyphs deferred to follow-up; rect+string model for B smokes. |
+| next    | ROLE=Driver STEP=2 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:10 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
 

@@ -15,8 +15,7 @@ UX_HEADLESS **closed** 2026-07-14. Active work:
 
 ## Next step
 
-**Phase B STEP=1** — widget Decision (kinds/state/hit/draw). See
-`TRACK_GUI_SCENE_PHASE_B.md`.
+**Phase B STEP=2** — `Label` kind + smoke. See `TRACK_GUI_SCENE_PHASE_B.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -76,7 +75,7 @@ Active work + STEP status:
 ## Phase B: виджеты — **active** (2026-07-14)
 
 Label / checkbox / slider / text-field as `SceneNode` kinds.
-Track: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md) (STEP=1 next).
+Track: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md) (STEP=1 done; STEP=2 next).
 Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 ## Phase C: dirty-tracking + spatial index (после Phase B closed)
