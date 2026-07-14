@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 17 |
-| step_last | 16 |
+| driver_turns_since_plan | 18 |
+| step_last | 17 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=17 clipboard next |
+| test_gate | STEP=18 undo next |
+
+### Turn 2026-07-14 13:00 (Driver TRACK_EDITOR_MVP STEP=17)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 17 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 12:51 |
+| elapsed | ~9 min |
+| done    | `clipboard.mlc` + `clipboard_edit.mlc` + unit; TRACK/PLAN. GLFW clipboard deferred. |
+| verify  | `scripts/run_editor_clipboard_unit.sh` exit 0; `clipboard_unit ok bytes=8`. |
+| result  | STEP=17 done. Plain: select_all/copy/cut/paste via inject clipboard. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=18 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 12:50 (Driver TRACK_EDITOR_MVP STEP=16)
 

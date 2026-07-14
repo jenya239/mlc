@@ -59,6 +59,9 @@ scripts/run_editor_edit_unit.sh
 # STEP=16 navigation unit + mouse inject
 scripts/run_editor_navigation_unit.sh
 MLC_GLFW_VISIBLE=0 scripts/run_editor_navigation_inject.sh
+
+# STEP=17 clipboard unit (no GLFW)
+scripts/run_editor_clipboard_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -79,6 +82,7 @@ Selection requires `[mlc-editor] selection_unit ok`.
 Edit unit requires `[mlc-editor] edit_unit ok`.
 Navigation unit requires `navigation_unit ok`.
 Navigation inject requires `navigation_inject ok`.
+Clipboard requires `[mlc-editor] clipboard_unit ok`.
 
 ## Layout (growing)
 

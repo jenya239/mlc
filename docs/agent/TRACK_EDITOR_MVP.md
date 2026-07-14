@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=17** — Clipboard (P2) Ctrl+C/X/V; Ctrl+A.
+**STEP=18** — Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y).
+
+### STEP=17 done (2026-07-14)
+
+- `clipboard.mlc` + `document/clipboard_edit.mlc`: select_all/copy/cut/paste (inject buffer).
+- `tests/clipboard_unit.mlc` exit 0. GLFW `glfw_gl_clipboard_*` still deferred (P2).
 
 ### STEP=16 done (2026-07-14)
 
@@ -237,7 +242,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 14 | Cursor + selection (model not in renderer) | **done** (2026-07-14): `selection.mlc` + unit |
 | 15 | Insert/delete/Enter/Backspace/Delete | **done** (2026-07-14): `edit.mlc` + unit |
 | 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | **done** (2026-07-14): `navigation.mlc` + unit + inject |
-| 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | integration |
+| 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | **done** (2026-07-14): inject clipboard + unit; GLFW deferred |
 | 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | unit |
 | 19 | Dirty + save Ctrl+S; errors shown to user | integration: temp project |
 
@@ -324,4 +329,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=13 done** (2026-07-14): scroll layout bound (E3 complete).
 - **STEP=14 done** (2026-07-14): selection model.
 - **STEP=15 done** (2026-07-14): edit insert/delete.
-- **STEP=16 done** (2026-07-14): navigation; next **STEP=17**.
+- **STEP=16 done** (2026-07-14): navigation.
+- **STEP=17 done** (2026-07-14): clipboard edit; next **STEP=18**.

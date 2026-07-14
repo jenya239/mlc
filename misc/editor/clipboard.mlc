@@ -1,0 +1,16 @@
+// TRACK_EDITOR_MVP STEP=17 — clipboard buffer (injectable; GLFW P2 wire later).
+export type Clipboard = {
+  text: string
+}
+
+export fn clipboard_new() -> Clipboard =
+  Clipboard { text: "" }
+
+export fn clipboard_set(clipboard: Clipboard, text: string) -> Clipboard =
+  Clipboard { text: text }
+
+export fn clipboard_get(clipboard: Clipboard) -> string =
+  clipboard.text
+
+export fn clipboard_is_empty(clipboard: Clipboard) -> bool =
+  clipboard.text.length() == 0

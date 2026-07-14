@@ -37,10 +37,10 @@ fragments → flatten → render`.
 ## Stdlib gaps (not in this tree)
 
 - P1: `list_dir` / `is_dir` / `is_file`
-- P2: clipboard get/set (+ test inject)
+- P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…16 status
+## STEP=0…17 status
 
-- STEP=0–15: scaffold through edit ops.
-- STEP=16: `document/navigation.mlc` — arrows/Home/End/Page/Shift + mouse hit.
+- STEP=0–16: scaffold through navigation.
+- STEP=17: `clipboard.mlc` + `clipboard_edit.mlc` — Ctrl+A/C/X/V (inject; GLFW later).

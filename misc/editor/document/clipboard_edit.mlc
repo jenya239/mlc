@@ -1,0 +1,104 @@
+// TRACK_EDITOR_MVP STEP=17 — Ctrl+A / C / X / V against document + selection.
+import {
+  TextDocument,
+  document_to_string,
+  document_byte_length
+} from './piece_table'
+import {
+  EditorSelection,
+  selection_is_empty,
+  selection_start,
+  selection_end,
+  selection_select_all,
+  selection_collapsed
+} from './selection'
+import { edit_insert_text, edit_backspace } from './edit'
+import { Clipboard, clipboard_set, clipboard_get } from '../clipboard'
+
+export type ClipboardEditResult = {
+  document: TextDocument,
+  selection: EditorSelection,
+  clipboard: Clipboard
+}
+
+fn document_slice(
+  document: TextDocument,
+  byte_start: i32,
+  byte_end: i32
+) -> string = do
+  let mut start = byte_start
+  let mut finish = byte_end
+  const total = document_byte_length(document)
+  if start < 0 then
+    start = 0
+  end
+  if finish < start then
+    finish = start
+  end
+  if start > total then
+    start = total
+  end
+  if finish > total then
+    finish = total
+  end
+  const full = document_to_string(document)
+  full.substring(start, finish - start)
+end
+
+export fn edit_select_all(document: TextDocument) -> EditorSelection =
+  selection_select_all(document_byte_length(document))
+
+// Ctrl+C — copy selection (or nothing if empty).
+export fn edit_copy(
+  document: TextDocument,
+  selection: EditorSelection,
+  clipboard: Clipboard
+) -> Clipboard = do
+  if selection_is_empty(selection) then
+    return clipboard
+  end
+  const text = document_slice(
+    document,
+    selection_start(selection),
+    selection_end(selection)
+  )
+  clipboard_set(clipboard, text)
+end
+
+// Ctrl+X — cut selection into clipboard.
+export fn edit_cut(
+  document: TextDocument,
+  selection: EditorSelection,
+  clipboard: Clipboard
+) -> ClipboardEditResult = do
+  if selection_is_empty(selection) then
+    return ClipboardEditResult {
+      document: document,
+      selection: selection,
+      clipboard: clipboard
+    }
+  end
+  const next_clipboard = edit_copy(document, selection, clipboard)
+  // Reuse backspace-on-selection path to delete range.
+  const deleted = edit_backspace(document, selection)
+  ClipboardEditResult {
+    document: deleted.document,
+    selection: deleted.selection,
+    clipboard: next_clipboard
+  }
+end
+
+// Ctrl+V — paste clipboard at caret / replacing selection.
+export fn edit_paste(
+  document: TextDocument,
+  selection: EditorSelection,
+  clipboard: Clipboard
+) -> ClipboardEditResult = do
+  const text = clipboard_get(clipboard)
+  const inserted = edit_insert_text(document, selection, text)
+  ClipboardEditResult {
+    document: inserted.document,
+    selection: inserted.selection,
+    clipboard: clipboard
+  }
+end
