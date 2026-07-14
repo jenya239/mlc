@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 12 |
-| step_last | 12 |
+| driver_turns_since_plan | 13 |
+| step_last | 13 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=13 clipboard scenario next |
+| test_gate | STEP=14 CI/README gate next |
+
+### Turn 2026-07-14 19:02 (Driver TRACK_UX_HEADLESS STEP=13)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 13 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 19:00 |
+| elapsed | ~3 min |
+| done    | `ux/clipboard_apply.mlc` + scenario `copy_paste_roundtrip`; gate. |
+| verify  | `run_ux_copy_paste.sh` exit 0; `ux_ok copy_paste_roundtrip`. |
+| result  | STEP=13 done. Plain: cut/paste roundtrip + second paste append. |
+| issues  | GLFW clipboard still deferred. Foreign dirty left. |
+| next    | ROLE=Driver STEP=14 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:58 (Driver TRACK_UX_HEADLESS STEP=12)
 

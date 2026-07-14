@@ -1,0 +1,102 @@
+// TRACK_UX_HEADLESS STEP=13 — clipboard on EditorUxState (inject; GLFW P2 deferred).
+import {
+  edit_select_all,
+  edit_copy,
+  edit_cut,
+  edit_paste
+} from '../document/clipboard_edit'
+import {
+  TabSet,
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import { open_buffer_set_document } from '../document/save'
+import { EditorSelection } from '../document/selection'
+import { Clipboard } from '../clipboard'
+import { EditorUxState } from './probe'
+
+export type EditorUxClipboardResult = {
+  state: EditorUxState,
+  clipboard: Clipboard
+}
+
+fn state_with_doc_selection(
+  state: EditorUxState,
+  buffer_tabs: TabSet,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: buffer_tabs,
+    selection: selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+export fn editor_ux_select_all(state: EditorUxState) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const selection = edit_select_all(active.buffer.document)
+  state_with_doc_selection(state, state.tabs, selection)
+end
+
+export fn editor_ux_copy(
+  state: EditorUxState,
+  clipboard: Clipboard
+) -> Clipboard = do
+  if !tab_set_has_active(state.tabs) then
+    return clipboard
+  end
+  const active = tab_set_active(state.tabs)
+  edit_copy(active.buffer.document, state.selection, clipboard)
+end
+
+export fn editor_ux_cut(
+  state: EditorUxState,
+  clipboard: Clipboard
+) -> EditorUxClipboardResult = do
+  if !tab_set_has_active(state.tabs) then
+    return EditorUxClipboardResult { state: state, clipboard: clipboard }
+  end
+  const active = tab_set_active(state.tabs)
+  const cut = edit_cut(active.buffer.document, state.selection, clipboard)
+  const buffer = open_buffer_set_document(active.buffer, cut.document)
+  EditorUxClipboardResult {
+    state: state_with_doc_selection(
+      state,
+      tab_set_update_active_buffer(state.tabs, buffer),
+      cut.selection
+    ),
+    clipboard: cut.clipboard
+  }
+end
+
+export fn editor_ux_paste(
+  state: EditorUxState,
+  clipboard: Clipboard
+) -> EditorUxClipboardResult = do
+  if !tab_set_has_active(state.tabs) then
+    return EditorUxClipboardResult { state: state, clipboard: clipboard }
+  end
+  const active = tab_set_active(state.tabs)
+  const pasted = edit_paste(active.buffer.document, state.selection, clipboard)
+  const buffer = open_buffer_set_document(active.buffer, pasted.document)
+  EditorUxClipboardResult {
+    state: state_with_doc_selection(
+      state,
+      tab_set_update_active_buffer(state.tabs, buffer),
+      pasted.selection
+    ),
+    clipboard: pasted.clipboard
+  }
+end

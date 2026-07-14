@@ -128,6 +128,9 @@ scissor, NoOverflow with scissor; `MLC_GLFW_VISIBLE=0`; `ux_ok draw_report_headl
 Scenario (STEP=12): `caret_glyph_mae` — 4×16 caret A8 vs golden; MAE≤8/255
 (TEXT_RENDERING); live FBO deferred; `ux_ok caret_glyph_mae`.
 
+Scenario (STEP=13): `copy_paste_roundtrip` — select_all/copy/cut/paste inject;
+GLFW clipboard deferred; `ux_ok copy_paste_roundtrip`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

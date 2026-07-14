@@ -1,0 +1,107 @@
+// TRACK_UX_HEADLESS STEP=13 — scenario: copy_paste_roundtrip (L7 inject).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  TextEquals,
+  SelectionRange,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import { tab_set_new, tab_set_open } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import { clipboard_new, clipboard_get } from '../clipboard'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import {
+  editor_ux_select_all,
+  editor_ux_copy,
+  editor_ux_cut,
+  editor_ux_paste
+} from '../ux/clipboard_apply'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  let mut clipboard = clipboard_new()
+  state = editor_ux_insert_text(state, "hello")
+  state = editor_ux_select_all(state)
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("hello")).ok == 0 then
+    return 1
+  end
+  if ux_check_expect(snapshot, SelectionRange(0, 5)).ok == 0 then
+    return 2
+  end
+
+  clipboard = editor_ux_copy(state, clipboard)
+  if clipboard_get(clipboard) != "hello" then
+    println("ux_fail copy")
+    return 3
+  end
+
+  let mut cut = editor_ux_cut(state, clipboard)
+  state = cut.state
+  clipboard = cut.clipboard
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("")).ok == 0 then
+    println("ux_fail cut left text")
+    return 4
+  end
+  if clipboard_get(clipboard) != "hello" then
+    return 5
+  end
+
+  let mut pasted = editor_ux_paste(state, clipboard)
+  state = pasted.state
+  clipboard = pasted.clipboard
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("hello")).ok == 0 then
+    println("ux_fail paste roundtrip")
+    return 6
+  end
+  if clipboard_get(clipboard) != "hello" then
+    return 7
+  end
+
+  // Second paste appends at caret (end after paste).
+  pasted = editor_ux_paste(state, clipboard)
+  state = pasted.state
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("hellohello")).ok == 0 then
+    println("ux_fail second paste")
+    return 8
+  end
+
+  println("ux_ok copy_paste_roundtrip")
+  0
+end
