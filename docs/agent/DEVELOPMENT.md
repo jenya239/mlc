@@ -41,8 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_B` closed** (2026-07-14) Critic OK — widgets on scene.
-Next: Planner opens Phase C (`TRACK_GUI_SCENE_PHASE_C`).
+**`TRACK_GUI_SCENE_PHASE_C` open** (2026-07-14) — dirty + spatial index; **STEP=1** Decision next.
 Epic: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 Phase B archive: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md).
 Phase A Critic OK: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).

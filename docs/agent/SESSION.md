@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 7 |
-| active_track | TRACK_GUI_CANVAS_GRAPH |
-| test_gate | Phase B closed; Planner Phase C next |
+| driver_turns_since_plan | 0 |
+| step_last | 0 |
+| active_track | TRACK_GUI_SCENE_PHASE_C |
+| test_gate | Phase C STEP=1 Decision next |
+
+### Turn 2026-07-14 19:55 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GUI_CANVAS_GRAPH / PHASE_C |
+| started | 2026-07-14 19:51 |
+| elapsed | ~4 min |
+| done    | Opened `TRACK_GUI_SCENE_PHASE_C.md` STEP=1–7; epic+PLAN §10c/§29 → Phase C. |
+| verify  | Phase C track exists; Next=STEP=1; Phase B remains archived. |
+| result  | plan-refresh done. Plain: Phase C queue head; Driver freezes Decision. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 19:50 (Critic TRACK_GUI_SCENE_PHASE_B STEP=7)
 
