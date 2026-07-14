@@ -1,0 +1,56 @@
+// TRACK_GUI_SCENE_PHASE_B STEP=2 — Label kind + hit + batch count (no GL).
+import {
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_label,
+  scene_label_new,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { scene_rect_fill_batch_vertex_count } from '../gui/scene_draw'
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+
+  const added = scene_add_label(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 40.0),
+    scene_label_new(120.0, 24.0, "Hello", 0.1, 0.2, 0.3, 1.0)
+  )
+  scene = added.scene
+  if added.node_id != 1 then
+    return 1
+  end
+
+  const kind = scene.nodes[1].kind
+  const text_ok = match kind {
+    Label(scene_label) => scene_label.text == "Hello",
+    Container => false,
+    RectFill(_) => false
+  }
+  if !text_ok then
+    return 2
+  end
+
+  scene = scene_update_world(scene)
+  if scene_hit_test(scene, 40.0, 40.0) != 1 then
+    return 3
+  end
+  if scene_hit_test(scene, 159.0, 63.0) != 1 then
+    return 4
+  end
+  if scene_hit_test(scene, 200.0, 200.0) != 0 - 1 then
+    return 5
+  end
+
+  if scene_rect_fill_batch_vertex_count(scene) != 6 then
+    return 6
+  end
+
+  println("scene_label_ok")
+  0
+end

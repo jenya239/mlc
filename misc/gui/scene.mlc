@@ -20,7 +20,21 @@ export type SceneRectFill = {
   alpha: f64
 }
 
-export type SceneNodeKind = Container | RectFill(SceneRectFill)
+// Phase B: colored rect + string payload (MSDF glyph draw deferred).
+export type SceneLabel = {
+  width: f64,
+  height: f64,
+  text: string,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export type SceneNodeKind =
+  Container
+  | RectFill(SceneRectFill)
+  | Label(SceneLabel)
 
 export type SceneNode = {
   parent: i32,
@@ -101,6 +115,35 @@ export fn scene_rect_fill_new(
     alpha: alpha
   }
 
+export fn scene_label_new(
+  width: f64,
+  height: f64,
+  text: string,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SceneLabel =
+  SceneLabel {
+    width: width,
+    height: height,
+    text: text,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+export fn scene_label_as_rect_fill(label: SceneLabel) -> SceneRectFill =
+  scene_rect_fill_new(
+    label.width,
+    label.height,
+    label.red,
+    label.green,
+    label.blue,
+    label.alpha
+  )
+
 export fn scene_new() -> Scene =
   Scene {
     nodes: [],
@@ -168,6 +211,14 @@ export fn scene_add_rect_fill(
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, RectFill(fill)))
 
+export fn scene_add_label(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  label: SceneLabel
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, Label(label)))
+
 // Topo order = index order (parent < child). Reuses `world[]` in place.
 export fn scene_update_world(scene: Scene) -> Scene = do
   let mut world = scene.world
@@ -224,6 +275,18 @@ export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
         )
         scene_point_in_rect_fill(local.x, local.y, fill)
       end,
+      Label(scene_label) => do
+        const local = affine_transform_point(
+          affine_invert(scene.world[index]),
+          scene_point.x,
+          scene_point.y
+        )
+        scene_point_in_rect_fill(
+          local.x,
+          local.y,
+          scene_label_as_rect_fill(scene_label)
+        )
+      end
       Container => 0
     }
     if hit != 0 then

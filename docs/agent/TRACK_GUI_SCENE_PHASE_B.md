@@ -11,7 +11,13 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ## Next step
 
-**STEP=2** — `Label` kind + smoke.
+**STEP=3** — `Checkbox` kind + smoke.
+
+### STEP=2 done (2026-07-14)
+
+- `SceneLabel` + `Label(SceneLabel)` on `SceneNodeKind`; `scene_add_label` / hit / draw-as-rect.
+- `misc/examples/scene_label_smoke.mlc` + `scripts/run_scene_label_smoke.sh` → `scene_label_ok`.
+- Phase A types+hit still exit 0 after kind extend.
 
 ### STEP=1 done (2026-07-14)
 
@@ -64,7 +70,7 @@ label rendering in Phase B smokes.
 | Step | Item | Gate |
 |------|------|------|
 | 1 | Decision: kinds + state + hit/draw/input contract (freeze in this file) | **done** (2026-07-14): Decision frozen |
-| 2 | `Label` kind: add + layout size + draw smoke (string → rect/text stub) | `scene_label_smoke` exit 0 |
+| 2 | `Label` kind: add + layout size + draw smoke (string → rect/text stub) | **done** (2026-07-14): `scene_label_ok` |
 | 3 | `Checkbox` kind: hit toggles checked; draw box+mark | `scene_checkbox_smoke` exit 0 |
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | `scene_slider_smoke` exit 0 |
 | 5 | `TextField` kind: focus + inject keys/text; caret model | `scene_text_field_smoke` exit 0 |
@@ -78,10 +84,10 @@ label rendering in Phase B smokes.
 2. Payload fields listed — done.
 3. Non-goals noted — done.
 
-**STEP=2**
-1. Extend `SceneNodeKind` + `scene_add_label` in `misc/gui/scene.mlc`.
-2. Draw path in `scene_draw.mlc` (rect + optional text stub).
-3. `misc/examples/scene_label_smoke.mlc` + `scripts/run_scene_label_smoke.sh`.
+**STEP=2** — **done**
+1. Extend `SceneNodeKind` + `scene_add_label` in `misc/gui/scene.mlc` — done.
+2. Draw path in `scene_draw.mlc` (rect stub) — done.
+3. `misc/examples/scene_label_smoke.mlc` + `scripts/run_scene_label_smoke.sh` — done.
 
 **STEP=3**
 1. `Checkbox` payload `{ checked: i32, … }`; toggle on hit.

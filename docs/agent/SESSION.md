@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 1 |
+| step_last | 2 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=2 Label next |
+| test_gate | Phase B STEP=3 Checkbox next |
+
+### Turn 2026-07-14 19:25 (Driver TRACK_GUI_SCENE_PHASE_B STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:15 |
+| elapsed | ~10 min |
+| done    | `SceneLabel`/`Label` + `scene_add_label`/hit/draw; `scene_label_smoke` + `run_scene_label_smoke.sh`. |
+| verify  | `bash scripts/run_scene_label_smoke.sh` → `scene_label_ok`; types+hit Phase A exit 0. |
+| result  | STEP=2 done. Plain: Label = colored rect + string; batch 6 verts. |
+| issues  | Match binding must be `scene_label` (not `label`) — codegen name clash. Left foreign dirty. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:12 (Driver TRACK_GUI_SCENE_PHASE_B STEP=1)
 
