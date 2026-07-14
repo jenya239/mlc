@@ -213,7 +213,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 10 | Line index + offset↔line/col | **done** (2026-07-14): `line_index.mlc` + unit |
 | 11 | Visible range + overscan; horizontal scroll OK; no wrap | **done** (2026-07-14): `visible_range.mlc` + unit |
 | 12 | Line numbers gutter | **done** (2026-07-14): `gutter.mlc` + unit + GLFW smoke |
-| 13 | Scroll does not layout whole file | perf: large file scroll frame bound |
+| 13 | Scroll does not layout whole file | **done** (2026-07-14): `scroll_layout.mlc` + unit (100k / bound=24) |
 
 ### E4 — Edit / selection / clipboard / undo / save
 
@@ -305,4 +305,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=7 done** (2026-07-14): shell panels + divider drag.
 - **STEP=8 done** (2026-07-14): ignore list.
 - **STEP=11 done** (2026-07-14): visible range.
-- **STEP=12 done** (2026-07-14): gutter; next **STEP=13**.
+- **STEP=12 done** (2026-07-14): gutter.
+- **STEP=13 done** (2026-07-14): scroll layout bound; next **STEP=14** (E3 complete).
