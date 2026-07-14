@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=25** — SyntaxHighlighter interface; MLC lexer stub (visible range / incremental).
+**STEP=26** — Status bar: path, Ln/Col, dirty, language, encoding if known.
+
+### STEP=25 done (2026-07-14)
+
+- `syntax/highlighter.mlc`: `highlight_range` / `highlight_mlc` spans (keyword/comment/string).
+- `tests/syntax_unit.mlc` + script exit 0.
+
 
 ### STEP=24 done (2026-07-14)
 
@@ -299,7 +305,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 
 | Step | Item | Gate |
 |------|------|------|
-| 25 | `SyntaxHighlighter` interface; MLC lexer stub (visible range / incremental) | unit spans; replaceable by tree-sitter later |
+| 25 | `SyntaxHighlighter` interface; MLC lexer stub (visible range / incremental) | **done** (2026-07-14): `highlighter.mlc` + unit |
 | 26 | Status bar: path, Ln/Col, dirty, language, encoding if known | smoke |
 | 27 | Theme finalize Solarized Light–like | visual |
 | 28 | Perf report on large file + screenshot/headless capture | numbers in ARCHITECTURE/README |
@@ -376,4 +382,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=21 done** (2026-07-14): dirty close confirm.
 - **STEP=22 done** (2026-07-14): Ctrl+Tab cycle.
 - **STEP=23 done** (2026-07-14): command bus + focus.
-- **STEP=24 done** (2026-07-14): session restore (E5 complete); next **STEP=25**.
+- **STEP=24 done** (2026-07-14): session restore (E5 complete).
+- **STEP=25 done** (2026-07-14): syntax stub spans; next **STEP=26**.

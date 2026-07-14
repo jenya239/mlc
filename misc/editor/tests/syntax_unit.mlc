@@ -1,0 +1,79 @@
+// TRACK_EDITOR_MVP STEP=25 — highlight spans unit.
+import {
+  HighlightSpan,
+  highlight_mlc,
+  highlight_range
+} from '../syntax/highlighter'
+
+fn count_tag(spans: [HighlightSpan], tag: string) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < spans.length() do
+    if spans[index].tag == tag then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn has_span(
+  spans: [HighlightSpan],
+  tag: string,
+  byte_start: i32,
+  byte_end: i32
+) -> bool = do
+  let mut index = 0
+  while index < spans.length() do
+    if spans[index].tag == tag &&
+        spans[index].byte_start == byte_start &&
+        spans[index].byte_end == byte_end then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  // offsets: fn(0-2) \n(2) //(3-7) \n(7) let(8-11)  "x"(14-17)
+  const source = "fn\n//c\nlet \"x\""
+  const spans = highlight_mlc(source)
+
+  if !has_span(spans, "keyword", 0, 2) then
+    return 1
+  end
+  if !has_span(spans, "comment", 3, 6) then
+    return 2
+  end
+  if !has_span(spans, "keyword", 7, 10) then
+    return 3
+  end
+  if !has_span(spans, "string", 11, 14) then
+    return 4
+  end
+  if count_tag(spans, "keyword") != 2 then
+    return 5
+  end
+
+  // Visible-range: only comment line [3,7).
+  const window = highlight_range(source, 3, 7)
+  if window.length() != 1 then
+    return 6
+  end
+  if !has_span(window, "comment", 3, 6) then
+    return 7
+  end
+  if count_tag(window, "keyword") != 0 then
+    return 8
+  end
+
+  // Identifier that is not a keyword → no span.
+  const plain = highlight_mlc("foo bar")
+  if plain.length() != 0 then
+    return 9
+  end
+
+  println("[mlc-editor] syntax_unit ok")
+  0
+end

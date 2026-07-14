@@ -83,6 +83,9 @@ scripts/run_editor_command_bus_unit.sh
 
 # STEP=24 session restore (temp fixture)
 scripts/run_editor_session_unit.sh
+
+# STEP=25 syntax highlight spans (no GLFW)
+scripts/run_editor_syntax_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -111,6 +114,7 @@ Tab close requires `[mlc-editor] tab_close_unit ok`.
 Tab cycle requires `[mlc-editor] tab_cycle_unit ok`.
 Command bus requires `[mlc-editor] command_bus_unit ok`.
 Session requires `[mlc-editor] session_unit ok`.
+Syntax requires `[mlc-editor] syntax_unit ok`.
 
 ## Layout (growing)
 
