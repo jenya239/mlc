@@ -8,6 +8,23 @@ import {
   ux_check_expect
 } from '../../gui/ux/expect'
 import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import {
+  editor_ux_click_text,
+  editor_ux_drag_text,
+  editor_ux_selection_draw_report
+} from '../ux/selection_apply'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 800, 600)
