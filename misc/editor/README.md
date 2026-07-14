@@ -39,6 +39,9 @@ scripts/run_editor_piece_table_unit.sh
 
 # STEP=10 LineIndex unit (no GLFW)
 scripts/run_editor_line_index_unit.sh
+
+# STEP=11 visible range unit (no GLFW)
+scripts/run_editor_visible_range_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -51,12 +54,14 @@ Shell panels requires `[mlc-editor] shell_panels ok`.
 Ignore list requires `[mlc-editor] ignore_list_unit ok`.
 Piece table requires `[mlc-editor] piece_table_unit ok`.
 LineIndex requires `[mlc-editor] line_index_unit ok`.
+Visible range requires `[mlc-editor] visible_range_unit ok`.
 
 ## Layout (growing)
 
 ```text
 main.mlc          # entry
 ARCHITECTURE.md
-document/         # piece_table (STEP=9), line_index (STEP=10)
-layout/ syntax/ workspace/ ui/ commands/ tests/
+document/         # piece_table, line_index
+layout/           # shell, visible_range (STEP=11)
+syntax/ workspace/ ui/ commands/ tests/
 ```

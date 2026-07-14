@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=11** — Visible range + overscan; horizontal scroll; no wrap.
+**STEP=12** — Line numbers gutter.
+
+### STEP=11 done (2026-07-14)
+
+- `layout/visible_range.mlc`: visible lines + overscan; horizontal window; no wrap
+  (`visual_row_for_line` identity).
+- `tests/visible_range_unit.mlc` + script exit 0 (`lines=9` with overscan).
 
 ### STEP=10 done (2026-07-14)
 

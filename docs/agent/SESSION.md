@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 10 |
+| driver_turns_since_plan | 12 |
+| step_last | 11 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=11 visible range next |
+| test_gate | STEP=12 gutter next |
+
+### Turn 2026-07-14 11:50 (Driver TRACK_EDITOR_MVP STEP=11)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 11:43 |
+| elapsed | ~7 min |
+| done    | `layout/visible_range.mlc` + unit/script; TRACK/PLAN/ARCH/README sync. |
+| verify  | `scripts/run_editor_visible_range_unit.sh` exit 0; `visible_range_unit ok lines=9`. |
+| result  | STEP=11 done. Plain: overscan range + horizontal window, no wrap. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=12 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 11:41 (Driver TRACK_EDITOR_MVP STEP=10)
 

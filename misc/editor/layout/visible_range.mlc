@@ -1,0 +1,133 @@
+// TRACK_EDITOR_MVP STEP=11 — visible line range + horizontal window (no wrap).
+// One document line = one visual row. Overscan expands the drawn line window.
+
+export type ViewportMetrics = {
+  line_height: i32,
+  viewport_height: i32,
+  viewport_width: i32,
+  overscan_lines: i32
+}
+
+export type VisibleLineRange = {
+  first_line: i32,
+  last_line: i32
+}
+
+export type HorizontalWindow = {
+  content_x: i32,
+  width: i32
+}
+
+export fn viewport_metrics_new(
+  line_height: i32,
+  viewport_height: i32,
+  viewport_width: i32,
+  overscan_lines: i32
+) -> ViewportMetrics =
+  ViewportMetrics {
+    line_height: line_height,
+    viewport_height: viewport_height,
+    viewport_width: viewport_width,
+    overscan_lines: overscan_lines
+  }
+
+// No-wrap: content height is line_count * line_height.
+export fn document_content_height(line_count: i32, line_height: i32) -> i32 = do
+  if line_count <= 0 then
+    return 0
+  end
+  if line_height <= 0 then
+    return 0
+  end
+  line_count * line_height
+end
+
+// Identity mapping (no wrap v1).
+export fn visual_row_for_line(line: i32) -> i32 =
+  line
+
+export fn visible_line_range(
+  line_count: i32,
+  scroll_offset_y: i32,
+  metrics: ViewportMetrics
+) -> VisibleLineRange = do
+  if line_count <= 0 then
+    return VisibleLineRange { first_line: 0, last_line: -1 }
+  end
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut scroll_y = scroll_offset_y
+  if scroll_y < 0 then
+    scroll_y = 0
+  end
+  let mut overscan = metrics.overscan_lines
+  if overscan < 0 then
+    overscan = 0
+  end
+
+  let mut first = scroll_y / line_height - overscan
+  if first < 0 then
+    first = 0
+  end
+
+  let mut bottom = scroll_y + metrics.viewport_height
+  if bottom < scroll_y then
+    bottom = scroll_y
+  end
+  // Inclusive last visible row before overscan.
+  let mut last = 0
+  if bottom == 0 then
+    last = 0
+  else
+    last = (bottom - 1) / line_height
+  end
+  last = last + overscan
+
+  const max_line = line_count - 1
+  if first > max_line then
+    first = max_line
+  end
+  if last > max_line then
+    last = max_line
+  end
+  if last < first then
+    last = first
+  end
+  VisibleLineRange { first_line: first, last_line: last }
+end
+
+export fn visible_line_count(range: VisibleLineRange) -> i32 = do
+  if range.last_line < range.first_line then
+    return 0
+  end
+  range.last_line - range.first_line + 1
+end
+
+// Horizontal scroll window in content coordinates (no wrap: full line width).
+export fn horizontal_visible_window(
+  scroll_offset_x: i32,
+  viewport_width: i32,
+  content_width: i32
+) -> HorizontalWindow = do
+  let mut offset_x = scroll_offset_x
+  if offset_x < 0 then
+    offset_x = 0
+  end
+  let mut max_x = content_width - viewport_width
+  if max_x < 0 then
+    max_x = 0
+  end
+  if offset_x > max_x then
+    offset_x = max_x
+  end
+  let mut width = viewport_width
+  if width < 0 then
+    width = 0
+  end
+  if content_width < width then
+    width = content_width
+  end
+  HorizontalWindow { content_x: offset_x, width: width }
+end

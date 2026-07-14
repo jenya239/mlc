@@ -1,0 +1,82 @@
+// TRACK_EDITOR_MVP STEP=11 — visible range + horizontal scroll (no wrap) unit.
+import {
+  viewport_metrics_new,
+  document_content_height,
+  visual_row_for_line,
+  visible_line_range,
+  visible_line_count,
+  horizontal_visible_window
+} from '../layout/visible_range'
+
+fn main() -> i32 = do
+  if document_content_height(100, 20) != 2000 then
+    return 1
+  end
+  if visual_row_for_line(42) != 42 then
+    return 2
+  end
+
+  // viewport 100px / line 20 → 5 lines; overscan 0
+  const metrics = viewport_metrics_new(20, 100, 200, 0)
+  const top = visible_line_range(100, 0, metrics)
+  if top.first_line != 0 || top.last_line != 4 then
+    return 3
+  end
+  if visible_line_count(top) != 5 then
+    return 4
+  end
+
+  // scroll to line 10 (y=200); still 5 lines 10..14
+  const mid = visible_line_range(100, 200, metrics)
+  if mid.first_line != 10 || mid.last_line != 14 then
+    return 5
+  end
+
+  // overscan 2 → 8..16
+  const with_overscan = visible_line_range(
+    100,
+    200,
+    viewport_metrics_new(20, 100, 200, 2)
+  )
+  if with_overscan.first_line != 8 || with_overscan.last_line != 16 then
+    return 6
+  end
+  if visible_line_count(with_overscan) != 9 then
+    return 7
+  end
+
+  // clamp at document end
+  const near_end = visible_line_range(20, 360, metrics)
+  if near_end.last_line != 19 then
+    return 8
+  end
+  if near_end.first_line > near_end.last_line then
+    return 9
+  end
+
+  // empty doc
+  const empty = visible_line_range(0, 0, metrics)
+  if empty.last_line != -1 || visible_line_count(empty) != 0 then
+    return 10
+  end
+
+  // horizontal: clamp offset, no wrap window
+  const window = horizontal_visible_window(50, 200, 1000)
+  if window.content_x != 50 || window.width != 200 then
+    return 11
+  end
+  const clamped = horizontal_visible_window(900, 200, 1000)
+  if clamped.content_x != 800 || clamped.width != 200 then
+    return 12
+  end
+  const narrow = horizontal_visible_window(0, 200, 80)
+  if narrow.content_x != 0 || narrow.width != 80 then
+    return 13
+  end
+
+  println(
+    "[mlc-editor] visible_range_unit ok lines=" +
+      visible_line_count(with_overscan).to_string()
+  )
+  0
+end
