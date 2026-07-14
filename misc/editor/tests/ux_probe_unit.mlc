@@ -1,0 +1,122 @@
+// TRACK_UX_HEADLESS STEP=3 — editor probe unit (fixture state).
+import { rect_new } from '../../gui/layout'
+import {
+  ux_focus_editor
+} from '../../gui/ux/snapshot'
+import {
+  TextContains,
+  CaretAt,
+  SelectionRange,
+  DirtyIs,
+  ActiveTabIndex,
+  FocusIs,
+  EditorRectIs,
+  NoOverflow,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_set_active,
+  tab_set_update_active_buffer,
+  tab_set_active
+} from '../workspace/tabs'
+import { selection_new } from '../document/selection'
+import { open_buffer_set_document } from '../document/save'
+import { document_from_string } from '../document/piece_table'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "line0\nline1")
+  tabs = tab_set_open(tabs, "/proj/b.mlc", "bbb")
+  tabs = tab_set_set_active(tabs, 0)
+
+  const dirty_buffer = open_buffer_set_document(
+    tab_set_active(tabs).buffer,
+    document_from_string("line0\nline1!")
+  )
+  tabs = tab_set_update_active_buffer(tabs, dirty_buffer)
+
+  // selection [6,10); caret=focus at byte 6 → Ln1 Col0
+  const selection = selection_new(10, 6)
+  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection)
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: 16,
+    cursor_shape: state.cursor_shape,
+    clock_ms: 100,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, FocusIs(ux_focus_editor())).ok == 0 then
+    return 1
+  end
+  if ux_check_expect(snapshot, ActiveTabIndex(0)).ok == 0 then
+    return 2
+  end
+  if ux_check_expect(snapshot, TextContains("line1!")).ok == 0 then
+    return 3
+  end
+  if ux_check_expect(snapshot, DirtyIs(1)).ok == 0 then
+    return 4
+  end
+  if ux_check_expect(snapshot, CaretAt(1, 0)).ok == 0 then
+    return 5
+  end
+  if ux_check_expect(snapshot, SelectionRange(6, 10)).ok == 0 then
+    return 6
+  end
+  if ux_check_expect(snapshot, NoOverflow).ok == 0 then
+    return 7
+  end
+  if snapshot.tabs.length() != 2 then
+    return 8
+  end
+  if snapshot.tabs[0].path != "/proj/a.mlc" then
+    return 9
+  end
+  if snapshot.scroll_offset_y != 16 || snapshot.clock_ms != 100 then
+    return 10
+  end
+  // ratio 1/4 of 800 with divider 4 → tree ~199, editor starts after divider
+  if snapshot.tree_rect.width <= 0 || snapshot.editor_rect.width <= 0 then
+    return 11
+  end
+  if snapshot.tab_strip_rect.height != 28 then
+    return 12
+  end
+  if snapshot.divider_rect.width != 4 then
+    return 13
+  end
+  if ux_check_expect(
+    snapshot,
+    EditorRectIs(
+      snapshot.editor_rect.x,
+      snapshot.editor_rect.y,
+      snapshot.editor_rect.width,
+      snapshot.editor_rect.height
+    )
+  ).ok == 0 then
+    return 14
+  end
+
+  println("[ux] probe_unit ok")
+  0
+end

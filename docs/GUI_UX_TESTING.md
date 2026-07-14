@@ -98,6 +98,9 @@ Helpers: `ux_rect_equals`, `ux_rect_contains_point`.
 Driver (STEP=2): `ux_driver_new` / `ux_driver_apply` / `ux_driver_run` — fake
 clock + pointer/typed/last_key; no GLFW until probe port (STEP=3+).
 
+Probe (STEP=3): `misc/editor/ux/probe.mlc` — `EditorUxState` + `editor_ux_snapshot`
+from tabs/selection/shell_panels (fixture; no window).
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

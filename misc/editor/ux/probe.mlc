@@ -1,0 +1,155 @@
+// TRACK_UX_HEADLESS STEP=3 — editor probe port (fixture → UxSnapshot).
+import { Rect } from '../../gui/layout'
+import {
+  UxSnapshot,
+  UxRect,
+  UxTabInfo,
+  UxOverflow,
+  ux_rect_new,
+  ux_focus_none
+} from '../../gui/ux/snapshot'
+import {
+  ShellPanels,
+  shell_panels_tree_rect,
+  shell_panels_editor_rect
+} from '../ui/shell_panels'
+import {
+  TabSet,
+  tab_set_has_active,
+  tab_set_active,
+  tab_is_dirty
+} from '../workspace/tabs'
+import {
+  EditorSelection,
+  selection_start,
+  selection_end,
+  selection_caret
+} from '../document/selection'
+import {
+  document_to_string
+} from '../document/piece_table'
+import {
+  line_index_from_document,
+  line_index_offset_to_position
+} from '../document/line_index'
+
+export type EditorUxState = {
+  window_width: i32,
+  window_height: i32,
+  focus: i32,
+  panels: ShellPanels,
+  tabs: TabSet,
+  selection: EditorSelection,
+  scroll_offset_x: i32,
+  scroll_offset_y: i32,
+  cursor_shape: i32,
+  clock_ms: i32,
+  tab_strip_height: i32,
+  overflows: [UxOverflow]
+}
+
+fn rect_to_ux(rect: Rect) -> UxRect =
+  ux_rect_new(rect.x, rect.y, rect.width, rect.height)
+
+export fn editor_ux_state_new(
+  window_width: i32,
+  window_height: i32,
+  panels: ShellPanels,
+  tabs: TabSet,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: window_width,
+    window_height: window_height,
+    focus: ux_focus_none(),
+    panels: panels,
+    tabs: tabs,
+    selection: selection,
+    scroll_offset_x: 0,
+    scroll_offset_y: 0,
+    cursor_shape: 0,
+    clock_ms: 0,
+    tab_strip_height: 28,
+    overflows: []
+  }
+
+// Build semantic snapshot from editor fixture state (no GLFW).
+export fn editor_ux_snapshot(state: EditorUxState) -> UxSnapshot = do
+  let mut tabs_info: [UxTabInfo] = []
+  let mut index = 0
+  while index < state.tabs.tabs.length() do
+    const tab = state.tabs.tabs[index]
+    let mut dirty_flag = 0
+    if tab_is_dirty(tab) then
+      dirty_flag = 1
+    end
+    tabs_info.push(UxTabInfo { path: tab.path, dirty: dirty_flag })
+    index = index + 1
+  end
+
+  let mut document_text = ""
+  let mut dirty = 0
+  let mut caret_line = 0
+  let mut caret_column = 0
+  let mut caret_byte = 0
+  if tab_set_has_active(state.tabs) then
+    const active = tab_set_active(state.tabs)
+    document_text = document_to_string(active.buffer.document)
+    if tab_is_dirty(active) then
+      dirty = 1
+    end
+    caret_byte = selection_caret(state.selection)
+    const line_index = line_index_from_document(active.buffer.document)
+    const position = line_index_offset_to_position(line_index, caret_byte)
+    caret_line = position.line
+    caret_column = position.column
+  end
+
+  const tree_rect = rect_to_ux(shell_panels_tree_rect(state.panels))
+  const editor_rect = rect_to_ux(shell_panels_editor_rect(state.panels))
+  const divider_rect = rect_to_ux(state.panels.panes.divider)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  const tab_strip_rect = ux_rect_new(
+    editor_rect.x,
+    editor_rect.y,
+    editor_rect.width,
+    strip_height
+  )
+  const text_rect = ux_rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+
+  UxSnapshot {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    active_tab_index: state.tabs.active_index,
+    tabs: tabs_info,
+    caret_line: caret_line,
+    caret_column: caret_column,
+    caret_byte: caret_byte,
+    selection_start: selection_start(state.selection),
+    selection_end: selection_end(state.selection),
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    document_text: document_text,
+    dirty: dirty,
+    tree_rect: tree_rect,
+    divider_rect: divider_rect,
+    editor_rect: editor_rect,
+    text_rect: text_rect,
+    tab_strip_rect: tab_strip_rect,
+    overflows: state.overflows,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms
+  }
+end

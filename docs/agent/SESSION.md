@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
+| driver_turns_since_plan | 3 |
+| step_last | 3 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=3 editor probe next |
+| test_gate | STEP=4 tab_strip scenario next |
+
+### Turn 2026-07-14 18:25 (Driver TRACK_UX_HEADLESS STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:20 |
+| elapsed | ~5 min |
+| done    | `misc/editor/ux/probe.mlc` + unit/script; gate probe_unit. |
+| verify  | `run_ux_probe_unit.sh` exit 0; `probe_unit ok`. |
+| result  | STEP=3 done. Plain: fixture tabs/selection/panels → UxSnapshot. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=4 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:20 (Driver TRACK_UX_HEADLESS STEP=2)
 
