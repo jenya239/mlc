@@ -1,0 +1,110 @@
+// TRACK_EDITOR_MVP STEP=15 — insert/delete/Enter/Backspace/Delete unit.
+import {
+  document_from_string,
+  document_to_string,
+  document_byte_length,
+  document_original_length
+} from '../document/piece_table'
+import { document_delete } from '../document/document_delete'
+import {
+  selection_collapsed,
+  selection_new,
+  selection_caret
+} from '../document/selection'
+import {
+  edit_insert_text,
+  edit_insert_newline,
+  edit_backspace,
+  edit_delete_forward
+} from '../document/edit'
+
+fn main() -> i32 = do
+  // document_delete mid-range; original buffer unchanged.
+  const base = document_from_string("abcdef")
+  const original_snapshot = base.original
+  const deleted = document_delete(base, 2, 4)
+  if document_to_string(deleted) != "abef" then
+    return 1
+  end
+  if document_original_length(deleted) != original_snapshot.length() then
+    return 2
+  end
+  if deleted.original != original_snapshot then
+    return 3
+  end
+
+  // Insert char at caret.
+  let mut document = document_from_string("ac")
+  let mut selection = selection_collapsed(1)
+  let mut result = edit_insert_text(document, selection, "b")
+  if document_to_string(result.document) != "abc" then
+    return 4
+  end
+  if selection_caret(result.selection) != 2 then
+    return 5
+  end
+
+  // Enter
+  result = edit_insert_newline(result.document, result.selection)
+  if document_to_string(result.document) != "ab\nc" then
+    return 6
+  end
+  if selection_caret(result.selection) != 3 then
+    return 7
+  end
+
+  // Backspace one byte
+  result = edit_backspace(result.document, result.selection)
+  if document_to_string(result.document) != "abc" then
+    return 8
+  end
+  if selection_caret(result.selection) != 2 then
+    return 9
+  end
+
+  // Delete forward
+  result = edit_delete_forward(result.document, selection_collapsed(1))
+  if document_to_string(result.document) != "ac" then
+    return 10
+  end
+  if selection_caret(result.selection) != 1 then
+    return 11
+  end
+
+  // Typing replaces selection
+  document = document_from_string("hello")
+  selection = selection_new(1, 4)
+  result = edit_insert_text(document, selection, "i")
+  if document_to_string(result.document) != "hio" then
+    return 12
+  end
+  if selection_caret(result.selection) != 2 then
+    return 13
+  end
+
+  // Backspace on selection deletes range
+  document = document_from_string("hello")
+  result = edit_backspace(document, selection_new(1, 4))
+  if document_to_string(result.document) != "ho" then
+    return 14
+  end
+  if selection_caret(result.selection) != 1 then
+    return 15
+  end
+
+  // Delete on selection
+  document = document_from_string("hello")
+  result = edit_delete_forward(document, selection_new(0, 5))
+  if document_to_string(result.document) != "" then
+    return 16
+  end
+  if document_byte_length(result.document) != 0 then
+    return 17
+  end
+
+  println(
+    "[mlc-editor] edit_unit ok bytes=" +
+      document_byte_length(result.document).to_string()
+  )
+  0
+end

@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set (+ test inject)
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…14 status
+## STEP=0…15 status
 
-- STEP=0–13: scaffold through scroll layout bound.
-- STEP=14: `document/selection.mlc` — view-owned cursor/selection (byte offsets).
+- STEP=0–14: scaffold through selection model.
+- STEP=15: `document/edit.mlc` + `document_delete.mlc` — insert/Enter/Backspace/Delete.

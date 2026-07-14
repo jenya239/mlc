@@ -1,0 +1,71 @@
+// TRACK_EDITOR_MVP STEP=15 — delete range on piece table (never rewrite original).
+// Orphan bytes may remain in `added`; pieces simply stop referencing them.
+
+import {
+  TextDocument,
+  Piece,
+  PieceSource,
+  document_byte_length
+} from './piece_table'
+
+fn make_piece(source: PieceSource, start: i32, length: i32) -> Piece =
+  Piece { source: source, start: start, length: length }
+
+// Delete bytes in [byte_start, byte_end). Empty range is a no-op.
+export fn document_delete(
+  document: TextDocument,
+  byte_start: i32,
+  byte_end: i32
+) -> TextDocument = do
+  let mut range_start = byte_start
+  let mut range_end = byte_end
+  if range_start < 0 then
+    range_start = 0
+  end
+  if range_end < range_start then
+    range_end = range_start
+  end
+  const total = document_byte_length(document)
+  if range_start > total then
+    range_start = total
+  end
+  if range_end > total then
+    range_end = total
+  end
+  if range_start == range_end then
+    return document
+  end
+
+  let mut pieces: [Piece] = []
+  let mut cursor = 0
+  let mut index = 0
+  while index < document.pieces.length() do
+    const piece = document.pieces[index]
+    const piece_start = cursor
+    const piece_finish = cursor + piece.length
+    cursor = piece_finish
+
+    if piece_finish <= range_start then
+      pieces.push(piece)
+    else if piece_start >= range_end then
+      pieces.push(piece)
+    else
+      const keep_head = range_start - piece_start
+      if keep_head > 0 then
+        pieces.push(make_piece(piece.source, piece.start, keep_head))
+      end
+      const keep_tail = piece_finish - range_end
+      if keep_tail > 0 then
+        const skip = range_end - piece_start
+        pieces.push(make_piece(piece.source, piece.start + skip, keep_tail))
+      end
+    end
+    index = index + 1
+  end
+
+  TextDocument {
+    original: document.original,
+    added: document.added,
+    pieces: pieces
+  }
+end

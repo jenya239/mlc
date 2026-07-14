@@ -52,6 +52,9 @@ scripts/run_editor_scroll_layout_unit.sh
 
 # STEP=14 selection model unit (no GLFW)
 scripts/run_editor_selection_unit.sh
+
+# STEP=15 edit insert/delete unit (no GLFW)
+scripts/run_editor_edit_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -69,13 +72,14 @@ Gutter unit requires `[mlc-editor] gutter_unit ok`.
 Gutter smoke requires open + `gutter ok glyphs=N`.
 Scroll layout requires `scroll_layout_unit ok` with `file_lines=100000` and `bound=24`.
 Selection requires `[mlc-editor] selection_unit ok`.
+Edit unit requires `[mlc-editor] edit_unit ok`.
 
 ## Layout (growing)
 
 ```text
 main.mlc          # entry
 ARCHITECTURE.md
-document/         # piece_table, line_index, selection (STEP=14)
+document/         # piece_table, line_index, selection, edit/delete (STEP=15)
 layout/           # shell, visible_range, gutter, scroll_layout (STEP=13)
 syntax/ workspace/ ui/ commands/ tests/
 ```

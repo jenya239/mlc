@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=15** — Insert/delete/Enter/Backspace/Delete.
+**STEP=16** — Arrows/Home/End/Page/Shift+arrows; mouse click+drag.
+
+### STEP=15 done (2026-07-14)
+
+- `document/document_delete.mlc` + `edit.mlc`: insert/Enter/Backspace/Delete.
+- `tests/edit_unit.mlc` + script exit 0; original buffer unchanged on delete.
 
 ### STEP=14 done (2026-07-14)
 
@@ -225,7 +230,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | Step | Item | Gate |
 |------|------|------|
 | 14 | Cursor + selection (model not in renderer) | **done** (2026-07-14): `selection.mlc` + unit |
-| 15 | Insert/delete/Enter/Backspace/Delete | unit |
+| 15 | Insert/delete/Enter/Backspace/Delete | **done** (2026-07-14): `edit.mlc` + unit |
 | 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | inject integration |
 | 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | integration |
 | 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | unit |
@@ -312,4 +317,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=11 done** (2026-07-14): visible range.
 - **STEP=12 done** (2026-07-14): gutter.
 - **STEP=13 done** (2026-07-14): scroll layout bound (E3 complete).
-- **STEP=14 done** (2026-07-14): selection model; next **STEP=15**.
+- **STEP=14 done** (2026-07-14): selection model.
+- **STEP=15 done** (2026-07-14): edit insert/delete; next **STEP=16**.

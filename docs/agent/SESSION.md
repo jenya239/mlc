@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 15 |
-| step_last | 14 |
+| driver_turns_since_plan | 16 |
+| step_last | 15 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=15 edit next |
+| test_gate | STEP=16 nav next |
+
+### Turn 2026-07-14 12:35 (Driver TRACK_EDITOR_MVP STEP=15)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 15 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 12:26 |
+| elapsed | ~9 min |
+| done    | `document_delete.mlc` + `edit.mlc` + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_edit_unit.sh` exit 0; `edit_unit ok bytes=0`. |
+| result  | STEP=15 done. Plain: insert/Enter/Backspace/Delete; original untouched. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=16 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 12:25 (Driver TRACK_EDITOR_MVP STEP=14)
 

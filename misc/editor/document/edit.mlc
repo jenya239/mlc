@@ -1,0 +1,107 @@
+// TRACK_EDITOR_MVP STEP=15 — insert/delete/Enter/Backspace/Delete with selection.
+import {
+  TextDocument,
+  document_insert,
+  document_byte_length
+} from './piece_table'
+import { document_delete } from './document_delete'
+import {
+  EditorSelection,
+  selection_collapsed,
+  selection_is_empty,
+  selection_start,
+  selection_end,
+  selection_clamp
+} from './selection'
+
+export type EditResult = {
+  document: TextDocument,
+  selection: EditorSelection
+}
+
+fn delete_selection(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult = do
+  const range_start = selection_start(selection)
+  const range_end = selection_end(selection)
+  const next_document = document_delete(document, range_start, range_end)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(range_start)
+  }
+end
+
+// Insert text at caret; replaces non-empty selection first.
+export fn edit_insert_text(
+  document: TextDocument,
+  selection: EditorSelection,
+  text: string
+) -> EditResult = do
+  let mut working = document
+  let mut caret = selection_start(selection)
+  if !selection_is_empty(selection) then
+    const cleared = delete_selection(document, selection)
+    working = cleared.document
+    caret = selection_start(cleared.selection)
+  end
+  if text.length() == 0 then
+    return EditResult {
+      document: working,
+      selection: selection_clamp(selection_collapsed(caret), document_byte_length(working))
+    }
+  end
+  const next_document = document_insert(working, caret, text)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(caret + text.length())
+  }
+end
+
+export fn edit_insert_newline(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult =
+  edit_insert_text(document, selection, "\n")
+
+// Backspace: delete selection, else delete one byte before caret.
+export fn edit_backspace(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult = do
+  if !selection_is_empty(selection) then
+    return delete_selection(document, selection)
+  end
+  const caret = selection_start(selection)
+  if caret <= 0 then
+    return EditResult { document: document, selection: selection_collapsed(0) }
+  end
+  const next_document = document_delete(document, caret - 1, caret)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(caret - 1)
+  }
+end
+
+// Delete key: delete selection, else delete one byte after caret.
+export fn edit_delete_forward(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult = do
+  if !selection_is_empty(selection) then
+    return delete_selection(document, selection)
+  end
+  const caret = selection_start(selection)
+  const length = document_byte_length(document)
+  if caret >= length then
+    return EditResult {
+      document: document,
+      selection: selection_collapsed(length)
+    }
+  end
+  const next_document = document_delete(document, caret, caret + 1)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(caret)
+  }
+end
