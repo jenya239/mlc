@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-c-critic` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=1 Decision next |
+| test_gate | Phase D STEP=2 camera next |
+
+### Turn 2026-07-15 02:12 (Driver TRACK_GUI_SCENE_PHASE_D STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-15 02:08 |
+| elapsed | ~4 min |
+| done    | Froze Decision: camera pan/zoom_at; ScenePath 8-float cubics; wire_rebuild; PLAN sync. |
+| verify  | TRACK Decision marked frozen; STEP=2 is Next; no code (doc gate). |
+| result  | STEP=1 done. Plain: camera=scene→screen; Path stroke MVP; wires=Path rebuild. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-15 02:05 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
 

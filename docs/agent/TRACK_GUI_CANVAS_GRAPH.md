@@ -18,7 +18,7 @@ Active work: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 
 ## Next step
 
-**Phase D STEP=1** — Decision freeze. See `TRACK_GUI_SCENE_PHASE_D.md`.
+**Phase D STEP=2** — Camera pan/zoom. See `TRACK_GUI_SCENE_PHASE_D.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -92,7 +92,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
 fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
-(STEP=1 Decision next).
+(STEP=1 done; STEP=2 camera next).
 
 ## Out of scope
 

@@ -14,30 +14,76 @@ on the same flat `Scene` (not a second toolkit).
 
 ## Next step
 
-**STEP=1** — Decision: camera API, Path kind, wire model, MVP scope.
+**STEP=2** — Camera pan/zoom helpers + smoke.
+
+### STEP=1 done (2026-07-15)
+
+- Decision frozen below (camera/Path/wire/MVP).
+- PLAN §10c/§29 → STEP=2 next.
 
 ### STEP=0 done (2026-07-15)
 
 - Planner opened this track; PLAN §10c/§29 → Phase D active.
 
-## Decision (STEP=1) — draft until Driver freezes
+## Decision (STEP=1) — **frozen** 2026-07-15
 
-| Item | Direction |
-|------|-----------|
-| Camera | Keep `Scene.camera: Affine2x3`; pan/zoom = mutate camera (or dedicated root); screen↔scene via existing invert chain |
-| Path kind | Extend `SceneNodeKind` with `Path(ScenePath)` — cubic segments in **local** space; tessellate to triangles/lines in draw |
-| Path payload | `points: [f64]` flat (x,y pairs) or segment list; `stroke_width`, rgba; optional closed/fill flag |
-| Wires | Blueprint edge = `Path` whose control points track two node anchors (world→local); rebuild on dirty of endpoints |
-| Hit | Path: fat AABB / distance-to-polyline stub OK for MVP; nodes reuse Phase A/B hit |
-| Draw | Path → batch into solid/line path (reuse `solid_renderer` or thin stroke tris); rect widgets unchanged |
-| MVP smoke | N≥2 drag-able rect nodes + ≥1 cubic wire; pan/zoom changes hit in screen space; no Figma product chrome |
-| Precision | Keep `f64` affine / path coords |
+Grounded in Phase A–C: `Scene.camera: Affine2x3`, hit =
+`inverse(camera)` then `inverse(world)` → local; `SceneNodeKind` sum;
+`f64` affine; dirty/AABB/spatial unchanged.
+
+| Item | Choice |
+|------|--------|
+| Keep | `Scene.nodes` / `world` / `camera` / `dirty` / `world_bounds` meaning |
+| Camera map | `camera` maps **scene → screen** (same as Phase A hit: screen→`invert(camera)`→scene) |
+| Pan | `scene_camera_pan(scene, dx, dy)`: `camera' = affine_multiply(affine_translation(dx, dy), camera)` |
+| Zoom | `scene_camera_zoom_at(scene, screen_x, screen_y, factor)`: zoom about screen point (translate→scale→translate); `factor>0` |
+| Camera dirty | Pan/zoom call `scene_mark_all_dirty` (world matrices unchanged; bounds/hit use new camera without world rebuild — optional no-op mark OK if hit only uses camera) |
+| Path kind | Add `Path(ScenePath)` on `SceneNodeKind`; keep all Phase B kinds |
+| Path geometry | Flat `points: [f64]` — **one or more cubics**, each **8** floats: `p0x,p0y, c1x,c1y, c2x,c2y, p1x,p1y` (local space) |
+| Path style | `stroke_width: f64`; `filled: i32` (0\|1); rgba; MVP STEPs 3–4 may implement **stroke only** (`filled` reserved) |
+| Tessellation | Fixed `SCENE_PATH_CUBIC_STEPS = 8` samples per cubic → polyline; stroke ribbon = 2 tris per polyline edge (draw) |
+| Path hit | Fat AABB of control points expanded by `stroke_width/2` in local→world; precise polyline distance **not** required for MVP |
+| Path AABB | `scene_kind_local_*` for Path = AABB of control points (+ stroke pad); feeds Phase C `world_bounds` |
+| Wire | Blueprint edge **is** a `Path` node; `scene_wire_rebuild(scene, path_node_id, from_id, to_id, from_ax, from_ay, to_ax, to_ay)` writes one cubic: p0=from anchor in path-local, p1=to anchor, c1/c2 = horizontal offsets `(dx/3)` style |
+| Wire endpoints | Stored only as rebuild args each frame/smoke (no new Scene fields); optional later cache on `ScenePath` if needed |
+| Draw | Path stroke → `solid_renderer` tris via `scene_draw`; widgets unchanged |
+| MVP | ≥2 `RectFill` nodes + ≥1 wire `Path` + pan/zoom; headless tokens; no product chrome |
+| Precision | `f64` throughout |
+
+### Exact types / constants
+
+```text
+ScenePath = {
+  points: [f64],       // length % 8 == 0
+  stroke_width: f64,
+  filled: i32,         // 0|1; fill deferred OK
+  red, green, blue, alpha: f64
+}
+
+SceneNodeKind += Path(ScenePath)
+
+SCENE_PATH_CUBIC_STEPS = 8
+```
+
+### API surface (STEPs 2–6)
+
+- `scene_camera_pan` / `scene_camera_zoom_at`
+- `scene_add_path` / `scene_path_set_points` (mark dirty)
+- `scene_path_polyline` / tess count helper (STEP=3)
+- Path arm in `scene_draw` + optional hit (STEP=4)
+- `scene_wire_rebuild` (STEP=5)
+- Smokes: no `sleep`; GLFW only if draw flush requires it (`MLC_GLFW_VISIBLE=0`)
+
+### Non-goals (Decision)
+
+Full Figma product; GPU instancing; deleting v0 demos; MSDF on paths;
+changing Phase B widget payloads; reopening Phase C spatial contract.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 1 | Decision: camera + Path + wire + MVP contract (freeze in this file) | doc + PLAN sync |
+| 1 | Decision: camera + Path + wire + MVP contract (freeze in this file) | **done** (2026-07-15): Decision frozen |
 | 2 | Camera pan/zoom helpers + smoke (screen hit moves with camera) | `scene_camera_smoke` exit 0 |
 | 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | `scene_path_tess_smoke` exit 0 |
 | 4 | Path draw (+ optional stroke hit) smoke | `scene_path_draw_smoke` exit 0 |
@@ -47,13 +93,13 @@ on the same flat `Scene` (not a second toolkit).
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Freeze Decision table (amend if scene API forces change).
-2. Exact `ScenePath` fields + camera helper names.
-3. Non-goals: full Figma product; GPU instancing; deleting v0 demos; MSDF on paths.
+**STEP=1** — **done**
+1. Freeze Decision table — done.
+2. Exact `ScenePath` fields + camera helper names — done.
+3. Non-goals noted — done.
 
 **STEP=2**
-1. `scene_camera_pan` / `scene_camera_zoom_at` (or equivalent) on `Scene.camera`.
+1. `scene_camera_pan` / `scene_camera_zoom_at` on `Scene.camera`.
 2. Smoke: place rect; after pan, same screen point misses / new point hits.
 
 **STEP=3**
@@ -61,11 +107,11 @@ on the same flat `Scene` (not a second toolkit).
 2. Tessellate one cubic → polyline/tris counts deterministic; token `scene_path_tess_ok`.
 
 **STEP=4**
-1. Draw path via batch (tris or line strip → solid renderer).
+1. Draw path via batch (tris → solid renderer).
 2. Smoke: vertex count / token `scene_path_draw_ok` (`MLC_GLFW_VISIBLE=0` if GL).
 
 **STEP=5**
-1. `scene_wire_set` / rebuild path from two node ids + local anchors.
+1. `scene_wire_rebuild` from two node ids + local anchors.
 2. Smoke: move endpoint → wire control points change; hit/draw still coherent.
 
 **STEP=6**
