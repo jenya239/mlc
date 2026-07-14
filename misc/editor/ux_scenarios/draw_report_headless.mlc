@@ -1,0 +1,118 @@
+// TRACK_UX_HEADLESS STEP=11 — L2 draw report smoke (headless, no live GL).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  NoOverflow,
+  WaitFrames,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import {
+  ux_driver_new,
+  ux_driver_apply
+} from '../../gui/ux/driver'
+import { shell_panels_new } from '../ui/shell_panels'
+import { tab_set_new, tab_set_open } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import { editor_ux_draw_frame } from '../ux/draw_frame'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 320, 200)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    320,
+    200,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  const long_line =
+    "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  let mut body = long_line
+  let mut line = 1
+  while line < 12 do
+    body = body + "\n" + long_line
+    line = line + 1
+  end
+  state = editor_ux_insert_text(state, body)
+
+  // Frame 0: no scissor → overflow present after draw.
+  let mut drawn = editor_ux_draw_frame(state, metrics, 0, 0)
+  state = drawn.state
+  if drawn.report.draw_count < 4 then
+    println("ux_fail expected panel+text draws")
+    return 1
+  end
+  if drawn.report.overflows.length() == 0 then
+    println("ux_fail expected overflow without scissor")
+    return 2
+  end
+
+  // Frames 1..3: scissor on → NoOverflow; WaitFrames advances fake clock.
+  let mut driver = ux_driver_new(16)
+  driver = ux_driver_apply(driver, WaitFrames(3))
+  let mut frame = 1
+  while frame <= 3 do
+    drawn = editor_ux_draw_frame(state, metrics, frame, 1)
+    state = drawn.state
+    state = EditorUxState {
+      window_width: state.window_width,
+      window_height: state.window_height,
+      focus: state.focus,
+      panels: state.panels,
+      tabs: state.tabs,
+      selection: state.selection,
+      scroll_offset_x: state.scroll_offset_x,
+      scroll_offset_y: state.scroll_offset_y,
+      cursor_shape: state.cursor_shape,
+      clock_ms: driver.clock_ms,
+      tab_strip_height: state.tab_strip_height,
+      overflows: state.overflows
+    }
+    const snapshot = editor_ux_snapshot(state)
+    if ux_check_expect(snapshot, NoOverflow).ok == 0 then
+      println("ux_fail NoOverflow after scissor draw")
+      return 3
+    end
+    if drawn.report.overflows.length() != 0 then
+      return 4
+    end
+    if drawn.report.frame_index != frame then
+      return 5
+    end
+    frame = frame + 1
+  end
+
+  if driver.frames_waited != 3 || driver.clock_ms != 48 then
+    println("ux_fail WaitFrames clock")
+    return 6
+  end
+
+  println("ux_ok draw_report_headless")
+  0
+end

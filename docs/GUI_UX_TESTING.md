@@ -122,6 +122,9 @@ Scenario (STEP=9): `tree_click_opens_tab` — visible-row hit-test opens tab by 
 Scenario (STEP=10): `divider_hover_cursor_ew` — divider → ew-resize, text → ibeam,
 tree → arrow; live GLFW SetCursor deferred; `ux_ok divider_hover_cursor_ew`.
 
+Scenario (STEP=11): `draw_report_headless` — UxDrawReport frames; overflow without
+scissor, NoOverflow with scissor; `MLC_GLFW_VISIBLE=0`; `ux_ok draw_report_headless`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

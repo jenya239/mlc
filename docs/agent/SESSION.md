@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 10 |
+| driver_turns_since_plan | 11 |
+| step_last | 11 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=11 L2 draw report next |
+| test_gate | STEP=12 FBO MAE optional next |
+
+### Turn 2026-07-14 18:55 (Driver TRACK_UX_HEADLESS STEP=11)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 11 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:53 |
+| elapsed | ~3 min |
+| done    | `gui/ux/draw_report.mlc` + `ux/draw_frame.mlc` + `draw_report_headless`; gate. |
+| verify  | `MLC_GLFW_VISIBLE=0 run_ux_draw_report.sh` exit 0; `ux_ok draw_report_headless`. |
+| result  | STEP=11 done. Plain: draw report frames; scissor clears overflow. |
+| issues  | No live GL clear/swap yet (model L2). Foreign dirty left. |
+| next    | ROLE=Driver STEP=12 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:52 (Driver TRACK_UX_HEADLESS STEP=10)
 

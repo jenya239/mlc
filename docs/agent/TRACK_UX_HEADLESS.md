@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=11** — L2 headless GL draw report (optional overflow after draw).
+**STEP=12** — L3 optional: one caret/glyph FBO MAE fixture (not full UI).
+
+### STEP=11 done (2026-07-14)
+
+- `gui/ux/draw_report.mlc` + `ux/draw_frame.mlc`: UxDrawReport after frame.
+- Scenario `draw_report_headless` → `ux_ok` under `MLC_GLFW_VISIBLE=0`.
 
 ### STEP=10 done (2026-07-14)
 
@@ -97,7 +102,7 @@ STEP progress (or explicit user override).
 | 8 | Scenario: multi-line selection probe (L3) | **done** (2026-07-14): scenario green |
 | 9 | Scenario: tree hit open tab (L4) | **done** (2026-07-14): scenario green |
 | 10 | Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI | **done** (2026-07-14): probe green; live GLFW deferred |
-| 11 | L2 headless GL draw report (optional overflow after draw) | smoke `MLC_GLFW_VISIBLE=0` |
+| 11 | L2 headless GL draw report (optional overflow after draw) | **done** (2026-07-14): draw_report_headless |
 | 12 | L3 optional: one caret/glyph FBO MAE fixture (not full UI) | MAE gate |
 | 13 | Clipboard scenario after GLFW P2 | red→green |
 | 14 | `run_ux_gate.sh` in CI / Critic checklist; README how to add scenario | docs + gate |
@@ -122,4 +127,5 @@ STEP progress (or explicit user override).
 - **STEP=7 done** (2026-07-14): wheel_scroll_keeps_caret_visible green.
 - **STEP=8 done** (2026-07-14): multi_line_selection_probe green.
 - **STEP=9 done** (2026-07-14): tree_click_opens_tab green.
-- **STEP=10 done** (2026-07-14): divider_hover_cursor_ew green; next **STEP=11**.
+- **STEP=10 done** (2026-07-14): divider_hover_cursor_ew green.
+- **STEP=11 done** (2026-07-14): draw_report_headless green; next **STEP=12**.

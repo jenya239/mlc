@@ -1,0 +1,130 @@
+// TRACK_UX_HEADLESS STEP=11 — editor frame draw → UxDrawReport (L2 model).
+import { Rect, rect_new } from '../../gui/layout'
+import {
+  UxDrawReport,
+  UxDrawOp,
+  ux_draw_report_empty,
+  ux_draw_op_new
+} from '../../gui/ux/draw_report'
+import {
+  shell_panels_tree_rect,
+  shell_panels_editor_rect
+} from '../ui/shell_panels'
+import {
+  clip_rect_clip_child,
+  clip_rect_is_empty
+} from '../ui/clip'
+import {
+  EditorTextMetrics,
+  editor_ux_collect_overflows,
+  editor_ux_apply_scissor_clip,
+  editor_ux_refresh_overflows
+} from './overflow'
+import { EditorUxState } from './probe'
+
+export type EditorDrawFrameResult = {
+  state: EditorUxState,
+  report: UxDrawReport,
+  ops: [UxDrawOp]
+}
+
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn push_panel_op(
+  ops: [UxDrawOp],
+  widget_id: string,
+  rect: Rect,
+  clipped: i32
+) -> [UxDrawOp] = do
+  ops.push(ux_draw_op_new(
+    widget_id,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height,
+    clipped
+  ))
+  ops
+end
+
+// Simulate one headless frame: panel fills + text (optional scissor).
+export fn editor_ux_draw_frame(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  frame_index: i32,
+  use_scissor: i32
+) -> EditorDrawFrameResult = do
+  let mut ops: [UxDrawOp] = []
+  const tree = shell_panels_tree_rect(state.panels)
+  const editor = shell_panels_editor_rect(state.panels)
+  const divider = state.panels.panes.divider
+  ops = push_panel_op(ops, "tree", tree, 0)
+  ops = push_panel_op(ops, "divider", divider, 0)
+  ops = push_panel_op(ops, "editor", editor, 0)
+
+  const text_clip = text_viewport_rect(state)
+  let mut text_draw = text_clip
+  let mut text_clipped = 0
+  if use_scissor != 0 then
+    // Content may extend; drawn region is clip∩content via scissor model.
+    const overflows_probe = editor_ux_collect_overflows(state, metrics)
+    if overflows_probe.length() > 0 then
+      const child = overflows_probe[0]
+      const content = rect_new(
+        child.child_x,
+        child.child_y,
+        child.child_width,
+        child.child_height
+      )
+      text_draw = clip_rect_clip_child(text_clip, content)
+      if clip_rect_is_empty(text_draw) == 0 then
+        if text_draw.width != content.width || text_draw.height != content.height then
+          text_clipped = 1
+        end
+      end
+    end
+  end
+  ops = push_panel_op(ops, "editor_text", text_draw, text_clipped)
+
+  let mut next_state = state
+  if use_scissor != 0 then
+    next_state = editor_ux_apply_scissor_clip(state, metrics)
+  else
+    next_state = editor_ux_refresh_overflows(state, metrics)
+  end
+
+  let mut clipped_count = 0
+  let mut index = 0
+  while index < ops.length() do
+    if ops[index].clipped != 0 then
+      clipped_count = clipped_count + 1
+    end
+    index = index + 1
+  end
+
+  EditorDrawFrameResult {
+    state: next_state,
+    report: UxDrawReport {
+      frame_index: frame_index,
+      draw_count: ops.length(),
+      clipped_count: clipped_count,
+      overflows: next_state.overflows
+    },
+    ops: ops
+  }
+end

@@ -1,0 +1,43 @@
+// TRACK_UX_HEADLESS STEP=11 — UxDrawReport after simulated frame draw (L2).
+import { UxOverflow } from './snapshot'
+
+export type UxDrawOp = {
+  widget_id: string,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  clipped: i32
+}
+
+export type UxDrawReport = {
+  frame_index: i32,
+  draw_count: i32,
+  clipped_count: i32,
+  overflows: [UxOverflow]
+}
+
+export fn ux_draw_report_empty(frame_index: i32) -> UxDrawReport =
+  UxDrawReport {
+    frame_index: frame_index,
+    draw_count: 0,
+    clipped_count: 0,
+    overflows: []
+  }
+
+export fn ux_draw_op_new(
+  widget_id: string,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  clipped: i32
+) -> UxDrawOp =
+  UxDrawOp {
+    widget_id: widget_id,
+    x: x,
+    y: y,
+    width: width,
+    height: height,
+    clipped: clipped
+  }
