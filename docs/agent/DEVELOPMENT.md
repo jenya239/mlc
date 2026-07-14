@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_UX_HEADLESS` STEP=3 done** (2026-07-14) — editor probe; **STEP=4** next. Phase B queued after.
+**`TRACK_UX_HEADLESS` STEP=4 done** (2026-07-14) — tab_strip scenario; **STEP=5** next. Phase B queued after.
 Epic GUI deferred: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 Phase A Critic OK: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 DEBUG Critic OK: [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).

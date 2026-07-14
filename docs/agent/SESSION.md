@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 3 |
+| driver_turns_since_plan | 4 |
+| step_last | 4 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=4 tab_strip scenario next |
+| test_gate | STEP=5 newline/caret scenario next |
+
+### Turn 2026-07-14 18:30 (Driver TRACK_UX_HEADLESS STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:25 |
+| elapsed | ~5 min |
+| done    | `ux/tab_strip.mlc` + scenario `tab_strip_click_activates`; gate entry. |
+| verify  | `run_ux_tab_strip_click.sh` exit 0; `ux_ok tab_strip_click_activates`. |
+| result  | STEP=4 done. Plain: click title slot → ActiveTabIndex (L5 model). |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=5 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:25 (Driver TRACK_UX_HEADLESS STEP=3)
 

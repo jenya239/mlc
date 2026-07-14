@@ -1,0 +1,99 @@
+// TRACK_UX_HEADLESS STEP=4 — tab strip hit-test + activate (L5 model).
+import {
+  UxRect,
+  ux_rect_new
+} from '../../gui/ux/snapshot'
+import {
+  ux_rect_contains_point
+} from '../../gui/ux/expect'
+import {
+  tab_set_set_active,
+  tab_set_count
+} from '../workspace/tabs'
+import {
+  EditorUxState
+} from './probe'
+
+// Equal-width title slots inside the tab strip rect.
+export fn tab_strip_title_rect(
+  strip: UxRect,
+  tab_count: i32,
+  index: i32
+) -> UxRect = do
+  if tab_count <= 0 || index < 0 || index >= tab_count then
+    return ux_rect_new(0, 0, 0, 0)
+  end
+  const slot_width = strip.width / tab_count
+  let mut width = slot_width
+  if index == tab_count - 1 then
+    width = strip.width - slot_width * (tab_count - 1)
+  end
+  ux_rect_new(strip.x + slot_width * index, strip.y, width, strip.height)
+end
+
+export fn tab_strip_hit_index(
+  strip: UxRect,
+  tab_count: i32,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if tab_count <= 0 then
+    return 0 - 1
+  end
+  if !ux_rect_contains_point(strip, point_x, point_y) then
+    return 0 - 1
+  end
+  let mut index = 0
+  while index < tab_count do
+    const title = tab_strip_title_rect(strip, tab_count, index)
+    if ux_rect_contains_point(title, point_x, point_y) then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn tab_strip_rect_from_state(state: EditorUxState) -> UxRect = do
+  const editor = state.panels.panes.second
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor.height then
+    strip_height = editor.height
+  end
+  ux_rect_new(editor.x, editor.y, editor.width, strip_height)
+end
+
+// Click on tab strip: activate hit tab; miss → unchanged.
+export fn editor_ux_click_tab_strip(
+  state: EditorUxState,
+  point_x: i32,
+  point_y: i32
+) -> EditorUxState = do
+  const strip = tab_strip_rect_from_state(state)
+  const hit = tab_strip_hit_index(
+    strip,
+    tab_set_count(state.tabs),
+    point_x,
+    point_y
+  )
+  if hit < 0 then
+    return state
+  end
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_set_active(state.tabs, hit),
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end

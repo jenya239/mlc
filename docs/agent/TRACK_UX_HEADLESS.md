@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=4** — First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed).
+**STEP=5** — Scenario: `newline_caret_and_spaces` (L9).
+
+### STEP=4 done (2026-07-14)
+
+- `ux/tab_strip.mlc`: equal-width hit-test + `editor_ux_click_tab_strip`.
+- Scenario `ux_scenarios/tab_strip_click_activates.mlc` → `ux_ok` (L5 model green).
 
 ### STEP=3 done (2026-07-14)
 
@@ -55,7 +60,7 @@ STEP progress (or explicit user override).
 | 1 | `UxSnapshot` + `UxExpect` matchers (caret/selection/tab/rects/NoOverflow/TextContains) pure unit | **done** (2026-07-14): TextContains+rects + gate |
 | 2 | `UxDriver`: inject actions + WaitFrames + SetClock (no app yet) | **done** (2026-07-14): `driver.mlc` + unit |
 | 3 | Editor probe port: build snapshot from shell/tabs/doc/selection/layout | **done** (2026-07-14): `probe.mlc` + unit |
-| 4 | First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed) | documented red→green |
+| 4 | First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed) | **done** (2026-07-14): scenario green (hit model) |
 | 5 | Scenario: `newline_caret_and_spaces` (L9) | red→green with product fix |
 | 6 | Scenario: `overflow_editor_text` (L1) + clip/scissor wiring | red→green |
 | 7 | Scenario: scroll wheel / scroll_offset (L2) | red→green |
@@ -80,4 +85,5 @@ STEP progress (or explicit user override).
 - **Planner** (2026-07-14): activated as queue head post-EDITOR; STEP=0 landed in git.
 - **STEP=1 done** (2026-07-14): TextContains + rect matchers.
 - **STEP=2 done** (2026-07-14): UxDriver clock/actions.
-- **STEP=3 done** (2026-07-14): editor probe port; next **STEP=4**.
+- **STEP=3 done** (2026-07-14): editor probe port.
+- **STEP=4 done** (2026-07-14): tab_strip_click_activates green; next **STEP=5**.

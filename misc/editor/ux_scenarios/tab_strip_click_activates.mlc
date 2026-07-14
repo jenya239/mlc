@@ -1,0 +1,76 @@
+// TRACK_UX_HEADLESS STEP=4 — scenario: tab_strip_click_activates (L5).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_tabs } from '../../gui/ux/snapshot'
+import {
+  ActiveTabIndex,
+  Click,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import {
+  ux_driver_new,
+  ux_driver_apply
+} from '../../gui/ux/driver'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_set_active
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import {
+  tab_strip_title_rect,
+  editor_ux_click_tab_strip
+} from '../ux/tab_strip'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "aaa")
+  tabs = tab_set_open(tabs, "/proj/b.mlc", "bbb")
+  tabs = tab_set_set_active(tabs, 0)
+
+  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection_collapsed(0))
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_tabs(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const before = editor_ux_snapshot(state)
+  if ux_check_expect(before, ActiveTabIndex(0)).ok == 0 then
+    return 1
+  end
+
+  const title1 = tab_strip_title_rect(before.tab_strip_rect, 2, 1)
+  const click_x = title1.x + title1.width / 2
+  const click_y = title1.y + title1.height / 2
+
+  // Driver records the click; probe applies hit-test activate.
+  let mut driver = ux_driver_new(16)
+  driver = ux_driver_apply(driver, Click(click_x, click_y))
+  state = editor_ux_click_tab_strip(state, driver.pointer_x, driver.pointer_y)
+
+  const after = editor_ux_snapshot(state)
+  if ux_check_expect(after, ActiveTabIndex(1)).ok == 0 then
+    println("[ux] tab_strip_click_activates FAIL active=" + after.active_tab_index.to_string())
+    return 2
+  end
+
+  println("ux_ok tab_strip_click_activates")
+  0
+end

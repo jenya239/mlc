@@ -101,6 +101,9 @@ clock + pointer/typed/last_key; no GLFW until probe port (STEP=3+).
 Probe (STEP=3): `misc/editor/ux/probe.mlc` — `EditorUxState` + `editor_ux_snapshot`
 from tabs/selection/shell_panels (fixture; no window).
 
+Scenario (STEP=4): `ux_scenarios/tab_strip_click_activates.mlc` +
+`ux/tab_strip.mlc` hit-test; stdout `ux_ok tab_strip_click_activates`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios
