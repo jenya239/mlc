@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=10** — LineIndex (byte-offset ↔ line/col), dirty-rebuild on edit.
+**STEP=11** — Visible range + overscan; horizontal scroll; no wrap.
+
+### STEP=10 done (2026-07-14)
+
+- `document/line_index.mlc`: starts[] + offset↔line/col; `line_index_rebuild`
+  after edit.
+- `tests/line_index_unit.mlc` + script exit 0 (`lines=4` after insert rebuild).
 
 ### STEP=9 done (2026-07-14)
 
@@ -188,7 +194,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | Step | Item | Gate |
 |------|------|------|
 | 9 | `TextDocument` piece-table from file (Decision E closed STEP=pre) | **done** (2026-07-14): `piece_table.mlc` + unit (~209KB); path load deferred |
-| 10 | Line index + offset↔line/col | unit |
+| 10 | Line index + offset↔line/col | **done** (2026-07-14): `line_index.mlc` + unit |
 | 11 | Visible range + overscan; horizontal scroll OK; no wrap | unit + smoke |
 | 12 | Line numbers gutter | visual/smoke |
 | 13 | Scroll does not layout whole file | perf: large file scroll frame bound |
@@ -282,4 +288,4 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=6 done** (2026-07-14): FileTree lazy expand.
 - **STEP=7 done** (2026-07-14): shell panels + divider drag.
 - **STEP=8 done** (2026-07-14): ignore list.
-- **STEP=9 done** (2026-07-14): piece table; next **STEP=10**.
+- **STEP=10 done** (2026-07-14): LineIndex; next **STEP=11**.

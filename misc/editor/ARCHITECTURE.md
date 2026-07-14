@@ -40,8 +40,8 @@ fragments → flatten → render`.
 - P2: clipboard get/set (+ test inject)
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…9 status
+## STEP=0…10 status
 
-- STEP=0–8: window / theme / text / clip / perf / layout / FileTree / panels /
-  ignore list.
-- STEP=9: `document/piece_table.mlc` + `tests/piece_table_unit.mlc`.
+- STEP=0–9: window / theme / text / clip / perf / layout / FileTree / panels /
+  ignore list / piece table.
+- STEP=10: `document/line_index.mlc` + `tests/line_index_unit.mlc` (dirty rebuild).

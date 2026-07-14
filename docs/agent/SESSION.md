@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 9 |
+| driver_turns_since_plan | 11 |
+| step_last | 10 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=10 LineIndex next |
+| test_gate | STEP=11 visible range next |
+
+### Turn 2026-07-14 11:41 (Driver TRACK_EDITOR_MVP STEP=10)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 11:27 |
+| elapsed | ~8 min |
+| done    | `document/line_index.mlc` + unit/script; TRACK/PLAN/ARCH/README sync. |
+| verify  | `scripts/run_editor_line_index_unit.sh` exit 0; `line_index_unit ok lines=4`. |
+| result  | STEP=10 done. Plain: offset↔line/col + dirty rebuild after insert. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=11 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 11:23 (Driver TRACK_EDITOR_MVP STEP=9)
 

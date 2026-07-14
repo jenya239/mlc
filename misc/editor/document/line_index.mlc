@@ -1,0 +1,116 @@
+// TRACK_EDITOR_MVP STEP=10 — LineIndex (byte offset ↔ line/column).
+// Rebuild from document after edits (dirty-rebuild). Columns are byte offsets
+// within the line (codepoint columns deferred).
+
+import {
+  TextDocument,
+  document_to_string,
+  document_byte_length
+} from './piece_table'
+
+export type TextPosition = {
+  line: i32,
+  column: i32
+}
+
+export type LineIndex = {
+  starts: [i32],
+  text_length: i32
+}
+
+export fn line_index_from_string(text: string) -> LineIndex = do
+  let mut starts: [i32] = []
+  starts.push(0)
+  let mut byte_index = 0
+  const length = text.byte_size()
+  while byte_index < length do
+    if text.byte_at(byte_index) == "\n" then
+      starts.push(byte_index + 1)
+    end
+    byte_index = byte_index + 1
+  end
+  LineIndex { starts: starts, text_length: length }
+end
+
+export fn line_index_from_document(document: TextDocument) -> LineIndex =
+  line_index_from_string(document_to_string(document))
+
+// Full rebuild after insert/delete (MVP dirty path).
+export fn line_index_rebuild(document: TextDocument) -> LineIndex =
+  line_index_from_document(document)
+
+export fn line_index_line_count(line_index: LineIndex) -> i32 =
+  line_index.starts.length()
+
+export fn line_index_line_start(line_index: LineIndex, line: i32) -> i32 = do
+  let mut line_number = line
+  if line_number < 0 then
+    line_number = 0
+  end
+  const count = line_index.starts.length()
+  if line_number >= count then
+    return line_index.text_length
+  end
+  line_index.starts[line_number]
+end
+
+fn line_end_exclusive(line_index: LineIndex, line: i32) -> i32 = do
+  const count = line_index.starts.length()
+  if line + 1 < count then
+    return line_index.starts[line + 1]
+  end
+  line_index.text_length
+end
+
+export fn line_index_offset_to_position(
+  line_index: LineIndex,
+  byte_offset: i32
+) -> TextPosition = do
+  let mut offset = byte_offset
+  if offset < 0 then
+    offset = 0
+  end
+  if offset > line_index.text_length then
+    offset = line_index.text_length
+  end
+  let mut line = 0
+  const count = line_index.starts.length()
+  while line + 1 < count && line_index.starts[line + 1] <= offset do
+    line = line + 1
+  end
+  TextPosition { line: line, column: offset - line_index.starts[line] }
+end
+
+export fn line_index_position_to_offset(
+  line_index: LineIndex,
+  position: TextPosition
+) -> i32 = do
+  let mut line = position.line
+  let mut column = position.column
+  if line < 0 then
+    line = 0
+  end
+  if column < 0 then
+    column = 0
+  end
+  const count = line_index.starts.length()
+  if count == 0 then
+    return 0
+  end
+  if line >= count then
+    return line_index.text_length
+  end
+  const start = line_index.starts[line]
+  const end_exclusive = line_end_exclusive(line_index, line)
+  const max_column = end_exclusive - start
+  if column > max_column then
+    column = max_column
+  end
+  start + column
+end
+
+export fn line_index_matches_document(
+  line_index: LineIndex,
+  document: TextDocument
+) -> bool =
+  line_index.text_length == document_byte_length(document)
