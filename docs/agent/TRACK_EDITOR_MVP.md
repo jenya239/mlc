@@ -207,7 +207,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 9 | `TextDocument` piece-table from file (Decision E closed STEP=pre) | **done** (2026-07-14): `piece_table.mlc` + unit (~209KB); path load deferred |
 | 10 | Line index + offset↔line/col | **done** (2026-07-14): `line_index.mlc` + unit |
 | 11 | Visible range + overscan; horizontal scroll OK; no wrap | **done** (2026-07-14): `visible_range.mlc` + unit |
-| 12 | Line numbers gutter | visual/smoke |
+| 12 | Line numbers gutter | **done** (2026-07-14): `gutter.mlc` + unit + GLFW smoke |
 | 13 | Scroll does not layout whole file | perf: large file scroll frame bound |
 
 ### E4 — Edit / selection / clipboard / undo / save
