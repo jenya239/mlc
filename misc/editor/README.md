@@ -77,6 +77,9 @@ scripts/run_editor_tab_close_unit.sh
 
 # STEP=22 Ctrl+Tab next/prev (no GLFW)
 scripts/run_editor_tab_cycle_unit.sh
+
+# STEP=23 command bus (no GLFW)
+scripts/run_editor_command_bus_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -103,6 +106,7 @@ Save requires `[mlc-editor] save_unit ok`.
 Tabs requires `[mlc-editor] tabs_unit ok`.
 Tab close requires `[mlc-editor] tab_close_unit ok`.
 Tab cycle requires `[mlc-editor] tab_cycle_unit ok`.
+Command bus requires `[mlc-editor] command_bus_unit ok`.
 
 ## Layout (growing)
 

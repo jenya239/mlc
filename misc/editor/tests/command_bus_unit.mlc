@@ -1,0 +1,94 @@
+// TRACK_EDITOR_MVP STEP=23 — command bus unit (all listed commands + focus).
+import {
+  FocusTarget,
+  FocusTree,
+  FocusEditor,
+  KeyBinding,
+  CmdNone,
+  command_id_tag,
+  command_bus_default_bindings,
+  command_bus_resolve,
+  command_bus_covers_listed,
+  focus_is_tree,
+  focus_is_editor
+} from '../commands/bus'
+
+fn expect_tag(
+  bindings: [KeyBinding],
+  focus: FocusTarget,
+  ctrl: i32,
+  shift: i32,
+  key: string,
+  expected: string
+) -> bool =
+  command_id_tag(command_bus_resolve(bindings, focus, ctrl, shift, 0, key)) == expected
+
+fn main() -> i32 = do
+  if !focus_is_tree(FocusTree) || focus_is_editor(FocusTree) then
+    return 1
+  end
+  if !focus_is_editor(FocusEditor) || focus_is_tree(FocusEditor) then
+    return 2
+  end
+
+  const bindings = command_bus_default_bindings()
+  if !command_bus_covers_listed(bindings) then
+    return 3
+  end
+
+  // Editor focus: all edit/tab chords.
+  if !expect_tag(bindings, FocusEditor, 1, 0, "s", "save") then
+    return 4
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "z", "undo") then
+    return 5
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 1, "z", "redo") then
+    return 6
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "y", "redo") then
+    return 7
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "c", "copy") then
+    return 8
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "x", "cut") then
+    return 9
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "v", "paste") then
+    return 10
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "a", "select_all") then
+    return 11
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "w", "close_tab") then
+    return 12
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "tab", "next_tab") then
+    return 13
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 1, "tab", "prev_tab") then
+    return 14
+  end
+
+  // Tree focus: edit chords blocked; tab cycle allowed.
+  if command_id_tag(command_bus_resolve(bindings, FocusTree, 1, 0, 0, "s")) != "none" then
+    return 15
+  end
+  if command_id_tag(command_bus_resolve(bindings, FocusTree, 1, 0, 0, "z")) != "none" then
+    return 16
+  end
+  if !expect_tag(bindings, FocusTree, 1, 0, "tab", "next_tab") then
+    return 17
+  end
+  if !expect_tag(bindings, FocusTree, 1, 1, "tab", "prev_tab") then
+    return 18
+  end
+
+  if command_id_tag(CmdNone) != "none" then
+    return 19
+  end
+
+  println("[mlc-editor] command_bus_unit ok")
+  0
+end

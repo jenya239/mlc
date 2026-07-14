@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 23 |
-| step_last | 22 |
+| driver_turns_since_plan | 24 |
+| step_last | 23 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=23 command-bus next |
+| test_gate | STEP=24 session-restore optional next |
+
+### Turn 2026-07-14 17:20 (Driver TRACK_EDITOR_MVP STEP=23)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 23 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 17:12 |
+| elapsed | ~8 min |
+| done    | `commands/bus.mlc` + unit/script; TRACK/PLAN STEP sync. |
+| verify  | `scripts/run_editor_command_bus_unit.sh` exit 0; `command_bus_unit ok`. |
+| result  | STEP=23 done. Plain: listed chords + tree blocks editor cmds. |
+| issues  | Left foreign: UX_HEADLESS/PLAN §33a, SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=24 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 17:05 (Driver TRACK_EDITOR_MVP STEP=22)
 

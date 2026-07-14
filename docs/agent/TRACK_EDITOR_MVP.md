@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=23** — Command bus: CommandId, KeyBinding, focus (tree vs editor).
+**STEP=24** — Optional: restore workspace root + open files on restart.
+
+### STEP=23 done (2026-07-14)
+
+- `commands/bus.mlc`: CommandId, KeyBinding, FocusTree/Editor; default chords; focus filter.
+- `tests/command_bus_unit.mlc` + script exit 0 (all listed commands).
+
 
 ### STEP=22 done (2026-07-14)
 
@@ -280,7 +286,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 20 | Tabs: name, dirty, active, close; one path ↔ one document | **done** (2026-07-14): `tabs.mlc` + unit |
 | 21 | Ctrl+W / middle-click close; dirty overlay confirm | **done** (2026-07-14): `tab_close.mlc` + unit |
 | 22 | Ctrl+Tab next/prev predictable order | **done** (2026-07-14): `tab_cycle.mlc` + unit |
-| 23 | Command bus: CommandId, KeyBinding, focus (tree vs editor) | unit all listed commands |
+| 23 | Command bus: CommandId, KeyBinding, focus (tree vs editor) | **done** (2026-07-14): `commands/bus.mlc` + unit |
 | 24 | Optional: restore workspace root + open files on restart | if cheap |
 
 ### E6 — Syntax / theme / status / perf numbers
@@ -362,4 +368,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=19 done** (2026-07-14): dirty/save (E4 complete).
 - **STEP=20 done** (2026-07-14): tabs.
 - **STEP=21 done** (2026-07-14): dirty close confirm.
-- **STEP=22 done** (2026-07-14): Ctrl+Tab cycle; next **STEP=23**.
+- **STEP=22 done** (2026-07-14): Ctrl+Tab cycle.
+- **STEP=23 done** (2026-07-14): command bus + focus; next **STEP=24**.
