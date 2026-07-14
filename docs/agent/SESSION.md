@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=1 Decision next |
+| test_gate | Phase C STEP=2 dirty next |
+
+### Turn 2026-07-14 21:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 21:30 |
+| elapsed | ~5 min |
+| done    | Froze Decision: dirty/AABB/threshold=64/API; PLAN+epic sync. |
+| verify  | TRACK Decision marked frozen; STEP=2 is Next; no code (doc gate). |
+| result  | STEP=1 done. Plain: Scene.dirty + world_bounds; spatial off below 64. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 19:55 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
 

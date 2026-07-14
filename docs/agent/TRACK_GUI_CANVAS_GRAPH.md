@@ -16,7 +16,7 @@ Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md).
 
 ## Next step
 
-**Phase C STEP=1** — Decision (dirty/AABB/quadtree). See `TRACK_GUI_SCENE_PHASE_C.md`.
+**Phase C STEP=2** — dirty flags + smoke. See `TRACK_GUI_SCENE_PHASE_C.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -85,7 +85,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 Пересчёт world-transform/перетесселляция только для изменившихся узлов;
 опциональный quadtree culling, включается по порогу числа узлов (не
 структура данных по умолчанию для 20 классических виджетов).
-Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=1 Decision next).
+Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=1 done; STEP=2 next).
 
 ## Phase D: camera + vector path + blueprint canvas (после Phase C closed)
 
