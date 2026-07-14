@@ -299,4 +299,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=6 done** (2026-07-14): FileTree lazy expand.
 - **STEP=7 done** (2026-07-14): shell panels + divider drag.
 - **STEP=8 done** (2026-07-14): ignore list.
-- **STEP=11 done** (2026-07-14): visible range; next **STEP=12**.
+- **STEP=11 done** (2026-07-14): visible range.
+- **STEP=12 done** (2026-07-14): gutter; next **STEP=13**.
