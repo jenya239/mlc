@@ -1,0 +1,77 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=2 — dirty flags + mark descendants (no GL).
+import {
+  Scene,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_mark_dirty,
+  scene_mark_all_dirty,
+  scene_clear_dirty
+} from '../gui/scene'
+
+fn dirty_at(scene: Scene, node_id: i32) -> i32 =
+  scene.dirty[node_id]
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+  const branch_a = scene_add_container(scene, root.node_id, affine_translation(10.0, 0.0))
+  scene = branch_a.scene
+  const branch_b = scene_add_container(scene, root.node_id, affine_translation(100.0, 0.0))
+  scene = branch_b.scene
+  const leaf = scene_add_rect_fill(
+    scene,
+    branch_a.node_id,
+    affine_translation(5.0, 5.0),
+    scene_rect_fill_new(20.0, 20.0, 1.0, 0.0, 0.0, 1.0)
+  )
+  scene = leaf.scene
+
+  // root=0, branch_a=1, branch_b=2, leaf=3
+  if scene.nodes.length() != 4 then
+    return 1
+  end
+  if scene.dirty.length() != 4 then
+    return 2
+  end
+  if dirty_at(scene, 3) != 1 then
+    return 3
+  end
+
+  scene = scene_clear_dirty(scene)
+  if dirty_at(scene, 0) != 0 then
+    return 4
+  end
+  if dirty_at(scene, 3) != 0 then
+    return 5
+  end
+
+  scene = scene_mark_dirty(scene, 1)
+  if dirty_at(scene, 0) != 0 then
+    return 6
+  end
+  if dirty_at(scene, 1) != 1 then
+    return 7
+  end
+  if dirty_at(scene, 2) != 0 then
+    return 8
+  end
+  if dirty_at(scene, 3) != 1 then
+    return 9
+  end
+
+  scene = scene_clear_dirty(scene)
+  scene = scene_mark_all_dirty(scene)
+  if dirty_at(scene, 0) != 1 then
+    return 10
+  end
+  if dirty_at(scene, 2) != 1 then
+    return 11
+  end
+
+  println("scene_dirty_ok")
+  0
+end

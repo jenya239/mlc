@@ -83,7 +83,8 @@ export type SceneNode = {
 export type Scene = {
   nodes: [SceneNode],
   world: [Affine2x3],
-  camera: Affine2x3
+  camera: Affine2x3,
+  dirty: [i32]
 }
 
 export type SceneAddResult = {
@@ -333,8 +334,77 @@ export fn scene_new() -> Scene =
   Scene {
     nodes: [],
     world: [],
-    camera: affine_identity()
+    camera: affine_identity(),
+    dirty: []
   }
+
+fn scene_with(
+  nodes: [SceneNode],
+  world: [Affine2x3],
+  camera: Affine2x3,
+  dirty: [i32]
+) -> Scene =
+  Scene {
+    nodes: nodes,
+    world: world,
+    camera: camera,
+    dirty: dirty
+  }
+
+fn scene_ensure_dirty_length(scene: Scene) -> Scene = do
+  let mut dirty = scene.dirty
+  while dirty.length() < scene.nodes.length() do
+    dirty.push(0)
+  end
+  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+end
+
+// Mark node_id and all descendants dirty (Decision STEP=1).
+export fn scene_mark_dirty(scene: Scene, node_id: i32) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  let mut working = scene_ensure_dirty_length(scene)
+  let mut dirty = working.dirty
+  let mut queue: [i32] = []
+  queue.push(node_id)
+  let mut head = 0
+  while head < queue.length() do
+    const current = queue[head]
+    head = head + 1
+    dirty.set(current, 1)
+    const children = working.nodes[current].children
+    let mut child_index = 0
+    while child_index < children.length() do
+      queue.push(children[child_index])
+      child_index = child_index + 1
+    end
+  end
+  scene_with(working.nodes, working.world, working.camera, dirty)
+end
+
+export fn scene_mark_all_dirty(scene: Scene) -> Scene = do
+  let mut dirty: [i32] = []
+  let mut index = 0
+  while index < scene.nodes.length() do
+    dirty.push(1)
+    index = index + 1
+  end
+  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+end
+
+export fn scene_clear_dirty(scene: Scene) -> Scene = do
+  let mut dirty: [i32] = []
+  let mut index = 0
+  while index < scene.nodes.length() do
+    dirty.push(0)
+    index = index + 1
+  end
+  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+end
 
 fn scene_node_new(parent: i32, local: Affine2x3, kind: SceneNodeKind) -> SceneNode =
   SceneNode {
@@ -359,29 +429,27 @@ fn scene_attach_child(scene: Scene, parent: i32, child_id: i32) -> Scene = do
     children: children
   }
   nodes.set(parent, parent_node)
-  Scene {
-    nodes: nodes,
-    world: scene.world,
-    camera: scene.camera
-  }
+  scene_with(nodes, scene.world, scene.camera, scene.dirty)
 end
 
 fn scene_push_node(scene: Scene, node: SceneNode) -> SceneAddResult = do
   let mut nodes = scene.nodes
   let mut world = scene.world
+  let mut dirty = scene.dirty
   const node_id = nodes.length()
   const parent = node.parent
   if parent >= node_id then
     return SceneAddResult { scene: scene, node_id: -1 }
   end
+  while dirty.length() < node_id do
+    dirty.push(0)
+  end
   nodes.push(node)
   world.push(affine_identity())
-  let mut next_scene = Scene {
-    nodes: nodes,
-    world: world,
-    camera: scene.camera
-  }
+  dirty.push(1)
+  let mut next_scene = scene_with(nodes, world, scene.camera, dirty)
   next_scene = scene_attach_child(next_scene, parent, node_id)
+  next_scene = scene_mark_dirty(next_scene, node_id)
   SceneAddResult { scene: next_scene, node_id: node_id }
 end
 
@@ -440,11 +508,10 @@ fn scene_set_node_kind(scene: Scene, node_id: i32, kind: SceneNodeKind) -> Scene
       children: node.children
     }
   )
-  Scene {
-    nodes: nodes,
-    world: scene.world,
-    camera: scene.camera
-  }
+  scene_mark_dirty(
+    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    node_id
+  )
 end
 
 export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
@@ -489,11 +556,10 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
       children: node.children
     }
   )
-  Scene {
-    nodes: nodes,
-    world: scene.world,
-    camera: scene.camera
-  }
+  scene_mark_dirty(
+    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    node_id
+  )
 end
 
 export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scene = do
@@ -533,11 +599,10 @@ export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scen
       children: node.children
     }
   )
-  Scene {
-    nodes: nodes,
-    world: scene.world,
-    camera: scene.camera
-  }
+  scene_mark_dirty(
+    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    node_id
+  )
 end
 
 // Drag: screen → local x → clamped value on hit Slider.
@@ -691,7 +756,8 @@ export fn scene_update_world(scene: Scene) -> Scene = do
   Scene {
     nodes: scene.nodes,
     world: world,
-    camera: scene.camera
+    camera: scene.camera,
+    dirty: scene.dirty
   }
 end
 

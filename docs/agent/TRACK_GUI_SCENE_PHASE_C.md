@@ -12,7 +12,12 @@ Phase A/B stay. Phase C adds **incremental world update** + optional
 
 ## Next step
 
-**STEP=2** — Dirty flags + `scene_mark_dirty` + smoke.
+**STEP=3** — Incremental `scene_update_world_dirty`.
+
+### STEP=2 done (2026-07-14)
+
+- `Scene.dirty`; `scene_mark_dirty` / `scene_mark_all_dirty` / `scene_clear_dirty`; add/set hooks.
+- `misc/examples/scene_dirty_smoke.mlc` + `scripts/run_scene_dirty_smoke.sh` → `scene_dirty_ok`.
 
 ### STEP=1 done (2026-07-14)
 
@@ -80,7 +85,7 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 | Step | Item | Gate |
 |------|------|------|
 | 1 | Decision: dirty + AABB + threshold + API (freeze in this file) | **done** (2026-07-14): Decision frozen |
-| 2 | Dirty flags + `scene_mark_dirty` / mutator hooks + smoke | `scene_dirty_smoke` exit 0 |
+| 2 | Dirty flags + `scene_mark_dirty` / mutator hooks + smoke | **done** (2026-07-14): `scene_dirty_ok` |
 | 3 | Incremental `scene_update_world_dirty` ≡ full update on dirty set | `scene_world_dirty_smoke` exit 0 |
 | 4 | World AABB pass from kind local size | `scene_aabb_smoke` exit 0 |
 | 5 | Quadtree insert + point/range query (unit, no GL) | `scene_quadtree_smoke` exit 0 |
@@ -94,10 +99,10 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 2. Exact types / threshold listed — done.
 3. Non-goals noted — done.
 
-**STEP=2**
-1. Add `dirty: [i32]` on `Scene` (or parallel store); `scene_mark_dirty(scene, node_id)`.
-2. Hook add/set helpers that change transform or size.
-3. `misc/examples/scene_dirty_smoke.mlc` + script → `scene_dirty_ok`.
+**STEP=2** — **done**
+1. Add `dirty: [i32]` on `Scene`; `scene_mark_dirty` — done.
+2. Hook add/set helpers — done.
+3. `scene_dirty_smoke` + script — done.
 
 **STEP=3**
 1. `scene_update_world_dirty`: recompute only dirty nodes (parent world required).

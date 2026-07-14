@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 1 |
+| step_last | 2 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=2 dirty next |
+| test_gate | Phase C STEP=3 world dirty next |
+
+### Turn 2026-07-14 21:40 (Driver TRACK_GUI_SCENE_PHASE_C STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 21:36 |
+| elapsed | ~4 min |
+| done    | `Scene.dirty` + mark/clear/all; add/set hooks; `scene_dirty_smoke` + script. |
+| verify  | `bash scripts/run_scene_dirty_smoke.sh` → `scene_dirty_ok`; label+form still ok. |
+| result  | STEP=2 done. Plain: mark node marks descendants; sibling stays clean. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 21:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=1)
 
