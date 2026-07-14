@@ -1,0 +1,62 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=5 — quadtree point query (no GL).
+import { SceneAabb } from '../gui/scene'
+import {
+  scene_quadtree_new,
+  scene_quadtree_insert,
+  scene_quadtree_query_point
+} from '../gui/scene_quadtree'
+
+fn main() -> i32 = do
+  let mut tree = scene_quadtree_new(
+    SceneAabb { min_x: 0.0, min_y: 0.0, max_x: 1000.0, max_y: 1000.0 }
+  )
+  tree = scene_quadtree_insert(
+    tree,
+    10,
+    SceneAabb { min_x: 10.0, min_y: 10.0, max_x: 30.0, max_y: 30.0 }
+  )
+  tree = scene_quadtree_insert(
+    tree,
+    20,
+    SceneAabb { min_x: 200.0, min_y: 200.0, max_x: 220.0, max_y: 220.0 }
+  )
+  tree = scene_quadtree_insert(
+    tree,
+    30,
+    SceneAabb { min_x: 500.0, min_y: 10.0, max_x: 520.0, max_y: 30.0 }
+  )
+  tree = scene_quadtree_insert(
+    tree,
+    40,
+    SceneAabb { min_x: 10.0, min_y: 500.0, max_x: 30.0, max_y: 520.0 }
+  )
+  tree = scene_quadtree_insert(
+    tree,
+    50,
+    SceneAabb { min_x: 800.0, min_y: 800.0, max_x: 820.0, max_y: 820.0 }
+  )
+
+  const hit_a = scene_quadtree_query_point(tree, 15.0, 15.0)
+  if hit_a.length() != 1 then
+    return 1
+  end
+  if hit_a[0] != 10 then
+    return 2
+  end
+
+  const hit_b = scene_quadtree_query_point(tree, 205.0, 205.0)
+  if hit_b.length() != 1 then
+    return 3
+  end
+  if hit_b[0] != 20 then
+    return 4
+  end
+
+  const miss = scene_quadtree_query_point(tree, 100.0, 100.0)
+  if miss.length() != 0 then
+    return 5
+  end
+
+  println("scene_quadtree_ok")
+  0
+end

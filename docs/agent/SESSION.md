@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 4 |
+| driver_turns_since_plan | 2 |
+| step_last | 5 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=5 quadtree next |
+| test_gate | Phase C STEP=6 spatial next |
+
+### Turn 2026-07-14 22:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 22:25 |
+| elapsed | ~10 min |
+| done    | `misc/gui/scene_quadtree.mlc` insert/query/`build_from_scene`; smoke+script; PLAN/TRACK sync. |
+| verify  | `bash scripts/run_scene_quadtree_smoke.sh` → `scene_quadtree_ok`. |
+| result  | STEP=5 done. Plain: 5 AABBs; point hits one id; miss empty. |
+| issues  | Nested if/else in build_from_scene truncated codegen; simplified root AABB 800×600. |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 22:10 (Driver TRACK_GUI_SCENE_PHASE_C STEP=4)
 

@@ -12,7 +12,12 @@ Phase A/B stay. Phase C adds **incremental world update** + optional
 
 ## Next step
 
-**STEP=5** — Quadtree insert + query.
+**STEP=6** — Threshold integration (hit/draw).
+
+### STEP=5 done (2026-07-14)
+
+- `misc/gui/scene_quadtree.mlc`: insert + point query + `build_from_scene`.
+- `misc/examples/scene_quadtree_smoke.mlc` + script → `scene_quadtree_ok`.
 
 ### STEP=4 done (2026-07-14)
 
@@ -98,7 +103,7 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 | 2 | Dirty flags + `scene_mark_dirty` / mutator hooks + smoke | **done** (2026-07-14): `scene_dirty_ok` |
 | 3 | Incremental `scene_update_world_dirty` ≡ full update on dirty set | **done** (2026-07-14): `scene_world_dirty_ok` |
 | 4 | World AABB pass from kind local size | **done** (2026-07-14): `scene_aabb_ok` |
-| 5 | Quadtree insert + point/range query (unit, no GL) | `scene_quadtree_smoke` exit 0 |
+| 5 | Quadtree insert + point/range query (unit, no GL) | **done** (2026-07-14): `scene_quadtree_ok` |
 | 6 | Threshold integration: cull/query smoke above/below threshold | `scene_spatial_smoke` exit 0 |
 | 7 | Critic: Decision match; Phase B smokes still green; no sleep | close Phase C |
 
@@ -118,13 +123,13 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 1. `scene_update_world_dirty` — done.
 2. Smoke: dirty ≡ full; sibling world stable — done.
 
-**STEP=4**
-1. `scene_update_world_bounds` (or fold into dirty world pass).
-2. Smoke: known rect under translation → expected AABB.
+**STEP=4** — **done**
+1. `scene_update_world_bounds` — done.
+2. Smoke: known rect under translation → expected AABB — done.
 
-**STEP=5**
-1. `misc/gui/scene_quadtree.mlc` (or section in `scene.mlc`): insert AABB + query point.
-2. Smoke: N non-overlapping rects; query hits one id.
+**STEP=5** — **done**
+1. `misc/gui/scene_quadtree.mlc`: insert AABB + query point — done.
+2. Smoke: N non-overlapping rects; query hits one id — done.
 
 **STEP=6**
 1. Wire threshold: below → linear; above → query then hit/draw candidates.

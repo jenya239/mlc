@@ -1,0 +1,318 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=5 — AABB quadtree (insert + point query).
+import { SceneAabb, Scene } from './scene'
+
+export type SceneQuadtreeItem = {
+  node_id: i32,
+  bounds: SceneAabb
+}
+
+export type SceneQuadtreeCell = {
+  bounds: SceneAabb,
+  items: [SceneQuadtreeItem],
+  child_north_west: i32,
+  child_north_east: i32,
+  child_south_west: i32,
+  child_south_east: i32,
+  depth: i32
+}
+
+export type SceneQuadtree = {
+  cells: [SceneQuadtreeCell],
+  root: i32
+}
+
+fn scene_quadtree_max_items() -> i32 = 4
+fn scene_quadtree_max_depth() -> i32 = 8
+
+export fn scene_aabb_contains_point(bounds: SceneAabb, point_x: f64, point_y: f64) -> i32 = do
+  if point_x < bounds.min_x then
+    return 0
+  end
+  if point_y < bounds.min_y then
+    return 0
+  end
+  if point_x >= bounds.max_x then
+    return 0
+  end
+  if point_y >= bounds.max_y then
+    return 0
+  end
+  1
+end
+
+fn scene_aabb_contains_aabb(outer: SceneAabb, inner: SceneAabb) -> i32 = do
+  if inner.min_x < outer.min_x then
+    return 0
+  end
+  if inner.min_y < outer.min_y then
+    return 0
+  end
+  if inner.max_x > outer.max_x then
+    return 0
+  end
+  if inner.max_y > outer.max_y then
+    return 0
+  end
+  1
+end
+
+fn scene_quadtree_cell_is_leaf(cell: SceneQuadtreeCell) -> i32 = do
+  if cell.child_north_west < 0 then
+    return 1
+  end
+  0
+end
+
+fn scene_quadtree_leaf_cell(bounds: SceneAabb, depth: i32) -> SceneQuadtreeCell =
+  SceneQuadtreeCell {
+    bounds: bounds,
+    items: [],
+    child_north_west: 0 - 1,
+    child_north_east: 0 - 1,
+    child_south_west: 0 - 1,
+    child_south_east: 0 - 1,
+    depth: depth
+  }
+
+export fn scene_quadtree_new(bounds: SceneAabb) -> SceneQuadtree = do
+  let mut cells: [SceneQuadtreeCell] = []
+  cells.push(scene_quadtree_leaf_cell(bounds, 0))
+  SceneQuadtree { cells: cells, root: 0 }
+end
+
+fn scene_quadtree_try_child_index(cell: SceneQuadtreeCell, item: SceneQuadtreeItem, cells: [SceneQuadtreeCell]) -> i32 = do
+  if scene_aabb_contains_aabb(cells[cell.child_north_west].bounds, item.bounds) != 0 then
+    return cell.child_north_west
+  end
+  if scene_aabb_contains_aabb(cells[cell.child_north_east].bounds, item.bounds) != 0 then
+    return cell.child_north_east
+  end
+  if scene_aabb_contains_aabb(cells[cell.child_south_west].bounds, item.bounds) != 0 then
+    return cell.child_south_west
+  end
+  if scene_aabb_contains_aabb(cells[cell.child_south_east].bounds, item.bounds) != 0 then
+    return cell.child_south_east
+  end
+  0 - 1
+end
+
+fn scene_quadtree_push_item(tree: SceneQuadtree, cell_index: i32, item: SceneQuadtreeItem) -> SceneQuadtree = do
+  let mut cells = tree.cells
+  const cell = cells[cell_index]
+  let mut items = cell.items
+  items.push(item)
+  cells.set(
+    cell_index,
+    SceneQuadtreeCell {
+      bounds: cell.bounds,
+      items: items,
+      child_north_west: cell.child_north_west,
+      child_north_east: cell.child_north_east,
+      child_south_west: cell.child_south_west,
+      child_south_east: cell.child_south_east,
+      depth: cell.depth
+    }
+  )
+  SceneQuadtree { cells: cells, root: tree.root }
+end
+
+fn scene_quadtree_split(tree: SceneQuadtree, cell_index: i32) -> SceneQuadtree = do
+  let mut cells = tree.cells
+  const cell = cells[cell_index]
+  const mid_x = (cell.bounds.min_x + cell.bounds.max_x) * 0.5
+  const mid_y = (cell.bounds.min_y + cell.bounds.max_y) * 0.5
+  const child_depth = cell.depth + 1
+  const north_west_index = cells.length()
+  cells.push(
+    scene_quadtree_leaf_cell(
+      SceneAabb {
+        min_x: cell.bounds.min_x,
+        min_y: mid_y,
+        max_x: mid_x,
+        max_y: cell.bounds.max_y
+      },
+      child_depth
+    )
+  )
+  const north_east_index = cells.length()
+  cells.push(
+    scene_quadtree_leaf_cell(
+      SceneAabb {
+        min_x: mid_x,
+        min_y: mid_y,
+        max_x: cell.bounds.max_x,
+        max_y: cell.bounds.max_y
+      },
+      child_depth
+    )
+  )
+  const south_west_index = cells.length()
+  cells.push(
+    scene_quadtree_leaf_cell(
+      SceneAabb {
+        min_x: cell.bounds.min_x,
+        min_y: cell.bounds.min_y,
+        max_x: mid_x,
+        max_y: mid_y
+      },
+      child_depth
+    )
+  )
+  const south_east_index = cells.length()
+  cells.push(
+    scene_quadtree_leaf_cell(
+      SceneAabb {
+        min_x: mid_x,
+        min_y: cell.bounds.min_y,
+        max_x: cell.bounds.max_x,
+        max_y: mid_y
+      },
+      child_depth
+    )
+  )
+  const old_items = cell.items
+  cells.set(
+    cell_index,
+    SceneQuadtreeCell {
+      bounds: cell.bounds,
+      items: [],
+      child_north_west: north_west_index,
+      child_north_east: north_east_index,
+      child_south_west: south_west_index,
+      child_south_east: south_east_index,
+      depth: cell.depth
+    }
+  )
+  let mut next_tree = SceneQuadtree { cells: cells, root: tree.root }
+  let mut item_index = 0
+  while item_index < old_items.length() do
+    const item = old_items[item_index]
+    const parent_cell = next_tree.cells[cell_index]
+    const child_index = scene_quadtree_try_child_index(parent_cell, item, next_tree.cells)
+    if child_index < 0 then
+      next_tree = scene_quadtree_push_item(next_tree, cell_index, item)
+    else
+      next_tree = scene_quadtree_push_item(next_tree, child_index, item)
+    end
+    item_index = item_index + 1
+  end
+  next_tree
+end
+
+fn scene_quadtree_insert_at(
+  tree: SceneQuadtree,
+  cell_index: i32,
+  item: SceneQuadtreeItem
+) -> SceneQuadtree = do
+  const cell = tree.cells[cell_index]
+  if scene_quadtree_cell_is_leaf(cell) != 0 then
+    if cell.items.length() < scene_quadtree_max_items() then
+      return scene_quadtree_push_item(tree, cell_index, item)
+    end
+    if cell.depth >= scene_quadtree_max_depth() then
+      return scene_quadtree_push_item(tree, cell_index, item)
+    end
+    let mut split_tree = scene_quadtree_split(tree, cell_index)
+    return scene_quadtree_insert_at(split_tree, cell_index, item)
+  end
+
+  const child_index = scene_quadtree_try_child_index(cell, item, tree.cells)
+  if child_index < 0 then
+    return scene_quadtree_push_item(tree, cell_index, item)
+  end
+  return scene_quadtree_insert_at(tree, child_index, item)
+end
+
+export fn scene_quadtree_insert(
+  tree: SceneQuadtree,
+  node_id: i32,
+  bounds: SceneAabb
+) -> SceneQuadtree =
+  scene_quadtree_insert_at(
+    tree,
+    tree.root,
+    SceneQuadtreeItem { node_id: node_id, bounds: bounds }
+  )
+
+fn scene_quadtree_query_at(
+  tree: SceneQuadtree,
+  cell_index: i32,
+  point_x: f64,
+  point_y: f64,
+  results: [i32]
+) -> [i32] = do
+  const cell = tree.cells[cell_index]
+  if scene_aabb_contains_point(cell.bounds, point_x, point_y) == 0 then
+    return results
+  end
+  let mut next_results = results
+  let mut item_index = 0
+  while item_index < cell.items.length() do
+    const item = cell.items[item_index]
+    if scene_aabb_contains_point(item.bounds, point_x, point_y) != 0 then
+      next_results.push(item.node_id)
+    end
+    item_index = item_index + 1
+  end
+  if scene_quadtree_cell_is_leaf(cell) != 0 then
+    return next_results
+  end
+  next_results = scene_quadtree_query_at(
+    tree,
+    cell.child_north_west,
+    point_x,
+    point_y,
+    next_results
+  )
+  next_results = scene_quadtree_query_at(
+    tree,
+    cell.child_north_east,
+    point_x,
+    point_y,
+    next_results
+  )
+  next_results = scene_quadtree_query_at(
+    tree,
+    cell.child_south_west,
+    point_x,
+    point_y,
+    next_results
+  )
+  return scene_quadtree_query_at(
+    tree,
+    cell.child_south_east,
+    point_x,
+    point_y,
+    next_results
+  )
+end
+
+export fn scene_quadtree_query_point(
+  tree: SceneQuadtree,
+  point_x: f64,
+  point_y: f64
+) -> [i32] = do
+  let mut results: [i32] = []
+  return scene_quadtree_query_at(tree, tree.root, point_x, point_y, results)
+end
+
+export fn scene_quadtree_build_from_scene(scene: Scene) -> SceneQuadtree = do
+  let mut tree = scene_quadtree_new(
+    SceneAabb { min_x: 0.0, min_y: 0.0, max_x: 800.0, max_y: 600.0 }
+  )
+  let mut index = 0
+  while index < scene.world_bounds.length() do
+    const bounds = scene.world_bounds[index]
+    let mut usable = 0
+    if bounds.max_x > bounds.min_x then
+      if bounds.max_y > bounds.min_y then
+        usable = 1
+      end
+    end
+    if usable != 0 then
+      tree = scene_quadtree_insert(tree, index, bounds)
+    end
+    index = index + 1
+  end
+  return tree
+end
