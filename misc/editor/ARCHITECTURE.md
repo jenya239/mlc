@@ -24,8 +24,10 @@ Editor owns **no** raw GL. Draw via `misc/gui/scene*` + `text_renderer` /
 
 ## Buffer (Decision E)
 
-**Piece table** — byte offsets; codepoint columns on the current line only;
-grapheme/IME out of v1. See STEP=pre response in mlc-support.
+**Piece table** (`document/piece_table.mlc`) — byte offsets; `Original`|
+`Added` pieces; inserts append to `added`, never rewrite `original`. Open
+path today: `document_from_string` (path load deferred — FFI). Codepoint
+columns on the current line only; grapheme/IME out of v1.
 
 ## Pipeline
 
@@ -36,8 +38,10 @@ fragments → flatten → render`.
 
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set (+ test inject)
+- by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…8 status
+## STEP=0…9 status
 
-- STEP=0–7: window / theme / text / clip / perf / layout / FileTree / panels.
-- STEP=8: `workspace/ignore_list.mlc` + filtered expand (`.git` default).
+- STEP=0–8: window / theme / text / clip / perf / layout / FileTree / panels /
+  ignore list.
+- STEP=9: `document/piece_table.mlc` + `tests/piece_table_unit.mlc`.

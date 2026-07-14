@@ -1,0 +1,118 @@
+// TRACK_EDITOR_MVP STEP=9 — piece-table TextDocument (byte offsets).
+// File path load deferred until by-value FFI wrappers for mlc::file exist;
+// open path = document_from_string (fixture / caller-supplied bytes).
+
+export type PieceSource = Original | Added
+
+export type Piece = {
+  source: PieceSource,
+  start: i32,
+  length: i32
+}
+
+export type TextDocument = {
+  original: string,
+  added: string,
+  pieces: [Piece]
+}
+
+fn piece_new(source: PieceSource, start: i32, length: i32) -> Piece =
+  Piece { source: source, start: start, length: length }
+
+fn buffer_slice(doc: TextDocument, source: PieceSource, start: i32, length: i32) -> string = do
+  match source
+  | Original => doc.original.substring(start, length)
+  | Added => doc.added.substring(start, length)
+  end
+end
+
+export fn document_from_string(text: string) -> TextDocument = do
+  let mut pieces: [Piece] = []
+  if text.length() > 0 then
+    pieces.push(piece_new(Original, 0, text.length()))
+  end
+  TextDocument { original: text, added: "", pieces: pieces }
+end
+
+export fn document_byte_length(doc: TextDocument) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < doc.pieces.length() do
+    total = total + doc.pieces[index].length
+    index = index + 1
+  end
+  total
+end
+
+export fn document_to_string(doc: TextDocument) -> string = do
+  let mut out = ""
+  let mut index = 0
+  while index < doc.pieces.length() do
+    const piece = doc.pieces[index]
+    out = out + buffer_slice(doc, piece.source, piece.start, piece.length)
+    index = index + 1
+  end
+  out
+end
+
+export fn document_original_length(doc: TextDocument) -> i32 =
+  doc.original.length()
+
+export fn document_added_length(doc: TextDocument) -> i32 =
+  doc.added.length()
+
+// Insert at byte_offset; appends to `added`, never rewrites `original`.
+export fn document_insert(
+  doc: TextDocument,
+  byte_offset: i32,
+  text: string
+) -> TextDocument = do
+  if text.length() == 0 then
+    return doc
+  end
+  let mut offset = byte_offset
+  if offset < 0 then
+    offset = 0
+  end
+  const total = document_byte_length(doc)
+  if offset > total then
+    offset = total
+  end
+
+  let mut pieces: [Piece] = []
+  let mut remaining = offset
+  let mut index = 0
+  let mut inserted = 0
+  while index < doc.pieces.length() do
+    const piece = doc.pieces[index]
+    if inserted == 0 && remaining <= 0 then
+      pieces.push(piece_new(Added, doc.added.length(), text.length()))
+      inserted = 1
+    end
+    if inserted == 0 && remaining < piece.length then
+      if remaining > 0 then
+        pieces.push(piece_new(piece.source, piece.start, remaining))
+      end
+      pieces.push(piece_new(Added, doc.added.length(), text.length()))
+      inserted = 1
+      const tail = piece.length - remaining
+      if tail > 0 then
+        pieces.push(piece_new(piece.source, piece.start + remaining, tail))
+      end
+    else
+      pieces.push(piece)
+      if inserted == 0 then
+        remaining = remaining - piece.length
+      end
+    end
+    index = index + 1
+  end
+  if inserted == 0 then
+    pieces.push(piece_new(Added, doc.added.length(), text.length()))
+  end
+  TextDocument {
+    original: doc.original,
+    added: doc.added + text,
+    pieces: pieces
+  }
+end

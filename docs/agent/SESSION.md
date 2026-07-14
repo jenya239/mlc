@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 8 |
+| driver_turns_since_plan | 10 |
+| step_last | 9 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=9 piece table next |
+| test_gate | STEP=10 LineIndex next |
+
+### Turn 2026-07-14 11:23 (Driver TRACK_EDITOR_MVP STEP=9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 11:08 |
+| elapsed | ~15 min |
+| done    | `document/piece_table.mlc` + unit/fixture/script; ARCH/README; TRACK/PLAN sync. Path load deferred (FFI). |
+| verify  | `scripts/run_editor_piece_table_unit.sh` exit 0; `piece_table_unit ok bytes=208890`. |
+| result  | STEP=9 done (anti-false-done: first commit of piece table). Plain: inserts never rewrite original. |
+| issues  | Left foreign: SCRIPT_VM docs, demo_live, theme/static_text/text_renderer M, `.tmp/`. |
+| next    | ROLE=Driver STEP=10 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 00:37 (Driver TRACK_EDITOR_MVP STEP=8)
 

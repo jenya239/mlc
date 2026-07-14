@@ -33,6 +33,9 @@ MLC_GLFW_VISIBLE=0 scripts/run_editor_shell_panels_smoke.sh
 
 # STEP=8 ignore list unit (no GLFW)
 scripts/run_editor_ignore_list_unit.sh
+
+# STEP=9 piece table unit (no GLFW)
+scripts/run_editor_piece_table_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -43,11 +46,13 @@ Layout unit requires `[mlc-editor] layout_unit ok`.
 FileTree unit requires `[mlc-editor] file_tree_unit ok`.
 Shell panels requires `[mlc-editor] shell_panels ok`.
 Ignore list requires `[mlc-editor] ignore_list_unit ok`.
+Piece table requires `[mlc-editor] piece_table_unit ok`.
 
 ## Layout (growing)
 
 ```text
 main.mlc          # entry
 ARCHITECTURE.md
-document/ layout/ syntax/ workspace/ ui/ commands/ tests/   # later STEPs
+document/         # piece_table (STEP=9)
+layout/ syntax/ workspace/ ui/ commands/ tests/
 ```

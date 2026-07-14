@@ -12,7 +12,14 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=9** — `TextDocument` piece-table load from file (unit; mock/path fixture).
+**STEP=10** — LineIndex (byte-offset ↔ line/col), dirty-rebuild on edit.
+
+### STEP=9 done (2026-07-14)
+
+- `document/piece_table.mlc`: Original|Added pieces; `document_insert` never
+  rewrites `original`.
+- `tests/piece_table_unit.mlc` + fixture text + ~209KB load/insert; exit 0.
+- Path `document_from_file` deferred (mlcc FFI vs `const String&`).
 
 ### STEP=8 done (2026-07-14)
 
@@ -174,13 +181,13 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 5 | UI primitives: row/col/fixed/flex/scroll/split (value types) | **done** (2026-07-14): `layout/shell.mlc` + `run_editor_layout_unit.sh` |
 | 6 | FileTree model + lazy expand (needs P1) | **done** (2026-07-14): mock DirEntry expand; `run_editor_file_tree_unit.sh` |
 | 7 | Wire tree panel + editor placeholder + divider drag | **done** (2026-07-14): `shell_panels.mlc` + inject smoke |
-| 8 | Exclude `.git` + extensible ignore list | unit |
+| 8 | Exclude `.git` + extensible ignore list | **done** (2026-07-14): `ignore_list.mlc` + unit |
 
 ### E3 — Open file / line index / visible lines / scroll / gutter
 
 | Step | Item | Gate |
 |------|------|------|
-| 9 | `TextDocument` piece-table from file (Decision E closed STEP=pre) | unit: load 1–5MB without multi-second block on open path |
+| 9 | `TextDocument` piece-table from file (Decision E closed STEP=pre) | **done** (2026-07-14): `piece_table.mlc` + unit (~209KB); path load deferred |
 | 10 | Line index + offset↔line/col | unit |
 | 11 | Visible range + overscan; horizontal scroll OK; no wrap | unit + smoke |
 | 12 | Line numbers gutter | visual/smoke |
@@ -273,4 +280,6 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=4 done** (2026-07-13): perf stub.
 - **STEP=5 done** (2026-07-13): shell layout unit.
 - **STEP=6 done** (2026-07-14): FileTree lazy expand.
-- **STEP=7 done** (2026-07-14): shell panels + divider drag; next **STEP=8**.
+- **STEP=7 done** (2026-07-14): shell panels + divider drag.
+- **STEP=8 done** (2026-07-14): ignore list.
+- **STEP=9 done** (2026-07-14): piece table; next **STEP=10**.

@@ -1,0 +1,90 @@
+// TRACK_EDITOR_MVP STEP=9 — piece-table load + insert (no full original rewrite).
+// Fixture text mirrors misc/editor/tests/fixtures/sample.txt (open-path = from_string).
+import {
+  TextDocument,
+  document_from_string,
+  document_to_string,
+  document_byte_length,
+  document_original_length,
+  document_added_length,
+  document_insert
+} from '../document/piece_table'
+
+fn check_loaded_document(doc: TextDocument) -> i32 = do
+  const text = document_to_string(doc)
+  if text.length() < 10 then
+    return 5
+  end
+  if document_original_length(doc) != text.length() then
+    return 6
+  end
+  if document_added_length(doc) != 0 then
+    return 7
+  end
+
+  const original_snapshot = doc.original
+  const mid = document_byte_length(doc) / 2
+  const edited = document_insert(doc, mid, "X")
+  if document_original_length(edited) != original_snapshot.length() then
+    return 8
+  end
+  if edited.original != original_snapshot then
+    return 9
+  end
+  if document_added_length(edited) != 1 then
+    return 10
+  end
+  if document_byte_length(edited) != document_byte_length(doc) + 1 then
+    return 11
+  end
+  if document_to_string(edited).length() != text.length() + 1 then
+    return 12
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const from_memory = document_from_string("abc")
+  if document_byte_length(from_memory) != 3 then
+    return 1
+  end
+  if document_to_string(from_memory) != "abc" then
+    return 2
+  end
+  if from_memory.pieces.length() != 1 then
+    return 3
+  end
+
+  // Same bytes as fixtures/sample.txt
+  const fixture = "hello piece table\nline two\n"
+  const loaded = document_from_string(fixture)
+  const load_check = check_loaded_document(loaded)
+  if load_check != 0 then
+    return load_check
+  end
+
+  let mut big = ""
+  let mut line_index = 0
+  while line_index < 20000 do
+    big = big + "line " + line_index.to_string() + "\n"
+    line_index = line_index + 1
+  end
+  const big_doc = document_from_string(big)
+  if document_byte_length(big_doc) != big.length() then
+    return 13
+  end
+  if document_to_string(big_doc) != big then
+    return 14
+  end
+  // Insert mid-file must not grow original buffer.
+  const big_edited = document_insert(big_doc, 100, "MARK")
+  if document_original_length(big_edited) != big.length() then
+    return 15
+  end
+  if document_added_length(big_edited) != 4 then
+    return 16
+  end
+
+  println("[mlc-editor] piece_table_unit ok bytes=" + big.length().to_string())
+  0
+end
