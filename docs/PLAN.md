@@ -427,7 +427,7 @@ compiler/
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
 | **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a |
-| **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **priority / active** (2026-07-14) STEP=0–5 **done**; **STEP=6** next | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](agent/TRACK_UX_HEADLESS.md); L1–L9 live-shell backlog |
+| **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **priority / active** (2026-07-14) STEP=0–6 **done**; **STEP=7** next | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](agent/TRACK_UX_HEADLESS.md); L1–L9 live-shell backlog |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -624,7 +624,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md))**
   → **EDITOR_MVP (**closed** 2026-07-14: Critic OK; STEP=pre…29; `80a76d99`…`75fc5142`;
       → [EDITOR.md](EDITOR.md), [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md))**
-  → **UX_HEADLESS (§33a, PRIORITY 2026-07-14 — queue head; STEP=0–5 done; STEP=6 next;
+  → **UX_HEADLESS (§33a, PRIORITY 2026-07-14 — queue head; STEP=0–6 done; STEP=7 next;
       → [GUI_UX_TESTING.md](GUI_UX_TESTING.md), [agent/TRACK_UX_HEADLESS.md](agent/TRACK_UX_HEADLESS.md))**
   → GUI_CANVAS_GRAPH Phase B–D (eligible; after UX_HEADLESS yield or user override)
 ```

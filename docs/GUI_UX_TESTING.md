@@ -107,6 +107,9 @@ Scenario (STEP=4): `ux_scenarios/tab_strip_click_activates.mlc` +
 Scenario (STEP=5): `newline_caret_and_spaces` — trailing space + Enter + caret
 cols via `ux/edit_apply.mlc`; `ux_ok newline_caret_and_spaces`.
 
+Scenario (STEP=6): `overflow_editor_text` — long line/tall stack overflows without
+scissor; `editor_ux_apply_scissor_clip` → `NoOverflow`; `ux_ok overflow_editor_text`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

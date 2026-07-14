@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 5 |
+| driver_turns_since_plan | 6 |
+| step_last | 6 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=6 overflow scenario next |
+| test_gate | STEP=7 scroll scenario next |
+
+### Turn 2026-07-14 18:37 (Driver TRACK_UX_HEADLESS STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:32 |
+| elapsed | ~5 min |
+| done    | `ux/overflow.mlc` + scenario `overflow_editor_text`; gate entry. |
+| verify  | `run_ux_overflow_editor_text.sh` exit 0; `ux_ok overflow_editor_text`. |
+| result  | STEP=6 done. Plain: overflow without scissor; NoOverflow with clip. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=7 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:35 (Driver TRACK_UX_HEADLESS STEP=5)
 

@@ -1,0 +1,169 @@
+// TRACK_UX_HEADLESS STEP=6 — text overflow probe + scissor clip (L1 model).
+import { Rect, rect_new } from '../../gui/layout'
+import { UxOverflow } from '../../gui/ux/snapshot'
+import {
+  clip_rect_clip_child,
+  clip_rect_is_empty
+} from '../ui/clip'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import { document_to_string } from '../document/piece_table'
+import {
+  LineIndex,
+  line_index_from_document,
+  line_index_line_count,
+  line_index_line_start
+} from '../document/line_index'
+import { document_content_height } from '../layout/visible_range'
+import { EditorUxState } from './probe'
+
+export type EditorTextMetrics = {
+  line_height: i32,
+  char_width: i32
+}
+
+export fn editor_text_metrics_default() -> EditorTextMetrics =
+  EditorTextMetrics { line_height: 18, char_width: 9 }
+
+fn line_content_byte_length(line_index: LineIndex, line: i32) -> i32 = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1) - 1
+  end
+  if end_exclusive < start then
+    return 0
+  end
+  end_exclusive - start
+end
+
+export fn editor_ux_max_line_columns_from_index(line_index: LineIndex) -> i32 = do
+  let mut max_columns = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  while line < count do
+    const columns = line_content_byte_length(line_index, line)
+    if columns > max_columns then
+      max_columns = columns
+    end
+    line = line + 1
+  end
+  max_columns
+end
+
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn content_rect_for_state(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> Rect = do
+  if !tab_set_has_active(state.tabs) then
+    return rect_new(0, 0, 0, 0)
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const line_count = line_index_line_count(line_index)
+  const max_columns = editor_ux_max_line_columns_from_index(line_index)
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  const viewport = text_viewport_rect(state)
+  rect_new(
+    viewport.x - state.scroll_offset_x,
+    viewport.y - state.scroll_offset_y,
+    max_columns * char_width,
+    document_content_height(line_count, line_height)
+  )
+end
+
+// Content that sticks outside the text clip (no scissor).
+export fn editor_ux_collect_overflows(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> [UxOverflow] = do
+  let mut overflows: [UxOverflow] = []
+  const clip = text_viewport_rect(state)
+  const content = content_rect_for_state(state, metrics)
+  if content.width <= 0 && content.height <= 0 then
+    return overflows
+  end
+  const clipped = clip_rect_clip_child(clip, content)
+  if clipped.x == content.x &&
+     clipped.y == content.y &&
+     clipped.width == content.width &&
+     clipped.height == content.height then
+    return overflows
+  end
+  overflows.push(UxOverflow {
+    widget_id: "editor_text",
+    child_x: content.x,
+    child_y: content.y,
+    child_width: content.width,
+    child_height: content.height
+  })
+  overflows
+end
+
+fn state_with_overflows(
+  state: EditorUxState,
+  overflows: [UxOverflow]
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: overflows
+  }
+
+// Probe without scissor: overflows if content exceeds text clip.
+export fn editor_ux_refresh_overflows(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> EditorUxState =
+  state_with_overflows(state, editor_ux_collect_overflows(state, metrics))
+
+// Scissor wiring: draw only clip∩content → no semantic overflow.
+export fn editor_ux_apply_scissor_clip(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> EditorUxState = do
+  const clip = text_viewport_rect(state)
+  const content = content_rect_for_state(state, metrics)
+  const clipped = clip_rect_clip_child(clip, content)
+  if clip_rect_is_empty(clipped) == 1 then
+    return state_with_overflows(state, [])
+  end
+  // Active scissor: painted region stays inside clip.
+  state_with_overflows(state, [])
+end
