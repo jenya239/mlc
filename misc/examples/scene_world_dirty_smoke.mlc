@@ -1,0 +1,115 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=3 — dirty world ≡ full world (no GL).
+import {
+  Affine2x3,
+  Scene,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_update_world_dirty,
+  scene_set_node_local,
+  scene_clear_dirty
+} from '../gui/scene'
+
+fn approx_eq(left: f64, right: f64) -> i32 = do
+  const delta = left - right
+  if delta < 0.0 then
+    if 0.0 - delta < 0.0000001 then
+      return 1
+    end
+    return 0
+  end
+  if delta < 0.0000001 then
+    return 1
+  end
+  0
+end
+
+fn affine_eq(left: Affine2x3, right: Affine2x3) -> i32 = do
+  if approx_eq(left.a, right.a) == 0 then
+    return 0
+  end
+  if approx_eq(left.b, right.b) == 0 then
+    return 0
+  end
+  if approx_eq(left.c, right.c) == 0 then
+    return 0
+  end
+  if approx_eq(left.d, right.d) == 0 then
+    return 0
+  end
+  if approx_eq(left.tx, right.tx) == 0 then
+    return 0
+  end
+  if approx_eq(left.ty, right.ty) == 0 then
+    return 0
+  end
+  1
+end
+
+fn worlds_eq(left: Scene, right: Scene) -> i32 = do
+  if left.world.length() != right.world.length() then
+    return 0
+  end
+  let mut index = 0
+  while index < left.world.length() do
+    if affine_eq(left.world[index], right.world[index]) == 0 then
+      return 0
+    end
+    index = index + 1
+  end
+  1
+end
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+  const branch_a = scene_add_container(scene, root.node_id, affine_translation(10.0, 20.0))
+  scene = branch_a.scene
+  const branch_b = scene_add_container(scene, root.node_id, affine_translation(200.0, 0.0))
+  scene = branch_b.scene
+  const leaf = scene_add_rect_fill(
+    scene,
+    branch_a.node_id,
+    affine_translation(5.0, 5.0),
+    scene_rect_fill_new(20.0, 20.0, 1.0, 0.0, 0.0, 1.0)
+  )
+  scene = leaf.scene
+
+  scene = scene_update_world(scene)
+  scene = scene_clear_dirty(scene)
+  const sibling_before = scene.world[branch_b.node_id]
+
+  scene = scene_set_node_local(scene, leaf.node_id, affine_translation(50.0, 60.0))
+  if scene.dirty[leaf.node_id] != 1 then
+    return 1
+  end
+  if scene.dirty[branch_b.node_id] != 0 then
+    return 2
+  end
+
+  const via_dirty = scene_update_world_dirty(scene)
+  const via_full = scene_update_world(scene)
+
+  if worlds_eq(via_dirty, via_full) == 0 then
+    return 3
+  end
+  if approx_eq(via_dirty.world[leaf.node_id].tx, 60.0) == 0 then
+    return 4
+  end
+  if approx_eq(via_dirty.world[leaf.node_id].ty, 80.0) == 0 then
+    return 5
+  end
+  if affine_eq(via_dirty.world[branch_b.node_id], sibling_before) == 0 then
+    return 6
+  end
+  if via_dirty.dirty[leaf.node_id] != 0 then
+    return 7
+  end
+
+  println("scene_world_dirty_ok")
+  0
+end

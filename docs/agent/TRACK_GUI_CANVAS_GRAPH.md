@@ -16,7 +16,7 @@ Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md).
 
 ## Next step
 
-**Phase C STEP=3** — `scene_update_world_dirty`. See `TRACK_GUI_SCENE_PHASE_C.md`.
+**Phase C STEP=4** — world AABB. See `TRACK_GUI_SCENE_PHASE_C.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой

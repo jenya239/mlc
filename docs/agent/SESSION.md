@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 2 |
+| step_last | 3 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=3 world dirty next |
+| test_gate | Phase C STEP=4 AABB next |
+
+### Turn 2026-07-14 21:55 (Driver TRACK_GUI_SCENE_PHASE_C STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 21:52 |
+| elapsed | ~3 min |
+| done    | `scene_update_world_dirty` + `scene_set_node_local`; `scene_world_dirty_smoke` + script. |
+| verify  | `bash scripts/run_scene_world_dirty_smoke.sh` → `scene_world_dirty_ok`. |
+| result  | STEP=3 done. Plain: dirty pass ≡ full; clean sibling world stable. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 21:40 (Driver TRACK_GUI_SCENE_PHASE_C STEP=2)
 

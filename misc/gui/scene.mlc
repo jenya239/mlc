@@ -753,12 +753,74 @@ export fn scene_update_world(scene: Scene) -> Scene = do
     end
     index = index + 1
   end
-  Scene {
-    nodes: scene.nodes,
-    world: world,
-    camera: scene.camera,
-    dirty: scene.dirty
-  }
+  scene_with(scene.nodes, world, scene.camera, scene.dirty)
+end
+
+export fn scene_set_node_local(scene: Scene, node_id: i32, local: Affine2x3) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  let mut nodes = scene.nodes
+  const node = nodes[node_id]
+  nodes.set(
+    node_id,
+    SceneNode {
+      parent: node.parent,
+      local: local,
+      kind: node.kind,
+      children: node.children
+    }
+  )
+  scene_mark_dirty(
+    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    node_id
+  )
+end
+
+// Incremental world: recompute dirty nodes (and children if parent updated this pass).
+export fn scene_update_world_dirty(scene: Scene) -> Scene = do
+  let mut working = scene_ensure_dirty_length(scene)
+  let mut world = working.world
+  let mut dirty = working.dirty
+  const node_count = working.nodes.length()
+  while world.length() < node_count do
+    world.push(affine_identity())
+  end
+  let mut parent_updated: [i32] = []
+  let mut index = 0
+  while index < node_count do
+    parent_updated.push(0)
+    index = index + 1
+  end
+  index = 0
+  while index < node_count do
+    const node = working.nodes[index]
+    let mut must_update = 0
+    if dirty[index] != 0 then
+      must_update = 1
+    end
+    if must_update == 0 then
+      if node.parent >= 0 then
+        if parent_updated[node.parent] != 0 then
+          must_update = 1
+        end
+      end
+    end
+    if must_update != 0 then
+      if node.parent < 0 then
+        world.set(index, node.local)
+      else
+        world.set(index, affine_multiply(world[node.parent], node.local))
+      end
+      dirty.set(index, 0)
+      parent_updated.set(index, 1)
+    end
+    index = index + 1
+  end
+  scene_with(working.nodes, world, working.camera, dirty)
 end
 
 fn scene_point_in_rect_fill(local_x: f64, local_y: f64, fill: SceneRectFill) -> i32 = do

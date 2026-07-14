@@ -12,7 +12,12 @@ Phase A/B stay. Phase C adds **incremental world update** + optional
 
 ## Next step
 
-**STEP=3** — Incremental `scene_update_world_dirty`.
+**STEP=4** — World AABB pass.
+
+### STEP=3 done (2026-07-14)
+
+- `scene_update_world_dirty` + `scene_set_node_local`; clears dirty after write.
+- `misc/examples/scene_world_dirty_smoke.mlc` + script → `scene_world_dirty_ok`.
 
 ### STEP=2 done (2026-07-14)
 
