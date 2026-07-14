@@ -1,4 +1,4 @@
-// TRACK_EDITOR_MVP STEP=1 — Theme (Solarized Light–like).
+// TRACK_EDITOR_MVP STEP=27 — Theme finalize (Solarized Light palette).
 export type Theme = {
   background_red: f64,
   background_green: f64,
@@ -8,19 +8,113 @@ export type Theme = {
   panel_blue: f64,
   accent_red: f64,
   accent_green: f64,
-  accent_blue: f64
+  accent_blue: f64,
+  text_red: f64,
+  text_green: f64,
+  text_blue: f64,
+  muted_red: f64,
+  muted_green: f64,
+  muted_blue: f64,
+  selection_red: f64,
+  selection_green: f64,
+  selection_blue: f64,
+  gutter_red: f64,
+  gutter_green: f64,
+  gutter_blue: f64,
+  status_red: f64,
+  status_green: f64,
+  status_blue: f64,
+  border_red: f64,
+  border_green: f64,
+  border_blue: f64,
+  caret_red: f64,
+  caret_green: f64,
+  caret_blue: f64,
+  keyword_red: f64,
+  keyword_green: f64,
+  keyword_blue: f64,
+  string_red: f64,
+  string_green: f64,
+  string_blue: f64,
+  comment_red: f64,
+  comment_green: f64,
+  comment_blue: f64
 }
 
-// Solarized Light: base3 / base2 / blue.
+export type ThemeRgb = {
+  red: f64,
+  green: f64,
+  blue: f64
+}
+
+export fn theme_rgb(red: f64, green: f64, blue: f64) -> ThemeRgb =
+  ThemeRgb { red: red, green: green, blue: blue }
+
+// Solarized Light: base3/base2/base00/base1 + green/cyan/blue.
 export fn theme_solarized_light() -> Theme =
   Theme {
+    // base3 #fdf6e3
     background_red: 0.992,
     background_green: 0.965,
     background_blue: 0.890,
+    // base2 #eee8d5
     panel_red: 0.933,
     panel_green: 0.910,
     panel_blue: 0.835,
+    // blue #268bd2
     accent_red: 0.149,
     accent_green: 0.545,
-    accent_blue: 0.824
+    accent_blue: 0.824,
+    // base00 #657b83
+    text_red: 0.396,
+    text_green: 0.482,
+    text_blue: 0.514,
+    // base1 #93a1a1
+    muted_red: 0.576,
+    muted_green: 0.631,
+    muted_blue: 0.631,
+    // selection: slightly darker than base2
+    selection_red: 0.878,
+    selection_green: 0.851,
+    selection_blue: 0.769,
+    gutter_red: 0.933,
+    gutter_green: 0.910,
+    gutter_blue: 0.835,
+    status_red: 0.933,
+    status_green: 0.910,
+    status_blue: 0.835,
+    border_red: 0.576,
+    border_green: 0.631,
+    border_blue: 0.631,
+    caret_red: 0.396,
+    caret_green: 0.482,
+    caret_blue: 0.514,
+    // green #859900
+    keyword_red: 0.522,
+    keyword_green: 0.600,
+    keyword_blue: 0.000,
+    // cyan #2aa198
+    string_red: 0.165,
+    string_green: 0.631,
+    string_blue: 0.596,
+    comment_red: 0.576,
+    comment_green: 0.631,
+    comment_blue: 0.631
   }
+
+export fn theme_default() -> Theme =
+  theme_solarized_light()
+
+// Map highlighter tag → RGB (unknown → text).
+export fn theme_rgb_for_tag(theme: Theme, tag: string) -> ThemeRgb = do
+  if tag == "keyword" then
+    return theme_rgb(theme.keyword_red, theme.keyword_green, theme.keyword_blue)
+  end
+  if tag == "string" then
+    return theme_rgb(theme.string_red, theme.string_green, theme.string_blue)
+  end
+  if tag == "comment" then
+    return theme_rgb(theme.comment_red, theme.comment_green, theme.comment_blue)
+  end
+  theme_rgb(theme.text_red, theme.text_green, theme.text_blue)
+end

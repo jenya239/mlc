@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 27 |
-| step_last | 26 |
+| driver_turns_since_plan | 28 |
+| step_last | 27 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=27 theme next |
+| test_gate | STEP=28 perf-report next |
+
+### Turn 2026-07-14 18:05 (Driver TRACK_EDITOR_MVP STEP=27)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 27 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 18:03 |
+| elapsed | ~2 min |
+| done    | `ui/theme.mlc` Solarized palette + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_theme_unit.sh` exit 0; `theme_unit ok`. |
+| result  | STEP=27 done. Plain: text/muted/selection/gutter/status + tag colors. |
+| issues  | Left foreign: UX_HEADLESS, SCRIPT_VM, demo_live, dark theme stub, text M. |
+| next    | ROLE=Driver STEP=28 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 18:01 (Driver TRACK_EDITOR_MVP STEP=26)
 

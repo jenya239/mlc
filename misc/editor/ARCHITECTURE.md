@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…26 status
+## STEP=0…27 status
 
-- STEP=0–25: scaffold through syntax stub.
-- STEP=26: `ui/status_bar.mlc` — path, Ln/Col, dirty, language, encoding.
+- STEP=0–26: scaffold through status bar.
+- STEP=27: `ui/theme.mlc` — Solarized Light palette + tag→RGB.

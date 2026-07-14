@@ -89,6 +89,9 @@ scripts/run_editor_syntax_unit.sh
 
 # STEP=26 status bar (no GLFW)
 scripts/run_editor_status_bar_unit.sh
+
+# STEP=27 Solarized Light theme unit (no GLFW)
+scripts/run_editor_theme_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -119,6 +122,7 @@ Command bus requires `[mlc-editor] command_bus_unit ok`.
 Session requires `[mlc-editor] session_unit ok`.
 Syntax requires `[mlc-editor] syntax_unit ok`.
 Status bar requires `[mlc-editor] status_bar_unit ok`.
+Theme requires `[mlc-editor] theme_unit ok`.
 
 ## Layout (growing)
 

@@ -1,0 +1,74 @@
+// TRACK_EDITOR_MVP STEP=27 — Solarized Light theme unit.
+import {
+  theme_default,
+  theme_solarized_light,
+  theme_rgb_for_tag
+} from '../ui/theme'
+
+fn near(actual: f64, expected: f64) -> bool = do
+  const delta = actual - expected
+  if delta < 0.0 then
+    return 0.0 - delta < 0.002
+  end
+  delta < 0.002
+end
+
+fn main() -> i32 = do
+  const theme = theme_solarized_light()
+  const same = theme_default()
+
+  // base3 background
+  if !near(theme.background_red, 0.992) then
+    return 1
+  end
+  if !near(theme.background_green, 0.965) then
+    return 2
+  end
+  if !near(theme.background_blue, 0.890) then
+    return 3
+  end
+  // base00 text
+  if !near(theme.text_red, 0.396) || !near(theme.text_green, 0.482) then
+    return 4
+  end
+  // green keyword / cyan string / muted comment
+  if !near(theme.keyword_green, 0.600) || !near(theme.keyword_blue, 0.000) then
+    return 5
+  end
+  if !near(theme.string_red, 0.165) || !near(theme.string_green, 0.631) then
+    return 6
+  end
+  if !near(theme.comment_red, theme.muted_red) then
+    return 7
+  end
+  if !near(theme.caret_red, theme.text_red) then
+    return 8
+  end
+  if !near(theme.gutter_red, theme.panel_red) then
+    return 9
+  end
+
+  const keyword = theme_rgb_for_tag(theme, "keyword")
+  if !near(keyword.red, theme.keyword_red) then
+    return 10
+  end
+  const string_color = theme_rgb_for_tag(theme, "string")
+  if !near(string_color.green, theme.string_green) then
+    return 11
+  end
+  const comment = theme_rgb_for_tag(theme, "comment")
+  if !near(comment.blue, theme.comment_blue) then
+    return 12
+  end
+  const plain = theme_rgb_for_tag(theme, "ident")
+  if !near(plain.red, theme.text_red) then
+    return 13
+  end
+
+  if !near(same.accent_blue, theme.accent_blue) then
+    return 14
+  end
+
+  println("[mlc-editor] theme_unit ok")
+  0
+end
