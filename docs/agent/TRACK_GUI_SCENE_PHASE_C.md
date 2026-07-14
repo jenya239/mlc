@@ -12,7 +12,12 @@ Phase A/B stay. Phase C adds **incremental world update** + optional
 
 ## Next step
 
-**STEP=4** — World AABB pass.
+**STEP=5** — Quadtree insert + query.
+
+### STEP=4 done (2026-07-14)
+
+- `SceneAabb` + `Scene.world_bounds`; `scene_update_world_bounds` / `scene_aabb_from_local_rect`.
+- `misc/examples/scene_aabb_smoke.mlc` + script → `scene_aabb_ok`.
 
 ### STEP=3 done (2026-07-14)
 
@@ -91,8 +96,8 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 |------|------|------|
 | 1 | Decision: dirty + AABB + threshold + API (freeze in this file) | **done** (2026-07-14): Decision frozen |
 | 2 | Dirty flags + `scene_mark_dirty` / mutator hooks + smoke | **done** (2026-07-14): `scene_dirty_ok` |
-| 3 | Incremental `scene_update_world_dirty` ≡ full update on dirty set | `scene_world_dirty_smoke` exit 0 |
-| 4 | World AABB pass from kind local size | `scene_aabb_smoke` exit 0 |
+| 3 | Incremental `scene_update_world_dirty` ≡ full update on dirty set | **done** (2026-07-14): `scene_world_dirty_ok` |
+| 4 | World AABB pass from kind local size | **done** (2026-07-14): `scene_aabb_ok` |
 | 5 | Quadtree insert + point/range query (unit, no GL) | `scene_quadtree_smoke` exit 0 |
 | 6 | Threshold integration: cull/query smoke above/below threshold | `scene_spatial_smoke` exit 0 |
 | 7 | Critic: Decision match; Phase B smokes still green; no sleep | close Phase C |
@@ -109,9 +114,9 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 2. Hook add/set helpers — done.
 3. `scene_dirty_smoke` + script — done.
 
-**STEP=3**
-1. `scene_update_world_dirty`: recompute only dirty nodes (parent world required).
-2. Smoke: mutate one leaf → world matches full `scene_update_world`; clean siblings unchanged identity optional.
+**STEP=3** — **done**
+1. `scene_update_world_dirty` — done.
+2. Smoke: dirty ≡ full; sibling world stable — done.
 
 **STEP=4**
 1. `scene_update_world_bounds` (or fold into dirty world pass).

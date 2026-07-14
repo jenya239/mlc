@@ -1,0 +1,68 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=4 — world AABB from local size (no GL).
+import {
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_update_world_bounds
+} from '../gui/scene'
+
+fn approx_eq(left: f64, right: f64) -> i32 = do
+  const delta = left - right
+  if delta < 0.0 then
+    if 0.0 - delta < 0.0000001 then
+      return 1
+    end
+    return 0
+  end
+  if delta < 0.0000001 then
+    return 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+  const rect = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 50.0),
+    scene_rect_fill_new(100.0, 20.0, 0.2, 0.4, 0.8, 1.0)
+  )
+  scene = rect.scene
+  scene = scene_update_world(scene)
+  scene = scene_update_world_bounds(scene)
+
+  if scene.world_bounds.length() != 2 then
+    return 1
+  end
+
+  const bounds = scene.world_bounds[rect.node_id]
+  if approx_eq(bounds.min_x, 40.0) == 0 then
+    return 2
+  end
+  if approx_eq(bounds.min_y, 50.0) == 0 then
+    return 3
+  end
+  if approx_eq(bounds.max_x, 140.0) == 0 then
+    return 4
+  end
+  if approx_eq(bounds.max_y, 70.0) == 0 then
+    return 5
+  end
+
+  const root_bounds = scene.world_bounds[root.node_id]
+  if approx_eq(root_bounds.min_x, 0.0) == 0 then
+    return 6
+  end
+  if approx_eq(root_bounds.max_x, 0.0) == 0 then
+    return 7
+  end
+
+  println("scene_aabb_ok")
+  0
+end

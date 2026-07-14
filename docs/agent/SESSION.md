@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 3 |
+| step_last | 4 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=4 AABB next |
+| test_gate | Phase C STEP=5 quadtree next |
+
+### Turn 2026-07-14 22:10 (Driver TRACK_GUI_SCENE_PHASE_C STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 22:04 |
+| elapsed | ~6 min |
+| done    | `SceneAabb`/`world_bounds` + `scene_update_world_bounds`; `scene_aabb_smoke` + script. |
+| verify  | `bash scripts/run_scene_aabb_smoke.sh` → `scene_aabb_ok`; dirty+world_dirty still ok. |
+| result  | STEP=4 done. Plain: translated 100×20 rect → AABB [40,50]–[140,70]. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 21:55 (Driver TRACK_GUI_SCENE_PHASE_C STEP=3)
 

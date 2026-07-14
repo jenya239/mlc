@@ -80,11 +80,19 @@ export type SceneNode = {
   children: [i32]
 }
 
+export type SceneAabb = {
+  min_x: f64,
+  min_y: f64,
+  max_x: f64,
+  max_y: f64
+}
+
 export type Scene = {
   nodes: [SceneNode],
   world: [Affine2x3],
   camera: Affine2x3,
-  dirty: [i32]
+  dirty: [i32],
+  world_bounds: [SceneAabb]
 }
 
 export type SceneAddResult = {
@@ -335,20 +343,26 @@ export fn scene_new() -> Scene =
     nodes: [],
     world: [],
     camera: affine_identity(),
-    dirty: []
+    dirty: [],
+    world_bounds: []
   }
+
+fn scene_aabb_empty() -> SceneAabb =
+  SceneAabb { min_x: 0.0, min_y: 0.0, max_x: 0.0, max_y: 0.0 }
 
 fn scene_with(
   nodes: [SceneNode],
   world: [Affine2x3],
   camera: Affine2x3,
-  dirty: [i32]
+  dirty: [i32],
+  world_bounds: [SceneAabb]
 ) -> Scene =
   Scene {
     nodes: nodes,
     world: world,
     camera: camera,
-    dirty: dirty
+    dirty: dirty,
+    world_bounds: world_bounds
   }
 
 fn scene_ensure_dirty_length(scene: Scene) -> Scene = do
@@ -356,7 +370,7 @@ fn scene_ensure_dirty_length(scene: Scene) -> Scene = do
   while dirty.length() < scene.nodes.length() do
     dirty.push(0)
   end
-  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+  scene_with(scene.nodes, scene.world, scene.camera, dirty, scene.world_bounds)
 end
 
 // Mark node_id and all descendants dirty (Decision STEP=1).
@@ -383,7 +397,7 @@ export fn scene_mark_dirty(scene: Scene, node_id: i32) -> Scene = do
       child_index = child_index + 1
     end
   end
-  scene_with(working.nodes, working.world, working.camera, dirty)
+  scene_with(working.nodes, working.world, working.camera, dirty, working.world_bounds)
 end
 
 export fn scene_mark_all_dirty(scene: Scene) -> Scene = do
@@ -393,7 +407,7 @@ export fn scene_mark_all_dirty(scene: Scene) -> Scene = do
     dirty.push(1)
     index = index + 1
   end
-  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+  scene_with(scene.nodes, scene.world, scene.camera, dirty, scene.world_bounds)
 end
 
 export fn scene_clear_dirty(scene: Scene) -> Scene = do
@@ -403,7 +417,7 @@ export fn scene_clear_dirty(scene: Scene) -> Scene = do
     dirty.push(0)
     index = index + 1
   end
-  scene_with(scene.nodes, scene.world, scene.camera, dirty)
+  scene_with(scene.nodes, scene.world, scene.camera, dirty, scene.world_bounds)
 end
 
 fn scene_node_new(parent: i32, local: Affine2x3, kind: SceneNodeKind) -> SceneNode =
@@ -429,13 +443,14 @@ fn scene_attach_child(scene: Scene, parent: i32, child_id: i32) -> Scene = do
     children: children
   }
   nodes.set(parent, parent_node)
-  scene_with(nodes, scene.world, scene.camera, scene.dirty)
+  scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds)
 end
 
 fn scene_push_node(scene: Scene, node: SceneNode) -> SceneAddResult = do
   let mut nodes = scene.nodes
   let mut world = scene.world
   let mut dirty = scene.dirty
+  let mut world_bounds = scene.world_bounds
   const node_id = nodes.length()
   const parent = node.parent
   if parent >= node_id then
@@ -444,10 +459,14 @@ fn scene_push_node(scene: Scene, node: SceneNode) -> SceneAddResult = do
   while dirty.length() < node_id do
     dirty.push(0)
   end
+  while world_bounds.length() < node_id do
+    world_bounds.push(scene_aabb_empty())
+  end
   nodes.push(node)
   world.push(affine_identity())
   dirty.push(1)
-  let mut next_scene = scene_with(nodes, world, scene.camera, dirty)
+  world_bounds.push(scene_aabb_empty())
+  let mut next_scene = scene_with(nodes, world, scene.camera, dirty, world_bounds)
   next_scene = scene_attach_child(next_scene, parent, node_id)
   next_scene = scene_mark_dirty(next_scene, node_id)
   SceneAddResult { scene: next_scene, node_id: node_id }
@@ -509,7 +528,7 @@ fn scene_set_node_kind(scene: Scene, node_id: i32, kind: SceneNodeKind) -> Scene
     }
   )
   scene_mark_dirty(
-    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds),
     node_id
   )
 end
@@ -557,7 +576,7 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
     }
   )
   scene_mark_dirty(
-    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds),
     node_id
   )
 end
@@ -600,7 +619,7 @@ export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scen
     }
   )
   scene_mark_dirty(
-    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds),
     node_id
   )
 end
@@ -753,7 +772,7 @@ export fn scene_update_world(scene: Scene) -> Scene = do
     end
     index = index + 1
   end
-  scene_with(scene.nodes, world, scene.camera, scene.dirty)
+  scene_with(scene.nodes, world, scene.camera, scene.dirty, scene.world_bounds)
 end
 
 export fn scene_set_node_local(scene: Scene, node_id: i32, local: Affine2x3) -> Scene = do
@@ -775,7 +794,7 @@ export fn scene_set_node_local(scene: Scene, node_id: i32, local: Affine2x3) -> 
     }
   )
   scene_mark_dirty(
-    scene_with(nodes, scene.world, scene.camera, scene.dirty),
+    scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds),
     node_id
   )
 end
@@ -820,7 +839,102 @@ export fn scene_update_world_dirty(scene: Scene) -> Scene = do
     end
     index = index + 1
   end
-  scene_with(working.nodes, world, working.camera, dirty)
+  scene_with(working.nodes, world, working.camera, dirty, working.world_bounds)
+end
+
+fn scene_kind_local_width(kind: SceneNodeKind) -> f64 =
+  match kind {
+    Container => 0.0,
+    RectFill(fill) => fill.width,
+    Label(scene_label) => scene_label.width,
+    Checkbox(scene_checkbox) => scene_checkbox.width,
+    Slider(scene_slider) => scene_slider.width,
+    TextField(scene_text_field) => scene_text_field.width
+  }
+
+fn scene_kind_local_height(kind: SceneNodeKind) -> f64 =
+  match kind {
+    Container => 0.0,
+    RectFill(fill) => fill.height,
+    Label(scene_label) => scene_label.height,
+    Checkbox(scene_checkbox) => scene_checkbox.height,
+    Slider(scene_slider) => scene_slider.height,
+    TextField(scene_text_field) => scene_text_field.height
+  }
+
+fn scene_min_f64(left: f64, right: f64) -> f64 = do
+  if left < right then
+    return left
+  end
+  right
+end
+
+fn scene_max_f64(left: f64, right: f64) -> f64 = do
+  if left > right then
+    return left
+  end
+  right
+end
+
+export fn scene_aabb_from_local_rect(
+  world: Affine2x3,
+  width: f64,
+  height: f64
+) -> SceneAabb = do
+  if width <= 0.0 then
+    if height <= 0.0 then
+      return scene_aabb_empty()
+    end
+  end
+  const corner0 = affine_transform_point(world, 0.0, 0.0)
+  const corner1 = affine_transform_point(world, width, 0.0)
+  const corner2 = affine_transform_point(world, width, height)
+  const corner3 = affine_transform_point(world, 0.0, height)
+  let mut min_x = corner0.x
+  let mut max_x = corner0.x
+  let mut min_y = corner0.y
+  let mut max_y = corner0.y
+  min_x = scene_min_f64(min_x, corner1.x)
+  max_x = scene_max_f64(max_x, corner1.x)
+  min_y = scene_min_f64(min_y, corner1.y)
+  max_y = scene_max_f64(max_y, corner1.y)
+  min_x = scene_min_f64(min_x, corner2.x)
+  max_x = scene_max_f64(max_x, corner2.x)
+  min_y = scene_min_f64(min_y, corner2.y)
+  max_y = scene_max_f64(max_y, corner2.y)
+  min_x = scene_min_f64(min_x, corner3.x)
+  max_x = scene_max_f64(max_x, corner3.x)
+  min_y = scene_min_f64(min_y, corner3.y)
+  max_y = scene_max_f64(max_y, corner3.y)
+  SceneAabb {
+    min_x: min_x,
+    min_y: min_y,
+    max_x: max_x,
+    max_y: max_y
+  }
+end
+
+// Requires fresh `scene_update_world` / `scene_update_world_dirty`.
+export fn scene_update_world_bounds(scene: Scene) -> Scene = do
+  let mut world_bounds = scene.world_bounds
+  const node_count = scene.nodes.length()
+  while world_bounds.length() < node_count do
+    world_bounds.push(scene_aabb_empty())
+  end
+  let mut index = 0
+  while index < node_count do
+    const kind = scene.nodes[index].kind
+    world_bounds.set(
+      index,
+      scene_aabb_from_local_rect(
+        scene.world[index],
+        scene_kind_local_width(kind),
+        scene_kind_local_height(kind)
+      )
+    )
+    index = index + 1
+  end
+  scene_with(scene.nodes, scene.world, scene.camera, scene.dirty, world_bounds)
 end
 
 fn scene_point_in_rect_fill(local_x: f64, local_y: f64, fill: SceneRectFill) -> i32 = do

@@ -16,7 +16,7 @@ Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md).
 
 ## Next step
 
-**Phase C STEP=4** — world AABB. See `TRACK_GUI_SCENE_PHASE_C.md`.
+**Phase C STEP=5** — quadtree. See `TRACK_GUI_SCENE_PHASE_C.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -85,7 +85,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 Пересчёт world-transform/перетесселляция только для изменившихся узлов;
 опциональный quadtree culling, включается по порогу числа узлов (не
 структура данных по умолчанию для 20 классических виджетов).
-Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=2 done; STEP=3 next).
+Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=3 done; STEP=4 next).
 
 ## Phase D: camera + vector path + blueprint canvas (после Phase C closed)
 
