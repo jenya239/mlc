@@ -1,0 +1,102 @@
+// TRACK_EDITOR_MVP STEP=12 — draw gutter line numbers (visual smoke).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { rect_new } from '../../gui/layout'
+import {
+  StaticTextLine,
+  static_text_create,
+  static_text_draw_lines,
+  static_text_destroy
+} from '../ui/static_text'
+import {
+  VisibleLineRange,
+  viewport_metrics_new,
+  visible_line_range
+} from '../layout/visible_range'
+import {
+  gutter_metrics_new,
+  gutter_width_for_line_count,
+  gutter_layout,
+  gutter_labels_for_range,
+  gutter_baseline_y,
+  gutter_label_pen_x
+} from '../layout/gutter'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(640, 360)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  println("[mlc-editor] open")
+
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  let mut text_state = static_text_create(512, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  const line_height = 20
+  const line_count = 100
+  const metrics = viewport_metrics_new(line_height, 200, 400, 0)
+  const range = visible_line_range(line_count, 0, metrics)
+  const labels = gutter_labels_for_range(range)
+  const gutter_metrics = gutter_metrics_new(10, 8, 8, 32)
+  const gutter_width = gutter_width_for_line_count(line_count, gutter_metrics)
+  const panes = gutter_layout(rect_new(0, 40, 640, 280), gutter_width)
+  const pen_x = gutter_label_pen_x(panes.gutter, gutter_metrics.padding_left)
+
+  let mut lines: [StaticTextLine] = []
+  let mut row = 0
+  while row < labels.length() do
+    lines.push(StaticTextLine {
+      text: labels[row],
+      pixel_size: 16,
+      pen_x: pen_x,
+      pen_y: gutter_baseline_y(panes.gutter.y, line_height, row, 14)
+    })
+    row = row + 1
+  end
+
+  let mut frame_index = 0
+  let mut last_vertex_count = 0
+  while glfw_gl_context_should_close() == 0 do
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const drawn = static_text_draw_lines(text_state, lines, width, height, 1)
+    text_state = drawn.state
+    if drawn.error_code != 0 then
+      static_text_destroy(text_state)
+      glfw_gl_context_end()
+      return drawn.error_code
+    end
+    last_vertex_count = drawn.vertex_count
+    if last_vertex_count < 6 then
+      static_text_destroy(text_state)
+      glfw_gl_context_end()
+      return 2
+    end
+
+    glfw_gl_context_swap_poll()
+    frame_index = frame_index + 1
+    if frame_index >= 3 then
+      break
+    end
+  end
+
+  println(
+    "[mlc-editor] gutter ok glyphs=" + last_vertex_count.to_string() +
+      " labels=" + labels.length().to_string()
+  )
+  static_text_destroy(text_state)
+  glfw_gl_context_end()
+  0
+end

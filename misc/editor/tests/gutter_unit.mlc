@@ -1,0 +1,75 @@
+// TRACK_EDITOR_MVP STEP=12 — gutter layout unit (no GLFW).
+import { rect_new } from '../../gui/layout'
+import { VisibleLineRange } from '../layout/visible_range'
+import {
+  decimal_digit_count,
+  gutter_metrics_new,
+  gutter_width_for_line_count,
+  gutter_layout,
+  gutter_line_label,
+  gutter_labels_for_range,
+  gutter_baseline_y,
+  gutter_label_pen_x
+} from '../layout/gutter'
+
+fn main() -> i32 = do
+  if decimal_digit_count(0) != 1 then
+    return 1
+  end
+  if decimal_digit_count(9) != 1 then
+    return 2
+  end
+  if decimal_digit_count(10) != 2 then
+    return 3
+  end
+  if decimal_digit_count(999) != 3 then
+    return 4
+  end
+
+  const metrics = gutter_metrics_new(8, 4, 4, 24)
+  // 100 lines → digits=3 → 4+24+4=32
+  if gutter_width_for_line_count(100, metrics) != 32 then
+    return 5
+  end
+  // 5 lines → digits=1 → 4+8+4=16 < min → 24
+  if gutter_width_for_line_count(5, metrics) != 24 then
+    return 6
+  end
+
+  const panes = gutter_layout(rect_new(10, 20, 400, 300), 48)
+  if panes.gutter.x != 10 || panes.gutter.width != 48 then
+    return 7
+  end
+  if panes.text.x != 58 || panes.text.width != 352 then
+    return 8
+  end
+
+  if gutter_line_label(0) != "1" then
+    return 9
+  end
+  if gutter_line_label(41) != "42" then
+    return 10
+  end
+
+  const range = VisibleLineRange { first_line: 8, last_line: 10 }
+  const labels = gutter_labels_for_range(range)
+  if labels.length() != 3 then
+    return 11
+  end
+  if labels[0] != "9" || labels[1] != "10" || labels[2] != "11" then
+    return 12
+  end
+
+  if gutter_baseline_y(20, 16, 2, 12) != 20 + 32 + 12 then
+    return 13
+  end
+  if gutter_label_pen_x(panes.gutter, 4) != 14 then
+    return 14
+  end
+
+  println(
+    "[mlc-editor] gutter_unit ok width=" +
+      gutter_width_for_line_count(100, metrics).to_string()
+  )
+  0
+end

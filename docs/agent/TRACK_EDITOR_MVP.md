@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=12** — Line numbers gutter.
+**STEP=13** — Scroll does not layout whole file (perf bound).
+
+### STEP=12 done (2026-07-14)
+
+- `layout/gutter.mlc`: digit width, panes, 1-based labels for visible range.
+- `tests/gutter_unit.mlc` + `gutter_smoke.mlc` (GLFW draw) exit 0.
 
 ### STEP=11 done (2026-07-14)
 
@@ -201,7 +206,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 |------|------|------|
 | 9 | `TextDocument` piece-table from file (Decision E closed STEP=pre) | **done** (2026-07-14): `piece_table.mlc` + unit (~209KB); path load deferred |
 | 10 | Line index + offset↔line/col | **done** (2026-07-14): `line_index.mlc` + unit |
-| 11 | Visible range + overscan; horizontal scroll OK; no wrap | unit + smoke |
+| 11 | Visible range + overscan; horizontal scroll OK; no wrap | **done** (2026-07-14): `visible_range.mlc` + unit |
 | 12 | Line numbers gutter | visual/smoke |
 | 13 | Scroll does not layout whole file | perf: large file scroll frame bound |
 
@@ -294,4 +299,4 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=6 done** (2026-07-14): FileTree lazy expand.
 - **STEP=7 done** (2026-07-14): shell panels + divider drag.
 - **STEP=8 done** (2026-07-14): ignore list.
-- **STEP=10 done** (2026-07-14): LineIndex; next **STEP=11**.
+- **STEP=11 done** (2026-07-14): visible range; next **STEP=12**.

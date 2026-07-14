@@ -42,6 +42,10 @@ scripts/run_editor_line_index_unit.sh
 
 # STEP=11 visible range unit (no GLFW)
 scripts/run_editor_visible_range_unit.sh
+
+# STEP=12 gutter unit + visual smoke
+scripts/run_editor_gutter_unit.sh
+MLC_GLFW_VISIBLE=0 scripts/run_editor_gutter_smoke.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -55,6 +59,8 @@ Ignore list requires `[mlc-editor] ignore_list_unit ok`.
 Piece table requires `[mlc-editor] piece_table_unit ok`.
 LineIndex requires `[mlc-editor] line_index_unit ok`.
 Visible range requires `[mlc-editor] visible_range_unit ok`.
+Gutter unit requires `[mlc-editor] gutter_unit ok`.
+Gutter smoke requires open + `gutter ok glyphs=N`.
 
 ## Layout (growing)
 
@@ -62,6 +68,6 @@ Visible range requires `[mlc-editor] visible_range_unit ok`.
 main.mlc          # entry
 ARCHITECTURE.md
 document/         # piece_table, line_index
-layout/           # shell, visible_range (STEP=11)
+layout/           # shell, visible_range, gutter (STEP=12)
 syntax/ workspace/ ui/ commands/ tests/
 ```

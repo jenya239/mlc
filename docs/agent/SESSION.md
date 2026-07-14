@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 12 |
-| step_last | 11 |
+| driver_turns_since_plan | 13 |
+| step_last | 12 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=12 gutter next |
+| test_gate | STEP=13 scroll perf next |
+
+### Turn 2026-07-14 12:00 (Driver TRACK_EDITOR_MVP STEP=12)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 12 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 11:53 |
+| elapsed | ~7 min |
+| done    | `layout/gutter.mlc` + unit + GLFW smoke; TRACK/PLAN sync (incl. STEP=11 chain leftover). |
+| verify  | gutter_unit ok width=32; gutter smoke `gutter ok glyphs=66 labels=10`. |
+| result  | STEP=12 done. Plain: 1-based gutter labels drawn for visible range. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=13 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 11:50 (Driver TRACK_EDITOR_MVP STEP=11)
 

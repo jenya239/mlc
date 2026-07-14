@@ -40,8 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set (+ test inject)
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…11 status
+## STEP=0…12 status
 
-- STEP=0–10: window / theme / text / clip / perf / shell layout / FileTree /
-  panels / ignore / piece table / LineIndex.
-- STEP=11: `layout/visible_range.mlc` + unit (overscan, horizontal, no wrap).
+- STEP=0–11: scaffold through visible range.
+- STEP=12: `layout/gutter.mlc` + unit + GLFW smoke (1-based labels).
