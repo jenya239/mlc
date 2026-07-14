@@ -1,0 +1,178 @@
+// TRACK_GUI_SCENE_PHASE_B STEP=6 — form: label+checkbox+slider+field (no GL).
+import {
+  Scene,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_label,
+  scene_add_checkbox,
+  scene_add_slider,
+  scene_add_text_field,
+  scene_label_new,
+  scene_checkbox_new,
+  scene_slider_new,
+  scene_text_field_new,
+  scene_checkbox_toggle,
+  scene_slider_set_from_screen,
+  scene_text_field_focus,
+  scene_text_field_apply_input,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { GuiInput } from '../gui/input'
+import { scene_rect_fill_batch_vertex_count } from '../gui/scene_draw'
+
+fn label_text(scene: Scene, node_id: i32) -> string =
+  match scene.nodes[node_id].kind {
+    Label(scene_label) => scene_label.text,
+    Container => "",
+    RectFill(_) => "",
+    Checkbox(_) => "",
+    Slider(_) => "",
+    TextField(_) => ""
+  }
+
+fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
+  match scene.nodes[node_id].kind {
+    Checkbox(scene_checkbox) => scene_checkbox.checked,
+    Container => 0 - 1,
+    RectFill(_) => 0 - 1,
+    Label(_) => 0 - 1,
+    Slider(_) => 0 - 1,
+    TextField(_) => 0 - 1
+  }
+
+fn slider_value(scene: Scene, node_id: i32) -> f64 =
+  match scene.nodes[node_id].kind {
+    Slider(scene_slider) => scene_slider.value,
+    Container => 0.0 - 1.0,
+    RectFill(_) => 0.0 - 1.0,
+    Label(_) => 0.0 - 1.0,
+    Checkbox(_) => 0.0 - 1.0,
+    TextField(_) => 0.0 - 1.0
+  }
+
+fn field_text(scene: Scene, node_id: i32) -> string =
+  match scene.nodes[node_id].kind {
+    TextField(scene_text_field) => scene_text_field.text,
+    Container => "",
+    RectFill(_) => "",
+    Label(_) => "",
+    Checkbox(_) => "",
+    Slider(_) => ""
+  }
+
+fn approx_eq(left: f64, right: f64) -> i32 = do
+  const delta = left - right
+  if delta < 0.0 then
+    if 0.0 - delta < 0.0001 then
+      return 1
+    end
+    return 0
+  end
+  if delta < 0.0001 then
+    return 1
+  end
+  0
+end
+
+fn gui_input_text(text: string) -> GuiInput =
+  GuiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    mouse_down: 0,
+    escape: 0,
+    text_buffer: text,
+    backspace: 0,
+    enter: 0
+  }
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+
+  const label = scene_add_label(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 20.0),
+    scene_label_new(120.0, 20.0, "Name", 0.1, 0.1, 0.1, 1.0)
+  )
+  scene = label.scene
+
+  const checkbox = scene_add_checkbox(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 50.0),
+    scene_checkbox_new(24.0, 24.0, 0, 0.2, 0.4, 0.6, 1.0)
+  )
+  scene = checkbox.scene
+
+  const slider = scene_add_slider(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 90.0),
+    scene_slider_new(200.0, 20.0, 0.0, 0.3, 0.3, 0.3, 1.0)
+  )
+  scene = slider.scene
+
+  const field = scene_add_text_field(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 130.0),
+    scene_text_field_new(160.0, 28.0, "", 0, 0, 0.15, 0.15, 0.2, 1.0)
+  )
+  scene = field.scene
+
+  if label.node_id != 1 then
+    return 1
+  end
+  if checkbox.node_id != 2 then
+    return 2
+  end
+  if slider.node_id != 3 then
+    return 3
+  end
+  if field.node_id != 4 then
+    return 4
+  end
+  if label_text(scene, 1) != "Name" then
+    return 5
+  end
+
+  scene = scene_update_world(scene)
+  if scene_hit_test(scene, 40.0, 50.0) != 2 then
+    return 6
+  end
+  if scene_hit_test(scene, 40.0, 90.0) != 3 then
+    return 7
+  end
+  if scene_hit_test(scene, 40.0, 130.0) != 4 then
+    return 8
+  end
+
+  // Headless inject: toggle, drag mid, type.
+  scene = scene_checkbox_toggle(scene, 2)
+  if checkbox_checked(scene, 2) != 1 then
+    return 9
+  end
+
+  scene = scene_slider_set_from_screen(scene, 3, 140.0, 100.0)
+  if approx_eq(slider_value(scene, 3), 0.5) == 0 then
+    return 10
+  end
+
+  scene = scene_text_field_focus(scene, 4)
+  scene = scene_text_field_apply_input(scene, 4, gui_input_text("Ada"))
+  if field_text(scene, 4) != "Ada" then
+    return 11
+  end
+
+  // label 6 + checkbox checked 12 + slider 12 + field 6 = 36
+  if scene_rect_fill_batch_vertex_count(scene) != 36 then
+    return 12
+  end
+
+  println("scene_form_ok")
+  0
+end

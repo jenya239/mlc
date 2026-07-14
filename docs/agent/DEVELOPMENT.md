@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_B` STEP=5 done** (2026-07-14) — TextField focus/apply; **STEP=6** form smoke next.
+**`TRACK_GUI_SCENE_PHASE_B` STEP=6 done** (2026-07-14) — form smoke; **STEP=7** Critic next.
 Epic GUI deferred: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 Phase A Critic OK: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 DEBUG Critic OK: [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).

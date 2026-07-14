@@ -15,7 +15,7 @@ UX_HEADLESS **closed** 2026-07-14. Active work:
 
 ## Next step
 
-**Phase B STEP=6** — form smoke. See `TRACK_GUI_SCENE_PHASE_B.md`.
+**Phase B STEP=7** — Critic. See `TRACK_GUI_SCENE_PHASE_B.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой

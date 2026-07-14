@@ -11,7 +11,12 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ## Next step
 
-**STEP=6** — form smoke (all four widgets).
+**STEP=7** — Critic audit / close Phase B.
+
+### STEP=6 done (2026-07-14)
+
+- `misc/examples/scene_form_smoke.mlc` + `scripts/run_scene_form_smoke.sh` → `scene_form_ok`.
+- One scene: label+checkbox+slider+field; headless toggle/drag/type; verts=36.
 
 ### STEP=5 done (2026-07-14)
 
@@ -89,7 +94,7 @@ label rendering in Phase B smokes.
 | 3 | `Checkbox` kind: hit toggles checked; draw box+mark | **done** (2026-07-14): `scene_checkbox_ok` |
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | **done** (2026-07-14): `scene_slider_ok` |
 | 5 | `TextField` kind: focus + inject keys/text; caret model | **done** (2026-07-14): `scene_text_field_ok` |
-| 6 | Form smoke: one scene with label+checkbox+slider+field; headless inject | `scene_form_smoke` exit 0 |
+| 6 | Form smoke: one scene with label+checkbox+slider+field; headless inject | **done** (2026-07-14): `scene_form_ok` |
 | 7 | Critic: kinds match Decision; no sleep; v0 demos untouched | close Phase B |
 
 ### Sub-steps (Driver)

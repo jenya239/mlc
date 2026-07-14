@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 5 |
+| step_last | 6 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=6 form next |
+| test_gate | Phase B STEP=7 Critic next |
+
+### Turn 2026-07-14 19:45 (Driver TRACK_GUI_SCENE_PHASE_B STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:41 |
+| elapsed | ~4 min |
+| done    | `scene_form_smoke.mlc` + `run_scene_form_smoke.sh`; label+checkbox+slider+field inject. |
+| verify  | `MLC_GLFW_VISIBLE=0 bash scripts/run_scene_form_smoke.sh` → `scene_form_ok`. |
+| result  | STEP=6 done. Plain: form headless; verts 36 after inject. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Critic STEP=7 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:40 (Driver TRACK_GUI_SCENE_PHASE_B STEP=5)
 
