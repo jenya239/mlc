@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 19 |
-| step_last | 18 |
+| driver_turns_since_plan | 20 |
+| step_last | 19 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=19 save next |
+| test_gate | STEP=20 tabs next |
+
+### Turn 2026-07-14 13:20 (Driver TRACK_EDITOR_MVP STEP=19)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 19 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 13:11 |
+| elapsed | ~9 min |
+| done    | `save.mlc` + `file_abi.hpp` + fixture unit; TRACK/PLAN (E4 complete). |
+| verify  | `scripts/run_editor_save_unit.sh` exit 0; `save_unit ok path=.tmp/editor_fixture/sample.txt`. |
+| result  | STEP=19 done. Plain: dirty/save/reload + error strings for missing/bad paths. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=20 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 13:10 (Driver TRACK_EDITOR_MVP STEP=18)
 

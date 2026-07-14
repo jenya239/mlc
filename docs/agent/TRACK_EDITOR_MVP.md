@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=19** — Dirty + save Ctrl+S; errors shown to user.
+**STEP=20** — Tabs: name, dirty, active, close; one path ↔ one document.
+
+### STEP=19 done (2026-07-14)
+
+- `document/save.mlc` + `runtime/.../file_abi.hpp`: dirty/save/reload + errors.
+- `tests/save_unit.mlc` on `.tmp/editor_fixture/` exit 0 (E4 complete).
 
 ### STEP=18 done (2026-07-14)
 
@@ -66,7 +71,7 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 - `document/piece_table.mlc`: Original|Added pieces; `document_insert` never
   rewrites `original`.
 - `tests/piece_table_unit.mlc` + fixture text + ~209KB load/insert; exit 0.
-- Path `document_from_file` deferred (mlcc FFI vs `const String&`).
+- Path load: `open_buffer_from_path` via `file_abi.hpp` (STEP=19).
 
 ### STEP=8 done (2026-07-14)
 
@@ -249,7 +254,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | **done** (2026-07-14): `navigation.mlc` + unit + inject |
 | 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | **done** (2026-07-14): inject clipboard + unit; GLFW deferred |
 | 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | **done** (2026-07-14): `history.mlc` + unit |
-| 19 | Dirty + save Ctrl+S; errors shown to user | integration: temp project |
+| 19 | Dirty + save Ctrl+S; errors shown to user | **done** (2026-07-14): `save.mlc` + fixture unit |
 
 ### E5 — Tabs / commands / focus / dirty close
 
@@ -336,4 +341,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=15 done** (2026-07-14): edit insert/delete.
 - **STEP=16 done** (2026-07-14): navigation.
 - **STEP=17 done** (2026-07-14): clipboard edit.
-- **STEP=18 done** (2026-07-14): undo/redo; next **STEP=19**.
+- **STEP=18 done** (2026-07-14): undo/redo.
+- **STEP=19 done** (2026-07-14): dirty/save (E4 complete); next **STEP=20**.

@@ -1,0 +1,101 @@
+// TRACK_EDITOR_MVP STEP=19 — dirty flag + save/reload (by-value file ABI).
+import {
+  TextDocument,
+  document_from_string,
+  document_to_string
+} from './piece_table'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_remove(path: string) -> bool
+  = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+
+export type OpenBuffer = {
+  path: string,
+  document: TextDocument,
+  dirty: i32,
+  last_error: string
+}
+
+export fn open_buffer_new(path: string, document: TextDocument) -> OpenBuffer =
+  OpenBuffer {
+    path: path,
+    document: document,
+    dirty: 0,
+    last_error: ""
+  }
+
+export fn open_buffer_from_text(path: string, text: string) -> OpenBuffer =
+  open_buffer_new(path, document_from_string(text))
+
+export fn open_buffer_from_path(path: string) -> OpenBuffer = do
+  if !file_exists(path) then
+    return OpenBuffer {
+      path: path,
+      document: document_from_string(""),
+      dirty: 0,
+      last_error: "File not found: " + path
+    }
+  end
+  const text = file_read_to_string(path)
+  OpenBuffer {
+    path: path,
+    document: document_from_string(text),
+    dirty: 0,
+    last_error: ""
+  }
+end
+
+export fn open_buffer_set_document(
+  buffer: OpenBuffer,
+  document: TextDocument
+) -> OpenBuffer =
+  OpenBuffer {
+    path: buffer.path,
+    document: document,
+    dirty: 1,
+    last_error: ""
+  }
+end
+
+export fn open_buffer_mark_dirty(buffer: OpenBuffer) -> OpenBuffer =
+  OpenBuffer {
+    path: buffer.path,
+    document: buffer.document,
+    dirty: 1,
+    last_error: buffer.last_error
+  }
+end
+
+export fn open_buffer_is_dirty(buffer: OpenBuffer) -> bool =
+  buffer.dirty != 0
+
+export fn open_buffer_has_error(buffer: OpenBuffer) -> bool =
+  buffer.last_error.length() > 0
+
+// Ctrl+S — write document to path; clear dirty on success.
+export fn open_buffer_save(buffer: OpenBuffer) -> OpenBuffer = do
+  const content = document_to_string(buffer.document)
+  const ok = file_write_string(buffer.path, content)
+  if !ok then
+    return OpenBuffer {
+      path: buffer.path,
+      document: buffer.document,
+      dirty: buffer.dirty,
+      last_error: "Failed to write: " + buffer.path
+    }
+  end
+  OpenBuffer {
+    path: buffer.path,
+    document: buffer.document,
+    dirty: 0,
+    last_error: ""
+  }
+end
+
+export fn open_buffer_reload(buffer: OpenBuffer) -> OpenBuffer =
+  open_buffer_from_path(buffer.path)

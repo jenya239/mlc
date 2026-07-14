@@ -1,0 +1,86 @@
+// TRACK_EDITOR_MVP STEP=19 — dirty + save integration (temp fixture).
+import { document_to_string } from '../document/piece_table'
+import { edit_insert_text } from '../document/edit'
+import { selection_collapsed } from '../document/selection'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_set_document,
+  open_buffer_is_dirty,
+  open_buffer_has_error,
+  open_buffer_save,
+  open_buffer_reload
+} from '../document/save'
+
+fn main() -> i32 = do
+  const path = ".tmp/editor_fixture/sample.txt"
+
+  // Seed fixture via save.
+  let mut buffer = open_buffer_from_text(path, "hello\n")
+  buffer = open_buffer_save(buffer)
+  if open_buffer_has_error(buffer) then
+    return 1
+  end
+  if open_buffer_is_dirty(buffer) then
+    return 2
+  end
+
+  buffer = open_buffer_from_path(path)
+  if open_buffer_has_error(buffer) then
+    return 3
+  end
+  if document_to_string(buffer.document) != "hello\n" then
+    return 4
+  end
+  if open_buffer_is_dirty(buffer) then
+    return 5
+  end
+
+  // Edit → dirty
+  const edited = edit_insert_text(
+    buffer.document,
+    selection_collapsed(document_to_string(buffer.document).length()),
+    "world\n"
+  )
+  buffer = open_buffer_set_document(buffer, edited.document)
+  if !open_buffer_is_dirty(buffer) then
+    return 6
+  end
+  if document_to_string(buffer.document) != "hello\nworld\n" then
+    return 7
+  end
+
+  // Save → clean
+  buffer = open_buffer_save(buffer)
+  if open_buffer_has_error(buffer) then
+    return 8
+  end
+  if open_buffer_is_dirty(buffer) then
+    return 9
+  end
+
+  // Reread from disk
+  buffer = open_buffer_reload(buffer)
+  if open_buffer_has_error(buffer) then
+    return 10
+  end
+  if document_to_string(buffer.document) != "hello\nworld\n" then
+    return 11
+  end
+
+  // Error path: missing file open
+  const missing = open_buffer_from_path(".tmp/editor_fixture/no_such.txt")
+  if !open_buffer_has_error(missing) then
+    return 12
+  end
+
+  // Error path: save to impossible path
+  let mut bad = open_buffer_from_text("/no/such/dir/editor_save.txt", "x")
+  bad = open_buffer_save(bad)
+  if !open_buffer_has_error(bad) then
+    return 13
+  end
+
+  println("[mlc-editor] save_unit ok path=" + path)
+  0
+end

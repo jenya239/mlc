@@ -65,6 +65,9 @@ scripts/run_editor_clipboard_unit.sh
 
 # STEP=18 undo/redo history unit (no GLFW)
 scripts/run_editor_history_unit.sh
+
+# STEP=19 dirty + save (temp fixture)
+scripts/run_editor_save_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -87,6 +90,7 @@ Navigation unit requires `navigation_unit ok`.
 Navigation inject requires `navigation_inject ok`.
 Clipboard requires `[mlc-editor] clipboard_unit ok`.
 History requires `[mlc-editor] history_unit ok`.
+Save requires `[mlc-editor] save_unit ok`.
 
 ## Layout (growing)
 

@@ -38,9 +38,9 @@ fragments → flatten → render`.
 
 - P1: `list_dir` / `is_dir` / `is_file`
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
-- by-value `mlc::file` wrappers for `document_from_file`
+- by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…18 status
+## STEP=0…19 status
 
-- STEP=0–17: scaffold through clipboard.
-- STEP=18: `document/history.mlc` — undo/redo snapshot stacks.
+- STEP=0–18: scaffold through undo/redo.
+- STEP=19: `document/save.mlc` + `file_abi.hpp` — dirty/save/reload/errors.
