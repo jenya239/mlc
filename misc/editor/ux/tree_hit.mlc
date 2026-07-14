@@ -1,0 +1,198 @@
+// TRACK_UX_HEADLESS STEP=9 — tree row hit-test → open tab (L4 model).
+import {
+  UxRect,
+  ux_rect_new,
+  ux_focus_tree
+} from '../../gui/ux/snapshot'
+import { ux_rect_contains_point } from '../../gui/ux/expect'
+import { FileTree } from '../workspace/file_tree'
+import { tab_set_open } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  ShellPanels,
+  shell_panels_tree_rect
+} from '../ui/shell_panels'
+import { EditorUxState } from './probe'
+
+export type TreeVisibleRow = {
+  node_id: i32,
+  depth: i32,
+  path: string,
+  name: string,
+  is_directory: i32
+}
+
+fn push_visible_rows(
+  tree: FileTree,
+  node_id: i32,
+  depth: i32,
+  rows: [TreeVisibleRow]
+) -> [TreeVisibleRow] = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return rows
+  end
+  const node = tree.nodes[node_id]
+  rows.push(TreeVisibleRow {
+    node_id: node_id,
+    depth: depth,
+    path: node.path,
+    name: node.name,
+    is_directory: node.is_directory
+  })
+  if node.expanded == 0 then
+    return rows
+  end
+  let mut next_rows = rows
+  let mut child_index = 0
+  while child_index < node.children.length() do
+    next_rows = push_visible_rows(
+      tree,
+      node.children[child_index],
+      depth + 1,
+      next_rows
+    )
+    child_index = child_index + 1
+  end
+  next_rows
+end
+
+export fn file_tree_visible_rows(tree: FileTree) -> [TreeVisibleRow] = do
+  let mut rows: [TreeVisibleRow] = []
+  push_visible_rows(tree, tree.root_id, 0, rows)
+end
+
+export fn tree_row_rect(
+  tree_bounds: UxRect,
+  row_index: i32,
+  row_height: i32
+) -> UxRect = do
+  let mut height = row_height
+  if height <= 0 then
+    height = 1
+  end
+  ux_rect_new(
+    tree_bounds.x,
+    tree_bounds.y + row_index * height,
+    tree_bounds.width,
+    height
+  )
+end
+
+// Row index under point, or -1. Equal-height rows (not fixed Y-band hacks).
+export fn tree_hit_row_index(
+  tree_bounds: UxRect,
+  row_count: i32,
+  row_height: i32,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if row_count <= 0 then
+    return 0 - 1
+  end
+  if !ux_rect_contains_point(tree_bounds, point_x, point_y) then
+    return 0 - 1
+  end
+  let mut height = row_height
+  if height <= 0 then
+    height = 1
+  end
+  const relative_y = point_y - tree_bounds.y
+  if relative_y < 0 then
+    return 0 - 1
+  end
+  const index = relative_y / height
+  if index < 0 || index >= row_count then
+    return 0 - 1
+  end
+  index
+end
+
+export fn tree_hit_node_id(
+  tree: FileTree,
+  tree_bounds: UxRect,
+  row_height: i32,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  const rows = file_tree_visible_rows(tree)
+  const index = tree_hit_row_index(
+    tree_bounds,
+    rows.length(),
+    row_height,
+    point_x,
+    point_y
+  )
+  if index < 0 then
+    return 0 - 1
+  end
+  rows[index].node_id
+end
+
+export fn shell_panels_set_tree(panels: ShellPanels, tree: FileTree) -> ShellPanels =
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+
+// Click file row → open/activate tab. Directory / miss → tabs unchanged.
+export fn editor_ux_click_tree(
+  state: EditorUxState,
+  row_height: i32,
+  point_x: i32,
+  point_y: i32,
+  open_text: string
+) -> EditorUxState = do
+  const tree_rect = shell_panels_tree_rect(state.panels)
+  const bounds = ux_rect_new(
+    tree_rect.x,
+    tree_rect.y,
+    tree_rect.width,
+    tree_rect.height
+  )
+  const node_id = tree_hit_node_id(
+    state.panels.tree,
+    bounds,
+    row_height,
+    point_x,
+    point_y
+  )
+  if node_id < 0 then
+    return state
+  end
+  const node = state.panels.tree.nodes[node_id]
+  if node.is_directory == 1 then
+    return EditorUxState {
+      window_width: state.window_width,
+      window_height: state.window_height,
+      focus: ux_focus_tree(),
+      panels: state.panels,
+      tabs: state.tabs,
+      selection: state.selection,
+      scroll_offset_x: state.scroll_offset_x,
+      scroll_offset_y: state.scroll_offset_y,
+      cursor_shape: state.cursor_shape,
+      clock_ms: state.clock_ms,
+      tab_strip_height: state.tab_strip_height,
+      overflows: state.overflows
+    }
+  end
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_tree(),
+    panels: state.panels,
+    tabs: tab_set_open(state.tabs, node.path, open_text),
+    selection: selection_collapsed(0),
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end

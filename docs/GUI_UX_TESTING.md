@@ -116,6 +116,9 @@ viewport after wheel via `ux/scroll.mlc`; `ux_ok wheel_scroll_keeps_caret_visibl
 Scenario (STEP=8): `multi_line_selection_probe` — click/drag across lines;
 SelectionRange + draw report highlights; `ux_ok multi_line_selection_probe`.
 
+Scenario (STEP=9): `tree_click_opens_tab` — visible-row hit-test opens tab by path
+(not Y-hack); `ux_ok tree_click_opens_tab`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

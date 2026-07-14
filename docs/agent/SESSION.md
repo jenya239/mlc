@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 8 |
+| driver_turns_since_plan | 9 |
+| step_last | 9 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=9 tree hit scenario next |
+| test_gate | STEP=10 cursor/divider scenario next |
+
+### Turn 2026-07-14 18:48 (Driver TRACK_UX_HEADLESS STEP=9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:46 |
+| elapsed | ~3 min |
+| done    | `ux/tree_hit.mlc` + scenario `tree_click_opens_tab`; gate. |
+| verify  | `run_ux_tree_click.sh` exit 0; `ux_ok tree_click_opens_tab`. |
+| result  | STEP=9 done. Plain: row hit opens README/main; dir click no tab. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=10 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:45 (Driver TRACK_UX_HEADLESS STEP=8)
 

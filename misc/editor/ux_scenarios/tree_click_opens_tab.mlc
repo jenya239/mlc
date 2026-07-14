@@ -1,0 +1,147 @@
+// TRACK_UX_HEADLESS STEP=9 — scenario: tree_click_opens_tab (L4).
+import { rect_new } from '../../gui/layout'
+import {
+  ux_focus_none,
+  ux_focus_tree,
+  ux_rect_new
+} from '../../gui/ux/snapshot'
+import {
+  ActiveTabIndex,
+  TextEquals,
+  FocusIs,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new, shell_panels_tree_rect } from '../ui/shell_panels'
+import {
+  DirEntry,
+  dir_entry_new,
+  file_tree_expand
+} from '../workspace/file_tree'
+import { tab_set_new } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import {
+  file_tree_visible_rows,
+  tree_row_rect,
+  shell_panels_set_tree,
+  editor_ux_click_tree
+} from '../ux/tree_hit'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  let mut panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("main.mlc", 0))
+  entries.push(dir_entry_new("README.md", 0))
+  const expanded = file_tree_expand(panels.tree, panels.tree.root_id, entries)
+  panels = shell_panels_set_tree(panels, expanded.tree)
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tab_set_new(),
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_none(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const row_height = 18
+  const rows = file_tree_visible_rows(state.panels.tree)
+  // root + main.mlc + README.md
+  if rows.length() != 3 then
+    println("ux_fail visible rows")
+    return 1
+  end
+  if rows[1].path != "/proj/main.mlc" || rows[2].path != "/proj/README.md" then
+    println("ux_fail row paths")
+    return 2
+  end
+
+  const tree_rect = shell_panels_tree_rect(state.panels)
+  const tree_bounds = ux_rect_new(
+    tree_rect.x,
+    tree_rect.y,
+    tree_rect.width,
+    tree_rect.height
+  )
+  const readme_rect = tree_row_rect(tree_bounds, 2, row_height)
+  state = editor_ux_click_tree(
+    state,
+    row_height,
+    readme_rect.x + 4,
+    readme_rect.y + 4,
+    "readme-body"
+  )
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, ActiveTabIndex(0)).ok == 0 then
+    return 3
+  end
+  if snapshot.tabs.length() != 1 || snapshot.tabs[0].path != "/proj/README.md" then
+    println("ux_fail README tab path")
+    return 4
+  end
+  if ux_check_expect(snapshot, TextEquals("readme-body")).ok == 0 then
+    return 5
+  end
+  if ux_check_expect(snapshot, FocusIs(ux_focus_tree())).ok == 0 then
+    return 6
+  end
+
+  const main_rect = tree_row_rect(tree_bounds, 1, row_height)
+  state = editor_ux_click_tree(
+    state,
+    row_height,
+    main_rect.x + 4,
+    main_rect.y + 4,
+    "main-body"
+  )
+  snapshot = editor_ux_snapshot(state)
+  if snapshot.tabs.length() != 2 then
+    println("ux_fail expected two tabs")
+    return 7
+  end
+  if snapshot.tabs[snapshot.active_tab_index].path != "/proj/main.mlc" then
+    println("ux_fail active should be main.mlc")
+    return 8
+  end
+  if ux_check_expect(snapshot, TextEquals("main-body")).ok == 0 then
+    return 9
+  end
+
+  // Click root directory: no new tab.
+  const root_rect = tree_row_rect(tree_bounds, 0, row_height)
+  const tabs_before = snapshot.tabs.length()
+  state = editor_ux_click_tree(
+    state,
+    row_height,
+    root_rect.x + 4,
+    root_rect.y + 4,
+    "ignored"
+  )
+  snapshot = editor_ux_snapshot(state)
+  if snapshot.tabs.length() != tabs_before then
+    println("ux_fail directory click opened tab")
+    return 10
+  end
+
+  println("ux_ok tree_click_opens_tab")
+  0
+end
