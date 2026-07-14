@@ -31,10 +31,21 @@ export type SceneLabel = {
   alpha: f64
 }
 
+export type SceneCheckbox = {
+  width: f64,
+  height: f64,
+  checked: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
 export type SceneNodeKind =
   Container
   | RectFill(SceneRectFill)
   | Label(SceneLabel)
+  | Checkbox(SceneCheckbox)
 
 export type SceneNode = {
   parent: i32,
@@ -144,6 +155,46 @@ export fn scene_label_as_rect_fill(label: SceneLabel) -> SceneRectFill =
     label.alpha
   )
 
+export fn scene_checkbox_new(
+  width: f64,
+  height: f64,
+  checked: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SceneCheckbox =
+  SceneCheckbox {
+    width: width,
+    height: height,
+    checked: checked,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+export fn scene_checkbox_as_rect_fill(scene_checkbox: SceneCheckbox) -> SceneRectFill =
+  scene_rect_fill_new(
+    scene_checkbox.width,
+    scene_checkbox.height,
+    scene_checkbox.red,
+    scene_checkbox.green,
+    scene_checkbox.blue,
+    scene_checkbox.alpha
+  )
+
+// Inner mark: half size, brighter fill (draw offset via affine_translation).
+export fn scene_checkbox_mark_rect_fill(scene_checkbox: SceneCheckbox) -> SceneRectFill =
+  scene_rect_fill_new(
+    scene_checkbox.width * 0.5,
+    scene_checkbox.height * 0.5,
+    1.0,
+    1.0,
+    1.0,
+    scene_checkbox.alpha
+  )
+
 export fn scene_new() -> Scene =
   Scene {
     nodes: [],
@@ -219,6 +270,61 @@ export fn scene_add_label(
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, Label(label)))
 
+export fn scene_add_checkbox(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  scene_checkbox: SceneCheckbox
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, Checkbox(scene_checkbox)))
+
+export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  let mut nodes = scene.nodes
+  const node = nodes[node_id]
+  const next_kind = match node.kind {
+    Checkbox(scene_checkbox) => do
+      let mut next_checked = 1
+      if scene_checkbox.checked != 0 then
+        next_checked = 0
+      end
+      Checkbox(
+        SceneCheckbox {
+          width: scene_checkbox.width,
+          height: scene_checkbox.height,
+          checked: next_checked,
+          red: scene_checkbox.red,
+          green: scene_checkbox.green,
+          blue: scene_checkbox.blue,
+          alpha: scene_checkbox.alpha
+        }
+      )
+    end,
+    Container => node.kind,
+    RectFill(_) => node.kind,
+    Label(_) => node.kind
+  }
+  nodes.set(
+    node_id,
+    SceneNode {
+      parent: node.parent,
+      local: node.local,
+      kind: next_kind,
+      children: node.children
+    }
+  )
+  Scene {
+    nodes: nodes,
+    world: scene.world,
+    camera: scene.camera
+  }
+end
+
 // Topo order = index order (parent < child). Reuses `world[]` in place.
 export fn scene_update_world(scene: Scene) -> Scene = do
   let mut world = scene.world
@@ -286,7 +392,19 @@ export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
           local.y,
           scene_label_as_rect_fill(scene_label)
         )
-      end
+      end,
+      Checkbox(scene_checkbox) => do
+        const local = affine_transform_point(
+          affine_invert(scene.world[index]),
+          scene_point.x,
+          scene_point.y
+        )
+        scene_point_in_rect_fill(
+          local.x,
+          local.y,
+          scene_checkbox_as_rect_fill(scene_checkbox)
+        )
+      end,
       Container => 0
     }
     if hit != 0 then

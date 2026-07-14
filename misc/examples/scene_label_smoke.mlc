@@ -30,7 +30,8 @@ fn main() -> i32 = do
   const text_ok = match kind {
     Label(scene_label) => scene_label.text == "Hello",
     Container => false,
-    RectFill(_) => false
+    RectFill(_) => false,
+    Checkbox(_) => false
   }
   if !text_ok then
     return 2

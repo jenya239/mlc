@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 2 |
+| step_last | 3 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=3 Checkbox next |
+| test_gate | Phase B STEP=4 Slider next |
+
+### Turn 2026-07-14 19:30 (Driver TRACK_GUI_SCENE_PHASE_B STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:21 |
+| elapsed | ~9 min |
+| done    | `SceneCheckbox`/`Checkbox` + add/toggle/hit; draw box+mark; `scene_checkbox_smoke` + script. |
+| verify  | `bash scripts/run_scene_checkbox_smoke.sh` → `scene_checkbox_ok`; label smoke still ok. |
+| result  | STEP=3 done. Plain: toggle 0→1→0; verts 6/12. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:25 (Driver TRACK_GUI_SCENE_PHASE_B STEP=2)
 

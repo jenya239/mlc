@@ -11,7 +11,12 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ## Next step
 
-**STEP=3** — `Checkbox` kind + smoke.
+**STEP=4** — `Slider` kind + smoke.
+
+### STEP=3 done (2026-07-14)
+
+- `SceneCheckbox` + `Checkbox`; `scene_add_checkbox` / `scene_checkbox_toggle`; hit; draw box+mark (6/12 verts).
+- `misc/examples/scene_checkbox_smoke.mlc` + `scripts/run_scene_checkbox_smoke.sh` → `scene_checkbox_ok`.
 
 ### STEP=2 done (2026-07-14)
 
@@ -71,7 +76,7 @@ label rendering in Phase B smokes.
 |------|------|------|
 | 1 | Decision: kinds + state + hit/draw/input contract (freeze in this file) | **done** (2026-07-14): Decision frozen |
 | 2 | `Label` kind: add + layout size + draw smoke (string → rect/text stub) | **done** (2026-07-14): `scene_label_ok` |
-| 3 | `Checkbox` kind: hit toggles checked; draw box+mark | `scene_checkbox_smoke` exit 0 |
+| 3 | `Checkbox` kind: hit toggles checked; draw box+mark | **done** (2026-07-14): `scene_checkbox_ok` |
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | `scene_slider_smoke` exit 0 |
 | 5 | `TextField` kind: focus + inject keys/text; caret model | `scene_text_field_smoke` exit 0 |
 | 6 | Form smoke: one scene with label+checkbox+slider+field; headless inject | `scene_form_smoke` exit 0 |
@@ -89,9 +94,9 @@ label rendering in Phase B smokes.
 2. Draw path in `scene_draw.mlc` (rect stub) — done.
 3. `misc/examples/scene_label_smoke.mlc` + `scripts/run_scene_label_smoke.sh` — done.
 
-**STEP=3**
-1. `Checkbox` payload `{ checked: i32, … }`; toggle on hit.
-2. Smoke: click → checked 0→1→0.
+**STEP=3** — **done**
+1. `Checkbox` payload `{ checked: i32, … }`; toggle on hit — done.
+2. Smoke: click → checked 0→1→0 — done (`scene_checkbox_toggle`).
 
 **STEP=4**
 1. `Slider` payload `{ value: f64, … }`; drag updates value.

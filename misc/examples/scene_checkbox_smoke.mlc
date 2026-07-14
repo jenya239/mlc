@@ -1,0 +1,75 @@
+// TRACK_GUI_SCENE_PHASE_B STEP=3 — Checkbox toggle + hit + batch (no GL).
+import {
+  Scene,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_checkbox,
+  scene_checkbox_new,
+  scene_checkbox_toggle,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { scene_rect_fill_batch_vertex_count } from '../gui/scene_draw'
+
+fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
+  match scene.nodes[node_id].kind {
+    Checkbox(scene_checkbox) => scene_checkbox.checked,
+    Container => 0 - 1,
+    RectFill(_) => 0 - 1,
+    Label(_) => 0 - 1
+  }
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+
+  const added = scene_add_checkbox(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 40.0),
+    scene_checkbox_new(24.0, 24.0, 0, 0.2, 0.4, 0.6, 1.0)
+  )
+  scene = added.scene
+  if added.node_id != 1 then
+    return 1
+  end
+  if checkbox_checked(scene, 1) != 0 then
+    return 2
+  end
+
+  scene = scene_update_world(scene)
+  if scene_hit_test(scene, 40.0, 40.0) != 1 then
+    return 3
+  end
+  if scene_hit_test(scene, 63.0, 63.0) != 1 then
+    return 4
+  end
+  if scene_hit_test(scene, 100.0, 100.0) != 0 - 1 then
+    return 5
+  end
+
+  if scene_rect_fill_batch_vertex_count(scene) != 6 then
+    return 6
+  end
+
+  scene = scene_checkbox_toggle(scene, 1)
+  if checkbox_checked(scene, 1) != 1 then
+    return 7
+  end
+  if scene_rect_fill_batch_vertex_count(scene) != 12 then
+    return 8
+  end
+
+  scene = scene_checkbox_toggle(scene, 1)
+  if checkbox_checked(scene, 1) != 0 then
+    return 9
+  end
+  if scene_rect_fill_batch_vertex_count(scene) != 6 then
+    return 10
+  end
+
+  println("scene_checkbox_ok")
+  0
+end
