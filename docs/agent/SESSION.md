@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=1 expect matchers next |
+| test_gate | STEP=2 UxDriver next |
+
+### Turn 2026-07-14 18:18 (Driver TRACK_UX_HEADLESS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:15 |
+| elapsed | ~3 min |
+| done    | `TextContains` + rect expects; expanded unit; GUI_UX_TESTING matcher list. |
+| verify  | `run_ux_expect_unit.sh` + `run_ux_gate.sh` exit 0. |
+| result  | STEP=1 done. Plain: contains/rects/NoOverflow covered. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=2 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:20 (Planner STEP=plan-refresh)
 

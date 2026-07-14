@@ -1,5 +1,9 @@
-// TRACK_UX_HEADLESS STEP=0 — action / expect stubs.
-import { UxSnapshot } from './snapshot'
+// TRACK_UX_HEADLESS STEP=1 — UxExpect matchers (TextContains + rects).
+import {
+  UxSnapshot,
+  UxRect,
+  ux_rect_new
+} from './snapshot'
 
 export type UxAction =
   Move(i32, i32)
@@ -23,6 +27,8 @@ export type UxExpect =
   | DirtyIs(i32)
   | NoOverflow
   | CursorShape(i32)
+  | EditorRectIs(i32, i32, i32, i32)
+  | RectContainsPoint(i32, i32, i32, i32, i32, i32)
 
 export type UxExpectResult = {
   ok: i32,
@@ -34,6 +40,29 @@ export fn ux_expect_ok() -> UxExpectResult =
 
 export fn ux_expect_fail(message: string) -> UxExpectResult =
   UxExpectResult { ok: 0, message: message }
+
+export fn ux_rect_equals(
+  rect: UxRect,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> bool =
+  rect.x == x && rect.y == y && rect.width == width && rect.height == height
+
+// Half-open: x in [rect.x, rect.x+width), y in [rect.y, rect.y+height).
+export fn ux_rect_contains_point(rect: UxRect, point_x: i32, point_y: i32) -> bool = do
+  if point_x < rect.x || point_y < rect.y then
+    return false
+  end
+  if point_x >= rect.x + rect.width then
+    return false
+  end
+  if point_y >= rect.y + rect.height then
+    return false
+  end
+  true
+end
 
 export fn ux_check_expect(snapshot: UxSnapshot, expect: UxExpect) -> UxExpectResult =
   match expect
@@ -74,7 +103,11 @@ export fn ux_check_expect(snapshot: UxSnapshot, expect: UxExpect) -> UxExpectRes
         ux_expect_fail("text equals mismatch")
       end
   | TextContains(fragment) =>
-      ux_expect_fail("TextContains not implemented in STEP=0: " + fragment)
+      if snapshot.document_text.contains(fragment) then
+        ux_expect_ok()
+      else
+        ux_expect_fail("text contains mismatch")
+      end
   | DirtyIs(dirty) =>
       if snapshot.dirty == dirty then
         ux_expect_ok()
@@ -92,5 +125,17 @@ export fn ux_check_expect(snapshot: UxSnapshot, expect: UxExpect) -> UxExpectRes
         ux_expect_ok()
       else
         ux_expect_fail("cursor_shape mismatch")
+      end
+  | EditorRectIs(x, y, width, height) =>
+      if ux_rect_equals(snapshot.editor_rect, x, y, width, height) then
+        ux_expect_ok()
+      else
+        ux_expect_fail("editor_rect mismatch")
+      end
+  | RectContainsPoint(x, y, width, height, point_x, point_y) =>
+      if ux_rect_contains_point(ux_rect_new(x, y, width, height), point_x, point_y) then
+        ux_expect_ok()
+      else
+        ux_expect_fail("rect does not contain point")
       end
   end

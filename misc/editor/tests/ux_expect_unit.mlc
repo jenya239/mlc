@@ -1,30 +1,149 @@
-// TRACK_UX_HEADLESS STEP=0 — expect matchers smoke.
-import { ux_snapshot_empty } from '../../gui/ux/snapshot'
+// TRACK_UX_HEADLESS STEP=1 — expect matcher coverage unit.
 import {
+  ux_snapshot_empty,
+  ux_focus_editor,
+  ux_rect_new,
+  UxSnapshot,
+  UxOverflow
+} from '../../gui/ux/snapshot'
+import {
+  FocusIs,
+  ActiveTabIndex,
   CaretAt,
-  NoOverflow,
+  SelectionRange,
+  ScrollY,
+  TextEquals,
+  TextContains,
   DirtyIs,
-  ux_check_expect
+  NoOverflow,
+  CursorShape,
+  EditorRectIs,
+  RectContainsPoint,
+  ux_check_expect,
+  ux_rect_contains_point,
+  ux_rect_equals
 } from '../../gui/ux/expect'
 
+fn with_text(snapshot: UxSnapshot, text: string) -> UxSnapshot =
+  UxSnapshot {
+    window_width: snapshot.window_width,
+    window_height: snapshot.window_height,
+    focus: ux_focus_editor(),
+    active_tab_index: 0,
+    tabs: snapshot.tabs,
+    caret_line: 1,
+    caret_column: 2,
+    caret_byte: 3,
+    selection_start: 0,
+    selection_end: 4,
+    scroll_offset_x: snapshot.scroll_offset_x,
+    scroll_offset_y: 40,
+    document_text: text,
+    dirty: 1,
+    tree_rect: snapshot.tree_rect,
+    divider_rect: snapshot.divider_rect,
+    editor_rect: ux_rect_new(200, 0, 600, 600),
+    text_rect: snapshot.text_rect,
+    tab_strip_rect: snapshot.tab_strip_rect,
+    overflows: snapshot.overflows,
+    cursor_shape: 2,
+    clock_ms: snapshot.clock_ms
+  }
+
 fn main() -> i32 = do
-  const snapshot = ux_snapshot_empty(800, 600)
-  const caret = ux_check_expect(snapshot, CaretAt(0, 0))
-  if caret.ok == 0 then
+  let mut snapshot = with_text(ux_snapshot_empty(800, 600), "hello world")
+
+  if ux_check_expect(snapshot, TextContains("world")).ok == 0 then
     return 1
   end
-  const dirty = ux_check_expect(snapshot, DirtyIs(0))
-  if dirty.ok == 0 then
+  if ux_check_expect(snapshot, TextContains("missing")).ok != 0 then
     return 2
   end
-  const overflow = ux_check_expect(snapshot, NoOverflow)
-  if overflow.ok == 0 then
+  if ux_check_expect(snapshot, TextEquals("hello world")).ok == 0 then
     return 3
   end
-  const bad = ux_check_expect(snapshot, CaretAt(1, 0))
-  if bad.ok != 0 then
+  if ux_check_expect(snapshot, FocusIs(ux_focus_editor())).ok == 0 then
     return 4
   end
+  if ux_check_expect(snapshot, ActiveTabIndex(0)).ok == 0 then
+    return 5
+  end
+  if ux_check_expect(snapshot, CaretAt(1, 2)).ok == 0 then
+    return 6
+  end
+  if ux_check_expect(snapshot, SelectionRange(0, 4)).ok == 0 then
+    return 7
+  end
+  if ux_check_expect(snapshot, ScrollY(40)).ok == 0 then
+    return 8
+  end
+  if ux_check_expect(snapshot, DirtyIs(1)).ok == 0 then
+    return 9
+  end
+  if ux_check_expect(snapshot, NoOverflow).ok == 0 then
+    return 10
+  end
+  if ux_check_expect(snapshot, CursorShape(2)).ok == 0 then
+    return 11
+  end
+  if ux_check_expect(snapshot, EditorRectIs(200, 0, 600, 600)).ok == 0 then
+    return 12
+  end
+  if ux_check_expect(snapshot, RectContainsPoint(200, 0, 600, 600, 250, 10)).ok == 0 then
+    return 13
+  end
+  if ux_check_expect(snapshot, RectContainsPoint(200, 0, 600, 600, 199, 10)).ok != 0 then
+    return 14
+  end
+
+  if !ux_rect_equals(snapshot.editor_rect, 200, 0, 600, 600) then
+    return 15
+  end
+  if !ux_rect_contains_point(snapshot.editor_rect, 200, 0) then
+    return 16
+  end
+  if ux_rect_contains_point(snapshot.editor_rect, 800, 0) then
+    return 17
+  end
+
+  // NoOverflow fails when overflows non-empty.
+  let mut bad = snapshot
+  let mut overflows: [UxOverflow] = []
+  overflows.push(UxOverflow {
+    widget_id: "editor",
+    child_x: 0,
+    child_y: 0,
+    child_width: 900,
+    child_height: 20
+  })
+  bad = UxSnapshot {
+    window_width: snapshot.window_width,
+    window_height: snapshot.window_height,
+    focus: snapshot.focus,
+    active_tab_index: snapshot.active_tab_index,
+    tabs: snapshot.tabs,
+    caret_line: snapshot.caret_line,
+    caret_column: snapshot.caret_column,
+    caret_byte: snapshot.caret_byte,
+    selection_start: snapshot.selection_start,
+    selection_end: snapshot.selection_end,
+    scroll_offset_x: snapshot.scroll_offset_x,
+    scroll_offset_y: snapshot.scroll_offset_y,
+    document_text: snapshot.document_text,
+    dirty: snapshot.dirty,
+    tree_rect: snapshot.tree_rect,
+    divider_rect: snapshot.divider_rect,
+    editor_rect: snapshot.editor_rect,
+    text_rect: snapshot.text_rect,
+    tab_strip_rect: snapshot.tab_strip_rect,
+    overflows: overflows,
+    cursor_shape: snapshot.cursor_shape,
+    clock_ms: snapshot.clock_ms
+  }
+  if ux_check_expect(bad, NoOverflow).ok != 0 then
+    return 18
+  end
+
   println("[ux] expect_unit ok")
   0
 end

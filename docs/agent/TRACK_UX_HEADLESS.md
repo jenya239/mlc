@@ -12,11 +12,13 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=1** — finish `TextContains` + expect matcher coverage; keep gate green.
+**STEP=2** — `UxDriver`: inject actions + WaitFrames + SetClock (no app yet).
 
-<!-- sub-steps: 1) audit `ux_check_expect` for TextContains/NoOverflow/rects;
-2) add missing pure cases in `misc/editor/tests/ux_expect_unit.mlc`;
-3) `scripts/run_ux_gate.sh` exit 0; 4) document matcher list in GUI_UX_TESTING -->
+### STEP=1 done (2026-07-14)
+
+- `TextContains` via `string.contains`; `EditorRectIs` / `RectContainsPoint`.
+- `ux_rect_equals` / `ux_rect_contains_point`; expanded `ux_expect_unit`.
+- Matcher list in `GUI_UX_TESTING.md`; gate green.
 
 ### STEP=0 done (2026-07-14)
 
@@ -40,7 +42,7 @@ STEP progress (or explicit user override).
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Scaffold `misc/gui/ux/{snapshot,expect}.mlc` + `scripts/run_ux_gate.sh` | **done** (2026-07-14): expect_unit + gate |
-| 1 | `UxSnapshot` + `UxExpect` matchers (caret/selection/tab/rects/NoOverflow/TextContains) pure unit | `ux_expect_unit ok` + gate |
+| 1 | `UxSnapshot` + `UxExpect` matchers (caret/selection/tab/rects/NoOverflow/TextContains) pure unit | **done** (2026-07-14): TextContains+rects + gate |
 | 2 | `UxDriver`: inject actions + WaitFrames + SetClock (no app yet) | unit |
 | 3 | Editor probe port: build snapshot from shell/tabs/doc/selection/layout | unit with fixture state |
 | 4 | First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed) | documented red→green |
@@ -66,4 +68,4 @@ STEP progress (or explicit user override).
 ## Progress
 
 - **Planner** (2026-07-14): activated as queue head post-EDITOR; STEP=0 landed in git.
-- Next: **Driver STEP=1**.
+- **STEP=1 done** (2026-07-14): TextContains + rect matchers; next **STEP=2**.
