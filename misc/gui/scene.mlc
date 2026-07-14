@@ -41,11 +41,22 @@ export type SceneCheckbox = {
   alpha: f64
 }
 
+export type SceneSlider = {
+  width: f64,
+  height: f64,
+  value: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
 export type SceneNodeKind =
   Container
   | RectFill(SceneRectFill)
   | Label(SceneLabel)
   | Checkbox(SceneCheckbox)
+  | Slider(SceneSlider)
 
 export type SceneNode = {
   parent: i32,
@@ -195,6 +206,74 @@ export fn scene_checkbox_mark_rect_fill(scene_checkbox: SceneCheckbox) -> SceneR
     scene_checkbox.alpha
   )
 
+fn scene_clamp_unit(value: f64) -> f64 = do
+  if value < 0.0 then
+    return 0.0
+  end
+  if value > 1.0 then
+    return 1.0
+  end
+  value
+end
+
+export fn scene_slider_new(
+  width: f64,
+  height: f64,
+  value: f64,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SceneSlider =
+  SceneSlider {
+    width: width,
+    height: height,
+    value: scene_clamp_unit(value),
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+export fn scene_slider_as_rect_fill(scene_slider: SceneSlider) -> SceneRectFill =
+  scene_rect_fill_new(
+    scene_slider.width,
+    scene_slider.height,
+    scene_slider.red,
+    scene_slider.green,
+    scene_slider.blue,
+    scene_slider.alpha
+  )
+
+export fn scene_slider_thumb_width(scene_slider: SceneSlider) -> f64 = do
+  if scene_slider.height < scene_slider.width then
+    return scene_slider.height
+  end
+  scene_slider.width * 0.2
+end
+
+export fn scene_slider_thumb_offset_x(scene_slider: SceneSlider) -> f64 =
+  scene_slider.value * (scene_slider.width - scene_slider_thumb_width(scene_slider))
+
+export fn scene_slider_thumb_rect_fill(scene_slider: SceneSlider) -> SceneRectFill =
+  scene_rect_fill_new(
+    scene_slider_thumb_width(scene_slider),
+    scene_slider.height,
+    1.0,
+    1.0,
+    1.0,
+    scene_slider.alpha
+  )
+
+export fn scene_slider_value_from_local_x(scene_slider: SceneSlider, local_x: f64) -> f64 = do
+  const thumb = scene_slider_thumb_width(scene_slider)
+  const travel = scene_slider.width - thumb
+  if travel <= 0.0 then
+    return 0.0
+  end
+  scene_clamp_unit((local_x - thumb * 0.5) / travel)
+end
+
 export fn scene_new() -> Scene =
   Scene {
     nodes: [],
@@ -278,6 +357,14 @@ export fn scene_add_checkbox(
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, Checkbox(scene_checkbox)))
 
+export fn scene_add_slider(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  scene_slider: SceneSlider
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, Slider(scene_slider)))
+
 export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
   if node_id < 0 then
     return scene
@@ -307,7 +394,8 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
     end,
     Container => node.kind,
     RectFill(_) => node.kind,
-    Label(_) => node.kind
+    Label(_) => node.kind,
+    Slider(_) => node.kind
   }
   nodes.set(
     node_id,
@@ -322,6 +410,83 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
     nodes: nodes,
     world: scene.world,
     camera: scene.camera
+  }
+end
+
+export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  let mut nodes = scene.nodes
+  const node = nodes[node_id]
+  const next_kind = match node.kind {
+    Slider(scene_slider) =>
+      Slider(
+        SceneSlider {
+          width: scene_slider.width,
+          height: scene_slider.height,
+          value: scene_clamp_unit(value),
+          red: scene_slider.red,
+          green: scene_slider.green,
+          blue: scene_slider.blue,
+          alpha: scene_slider.alpha
+        }
+      ),
+    Container => node.kind,
+    RectFill(_) => node.kind,
+    Label(_) => node.kind,
+    Checkbox(_) => node.kind
+  }
+  nodes.set(
+    node_id,
+    SceneNode {
+      parent: node.parent,
+      local: node.local,
+      kind: next_kind,
+      children: node.children
+    }
+  )
+  Scene {
+    nodes: nodes,
+    world: scene.world,
+    camera: scene.camera
+  }
+end
+
+// Drag: screen → local x → clamped value on hit Slider.
+export fn scene_slider_set_from_screen(
+  scene: Scene,
+  node_id: i32,
+  screen_x: f64,
+  screen_y: f64
+) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  const scene_point = affine_transform_point(affine_invert(scene.camera), screen_x, screen_y)
+  const local = affine_transform_point(
+    affine_invert(scene.world[node_id]),
+    scene_point.x,
+    scene_point.y
+  )
+  const node = scene.nodes[node_id]
+  match node.kind {
+    Slider(scene_slider) =>
+      scene_slider_set_value(
+        scene,
+        node_id,
+        scene_slider_value_from_local_x(scene_slider, local.x)
+      ),
+    Container => scene,
+    RectFill(_) => scene,
+    Label(_) => scene,
+    Checkbox(_) => scene
   }
 end
 
@@ -403,6 +568,18 @@ export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
           local.x,
           local.y,
           scene_checkbox_as_rect_fill(scene_checkbox)
+        )
+      end,
+      Slider(scene_slider) => do
+        const local = affine_transform_point(
+          affine_invert(scene.world[index]),
+          scene_point.x,
+          scene_point.y
+        )
+        scene_point_in_rect_fill(
+          local.x,
+          local.y,
+          scene_slider_as_rect_fill(scene_slider)
         )
       end,
       Container => 0

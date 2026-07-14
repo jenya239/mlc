@@ -12,7 +12,10 @@ import {
   affine_translation,
   scene_label_as_rect_fill,
   scene_checkbox_as_rect_fill,
-  scene_checkbox_mark_rect_fill
+  scene_checkbox_mark_rect_fill,
+  scene_slider_as_rect_fill,
+  scene_slider_thumb_rect_fill,
+  scene_slider_thumb_offset_x
 } from './scene'
 import {
   SolidRenderer,
@@ -84,6 +87,9 @@ export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
           count = count + 6
         end
       end,
+      Slider(_) => do
+        count = count + 12
+      end,
       Container => do
       end
     }
@@ -147,6 +153,26 @@ export fn scene_draw_rect_fills(
             scene_checkbox_mark_rect_fill(scene_checkbox)
           )
         end
+      end,
+      Slider(scene_slider) => do
+        const model_view = affine_multiply(view, scene.world[index])
+        batch = push_rect_fill_triangles(
+          batch,
+          window_width,
+          window_height,
+          model_view,
+          scene_slider_as_rect_fill(scene_slider)
+        )
+        batch = push_rect_fill_triangles(
+          batch,
+          window_width,
+          window_height,
+          affine_multiply(
+            model_view,
+            affine_translation(scene_slider_thumb_offset_x(scene_slider), 0.0)
+          ),
+          scene_slider_thumb_rect_fill(scene_slider)
+        )
       end,
       Container => do
       end

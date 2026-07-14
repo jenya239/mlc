@@ -17,7 +17,8 @@ fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
     Checkbox(scene_checkbox) => scene_checkbox.checked,
     Container => 0 - 1,
     RectFill(_) => 0 - 1,
-    Label(_) => 0 - 1
+    Label(_) => 0 - 1,
+    Slider(_) => 0 - 1
   }
 
 fn main() -> i32 = do

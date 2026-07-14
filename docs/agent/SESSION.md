@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 3 |
+| step_last | 4 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=4 Slider next |
+| test_gate | Phase B STEP=5 TextField next |
+
+### Turn 2026-07-14 19:35 (Driver TRACK_GUI_SCENE_PHASE_B STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:26 |
+| elapsed | ~9 min |
+| done    | `SceneSlider`/`Slider` + set_value/set_from_screen; track+thumb draw; `scene_slider_smoke` + script. |
+| verify  | `bash scripts/run_scene_slider_smoke.sh` → `scene_slider_ok`; checkbox+label still ok. |
+| result  | STEP=4 done. Plain: clamp 0..1; drag mid → 0.5; 12 verts. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:30 (Driver TRACK_GUI_SCENE_PHASE_B STEP=3)
 
