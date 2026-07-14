@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 9 |
+| driver_turns_since_plan | 10 |
+| step_last | 10 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=10 cursor/divider scenario next |
+| test_gate | STEP=11 L2 draw report next |
+
+### Turn 2026-07-14 18:52 (Driver TRACK_UX_HEADLESS STEP=10)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 10 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:50 |
+| elapsed | ~2 min |
+| done    | `ux/cursor.mlc` + scenario `divider_hover_cursor_ew`; gate. |
+| verify  | `run_ux_divider_cursor.sh` exit 0; `ux_ok divider_hover_cursor_ew`. |
+| result  | STEP=10 done. Plain: divider→ew, text→ibeam, tree→arrow. |
+| issues  | Live glfwSetCursor deferred (L1 probe only). Foreign dirty left. |
+| next    | ROLE=Driver STEP=11 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:48 (Driver TRACK_UX_HEADLESS STEP=9)
 

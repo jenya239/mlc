@@ -1,0 +1,91 @@
+// TRACK_UX_HEADLESS STEP=10 — scenario: divider_hover_cursor_ew (L6).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_none } from '../../gui/ux/snapshot'
+import {
+  CursorShape,
+  Move,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import {
+  ux_driver_new,
+  ux_driver_apply
+} from '../../gui/ux/driver'
+import { shell_panels_new } from '../ui/shell_panels'
+import { tab_set_new, tab_set_open } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import {
+  ux_cursor_arrow,
+  ux_cursor_ew_resize,
+  ux_cursor_ibeam,
+  editor_ux_hover
+} from '../ux/cursor'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "x")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_none(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  let mut driver = ux_driver_new(16)
+  const divider = state.panels.panes.divider
+  const divider_x = divider.x + divider.width / 2
+  const divider_y = divider.y + divider.height / 2
+
+  driver = ux_driver_apply(driver, Move(divider_x, divider_y))
+  state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CursorShape(ux_cursor_ew_resize())).ok == 0 then
+    println("ux_fail expected ew-resize on divider")
+    return 1
+  end
+
+  const text_x = state.panels.panes.second.x + 20
+  const text_y = state.panels.panes.second.y + state.tab_strip_height + 20
+  driver = ux_driver_apply(driver, Move(text_x, text_y))
+  state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CursorShape(ux_cursor_ibeam())).ok == 0 then
+    println("ux_fail expected ibeam in text")
+    return 2
+  end
+
+  const tree_x = state.panels.panes.first.x + 10
+  const tree_y = state.panels.panes.first.y + 10
+  driver = ux_driver_apply(driver, Move(tree_x, tree_y))
+  state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CursorShape(ux_cursor_arrow())).ok == 0 then
+    println("ux_fail expected arrow in tree")
+    return 3
+  end
+
+  println("ux_ok divider_hover_cursor_ew")
+  0
+end

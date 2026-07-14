@@ -119,6 +119,9 @@ SelectionRange + draw report highlights; `ux_ok multi_line_selection_probe`.
 Scenario (STEP=9): `tree_click_opens_tab` — visible-row hit-test opens tab by path
 (not Y-hack); `ux_ok tree_click_opens_tab`.
 
+Scenario (STEP=10): `divider_hover_cursor_ew` — divider → ew-resize, text → ibeam,
+tree → arrow; live GLFW SetCursor deferred; `ux_ok divider_hover_cursor_ew`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

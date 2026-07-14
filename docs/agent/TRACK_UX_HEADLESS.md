@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=10** — Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI.
+**STEP=11** — L2 headless GL draw report (optional overflow after draw).
+
+### STEP=10 done (2026-07-14)
+
+- `ux/cursor.mlc`: arrow/ibeam/ew-resize probe from divider/text/tree hit.
+- Scenario `divider_hover_cursor_ew` → `ux_ok`. Live `glfwSetCursor` deferred.
 
 ### STEP=9 done (2026-07-14)
 
@@ -91,7 +96,7 @@ STEP progress (or explicit user override).
 | 7 | Scenario: scroll wheel / scroll_offset (L2) | **done** (2026-07-14): scenario green |
 | 8 | Scenario: multi-line selection probe (L3) | **done** (2026-07-14): scenario green |
 | 9 | Scenario: tree hit open tab (L4) | **done** (2026-07-14): scenario green |
-| 10 | Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI | red→green |
+| 10 | Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI | **done** (2026-07-14): probe green; live GLFW deferred |
 | 11 | L2 headless GL draw report (optional overflow after draw) | smoke `MLC_GLFW_VISIBLE=0` |
 | 12 | L3 optional: one caret/glyph FBO MAE fixture (not full UI) | MAE gate |
 | 13 | Clipboard scenario after GLFW P2 | red→green |
@@ -116,4 +121,5 @@ STEP progress (or explicit user override).
 - **STEP=6 done** (2026-07-14): overflow_editor_text green.
 - **STEP=7 done** (2026-07-14): wheel_scroll_keeps_caret_visible green.
 - **STEP=8 done** (2026-07-14): multi_line_selection_probe green.
-- **STEP=9 done** (2026-07-14): tree_click_opens_tab green; next **STEP=10**.
+- **STEP=9 done** (2026-07-14): tree_click_opens_tab green.
+- **STEP=10 done** (2026-07-14): divider_hover_cursor_ew green; next **STEP=11**.

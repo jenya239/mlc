@@ -25,6 +25,7 @@ run_one overflow_editor_text "$ROOT_DIR/scripts/run_ux_overflow_editor_text.sh"
 run_one wheel_scroll "$ROOT_DIR/scripts/run_ux_wheel_scroll.sh"
 run_one multi_line_selection "$ROOT_DIR/scripts/run_ux_multi_line_selection.sh"
 run_one tree_click "$ROOT_DIR/scripts/run_ux_tree_click.sh"
+run_one divider_cursor "$ROOT_DIR/scripts/run_ux_divider_cursor.sh"
 
 if [ "$fail" != 0 ]; then
   echo "[ux gate] FAILED" >&2

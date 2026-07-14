@@ -1,0 +1,77 @@
+// TRACK_UX_HEADLESS STEP=10 — cursor shape probe on divider hover (L6 model).
+// Live glfwSetCursor deferred; probe + inject shape id is the L1 gate.
+import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
+import {
+  shell_panels_divider_hit,
+  shell_panels_editor_rect,
+  shell_panels_tree_rect
+} from '../ui/shell_panels'
+import { EditorUxState } from './probe'
+
+export fn ux_cursor_arrow() -> i32 = 0
+export fn ux_cursor_ew_resize() -> i32 = 1
+export fn ux_cursor_ibeam() -> i32 = 2
+
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn state_with_cursor(state: EditorUxState, cursor_shape: i32) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+// Resolve probe cursor for pointer position (divider → ew-resize).
+export fn editor_ux_cursor_shape_at(
+  state: EditorUxState,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if shell_panels_divider_hit(state.panels, point_x, point_y) != 0 then
+    return ux_cursor_ew_resize()
+  end
+  const text_rect = text_viewport_rect(state)
+  if point_in_rect(point_new(point_x, point_y), text_rect) != 0 then
+    return ux_cursor_ibeam()
+  end
+  const tree_rect = shell_panels_tree_rect(state.panels)
+  if point_in_rect(point_new(point_x, point_y), tree_rect) != 0 then
+    return ux_cursor_arrow()
+  end
+  ux_cursor_arrow()
+end
+
+export fn editor_ux_hover(
+  state: EditorUxState,
+  point_x: i32,
+  point_y: i32
+) -> EditorUxState =
+  state_with_cursor(
+    state,
+    editor_ux_cursor_shape_at(state, point_x, point_y)
+  )
+end
