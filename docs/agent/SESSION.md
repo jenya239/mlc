@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 22 |
-| step_last | 21 |
+| driver_turns_since_plan | 23 |
+| step_last | 22 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=22 Ctrl+Tab next |
+| test_gate | STEP=23 command-bus next |
+
+### Turn 2026-07-14 17:05 (Driver TRACK_EDITOR_MVP STEP=22)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 22 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 17:00 |
+| elapsed | ~5 min |
+| done    | `workspace/tab_cycle.mlc` + unit/script; TRACK/PLAN STEP sync. |
+| verify  | `scripts/run_editor_tab_cycle_unit.sh` exit 0; `tab_cycle_unit ok`. |
+| result  | STEP=22 done. Plain: next/prev wrap in strip order. |
+| issues  | Left foreign: UX_HEADLESS/PLAN §33a, SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=23 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 16:50 (Driver TRACK_EDITOR_MVP STEP=21)
 

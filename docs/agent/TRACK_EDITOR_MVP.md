@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=22** — Ctrl+Tab next/prev predictable order.
+**STEP=23** — Command bus: CommandId, KeyBinding, focus (tree vs editor).
+
+### STEP=22 done (2026-07-14)
+
+- `workspace/tab_cycle.mlc`: Ctrl+Tab next / Ctrl+Shift+Tab prev; wrap; strip order.
+- `tests/tab_cycle_unit.mlc` + script exit 0.
+
 
 ### STEP=21 done (2026-07-14)
 
@@ -273,7 +279,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 |------|------|------|
 | 20 | Tabs: name, dirty, active, close; one path ↔ one document | **done** (2026-07-14): `tabs.mlc` + unit |
 | 21 | Ctrl+W / middle-click close; dirty overlay confirm | **done** (2026-07-14): `tab_close.mlc` + unit |
-| 22 | Ctrl+Tab next/prev predictable order | unit |
+| 22 | Ctrl+Tab next/prev predictable order | **done** (2026-07-14): `tab_cycle.mlc` + unit |
 | 23 | Command bus: CommandId, KeyBinding, focus (tree vs editor) | unit all listed commands |
 | 24 | Optional: restore workspace root + open files on restart | if cheap |
 
@@ -355,4 +361,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=18 done** (2026-07-14): undo/redo.
 - **STEP=19 done** (2026-07-14): dirty/save (E4 complete).
 - **STEP=20 done** (2026-07-14): tabs.
-- **STEP=21 done** (2026-07-14): dirty close confirm; next **STEP=22**.
+- **STEP=21 done** (2026-07-14): dirty close confirm.
+- **STEP=22 done** (2026-07-14): Ctrl+Tab cycle; next **STEP=23**.

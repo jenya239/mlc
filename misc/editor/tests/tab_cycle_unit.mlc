@@ -1,0 +1,63 @@
+// TRACK_EDITOR_MVP STEP=22 — Ctrl+Tab next/prev unit.
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_count,
+  tab_set_active,
+  tab_set_set_active
+} from '../workspace/tabs'
+import {
+  tab_set_activate_next,
+  tab_set_activate_prev
+} from '../workspace/tab_cycle'
+
+fn main() -> i32 = do
+  let mut tabs = tab_set_new()
+  tabs = tab_set_activate_next(tabs)
+  if tab_set_count(tabs) != 0 then
+    return 1
+  end
+
+  tabs = tab_set_open(tabs, "/a.mlc", "a")
+  tabs = tab_set_open(tabs, "/b.mlc", "b")
+  tabs = tab_set_open(tabs, "/c.mlc", "c")
+  // open leaves active on last → c
+  if tab_set_active(tabs).name != "c.mlc" then
+    return 2
+  end
+
+  tabs = tab_set_activate_next(tabs)
+  if tab_set_active(tabs).name != "a.mlc" then
+    return 3
+  end
+  tabs = tab_set_activate_next(tabs)
+  if tab_set_active(tabs).name != "b.mlc" then
+    return 4
+  end
+  tabs = tab_set_activate_next(tabs)
+  if tab_set_active(tabs).name != "c.mlc" then
+    return 5
+  end
+
+  tabs = tab_set_activate_prev(tabs)
+  if tab_set_active(tabs).name != "b.mlc" then
+    return 6
+  end
+  tabs = tab_set_activate_prev(tabs)
+  if tab_set_active(tabs).name != "a.mlc" then
+    return 7
+  end
+  tabs = tab_set_activate_prev(tabs)
+  if tab_set_active(tabs).name != "c.mlc" then
+    return 8
+  end
+
+  tabs = tab_set_set_active(tabs, 1)
+  tabs = tab_set_activate_next(tabs)
+  if tab_set_active(tabs).name != "c.mlc" then
+    return 9
+  end
+
+  println("[mlc-editor] tab_cycle_unit ok")
+  0
+end

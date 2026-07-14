@@ -74,6 +74,9 @@ scripts/run_editor_tabs_unit.sh
 
 # STEP=21 dirty close confirm (no GLFW)
 scripts/run_editor_tab_close_unit.sh
+
+# STEP=22 Ctrl+Tab next/prev (no GLFW)
+scripts/run_editor_tab_cycle_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -99,6 +102,7 @@ History requires `[mlc-editor] history_unit ok`.
 Save requires `[mlc-editor] save_unit ok`.
 Tabs requires `[mlc-editor] tabs_unit ok`.
 Tab close requires `[mlc-editor] tab_close_unit ok`.
+Tab cycle requires `[mlc-editor] tab_cycle_unit ok`.
 
 ## Layout (growing)
 

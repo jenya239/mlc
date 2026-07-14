@@ -1,0 +1,32 @@
+// TRACK_EDITOR_MVP STEP=22 — Ctrl+Tab / Ctrl+Shift+Tab in strip order.
+import {
+  TabSet,
+  tab_set_count,
+  tab_set_has_active
+} from './tabs'
+
+// Ctrl+Tab: activate next tab; wrap to 0. Empty / no active → unchanged.
+export fn tab_set_activate_next(tabs: TabSet) -> TabSet = do
+  const count = tab_set_count(tabs)
+  if count == 0 || !tab_set_has_active(tabs) then
+    return tabs
+  end
+  let mut next_index = tabs.active_index + 1
+  if next_index >= count then
+    next_index = 0
+  end
+  TabSet { tabs: tabs.tabs, active_index: next_index }
+end
+
+// Ctrl+Shift+Tab: activate previous tab; wrap to last.
+export fn tab_set_activate_prev(tabs: TabSet) -> TabSet = do
+  const count = tab_set_count(tabs)
+  if count == 0 || !tab_set_has_active(tabs) then
+    return tabs
+  end
+  let mut prev_index = tabs.active_index - 1
+  if prev_index < 0 then
+    prev_index = count - 1
+  end
+  TabSet { tabs: tabs.tabs, active_index: prev_index }
+end
