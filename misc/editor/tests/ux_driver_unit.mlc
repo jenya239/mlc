@@ -1,0 +1,79 @@
+// TRACK_UX_HEADLESS STEP=2 — UxDriver unit (no app / no GLFW).
+import {
+  Move,
+  Click,
+  TypeText,
+  KeyEnter,
+  WaitFrames,
+  SetClock,
+  UxAction
+} from '../../gui/ux/expect'
+import {
+  ux_driver_new,
+  ux_driver_apply,
+  ux_driver_run
+} from '../../gui/ux/driver'
+
+fn main() -> i32 = do
+  let mut driver = ux_driver_new(16)
+  if driver.clock_ms != 0 || driver.frame_ms != 16 then
+    return 1
+  end
+
+  driver = ux_driver_apply(driver, Move(10, 20))
+  if driver.pointer_x != 10 || driver.pointer_y != 20 then
+    return 2
+  end
+
+  driver = ux_driver_apply(driver, Click(30, 40))
+  if driver.pointer_x != 30 || driver.pointer_y != 40 || driver.pointer_down != 1 then
+    return 3
+  end
+
+  driver = ux_driver_apply(driver, TypeText("ab"))
+  driver = ux_driver_apply(driver, TypeText("c"))
+  if driver.typed_text != "abc" then
+    return 4
+  end
+
+  driver = ux_driver_apply(driver, KeyEnter)
+  if driver.last_key != "enter" then
+    return 5
+  end
+
+  driver = ux_driver_apply(driver, WaitFrames(3))
+  if driver.clock_ms != 48 || driver.frames_waited != 3 then
+    return 6
+  end
+
+  driver = ux_driver_apply(driver, SetClock(1000))
+  if driver.clock_ms != 1000 then
+    return 7
+  end
+
+  // Batch run: clock from SetClock then WaitFrames.
+  let mut actions: [UxAction] = []
+  actions.push(SetClock(0))
+  actions.push(Move(1, 2))
+  actions.push(WaitFrames(2))
+  actions.push(TypeText("x"))
+  driver = ux_driver_run(ux_driver_new(10), actions)
+  if driver.clock_ms != 20 then
+    return 8
+  end
+  if driver.pointer_x != 1 || driver.typed_text != "x" then
+    return 9
+  end
+  if driver.frames_waited != 2 then
+    return 10
+  end
+
+  // Negative WaitFrames clamped.
+  driver = ux_driver_apply(ux_driver_new(16), WaitFrames(0 - 5))
+  if driver.clock_ms != 0 || driver.frames_waited != 0 then
+    return 11
+  end
+
+  println("[ux] driver_unit ok")
+  0
+end

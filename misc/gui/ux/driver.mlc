@@ -1,0 +1,153 @@
+// TRACK_UX_HEADLESS STEP=2 — UxDriver (actions + clock; no app).
+import { UxAction } from './expect'
+
+export type UxDriver = {
+  clock_ms: i32,
+  frame_ms: i32,
+  pointer_x: i32,
+  pointer_y: i32,
+  pointer_down: i32,
+  typed_text: string,
+  last_key: string,
+  frames_waited: i32
+}
+
+export fn ux_driver_new(frame_ms: i32) -> UxDriver = do
+  let mut step = frame_ms
+  if step <= 0 then
+    step = 16
+  end
+  UxDriver {
+    clock_ms: 0,
+    frame_ms: step,
+    pointer_x: 0,
+    pointer_y: 0,
+    pointer_down: 0,
+    typed_text: "",
+    last_key: "",
+    frames_waited: 0
+  }
+end
+
+export fn ux_driver_apply(driver: UxDriver, action: UxAction) -> UxDriver =
+  match action
+  | Move(x, y) =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: x,
+        pointer_y: y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited
+      }
+  | Click(x, y) =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: x,
+        pointer_y: y,
+        pointer_down: 1,
+        typed_text: driver.typed_text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited
+      }
+  | DragTo(x, y) =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: x,
+        pointer_y: y,
+        pointer_down: 1,
+        typed_text: driver.typed_text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited
+      }
+  | TypeText(text) =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text + text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited
+      }
+  | KeyEnter =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: "enter",
+        frames_waited: driver.frames_waited
+      }
+  | KeyBackspace =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: "backspace",
+        frames_waited: driver.frames_waited
+      }
+  | KeyEscape =>
+      UxDriver {
+        clock_ms: driver.clock_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: "escape",
+        frames_waited: driver.frames_waited
+      }
+  | WaitFrames(frames) => do
+      let mut count = frames
+      if count < 0 then
+        count = 0
+      end
+      UxDriver {
+        clock_ms: driver.clock_ms + count * driver.frame_ms,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited + count
+      }
+    end
+  | SetClock(clock_ms) => do
+      let mut clock = clock_ms
+      if clock < 0 then
+        clock = 0
+      end
+      UxDriver {
+        clock_ms: clock,
+        frame_ms: driver.frame_ms,
+        pointer_x: driver.pointer_x,
+        pointer_y: driver.pointer_y,
+        pointer_down: driver.pointer_down,
+        typed_text: driver.typed_text,
+        last_key: driver.last_key,
+        frames_waited: driver.frames_waited
+      }
+    end
+  end
+
+export fn ux_driver_run(driver: UxDriver, actions: [UxAction]) -> UxDriver = do
+  let mut next_driver = driver
+  let mut index = 0
+  while index < actions.length() do
+    next_driver = ux_driver_apply(next_driver, actions[index])
+    index = index + 1
+  end
+  next_driver
+end

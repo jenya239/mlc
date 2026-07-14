@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=2** — `UxDriver`: inject actions + WaitFrames + SetClock (no app yet).
+**STEP=3** — Editor probe port: build snapshot from shell/tabs/doc/selection/layout.
+
+### STEP=2 done (2026-07-14)
+
+- `misc/gui/ux/driver.mlc`: apply/run Move/Click/Type/Keys/WaitFrames/SetClock.
+- `tests/ux_driver_unit.mlc` + gate (`driver_unit`).
 
 ### STEP=1 done (2026-07-14)
 
@@ -43,7 +48,7 @@ STEP progress (or explicit user override).
 |------|------|------|
 | 0 | Scaffold `misc/gui/ux/{snapshot,expect}.mlc` + `scripts/run_ux_gate.sh` | **done** (2026-07-14): expect_unit + gate |
 | 1 | `UxSnapshot` + `UxExpect` matchers (caret/selection/tab/rects/NoOverflow/TextContains) pure unit | **done** (2026-07-14): TextContains+rects + gate |
-| 2 | `UxDriver`: inject actions + WaitFrames + SetClock (no app yet) | unit |
+| 2 | `UxDriver`: inject actions + WaitFrames + SetClock (no app yet) | **done** (2026-07-14): `driver.mlc` + unit |
 | 3 | Editor probe port: build snapshot from shell/tabs/doc/selection/layout | unit with fixture state |
 | 4 | First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed) | documented red→green |
 | 5 | Scenario: `newline_caret_and_spaces` (L9) | red→green with product fix |
@@ -68,4 +73,5 @@ STEP progress (or explicit user override).
 ## Progress
 
 - **Planner** (2026-07-14): activated as queue head post-EDITOR; STEP=0 landed in git.
-- **STEP=1 done** (2026-07-14): TextContains + rect matchers; next **STEP=2**.
+- **STEP=1 done** (2026-07-14): TextContains + rect matchers.
+- **STEP=2 done** (2026-07-14): UxDriver clock/actions; next **STEP=3**.

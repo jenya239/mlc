@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
+| driver_turns_since_plan | 2 |
+| step_last | 2 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=2 UxDriver next |
+| test_gate | STEP=3 editor probe next |
+
+### Turn 2026-07-14 18:20 (Driver TRACK_UX_HEADLESS STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:17 |
+| elapsed | ~3 min |
+| done    | `misc/gui/ux/driver.mlc` + unit/script; gate includes driver_unit. |
+| verify  | `run_ux_driver_unit.sh` + `run_ux_gate.sh` exit 0; `driver_unit ok`. |
+| result  | STEP=2 done. Plain: WaitFrames/SetClock + inject queue, no app. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=3 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:18 (Driver TRACK_UX_HEADLESS STEP=1)
 

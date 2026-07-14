@@ -17,6 +17,7 @@ run_one() {
 }
 
 run_one expect_unit "$ROOT_DIR/scripts/run_ux_expect_unit.sh"
+run_one driver_unit "$ROOT_DIR/scripts/run_ux_driver_unit.sh"
 
 if [ "$fail" != 0 ]; then
   echo "[ux gate] FAILED" >&2
