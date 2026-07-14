@@ -89,9 +89,11 @@ Semantic, serializable enough to assert:
 Actions: `Move`, `Click`, `DragTo`, `Type`, `Key` (Escape/Enter/Backspace + later
 arrows/modifiers), `WaitFrames`, `SetClock`.
 
-Expects: `Focus`, `ActiveTab`, `Caret`, `Selection`, `ScrollY`, `TextEquals` /
-`TextContains`, `Dirty`, `NoOverflow`, `RectContainsPoint` (hit maps),
-`DividerWidth` / split bounds.
+Expects: `FocusIs`, `ActiveTabIndex`, `CaretAt`, `SelectionRange`, `ScrollY`,
+`TextEquals` / `TextContains`, `DirtyIs`, `NoOverflow`, `CursorShape`,
+`EditorRectIs(x,y,w,h)`, `RectContainsPoint(x,y,w,h,px,py)` (half-open hit).
+
+Helpers: `ux_rect_equals`, `ux_rect_contains_point`.
 
 Later: clipboard expects after P2 GLFW clipboard.
 
