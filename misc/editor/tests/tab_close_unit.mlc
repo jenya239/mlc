@@ -1,0 +1,83 @@
+// TRACK_EDITOR_MVP STEP=21 — dirty close confirm unit/smoke.
+import { open_buffer_set_document } from '../document/save'
+import { document_from_string } from '../document/piece_table'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_count,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  dirty_close_overlay_is_visible,
+  close_outcome_needs_confirm,
+  tab_set_request_close_active,
+  tab_set_request_close_middle_click,
+  dirty_close_discard,
+  dirty_close_cancel
+} from '../workspace/tab_close'
+
+fn main() -> i32 = do
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/clean.mlc", "ok")
+  tabs = tab_set_open(tabs, "/proj/dirty.mlc", "x")
+
+  const dirty_buffer = open_buffer_set_document(
+    tab_set_active(tabs).buffer,
+    document_from_string("xx")
+  )
+  tabs = tab_set_update_active_buffer(tabs, dirty_buffer)
+
+  // Ctrl+W on dirty → confirm overlay, tab stays.
+  let mut outcome = tab_set_request_close_active(tabs)
+  if !close_outcome_needs_confirm(outcome) then
+    return 1
+  end
+  if !dirty_close_overlay_is_visible(outcome.overlay) then
+    return 2
+  end
+  if outcome.overlay.name != "dirty.mlc" then
+    return 3
+  end
+  if tab_set_count(outcome.tabs) != 2 then
+    return 4
+  end
+
+  outcome = dirty_close_cancel(outcome.tabs, outcome.overlay)
+  if dirty_close_overlay_is_visible(outcome.overlay) then
+    return 5
+  end
+  if tab_set_count(outcome.tabs) != 2 then
+    return 6
+  end
+
+  // Middle-click clean tab → instant close.
+  outcome = tab_set_request_close_middle_click(outcome.tabs, 0)
+  if close_outcome_needs_confirm(outcome) then
+    return 7
+  end
+  if tab_set_count(outcome.tabs) != 1 then
+    return 8
+  end
+  if tab_set_active(outcome.tabs).name != "dirty.mlc" then
+    return 9
+  end
+
+  outcome = tab_set_request_close_active(outcome.tabs)
+  if !close_outcome_needs_confirm(outcome) then
+    return 10
+  end
+  outcome = dirty_close_discard(outcome.tabs, outcome.overlay)
+  if close_outcome_needs_confirm(outcome) then
+    return 11
+  end
+  if tab_set_count(outcome.tabs) != 0 then
+    return 12
+  end
+  if dirty_close_overlay_is_visible(outcome.overlay) then
+    return 13
+  end
+
+  println("[mlc-editor] tab_close_unit ok")
+  0
+end

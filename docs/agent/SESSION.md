@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 21 |
-| step_last | 20 |
+| driver_turns_since_plan | 22 |
+| step_last | 21 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=21 dirty-close next |
+| test_gate | STEP=22 Ctrl+Tab next |
+
+### Turn 2026-07-14 16:50 (Driver TRACK_EDITOR_MVP STEP=21)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 21 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 16:43 |
+| elapsed | ~7 min |
+| done    | `workspace/tab_close.mlc` + unit/script; TRACK/PLAN STEP sync only (left UX_HEADLESS foreign). |
+| verify  | `scripts/run_editor_tab_close_unit.sh` exit 0; `tab_close_unit ok`. |
+| result  | STEP=21 done. Plain: dirty → overlay; discard/cancel; clean middle-click closes. |
+| issues  | Left foreign: UX_HEADLESS docs/PLAN §33a, SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=22 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 13:30 (Driver TRACK_EDITOR_MVP STEP=20)
 

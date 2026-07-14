@@ -1,0 +1,112 @@
+// TRACK_EDITOR_MVP STEP=21 — Ctrl+W / middle-click close + dirty confirm overlay.
+import {
+  TabSet,
+  tab_set_close,
+  tab_set_has_active,
+  tab_is_dirty
+} from './tabs'
+
+export type DirtyCloseOverlay = {
+  visible: i32,
+  tab_index: i32,
+  path: string,
+  name: string
+}
+
+export type CloseOutcome = {
+  needs_confirm: i32,
+  tabs: TabSet,
+  overlay: DirtyCloseOverlay
+}
+
+export fn dirty_close_overlay_hidden() -> DirtyCloseOverlay =
+  DirtyCloseOverlay {
+    visible: 0,
+    tab_index: 0 - 1,
+    path: "",
+    name: ""
+  }
+
+export fn dirty_close_overlay_is_visible(overlay: DirtyCloseOverlay) -> bool =
+  overlay.visible != 0
+
+export fn close_outcome_needs_confirm(outcome: CloseOutcome) -> bool =
+  outcome.needs_confirm != 0
+
+// Ctrl+W / middle-click: close clean tabs immediately; dirty → overlay.
+export fn tab_set_request_close(
+  tabs: TabSet,
+  index: i32
+) -> CloseOutcome = do
+  if index < 0 || index >= tabs.tabs.length() then
+    return CloseOutcome {
+      needs_confirm: 0,
+      tabs: tabs,
+      overlay: dirty_close_overlay_hidden()
+    }
+  end
+  const tab = tabs.tabs[index]
+  if tab_is_dirty(tab) then
+    return CloseOutcome {
+      needs_confirm: 1,
+      tabs: tabs,
+      overlay: DirtyCloseOverlay {
+        visible: 1,
+        tab_index: index,
+        path: tab.path,
+        name: tab.name
+      }
+    }
+  end
+  CloseOutcome {
+    needs_confirm: 0,
+    tabs: tab_set_close(tabs, index),
+    overlay: dirty_close_overlay_hidden()
+  }
+end
+
+export fn tab_set_request_close_active(tabs: TabSet) -> CloseOutcome = do
+  if !tab_set_has_active(tabs) then
+    return CloseOutcome {
+      needs_confirm: 0,
+      tabs: tabs,
+      overlay: dirty_close_overlay_hidden()
+    }
+  end
+  tab_set_request_close(tabs, tabs.active_index)
+end
+
+export fn tab_set_request_close_middle_click(
+  tabs: TabSet,
+  tab_index: i32
+) -> CloseOutcome =
+  tab_set_request_close(tabs, tab_index)
+
+export fn dirty_close_discard(
+  tabs: TabSet,
+  overlay: DirtyCloseOverlay
+) -> CloseOutcome = do
+  if overlay.visible == 0 then
+    return CloseOutcome {
+      needs_confirm: 0,
+      tabs: tabs,
+      overlay: dirty_close_overlay_hidden()
+    }
+  end
+  CloseOutcome {
+    needs_confirm: 0,
+    tabs: tab_set_close(tabs, overlay.tab_index),
+    overlay: dirty_close_overlay_hidden()
+  }
+end
+
+export fn dirty_close_cancel(
+  tabs: TabSet,
+  overlay: DirtyCloseOverlay
+) -> CloseOutcome =
+  CloseOutcome {
+    needs_confirm: 0,
+    tabs: tabs,
+    overlay: dirty_close_overlay_hidden()
+  }
+end

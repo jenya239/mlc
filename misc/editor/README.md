@@ -71,6 +71,9 @@ scripts/run_editor_save_unit.sh
 
 # STEP=20 tabs unit (no GLFW)
 scripts/run_editor_tabs_unit.sh
+
+# STEP=21 dirty close confirm (no GLFW)
+scripts/run_editor_tab_close_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -95,6 +98,7 @@ Clipboard requires `[mlc-editor] clipboard_unit ok`.
 History requires `[mlc-editor] history_unit ok`.
 Save requires `[mlc-editor] save_unit ok`.
 Tabs requires `[mlc-editor] tabs_unit ok`.
+Tab close requires `[mlc-editor] tab_close_unit ok`.
 
 ## Layout (growing)
 
