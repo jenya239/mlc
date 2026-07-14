@@ -1,0 +1,73 @@
+// TRACK_EDITOR_MVP STEP=16 — mouse click+drag selection (GLFW inject).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gui_input_poll,
+  gui_input_test_set,
+  gui_input_test_clear
+} from '../../gui/input'
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_start,
+  selection_end,
+  selection_length
+} from '../document/selection'
+import {
+  editor_view_metrics_new,
+  nav_click,
+  nav_drag
+} from '../document/navigation'
+
+fn main() -> i32 = do
+  const index = line_index_from_string("hello\nworld\n")
+  const metrics = editor_view_metrics_new(20, 10, 40, 40, 0, 0, 5)
+  let mut selection = selection_collapsed(0)
+
+  // Pure path first (no GLFW required for model).
+  selection = nav_click(index, metrics, selection, 40, 40)
+  if selection_start(selection) != 0 then
+    return 1
+  end
+  selection = nav_drag(index, metrics, selection, 40 + 50, 40)
+  // 5 chars * 10px → column 5 → end of "hello" / before \n = offset 5
+  if selection_end(selection) != 5 then
+    return 2
+  end
+
+  const begin_status = glfw_gl_context_begin(320, 240)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  // Inject: press at origin, drag right, release — drive nav via polled coords.
+  gui_input_test_set(40, 40, 1, 0)
+  glfw_gl_context_swap_poll()
+  let mut input = gui_input_poll()
+  selection = nav_click(index, metrics, selection_collapsed(0), input.mouse_x, input.mouse_y)
+
+  gui_input_test_set(40 + 30, 40, 1, 0)
+  glfw_gl_context_swap_poll()
+  input = gui_input_poll()
+  selection = nav_drag(index, metrics, selection, input.mouse_x, input.mouse_y)
+
+  gui_input_test_set(40 + 30, 40, 0, 0)
+  glfw_gl_context_swap_poll()
+  gui_input_test_clear()
+  glfw_gl_context_end()
+
+  if selection_length(selection) != 3 then
+    return 3
+  end
+  if selection_start(selection) != 0 || selection_end(selection) != 3 then
+    return 4
+  end
+
+  println(
+    "[mlc-editor] navigation_inject ok sel=" + selection_length(selection).to_string()
+  )
+  0
+end

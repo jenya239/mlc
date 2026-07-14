@@ -1,0 +1,105 @@
+// TRACK_EDITOR_MVP STEP=16 — navigation unit (arrows/Home/End/Page/Shift).
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_start,
+  selection_end,
+  selection_caret,
+  selection_length
+} from '../document/selection'
+import {
+  Collapse,
+  Extend,
+  editor_view_metrics_new,
+  nav_move_left,
+  nav_move_right,
+  nav_move_up,
+  nav_move_down,
+  nav_line_home,
+  nav_line_end,
+  nav_page_up,
+  nav_page_down,
+  nav_offset_at_point,
+  nav_click,
+  nav_drag
+} from '../document/navigation'
+
+fn main() -> i32 = do
+  // "ab\ncd\nef\n" — lines 0,1,2 (+ empty trailing)
+  const index = line_index_from_string("ab\ncd\nef\n")
+  let mut selection = selection_collapsed(1) // after 'a'
+
+  selection = nav_move_right(index, selection, Collapse)
+  if selection_caret(selection) != 2 then
+    return 1
+  end
+  selection = nav_move_left(index, selection, Collapse)
+  if selection_caret(selection) != 1 then
+    return 2
+  end
+
+  selection = nav_move_down(index, selection, Collapse)
+  // column 1 on line 1 → offset of 'd' = 4
+  if selection_caret(selection) != 4 then
+    return 3
+  end
+  selection = nav_move_up(index, selection, Collapse)
+  if selection_caret(selection) != 1 then
+    return 4
+  end
+
+  selection = nav_line_home(index, selection, Collapse)
+  if selection_caret(selection) != 0 then
+    return 5
+  end
+  selection = nav_line_end(index, selection, Collapse)
+  // end of line 0 is at '\n' offset 2
+  if selection_caret(selection) != 2 then
+    return 6
+  end
+
+  // Shift+right extends
+  selection = selection_collapsed(0)
+  selection = nav_move_right(index, selection, Extend)
+  selection = nav_move_right(index, selection, Extend)
+  if selection_start(selection) != 0 || selection_end(selection) != 2 then
+    return 7
+  end
+  if selection_length(selection) != 2 then
+    return 8
+  end
+
+  const metrics = editor_view_metrics_new(20, 10, 0, 0, 0, 0, 2)
+  selection = selection_collapsed(4)
+  selection = nav_page_down(index, selection, metrics, Collapse)
+  // line 1 + 2 rows → line 3 (last empty) or clamped
+  const after_page = selection_caret(selection)
+  if after_page < 4 then
+    return 9
+  end
+  selection = nav_page_up(index, selection, metrics, Collapse)
+  if selection_caret(selection) > after_page then
+    return 10
+  end
+
+  // Hit-test: line 1 col 1 → 'd' at 4
+  const hit = nav_offset_at_point(index, metrics, 10, 20)
+  if hit != 4 then
+    return 11
+  end
+
+  selection = nav_click(index, metrics, selection_collapsed(0), 0, 0)
+  if selection_caret(selection) != 0 then
+    return 12
+  end
+  selection = nav_drag(index, metrics, selection, 20, 0)
+  // col 2 on line 0 → offset 2
+  if selection_start(selection) != 0 || selection_end(selection) != 2 then
+    return 13
+  end
+
+  println(
+    "[mlc-editor] navigation_unit ok sel=" + selection_length(selection).to_string()
+  )
+  0
+end

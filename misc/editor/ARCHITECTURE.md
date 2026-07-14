@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set (+ test inject)
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…15 status
+## STEP=0…16 status
 
-- STEP=0–14: scaffold through selection model.
-- STEP=15: `document/edit.mlc` + `document_delete.mlc` — insert/Enter/Backspace/Delete.
+- STEP=0–15: scaffold through edit ops.
+- STEP=16: `document/navigation.mlc` — arrows/Home/End/Page/Shift + mouse hit.

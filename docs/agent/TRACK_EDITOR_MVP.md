@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=16** — Arrows/Home/End/Page/Shift+arrows; mouse click+drag.
+**STEP=17** — Clipboard (P2) Ctrl+C/X/V; Ctrl+A.
+
+### STEP=16 done (2026-07-14)
+
+- `document/navigation.mlc`: arrows/Home/End/Page + Shift extend; mono hit-test.
+- `tests/navigation_unit.mlc` + `navigation_inject.mlc` (GLFW mouse drag) exit 0.
 
 ### STEP=15 done (2026-07-14)
 
@@ -231,7 +236,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 |------|------|------|
 | 14 | Cursor + selection (model not in renderer) | **done** (2026-07-14): `selection.mlc` + unit |
 | 15 | Insert/delete/Enter/Backspace/Delete | **done** (2026-07-14): `edit.mlc` + unit |
-| 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | inject integration |
+| 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | **done** (2026-07-14): `navigation.mlc` + unit + inject |
 | 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | integration |
 | 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | unit |
 | 19 | Dirty + save Ctrl+S; errors shown to user | integration: temp project |
@@ -318,4 +323,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=12 done** (2026-07-14): gutter.
 - **STEP=13 done** (2026-07-14): scroll layout bound (E3 complete).
 - **STEP=14 done** (2026-07-14): selection model.
-- **STEP=15 done** (2026-07-14): edit insert/delete; next **STEP=16**.
+- **STEP=15 done** (2026-07-14): edit insert/delete.
+- **STEP=16 done** (2026-07-14): navigation; next **STEP=17**.

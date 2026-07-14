@@ -1,0 +1,269 @@
+// TRACK_EDITOR_MVP STEP=16 — caret navigation + mouse hit (model, not renderer).
+import {
+  LineIndex,
+  TextPosition,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_offset_to_position,
+  line_index_position_to_offset
+} from './line_index'
+import {
+  EditorSelection,
+  selection_collapsed,
+  selection_set_caret,
+  selection_set_focus,
+  selection_clamp,
+  selection_caret
+} from './selection'
+
+export type NavMode = Collapse | Extend
+
+export type EditorViewMetrics = {
+  line_height: i32,
+  char_width: i32,
+  text_origin_x: i32,
+  text_origin_y: i32,
+  scroll_offset_x: i32,
+  scroll_offset_y: i32,
+  page_rows: i32
+}
+
+export fn editor_view_metrics_new(
+  line_height: i32,
+  char_width: i32,
+  text_origin_x: i32,
+  text_origin_y: i32,
+  scroll_offset_x: i32,
+  scroll_offset_y: i32,
+  page_rows: i32
+) -> EditorViewMetrics =
+  EditorViewMetrics {
+    line_height: line_height,
+    char_width: char_width,
+    text_origin_x: text_origin_x,
+    text_origin_y: text_origin_y,
+    scroll_offset_x: scroll_offset_x,
+    scroll_offset_y: scroll_offset_y,
+    page_rows: page_rows
+  }
+
+fn apply_caret(
+  selection: EditorSelection,
+  byte_offset: i32,
+  mode: NavMode,
+  document_length: i32
+) -> EditorSelection = do
+  match mode
+  | Collapse =>
+      selection_clamp(selection_set_caret(selection, byte_offset), document_length)
+  | Extend =>
+      selection_clamp(selection_set_focus(selection, byte_offset), document_length)
+  end
+end
+
+fn move_horizontal(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  delta: i32,
+  mode: NavMode
+) -> EditorSelection = do
+  let mut offset = selection_caret(selection) + delta
+  if offset < 0 then
+    offset = 0
+  end
+  if offset > line_index.text_length then
+    offset = line_index.text_length
+  end
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_move_left(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection =
+  move_horizontal(line_index, selection, 0 - 1, mode)
+
+export fn nav_move_right(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection =
+  move_horizontal(line_index, selection, 1, mode)
+
+export fn nav_move_up(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  let mut line = position.line - 1
+  if line < 0 then
+    line = 0
+  end
+  const offset = line_index_position_to_offset(
+    line_index,
+    TextPosition { line: line, column: position.column }
+  )
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_move_down(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  const max_line = line_index_line_count(line_index) - 1
+  let mut line = position.line + 1
+  if line > max_line then
+    line = max_line
+  end
+  if line < 0 then
+    line = 0
+  end
+  const offset = line_index_position_to_offset(
+    line_index,
+    TextPosition { line: line, column: position.column }
+  )
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_line_home(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  const offset = line_index_line_start(line_index, position.line)
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_line_end(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  let mut offset = line_index_position_to_offset(
+    line_index,
+    TextPosition { line: position.line, column: 1000000 }
+  )
+  // Do not land on the next line's start; sit on the trailing newline if present.
+  const next_line = position.line + 1
+  if next_line < line_index_line_count(line_index) then
+    const next_start = line_index_line_start(line_index, next_line)
+    if offset == next_start && offset > 0 then
+      offset = offset - 1
+    end
+  end
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_page_up(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  metrics: EditorViewMetrics,
+  mode: NavMode
+) -> EditorSelection = do
+  let mut rows = metrics.page_rows
+  if rows < 1 then
+    rows = 1
+  end
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  let mut line = position.line - rows
+  if line < 0 then
+    line = 0
+  end
+  const offset = line_index_position_to_offset(
+    line_index,
+    TextPosition { line: line, column: position.column }
+  )
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_page_down(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  metrics: EditorViewMetrics,
+  mode: NavMode
+) -> EditorSelection = do
+  let mut rows = metrics.page_rows
+  if rows < 1 then
+    rows = 1
+  end
+  const position = line_index_offset_to_position(line_index, selection_caret(selection))
+  const max_line = line_index_line_count(line_index) - 1
+  let mut line = position.line + rows
+  if line > max_line then
+    line = max_line
+  end
+  if line < 0 then
+    line = 0
+  end
+  const offset = line_index_position_to_offset(
+    line_index,
+    TextPosition { line: line, column: position.column }
+  )
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+// Mono hit-test: pixel → document byte offset (no wrap).
+export fn nav_offset_at_point(
+  line_index: LineIndex,
+  metrics: EditorViewMetrics,
+  pixel_x: i32,
+  pixel_y: i32
+) -> i32 = do
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  let mut content_y = pixel_y - metrics.text_origin_y + metrics.scroll_offset_y
+  if content_y < 0 then
+    content_y = 0
+  end
+  let mut line = content_y / line_height
+  const max_line = line_index_line_count(line_index) - 1
+  if line > max_line then
+    line = max_line
+  end
+  if line < 0 then
+    line = 0
+  end
+  let mut content_x = pixel_x - metrics.text_origin_x + metrics.scroll_offset_x
+  if content_x < 0 then
+    content_x = 0
+  end
+  const column = content_x / char_width
+  line_index_position_to_offset(
+    line_index,
+    TextPosition { line: line, column: column }
+  )
+end
+
+export fn nav_click(
+  line_index: LineIndex,
+  metrics: EditorViewMetrics,
+  selection: EditorSelection,
+  pixel_x: i32,
+  pixel_y: i32
+) -> EditorSelection = do
+  const offset = nav_offset_at_point(line_index, metrics, pixel_x, pixel_y)
+  selection_clamp(selection_collapsed(offset), line_index.text_length)
+end
+
+export fn nav_drag(
+  line_index: LineIndex,
+  metrics: EditorViewMetrics,
+  selection: EditorSelection,
+  pixel_x: i32,
+  pixel_y: i32
+) -> EditorSelection = do
+  const offset = nav_offset_at_point(line_index, metrics, pixel_x, pixel_y)
+  selection_clamp(selection_set_focus(selection, offset), line_index.text_length)
+end

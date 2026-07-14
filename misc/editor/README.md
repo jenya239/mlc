@@ -55,6 +55,10 @@ scripts/run_editor_selection_unit.sh
 
 # STEP=15 edit insert/delete unit (no GLFW)
 scripts/run_editor_edit_unit.sh
+
+# STEP=16 navigation unit + mouse inject
+scripts/run_editor_navigation_unit.sh
+MLC_GLFW_VISIBLE=0 scripts/run_editor_navigation_inject.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -73,13 +77,15 @@ Gutter smoke requires open + `gutter ok glyphs=N`.
 Scroll layout requires `scroll_layout_unit ok` with `file_lines=100000` and `bound=24`.
 Selection requires `[mlc-editor] selection_unit ok`.
 Edit unit requires `[mlc-editor] edit_unit ok`.
+Navigation unit requires `navigation_unit ok`.
+Navigation inject requires `navigation_inject ok`.
 
 ## Layout (growing)
 
 ```text
 main.mlc          # entry
 ARCHITECTURE.md
-document/         # piece_table, line_index, selection, edit/delete (STEP=15)
+document/         # … + navigation (STEP=16)
 layout/           # shell, visible_range, gutter, scroll_layout (STEP=13)
 syntax/ workspace/ ui/ commands/ tests/
 ```
