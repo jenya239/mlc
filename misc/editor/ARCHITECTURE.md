@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set (+ test inject)
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…12 status
+## STEP=0…13 status
 
-- STEP=0–11: scaffold through visible range.
-- STEP=12: `layout/gutter.mlc` + unit + GLFW smoke (1-based labels).
+- STEP=0–12: scaffold through gutter.
+- STEP=13: `layout/scroll_layout.mlc` — large-file scroll visits ≤ visible+overscan.

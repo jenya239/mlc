@@ -1,0 +1,65 @@
+// TRACK_EDITOR_MVP STEP=13 — scroll layout visits only visible lines (no wrap).
+import {
+  ViewportMetrics,
+  VisibleLineRange,
+  visible_line_range,
+  visible_line_count,
+  document_content_height
+} from './visible_range'
+
+export type ScrollLayoutFrame = {
+  range: VisibleLineRange,
+  lines_touched: i32,
+  content_height: i32
+}
+
+// Upper bound on lines laid out per frame: visible rows + 2*overscan.
+export fn scroll_layout_lines_bound(metrics: ViewportMetrics) -> i32 = do
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut viewport_rows = metrics.viewport_height / line_height
+  if metrics.viewport_height % line_height != 0 then
+    viewport_rows = viewport_rows + 1
+  end
+  if viewport_rows < 1 then
+    viewport_rows = 1
+  end
+  let mut overscan = metrics.overscan_lines
+  if overscan < 0 then
+    overscan = 0
+  end
+  viewport_rows + overscan * 2
+end
+
+// Layout one scroll frame: touch only lines in visible range (+ overscan).
+export fn scroll_layout_frame(
+  line_count: i32,
+  scroll_offset_y: i32,
+  metrics: ViewportMetrics
+) -> ScrollLayoutFrame = do
+  const range = visible_line_range(line_count, scroll_offset_y, metrics)
+  let mut lines_touched = 0
+  if visible_line_count(range) > 0 then
+    let mut line = range.first_line
+    while line <= range.last_line do
+      // Stand-in for per-line layout work (gutter label, glyph run request).
+      lines_touched = lines_touched + 1
+      line = line + 1
+    end
+  end
+  ScrollLayoutFrame {
+    range: range,
+    lines_touched: lines_touched,
+    content_height: document_content_height(line_count, metrics.line_height)
+  }
+end
+
+export fn scroll_layout_within_bound(
+  frame: ScrollLayoutFrame,
+  metrics: ViewportMetrics
+) -> bool = do
+  const bound = scroll_layout_lines_bound(metrics)
+  frame.lines_touched <= bound
+end

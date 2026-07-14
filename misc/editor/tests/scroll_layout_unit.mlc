@@ -1,0 +1,58 @@
+// TRACK_EDITOR_MVP STEP=13 — large-file scroll must not layout whole file.
+import { viewport_metrics_new } from '../layout/visible_range'
+import {
+  scroll_layout_frame,
+  scroll_layout_lines_bound,
+  scroll_layout_within_bound
+} from '../layout/scroll_layout'
+
+fn main() -> i32 = do
+  const line_count = 100000
+  const metrics = viewport_metrics_new(20, 400, 800, 2)
+  const bound = scroll_layout_lines_bound(metrics)
+  // 400/20=20 rows + 2*2 overscan = 24
+  if bound != 24 then
+    return 1
+  end
+
+  let mut max_touched = 0
+  let mut scroll_y = 0
+  let mut step = 0
+  while step < 50 do
+    const frame = scroll_layout_frame(line_count, scroll_y, metrics)
+    if !scroll_layout_within_bound(frame, metrics) then
+      return 2
+    end
+    if frame.lines_touched > max_touched then
+      max_touched = frame.lines_touched
+    end
+    // Must stay far below whole-file size.
+    if frame.lines_touched * 100 >= line_count then
+      return 3
+    end
+    if frame.content_height != line_count * 20 then
+      return 4
+    end
+    scroll_y = scroll_y + 800
+    step = step + 1
+  end
+
+  // Near end of file.
+  const near_end = scroll_layout_frame(line_count, line_count * 20 - 100, metrics)
+  if !scroll_layout_within_bound(near_end, metrics) then
+    return 5
+  end
+  if near_end.lines_touched > bound then
+    return 6
+  end
+  if near_end.lines_touched > max_touched then
+    max_touched = near_end.lines_touched
+  end
+
+  println(
+    "[mlc-editor] scroll_layout_unit ok file_lines=" + line_count.to_string() +
+      " max_touched=" + max_touched.to_string() +
+      " bound=" + bound.to_string()
+  )
+  0
+end

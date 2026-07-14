@@ -46,6 +46,9 @@ scripts/run_editor_visible_range_unit.sh
 # STEP=12 gutter unit + visual smoke
 scripts/run_editor_gutter_unit.sh
 MLC_GLFW_VISIBLE=0 scripts/run_editor_gutter_smoke.sh
+
+# STEP=13 scroll layout bound (no GLFW)
+scripts/run_editor_scroll_layout_unit.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -61,6 +64,7 @@ LineIndex requires `[mlc-editor] line_index_unit ok`.
 Visible range requires `[mlc-editor] visible_range_unit ok`.
 Gutter unit requires `[mlc-editor] gutter_unit ok`.
 Gutter smoke requires open + `gutter ok glyphs=N`.
+Scroll layout requires `scroll_layout_unit ok` with `file_lines=100000` and `bound=24`.
 
 ## Layout (growing)
 
@@ -68,6 +72,6 @@ Gutter smoke requires open + `gutter ok glyphs=N`.
 main.mlc          # entry
 ARCHITECTURE.md
 document/         # piece_table, line_index
-layout/           # shell, visible_range, gutter (STEP=12)
+layout/           # shell, visible_range, gutter, scroll_layout (STEP=13)
 syntax/ workspace/ ui/ commands/ tests/
 ```

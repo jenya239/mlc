@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=13** — Scroll does not layout whole file (perf bound).
+**STEP=14** — Cursor + selection (model not in renderer).
+
+### STEP=13 done (2026-07-14)
+
+- `layout/scroll_layout.mlc`: frame touches only visible+overscan lines.
+- `tests/scroll_layout_unit.mlc`: 100k lines, 50 scrolls; `max_touched=24 bound=24`.
 
 ### STEP=12 done (2026-07-14)
 

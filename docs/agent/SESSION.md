@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 13 |
-| step_last | 12 |
+| driver_turns_since_plan | 14 |
+| step_last | 13 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=13 scroll perf next |
+| test_gate | STEP=14 cursor next |
+
+### Turn 2026-07-14 12:15 (Driver TRACK_EDITOR_MVP STEP=13)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 13 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 12:09 |
+| elapsed | ~6 min |
+| done    | `layout/scroll_layout.mlc` + unit/script; TRACK/PLAN (E3 complete). |
+| verify  | `scroll_layout_unit ok file_lines=100000 max_touched=24 bound=24`. |
+| result  | STEP=13 done. Plain: scroll frames touch ≤ viewport+overscan, not 100k lines. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=14 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 12:00 (Driver TRACK_EDITOR_MVP STEP=12)
 
