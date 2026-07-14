@@ -2,7 +2,7 @@
 
 Headless semantic scenarios for the editor shell.
 Design: [docs/GUI_UX_TESTING.md](../../../docs/GUI_UX_TESTING.md).
-Track: [docs/agent/TRACK_UX_HEADLESS.md](../../../docs/agent/TRACK_UX_HEADLESS.md).
+Track: [docs/archive/tracks/TRACK_UX_HEADLESS.md](../../../docs/archive/tracks/TRACK_UX_HEADLESS.md).
 
 ## Run all
 

@@ -1,18 +1,29 @@
 # Track: Headless UX test harness (editor + GUI)
 
-Parent: [../GUI_UX_TESTING.md](../GUI_UX_TESTING.md), [../EDITOR.md](../EDITOR.md),
-[../GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md),
-[../archive/tracks/TRACK_EDITOR_MVP.md](../archive/tracks/TRACK_EDITOR_MVP.md).
+Parent: [../GUI_UX_TESTING.md](../../GUI_UX_TESTING.md), [../EDITOR.md](../../EDITOR.md),
+[../GUI_ARCHITECTURE.md](../../GUI_ARCHITECTURE.md),
+[../archive/tracks/TRACK_EDITOR_MVP.md](TRACK_EDITOR_MVP.md).
 
-## Status: **priority / active** (2026-07-14) — голова очереди после EDITOR close
+## Status: **closed** (2026-07-14) — Critic OK
 
-Critic EDITOR residuals (live UX L1–L9) → this harness. Design frozen in
-`GUI_UX_TESTING.md`. GUI Phase B eligible but **queued after** UX_HEADLESS
-STEP progress (or explicit user override).
+**Critic 2026-07-14 (STEP=15):** Harness accepted. `scripts/run_ux_gate.sh` →
+`[ux gate] all ok` (13 entries). No `sleep` in scenarios/ux helpers. Anti-false-done:
+artifacts committed `a159e85d`…`09e33f3e`. CI job `ux-headless-gate` present.
+REG N/A (no `compiler/` / `lib/mlc/` in UX steps). **reopen: none** for numbered STEPs.
+
+**L1–L9 coverage:** L1 overflow, L2 scroll, L3 selection, L4 tree, L5 tabs, L6 cursor
+probe, L7 clipboard inject, L9 whitespace — gated. **Residuals (not blockers):**
+L8 `caret_blink_phases` not shipped as scenario; live GLFW SetCursor / clipboard /
+FBO readback deferred (CPU inject/MAE stand-ins). Design matches code in
+`GUI_UX_TESTING.md` + `misc/editor/ux/README.md`.
 
 ## Next step
 
-**STEP=15** — Critic: design matches code; no flaky sleep; L1 coverage of L1–L9.
+**closed** — Critic OK. Queue → Planner (GUI Phase B eligible).
+
+### STEP=15 done (2026-07-14)
+
+- Critic close: gate green; L1–L9 audit; known limits listed; archived.
 
 ### STEP=14 done (2026-07-14)
 
@@ -122,7 +133,7 @@ STEP progress (or explicit user override).
 | 12 | L3 optional: one caret/glyph FBO MAE fixture (not full UI) | **done** (2026-07-14): caret_glyph_mae; FBO deferred |
 | 13 | Clipboard scenario after GLFW P2 | **done** (2026-07-14): copy_paste_roundtrip; GLFW deferred |
 | 14 | `run_ux_gate.sh` in CI / Critic checklist; README how to add scenario | **done** (2026-07-14): CI + README + gate green |
-| 15 | Critic: design matches code; no flaky sleep; L1 coverage of L1–L9 | close |
+| 15 | Critic: design matches code; no flaky sleep; L1 coverage of L1–L9 | **done** (2026-07-14): Critic OK; closed |
 
 ## Out of scope
 
@@ -147,4 +158,5 @@ STEP progress (or explicit user override).
 - **STEP=11 done** (2026-07-14): draw_report_headless green.
 - **STEP=12 done** (2026-07-14): caret_glyph_mae green.
 - **STEP=13 done** (2026-07-14): copy_paste_roundtrip green.
-- **STEP=14 done** (2026-07-14): CI/README/gate; next **STEP=15** Critic.
+- **STEP=14 done** (2026-07-14): CI/README/gate.
+- **STEP=15 done** (2026-07-14): Critic OK; track **closed**.

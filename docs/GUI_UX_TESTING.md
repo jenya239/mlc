@@ -2,7 +2,7 @@
 
 Parent: [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md), [EDITOR.md](EDITOR.md),
 [TEXT_RENDERING.md](TEXT_RENDERING.md). Track:
-[agent/TRACK_UX_HEADLESS.md](agent/TRACK_UX_HEADLESS.md).
+[archive/tracks/TRACK_UX_HEADLESS.md](archive/tracks/TRACK_UX_HEADLESS.md).
 
 ## Goal
 
@@ -154,14 +154,14 @@ Later: clipboard expects after P2 GLFW clipboard.
 - Optional Mesa/EGL for true GL L2/L3 (reuse `gl-loader-smoke` path); CPU MAE
   stand-in is enough for caret fixture.
 
-### Critic checklist (before UX_HEADLESS close)
+### Critic checklist (UX_HEADLESS closed 2026-07-14)
 
-- [ ] `scripts/run_ux_gate.sh` exit 0 on clean tree
-- [ ] No `sleep` in scenarios; clock via `UxDriver`
-- [ ] L1 scenarios cover live backlog L1–L9 (or documented deferral)
-- [ ] README how-to: `misc/editor/ux/README.md`
-- [ ] CI job `ux-headless-gate` present
-- [ ] Known limits listed in TRACK (GLFW clipboard/cursor/FBO if deferred)
+- [x] `scripts/run_ux_gate.sh` exit 0 on clean tree
+- [x] No `sleep` in scenarios; clock via `UxDriver`
+- [x] L1–L9: L8 blink deferred (documented); rest gated
+- [x] README how-to: `misc/editor/ux/README.md`
+- [x] CI job `ux-headless-gate` present
+- [x] Known limits listed in TRACK (GLFW clipboard/cursor/FBO; L8)
 
 ## Relation to EDITOR_MVP
 

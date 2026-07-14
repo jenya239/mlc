@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 14 |
-| step_last | 14 |
-| active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=15 Critic critique-audit next |
+| driver_turns_since_plan | 0 |
+| step_last | 15 |
+| active_track | TRACK_UX_HEADLESS (closed) |
+| test_gate | Planner Phase B next |
+
+### Turn 2026-07-14 19:08 (Critic TRACK_UX_HEADLESS STEP=15)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 15 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 19:05 |
+| elapsed | ~3 min |
+| done    | Gate re-run all ok; L1–L9 audit; archive TRACK; PLAN §33a done. |
+| verify  | `run_ux_gate.sh` → all ok; no sleep in scenarios; CI job present. |
+| result  | STEP=15 done; track **closed**. Residuals: L8 blink; live GLFW/FBO. |
+| issues  | Left foreign demo_live/theme dirty. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_GUI_CANVAS_GRAPH |
 
 ### Turn 2026-07-14 19:05 (Driver TRACK_UX_HEADLESS STEP=14)
 
