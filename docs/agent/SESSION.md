@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 14 |
-| step_last | 13 |
+| driver_turns_since_plan | 15 |
+| step_last | 14 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=14 cursor next |
+| test_gate | STEP=15 edit next |
+
+### Turn 2026-07-14 12:25 (Driver TRACK_EDITOR_MVP STEP=14)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 14 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 12:20 |
+| elapsed | ~5 min |
+| done    | `document/selection.mlc` + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_selection_unit.sh` exit 0; `selection_unit ok len=12`. |
+| result  | STEP=14 done. Plain: anchor/focus selection model, LineIndex maps caret. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=15 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 12:15 (Driver TRACK_EDITOR_MVP STEP=13)
 

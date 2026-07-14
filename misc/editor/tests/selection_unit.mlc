@@ -1,0 +1,90 @@
+// TRACK_EDITOR_MVP STEP=14 — cursor/selection model unit (no GLFW).
+import {
+  document_from_string,
+  document_byte_length
+} from '../document/piece_table'
+import {
+  line_index_from_document,
+  line_index_offset_to_position,
+  line_index_position_to_offset,
+  TextPosition
+} from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_new,
+  selection_is_empty,
+  selection_start,
+  selection_end,
+  selection_length,
+  selection_set_caret,
+  selection_set_focus,
+  selection_clamp,
+  selection_select_all,
+  selection_caret
+} from '../document/selection'
+
+fn main() -> i32 = do
+  const empty = selection_collapsed(5)
+  if !selection_is_empty(empty) then
+    return 1
+  end
+  if selection_caret(empty) != 5 then
+    return 2
+  end
+
+  const range = selection_new(10, 3)
+  if selection_start(range) != 3 || selection_end(range) != 10 then
+    return 3
+  end
+  if selection_length(range) != 7 then
+    return 4
+  end
+  if selection_is_empty(range) then
+    return 5
+  end
+
+  const extended = selection_set_focus(selection_collapsed(2), 8)
+  if selection_start(extended) != 2 || selection_end(extended) != 8 then
+    return 6
+  end
+  if selection_caret(extended) != 8 then
+    return 7
+  end
+
+  const moved = selection_set_caret(extended, 4)
+  if !selection_is_empty(moved) || selection_caret(moved) != 4 then
+    return 8
+  end
+
+  const document = document_from_string("hello\nworld\n")
+  const length = document_byte_length(document)
+  const clamped = selection_clamp(selection_new(-5, 999), length)
+  if clamped.anchor != 0 || clamped.focus != length then
+    return 9
+  end
+
+  const all = selection_select_all(length)
+  if selection_start(all) != 0 || selection_end(all) != length then
+    return 10
+  end
+
+  // Model stays in document space; LineIndex maps caret ↔ line/col (not renderer).
+  const index = line_index_from_document(document)
+  const caret = selection_caret(selection_set_focus(selection_collapsed(0), 7))
+  const position = line_index_offset_to_position(index, caret)
+  if position.line != 1 || position.column != 1 then
+    return 11
+  end
+  const back = line_index_position_to_offset(
+    index,
+    TextPosition { line: position.line, column: position.column }
+  )
+  if back != caret then
+    return 12
+  end
+
+  println(
+    "[mlc-editor] selection_unit ok len=" + selection_length(all).to_string()
+  )
+  0
+end

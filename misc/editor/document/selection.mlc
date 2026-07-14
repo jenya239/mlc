@@ -1,0 +1,102 @@
+// TRACK_EDITOR_MVP STEP=14 — cursor + selection model (view-owned, not renderer).
+// Byte offsets into the document; LineIndex converts to line/col when needed.
+
+export type EditorSelection = {
+  anchor: i32,
+  focus: i32
+}
+
+export fn selection_collapsed(byte_offset: i32) -> EditorSelection = do
+  let mut offset = byte_offset
+  if offset < 0 then
+    offset = 0
+  end
+  EditorSelection { anchor: offset, focus: offset }
+end
+
+export fn selection_new(anchor: i32, focus: i32) -> EditorSelection = do
+  let mut a = anchor
+  let mut f = focus
+  if a < 0 then
+    a = 0
+  end
+  if f < 0 then
+    f = 0
+  end
+  EditorSelection { anchor: a, focus: f }
+end
+
+export fn selection_is_empty(selection: EditorSelection) -> bool =
+  selection.anchor == selection.focus
+
+export fn selection_start(selection: EditorSelection) -> i32 = do
+  if selection.anchor <= selection.focus then
+    return selection.anchor
+  end
+  selection.focus
+end
+
+export fn selection_end(selection: EditorSelection) -> i32 = do
+  if selection.anchor >= selection.focus then
+    return selection.anchor
+  end
+  selection.focus
+end
+
+export fn selection_length(selection: EditorSelection) -> i32 =
+  selection_end(selection) - selection_start(selection)
+
+// Move caret; collapse selection.
+export fn selection_set_caret(
+  selection: EditorSelection,
+  byte_offset: i32
+) -> EditorSelection =
+  selection_collapsed(byte_offset)
+
+// Move caret while keeping anchor (extend selection).
+export fn selection_set_focus(
+  selection: EditorSelection,
+  byte_offset: i32
+) -> EditorSelection = do
+  let mut focus = byte_offset
+  if focus < 0 then
+    focus = 0
+  end
+  EditorSelection { anchor: selection.anchor, focus: focus }
+end
+
+export fn selection_clamp(
+  selection: EditorSelection,
+  document_length: i32
+) -> EditorSelection = do
+  let mut max_offset = document_length
+  if max_offset < 0 then
+    max_offset = 0
+  end
+  let mut anchor = selection.anchor
+  let mut focus = selection.focus
+  if anchor < 0 then
+    anchor = 0
+  end
+  if focus < 0 then
+    focus = 0
+  end
+  if anchor > max_offset then
+    anchor = max_offset
+  end
+  if focus > max_offset then
+    focus = max_offset
+  end
+  EditorSelection { anchor: anchor, focus: focus }
+end
+
+export fn selection_select_all(document_length: i32) -> EditorSelection = do
+  let mut length = document_length
+  if length < 0 then
+    length = 0
+  end
+  EditorSelection { anchor: 0, focus: length }
+end
+
+export fn selection_caret(selection: EditorSelection) -> i32 =
+  selection.focus
