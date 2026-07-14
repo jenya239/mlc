@@ -1,0 +1,104 @@
+// TRACK_UX_HEADLESS STEP=7 — scenario: wheel_scroll_keeps_caret_visible (L2).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  ScrollY,
+  CaretAt,
+  TextContains,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import {
+  editor_ux_ensure_caret_visible,
+  editor_ux_wheel_scroll,
+  editor_ux_caret_in_viewport
+} from '../ux/scroll'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 320, 200)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    320,
+    200,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  // 40 lines → caret at end needs scroll in short viewport.
+  let mut body = "L0"
+  let mut line = 1
+  while line < 40 do
+    body = body + "\nL" + line.to_string()
+    line = line + 1
+  end
+  state = editor_ux_insert_text(state, body)
+  state = editor_ux_ensure_caret_visible(state, metrics)
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CaretAt(39, 3)).ok == 0 then
+    println("ux_fail caret at last line")
+    return 1
+  end
+  if snapshot.scroll_offset_y <= 0 then
+    println("ux_fail expected scroll_offset_y > 0")
+    return 2
+  end
+  if editor_ux_caret_in_viewport(state, metrics) == 0 then
+    println("ux_fail caret not in viewport after ensure")
+    return 3
+  end
+  if ux_check_expect(snapshot, ScrollY(snapshot.scroll_offset_y)).ok == 0 then
+    return 4
+  end
+  if ux_check_expect(snapshot, TextContains("L39")).ok == 0 then
+    return 5
+  end
+
+  // Wheel toward start would hide bottom caret without keep-visible.
+  state = editor_ux_wheel_scroll(state, metrics, 8)
+  snapshot = editor_ux_snapshot(state)
+  if editor_ux_caret_in_viewport(state, metrics) == 0 then
+    println("ux_fail caret left viewport after wheel")
+    return 6
+  end
+  if ux_check_expect(snapshot, ScrollY(snapshot.scroll_offset_y)).ok == 0 then
+    return 7
+  end
+  if ux_check_expect(snapshot, CaretAt(39, 3)).ok == 0 then
+    return 8
+  end
+
+  println("ux_ok wheel_scroll_keeps_caret_visible")
+  0
+end

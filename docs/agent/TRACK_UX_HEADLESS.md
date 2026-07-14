@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=7** — Scenario: scroll wheel / scroll_offset (L2).
+**STEP=8** — Scenario: multi-line selection probe (L3).
+
+### STEP=7 done (2026-07-14)
+
+- `ux/scroll.mlc`: wheel + clamp + ensure caret visible.
+- Scenario `wheel_scroll_keeps_caret_visible` → `ux_ok` (ScrollY + caret in view after wheel).
 
 ### STEP=6 done (2026-07-14)
 
@@ -73,7 +78,7 @@ STEP progress (or explicit user override).
 | 4 | First real scenario binary: `tab_strip_click_activates` (may fail red until L5 fixed) | **done** (2026-07-14): scenario green (hit model) |
 | 5 | Scenario: `newline_caret_and_spaces` (L9) | **done** (2026-07-14): scenario green |
 | 6 | Scenario: `overflow_editor_text` (L1) + clip/scissor wiring | **done** (2026-07-14): scenario green |
-| 7 | Scenario: scroll wheel / scroll_offset (L2) | red→green |
+| 7 | Scenario: scroll wheel / scroll_offset (L2) | **done** (2026-07-14): scenario green |
 | 8 | Scenario: multi-line selection probe (L3) | red→green |
 | 9 | Scenario: tree hit open tab (L4) | red→green |
 | 10 | Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI | red→green |
@@ -98,4 +103,5 @@ STEP progress (or explicit user override).
 - **STEP=3 done** (2026-07-14): editor probe port.
 - **STEP=4 done** (2026-07-14): tab_strip_click_activates green.
 - **STEP=5 done** (2026-07-14): newline_caret_and_spaces green.
-- **STEP=6 done** (2026-07-14): overflow_editor_text green; next **STEP=7**.
+- **STEP=6 done** (2026-07-14): overflow_editor_text green.
+- **STEP=7 done** (2026-07-14): wheel_scroll_keeps_caret_visible green; next **STEP=8**.

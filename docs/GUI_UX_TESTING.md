@@ -110,6 +110,9 @@ cols via `ux/edit_apply.mlc`; `ux_ok newline_caret_and_spaces`.
 Scenario (STEP=6): `overflow_editor_text` — long line/tall stack overflows without
 scissor; `editor_ux_apply_scissor_clip` → `NoOverflow`; `ux_ok overflow_editor_text`.
 
+Scenario (STEP=7): `wheel_scroll_keeps_caret_visible` — ScrollY + caret stays in
+viewport after wheel via `ux/scroll.mlc`; `ux_ok wheel_scroll_keeps_caret_visible`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

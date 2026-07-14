@@ -1,0 +1,157 @@
+// TRACK_UX_HEADLESS STEP=7 — wheel scroll + caret visibility (L2 model).
+import { Rect, rect_new } from '../../gui/layout'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import { selection_caret } from '../document/selection'
+import {
+  line_index_from_document,
+  line_index_offset_to_position,
+  line_index_line_count
+} from '../document/line_index'
+import { document_content_height } from '../layout/visible_range'
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn state_with_scroll_y(state: EditorUxState, scroll_offset_y: i32) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+fn line_height_or_one(metrics: EditorTextMetrics) -> i32 = do
+  if metrics.line_height <= 0 then
+    return 1
+  end
+  metrics.line_height
+end
+
+fn max_scroll_y(state: EditorUxState, metrics: EditorTextMetrics) -> i32 = do
+  if !tab_set_has_active(state.tabs) then
+    return 0
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const line_count = line_index_line_count(line_index)
+  const content_height = document_content_height(line_count, line_height_or_one(metrics))
+  const viewport = text_viewport_rect(state)
+  let mut max_y = content_height - viewport.height
+  if max_y < 0 then
+    max_y = 0
+  end
+  max_y
+end
+
+export fn editor_ux_clamp_scroll_y(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  scroll_offset_y: i32
+) -> i32 = do
+  let mut scroll_y = scroll_offset_y
+  if scroll_y < 0 then
+    scroll_y = 0
+  end
+  const max_y = max_scroll_y(state, metrics)
+  if scroll_y > max_y then
+    scroll_y = max_y
+  end
+  scroll_y
+end
+
+// 1 if caret row intersects the text viewport.
+export fn editor_ux_caret_in_viewport(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> i32 = do
+  if !tab_set_has_active(state.tabs) then
+    return 0
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const position = line_index_offset_to_position(
+    line_index,
+    selection_caret(state.selection)
+  )
+  const line_height = line_height_or_one(metrics)
+  const caret_top = position.line * line_height
+  const caret_bottom = caret_top + line_height
+  const viewport = text_viewport_rect(state)
+  const scroll_y = state.scroll_offset_y
+  if caret_bottom <= scroll_y then
+    return 0
+  end
+  if caret_top >= scroll_y + viewport.height then
+    return 0
+  end
+  1
+end
+
+export fn editor_ux_ensure_caret_visible(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const position = line_index_offset_to_position(
+    line_index,
+    selection_caret(state.selection)
+  )
+  const line_height = line_height_or_one(metrics)
+  const caret_top = position.line * line_height
+  const viewport = text_viewport_rect(state)
+  let mut scroll_y = state.scroll_offset_y
+  if caret_top < scroll_y then
+    scroll_y = caret_top
+  end
+  if caret_top + line_height > scroll_y + viewport.height then
+    scroll_y = caret_top + line_height - viewport.height
+  end
+  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
+  state_with_scroll_y(state, scroll_y)
+end
+
+// Positive ticks scroll toward document start (decrease offset), like demo_live.
+export fn editor_ux_wheel_scroll(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  wheel_ticks: i32
+) -> EditorUxState = do
+  const line_height = line_height_or_one(metrics)
+  let mut scroll_y = state.scroll_offset_y - wheel_ticks * line_height
+  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
+  let mut next_state = state_with_scroll_y(state, scroll_y)
+  // L2 product: wheel must keep caret visible.
+  editor_ux_ensure_caret_visible(next_state, metrics)
+end

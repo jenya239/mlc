@@ -22,6 +22,7 @@ run_one probe_unit "$ROOT_DIR/scripts/run_ux_probe_unit.sh"
 run_one tab_strip_click "$ROOT_DIR/scripts/run_ux_tab_strip_click.sh"
 run_one newline_caret "$ROOT_DIR/scripts/run_ux_newline_caret.sh"
 run_one overflow_editor_text "$ROOT_DIR/scripts/run_ux_overflow_editor_text.sh"
+run_one wheel_scroll "$ROOT_DIR/scripts/run_ux_wheel_scroll.sh"
 
 if [ "$fail" != 0 ]; then
   echo "[ux gate] FAILED" >&2
