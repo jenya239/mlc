@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-15-phase-c-critic` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 7 |
-| active_track | TRACK_GUI_CANVAS_GRAPH (Phase C closed) |
-| test_gate | Phase C Critic OK; Phase D Planner next |
+| step_last | 0 |
+| active_track | TRACK_GUI_SCENE_PHASE_D |
+| test_gate | Phase D STEP=1 Decision next |
+
+### Turn 2026-07-15 02:05 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GUI_CANVAS_GRAPH / PHASE_D |
+| started | 2026-07-15 02:02 |
+| elapsed | ~3 min |
+| done    | Opened `TRACK_GUI_SCENE_PHASE_D.md` STEP=1–7; epic+PLAN §10c/§29 → Phase D. |
+| verify  | Phase D track exists; Next=STEP=1; Phase C remains archived. |
+| result  | plan-refresh done. Plain: Phase D queue head; Driver freezes Decision. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-15 02:00 (Critic TRACK_GUI_SCENE_PHASE_C STEP=7)
 

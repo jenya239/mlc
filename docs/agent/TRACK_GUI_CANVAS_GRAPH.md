@@ -7,16 +7,18 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **priority / active** (2026-07-15) — Phase C Critic STEP=7 next
+## Status: **priority / active** (2026-07-15) — Phase D queue head
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** 2026-07-14, Critic OK).
-Active work: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (Driver STEPs 1–6 in git).
+Phase C: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
+(**closed** 2026-07-15, Critic OK).
+Active work: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 
 ## Next step
 
-**Phase C STEP=7** — Critic close. See `TRACK_GUI_SCENE_PHASE_C.md`.
+**Phase D STEP=1** — Decision freeze. See `TRACK_GUI_SCENE_PHASE_D.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -86,14 +88,11 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 (порог 64). Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** Critic OK; `d0a3996f`…`64014467`).
 
-## Phase D: camera + vector path + blueprint canvas — **eligible** (после Phase C closed)
+## Phase D: camera + vector path + blueprint canvas — **priority / active** (2026-07-15)
 
-Camera pan/zoom = трансформация корневого узла. Vector-path bezier
-fill+stroke примитив (один примитив для blueprint-связей и Flash-style
-вычурных форм — не два). Node/wire canvas MVP (минимальный
-Figma/blueprint-подобный демо: N узлов, drag, кривая связь между двумя
-точками). Detailed steps — отдельный `TRACK_GUI_SCENE_PHASE_D.md` при
-старте; это конечная цель, ради которой трек создавался.
+Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
+fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
+(STEP=1 Decision next).
 
 ## Out of scope
 
