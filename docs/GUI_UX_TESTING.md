@@ -113,6 +113,9 @@ scissor; `editor_ux_apply_scissor_clip` → `NoOverflow`; `ux_ok overflow_editor
 Scenario (STEP=7): `wheel_scroll_keeps_caret_visible` — ScrollY + caret stays in
 viewport after wheel via `ux/scroll.mlc`; `ux_ok wheel_scroll_keeps_caret_visible`.
 
+Scenario (STEP=8): `multi_line_selection_probe` — click/drag across lines;
+SelectionRange + draw report highlights; `ux_ok multi_line_selection_probe`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios

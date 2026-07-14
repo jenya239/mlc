@@ -12,7 +12,12 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=8** — Scenario: multi-line selection probe (L3).
+**STEP=9** — Scenario: tree hit open tab (L4).
+
+### STEP=8 done (2026-07-14)
+
+- `ux/selection_apply.mlc`: click/drag + per-line selection draw report.
+- Scenario `multi_line_selection_probe` → `ux_ok` (SelectionRange + 3 highlights).
 
 ### STEP=7 done (2026-07-14)
 
@@ -79,7 +84,7 @@ STEP progress (or explicit user override).
 | 5 | Scenario: `newline_caret_and_spaces` (L9) | **done** (2026-07-14): scenario green |
 | 6 | Scenario: `overflow_editor_text` (L1) + clip/scissor wiring | **done** (2026-07-14): scenario green |
 | 7 | Scenario: scroll wheel / scroll_offset (L2) | **done** (2026-07-14): scenario green |
-| 8 | Scenario: multi-line selection probe (L3) | red→green |
+| 8 | Scenario: multi-line selection probe (L3) | **done** (2026-07-14): scenario green |
 | 9 | Scenario: tree hit open tab (L4) | red→green |
 | 10 | Cursor shape probe + divider ew-resize (L6); needs GLFW cursor FFI | red→green |
 | 11 | L2 headless GL draw report (optional overflow after draw) | smoke `MLC_GLFW_VISIBLE=0` |
@@ -104,4 +109,5 @@ STEP progress (or explicit user override).
 - **STEP=4 done** (2026-07-14): tab_strip_click_activates green.
 - **STEP=5 done** (2026-07-14): newline_caret_and_spaces green.
 - **STEP=6 done** (2026-07-14): overflow_editor_text green.
-- **STEP=7 done** (2026-07-14): wheel_scroll_keeps_caret_visible green; next **STEP=8**.
+- **STEP=7 done** (2026-07-14): wheel_scroll_keeps_caret_visible green.
+- **STEP=8 done** (2026-07-14): multi_line_selection_probe green; next **STEP=9**.

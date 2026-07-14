@@ -1,0 +1,89 @@
+// TRACK_UX_HEADLESS STEP=8 — scenario: multi_line_selection_probe (L3).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  SelectionRange,
+  TextEquals,
+  CaretAt,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  state = editor_ux_insert_text(state, "aaa\nbbb\nccc")
+
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  const text_x = editor_rect.x
+  const text_y = editor_rect.y + state.tab_strip_height
+
+  // Click start of line 0, drag to end of line 2.
+  state = editor_ux_click_text(state, metrics, text_x, text_y)
+  state = editor_ux_drag_text(
+    state,
+    metrics,
+    text_x + 3 * metrics.char_width,
+    text_y + 2 * metrics.line_height
+  )
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("aaa\nbbb\nccc")).ok == 0 then
+    return 1
+  end
+  // Full span: bytes 0..11
+  if ux_check_expect(snapshot, SelectionRange(0, 11)).ok == 0 then
+    println("ux_fail SelectionRange expected 0..11")
+    return 2
+  end
+  if ux_check_expect(snapshot, CaretAt(2, 3)).ok == 0 then
+    println("ux_fail caret at end of line 2")
+    return 3
+  end
+
+  const report = editor_ux_selection_draw_report(state, metrics)
+  if report.line_span != 3 then
+    println("ux_fail line_span expected 3")
+    return 4
+  end
+  if report.highlights.length() != 3 then
+    println("ux_fail highlights length expected 3")
+    return 5
+  end
+  if report.highlights[0].line != 0 || report.highlights[2].line != 2 then
+    return 6
+  end
+  if report.highlights[1].width <= 0 then
+    println("ux_fail middle highlight empty")
+    return 7
+  end
+
+  println("ux_ok multi_line_selection_probe")
+  0
+end

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 7 |
+| driver_turns_since_plan | 8 |
+| step_last | 8 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=8 selection scenario next |
+| test_gate | STEP=9 tree hit scenario next |
+
+### Turn 2026-07-14 18:45 (Driver TRACK_UX_HEADLESS STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:41 |
+| elapsed | ~4 min |
+| done    | `ux/selection_apply.mlc` + scenario `multi_line_selection_probe`; gate. |
+| verify  | `run_ux_multi_line_selection.sh` exit 0; `ux_ok multi_line_selection_probe`. |
+| result  | STEP=8 done. Plain: drag 3 lines → SelectionRange + draw report. |
+| issues  | Renamed away from `select.mlc` (POSIX select clash). Foreign dirty left. |
+| next    | ROLE=Driver STEP=9 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:40 (Driver TRACK_UX_HEADLESS STEP=7)
 

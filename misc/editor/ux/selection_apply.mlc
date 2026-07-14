@@ -1,0 +1,206 @@
+// TRACK_UX_HEADLESS STEP=8 — multi-line selection + draw report (L3 model).
+import { Rect, rect_new } from '../../gui/layout'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  EditorSelection,
+  selection_start,
+  selection_end,
+  selection_is_empty
+} from '../document/selection'
+import {
+  LineIndex,
+  line_index_from_document,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_offset_to_position
+} from '../document/line_index'
+import {
+  EditorViewMetrics,
+  editor_view_metrics_new,
+  nav_click,
+  nav_drag
+} from '../document/navigation'
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+
+export type SelectionHighlight = {
+  line: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type SelectionDrawReport = {
+  line_span: i32,
+  highlights: [SelectionHighlight]
+}
+
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn view_metrics_for_state(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> EditorViewMetrics = do
+  const viewport = text_viewport_rect(state)
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  let mut page_rows = viewport.height / line_height
+  if page_rows < 1 then
+    page_rows = 1
+  end
+  editor_view_metrics_new(
+    line_height,
+    char_width,
+    viewport.x,
+    viewport.y,
+    state.scroll_offset_x,
+    state.scroll_offset_y,
+    page_rows
+  )
+end
+
+fn state_with_selection(
+  state: EditorUxState,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+export fn editor_ux_click_text(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  pixel_x: i32,
+  pixel_y: i32
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const view = view_metrics_for_state(state, metrics)
+  const selection = nav_click(line_index, view, state.selection, pixel_x, pixel_y)
+  state_with_selection(state, selection)
+end
+
+export fn editor_ux_drag_text(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  pixel_x: i32,
+  pixel_y: i32
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const view = view_metrics_for_state(state, metrics)
+  const selection = nav_drag(line_index, view, state.selection, pixel_x, pixel_y)
+  state_with_selection(state, selection)
+end
+
+fn line_content_end(line_index: LineIndex, line: i32) -> i32 = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1) - 1
+  end
+  if end_exclusive < start then
+    return start
+  end
+  end_exclusive
+end
+
+// Per-line highlight rects for the current selection (semantic draw report).
+export fn editor_ux_selection_draw_report(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> SelectionDrawReport = do
+  let mut highlights: [SelectionHighlight] = []
+  if !tab_set_has_active(state.tabs) then
+    return SelectionDrawReport { line_span: 0, highlights: highlights }
+  end
+  if selection_is_empty(state.selection) then
+    return SelectionDrawReport { line_span: 0, highlights: highlights }
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const range_start = selection_start(state.selection)
+  const range_end = selection_end(state.selection)
+  const start_pos = line_index_offset_to_position(line_index, range_start)
+  const end_pos = line_index_offset_to_position(line_index, range_end)
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  const viewport = text_viewport_rect(state)
+  let mut line = start_pos.line
+  while line <= end_pos.line do
+    let mut col_start = 0
+    let mut col_end = line_content_end(line_index, line) -
+      line_index_line_start(line_index, line)
+    if line == start_pos.line then
+      col_start = start_pos.column
+    end
+    if line == end_pos.line then
+      col_end = end_pos.column
+    end
+    let mut width = (col_end - col_start) * char_width
+    if width < 0 then
+      width = 0
+    end
+    highlights.push(SelectionHighlight {
+      line: line,
+      x: viewport.x + col_start * char_width,
+      y: viewport.y + line * line_height - state.scroll_offset_y,
+      width: width,
+      height: line_height
+    })
+    line = line + 1
+  end
+  SelectionDrawReport {
+    line_span: end_pos.line - start_pos.line + 1,
+    highlights: highlights
+  }
+end
