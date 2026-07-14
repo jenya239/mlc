@@ -20,6 +20,7 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../LARGE_CONTEXT_TASKS.md](../LARGE_CONTEXT_TASKS.md) | agent, external-model, batch, mlc-support | Deciding between batch LLM request vs iterative TDD for a track |
 | [../EDITOR.md](../EDITOR.md) | editor, gui, text, workspace, dogfood | Native editor MVP / `misc/editor/`; TRACK_EDITOR_MVP |
 | [../GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) | gui, architecture, editor, hybrid, scene, platform | Editor-first runtime decisions; reference map GPUI/Xilem/… |
+| [../GUI_UX_TESTING.md](../GUI_UX_TESTING.md) | gui, editor, ux, headless, harness, inject, golden | Headless UX scenarios / probes; TRACK_UX_HEADLESS |
 | [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) | vm, script, dyn, embed, bytecode, jit, design-only | Script-profile VM. **Not** MIR VM / `mlcc --run` — see doc §0 |
 
 ## Verification

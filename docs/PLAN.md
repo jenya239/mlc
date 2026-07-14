@@ -394,7 +394,7 @@ compiler/
 | **11** Stdlib для backend-приложений (TCP/HTTP сервер, Postgres, crypto, WS, job queue) | **partial** | [STDLIB_BACKEND.md](STDLIB_BACKEND.md); NET/…/GL_GLAD **closed**. §20 initiative **done**. §14 FFI_SAFETY **closed** |
 | **11a** HTTP-парсер/роутер доступны из MLC (сейчас C++-only) | **done** (2026-07-11) | [TRACK_STDLIB_HTTP_MLC](archive/tracks/TRACK_STDLIB_HTTP_MLC.md) **closed** STEP=1–7; Critic OK (`2fdc8c83`…`34977011`; parse+curl EXIT 0). Residual: no `[HttpRoute]` API |
 | **11b** `spawn` fire-and-forget блокирует (Task-деструктор ждёт `std::future`) — реального многопоточного сервера сегодня нет | **done** (2026-07-11) | [TRACK_CONCURRENCY_SPAWN_DETACH](archive/tracks/TRACK_CONCURRENCY_SPAWN_DETACH.md) **closed** STEP=1–5; Critic OK; E089+`scope`→TaskScope; parallel sleep+accept-loop curl; REG 20/0; self-host identical |
-| **10c** Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas — один фреймворк) | **deferred behind §33** (2026-07-13) Phase A closed; Phase B after EDITOR | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) → Phase A archive |
+| **10c** Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas — один фреймворк) | **queued after §33a** (2026-07-14) Phase A closed; Phase B after UX_HEADLESS | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) → Phase A archive |
 | **12** API-клиенты (derive Json, OpenAPI codegen) | **done** | [API_CLIENT.md](API_CLIENT.md); [TRACK_API_CLIENT](archive/tracks/TRACK_API_CLIENT.md) **closed** 2026-07-09 (STEP=1–6: Json sync, JsonError, record/sum derive Json Ruby+self-host, OpenAPI codegen MVP; self-host diff identical; regression_gate 20/0). Deferred: §8.4 mock `fetch` |
 | **13a** MIR VM crash на >~1500 шагов (trampoline fix) | **done** | [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed** 2026-07-10 (STEP=1–5: trampoline host loop, corpus, 100k depth gate, re-bench, self-host diff identical, regression_gate 20/0) |
 | **13a-2** MIR block-id collision на вложенном `if` (VM зависает) | **done** | [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed** 2026-07-10 (STEP=1–5: `else_block_step.state`; classify/deep gates; corpus; self-host identical; regression_gate 20/0) |
@@ -423,10 +423,11 @@ compiler/
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_LANG_DOCS](archive/tracks/TRACK_LANG_DOCS.md) **closed** Critic OK (`328cb686`…`022402ad`); `lang_ref_lint` 33/0 |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
 | **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) Critic OK; STEP=1–14; REG 20/0; sweep 113/0/1 | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
-| **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open** (2026-07-14) Phase A closed; Phase B eligible (EDITOR closed) | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A → archive; Planner opens Phase B when queued |
+| **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open** (2026-07-14) Phase B eligible; **queued after §33a** | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A archive; Phase B after UX_HEADLESS or user override |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
-| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a / Phase B eligible |
+| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a |
+| **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **priority / active** (2026-07-14) STEP=0 **done**; **STEP=1** next | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](agent/TRACK_UX_HEADLESS.md); L1–L9 live-shell backlog |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -622,9 +623,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **GUI_CANVAS_GRAPH Phase A (**closed** 2026-07-13: STEP=1–7; Critic OK (`9d1fd06e`…`1a010299`); reopen: none;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md))**
   → **EDITOR_MVP (**closed** 2026-07-14: Critic OK; STEP=pre…29; `80a76d99`…`75fc5142`;
-      unit/model MVP; live UX residuals → UX_HEADLESS;
       → [EDITOR.md](EDITOR.md), [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md))**
-  → GUI_CANVAS_GRAPH Phase B–D (eligible; Planner may open Phase B)
+  → **UX_HEADLESS (§33a, PRIORITY 2026-07-14 — queue head; STEP=0 done; STEP=1 next;
+      → [GUI_UX_TESTING.md](GUI_UX_TESTING.md), [agent/TRACK_UX_HEADLESS.md](agent/TRACK_UX_HEADLESS.md))**
+  → GUI_CANVAS_GRAPH Phase B–D (eligible; after UX_HEADLESS yield or user override)
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

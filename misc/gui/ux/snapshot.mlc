@@ -1,0 +1,82 @@
+// TRACK_UX_HEADLESS STEP=0 — semantic UX probe types (scaffold).
+// Design: docs/GUI_UX_TESTING.md
+
+export fn ux_focus_none() -> i32 = 0
+export fn ux_focus_tree() -> i32 = 1
+export fn ux_focus_editor() -> i32 = 2
+export fn ux_focus_tabs() -> i32 = 3
+export fn ux_focus_status() -> i32 = 4
+
+export type UxRect = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type UxOverflow = {
+  widget_id: string,
+  child_x: i32,
+  child_y: i32,
+  child_width: i32,
+  child_height: i32
+}
+
+export type UxTabInfo = {
+  path: string,
+  dirty: i32
+}
+
+export type UxSnapshot = {
+  window_width: i32,
+  window_height: i32,
+  focus: i32,
+  active_tab_index: i32,
+  tabs: [UxTabInfo],
+  caret_line: i32,
+  caret_column: i32,
+  caret_byte: i32,
+  selection_start: i32,
+  selection_end: i32,
+  scroll_offset_x: i32,
+  scroll_offset_y: i32,
+  document_text: string,
+  dirty: i32,
+  tree_rect: UxRect,
+  divider_rect: UxRect,
+  editor_rect: UxRect,
+  text_rect: UxRect,
+  tab_strip_rect: UxRect,
+  overflows: [UxOverflow],
+  cursor_shape: i32,
+  clock_ms: i32
+}
+
+export fn ux_rect_new(x: i32, y: i32, width: i32, height: i32) -> UxRect =
+  UxRect { x: x, y: y, width: width, height: height }
+
+export fn ux_snapshot_empty(width: i32, height: i32) -> UxSnapshot =
+  UxSnapshot {
+    window_width: width,
+    window_height: height,
+    focus: ux_focus_none(),
+    active_tab_index: 0 - 1,
+    tabs: [],
+    caret_line: 0,
+    caret_column: 0,
+    caret_byte: 0,
+    selection_start: 0,
+    selection_end: 0,
+    scroll_offset_x: 0,
+    scroll_offset_y: 0,
+    document_text: "",
+    dirty: 0,
+    tree_rect: ux_rect_new(0, 0, 0, 0),
+    divider_rect: ux_rect_new(0, 0, 0, 0),
+    editor_rect: ux_rect_new(0, 0, 0, 0),
+    text_rect: ux_rect_new(0, 0, 0, 0),
+    tab_strip_rect: ux_rect_new(0, 0, 0, 0),
+    overflows: [],
+    cursor_shape: 0,
+    clock_ms: 0
+  }

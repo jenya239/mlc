@@ -7,17 +7,17 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **deferred** (2026-07-13) — Phase A closed; Phase B behind EDITOR_MVP
+## Status: **open** (2026-07-14) — Phase A closed; Phase B **eligible**, queued after UX_HEADLESS
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-User priority override: [TRACK_EDITOR_MVP](TRACK_EDITOR_MVP.md) is head of
-queue. **Do not open Phase B** until EDITOR closes or user resumes canvas.
+EDITOR_MVP **closed** 2026-07-14. Current queue head:
+[TRACK_UX_HEADLESS](TRACK_UX_HEADLESS.md). **Do not open Phase B** until
+UX_HEADLESS yields / Critic / explicit user resume canvas.
 
 ## Next step
 
-Phase A Critic OK. Yield to
-**TRACK_EDITOR_MVP STEP=pre**. Resume this epic only after EDITOR or explicit
-user command.
+Yield to **TRACK_UX_HEADLESS STEP=1**. Planner opens
+`TRACK_GUI_SCENE_PHASE_B.md` when this epic is next.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой

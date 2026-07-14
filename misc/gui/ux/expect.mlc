@@ -1,0 +1,96 @@
+// TRACK_UX_HEADLESS STEP=0 — action / expect stubs.
+import { UxSnapshot } from './snapshot'
+
+export type UxAction =
+  Move(i32, i32)
+  | Click(i32, i32)
+  | DragTo(i32, i32)
+  | TypeText(string)
+  | KeyEnter
+  | KeyBackspace
+  | KeyEscape
+  | WaitFrames(i32)
+  | SetClock(i32)
+
+export type UxExpect =
+  FocusIs(i32)
+  | ActiveTabIndex(i32)
+  | CaretAt(i32, i32)
+  | SelectionRange(i32, i32)
+  | ScrollY(i32)
+  | TextEquals(string)
+  | TextContains(string)
+  | DirtyIs(i32)
+  | NoOverflow
+  | CursorShape(i32)
+
+export type UxExpectResult = {
+  ok: i32,
+  message: string
+}
+
+export fn ux_expect_ok() -> UxExpectResult =
+  UxExpectResult { ok: 1, message: "" }
+
+export fn ux_expect_fail(message: string) -> UxExpectResult =
+  UxExpectResult { ok: 0, message: message }
+
+export fn ux_check_expect(snapshot: UxSnapshot, expect: UxExpect) -> UxExpectResult =
+  match expect
+  | FocusIs(focus) =>
+      if snapshot.focus == focus then
+        ux_expect_ok()
+      else
+        ux_expect_fail("focus mismatch")
+      end
+  | ActiveTabIndex(index) =>
+      if snapshot.active_tab_index == index then
+        ux_expect_ok()
+      else
+        ux_expect_fail("active_tab_index mismatch")
+      end
+  | CaretAt(line, column) =>
+      if snapshot.caret_line == line && snapshot.caret_column == column then
+        ux_expect_ok()
+      else
+        ux_expect_fail("caret mismatch")
+      end
+  | SelectionRange(range_start, range_end) =>
+      if snapshot.selection_start == range_start && snapshot.selection_end == range_end then
+        ux_expect_ok()
+      else
+        ux_expect_fail("selection mismatch")
+      end
+  | ScrollY(scroll_y) =>
+      if snapshot.scroll_offset_y == scroll_y then
+        ux_expect_ok()
+      else
+        ux_expect_fail("scroll_y mismatch")
+      end
+  | TextEquals(text) =>
+      if snapshot.document_text == text then
+        ux_expect_ok()
+      else
+        ux_expect_fail("text equals mismatch")
+      end
+  | TextContains(fragment) =>
+      ux_expect_fail("TextContains not implemented in STEP=0: " + fragment)
+  | DirtyIs(dirty) =>
+      if snapshot.dirty == dirty then
+        ux_expect_ok()
+      else
+        ux_expect_fail("dirty mismatch")
+      end
+  | NoOverflow =>
+      if snapshot.overflows.length() == 0 then
+        ux_expect_ok()
+      else
+        ux_expect_fail("overflow present")
+      end
+  | CursorShape(shape) =>
+      if snapshot.cursor_shape == shape then
+        ux_expect_ok()
+      else
+        ux_expect_fail("cursor_shape mismatch")
+      end
+  end

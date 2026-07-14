@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 29 |
-| active_track | — (EDITOR_MVP closed) |
-| test_gate | Planner next after Critic close |
+| step_last | 0 |
+| active_track | TRACK_UX_HEADLESS |
+| test_gate | STEP=1 expect matchers next |
+
+### Turn 2026-07-14 18:20 (Planner STEP=plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:13 |
+| elapsed | ~7 min |
+| done    | Activated §33a UX_HEADLESS as queue head; landed STEP=0 scaffold+docs; Phase B queued after. |
+| verify  | `scripts/run_ux_expect_unit.sh` + `run_ux_gate.sh` exit 0; `expect_unit ok`. |
+| result  | PLAN/TRACK/DEVELOPMENT sync. Plain: Driver STEP=1 next. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M, GUI_ARCHITECTURE M. |
+| next    | ROLE=Driver STEP=1 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:15 (Critic TRACK_EDITOR_MVP STEP=29)
 

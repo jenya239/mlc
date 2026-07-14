@@ -1,0 +1,30 @@
+// TRACK_UX_HEADLESS STEP=0 — expect matchers smoke.
+import { ux_snapshot_empty } from '../../gui/ux/snapshot'
+import {
+  CaretAt,
+  NoOverflow,
+  DirtyIs,
+  ux_check_expect
+} from '../../gui/ux/expect'
+
+fn main() -> i32 = do
+  const snapshot = ux_snapshot_empty(800, 600)
+  const caret = ux_check_expect(snapshot, CaretAt(0, 0))
+  if caret.ok == 0 then
+    return 1
+  end
+  const dirty = ux_check_expect(snapshot, DirtyIs(0))
+  if dirty.ok == 0 then
+    return 2
+  end
+  const overflow = ux_check_expect(snapshot, NoOverflow)
+  if overflow.ok == 0 then
+    return 3
+  end
+  const bad = ux_check_expect(snapshot, CaretAt(1, 0))
+  if bad.ok != 0 then
+    return 4
+  end
+  println("[ux] expect_unit ok")
+  0
+end
