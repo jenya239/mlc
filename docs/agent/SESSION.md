@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 18 |
-| step_last | 17 |
+| driver_turns_since_plan | 19 |
+| step_last | 18 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=18 undo next |
+| test_gate | STEP=19 save next |
+
+### Turn 2026-07-14 13:10 (Driver TRACK_EDITOR_MVP STEP=18)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 18 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 13:03 |
+| elapsed | ~7 min |
+| done    | `document/history.mlc` + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_history_unit.sh` exit 0; `history_unit ok text=ab`. |
+| result  | STEP=18 done. Plain: undo/redo restores doc+selection; redo cleared on edit. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/static_text/text_renderer M. |
+| next    | ROLE=Driver STEP=19 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 13:00 (Driver TRACK_EDITOR_MVP STEP=17)
 

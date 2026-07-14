@@ -1,0 +1,111 @@
+// TRACK_EDITOR_MVP STEP=18 — undo/redo history (document + selection snapshots).
+import { TextDocument } from './piece_table'
+import { EditorSelection } from './selection'
+
+export type HistoryEntry = {
+  document: TextDocument,
+  selection: EditorSelection
+}
+
+export type EditorHistory = {
+  undo: [HistoryEntry],
+  redo: [HistoryEntry]
+}
+
+export fn history_entry_new(
+  document: TextDocument,
+  selection: EditorSelection
+) -> HistoryEntry =
+  HistoryEntry { document: document, selection: selection }
+
+export fn history_new() -> EditorHistory =
+  EditorHistory { undo: [], redo: [] }
+
+export fn history_can_undo(history: EditorHistory) -> bool =
+  history.undo.length() > 0
+
+export fn history_can_redo(history: EditorHistory) -> bool =
+  history.redo.length() > 0
+
+export type HistoryApplyResult = {
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection,
+  applied: i32
+}
+
+// Before mutating: push current state, clear redo.
+export fn history_push_before_edit(
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditorHistory = do
+  let mut undo = history.undo
+  undo.push(history_entry_new(document, selection))
+  EditorHistory { undo: undo, redo: [] }
+end
+
+fn array_without_last(entries: [HistoryEntry]) -> [HistoryEntry] = do
+  let mut out: [HistoryEntry] = []
+  let mut index = 0
+  const limit = entries.length() - 1
+  while index < limit do
+    out.push(entries[index])
+    index = index + 1
+  end
+  out
+end
+
+export fn history_undo(
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection
+) -> HistoryApplyResult = do
+  if history.undo.length() == 0 then
+    return HistoryApplyResult {
+      history: history,
+      document: document,
+      selection: selection,
+      applied: 0
+    }
+  end
+  const entry = history.undo[history.undo.length() - 1]
+  let mut redo = history.redo
+  redo.push(history_entry_new(document, selection))
+  HistoryApplyResult {
+    history: EditorHistory {
+      undo: array_without_last(history.undo),
+      redo: redo
+    },
+    document: entry.document,
+    selection: entry.selection,
+    applied: 1
+  }
+end
+
+export fn history_redo(
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection
+) -> HistoryApplyResult = do
+  if history.redo.length() == 0 then
+    return HistoryApplyResult {
+      history: history,
+      document: document,
+      selection: selection,
+      applied: 0
+    }
+  end
+  const entry = history.redo[history.redo.length() - 1]
+  let mut undo = history.undo
+  undo.push(history_entry_new(document, selection))
+  HistoryApplyResult {
+    history: EditorHistory {
+      undo: undo,
+      redo: array_without_last(history.redo)
+    },
+    document: entry.document,
+    selection: entry.selection,
+    applied: 1
+  }
+end

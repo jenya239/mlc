@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers for `document_from_file`
 
-## STEP=0…17 status
+## STEP=0…18 status
 
-- STEP=0–16: scaffold through navigation.
-- STEP=17: `clipboard.mlc` + `clipboard_edit.mlc` — Ctrl+A/C/X/V (inject; GLFW later).
+- STEP=0–17: scaffold through clipboard.
+- STEP=18: `document/history.mlc` — undo/redo snapshot stacks.

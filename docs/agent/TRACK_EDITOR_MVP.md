@@ -12,7 +12,12 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=18** — Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y).
+**STEP=19** — Dirty + save Ctrl+S; errors shown to user.
+
+### STEP=18 done (2026-07-14)
+
+- `document/history.mlc`: undo/redo stacks (doc+selection snapshots).
+- `tests/history_unit.mlc` + script exit 0 (`text=ab`).
 
 ### STEP=17 done (2026-07-14)
 
@@ -243,7 +248,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 15 | Insert/delete/Enter/Backspace/Delete | **done** (2026-07-14): `edit.mlc` + unit |
 | 16 | Arrows/Home/End/Page/Shift+arrows; mouse click+drag | **done** (2026-07-14): `navigation.mlc` + unit + inject |
 | 17 | Clipboard (P2) Ctrl+C/X/V; Ctrl+A | **done** (2026-07-14): inject clipboard + unit; GLFW deferred |
-| 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | unit |
+| 18 | Undo/redo (Ctrl+Z / Ctrl+Shift+Z or Y) | **done** (2026-07-14): `history.mlc` + unit |
 | 19 | Dirty + save Ctrl+S; errors shown to user | integration: temp project |
 
 ### E5 — Tabs / commands / focus / dirty close
@@ -330,4 +335,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=14 done** (2026-07-14): selection model.
 - **STEP=15 done** (2026-07-14): edit insert/delete.
 - **STEP=16 done** (2026-07-14): navigation.
-- **STEP=17 done** (2026-07-14): clipboard edit; next **STEP=18**.
+- **STEP=17 done** (2026-07-14): clipboard edit.
+- **STEP=18 done** (2026-07-14): undo/redo; next **STEP=19**.

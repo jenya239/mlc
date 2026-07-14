@@ -1,0 +1,126 @@
+// TRACK_EDITOR_MVP STEP=18 — undo/redo unit.
+import {
+  document_from_string,
+  document_to_string
+} from '../document/piece_table'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import { edit_insert_text, edit_backspace } from '../document/edit'
+import {
+  history_new,
+  history_push_before_edit,
+  history_undo,
+  history_redo,
+  history_can_undo,
+  history_can_redo
+} from '../document/history'
+
+fn main() -> i32 = do
+  let mut document = document_from_string("ab")
+  let mut selection = selection_collapsed(2)
+  let mut history = history_new()
+
+  if history_can_undo(history) || history_can_redo(history) then
+    return 1
+  end
+
+  // Edit 1: insert "c"
+  history = history_push_before_edit(history, document, selection)
+  let mut edited = edit_insert_text(document, selection, "c")
+  document = edited.document
+  selection = edited.selection
+  if document_to_string(document) != "abc" then
+    return 2
+  end
+
+  // Edit 2: backspace
+  history = history_push_before_edit(history, document, selection)
+  edited = edit_backspace(document, selection)
+  document = edited.document
+  selection = edited.selection
+  if document_to_string(document) != "ab" then
+    return 3
+  end
+
+  if !history_can_undo(history) then
+    return 4
+  end
+
+  // Undo → back to "abc"
+  let mut applied = history_undo(history, document, selection)
+  if applied.applied != 1 then
+    return 5
+  end
+  history = applied.history
+  document = applied.document
+  selection = applied.selection
+  if document_to_string(document) != "abc" then
+    return 6
+  end
+  if selection_caret(selection) != 3 then
+    return 7
+  end
+  if !history_can_redo(history) then
+    return 8
+  end
+
+  // Undo → "ab" (before first insert)
+  applied = history_undo(history, document, selection)
+  if applied.applied != 1 then
+    return 9
+  end
+  history = applied.history
+  document = applied.document
+  selection = applied.selection
+  if document_to_string(document) != "ab" then
+    return 10
+  end
+
+  // Redo → "abc"
+  applied = history_redo(history, document, selection)
+  if applied.applied != 1 then
+    return 11
+  end
+  history = applied.history
+  document = applied.document
+  if document_to_string(document) != "abc" then
+    return 12
+  end
+
+  // New edit clears redo
+  history = history_push_before_edit(history, document, applied.selection)
+  edited = edit_insert_text(document, applied.selection, "!")
+  document = edited.document
+  selection = edited.selection
+  if history_can_redo(history) then
+    return 13
+  end
+  if document_to_string(document) != "abc!" then
+    return 14
+  end
+
+  // Undo empty when stack drained after undos
+  applied = history_undo(history, document, selection)
+  history = applied.history
+  document = applied.document
+  selection = applied.selection
+  applied = history_undo(history, document, selection)
+  history = applied.history
+  document = applied.document
+  selection = applied.selection
+  applied = history_undo(history, document, selection)
+  if document_to_string(applied.document) != "ab" then
+    return 15
+  end
+  applied = history_undo(applied.history, applied.document, applied.selection)
+  if applied.applied != 0 then
+    return 16
+  end
+
+  println(
+    "[mlc-editor] history_unit ok text=" + document_to_string(applied.document)
+  )
+  0
+end
