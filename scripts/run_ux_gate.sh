@@ -27,6 +27,7 @@ run_one multi_line_selection "$ROOT_DIR/scripts/run_ux_multi_line_selection.sh"
 run_one tree_click "$ROOT_DIR/scripts/run_ux_tree_click.sh"
 run_one divider_cursor "$ROOT_DIR/scripts/run_ux_divider_cursor.sh"
 run_one draw_report "$ROOT_DIR/scripts/run_ux_draw_report.sh"
+run_one caret_mae "$ROOT_DIR/scripts/run_ux_caret_mae.sh"
 
 if [ "$fail" != 0 ]; then
   echo "[ux gate] FAILED" >&2

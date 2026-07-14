@@ -1,0 +1,24 @@
+// TRACK_UX_HEADLESS STEP=12 — rasterize caret glyph into A8 (CPU stand-in for FBO).
+export fn render_caret_a8(
+  width: i32,
+  height: i32,
+  caret_x: i32,
+  caret_width: i32,
+  alpha: i32
+) -> [i32] = do
+  let mut pixels: [i32] = []
+  let mut row = 0
+  while row < height do
+    let mut column = 0
+    while column < width do
+      let mut value = 0
+      if column >= caret_x && column < caret_x + caret_width then
+        value = alpha
+      end
+      pixels.push(value)
+      column = column + 1
+    end
+    row = row + 1
+  end
+  pixels
+end

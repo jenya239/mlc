@@ -1,0 +1,23 @@
+// TRACK_UX_HEADLESS STEP=12 — caret A8 golden (4×16, not full UI).
+// Vertical bar at x=1, alpha 255 — stand-in for FBO caret/glyph readback.
+export fn caret_fixture_width() -> i32 = 4
+export fn caret_fixture_height() -> i32 = 16
+
+export fn caret_4x16_a8_golden() -> [i32] = [
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0,
+  0, 255, 0, 0
+]

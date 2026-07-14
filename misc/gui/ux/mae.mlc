@@ -1,0 +1,37 @@
+// TRACK_UX_HEADLESS STEP=12 — MAE over u8 buffers (TEXT_RENDERING tol ≤ 8/255).
+export fn ux_mae_tolerance_u8() -> i32 = 8
+
+// Mean absolute error on 0..255 samples (integer floor(sum/n)).
+export fn ux_mae_u8_mean(actual: [i32], expected: [i32]) -> i32 = do
+  if actual.length() != expected.length() then
+    return 255
+  end
+  if actual.length() == 0 then
+    return 0
+  end
+  let mut sum = 0
+  let mut index = 0
+  while index < actual.length() do
+    let mut delta = actual[index] - expected[index]
+    if delta < 0 then
+      delta = 0 - delta
+    end
+    sum = sum + delta
+    index = index + 1
+  end
+  sum / actual.length()
+end
+
+export fn ux_mae_u8_within(
+  actual: [i32],
+  expected: [i32],
+  limit: i32
+) -> i32 = do
+  if actual.length() != expected.length() then
+    return 0
+  end
+  if ux_mae_u8_mean(actual, expected) <= limit then
+    return 1
+  end
+  0
+end

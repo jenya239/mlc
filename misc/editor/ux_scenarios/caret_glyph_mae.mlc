@@ -1,0 +1,60 @@
+// TRACK_UX_HEADLESS STEP=12 — L3 caret/glyph MAE vs fixture (optional FBO stand-in).
+import {
+  ux_mae_tolerance_u8,
+  ux_mae_u8_mean,
+  ux_mae_u8_within
+} from '../../gui/ux/mae'
+import {
+  caret_fixture_width,
+  caret_fixture_height,
+  caret_4x16_a8_golden
+} from '../fixtures/ux/caret_4x16_a8'
+import { render_caret_a8 } from '../ux/caret_raster'
+
+fn main() -> i32 = do
+  const width = caret_fixture_width()
+  const height = caret_fixture_height()
+  const golden = caret_4x16_a8_golden()
+  if golden.length() != width * height then
+    println("ux_fail golden size")
+    return 1
+  end
+
+  const actual = render_caret_a8(width, height, 1, 1, 255)
+  if actual.length() != golden.length() then
+    println("ux_fail raster size")
+    return 2
+  end
+
+  const mean = ux_mae_u8_mean(actual, golden)
+  if ux_mae_u8_within(actual, golden, ux_mae_tolerance_u8()) == 0 then
+    println("ux_fail MAE=" + mean.to_string())
+    return 3
+  end
+  if mean != 0 then
+    println("ux_fail expected exact caret match MAE=0 got " + mean.to_string())
+    return 4
+  end
+
+  // Soft noise still within TEXT_RENDERING tol (≤8).
+  let mut noisy = actual
+  noisy.set(0, 8)
+  if ux_mae_u8_within(noisy, golden, ux_mae_tolerance_u8()) == 0 then
+    println("ux_fail noisy within tol")
+    return 5
+  end
+  // Mean > 8 requires sum > 8*64=512 → flip ≥3 bar pixels off + fill noise.
+  let mut loud = actual
+  let mut loud_index = 0
+  while loud_index < loud.length() do
+    loud.set(loud_index, 255)
+    loud_index = loud_index + 1
+  end
+  if ux_mae_u8_within(loud, golden, ux_mae_tolerance_u8()) != 0 then
+    println("ux_fail loud should exceed tol")
+    return 6
+  end
+
+  println("ux_ok caret_glyph_mae mae=" + mean.to_string())
+  0
+end

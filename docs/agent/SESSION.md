@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 11 |
-| step_last | 11 |
+| driver_turns_since_plan | 12 |
+| step_last | 12 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=12 FBO MAE optional next |
+| test_gate | STEP=13 clipboard scenario next |
+
+### Turn 2026-07-14 18:58 (Driver TRACK_UX_HEADLESS STEP=12)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 12 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:56 |
+| elapsed | ~3 min |
+| done    | `gui/ux/mae.mlc` + caret fixture/raster + `caret_glyph_mae`; gate. |
+| verify  | `run_ux_caret_mae.sh` exit 0; `ux_ok caret_glyph_mae mae=0`. |
+| result  | STEP=12 done. Plain: caret A8 MAE≤8; live FBO deferred. |
+| issues  | CPU stand-in only. Foreign dirty left. |
+| next    | ROLE=Driver STEP=13 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:55 (Driver TRACK_UX_HEADLESS STEP=11)
 
