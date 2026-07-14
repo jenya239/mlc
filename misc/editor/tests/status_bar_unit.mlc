@@ -1,0 +1,68 @@
+// TRACK_EDITOR_MVP STEP=26 — status bar unit/smoke.
+import {
+  open_buffer_from_text,
+  open_buffer_set_document
+} from '../document/save'
+import { document_from_string } from '../document/piece_table'
+import {
+  status_bar_language_from_path,
+  status_bar_from_buffer,
+  status_bar_format
+} from '../ui/status_bar'
+
+fn main() -> i32 = do
+  if status_bar_language_from_path("/proj/a.mlc") != "mlc" then
+    return 1
+  end
+  if status_bar_language_from_path("README.md") != "markdown" then
+    return 2
+  end
+  if status_bar_language_from_path("noext") != "text" then
+    return 3
+  end
+
+  let mut buffer = open_buffer_from_text("/proj/main.mlc", "ab\nc")
+  // caret at start of second line (byte 3) → Ln 2, Col 1
+  let mut model = status_bar_from_buffer(buffer, 3)
+  if model.path != "/proj/main.mlc" then
+    return 4
+  end
+  if model.line != 2 || model.column != 1 then
+    return 5
+  end
+  if model.dirty != 0 then
+    return 6
+  end
+  if model.language != "mlc" || model.encoding != "utf-8" then
+    return 7
+  end
+
+  buffer = open_buffer_set_document(buffer, document_from_string("ab\ncd"))
+  model = status_bar_from_buffer(buffer, 0)
+  if model.dirty != 1 then
+    return 8
+  end
+  const formatted = status_bar_format(model)
+  if formatted.byte_size() < 10 then
+    return 9
+  end
+  // must include path, Ln, modified, language, encoding markers
+  if !formatted.contains("/proj/main.mlc") then
+    return 10
+  end
+  if !formatted.contains("Ln 1") then
+    return 11
+  end
+  if !formatted.contains("[modified]") then
+    return 12
+  end
+  if !formatted.contains("mlc") then
+    return 13
+  end
+  if !formatted.contains("utf-8") then
+    return 14
+  end
+
+  println("[mlc-editor] status_bar_unit ok")
+  0
+end

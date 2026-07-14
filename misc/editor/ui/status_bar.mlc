@@ -1,0 +1,79 @@
+// TRACK_EDITOR_MVP STEP=26 — status bar model (path, Ln/Col, dirty, language, encoding).
+import {
+  OpenBuffer,
+  open_buffer_is_dirty
+} from '../document/save'
+import {
+  line_index_from_document,
+  line_index_offset_to_position
+} from '../document/line_index'
+
+export type StatusBarModel = {
+  path: string,
+  line: i32,
+  column: i32,
+  dirty: i32,
+  language: string,
+  encoding: string
+}
+
+export fn status_bar_language_from_path(path: string) -> string = do
+  let mut dot = 0 - 1
+  let mut index = 0
+  const length = path.byte_size()
+  while index < length do
+    if path.byte_at(index) == "." then
+      dot = index
+    end
+    index = index + 1
+  end
+  if dot < 0 || dot + 1 >= length then
+    return "text"
+  end
+  const extension = path.byte_substring(dot + 1, length - dot - 1)
+  if extension == "mlc" then
+    return "mlc"
+  end
+  if extension == "md" then
+    return "markdown"
+  end
+  if extension == "cpp" || extension == "hpp" || extension == "cc" then
+    return "cpp"
+  end
+  if extension == "rb" then
+    return "ruby"
+  end
+  extension
+end
+
+export fn status_bar_from_buffer(
+  buffer: OpenBuffer,
+  caret_byte: i32
+) -> StatusBarModel = do
+  const line_index = line_index_from_document(buffer.document)
+  const position = line_index_offset_to_position(line_index, caret_byte)
+  let mut dirty_flag = 0
+  if open_buffer_is_dirty(buffer) then
+    dirty_flag = 1
+  end
+  StatusBarModel {
+    path: buffer.path,
+    line: position.line + 1,
+    column: position.column + 1,
+    dirty: dirty_flag,
+    language: status_bar_language_from_path(buffer.path),
+    encoding: "utf-8"
+  }
+end
+
+export fn status_bar_format(model: StatusBarModel) -> string = do
+  let mut text = model.path
+  text = text + "  Ln " + model.line.to_string()
+  text = text + ", Col " + model.column.to_string()
+  if model.dirty != 0 then
+    text = text + "  [modified]"
+  end
+  text = text + "  " + model.language
+  text = text + "  " + model.encoding
+  text
+end

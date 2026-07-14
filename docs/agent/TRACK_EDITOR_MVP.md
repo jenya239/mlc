@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=26** — Status bar: path, Ln/Col, dirty, language, encoding if known.
+**STEP=27** — Theme finalize Solarized Light–like.
+
+### STEP=26 done (2026-07-14)
+
+- `ui/status_bar.mlc`: path, Ln/Col (1-based), dirty, language, encoding; format string.
+- `tests/status_bar_unit.mlc` + script exit 0.
+
 
 ### STEP=25 done (2026-07-14)
 
@@ -306,7 +312,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | Step | Item | Gate |
 |------|------|------|
 | 25 | `SyntaxHighlighter` interface; MLC lexer stub (visible range / incremental) | **done** (2026-07-14): `highlighter.mlc` + unit |
-| 26 | Status bar: path, Ln/Col, dirty, language, encoding if known | smoke |
+| 26 | Status bar: path, Ln/Col, dirty, language, encoding if known | **done** (2026-07-14): `status_bar.mlc` + unit |
 | 27 | Theme finalize Solarized Light–like | visual |
 | 28 | Perf report on large file + screenshot/headless capture | numbers in ARCHITECTURE/README |
 | 29 | Critic close: acceptance checklist; REG if touched compiler; docs |
@@ -383,4 +389,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=22 done** (2026-07-14): Ctrl+Tab cycle.
 - **STEP=23 done** (2026-07-14): command bus + focus.
 - **STEP=24 done** (2026-07-14): session restore (E5 complete).
-- **STEP=25 done** (2026-07-14): syntax stub spans; next **STEP=26**.
+- **STEP=25 done** (2026-07-14): syntax stub spans.
+- **STEP=26 done** (2026-07-14): status bar model; next **STEP=27**.

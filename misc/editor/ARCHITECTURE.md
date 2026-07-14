@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…25 status
+## STEP=0…26 status
 
-- STEP=0–24: scaffold through session restore.
-- STEP=25: `syntax/highlighter.mlc` — range spans (keyword/comment/string).
+- STEP=0–25: scaffold through syntax stub.
+- STEP=26: `ui/status_bar.mlc` — path, Ln/Col, dirty, language, encoding.

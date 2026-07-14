@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 26 |
-| step_last | 25 |
+| driver_turns_since_plan | 27 |
+| step_last | 26 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=26 status-bar next |
+| test_gate | STEP=27 theme next |
+
+### Turn 2026-07-14 18:01 (Driver TRACK_EDITOR_MVP STEP=26)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 26 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 17:58 |
+| elapsed | ~3 min |
+| done    | `ui/status_bar.mlc` + unit/script; TRACK/PLAN STEP sync. |
+| verify  | `scripts/run_editor_status_bar_unit.sh` exit 0; `status_bar_unit ok`. |
+| result  | STEP=26 done. Plain: path Ln/Col dirty language utf-8 format. |
+| issues  | Left foreign: UX_HEADLESS/PLAN §33a, SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=27 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 17:58 (Driver TRACK_EDITOR_MVP STEP=25)
 
