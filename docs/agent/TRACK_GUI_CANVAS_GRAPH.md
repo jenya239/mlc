@@ -7,17 +7,16 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **open** (2026-07-14) — Phase A closed; Phase B **eligible**, queued after UX_HEADLESS
+## Status: **priority / active** (2026-07-14) — Phase B open (queue head)
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-EDITOR_MVP **closed** 2026-07-14. Current queue head:
-[TRACK_UX_HEADLESS](TRACK_UX_HEADLESS.md). **Do not open Phase B** until
-UX_HEADLESS yields / Critic / explicit user resume canvas.
+UX_HEADLESS **closed** 2026-07-14. Active work:
+[TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md).
 
 ## Next step
 
-Yield to **TRACK_UX_HEADLESS STEP=1**. Planner opens
-`TRACK_GUI_SCENE_PHASE_B.md` when this epic is next.
+**Phase B STEP=1** — widget Decision (kinds/state/hit/draw). See
+`TRACK_GUI_SCENE_PHASE_B.md`.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой

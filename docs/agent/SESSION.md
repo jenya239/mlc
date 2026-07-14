@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 15 |
-| active_track | TRACK_UX_HEADLESS (closed) |
-| test_gate | Planner Phase B next |
+| step_last | 0 |
+| active_track | TRACK_GUI_SCENE_PHASE_B |
+| test_gate | Phase B STEP=1 Decision next |
+
+### Turn 2026-07-14 19:10 (Planner TRACK_GUI_CANVAS_GRAPH plan-refresh)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_GUI_CANVAS_GRAPH / PHASE_B |
+| started | 2026-07-14 19:08 |
+| elapsed | ~2 min |
+| done    | Opened `TRACK_GUI_SCENE_PHASE_B.md` STEP=1–7; epic+PLAN §10c/§29 active. |
+| verify  | Phase B track exists; Next=STEP=1; UX_HEADLESS remains archived. |
+| result  | plan-refresh done. Plain: Phase B queue head; Driver freezes Decision. |
+| issues  | Left foreign demo_live/theme dirty. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:08 (Critic TRACK_UX_HEADLESS STEP=15)
 
