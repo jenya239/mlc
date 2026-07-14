@@ -127,6 +127,7 @@ Syntax requires `[mlc-editor] syntax_unit ok`.
 Status bar requires `[mlc-editor] status_bar_unit ok`.
 Theme requires `[mlc-editor] theme_unit ok`.
 Perf report requires `perf_report file_lines=100000 scroll_bound=24` + `perf_report_unit ok`.
+Track **closed** 2026-07-14 (Critic OK) — see `docs/archive/tracks/TRACK_EDITOR_MVP.md`.
 
 ## Layout (growing)
 

@@ -423,10 +423,10 @@ compiler/
 | **27** | Language reference manual (`docs/LANGUAGE_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_LANG_DOCS](archive/tracks/TRACK_LANG_DOCS.md) **closed** Critic OK (`328cb686`…`022402ad`); `lang_ref_lint` 33/0 |
 | **28** | Stdlib module reference (`docs/STDLIB_REFERENCE.md`) | **done** (2026-07-12) | [TRACK_STDLIB_DOCS](archive/tracks/TRACK_STDLIB_DOCS.md) **closed** Critic OK (`e47e22c5`…`8b2ae9a8`); snippet 10/0 |
 | **21b** | GL text pipeline: per-call FreeType/HarfBuzz re-init (CPU load) + отсутствие baseline bearing (кривое выравнивание букв) | **done** (2026-07-12) Critic OK; STEP=1–14; REG 20/0; sweep 113/0/1 | [TRACK_TEXT_GL_PERF_BASELINE](archive/tracks/TRACK_TEXT_GL_PERF_BASELINE.md) — face/font cache (~47× user CPU); `glyph_bearing_*` + GL demos baseline; `text_a8_hxpjy_24.rgba` |
-| **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **deferred behind §33** (2026-07-13) Phase A closed; Phase B **после** EDITOR_MVP или явной команды | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A → archive; Phase B не открывать, пока EDITOR в приоритете |
+| **29** | Retained affine-transform scene graph (Figma/blueprint canvas + classic + game + Flash-rich UI — один фундамент) | **open** (2026-07-14) Phase A closed; Phase B eligible (EDITOR closed) | [TRACK_GUI_CANVAS_GRAPH](agent/TRACK_GUI_CANVAS_GRAPH.md) — Phase A → archive; Planner opens Phase B when queued |
 | **30** | HarfBuzz/FreeType шимы: §8 «без hand-written C++» пропустил их — face/font handle-кеш и pitch-copy loop остаются ручным C++ | **done** (2026-07-13) Critic OK; STEP=1–10 | [TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md) — abi+text_shaping; ~27× user vs pre-cache; REG 20/0 |
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
-| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **priority / active** (2026-07-14) STEP=pre…28 **done**; **STEP=29** next (Critic close) | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](agent/TRACK_EDITOR_MVP.md); GLFW PlatformBackend v1; GUI Phase B deferred |
+| **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a / Phase B eligible |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -621,13 +621,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](archive/tracks/TRACK_DEBUG_SOURCE_MAP.md))**
   → **GUI_CANVAS_GRAPH Phase A (**closed** 2026-07-13: STEP=1–7; Critic OK (`9d1fd06e`…`1a010299`); reopen: none;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md))**
-  → **EDITOR_MVP (**PRIORITY** 2026-07-13 — голова очереди;
-      STEP=pre…28 **done**; **STEP=29** Critic-close next;
-      GUI Phase B–D **deferred** until EDITOR acceptance or explicit user
-      command to resume canvas;
-      → [EDITOR.md](EDITOR.md), [agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md),
-        [LARGE_CONTEXT_TASKS.md](LARGE_CONTEXT_TASKS.md) §7)**
-  → GUI_CANVAS_GRAPH Phase B–D (deferred; resume after EDITOR or user says so)
+  → **EDITOR_MVP (**closed** 2026-07-14: Critic OK; STEP=pre…29; `80a76d99`…`75fc5142`;
+      unit/model MVP; live UX residuals → UX_HEADLESS;
+      → [EDITOR.md](EDITOR.md), [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md))**
+  → GUI_CANVAS_GRAPH Phase B–D (eligible; Planner may open Phase B)
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

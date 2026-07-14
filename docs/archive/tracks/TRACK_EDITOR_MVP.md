@@ -1,18 +1,31 @@
 # Track: Native editor MVP (text-centric, Linux)
 
-Parent: [../EDITOR.md](../EDITOR.md), [../PLAN.md](../PLAN.md) §33,
-[../GUI.md](../GUI.md). Trigger: пользователь 2026-07-13 — минимальный
+Parent: [EDITOR.md](../../EDITOR.md), [PLAN.md](../../PLAN.md) §33,
+[GUI.md](../../GUI.md). Trigger: пользователь 2026-07-13 — минимальный
 используемый редактор на наших GUI/text наработках; задел под будущую
 AI-first IDE **без** реализации будущих фич сейчас.
 
-## Status: **priority / active** (2026-07-13) — голова очереди PLAN §33
+## Status: **closed** (2026-07-14) — Critic OK
 
-User override 2026-07-13: editor + mlc-support Opus preflight ahead of GUI
-Phase B–D. Phase A scene is done (dependency satisfied).
+**Critic 2026-07-14 (STEP=29):** Unit/model MVP accepted. Spot-check units exit 0
+(tabs, tab_close, command_bus, session, syntax, perf_report, piece_table, save).
+Anti-false-done: key artifacts have commits (`7a7e3980`…`75fc5142`). REG skipped
+(no `compiler/` / `lib/mlc/` in EDITOR steps). **reopen: none** for numbered
+STEPs. Residuals (known limits, not blockers for close): integrated live shell
+wiring incomplete (`main.mlc` still scaffold smoke); L1–L9 live UX →
+`TRACK_UX_HEADLESS` / foreign demo; P1 `list_dir` deferred; P2 GLFW clipboard
+deferred; no FBO screenshot (headless unit counts only). Product phrase
+«usable on repo sources» = **model+unit gate met**, not polished interactive IDE.
 
 ## Next step
 
-**STEP=29** — Critic close: acceptance checklist; REG if touched compiler; docs.
+**closed** — Critic OK. Queue → Planner (GUI Phase B eligible; UX_HEADLESS open).
+
+### STEP=29 done (2026-07-14)
+
+- Acceptance checklist + spot-check units + git anti-false-done.
+- REG N/A (misc/editor only). Archived this track.
+
 
 ### STEP=28 done (2026-07-14)
 
@@ -213,7 +226,7 @@ VM/`mlc-script`, plugins, agent chat, hypergraph, notebooks, CRDT, collab,
 LSP, debugger, terminal, minimap, inline widgets in text, heavy animation,
 multi-platform, Electron/WebView/Qt Widgets/ready-made editor component.
 
-## Architecture (Clean, minimal) — [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md)
+## Architecture (Clean, minimal) — [GUI_ARCHITECTURE.md](../../GUI_ARCHITECTURE.md)
 
 **Editor substrate first.** Hybrid immediate/retained. Multi-tree (entity /
 view / layout / scene / hit / focus / semantic stub), not one DOM. No raw GL
@@ -247,7 +260,7 @@ scene fragments → flatten → render`.
 12. No Widget inheritance tower; no CSS; no global signal mesh.
 13. Runtime must not assume “only TextDocument apps”: lists/scene/commands
     stay usable for file manager / image viewer / music player (see
-    [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) §Product surfaces). Those
+    [GUI_ARCHITECTURE.md](../../GUI_ARCHITECTURE.md) §Product surfaces). Those
     apps are **not** EDITOR_MVP deliverables — only architectural room.### Theme
 
 Single `Theme` record (Solarized Light–like: dense, calm, no card chrome).
@@ -328,13 +341,13 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 26 | Status bar: path, Ln/Col, dirty, language, encoding if known | **done** (2026-07-14): `status_bar.mlc` + unit |
 | 27 | Theme finalize Solarized Light–like | **done** (2026-07-14): palette + `theme_unit` |
 | 28 | Perf report on large file + screenshot/headless capture | **done** (2026-07-14): `perf_report` + numbers |
-| 29 | Critic close: acceptance checklist; REG if touched compiler; docs |
+| 29 | Critic close: acceptance checklist; REG if touched compiler; docs | **done** (2026-07-14): Critic OK; archived |
 
 ## Decisions (closed / open)
 
 | # | Topic | Status |
 |---|-------|--------|
-| A | Own editor-first runtime; no GPUI/Qt/… dependency | **closed** — [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) |
+| A | Own editor-first runtime; no GPUI/Qt/… dependency | **closed** — [GUI_ARCHITECTURE.md](../../GUI_ARCHITECTURE.md) |
 | B | Hybrid IM/retained; multi-tree; explicit invalidation | **closed** |
 | C | PlatformBackend: GLFW v1, SDL3 later | **closed** |
 | D | Code glyphs = raster atlas; MSDF not for body text | **closed** |
@@ -376,7 +389,7 @@ and session restore expand — still smaller than inventing Script VM.
 - **Planner** (2026-07-13): design + placement written.
 - **Priority** (2026-07-13 user): ahead of GUI Phase B.
 - **Architecture review** (2026-07-13): frozen in
-  [GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md).
+  [GUI_ARCHITECTURE.md](../../GUI_ARCHITECTURE.md).
 - **STEP=pre done** (2026-07-13): bundle 85K tokens; Sonnet preflight;
   Decision E = piece table.
 - **STEP=0 done** (2026-07-13): scaffold GLFW + `[mlc-editor] open`.
@@ -405,4 +418,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=25 done** (2026-07-14): syntax stub spans.
 - **STEP=26 done** (2026-07-14): status bar model.
 - **STEP=27 done** (2026-07-14): Solarized Light finalize.
-- **STEP=28 done** (2026-07-14): large-file perf report; next **STEP=29** Critic.
+- **STEP=28 done** (2026-07-14): large-file perf report.
+- **STEP=29 done** (2026-07-14): Critic OK; track **closed** (`80a76d99`…`75fc5142`).

@@ -2,7 +2,7 @@
 
 Product: [docs/EDITOR.md](../../docs/EDITOR.md).
 Frozen runtime decisions: [docs/GUI_ARCHITECTURE.md](../../docs/GUI_ARCHITECTURE.md).
-Track: [docs/agent/TRACK_EDITOR_MVP.md](../../docs/agent/TRACK_EDITOR_MVP.md).
+Track: [TRACK_EDITOR_MVP](../../docs/archive/tracks/TRACK_EDITOR_MVP.md) (**closed** 2026-07-14).
 
 ## Module layout
 
@@ -40,10 +40,10 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…28 status
+## STEP=0…29 status
 
-- STEP=0–27: scaffold through Solarized theme.
-- STEP=28: `ui/perf_report.mlc` — large-file scroll/highlight counts.
+- STEP=0–28: scaffold through perf report.
+- STEP=29: Critic OK — track closed (unit/model MVP; live UX deferred).
 
 ## Perf report (STEP=28, 2026-07-14)
 
@@ -59,3 +59,10 @@ Headless unit `scripts/run_editor_perf_report.sh` (no GLFW screenshot infra):
 | line_index_lines (compact fixture) | 5 |
 
 GPU frame timings remain stub zeros (`MLC_EDITOR_PERF` smoke). Pixel/FBO capture not added.
+
+## Known limits (Critic 2026-07-14)
+
+- `main.mlc` remains scaffold/text smoke — not a wired multi-panel IDE shell.
+- Live UX gaps (clip/scroll/tree hit-test/…) → UX_HEADLESS / follow-up.
+- P1 `list_dir` / P2 GLFW clipboard still deferred.
+- No FBO screenshot; perf numbers are headless counts.

@@ -1,6 +1,6 @@
 # Native code editor (MLC) — product + placement
 
-Parent: [PLAN.md](PLAN.md) §33, track [agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md).
+Parent: [PLAN.md](PLAN.md) §33, track [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md) (**closed**).
 Architecture decisions (frozen): [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md).
 Depends on: [GUI.md](GUI.md), [TEXT_RENDERING.md](TEXT_RENDERING.md),
 scene Phase A ([archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)).

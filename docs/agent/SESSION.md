@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 29 |
-| step_last | 28 |
-| active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=29 Critic close next |
+| driver_turns_since_plan | 0 |
+| step_last | 29 |
+| active_track | — (EDITOR_MVP closed) |
+| test_gate | Planner next after Critic close |
+
+### Turn 2026-07-14 18:15 (Critic TRACK_EDITOR_MVP STEP=29)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 29 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 18:10 |
+| elapsed | ~5 min |
+| done    | Acceptance audit; spot-check 8 units OK; track → `docs/archive/tracks/TRACK_EDITOR_MVP.md`; PLAN §33 closed. |
+| verify  | tabs/tab_close/command_bus/session/syntax/perf_report/piece_table/save exit 0; REG N/A. |
+| result  | TRACK **closed** Critic OK. Plain: unit/model MVP; live UX residuals documented. |
+| issues  | Left foreign: UX_HEADLESS WIP, SCRIPT_VM, demo_live, theme dark, text M. |
+| next    | ROLE=Planner STEP=plan-refresh |
 
 ### Turn 2026-07-14 18:10 (Driver TRACK_EDITOR_MVP STEP=28)
 
