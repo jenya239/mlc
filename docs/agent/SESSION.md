@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 4 |
+| step_last | 5 |
 | active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=5 TextField next |
+| test_gate | Phase B STEP=6 form next |
+
+### Turn 2026-07-14 19:40 (Driver TRACK_GUI_SCENE_PHASE_B STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:33 |
+| elapsed | ~7 min |
+| done    | `SceneTextField`/`TextField` + focus/apply_input; caret; smoke + script. |
+| verify  | `bash scripts/run_scene_text_field_smoke.sh` → `scene_text_field_ok`. |
+| result  | STEP=5 done. Plain: focus exclusivity; Hi→H→Hello; no GLFW. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_SCENE_PHASE_B |
 
 ### Turn 2026-07-14 19:35 (Driver TRACK_GUI_SCENE_PHASE_B STEP=4)
 

@@ -11,7 +11,12 @@ widget **kinds** + interaction on the same tree (not a second UI toolkit).
 
 ## Next step
 
-**STEP=5** — `TextField` kind + smoke.
+**STEP=6** — form smoke (all four widgets).
+
+### STEP=5 done (2026-07-14)
+
+- `SceneTextField` + `TextField`; `scene_add_text_field` / `scene_text_field_focus` / `scene_text_field_apply_input`; hit; draw rect.
+- `misc/examples/scene_text_field_smoke.mlc` + `scripts/run_scene_text_field_smoke.sh` → `scene_text_field_ok`.
 
 ### STEP=4 done (2026-07-14)
 
@@ -83,7 +88,7 @@ label rendering in Phase B smokes.
 | 2 | `Label` kind: add + layout size + draw smoke (string → rect/text stub) | **done** (2026-07-14): `scene_label_ok` |
 | 3 | `Checkbox` kind: hit toggles checked; draw box+mark | **done** (2026-07-14): `scene_checkbox_ok` |
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | **done** (2026-07-14): `scene_slider_ok` |
-| 5 | `TextField` kind: focus + inject keys/text; caret model | `scene_text_field_smoke` exit 0 |
+| 5 | `TextField` kind: focus + inject keys/text; caret model | **done** (2026-07-14): `scene_text_field_ok` |
 | 6 | Form smoke: one scene with label+checkbox+slider+field; headless inject | `scene_form_smoke` exit 0 |
 | 7 | Critic: kinds match Decision; no sleep; v0 demos untouched | close Phase B |
 
@@ -107,9 +112,9 @@ label rendering in Phase B smokes.
 1. `Slider` payload `{ value: f64, … }`; drag updates value — done.
 2. Smoke: inject drag → value in range — done.
 
-**STEP=5**
-1. `TextField` + focus flag; wire `gui_input` text/backspace inject.
-2. Smoke: type → buffer equals expected (no GLFW required).
+**STEP=5** — **done**
+1. `TextField` + focus flag; wire `gui_input` text/backspace inject — done.
+2. Smoke: type → buffer equals expected (no GLFW required) — done.
 
 **STEP=6**
 1. Single example composing all four widgets.

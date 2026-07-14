@@ -1,0 +1,140 @@
+// TRACK_GUI_SCENE_PHASE_B STEP=5 — TextField focus + GuiInput apply (no GLFW).
+import {
+  Scene,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_text_field,
+  scene_text_field_new,
+  scene_text_field_focus,
+  scene_text_field_apply_input,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { GuiInput } from '../gui/input'
+import { scene_rect_fill_batch_vertex_count } from '../gui/scene_draw'
+
+fn field_text(scene: Scene, node_id: i32) -> string =
+  match scene.nodes[node_id].kind {
+    TextField(scene_text_field) => scene_text_field.text,
+    Container => "",
+    RectFill(_) => "",
+    Label(_) => "",
+    Checkbox(_) => "",
+    Slider(_) => ""
+  }
+
+fn field_focused(scene: Scene, node_id: i32) -> i32 =
+  match scene.nodes[node_id].kind {
+    TextField(scene_text_field) => scene_text_field.focused,
+    Container => 0 - 1,
+    RectFill(_) => 0 - 1,
+    Label(_) => 0 - 1,
+    Checkbox(_) => 0 - 1,
+    Slider(_) => 0 - 1
+  }
+
+fn field_caret(scene: Scene, node_id: i32) -> i32 =
+  match scene.nodes[node_id].kind {
+    TextField(scene_text_field) => scene_text_field.caret,
+    Container => 0 - 1,
+    RectFill(_) => 0 - 1,
+    Label(_) => 0 - 1,
+    Checkbox(_) => 0 - 1,
+    Slider(_) => 0 - 1
+  }
+
+fn gui_input_text(text: string) -> GuiInput =
+  GuiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    mouse_down: 0,
+    escape: 0,
+    text_buffer: text,
+    backspace: 0,
+    enter: 0
+  }
+
+fn gui_input_backspace() -> GuiInput =
+  GuiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    mouse_down: 0,
+    escape: 0,
+    text_buffer: "",
+    backspace: 1,
+    enter: 0
+  }
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_translation(0.0, 0.0))
+  scene = root.scene
+
+  const field_a = scene_add_text_field(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 40.0),
+    scene_text_field_new(160.0, 28.0, "", 0, 0, 0.15, 0.15, 0.2, 1.0)
+  )
+  scene = field_a.scene
+  const field_b = scene_add_text_field(
+    scene,
+    root.node_id,
+    affine_translation(40.0, 80.0),
+    scene_text_field_new(160.0, 28.0, "x", 1, 1, 0.15, 0.15, 0.2, 1.0)
+  )
+  scene = field_b.scene
+  if field_a.node_id != 1 then
+    return 1
+  end
+  if field_b.node_id != 2 then
+    return 2
+  end
+
+  // Unfocused field ignores typing.
+  scene = scene_text_field_apply_input(scene, 1, gui_input_text("Hi"))
+  if field_text(scene, 1) != "" then
+    return 3
+  end
+
+  scene = scene_text_field_focus(scene, 1)
+  if field_focused(scene, 1) != 1 then
+    return 4
+  end
+  if field_focused(scene, 2) != 0 then
+    return 5
+  end
+
+  scene = scene_text_field_apply_input(scene, 1, gui_input_text("Hi"))
+  if field_text(scene, 1) != "Hi" then
+    return 6
+  end
+  if field_caret(scene, 1) != 2 then
+    return 7
+  end
+
+  scene = scene_text_field_apply_input(scene, 1, gui_input_backspace())
+  if field_text(scene, 1) != "H" then
+    return 8
+  end
+
+  scene = scene_text_field_apply_input(scene, 1, gui_input_text("ello"))
+  if field_text(scene, 1) != "Hello" then
+    return 9
+  end
+  if field_caret(scene, 1) != 5 then
+    return 10
+  end
+
+  scene = scene_update_world(scene)
+  if scene_hit_test(scene, 40.0, 40.0) != 1 then
+    return 11
+  end
+  if scene_rect_fill_batch_vertex_count(scene) != 12 then
+    return 12
+  end
+
+  println("scene_text_field_ok")
+  0
+end

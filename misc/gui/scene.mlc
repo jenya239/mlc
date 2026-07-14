@@ -2,6 +2,8 @@
 // Flat nodes + Affine2x3; world pass = scene_update_world (STEP=3).
 // Precision: f64 in MLC (mlcc f32 arith incomplete); GPU upload casts to f32 in STEP=5.
 
+import { GuiInput } from './input'
+
 export type Affine2x3 = {
   a: f64,
   b: f64,
@@ -51,12 +53,25 @@ export type SceneSlider = {
   alpha: f64
 }
 
+export type SceneTextField = {
+  width: f64,
+  height: f64,
+  text: string,
+  focused: i32,
+  caret: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
 export type SceneNodeKind =
   Container
   | RectFill(SceneRectFill)
   | Label(SceneLabel)
   | Checkbox(SceneCheckbox)
   | Slider(SceneSlider)
+  | TextField(SceneTextField)
 
 export type SceneNode = {
   parent: i32,
@@ -274,6 +289,46 @@ export fn scene_slider_value_from_local_x(scene_slider: SceneSlider, local_x: f6
   scene_clamp_unit((local_x - thumb * 0.5) / travel)
 end
 
+export fn scene_text_field_new(
+  width: f64,
+  height: f64,
+  text: string,
+  focused: i32,
+  caret: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> SceneTextField =
+  SceneTextField {
+    width: width,
+    height: height,
+    text: text,
+    focused: focused,
+    caret: caret,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+export fn scene_text_field_as_rect_fill(scene_text_field: SceneTextField) -> SceneRectFill =
+  scene_rect_fill_new(
+    scene_text_field.width,
+    scene_text_field.height,
+    scene_text_field.red,
+    scene_text_field.green,
+    scene_text_field.blue,
+    scene_text_field.alpha
+  )
+
+fn scene_text_drop_last_char(text: string) -> string = do
+  if text.length() <= 0 then
+    return ""
+  end
+  text.substring(0, text.length() - 1)
+end
+
 export fn scene_new() -> Scene =
   Scene {
     nodes: [],
@@ -365,6 +420,33 @@ export fn scene_add_slider(
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, Slider(scene_slider)))
 
+export fn scene_add_text_field(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  scene_text_field: SceneTextField
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, TextField(scene_text_field)))
+
+fn scene_set_node_kind(scene: Scene, node_id: i32, kind: SceneNodeKind) -> Scene = do
+  let mut nodes = scene.nodes
+  const node = nodes[node_id]
+  nodes.set(
+    node_id,
+    SceneNode {
+      parent: node.parent,
+      local: node.local,
+      kind: kind,
+      children: node.children
+    }
+  )
+  Scene {
+    nodes: nodes,
+    world: scene.world,
+    camera: scene.camera
+  }
+end
+
 export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
   if node_id < 0 then
     return scene
@@ -395,7 +477,8 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
     Container => node.kind,
     RectFill(_) => node.kind,
     Label(_) => node.kind,
-    Slider(_) => node.kind
+    Slider(_) => node.kind,
+    TextField(_) => node.kind
   }
   nodes.set(
     node_id,
@@ -438,7 +521,8 @@ export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scen
     Container => node.kind,
     RectFill(_) => node.kind,
     Label(_) => node.kind,
-    Checkbox(_) => node.kind
+    Checkbox(_) => node.kind,
+    TextField(_) => node.kind
   }
   nodes.set(
     node_id,
@@ -486,7 +570,104 @@ export fn scene_slider_set_from_screen(
     Container => scene,
     RectFill(_) => scene,
     Label(_) => scene,
-    Checkbox(_) => scene
+    Checkbox(_) => scene,
+    TextField(_) => scene
+  }
+end
+
+// Clear focused on all TextFields; set focused=1 on node_id if it is a TextField.
+export fn scene_text_field_focus(scene: Scene, node_id: i32) -> Scene = do
+  let mut next_scene = scene
+  let mut index = 0
+  while index < next_scene.nodes.length() do
+    const node = next_scene.nodes[index]
+    match node.kind {
+      TextField(scene_text_field) => do
+        let mut next_focused = 0
+        if index == node_id then
+          next_focused = 1
+        end
+        next_scene = scene_set_node_kind(
+          next_scene,
+          index,
+          TextField(
+            SceneTextField {
+              width: scene_text_field.width,
+              height: scene_text_field.height,
+              text: scene_text_field.text,
+              focused: next_focused,
+              caret: scene_text_field.caret,
+              red: scene_text_field.red,
+              green: scene_text_field.green,
+              blue: scene_text_field.blue,
+              alpha: scene_text_field.alpha
+            }
+          )
+        )
+      end,
+      Container => do
+      end,
+      RectFill(_) => do
+      end,
+      Label(_) => do
+      end,
+      Checkbox(_) => do
+      end,
+      Slider(_) => do
+      end
+    }
+    index = index + 1
+  end
+  next_scene
+end
+
+export fn scene_text_field_apply_input(
+  scene: Scene,
+  node_id: i32,
+  input: GuiInput
+) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  const node = scene.nodes[node_id]
+  match node.kind {
+    TextField(scene_text_field) => do
+      if scene_text_field.focused == 0 then
+        return scene
+      end
+      let mut next_text = scene_text_field.text
+      if input.text_buffer != "" then
+        next_text = next_text + input.text_buffer
+      end
+      if input.backspace != 0 then
+        next_text = scene_text_drop_last_char(next_text)
+      end
+      scene_set_node_kind(
+        scene,
+        node_id,
+        TextField(
+          SceneTextField {
+            width: scene_text_field.width,
+            height: scene_text_field.height,
+            text: next_text,
+            focused: scene_text_field.focused,
+            caret: next_text.length(),
+            red: scene_text_field.red,
+            green: scene_text_field.green,
+            blue: scene_text_field.blue,
+            alpha: scene_text_field.alpha
+          }
+        )
+      )
+    end,
+    Container => scene,
+    RectFill(_) => scene,
+    Label(_) => scene,
+    Checkbox(_) => scene,
+    Slider(_) => scene
   }
 end
 
@@ -580,6 +761,18 @@ export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
           local.x,
           local.y,
           scene_slider_as_rect_fill(scene_slider)
+        )
+      end,
+      TextField(scene_text_field) => do
+        const local = affine_transform_point(
+          affine_invert(scene.world[index]),
+          scene_point.x,
+          scene_point.y
+        )
+        scene_point_in_rect_fill(
+          local.x,
+          local.y,
+          scene_text_field_as_rect_fill(scene_text_field)
         )
       end,
       Container => 0

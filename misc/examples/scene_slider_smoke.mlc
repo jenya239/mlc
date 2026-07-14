@@ -19,7 +19,8 @@ fn slider_value(scene: Scene, node_id: i32) -> f64 =
     Container => 0.0 - 1.0,
     RectFill(_) => 0.0 - 1.0,
     Label(_) => 0.0 - 1.0,
-    Checkbox(_) => 0.0 - 1.0
+    Checkbox(_) => 0.0 - 1.0,
+    TextField(_) => 0.0 - 1.0
   }
 
 fn approx_eq(left: f64, right: f64) -> i32 = do
