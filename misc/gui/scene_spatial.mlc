@@ -1,0 +1,93 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=6 — threshold: linear vs quadtree candidates.
+import {
+  Scene,
+  SceneAabb,
+  affine_invert,
+  affine_transform_point,
+  scene_hit_node,
+  scene_hit_test_linear
+} from './scene'
+import {
+  scene_quadtree_build_from_scene,
+  scene_quadtree_query_aabb,
+  scene_quadtree_query_point
+} from './scene_quadtree'
+
+export fn scene_spatial_threshold() -> i32 = 64
+
+fn scene_sort_ids_descending(ids: [i32]) -> [i32] = do
+  let mut sorted = ids
+  let mut outer = 0
+  while outer < sorted.length() do
+    let mut inner = 0
+    while inner + 1 < sorted.length() do
+      if sorted[inner] < sorted[inner + 1] then
+        const left = sorted[inner]
+        const right = sorted[inner + 1]
+        sorted.set(inner, right)
+        sorted.set(inner + 1, left)
+      end
+      inner = inner + 1
+    end
+    outer = outer + 1
+  end
+  return sorted
+end
+
+fn scene_sort_ids_ascending(ids: [i32]) -> [i32] = do
+  let mut sorted = ids
+  let mut outer = 0
+  while outer < sorted.length() do
+    let mut inner = 0
+    while inner + 1 < sorted.length() do
+      if sorted[inner] > sorted[inner + 1] then
+        const left = sorted[inner]
+        const right = sorted[inner + 1]
+        sorted.set(inner, right)
+        sorted.set(inner + 1, left)
+      end
+      inner = inner + 1
+    end
+    outer = outer + 1
+  end
+  return sorted
+end
+
+export fn scene_spatial_uses_quadtree(scene: Scene) -> i32 = do
+  if scene.nodes.length() < scene_spatial_threshold() then
+    return 0
+  end
+  1
+end
+
+// Screen → scene point → candidate ids (quadtree) or empty (caller uses linear).
+export fn scene_spatial_hit_candidates(scene: Scene, screen_x: f64, screen_y: f64) -> [i32] = do
+  const scene_point = affine_transform_point(affine_invert(scene.camera), screen_x, screen_y)
+  const tree = scene_quadtree_build_from_scene(scene)
+  return scene_quadtree_query_point(tree, scene_point.x, scene_point.y)
+end
+
+export fn scene_spatial_draw_candidates(scene: Scene, view_bounds: SceneAabb) -> [i32] = do
+  const tree = scene_quadtree_build_from_scene(scene)
+  return scene_sort_ids_ascending(scene_quadtree_query_aabb(tree, view_bounds))
+end
+
+// Threshold hit: <64 linear; >=64 quadtree candidates then precise front-to-back.
+export fn scene_hit_test_spatial(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
+  if scene_spatial_uses_quadtree(scene) == 0 then
+    return scene_hit_test_linear(scene, screen_x, screen_y)
+  end
+  const scene_point = affine_transform_point(affine_invert(scene.camera), screen_x, screen_y)
+  const candidates = scene_sort_ids_descending(
+    scene_spatial_hit_candidates(scene, screen_x, screen_y)
+  )
+  let mut candidate_index = 0
+  while candidate_index < candidates.length() do
+    const node_id = candidates[candidate_index]
+    if scene_hit_node(scene, node_id, scene_point.x, scene_point.y) != 0 then
+      return node_id
+    end
+    candidate_index = candidate_index + 1
+  end
+  -1
+end

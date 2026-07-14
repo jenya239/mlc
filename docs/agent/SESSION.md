@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 5 |
+| driver_turns_since_plan | 3 |
+| step_last | 6 |
 | active_track | TRACK_GUI_SCENE_PHASE_C |
-| test_gate | Phase C STEP=6 spatial next |
+| test_gate | Phase C STEP=7 Critic next |
+
+### Turn 2026-07-14 23:05 (Driver TRACK_GUI_SCENE_PHASE_C STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_SCENE_PHASE_C |
+| started | 2026-07-14 22:48 |
+| elapsed | ~17 min |
+| done    | `scene_spatial.mlc` threshold+hit; draw candidates; `scene_hit_node`/`_linear`; smoke+script. |
+| verify  | `run_scene_spatial_smoke.sh` → `scene_spatial_ok`; form+quadtree ok. |
+| result  | STEP=6 done. Plain: <64 linear; >=64 quadtree hit ≡ linear; cull <63. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Critic STEP=7 TRACK_GUI_SCENE_PHASE_C |
 
 ### Turn 2026-07-14 22:35 (Driver TRACK_GUI_SCENE_PHASE_C STEP=5)
 

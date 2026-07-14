@@ -954,75 +954,89 @@ fn scene_point_in_rect_fill(local_x: f64, local_y: f64, fill: SceneRectFill) -> 
 end
 
 // Front-to-back: highest index first. Requires fresh `scene_update_world`.
-// Returns node id or -1. Screen → inverse(camera) → inverse(world) → local rect.
-export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
+// Returns 1 if node local rect contains scene-space point.
+export fn scene_hit_node(scene: Scene, index: i32, scene_x: f64, scene_y: f64) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  if index >= scene.nodes.length() then
+    return 0
+  end
+  const node = scene.nodes[index]
+  match node.kind {
+    RectFill(fill) => do
+      const local = affine_transform_point(
+        affine_invert(scene.world[index]),
+        scene_x,
+        scene_y
+      )
+      scene_point_in_rect_fill(local.x, local.y, fill)
+    end,
+    Label(scene_label) => do
+      const local = affine_transform_point(
+        affine_invert(scene.world[index]),
+        scene_x,
+        scene_y
+      )
+      scene_point_in_rect_fill(
+        local.x,
+        local.y,
+        scene_label_as_rect_fill(scene_label)
+      )
+    end,
+    Checkbox(scene_checkbox) => do
+      const local = affine_transform_point(
+        affine_invert(scene.world[index]),
+        scene_x,
+        scene_y
+      )
+      scene_point_in_rect_fill(
+        local.x,
+        local.y,
+        scene_checkbox_as_rect_fill(scene_checkbox)
+      )
+    end,
+    Slider(scene_slider) => do
+      const local = affine_transform_point(
+        affine_invert(scene.world[index]),
+        scene_x,
+        scene_y
+      )
+      scene_point_in_rect_fill(
+        local.x,
+        local.y,
+        scene_slider_as_rect_fill(scene_slider)
+      )
+    end,
+    TextField(scene_text_field) => do
+      const local = affine_transform_point(
+        affine_invert(scene.world[index]),
+        scene_x,
+        scene_y
+      )
+      scene_point_in_rect_fill(
+        local.x,
+        local.y,
+        scene_text_field_as_rect_fill(scene_text_field)
+      )
+    end,
+    Container => 0
+  }
+end
+
+// Linear scan (no quadtree). Prefer `scene_hit_test` from `scene_spatial.mlc` (threshold).
+export fn scene_hit_test_linear(scene: Scene, screen_x: f64, screen_y: f64) -> i32 = do
   const scene_point = affine_transform_point(affine_invert(scene.camera), screen_x, screen_y)
   let mut index = scene.nodes.length() - 1
   while index >= 0 do
-    const node = scene.nodes[index]
-    const hit = match node.kind {
-      RectFill(fill) => do
-        const local = affine_transform_point(
-          affine_invert(scene.world[index]),
-          scene_point.x,
-          scene_point.y
-        )
-        scene_point_in_rect_fill(local.x, local.y, fill)
-      end,
-      Label(scene_label) => do
-        const local = affine_transform_point(
-          affine_invert(scene.world[index]),
-          scene_point.x,
-          scene_point.y
-        )
-        scene_point_in_rect_fill(
-          local.x,
-          local.y,
-          scene_label_as_rect_fill(scene_label)
-        )
-      end,
-      Checkbox(scene_checkbox) => do
-        const local = affine_transform_point(
-          affine_invert(scene.world[index]),
-          scene_point.x,
-          scene_point.y
-        )
-        scene_point_in_rect_fill(
-          local.x,
-          local.y,
-          scene_checkbox_as_rect_fill(scene_checkbox)
-        )
-      end,
-      Slider(scene_slider) => do
-        const local = affine_transform_point(
-          affine_invert(scene.world[index]),
-          scene_point.x,
-          scene_point.y
-        )
-        scene_point_in_rect_fill(
-          local.x,
-          local.y,
-          scene_slider_as_rect_fill(scene_slider)
-        )
-      end,
-      TextField(scene_text_field) => do
-        const local = affine_transform_point(
-          affine_invert(scene.world[index]),
-          scene_point.x,
-          scene_point.y
-        )
-        scene_point_in_rect_fill(
-          local.x,
-          local.y,
-          scene_text_field_as_rect_fill(scene_text_field)
-        )
-      end,
-      Container => 0
-    }
-    if hit != 0 then
+    if scene_hit_node(scene, index, scene_point.x, scene_point.y) != 0 then
       return index
     end
     index = index - 1
   end
   -1
 end
+
+// Compat alias: linear path (scenes below spatial threshold).
+export fn scene_hit_test(scene: Scene, screen_x: f64, screen_y: f64) -> i32 =
+  scene_hit_test_linear(scene, screen_x, screen_y)

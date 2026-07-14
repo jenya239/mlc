@@ -12,7 +12,13 @@ Phase A/B stay. Phase C adds **incremental world update** + optional
 
 ## Next step
 
-**STEP=6** — Threshold integration (hit/draw).
+**STEP=7** — Critic audit / close Phase C.
+
+### STEP=6 done (2026-07-14)
+
+- `scene_spatial.mlc`: threshold 64; `scene_hit_test_spatial`; draw candidates via AABB query.
+- `scene_draw_rect_fills` uses candidates when `nodes.length() >= 64`.
+- `scene_spatial_smoke` + script → `scene_spatial_ok`; form still ok.
 
 ### STEP=5 done (2026-07-14)
 
@@ -104,7 +110,7 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 | 3 | Incremental `scene_update_world_dirty` ≡ full update on dirty set | **done** (2026-07-14): `scene_world_dirty_ok` |
 | 4 | World AABB pass from kind local size | **done** (2026-07-14): `scene_aabb_ok` |
 | 5 | Quadtree insert + point/range query (unit, no GL) | **done** (2026-07-14): `scene_quadtree_ok` |
-| 6 | Threshold integration: cull/query smoke above/below threshold | `scene_spatial_smoke` exit 0 |
+| 6 | Threshold integration: cull/query smoke above/below threshold | **done** (2026-07-14): `scene_spatial_ok` |
 | 7 | Critic: Decision match; Phase B smokes still green; no sleep | close Phase C |
 
 ### Sub-steps (Driver)
@@ -131,9 +137,9 @@ persistent mapped GPU buffers; changing Phase B widget payloads.
 1. `misc/gui/scene_quadtree.mlc`: insert AABB + query point — done.
 2. Smoke: N non-overlapping rects; query hits one id — done.
 
-**STEP=6**
-1. Wire threshold: below → linear; above → query then hit/draw candidates.
-2. Smoke token `scene_spatial_ok`; Phase B form still exit 0.
+**STEP=6** — **done**
+1. Wire threshold: below → linear; above → query then hit/draw candidates — done.
+2. Smoke token `scene_spatial_ok`; Phase B form still exit 0 — done.
 
 **STEP=7**
 1. Critic: re-run Phase C + Phase B form/label smokes; archive; epic → Phase D Planner later.

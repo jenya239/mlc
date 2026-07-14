@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_C` STEP=5 done** (2026-07-14) — AABB quadtree; **STEP=6** spatial threshold next.
+**`TRACK_GUI_SCENE_PHASE_C` STEP=6 done** (2026-07-14) — spatial threshold; **STEP=7** Critic next.
 Epic: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 Phase B archive: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md).
 Phase A Critic OK: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).

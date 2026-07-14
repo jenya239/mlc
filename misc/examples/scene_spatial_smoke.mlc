@@ -1,0 +1,117 @@
+// TRACK_GUI_SCENE_PHASE_C STEP=6 — threshold linear vs quadtree hit (no GL).
+import {
+  Scene,
+  SceneAabb,
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_rect_fill_new,
+  scene_update_world,
+  scene_update_world_bounds,
+  scene_hit_test_linear
+} from '../gui/scene'
+import {
+  scene_spatial_threshold,
+  scene_spatial_uses_quadtree,
+  scene_hit_test_spatial,
+  scene_spatial_draw_candidates
+} from '../gui/scene_spatial'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+fn add_grid_rects(scene_in: Scene, root_id: i32, count: i32) -> Scene = do
+  let mut scene = scene_in
+  let mut index = 0
+  while index < count do
+    const column = index - (index / 8) * 8
+    const row = index / 8
+    const added = scene_add_rect_fill(
+      scene,
+      root_id,
+      affine_translation(
+        10.0 + i32_to_f64(column) * 40.0,
+        10.0 + i32_to_f64(row) * 40.0
+      ),
+      scene_rect_fill_new(20.0, 20.0, 0.2, 0.4, 0.8, 1.0)
+    )
+    scene = added.scene
+    index = index + 1
+  end
+  scene
+end
+
+fn main() -> i32 = do
+  if scene_spatial_threshold() != 64 then
+    return 1
+  end
+
+  // Below threshold: spatial path == linear; quadtree off.
+  let mut small = scene_new()
+  const small_root = scene_add_container(small, -1, affine_identity())
+  small = small_root.scene
+  const small_rect = scene_add_rect_fill(
+    small,
+    small_root.node_id,
+    affine_translation(40.0, 50.0),
+    scene_rect_fill_new(100.0, 20.0, 0.2, 0.4, 0.8, 1.0)
+  )
+  small = small_rect.scene
+  small = scene_update_world(small)
+  small = scene_update_world_bounds(small)
+  if scene_spatial_uses_quadtree(small) != 0 then
+    return 2
+  end
+  if scene_hit_test_spatial(small, 50.0, 55.0) != small_rect.node_id then
+    return 3
+  end
+  if scene_hit_test_spatial(small, 50.0, 55.0) != scene_hit_test_linear(small, 50.0, 55.0) then
+    return 4
+  end
+
+  // >= threshold: root + 63 rects = 64 nodes → quadtree on.
+  let mut large = scene_new()
+  const large_root = scene_add_container(large, -1, affine_identity())
+  large = large_root.scene
+  large = add_grid_rects(large, large_root.node_id, 63)
+  large = scene_update_world(large)
+  large = scene_update_world_bounds(large)
+  if large.nodes.length() != 64 then
+    return 5
+  end
+  if scene_spatial_uses_quadtree(large) == 0 then
+    return 6
+  end
+
+  // First grid rect at (10,10)-(30,30); node_id = 1 (after root 0).
+  const linear_hit = scene_hit_test_linear(large, 15.0, 15.0)
+  const spatial_hit = scene_hit_test_spatial(large, 15.0, 15.0)
+  if linear_hit != 1 then
+    return 7
+  end
+  if spatial_hit != linear_hit then
+    return 8
+  end
+  if scene_hit_test_spatial(large, 5.0, 5.0) != 0 - 1 then
+    return 9
+  end
+
+  // Draw candidates for a tight view around first cell — fewer than all rects.
+  const view_bounds = SceneAabb {
+    min_x: 0.0,
+    min_y: 0.0,
+    max_x: 35.0,
+    max_y: 35.0
+  }
+  const draw_candidates = scene_spatial_draw_candidates(large, view_bounds)
+  if draw_candidates.length() < 1 then
+    return 10
+  end
+  if draw_candidates.length() >= 63 then
+    return 11
+  end
+
+  println("scene_spatial_ok")
+  0
+end

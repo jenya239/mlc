@@ -40,6 +40,22 @@ export fn scene_aabb_contains_point(bounds: SceneAabb, point_x: f64, point_y: f6
   1
 end
 
+export fn scene_aabb_intersects(left: SceneAabb, right: SceneAabb) -> i32 = do
+  if left.max_x <= right.min_x then
+    return 0
+  end
+  if right.max_x <= left.min_x then
+    return 0
+  end
+  if left.max_y <= right.min_y then
+    return 0
+  end
+  if right.max_y <= left.min_y then
+    return 0
+  end
+  1
+end
+
 fn scene_aabb_contains_aabb(outer: SceneAabb, inner: SceneAabb) -> i32 = do
   if inner.min_x < outer.min_x then
     return 0
@@ -294,6 +310,59 @@ export fn scene_quadtree_query_point(
 ) -> [i32] = do
   let mut results: [i32] = []
   return scene_quadtree_query_at(tree, tree.root, point_x, point_y, results)
+end
+
+fn scene_quadtree_query_aabb_at(
+  tree: SceneQuadtree,
+  cell_index: i32,
+  query: SceneAabb,
+  results: [i32]
+) -> [i32] = do
+  const cell = tree.cells[cell_index]
+  if scene_aabb_intersects(cell.bounds, query) == 0 then
+    return results
+  end
+  let mut next_results = results
+  let mut item_index = 0
+  while item_index < cell.items.length() do
+    const item = cell.items[item_index]
+    if scene_aabb_intersects(item.bounds, query) != 0 then
+      next_results.push(item.node_id)
+    end
+    item_index = item_index + 1
+  end
+  if scene_quadtree_cell_is_leaf(cell) != 0 then
+    return next_results
+  end
+  next_results = scene_quadtree_query_aabb_at(
+    tree,
+    cell.child_north_west,
+    query,
+    next_results
+  )
+  next_results = scene_quadtree_query_aabb_at(
+    tree,
+    cell.child_north_east,
+    query,
+    next_results
+  )
+  next_results = scene_quadtree_query_aabb_at(
+    tree,
+    cell.child_south_west,
+    query,
+    next_results
+  )
+  return scene_quadtree_query_aabb_at(
+    tree,
+    cell.child_south_east,
+    query,
+    next_results
+  )
+end
+
+export fn scene_quadtree_query_aabb(tree: SceneQuadtree, query: SceneAabb) -> [i32] = do
+  let mut results: [i32] = []
+  return scene_quadtree_query_aabb_at(tree, tree.root, query, results)
 end
 
 export fn scene_quadtree_build_from_scene(scene: Scene) -> SceneQuadtree = do

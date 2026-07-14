@@ -1,10 +1,12 @@
 // Scene → one solid-color triangle batch (TRACK_GUI_SCENE_PHASE_A STEP=5).
 // Camera-relative: model_view = invert(camera) ∘ world; pixel space → NDC.
+// Phase C STEP=6: >= SCENE_SPATIAL_THRESHOLD → draw only AABB candidates.
 
 import {
   Affine2x3,
   AffinePoint,
   Scene,
+  SceneAabb,
   SceneRectFill,
   affine_invert,
   affine_multiply,
@@ -18,6 +20,10 @@ import {
   scene_slider_thumb_offset_x,
   scene_text_field_as_rect_fill
 } from './scene'
+import {
+  scene_spatial_draw_candidates,
+  scene_spatial_uses_quadtree
+} from './scene_spatial'
 import {
   SolidRenderer,
   solid_renderer_begin,
@@ -102,7 +108,91 @@ export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
   count
 end
 
-// One gl_draw_arrays after flush. Requires fresh scene_update_world.
+fn scene_draw_one_node(
+  scene: Scene,
+  index: i32,
+  batch: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  view: Affine2x3
+) -> SolidRenderer = do
+  const node = scene.nodes[index]
+  match node.kind {
+    RectFill(fill) =>
+      push_rect_fill_triangles(
+        batch,
+        window_width,
+        window_height,
+        affine_multiply(view, scene.world[index]),
+        fill
+      ),
+    Label(scene_label) =>
+      push_rect_fill_triangles(
+        batch,
+        window_width,
+        window_height,
+        affine_multiply(view, scene.world[index]),
+        scene_label_as_rect_fill(scene_label)
+      ),
+    Checkbox(scene_checkbox) => do
+      const model_view = affine_multiply(view, scene.world[index])
+      let mut next_batch = push_rect_fill_triangles(
+        batch,
+        window_width,
+        window_height,
+        model_view,
+        scene_checkbox_as_rect_fill(scene_checkbox)
+      )
+      if scene_checkbox.checked != 0 then
+        next_batch = push_rect_fill_triangles(
+          next_batch,
+          window_width,
+          window_height,
+          affine_multiply(
+            model_view,
+            affine_translation(
+              scene_checkbox.width * 0.25,
+              scene_checkbox.height * 0.25
+            )
+          ),
+          scene_checkbox_mark_rect_fill(scene_checkbox)
+        )
+      end
+      next_batch
+    end,
+    Slider(scene_slider) => do
+      const model_view = affine_multiply(view, scene.world[index])
+      let mut next_batch = push_rect_fill_triangles(
+        batch,
+        window_width,
+        window_height,
+        model_view,
+        scene_slider_as_rect_fill(scene_slider)
+      )
+      push_rect_fill_triangles(
+        next_batch,
+        window_width,
+        window_height,
+        affine_multiply(
+          model_view,
+          affine_translation(scene_slider_thumb_offset_x(scene_slider), 0.0)
+        ),
+        scene_slider_thumb_rect_fill(scene_slider)
+      )
+    end,
+    TextField(scene_text_field) =>
+      push_rect_fill_triangles(
+        batch,
+        window_width,
+        window_height,
+        affine_multiply(view, scene.world[index]),
+        scene_text_field_as_rect_fill(scene_text_field)
+      ),
+    Container => batch
+  }
+end
+
+// One gl_draw_arrays after flush. Requires fresh scene_update_world (+ bounds if spatial).
 export fn scene_draw_rect_fills(
   scene: Scene,
   renderer: SolidRenderer,
@@ -111,86 +201,32 @@ export fn scene_draw_rect_fills(
 ) -> SolidRenderer = do
   let mut batch = solid_renderer_begin(renderer)
   const view = affine_invert(scene.camera)
-  let mut index = 0
-  while index < scene.nodes.length() do
-    const node = scene.nodes[index]
-    match node.kind {
-      RectFill(fill) => do
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          affine_multiply(view, scene.world[index]),
-          fill
-        )
-      end,
-      Label(scene_label) => do
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          affine_multiply(view, scene.world[index]),
-          scene_label_as_rect_fill(scene_label)
-        )
-      end,
-      Checkbox(scene_checkbox) => do
-        const model_view = affine_multiply(view, scene.world[index])
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          model_view,
-          scene_checkbox_as_rect_fill(scene_checkbox)
-        )
-        if scene_checkbox.checked != 0 then
-          batch = push_rect_fill_triangles(
-            batch,
-            window_width,
-            window_height,
-            affine_multiply(
-              model_view,
-              affine_translation(
-                scene_checkbox.width * 0.25,
-                scene_checkbox.height * 0.25
-              )
-            ),
-            scene_checkbox_mark_rect_fill(scene_checkbox)
-          )
-        end
-      end,
-      Slider(scene_slider) => do
-        const model_view = affine_multiply(view, scene.world[index])
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          model_view,
-          scene_slider_as_rect_fill(scene_slider)
-        )
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          affine_multiply(
-            model_view,
-            affine_translation(scene_slider_thumb_offset_x(scene_slider), 0.0)
-          ),
-          scene_slider_thumb_rect_fill(scene_slider)
-        )
-      end,
-      TextField(scene_text_field) => do
-        batch = push_rect_fill_triangles(
-          batch,
-          window_width,
-          window_height,
-          affine_multiply(view, scene.world[index]),
-          scene_text_field_as_rect_fill(scene_text_field)
-        )
-      end,
-      Container => do
-      end
-    }
-    index = index + 1
+  if scene_spatial_uses_quadtree(scene) == 0 then
+    let mut index = 0
+    while index < scene.nodes.length() do
+      batch = scene_draw_one_node(scene, index, batch, window_width, window_height, view)
+      index = index + 1
+    end
+    return batch
   end
-  batch
+  const view_bounds = SceneAabb {
+    min_x: 0.0,
+    min_y: 0.0,
+    max_x: i32_to_f64(window_width),
+    max_y: i32_to_f64(window_height)
+  }
+  const candidates = scene_spatial_draw_candidates(scene, view_bounds)
+  let mut candidate_index = 0
+  while candidate_index < candidates.length() do
+    batch = scene_draw_one_node(
+      scene,
+      candidates[candidate_index],
+      batch,
+      window_width,
+      window_height,
+      view
+    )
+    candidate_index = candidate_index + 1
+  end
+  return batch
 end

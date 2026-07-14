@@ -85,7 +85,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 Пересчёт world-transform/перетесселляция только для изменившихся узлов;
 опциональный quadtree culling, включается по порогу числа узлов (не
 структура данных по умолчанию для 20 классических виджетов).
-Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=5 done; STEP=6 next).
+Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md) (STEP=6 done; STEP=7 Critic next).
 
 ## Phase D: camera + vector path + blueprint canvas (после Phase C closed)
 
