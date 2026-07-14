@@ -92,6 +92,9 @@ scripts/run_editor_status_bar_unit.sh
 
 # STEP=27 Solarized Light theme unit (no GLFW)
 scripts/run_editor_theme_unit.sh
+
+# STEP=28 large-file perf report (no GLFW)
+scripts/run_editor_perf_report.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
@@ -123,6 +126,7 @@ Session requires `[mlc-editor] session_unit ok`.
 Syntax requires `[mlc-editor] syntax_unit ok`.
 Status bar requires `[mlc-editor] status_bar_unit ok`.
 Theme requires `[mlc-editor] theme_unit ok`.
+Perf report requires `perf_report file_lines=100000 scroll_bound=24` + `perf_report_unit ok`.
 
 ## Layout (growing)
 

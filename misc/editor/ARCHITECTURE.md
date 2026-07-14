@@ -40,7 +40,22 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…27 status
+## STEP=0…28 status
 
-- STEP=0–26: scaffold through status bar.
-- STEP=27: `ui/theme.mlc` — Solarized Light palette + tag→RGB.
+- STEP=0–27: scaffold through Solarized theme.
+- STEP=28: `ui/perf_report.mlc` — large-file scroll/highlight counts.
+
+## Perf report (STEP=28, 2026-07-14)
+
+Headless unit `scripts/run_editor_perf_report.sh` (no GLFW screenshot infra):
+
+| Metric | Value |
+|--------|-------|
+| file_lines (scroll model) | 100000 |
+| scroll_bound (viewport 400/20 + overscan 2×2) | 24 |
+| scroll_max_touched (40 scroll samples) | 24 |
+| highlight_window_bytes | 58 |
+| highlight_spans | 6 |
+| line_index_lines (compact fixture) | 5 |
+
+GPU frame timings remain stub zeros (`MLC_EDITOR_PERF` smoke). Pixel/FBO capture not added.

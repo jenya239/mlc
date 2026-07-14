@@ -1,0 +1,30 @@
+// TRACK_EDITOR_MVP STEP=28 — large-file perf report (counts; no GLFW).
+export type EditorPerfReport = {
+  file_lines: i32,
+  scroll_bound: i32,
+  scroll_max_touched: i32,
+  highlight_window_bytes: i32,
+  highlight_spans: i32,
+  line_index_lines: i32,
+  status: string
+}
+
+export fn editor_perf_report_new() -> EditorPerfReport =
+  EditorPerfReport {
+    file_lines: 0,
+    scroll_bound: 0,
+    scroll_max_touched: 0,
+    highlight_window_bytes: 0,
+    highlight_spans: 0,
+    line_index_lines: 0,
+    status: "empty"
+  }
+
+export fn editor_perf_report_format(report: EditorPerfReport) -> string =
+  "[mlc-editor] perf_report file_lines=" + report.file_lines.to_string()
+    + " scroll_bound=" + report.scroll_bound.to_string()
+    + " scroll_max_touched=" + report.scroll_max_touched.to_string()
+    + " highlight_window_bytes=" + report.highlight_window_bytes.to_string()
+    + " highlight_spans=" + report.highlight_spans.to_string()
+    + " line_index_lines=" + report.line_index_lines.to_string()
+    + " status=" + report.status

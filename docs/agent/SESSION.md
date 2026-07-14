@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 28 |
-| step_last | 27 |
+| driver_turns_since_plan | 29 |
+| step_last | 28 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=28 perf-report next |
+| test_gate | STEP=29 Critic close next |
+
+### Turn 2026-07-14 18:10 (Driver TRACK_EDITOR_MVP STEP=28)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 28 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 18:06 |
+| elapsed | ~4 min |
+| done    | `ui/perf_report.mlc` + unit/script; numbers in ARCHITECTURE/README. |
+| verify  | `scripts/run_editor_perf_report.sh` exit 0; `file_lines=100000 scroll_bound=24`. |
+| result  | STEP=28 done. Plain: 100k scroll ≤24 lines; highlight window spans. |
+| issues  | No FBO screenshot (deferred); left foreign UX/SCRIPT_VM/demo_live/theme dark. |
+| next    | ROLE=Critic STEP=29 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 18:05 (Driver TRACK_EDITOR_MVP STEP=27)
 

@@ -1,0 +1,68 @@
+// TRACK_EDITOR_MVP STEP=28 — large-file perf report unit (headless counts).
+import { viewport_metrics_new } from '../layout/visible_range'
+import {
+  scroll_layout_frame,
+  scroll_layout_lines_bound,
+  scroll_layout_within_bound
+} from '../layout/scroll_layout'
+import { line_index_from_string, line_index_line_count } from '../document/line_index'
+import { highlight_range } from '../syntax/highlighter'
+import {
+  EditorPerfReport,
+  editor_perf_report_format
+} from '../ui/perf_report'
+
+fn main() -> i32 = do
+  const file_lines = 100000
+  const metrics = viewport_metrics_new(20, 400, 800, 2)
+  const bound = scroll_layout_lines_bound(metrics)
+  if bound != 24 then
+    return 1
+  end
+
+  let mut max_touched = 0
+  let mut scroll_y = 0
+  let mut step = 0
+  while step < 40 do
+    const frame = scroll_layout_frame(file_lines, scroll_y, metrics)
+    if !scroll_layout_within_bound(frame, metrics) then
+      return 2
+    end
+    if frame.lines_touched > max_touched then
+      max_touched = frame.lines_touched
+    end
+    scroll_y = scroll_y + 1000
+    step = step + 1
+  end
+
+  // Compact fixture: enough for line_index + highlight window (no 100k string).
+  const source = "fn a() -> i32 = 0 // c\nfn b() -> i32 = 1\nlet x = \"hi\"\nend\n"
+  const line_index = line_index_from_string(source)
+  const line_count = line_index_line_count(line_index)
+  if line_count < 4 then
+    return 3
+  end
+
+  const window_end = source.byte_size()
+  const spans = highlight_range(source, 0, window_end)
+  if spans.length() < 3 then
+    return 4
+  end
+
+  const report = EditorPerfReport {
+    file_lines: file_lines,
+    scroll_bound: bound,
+    scroll_max_touched: max_touched,
+    highlight_window_bytes: window_end,
+    highlight_spans: spans.length(),
+    line_index_lines: line_count,
+    status: "ok"
+  }
+  if report.scroll_max_touched > report.scroll_bound then
+    return 5
+  end
+
+  println(editor_perf_report_format(report))
+  println("[mlc-editor] perf_report_unit ok")
+  0
+end

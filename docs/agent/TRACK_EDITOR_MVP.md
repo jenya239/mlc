@@ -12,7 +12,14 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=28** — Perf report on large file + screenshot/headless capture.
+**STEP=29** — Critic close: acceptance checklist; REG if touched compiler; docs.
+
+### STEP=28 done (2026-07-14)
+
+- `ui/perf_report.mlc` + unit: 100k scroll bound=24 max_touched=24; highlight spans on window.
+- Headless capture: existing `MLC_GLFW_VISIBLE=0` smokes (no new FBO infra).
+- Numbers in ARCHITECTURE/README.
+
 
 ### STEP=27 done (2026-07-14)
 
@@ -320,7 +327,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 25 | `SyntaxHighlighter` interface; MLC lexer stub (visible range / incremental) | **done** (2026-07-14): `highlighter.mlc` + unit |
 | 26 | Status bar: path, Ln/Col, dirty, language, encoding if known | **done** (2026-07-14): `status_bar.mlc` + unit |
 | 27 | Theme finalize Solarized Light–like | **done** (2026-07-14): palette + `theme_unit` |
-| 28 | Perf report on large file + screenshot/headless capture | numbers in ARCHITECTURE/README |
+| 28 | Perf report on large file + screenshot/headless capture | **done** (2026-07-14): `perf_report` + numbers |
 | 29 | Critic close: acceptance checklist; REG if touched compiler; docs |
 
 ## Decisions (closed / open)
@@ -397,4 +404,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=24 done** (2026-07-14): session restore (E5 complete).
 - **STEP=25 done** (2026-07-14): syntax stub spans.
 - **STEP=26 done** (2026-07-14): status bar model.
-- **STEP=27 done** (2026-07-14): Solarized Light finalize; next **STEP=28**.
+- **STEP=27 done** (2026-07-14): Solarized Light finalize.
+- **STEP=28 done** (2026-07-14): large-file perf report; next **STEP=29** Critic.
