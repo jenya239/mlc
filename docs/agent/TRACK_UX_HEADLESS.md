@@ -12,7 +12,13 @@ STEP progress (or explicit user override).
 
 ## Next step
 
-**STEP=14** — `run_ux_gate.sh` in CI / Critic checklist; README how to add scenario.
+**STEP=15** — Critic: design matches code; no flaky sleep; L1 coverage of L1–L9.
+
+### STEP=14 done (2026-07-14)
+
+- CI job `ux-headless-gate` in `.github/workflows/ci.yml`.
+- `misc/editor/ux/README.md` how to add scenario; Critic checklist in GUI_UX_TESTING.
+- `run_ux_gate.sh` verified green.
 
 ### STEP=13 done (2026-07-14)
 
@@ -115,7 +121,7 @@ STEP progress (or explicit user override).
 | 11 | L2 headless GL draw report (optional overflow after draw) | **done** (2026-07-14): draw_report_headless |
 | 12 | L3 optional: one caret/glyph FBO MAE fixture (not full UI) | **done** (2026-07-14): caret_glyph_mae; FBO deferred |
 | 13 | Clipboard scenario after GLFW P2 | **done** (2026-07-14): copy_paste_roundtrip; GLFW deferred |
-| 14 | `run_ux_gate.sh` in CI / Critic checklist; README how to add scenario | docs + gate |
+| 14 | `run_ux_gate.sh` in CI / Critic checklist; README how to add scenario | **done** (2026-07-14): CI + README + gate green |
 | 15 | Critic: design matches code; no flaky sleep; L1 coverage of L1–L9 | close |
 
 ## Out of scope
@@ -140,4 +146,5 @@ STEP progress (or explicit user override).
 - **STEP=10 done** (2026-07-14): divider_hover_cursor_ew green.
 - **STEP=11 done** (2026-07-14): draw_report_headless green.
 - **STEP=12 done** (2026-07-14): caret_glyph_mae green.
-- **STEP=13 done** (2026-07-14): copy_paste_roundtrip green; next **STEP=14**.
+- **STEP=13 done** (2026-07-14): copy_paste_roundtrip green.
+- **STEP=14 done** (2026-07-14): CI/README/gate; next **STEP=15** Critic.

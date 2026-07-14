@@ -149,10 +149,19 @@ Later: clipboard expects after P2 GLFW clipboard.
 
 ## CI
 
-- `scripts/run_ux_gate.sh` — all L0-linked UX scenarios (fast, no display).
-- Optional job with Mesa/EGL for L2/L3 (reuse glad EGL path from text rendering).
-- EDITOR_MVP Critic close requires UX gate green for scenarios covering
-  acceptance interactions (edit, tab, scroll, dirty) — see track STEP close.
+- **Gate:** `scripts/run_ux_gate.sh` — all registered UX scenarios (no display).
+- **Workflow:** `.github/workflows/ci.yml` job `ux-headless-gate`.
+- Optional Mesa/EGL for true GL L2/L3 (reuse `gl-loader-smoke` path); CPU MAE
+  stand-in is enough for caret fixture.
+
+### Critic checklist (before UX_HEADLESS close)
+
+- [ ] `scripts/run_ux_gate.sh` exit 0 on clean tree
+- [ ] No `sleep` in scenarios; clock via `UxDriver`
+- [ ] L1 scenarios cover live backlog L1–L9 (or documented deferral)
+- [ ] README how-to: `misc/editor/ux/README.md`
+- [ ] CI job `ux-headless-gate` present
+- [ ] Known limits listed in TRACK (GLFW clipboard/cursor/FBO if deferred)
 
 ## Relation to EDITOR_MVP
 

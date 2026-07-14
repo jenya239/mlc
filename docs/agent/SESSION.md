@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 13 |
-| step_last | 13 |
+| driver_turns_since_plan | 14 |
+| step_last | 14 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=14 CI/README gate next |
+| test_gate | STEP=15 Critic critique-audit next |
+
+### Turn 2026-07-14 19:05 (Driver TRACK_UX_HEADLESS STEP=14)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 14 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 19:03 |
+| elapsed | ~3 min |
+| done    | CI `ux-headless-gate`; `misc/editor/ux/README.md`; Critic checklist in GUI_UX_TESTING. |
+| verify  | `scripts/run_ux_gate.sh` → `[ux gate] all ok`. |
+| result  | STEP=14 done. Plain: gate in CI + how-to README. |
+| issues  | Left foreign README/demo_live dirty untouched. |
+| next    | ROLE=Critic STEP=15 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 19:02 (Driver TRACK_UX_HEADLESS STEP=13)
 

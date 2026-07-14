@@ -122,3 +122,30 @@ jobs:
 
       - name: RenderMode A8/MSDF switch smoke
         run: compiler/tests/run_render_mode_smoke.sh
+
+  ux-headless-gate:
+    runs-on: ubuntu-latest
+    env:
+      MLC_CXX: clang++
+      TMPDIR: ${{ github.workspace }}/tmp
+      MLC_GLFW_VISIBLE: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      - name: Download bootstrap mlcc binary
+        run: |
+          mkdir -p compiler/out tmp
+          gh release download --repo jenya239/mlc --pattern 'mlcc' --dir compiler/out/ \
+            $(gh release list --repo jenya239/mlc --limit 1 | awk '{print $3}')
+          chmod +x compiler/out/mlcc
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build mlcc (self-hosted, Ruby fallback if stale)
+        run: compiler/build.sh
+
+      - name: UX headless gate
+        run: scripts/run_ux_gate.sh
