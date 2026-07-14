@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 4 |
+| driver_turns_since_plan | 5 |
+| step_last | 5 |
 | active_track | TRACK_UX_HEADLESS |
-| test_gate | STEP=5 newline/caret scenario next |
+| test_gate | STEP=6 overflow scenario next |
+
+### Turn 2026-07-14 18:35 (Driver TRACK_UX_HEADLESS STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_UX_HEADLESS |
+| started | 2026-07-14 18:29 |
+| elapsed | ~6 min |
+| done    | `ux/edit_apply.mlc` + scenario `newline_caret_and_spaces`; gate entry. |
+| verify  | `run_ux_newline_caret.sh` exit 0; `ux_ok newline_caret_and_spaces`. |
+| result  | STEP=5 done. Plain: "x " + Enter + "y" → caret Ln/Col. |
+| issues  | Left foreign: SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=6 TRACK_UX_HEADLESS |
 
 ### Turn 2026-07-14 18:30 (Driver TRACK_UX_HEADLESS STEP=4)
 

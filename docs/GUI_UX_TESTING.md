@@ -104,6 +104,9 @@ from tabs/selection/shell_panels (fixture; no window).
 Scenario (STEP=4): `ux_scenarios/tab_strip_click_activates.mlc` +
 `ux/tab_strip.mlc` hit-test; stdout `ux_ok tab_strip_click_activates`.
 
+Scenario (STEP=5): `newline_caret_and_spaces` — trailing space + Enter + caret
+cols via `ux/edit_apply.mlc`; `ux_ok newline_caret_and_spaces`.
+
 Later: clipboard expects after P2 GLFW clipboard.
 
 ## Mapping live backlog → scenarios
