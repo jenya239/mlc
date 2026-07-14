@@ -40,7 +40,7 @@ fragments → flatten → render`.
 - P2: clipboard get/set — editor inject done (STEP=17); GLFW `glfw_gl_clipboard_*` deferred
 - by-value `mlc::file` wrappers: `runtime/include/mlc/io/file_abi.hpp` (STEP=19)
 
-## STEP=0…23 status
+## STEP=0…24 status
 
-- STEP=0–22: scaffold through tab cycle.
-- STEP=23: `commands/bus.mlc` — CommandId, KeyBinding, focus tree/editor.
+- STEP=0–23: scaffold through command bus.
+- STEP=24: `workspace/session.mlc` — root + open paths restore (E5 complete).

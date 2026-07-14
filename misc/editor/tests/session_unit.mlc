@@ -1,0 +1,89 @@
+// TRACK_EDITOR_MVP STEP=24 — session save/restore unit (temp fixture).
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_set_active,
+  tab_set_count,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  open_buffer_from_text,
+  open_buffer_save
+} from '../document/save'
+import {
+  workspace_session_from_tabs,
+  workspace_session_encode,
+  workspace_session_decode,
+  workspace_session_save,
+  workspace_session_load,
+  workspace_session_restore_tabs
+} from '../workspace/session'
+
+fn main() -> i32 = do
+  const root = ".tmp/editor_fixture"
+  const session_path = ".tmp/editor_fixture/session.txt"
+  const path_a = ".tmp/editor_fixture/a.mlc"
+  const path_b = ".tmp/editor_fixture/b.mlc"
+
+  // Seed files on disk.
+  let mut seed = open_buffer_from_text(path_a, "aaa")
+  seed = open_buffer_save(seed)
+  seed = open_buffer_from_text(path_b, "bbb")
+  seed = open_buffer_save(seed)
+
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, path_a, "aaa")
+  tabs = tab_set_open(tabs, path_b, "bbb")
+  tabs = tab_set_set_active(tabs, 0)
+
+  let mut session = workspace_session_from_tabs(root, tabs)
+  if session.root != root then
+    return 1
+  end
+  if session.paths.length() != 2 then
+    return 2
+  end
+  if session.active_index != 0 then
+    return 3
+  end
+
+  const encoded = workspace_session_encode(session)
+  const decoded = workspace_session_decode(encoded)
+  if decoded.root != root then
+    return 4
+  end
+  if decoded.paths.length() != 2 || decoded.paths[0] != path_a then
+    return 5
+  end
+  if decoded.active_index != 0 then
+    return 6
+  end
+
+  if !workspace_session_save(session_path, session) then
+    return 7
+  end
+  session = workspace_session_load(session_path)
+  if session.root != root || session.paths.length() != 2 then
+    return 8
+  end
+
+  tabs = workspace_session_restore_tabs(session)
+  if tab_set_count(tabs) != 2 then
+    return 9
+  end
+  if tab_set_active(tabs).path != path_a then
+    return 10
+  end
+  if tab_set_active(tabs).name != "a.mlc" then
+    return 11
+  end
+
+  // Missing session file → empty root.
+  session = workspace_session_load(".tmp/editor_fixture/missing_session.txt")
+  if session.root != "" || session.paths.length() != 0 then
+    return 12
+  end
+
+  println("[mlc-editor] session_unit ok")
+  0
+end

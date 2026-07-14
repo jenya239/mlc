@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
-| driver_turns_since_plan | 24 |
-| step_last | 23 |
+| driver_turns_since_plan | 25 |
+| step_last | 24 |
 | active_track | TRACK_EDITOR_MVP |
-| test_gate | STEP=24 session-restore optional next |
+| test_gate | STEP=25 syntax-stub next |
+
+### Turn 2026-07-14 17:55 (Driver TRACK_EDITOR_MVP STEP=24)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 24 |
+| track   | TRACK_EDITOR_MVP |
+| started | 2026-07-14 17:53 |
+| elapsed | ~2 min |
+| done    | verified untracked `workspace/session.mlc` + unit/script; TRACK/PLAN sync. |
+| verify  | `scripts/run_editor_session_unit.sh` exit 0; `session_unit ok`. |
+| result  | STEP=24 done (E5 complete). Plain: save/load root+paths+active → tabs. |
+| issues  | Left foreign: UX_HEADLESS/PLAN §33a, SCRIPT_VM, demo_live, theme/text M. |
+| next    | ROLE=Driver STEP=25 TRACK_EDITOR_MVP |
 
 ### Turn 2026-07-14 17:20 (Driver TRACK_EDITOR_MVP STEP=23)
 

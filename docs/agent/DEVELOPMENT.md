@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_MVP` STEP=23 done** (2026-07-14) — command bus; **STEP=24** next.
+**`TRACK_EDITOR_MVP` STEP=24 done** (2026-07-14) — session restore (E5); **STEP=25** next.
 Epic GUI deferred: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
 Phase A Critic OK: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 DEBUG Critic OK: [archive/tracks/TRACK_DEBUG_SOURCE_MAP.md](../archive/tracks/TRACK_DEBUG_SOURCE_MAP.md).

@@ -12,7 +12,13 @@ Phase B–D. Phase A scene is done (dependency satisfied).
 
 ## Next step
 
-**STEP=24** — Optional: restore workspace root + open files on restart.
+**STEP=25** — SyntaxHighlighter interface; MLC lexer stub (visible range / incremental).
+
+### STEP=24 done (2026-07-14)
+
+- `workspace/session.mlc`: root + open paths + active; encode/save/load/restore tabs.
+- `tests/session_unit.mlc` + script exit 0 (E5 complete).
+
 
 ### STEP=23 done (2026-07-14)
 
@@ -287,7 +293,7 @@ Each epic: TDD first (pure), then wire GL; app must **build and run** after each
 | 21 | Ctrl+W / middle-click close; dirty overlay confirm | **done** (2026-07-14): `tab_close.mlc` + unit |
 | 22 | Ctrl+Tab next/prev predictable order | **done** (2026-07-14): `tab_cycle.mlc` + unit |
 | 23 | Command bus: CommandId, KeyBinding, focus (tree vs editor) | **done** (2026-07-14): `commands/bus.mlc` + unit |
-| 24 | Optional: restore workspace root + open files on restart | if cheap |
+| 24 | Optional: restore workspace root + open files on restart | **done** (2026-07-14): `session.mlc` + unit |
 
 ### E6 — Syntax / theme / status / perf numbers
 
@@ -369,4 +375,5 @@ and session restore expand — still smaller than inventing Script VM.
 - **STEP=20 done** (2026-07-14): tabs.
 - **STEP=21 done** (2026-07-14): dirty close confirm.
 - **STEP=22 done** (2026-07-14): Ctrl+Tab cycle.
-- **STEP=23 done** (2026-07-14): command bus + focus; next **STEP=24**.
+- **STEP=23 done** (2026-07-14): command bus + focus.
+- **STEP=24 done** (2026-07-14): session restore (E5 complete); next **STEP=25**.
