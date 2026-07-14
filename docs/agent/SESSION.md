@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-12-multi-track-order` |
 | agent_token_last | — |
 | driver_turns_since_plan | 1 |
-| step_last | 6 |
-| active_track | TRACK_GUI_SCENE_PHASE_B |
-| test_gate | Phase B STEP=7 Critic next |
+| step_last | 7 |
+| active_track | TRACK_GUI_CANVAS_GRAPH |
+| test_gate | Phase B closed; Planner Phase C next |
+
+### Turn 2026-07-14 19:50 (Critic TRACK_GUI_SCENE_PHASE_B STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 7 |
+| track   | TRACK_GUI_SCENE_PHASE_B |
+| started | 2026-07-14 19:45 |
+| elapsed | ~5 min |
+| done    | Re-ran 5 Phase B smokes; Decision/kinds audit; archived TRACK; PLAN §10c/§29 sync. |
+| verify  | label/checkbox/slider/text_field/form → ok; no sleep; v0 demos present. |
+| result  | STEP=7 done; track **closed**. Residuals: MSDF glyphs; GuiInput literals vs GLFW test inject. |
+| issues  | Left foreign dirty untouched. |
+| next    | ROLE=Planner STEP=plan-refresh TRACK_GUI_CANVAS_GRAPH |
 
 ### Turn 2026-07-14 19:45 (Driver TRACK_GUI_SCENE_PHASE_B STEP=6)
 

@@ -7,15 +7,15 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **priority / active** (2026-07-14) — Phase B open (queue head)
+## Status: **priority / active** (2026-07-14) — Phase B **closed**; Phase C next
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-UX_HEADLESS **closed** 2026-07-14. Active work:
-[TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md).
+Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
+(**closed** 2026-07-14, Critic OK).
 
 ## Next step
 
-**Phase B STEP=7** — Critic. See `TRACK_GUI_SCENE_PHASE_B.md`.
+**Phase C** — Planner opens `TRACK_GUI_SCENE_PHASE_C.md` (dirty + spatial index).
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -72,13 +72,14 @@ Active work + STEP status:
 | 6 | Migration smoke vs `gui_button_demo` | **done** |
 | 7 | Verify | **done** |
 
-## Phase B: виджеты — **active** (2026-07-14)
+## Phase B: виджеты — **closed** (2026-07-14)
 
 Label / checkbox / slider / text-field as `SceneNode` kinds.
-Track: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md) (STEP=5 done; STEP=6 next).
+Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
+(**closed** Critic OK; `c28c620b`…`31d9299a`).
 Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
-## Phase C: dirty-tracking + spatial index (после Phase B closed)
+## Phase C: dirty-tracking + spatial index — **next** (after Phase B closed)
 
 Пересчёт world-transform/перетесселляция только для изменившихся узлов;
 опциональный quadtree culling, включается по порогу числа узлов (не

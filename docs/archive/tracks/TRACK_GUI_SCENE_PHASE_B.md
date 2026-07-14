@@ -1,17 +1,25 @@
 # Track: GUI scene Phase B — widgets on retained scene
 
-Parent: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
-Epic §29 / §10c in [../PLAN.md](../PLAN.md).
-Phase A (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
+Parent: [../../agent/TRACK_GUI_CANVAS_GRAPH.md](../../agent/TRACK_GUI_CANVAS_GRAPH.md).
+Epic §29 / §10c in [../../PLAN.md](../../PLAN.md).
+Phase A (closed): [TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
 
-## Status: **priority / active** (2026-07-14) — queue head after UX_HEADLESS close
+## Status: **closed** (2026-07-14) — Critic OK
 
-Phase A foundation (`scene.mlc` / `scene_draw.mlc`) stays. Phase B adds
-widget **kinds** + interaction on the same tree (not a second UI toolkit).
+**Critic 2026-07-14 (STEP=7):** Kinds match Decision (`Label`/`Checkbox`/`Slider`/`TextField`
+on `SceneNodeKind`). Re-ran label/checkbox/slider/text_field/form smokes → all ok.
+No `sleep` in Phase B smokes. v0 `gui_button_demo` + `layout.mlc` present (untouched).
+Anti-false-done: `c28c620b`…`31d9299a`. **reopen: none**. Residuals: MSDF glyphs
+deferred (Decision); TextField smokes build `GuiInput` literals (no GLFW
+`gui_input_*_test_*` poll path).
 
 ## Next step
 
-**STEP=7** — Critic audit / close Phase B.
+**closed** — Critic OK. Queue → Planner (Phase C eligible).
+
+### STEP=7 done (2026-07-14)
+
+- Critic: re-ran Phase B smokes; Decision audit; archive; epic → Phase C Planner.
 
 ### STEP=6 done (2026-07-14)
 
@@ -95,7 +103,7 @@ label rendering in Phase B smokes.
 | 4 | `Slider` kind: hit/drag sets value `[0,1]`; draw track+thumb | **done** (2026-07-14): `scene_slider_ok` |
 | 5 | `TextField` kind: focus + inject keys/text; caret model | **done** (2026-07-14): `scene_text_field_ok` |
 | 6 | Form smoke: one scene with label+checkbox+slider+field; headless inject | **done** (2026-07-14): `scene_form_ok` |
-| 7 | Critic: kinds match Decision; no sleep; v0 demos untouched | close Phase B |
+| 7 | Critic: kinds match Decision; no sleep; v0 demos untouched | **done** (2026-07-14): closed |
 
 ### Sub-steps (Driver)
 
@@ -121,12 +129,12 @@ label rendering in Phase B smokes.
 1. `TextField` + focus flag; wire `gui_input` text/backspace inject — done.
 2. Smoke: type → buffer equals expected (no GLFW required) — done.
 
-**STEP=6**
-1. Single example composing all four widgets.
-2. Script `MLC_GLFW_VISIBLE=0`; stdout token `scene_form_ok`.
+**STEP=6** — **done**
+1. Single example composing all four widgets — done.
+2. Script `MLC_GLFW_VISIBLE=0`; stdout token `scene_form_ok` — done.
 
-**STEP=7**
-1. Critic gate: re-run Phase B smokes; archive this track; epic → Phase C Planner later.
+**STEP=7** — **done**
+1. Critic gate: re-run Phase B smokes; archive this track; epic → Phase C Planner later — done.
 
 ## Out of scope
 
@@ -142,4 +150,4 @@ label rendering in Phase B smokes.
 | `misc/gui/scene.mlc` | tree + Affine2x3 + hit |
 | `misc/gui/scene_draw.mlc` | rect-fill batch |
 | `misc/gui/input.mlc` | inject mouse/keys/text |
-| `misc/examples/scene_*_smoke.mlc` | Phase A proofs — keep green |
+| `misc/examples/scene_*_smoke.mlc` | Phase A/B proofs — keep green |
