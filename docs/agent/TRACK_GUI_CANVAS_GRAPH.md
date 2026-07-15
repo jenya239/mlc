@@ -7,18 +7,19 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **priority / active** (2026-07-15) — Phase D queue head
+## Status: **parked** (2026-07-15) — Phase D behind EDITOR_LIVE_POLISH
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** 2026-07-14, Critic OK).
 Phase C: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** 2026-07-15, Critic OK).
-Active work: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
+Active park: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
+Queue head: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md) (§33b).
 
 ## Next step
 
-**Phase D STEP=3** — Path tessellation. See `TRACK_GUI_SCENE_PHASE_D.md`.
+**§33b EDITOR_LIVE_POLISH** first. Then Phase D **STEP=3** Path tess.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -92,7 +93,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
 fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
-(STEP=1 done; STEP=2 camera next).
+(STEP=2 done; STEP=3 Path tess next).
 
 ## Out of scope
 

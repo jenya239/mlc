@@ -6,15 +6,20 @@ Phase A (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/trac
 Phase B (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md).
 Phase C (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md).
 
-## Status: **priority / active** (2026-07-15) — queue head after Phase C close
+## Status: **parked** (2026-07-15) — behind EDITOR_LIVE_POLISH §33b
 
 Phase A/B/C stay. Phase D adds **camera pan/zoom**, one **vector path**
 (bezier fill+stroke) primitive, and a minimal **node/wire canvas** smoke
 on the same flat `Scene` (not a second toolkit).
 
+**Park reason:** user priority override — live editor polish (scissor/cursor/
+clipboard) before Path tess. Do **not** advance STEP=3+ until
+`TRACK_EDITOR_LIVE_POLISH` Critic closes. Leave any Path WIP uncommitted;
+do not revert.
+
 ## Next step
 
-**STEP=3** — Path kind + cubic tessellation.
+**Parked** — resume **STEP=3** (Path kind + cubic tessellation) after §33b.
 
 ### STEP=2 done (2026-07-15)
 
@@ -89,7 +94,7 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 | Step | Item | Gate |
 |------|------|------|
 | 1 | Decision: camera + Path + wire + MVP contract (freeze in this file) | **done** (2026-07-15): Decision frozen |
-| 2 | Camera pan/zoom helpers + smoke (screen hit moves with camera) | `scene_camera_smoke` exit 0 |
+| 2 | Camera pan/zoom helpers + smoke (screen hit moves with camera) | **done** (2026-07-15): `scene_camera_ok` |
 | 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | `scene_path_tess_smoke` exit 0 |
 | 4 | Path draw (+ optional stroke hit) smoke | `scene_path_draw_smoke` exit 0 |
 | 5 | Wire helper: path between two node anchors; updates when endpoints move | `scene_wire_smoke` exit 0 |
@@ -103,9 +108,9 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 2. Exact `ScenePath` fields + camera helper names — done.
 3. Non-goals noted — done.
 
-**STEP=2**
-1. `scene_camera_pan` / `scene_camera_zoom_at` on `Scene.camera`.
-2. Smoke: place rect; after pan, same screen point misses / new point hits.
+**STEP=2** — **done**
+1. `scene_camera_pan` / `scene_camera_zoom_at` on `Scene.camera` — done.
+2. Smoke: place rect; after pan, same screen point misses / new point hits — done.
 
 **STEP=3**
 1. `ScenePath` + `Path(...)` on `SceneNodeKind`; `scene_add_path`.

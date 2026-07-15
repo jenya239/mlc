@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-15-phase-c-critic` |
+| instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 2 |
-| active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=3 Path tess next |
+| driver_turns_since_plan | 0 |
+| step_last | 0 |
+| active_track | TRACK_EDITOR_LIVE_POLISH |
+| test_gate | §33b PRIORITY; Phase D parked; STEP=0 Decision next |
+
+### Turn 2026-07-15 11:05 (Planner TRACK_EDITOR_LIVE_POLISH priority-override)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_EDITOR_LIVE_POLISH (§33b) |
+| started | 2026-07-15 11:01 |
+| elapsed | — |
+| done    | Opened `TRACK_EDITOR_LIVE_POLISH.md` STEP=0–10; PLAN §33b + chain; Phase D parked; CONTINUITY rev `live-polish-priority`. Source: mlc-support architecture review. |
+| verify  | Queue head = §33b; Phase D Next=parked STEP=3; demo_live in scope. |
+| result  | Priority override armed. Plain: scissor/cursor/clipboard before Path. |
+| issues  | Left Phase D Path WIP + other foreign dirty untouched. |
+| next    | ROLE=Driver STEP=0 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 02:20 (Driver TRACK_GUI_SCENE_PHASE_D STEP=2)
 
