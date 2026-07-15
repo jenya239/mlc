@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=8** — Decision: chrome on SceneNode **or** documented split (`GUI_ARCHITECTURE.md`).
+**STEP=9** — Text glyph color (`u_color` / per-quad); theme / live readable.
+
+### STEP=8 done (2026-07-15)
+
+- Frozen **documented split**: IDE chrome = shell panels + `EditorAppState`; Scene = canvas/spatial only.
+- Doc: `docs/GUI_ARCHITECTURE.md` § «Live editor chrome vs Scene».
+- No SceneNode migration of tabs/tree/toolbar in this track.
 
 ### STEP=7 done (2026-07-15)
 
@@ -79,7 +85,7 @@ clipboard GLFW).
 | Scope | Live scissor, cursor, OS clipboard, command-bus wire, `demo_live` frame split seed; **not** Phase D Path |
 | `demo_live.mlc` + `run_editor_live_demo.sh` | **In scope** — absorb as product shell; commit when a STEP first needs them |
 | Phase D | **Parked** — leave Path WIP (`scene_path*`, tess smoke, related `scene.mlc`/`scene_draw.mlc` dirty) untouched; resume STEP=3 after this track Critic |
-| Scene vs chrome | Deferred to STEP=8; P0 keeps shell panels / `EditorUxState` paths |
+| Scene vs chrome | **STEP=8 frozen:** documented split — chrome stays shell/`EditorUxState`/`EditorAppState`; Scene = spatial/canvas only; no chrome→SceneNode migration this track |
 | Fake scissor | Today `editor_ux_apply_scissor_clip` always `state_with_overflows([],…)` when clip nonempty — **must** report real overflows when content exceeds clip **without** GL; with GL scissor, draw uses `glEnable(GL_SCISSOR_TEST)` + `glScissor` |
 | Scissor ABI | Add `gl_scissor(x,y,width,height)` + `GL_SCISSOR_TEST` constant in `glad_gl.mlc` / shim (mirror existing `gl_enable`/`gl_viewport` style) |
 | Cursor ABI | `glfw_gl_cursor_set(shape: i32)` mapping `ux_cursor_arrow/ew_resize/ibeam` → GLFW standard cursors; live calls after `editor_ux_cursor_shape_at` |
@@ -121,7 +127,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 5 | Wire `command_bus_resolve` into live | **done** (2026-07-15): unit + `editor_command_bus_live_ok` |
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | **done** (2026-07-15): `editor_app_seed_ok` |
 | 7 | Single app state; drop duplicate hit/scroll where safe | **done** (2026-07-15): `run_ux_gate` + `editor_app_seed_ok` |
-| 8 | Decision: chrome on SceneNode **or** documented split | doc in `GUI_ARCHITECTURE.md` |
+| 8 | Decision: chrome on SceneNode **or** documented split | **done** (2026-07-15): documented split in `GUI_ARCHITECTURE.md` |
 | 9 | Text glyph color (`u_color` / per-quad) | theme / live readable |
 | 10 | Critic: P0 gates green; Phase D unpark note; archive | close |
 
@@ -155,8 +161,11 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=7** — **done**
 1. `EditorAppState` + demo_live wire; wheel/caret via ux helpers — done.
 
-**STEP=8–9**
-1. Architecture Decision only if cheap; glyph color unblock Solarized light.
+**STEP=8** — **done**
+1. Documented chrome/Scene split in `GUI_ARCHITECTURE.md` — done.
+
+**STEP=9**
+1. Glyph color unblock Solarized light / live readable.
 
 **STEP=10**
 1. Critic; then Planner resumes Phase D STEP=3 (Path tess) — do not discard Path WIP.

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 8 |
-| step_last | 7 |
+| driver_turns_since_plan | 9 |
+| step_last | 8 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=8 Scene/chrome Decision next |
+| test_gate | §33b STEP=9 glyph color next |
+
+### Turn 2026-07-15 14:00 (Driver TRACK_EDITOR_LIVE_POLISH STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 13:56 |
+| elapsed | ~4 min |
+| done    | Frozen documented chrome/Scene split in `GUI_ARCHITECTURE.md`; TRACK Decision row + PLAN sync. |
+| verify  | Doc section present; no SceneNode chrome migration; Path WIP untouched. |
+| result  | STEP=8 done. Plain: chrome stays shell/app; Scene stays canvas/spatial. |
+| issues  | Bundled pre-existing dirty Testing line in `GUI_ARCHITECTURE.md` (UX levels); left EDITOR.md + Path WIP untouched. |
+| next    | ROLE=Driver STEP=9 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 13:45 (Driver TRACK_EDITOR_LIVE_POLISH STEP=7)
 

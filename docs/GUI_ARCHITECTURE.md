@@ -140,7 +140,8 @@ Layout:       own Row/Column/Split/Scroll/Overlay
 UI model:     entities + ephemeral views + layout cache + scene fragments
 Rendering:    rect / glyph-sprite / line batches + atlas
 Glyphs:       hinted raster atlas for code size; MSDF for zoom/spatial only
-Testing:      headless model/layout; inject input; scene snapshots when cheap
+Testing:      L0 model unit; L1 semantic UX scenarios (primary);
+              inject input; L2/L3 GL/FBO rare — see GUI_UX_TESTING.md
 ```
 
 ## Frame loop
@@ -214,14 +215,34 @@ General form widgets
 “runtime is monospace-only”. Do not encode assumptions that block image
 textures, non-text lists, or an audio transport UI.
 
+## Live editor chrome vs Scene (TRACK_EDITOR_LIVE_POLISH STEP=8)
+
+**Frozen 2026-07-15 — documented split (not “chrome = SceneNode tree”).**
+
+| Layer | Owns | Live path today |
+|-------|------|-----------------|
+| **IDE chrome** | Header, tab strip, toolbar, status, file-tree + editor split, focus/cursor/scroll probes | `misc/editor/ui/shell_panels.mlc`, `EditorUxState`, `EditorAppState` (`misc/editor/app/`), `demo_live.mlc` |
+| **Document surface** | Piece table, selection, history, command bus, gutter/visible lines, GL text/solids + scissor | `misc/editor/document/*`, `layout/*`, draw in `demo_live` |
+| **Scene graph** | Affine nodes, camera, hit spatial, Path/wires (Phase D) | `misc/gui/scene*.mlc` — **canvas/spatial substrate**, not the IDE chrome host |
+
+**Choice:** keep chrome on shell panels + ux/app state through LIVE_POLISH P0/P1.
+Do **not** reparent tabs/tree/toolbar into `SceneNode` in this track.
+
+**Rationale:** product dogfood already runs on shell panels; Scene Phase D Path WIP is parked;
+migrating chrome mid-polish would mix unrelated trees and block scissor/cursor/clipboard gates.
+
+**Later (out of this track):** optional Scene-backed chrome only after Path/wires Critic and an
+explicit new Decision — not implied by north-star “scene fragments” wording above.
+
 ## Relation to existing code
 | Existing | Role under this architecture |
 |----------|------------------------------|
-| `misc/gui/scene.mlc` | Start of Scene/Layout affine substrate (Phase A) |
+| `misc/gui/scene.mlc` | Scene/Layout affine substrate (Phases A–C done; D Path parked) |
 | `misc/gui/text_renderer.mlc` | Text Runtime glyph atlas path |
 | `misc/gui/input.mlc` + `gl_window` | Platform GLFW + Interaction inject |
 | `misc/editor/` | Application + Editor + View/Command runtimes |
+| `misc/editor/demo_live.mlc` + `app/` | Live product shell (chrome split above) |
 | `text_ide_panels_demo.mlc` | Visual mock only — not the architecture |
 
-GUI Canvas Phase B–D (widgets/bezier) remain **deferred** while EDITOR_MVP
-is priority; they must not contradict “editor substrate first”.
+GUI Canvas Phase D (Path/wires) remains **parked** until LIVE_POLISH Critic; do not contradict
+the chrome/Scene split above.
