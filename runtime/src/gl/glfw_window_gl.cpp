@@ -75,6 +75,48 @@ int32_t& cached_window_height() {
   return height;
 }
 
+struct StandardCursors {
+  GLFWcursor* arrow = nullptr;
+  GLFWcursor* ew_resize = nullptr;
+  GLFWcursor* ibeam = nullptr;
+  int32_t last_shape = 0;
+};
+
+StandardCursors& standard_cursors() {
+  static StandardCursors cursors;
+  return cursors;
+}
+
+void destroy_standard_cursors() {
+  StandardCursors& cursors = standard_cursors();
+  if (cursors.arrow != nullptr) {
+    glfwDestroyCursor(cursors.arrow);
+    cursors.arrow = nullptr;
+  }
+  if (cursors.ew_resize != nullptr) {
+    glfwDestroyCursor(cursors.ew_resize);
+    cursors.ew_resize = nullptr;
+  }
+  if (cursors.ibeam != nullptr) {
+    glfwDestroyCursor(cursors.ibeam);
+    cursors.ibeam = nullptr;
+  }
+  cursors.last_shape = 0;
+}
+
+void ensure_standard_cursors() {
+  StandardCursors& cursors = standard_cursors();
+  if (cursors.arrow == nullptr) {
+    cursors.arrow = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+  }
+  if (cursors.ew_resize == nullptr) {
+    cursors.ew_resize = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+  }
+  if (cursors.ibeam == nullptr) {
+    cursors.ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+  }
+}
+
 void append_utf8(std::string& out, unsigned int codepoint) {
   // ASCII / BMP Latin text only (TRACK_GUI_INPUT_ROBUSTNESS out-of-scope: IME/CJK).
   if (codepoint <= 0x7Fu) {
@@ -173,6 +215,7 @@ void glfw_gl_context_end() {
   pending_scroll_y() = 0.0;
   cached_window_width() = 0;
   cached_window_height() = 0;
+  destroy_standard_cursors();
   glfwDestroyWindow(window);
   context_window() = nullptr;
   glfwTerminate();
@@ -329,6 +372,32 @@ void glfw_gl_input_test_clear() {
   pending_scroll_y() = 0.0;
 }
 
+void glfw_gl_cursor_set(int32_t shape) {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return;
+  }
+  ensure_standard_cursors();
+  StandardCursors& cursors = standard_cursors();
+  GLFWcursor* cursor = cursors.arrow;
+  int32_t resolved = 0;
+  if (shape == 1) {
+    cursor = cursors.ew_resize;
+    resolved = 1;
+  } else if (shape == 2) {
+    cursor = cursors.ibeam;
+    resolved = 2;
+  }
+  if (cursor != nullptr) {
+    glfwSetCursor(window, cursor);
+  }
+  cursors.last_shape = resolved;
+}
+
+int32_t glfw_gl_cursor_shape_get() {
+  return standard_cursors().last_shape;
+}
+
 #else
 
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
@@ -352,6 +421,8 @@ void glfw_gl_text_test_push(String) {}
 void glfw_gl_keys_test_set(int32_t, int32_t) {}
 void glfw_gl_input_test_set(int32_t, int32_t, int32_t, int32_t) {}
 void glfw_gl_input_test_clear() {}
+void glfw_gl_cursor_set(int32_t) {}
+int32_t glfw_gl_cursor_shape_get() { return 0; }
 
 #endif
 

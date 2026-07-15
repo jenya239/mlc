@@ -38,5 +38,9 @@ void glfw_gl_input_test_set(
 );
 void glfw_gl_input_test_clear();
 
+// shape: 0 arrow, 1 ew-resize, 2 ibeam (TRACK_EDITOR_LIVE_POLISH STEP=3)
+void glfw_gl_cursor_set(int32_t shape);
+int32_t glfw_gl_cursor_shape_get();
+
 } // namespace gl
 } // namespace mlc

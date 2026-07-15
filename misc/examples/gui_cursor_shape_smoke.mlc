@@ -1,0 +1,47 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=3 — glfw_gl_cursor_set shapes 0/1/2.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_cursor_set,
+  glfw_gl_cursor_shape_get
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  ux_cursor_arrow,
+  ux_cursor_ew_resize,
+  ux_cursor_ibeam
+} from '../editor/ux/cursor'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  glfw_gl_cursor_set(ux_cursor_arrow())
+  if glfw_gl_cursor_shape_get() != ux_cursor_arrow() then
+    glfw_gl_context_end()
+    return 1
+  end
+
+  glfw_gl_cursor_set(ux_cursor_ew_resize())
+  if glfw_gl_cursor_shape_get() != ux_cursor_ew_resize() then
+    glfw_gl_context_end()
+    return 2
+  end
+
+  glfw_gl_cursor_set(ux_cursor_ibeam())
+  if glfw_gl_cursor_shape_get() != ux_cursor_ibeam() then
+    glfw_gl_context_end()
+    return 3
+  end
+
+  glfw_gl_cursor_set(ux_cursor_arrow())
+  if glfw_gl_cursor_shape_get() != ux_cursor_arrow() then
+    glfw_gl_context_end()
+    return 4
+  end
+
+  glfw_gl_context_end()
+  println("gui_cursor_shape_ok")
+  0
+end

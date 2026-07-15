@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=3** — `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live.
+**STEP=4** — GLFW clipboard get/set; live uses OS clipboard.
+
+### STEP=3 done (2026-07-15)
+
+- `glfw_gl_cursor_set` / `glfw_gl_cursor_shape_get`; standard arrow/ew/ibeam.
+- `demo_live` calls `editor_ux_cursor_shape_at` each frame.
+- Smoke `gui_cursor_shape_ok`.
 
 ### STEP=2 done (2026-07-15)
 

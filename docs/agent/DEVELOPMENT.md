@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_LIVE_POLISH` STEP=2 done** (2026-07-15) — live scissor wire; **STEP=3** cursor next.
+**`TRACK_EDITOR_LIVE_POLISH` STEP=3 done** (2026-07-15) — GLFW cursor shapes; **STEP=4** clipboard next.
 Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
 Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
 ## Step sizing (good vs bad)

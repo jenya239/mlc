@@ -428,7 +428,7 @@ compiler/
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
 | **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a |
 | **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **done** (2026-07-14) Critic OK; STEP=0–15; `a159e85d`…`09e33f3e` | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](archive/tracks/TRACK_UX_HEADLESS.md) **closed**; residuals L8 blink + live GLFW/FBO |
-| **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **PRIORITY / queue head** (2026-07-15) STEP=2 **done**; **STEP=3** cursor ABI next; Phase D parked | [TRACK_EDITOR_LIVE_POLISH](agent/TRACK_EDITOR_LIVE_POLISH.md); review `mlc-support/responses/gui_editor_architecture_20260715_105621.md` |
+| **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **PRIORITY / queue head** (2026-07-15) STEP=3 **done**; **STEP=4** clipboard ABI next; Phase D parked | [TRACK_EDITOR_LIVE_POLISH](agent/TRACK_EDITOR_LIVE_POLISH.md); review `mlc-support/responses/gui_editor_architecture_20260715_105621.md` |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 

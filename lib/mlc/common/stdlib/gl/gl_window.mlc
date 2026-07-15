@@ -44,3 +44,8 @@ export extern fn glfw_gl_input_test_set(
   = "mlc::gl::glfw_gl_input_test_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_input_test_clear() -> unit
   = "mlc::gl::glfw_gl_input_test_clear" from "mlc/gl/glfw_window_gl.hpp"
+// shape: 0 arrow, 1 ew-resize, 2 ibeam
+export extern fn glfw_gl_cursor_set(shape: i32) -> unit
+  = "mlc::gl::glfw_gl_cursor_set" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_cursor_shape_get() -> i32
+  = "mlc::gl::glfw_gl_cursor_shape_get" from "mlc/gl/glfw_window_gl.hpp"

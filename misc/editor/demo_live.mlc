@@ -8,7 +8,8 @@ import {
   glfw_gl_context_end,
   glfw_gl_window_width,
   glfw_gl_window_height,
-  glfw_gl_take_scroll_y
+  glfw_gl_take_scroll_y,
+  glfw_gl_cursor_set
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { gui_input_poll } from '../gui/input'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
@@ -162,6 +163,8 @@ import {
   tree_hit_row_index
 } from './ux/tree_hit'
 import { editor_text_metrics_default } from './ux/overflow'
+import { editor_ux_cursor_shape_at } from './ux/cursor'
+import { EditorUxState, editor_ux_state_new } from './ux/probe'
 
 extern fn sleep_ms(milliseconds: i32) -> unit
   = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
@@ -430,6 +433,26 @@ fn main() -> i32 = do
       tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height
     )
     const tree_rows = file_tree_visible_rows(panels.tree)
+
+    // Tabs live above shell panels → strip height 0 for cursor probe.
+    let mut cursor_state = editor_ux_state_new(width, height, panels, tabs, selection)
+    cursor_state = EditorUxState {
+      window_width: cursor_state.window_width,
+      window_height: cursor_state.window_height,
+      focus: cursor_state.focus,
+      panels: cursor_state.panels,
+      tabs: cursor_state.tabs,
+      selection: cursor_state.selection,
+      scroll_offset_x: cursor_state.scroll_offset_x,
+      scroll_offset_y: cursor_state.scroll_offset_y,
+      cursor_shape: cursor_state.cursor_shape,
+      clock_ms: cursor_state.clock_ms,
+      tab_strip_height: 0,
+      overflows: cursor_state.overflows
+    }
+    glfw_gl_cursor_set(
+      editor_ux_cursor_shape_at(cursor_state, input.mouse_x, input.mouse_y)
+    )
 
     const viewport = viewport_metrics_new(
       line_height(), text_rect.height, text_rect.width, 1

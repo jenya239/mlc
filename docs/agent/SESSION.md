@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 2 |
+| driver_turns_since_plan | 4 |
+| step_last | 3 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=3 cursor ABI next |
+| test_gate | §33b STEP=4 clipboard ABI next |
+
+### Turn 2026-07-15 12:20 (Driver TRACK_EDITOR_LIVE_POLISH STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 12:09 |
+| elapsed | ~11 min |
+| done    | `glfw_gl_cursor_set`/`shape_get`; demo_live ↔ `editor_ux_cursor_shape_at`; smoke `gui_cursor_shape_ok`. |
+| verify  | `bash scripts/run_gui_cursor_shape_smoke.sh` → `gui_cursor_shape_ok`; demo_live compiles. |
+| result  | STEP=3 done. Plain: live divider/text hover sets OS cursor via GLFW. |
+| issues  | Left Path WIP + EDITOR/GUI_ARCHITECTURE dirty untouched. |
+| next    | ROLE=Driver STEP=4 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 12:06 (Driver TRACK_EDITOR_LIVE_POLISH STEP=2)
 

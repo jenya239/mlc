@@ -1,5 +1,4 @@
-// TRACK_UX_HEADLESS STEP=10 — cursor shape probe on divider hover (L6 model).
-// Live glfwSetCursor deferred; probe + inject shape id is the L1 gate.
+// Cursor shape probe (UX model) + live via glfw_gl_cursor_set (LIVE_POLISH STEP=3).
 import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
 import {
   shell_panels_divider_hit,
