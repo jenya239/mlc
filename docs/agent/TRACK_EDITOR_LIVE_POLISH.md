@@ -18,41 +18,78 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=0** — Freeze Decision (bindings + live shell scope) + PLAN sync.
+**STEP=1** — `gl_scissor` / `GL_SCISSOR_TEST` stdlib + smoke.
 
-## Decision (STEP=0) — draft until Driver freezes
+### STEP=0 done (2026-07-15)
 
-| Item | Direction |
-|------|-----------|
-| Scope | Live scissor, cursor, clipboard, command-bus wire, frame split seed; not Phase D Path |
-| `demo_live.mlc` | **In scope** for this track (was foreign WIP; absorb/commit as product shell) |
-| Phase D | **Parked** — leave uncommitted Path WIP untouched; resume after this track Critic close |
-| Scene vs editor chrome | Document Decision later (STEP=8); do not migrate tabs/tree to Scene in P0 |
-| Fake scissor | Fix `editor_ux_apply_scissor_clip` so overflow depends on real clip math; enable GL scissor in draw |
-| Gates | Prefer `MLC_GLFW_VISIBLE=0` smokes + existing `run_ux_gate` still green |
+- Decision frozen below (bindings + live shell scope).
+- Phase D remains parked; PLAN §33b → STEP=1 next.
+
+## Decision (STEP=0) — **frozen** 2026-07-15
+
+Grounded in: `misc/editor/demo_live.mlc` (god-loop), `editor/ux/overflow.mlc`
+(`editor_ux_apply_scissor_clip` always clears overflows), `editor/ux/cursor.mlc`
+(shape ids only), `editor/clipboard.mlc` (in-memory), `command_bus_resolve`,
+`glad_gl.mlc` (`gl_enable` present; **no** scissor), `gl_window.mlc` (no cursor/
+clipboard GLFW).
+
+| Item | Choice |
+|------|--------|
+| Scope | Live scissor, cursor, OS clipboard, command-bus wire, `demo_live` frame split seed; **not** Phase D Path |
+| `demo_live.mlc` + `run_editor_live_demo.sh` | **In scope** — absorb as product shell; commit when a STEP first needs them |
+| Phase D | **Parked** — leave Path WIP (`scene_path*`, tess smoke, related `scene.mlc`/`scene_draw.mlc` dirty) untouched; resume STEP=3 after this track Critic |
+| Scene vs chrome | Deferred to STEP=8; P0 keeps shell panels / `EditorUxState` paths |
+| Fake scissor | Today `editor_ux_apply_scissor_clip` always `state_with_overflows([],…)` when clip nonempty — **must** report real overflows when content exceeds clip **without** GL; with GL scissor, draw uses `glEnable(GL_SCISSOR_TEST)` + `glScissor` |
+| Scissor ABI | Add `gl_scissor(x,y,width,height)` + `GL_SCISSOR_TEST` constant in `glad_gl.mlc` / shim (mirror existing `gl_enable`/`gl_viewport` style) |
+| Cursor ABI | `glfw_gl_cursor_set(shape: i32)` mapping `ux_cursor_arrow/ew_resize/ibeam` → GLFW standard cursors; live calls after `editor_ux_cursor_shape_at` |
+| Clipboard ABI | `glfw_gl_clipboard_get` / `glfw_gl_clipboard_set`; live: OS sync on copy/cut/paste; keep in-memory `Clipboard` as cache; headless inject via test setters if needed |
+| Command bus | Live key path calls `command_bus_resolve` (same bindings as unit); toolbar buttons dispatch same command ids |
+| Frame split | Seed `misc/editor/app/` — extract input/apply/layout/draw from `demo_live` without behavior change (STEP=6) |
+| Gates | `MLC_GLFW_VISIBLE=0` where GL; `scripts/run_ux_gate.sh` must stay green after STEPs that touch ux |
+
+### Exact API surface (STEPs 1–4)
+
+```text
+# STEP=1
+gl_scissor(x: i32, y: i32, width: i32, height: i32) -> unit
+GL_SCISSOR_TEST : i32   # use with existing gl_enable
+
+# STEP=3
+glfw_gl_cursor_set(shape: i32) -> unit   # 0 arrow, 1 ew-resize, 2 ibeam
+
+# STEP=4
+glfw_gl_clipboard_get() -> string
+glfw_gl_clipboard_set(text: string) -> unit
+# optional test inject parallel to glfw_gl_text_test_push
+```
+
+### Non-goals (Decision)
+
+Tree-sitter; IME; Flex everywhere; Script VM; full Scene migration of tabs/tree;
+Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY sync | doc |
-| 1 | `gl_scissor` / `GL_SCISSOR_TEST` in glad/gl stdlib | `run_gl_scissor_smoke.sh` → `scissor_ok` (or FBO/clear proof) |
-| 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | `run_editor_live_scissor_smoke.sh` + `run_ux_gate` still ok |
-| 3 | `glfwSetCursor` / standard cursors; wire `ux/cursor.mlc` in live | `run_gui_cursor_shape_smoke.sh` |
-| 4 | GLFW clipboard get/set + inject; live uses OS clipboard | `run_gui_clipboard_smoke.sh` |
-| 5 | Wire `command_bus_resolve` into live (kbd + toolbar one path) | unit + `run_editor_command_bus_live_smoke.sh` |
-| 6 | Split `demo_live` frame: input / apply / layout / draw modules (seed `misc/editor/app/`) | compiles; live still runs |
-| 7 | Single `EditorAppState` (or build `EditorUxState` from live); drop duplicate hit/scroll paths where safe | `run_ux_gate` + live smoke |
-| 8 | Decision: editor chrome on SceneNode **or** documented split in `GUI_ARCHITECTURE.md` | doc Deviation/Decision |
-| 9 | Text glyph color (`u_color` / per-quad) — real highlight, not only underlays | theme smoke / live dark+light readable |
+| 0 | Decision freeze + PLAN/CONTINUITY sync | **done** (2026-07-15) |
+| 1 | `gl_scissor` / `GL_SCISSOR_TEST` in glad/gl stdlib | `run_gl_scissor_smoke.sh` → `scissor_ok` |
+| 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | `run_editor_live_scissor_smoke.sh` + `run_ux_gate` ok |
+| 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | `run_gui_cursor_shape_smoke.sh` |
+| 4 | GLFW clipboard get/set; live uses OS clipboard | `run_gui_clipboard_smoke.sh` |
+| 5 | Wire `command_bus_resolve` into live | unit + `run_editor_command_bus_live_smoke.sh` |
+| 6 | Split `demo_live` frame → `misc/editor/app/` seed | compiles; live still runs |
+| 7 | Single app state; drop duplicate hit/scroll where safe | `run_ux_gate` + live smoke |
+| 8 | Decision: chrome on SceneNode **or** documented split | doc in `GUI_ARCHITECTURE.md` |
+| 9 | Text glyph color (`u_color` / per-quad) | theme / live readable |
 | 10 | Critic: P0 gates green; Phase D unpark note; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze Decision table.
-2. Mark Phase D parked in its TRACK + epic; queue head = this track.
-3. Non-goals: Tree-sitter, IME, Flex everywhere, Script VM, full Scene migration.
+**STEP=0** — **done**
+1. Freeze Decision table — done.
+2. Phase D parked (Planner) — confirmed.
+3. Non-goals noted — done.
 
 **STEP=1**
 1. ABI + `glad_gl.mlc` scissor enable/rect.
@@ -87,4 +124,4 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 - One atomic STEP per turn; commit + push.
 - Do not mark done without gate script exit 0.
-- Foreign: Phase D Path files (`scene_path*.mlc`, path tess smoke) if still uncommitted — do not revert; do not mix into this track's commits unless STEP explicitly needs them (it should not).
+- Foreign: Phase D Path files (`scene_path*.mlc`, path tess smoke, related scene/draw dirty) — do not revert; do not mix into this track's commits unless STEP explicitly needs them (it should not).

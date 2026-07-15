@@ -41,10 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_D` STEP=2 done** (2026-07-15) — camera pan/zoom; **STEP=3** Path tess next.
-Epic: [TRACK_GUI_CANVAS_GRAPH.md](TRACK_GUI_CANVAS_GRAPH.md).
-Phase C archive: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md).
-Phase B archive: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md).
+**`TRACK_EDITOR_LIVE_POLISH` STEP=0 done** (2026-07-15) — Decision frozen; **STEP=1** `gl_scissor` next.
+Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
+Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
 ## Step sizing (good vs bad)
 
 | Good | Bad |

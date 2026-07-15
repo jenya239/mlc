@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
+| driver_turns_since_plan | 1 |
 | step_last | 0 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b PRIORITY; Phase D parked; STEP=0 Decision next |
+| test_gate | §33b STEP=1 gl_scissor next |
+
+### Turn 2026-07-15 11:10 (Driver TRACK_EDITOR_LIVE_POLISH STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 11:06 |
+| elapsed | ~4 min |
+| done    | Froze Decision: gl_scissor/cursor/clipboard ABI; demo_live in scope; Phase D parked; PLAN §33b sync. |
+| verify  | TRACK Decision frozen; STEP=1 Next; Path WIP untouched; no code (doc gate). |
+| result  | STEP=0 done. Plain: P0 = live GL scissor + OS clipboard + cursor wire. |
+| issues  | Left Phase D Path WIP + EDITOR/theme dirty untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 11:05 (Planner TRACK_EDITOR_LIVE_POLISH priority-override)
 
