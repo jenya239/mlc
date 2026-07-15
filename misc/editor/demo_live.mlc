@@ -34,6 +34,7 @@ import {
   StaticTextLine,
   static_text_create,
   static_text_draw_lines,
+  static_text_draw_lines_colored,
   static_text_destroy
 } from './ui/static_text'
 import {
@@ -987,8 +988,9 @@ fn main() -> i32 = do
       )
     end
 
-    let mut chrome_drawn = static_text_draw_lines(
-      text_state, chrome_lines, width, height, 0
+    let mut chrome_drawn = static_text_draw_lines_colored(
+      text_state, chrome_lines, width, height, 0,
+      theme.text_red, theme.text_green, theme.text_blue, 1.0
     )
     text_state = chrome_drawn.state
     if chrome_drawn.error_code != 0 then
@@ -1016,8 +1018,9 @@ fn main() -> i32 = do
     end
 
     editor_gl_scissor_enable_rect(height, editor_rect)
-    const editor_drawn = static_text_draw_lines(
-      text_state, editor_lines, width, height, 0
+    const editor_drawn = static_text_draw_lines_colored(
+      text_state, editor_lines, width, height, 0,
+      theme.text_red, theme.text_green, theme.text_blue, 1.0
     )
     editor_gl_scissor_disable()
     text_state = editor_drawn.state

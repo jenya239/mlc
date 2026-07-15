@@ -84,6 +84,21 @@ inline int32_t get_uniform_location_string(int32_t program, String name) {
   return glGetUniformLocation(static_cast<GLuint>(program), name.c_str());
 }
 inline void uniform_1i(int32_t location, int32_t value) { glUniform1i(location, value); }
+inline void uniform_4f(
+  int32_t location,
+  double red,
+  double green,
+  double blue,
+  double alpha
+) {
+  glUniform4f(
+    location,
+    static_cast<GLfloat>(red),
+    static_cast<GLfloat>(green),
+    static_cast<GLfloat>(blue),
+    static_cast<GLfloat>(alpha)
+  );
+}
 
 inline int32_t gen_buffer() {
   GLuint buffer = 0;
@@ -337,6 +352,15 @@ inline int32_t gl_get_uniform_location_string(int32_t program, String name) {
 }
 inline void gl_uniform_1i(int32_t location, int32_t value) {
   glad_abi::uniform_1i(location, value);
+}
+inline void gl_uniform_4f(
+  int32_t location,
+  double red,
+  double green,
+  double blue,
+  double alpha
+) {
+  glad_abi::uniform_4f(location, red, green, blue, alpha);
 }
 inline int32_t gl_gen_buffer() { return glad_abi::gen_buffer(); }
 inline void gl_delete_buffer(int32_t buffer) { glad_abi::delete_buffer(buffer); }

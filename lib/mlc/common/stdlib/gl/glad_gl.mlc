@@ -57,6 +57,14 @@ export extern fn gl_get_uniform_location_string(program: i32, name: string) -> i
   = "mlc::gl::glad_abi::get_uniform_location_string" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_uniform_1i(location: i32, value: i32) -> unit
   = "mlc::gl::glad_abi::uniform_1i" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_uniform_4f(
+  location: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> unit
+  = "mlc::gl::glad_abi::uniform_4f" from "mlc/gl/glad_gl_abi.hpp"
 
 export extern fn gl_gen_buffer() -> i32
   = "mlc::gl::glad_abi::gen_buffer" from "mlc/gl/glad_gl_abi.hpp"

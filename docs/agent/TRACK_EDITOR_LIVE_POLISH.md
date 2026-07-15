@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=9** — Text glyph color (`u_color` / per-quad); theme / live readable.
+**STEP=10** — Critic: P0 gates green; Phase D unpark note; archive.
+
+### STEP=9 done (2026-07-15)
+
+- `gl_uniform_4f`; TextRenderer `u_color` + `draw_*_colored`.
+- `static_text_draw_lines_colored`; demo_live chrome/editor use `theme.text_*`.
+- Smoke `text_glyph_color_ok`.
 
 ### STEP=8 done (2026-07-15)
 
@@ -128,7 +134,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | **done** (2026-07-15): `editor_app_seed_ok` |
 | 7 | Single app state; drop duplicate hit/scroll where safe | **done** (2026-07-15): `run_ux_gate` + `editor_app_seed_ok` |
 | 8 | Decision: chrome on SceneNode **or** documented split | **done** (2026-07-15): documented split in `GUI_ARCHITECTURE.md` |
-| 9 | Text glyph color (`u_color` / per-quad) | theme / live readable |
+| 9 | Text glyph color (`u_color` / per-quad) | **done** (2026-07-15): `text_glyph_color_ok` + demo theme tint |
 | 10 | Critic: P0 gates green; Phase D unpark note; archive | close |
 
 ### Sub-steps (Driver)
@@ -164,8 +170,8 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=8** — **done**
 1. Documented chrome/Scene split in `GUI_ARCHITECTURE.md` — done.
 
-**STEP=9**
-1. Glyph color unblock Solarized light / live readable.
+**STEP=9** — **done**
+1. Glyph `u_color` + live theme text tint — done.
 
 **STEP=10**
 1. Critic; then Planner resumes Phase D STEP=3 (Path tess) — do not discard Path WIP.

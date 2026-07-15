@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 9 |
-| step_last | 8 |
+| driver_turns_since_plan | 10 |
+| step_last | 9 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=9 glyph color next |
+| test_gate | §33b STEP=10 Critic next |
+
+### Turn 2026-07-15 19:30 (Driver TRACK_EDITOR_LIVE_POLISH STEP=9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 19:21 |
+| elapsed | ~9 min |
+| done    | `gl_uniform_4f`; TextRenderer `u_color`; `static_text_draw_lines_colored`; demo_live theme text; smoke. |
+| verify  | `bash scripts/run_text_glyph_color_smoke.sh` → `text_glyph_color_ok`; seed + editor text smokes ok. |
+| result  | STEP=9 done. Plain: live glyphs tint via theme `text_*` / `u_color`. |
+| issues  | Left Path WIP + EDITOR.md dirty untouched; batch tint (not per-glyph quad attrs). |
+| next    | ROLE=Critic STEP=critique-audit TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 14:00 (Driver TRACK_EDITOR_LIVE_POLISH STEP=8)
 

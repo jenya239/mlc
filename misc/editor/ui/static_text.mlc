@@ -12,8 +12,8 @@ import {
   text_renderer_create,
   text_renderer_upload_atlas,
   text_renderer_set_batch,
-  text_renderer_draw,
-  text_renderer_draw_over,
+  text_renderer_draw_colored,
+  text_renderer_draw_over_colored,
   text_renderer_destroy,
   text_scratch_u8_clear,
   text_scratch_u8_resize_zero,
@@ -212,6 +212,22 @@ export fn static_text_draw_lines(
   window_width: i32,
   window_height: i32,
   clear_framebuffer: i32
+) -> StaticTextDrawResult =
+  static_text_draw_lines_colored(
+    state, lines, window_width, window_height, clear_framebuffer,
+    1.0, 1.0, 1.0, 1.0
+  )
+
+export fn static_text_draw_lines_colored(
+  state: StaticTextState,
+  lines: [StaticTextLine],
+  window_width: i32,
+  window_height: i32,
+  clear_framebuffer: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
 ) -> StaticTextDrawResult = do
   text_scratch_f32_clear()
   let mut working = state
@@ -231,9 +247,13 @@ export fn static_text_draw_lines(
   const batched = text_renderer_set_batch(working.renderer, total_vertices)
   let mut draw_status = 0
   if clear_framebuffer != 0 then
-    draw_status = text_renderer_draw(batched, window_width, window_height)
+    draw_status = text_renderer_draw_colored(
+      batched, window_width, window_height, red, green, blue, alpha
+    )
   else
-    draw_status = text_renderer_draw_over(batched, window_width, window_height)
+    draw_status = text_renderer_draw_over_colored(
+      batched, window_width, window_height, red, green, blue, alpha
+    )
   end
   StaticTextDrawResult {
     state: StaticTextState {

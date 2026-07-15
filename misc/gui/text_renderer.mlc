@@ -29,6 +29,7 @@ import {
   gl_get_attrib_location_string,
   gl_get_uniform_location_string,
   gl_uniform_1i,
+  gl_uniform_4f,
   gl_gen_buffer,
   gl_delete_buffer,
   gl_bind_buffer,
@@ -67,7 +68,7 @@ fn vertex_shader_source() -> string =
   "attribute vec2 a_pos;\nattribute vec2 a_uv;\nvarying vec2 v_uv;\nvoid main() {\n  v_uv = a_uv;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
 
 fn fragment_shader_source() -> string =
-  "varying vec2 v_uv;\nuniform sampler2D u_tex;\nvoid main() {\n  float alpha = texture2D(u_tex, v_uv).r;\n  gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);\n}\n"
+  "varying vec2 v_uv;\nuniform sampler2D u_tex;\nuniform vec4 u_color;\nvoid main() {\n  float alpha = texture2D(u_tex, v_uv).r;\n  gl_FragColor = vec4(u_color.rgb, u_color.a * alpha);\n}\n"
 
 export type AtlasSlot = {
   page_index: i32,
@@ -131,6 +132,7 @@ export type TextRenderer = {
   atlas_texture: i32,
   position_location: i32,
   uv_location: i32,
+  color_location: i32,
   atlas_size: i32,
   vertex_count: i32
 }
@@ -337,7 +339,8 @@ export fn text_renderer_create(atlas_size: i32) -> TextRenderer = do
   if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
     return TextRenderer {
       program: -12, vertex_buffer: 0, atlas_texture: 0,
-      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+      position_location: -1, uv_location: -1, color_location: -1,
+      atlas_size: atlas_size, vertex_count: 0
     }
   end
   const fragment_shader = gl_create_shader(gl_fragment_shader())
@@ -347,7 +350,8 @@ export fn text_renderer_create(atlas_size: i32) -> TextRenderer = do
     gl_delete_shader(vertex_shader)
     return TextRenderer {
       program: -13, vertex_buffer: 0, atlas_texture: 0,
-      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+      position_location: -1, uv_location: -1, color_location: -1,
+      atlas_size: atlas_size, vertex_count: 0
     }
   end
   const program = gl_create_program()
@@ -360,17 +364,20 @@ export fn text_renderer_create(atlas_size: i32) -> TextRenderer = do
     gl_delete_program(program)
     return TextRenderer {
       program: -14, vertex_buffer: 0, atlas_texture: 0,
-      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+      position_location: -1, uv_location: -1, color_location: -1,
+      atlas_size: atlas_size, vertex_count: 0
     }
   end
   const position_location = gl_get_attrib_location_string(program, "a_pos")
   const uv_location = gl_get_attrib_location_string(program, "a_uv")
   const texture_location = gl_get_uniform_location_string(program, "u_tex")
-  if position_location < 0 || uv_location < 0 || texture_location < 0 then
+  const color_location = gl_get_uniform_location_string(program, "u_color")
+  if position_location < 0 || uv_location < 0 || texture_location < 0 || color_location < 0 then
     gl_delete_program(program)
     return TextRenderer {
       program: -15, vertex_buffer: 0, atlas_texture: 0,
-      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+      position_location: -1, uv_location: -1, color_location: -1,
+      atlas_size: atlas_size, vertex_count: 0
     }
   end
   const vertex_buffer = gl_gen_buffer()
@@ -381,17 +388,20 @@ export fn text_renderer_create(atlas_size: i32) -> TextRenderer = do
     gl_delete_program(program)
     return TextRenderer {
       program: -16, vertex_buffer: 0, atlas_texture: 0,
-      position_location: -1, uv_location: -1, atlas_size: atlas_size, vertex_count: 0
+      position_location: -1, uv_location: -1, color_location: -1,
+      atlas_size: atlas_size, vertex_count: 0
     }
   end
   gl_use_program(program)
   gl_uniform_1i(texture_location, 0)
+  gl_uniform_4f(color_location, 1.0, 1.0, 1.0, 1.0)
   TextRenderer {
     program: program,
     vertex_buffer: vertex_buffer,
     atlas_texture: atlas_texture,
     position_location: position_location,
     uv_location: uv_location,
+    color_location: color_location,
     atlas_size: atlas_size,
     vertex_count: 0
   }
@@ -410,19 +420,47 @@ export fn text_renderer_set_batch(renderer: TextRenderer, vertex_count: i32) -> 
     atlas_texture: renderer.atlas_texture,
     position_location: renderer.position_location,
     uv_location: renderer.uv_location,
+    color_location: renderer.color_location,
     atlas_size: renderer.atlas_size,
     vertex_count: vertex_count
   }
 
 export fn text_renderer_draw(renderer: TextRenderer, width: i32, height: i32) -> i32 =
-  text_renderer_draw_cleared(renderer, width, height, 0.05, 0.07, 0.12)
+  text_renderer_draw_colored(renderer, width, height, 1.0, 1.0, 1.0, 1.0)
 
-// Draw glyph quads without clearing the framebuffer (compose over solids).
-export fn text_renderer_draw_over(renderer: TextRenderer, width: i32, height: i32) -> i32 = do
+export fn text_renderer_draw_colored(
+  renderer: TextRenderer,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> i32 = do
+  gl_viewport(0, 0, width, height)
+  gl_clear_color_f64(0.05, 0.07, 0.12, 1.0)
+  gl_clear(gl_color_buffer_bit())
+  text_renderer_draw_over_colored(renderer, width, height, red, green, blue, alpha)
+end
+
+export fn text_renderer_draw_over(renderer: TextRenderer, width: i32, height: i32) -> i32 =
+  text_renderer_draw_over_colored(renderer, width, height, 1.0, 1.0, 1.0, 1.0)
+
+// Draw glyph quads without clearing; tint via u_color.
+export fn text_renderer_draw_over_colored(
+  renderer: TextRenderer,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> i32 = do
   gl_viewport(0, 0, width, height)
   gl_enable(gl_blend())
   gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
   gl_use_program(renderer.program)
+  gl_uniform_4f(renderer.color_location, red, green, blue, alpha)
   gl_active_texture(gl_texture0())
   gl_bind_texture(gl_texture_2d(), renderer.atlas_texture)
   gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)

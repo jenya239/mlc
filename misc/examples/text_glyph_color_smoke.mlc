@@ -1,0 +1,64 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=9 — u_color on TextRenderer + colored static draw.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  StaticTextLine,
+  static_text_create,
+  static_text_draw_lines_colored,
+  static_text_destroy
+} from '../editor/ui/static_text'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(320, 180)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  let mut text_state = static_text_create(512, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
+    glfw_gl_context_end()
+    return error_code
+  end
+  if text_state.renderer.color_location < 0 then
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 2
+  end
+
+  let mut lines: [StaticTextLine] = []
+  lines.push(StaticTextLine {
+    text: "glyph",
+    pixel_size: 24,
+    pen_x: 24,
+    pen_y: 64
+  })
+  const width = glfw_gl_window_width()
+  const height = glfw_gl_window_height()
+  // Solarized base00-ish dark text on default clear — proves non-white u_color.
+  const drawn = static_text_draw_lines_colored(
+    text_state, lines, width, height, 1,
+    0.396, 0.482, 0.514, 1.0
+  )
+  text_state = drawn.state
+  if drawn.error_code != 0 then
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return drawn.error_code
+  end
+  if drawn.vertex_count < 6 then
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 3
+  end
+
+  static_text_destroy(text_state)
+  glfw_gl_context_end()
+  println("text_glyph_color_ok")
+  0
+end
