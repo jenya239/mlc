@@ -18,7 +18,8 @@ import {
   EditorTextMetrics,
   editor_ux_collect_overflows,
   editor_ux_apply_scissor_clip,
-  editor_ux_refresh_overflows
+  editor_ux_refresh_overflows,
+  editor_ux_clear_overflows_after_scissor
 } from './overflow'
 import { EditorUxState } from './probe'
 
@@ -104,6 +105,7 @@ export fn editor_ux_draw_frame(
   let mut next_state = state
   if use_scissor != 0 then
     next_state = editor_ux_apply_scissor_clip(state, metrics)
+    next_state = editor_ux_clear_overflows_after_scissor(next_state)
   else
     next_state = editor_ux_refresh_overflows(state, metrics)
   end

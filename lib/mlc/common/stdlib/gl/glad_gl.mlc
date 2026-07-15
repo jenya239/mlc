@@ -14,6 +14,8 @@ export extern fn gl_viewport(x: i32, y: i32, width: i32, height: i32) -> unit
   = "mlc::gl::glad_abi::viewport" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_enable(capability: i32) -> unit
   = "mlc::gl::glad_abi::enable" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_disable(capability: i32) -> unit
+  = "mlc::gl::glad_abi::disable" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
   = "mlc::gl::glad_abi::blend_func" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_scissor(x: i32, y: i32, width: i32, height: i32) -> unit

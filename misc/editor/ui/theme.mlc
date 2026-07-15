@@ -118,3 +118,47 @@ export fn theme_rgb_for_tag(theme: Theme, tag: string) -> ThemeRgb = do
   end
   theme_rgb(theme.text_red, theme.text_green, theme.text_blue)
 end
+
+// Dark shell until TextRenderer has a color uniform (glyph shader is white).
+export fn theme_editor_dark() -> Theme =
+  Theme {
+    background_red: 0.10,
+    background_green: 0.12,
+    background_blue: 0.16,
+    panel_red: 0.14,
+    panel_green: 0.16,
+    panel_blue: 0.20,
+    accent_red: 0.30,
+    accent_green: 0.60,
+    accent_blue: 0.90,
+    text_red: 0.85,
+    text_green: 0.87,
+    text_blue: 0.90,
+    muted_red: 0.55,
+    muted_green: 0.58,
+    muted_blue: 0.62,
+    selection_red: 0.20,
+    selection_green: 0.24,
+    selection_blue: 0.32,
+    gutter_red: 0.12,
+    gutter_green: 0.14,
+    gutter_blue: 0.18,
+    status_red: 0.12,
+    status_green: 0.14,
+    status_blue: 0.18,
+    border_red: 0.30,
+    border_green: 0.34,
+    border_blue: 0.40,
+    caret_red: 0.90,
+    caret_green: 0.92,
+    caret_blue: 0.95,
+    keyword_red: 0.40,
+    keyword_green: 0.75,
+    keyword_blue: 0.95,
+    string_red: 0.40,
+    string_green: 0.80,
+    string_blue: 0.70,
+    comment_red: 0.50,
+    comment_green: 0.55,
+    comment_blue: 0.58
+  }

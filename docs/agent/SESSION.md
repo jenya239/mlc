@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
+| driver_turns_since_plan | 3 |
+| step_last | 2 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=2 live scissor wire next |
+| test_gate | §33b STEP=3 cursor ABI next |
+
+### Turn 2026-07-15 12:06 (Driver TRACK_EDITOR_LIVE_POLISH STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 11:38 |
+| elapsed | ~28 min |
+| done    | `gl_disable`; `gl_scissor.mlc`; honest overflow + clear-after-scissor; `flush_over`/`draw_over`; `demo_live` scissor; smoke + ux_gate. |
+| verify  | `bash scripts/run_editor_live_scissor_smoke.sh` → `editor_live_scissor_ok`; `bash scripts/run_ux_gate.sh` → all ok; demo_live compiles. |
+| result  | STEP=2 done. Plain: live editor draw uses GL scissor; model clip no longer fakes empty overflows. |
+| issues  | Left Path WIP + EDITOR/GUI_ARCHITECTURE dirty untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 11:37 (Driver TRACK_EDITOR_LIVE_POLISH STEP=1)
 

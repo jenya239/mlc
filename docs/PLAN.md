@@ -428,7 +428,7 @@ compiler/
 | **32** | `text_ide_panels_demo` ~72ms/frame — `GlyphCache` O(n) + per-frame reshape | **done** (2026-07-13) Critic OK; STEP=1–3; corpus PASS | [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md) — HashMap+FIFO + layout cache; `c323556f`…`14972c49` |
 | **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a |
 | **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **done** (2026-07-14) Critic OK; STEP=0–15; `a159e85d`…`09e33f3e` | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](archive/tracks/TRACK_UX_HEADLESS.md) **closed**; residuals L8 blink + live GLFW/FBO |
-| **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **PRIORITY / queue head** (2026-07-15) STEP=1 **done**; **STEP=2** live scissor wire next; Phase D parked | [TRACK_EDITOR_LIVE_POLISH](agent/TRACK_EDITOR_LIVE_POLISH.md); review `mlc-support/responses/gui_editor_architecture_20260715_105621.md` |
+| **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **PRIORITY / queue head** (2026-07-15) STEP=2 **done**; **STEP=3** cursor ABI next; Phase D parked | [TRACK_EDITOR_LIVE_POLISH](agent/TRACK_EDITOR_LIVE_POLISH.md); review `mlc-support/responses/gui_editor_architecture_20260715_105621.md` |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -631,7 +631,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](archive/tracks/TRACK_GUI_SCENE_PHASE_B.md))**
   → **GUI_CANVAS_GRAPH Phase C (**closed** 2026-07-15: Critic OK; STEP=1–7; `d0a3996f`…`64014467`;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](archive/tracks/TRACK_GUI_SCENE_PHASE_C.md))**
-  → **EDITOR_LIVE_POLISH (§33b, **PRIORITY OVERRIDE** 2026-07-15: queue head; STEP=1 done; STEP=2 live scissor wire next;
+  → **EDITOR_LIVE_POLISH (§33b, **PRIORITY OVERRIDE** 2026-07-15: queue head; STEP=2 done; STEP=3 cursor ABI next;
       → [agent/TRACK_EDITOR_LIVE_POLISH.md](agent/TRACK_EDITOR_LIVE_POLISH.md);
       scissor/cursor/clipboard/command-bus/frame; Phase D parked)**
   → **GUI_CANVAS_GRAPH Phase D (**parked**; STEP=2 done; resume STEP=3 Path tess after §33b Critic;

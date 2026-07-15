@@ -1,0 +1,1025 @@
+// Interactive editor preview — EDITOR_MVP close surface + UX hit helpers.
+// Glyphs are white → dark canvas; Solarized accents for syntax/selection/caret.
+// Run: MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_take_scroll_y
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { gui_input_poll } from '../gui/input'
+import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
+import {
+  solid_renderer_create,
+  solid_renderer_begin,
+  solid_renderer_rect,
+  solid_renderer_flush,
+  solid_renderer_flush_over,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  theme_editor_dark,
+  theme_solarized_light,
+  theme_rgb_for_tag
+} from './ui/theme'
+import {
+  StaticTextLine,
+  static_text_create,
+  static_text_draw_lines,
+  static_text_destroy
+} from './ui/static_text'
+import {
+  editor_gl_scissor_enable_rect,
+  editor_gl_scissor_disable
+} from './ui/gl_scissor'
+import {
+  status_bar_from_buffer,
+  status_bar_format
+} from './ui/status_bar'
+import {
+  ShellPanels,
+  shell_panels_new,
+  shell_panels_set_bounds,
+  shell_panels_begin_drag,
+  shell_panels_end_drag,
+  shell_panels_drag_to,
+  shell_panels_divider_hit,
+  shell_panels_tree_rect,
+  shell_panels_editor_rect
+} from './ui/shell_panels'
+import { DirEntry, dir_entry_new, file_tree_expand } from './workspace/file_tree'
+import {
+  TabSet,
+  tab_set_new,
+  tab_set_open,
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_set_active,
+  tab_set_update_active_buffer,
+  tab_set_count,
+  tab_is_dirty
+} from './workspace/tabs'
+import {
+  DirtyCloseOverlay,
+  dirty_close_overlay_hidden,
+  dirty_close_overlay_is_visible,
+  tab_set_request_close,
+  dirty_close_discard,
+  dirty_close_cancel
+} from './workspace/tab_close'
+import {
+  tab_set_activate_next,
+  tab_set_activate_prev
+} from './workspace/tab_cycle'
+import {
+  workspace_session_from_tabs,
+  workspace_session_save,
+  workspace_session_load,
+  workspace_session_restore_tabs
+} from './workspace/session'
+import {
+  CommandId,
+  CmdUndo,
+  CmdRedo,
+  CmdCopy,
+  CmdCut,
+  CmdPaste,
+  CmdSelectAll,
+  CmdCloseTab,
+  CmdNextTab,
+  CmdPrevTab,
+  CmdNone,
+  CmdSave,
+  command_id_tag
+} from './commands/bus'
+import {
+  open_buffer_set_document,
+  open_buffer_from_text,
+  open_buffer_save
+} from './document/save'
+import {
+  TextDocument,
+  document_to_string
+} from './document/piece_table'
+import {
+  LineIndex,
+  line_index_rebuild,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_offset_to_position
+} from './document/line_index'
+import {
+  EditorSelection,
+  selection_collapsed,
+  selection_is_empty,
+  selection_start,
+  selection_end,
+  selection_caret
+} from './document/selection'
+import {
+  edit_insert_text,
+  edit_insert_newline,
+  edit_backspace
+} from './document/edit'
+import {
+  editor_view_metrics_new,
+  nav_click,
+  nav_drag
+} from './document/navigation'
+import {
+  history_new,
+  history_push_before_edit,
+  history_undo,
+  history_redo
+} from './document/history'
+import { Clipboard, clipboard_new } from './clipboard'
+import {
+  edit_select_all,
+  edit_copy,
+  edit_cut,
+  edit_paste
+} from './document/clipboard_edit'
+import { highlight_range } from './syntax/highlighter'
+import {
+  viewport_metrics_new,
+  visible_line_range
+} from './layout/visible_range'
+import {
+  gutter_metrics_new,
+  gutter_width_for_line_count,
+  gutter_layout,
+  gutter_line_label,
+  gutter_baseline_y,
+  gutter_label_pen_x
+} from './layout/gutter'
+import { ux_rect_new } from '../gui/ux/snapshot'
+import { tab_strip_hit_index } from './ux/tab_strip'
+import {
+  file_tree_visible_rows,
+  tree_hit_row_index
+} from './ux/tree_hit'
+import { editor_text_metrics_default } from './ux/overflow'
+
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
+extern fn f64_to_i32(value: f64) -> i32
+  = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+
+fn line_height() -> i32 = 18
+fn char_width() -> i32 = 9
+fn font_size() -> i32 = 15
+fn header_height() -> i32 = 32
+fn tab_bar_height() -> i32 = 28
+fn toolbar_height() -> i32 = 26
+fn status_height() -> i32 = 24
+fn session_path() -> string = ".tmp/editor_live_session.txt"
+
+fn push_line(
+  lines: [StaticTextLine],
+  text: string,
+  pixel_size: i32,
+  pen_x: i32,
+  pen_y: i32
+) -> [StaticTextLine] = do
+  let mut out = lines
+  out.push(StaticTextLine {
+    text: text,
+    pixel_size: pixel_size,
+    pen_x: pen_x,
+    pen_y: pen_y
+  })
+  out
+end
+
+fn sample_main_text() -> string =
+  "// TRACK_EDITOR_MVP live demo\nfn main() -> i32 = do\n  println(\"hello from mlc-editor\")\n  let mut n = 0\n  while n < 3 do\n    n = n + 1\n  end\n  0\nend\n"
+
+fn sample_readme_text() -> string =
+  "# mlc-editor\n\nType / Enter / Backspace.\nWheel scroll. Click-drag select.\nToolbar: tabs undo clipboard session.\n"
+
+fn sample_notes_text() -> string =
+  "notes\nline two\nline three\nline four\nline five\nline six\nline seven\nline eight\nline nine\nline ten\n"
+
+fn text_for_path(path: string) -> string = do
+  if path == "/demo/main.mlc" || path.ends_with("main.mlc") then
+    return sample_main_text()
+  end
+  if path == "/demo/README.md" || path.ends_with("README.md") then
+    return sample_readme_text()
+  end
+  if path == "/demo/notes.txt" || path.ends_with("notes.txt") then
+    return sample_notes_text()
+  end
+  ""
+end
+
+fn line_text_at(
+  full_text: string,
+  line_index: LineIndex,
+  line: i32
+) -> string = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1)
+  end
+  let mut length = end_exclusive - start
+  if length > 0 && full_text.byte_at(end_exclusive - 1) == "\n" then
+    length = length - 1
+  end
+  if length < 0 then
+    length = 0
+  end
+  full_text.byte_substring(start, length)
+end
+
+fn apply_edit(tabs: TabSet, next_document: TextDocument) -> TabSet = do
+  const active = tab_set_active(tabs)
+  const buffer = open_buffer_set_document(active.buffer, next_document)
+  tab_set_update_active_buffer(tabs, buffer)
+end
+
+fn toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
+  rect_new(8 + index * 72, bar_y + 2, 68, toolbar_height() - 4)
+
+fn toolbar_command_at(tool: i32) -> CommandId = do
+  if tool == 0 then
+    return CmdPrevTab
+  end
+  if tool == 1 then
+    return CmdNextTab
+  end
+  if tool == 2 then
+    return CmdCloseTab
+  end
+  if tool == 3 then
+    return CmdUndo
+  end
+  if tool == 4 then
+    return CmdRedo
+  end
+  if tool == 5 then
+    return CmdSelectAll
+  end
+  if tool == 6 then
+    return CmdCopy
+  end
+  if tool == 7 then
+    return CmdCut
+  end
+  if tool == 8 then
+    return CmdPaste
+  end
+  if tool == 9 then
+    return CmdSave
+  end
+  CmdNone
+end
+
+fn dump_tab_file(path: string, text: string) -> string = do
+  let mut file_name = "buffer.txt"
+  if path.ends_with("main.mlc") then
+    file_name = "main.mlc"
+  else if path.ends_with("README.md") then
+    file_name = "README.md"
+  else if path.ends_with("notes.txt") then
+    file_name = "notes.txt"
+  end
+  const out_path = ".tmp/editor_live_" + file_name
+  let mut buffer = open_buffer_from_text(out_path, text)
+  buffer = open_buffer_save(buffer)
+  out_path
+end
+
+fn save_demo_session(tabs: TabSet) -> i32 = do
+  let mut saved = tab_set_new()
+  let mut index = 0
+  while index < tab_set_count(tabs) do
+    const tab = tabs.tabs[index]
+    const out_path = dump_tab_file(tab.path, document_to_string(tab.buffer.document))
+    saved = tab_set_open(saved, out_path, document_to_string(tab.buffer.document))
+    index = index + 1
+  end
+  if tab_set_count(saved) == 0 then
+    return 0
+  end
+  saved = tab_set_set_active(saved, tabs.active_index)
+  const session = workspace_session_from_tabs(".tmp", saved)
+  if workspace_session_save(session_path(), session) then
+    return 1
+  end
+  0
+end
+
+fn load_demo_session() -> TabSet = do
+  const session = workspace_session_load(session_path())
+  if session.paths.length() == 0 then
+    return tab_set_new()
+  end
+  workspace_session_restore_tabs(session)
+end
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(1100, 760)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  println("[mlc-editor] live demo MVP-close — SessSave/Load; Esc quit")
+
+  const theme = theme_editor_dark()
+  const solar = theme_solarized_light()
+  let mut solid = solid_renderer_create()
+  if solid.program < 0 then
+    const error_code = solid.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  let mut text_state = static_text_create(1024, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
+    solid_renderer_destroy(solid)
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  const chrome_top = header_height() + tab_bar_height() + toolbar_height()
+  let mut panels = shell_panels_new(
+    rect_new(0, chrome_top, 1100, 760 - chrome_top - status_height()),
+    28, 100, 4,
+    "/demo", "demo"
+  )
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("src", 1))
+  entries.push(dir_entry_new("docs", 1))
+  entries.push(dir_entry_new("main.mlc", 0))
+  entries.push(dir_entry_new("README.md", 0))
+  entries.push(dir_entry_new("notes.txt", 0))
+  const expanded = file_tree_expand(panels.tree, panels.tree.root_id, entries)
+  panels = ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: expanded.tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+
+  let mut tabs = load_demo_session()
+  if tab_set_count(tabs) == 0 then
+    tabs = tab_set_open(tabs, "/demo/main.mlc", sample_main_text())
+    tabs = tab_set_open(tabs, "/demo/README.md", sample_readme_text())
+    tabs = tab_set_open(tabs, "/demo/notes.txt", sample_notes_text())
+    tabs = tab_set_set_active(tabs, 0)
+  end
+
+  let mut selection = selection_collapsed(0)
+  let mut history = history_new()
+  let mut clipboard = clipboard_new()
+  let mut overlay = dirty_close_overlay_hidden()
+  let mut editor_focused = 1
+  let mut last_command = "none"
+  let mut mouse_was_down = 0
+  let mut backspace_was_down = 0
+  let mut enter_was_down = 0
+  let mut selecting_text = 0
+  let mut scroll_offset_y = 0
+  let mut frame_index = 0
+  const metrics = editor_text_metrics_default()
+
+  while glfw_gl_context_should_close() == 0 do
+    const input = gui_input_poll()
+    if input.escape != 0 && !dirty_close_overlay_is_visible(overlay) then
+      break
+    end
+
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const content_top = header_height() + tab_bar_height() + toolbar_height()
+    const content_height = height - content_top - status_height()
+    panels = shell_panels_set_bounds(
+      panels, rect_new(0, content_top, width, content_height)
+    )
+    const tab_bar_y = header_height()
+    const toolbar_y = header_height() + tab_bar_height()
+    const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
+
+    if !tab_set_has_active(tabs) then
+      break
+    end
+    let mut active = tab_set_active(tabs)
+    let mut document = active.buffer.document
+    let mut line_index = line_index_rebuild(document)
+
+    const tree_rect = shell_panels_tree_rect(panels)
+    const editor_rect = shell_panels_editor_rect(panels)
+    const divider = panels.panes.divider
+    const line_count = line_index_line_count(line_index)
+    const gutter_metrics = gutter_metrics_new(char_width(), 8, 8, 36)
+    const gutter_width = gutter_width_for_line_count(line_count, gutter_metrics)
+    const panes = gutter_layout(editor_rect, gutter_width)
+    const text_rect = panes.text
+    const gutter_rect = panes.gutter
+    const tree_bounds = ux_rect_new(
+      tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height
+    )
+    const tree_rows = file_tree_visible_rows(panels.tree)
+
+    const viewport = viewport_metrics_new(
+      line_height(), text_rect.height, text_rect.width, 1
+    )
+    let mut visible = visible_line_range(line_count, scroll_offset_y, viewport)
+    let mut view_metrics = editor_view_metrics_new(
+      line_height(), char_width(),
+      text_rect.x + 4, text_rect.y + 2,
+      0, scroll_offset_y,
+      text_rect.height / line_height()
+    )
+
+    const scroll_ticks = f64_to_i32(glfw_gl_take_scroll_y() * 3.0)
+    if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
+      scroll_offset_y = scroll_offset_y - scroll_ticks * metrics.line_height
+      if scroll_offset_y < 0 then
+        scroll_offset_y = 0
+      end
+      visible = visible_line_range(line_count, scroll_offset_y, viewport)
+      view_metrics = editor_view_metrics_new(
+        line_height(), char_width(),
+        text_rect.x + 4, text_rect.y + 2,
+        0, scroll_offset_y,
+        text_rect.height / line_height()
+      )
+    end
+
+    if dirty_close_overlay_is_visible(overlay) then
+      if input.mouse_down != 0 && mouse_was_down == 0 then
+        const discard_rect = rect_new(width / 2 - 120, height / 2 + 20, 100, 28)
+        const cancel_rect = rect_new(width / 2 + 20, height / 2 + 20, 100, 28)
+        if point_in_rect(point_new(input.mouse_x, input.mouse_y), discard_rect) != 0 then
+          const outcome = dirty_close_discard(tabs, overlay)
+          tabs = outcome.tabs
+          overlay = outcome.overlay
+          if tab_set_has_active(tabs) then
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = selection_collapsed(0)
+            history = history_new()
+          end
+          last_command = "close_discard"
+        else if point_in_rect(point_new(input.mouse_x, input.mouse_y), cancel_rect) != 0 then
+          const outcome = dirty_close_cancel(tabs, overlay)
+          overlay = outcome.overlay
+          last_command = "close_cancel"
+        end
+      end
+      mouse_was_down = input.mouse_down
+    else if input.mouse_down != 0 && mouse_was_down == 0 then
+      let mut handled = 0
+      let mut tool = 0
+      while tool < 10 do
+        if point_in_rect(point_new(input.mouse_x, input.mouse_y), toolbar_button_rect(tool, toolbar_y)) != 0 then
+          const command = toolbar_command_at(tool)
+          last_command = command_id_tag(command)
+          match command
+          | CmdPrevTab => do
+              tabs = tab_set_activate_prev(tabs)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = selection_collapsed(0)
+              history = history_new()
+            end
+          | CmdNextTab => do
+              tabs = tab_set_activate_next(tabs)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = selection_collapsed(0)
+              history = history_new()
+            end
+          | CmdCloseTab => do
+              const close_outcome = tab_set_request_close(tabs, tabs.active_index)
+              tabs = close_outcome.tabs
+              overlay = close_outcome.overlay
+              if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
+                active = tab_set_active(tabs)
+                document = active.buffer.document
+                line_index = line_index_rebuild(document)
+                selection = selection_collapsed(0)
+                history = history_new()
+              end
+            end
+          | CmdUndo => do
+              const undo_result = history_undo(history, document, selection)
+              if undo_result.applied != 0 then
+                history = undo_result.history
+                tabs = apply_edit(tabs, undo_result.document)
+                active = tab_set_active(tabs)
+                document = active.buffer.document
+                line_index = line_index_rebuild(document)
+                selection = undo_result.selection
+              end
+            end
+          | CmdRedo => do
+              const redo_result = history_redo(history, document, selection)
+              if redo_result.applied != 0 then
+                history = redo_result.history
+                tabs = apply_edit(tabs, redo_result.document)
+                active = tab_set_active(tabs)
+                document = active.buffer.document
+                line_index = line_index_rebuild(document)
+                selection = redo_result.selection
+              end
+            end
+          | CmdSelectAll => do
+              selection = edit_select_all(document)
+            end
+          | CmdCopy => do
+              clipboard = edit_copy(document, selection, clipboard)
+            end
+          | CmdCut => do
+              history = history_push_before_edit(history, document, selection)
+              const cut_result = edit_cut(document, selection, clipboard)
+              tabs = apply_edit(tabs, cut_result.document)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = cut_result.selection
+              clipboard = cut_result.clipboard
+            end
+          | CmdPaste => do
+              history = history_push_before_edit(history, document, selection)
+              const paste_result = edit_paste(document, selection, clipboard)
+              tabs = apply_edit(tabs, paste_result.document)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = paste_result.selection
+            end
+          | CmdSave => do
+              if save_demo_session(tabs) != 0 then
+                last_command = "session_save"
+              else
+                last_command = "session_save_fail"
+              end
+            end
+          | CmdNone => do
+              // tool 10 reserved — Load session via index 10 below
+              last_command = last_command
+            end
+          end
+          handled = 1
+        end
+        tool = tool + 1
+      end
+
+      // Load session button (index 10).
+      if handled == 0 && point_in_rect(
+        point_new(input.mouse_x, input.mouse_y), toolbar_button_rect(10, toolbar_y)
+      ) != 0 then
+        const loaded = load_demo_session()
+        if tab_set_count(loaded) > 0 then
+          tabs = loaded
+          active = tab_set_active(tabs)
+          document = active.buffer.document
+          line_index = line_index_rebuild(document)
+          selection = selection_collapsed(0)
+          history = history_new()
+          last_command = "session_load"
+        else
+          last_command = "session_load_empty"
+        end
+        handled = 1
+      end
+
+      if handled == 0 && shell_panels_divider_hit(panels, input.mouse_x, input.mouse_y) != 0 then
+        panels = shell_panels_begin_drag(panels, input.mouse_x)
+        selecting_text = 0
+        handled = 1
+      end
+
+      if handled == 0 then
+        const hit = tab_strip_hit_index(
+          tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+        )
+          if hit >= 0 then
+          // Right edge of equal slot ≈ close.
+          const slot = width / tab_set_count(tabs)
+          const local_x = input.mouse_x - hit * slot
+          if local_x >= slot - 20 then
+            const outcome = tab_set_request_close(tabs, hit)
+            tabs = outcome.tabs
+            overlay = outcome.overlay
+            last_command = "close_tab"
+            if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = selection_collapsed(0)
+              history = history_new()
+            end
+          else
+            tabs = tab_set_set_active(tabs, hit)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = selection_collapsed(0)
+            history = history_new()
+            last_command = "activate_tab"
+          end
+          handled = 1
+        end
+      end
+
+      if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
+        editor_focused = 1
+        selection = nav_click(line_index, view_metrics, selection, input.mouse_x, input.mouse_y)
+        selecting_text = 1
+        handled = 1
+      end
+
+      if handled == 0 then
+        const row = tree_hit_row_index(
+          tree_bounds, tree_rows.length(), 18, input.mouse_x, input.mouse_y
+        )
+        if row >= 0 then
+          editor_focused = 0
+          const tree_row = tree_rows[row]
+          if tree_row.is_directory == 0 then
+            const open_path = tree_row.path
+            tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = selection_collapsed(0)
+            history = history_new()
+            last_command = "tree_open"
+          end
+          selecting_text = 0
+          handled = 1
+        end
+      end
+    end
+
+    if !dirty_close_overlay_is_visible(overlay) then
+      if input.mouse_down != 0 && panels.dragging != 0 then
+        panels = shell_panels_drag_to(panels, input.mouse_x)
+      end
+      if input.mouse_down != 0 && selecting_text != 0 && panels.dragging == 0 then
+        selection = nav_drag(line_index, view_metrics, selection, input.mouse_x, input.mouse_y)
+      end
+      if input.mouse_down == 0 && mouse_was_down != 0 then
+        panels = shell_panels_end_drag(panels)
+        selecting_text = 0
+      end
+      mouse_was_down = input.mouse_down
+
+      if input.text_buffer.length() > 0 then
+        history = history_push_before_edit(history, document, selection)
+        const edited = edit_insert_text(document, selection, input.text_buffer)
+        tabs = apply_edit(tabs, edited.document)
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        line_index = line_index_rebuild(document)
+        selection = edited.selection
+      end
+      if input.enter != 0 && enter_was_down == 0 then
+        history = history_push_before_edit(history, document, selection)
+        const edited = edit_insert_newline(document, selection)
+        tabs = apply_edit(tabs, edited.document)
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        line_index = line_index_rebuild(document)
+        selection = edited.selection
+      end
+      if input.backspace != 0 && backspace_was_down == 0 then
+        history = history_push_before_edit(history, document, selection)
+        const edited = edit_backspace(document, selection)
+        tabs = apply_edit(tabs, edited.document)
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        line_index = line_index_rebuild(document)
+        selection = edited.selection
+      end
+      enter_was_down = input.enter
+      backspace_was_down = input.backspace
+    else
+      mouse_was_down = input.mouse_down
+    end
+
+    if !tab_set_has_active(tabs) then
+      break
+    end
+    active = tab_set_active(tabs)
+    document = active.buffer.document
+    line_index = line_index_rebuild(document)
+    visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
+
+    const caret_position = line_index_offset_to_position(line_index, selection_caret(selection))
+    const caret_top = caret_position.line * line_height()
+    if caret_top < scroll_offset_y then
+      scroll_offset_y = caret_top
+    end
+    if caret_top + line_height() > scroll_offset_y + text_rect.height then
+      scroll_offset_y = caret_top + line_height() - text_rect.height
+    end
+    if scroll_offset_y < 0 then
+      scroll_offset_y = 0
+    end
+
+    solid = solid_renderer_begin(solid)
+    solid = solid_renderer_rect(
+      solid, width, height, 0, 0, width, height,
+      theme.background_red, theme.background_green, theme.background_blue, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height, 0, 0, width, header_height(),
+      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height, 0, tab_bar_y, width, tab_bar_height(),
+      0.12, 0.14, 0.18, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height, 0, toolbar_y, width, toolbar_height(),
+      0.13, 0.15, 0.19, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height,
+      tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height,
+      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height,
+      editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height,
+      0.08, 0.09, 0.12, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height,
+      gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height,
+      theme.gutter_red, theme.gutter_green, theme.gutter_blue, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height,
+      divider.x, divider.y, divider.width, divider.height,
+      solar.accent_red, solar.accent_green, solar.accent_blue, 1.0
+    )
+    solid = solid_renderer_rect(
+      solid, width, height, 0, height - status_height(), width, status_height(),
+      theme.status_red, theme.status_green, theme.status_blue, 1.0
+    )
+
+    let mut flush_status = solid_renderer_flush(
+      solid, width, height, theme.background_red, theme.background_green, theme.background_blue
+    )
+    if flush_status != 0 then
+      solid_renderer_destroy(solid)
+      static_text_destroy(text_state)
+      glfw_gl_context_end()
+      return flush_status
+    end
+
+    solid = solid_renderer_begin(solid)
+    editor_gl_scissor_enable_rect(height, editor_rect)
+
+    // Syntax highlight backgrounds (Solarized tags on dark canvas).
+    const draw_text = document_to_string(document)
+    if visible.first_line <= visible.last_line then
+      const range_start = line_index_line_start(line_index, visible.first_line)
+      let mut range_end = line_index.text_length
+      if visible.last_line + 1 < line_index_line_count(line_index) then
+        range_end = line_index_line_start(line_index, visible.last_line + 1)
+      end
+      const spans = highlight_range(draw_text, range_start, range_end)
+      let mut span_index = 0
+      while span_index < spans.length() do
+        const span = spans[span_index]
+        if span.tag.byte_size() > 0 then
+          const start_position = line_index_offset_to_position(line_index, span.byte_start)
+          const end_position = line_index_offset_to_position(line_index, span.byte_end)
+          if start_position.line == end_position.line &&
+              start_position.line >= visible.first_line &&
+              start_position.line <= visible.last_line then
+            const row = start_position.line - visible.first_line
+            const rgb = theme_rgb_for_tag(solar, span.tag)
+            const highlight_width =
+              (end_position.column - start_position.column) * char_width()
+            if highlight_width > 0 then
+              solid = solid_renderer_rect(
+                solid, width, height,
+                text_rect.x + 4 + start_position.column * char_width(),
+                text_rect.y + 2 + row * line_height(),
+                highlight_width, line_height(),
+                rgb.red * 0.35, rgb.green * 0.35, rgb.blue * 0.35, 1.0
+              )
+            end
+          end
+        end
+        span_index = span_index + 1
+      end
+    end
+
+    if !selection_is_empty(selection) then
+      const range_start = selection_start(selection)
+      const range_end = selection_end(selection)
+      const start_position = line_index_offset_to_position(line_index, range_start)
+      const end_position = line_index_offset_to_position(line_index, range_end)
+      let mut highlight_line = start_position.line
+      while highlight_line <= end_position.line do
+        if highlight_line >= visible.first_line && highlight_line <= visible.last_line then
+          const row = highlight_line - visible.first_line
+          let mut col_start = 0
+          let mut col_end = line_text_at(draw_text, line_index, highlight_line).byte_size()
+          if highlight_line == start_position.line then
+            col_start = start_position.column
+          end
+          if highlight_line == end_position.line then
+            col_end = end_position.column
+          end
+          const highlight_width = (col_end - col_start) * char_width()
+          if highlight_width > 0 then
+            solid = solid_renderer_rect(
+              solid, width, height,
+              text_rect.x + 4 + col_start * char_width(),
+              text_rect.y + 2 + row * line_height(),
+              highlight_width, line_height(),
+              theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
+            )
+          end
+        end
+        highlight_line = highlight_line + 1
+      end
+    end
+
+    const caret_row = caret_position.line - visible.first_line
+    const blink_on = (frame_index / 30) % 2 == 0
+    if blink_on && caret_row >= 0 && caret_position.line <= visible.last_line then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        text_rect.x + 4 + caret_position.column * char_width(),
+        text_rect.y + 2 + caret_row * line_height(),
+        1, line_height() - 2,
+        solar.caret_red, solar.caret_green, solar.caret_blue, 1.0
+      )
+    end
+
+    if dirty_close_overlay_is_visible(overlay) then
+      editor_gl_scissor_disable()
+      solid = solid_renderer_rect(
+        solid, width, height, width / 2 - 180, height / 2 - 70, 360, 140,
+        0.16, 0.18, 0.22, 1.0
+      )
+      solid = solid_renderer_rect(
+        solid, width, height, width / 2 - 120, height / 2 + 20, 100, 28,
+        0.55, 0.22, 0.22, 1.0
+      )
+      solid = solid_renderer_rect(
+        solid, width, height, width / 2 + 20, height / 2 + 20, 100, 28,
+        solar.accent_red, solar.accent_green, solar.accent_blue, 1.0
+      )
+    end
+
+    flush_status = solid_renderer_flush_over(solid, width, height)
+    editor_gl_scissor_disable()
+    if flush_status != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return flush_status
+    end
+
+    let mut chrome_lines: [StaticTextLine] = []
+    chrome_lines = push_line(
+      chrome_lines,
+      "mlc-editor MVP  SessSave/Load  cmd=" + last_command,
+      13, 12, 20
+    )
+
+    let mut tab_index = 0
+    while tab_index < tab_set_count(tabs) do
+      const tab = tabs.tabs[tab_index]
+      let mut title = tab.name
+      if tab_is_dirty(tab) then
+        title = title + "*"
+      end
+      if tab_index == tabs.active_index then
+        title = "[" + title + "]"
+      end
+      title = title + " x"
+      const slot = width / tab_set_count(tabs)
+      chrome_lines = push_line(
+        chrome_lines, title, 13, tab_index * slot + 8, tab_bar_y + 18
+      )
+      tab_index = tab_index + 1
+    end
+
+    const tools = [
+      "<Prev", "Next>", "Close", "Undo", "Redo", "SelAll",
+      "Copy", "Cut", "Paste", "SessSv", "SessLd"
+    ]
+    let mut tool_index = 0
+    while tool_index < tools.length() do
+      const button = toolbar_button_rect(tool_index, toolbar_y)
+      chrome_lines = push_line(
+        chrome_lines, tools[tool_index], 11, button.x + 4, button.y + 16
+      )
+      tool_index = tool_index + 1
+    end
+
+    let mut row_index = 0
+    while row_index < tree_rows.length() do
+      const tree_row = tree_rows[row_index]
+      let mut label = tree_row.name
+      if tree_row.is_directory != 0 then
+        label = label + "/"
+      end
+      let mut indent = 0
+      while indent < tree_row.depth do
+        label = "  " + label
+        indent = indent + 1
+      end
+      chrome_lines = push_line(
+        chrome_lines, label, 13,
+        tree_rect.x + 8,
+        tree_rect.y + 14 + row_index * 18
+      )
+      row_index = row_index + 1
+    end
+
+    const status = status_bar_format(
+      status_bar_from_buffer(active.buffer, selection_caret(selection))
+    )
+    chrome_lines = push_line(chrome_lines, status, 12, 12, height - 8)
+
+    if dirty_close_overlay_is_visible(overlay) then
+      chrome_lines = push_line(
+        chrome_lines, "Close dirty tab? " + overlay.name, 15,
+        width / 2 - 140, height / 2 - 30
+      )
+      chrome_lines = push_line(
+        chrome_lines, "Discard", 14, width / 2 - 100, height / 2 + 40
+      )
+      chrome_lines = push_line(
+        chrome_lines, "Cancel", 14, width / 2 + 40, height / 2 + 40
+      )
+    end
+
+    let mut chrome_drawn = static_text_draw_lines(
+      text_state, chrome_lines, width, height, 0
+    )
+    text_state = chrome_drawn.state
+    if chrome_drawn.error_code != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return chrome_drawn.error_code
+    end
+
+    let mut editor_lines: [StaticTextLine] = []
+    let mut line = visible.first_line
+    let mut draw_row = 0
+    while line <= visible.last_line do
+      const baseline = gutter_baseline_y(text_rect.y + 2, line_height(), draw_row, 14)
+      editor_lines = push_line(
+        editor_lines, gutter_line_label(line), 13,
+        gutter_label_pen_x(gutter_rect, 8), baseline
+      )
+      editor_lines = push_line(
+        editor_lines, line_text_at(draw_text, line_index, line), font_size(),
+        text_rect.x + 4, baseline
+      )
+      line = line + 1
+      draw_row = draw_row + 1
+    end
+
+    editor_gl_scissor_enable_rect(height, editor_rect)
+    const editor_drawn = static_text_draw_lines(
+      text_state, editor_lines, width, height, 0
+    )
+    editor_gl_scissor_disable()
+    text_state = editor_drawn.state
+    if editor_drawn.error_code != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return editor_drawn.error_code
+    end
+
+    glfw_gl_context_swap_poll()
+    sleep_ms(16)
+    frame_index = frame_index + 1
+  end
+
+  static_text_destroy(text_state)
+  solid_renderer_destroy(solid)
+  glfw_gl_context_end()
+  println("[mlc-editor] live closed")
+  0
+end

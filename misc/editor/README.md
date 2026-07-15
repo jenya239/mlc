@@ -95,6 +95,9 @@ scripts/run_editor_theme_unit.sh
 
 # STEP=28 large-file perf report (no GLFW)
 scripts/run_editor_perf_report.sh
+
+# Interactive live preview (keeps window open; Esc to quit)
+MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
 ```
 
 Expect stdout containing `[mlc-editor] open` and exit 0.

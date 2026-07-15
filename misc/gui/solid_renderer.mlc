@@ -232,6 +232,16 @@ export fn solid_renderer_flush(
   gl_viewport(0, 0, window_width, window_height)
   gl_clear_color_f64(clear_red, clear_green, clear_blue, 1.0)
   gl_clear(gl_color_buffer_bit())
+  solid_renderer_flush_over(renderer, window_width, window_height)
+end
+
+// Draw without clearing the framebuffer (compose over prior flush / text).
+export fn solid_renderer_flush_over(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32
+) -> i32 = do
+  gl_viewport(0, 0, window_width, window_height)
   gl_enable(gl_blend())
   gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
   if renderer.vertex_count <= 0 then

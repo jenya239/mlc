@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=2** — Wire scissor in editor draw; fix fake clip.
+**STEP=3** — `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live.
+
+### STEP=2 done (2026-07-15)
+
+- `gl_disable`; `editor_gl_scissor_*` helpers; honest `apply_scissor_clip` + clear after draw.
+- `demo_live` scissor around editor solids/text; `flush_over` / `draw_over` compose.
+- Smoke `editor_live_scissor_ok`; `run_ux_gate` green.
 
 ### STEP=1 done (2026-07-15)
 
@@ -79,7 +85,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY sync | **done** (2026-07-15) |
 | 1 | `gl_scissor` / `GL_SCISSOR_TEST` in glad/gl stdlib | **done** (2026-07-15): `scissor_ok` |
-| 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | `run_editor_live_scissor_smoke.sh` + `run_ux_gate` ok |
+| 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | **done** (2026-07-15): `editor_live_scissor_ok` + ux_gate |
 | 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | `run_gui_cursor_shape_smoke.sh` |
 | 4 | GLFW clipboard get/set; live uses OS clipboard | `run_gui_clipboard_smoke.sh` |
 | 5 | Wire `command_bus_resolve` into live | unit + `run_editor_command_bus_live_smoke.sh` |
@@ -100,9 +106,9 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 1. ABI + `glad_gl.mlc` scissor enable/rect — done.
 2. Minimal smoke proving clip — done (`scissor_ok`).
 
-**STEP=2**
-1. Apply scissor around tree/editor/tab text draws in live path.
-2. Make `editor_ux_apply_scissor_clip` honest (overflow not always `[]`).
+**STEP=2** — **done**
+1. Apply scissor around editor solids/text in `demo_live` — done.
+2. Make `editor_ux_apply_scissor_clip` honest (overflow not always `[]`) — done.
 
 **STEP=3–4**
 1. Platform cursor + clipboard bindings mirroring existing glfw test-inject style.

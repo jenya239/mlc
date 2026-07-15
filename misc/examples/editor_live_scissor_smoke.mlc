@@ -1,0 +1,60 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=2 — editor_gl_scissor helpers (Y-flip + disable).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gl_is_enabled,
+  gl_get_integer_at,
+  gl_scissor_test,
+  gl_scissor_box,
+  gl_viewport
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+import { rect_new } from '../gui/layout'
+import {
+  editor_gl_scissor_enable_rect,
+  editor_gl_scissor_disable
+} from '../editor/ui/gl_scissor'
+
+fn main() -> i32 = do
+  const window_width = 200
+  const window_height = 100
+  const begin_status = glfw_gl_context_begin(window_width, window_height)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  gl_viewport(0, 0, window_width, window_height)
+  // Top-left window rect (10,20,30,40) → GL bottom-left y = 100-20-40 = 40.
+  editor_gl_scissor_enable_rect(window_height, rect_new(10, 20, 30, 40))
+  if gl_is_enabled(gl_scissor_test()) != 1 then
+    glfw_gl_context_end()
+    return 1
+  end
+  if gl_get_integer_at(gl_scissor_box(), 0) != 10 then
+    glfw_gl_context_end()
+    return 2
+  end
+  if gl_get_integer_at(gl_scissor_box(), 1) != 40 then
+    glfw_gl_context_end()
+    return 3
+  end
+  if gl_get_integer_at(gl_scissor_box(), 2) != 30 then
+    glfw_gl_context_end()
+    return 4
+  end
+  if gl_get_integer_at(gl_scissor_box(), 3) != 40 then
+    glfw_gl_context_end()
+    return 5
+  end
+
+  editor_gl_scissor_disable()
+  if gl_is_enabled(gl_scissor_test()) != 0 then
+    glfw_gl_context_end()
+    return 6
+  end
+
+  glfw_gl_context_end()
+  println("editor_live_scissor_ok")
+  0
+end

@@ -23,6 +23,7 @@ import {
   editor_ux_refresh_overflows,
   editor_ux_apply_scissor_clip
 } from '../ux/overflow'
+import { editor_ux_draw_frame } from '../ux/draw_frame'
 
 fn main() -> i32 = do
   // Narrow shell so long line + many lines exceed text clip.
@@ -78,14 +79,24 @@ fn main() -> i32 = do
     return 3
   end
 
+  // Honest apply_scissor_clip still reports overflows (no fake clear).
   state = editor_ux_apply_scissor_clip(state, metrics)
   snapshot = editor_ux_snapshot(state)
-  if ux_check_expect(snapshot, NoOverflow).ok == 0 then
-    println("ux_fail NoOverflow after scissor")
+  if snapshot.overflows.length() == 0 then
+    println("ux_fail expected overflow after honest apply_scissor_clip")
     return 4
   end
-  if snapshot.overflows.length() != 0 then
+
+  // Model GL scissor draw → NoOverflow.
+  const drawn = editor_ux_draw_frame(state, metrics, 1, 1)
+  state = drawn.state
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, NoOverflow).ok == 0 then
+    println("ux_fail NoOverflow after scissor draw_frame")
     return 5
+  end
+  if snapshot.overflows.length() != 0 then
+    return 6
   end
 
   println("ux_ok overflow_editor_text")

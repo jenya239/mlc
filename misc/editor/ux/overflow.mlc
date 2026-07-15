@@ -153,17 +153,13 @@ export fn editor_ux_refresh_overflows(
 ) -> EditorUxState =
   state_with_overflows(state, editor_ux_collect_overflows(state, metrics))
 
-// Scissor wiring: draw only clip∩content → no semantic overflow.
+// Honest: report overflows when content exceeds clip (no fake clear).
+// After real/model GL scissor draw, call `editor_ux_clear_overflows_after_scissor`.
 export fn editor_ux_apply_scissor_clip(
   state: EditorUxState,
   metrics: EditorTextMetrics
-) -> EditorUxState = do
-  const clip = text_viewport_rect(state)
-  const content = content_rect_for_state(state, metrics)
-  const clipped = clip_rect_clip_child(clip, content)
-  if clip_rect_is_empty(clipped) == 1 then
-    return state_with_overflows(state, [])
-  end
-  // Active scissor: painted region stays inside clip.
+) -> EditorUxState =
+  editor_ux_refresh_overflows(state, metrics)
+
+export fn editor_ux_clear_overflows_after_scissor(state: EditorUxState) -> EditorUxState =
   state_with_overflows(state, [])
-end

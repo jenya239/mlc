@@ -1,0 +1,29 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=2 — GL scissor helpers (Y-flip for window coords).
+import { Rect } from '../../gui/layout'
+import {
+  gl_enable,
+  gl_disable,
+  gl_scissor,
+  gl_scissor_test
+} from '../../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+// `rect` in top-left window pixels; OpenGL scissor origin is bottom-left.
+export fn editor_gl_scissor_enable_rect(window_height: i32, rect: Rect) -> unit = do
+  let mut bottom = window_height - rect.y - rect.height
+  if bottom < 0 then
+    bottom = 0
+  end
+  let mut width = rect.width
+  if width < 0 then
+    width = 0
+  end
+  let mut height = rect.height
+  if height < 0 then
+    height = 0
+  end
+  gl_enable(gl_scissor_test())
+  gl_scissor(rect.x, bottom, width, height)
+end
+
+export fn editor_gl_scissor_disable() -> unit =
+  gl_disable(gl_scissor_test())

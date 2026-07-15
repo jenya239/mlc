@@ -31,6 +31,7 @@ inline void viewport(int32_t x, int32_t y, int32_t width, int32_t height) {
   glViewport(x, y, width, height);
 }
 inline void enable(int32_t capability) { glEnable(static_cast<GLenum>(capability)); }
+inline void disable(int32_t capability) { glDisable(static_cast<GLenum>(capability)); }
 inline void blend_func(int32_t source_factor, int32_t destination_factor) {
   glBlendFunc(static_cast<GLenum>(source_factor), static_cast<GLenum>(destination_factor));
 }
@@ -296,6 +297,7 @@ inline void gl_viewport(int32_t x, int32_t y, int32_t width, int32_t height) {
   glad_abi::viewport(x, y, width, height);
 }
 inline void gl_enable(int32_t capability) { glad_abi::enable(capability); }
+inline void gl_disable(int32_t capability) { glad_abi::disable(capability); }
 inline void gl_blend_func(int32_t source_factor, int32_t destination_factor) {
   glad_abi::blend_func(source_factor, destination_factor);
 }

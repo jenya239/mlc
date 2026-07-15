@@ -13,6 +13,7 @@ import {
   text_renderer_upload_atlas,
   text_renderer_set_batch,
   text_renderer_draw,
+  text_renderer_draw_over,
   text_renderer_destroy,
   text_scratch_u8_clear,
   text_scratch_u8_resize_zero,
@@ -199,26 +200,52 @@ export fn static_text_draw_line(
   window_width: i32,
   window_height: i32
 ) -> StaticTextDrawResult = do
+  let mut lines: [StaticTextLine] = []
+  lines.push(line)
+  static_text_draw_lines(state, lines, window_width, window_height, 1)
+end
+
+// clear_framebuffer: 1 = clear then draw; 0 = compose over existing frame.
+export fn static_text_draw_lines(
+  state: StaticTextState,
+  lines: [StaticTextLine],
+  window_width: i32,
+  window_height: i32,
+  clear_framebuffer: i32
+) -> StaticTextDrawResult = do
   text_scratch_f32_clear()
-  const drawn = append_static_line(state, line, window_width, window_height)
-  if drawn.error_code != 0 then
-    return drawn
+  let mut working = state
+  let mut total_vertices = 0
+  let mut index = 0
+  while index < lines.length() do
+    const drawn = append_static_line(working, lines[index], window_width, window_height)
+    if drawn.error_code != 0 then
+      return drawn
+    end
+    working = drawn.state
+    total_vertices = total_vertices + drawn.vertex_count
+    index = index + 1
   end
-  text_bind_array_buffer(drawn.state.renderer.vertex_buffer)
+  text_bind_array_buffer(working.renderer.vertex_buffer)
   text_upload_dynamic_scratch()
-  const batched = text_renderer_set_batch(drawn.state.renderer, drawn.vertex_count)
-  const draw_status = text_renderer_draw(batched, window_width, window_height)
+  const batched = text_renderer_set_batch(working.renderer, total_vertices)
+  let mut draw_status = 0
+  if clear_framebuffer != 0 then
+    draw_status = text_renderer_draw(batched, window_width, window_height)
+  else
+    draw_status = text_renderer_draw_over(batched, window_width, window_height)
+  end
   StaticTextDrawResult {
     state: StaticTextState {
       renderer: batched,
-      atlas: drawn.state.atlas,
-      cache: drawn.state.cache,
-      shaping: drawn.state.shaping,
-      atlas_size: drawn.state.atlas_size,
-      font_path: drawn.state.font_path,
-      font_id: drawn.state.font_id
+      atlas: working.atlas,
+      cache: working.cache,
+      shaping: working.shaping,
+      atlas_size: working.atlas_size,
+      font_path: working.font_path,
+      font_id: working.font_id
     },
-    vertex_count: drawn.vertex_count,
+    vertex_count: total_vertices,
     error_code: draw_status
   }
 end
