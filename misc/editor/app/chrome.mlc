@@ -1,0 +1,61 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=6 — chrome metrics + toolbar mapping (app seed).
+import { Rect, rect_new } from '../../gui/layout'
+import {
+  CommandId,
+  CmdUndo,
+  CmdRedo,
+  CmdCopy,
+  CmdCut,
+  CmdPaste,
+  CmdSelectAll,
+  CmdCloseTab,
+  CmdNextTab,
+  CmdPrevTab,
+  CmdNone,
+  CmdSave
+} from '../commands/bus'
+
+export fn editor_app_line_height() -> i32 = 18
+export fn editor_app_char_width() -> i32 = 9
+export fn editor_app_font_size() -> i32 = 15
+export fn editor_app_header_height() -> i32 = 32
+export fn editor_app_tab_bar_height() -> i32 = 28
+export fn editor_app_toolbar_height() -> i32 = 26
+export fn editor_app_status_height() -> i32 = 24
+
+export fn editor_app_toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
+  rect_new(8 + index * 72, bar_y + 2, 68, editor_app_toolbar_height() - 4)
+
+export fn editor_app_toolbar_command_at(tool: i32) -> CommandId = do
+  if tool == 0 then
+    return CmdPrevTab
+  end
+  if tool == 1 then
+    return CmdNextTab
+  end
+  if tool == 2 then
+    return CmdCloseTab
+  end
+  if tool == 3 then
+    return CmdUndo
+  end
+  if tool == 4 then
+    return CmdRedo
+  end
+  if tool == 5 then
+    return CmdSelectAll
+  end
+  if tool == 6 then
+    return CmdCopy
+  end
+  if tool == 7 then
+    return CmdCut
+  end
+  if tool == 8 then
+    return CmdPaste
+  end
+  if tool == 9 then
+    return CmdSave
+  end
+  CmdNone
+end

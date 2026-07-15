@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=6** — Split `demo_live` frame → `misc/editor/app/` seed.
+**STEP=7** — Single app state; drop duplicate hit/scroll where safe.
+
+### STEP=6 done (2026-07-15)
+
+- Seed `misc/editor/app/chrome.mlc` + `frame_command.mlc`.
+- `demo_live` delegates chrome metrics + frame command resolve.
+- Smoke `editor_app_seed_ok` (compiles/links).
 
 ### STEP=5 done (2026-07-15)
 
@@ -107,7 +113,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | **done** (2026-07-15): `gui_cursor_shape_ok` |
 | 4 | GLFW clipboard get/set; live uses OS clipboard | **done** (2026-07-15): `gui_clipboard_ok` |
 | 5 | Wire `command_bus_resolve` into live | **done** (2026-07-15): unit + `editor_command_bus_live_ok` |
-| 6 | Split `demo_live` frame → `misc/editor/app/` seed | compiles; live still runs |
+| 6 | Split `demo_live` frame → `misc/editor/app/` seed | **done** (2026-07-15): `editor_app_seed_ok` |
 | 7 | Single app state; drop duplicate hit/scroll where safe | `run_ux_gate` + live smoke |
 | 8 | Decision: chrome on SceneNode **or** documented split | doc in `GUI_ARCHITECTURE.md` |
 | 9 | Text glyph color (`u_color` / per-quad) | theme / live readable |
@@ -137,9 +143,11 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=5** — **done**
 1. Live key path + toolbar share `command_bus_resolve` / same CommandId dispatch — done.
 
-**STEP=6–7**
-1. One command path; start extracting `app/` from `demo_live` god-loop.
-2. Prefer reusing `ux/*` helpers over re-implementing.
+**STEP=6** — **done**
+1. Seed `app/chrome` + `app/frame_command`; demo_live imports — done.
+
+**STEP=7**
+1. Single app state; drop duplicate hit/scroll where safe.
 
 **STEP=8–9**
 1. Architecture Decision only if cheap; glyph color unblock Solarized light.

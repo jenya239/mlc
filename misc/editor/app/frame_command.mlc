@@ -1,0 +1,43 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=6 — frame command resolve (app seed).
+import {
+  CommandId,
+  FocusTarget,
+  FocusEditor,
+  FocusTree,
+  KeyBinding,
+  CmdNone,
+  command_bus_resolve
+} from '../commands/bus'
+import { editor_app_toolbar_command_at } from './chrome'
+
+export fn editor_app_focus_from_editor_flag(editor_focused: i32) -> FocusTarget = do
+  if editor_focused != 0 then
+    return FocusEditor
+  end
+  FocusTree
+end
+
+export fn editor_app_frame_command_from_inputs(
+  toolbar_tool: i32,
+  bindings: [KeyBinding],
+  editor_focused: i32,
+  ctrl_down: i32,
+  shift_down: i32,
+  alt_down: i32,
+  binding_key: string
+) -> CommandId = do
+  if toolbar_tool >= 0 then
+    return editor_app_toolbar_command_at(toolbar_tool)
+  end
+  if binding_key.byte_size() == 0 then
+    return CmdNone
+  end
+  command_bus_resolve(
+    bindings,
+    editor_app_focus_from_editor_flag(editor_focused),
+    ctrl_down,
+    shift_down,
+    alt_down,
+    binding_key
+  )
+end

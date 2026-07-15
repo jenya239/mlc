@@ -87,10 +87,6 @@ import {
 } from './workspace/session'
 import {
   CommandId,
-  FocusTarget,
-  FocusEditor,
-  FocusTree,
-  KeyBinding,
   CmdUndo,
   CmdRedo,
   CmdCopy,
@@ -103,8 +99,7 @@ import {
   CmdNone,
   CmdSave,
   command_id_tag,
-  command_bus_default_bindings,
-  command_bus_resolve
+  command_bus_default_bindings
 } from './commands/bus'
 import {
   open_buffer_set_document,
@@ -179,19 +174,30 @@ import {
 import { editor_text_metrics_default } from './ux/overflow'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
 import { EditorUxState, editor_ux_state_new } from './ux/probe'
+import {
+  editor_app_line_height,
+  editor_app_char_width,
+  editor_app_font_size,
+  editor_app_header_height,
+  editor_app_tab_bar_height,
+  editor_app_toolbar_height,
+  editor_app_status_height,
+  editor_app_toolbar_button_rect
+} from './app/chrome'
+import { editor_app_frame_command_from_inputs } from './app/frame_command'
 
 extern fn sleep_ms(milliseconds: i32) -> unit
   = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
 
-fn line_height() -> i32 = 18
-fn char_width() -> i32 = 9
-fn font_size() -> i32 = 15
-fn header_height() -> i32 = 32
-fn tab_bar_height() -> i32 = 28
-fn toolbar_height() -> i32 = 26
-fn status_height() -> i32 = 24
+fn line_height() -> i32 = editor_app_line_height()
+fn char_width() -> i32 = editor_app_char_width()
+fn font_size() -> i32 = editor_app_font_size()
+fn header_height() -> i32 = editor_app_header_height()
+fn tab_bar_height() -> i32 = editor_app_tab_bar_height()
+fn toolbar_height() -> i32 = editor_app_toolbar_height()
+fn status_height() -> i32 = editor_app_status_height()
 fn session_path() -> string = ".tmp/editor_live_session.txt"
 
 fn push_line(
@@ -260,73 +266,7 @@ fn apply_edit(tabs: TabSet, next_document: TextDocument) -> TabSet = do
 end
 
 fn toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
-  rect_new(8 + index * 72, bar_y + 2, 68, toolbar_height() - 4)
-
-fn toolbar_command_at(tool: i32) -> CommandId = do
-  if tool == 0 then
-    return CmdPrevTab
-  end
-  if tool == 1 then
-    return CmdNextTab
-  end
-  if tool == 2 then
-    return CmdCloseTab
-  end
-  if tool == 3 then
-    return CmdUndo
-  end
-  if tool == 4 then
-    return CmdRedo
-  end
-  if tool == 5 then
-    return CmdSelectAll
-  end
-  if tool == 6 then
-    return CmdCopy
-  end
-  if tool == 7 then
-    return CmdCut
-  end
-  if tool == 8 then
-    return CmdPaste
-  end
-  if tool == 9 then
-    return CmdSave
-  end
-  CmdNone
-end
-
-fn focus_from_editor_flag(editor_focused: i32) -> FocusTarget = do
-  if editor_focused != 0 then
-    return FocusEditor
-  end
-  FocusTree
-end
-
-fn frame_command_from_inputs(
-  toolbar_tool: i32,
-  bindings: [KeyBinding],
-  editor_focused: i32,
-  ctrl_down: i32,
-  shift_down: i32,
-  alt_down: i32,
-  binding_key: string
-) -> CommandId = do
-  if toolbar_tool >= 0 then
-    return toolbar_command_at(toolbar_tool)
-  end
-  if binding_key.byte_size() == 0 then
-    return CmdNone
-  end
-  command_bus_resolve(
-    bindings,
-    focus_from_editor_flag(editor_focused),
-    ctrl_down,
-    shift_down,
-    alt_down,
-    binding_key
-  )
-end
+  editor_app_toolbar_button_rect(index, bar_y)
 
 fn dump_tab_file(path: string, text: string) -> string = do
   let mut file_name = "buffer.txt"
@@ -656,7 +596,7 @@ fn main() -> i32 = do
       if toolbar_tool < 0 then
         binding_key = glfw_gl_take_binding_key()
       end
-      const dispatch_command = frame_command_from_inputs(
+      const dispatch_command = editor_app_frame_command_from_inputs(
         toolbar_tool,
         command_bindings,
         editor_focused,
