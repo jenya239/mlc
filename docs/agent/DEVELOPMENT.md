@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_LIVE_POLISH` STEP=9 done** (2026-07-15) — glyph `u_color`; **STEP=10** Critic next.
-Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
-Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
+**`TRACK_GUI_SCENE_PHASE_D` active** (2026-07-15) — §33b LIVE_POLISH Critic OK; **STEP=3** Path tess next.
+Leave Path WIP untouched (absorb when STEP needs it).
+Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 ## Step sizing (good vs bad)
 
 | Good | Bad |

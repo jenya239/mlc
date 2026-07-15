@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-15-live-polish-priority` |
+| instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 10 |
-| step_last | 9 |
-| active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=10 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 10 |
+| active_track | TRACK_GUI_SCENE_PHASE_D |
+| test_gate | §33b Critic OK; Phase D STEP=3 next |
+
+### Turn 2026-07-15 19:50 (Critic TRACK_EDITOR_LIVE_POLISH STEP=critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit / 10 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 19:41 |
+| elapsed | ~9 min |
+| done    | P0 re-run all ok; archive `TRACK_EDITOR_LIVE_POLISH`; unpark Phase D; PLAN/CONTINUITY sync. |
+| verify  | scissor/live_scissor/cursor/clipboard/command_bus/seed/glyph_color + `run_ux_gate` → all ok; commits `011cdbb1`…`f3a8cdbc`. |
+| result  | STEP=10 closed. Plain: live polish Critic OK; Path tess is queue head. |
+| issues  | Residuals: batch `u_color` only; Path WIP + EDITOR.md left untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-15 19:30 (Driver TRACK_EDITOR_LIVE_POLISH STEP=9)
 

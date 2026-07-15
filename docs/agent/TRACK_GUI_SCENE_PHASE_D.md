@@ -6,20 +6,18 @@ Phase A (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/trac
 Phase B (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md).
 Phase C (closed): [../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md).
 
-## Status: **parked** (2026-07-15) — behind EDITOR_LIVE_POLISH §33b
+## Status: **active** (2026-07-15) — unparked after §33b Critic
 
 Phase A/B/C stay. Phase D adds **camera pan/zoom**, one **vector path**
 (bezier fill+stroke) primitive, and a minimal **node/wire canvas** smoke
 on the same flat `Scene` (not a second toolkit).
 
-**Park reason:** user priority override — live editor polish (scissor/cursor/
-clipboard) before Path tess. Do **not** advance STEP=3+ until
-`TRACK_EDITOR_LIVE_POLISH` Critic closes. Leave any Path WIP uncommitted;
-do not revert.
+**Unpark:** `TRACK_EDITOR_LIVE_POLISH` Critic OK 2026-07-15. Resume STEP=3 Path
+tess. Leave any pre-existing Path WIP; do not revert foreign dirty.
 
 ## Next step
 
-**Parked** — resume **STEP=3** (Path kind + cubic tessellation) after §33b.
+**STEP=3** — Path kind + cubic tessellation (+ smoke).
 
 ### STEP=2 done (2026-07-15)
 

@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-15-live-polish-priority` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-15-phase-d-path` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-15-live-polish-priority
+INSTRUCTIONS_REV=2026-07-15-phase-d-path
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, Phase D Path WIP `misc/gui/scene_path*.mlc` / `scene_path_tess_smoke*` / related scripts, `misc/examples/scene_form_live.mlc`, `.tmp/**` без записи в TRACK) — не удалять, не коммитить чужое, не откатывать; работать поверх, `git add` явным списком своих файлов. **`misc/editor/demo_live.mlc` + `scripts/run_editor_live_demo.sh` — in scope для TRACK_EDITOR_LIVE_POLISH** (не foreign). Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, `misc/examples/scene_form_live.mlc`, `.tmp/**` без записи в TRACK) — не удалять, не коммитить чужое, не откатывать; работать поверх, `git add` явным списком. Path WIP (`scene_path*`, tess smoke, related `scene.mlc`/`scene_draw.mlc`) — **in scope** для PHASE_D STEP=3+ когда STEP их касается; иначе не трогать чужое. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -61,9 +61,10 @@ INSTRUCTIONS_REV=2026-07-15-live-polish-priority
 | **~300-step backlog (PLAN.md §21-29, построен 2026-07-11)** | Порядок: `EXAMPLES_CI` → `FFI_EXTERN_DEDUP` → `GUI_INPUT_ROBUSTNESS` → `STDLIB_HTTP_HARDENING` → `CONCURRENCY_SUPERVISOR` → `CONCURRENCY_TEST_HARNESS` T6/T7 → `LANG_DOCS` → `STDLIB_DOCS` → `LANG_REGION_ARENA` → `PACKAGE_MANAGER` → `DEBUG_SOURCE_MAP` → `GUI_CANVAS_GRAPH` (Phase A→B→C→D, под-треки `TRACK_GUI_SCENE_PHASE_{A,B,C,D}.md` создаются Planner'ом при старте каждой фазы). Все ungated — пользователь 2026-07-11 явно авторизовал реализацию `LANG_REGION_ARENA`/`PACKAGE_MANAGER`/`DEBUG_SOURCE_MAP`/`GUI_CANVAS_GRAPH` (ранее design-only/deferred/low-priority), Driver открывает Step 1 любого из них без доп. разрешения, по порядку очереди |
 | **`TRACK_EDITOR_MVP` (PLAN §33)** | **closed** 2026-07-14. Не открывать numbered STEPs |
 | **`TRACK_UX_HEADLESS` (PLAN §33a)** | **closed** 2026-07-14. L8 blink residual ок |
-| **`TRACK_EDITOR_LIVE_POLISH` (PLAN §33b) — PRIORITY OVERRIDE 2026-07-15** | Queue head. Live scissor/cursor/clipboard/command-bus/frame. `demo_live` **in scope**. Phase D **parked** (не продолжать STEP=3 Path, не откатывать Path WIP). После Critic close → Planner resumes Phase D STEP=3 |
+| **`TRACK_EDITOR_LIVE_POLISH` (PLAN §33b)** | **closed** 2026-07-15 (Critic OK). Archive. Не открывать numbered STEPs |
+| **`TRACK_GUI_SCENE_PHASE_D` (PLAN §10c/§29)** | **active** queue head after §33b. Resume STEP=3 Path tess; leave Path WIP |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
-| **`TRACK_EDITOR_MVP` placement** | Design: `docs/EDITOR.md`, archive. Код → `misc/editor/`. Live polish → `TRACK_EDITOR_LIVE_POLISH` |
+| **`TRACK_EDITOR_MVP` placement** | Design: `docs/EDITOR.md`, archive. Код → `misc/editor/`. Live polish → archived `TRACK_EDITOR_LIVE_POLISH` |
 
 ## When to stop (only these)
 
