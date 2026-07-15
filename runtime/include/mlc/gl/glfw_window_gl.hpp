@@ -42,5 +42,10 @@ void glfw_gl_input_test_clear();
 void glfw_gl_cursor_set(int32_t shape);
 int32_t glfw_gl_cursor_shape_get();
 
+// TRACK_EDITOR_LIVE_POLISH STEP=4
+String glfw_gl_clipboard_get();
+void glfw_gl_clipboard_set(String text);
+void glfw_gl_clipboard_test_set(String text);
+
 } // namespace gl
 } // namespace mlc

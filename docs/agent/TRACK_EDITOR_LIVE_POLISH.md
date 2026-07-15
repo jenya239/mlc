@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=4** — GLFW clipboard get/set; live uses OS clipboard.
+**STEP=5** — Wire `command_bus_resolve` into live.
+
+### STEP=4 done (2026-07-15)
+
+- `glfw_gl_clipboard_get`/`set`/`test_set`; `clipboard_os` pull/push.
+- `demo_live` copy/cut → OS; paste ← OS.
+- Smoke `gui_clipboard_ok`.
 
 ### STEP=3 done (2026-07-15)
 
@@ -92,7 +98,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 0 | Decision freeze + PLAN/CONTINUITY sync | **done** (2026-07-15) |
 | 1 | `gl_scissor` / `GL_SCISSOR_TEST` in glad/gl stdlib | **done** (2026-07-15): `scissor_ok` |
 | 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | **done** (2026-07-15): `editor_live_scissor_ok` + ux_gate |
-| 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | `run_gui_cursor_shape_smoke.sh` |
+| 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | **done** (2026-07-15): `gui_cursor_shape_ok` |
 | 4 | GLFW clipboard get/set; live uses OS clipboard | `run_gui_clipboard_smoke.sh` |
 | 5 | Wire `command_bus_resolve` into live | unit + `run_editor_command_bus_live_smoke.sh` |
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | compiles; live still runs |
@@ -116,9 +122,11 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 1. Apply scissor around editor solids/text in `demo_live` — done.
 2. Make `editor_ux_apply_scissor_clip` honest (overflow not always `[]`) — done.
 
-**STEP=3–4**
-1. Platform cursor + clipboard bindings mirroring existing glfw test-inject style.
-2. Live hover divider → ew-resize; text → ibeam.
+**STEP=3** — **done**
+1. Platform cursor binding + live hover divider/text — done.
+
+**STEP=4**
+1. Platform clipboard get/set; live OS sync on copy/cut/paste.
 
 **STEP=5–7**
 1. One command path; start extracting `app/` from `demo_live` god-loop.

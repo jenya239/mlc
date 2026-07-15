@@ -65,6 +65,16 @@ double& pending_scroll_y() {
   return scroll_y;
 }
 
+struct ClipboardTestOverride {
+  bool active = false;
+  std::string text;
+};
+
+ClipboardTestOverride& clipboard_test_override() {
+  static ClipboardTestOverride override_state;
+  return override_state;
+}
+
 int32_t& cached_window_width() {
   static int32_t width = 0;
   return width;
@@ -370,6 +380,7 @@ void glfw_gl_input_test_clear() {
   input_test_override() = InputTestOverride{};
   pending_text().clear();
   pending_scroll_y() = 0.0;
+  clipboard_test_override() = ClipboardTestOverride{};
 }
 
 void glfw_gl_cursor_set(int32_t shape) {
@@ -398,6 +409,42 @@ int32_t glfw_gl_cursor_shape_get() {
   return standard_cursors().last_shape;
 }
 
+String glfw_gl_clipboard_get() {
+  const ClipboardTestOverride& override_state = clipboard_test_override();
+  if (override_state.active) {
+    return String(override_state.text);
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return String();
+  }
+  const char* text = glfwGetClipboardString(window);
+  if (text == nullptr) {
+    return String();
+  }
+  return String(text);
+}
+
+void glfw_gl_clipboard_set(String text) {
+  const std::string payload(text.raw_data(), text.size());
+  ClipboardTestOverride& override_state = clipboard_test_override();
+  if (override_state.active) {
+    override_state.text = payload;
+    return;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return;
+  }
+  glfwSetClipboardString(window, payload.c_str());
+}
+
+void glfw_gl_clipboard_test_set(String text) {
+  ClipboardTestOverride& override_state = clipboard_test_override();
+  override_state.active = true;
+  override_state.text = std::string(text.raw_data(), text.size());
+}
+
 #else
 
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
@@ -423,6 +470,9 @@ void glfw_gl_input_test_set(int32_t, int32_t, int32_t, int32_t) {}
 void glfw_gl_input_test_clear() {}
 void glfw_gl_cursor_set(int32_t) {}
 int32_t glfw_gl_cursor_shape_get() { return 0; }
+String glfw_gl_clipboard_get() { return String(); }
+void glfw_gl_clipboard_set(String) {}
+void glfw_gl_clipboard_test_set(String) {}
 
 #endif
 

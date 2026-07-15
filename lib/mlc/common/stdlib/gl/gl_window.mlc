@@ -49,3 +49,9 @@ export extern fn glfw_gl_cursor_set(shape: i32) -> unit
   = "mlc::gl::glfw_gl_cursor_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_cursor_shape_get() -> i32
   = "mlc::gl::glfw_gl_cursor_shape_get" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_get() -> string
+  = "mlc::gl::glfw_gl_clipboard_get" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_set(text: string) -> unit
+  = "mlc::gl::glfw_gl_clipboard_set" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_test_set(text: string) -> unit
+  = "mlc::gl::glfw_gl_clipboard_test_set" from "mlc/gl/glfw_window_gl.hpp"

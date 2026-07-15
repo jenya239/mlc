@@ -1,0 +1,37 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=4 — glfw_gl_clipboard get/set (+ test inject).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_clipboard_get,
+  glfw_gl_clipboard_set,
+  glfw_gl_clipboard_test_set
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  glfw_gl_clipboard_test_set("seed")
+  if glfw_gl_clipboard_get() != "seed" then
+    glfw_gl_context_end()
+    return 1
+  end
+
+  glfw_gl_clipboard_set("hello-os-clip")
+  if glfw_gl_clipboard_get() != "hello-os-clip" then
+    glfw_gl_context_end()
+    return 2
+  end
+
+  glfw_gl_clipboard_set("")
+  if glfw_gl_clipboard_get() != "" then
+    glfw_gl_context_end()
+    return 3
+  end
+
+  glfw_gl_context_end()
+  println("gui_clipboard_ok")
+  0
+end

@@ -138,6 +138,10 @@ import {
 } from './document/history'
 import { Clipboard, clipboard_new } from './clipboard'
 import {
+  clipboard_pull_from_os,
+  clipboard_push_to_os
+} from './clipboard_os'
+import {
   edit_select_all,
   edit_copy,
   edit_cut,
@@ -566,6 +570,7 @@ fn main() -> i32 = do
             end
           | CmdCopy => do
               clipboard = edit_copy(document, selection, clipboard)
+              clipboard_push_to_os(clipboard)
             end
           | CmdCut => do
               history = history_push_before_edit(history, document, selection)
@@ -576,8 +581,10 @@ fn main() -> i32 = do
               line_index = line_index_rebuild(document)
               selection = cut_result.selection
               clipboard = cut_result.clipboard
+              clipboard_push_to_os(clipboard)
             end
           | CmdPaste => do
+              clipboard = clipboard_pull_from_os(clipboard)
               history = history_push_before_edit(history, document, selection)
               const paste_result = edit_paste(document, selection, clipboard)
               tabs = apply_edit(tabs, paste_result.document)

@@ -1,4 +1,5 @@
-// TRACK_EDITOR_MVP STEP=17 — clipboard buffer (injectable; GLFW P2 wire later).
+// TRACK_EDITOR_MVP STEP=17 — in-memory clipboard cache.
+// OS sync: glfw_gl_clipboard_* via clipboard_os.mlc (LIVE_POLISH STEP=4).
 export type Clipboard = {
   text: string
 }

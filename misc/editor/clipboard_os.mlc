@@ -1,0 +1,16 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=4 — OS clipboard cache helpers (GLFW).
+import {
+  glfw_gl_clipboard_get,
+  glfw_gl_clipboard_set
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  Clipboard,
+  clipboard_get,
+  clipboard_set
+} from './clipboard'
+
+export fn clipboard_pull_from_os(clipboard: Clipboard) -> Clipboard =
+  clipboard_set(clipboard, glfw_gl_clipboard_get())
+
+export fn clipboard_push_to_os(clipboard: Clipboard) -> unit =
+  glfw_gl_clipboard_set(clipboard_get(clipboard))
