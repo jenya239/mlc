@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 4 |
+| driver_turns_since_plan | 6 |
+| step_last | 5 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=5 command-bus live next |
+| test_gate | §33b STEP=6 frame split next |
+
+### Turn 2026-07-15 12:55 (Driver TRACK_EDITOR_LIVE_POLISH STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 12:38 |
+| elapsed | ~17 min |
+| done    | Chord ABI; demo_live toolbar+keys → `command_bus_resolve`; unit + live smoke. |
+| verify  | `bash scripts/run_editor_command_bus_unit.sh` ok; `bash scripts/run_editor_command_bus_live_smoke.sh` → `editor_command_bus_live_ok`; demo_live compiles. |
+| result  | STEP=5 done. Plain: live Ctrl chords use the same command bus as unit/toolbar. |
+| issues  | Left Path WIP + EDITOR/GUI_ARCHITECTURE dirty untouched. |
+| next    | ROLE=Driver STEP=6 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 12:31 (Driver TRACK_EDITOR_LIVE_POLISH STEP=4)
 

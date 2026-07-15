@@ -9,7 +9,11 @@ import {
   glfw_gl_window_width,
   glfw_gl_window_height,
   glfw_gl_take_scroll_y,
-  glfw_gl_cursor_set
+  glfw_gl_cursor_set,
+  glfw_gl_mod_ctrl_down,
+  glfw_gl_mod_shift_down,
+  glfw_gl_mod_alt_down,
+  glfw_gl_take_binding_key
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { gui_input_poll } from '../gui/input'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
@@ -83,6 +87,10 @@ import {
 } from './workspace/session'
 import {
   CommandId,
+  FocusTarget,
+  FocusEditor,
+  FocusTree,
+  KeyBinding,
   CmdUndo,
   CmdRedo,
   CmdCopy,
@@ -94,7 +102,9 @@ import {
   CmdPrevTab,
   CmdNone,
   CmdSave,
-  command_id_tag
+  command_id_tag,
+  command_bus_default_bindings,
+  command_bus_resolve
 } from './commands/bus'
 import {
   open_buffer_set_document,
@@ -286,6 +296,38 @@ fn toolbar_command_at(tool: i32) -> CommandId = do
   CmdNone
 end
 
+fn focus_from_editor_flag(editor_focused: i32) -> FocusTarget = do
+  if editor_focused != 0 then
+    return FocusEditor
+  end
+  FocusTree
+end
+
+fn frame_command_from_inputs(
+  toolbar_tool: i32,
+  bindings: [KeyBinding],
+  editor_focused: i32,
+  ctrl_down: i32,
+  shift_down: i32,
+  alt_down: i32,
+  binding_key: string
+) -> CommandId = do
+  if toolbar_tool >= 0 then
+    return toolbar_command_at(toolbar_tool)
+  end
+  if binding_key.byte_size() == 0 then
+    return CmdNone
+  end
+  command_bus_resolve(
+    bindings,
+    focus_from_editor_flag(editor_focused),
+    ctrl_down,
+    shift_down,
+    alt_down,
+    binding_key
+  )
+end
+
 fn dump_tab_file(path: string, text: string) -> string = do
   let mut file_name = "buffer.txt"
   if path.ends_with("main.mlc") then
@@ -399,12 +441,15 @@ fn main() -> i32 = do
   let mut scroll_offset_y = 0
   let mut frame_index = 0
   const metrics = editor_text_metrics_default()
+  const command_bindings = command_bus_default_bindings()
 
   while glfw_gl_context_should_close() == 0 do
     const input = gui_input_poll()
     if input.escape != 0 && !dirty_close_overlay_is_visible(overlay) then
       break
     end
+
+    let mut toolbar_tool = -1
 
     const width = glfw_gl_window_width()
     const height = glfw_gl_window_height()
@@ -512,99 +557,7 @@ fn main() -> i32 = do
       let mut tool = 0
       while tool < 10 do
         if point_in_rect(point_new(input.mouse_x, input.mouse_y), toolbar_button_rect(tool, toolbar_y)) != 0 then
-          const command = toolbar_command_at(tool)
-          last_command = command_id_tag(command)
-          match command
-          | CmdPrevTab => do
-              tabs = tab_set_activate_prev(tabs)
-              active = tab_set_active(tabs)
-              document = active.buffer.document
-              line_index = line_index_rebuild(document)
-              selection = selection_collapsed(0)
-              history = history_new()
-            end
-          | CmdNextTab => do
-              tabs = tab_set_activate_next(tabs)
-              active = tab_set_active(tabs)
-              document = active.buffer.document
-              line_index = line_index_rebuild(document)
-              selection = selection_collapsed(0)
-              history = history_new()
-            end
-          | CmdCloseTab => do
-              const close_outcome = tab_set_request_close(tabs, tabs.active_index)
-              tabs = close_outcome.tabs
-              overlay = close_outcome.overlay
-              if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
-                active = tab_set_active(tabs)
-                document = active.buffer.document
-                line_index = line_index_rebuild(document)
-                selection = selection_collapsed(0)
-                history = history_new()
-              end
-            end
-          | CmdUndo => do
-              const undo_result = history_undo(history, document, selection)
-              if undo_result.applied != 0 then
-                history = undo_result.history
-                tabs = apply_edit(tabs, undo_result.document)
-                active = tab_set_active(tabs)
-                document = active.buffer.document
-                line_index = line_index_rebuild(document)
-                selection = undo_result.selection
-              end
-            end
-          | CmdRedo => do
-              const redo_result = history_redo(history, document, selection)
-              if redo_result.applied != 0 then
-                history = redo_result.history
-                tabs = apply_edit(tabs, redo_result.document)
-                active = tab_set_active(tabs)
-                document = active.buffer.document
-                line_index = line_index_rebuild(document)
-                selection = redo_result.selection
-              end
-            end
-          | CmdSelectAll => do
-              selection = edit_select_all(document)
-            end
-          | CmdCopy => do
-              clipboard = edit_copy(document, selection, clipboard)
-              clipboard_push_to_os(clipboard)
-            end
-          | CmdCut => do
-              history = history_push_before_edit(history, document, selection)
-              const cut_result = edit_cut(document, selection, clipboard)
-              tabs = apply_edit(tabs, cut_result.document)
-              active = tab_set_active(tabs)
-              document = active.buffer.document
-              line_index = line_index_rebuild(document)
-              selection = cut_result.selection
-              clipboard = cut_result.clipboard
-              clipboard_push_to_os(clipboard)
-            end
-          | CmdPaste => do
-              clipboard = clipboard_pull_from_os(clipboard)
-              history = history_push_before_edit(history, document, selection)
-              const paste_result = edit_paste(document, selection, clipboard)
-              tabs = apply_edit(tabs, paste_result.document)
-              active = tab_set_active(tabs)
-              document = active.buffer.document
-              line_index = line_index_rebuild(document)
-              selection = paste_result.selection
-            end
-          | CmdSave => do
-              if save_demo_session(tabs) != 0 then
-                last_command = "session_save"
-              else
-                last_command = "session_save_fail"
-              end
-            end
-          | CmdNone => do
-              // tool 10 reserved — Load session via index 10 below
-              last_command = last_command
-            end
-          end
+          toolbar_tool = tool
           handled = 1
         end
         tool = tool + 1
@@ -694,6 +647,115 @@ fn main() -> i32 = do
           end
           selecting_text = 0
           handled = 1
+        end
+      end
+    end
+
+    if !dirty_close_overlay_is_visible(overlay) then
+      let mut binding_key = ""
+      if toolbar_tool < 0 then
+        binding_key = glfw_gl_take_binding_key()
+      end
+      const dispatch_command = frame_command_from_inputs(
+        toolbar_tool,
+        command_bindings,
+        editor_focused,
+        glfw_gl_mod_ctrl_down(),
+        glfw_gl_mod_shift_down(),
+        glfw_gl_mod_alt_down(),
+        binding_key
+      )
+      if command_id_tag(dispatch_command) != "none" then
+        last_command = command_id_tag(dispatch_command)
+        match dispatch_command
+        | CmdPrevTab => do
+            tabs = tab_set_activate_prev(tabs)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = selection_collapsed(0)
+            history = history_new()
+          end
+        | CmdNextTab => do
+            tabs = tab_set_activate_next(tabs)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = selection_collapsed(0)
+            history = history_new()
+          end
+        | CmdCloseTab => do
+            const close_outcome = tab_set_request_close(tabs, tabs.active_index)
+            tabs = close_outcome.tabs
+            overlay = close_outcome.overlay
+            if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = selection_collapsed(0)
+              history = history_new()
+            end
+          end
+        | CmdUndo => do
+            const undo_result = history_undo(history, document, selection)
+            if undo_result.applied != 0 then
+              history = undo_result.history
+              tabs = apply_edit(tabs, undo_result.document)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = undo_result.selection
+            end
+          end
+        | CmdRedo => do
+            const redo_result = history_redo(history, document, selection)
+            if redo_result.applied != 0 then
+              history = redo_result.history
+              tabs = apply_edit(tabs, redo_result.document)
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              line_index = line_index_rebuild(document)
+              selection = redo_result.selection
+            end
+          end
+        | CmdSelectAll => do
+            selection = edit_select_all(document)
+          end
+        | CmdCopy => do
+            clipboard = edit_copy(document, selection, clipboard)
+            clipboard_push_to_os(clipboard)
+          end
+        | CmdCut => do
+            history = history_push_before_edit(history, document, selection)
+            const cut_result = edit_cut(document, selection, clipboard)
+            tabs = apply_edit(tabs, cut_result.document)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = cut_result.selection
+            clipboard = cut_result.clipboard
+            clipboard_push_to_os(clipboard)
+          end
+        | CmdPaste => do
+            clipboard = clipboard_pull_from_os(clipboard)
+            history = history_push_before_edit(history, document, selection)
+            const paste_result = edit_paste(document, selection, clipboard)
+            tabs = apply_edit(tabs, paste_result.document)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            line_index = line_index_rebuild(document)
+            selection = paste_result.selection
+          end
+        | CmdSave => do
+            if save_demo_session(tabs) != 0 then
+              last_command = "session_save"
+            else
+              last_command = "session_save_fail"
+            end
+          end
+        | CmdNone => do
+            last_command = last_command
+          end
         end
       end
     end

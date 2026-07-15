@@ -75,6 +75,40 @@ ClipboardTestOverride& clipboard_test_override() {
   return override_state;
 }
 
+struct ModsTestOverride {
+  bool active = false;
+  int32_t ctrl_down = 0;
+  int32_t shift_down = 0;
+  int32_t alt_down = 0;
+};
+
+ModsTestOverride& mods_test_override() {
+  static ModsTestOverride override_state;
+  return override_state;
+}
+
+std::string& pending_binding_key() {
+  static std::string key;
+  return key;
+}
+
+struct BindingKeyEdges {
+  int32_t key_s = 0;
+  int32_t key_z = 0;
+  int32_t key_y = 0;
+  int32_t key_c = 0;
+  int32_t key_x = 0;
+  int32_t key_v = 0;
+  int32_t key_a = 0;
+  int32_t key_w = 0;
+  int32_t key_tab = 0;
+};
+
+BindingKeyEdges& binding_key_edges() {
+  static BindingKeyEdges edges;
+  return edges;
+}
+
 int32_t& cached_window_width() {
   static int32_t width = 0;
   return width;
@@ -381,6 +415,9 @@ void glfw_gl_input_test_clear() {
   pending_text().clear();
   pending_scroll_y() = 0.0;
   clipboard_test_override() = ClipboardTestOverride{};
+  mods_test_override() = ModsTestOverride{};
+  pending_binding_key().clear();
+  binding_key_edges() = BindingKeyEdges{};
 }
 
 void glfw_gl_cursor_set(int32_t shape) {
@@ -445,6 +482,113 @@ void glfw_gl_clipboard_test_set(String text) {
   override_state.text = std::string(text.raw_data(), text.size());
 }
 
+int32_t glfw_gl_mod_ctrl_down() {
+  const ModsTestOverride& override_state = mods_test_override();
+  if (override_state.active) {
+    return override_state.ctrl_down;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  const int left = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ? 1 : 0;
+  const int right = glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS ? 1 : 0;
+  return (left != 0 || right != 0) ? 1 : 0;
+}
+
+int32_t glfw_gl_mod_shift_down() {
+  const ModsTestOverride& override_state = mods_test_override();
+  if (override_state.active) {
+    return override_state.shift_down;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  const int left = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ? 1 : 0;
+  const int right = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS ? 1 : 0;
+  return (left != 0 || right != 0) ? 1 : 0;
+}
+
+int32_t glfw_gl_mod_alt_down() {
+  const ModsTestOverride& override_state = mods_test_override();
+  if (override_state.active) {
+    return override_state.alt_down;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  const int left = glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ? 1 : 0;
+  const int right = glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS ? 1 : 0;
+  return (left != 0 || right != 0) ? 1 : 0;
+}
+
+namespace {
+
+int32_t edge_key_down(int32_t glfw_key, int32_t& previous_down) {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    previous_down = 0;
+    return 0;
+  }
+  const int32_t down = glfwGetKey(window, glfw_key) == GLFW_PRESS ? 1 : 0;
+  const int32_t edge = (down != 0 && previous_down == 0) ? 1 : 0;
+  previous_down = down;
+  return edge;
+}
+
+} // namespace
+
+String glfw_gl_take_binding_key() {
+  if (!pending_binding_key().empty()) {
+    String taken(pending_binding_key());
+    pending_binding_key().clear();
+    return taken;
+  }
+  BindingKeyEdges& edges = binding_key_edges();
+  if (edge_key_down(GLFW_KEY_S, edges.key_s) != 0) {
+    return String("s");
+  }
+  if (edge_key_down(GLFW_KEY_Z, edges.key_z) != 0) {
+    return String("z");
+  }
+  if (edge_key_down(GLFW_KEY_Y, edges.key_y) != 0) {
+    return String("y");
+  }
+  if (edge_key_down(GLFW_KEY_C, edges.key_c) != 0) {
+    return String("c");
+  }
+  if (edge_key_down(GLFW_KEY_X, edges.key_x) != 0) {
+    return String("x");
+  }
+  if (edge_key_down(GLFW_KEY_V, edges.key_v) != 0) {
+    return String("v");
+  }
+  if (edge_key_down(GLFW_KEY_A, edges.key_a) != 0) {
+    return String("a");
+  }
+  if (edge_key_down(GLFW_KEY_W, edges.key_w) != 0) {
+    return String("w");
+  }
+  if (edge_key_down(GLFW_KEY_TAB, edges.key_tab) != 0) {
+    return String("tab");
+  }
+  return String();
+}
+
+void glfw_gl_mods_test_set(int32_t ctrl_down, int32_t shift_down, int32_t alt_down) {
+  ModsTestOverride& override_state = mods_test_override();
+  override_state.active = true;
+  override_state.ctrl_down = ctrl_down;
+  override_state.shift_down = shift_down;
+  override_state.alt_down = alt_down;
+}
+
+void glfw_gl_binding_key_test_push(String key) {
+  pending_binding_key() = std::string(key.raw_data(), key.size());
+}
+
 #else
 
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
@@ -473,6 +617,12 @@ int32_t glfw_gl_cursor_shape_get() { return 0; }
 String glfw_gl_clipboard_get() { return String(); }
 void glfw_gl_clipboard_set(String) {}
 void glfw_gl_clipboard_test_set(String) {}
+int32_t glfw_gl_mod_ctrl_down() { return 0; }
+int32_t glfw_gl_mod_shift_down() { return 0; }
+int32_t glfw_gl_mod_alt_down() { return 0; }
+String glfw_gl_take_binding_key() { return String(); }
+void glfw_gl_mods_test_set(int32_t, int32_t, int32_t) {}
+void glfw_gl_binding_key_test_push(String) {}
 
 #endif
 

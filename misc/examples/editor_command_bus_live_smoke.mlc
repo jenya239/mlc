@@ -1,0 +1,98 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=5 — live command_bus_resolve via GLFW chord inject.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_mods_test_set,
+  glfw_gl_binding_key_test_push,
+  glfw_gl_mod_ctrl_down,
+  glfw_gl_mod_shift_down,
+  glfw_gl_mod_alt_down,
+  glfw_gl_take_binding_key
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  FocusEditor,
+  FocusTree,
+  command_bus_default_bindings,
+  command_bus_resolve,
+  command_id_tag
+} from '../editor/commands/bus'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const bindings = command_bus_default_bindings()
+
+  glfw_gl_mods_test_set(1, 0, 0)
+  glfw_gl_binding_key_test_push("c")
+  const key_copy = glfw_gl_take_binding_key()
+  if key_copy != "c" then
+    glfw_gl_context_end()
+    return 1
+  end
+  if glfw_gl_mod_ctrl_down() != 1 then
+    glfw_gl_context_end()
+    return 2
+  end
+  const copy_command = command_bus_resolve(
+    bindings, FocusEditor,
+    glfw_gl_mod_ctrl_down(),
+    glfw_gl_mod_shift_down(),
+    glfw_gl_mod_alt_down(),
+    key_copy
+  )
+  if command_id_tag(copy_command) != "copy" then
+    glfw_gl_context_end()
+    return 3
+  end
+
+  glfw_gl_mods_test_set(1, 1, 0)
+  glfw_gl_binding_key_test_push("z")
+  const key_redo = glfw_gl_take_binding_key()
+  const redo_command = command_bus_resolve(
+    bindings, FocusEditor,
+    glfw_gl_mod_ctrl_down(),
+    glfw_gl_mod_shift_down(),
+    glfw_gl_mod_alt_down(),
+    key_redo
+  )
+  if command_id_tag(redo_command) != "redo" then
+    glfw_gl_context_end()
+    return 4
+  end
+
+  glfw_gl_mods_test_set(1, 0, 0)
+  glfw_gl_binding_key_test_push("s")
+  const key_save = glfw_gl_take_binding_key()
+  const tree_blocked = command_bus_resolve(
+    bindings, FocusTree,
+    glfw_gl_mod_ctrl_down(),
+    glfw_gl_mod_shift_down(),
+    glfw_gl_mod_alt_down(),
+    key_save
+  )
+  if command_id_tag(tree_blocked) != "none" then
+    glfw_gl_context_end()
+    return 5
+  end
+
+  glfw_gl_binding_key_test_push("tab")
+  const key_tab = glfw_gl_take_binding_key()
+  const tree_tab = command_bus_resolve(
+    bindings, FocusTree,
+    glfw_gl_mod_ctrl_down(),
+    glfw_gl_mod_shift_down(),
+    glfw_gl_mod_alt_down(),
+    key_tab
+  )
+  if command_id_tag(tree_tab) != "next_tab" then
+    glfw_gl_context_end()
+    return 6
+  end
+
+  glfw_gl_context_end()
+  println("editor_command_bus_live_ok")
+  0
+end

@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_LIVE_POLISH` STEP=4 done** (2026-07-15) — OS clipboard; **STEP=5** command-bus next.
+**`TRACK_EDITOR_LIVE_POLISH` STEP=5 done** (2026-07-15) — command bus live; **STEP=6** frame split next.
 Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
 Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
 ## Step sizing (good vs bad)

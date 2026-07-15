@@ -47,5 +47,13 @@ String glfw_gl_clipboard_get();
 void glfw_gl_clipboard_set(String text);
 void glfw_gl_clipboard_test_set(String text);
 
+// TRACK_EDITOR_LIVE_POLISH STEP=5 — command-bus chords
+int32_t glfw_gl_mod_ctrl_down();
+int32_t glfw_gl_mod_shift_down();
+int32_t glfw_gl_mod_alt_down();
+String glfw_gl_take_binding_key();
+void glfw_gl_mods_test_set(int32_t ctrl_down, int32_t shift_down, int32_t alt_down);
+void glfw_gl_binding_key_test_push(String key);
+
 } // namespace gl
 } // namespace mlc

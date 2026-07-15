@@ -55,3 +55,15 @@ export extern fn glfw_gl_clipboard_set(text: string) -> unit
   = "mlc::gl::glfw_gl_clipboard_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_clipboard_test_set(text: string) -> unit
   = "mlc::gl::glfw_gl_clipboard_test_set" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_mod_ctrl_down() -> i32
+  = "mlc::gl::glfw_gl_mod_ctrl_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_mod_shift_down() -> i32
+  = "mlc::gl::glfw_gl_mod_shift_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_mod_alt_down() -> i32
+  = "mlc::gl::glfw_gl_mod_alt_down" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_take_binding_key() -> string
+  = "mlc::gl::glfw_gl_take_binding_key" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_mods_test_set(ctrl_down: i32, shift_down: i32, alt_down: i32) -> unit
+  = "mlc::gl::glfw_gl_mods_test_set" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_binding_key_test_push(key: string) -> unit
+  = "mlc::gl::glfw_gl_binding_key_test_push" from "mlc/gl/glfw_window_gl.hpp"

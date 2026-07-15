@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=5** — Wire `command_bus_resolve` into live.
+**STEP=6** — Split `demo_live` frame → `misc/editor/app/` seed.
+
+### STEP=5 done (2026-07-15)
+
+- GLFW chord mods + `take_binding_key` (+ test inject).
+- `demo_live`: toolbar + keys → one `command_bus_resolve` / dispatch path.
+- Unit + smoke `editor_command_bus_live_ok`.
 
 ### STEP=4 done (2026-07-15)
 
@@ -100,7 +106,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | **done** (2026-07-15): `editor_live_scissor_ok` + ux_gate |
 | 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | **done** (2026-07-15): `gui_cursor_shape_ok` |
 | 4 | GLFW clipboard get/set; live uses OS clipboard | **done** (2026-07-15): `gui_clipboard_ok` |
-| 5 | Wire `command_bus_resolve` into live | unit + `run_editor_command_bus_live_smoke.sh` |
+| 5 | Wire `command_bus_resolve` into live | **done** (2026-07-15): unit + `editor_command_bus_live_ok` |
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | compiles; live still runs |
 | 7 | Single app state; drop duplicate hit/scroll where safe | `run_ux_gate` + live smoke |
 | 8 | Decision: chrome on SceneNode **or** documented split | doc in `GUI_ARCHITECTURE.md` |
@@ -128,7 +134,10 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=4** — **done**
 1. Platform clipboard get/set; live OS sync on copy/cut/paste — done.
 
-**STEP=5–7**
+**STEP=5** — **done**
+1. Live key path + toolbar share `command_bus_resolve` / same CommandId dispatch — done.
+
+**STEP=6–7**
 1. One command path; start extracting `app/` from `demo_live` god-loop.
 2. Prefer reusing `ux/*` helpers over re-implementing.
 
