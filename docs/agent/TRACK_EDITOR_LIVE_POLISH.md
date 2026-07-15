@@ -99,7 +99,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 1 | `gl_scissor` / `GL_SCISSOR_TEST` in glad/gl stdlib | **done** (2026-07-15): `scissor_ok` |
 | 2 | Wire scissor in editor/gui draw; fix fake `editor_ux_apply_scissor_clip` | **done** (2026-07-15): `editor_live_scissor_ok` + ux_gate |
 | 3 | `glfw_gl_cursor_set`; wire `ux/cursor.mlc` in live | **done** (2026-07-15): `gui_cursor_shape_ok` |
-| 4 | GLFW clipboard get/set; live uses OS clipboard | `run_gui_clipboard_smoke.sh` |
+| 4 | GLFW clipboard get/set; live uses OS clipboard | **done** (2026-07-15): `gui_clipboard_ok` |
 | 5 | Wire `command_bus_resolve` into live | unit + `run_editor_command_bus_live_smoke.sh` |
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | compiles; live still runs |
 | 7 | Single app state; drop duplicate hit/scroll where safe | `run_ux_gate` + live smoke |
@@ -125,8 +125,8 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=3** — **done**
 1. Platform cursor binding + live hover divider/text — done.
 
-**STEP=4**
-1. Platform clipboard get/set; live OS sync on copy/cut/paste.
+**STEP=4** — **done**
+1. Platform clipboard get/set; live OS sync on copy/cut/paste — done.
 
 **STEP=5–7**
 1. One command path; start extracting `app/` from `demo_live` god-loop.

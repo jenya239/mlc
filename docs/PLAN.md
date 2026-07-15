@@ -631,7 +631,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](archive/tracks/TRACK_GUI_SCENE_PHASE_B.md))**
   → **GUI_CANVAS_GRAPH Phase C (**closed** 2026-07-15: Critic OK; STEP=1–7; `d0a3996f`…`64014467`;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](archive/tracks/TRACK_GUI_SCENE_PHASE_C.md))**
-  → **EDITOR_LIVE_POLISH (§33b, **PRIORITY OVERRIDE** 2026-07-15: queue head; STEP=3 done; STEP=4 clipboard ABI next;
+  → **EDITOR_LIVE_POLISH (§33b, **PRIORITY OVERRIDE** 2026-07-15: queue head; STEP=4 done; STEP=5 command-bus live next;
       → [agent/TRACK_EDITOR_LIVE_POLISH.md](agent/TRACK_EDITOR_LIVE_POLISH.md);
       scissor/cursor/clipboard/command-bus/frame; Phase D parked)**
   → **GUI_CANVAS_GRAPH Phase D (**parked**; STEP=2 done; resume STEP=3 Path tess after §33b Critic;
