@@ -1,0 +1,184 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=7 — single live app state (ux shell + session).
+import {
+  EditorUxState,
+  editor_ux_state_new
+} from '../ux/probe'
+import {
+  editor_ux_wheel_scroll,
+  editor_ux_ensure_caret_visible
+} from '../ux/scroll'
+import { EditorTextMetrics } from '../ux/overflow'
+import { ShellPanels } from '../ui/shell_panels'
+import { TabSet } from '../workspace/tabs'
+import { EditorSelection } from '../document/selection'
+import { EditorHistory, history_new } from '../document/history'
+import { Clipboard, clipboard_new } from '../clipboard'
+import {
+  DirtyCloseOverlay,
+  dirty_close_overlay_hidden
+} from '../workspace/tab_close'
+
+export type EditorAppState = {
+  ux: EditorUxState,
+  history: EditorHistory,
+  clipboard: Clipboard,
+  overlay: DirtyCloseOverlay,
+  editor_focused: i32,
+  last_command: string,
+  mouse_was_down: i32,
+  backspace_was_down: i32,
+  enter_was_down: i32,
+  selecting_text: i32,
+  frame_index: i32
+}
+
+export fn editor_app_state_new(
+  window_width: i32,
+  window_height: i32,
+  panels: ShellPanels,
+  tabs: TabSet,
+  selection: EditorSelection
+) -> EditorAppState = do
+  let mut ux = editor_ux_state_new(window_width, window_height, panels, tabs, selection)
+  // Live chrome tabs sit above shell panels → strip height 0 for hit/scroll/cursor.
+  ux = EditorUxState {
+    window_width: ux.window_width,
+    window_height: ux.window_height,
+    focus: ux.focus,
+    panels: ux.panels,
+    tabs: ux.tabs,
+    selection: ux.selection,
+    scroll_offset_x: ux.scroll_offset_x,
+    scroll_offset_y: ux.scroll_offset_y,
+    cursor_shape: ux.cursor_shape,
+    clock_ms: ux.clock_ms,
+    tab_strip_height: 0,
+    overflows: ux.overflows
+  }
+  EditorAppState {
+    ux: ux,
+    history: history_new(),
+    clipboard: clipboard_new(),
+    overlay: dirty_close_overlay_hidden(),
+    editor_focused: 1,
+    last_command: "none",
+    mouse_was_down: 0,
+    backspace_was_down: 0,
+    enter_was_down: 0,
+    selecting_text: 0,
+    frame_index: 0
+  }
+end
+
+export fn editor_app_sync_shell(
+  app: EditorAppState,
+  window_width: i32,
+  window_height: i32,
+  panels: ShellPanels,
+  tabs: TabSet,
+  selection: EditorSelection
+) -> EditorAppState =
+  EditorAppState {
+    ux: EditorUxState {
+      window_width: window_width,
+      window_height: window_height,
+      focus: app.ux.focus,
+      panels: panels,
+      tabs: tabs,
+      selection: selection,
+      scroll_offset_x: app.ux.scroll_offset_x,
+      scroll_offset_y: app.ux.scroll_offset_y,
+      cursor_shape: app.ux.cursor_shape,
+      clock_ms: app.ux.clock_ms,
+      tab_strip_height: 0,
+      overflows: app.ux.overflows
+    },
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_commit_session(
+  app: EditorAppState,
+  history: EditorHistory,
+  clipboard: Clipboard,
+  overlay: DirtyCloseOverlay,
+  editor_focused: i32,
+  last_command: string,
+  mouse_was_down: i32,
+  backspace_was_down: i32,
+  enter_was_down: i32,
+  selecting_text: i32
+) -> EditorAppState =
+  EditorAppState {
+    ux: app.ux,
+    history: history,
+    clipboard: clipboard,
+    overlay: overlay,
+    editor_focused: editor_focused,
+    last_command: last_command,
+    mouse_was_down: mouse_was_down,
+    backspace_was_down: backspace_was_down,
+    enter_was_down: enter_was_down,
+    selecting_text: selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_wheel_scroll(
+  app: EditorAppState,
+  metrics: EditorTextMetrics,
+  wheel_ticks: i32
+) -> EditorAppState =
+  EditorAppState {
+    ux: editor_ux_wheel_scroll(app.ux, metrics, wheel_ticks),
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_ensure_caret_visible(
+  app: EditorAppState,
+  metrics: EditorTextMetrics
+) -> EditorAppState =
+  EditorAppState {
+    ux: editor_ux_ensure_caret_visible(app.ux, metrics),
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_bump_frame(app: EditorAppState) -> EditorAppState =
+  EditorAppState {
+    ux: app.ux,
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index + 1
+  }

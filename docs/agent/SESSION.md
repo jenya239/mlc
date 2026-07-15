@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 7 |
-| step_last | 6 |
+| driver_turns_since_plan | 8 |
+| step_last | 7 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=7 app state next |
+| test_gate | §33b STEP=8 Scene/chrome Decision next |
+
+### Turn 2026-07-15 13:45 (Driver TRACK_EDITOR_LIVE_POLISH STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 13:21 |
+| elapsed | ~24 min |
+| done    | `app/state.mlc` (`EditorAppState`); demo_live sync/commit/wheel/caret/frame; dropped local scroll clamp. |
+| verify  | `bash scripts/run_editor_app_seed_smoke.sh` → `editor_app_seed_ok`; `bash scripts/run_ux_gate.sh` exit 0. |
+| result  | STEP=7 done. Plain: live loop keeps one app state; scroll via ux helpers. |
+| issues  | Left Path WIP + EDITOR/GUI_ARCHITECTURE dirty untouched. |
+| next    | ROLE=Driver STEP=8 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 13:15 (Driver TRACK_EDITOR_LIVE_POLISH STEP=6)
 

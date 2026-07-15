@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_LIVE_POLISH` STEP=6 done** (2026-07-15) — `app/` seed; **STEP=7** app state next.
+**`TRACK_EDITOR_LIVE_POLISH` STEP=7 done** (2026-07-15) — `EditorAppState`; **STEP=8** Scene/chrome Decision next.
 Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
 Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
 ## Step sizing (good vs bad)

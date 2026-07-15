@@ -18,7 +18,13 @@ Inserted **before** parked `TRACK_GUI_SCENE_PHASE_D` STEP=3+.
 
 ## Next step
 
-**STEP=7** — Single app state; drop duplicate hit/scroll where safe.
+**STEP=8** — Decision: chrome on SceneNode **or** documented split (`GUI_ARCHITECTURE.md`).
+
+### STEP=7 done (2026-07-15)
+
+- `misc/editor/app/state.mlc` (`EditorAppState` + sync/commit/wheel/caret/frame).
+- `demo_live` owns one app state; wheel/caret via ux helpers (no local scroll clamp dup).
+- Gate: `run_ux_gate` + `editor_app_seed_ok`.
 
 ### STEP=6 done (2026-07-15)
 
@@ -114,7 +120,7 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 | 4 | GLFW clipboard get/set; live uses OS clipboard | **done** (2026-07-15): `gui_clipboard_ok` |
 | 5 | Wire `command_bus_resolve` into live | **done** (2026-07-15): unit + `editor_command_bus_live_ok` |
 | 6 | Split `demo_live` frame → `misc/editor/app/` seed | **done** (2026-07-15): `editor_app_seed_ok` |
-| 7 | Single app state; drop duplicate hit/scroll where safe | `run_ux_gate` + live smoke |
+| 7 | Single app state; drop duplicate hit/scroll where safe | **done** (2026-07-15): `run_ux_gate` + `editor_app_seed_ok` |
 | 8 | Decision: chrome on SceneNode **or** documented split | doc in `GUI_ARCHITECTURE.md` |
 | 9 | Text glyph color (`u_color` / per-quad) | theme / live readable |
 | 10 | Critic: P0 gates green; Phase D unpark note; archive | close |
@@ -146,8 +152,8 @@ Phase D Path/wires; `list_dir` FS tree; full a11y/DPI; Qt/Flutter rewrite.
 **STEP=6** — **done**
 1. Seed `app/chrome` + `app/frame_command`; demo_live imports — done.
 
-**STEP=7**
-1. Single app state; drop duplicate hit/scroll where safe.
+**STEP=7** — **done**
+1. `EditorAppState` + demo_live wire; wheel/caret via ux helpers — done.
 
 **STEP=8–9**
 1. Architecture Decision only if cheap; glyph color unblock Solarized light.

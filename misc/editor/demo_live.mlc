@@ -68,8 +68,6 @@ import {
   tab_is_dirty
 } from './workspace/tabs'
 import {
-  DirtyCloseOverlay,
-  dirty_close_overlay_hidden,
   dirty_close_overlay_is_visible,
   tab_set_request_close,
   dirty_close_discard,
@@ -118,7 +116,6 @@ import {
   line_index_offset_to_position
 } from './document/line_index'
 import {
-  EditorSelection,
   selection_collapsed,
   selection_is_empty,
   selection_start,
@@ -141,7 +138,6 @@ import {
   history_undo,
   history_redo
 } from './document/history'
-import { Clipboard, clipboard_new } from './clipboard'
 import {
   clipboard_pull_from_os,
   clipboard_push_to_os
@@ -173,7 +169,6 @@ import {
 } from './ux/tree_hit'
 import { editor_text_metrics_default } from './ux/overflow'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
-import { EditorUxState, editor_ux_state_new } from './ux/probe'
 import {
   editor_app_line_height,
   editor_app_char_width,
@@ -185,6 +180,15 @@ import {
   editor_app_toolbar_button_rect
 } from './app/chrome'
 import { editor_app_frame_command_from_inputs } from './app/frame_command'
+import {
+  EditorAppState,
+  editor_app_state_new,
+  editor_app_sync_shell,
+  editor_app_commit_session,
+  editor_app_wheel_scroll,
+  editor_app_ensure_caret_visible,
+  editor_app_bump_frame
+} from './app/state'
 
 extern fn sleep_ms(milliseconds: i32) -> unit
   = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
@@ -368,22 +372,27 @@ fn main() -> i32 = do
     tabs = tab_set_set_active(tabs, 0)
   end
 
-  let mut selection = selection_collapsed(0)
-  let mut history = history_new()
-  let mut clipboard = clipboard_new()
-  let mut overlay = dirty_close_overlay_hidden()
-  let mut editor_focused = 1
-  let mut last_command = "none"
-  let mut mouse_was_down = 0
-  let mut backspace_was_down = 0
-  let mut enter_was_down = 0
-  let mut selecting_text = 0
-  let mut scroll_offset_y = 0
-  let mut frame_index = 0
+  let mut app = editor_app_state_new(
+    1100, 760, panels, tabs, selection_collapsed(0)
+  )
   const metrics = editor_text_metrics_default()
   const command_bindings = command_bus_default_bindings()
 
   while glfw_gl_context_should_close() == 0 do
+    let mut tabs = app.ux.tabs
+    let mut selection = app.ux.selection
+    let mut history = app.history
+    let mut clipboard = app.clipboard
+    let mut overlay = app.overlay
+    let mut editor_focused = app.editor_focused
+    let mut last_command = app.last_command
+    let mut mouse_was_down = app.mouse_was_down
+    let mut backspace_was_down = app.backspace_was_down
+    let mut enter_was_down = app.enter_was_down
+    let mut selecting_text = app.selecting_text
+    let mut scroll_offset_y = app.ux.scroll_offset_y
+    let mut frame_index = app.frame_index
+
     const input = gui_input_poll()
     if input.escape != 0 && !dirty_close_overlay_is_visible(overlay) then
       break
@@ -423,24 +432,9 @@ fn main() -> i32 = do
     )
     const tree_rows = file_tree_visible_rows(panels.tree)
 
-    // Tabs live above shell panels → strip height 0 for cursor probe.
-    let mut cursor_state = editor_ux_state_new(width, height, panels, tabs, selection)
-    cursor_state = EditorUxState {
-      window_width: cursor_state.window_width,
-      window_height: cursor_state.window_height,
-      focus: cursor_state.focus,
-      panels: cursor_state.panels,
-      tabs: cursor_state.tabs,
-      selection: cursor_state.selection,
-      scroll_offset_x: cursor_state.scroll_offset_x,
-      scroll_offset_y: cursor_state.scroll_offset_y,
-      cursor_shape: cursor_state.cursor_shape,
-      clock_ms: cursor_state.clock_ms,
-      tab_strip_height: 0,
-      overflows: cursor_state.overflows
-    }
+    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     glfw_gl_cursor_set(
-      editor_ux_cursor_shape_at(cursor_state, input.mouse_x, input.mouse_y)
+      editor_ux_cursor_shape_at(app.ux, input.mouse_x, input.mouse_y)
     )
 
     const viewport = viewport_metrics_new(
@@ -456,10 +450,8 @@ fn main() -> i32 = do
 
     const scroll_ticks = f64_to_i32(glfw_gl_take_scroll_y() * 3.0)
     if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
-      scroll_offset_y = scroll_offset_y - scroll_ticks * metrics.line_height
-      if scroll_offset_y < 0 then
-        scroll_offset_y = 0
-      end
+      app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
+      scroll_offset_y = app.ux.scroll_offset_y
       visible = visible_line_range(line_count, scroll_offset_y, viewport)
       view_metrics = editor_view_metrics_new(
         line_height(), char_width(),
@@ -752,19 +744,10 @@ fn main() -> i32 = do
     active = tab_set_active(tabs)
     document = active.buffer.document
     line_index = line_index_rebuild(document)
+    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_ensure_caret_visible(app, metrics)
+    scroll_offset_y = app.ux.scroll_offset_y
     visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
-
-    const caret_position = line_index_offset_to_position(line_index, selection_caret(selection))
-    const caret_top = caret_position.line * line_height()
-    if caret_top < scroll_offset_y then
-      scroll_offset_y = caret_top
-    end
-    if caret_top + line_height() > scroll_offset_y + text_rect.height then
-      scroll_offset_y = caret_top + line_height() - text_rect.height
-    end
-    if scroll_offset_y < 0 then
-      scroll_offset_y = 0
-    end
 
     solid = solid_renderer_begin(solid)
     solid = solid_renderer_rect(
@@ -890,6 +873,7 @@ fn main() -> i32 = do
       end
     end
 
+    const caret_position = line_index_offset_to_position(line_index, selection_caret(selection))
     const caret_row = caret_position.line - visible.first_line
     const blink_on = (frame_index / 30) % 2 == 0
     if blink_on && caret_row >= 0 && caret_position.line <= visible.last_line then
@@ -1046,7 +1030,12 @@ fn main() -> i32 = do
 
     glfw_gl_context_swap_poll()
     sleep_ms(16)
-    frame_index = frame_index + 1
+    app = editor_app_commit_session(
+      app, history, clipboard, overlay, editor_focused, last_command,
+      mouse_was_down, backspace_was_down, enter_was_down, selecting_text
+    )
+    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_bump_frame(app)
   end
 
   static_text_destroy(text_state)

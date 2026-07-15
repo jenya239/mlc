@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_LIVE_POLISH STEP=6 — demo_live still compiles with app/ seed.
+# TRACK_EDITOR_LIVE_POLISH STEP=7 — demo_live compiles with EditorAppState.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
