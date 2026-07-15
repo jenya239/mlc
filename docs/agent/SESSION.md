@@ -6,10 +6,40 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-live-polish-priority` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_EDITOR_LIVE_POLISH |
-| test_gate | §33b STEP=1 gl_scissor next |
+| test_gate | §33b STEP=2 live scissor wire next |
+
+### Turn 2026-07-15 11:37 (Driver TRACK_EDITOR_LIVE_POLISH STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 11:34 |
+| elapsed | ~3 min |
+| done    | Anti-false-done: commit `gl_scissor` ABI + smoke left uncommitted; re-verify `scissor_ok`. |
+| verify  | `bash scripts/run_gl_scissor_smoke.sh` → `scissor_ok`. |
+| result  | STEP=1 done (committed). Plain: SCISSOR_TEST + box 10,20,30,40. |
+| issues  | Prior SESSION claimed STEP=1 without commit; Path WIP left untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_LIVE_POLISH |
+
+### Turn 2026-07-15 11:15 (Driver TRACK_EDITOR_LIVE_POLISH STEP=1 — uncommitted)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_LIVE_POLISH |
+| started | 2026-07-15 11:11 |
+| elapsed | ~4 min |
+| done    | `glad_gl_abi` scissor/is_enabled/get_integer_at; `glad_gl.mlc` + `gl_scissor_smoke` + script. |
+| verify  | `bash scripts/run_gl_scissor_smoke.sh` → `scissor_ok`. |
+| result  | STEP=1 done. Plain: enable SCISSOR_TEST; box 10,20,30,40 via GetIntegerv. |
+| issues  | Left Path WIP + editor theme dirty untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_LIVE_POLISH |
 
 ### Turn 2026-07-15 11:10 (Driver TRACK_EDITOR_LIVE_POLISH STEP=0)
 

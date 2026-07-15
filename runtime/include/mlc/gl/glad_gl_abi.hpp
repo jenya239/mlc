@@ -34,6 +34,21 @@ inline void enable(int32_t capability) { glEnable(static_cast<GLenum>(capability
 inline void blend_func(int32_t source_factor, int32_t destination_factor) {
   glBlendFunc(static_cast<GLenum>(source_factor), static_cast<GLenum>(destination_factor));
 }
+inline void scissor(int32_t x, int32_t y, int32_t width, int32_t height) {
+  glScissor(x, y, width, height);
+}
+inline int32_t is_enabled(int32_t capability) {
+  return glIsEnabled(static_cast<GLenum>(capability)) ? 1 : 0;
+}
+// For 4-component queries such as GL_SCISSOR_BOX (index 0..3).
+inline int32_t get_integer_at(int32_t parameter_name, int32_t index) {
+  GLint values[4] = {0, 0, 0, 0};
+  glGetIntegerv(static_cast<GLenum>(parameter_name), values);
+  if (index < 0 || index > 3) {
+    return 0;
+  }
+  return static_cast<int32_t>(values[index]);
+}
 
 inline int32_t create_shader(int32_t shader_type) {
   return static_cast<int32_t>(glCreateShader(static_cast<GLenum>(shader_type)));
@@ -283,6 +298,13 @@ inline void gl_viewport(int32_t x, int32_t y, int32_t width, int32_t height) {
 inline void gl_enable(int32_t capability) { glad_abi::enable(capability); }
 inline void gl_blend_func(int32_t source_factor, int32_t destination_factor) {
   glad_abi::blend_func(source_factor, destination_factor);
+}
+inline void gl_scissor(int32_t x, int32_t y, int32_t width, int32_t height) {
+  glad_abi::scissor(x, y, width, height);
+}
+inline int32_t gl_is_enabled(int32_t capability) { return glad_abi::is_enabled(capability); }
+inline int32_t gl_get_integer_at(int32_t parameter_name, int32_t index) {
+  return glad_abi::get_integer_at(parameter_name, index);
 }
 inline int32_t gl_create_shader(int32_t shader_type) {
   return glad_abi::create_shader(shader_type);

@@ -1,0 +1,50 @@
+// TRACK_EDITOR_LIVE_POLISH STEP=1 — gl_scissor / GL_SCISSOR_TEST (GLFW headless).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gl_enable,
+  gl_scissor,
+  gl_is_enabled,
+  gl_get_integer_at,
+  gl_scissor_test,
+  gl_scissor_box,
+  gl_viewport
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  gl_viewport(0, 0, 200, 100)
+  gl_enable(gl_scissor_test())
+  if gl_is_enabled(gl_scissor_test()) != 1 then
+    glfw_gl_context_end()
+    return 1
+  end
+
+  gl_scissor(10, 20, 30, 40)
+  if gl_get_integer_at(gl_scissor_box(), 0) != 10 then
+    glfw_gl_context_end()
+    return 2
+  end
+  if gl_get_integer_at(gl_scissor_box(), 1) != 20 then
+    glfw_gl_context_end()
+    return 3
+  end
+  if gl_get_integer_at(gl_scissor_box(), 2) != 30 then
+    glfw_gl_context_end()
+    return 4
+  end
+  if gl_get_integer_at(gl_scissor_box(), 3) != 40 then
+    glfw_gl_context_end()
+    return 5
+  end
+
+  glfw_gl_context_end()
+  println("scissor_ok")
+  0
+end

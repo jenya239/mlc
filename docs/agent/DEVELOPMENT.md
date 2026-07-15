@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_LIVE_POLISH` STEP=0 done** (2026-07-15) — Decision frozen; **STEP=1** `gl_scissor` next.
+**`TRACK_EDITOR_LIVE_POLISH` STEP=1 done** (2026-07-15) — `gl_scissor` ABI; **STEP=2** live wire next.
 Phase D **parked** (resume STEP=3 after §33b Critic). Leave Path WIP untouched.
 Track: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md).
 ## Step sizing (good vs bad)

@@ -16,6 +16,16 @@ export extern fn gl_enable(capability: i32) -> unit
   = "mlc::gl::glad_abi::enable" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_blend_func(source_factor: i32, destination_factor: i32) -> unit
   = "mlc::gl::glad_abi::blend_func" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_scissor(x: i32, y: i32, width: i32, height: i32) -> unit
+  = "mlc::gl::glad_abi::scissor" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_is_enabled(capability: i32) -> i32
+  = "mlc::gl::glad_abi::is_enabled" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_get_integer_at(parameter_name: i32, index: i32) -> i32
+  = "mlc::gl::glad_abi::get_integer_at" from "mlc/gl/glad_gl_abi.hpp"
+
+// OpenGL enum: GL_SCISSOR_TEST = 0x0C11, GL_SCISSOR_BOX = 0x0C10.
+export fn gl_scissor_test() -> i32 = 3089
+export fn gl_scissor_box() -> i32 = 3088
 
 export extern fn gl_create_shader(shader_type: i32) -> i32
   = "mlc::gl::glad_abi::create_shader" from "mlc/gl/glad_gl_abi.hpp"
