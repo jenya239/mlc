@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_CARET_BLINK
+done: Decision — `caret_blink.mlc`; period 1000ms; `caret_blink_visible`; scenario name L8
+verify: TRACK Decision + PLAN §41 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_CARET_BLINK
+
 ### 2026-07-16 — ROLE=Planner STEP=pick-next (after §40)
 done: §41 `TRACK_EDITOR_CARET_BLINK` — UX L8 caret blink + live helper
 verify: PLAN §41 + TRACK + queue; EDITOR gap row; foreign dirty left

@@ -8,54 +8,82 @@ Parent: [../PLAN.md](../PLAN.md) §41; residual from
 
 ## Status: **active** (2026-07-16) — queue head
 
-After §40 UTF-8 codepoint columns closed. Next editor/UX gap: ship L8 caret
-blink via fake clock (no `sleep`); share helper with `demo_live`.
-
 ## Next step
 
-**STEP=0** — Decision freeze: period, helper API, scenario vs unit gates.
+**STEP=1** — Land helper + unit.
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
-| Scope v1 | Pure `caret_blink_visible(clock_ms, period_ms) -> bool` (+ optional period const) |
-| Clock | `UxDriver` `SetClock` / `WaitFrames` only — no `sleep` |
-| Scenario | `caret_blink_phases` → `ux_ok caret_blink_phases`; register in `run_ux_gate.sh` |
-| Live | Replace `demo_live` frame_index blink with helper (same period) |
-| Probe | Prefer snapshot/expect on visibility bool; no FBO required |
-| REG | Prefer no `lib/mlc/`; no `compiler/` |
-| Non-goals | IME; grapheme; tree-sitter; SCRIPT_VM; MIR Epic 5; Fontconfig |
+- Decision frozen below; PLAN §41 → STEP=1.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in `demo_live.mlc` `(frame_index / 30) % 2 == 0` (~30 frames half-cycle
+at ~60 fps ≈ 500 ms on / 500 ms off) and GUI_UX_TESTING L8
+(`caret_blink_phases` + `UxClock`; no `sleep`).
+
+| Item | Choice |
+|------|--------|
+| Module | `misc/editor/ux/caret_blink.mlc` |
+| API | `caret_blink_period_ms() -> i32`; `caret_blink_visible(clock_ms: i32, period_ms: i32) -> bool` |
+| Period default | **1000** ms full cycle (half on, half off) — matches ~60 frames @ 16 ms |
+| Visibility | on when `((clock_ms % period_ms) * 2) < period_ms` after clamp; `period_ms <= 0` → always **true** |
+| Clock | `UxDriver` `SetClock` / `WaitFrames` only in scenario; no `sleep` |
+| Live clock | `demo_live`: `caret_blink_visible(frame_index * 16, caret_blink_period_ms())` |
+| Scenario | `misc/editor/ux_scenarios/caret_blink_phases.mlc` → print `ux_ok caret_blink_phases` |
+| Unit (STEP=1) | `misc/editor/tests/caret_blink_unit.mlc` — pure phases, no GLFW |
+| Wire (STEP=2) | replace frame_index blink in `demo_live`; register scenario in `run_ux_gate.sh` |
+| Probe | assert bool phases via unit/scenario; no FBO |
+| REG | Prefer **no** `lib/mlc/`; no `compiler/` |
+
+### Exact exports
+
+```text
+caret_blink_period_ms() -> i32
+caret_blink_visible(clock_ms: i32, period_ms: i32) -> bool
+```
+
+### Gate names
+
+| Step | Script / token |
+|------|----------------|
+| 1 | `scripts/run_editor_caret_blink_unit.sh` → `caret_blink_unit ok` |
+| 2 | `scripts/run_ux_caret_blink_phases.sh` + `run_ux_gate.sh` → `ux_ok caret_blink_phases` / `[ux gate] all ok`; `run_editor_demo_live_fs_compile.sh` |
+
+### Non-goals (Decision)
+
+IME; grapheme; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
+Fontconfig; live FBO caret MAE; `compiler/` / `lib/mlc/` changes.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
-| 1 | Helper + unit and/or UX scenario | unit / `ux_ok` token |
-| 2 | Wire `demo_live` + `run_ux_gate.sh` green | compile + ux gate |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
+| 1 | Helper + unit | `caret_blink_unit ok` |
+| 2 | Wire `demo_live` + UX scenario + ux gate | compile + `[ux gate] all ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze period_ms default + export names + file placement (`ux/` vs `ui/`).
-2. Confirm scenario name matches GUI_UX_TESTING L8.
+**STEP=0** — **done**
+1. Freeze period + exports + placement — done.
+2. Scenario name = GUI_UX_TESTING L8 — done.
 
 **STEP=1**
-1. Land helper + unit (or scenario that asserts on/off phases via SetClock).
-2. Gate script token.
+1. `misc/editor/ux/caret_blink.mlc` + `misc/editor/tests/caret_blink_unit.mlc`.
+2. Gate: `bash scripts/run_editor_caret_blink_unit.sh`.
 
 **STEP=2**
-1. `demo_live` uses helper; register scenario in `run_ux_gate.sh`.
-2. `run_ux_gate.sh` → `[ux gate] all ok`; demo_live compile ok.
+1. `demo_live.mlc` uses helper; add scenario + `run_ux_gate.sh` entry.
+2. `run_ux_gate.sh` + demo_live compile green.
 
 **STEP=3** — Critic; `next` = Planner.
 
 ## Out of scope
 
 - IME / grapheme clusters
-- Live FBO caret MAE (already have CPU stand-in L9-adjacent)
+- Live FBO caret MAE
 - tree-sitter / SCRIPT_VM / LANG_AUTO_CYCLE / MIR Epic 5
 - `compiler/` changes
 
