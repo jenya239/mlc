@@ -259,6 +259,21 @@ inline bool is_regular_file(const mlc::String& path) {
         std::filesystem::path(path.as_std_string()), error_code);
 }
 
+// TRACK_STDLIB_IO_FS STEP=4 — parents ok; true if created or already a directory.
+inline bool create_directories(const mlc::String& path) {
+    std::error_code error_code;
+    const std::filesystem::path directory(path.as_std_string());
+    if (std::filesystem::is_directory(directory, error_code)) {
+        return true;
+    }
+    error_code.clear();
+    (void)std::filesystem::create_directories(directory, error_code);
+    if (error_code) {
+        return false;
+    }
+    return std::filesystem::is_directory(directory, error_code);
+}
+
 // TRACK_STDLIB_IO_FS STEP=2 — non-recursive; skip . / ..; lexicographic by name.
 inline void list_dir_fill(
     const mlc::String& path,

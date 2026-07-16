@@ -14,7 +14,12 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=4** — `create_directories` (+ smoke write then list).
+**STEP=5** — Editor: expand-from-disk helper; unit with temp fixture.
+
+### STEP=4 done (2026-07-16)
+
+- `create_directories` / `create_directories_value`; export on `file.mlc`.
+- Smoke `mkdir_ok` (nested create, idempotent, write+list, fail on file).
 
 ### STEP=3 done (2026-07-16)
 
@@ -82,7 +87,7 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 | 1 | Runtime + ABI: `is_directory` / `is_regular_file` | **done** (2026-07-16): `fs_stat_ok` |
 | 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | **done** (2026-07-16): `list_dir_ok` |
 | 3 | `safe_list_dir` + missing-path Err | **done** (2026-07-16): `list_dir_safe_ok` |
-| 4 | `create_directories` (+ smoke write then list) | `run_stdlib_mkdir_smoke.sh` → `mkdir_ok` |
+| 4 | `create_directories` (+ smoke write then list) | **done** (2026-07-16): `mkdir_ok` |
 | 5 | Editor: expand-from-disk helper; unit with temp fixture | `run_editor_file_tree_fs_unit.sh` |
 | 6 | `demo_live`: real tree via `list_dir`; mock fallback if root missing | compile smoke |
 | 7 | Optional content_scale | **deferred** (STEP=0) |
@@ -106,8 +111,11 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 1. `safe_list_dir` → Err on missing/not-a-dir — done.
 2. Smoke `list_dir_safe_ok` — done.
 
-**STEP=4**
-1. `create_directories` + smoke.
+**STEP=4** — **done**
+1. `create_directories` + smoke `mkdir_ok` — done.
+
+**STEP=5**
+1. Editor expand-from-disk + unit.
 
 **STEP=8** — Critic; `next` = Planner.
 

@@ -40,6 +40,14 @@ inline bool is_regular_file_value(String path) {
   }
 }
 
+inline bool create_directories_value(String path) {
+  try {
+    return create_directories(path);
+  } catch (...) {
+    return false;
+  }
+}
+
 inline bool remove_file_value(String path) {
   return remove_file(path);
 }

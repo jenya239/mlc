@@ -30,6 +30,8 @@ export extern fn is_directory(path: str) -> bool
   = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
 export extern fn is_regular_file(path: str) -> bool
   = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
+export extern fn create_directories(path: str) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
 
 // TRACK_STDLIB_IO_FS STEP=2 — parallel ABI; zip in list_dir.
 export type FsDirEntry = {

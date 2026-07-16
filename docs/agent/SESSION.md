@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 3 |
+| step_last | 4 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=4 create_directories next |
+| test_gate | IO_FS STEP=5 editor expand next |
+
+### Turn 2026-07-16 14:40 (Driver TRACK_STDLIB_IO_FS STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:36 |
+| elapsed | ~4 min |
+| done    | `create_directories` in file.hpp+abi; file.mlc export; mkdir smoke. |
+| verify  | `bash scripts/run_stdlib_mkdir_smoke.sh` → `mkdir_ok`. |
+| result  | STEP=4 done. Plain: mkdir parents + idempotent. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:35 (Driver TRACK_STDLIB_IO_FS STEP=3)
 
