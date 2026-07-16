@@ -5,11 +5,19 @@ Parent: [../PLAN.md](../PLAN.md) §43; polish after
 Uncommitted WIP in `misc/editor/ux/folder_panel.mlc` (`FolderNavHistory`,
 `folder_nav_*`, `folder_tree_browser_rows`) — absorb, do not discard.
 
-## Status: **active** (2026-07-16) — STEP=2 next
+## Status: **active** (2026-07-16) — STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — Wire `demo_live` (+ compile).
+**STEP=3** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=2 done (2026-07-16)
+
+- Wired `folder_nav_*` in `misc/editor/demo_live.mlc` (push on browse;
+  back/forward hit+draw; crumbs origin).
+- Gate: `bash scripts/run_editor_demo_live_fs_compile.sh` →
+  `demo_live_fs_compile_ok` (binary linked).
+- PLAN §43 → STEP=3 Critic.
 
 ### STEP=1 done (2026-07-16)
 
@@ -88,7 +96,7 @@ File watch; recursive glob; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Absorb nav API + unit | **done** (2026-07-16) `folder_nav_unit ok` |
-| 2 | Wire `demo_live` (+ compile) | `demo_live_fs_compile_ok` |
+| 2 | Wire `demo_live` (+ compile) | **done** (2026-07-16) `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
@@ -101,9 +109,9 @@ File watch; recursive glob; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
 1. Commit nav portion of `folder_panel.mlc` + unit — done.
 2. Gate: `bash scripts/run_editor_folder_nav_unit.sh` — done.
 
-**STEP=2**
-1. Wire `demo_live` history/back/forward (stash unrelated foreign).
-2. `bash scripts/run_editor_demo_live_fs_compile.sh`.
+**STEP=2** — **done**
+1. Wire `demo_live` history/back/forward (stash unrelated foreign) — done.
+2. `bash scripts/run_editor_demo_live_fs_compile.sh` — done.
 
 **STEP=3** — Critic; `next` = Planner.
 

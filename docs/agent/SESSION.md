@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_FOLDER_NAV
+done: Wire `folder_nav_*` in `demo_live.mlc` (push/back/forward hit+draw); foreign dirty stashed during gate
+verify: `bash scripts/run_editor_demo_live_fs_compile.sh` → binary + `demo_live_fs_compile_ok`; REG N/A
+next: ROLE=Critic STEP=critique-audit TRACK_EDITOR_FOLDER_NAV
+
 ### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_FOLDER_NAV
 done: Absorb `folder_nav_*` + `folder_tree_browser_rows` in `folder_panel.mlc`; `folder_nav_unit.mlc` + `run_editor_folder_nav_unit.sh`
 verify: `bash scripts/run_editor_folder_nav_unit.sh` → `folder_nav_unit ok`; REG N/A

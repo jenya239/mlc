@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0–1 done** (2026-07-16) — nav API + unit;
-**STEP=2** wire `demo_live` next.
+**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0–2 done** (2026-07-16) — nav API +
+`demo_live` wire; **STEP=3 Critic** next.
 Track: [TRACK_EDITOR_FOLDER_NAV.md](TRACK_EDITOR_FOLDER_NAV.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

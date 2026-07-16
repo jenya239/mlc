@@ -79,6 +79,17 @@ import {
   folder_row_height,
   folder_row_parent,
   folder_row_directory,
+  folder_nav_new,
+  folder_nav_current,
+  folder_nav_can_back,
+  folder_nav_can_forward,
+  folder_nav_push,
+  folder_nav_back,
+  folder_nav_forward,
+  folder_nav_back_rect,
+  folder_nav_forward_rect,
+  folder_nav_crumbs_origin_x,
+  folder_nav_button_hit,
   path_leaf_name
 } from './ux/folder_panel'
 import {
@@ -568,6 +579,7 @@ fn main() -> i32 = do
     tree_root, tree_name
   )
   panels = browse_panels_to(panels, tree_root)
+  let mut folder_nav = folder_nav_new(folder_current_path(panels.tree))
 
   let mut tabs = ensure_tabs(load_demo_session(), panels)
   if tab_set_has_active(tabs) then
@@ -659,12 +671,15 @@ fn main() -> i32 = do
     )
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_listing_rows(panels.tree)
+    const crumbs_origin_x = folder_nav_crumbs_origin_x(tree_rect)
     const breadcrumb_segments = folder_breadcrumb_segments(
-      folder_current_path(panels.tree), tree_rect.x + 8, 8
+      folder_current_path(panels.tree), crumbs_origin_x, 8
     )
     const breadcrumb_rect = rect_new(
       tree_rect.x, tree_rect.y, tree_rect.width, folder_breadcrumb_height()
     )
+    const nav_back_rect = folder_nav_back_rect(tree_rect)
+    const nav_forward_rect = folder_nav_forward_rect(tree_rect)
     tree_scroll_y = folder_clamp_scroll(
       tree_scroll_y, folder_rows.length(), tree_list_rect.height
     )
@@ -827,12 +842,38 @@ fn main() -> i32 = do
       end
 
       if handled == 0 then
+        const nav_hit = folder_nav_button_hit(
+          tree_rect, input.mouse_x, input.mouse_y
+        )
+        if nav_hit == 1 && folder_nav_can_back(folder_nav) != 0 then
+          editor_focused = 0
+          folder_nav = folder_nav_back(folder_nav)
+          panels = browse_panels_to(panels, folder_nav_current(folder_nav))
+          tree_scroll_y = 0
+          last_tree_click_path = ""
+          last_command = "tree_nav_back"
+          handled = 1
+        else if nav_hit == 2 && folder_nav_can_forward(folder_nav) != 0 then
+          editor_focused = 0
+          folder_nav = folder_nav_forward(folder_nav)
+          panels = browse_panels_to(panels, folder_nav_current(folder_nav))
+          tree_scroll_y = 0
+          last_tree_click_path = ""
+          last_command = "tree_nav_forward"
+          handled = 1
+        else if nav_hit != 0 then
+          handled = 1
+        end
+      end
+
+      if handled == 0 then
         const crumb_path = folder_breadcrumb_hit(
           breadcrumb_segments, breadcrumb_rect, input.mouse_x, input.mouse_y
         )
         if crumb_path.byte_size() > 0 then
           editor_focused = 0
           panels = browse_panels_to(panels, crumb_path)
+          folder_nav = folder_nav_push(folder_nav, folder_current_path(panels.tree))
           tree_scroll_y = 0
           last_tree_click_path = ""
           last_command = "tree_breadcrumb"
@@ -850,6 +891,7 @@ fn main() -> i32 = do
           const folder_row = folder_rows[row]
           if folder_row.kind == folder_row_parent() then
             panels = browse_panels_to(panels, folder_row.path)
+            folder_nav = folder_nav_push(folder_nav, folder_current_path(panels.tree))
             tree_scroll_y = 0
             last_tree_click_path = ""
             last_command = "tree_parent"
@@ -860,6 +902,7 @@ fn main() -> i32 = do
               frame_index - last_tree_click_frame <= 25
             if is_double then
               panels = browse_panels_to(panels, folder_row.path)
+              folder_nav = folder_nav_push(folder_nav, folder_current_path(panels.tree))
               tree_scroll_y = 0
               last_tree_click_path = ""
               last_tree_click_frame = 0 - 1000
@@ -1104,9 +1147,23 @@ fn main() -> i32 = do
       breadcrumb_rect.x, breadcrumb_rect.y, breadcrumb_rect.width, breadcrumb_rect.height,
       0.10, 0.12, 0.16, 1.0
     )
+    if folder_nav_can_back(folder_nav) != 0 then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        nav_back_rect.x, nav_back_rect.y, nav_back_rect.width, nav_back_rect.height,
+        0.22, 0.24, 0.30, 1.0
+      )
+    end
+    if folder_nav_can_forward(folder_nav) != 0 then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        nav_forward_rect.x, nav_forward_rect.y, nav_forward_rect.width, nav_forward_rect.height,
+        0.22, 0.24, 0.30, 1.0
+      )
+    end
     const draw_folder_rows = folder_listing_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
-      folder_current_path(panels.tree), tree_rect.x + 8, 8
+      folder_current_path(panels.tree), crumbs_origin_x, 8
     )
     tree_scroll_y = folder_clamp_scroll(
       tree_scroll_y, draw_folder_rows.length(), tree_list_rect.height
@@ -1318,17 +1375,23 @@ fn main() -> i32 = do
     end
 
     const draw_tree_rows = draw_folder_rows
+    chrome_lines = push_line(
+      chrome_lines, "<", 12, nav_back_rect.x + 3, tree_rect.y + 12
+    )
+    chrome_lines = push_line(
+      chrome_lines, ">", 12, nav_forward_rect.x + 3, tree_rect.y + 12
+    )
     let mut crumb_text = ""
     let mut crumb_index = 0
     while crumb_index < draw_crumbs.length() do
       if crumb_index > 0 then
-        crumb_text = crumb_text + " / "
+        crumb_text = crumb_text + "/"
       end
       crumb_text = crumb_text + draw_crumbs[crumb_index].label
       crumb_index = crumb_index + 1
     end
     chrome_lines = push_line(
-      chrome_lines, crumb_text, 12, tree_rect.x + 8, tree_rect.y + 16
+      chrome_lines, crumb_text, 12, crumbs_origin_x, tree_rect.y + 12
     )
 
     let mut tree_lines: [StaticTextLine] = []
