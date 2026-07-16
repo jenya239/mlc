@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-glfw-content-scale-closed` |
+| instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 4 |
-| active_track | — (GLFW_CONTENT_SCALE closed) |
-| test_gate | Planner pick-next |
+| step_last | 0 |
+| active_track | TRACK_EDITOR_FOLDER_BROWSER |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=0 next |
+
+### Turn 2026-07-16 19:58 (Planner TRACK_EDITOR_FOLDER_BROWSER pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next / plan-refresh |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 19:56 |
+| elapsed | ~2 min |
+| done    | Opened §38; TRACK Decision draft; absorb folder_panel/demo_live/tab_strip WIP. |
+| verify  | PLAN §38 + CONTINUITY queue head; TRACK steps 0–5. |
+| result  | STEP=pick-next done. Plain: folder browser track opened. |
+| issues  | Left foreign code uncommitted for Driver; SCRIPT_VM gated. |
+| next    | ROLE=Driver STEP=0 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 19:10 (Critic TRACK_GLFW_CONTENT_SCALE STEP=4)
 
