@@ -10,7 +10,11 @@ discard).
 
 ## Next step
 
-**STEP=1** — Absorb/stabilize `word_wrap.mlc` + unit.
+**STEP=2** — Wire scroll/hit/`demo_live`; compile green.
+
+### STEP=1 done (2026-07-16)
+
+- Absorbed `word_wrap.mlc` + unit; gate `word_wrap_unit ok`.
 
 ### STEP=0 done (2026-07-16)
 

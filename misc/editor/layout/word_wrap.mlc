@@ -1,0 +1,296 @@
+// Soft word-wrap for monospaced editor rows (codepoint columns).
+import {
+  LineIndex,
+  line_index_line_count,
+  line_index_line_start,
+  utf8_count_codepoints,
+  utf8_byte_offset_for_codepoint_column
+} from '../document/line_index'
+import { Rect, rect_new } from '../../gui/layout'
+
+export type VisualRow = {
+  doc_line: i32,
+  byte_start: i32,
+  byte_end: i32,
+  column_start: i32,
+  column_end: i32,
+  is_wrap_continue: i32
+}
+
+fn line_end_byte(text: string, line_index: LineIndex, doc_line: i32) -> i32 = do
+  const count = line_index_line_count(line_index)
+  if doc_line + 1 < count then
+    let mut end_byte = line_index_line_start(line_index, doc_line + 1)
+    if end_byte > 0 && text.byte_at(end_byte - 1) == "\n" then
+      end_byte = end_byte - 1
+    end
+    return end_byte
+  end
+  line_index.text_length
+end
+
+export fn wrap_max_columns(viewport_width: i32, char_width: i32) -> i32 = do
+  let mut width = viewport_width
+  if width < 1 then
+    width = 1
+  end
+  let mut cell = char_width
+  if cell < 1 then
+    cell = 1
+  end
+  let mut columns = width / cell
+  if columns < 1 then
+    columns = 1
+  end
+  columns
+end
+
+export fn visual_rows_for_line(
+  text: string,
+  line_index: LineIndex,
+  doc_line: i32,
+  max_columns: i32
+) -> [VisualRow] = do
+  let mut rows: [VisualRow] = []
+  let mut max_cols = max_columns
+  if max_cols < 1 then
+    max_cols = 1
+  end
+  const line_start = line_index_line_start(line_index, doc_line)
+  const line_finish = line_end_byte(text, line_index, doc_line)
+  if line_finish <= line_start then
+    rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: line_start,
+      byte_end: line_finish,
+      column_start: 0,
+      column_end: 0,
+      is_wrap_continue: 0
+    })
+    return rows
+  end
+  let mut column_start = 0
+  let mut byte_start = line_start
+  let mut continue_flag = 0
+  while byte_start < line_finish do
+    const remaining = utf8_count_codepoints(text, byte_start, line_finish)
+    if remaining <= max_cols then
+      rows.push(VisualRow {
+        doc_line: doc_line,
+        byte_start: byte_start,
+        byte_end: line_finish,
+        column_start: column_start,
+        column_end: column_start + remaining,
+        is_wrap_continue: continue_flag
+      })
+      return rows
+    end
+    let mut break_column = column_start + max_cols
+    let mut break_byte = utf8_byte_offset_for_codepoint_column(
+      text, line_start, line_finish, break_column
+    )
+    let mut search = break_byte
+    let mut found_space = 0
+    let mut space_byte = break_byte
+    let mut space_column = break_column
+    while search > byte_start do
+      search = search - 1
+      if text.byte_at(search) == " " then
+        found_space = 1
+        space_byte = search + 1
+        space_column = column_start + utf8_count_codepoints(text, byte_start, space_byte)
+        break
+      end
+    end
+    if found_space != 0 && space_byte > byte_start then
+      break_byte = space_byte
+      break_column = space_column
+    end
+    if break_byte <= byte_start then
+      break_byte = utf8_byte_offset_for_codepoint_column(
+        text, line_start, line_finish, column_start + 1
+      )
+      if break_byte <= byte_start then
+        break_byte = line_finish
+      end
+      break_column = column_start + utf8_count_codepoints(text, byte_start, break_byte)
+    end
+    rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: byte_start,
+      byte_end: break_byte,
+      column_start: column_start,
+      column_end: break_column,
+      is_wrap_continue: continue_flag
+    })
+    byte_start = break_byte
+    column_start = break_column
+    continue_flag = 1
+  end
+  if rows.length() == 0 then
+    rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: line_start,
+      byte_end: line_finish,
+      column_start: 0,
+      column_end: 0,
+      is_wrap_continue: 0
+    })
+  end
+  rows
+end
+
+export fn document_visual_row_count(
+  text: string,
+  line_index: LineIndex,
+  max_columns: i32
+) -> i32 = do
+  let mut total = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  while line < count do
+    const rows = visual_rows_for_line(text, line_index, line, max_columns)
+    total = total + rows.length()
+    line = line + 1
+  end
+  total
+end
+
+export fn collect_visible_visual_rows(
+  text: string,
+  line_index: LineIndex,
+  max_columns: i32,
+  first_visual_row: i32,
+  max_rows: i32
+) -> [VisualRow] = do
+  let mut out: [VisualRow] = []
+  if max_rows <= 0 then
+    return out
+  end
+  let mut visual = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  let mut first = first_visual_row
+  if first < 0 then
+    first = 0
+  end
+  while line < count && out.length() < max_rows do
+    const rows = visual_rows_for_line(text, line_index, line, max_columns)
+    let mut row_index = 0
+    while row_index < rows.length() && out.length() < max_rows do
+      if visual >= first then
+        out.push(rows[row_index])
+      end
+      visual = visual + 1
+      row_index = row_index + 1
+    end
+    line = line + 1
+  end
+  out
+end
+
+export fn visual_row_index_for_caret(
+  text: string,
+  line_index: LineIndex,
+  max_columns: i32,
+  caret_line: i32,
+  caret_column: i32
+) -> i32 = do
+  let mut visual = 0
+  let mut line = 0
+  while line < caret_line do
+    const rows = visual_rows_for_line(text, line_index, line, max_columns)
+    visual = visual + rows.length()
+    line = line + 1
+  end
+  const rows = visual_rows_for_line(text, line_index, caret_line, max_columns)
+  let mut row_index = 0
+  while row_index < rows.length() do
+    const row = rows[row_index]
+    if caret_column >= row.column_start && caret_column <= row.column_end then
+      return visual + row_index
+    end
+    row_index = row_index + 1
+  end
+  if rows.length() > 0 then
+    return visual + rows.length() - 1
+  end
+  visual
+end
+
+export fn wrap_offset_at_point(
+  text: string,
+  line_index: LineIndex,
+  max_columns: i32,
+  text_origin_x: i32,
+  text_origin_y: i32,
+  scroll_offset_y: i32,
+  line_height: i32,
+  char_width: i32,
+  pixel_x: i32,
+  pixel_y: i32
+) -> i32 = do
+  let mut row_height = line_height
+  if row_height <= 0 then
+    row_height = 1
+  end
+  let mut cell_width = char_width
+  if cell_width <= 0 then
+    cell_width = 1
+  end
+  let mut content_y = pixel_y - text_origin_y + scroll_offset_y
+  if content_y < 0 then
+    content_y = 0
+  end
+  const visual_target = content_y / row_height
+  let mut content_x = pixel_x - text_origin_x
+  if content_x < 0 then
+    content_x = 0
+  end
+  const column_in_row = content_x / cell_width
+  let mut visual = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  while line < count do
+    const rows = visual_rows_for_line(text, line_index, line, max_columns)
+    let mut row_index = 0
+    while row_index < rows.length() do
+      if visual == visual_target then
+        const row = rows[row_index]
+        return utf8_byte_offset_for_codepoint_column(
+          text, row.byte_start, row.byte_end, column_in_row
+        )
+      end
+      visual = visual + 1
+      row_index = row_index + 1
+    end
+    line = line + 1
+  end
+  line_index.text_length
+end
+
+export fn editor_scrollbar_thumb(
+  track_x: i32,
+  track_y: i32,
+  track_height: i32,
+  thumb_width: i32,
+  content_height: i32,
+  scroll_y: i32
+) -> Rect = do
+  if content_height <= track_height || track_height <= 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  let mut thumb = track_height * track_height / content_height
+  if thumb < 12 then
+    thumb = 12
+  end
+  if thumb > track_height then
+    thumb = track_height
+  end
+  let mut max_scroll = content_height - track_height
+  if max_scroll < 1 then
+    max_scroll = 1
+  end
+  const thumb_y = track_y + (track_height - thumb) * scroll_y / max_scroll
+  rect_new(track_x, thumb_y, thumb_width, thumb)
+end

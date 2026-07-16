@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_WORD_WRAP
+done: absorb `word_wrap.mlc` + unit (short/hard/soft/empty/hit)
+verify: `bash scripts/run_editor_word_wrap_unit.sh` → `word_wrap_unit ok`
+next: ROLE=Implementer STEP=2 TRACK_EDITOR_WORD_WRAP
+
 ### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_WORD_WRAP
 done: Decision — absorb WIP API; space-prefer break; codepoint columns; gate names
 verify: TRACK Decision + PLAN §42 STEP=0; foreign dirty left

@@ -1,0 +1,99 @@
+# TRACK_EDITOR_WORD_WRAP STEP=1 — word_wrap unit (no GLFW).
+import { line_index_from_string } from '../document/line_index'
+import {
+  wrap_max_columns,
+  visual_rows_for_line,
+  document_visual_row_count,
+  wrap_offset_at_point
+} from '../layout/word_wrap'
+
+fn main() -> i32 = do
+  if wrap_max_columns(80, 8) != 10 then
+    println("[mlc-editor] word_wrap_unit fail max_cols")
+    return 1
+  end
+  if wrap_max_columns(0, 8) != 1 then
+    println("[mlc-editor] word_wrap_unit fail max_cols_clamp")
+    return 2
+  end
+
+  const short_text = "hi\n"
+  const short_index = line_index_from_string(short_text)
+  const short_rows = visual_rows_for_line(short_text, short_index, 0, 10)
+  if short_rows.length() != 1 then
+    println("[mlc-editor] word_wrap_unit fail short_count")
+    return 3
+  end
+  if short_rows[0].is_wrap_continue != 0 then
+    println("[mlc-editor] word_wrap_unit fail short_continue")
+    return 4
+  end
+
+  const hard_text = "abcdefgh\n"
+  const hard_index = line_index_from_string(hard_text)
+  const hard_rows = visual_rows_for_line(hard_text, hard_index, 0, 4)
+  if hard_rows.length() != 2 then
+    println("[mlc-editor] word_wrap_unit fail hard_count")
+    return 5
+  end
+  if hard_rows[1].is_wrap_continue != 1 then
+    println("[mlc-editor] word_wrap_unit fail hard_continue")
+    return 6
+  end
+  if hard_rows[0].column_end - hard_rows[0].column_start != 4 then
+    println("[mlc-editor] word_wrap_unit fail hard_width")
+    return 7
+  end
+
+  const soft_text = "aaa bbbbb\n"
+  const soft_index = line_index_from_string(soft_text)
+  const soft_rows = visual_rows_for_line(soft_text, soft_index, 0, 7)
+  if soft_rows.length() < 2 then
+    println("[mlc-editor] word_wrap_unit fail soft_count")
+    return 8
+  end
+  // Prefer break after "aaa " (byte end at space+1).
+  if soft_rows[0].byte_end <= soft_rows[0].byte_start then
+    println("[mlc-editor] word_wrap_unit fail soft_empty")
+    return 9
+  end
+  if soft_text.byte_at(soft_rows[0].byte_end - 1) != " " &&
+      soft_rows[0].column_end - soft_rows[0].column_start > 7 then
+    println("[mlc-editor] word_wrap_unit fail soft_break")
+    return 10
+  end
+
+  const empty_text = "\n"
+  const empty_index = line_index_from_string(empty_text)
+  const empty_rows = visual_rows_for_line(empty_text, empty_index, 0, 8)
+  if empty_rows.length() != 1 then
+    println("[mlc-editor] word_wrap_unit fail empty")
+    return 11
+  end
+
+  if document_visual_row_count(hard_text, hard_index, 4) < 2 then
+    println("[mlc-editor] word_wrap_unit fail doc_count")
+    return 12
+  end
+
+  const hard_only = "abcdefgh"
+  const hard_only_index = line_index_from_string(hard_only)
+  if document_visual_row_count(hard_only, hard_only_index, 4) != 2 then
+    println("[mlc-editor] word_wrap_unit fail doc_count_only")
+    return 14
+  end
+
+  const hit = wrap_offset_at_point(
+    hard_text, hard_index, 4,
+    0, 0, 0,
+    20, 10,
+    0, 0
+  )
+  if hit != hard_rows[0].byte_start then
+    println("[mlc-editor] word_wrap_unit fail hit")
+    return 13
+  end
+
+  println("[mlc-editor] word_wrap_unit ok")
+  0
+end
