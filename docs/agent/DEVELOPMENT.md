@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GLFW_CONTENT_SCALE` (§37) STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** runtime ABI next.
+**`TRACK_GLFW_CONTENT_SCALE` (§37) STEP=1 done** (2026-07-16) — ABI + compile; **STEP=2** smoke next.
 Track: [TRACK_GLFW_CONTENT_SCALE.md](TRACK_GLFW_CONTENT_SCALE.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

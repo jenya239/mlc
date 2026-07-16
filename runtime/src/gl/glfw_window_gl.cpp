@@ -294,6 +294,29 @@ void glfw_gl_window_set_size(int32_t width, int32_t height) {
   cached_window_height() = height;
 }
 
+// TRACK_GLFW_CONTENT_SCALE STEP=1 — missing window → 1.0
+double glfw_gl_window_content_scale_x() {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 1.0;
+  }
+  float scale_x = 1.0f;
+  float scale_y = 1.0f;
+  glfwGetWindowContentScale(window, &scale_x, &scale_y);
+  return static_cast<double>(scale_x);
+}
+
+double glfw_gl_window_content_scale_y() {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 1.0;
+  }
+  float scale_x = 1.0f;
+  float scale_y = 1.0f;
+  glfwGetWindowContentScale(window, &scale_x, &scale_y);
+  return static_cast<double>(scale_y);
+}
+
 int32_t glfw_gl_mouse_x() {
   const InputTestOverride& override_state = input_test_override();
   if (override_state.active) {
@@ -600,6 +623,8 @@ double glfw_gl_anim_unit() { return 0.0; }
 int32_t glfw_gl_window_width() { return 0; }
 int32_t glfw_gl_window_height() { return 0; }
 void glfw_gl_window_set_size(int32_t, int32_t) {}
+double glfw_gl_window_content_scale_x() { return 1.0; }
+double glfw_gl_window_content_scale_y() { return 1.0; }
 int32_t glfw_gl_mouse_x() { return 0; }
 int32_t glfw_gl_mouse_y() { return 0; }
 int32_t glfw_gl_mouse_left_down() { return 0; }

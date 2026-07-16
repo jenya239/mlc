@@ -19,6 +19,9 @@ double glfw_gl_anim_unit();
 int32_t glfw_gl_window_width();
 int32_t glfw_gl_window_height();
 void glfw_gl_window_set_size(int32_t width, int32_t height);
+// TRACK_GLFW_CONTENT_SCALE STEP=1
+double glfw_gl_window_content_scale_x();
+double glfw_gl_window_content_scale_y();
 
 int32_t glfw_gl_mouse_x();
 int32_t glfw_gl_mouse_y();

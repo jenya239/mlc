@@ -10,7 +10,12 @@ STEP=7 deferred.
 
 ## Next step
 
-**STEP=1** — Runtime + ABI + MLC extern.
+**STEP=2** — Headless smoke token (`content_scale_ok`).
+
+### STEP=1 done (2026-07-16)
+
+- `glfw_gl_window_content_scale_x/y` in glfw_window_gl + `gl_window.mlc`.
+- Compile gate `content_scale_compile_ok`.
 
 ### STEP=0 done (2026-07-16)
 
@@ -50,7 +55,7 @@ SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Runtime + ABI + MLC extern | compile smoke |
+| 1 | Runtime + ABI + MLC extern | **done** (2026-07-16): `content_scale_compile_ok` |
 | 2 | Headless smoke token (`content_scale_ok`) | `run_glfw_content_scale_smoke.sh` |
 | 3 | Optional: demo_live / editor use scale | compile smoke or N/A |
 | 4 | Critic: gates + REG if `lib/mlc/`; archive | close |
@@ -61,9 +66,9 @@ SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
 1. Freeze table; name exports exactly — done.
 2. Non-goals + headless behavior — done.
 
-**STEP=1**
-1. C++ wrapper around `glfwGetWindowContentScale`.
-2. MLC extern on `gl_window.mlc`.
+**STEP=1** — **done**
+1. C++ wrapper around `glfwGetWindowContentScale` — done.
+2. MLC extern on `gl_window.mlc` — done.
 
 **STEP=2**
 1. Smoke: after `glfw_gl_context_begin`, scales finite and `> 0`.

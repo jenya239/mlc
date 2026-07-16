@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-glfw-content-scale` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 0 |
+| step_last | 1 |
 | active_track | TRACK_GLFW_CONTENT_SCALE |
-| test_gate | GLFW_CONTENT_SCALE STEP=1 runtime ABI next |
+| test_gate | GLFW_CONTENT_SCALE STEP=2 smoke next |
+
+### Turn 2026-07-16 17:48 (Driver TRACK_GLFW_CONTENT_SCALE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GLFW_CONTENT_SCALE |
+| started | 2026-07-16 17:43 |
+| elapsed | ~5 min |
+| done    | `glfw_gl_window_content_scale_x/y` in glfw_window_gl; gl_window.mlc; compile script. |
+| verify  | `bash scripts/run_glfw_content_scale_compile.sh` → `content_scale_compile_ok`. |
+| result  | STEP=1 done. Plain: content_scale ABI linked. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_GLFW_CONTENT_SCALE |
 
 ### Turn 2026-07-16 17:43 (Driver TRACK_GLFW_CONTENT_SCALE STEP=0)
 

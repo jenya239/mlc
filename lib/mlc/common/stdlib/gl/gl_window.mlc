@@ -17,6 +17,11 @@ export extern fn glfw_gl_window_height() -> i32
   = "mlc::gl::glfw_gl_window_height" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_window_set_size(width: i32, height: i32) -> unit
   = "mlc::gl::glfw_gl_window_set_size" from "mlc/gl/glfw_window_gl.hpp"
+// TRACK_GLFW_CONTENT_SCALE STEP=1
+export extern fn glfw_gl_window_content_scale_x() -> f64
+  = "mlc::gl::glfw_gl_window_content_scale_x" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_window_content_scale_y() -> f64
+  = "mlc::gl::glfw_gl_window_content_scale_y" from "mlc/gl/glfw_window_gl.hpp"
 
 export extern fn glfw_gl_mouse_x() -> i32
   = "mlc::gl::glfw_gl_mouse_x" from "mlc/gl/glfw_window_gl.hpp"

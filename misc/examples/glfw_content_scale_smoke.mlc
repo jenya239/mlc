@@ -1,0 +1,29 @@
+# TRACK_GLFW_CONTENT_SCALE STEP=1/2 — content_scale ABI smoke (headless GLFW).
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_window_content_scale_x,
+  glfw_gl_window_content_scale_y
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  const scale_x = glfw_gl_window_content_scale_x()
+  const scale_y = glfw_gl_window_content_scale_y()
+  if !(scale_x > 0.0) then
+    glfw_gl_context_end()
+    return 1
+  end
+  if !(scale_y > 0.0) then
+    glfw_gl_context_end()
+    return 2
+  end
+
+  println("content_scale_ok")
+  glfw_gl_context_end()
+  0
+end
