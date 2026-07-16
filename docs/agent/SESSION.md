@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_FOLDER_NAV
+done: Decision — keep in `folder_panel.mlc`; freeze `folder_nav_*` + browser_rows; gates named
+verify: TRACK Decision + PLAN §43 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_FOLDER_NAV
+
 ### 2026-07-16 — ROLE=Planner STEP=pick-next (after §42)
 done: §43 `TRACK_EDITOR_FOLDER_NAV` — back/forward history; absorb folder_panel WIP
 verify: PLAN §43 + TRACK + queue; EDITOR gap row; foreign dirty left

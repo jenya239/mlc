@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0 next** (2026-07-16) — folder nav history; absorb WIP.
+**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** next.
 Track: [TRACK_EDITOR_FOLDER_NAV.md](TRACK_EDITOR_FOLDER_NAV.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
