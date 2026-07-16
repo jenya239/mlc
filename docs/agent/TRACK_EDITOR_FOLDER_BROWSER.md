@@ -8,7 +8,12 @@ Parent: [../PLAN.md](../PLAN.md) §38; residual polish after
 
 ## Next step
 
-**STEP=4** — `run_editor_live_demo.sh` root/mock env.
+**STEP=5** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=4 done (2026-07-16)
+
+- Absorbed `run_editor_live_demo.sh` (`MLC_EDITOR_ROOT` / `MLC_EDITOR_MOCK`).
+- Gate: `bash scripts/run_editor_live_demo_env_gate.sh` → `editor_live_env_ok`.
 
 ### STEP=3 done (2026-07-16)
 

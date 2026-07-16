@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 3 |
+| driver_turns_since_plan | 5 |
+| step_last | 4 |
 | active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=4 next |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=5 Critic next |
+
+### Turn 2026-07-16 20:46 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:45 |
+| elapsed | ~1 min |
+| done    | Absorbed `run_editor_live_demo.sh`; added `run_editor_live_demo_env_gate.sh`. |
+| verify  | `bash scripts/run_editor_live_demo_env_gate.sh` → `editor_live_env_ok`. |
+| result  | STEP=4 done. Plain: live demo root/mock env gated. |
+| issues  | Last Driver STEP; Critic next. |
+| next    | ROLE=Critic STEP=5 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 20:40 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=3)
 

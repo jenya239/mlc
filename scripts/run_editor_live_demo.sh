@@ -25,11 +25,17 @@ fi
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"
 export MLCC_OBJ_CLEAN="${MLCC_OBJ_CLEAN:-1}"
 export MLCC_PCH="${MLCC_PCH:-0}"
-export MLC_GLFW_VISIBLE=1
+export MLC_GLFW_VISIBLE="${MLC_GLFW_VISIBLE:-1}"
+if [ "${MLC_EDITOR_MOCK:-0}" = "1" ]; then
+  unset MLC_EDITOR_ROOT || true
+else
+  export MLC_EDITOR_ROOT="${MLC_EDITOR_ROOT:-$ROOT_DIR}"
+fi
 
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
+echo "[editor live] root=${MLC_EDITOR_ROOT:-(mock /demo)}"
 "$MLCC" -o "$OUT_DIR" "$ENTRY"
 "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$BIN_OUT"
-exec "$BIN_OUT"
+exec env MLC_EDITOR_ROOT="${MLC_EDITOR_ROOT-}" "$BIN_OUT"

@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FOLDER_BROWSER` (§38) STEP=3 done** (2026-07-16) — demo_live folder wire; **STEP=4** live demo script.
+**`TRACK_EDITOR_FOLDER_BROWSER` (§38) STEP=4 done** (2026-07-16) — live demo env; **STEP=5** Critic next.
 Track: [TRACK_EDITOR_FOLDER_BROWSER.md](TRACK_EDITOR_FOLDER_BROWSER.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
