@@ -10,7 +10,11 @@ STEP=7 deferred.
 
 ## Next step
 
-**STEP=3** — Optional: demo_live / editor use scale (or N/A).
+**STEP=4** — Critic: gates + REG if `lib/mlc/`; archive.
+
+### STEP=3 done (2026-07-16)
+
+- `demo_live` `font_size()` × `glfw_gl_window_content_scale_y`; compile ok.
 
 ### STEP=2 done (2026-07-16)
 
@@ -61,7 +65,7 @@ SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI + MLC extern | **done** (2026-07-16): `content_scale_compile_ok` |
 | 2 | Headless smoke token (`content_scale_ok`) | **done** (2026-07-16): `content_scale_ok` |
-| 3 | Optional: demo_live / editor use scale | compile smoke or N/A |
+| 3 | Optional: demo_live / editor use scale | **done** (2026-07-16): `demo_live_fs_compile_ok` |
 | 4 | Critic: gates + REG if `lib/mlc/`; archive | close |
 
 ### Sub-steps (Driver)

@@ -9,6 +9,7 @@ import {
   glfw_gl_context_end,
   glfw_gl_window_width,
   glfw_gl_window_height,
+  glfw_gl_window_content_scale_y,
   glfw_gl_take_scroll_y,
   glfw_gl_cursor_set,
   glfw_gl_mod_ctrl_down,
@@ -204,6 +205,8 @@ extern fn sleep_ms(milliseconds: i32) -> unit
   = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+extern fn i32_to_f64(value: i32) -> f64
+  = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 extern fn is_directory(path: string) -> bool
   = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_exists(path: string) -> bool
@@ -241,7 +244,9 @@ end
 
 fn line_height() -> i32 = editor_app_line_height()
 fn char_width() -> i32 = editor_app_char_width()
-fn font_size() -> i32 = editor_app_font_size()
+// TRACK_GLFW_CONTENT_SCALE STEP=3 — one chrome metric × content scale.
+fn font_size() -> i32 =
+  f64_to_i32(i32_to_f64(editor_app_font_size()) * glfw_gl_window_content_scale_y())
 fn header_height() -> i32 = editor_app_header_height()
 fn tab_bar_height() -> i32 = editor_app_tab_bar_height()
 fn toolbar_height() -> i32 = editor_app_toolbar_height()

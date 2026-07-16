@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GLFW_CONTENT_SCALE` (§37) STEP=2 done** (2026-07-16) — `content_scale_ok`; **STEP=3** optional editor next.
+**`TRACK_GLFW_CONTENT_SCALE` (§37) STEP=3 done** (2026-07-16) — demo_live font_size×scale; **STEP=4** Critic next.
 Track: [TRACK_GLFW_CONTENT_SCALE.md](TRACK_GLFW_CONTENT_SCALE.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

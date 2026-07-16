@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-glfw-content-scale` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 2 |
+| step_last | 3 |
 | active_track | TRACK_GLFW_CONTENT_SCALE |
-| test_gate | GLFW_CONTENT_SCALE STEP=3 optional editor next |
+| test_gate | GLFW_CONTENT_SCALE STEP=4 Critic next |
+
+### Turn 2026-07-16 17:55 (Driver TRACK_GLFW_CONTENT_SCALE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GLFW_CONTENT_SCALE |
+| started | 2026-07-16 17:47 |
+| elapsed | ~8 min |
+| done    | demo_live `font_size()` × `glfw_gl_window_content_scale_y`; i32_to_f64. |
+| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
+| result  | STEP=3 done. Plain: one chrome metric scaled. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=4 TRACK_GLFW_CONTENT_SCALE |
 
 ### Turn 2026-07-16 17:50 (Driver TRACK_GLFW_CONTENT_SCALE STEP=2)
 
