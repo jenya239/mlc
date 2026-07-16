@@ -1,0 +1,42 @@
+# TRACK_EDITOR_FONT_CONFIG STEP=1 — font path resolver unit (no GLFW).
+import { get_or } from '../../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  editor_default_font_path,
+  editor_resolve_font_path
+} from '../config/font_path'
+
+fn main() -> i32 = do
+  const primary = editor_default_font_path()
+  if primary != "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf" then
+    println("[mlc-editor] font_config_unit fail default")
+    return 1
+  end
+
+  if editor_resolve_font_path("/tmp/CustomMono.ttf") != "/tmp/CustomMono.ttf" then
+    println("[mlc-editor] font_config_unit fail explicit")
+    return 2
+  end
+
+  const from_env = get_or("MLC_EDITOR_FONT", "")
+  const resolved = editor_resolve_font_path("")
+  if from_env.byte_size() > 0 then
+    if resolved != from_env then
+      println("[mlc-editor] font_config_unit fail env")
+      return 3
+    end
+    println("[mlc-editor] font_config_unit ok")
+    return 0
+  end
+
+  if resolved.byte_size() == 0 then
+    println("[mlc-editor] font_config_unit fail empty")
+    return 4
+  end
+  if resolved.contains("DejaVuSansMono") == false then
+    println("[mlc-editor] font_config_unit fail candidate")
+    return 5
+  end
+
+  println("[mlc-editor] font_config_unit ok")
+  0
+end

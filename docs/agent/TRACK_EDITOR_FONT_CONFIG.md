@@ -7,7 +7,12 @@ Parent: [../PLAN.md](../PLAN.md) §39; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Next step
 
-**STEP=1** — Land resolver module + unit.
+**STEP=2** — Wire `demo_live`.
+
+### STEP=1 done (2026-07-16)
+
+- Landed `misc/editor/config/font_path.mlc` + unit + gate (default + env override).
+- Gate: `bash scripts/run_editor_font_config_unit.sh` → `font_config_unit ok`.
 
 ### STEP=0 done (2026-07-16)
 

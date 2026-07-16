@@ -1,0 +1,45 @@
+# TRACK_EDITOR_FONT_CONFIG — resolve monospace font path (no Fontconfig).
+import { get_or } from '../../../lib/mlc/common/stdlib/env/env.mlc'
+
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+
+export fn editor_default_font_path() -> string =
+  "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+
+fn editor_font_candidate_at(index: i32) -> string = do
+  if index == 0 then
+    return editor_default_font_path()
+  end
+  if index == 1 then
+    return "/usr/share/fonts/TTF/DejaVuSansMono.ttf"
+  end
+  if index == 2 then
+    return "/usr/local/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  end
+  ""
+end
+
+fn editor_first_existing_font_path() -> string = do
+  let mut index = 0
+  while index < 3 do
+    const candidate = editor_font_candidate_at(index)
+    if file_exists(candidate) then
+      return candidate
+    end
+    index = index + 1
+  end
+  editor_default_font_path()
+end
+
+// Order: explicit → MLC_EDITOR_FONT → first existing well-known → default string.
+export fn editor_resolve_font_path(explicit: string) -> string = do
+  if explicit.byte_size() > 0 then
+    return explicit
+  end
+  const from_env = get_or("MLC_EDITOR_FONT", "")
+  if from_env.byte_size() > 0 then
+    return from_env
+  end
+  editor_first_existing_font_path()
+end

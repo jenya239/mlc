@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-font-config` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_EDITOR_FONT_CONFIG |
-| test_gate | EDITOR_FONT_CONFIG STEP=1 next |
+| test_gate | EDITOR_FONT_CONFIG STEP=2 next |
+
+### Turn 2026-07-16 21:18 (Driver TRACK_EDITOR_FONT_CONFIG STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FONT_CONFIG |
+| started | 2026-07-16 21:13 |
+| elapsed | ~5 min |
+| done    | Landed `font_path.mlc` + unit; gate default+`MLC_EDITOR_FONT` override. |
+| verify  | `bash scripts/run_editor_font_config_unit.sh` → `font_config_unit ok` ×2. |
+| result  | STEP=1 done. Plain: font path resolver unit-passes. |
+| issues  | None. |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_FONT_CONFIG |
 
 ### Turn 2026-07-16 21:10 (Driver TRACK_EDITOR_FONT_CONFIG STEP=0)
 

@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FONT_CONFIG` (§39) STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** resolver+unit.
+**`TRACK_EDITOR_FONT_CONFIG` (§39) STEP=1 done** (2026-07-16) — resolver+unit; **STEP=2** demo_live wire.
 Track: [TRACK_EDITOR_FONT_CONFIG.md](TRACK_EDITOR_FONT_CONFIG.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
