@@ -60,7 +60,7 @@ SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI + MLC extern | **done** (2026-07-16): `content_scale_compile_ok` |
-| 2 | Headless smoke token (`content_scale_ok`) | `run_glfw_content_scale_smoke.sh` |
+| 2 | Headless smoke token (`content_scale_ok`) | **done** (2026-07-16): `content_scale_ok` |
 | 3 | Optional: demo_live / editor use scale | compile smoke or N/A |
 | 4 | Critic: gates + REG if `lib/mlc/`; archive | close |
 
@@ -74,8 +74,8 @@ SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
 1. C++ wrapper around `glfwGetWindowContentScale` — done.
 2. MLC extern on `gl_window.mlc` — done.
 
-**STEP=2**
-1. Smoke: after `glfw_gl_context_begin`, scales finite and `> 0`.
+**STEP=2** — **done**
+1. Smoke: after `glfw_gl_context_begin`, scales `> 0` — done.
 
 **STEP=3** (optional / N/A if heavy)
 1. Multiply one chrome metric by scale in demo_live — or mark N/A.
