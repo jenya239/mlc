@@ -7,7 +7,12 @@ Parent: [../PLAN.md](../PLAN.md) §39; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Next step
 
-**STEP=2** — Wire `demo_live`.
+**STEP=3** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=2 done (2026-07-16)
+
+- `demo_live.mlc` uses `editor_resolve_font_path("")`.
+- Gate: `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-16)
 
@@ -65,8 +70,8 @@ MIR Epic 5; `compiler/` changes; rewriting every demo/smoke path in one STEP.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Land resolver module + unit | `font_config_unit ok` |
-| 2 | Wire `demo_live` | `demo_live_fs_compile_ok` |
+| 1 | Land resolver module + unit | **done** (2026-07-16) `font_config_unit ok` |
+| 2 | Wire `demo_live` | **done** (2026-07-16) `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
@@ -75,13 +80,13 @@ MIR Epic 5; `compiler/` changes; rewriting every demo/smoke path in one STEP.
 1. Freeze order + exact export names — done.
 2. Well-known path candidates — done.
 
-**STEP=1**
-1. `misc/editor/config/font_path.mlc` + `misc/editor/tests/font_config_unit.mlc`.
-2. Gate: `bash scripts/run_editor_font_config_unit.sh`.
+**STEP=1** — **done**
+1. `font_path.mlc` + unit — done.
+2. Gate: `run_editor_font_config_unit.sh` — done.
 
-**STEP=2**
-1. `demo_live.mlc`: replace hardcoded path with `editor_resolve_font_path("")`.
-2. `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
+1. `demo_live.mlc` → `editor_resolve_font_path("")` — done.
+2. `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` — done.
 
 **STEP=3** — Critic; `next` = Planner.
 

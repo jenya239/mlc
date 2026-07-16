@@ -39,6 +39,7 @@ import {
   static_text_draw_lines_colored,
   static_text_destroy
 } from './ui/static_text'
+import { editor_resolve_font_path } from './config/font_path'
 import {
   editor_gl_scissor_enable_rect,
   editor_gl_scissor_disable
@@ -530,7 +531,7 @@ fn main() -> i32 = do
     return error_code
   end
 
-  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  const font_path = editor_resolve_font_path("")
   let mut text_state = static_text_create(1024, font_path, 1)
   if text_state.renderer.program < 0 then
     const error_code = text_state.renderer.program
