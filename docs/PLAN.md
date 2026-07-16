@@ -434,6 +434,7 @@ compiler/
 | **36** | Stdlib IO/FS: `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire | **done** (2026-07-16) Critic OK; STEP=0–6; STEP=7 deferred | [archive/tracks/TRACK_STDLIB_IO_FS](archive/tracks/TRACK_STDLIB_IO_FS.md) |
 | **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_GLFW_CONTENT_SCALE](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md) |
 | **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–4 | [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md) |
+| **39** | Editor font config path (DejaVuMono default; no Fontconfig) | **active** (2026-07-16) STEP=0 next | [TRACK_EDITOR_FONT_CONFIG](agent/TRACK_EDITOR_FONT_CONFIG.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -651,6 +652,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GLFW_CONTENT_SCALE.md](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md))**
   → **EDITOR_FOLDER_BROWSER (§38, **closed** 2026-07-16: Critic OK; STEP=0–4; `9dcb6bfb`…`d33a90eb`;
       → [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md))**
+  → **EDITOR_FONT_CONFIG (§39, **active**; STEP=0 Decision next;
+      → [agent/TRACK_EDITOR_FONT_CONFIG.md](agent/TRACK_EDITOR_FONT_CONFIG.md))**
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

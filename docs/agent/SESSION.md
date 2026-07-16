@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-editor-folder-browser-closed` |
+| instructions_rev | `2026-07-16-editor-font-config` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 5 |
-| active_track | — (EDITOR_FOLDER_BROWSER closed) |
-| test_gate | Planner pick-next |
+| step_last | 0 |
+| active_track | TRACK_EDITOR_FONT_CONFIG |
+| test_gate | EDITOR_FONT_CONFIG STEP=0 next |
+
+### Turn 2026-07-16 21:05 (Planner TRACK_EDITOR_FONT_CONFIG pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next / plan-refresh |
+| track   | TRACK_EDITOR_FONT_CONFIG |
+| started | 2026-07-16 21:01 |
+| elapsed | ~4 min |
+| done    | Opened §39 from EDITOR.md font gap; TRACK Decision draft STEPs 0–3. |
+| verify  | PLAN §39 + CONTINUITY queue head. |
+| result  | STEP=pick-next done. Plain: font config track opened. |
+| issues  | SCRIPT_VM/AUTO_CYCLE/MIR Epic 5 gated; left concurrency_lint. |
+| next    | ROLE=Driver STEP=0 TRACK_EDITOR_FONT_CONFIG |
 
 ### Turn 2026-07-16 20:55 (Critic TRACK_EDITOR_FOLDER_BROWSER STEP=5)
 

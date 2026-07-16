@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue empty after §38 close** — next Planner `pick-next` (no active numbered track).
+**`TRACK_EDITOR_FONT_CONFIG` (§39) STEP=0 next** (2026-07-16) — Decision; DejaVuMono/env path.
+Track: [TRACK_EDITOR_FONT_CONFIG.md](TRACK_EDITOR_FONT_CONFIG.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 
