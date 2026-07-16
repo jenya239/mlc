@@ -41,8 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FONT_CONFIG` (§39) STEP=2 done** (2026-07-16) — demo_live wire; **STEP=3** Critic next.
-Track: [TRACK_EDITOR_FONT_CONFIG.md](TRACK_EDITOR_FONT_CONFIG.md).
+**Queue empty after §39 close** — next Planner `pick-next` (no active numbered track).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 

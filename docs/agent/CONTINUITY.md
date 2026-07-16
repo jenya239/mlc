@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-16-editor-font-config` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-16-editor-font-config-closed` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-16-editor-font-config
+INSTRUCTIONS_REV=2026-07-16-editor-font-config-closed
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. **`misc/editor/**` font resolver + demo wire — in scope для TRACK_EDITOR_FONT_CONFIG**. Не трогать `compiler/` в этом треке. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -68,7 +68,7 @@ INSTRUCTIONS_REV=2026-07-16-editor-font-config
 | **`TRACK_STDLIB_IO_FS` (PLAN §36)** | **closed** 2026-07-16 (Critic OK). Archive. STEP=7 → §37 |
 | **`TRACK_GLFW_CONTENT_SCALE` (PLAN §37)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FOLDER_BROWSER` (PLAN §38)** | **closed** 2026-07-16 (Critic OK). Archive |
-| **`TRACK_EDITOR_FONT_CONFIG` (PLAN §39) — queue head** | Font path: env + DejaVuMono default. Prefer `misc/editor/**`; no Fontconfig; no `compiler/` |
+| **`TRACK_EDITOR_FONT_CONFIG` (PLAN §39)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-editor-font-config` |
+| instructions_rev | `2026-07-16-editor-font-config-closed` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 2 |
-| active_track | TRACK_EDITOR_FONT_CONFIG |
-| test_gate | EDITOR_FONT_CONFIG STEP=3 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 3 |
+| active_track | — (EDITOR_FONT_CONFIG closed) |
+| test_gate | Planner pick-next |
+
+### Turn 2026-07-16 21:40 (Critic TRACK_EDITOR_FONT_CONFIG STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 / critique-audit |
+| track   | TRACK_EDITOR_FONT_CONFIG |
+| started | 2026-07-16 21:37 |
+| elapsed | ~3 min |
+| done    | Re-ran font unit + demo_live compile; REG N/A; archive §39. |
+| verify  | `font_config_unit ok` ×2; `demo_live_fs_compile_ok`. |
+| result  | STEP=3 closed. Plain: font config Critic OK. |
+| issues  | Left extern_concurrency_lint untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 21:30 (Driver TRACK_EDITOR_FONT_CONFIG STEP=2)
 
