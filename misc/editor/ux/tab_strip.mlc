@@ -31,6 +31,30 @@ export fn tab_strip_title_rect(
   ux_rect_new(strip.x + slot_width * index, strip.y, width, strip.height)
 end
 
+export fn tab_strip_close_width() -> i32 = 20
+
+// Close affordance: right edge of the tab slot.
+export fn tab_strip_close_rect(
+  strip: UxRect,
+  tab_count: i32,
+  index: i32
+) -> UxRect = do
+  const title = tab_strip_title_rect(strip, tab_count, index)
+  if title.width <= 0 then
+    return ux_rect_new(0, 0, 0, 0)
+  end
+  let mut close_width = tab_strip_close_width()
+  if close_width > title.width then
+    close_width = title.width
+  end
+  ux_rect_new(
+    title.x + title.width - close_width,
+    title.y,
+    close_width,
+    title.height
+  )
+end
+
 export fn tab_strip_hit_index(
   strip: UxRect,
   tab_count: i32,
@@ -47,6 +71,29 @@ export fn tab_strip_hit_index(
   while index < tab_count do
     const title = tab_strip_title_rect(strip, tab_count, index)
     if ux_rect_contains_point(title, point_x, point_y) then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn tab_strip_hit_close_index(
+  strip: UxRect,
+  tab_count: i32,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if tab_count <= 0 then
+    return 0 - 1
+  end
+  if !ux_rect_contains_point(strip, point_x, point_y) then
+    return 0 - 1
+  end
+  let mut index = 0
+  while index < tab_count do
+    const close_rect = tab_strip_close_rect(strip, tab_count, index)
+    if ux_rect_contains_point(close_rect, point_x, point_y) then
       return index
     end
     index = index + 1

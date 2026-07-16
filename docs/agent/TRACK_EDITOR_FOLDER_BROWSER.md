@@ -8,7 +8,12 @@ Parent: [../PLAN.md](../PLAN.md) §38; residual polish after
 
 ## Next step
 
-**STEP=2** — Land `tab_strip` close hit helpers.
+**STEP=3** — Wire `demo_live` folder browser + disk/mock.
+
+### STEP=2 done (2026-07-16)
+
+- Landed `tab_strip` close helpers (`close_width` / `close_rect` / `hit_close_index`).
+- Gate: `bash scripts/run_editor_tab_strip_close_unit.sh` → `tab_strip_close_unit ok`.
 
 ### STEP=1 done (2026-07-16)
 
@@ -70,7 +75,7 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Land `folder_panel.mlc` (+ minimal unit or compile import) | compile/unit token |
+| 1 | Land `folder_panel.mlc` (+ minimal unit or compile import) | **done** (2026-07-16) `folder_panel_unit ok` |
 | 2 | Land `tab_strip` close hit helpers | compile/unit token |
 | 3 | Wire `demo_live` folder browser + disk/mock | `demo_live_fs_compile_ok` |
 | 4 | `run_editor_live_demo.sh` root/mock env | script dry-run / comment gate |
@@ -82,9 +87,9 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 1. Freeze Decision; list absorb paths — done.
 2. Non-goals; no `compiler/` — done.
 
-**STEP=1**
-1. Commit `folder_panel.mlc` (or slice if too large).
-2. Gate: compile import or tiny unit printing a token.
+**STEP=1** — **done**
+1. Commit `folder_panel.mlc` — done (`end`→`end_index`).
+2. Gate: `run_editor_folder_panel_unit.sh` — done.
 
 **STEP=2**
 1. Commit tab close rect/hit exports.

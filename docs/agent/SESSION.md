@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
+| driver_turns_since_plan | 3 |
+| step_last | 2 |
 | active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=2 next |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=3 next |
+
+### Turn 2026-07-16 20:30 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:25 |
+| elapsed | ~5 min |
+| done    | Landed tab_strip close helpers; `tab_strip_close_unit.mlc` + run script. |
+| verify  | `bash scripts/run_editor_tab_strip_close_unit.sh` → `tab_strip_close_unit ok`. |
+| result  | STEP=2 done. Plain: tab close hit geometry unit-passes. |
+| issues  | Left demo_live/live script for STEPs 3–4. |
+| next    | ROLE=Driver STEP=3 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 20:15 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=1)
 

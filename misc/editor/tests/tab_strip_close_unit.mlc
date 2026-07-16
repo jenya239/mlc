@@ -1,0 +1,55 @@
+# TRACK_EDITOR_FOLDER_BROWSER STEP=2 — tab_strip close hit pure unit (no GLFW).
+import { ux_rect_new } from '../../gui/ux/snapshot'
+import {
+  tab_strip_close_width,
+  tab_strip_close_rect,
+  tab_strip_hit_close_index,
+  tab_strip_hit_index
+} from '../ux/tab_strip'
+
+fn main() -> i32 = do
+  const strip = ux_rect_new(0, 0, 200, 24)
+  if tab_strip_close_width() != 20 then
+    println("[mlc-editor] tab_strip_close_unit fail width")
+    return 1
+  end
+
+  const close0 = tab_strip_close_rect(strip, 2, 0)
+  if close0.width != 20 || close0.height != 24 then
+    println("[mlc-editor] tab_strip_close_unit fail close0 size")
+    return 2
+  end
+  if close0.x != 80 then
+    println("[mlc-editor] tab_strip_close_unit fail close0 x")
+    return 3
+  end
+
+  const close1 = tab_strip_close_rect(strip, 2, 1)
+  if close1.x != 180 then
+    println("[mlc-editor] tab_strip_close_unit fail close1 x")
+    return 4
+  end
+
+  // Hit inside close0 (right edge of first slot 0..100).
+  if tab_strip_hit_close_index(strip, 2, 90, 12) != 0 then
+    println("[mlc-editor] tab_strip_close_unit fail hit close0")
+    return 5
+  end
+  // Hit left of close0 → title, not close.
+  if tab_strip_hit_close_index(strip, 2, 10, 12) != 0 - 1 then
+    println("[mlc-editor] tab_strip_close_unit fail miss close0")
+    return 6
+  end
+  if tab_strip_hit_index(strip, 2, 10, 12) != 0 then
+    println("[mlc-editor] tab_strip_close_unit fail hit title0")
+    return 7
+  end
+  // Outside strip.
+  if tab_strip_hit_close_index(strip, 2, 10, 100) != 0 - 1 then
+    println("[mlc-editor] tab_strip_close_unit fail outside")
+    return 8
+  end
+
+  println("[mlc-editor] tab_strip_close_unit ok")
+  0
+end
