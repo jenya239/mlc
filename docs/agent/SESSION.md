@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-editor-font-config-closed` |
+| instructions_rev | `2026-07-16-editor-utf8-columns` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 3 |
-| active_track | — (EDITOR_FONT_CONFIG closed) |
-| test_gate | Planner pick-next |
+| step_last | 0 |
+| active_track | TRACK_EDITOR_UTF8_COLUMNS |
+| test_gate | EDITOR_UTF8_COLUMNS STEP=0 next |
+
+### Turn 2026-07-16 21:45 (Planner TRACK_EDITOR_UTF8_COLUMNS pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next / plan-refresh |
+| track   | TRACK_EDITOR_UTF8_COLUMNS |
+| started | 2026-07-16 21:43 |
+| elapsed | ~2 min |
+| done    | Opened §40 from EDITOR.md column gap; marked §39 font gap done in EDITOR.md. |
+| verify  | PLAN §40 + CONTINUITY queue head; TRACK STEPs 0–3. |
+| result  | STEP=pick-next done. Plain: UTF-8 columns track opened. |
+| issues  | Grapheme/ICU out; SCRIPT_VM gated. |
+| next    | ROLE=Driver STEP=0 TRACK_EDITOR_UTF8_COLUMNS |
 
 ### Turn 2026-07-16 21:40 (Critic TRACK_EDITOR_FONT_CONFIG STEP=3)
 

@@ -66,9 +66,9 @@ Imports: `import { ... } from '../gui/scene'` etc. Stdlib: relative to
 |-----|--------------|--------|
 | No `list_dir` / `is_dir` / `is_file` | stdlib `io` + runtime — **done** §36 (`TRACK_STDLIB_IO_FS`) | File tree |
 | Clipboard | **done** (§33b LIVE_POLISH: GLFW get/set + inject) | Cut/copy/paste |
-| No font discovery API | config path + DejaVuMono default first | Theme font |
+| No font discovery API | **done** §39 (`TRACK_EDITOR_FONT_CONFIG`) | Theme font |
 | tree-sitter | later package + FFI; v1 = incremental lexer behind interface | Syntax (E6) |
-| Optional: better UTF-8 grapheme/column rules | editor `document/` first; promote to stdlib if shared | Cursor columns |
+| Optional: better UTF-8 grapheme/column rules | editor `document/` — **§40 active** (`TRACK_EDITOR_UTF8_COLUMNS`; codepoint v1) | Cursor columns |
 
 Language/compiler changes only when a vertical slice is blocked (document in
 track Decision, one small compiler track if needed — never drive editor from

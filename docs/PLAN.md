@@ -435,6 +435,7 @@ compiler/
 | **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_GLFW_CONTENT_SCALE](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md) |
 | **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–4 | [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md) |
 | **39** | Editor font config path (DejaVuMono default; no Fontconfig) | **done** (2026-07-16) Critic OK; STEP=0–2 | [archive/tracks/TRACK_EDITOR_FONT_CONFIG](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md) |
+| **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **active** (2026-07-16) STEP=0 next | [TRACK_EDITOR_UTF8_COLUMNS](agent/TRACK_EDITOR_UTF8_COLUMNS.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**

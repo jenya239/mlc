@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue empty after §39 close** — next Planner `pick-next` (no active numbered track).
+**`TRACK_EDITOR_UTF8_COLUMNS` (§40) STEP=0 next** (2026-07-16) — Decision; codepoint columns in line_index.
+Track: [TRACK_EDITOR_UTF8_COLUMNS.md](TRACK_EDITOR_UTF8_COLUMNS.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 
