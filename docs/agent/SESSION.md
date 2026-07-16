@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §40)
+done: §41 `TRACK_EDITOR_CARET_BLINK` — UX L8 caret blink + live helper
+verify: PLAN §41 + TRACK + queue; EDITOR gap row; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_CARET_BLINK
+
 ### 2026-07-16 — ROLE=Critic STEP=3 TRACK_EDITOR_UTF8_COLUMNS
 done: closed §40; TRACK → archive; PLAN done; REG N/A
 verify: line_index/selection/navigation/status_bar units ok; `demo_live_fs_compile_ok`; foreign dirty left

@@ -68,7 +68,8 @@ Imports: `import { ... } from '../gui/scene'` etc. Stdlib: relative to
 | Clipboard | **done** (§33b LIVE_POLISH: GLFW get/set + inject) | Cut/copy/paste |
 | No font discovery API | **done** §39 (`TRACK_EDITOR_FONT_CONFIG`) | Theme font |
 | tree-sitter | later package + FFI; v1 = incremental lexer behind interface | Syntax (E6) |
-| Optional: better UTF-8 grapheme/column rules | editor `document/` — **§40 active** (`TRACK_EDITOR_UTF8_COLUMNS`; codepoint v1) | Cursor columns |
+| Optional: better UTF-8 grapheme/column rules | editor `document/` — **§40 done** (codepoints; grapheme deferred) | Cursor columns |
+| Caret blink phases (UX L8) | editor `ux/` + `demo_live` — **§41 active** (`TRACK_EDITOR_CARET_BLINK`) | Headless clock + live |
 
 Language/compiler changes only when a vertical slice is blocked (document in
 track Decision, one small compiler track if needed — never drive editor from
