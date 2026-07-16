@@ -5,46 +5,78 @@ Parent: [../PLAN.md](../PLAN.md) §39; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Status: **active** (2026-07-16) — queue head
 
-After §38 folder browser closed. Next editor gap: resolve font path without
-Fontconfig — config / env / well-known DejaVuMono fallback.
-
 ## Next step
 
-**STEP=0** — Decision freeze: resolution order + gates.
+**STEP=1** — Land resolver module + unit.
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
-| API | Pure helper e.g. `editor_resolve_font_path(...)` → `string` |
-| Order | explicit arg / `MLC_EDITOR_FONT` / well-known DejaVuMono paths |
-| Default | `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf` (existing demos) |
-| Wire | `demo_live` / chrome use resolver (one call site) |
-| REG | Prefer no `lib/mlc/`; if touched → REG before Critic |
-| Non-goals | Fontconfig; font enumeration UI; tree-sitter; SCRIPT_VM; MIR Epic 5; `compiler/` |
+- Decision frozen below; PLAN §39 → STEP=1.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in existing hardcoded
+`/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf` in `demo_live.mlc` /
+`main.mlc` / `gutter_smoke.mlc`, plus `get_or` from stdlib `env`.
+
+| Item | Choice |
+|------|--------|
+| Module | `misc/editor/config/font_path.mlc` |
+| API | `editor_default_font_path() -> string`; `editor_resolve_font_path(explicit: string) -> string` |
+| Order | (1) non-empty `explicit`; (2) `get_or("MLC_EDITOR_FONT", "")` if non-empty; (3) first existing well-known path; (4) primary default string even if missing (caller / FreeType fails later) |
+| Exists check | `file_exists` from §36 IO (`mlc/io/file_abi.hpp`) for candidates only |
+| Primary default | `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf` |
+| Wire (STEP=2) | `demo_live.mlc` only (one call site); leave `main.mlc` / tests unless trivial |
+| REG | Prefer **no** `lib/mlc/`; if touched → REG before Critic |
+| Namespace | Editor-only under `misc/editor/`; **no** `compiler/` |
+
+### Exact exports
+
+```text
+editor_default_font_path() -> string
+editor_resolve_font_path(explicit: string) -> string
+```
+
+### Well-known candidates (Linux, first existing wins after env)
+
+1. `/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`
+2. `/usr/share/fonts/TTF/DejaVuSansMono.ttf`
+3. `/usr/local/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`
+
+### Gate names
+
+| Step | Script / token |
+|------|----------------|
+| 1 | `scripts/run_editor_font_config_unit.sh` → `[mlc-editor] font_config_unit ok` |
+| 2 | `scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+
+### Non-goals (Decision)
+
+Fontconfig; font enumeration UI; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE;
+MIR Epic 5; `compiler/` changes; rewriting every demo/smoke path in one STEP.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
-| 1 | Land resolver module + unit | unit token |
-| 2 | Wire one consumer (`demo_live` or chrome) | compile gate |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
+| 1 | Land resolver module + unit | `font_config_unit ok` |
+| 2 | Wire `demo_live` | `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze order + exact export names.
-2. List well-known path candidates (Linux DejaVu).
+**STEP=0** — **done**
+1. Freeze order + exact export names — done.
+2. Well-known path candidates — done.
 
 **STEP=1**
-1. `misc/editor/...` resolver; unit covers env override + default.
-2. Gate: `run_editor_font_config_unit.sh` (name TBD at STEP=0).
+1. `misc/editor/config/font_path.mlc` + `misc/editor/tests/font_config_unit.mlc`.
+2. Gate: `bash scripts/run_editor_font_config_unit.sh`.
 
 **STEP=2**
-1. Replace hardcoded DejaVu path in one live entry.
-2. `run_editor_demo_live_fs_compile.sh` or equivalent.
+1. `demo_live.mlc`: replace hardcoded path with `editor_resolve_font_path("")`.
+2. `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`.
 
 **STEP=3** — Critic; `next` = Planner.
 

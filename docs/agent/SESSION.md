@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-font-config` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
+| driver_turns_since_plan | 1 |
 | step_last | 0 |
 | active_track | TRACK_EDITOR_FONT_CONFIG |
-| test_gate | EDITOR_FONT_CONFIG STEP=0 next |
+| test_gate | EDITOR_FONT_CONFIG STEP=1 next |
+
+### Turn 2026-07-16 21:10 (Driver TRACK_EDITOR_FONT_CONFIG STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FONT_CONFIG |
+| started | 2026-07-16 21:09 |
+| elapsed | ~1 min |
+| done    | Frozen Decision: resolve order + exports + DejaVu candidates + gates. |
+| verify  | TRACK Decision **frozen**; PLAN §39 STEP=0 done / STEP=1 next. |
+| result  | STEP=0 done. Plain: font path Decision frozen. |
+| issues  | None. |
+| next    | ROLE=Driver STEP=1 TRACK_EDITOR_FONT_CONFIG |
 
 ### Turn 2026-07-16 21:05 (Planner TRACK_EDITOR_FONT_CONFIG pick-next)
 
