@@ -44,5 +44,21 @@ inline bool remove_file_value(String path) {
   return remove_file(path);
 }
 
+inline Array<String> list_dir_names_value(String path) {
+  try {
+    return list_dir_names(path);
+  } catch (...) {
+    return Array<String>{};
+  }
+}
+
+inline Array<int32_t> list_dir_is_directory_value(String path) {
+  try {
+    return list_dir_is_directory_flags(path);
+  } catch (...) {
+    return Array<int32_t>{};
+  }
+}
+
 } // namespace file
 } // namespace mlc

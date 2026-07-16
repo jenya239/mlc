@@ -1,0 +1,74 @@
+// TRACK_STDLIB_IO_FS STEP=2 — list_dir lexicographic + flags smoke.
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_names(path: string) -> [string]
+  = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_is_directory_flags(path: string) -> [i32]
+  = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+type FsDirEntry = {
+  name: string,
+  is_directory: i32
+}
+
+fn list_dir(path: string) -> [FsDirEntry] = do
+  const names = list_dir_names(path)
+  const flags = list_dir_is_directory_flags(path)
+  let mut entries: [FsDirEntry] = []
+  let mut index = 0
+  const count = names.length()
+  if flags.length() != count then
+    return entries
+  end
+  while index < count do
+    entries.push(FsDirEntry {
+      name: names[index],
+      is_directory: flags[index]
+    })
+    index = index + 1
+  end
+  entries
+end
+
+fn main() -> i32 = do
+  const root = ".tmp/stdlib_list_dir_fixture"
+  if !write_string(root + "/zebra.txt", "z") then
+    println("list_dir_fail write zebra")
+    return 1
+  end
+  if !write_string(root + "/alpha.txt", "a") then
+    println("list_dir_fail write alpha")
+    return 2
+  end
+  if !write_string(root + "/mid/nested.txt", "n") then
+    println("list_dir_fail write mid")
+    return 3
+  end
+
+  const entries = list_dir(root)
+  if entries.length() != 3 then
+    println("list_dir_fail count")
+    return 4
+  end
+  if entries[0].name != "alpha.txt" || entries[0].is_directory != 0 then
+    println("list_dir_fail alpha")
+    return 5
+  end
+  if entries[1].name != "mid" || entries[1].is_directory != 1 then
+    println("list_dir_fail mid")
+    return 6
+  end
+  if entries[2].name != "zebra.txt" || entries[2].is_directory != 0 then
+    println("list_dir_fail zebra")
+    return 7
+  end
+
+  const missing = list_dir(".tmp/stdlib_list_dir_missing_xyz")
+  if missing.length() != 0 then
+    println("list_dir_fail missing")
+    return 8
+  end
+
+  println("list_dir_ok")
+  0
+end

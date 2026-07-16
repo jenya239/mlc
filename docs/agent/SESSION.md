@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
+| driver_turns_since_plan | 3 |
+| step_last | 2 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=2 list_dir next |
+| test_gate | IO_FS STEP=3 safe_list_dir next |
+
+### Turn 2026-07-16 14:27 (Driver TRACK_STDLIB_IO_FS STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:25 |
+| elapsed | ~2 min |
+| done    | `list_dir_fill` + parallel ABI; `FsDirEntry`/`list_dir` in file.mlc; list_dir smoke. |
+| verify  | `bash scripts/run_stdlib_list_dir_smoke.sh` → `list_dir_ok`; fs_stat still ok. |
+| result  | STEP=2 done. Plain: lex list_dir with dir flags. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:23 (Driver TRACK_STDLIB_IO_FS STEP=1)
 

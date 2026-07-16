@@ -8,6 +8,9 @@
 #include <vector>
 #include <optional>
 #include <cstdlib>
+#include <algorithm>
+#include <utility>
+#include <cstdint>
 #include "mlc/core/string.hpp"
 #include "mlc/core/array.hpp"
 
@@ -254,6 +257,64 @@ inline bool is_regular_file(const mlc::String& path) {
     std::error_code error_code;
     return std::filesystem::is_regular_file(
         std::filesystem::path(path.as_std_string()), error_code);
+}
+
+// TRACK_STDLIB_IO_FS STEP=2 — non-recursive; skip . / ..; lexicographic by name.
+inline void list_dir_fill(
+    const mlc::String& path,
+    mlc::Array<mlc::String>& names,
+    mlc::Array<int32_t>& is_directory_flags
+) {
+    names = mlc::Array<mlc::String>{};
+    is_directory_flags = mlc::Array<int32_t>{};
+    std::error_code error_code;
+    const std::filesystem::path directory(path.as_std_string());
+    if (!std::filesystem::is_directory(directory, error_code)) {
+        return;
+    }
+    std::vector<std::pair<std::string, int32_t>> entries;
+    for (const auto& directory_entry :
+         std::filesystem::directory_iterator(directory, error_code)) {
+        if (error_code) {
+            names = mlc::Array<mlc::String>{};
+            is_directory_flags = mlc::Array<int32_t>{};
+            return;
+        }
+        const std::string name = directory_entry.path().filename().string();
+        if (name == "." || name == "..") {
+            continue;
+        }
+        std::error_code type_error;
+        const int32_t directory_flag =
+            directory_entry.is_directory(type_error) ? 1 : 0;
+        entries.push_back({name, directory_flag});
+    }
+    std::sort(
+        entries.begin(),
+        entries.end(),
+        [](const std::pair<std::string, int32_t>& left,
+           const std::pair<std::string, int32_t>& right) {
+            return left.first < right.first;
+        }
+    );
+    for (const auto& entry : entries) {
+        names.push_back(mlc::String(entry.first));
+        is_directory_flags.push_back(entry.second);
+    }
+}
+
+inline mlc::Array<mlc::String> list_dir_names(const mlc::String& path) {
+    mlc::Array<mlc::String> names;
+    mlc::Array<int32_t> is_directory_flags;
+    list_dir_fill(path, names, is_directory_flags);
+    return names;
+}
+
+inline mlc::Array<int32_t> list_dir_is_directory_flags(const mlc::String& path) {
+    mlc::Array<mlc::String> names;
+    mlc::Array<int32_t> is_directory_flags;
+    list_dir_fill(path, names, is_directory_flags);
+    return is_directory_flags;
 }
 
 inline bool remove_file(const mlc::String& path) {

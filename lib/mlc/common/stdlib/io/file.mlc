@@ -31,6 +31,36 @@ export extern fn is_directory(path: str) -> bool
 export extern fn is_regular_file(path: str) -> bool
   = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
 
+// TRACK_STDLIB_IO_FS STEP=2 — parallel ABI; zip in list_dir.
+export type FsDirEntry = {
+  name: str,
+  is_directory: i32
+}
+
+export extern fn list_dir_names(path: str) -> str[]
+  = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
+export extern fn list_dir_is_directory_flags(path: str) -> i32[]
+  = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+export fn list_dir(path: str) -> FsDirEntry[] = do
+  const names = list_dir_names(path)
+  const flags = list_dir_is_directory_flags(path)
+  let mut entries: FsDirEntry[] = []
+  let mut index = 0
+  const count = names.length()
+  if flags.length() != count then
+    return entries
+  end
+  while index < count do
+    entries.push(FsDirEntry {
+      name: names[index],
+      is_directory: flags[index]
+    })
+    index = index + 1
+  end
+  entries
+end
+
 // Helper functions
 
 export fn read_text(path: str) -> str =

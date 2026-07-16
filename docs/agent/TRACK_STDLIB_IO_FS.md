@@ -14,7 +14,12 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=2** — Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` → `list_dir_ok`.
+**STEP=3** — `safe_list_dir` + missing-path Err.
+
+### STEP=2 done (2026-07-16)
+
+- Parallel ABI `list_dir_names` / `list_dir_is_directory_flags`; `FsDirEntry` + `list_dir` zip.
+- Smoke `list_dir_ok` (lex order alpha/mid/zebra).
 
 ### STEP=1 done (2026-07-16)
 
@@ -70,7 +75,7 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI: `is_directory` / `is_regular_file` | **done** (2026-07-16): `fs_stat_ok` |
-| 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | `run_stdlib_list_dir_smoke.sh` → `list_dir_ok` |
+| 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | **done** (2026-07-16): `list_dir_ok` |
 | 3 | `safe_list_dir` + missing-path Err | safe smoke / token |
 | 4 | `create_directories` (+ smoke write then list) | `run_stdlib_mkdir_smoke.sh` → `mkdir_ok` |
 | 5 | Editor: expand-from-disk helper; unit with temp fixture | `run_editor_file_tree_fs_unit.sh` |
@@ -84,11 +89,13 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 1. Freeze table; name exports exactly — done.
 2. Non-goals + symlink + order + STEP=7 deferred — done.
 
-**STEP=1**
-1. `is_directory` / `is_regular_file` in `file.hpp` + `*_value` in `file_abi.hpp`.
-2. MLC extern + smoke `fs_stat_ok`.
+**STEP=1** — **done**
+1. `is_directory` / `is_regular_file` in `file.hpp` + `*_value` in `file_abi.hpp` — done.
+2. MLC extern + smoke `fs_stat_ok` — done.
 
-**STEP=2–4** — list/safe/mkdir as table.
+**STEP=2**
+1. Parallel ABI `list_dir_names_value` / `list_dir_is_directory_value`; MLC zip to `[FsDirEntry]`.
+2. Smoke `list_dir_ok`.
 
 **STEP=5–6** — editor + demo_live (in scope STEP=6 only).
 
