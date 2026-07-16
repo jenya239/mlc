@@ -10,7 +10,12 @@ discard).
 
 ## Next step
 
-**STEP=2** — Wire scroll/hit/`demo_live`; compile green.
+**STEP=3** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=2 done (2026-07-16)
+
+- `demo_live` wrap: scroll clamp, hit/drag, visual-row draw/caret.
+- Gate: `demo_live_fs_compile_ok` (foreign deps stashed).
 
 ### STEP=1 done (2026-07-16)
 
@@ -84,8 +89,8 @@ LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` / `lib/mlc/`; committing foreign
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Absorb/stabilize `word_wrap.mlc` + unit | `word_wrap_unit ok` |
-| 2 | Wire scroll/hit/`demo_live`; compile green | `demo_live_fs_compile_ok` |
+| 1 | Absorb/stabilize `word_wrap.mlc` + unit | **done** (2026-07-16) `word_wrap_unit ok` |
+| 2 | Wire scroll/hit/`demo_live`; compile green | **done** (2026-07-16) `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
@@ -94,13 +99,13 @@ LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` / `lib/mlc/`; committing foreign
 1. Freeze break rules + exact exports — done.
 2. In-scope WIP file list — done.
 
-**STEP=1**
-1. Commit `word_wrap.mlc` + `tests/word_wrap_unit.mlc`.
-2. Gate: `bash scripts/run_editor_word_wrap_unit.sh`.
+**STEP=1** — **done**
+1. `word_wrap.mlc` + unit — done.
+2. Gate: `bash scripts/run_editor_word_wrap_unit.sh` → `word_wrap_unit ok`.
 
-**STEP=2**
-1. Finish `demo_live` wrap wire from WIP (explicit `git add` only wrap-needed files).
-2. `bash scripts/run_editor_demo_live_fs_compile.sh` (stash unrelated foreign if needed).
+**STEP=2** — **done**
+1. `demo_live` wrap wire — done.
+2. `demo_live_fs_compile_ok` — done.
 
 **STEP=3** — Critic; `next` = Planner.
 

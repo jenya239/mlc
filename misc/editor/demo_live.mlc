@@ -145,7 +145,9 @@ import {
   selection_is_empty,
   selection_start,
   selection_end,
-  selection_caret
+  selection_caret,
+  selection_clamp,
+  selection_set_focus
 } from './document/selection'
 import {
   edit_insert_text,
@@ -186,6 +188,13 @@ import {
   gutter_baseline_y,
   gutter_label_pen_x
 } from './layout/gutter'
+import {
+  wrap_max_columns,
+  document_visual_row_count,
+  collect_visible_visual_rows,
+  visual_row_index_for_caret,
+  wrap_offset_at_point
+} from './layout/word_wrap'
 import { ux_rect_new } from '../gui/ux/snapshot'
 import {
   tab_strip_hit_index,
@@ -621,6 +630,33 @@ fn main() -> i32 = do
     const panes = gutter_layout(editor_rect, gutter_width)
     const text_rect = panes.text
     const gutter_rect = panes.gutter
+    const draw_text_early = document_to_string(document)
+    const wrap_columns = wrap_max_columns(text_rect.width - 8, char_width())
+    const visual_row_count = document_visual_row_count(
+      draw_text_early, line_index, wrap_columns
+    )
+    let mut wrapped_content_height = visual_row_count * line_height()
+    if wrapped_content_height < 0 then
+      wrapped_content_height = 0
+    end
+    let mut max_editor_scroll = wrapped_content_height - text_rect.height
+    if max_editor_scroll < 0 then
+      max_editor_scroll = 0
+    end
+    if scroll_offset_y > max_editor_scroll then
+      scroll_offset_y = max_editor_scroll
+    end
+    if scroll_offset_y < 0 then
+      scroll_offset_y = 0
+    end
+    const first_visual_row = scroll_offset_y / line_height()
+    let mut visible_row_budget = text_rect.height / line_height() + 3
+    if visible_row_budget < 1 then
+      visible_row_budget = 1
+    end
+    let mut visual_rows = collect_visible_visual_rows(
+      draw_text_early, line_index, wrap_columns, first_visual_row, visible_row_budget
+    )
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_listing_rows(panels.tree)
     const breadcrumb_segments = folder_breadcrumb_segments(
@@ -661,12 +697,22 @@ fn main() -> i32 = do
     else if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
       app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
       scroll_offset_y = app.ux.scroll_offset_y
+      if scroll_offset_y > max_editor_scroll then
+        scroll_offset_y = max_editor_scroll
+      end
+      if scroll_offset_y < 0 then
+        scroll_offset_y = 0
+      end
       visible = visible_line_range(line_count, scroll_offset_y, viewport)
       view_metrics = editor_view_metrics_new(
         line_height(), char_width(),
         text_rect.x + 4, text_rect.y + 2,
         0, scroll_offset_y,
         text_rect.height / line_height()
+      )
+      visual_rows = collect_visible_visual_rows(
+        draw_text_early, line_index, wrap_columns,
+        scroll_offset_y / line_height(), visible_row_budget
       )
     end
 
@@ -767,7 +813,15 @@ fn main() -> i32 = do
 
       if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
         editor_focused = 1
-        selection = nav_click(line_index, view_metrics, selection, input.mouse_x, input.mouse_y)
+        const click_offset = wrap_offset_at_point(
+          draw_text_early, line_index, wrap_columns,
+          text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
+          line_height(), char_width(),
+          input.mouse_x, input.mouse_y
+        )
+        selection = selection_clamp(
+          selection_collapsed(click_offset), line_index.text_length
+        )
         selecting_text = 1
         handled = 1
       end
@@ -946,7 +1000,15 @@ fn main() -> i32 = do
         panels = shell_panels_drag_to(panels, input.mouse_x)
       end
       if input.mouse_down != 0 && selecting_text != 0 && panels.dragging == 0 then
-        selection = nav_drag(line_index, view_metrics, selection, input.mouse_x, input.mouse_y)
+        const drag_offset = wrap_offset_at_point(
+          draw_text_early, line_index, wrap_columns,
+          text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
+          line_height(), char_width(),
+          input.mouse_x, input.mouse_y
+        )
+        selection = selection_clamp(
+          selection_set_focus(selection, drag_offset), line_index.text_length
+        )
       end
       if input.mouse_down == 0 && mouse_was_down != 0 then
         panels = shell_panels_end_drag(panels)
@@ -995,6 +1057,25 @@ fn main() -> i32 = do
     app = editor_app_ensure_caret_visible(app, metrics)
     scroll_offset_y = app.ux.scroll_offset_y
     visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
+    const draw_text_pre = document_to_string(document)
+    const wrap_columns_now = wrap_max_columns(text_rect.width - 8, char_width())
+    const visual_row_count_now = document_visual_row_count(
+      draw_text_pre, line_index, wrap_columns_now
+    )
+    let mut max_scroll_now = visual_row_count_now * line_height() - text_rect.height
+    if max_scroll_now < 0 then
+      max_scroll_now = 0
+    end
+    if scroll_offset_y > max_scroll_now then
+      scroll_offset_y = max_scroll_now
+    end
+    if scroll_offset_y < 0 then
+      scroll_offset_y = 0
+    end
+    visual_rows = collect_visible_visual_rows(
+      draw_text_pre, line_index, wrap_columns_now,
+      scroll_offset_y / line_height(), visible_row_budget
+    )
 
     solid = solid_renderer_begin(solid)
     solid = solid_renderer_rect(
@@ -1149,15 +1230,21 @@ fn main() -> i32 = do
       draw_text,
       selection_caret(selection)
     )
-    const caret_row = caret_position.line - visible.first_line
+    const caret_visual = visual_row_index_for_caret(
+      draw_text, line_index, wrap_columns_now,
+      caret_position.line, caret_position.column
+    )
+    const caret_row = caret_visual - (scroll_offset_y / line_height())
     const blink_on = caret_blink_visible(
       frame_index * 16,
       caret_blink_period_ms()
     )
-    if blink_on && caret_row >= 0 && caret_position.line <= visible.last_line then
+    if blink_on && caret_row >= 0 && caret_row < visual_rows.length() then
+      const caret_row_info = visual_rows[caret_row]
+      const caret_col = caret_position.column - caret_row_info.column_start
       solid = solid_renderer_rect(
         solid, width, height,
-        text_rect.x + 4 + caret_position.column * char_width(),
+        text_rect.x + 4 + caret_col * char_width(),
         text_rect.y + 2 + caret_row * line_height(),
         1, line_height() - 2,
         solar.caret_red, solar.caret_green, solar.caret_blue, 1.0
@@ -1311,19 +1398,27 @@ fn main() -> i32 = do
     end
 
     let mut editor_lines: [StaticTextLine] = []
-    let mut line = visible.first_line
     let mut draw_row = 0
-    while line <= visible.last_line do
+    while draw_row < visual_rows.length() do
+      const row = visual_rows[draw_row]
       const baseline = gutter_baseline_y(text_rect.y + 2, line_height(), draw_row, 14)
+      let mut gutter_label = ""
+      if row.is_wrap_continue == 0 then
+        gutter_label = gutter_line_label(row.doc_line)
+      end
       editor_lines = push_line(
-        editor_lines, gutter_line_label(line), 13,
+        editor_lines, gutter_label, 13,
         gutter_label_pen_x(gutter_rect, 8), baseline
       )
+      const row_length = row.byte_end - row.byte_start
+      let mut row_text = ""
+      if row_length > 0 then
+        row_text = draw_text.substring(row.byte_start, row_length)
+      end
       editor_lines = push_line(
-        editor_lines, line_text_at(draw_text, line_index, line), font_size(),
+        editor_lines, row_text, font_size(),
         text_rect.x + 4, baseline
       )
-      line = line + 1
       draw_row = draw_row + 1
     end
 

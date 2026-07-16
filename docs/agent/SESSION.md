@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_WORD_WRAP
+done: `demo_live` wrap scroll/hit/draw/caret; compile on clean deps
+verify: `demo_live_fs_compile_ok`; `word_wrap_unit ok`; foreign dirty left
+next: ROLE=Critic STEP=3 TRACK_EDITOR_WORD_WRAP
+
 ### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_WORD_WRAP
 done: absorb `word_wrap.mlc` + unit (short/hard/soft/empty/hit)
 verify: `bash scripts/run_editor_word_wrap_unit.sh` → `word_wrap_unit ok`
