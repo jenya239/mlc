@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-16-glfw-content-scale` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-16-glfw-content-scale-closed` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-16-glfw-content-scale
+INSTRUCTIONS_REV=2026-07-16-glfw-content-scale-closed
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM already in-tree design-only, `.tmp/**`) — не удалять чужое; `git add` явным списком. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM already in-tree design-only, `.tmp/**`, foreign demo_live/folder_panel) — не удалять чужое; `git add` явным списком. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -66,7 +66,7 @@ INSTRUCTIONS_REV=2026-07-16-glfw-content-scale
 | **`TRACK_GUI_SCENE_PATH_MATCH` (PLAN §34)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_SCENE_FORM_LIVE` (PLAN §35)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_STDLIB_IO_FS` (PLAN §36)** | **closed** 2026-07-16 (Critic OK). Archive. STEP=7 → §37 |
-| **`TRACK_GLFW_CONTENT_SCALE` (PLAN §37) — queue head** | GLFW HiDPI content_scale ABI + smoke. Prefer `runtime`/`gl_window.mlc`; no `compiler/` |
+| **`TRACK_GLFW_CONTENT_SCALE` (PLAN §37)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

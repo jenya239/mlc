@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-glfw-content-scale` |
+| instructions_rev | `2026-07-16-glfw-content-scale-closed` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 3 |
-| active_track | TRACK_GLFW_CONTENT_SCALE |
-| test_gate | GLFW_CONTENT_SCALE STEP=4 Critic next |
+| step_last | 4 |
+| active_track | — (GLFW_CONTENT_SCALE closed) |
+| test_gate | Planner pick-next |
+
+### Turn 2026-07-16 19:10 (Critic TRACK_GLFW_CONTENT_SCALE STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 4 / critique-audit |
+| track   | TRACK_GLFW_CONTENT_SCALE |
+| started | 2026-07-16 17:51 |
+| elapsed | ~79 min (REG OOM retry MLC_JOBS=2) |
+| done    | Re-ran smoke+compile; REG 20/0 + sweep 148/0/1; archive §37. |
+| verify  | `content_scale_ok`; REG exit 0 (MLC_JOBS=2). |
+| result  | STEP=4 closed. Plain: content_scale Critic OK. |
+| issues  | Left foreign demo_live/folder_panel/SCRIPT_VM untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 17:55 (Driver TRACK_GLFW_CONTENT_SCALE STEP=3)
 
