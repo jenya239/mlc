@@ -1,12 +1,17 @@
-// TRACK_EDITOR_MVP STEP=10 — LineIndex (byte offset ↔ line/column).
-// Rebuild from document after edits (dirty-rebuild). Columns are byte offsets
-// within the line (codepoint columns deferred).
+// TRACK_EDITOR_MVP STEP=10 + TRACK_EDITOR_UTF8_COLUMNS —
+// LineIndex (byte offset ↔ line/codepoint-column).
+// Rebuild from document after edits (dirty-rebuild).
+// Columns are UTF-8 codepoint offsets within the line (grapheme deferred).
 
 import {
   TextDocument,
   document_to_string,
   document_byte_length
 } from './piece_table'
+
+// Byte value 0–255 (reuse net ABI; no Fontconfig/ICU).
+extern fn string_byte_u8(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" blocking
 
 export type TextPosition = {
   line: i32,
@@ -17,6 +22,98 @@ export type LineIndex = {
   starts: [i32],
   text_length: i32
 }
+
+export fn utf8_codepoint_byte_length(lead_byte: i32) -> i32 = do
+  let mut lead = lead_byte
+  if lead < 0 then
+    lead = 0
+  end
+  if lead > 255 then
+    lead = lead & 255
+  end
+  if lead < 128 then
+    return 1
+  end
+  if lead < 192 then
+    return 1
+  end
+  if lead < 224 then
+    return 2
+  end
+  if lead < 240 then
+    return 3
+  end
+  if lead < 248 then
+    return 4
+  end
+  1
+end
+
+export fn utf8_count_codepoints(
+  text: string,
+  start: i32,
+  end_exclusive: i32
+) -> i32 = do
+  let mut index = start
+  let mut count = 0
+  const text_length = text.byte_size()
+  let mut finish = end_exclusive
+  if finish > text_length then
+    finish = text_length
+  end
+  if index < 0 then
+    index = 0
+  end
+  while index < finish do
+    const lead = string_byte_u8(text, index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if index + step > finish then
+      count = count + 1
+      return count
+    end
+    index = index + step
+    count = count + 1
+  end
+  count
+end
+
+export fn utf8_byte_offset_for_codepoint_column(
+  text: string,
+  start: i32,
+  end_exclusive: i32,
+  column: i32
+) -> i32 = do
+  let mut index = start
+  let mut seen = 0
+  const text_length = text.byte_size()
+  let mut finish = end_exclusive
+  if finish > text_length then
+    finish = text_length
+  end
+  if index < 0 then
+    index = 0
+  end
+  let mut target = column
+  if target < 0 then
+    target = 0
+  end
+  while index < finish && seen < target do
+    const lead = string_byte_u8(text, index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if index + step > finish then
+      return finish
+    end
+    index = index + step
+    seen = seen + 1
+  end
+  index
+end
 
 export fn line_index_from_string(text: string) -> LineIndex = do
   let mut starts: [i32] = []
@@ -35,7 +132,6 @@ end
 export fn line_index_from_document(document: TextDocument) -> LineIndex =
   line_index_from_string(document_to_string(document))
 
-// Full rebuild after insert/delete (MVP dirty path).
 export fn line_index_rebuild(document: TextDocument) -> LineIndex =
   line_index_from_document(document)
 
@@ -64,6 +160,7 @@ end
 
 export fn line_index_offset_to_position(
   line_index: LineIndex,
+  text: string,
   byte_offset: i32
 ) -> TextPosition = do
   let mut offset = byte_offset
@@ -78,11 +175,14 @@ export fn line_index_offset_to_position(
   while line + 1 < count && line_index.starts[line + 1] <= offset do
     line = line + 1
   end
-  TextPosition { line: line, column: offset - line_index.starts[line] }
+  const start = line_index.starts[line]
+  const column = utf8_count_codepoints(text, start, offset)
+  TextPosition { line: line, column: column }
 end
 
 export fn line_index_position_to_offset(
   line_index: LineIndex,
+  text: string,
   position: TextPosition
 ) -> i32 = do
   let mut line = position.line
@@ -102,11 +202,7 @@ export fn line_index_position_to_offset(
   end
   const start = line_index.starts[line]
   const end_exclusive = line_end_exclusive(line_index, line)
-  const max_column = end_exclusive - start
-  if column > max_column then
-    column = max_column
-  end
-  start + column
+  utf8_byte_offset_for_codepoint_column(text, start, end_exclusive, column)
 end
 
 export fn line_index_matches_document(

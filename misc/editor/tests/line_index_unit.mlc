@@ -1,8 +1,10 @@
-// TRACK_EDITOR_MVP STEP=10 — LineIndex unit (offset ↔ line/col + dirty rebuild).
+// TRACK_EDITOR_MVP STEP=10 + TRACK_EDITOR_UTF8_COLUMNS —
+// LineIndex unit (offset ↔ line/codepoint-col + dirty rebuild).
 import {
   document_from_string,
   document_insert,
-  document_byte_length
+  document_byte_length,
+  document_to_string
 } from '../document/piece_table'
 import {
   TextPosition,
@@ -13,7 +15,8 @@ import {
   line_index_line_start,
   line_index_offset_to_position,
   line_index_position_to_offset,
-  line_index_matches_document
+  line_index_matches_document,
+  utf8_count_codepoints
 } from '../document/line_index'
 
 fn main() -> i32 = do
@@ -40,17 +43,18 @@ fn main() -> i32 = do
     return 6
   end
 
-  const at_w = line_index_offset_to_position(sample_index, 6)
+  const at_w = line_index_offset_to_position(sample_index, sample, 6)
   if at_w.line != 1 || at_w.column != 0 then
     return 7
   end
-  const at_d = line_index_offset_to_position(sample_index, 10)
+  const at_d = line_index_offset_to_position(sample_index, sample, 10)
   if at_d.line != 1 || at_d.column != 4 then
     return 8
   end
 
   const back = line_index_position_to_offset(
     sample_index,
+    sample,
     TextPosition { line: 1, column: 4 }
   )
   if back != 10 then
@@ -58,7 +62,8 @@ fn main() -> i32 = do
   end
   const round_trip = line_index_position_to_offset(
     sample_index,
-    line_index_offset_to_position(sample_index, 10)
+    sample,
+    line_index_offset_to_position(sample_index, sample, 10)
   )
   if round_trip != 10 then
     return 10
@@ -73,7 +78,6 @@ fn main() -> i32 = do
     return 12
   end
 
-  // Dirty rebuild after insert of a newline mid-file.
   const edited = document_insert(document, 5, "\nX")
   const rebuilt = line_index_rebuild(edited)
   if !line_index_matches_document(rebuilt, edited) then
@@ -85,12 +89,47 @@ fn main() -> i32 = do
   if document_byte_length(edited) != sample.length() + 2 then
     return 15
   end
-  const after_insert = line_index_offset_to_position(rebuilt, 6)
+  const edited_text = document_to_string(edited)
+  const after_insert = line_index_offset_to_position(rebuilt, edited_text, 6)
   if after_insert.line != 1 || after_insert.column != 0 then
     return 16
   end
   if line_index_line_start(rebuilt, 1) != 6 then
     return 17
+  end
+
+  // UTF-8: "café" — é is 2 bytes, 1 codepoint.
+  const utf = "café"
+  const utf_index = line_index_from_string(utf)
+  if utf.byte_size() != 5 then
+    return 18
+  end
+  if utf8_count_codepoints(utf, 0, utf.byte_size()) != 4 then
+    return 19
+  end
+  const at_e = line_index_offset_to_position(utf_index, utf, 3)
+  if at_e.line != 0 || at_e.column != 3 then
+    return 20
+  end
+  const after_e = line_index_offset_to_position(utf_index, utf, 5)
+  if after_e.column != 4 then
+    return 21
+  end
+  const utf_back = line_index_position_to_offset(
+    utf_index,
+    utf,
+    TextPosition { line: 0, column: 3 }
+  )
+  if utf_back != 3 then
+    return 22
+  end
+  const utf_end = line_index_position_to_offset(
+    utf_index,
+    utf,
+    TextPosition { line: 0, column: 4 }
+  )
+  if utf_end != 5 then
+    return 23
   end
 
   println(

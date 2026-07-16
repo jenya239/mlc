@@ -8,7 +8,13 @@ Parent: [../PLAN.md](../PLAN.md) §40; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Next step
 
-**STEP=1** — Codepoint helpers + `line_index` unit.
+**STEP=2** — Update all call sites; other editor units green.
+
+### STEP=1 done (2026-07-16)
+
+- Helpers + converters with `text:`; unit covers ASCII + `café`.
+- Gate: `bash scripts/run_editor_line_index_unit.sh` → `line_index_unit ok`.
+- Call sites still on old arity → STEP=2.
 
 ### STEP=0 done (2026-07-16)
 

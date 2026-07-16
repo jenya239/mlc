@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_UTF8_COLUMNS` (§40) STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** helpers+unit.
+**`TRACK_EDITOR_UTF8_COLUMNS` (§40) STEP=1 done** (2026-07-16) — helpers+unit; **STEP=2** call sites.
 Track: [TRACK_EDITOR_UTF8_COLUMNS.md](TRACK_EDITOR_UTF8_COLUMNS.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

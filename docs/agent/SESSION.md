@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-utf8-columns` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_EDITOR_UTF8_COLUMNS |
-| test_gate | EDITOR_UTF8_COLUMNS STEP=1 next |
+| test_gate | EDITOR_UTF8_COLUMNS STEP=2 next |
+
+### Turn 2026-07-16 21:58 (Driver TRACK_EDITOR_UTF8_COLUMNS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_UTF8_COLUMNS |
+| started | 2026-07-16 21:54 |
+| elapsed | ~4 min |
+| done    | Codepoint helpers + converters(+`text`); unit ASCII+`café`. |
+| verify  | `bash scripts/run_editor_line_index_unit.sh` → `line_index_unit ok`. |
+| result  | STEP=1 done. Plain: line_index codepoint columns unit-pass. |
+| issues  | Call sites still old arity until STEP=2. |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_UTF8_COLUMNS |
 
 ### Turn 2026-07-16 21:50 (Driver TRACK_EDITOR_UTF8_COLUMNS STEP=0)
 
