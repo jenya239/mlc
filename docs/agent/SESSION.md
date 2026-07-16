@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-stdlib-io-fs` |
+| instructions_rev | `2026-07-16-stdlib-io-fs-closed` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 6 |
-| active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=8 Critic next |
+| step_last | 8 |
+| active_track | — (STDLIB_IO_FS closed) |
+| test_gate | Planner pick-next |
+
+### Turn 2026-07-16 15:45 (Critic TRACK_STDLIB_IO_FS STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 8 / critique-audit |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:52 |
+| elapsed | ~53 min |
+| done    | Re-ran FS smokes + demo_live compile; REG 20/0 + sweep 147/0/1; archive §36. |
+| verify  | `fs_stat_ok` `list_dir_ok` `list_dir_safe_ok` `mkdir_ok` `file_tree_fs_unit ok` `demo_live_fs_compile_ok`; REG exit 0. |
+| result  | STEP=8 closed. Plain: IO/FS + editor tree Critic OK. |
+| issues  | Left SCRIPT_VM untouched. STEP=7 deferred. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 14:55 (Driver TRACK_STDLIB_IO_FS STEP=6)
 

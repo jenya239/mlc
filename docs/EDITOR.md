@@ -64,7 +64,7 @@ Imports: `import { ... } from '../gui/scene'` etc. Stdlib: relative to
 
 | Gap | Where to fix | Blocks |
 |-----|--------------|--------|
-| No `list_dir` / `is_dir` / `is_file` | stdlib `io` + runtime — **TRACK_STDLIB_IO_FS (§36)** | File tree |
+| No `list_dir` / `is_dir` / `is_file` | stdlib `io` + runtime — **done** §36 (`TRACK_STDLIB_IO_FS`) | File tree |
 | Clipboard | **done** (§33b LIVE_POLISH: GLFW get/set + inject) | Cut/copy/paste |
 | No font discovery API | config path + DejaVuMono default first | Theme font |
 | tree-sitter | later package + FFI; v1 = incremental lexer behind interface | Syntax (E6) |

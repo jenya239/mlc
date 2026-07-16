@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_IO_FS` STEP=6 done** (2026-07-16) — demo_live disk/mock tree; **STEP=8** Critic next.
-Track: [TRACK_STDLIB_IO_FS.md](TRACK_STDLIB_IO_FS.md).
+**Queue empty after §36 close** — next Planner `pick-next` (no active numbered track).
+See [PLAN.md](../PLAN.md).
 ## Step sizing (good vs bad)
 
 | Good | Bad |
