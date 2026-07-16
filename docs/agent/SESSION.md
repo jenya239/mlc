@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 5 |
+| driver_turns_since_plan | 4 |
+| step_last | 6 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=6 blueprint MVP next |
+| test_gate | Phase D STEP=7 Critic next |
+
+### Turn 2026-07-16 13:38 (Driver TRACK_GUI_SCENE_PHASE_D STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-16 13:35 |
+| elapsed | ~3 min |
+| done    | `scene_blueprint_smoke.mlc` + runner; form smoke `Path(_)` arms (E084). |
+| verify  | blueprint → `scene_blueprint_ok`; form → `scene_form_ok`; spatial → `scene_spatial_ok`. |
+| result  | STEP=6 done. Plain: 2 rects + wire + pan/zoom headless MVP. |
+| issues  | Left EDITOR.md + scene_form_live + SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=7 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-16 13:35 (Driver TRACK_GUI_SCENE_PHASE_D STEP=5)
 

@@ -29,7 +29,8 @@ fn label_text(scene: Scene, node_id: i32) -> string =
     RectFill(_) => "",
     Checkbox(_) => "",
     Slider(_) => "",
-    TextField(_) => ""
+    TextField(_) => "",
+    Path(_) => ""
   }
 
 fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
@@ -39,7 +40,8 @@ fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
     RectFill(_) => 0 - 1,
     Label(_) => 0 - 1,
     Slider(_) => 0 - 1,
-    TextField(_) => 0 - 1
+    TextField(_) => 0 - 1,
+    Path(_) => 0 - 1
   }
 
 fn slider_value(scene: Scene, node_id: i32) -> f64 =
@@ -49,7 +51,8 @@ fn slider_value(scene: Scene, node_id: i32) -> f64 =
     RectFill(_) => 0.0 - 1.0,
     Label(_) => 0.0 - 1.0,
     Checkbox(_) => 0.0 - 1.0,
-    TextField(_) => 0.0 - 1.0
+    TextField(_) => 0.0 - 1.0,
+    Path(_) => 0.0 - 1.0
   }
 
 fn field_text(scene: Scene, node_id: i32) -> string =
@@ -59,7 +62,8 @@ fn field_text(scene: Scene, node_id: i32) -> string =
     RectFill(_) => "",
     Label(_) => "",
     Checkbox(_) => "",
-    Slider(_) => ""
+    Slider(_) => "",
+    Path(_) => ""
   }
 
 fn approx_eq(left: f64, right: f64) -> i32 = do

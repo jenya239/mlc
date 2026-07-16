@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_D` STEP=5 done** (2026-07-16) — `scene_wire_rebuild`; **STEP=6** blueprint MVP next.
+**`TRACK_GUI_SCENE_PHASE_D` STEP=6 done** (2026-07-16) — blueprint MVP smoke; **STEP=7** Critic next.
 Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 ## Step sizing (good vs bad)
 

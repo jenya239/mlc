@@ -17,7 +17,12 @@ tess. Leave any pre-existing Path WIP; do not revert foreign dirty.
 
 ## Next step
 
-**STEP=6** — Blueprint MVP smoke (≥2 nodes + wire + pan/zoom).
+**STEP=7** — Critic: Decision match; form + spatial still green; close Phase D.
+
+### STEP=6 done (2026-07-16)
+
+- Blueprint MVP: ≥2 `RectFill` + wire `Path` + pan/zoom; `scene_blueprint_ok`.
+- Form smoke: `Path(_)` arms (non-exhaustive after STEP=3); form + spatial still exit 0.
 
 ### STEP=5 done (2026-07-16)
 
@@ -112,7 +117,7 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 | 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | **done** (2026-07-15): `scene_path_tess_ok` |
 | 4 | Path draw (+ optional stroke hit) smoke | **done** (2026-07-16): `scene_path_draw_ok` |
 | 5 | Wire helper: path between two node anchors; updates when endpoints move | **done** (2026-07-16): `scene_wire_ok` |
-| 6 | Blueprint MVP smoke: ≥2 nodes + wire + pan/zoom; headless token | `scene_blueprint_smoke` exit 0 |
+| 6 | Blueprint MVP smoke: ≥2 nodes + wire + pan/zoom; headless token | **done** (2026-07-16): `scene_blueprint_ok` |
 | 7 | Critic: Decision match; Phase C spatial + Phase B form still green; no sleep | close Phase D |
 
 ### Sub-steps (Driver)
@@ -134,13 +139,13 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 1. Draw path stroke via solid batch — done.
 2. Smoke `scene_path_draw_ok` — done.
 
-**STEP=5**
-1. `scene_wire_rebuild` from two node ids + local anchors.
-2. Smoke: move endpoint → wire control points change; hit/draw still coherent.
+**STEP=5** — **done**
+1. `scene_wire_rebuild` from two node ids + local anchors — done.
+2. Smoke: move endpoint → wire control points change — done.
 
-**STEP=6**
-1. Compose MVP example + script; stdout `scene_blueprint_ok`.
-2. Phase B form + Phase C spatial still exit 0.
+**STEP=6** — **done**
+1. Compose MVP example + script; stdout `scene_blueprint_ok` — done.
+2. Phase B form + Phase C spatial still exit 0 — done (`Path(_)` in form helpers).
 
 **STEP=7**
 1. Critic: re-run Phase D + form/spatial smokes; archive; epic → next PLAN item.

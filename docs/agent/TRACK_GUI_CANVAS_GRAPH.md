@@ -94,7 +94,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
 fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
-(STEP=4 done; STEP=5 wire next).
+(STEP=6 done; STEP=7 Critic next).
 
 ## Out of scope
 
