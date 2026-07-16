@@ -7,6 +7,7 @@ import {
   AffinePoint,
   Scene,
   SceneAabb,
+  ScenePath,
   SceneRectFill,
   affine_invert,
   affine_multiply,
@@ -21,6 +22,10 @@ import {
   scene_text_field_as_rect_fill
 } from './scene'
 import {
+  scene_path_polyline,
+  scene_path_polyline_point_count
+} from './scene_path'
+import {
   scene_spatial_draw_candidates,
   scene_spatial_uses_quadtree
 } from './scene_spatial'
@@ -31,6 +36,7 @@ import {
 } from './solid_renderer'
 
 extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn sqrt(value: f64) -> f64 = "std::sqrt" from "<cmath>"
 
 fn pixel_to_ndc_x(pixel_x: f64, window_width: i32) -> f64 =
   pixel_x / i32_to_f64(window_width) * 2.0 - 1.0
@@ -76,7 +82,85 @@ fn push_rect_fill_triangles(
   batch
 end
 
-// 6 vertices per RectFill (two triangles). No GL.
+fn scene_path_as_rect_fill(path: ScenePath) -> SceneRectFill =
+  SceneRectFill {
+    width: 0.0,
+    height: 0.0,
+    red: path.red,
+    green: path.green,
+    blue: path.blue,
+    alpha: path.alpha
+  }
+
+// 6 vertices (2 tris) per polyline edge.
+export fn scene_path_stroke_vertex_count(path: ScenePath) -> i32 = do
+  const point_count = scene_path_polyline_point_count(path)
+  if point_count < 2 then
+    return 0
+  end
+  (point_count - 1) * 6
+end
+
+fn push_path_stroke_triangles(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  model_view: Affine2x3,
+  path: ScenePath
+) -> SolidRenderer = do
+  const polyline = scene_path_polyline(path)
+  const point_count = polyline.length() / 2
+  if point_count < 2 then
+    return renderer
+  end
+  const half_width = path.stroke_width * 0.5
+  const fill = scene_path_as_rect_fill(path)
+  let mut batch = renderer
+  let mut edge_index = 0
+  while edge_index + 1 < point_count do
+    const base = edge_index * 2
+    const start_local_x = polyline[base]
+    const start_local_y = polyline[base + 1]
+    const end_local_x = polyline[base + 2]
+    const end_local_y = polyline[base + 3]
+    const start_pixel = affine_transform_point(model_view, start_local_x, start_local_y)
+    const end_pixel = affine_transform_point(model_view, end_local_x, end_local_y)
+    const delta_x = end_pixel.x - start_pixel.x
+    const delta_y = end_pixel.y - start_pixel.y
+    const length_squared = delta_x * delta_x + delta_y * delta_y
+    if length_squared > 0.00000001 then
+      const length = sqrt(length_squared)
+      const normal_x = 0.0 - delta_y / length * half_width
+      const normal_y = delta_x / length * half_width
+      const corner0 = AffinePoint {
+        x: start_pixel.x + normal_x,
+        y: start_pixel.y + normal_y
+      }
+      const corner1 = AffinePoint {
+        x: end_pixel.x + normal_x,
+        y: end_pixel.y + normal_y
+      }
+      const corner2 = AffinePoint {
+        x: end_pixel.x - normal_x,
+        y: end_pixel.y - normal_y
+      }
+      const corner3 = AffinePoint {
+        x: start_pixel.x - normal_x,
+        y: start_pixel.y - normal_y
+      }
+      batch = push_ndc_vertex(batch, window_width, window_height, corner0, fill)
+      batch = push_ndc_vertex(batch, window_width, window_height, corner1, fill)
+      batch = push_ndc_vertex(batch, window_width, window_height, corner2, fill)
+      batch = push_ndc_vertex(batch, window_width, window_height, corner0, fill)
+      batch = push_ndc_vertex(batch, window_width, window_height, corner2, fill)
+      batch = push_ndc_vertex(batch, window_width, window_height, corner3, fill)
+    end
+    edge_index = edge_index + 1
+  end
+  batch
+end
+
+// 6 vertices per RectFill (two triangles). Path: 6 per polyline edge. No GL.
 export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
   let mut count = 0
   let mut index = 0
@@ -100,7 +184,8 @@ export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
       TextField(_) => do
         count = count + 6
       end,
-      Path(_) => do
+      Path(scene_path) => do
+        count = count + scene_path_stroke_vertex_count(scene_path)
       end,
       Container => do
       end
@@ -190,7 +275,14 @@ fn scene_draw_one_node(
         affine_multiply(view, scene.world[index]),
         scene_text_field_as_rect_fill(scene_text_field)
       ),
-    Path(_) => batch,
+    Path(scene_path) =>
+      push_path_stroke_triangles(
+        batch,
+        window_width,
+        window_height,
+        affine_multiply(view, scene.world[index]),
+        scene_path
+      ),
     Container => batch
   }
 end

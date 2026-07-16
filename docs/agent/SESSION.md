@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 3 |
+| driver_turns_since_plan | 2 |
+| step_last | 4 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=4 Path draw next |
+| test_gate | Phase D STEP=5 wire next |
+
+### Turn 2026-07-16 13:25 (Driver TRACK_GUI_SCENE_PHASE_D STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-16 13:20 |
+| elapsed | ~5 min |
+| done    | Path stroke ribbon in `scene_draw`; `scene_path_stroke_vertex_count`; draw smoke. |
+| verify  | `bash scripts/run_scene_path_draw_smoke.sh` → `scene_path_draw_ok`; tess smoke ok. |
+| result  | STEP=4 done. Plain: cubic path strokes as solid tris (48 verts / 8 edges). |
+| issues  | Left EDITOR.md + scene_form_live untouched; precise stroke hit deferred. |
+| next    | ROLE=Driver STEP=5 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-16 13:20 (Driver TRACK_GUI_SCENE_PHASE_D STEP=3)
 

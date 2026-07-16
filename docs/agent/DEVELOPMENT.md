@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_D` STEP=3 done** (2026-07-15) — Path tess; **STEP=4** Path draw next.
+**`TRACK_GUI_SCENE_PHASE_D` STEP=4 done** (2026-07-16) — Path stroke draw; **STEP=5** wire next.
 Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 ## Step sizing (good vs bad)
 
