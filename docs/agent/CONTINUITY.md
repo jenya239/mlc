@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-16-editor-caret-blink` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-16-editor-word-wrap` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 

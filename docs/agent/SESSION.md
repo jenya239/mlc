@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §41)
+done: §42 `TRACK_EDITOR_WORD_WRAP` — soft wrap; absorb `word_wrap.mlc` WIP
+verify: PLAN §42 + TRACK + queue; EDITOR gap row; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_WORD_WRAP
+
 ### 2026-07-16 — ROLE=Critic STEP=3 TRACK_EDITOR_CARET_BLINK
 done: closed §41; TRACK → archive; PLAN done; REG N/A
 verify: `caret_blink_unit ok`; `ux_ok caret_blink_phases`; `demo_live_fs_compile_ok`; foreign dirty left

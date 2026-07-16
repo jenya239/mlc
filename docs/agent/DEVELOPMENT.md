@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_CARET_BLINK` (§41) closed** (2026-07-16) — Critic OK; archive.
-Queue → Planner `pick-next`. SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated.
+**`TRACK_EDITOR_WORD_WRAP` (§42) STEP=0 next** (2026-07-16) — soft wrap; absorb WIP.
+Track: [TRACK_EDITOR_WORD_WRAP.md](TRACK_EDITOR_WORD_WRAP.md).
+SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 
 | Good | Bad |
