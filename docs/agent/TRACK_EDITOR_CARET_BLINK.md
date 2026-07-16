@@ -10,7 +10,12 @@ Parent: [../PLAN.md](../PLAN.md) §41; residual from
 
 ## Next step
 
-**STEP=2** — Wire `demo_live` + UX scenario + ux gate.
+**STEP=3** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=2 done (2026-07-16)
+
+- `demo_live` uses `caret_blink_visible`; scenario + `run_ux_gate.sh`.
+- Gates: `ux_ok caret_blink_phases`; `[ux gate] all ok`; `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-16)
 
@@ -64,8 +69,8 @@ Fontconfig; live FBO caret MAE; `compiler/` / `lib/mlc/` changes.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Helper + unit | `caret_blink_unit ok` |
-| 2 | Wire `demo_live` + UX scenario + ux gate | compile + `[ux gate] all ok` |
+| 1 | Helper + unit | **done** (2026-07-16) `caret_blink_unit ok` |
+| 2 | Wire `demo_live` + UX scenario + ux gate | **done** (2026-07-16) |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
@@ -74,13 +79,13 @@ Fontconfig; live FBO caret MAE; `compiler/` / `lib/mlc/` changes.
 1. Freeze period + exports + placement — done.
 2. Scenario name = GUI_UX_TESTING L8 — done.
 
-**STEP=1**
-1. `misc/editor/ux/caret_blink.mlc` + `misc/editor/tests/caret_blink_unit.mlc`.
-2. Gate: `bash scripts/run_editor_caret_blink_unit.sh`.
+**STEP=1** — **done**
+1. Helper + unit — done.
+2. Gate: `bash scripts/run_editor_caret_blink_unit.sh` → `caret_blink_unit ok`.
 
-**STEP=2**
-1. `demo_live.mlc` uses helper; add scenario + `run_ux_gate.sh` entry.
-2. `run_ux_gate.sh` + demo_live compile green.
+**STEP=2** — **done**
+1. `demo_live` + scenario + gate — done.
+2. `run_ux_gate.sh` + demo_live compile — done.
 
 **STEP=3** — Critic; `next` = Planner.
 

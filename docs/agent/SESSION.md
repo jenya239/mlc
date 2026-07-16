@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_CARET_BLINK
+done: `demo_live` helper wire; `caret_blink_phases` scenario + ux gate
+verify: `ux_ok caret_blink_phases`; `[ux gate] all ok`; `demo_live_fs_compile_ok`; foreign WIP stashed then restored
+next: ROLE=Critic STEP=3 TRACK_EDITOR_CARET_BLINK
+
 ### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_CARET_BLINK
 done: `caret_blink.mlc` + unit; period/phases/clamp
 verify: `bash scripts/run_editor_caret_blink_unit.sh` → `caret_blink_unit ok`

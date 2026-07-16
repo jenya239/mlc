@@ -436,7 +436,7 @@ compiler/
 | **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–4 | [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md) |
 | **39** | Editor font config path (DejaVuMono default; no Fontconfig) | **done** (2026-07-16) Critic OK; STEP=0–2 | [archive/tracks/TRACK_EDITOR_FONT_CONFIG](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md) |
 | **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md) |
-| **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **active** (2026-07-16) STEP=1 **done**; STEP=2 next | [TRACK_EDITOR_CARET_BLINK](agent/TRACK_EDITOR_CARET_BLINK.md) |
+| **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **active** (2026-07-16) STEP=2 **done**; **STEP=3** Critic next | [TRACK_EDITOR_CARET_BLINK](agent/TRACK_EDITOR_CARET_BLINK.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -658,7 +658,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_FONT_CONFIG.md](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md))**
   → **EDITOR_UTF8_COLUMNS (§40, **closed** 2026-07-16: Critic OK; STEP=0–3; `83fd96f1`…`bd92d925`;
       → [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md))**
-  → **EDITOR_CARET_BLINK (§41, **active**; STEP=0 Decision **done**; STEP=1 next;
+  → **EDITOR_CARET_BLINK (§41, **active**; STEP=2 wire **done**; **STEP=3** Critic next;
       → [agent/TRACK_EDITOR_CARET_BLINK.md](agent/TRACK_EDITOR_CARET_BLINK.md))**
 ```
 

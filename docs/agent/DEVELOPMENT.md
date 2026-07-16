@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_CARET_BLINK` (§41) STEP=1 done** (2026-07-16) — helper+unit; **STEP=2** next.
+**`TRACK_EDITOR_CARET_BLINK` (§41) STEP=2 done** (2026-07-16) — demo_live+UX; **STEP=3** Critic next.
 Track: [TRACK_EDITOR_CARET_BLINK.md](TRACK_EDITOR_CARET_BLINK.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

@@ -29,6 +29,7 @@ run_one divider_cursor "$ROOT_DIR/scripts/run_ux_divider_cursor.sh"
 run_one draw_report "$ROOT_DIR/scripts/run_ux_draw_report.sh"
 run_one caret_mae "$ROOT_DIR/scripts/run_ux_caret_mae.sh"
 run_one copy_paste "$ROOT_DIR/scripts/run_ux_copy_paste.sh"
+run_one caret_blink_phases "$ROOT_DIR/scripts/run_ux_caret_blink_phases.sh"
 
 if [ "$fail" != 0 ]; then
   echo "[ux gate] FAILED" >&2

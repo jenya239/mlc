@@ -1,0 +1,48 @@
+# TRACK_EDITOR_CARET_BLINK STEP=2 — scenario caret_blink_phases (L8).
+import { SetClock } from '../../gui/ux/expect'
+import {
+  ux_driver_new,
+  ux_driver_apply
+} from '../../gui/ux/driver'
+import {
+  caret_blink_period_ms,
+  caret_blink_visible
+} from '../ux/caret_blink'
+
+fn main() -> i32 = do
+  const period = caret_blink_period_ms()
+  let mut driver = ux_driver_new(16)
+
+  driver = ux_driver_apply(driver, SetClock(0))
+  if !caret_blink_visible(driver.clock_ms, period) then
+    println("ux_fail caret_blink_phases on0")
+    return 1
+  end
+
+  driver = ux_driver_apply(driver, SetClock(499))
+  if !caret_blink_visible(driver.clock_ms, period) then
+    println("ux_fail caret_blink_phases on499")
+    return 2
+  end
+
+  driver = ux_driver_apply(driver, SetClock(500))
+  if caret_blink_visible(driver.clock_ms, period) then
+    println("ux_fail caret_blink_phases off500")
+    return 3
+  end
+
+  driver = ux_driver_apply(driver, SetClock(999))
+  if caret_blink_visible(driver.clock_ms, period) then
+    println("ux_fail caret_blink_phases off999")
+    return 4
+  end
+
+  driver = ux_driver_apply(driver, SetClock(1000))
+  if !caret_blink_visible(driver.clock_ms, period) then
+    println("ux_fail caret_blink_phases on1000")
+    return 5
+  end
+
+  println("ux_ok caret_blink_phases")
+  0
+end

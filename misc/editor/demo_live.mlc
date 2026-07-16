@@ -196,6 +196,10 @@ import {
 import { editor_text_metrics_default } from './ux/overflow'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
 import {
+  caret_blink_period_ms,
+  caret_blink_visible
+} from './ux/caret_blink'
+import {
   editor_app_line_height,
   editor_app_char_width,
   editor_app_font_size,
@@ -1146,7 +1150,10 @@ fn main() -> i32 = do
       selection_caret(selection)
     )
     const caret_row = caret_position.line - visible.first_line
-    const blink_on = (frame_index / 30) % 2 == 0
+    const blink_on = caret_blink_visible(
+      frame_index * 16,
+      caret_blink_period_ms()
+    )
     if blink_on && caret_row >= 0 && caret_position.line <= visible.last_line then
       solid = solid_renderer_rect(
         solid, width, height,
