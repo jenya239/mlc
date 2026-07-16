@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-glfw-content-scale` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 1 |
+| step_last | 2 |
 | active_track | TRACK_GLFW_CONTENT_SCALE |
-| test_gate | GLFW_CONTENT_SCALE STEP=2 smoke next |
+| test_gate | GLFW_CONTENT_SCALE STEP=3 optional editor next |
+
+### Turn 2026-07-16 17:50 (Driver TRACK_GLFW_CONTENT_SCALE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_GLFW_CONTENT_SCALE |
+| started | 2026-07-16 17:45 |
+| elapsed | ~2 min |
+| done    | `run_glfw_content_scale_smoke.sh` runs binary after begin; token gate. |
+| verify  | `bash scripts/run_glfw_content_scale_smoke.sh` → `content_scale_ok`. |
+| result  | STEP=2 done. Plain: headless scales > 0. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_GLFW_CONTENT_SCALE |
 
 ### Turn 2026-07-16 17:48 (Driver TRACK_GLFW_CONTENT_SCALE STEP=1)
 

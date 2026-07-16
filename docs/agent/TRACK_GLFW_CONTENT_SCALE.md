@@ -10,7 +10,11 @@ STEP=7 deferred.
 
 ## Next step
 
-**STEP=2** — Headless smoke token (`content_scale_ok`).
+**STEP=3** — Optional: demo_live / editor use scale (or N/A).
+
+### STEP=2 done (2026-07-16)
+
+- Headless smoke `content_scale_ok`.
 
 ### STEP=1 done (2026-07-16)
 
