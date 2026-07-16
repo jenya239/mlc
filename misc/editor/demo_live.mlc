@@ -1084,8 +1084,8 @@ fn main() -> i32 = do
       while span_index < spans.length() do
         const span = spans[span_index]
         if span.tag.byte_size() > 0 then
-          const start_position = line_index_offset_to_position(line_index, span.byte_start)
-          const end_position = line_index_offset_to_position(line_index, span.byte_end)
+          const start_position = line_index_offset_to_position(line_index, draw_text, span.byte_start)
+          const end_position = line_index_offset_to_position(line_index, draw_text, span.byte_end)
           if start_position.line == end_position.line &&
               start_position.line >= visible.first_line &&
               start_position.line <= visible.last_line then
@@ -1111,8 +1111,8 @@ fn main() -> i32 = do
     if !selection_is_empty(selection) then
       const range_start = selection_start(selection)
       const range_end = selection_end(selection)
-      const start_position = line_index_offset_to_position(line_index, range_start)
-      const end_position = line_index_offset_to_position(line_index, range_end)
+      const start_position = line_index_offset_to_position(line_index, draw_text, range_start)
+      const end_position = line_index_offset_to_position(line_index, draw_text, range_end)
       let mut highlight_line = start_position.line
       while highlight_line <= end_position.line do
         if highlight_line >= visible.first_line && highlight_line <= visible.last_line then
@@ -1140,7 +1140,11 @@ fn main() -> i32 = do
       end
     end
 
-    const caret_position = line_index_offset_to_position(line_index, selection_caret(selection))
+    const caret_position = line_index_offset_to_position(
+      line_index,
+      draw_text,
+      selection_caret(selection)
+    )
     const caret_row = caret_position.line - visible.first_line
     const blink_on = (frame_index / 30) % 2 == 0
     if blink_on && caret_row >= 0 && caret_position.line <= visible.last_line then

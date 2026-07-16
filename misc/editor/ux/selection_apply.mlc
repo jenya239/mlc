@@ -164,8 +164,8 @@ export fn editor_ux_selection_draw_report(
   const line_index = line_index_from_document(active.buffer.document)
   const range_start = selection_start(state.selection)
   const range_end = selection_end(state.selection)
-  const start_pos = line_index_offset_to_position(line_index, range_start)
-  const end_pos = line_index_offset_to_position(line_index, range_end)
+  const start_pos = line_index_offset_to_position(line_index, line_index.text, range_start)
+  const end_pos = line_index_offset_to_position(line_index, line_index.text, range_end)
   let mut line_height = metrics.line_height
   if line_height <= 0 then
     line_height = 1

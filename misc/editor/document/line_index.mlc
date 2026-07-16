@@ -20,7 +20,8 @@ export type TextPosition = {
 
 export type LineIndex = {
   starts: [i32],
-  text_length: i32
+  text_length: i32,
+  text: string
 }
 
 export fn utf8_codepoint_byte_length(lead_byte: i32) -> i32 = do
@@ -126,7 +127,7 @@ export fn line_index_from_string(text: string) -> LineIndex = do
     end
     byte_index = byte_index + 1
   end
-  LineIndex { starts: starts, text_length: length }
+  LineIndex { starts: starts, text_length: length, text: text }
 end
 
 export fn line_index_from_document(document: TextDocument) -> LineIndex =

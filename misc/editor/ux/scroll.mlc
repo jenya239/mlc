@@ -99,6 +99,7 @@ export fn editor_ux_caret_in_viewport(
   const line_index = line_index_from_document(active.buffer.document)
   const position = line_index_offset_to_position(
     line_index,
+    line_index.text,
     selection_caret(state.selection)
   )
   const line_height = line_height_or_one(metrics)
@@ -126,6 +127,7 @@ export fn editor_ux_ensure_caret_visible(
   const line_index = line_index_from_document(active.buffer.document)
   const position = line_index_offset_to_position(
     line_index,
+    line_index.text,
     selection_caret(state.selection)
   )
   const line_height = line_height_or_one(metrics)

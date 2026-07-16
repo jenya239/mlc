@@ -100,7 +100,7 @@ export fn editor_ux_snapshot(state: EditorUxState) -> UxSnapshot = do
     end
     caret_byte = selection_caret(state.selection)
     const line_index = line_index_from_document(active.buffer.document)
-    const position = line_index_offset_to_position(line_index, caret_byte)
+    const position = line_index_offset_to_position(line_index, line_index.text, caret_byte)
     caret_line = position.line
     caret_column = position.column
   end

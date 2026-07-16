@@ -1,344 +1,96 @@
 # Agent session log
 
-## Session 2026-05-22
+## Entries
 
-| Field | Value |
-|-------|-------|
-| instructions_rev | `2026-07-16-editor-utf8-columns` |
-| agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 1 |
-| active_track | TRACK_EDITOR_UTF8_COLUMNS |
-| test_gate | EDITOR_UTF8_COLUMNS STEP=2 next |
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_UTF8_COLUMNS
+done: `LineIndex.text`; call sites pass `text:`; units + demo_live compile ok
+verify: line_index/selection/navigation/status_bar units; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Critic STEP=3 TRACK_EDITOR_UTF8_COLUMNS
 
-### Turn 2026-07-16 21:58 (Driver TRACK_EDITOR_UTF8_COLUMNS STEP=1)
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_UTF8_COLUMNS
+done: helpers + converters with `text:`; unit ASCII + `café`; call sites still old arity
+verify: `bash scripts/run_editor_line_index_unit.sh` → `line_index_unit ok`
+next: ROLE=Implementer STEP=2 TRACK_EDITOR_UTF8_COLUMNS
 
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_EDITOR_UTF8_COLUMNS |
-| started | 2026-07-16 21:54 |
-| elapsed | ~4 min |
-| done    | Codepoint helpers + converters(+`text`); unit ASCII+`café`. |
-| verify  | `bash scripts/run_editor_line_index_unit.sh` → `line_index_unit ok`. |
-| result  | STEP=1 done. Plain: line_index codepoint columns unit-pass. |
-| issues  | Call sites still old arity until STEP=2. |
-| next    | ROLE=Driver STEP=2 TRACK_EDITOR_UTF8_COLUMNS |
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_UTF8_COLUMNS
+done: Decision — converters take `text:`; helpers named; no grapheme/ICU
+verify: TRACK Decision + PLAN §40 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_UTF8_COLUMNS
 
-### Turn 2026-07-16 21:50 (Driver TRACK_EDITOR_UTF8_COLUMNS STEP=0)
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §39)
+done: §40 `TRACK_EDITOR_UTF8_COLUMNS` — UTF-8 **codepoint** columns in `line_index`
+verify: PLAN §40 + TRACK + queue; SESSION archived pre-pick; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_UTF8_COLUMNS
 
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 0 |
-| track   | TRACK_EDITOR_UTF8_COLUMNS |
-| started | 2026-07-16 21:49 |
-| elapsed | ~1 min |
-| done    | Frozen Decision: codepoint columns; converters gain `text:`; helpers named. |
-| verify  | TRACK Decision **frozen**; PLAN §40 STEP=0 done / STEP=1 next. |
-| result  | STEP=0 done. Plain: UTF-8 column Decision frozen. |
-| issues  | Folded leftover PLAN/CONTINUITY sync from open. |
-| next    | ROLE=Driver STEP=1 TRACK_EDITOR_UTF8_COLUMNS |
+### 2026-07-16 — ROLE=Critic STEP=2 TRACK_EDITOR_FONT_CONFIG
+done: closed §39; TRACK → archive; PLAN done; REG N/A
+verify: `editor_font_config_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Planner STEP=pick-next
 
-### Turn 2026-07-16 21:45 (Planner TRACK_EDITOR_UTF8_COLUMNS pick-next)
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_FONT_CONFIG
+done: `resolve_editor_font_path` + unit + demo_live + README
+verify: `editor_font_config_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Critic STEP=2 TRACK_EDITOR_FONT_CONFIG
 
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | pick-next / plan-refresh |
-| track   | TRACK_EDITOR_UTF8_COLUMNS |
-| started | 2026-07-16 21:43 |
-| elapsed | ~2 min |
-| done    | Opened §40 from EDITOR.md column gap; marked §39 font gap done in EDITOR.md. |
-| verify  | PLAN §40 + CONTINUITY queue head; TRACK STEPs 0–3. |
-| result  | STEP=pick-next done. Plain: UTF-8 columns track opened. |
-| issues  | Grapheme/ICU out; SCRIPT_VM gated. |
-| next    | ROLE=Driver STEP=0 TRACK_EDITOR_UTF8_COLUMNS |
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_FONT_CONFIG
+done: Decision — default DejaVuMono; `MLC_EDITOR_FONT`; no Fontconfig; PATH_MAX
+verify: TRACK Decision + PLAN §39 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_FONT_CONFIG
 
-### Turn 2026-07-16 21:40 (Critic TRACK_EDITOR_FONT_CONFIG STEP=3)
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §38)
+done: §39 `TRACK_EDITOR_FONT_CONFIG` — DejaVuMono default + env override
+verify: PLAN §39 + TRACK + queue; SESSION archived; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_FONT_CONFIG
 
-| field   | value |
-|---------|-------|
-| role    | Critic |
-| step    | 3 / critique-audit |
-| track   | TRACK_EDITOR_FONT_CONFIG |
-| started | 2026-07-16 21:37 |
-| elapsed | ~3 min |
-| done    | Re-ran font unit + demo_live compile; REG N/A; archive §39. |
-| verify  | `font_config_unit ok` ×2; `demo_live_fs_compile_ok`. |
-| result  | STEP=3 closed. Plain: font config Critic OK. |
-| issues  | Left extern_concurrency_lint untouched. |
-| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
+### 2026-07-16 — ROLE=Critic STEP=4 TRACK_EDITOR_FOLDER_BROWSER
+done: closed §38; TRACK → archive; PLAN done; REG N/A
+verify: folder_browser + breadcrumbs units; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Planner STEP=pick-next
 
-### Turn 2026-07-16 21:30 (Driver TRACK_EDITOR_FONT_CONFIG STEP=2)
+### 2026-07-16 — ROLE=Implementer STEP=3 TRACK_EDITOR_FOLDER_BROWSER
+done: `demo_live` Ctrl+O / breadcrumbs / listing; compile ok
+verify: `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Critic STEP=4 TRACK_EDITOR_FOLDER_BROWSER
 
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 2 |
-| track   | TRACK_EDITOR_FONT_CONFIG |
-| started | 2026-07-16 21:28 |
-| elapsed | ~2 min |
-| done    | `demo_live` → `editor_resolve_font_path("")`. |
-| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
-| result  | STEP=2 done. Plain: demo_live uses font resolver. |
-| issues  | Last Driver STEP; Critic next. |
-| next    | ROLE=Critic STEP=3 TRACK_EDITOR_FONT_CONFIG |
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_FOLDER_BROWSER
+done: `folder_browser.mlc` + unit + demo_live import compile
+verify: `folder_browser_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Implementer STEP=3 TRACK_EDITOR_FOLDER_BROWSER
 
-### Turn 2026-07-16 21:18 (Driver TRACK_EDITOR_FONT_CONFIG STEP=1)
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_FOLDER_BROWSER
+done: `breadcrumbs.mlc` + unit; demo_live compile still green
+verify: `editor_breadcrumbs_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Implementer STEP=2 TRACK_EDITOR_FOLDER_BROWSER
 
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_EDITOR_FONT_CONFIG |
-| started | 2026-07-16 21:13 |
-| elapsed | ~5 min |
-| done    | Landed `font_path.mlc` + unit; gate default+`MLC_EDITOR_FONT` override. |
-| verify  | `bash scripts/run_editor_font_config_unit.sh` → `font_config_unit ok` ×2. |
-| result  | STEP=1 done. Plain: font path resolver unit-passes. |
-| issues  | None. |
-| next    | ROLE=Driver STEP=2 TRACK_EDITOR_FONT_CONFIG |
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_FOLDER_BROWSER
+done: Decision — absorb WIP; breadcrumbs→listing→demo_live; PATH_MAX; no lib/mlc
+verify: TRACK Decision + PLAN §38 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_FOLDER_BROWSER
 
-### Turn 2026-07-16 21:10 (Driver TRACK_EDITOR_FONT_CONFIG STEP=0)
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §37)
+done: §38 `TRACK_EDITOR_FOLDER_BROWSER` — absorb WIP breadcrumbs/listing
+verify: PLAN §38 + TRACK + queue; SESSION archived; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_FOLDER_BROWSER
 
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 0 |
-| track   | TRACK_EDITOR_FONT_CONFIG |
-| started | 2026-07-16 21:09 |
-| elapsed | ~1 min |
-| done    | Frozen Decision: resolve order + exports + DejaVu candidates + gates. |
-| verify  | TRACK Decision **frozen**; PLAN §39 STEP=0 done / STEP=1 next. |
-| result  | STEP=0 done. Plain: font path Decision frozen. |
-| issues  | None. |
-| next    | ROLE=Driver STEP=1 TRACK_EDITOR_FONT_CONFIG |
+### 2026-07-16 — ROLE=Critic STEP=3 TRACK_GLFW_CONTENT_SCALE
+done: closed §37; TRACK → archive; PLAN done; REG N/A (no `lib/mlc/`)
+verify: `content_scale_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Planner STEP=pick-next
 
-### Turn 2026-07-16 21:05 (Planner TRACK_EDITOR_FONT_CONFIG pick-next)
+### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_GLFW_CONTENT_SCALE
+done: `demo_live` framebuffer×scale + scroll; compile ok
+verify: `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`
+next: ROLE=Critic STEP=3 TRACK_GLFW_CONTENT_SCALE
 
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | pick-next / plan-refresh |
-| track   | TRACK_EDITOR_FONT_CONFIG |
-| started | 2026-07-16 21:01 |
-| elapsed | ~4 min |
-| done    | Opened §39 from EDITOR.md font gap; TRACK Decision draft STEPs 0–3. |
-| verify  | PLAN §39 + CONTINUITY queue head. |
-| result  | STEP=pick-next done. Plain: font config track opened. |
-| issues  | SCRIPT_VM/AUTO_CYCLE/MIR Epic 5 gated; left concurrency_lint. |
-| next    | ROLE=Driver STEP=0 TRACK_EDITOR_FONT_CONFIG |
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_GLFW_CONTENT_SCALE
+done: `content_scale.mlc` + unit; `FramebufferSize` = content×scale
+verify: `bash scripts/run_editor_content_scale_unit.sh` → `content_scale_unit ok`
+next: ROLE=Implementer STEP=2 TRACK_GLFW_CONTENT_SCALE
 
-### Turn 2026-07-16 20:55 (Critic TRACK_EDITOR_FOLDER_BROWSER STEP=5)
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_GLFW_CONTENT_SCALE
+done: Decision — `get_window_content_scale`; FramebufferSize = content×scale; PATH_MAX
+verify: TRACK Decision + PLAN §37 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_GLFW_CONTENT_SCALE
 
-| field   | value |
-|---------|-------|
-| role    | Critic |
-| step    | 5 / critique-audit |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:51 |
-| elapsed | ~4 min |
-| done    | Re-ran 4 gates; no lib/mlc → REG skip; archive §38. |
-| verify  | folder/tab/demo_live/env tokens ok; REG N/A. |
-| result  | STEP=5 closed. Plain: folder browser Critic OK. |
-| issues  | Left extern_concurrency_lint untouched. |
-| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
-
-### Turn 2026-07-16 20:46 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=4)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 4 |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:45 |
-| elapsed | ~1 min |
-| done    | Absorbed `run_editor_live_demo.sh`; added `run_editor_live_demo_env_gate.sh`. |
-| verify  | `bash scripts/run_editor_live_demo_env_gate.sh` → `editor_live_env_ok`. |
-| result  | STEP=4 done. Plain: live demo root/mock env gated. |
-| issues  | Last Driver STEP; Critic next. |
-| next    | ROLE=Critic STEP=5 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 20:40 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=3)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 3 |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:34 |
-| elapsed | ~6 min |
-| done    | Absorbed `demo_live.mlc` folder browser + mock/disk + tab close wire. |
-| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
-| result  | STEP=3 done. Plain: demo_live folder wire compiles. |
-| issues  | Left `run_editor_live_demo.sh` for STEP=4. |
-| next    | ROLE=Driver STEP=4 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 20:30 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=2)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 2 |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:25 |
-| elapsed | ~5 min |
-| done    | Landed tab_strip close helpers; `tab_strip_close_unit.mlc` + run script. |
-| verify  | `bash scripts/run_editor_tab_strip_close_unit.sh` → `tab_strip_close_unit ok`. |
-| result  | STEP=2 done. Plain: tab close hit geometry unit-passes. |
-| issues  | Left demo_live/live script for STEPs 3–4. |
-| next    | ROLE=Driver STEP=3 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 20:15 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=1)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:11 |
-| elapsed | ~4 min |
-| done    | Landed `folder_panel.mlc` (`end`→`end_index`); unit + `run_editor_folder_panel_unit.sh`. |
-| verify  | `bash scripts/run_editor_folder_panel_unit.sh` → `folder_panel_unit ok`. |
-| result  | STEP=1 done. Plain: folder_panel compiles and unit-passes. |
-| issues  | Left demo_live/tab_strip/live script for later STEPs. |
-| next    | ROLE=Driver STEP=2 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 20:08 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=0)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 0 |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 20:06 |
-| elapsed | ~2 min |
-| done    | Frozen Decision: flat+breadcrumb; absorb paths STEPs 1–4; key exports listed. |
-| verify  | TRACK Decision **frozen**; PLAN §38 STEP=0 done / STEP=1 next. |
-| result  | STEP=0 done. Plain: folder browser Decision frozen. |
-| issues  | WIP code still uncommitted (by design until STEPs 1–4). |
-| next    | ROLE=Driver STEP=1 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 19:58 (Planner TRACK_EDITOR_FOLDER_BROWSER pick-next)
-
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | pick-next / plan-refresh |
-| track   | TRACK_EDITOR_FOLDER_BROWSER |
-| started | 2026-07-16 19:56 |
-| elapsed | ~2 min |
-| done    | Opened §38; TRACK Decision draft; absorb folder_panel/demo_live/tab_strip WIP. |
-| verify  | PLAN §38 + CONTINUITY queue head; TRACK steps 0–5. |
-| result  | STEP=pick-next done. Plain: folder browser track opened. |
-| issues  | Left foreign code uncommitted for Driver; SCRIPT_VM gated. |
-| next    | ROLE=Driver STEP=0 TRACK_EDITOR_FOLDER_BROWSER |
-
-### Turn 2026-07-16 19:10 (Critic TRACK_GLFW_CONTENT_SCALE STEP=4)
-
-| field   | value |
-|---------|-------|
-| role    | Critic |
-| step    | 4 / critique-audit |
-| track   | TRACK_GLFW_CONTENT_SCALE |
-| started | 2026-07-16 17:51 |
-| elapsed | ~79 min (REG OOM retry MLC_JOBS=2) |
-| done    | Re-ran smoke+compile; REG 20/0 + sweep 148/0/1; archive §37. |
-| verify  | `content_scale_ok`; REG exit 0 (MLC_JOBS=2). |
-| result  | STEP=4 closed. Plain: content_scale Critic OK. |
-| issues  | Left foreign demo_live/folder_panel/SCRIPT_VM untouched. |
-| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
-
-### Turn 2026-07-16 17:55 (Driver TRACK_GLFW_CONTENT_SCALE STEP=3)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 3 |
-| track   | TRACK_GLFW_CONTENT_SCALE |
-| started | 2026-07-16 17:47 |
-| elapsed | ~8 min |
-| done    | demo_live `font_size()` × `glfw_gl_window_content_scale_y`; i32_to_f64. |
-| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
-| result  | STEP=3 done. Plain: one chrome metric scaled. |
-| issues  | Left SCRIPT_VM untouched. |
-| next    | ROLE=Critic STEP=4 TRACK_GLFW_CONTENT_SCALE |
-
-### Turn 2026-07-16 17:50 (Driver TRACK_GLFW_CONTENT_SCALE STEP=2)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 2 |
-| track   | TRACK_GLFW_CONTENT_SCALE |
-| started | 2026-07-16 17:45 |
-| elapsed | ~2 min |
-| done    | `run_glfw_content_scale_smoke.sh` runs binary after begin; token gate. |
-| verify  | `bash scripts/run_glfw_content_scale_smoke.sh` → `content_scale_ok`. |
-| result  | STEP=2 done. Plain: headless scales > 0. |
-| issues  | Left SCRIPT_VM untouched. |
-| next    | ROLE=Driver STEP=3 TRACK_GLFW_CONTENT_SCALE |
-
-### Turn 2026-07-16 17:48 (Driver TRACK_GLFW_CONTENT_SCALE STEP=1)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_GLFW_CONTENT_SCALE |
-| started | 2026-07-16 17:43 |
-| elapsed | ~5 min |
-| done    | `glfw_gl_window_content_scale_x/y` in glfw_window_gl; gl_window.mlc; compile script. |
-| verify  | `bash scripts/run_glfw_content_scale_compile.sh` → `content_scale_compile_ok`. |
-| result  | STEP=1 done. Plain: content_scale ABI linked. |
-| issues  | Left SCRIPT_VM untouched. |
-| next    | ROLE=Driver STEP=2 TRACK_GLFW_CONTENT_SCALE |
-
-### Turn 2026-07-16 17:43 (Driver TRACK_GLFW_CONTENT_SCALE STEP=0)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 0 |
-| track   | TRACK_GLFW_CONTENT_SCALE |
-| started | 2026-07-16 17:42 |
-| elapsed | ~1 min |
-| done    | Froze Decision: `glfw_gl_window_content_scale_x/y` → f64; missing→1.0; STEP=3 optional. |
-| verify  | Decision table + exact exports in TRACK; PLAN §37 → STEP=1. |
-| result  | STEP=0 done. Plain: content_scale ABI contract ready. |
-| issues  | Left SCRIPT_VM untouched. |
-| next    | ROLE=Driver STEP=1 TRACK_GLFW_CONTENT_SCALE |
-
-### Turn 2026-07-16 17:35 (Planner TRACK_GLFW_CONTENT_SCALE pick-next)
-
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | pick-next / plan-refresh |
-| track   | TRACK_GLFW_CONTENT_SCALE (§37) |
-| started | 2026-07-16 17:33 |
-| elapsed | ~2 min |
-| done    | Opened §37 `TRACK_GLFW_CONTENT_SCALE`; PLAN/CONTINUITY/DEVELOPMENT; archive IO_FS SESSION turns; archive GUI_CANVAS_GRAPH epic file; SCRIPT_VM gated design-only. |
-| verify  | Queue head = §37 STEP=0; SCRIPT_VM/AUTO_CYCLE/MIR Epic 5 not opened. |
-| result  | Priority armed. Plain: content_scale residual after §36. |
-| issues  | Absorbed foreign Planner WIP; left SCRIPT_VM implementation gated. |
-| next    | ROLE=Driver STEP=0 TRACK_GLFW_CONTENT_SCALE |
-
-### Turn 2026-07-16 15:45 (Critic TRACK_STDLIB_IO_FS STEP=8)
-
-| field   | value |
-|---------|-------|
-| role    | Critic |
-| step    | 8 / critique-audit |
-| track   | TRACK_STDLIB_IO_FS |
-| started | 2026-07-16 14:52 |
-| elapsed | ~53 min |
-| done    | Re-ran FS smokes + demo_live compile; REG 20/0 + sweep 147/0/1; archive §36. |
-| verify  | `fs_stat_ok` `list_dir_ok` `list_dir_safe_ok` `mkdir_ok` `file_tree_fs_unit ok` `demo_live_fs_compile_ok`; REG exit 0. |
-| result  | STEP=8 closed. Plain: IO/FS + editor tree Critic OK. |
-| issues  | Left SCRIPT_VM untouched. STEP=7 deferred. |
-| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
-
-Older turns → [archive/SESSION_HISTORY.md](../archive/SESSION_HISTORY.md).
+Older entries: [archive/SESSION_BEFORE_EDITOR_UTF8_COLUMNS_2026-07-16.md](archive/SESSION_BEFORE_EDITOR_UTF8_COLUMNS_2026-07-16.md)
+(and earlier SESSION archives under `docs/archive/`).

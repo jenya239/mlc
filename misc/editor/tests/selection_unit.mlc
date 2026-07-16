@@ -71,12 +71,13 @@ fn main() -> i32 = do
   // Model stays in document space; LineIndex maps caret ↔ line/col (not renderer).
   const index = line_index_from_document(document)
   const caret = selection_caret(selection_set_focus(selection_collapsed(0), 7))
-  const position = line_index_offset_to_position(index, caret)
+  const position = line_index_offset_to_position(index, index.text, caret)
   if position.line != 1 || position.column != 1 then
     return 11
   end
   const back = line_index_position_to_offset(
     index,
+    index.text,
     TextPosition { line: position.line, column: position.column }
   )
   if back != caret then

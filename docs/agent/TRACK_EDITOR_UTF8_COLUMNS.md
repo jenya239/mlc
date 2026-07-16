@@ -8,7 +8,12 @@ Parent: [../PLAN.md](../PLAN.md) §40; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Next step
 
-**STEP=2** — Update all call sites; other editor units green.
+**STEP=3** — Critic: gates (+ REG if `lib/mlc/`); archive.
+
+### STEP=2 done (2026-07-16)
+
+- `LineIndex.text` stored; call sites pass `line_index.text`.
+- Gates: line_index / selection / navigation / status_bar units ok; demo_live compile.
 
 ### STEP=1 done (2026-07-16)
 
@@ -72,8 +77,8 @@ Grapheme clusters; emoji ZWJ; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Helpers + converter impl + unit (ASCII + multi-byte) | `line_index_unit ok` (extended) |
-| 2 | Update all call sites; other editor units green | `run_editor_line_index_unit.sh` + spot units |
+| 1 | Helpers + converter impl + unit (ASCII + multi-byte) | **done** (2026-07-16) `line_index_unit ok` |
+| 2 | Update all call sites; other editor units green | **done** (2026-07-16) |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
@@ -82,13 +87,13 @@ Grapheme clusters; emoji ZWJ; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 
 1. Freeze codepoint-only + signatures — done.
 2. List functions that must change — done.
 
-**STEP=1**
-1. Implement helpers + change two converters.
-2. Extend `line_index_unit.mlc` (e.g. `"café"` / Cyrillic): column ≠ byte.
+**STEP=1** — **done**
+1. Helpers + converters — done (`string_byte_u8` lead).
+2. Extended `line_index_unit.mlc` — done.
 
-**STEP=2**
-1. Grep/fix call sites for new `text` arg.
-2. Re-run line_index unit + any broken navigation unit.
+**STEP=2** — **done**
+1. Call sites + `LineIndex.text` — done.
+2. Units + demo_live compile — done.
 
 **STEP=3** — Critic; `next` = Planner.
 
