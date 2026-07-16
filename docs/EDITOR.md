@@ -70,7 +70,7 @@ Imports: `import { ... } from '../gui/scene'` etc. Stdlib: relative to
 | tree-sitter | later package + FFI; v1 = incremental lexer behind interface | Syntax (E6) |
 | Optional: better UTF-8 grapheme/column rules | editor `document/` — **§40 done** (codepoints; grapheme deferred) | Cursor columns |
 | Caret blink phases (UX L8) | editor `ux/` + `demo_live` — **§41 done** (`TRACK_EDITOR_CARET_BLINK`) | Headless clock + live |
-| Soft word-wrap (no wrap v1 residual) | editor `layout/word_wrap` — **§42 active** (`TRACK_EDITOR_WORD_WRAP`; absorb WIP) | Long lines |
+| Soft word-wrap (no wrap v1 residual) | editor `layout/word_wrap` — **§42 done** (`TRACK_EDITOR_WORD_WRAP`) | Long lines |
 
 Language/compiler changes only when a vertical slice is blocked (document in
 track Decision, one small compiler track if needed — never drive editor from

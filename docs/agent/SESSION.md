@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Critic STEP=3 TRACK_EDITOR_WORD_WRAP
+done: closed §42; TRACK → archive; PLAN done; REG N/A
+verify: `word_wrap_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Planner STEP=pick-next
+
 ### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_WORD_WRAP
 done: `demo_live` wrap scroll/hit/draw/caret; compile on clean deps
 verify: `demo_live_fs_compile_ok`; `word_wrap_unit ok`; foreign dirty left

@@ -437,7 +437,7 @@ compiler/
 | **39** | Editor font config path (DejaVuMono default; no Fontconfig) | **done** (2026-07-16) Critic OK; STEP=0–2 | [archive/tracks/TRACK_EDITOR_FONT_CONFIG](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md) |
 | **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md) |
 | **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CARET_BLINK](archive/tracks/TRACK_EDITOR_CARET_BLINK.md) |
-| **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **active** (2026-07-16) STEP=2 **done**; **STEP=3** Critic next | [TRACK_EDITOR_WORD_WRAP](agent/TRACK_EDITOR_WORD_WRAP.md) |
+| **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
