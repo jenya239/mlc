@@ -646,7 +646,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_SCENE_FORM_LIVE.md](archive/tracks/TRACK_SCENE_FORM_LIVE.md))**
   → **STDLIB_IO_FS (§36, **closed** 2026-07-16: Critic OK; STEP=0–6; STEP=7 deferred; `e05ae187`…`ecf8568f`;
       → [archive/tracks/TRACK_STDLIB_IO_FS.md](archive/tracks/TRACK_STDLIB_IO_FS.md))**
-  → **GLFW_CONTENT_SCALE (§37, **active**; STEP=1 ABI done; **STEP=2** smoke next;
+  → **GLFW_CONTENT_SCALE (§37, **active**; STEP=2 smoke done; **STEP=3** optional editor next;
       → [agent/TRACK_GLFW_CONTENT_SCALE.md](agent/TRACK_GLFW_CONTENT_SCALE.md))**
 ```
 
