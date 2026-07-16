@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
+| driver_turns_since_plan | 1 |
 | step_last | 0 |
 | active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=0 next |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=1 next |
+
+### Turn 2026-07-16 20:08 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:06 |
+| elapsed | ~2 min |
+| done    | Frozen Decision: flat+breadcrumb; absorb paths STEPs 1–4; key exports listed. |
+| verify  | TRACK Decision **frozen**; PLAN §38 STEP=0 done / STEP=1 next. |
+| result  | STEP=0 done. Plain: folder browser Decision frozen. |
+| issues  | WIP code still uncommitted (by design until STEPs 1–4). |
+| next    | ROLE=Driver STEP=1 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 19:58 (Planner TRACK_EDITOR_FOLDER_BROWSER pick-next)
 

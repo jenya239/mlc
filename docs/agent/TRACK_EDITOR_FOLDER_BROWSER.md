@@ -6,31 +6,65 @@ Parent: [../PLAN.md](../PLAN.md) §38; residual polish after
 
 ## Status: **active** (2026-07-16) — queue head
 
-Foreign WIP already in tree (do not delete): `misc/editor/ux/folder_panel.mlc`,
-`demo_live.mlc` folder wire, `tab_strip` close hit, `run_editor_live_demo.sh`
-`MLC_EDITOR_ROOT`. Absorb into numbered STEPs; no invent-from-scratch.
-
 ## Next step
 
-**STEP=0** — Decision freeze: model + gates + absorb list.
+**STEP=1** — Land `folder_panel.mlc` (+ minimal unit or compile import).
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
+- Decision frozen below; PLAN §38 → STEP=1.
+- Absorb paths listed; WIP stays uncommitted until STEPs 1–4.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in existing §36 disk APIs (`dir_entries_from_disk`, `list_dir`) and
+foreign WIP already in the working tree.
+
+| Item | Choice |
+|------|--------|
 | UX model | Flat listing + breadcrumbs (not expand/collapse tree chrome) |
 | Module | `misc/editor/ux/folder_panel.mlc` — rows, breadcrumb hit, scroll |
-| Disk | Reuse §36 `dir_entries_from_disk` / `list_dir`; mock `/demo` fallback |
-| Tabs | Close affordance hit via `tab_strip_close_rect` / `tab_strip_hit_close_index` |
-| Live root | `MLC_EDITOR_ROOT` default repo; `MLC_EDITOR_MOCK=1` → mock |
-| REG | Prefer no `lib/mlc/`; if touched → REG before Critic |
-| Non-goals | tree-sitter; Fontconfig; SCRIPT_VM; MIR Epic 5; `compiler/` |
+| Disk | Reuse `dir_entries_from_disk` / §36 `list_dir`; mock `/demo` + `/demo/…` → no disk |
+| Tabs | Close affordance: `tab_strip_close_width`, `tab_strip_close_rect`, `tab_strip_hit_close_index` |
+| Live root | `MLC_EDITOR_ROOT` default repo root; `MLC_EDITOR_MOCK=1` unsets root → mock |
+| REG | Prefer **no** `lib/mlc/`; if touched → `scripts/regression_gate.sh` before Critic |
+| Namespace | Editor-only under `misc/editor/`; **no** `compiler/` |
+
+### Absorb paths (exact)
+
+| Path | STEP |
+|------|------|
+| `misc/editor/ux/folder_panel.mlc` (untracked) | 1 |
+| `misc/editor/ux/tab_strip.mlc` (close hit) | 2 |
+| `misc/editor/demo_live.mlc` (folder wire) | 3 |
+| `scripts/run_editor_live_demo.sh` (`MLC_EDITOR_ROOT` / mock) | 4 |
+
+Leave alone: `compiler/out/extern_concurrency_lint.*`.
+
+### Key exports (from WIP — land as-is unless compile forces trim)
+
+```text
+# folder_panel.mlc
+folder_browser_at / folder_current_path / folder_listing_rows
+folder_breadcrumb_segments / folder_breadcrumb_hit
+folder_list_rect / folder_clamp_scroll / folder_hit_row_index / folder_scrollbar_thumb
+path_leaf_name / path_parent
+folder_row_parent | folder_row_directory | folder_row_file
+
+# tab_strip.mlc
+tab_strip_close_width / tab_strip_close_rect / tab_strip_hit_close_index
+```
+
+### Non-goals (Decision)
+
+tree-sitter; Fontconfig; full HiDPI layout rewrite; SCRIPT_VM; LANG_AUTO_CYCLE;
+MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Land `folder_panel.mlc` (+ minimal unit or compile import) | compile/unit token |
 | 2 | Land `tab_strip` close hit helpers | compile/unit token |
 | 3 | Wire `demo_live` folder browser + disk/mock | `demo_live_fs_compile_ok` |
@@ -39,9 +73,9 @@ Foreign WIP already in tree (do not delete): `misc/editor/ux/folder_panel.mlc`,
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze Decision table; list exact absorb paths.
-2. Confirm non-goals; no `compiler/`.
+**STEP=0** — **done**
+1. Freeze Decision; list absorb paths — done.
+2. Non-goals; no `compiler/` — done.
 
 **STEP=1**
 1. Commit `folder_panel.mlc` (or slice if too large).
@@ -71,5 +105,5 @@ Foreign WIP already in tree (do not delete): `misc/editor/ux/folder_panel.mlc`,
 ## Verify discipline
 
 - One STEP per turn; commit + push.
-- Foreign dirty listed above is **in scope** — absorb, do not discard.
+- Absorb paths above are **in scope** — absorb, do not discard.
 - Leave `compiler/out/extern_concurrency_lint.*` alone (unrelated).
