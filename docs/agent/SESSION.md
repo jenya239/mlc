@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_GUI_SCENE_PATH_MATCH |
-| test_gate | PATH_MATCH STEP=2 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 2 |
+| active_track | — (PATH_MATCH closed; Planner next) |
+| test_gate | Planner picks next from PLAN |
+
+### Turn 2026-07-16 13:56 (Critic TRACK_GUI_SCENE_PATH_MATCH STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 2 / critique-audit |
+| track   | TRACK_GUI_SCENE_PATH_MATCH |
+| started | 2026-07-16 13:55 |
+| elapsed | ~1 min |
+| done    | P0 re-run widget+form/spatial+Phase D smokes; archive §34; PLAN done. |
+| verify  | label/checkbox/slider/text_field/form/spatial/camera/tess/draw/wire/blueprint → all ok; commit `227a82c4`. |
+| result  | STEP=2 closed. Plain: Path match residual Critic OK. |
+| issues  | Residual: form_live still missing Path(_). Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 13:52 (Driver TRACK_GUI_SCENE_PATH_MATCH STEP=1)
 

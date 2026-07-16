@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PATH_MATCH` STEP=1 done** (2026-07-16) — Path(_) in 4 widget smokes; **STEP=2** Critic next.
-Track: [TRACK_GUI_SCENE_PATH_MATCH.md](TRACK_GUI_SCENE_PATH_MATCH.md).
+**`TRACK_GUI_SCENE_PATH_MATCH` closed** (2026-07-16) — Critic OK.
+**Next:** Planner — pick next from `PLAN.md` (not SCRIPT_VM / MIR Epic 5).
+Archive: [../archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](../archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md).
 ## Step sizing (good vs bad)
 
 | Good | Bad |
