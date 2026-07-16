@@ -430,7 +430,7 @@ compiler/
 | **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **done** (2026-07-14) Critic OK; STEP=0–15; `a159e85d`…`09e33f3e` | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](archive/tracks/TRACK_UX_HEADLESS.md) **closed**; residuals L8 blink + live GLFW/FBO |
 | **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **done** (2026-07-15) Critic OK; STEP=0–10 | [archive/tracks/TRACK_EDITOR_LIVE_POLISH](archive/tracks/TRACK_EDITOR_LIVE_POLISH.md); `011cdbb1`…`f3a8cdbc` |
 | **34** | Phase B widget smokes: non-exhaustive `match` after `Path` (E084) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md); `57015273`…`227a82c4` |
-| **35** | Scene Phase B form live demo (Path arms + absorb WIP) | **active** (2026-07-16) STEP=1 **done**; **STEP=2** Critic next | [TRACK_SCENE_FORM_LIVE](agent/TRACK_SCENE_FORM_LIVE.md) |
+| **35** | Scene Phase B form live demo (Path arms + absorb WIP) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_SCENE_FORM_LIVE](archive/tracks/TRACK_SCENE_FORM_LIVE.md); `7969cd73`…`47839f7f` |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -639,8 +639,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](archive/tracks/TRACK_GUI_SCENE_PHASE_D.md))**
   → **GUI_SCENE_PATH_MATCH (§34, **closed** 2026-07-16: Critic OK; STEP=1–2; `57015273`…`227a82c4`;
       → [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md))**
-  → **SCENE_FORM_LIVE (§35, **active**; STEP=1 Path arms + compile gate;
-      → [agent/TRACK_SCENE_FORM_LIVE.md](agent/TRACK_SCENE_FORM_LIVE.md))**
+  → **SCENE_FORM_LIVE (§35, **closed** 2026-07-16: Critic OK; STEP=1–2; `7969cd73`…`47839f7f`;
+      → [archive/tracks/TRACK_SCENE_FORM_LIVE.md](archive/tracks/TRACK_SCENE_FORM_LIVE.md))**
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 1 |
-| active_track | TRACK_SCENE_FORM_LIVE |
-| test_gate | FORM_LIVE STEP=2 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 2 |
+| active_track | — (FORM_LIVE closed; Planner next) |
+| test_gate | Planner picks next from PLAN |
+
+### Turn 2026-07-16 14:13 (Critic TRACK_SCENE_FORM_LIVE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 2 / critique-audit |
+| track   | TRACK_SCENE_FORM_LIVE |
+| started | 2026-07-16 14:12 |
+| elapsed | ~1 min |
+| done    | Re-ran compile+form gates; archive §35; PLAN done. |
+| verify  | `scene_form_live_compile_ok`; `scene_form_ok`; commit `47839f7f`. |
+| result  | STEP=2 closed. Plain: form live absorb Critic OK. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 14:02 (Driver TRACK_SCENE_FORM_LIVE STEP=1)
 
