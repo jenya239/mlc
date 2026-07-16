@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 4 |
+| step_last | 5 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=5 editor expand next |
+| test_gate | IO_FS STEP=6 demo_live tree next |
+
+### Turn 2026-07-16 14:45 (Driver TRACK_STDLIB_IO_FS STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:39 |
+| elapsed | ~6 min |
+| done    | `dir_entries_from_disk`/`file_tree_expand_from_disk` in file_tree.mlc; fs unit + script. |
+| verify  | `bash scripts/run_editor_file_tree_fs_unit.sh` → `file_tree_fs_unit ok`. |
+| result  | STEP=5 done. Plain: editor tree expands from real list_dir. |
+| issues  | Left demo_live + SCRIPT_VM untouched (STEP=6). |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:40 (Driver TRACK_STDLIB_IO_FS STEP=4)
 

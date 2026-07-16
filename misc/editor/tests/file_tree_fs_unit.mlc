@@ -1,0 +1,80 @@
+# TRACK_STDLIB_IO_FS STEP=5 — FileTree expand-from-disk unit (temp fixture).
+import {
+  file_tree_new,
+  file_tree_expand_from_disk,
+  file_tree_child_count,
+  file_tree_is_expanded
+} from '../workspace/file_tree'
+
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn main() -> i32 = do
+  const root = ".tmp/editor_file_tree_fs_fixture"
+  if !create_directories(root + "/mid") then
+    println("[mlc-editor] file_tree_fs_unit fail mkdir")
+    return 1
+  end
+  if !write_string(root + "/zebra.txt", "z") then
+    println("[mlc-editor] file_tree_fs_unit fail write zebra")
+    return 2
+  end
+  if !write_string(root + "/alpha.txt", "a") then
+    println("[mlc-editor] file_tree_fs_unit fail write alpha")
+    return 3
+  end
+  if !write_string(root + "/mid/nested.txt", "n") then
+    println("[mlc-editor] file_tree_fs_unit fail write mid")
+    return 4
+  end
+
+  let mut tree = file_tree_new(root, "fixture")
+  const expanded = file_tree_expand_from_disk(tree, 0)
+  tree = expanded.tree
+
+  if file_tree_is_expanded(tree, 0) != 1 then
+    println("[mlc-editor] file_tree_fs_unit fail expanded")
+    return 5
+  end
+  if file_tree_child_count(tree, 0) != 3 then
+    println("[mlc-editor] file_tree_fs_unit fail count")
+    return 6
+  end
+
+  const child0 = tree.nodes[0].children[0]
+  const child1 = tree.nodes[0].children[1]
+  const child2 = tree.nodes[0].children[2]
+  if tree.nodes[child0].name != "alpha.txt" || tree.nodes[child0].is_directory != 0 then
+    println("[mlc-editor] file_tree_fs_unit fail alpha")
+    return 7
+  end
+  if tree.nodes[child1].name != "mid" || tree.nodes[child1].is_directory != 1 then
+    println("[mlc-editor] file_tree_fs_unit fail mid")
+    return 8
+  end
+  if tree.nodes[child2].name != "zebra.txt" || tree.nodes[child2].is_directory != 0 then
+    println("[mlc-editor] file_tree_fs_unit fail zebra")
+    return 9
+  end
+  if file_tree_child_count(tree, child1) != 0 then
+    println("[mlc-editor] file_tree_fs_unit fail lazy mid")
+    return 10
+  end
+
+  const mid_expanded = file_tree_expand_from_disk(tree, child1)
+  tree = mid_expanded.tree
+  if file_tree_child_count(tree, child1) != 1 then
+    println("[mlc-editor] file_tree_fs_unit fail mid children")
+    return 11
+  end
+  const nested_id = tree.nodes[child1].children[0]
+  if tree.nodes[nested_id].name != "nested.txt" then
+    println("[mlc-editor] file_tree_fs_unit fail nested")
+    return 12
+  end
+
+  println("[mlc-editor] file_tree_fs_unit ok")
+  0
+end

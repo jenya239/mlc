@@ -431,7 +431,7 @@ compiler/
 | **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **done** (2026-07-15) Critic OK; STEP=0–10 | [archive/tracks/TRACK_EDITOR_LIVE_POLISH](archive/tracks/TRACK_EDITOR_LIVE_POLISH.md); `011cdbb1`…`f3a8cdbc` |
 | **34** | Phase B widget smokes: non-exhaustive `match` after `Path` (E084) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md); `57015273`…`227a82c4` |
 | **35** | Scene Phase B form live demo (Path arms + absorb WIP) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_SCENE_FORM_LIVE](archive/tracks/TRACK_SCENE_FORM_LIVE.md); `7969cd73`…`47839f7f` |
-| **36** | Stdlib IO/FS: `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire | **active** (2026-07-16) STEP=4 **done**; **STEP=5** editor expand next | [TRACK_STDLIB_IO_FS](agent/TRACK_STDLIB_IO_FS.md) |
+| **36** | Stdlib IO/FS: `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire | **active** (2026-07-16) STEP=5 **done**; **STEP=6** demo_live tree next | [TRACK_STDLIB_IO_FS](agent/TRACK_STDLIB_IO_FS.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -642,7 +642,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md))**
   → **SCENE_FORM_LIVE (§35, **closed** 2026-07-16: Critic OK; STEP=1–2; `7969cd73`…`47839f7f`;
       → [archive/tracks/TRACK_SCENE_FORM_LIVE.md](archive/tracks/TRACK_SCENE_FORM_LIVE.md))**
-  → **STDLIB_IO_FS (§36, **active**; STEP=4 create_directories done; **STEP=5** editor expand next;
+  → **STDLIB_IO_FS (§36, **active**; STEP=5 file_tree_fs done; **STEP=6** demo_live tree next;
       → [agent/TRACK_STDLIB_IO_FS.md](agent/TRACK_STDLIB_IO_FS.md))**
 ```
 

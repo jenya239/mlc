@@ -139,6 +139,57 @@ export fn file_tree_expand_filtered(
 ) -> FileTreeExpandResult =
   file_tree_expand(tree, node_id, filter_dir_entries(entries, ignore))
 
+// TRACK_STDLIB_IO_FS STEP=5 — real FS one level; converts ABI arrays → DirEntry.
+extern fn list_dir_names(path: string) -> [string]
+  = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_is_directory_flags(path: string) -> [i32]
+  = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+export fn dir_entries_from_disk(path: string) -> [DirEntry] = do
+  const names = list_dir_names(path)
+  const flags = list_dir_is_directory_flags(path)
+  let mut entries: [DirEntry] = []
+  let mut index = 0
+  const count = names.length()
+  if flags.length() != count then
+    return entries
+  end
+  while index < count do
+    entries.push(DirEntry {
+      name: names[index],
+      is_directory: flags[index]
+    })
+    index = index + 1
+  end
+  entries
+end
+
+export fn file_tree_expand_from_disk(
+  tree: FileTree,
+  node_id: i32
+) -> FileTreeExpandResult = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return FileTreeExpandResult { tree: tree, node_id: node_id }
+  end
+  file_tree_expand(tree, node_id, dir_entries_from_disk(tree.nodes[node_id].path))
+end
+
+export fn file_tree_expand_from_disk_filtered(
+  tree: FileTree,
+  node_id: i32,
+  ignore: IgnoreList
+) -> FileTreeExpandResult = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return FileTreeExpandResult { tree: tree, node_id: node_id }
+  end
+  file_tree_expand_filtered(
+    tree,
+    node_id,
+    dir_entries_from_disk(tree.nodes[node_id].path),
+    ignore
+  )
+end
+
 export fn file_tree_collapse(tree: FileTree, node_id: i32) -> FileTree = do
   if node_id < 0 || node_id >= tree.nodes.length() then
     return tree
