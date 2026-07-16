@@ -1,0 +1,264 @@
+// TRACK_SCENE_FORM_LIVE — Interactive Phase B form on scene graph — Esc to quit.
+// Run: MLC_GLFW_VISIBLE=1 scripts/run_scene_form_live.sh
+// Compile gate: scripts/run_scene_form_live_compile.sh
+import {
+  Scene,
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_label,
+  scene_add_checkbox,
+  scene_add_slider,
+  scene_add_text_field,
+  scene_label_new,
+  scene_checkbox_new,
+  scene_slider_new,
+  scene_text_field_new,
+  scene_checkbox_toggle,
+  scene_slider_set_from_screen,
+  scene_text_field_focus,
+  scene_text_field_apply_input,
+  scene_update_world,
+  scene_hit_test
+} from '../gui/scene'
+import { scene_draw_rect_fills } from '../gui/scene_draw'
+import { gui_input_poll } from '../gui/input'
+import {
+  solid_renderer_create,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  StaticTextLine,
+  static_text_create,
+  static_text_draw_lines,
+  static_text_destroy
+} from '../editor/ui/static_text'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
+extern fn i32_to_f64(value: i32) -> f64
+  = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn f64_to_i32(value: f64) -> i32
+  = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+
+fn field_text(scene: Scene, node_id: i32) -> string =
+  match scene.nodes[node_id].kind {
+    TextField(scene_text_field) => scene_text_field.text,
+    Container => "",
+    RectFill(_) => "",
+    Label(_) => "",
+    Checkbox(_) => "",
+    Slider(_) => "",
+    Path(_) => ""
+  }
+
+fn checkbox_checked(scene: Scene, node_id: i32) -> i32 =
+  match scene.nodes[node_id].kind {
+    Checkbox(scene_checkbox) => scene_checkbox.checked,
+    Container => 0,
+    RectFill(_) => 0,
+    Label(_) => 0,
+    Slider(_) => 0,
+    TextField(_) => 0,
+    Path(_) => 0
+  }
+
+fn slider_value(scene: Scene, node_id: i32) -> f64 =
+  match scene.nodes[node_id].kind {
+    Slider(scene_slider) => scene_slider.value,
+    Container => 0.0,
+    RectFill(_) => 0.0,
+    Label(_) => 0.0,
+    Checkbox(_) => 0.0,
+    TextField(_) => 0.0,
+    Path(_) => 0.0
+  }
+
+fn push_line(
+  lines: [StaticTextLine],
+  text: string,
+  pen_x: i32,
+  pen_y: i32
+) -> [StaticTextLine] = do
+  let mut out = lines
+  out.push(StaticTextLine {
+    text: text,
+    pixel_size: 16,
+    pen_x: pen_x,
+    pen_y: pen_y
+  })
+  out
+end
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(720, 480)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  println("[scene form] live — click widgets; type in field; Esc quit")
+
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+
+  const title = scene_add_label(
+    scene, root.node_id, affine_translation(40.0, 24.0),
+    scene_label_new(280.0, 22.0, "Phase B form", 0.15, 0.18, 0.22, 1.0)
+  )
+  scene = title.scene
+
+  const checkbox = scene_add_checkbox(
+    scene, root.node_id, affine_translation(40.0, 70.0),
+    scene_checkbox_new(28.0, 28.0, 0, 0.25, 0.55, 0.75, 1.0)
+  )
+  scene = checkbox.scene
+
+  const slider = scene_add_slider(
+    scene, root.node_id, affine_translation(40.0, 130.0),
+    scene_slider_new(280.0, 24.0, 0.35, 0.28, 0.32, 0.38, 1.0)
+  )
+  scene = slider.scene
+
+  const field = scene_add_text_field(
+    scene, root.node_id, affine_translation(40.0, 190.0),
+    scene_text_field_new(280.0, 32.0, "type here", 1, 0, 0.18, 0.20, 0.24, 1.0)
+  )
+  scene = field.scene
+  scene = scene_update_world(scene)
+
+  let mut solid = solid_renderer_create()
+  if solid.program < 0 then
+    const error_code = solid.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+  let mut text_state = static_text_create(512, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
+    solid_renderer_destroy(solid)
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  let mut mouse_was_down = 0
+  let mut dragging_slider = 0
+  let mut focused_field = 0
+
+  while glfw_gl_context_should_close() == 0 do
+    const input = gui_input_poll()
+    if input.escape != 0 then
+      break
+    end
+
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const hit = scene_hit_test(
+      scene, i32_to_f64(input.mouse_x), i32_to_f64(input.mouse_y)
+    )
+
+    if input.mouse_down != 0 && mouse_was_down == 0 then
+      if hit == checkbox.node_id then
+        scene = scene_checkbox_toggle(scene, checkbox.node_id)
+        scene = scene_update_world(scene)
+        dragging_slider = 0
+        focused_field = 0
+      else if hit == slider.node_id then
+        scene = scene_slider_set_from_screen(
+          scene, slider.node_id,
+          i32_to_f64(input.mouse_x), i32_to_f64(input.mouse_y)
+        )
+        scene = scene_update_world(scene)
+        dragging_slider = 1
+        focused_field = 0
+      else if hit == field.node_id then
+        scene = scene_text_field_focus(scene, field.node_id)
+        scene = scene_update_world(scene)
+        dragging_slider = 0
+        focused_field = 1
+      else
+        dragging_slider = 0
+        focused_field = 0
+      end
+    end
+
+    if input.mouse_down != 0 && dragging_slider != 0 then
+      scene = scene_slider_set_from_screen(
+        scene, slider.node_id,
+        i32_to_f64(input.mouse_x), i32_to_f64(input.mouse_y)
+      )
+      scene = scene_update_world(scene)
+    end
+    if input.mouse_down == 0 then
+      dragging_slider = 0
+    end
+    mouse_was_down = input.mouse_down
+
+    if focused_field != 0 then
+      if input.text_buffer.length() > 0 || input.backspace != 0 || input.enter != 0 then
+        scene = scene_text_field_apply_input(scene, field.node_id, input)
+        scene = scene_update_world(scene)
+      end
+    end
+
+    solid = scene_draw_rect_fills(scene, solid, width, height)
+    const flush_status = solid_renderer_flush(
+      solid, width, height, 0.10, 0.11, 0.14
+    )
+    if flush_status != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return flush_status
+    end
+
+    let mut checked_label = "off"
+    if checkbox_checked(scene, checkbox.node_id) != 0 then
+      checked_label = "on"
+    end
+    const percent = f64_to_i32(slider_value(scene, slider.node_id) * 100.0)
+
+    let mut lines: [StaticTextLine] = []
+    lines = push_line(lines, "scene form live  Esc quit", 16, 22)
+    lines = push_line(lines, "Phase B widgets", 48, 40)
+    lines = push_line(lines, "checkbox: " + checked_label, 80, 90)
+    lines = push_line(lines, "slider: " + percent.to_string() + "%", 40, 155)
+    lines = push_line(lines, field_text(scene, field.node_id), 48, 212)
+    lines = push_line(
+      lines,
+      "hit=" + hit.to_string() + "  drag=" + dragging_slider.to_string()
+        + "  focus=" + focused_field.to_string(),
+      16, height - 16
+    )
+
+    const drawn = static_text_draw_lines(text_state, lines, width, height, 0)
+    text_state = drawn.state
+    if drawn.error_code != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return drawn.error_code
+    end
+
+    glfw_gl_context_swap_poll()
+    sleep_ms(16)
+  end
+
+  static_text_destroy(text_state)
+  solid_renderer_destroy(solid)
+  glfw_gl_context_end()
+  println("[scene form] live closed")
+  0
+end

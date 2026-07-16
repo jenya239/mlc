@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_SCENE_FORM_LIVE |
-| test_gate | FORM_LIVE STEP=1 next |
+| test_gate | FORM_LIVE STEP=2 Critic next |
+
+### Turn 2026-07-16 14:02 (Driver TRACK_SCENE_FORM_LIVE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_SCENE_FORM_LIVE |
+| started | 2026-07-16 14:01 |
+| elapsed | ~2 min |
+| done    | `Path(_)` in form_live; absorb example+runners; compile gate script. |
+| verify  | `run_scene_form_live_compile.sh` → `scene_form_live_compile_ok`; form smoke ok. |
+| result  | STEP=1 done. Plain: live form compiles; Path exhaust fixed. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=2 TRACK_SCENE_FORM_LIVE |
 
 ### Turn 2026-07-16 13:58 (Planner STEP=pick-next)
 

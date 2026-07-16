@@ -10,7 +10,12 @@ were foreign untracked WIP and still lack `Path(_)` (E084).
 
 ## Next step
 
-**STEP=1** — `Path(_)` arms + commit live example; compile/link gate (no interactive hang).
+**STEP=2** — Critic: compile gate + form smoke; archive.
+
+### STEP=1 done (2026-07-16)
+
+- `Path(_)` in form_live helpers; committed example + runners.
+- `run_scene_form_live_compile.sh` → `scene_form_live_compile_ok`.
 
 ## Decision (frozen) — minimal
 
