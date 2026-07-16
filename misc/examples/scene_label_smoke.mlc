@@ -33,7 +33,8 @@ fn main() -> i32 = do
     RectFill(_) => false,
     Checkbox(_) => false,
     Slider(_) => false,
-    TextField(_) => false
+    TextField(_) => false,
+    Path(_) => false
   }
   if !text_ok then
     return 2

@@ -21,7 +21,8 @@ fn field_text(scene: Scene, node_id: i32) -> string =
     RectFill(_) => "",
     Label(_) => "",
     Checkbox(_) => "",
-    Slider(_) => ""
+    Slider(_) => "",
+    Path(_) => ""
   }
 
 fn field_focused(scene: Scene, node_id: i32) -> i32 =
@@ -31,7 +32,8 @@ fn field_focused(scene: Scene, node_id: i32) -> i32 =
     RectFill(_) => 0 - 1,
     Label(_) => 0 - 1,
     Checkbox(_) => 0 - 1,
-    Slider(_) => 0 - 1
+    Slider(_) => 0 - 1,
+    Path(_) => 0 - 1
   }
 
 fn field_caret(scene: Scene, node_id: i32) -> i32 =
@@ -41,7 +43,8 @@ fn field_caret(scene: Scene, node_id: i32) -> i32 =
     RectFill(_) => 0 - 1,
     Label(_) => 0 - 1,
     Checkbox(_) => 0 - 1,
-    Slider(_) => 0 - 1
+    Slider(_) => 0 - 1,
+    Path(_) => 0 - 1
   }
 
 fn gui_input_text(text: string) -> GuiInput =

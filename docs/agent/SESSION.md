@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 0 |
+| driver_turns_since_plan | 1 |
+| step_last | 1 |
 | active_track | TRACK_GUI_SCENE_PATH_MATCH |
-| test_gate | PATH_MATCH STEP=1 Path arms next |
+| test_gate | PATH_MATCH STEP=2 Critic next |
+
+### Turn 2026-07-16 13:52 (Driver TRACK_GUI_SCENE_PATH_MATCH STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PATH_MATCH |
+| started | 2026-07-16 13:50 |
+| elapsed | ~2 min |
+| done    | `Path(_)` in label/checkbox/slider/text_field smokes. |
+| verify  | four scripts → `scene_{label,checkbox,slider,text_field}_ok`. |
+| result  | STEP=1 done. Plain: E084 gone on Phase B widget smokes. |
+| issues  | Left EDITOR.md + demo_live + form_live + SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=2 TRACK_GUI_SCENE_PATH_MATCH |
 
 ### Turn 2026-07-16 13:47 (Planner STEP=pick-next)
 

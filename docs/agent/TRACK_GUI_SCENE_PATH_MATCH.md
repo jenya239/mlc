@@ -10,7 +10,12 @@ STEP=6; label/checkbox/slider/text_field still red.
 
 ## Next step
 
-**STEP=1** — Add `Path(_)` arms to the four widget smokes; scripts exit 0.
+**STEP=2** — Critic: full `scene_*_smoke` + form/spatial; archive.
+
+### STEP=1 done (2026-07-16)
+
+- `Path(_)` arms in label/checkbox/slider/text_field smokes.
+- Four scripts → `*_ok`.
 
 ## Decision (frozen) — minimal
 
@@ -24,14 +29,14 @@ STEP=6; label/checkbox/slider/text_field still red.
 
 | Step | Item | Gate |
 |------|------|------|
-| 1 | `Path(_)` in `scene_{label,checkbox,slider,text_field}_smoke.mlc` | four scripts → `*_ok`, exit 0 |
+| 1 | `Path(_)` in `scene_{label,checkbox,slider,text_field}_smoke.mlc` | **done** (2026-07-16): four `*_ok` |
 | 2 | Critic: full `scene_*_smoke` + form/spatial; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `Path(_)` to every `match … kind` in the four files.
-2. `bash scripts/run_scene_{label,checkbox,slider,text_field}_smoke.sh` → ok.
+**STEP=1** — **done**
+1. Add `Path(_)` to every `match … kind` in the four files — done.
+2. Four smoke scripts → ok — done.
 
 **STEP=2**
 1. Critic: re-run Phase B widget + form/spatial + Phase D blueprint smokes; archive.

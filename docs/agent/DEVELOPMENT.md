@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PATH_MATCH` STEP=1 next** (2026-07-16) — Path(_) arms in Phase B widget smokes (E084 residual).
+**`TRACK_GUI_SCENE_PATH_MATCH` STEP=1 done** (2026-07-16) — Path(_) in 4 widget smokes; **STEP=2** Critic next.
 Track: [TRACK_GUI_SCENE_PATH_MATCH.md](TRACK_GUI_SCENE_PATH_MATCH.md).
-Not: SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE (parked).
 ## Step sizing (good vs bad)
 
 | Good | Bad |
