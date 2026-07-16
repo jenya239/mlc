@@ -435,7 +435,7 @@ compiler/
 | **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_GLFW_CONTENT_SCALE](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md) |
 | **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–4 | [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md) |
 | **39** | Editor font config path (DejaVuMono default; no Fontconfig) | **done** (2026-07-16) Critic OK; STEP=0–2 | [archive/tracks/TRACK_EDITOR_FONT_CONFIG](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md) |
-| **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **active** (2026-07-16) STEP=2 **done**; **STEP=3** Critic next | [TRACK_EDITOR_UTF8_COLUMNS](agent/TRACK_EDITOR_UTF8_COLUMNS.md) |
+| **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -655,9 +655,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md](archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md))**
   → **EDITOR_FONT_CONFIG (§39, **closed** 2026-07-16: Critic OK; STEP=0–2; `279025c9`…`8176d8c5`;
       → [archive/tracks/TRACK_EDITOR_FONT_CONFIG.md](archive/tracks/TRACK_EDITOR_FONT_CONFIG.md))**
-  → **EDITOR_UTF8_COLUMNS (§40, **active**; STEP=2 call sites **done**; **STEP=3** Critic next;
-      → [agent/TRACK_EDITOR_UTF8_COLUMNS.md](agent/TRACK_EDITOR_UTF8_COLUMNS.md))**
+  → **EDITOR_UTF8_COLUMNS (§40, **closed** 2026-07-16: Critic OK; STEP=0–3; `83fd96f1`…`bd92d925`;
+      → [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md))**
 ```
+
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.
 

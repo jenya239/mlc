@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Critic STEP=3 TRACK_EDITOR_UTF8_COLUMNS
+done: closed §40; TRACK → archive; PLAN done; REG N/A
+verify: line_index/selection/navigation/status_bar units ok; `demo_live_fs_compile_ok`; foreign dirty left
+next: ROLE=Planner STEP=pick-next
+
 ### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_UTF8_COLUMNS
 done: `LineIndex.text`; call sites pass `text:`; units + demo_live compile ok
 verify: line_index/selection/navigation/status_bar units; `demo_live_fs_compile_ok`; foreign dirty left
