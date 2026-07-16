@@ -6,46 +6,83 @@ Parent: [../PLAN.md](../PLAN.md) §40; gap from [../EDITOR.md](../EDITOR.md)
 
 ## Status: **active** (2026-07-16) — queue head
 
-After §39 font config. Next editor gap: columns as UTF-8 **codepoints**
-(not bytes). Full grapheme clusters (ZWJ/emoji) deferred — no ICU.
-
 ## Next step
 
-**STEP=0** — Decision freeze: codepoint vs grapheme; API touch points.
+**STEP=1** — Codepoint helpers + `line_index` unit.
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
-| Scope v1 | UTF-8 **codepoint** columns in `line_index` (+ helpers) |
-| Grapheme | **out** — document as residual; no ICU/Fontconfig |
-| API | `line_index` byte↔position uses codepoint column; keep type `TextPosition.column` |
-| Wire | navigation/hit-test that assume byte==column — audit + fix if broken |
-| REG | Prefer no `lib/mlc/`; if touched → REG before Critic |
-| Non-goals | tree-sitter; SCRIPT_VM; MIR Epic 5; `compiler/`; full grapheme |
+- Decision frozen below; PLAN §40 → STEP=1.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in `line_index.mlc` comment «codepoint columns deferred» and existing
+byte-column math in `line_index_offset_to_position` /
+`line_index_position_to_offset`.
+
+| Item | Choice |
+|------|--------|
+| Scope v1 | UTF-8 **codepoint** columns (1 scalar value = 1 column) |
+| Grapheme | **out** — residual; no ICU / combining-cluster merge |
+| Invalid UTF-8 | Treat each bad byte as one column (advance 1); do not panic |
+| API keep | `TextPosition.column` meaning becomes **codepoint** within line |
+| Helpers (private or export) | `utf8_codepoint_byte_length(lead: i32) -> i32`; `utf8_count_codepoints(text, start, end_exclusive) -> i32`; `utf8_byte_offset_for_codepoint_column(text, start, end_exclusive, column) -> i32` |
+| Must change | `line_index_offset_to_position`, `line_index_position_to_offset` (need line text slice — pass `text: string` **or** store nothing extra: rebuild callers pass text) |
+| Text source | Both converters take additional `text: string` matching `line_index` **OR** keep signature and require `LineIndex` + external text via new overloads — **freeze: add `text: string` parameter** to the two converters |
+| Call-site audit (STEP=2) | All `line_index_offset_to_position` / `position_to_offset` call sites |
+| Gate | Extend `scripts/run_editor_line_index_unit.sh` / `line_index_unit.mlc` |
+| REG | Prefer **no** `lib/mlc/`; no `compiler/` |
+
+### Exact signatures (frozen)
+
+```text
+# helpers (in line_index.mlc or utf8_columns.mlc)
+utf8_codepoint_byte_length(lead_byte: i32) -> i32
+utf8_count_codepoints(text: string, start: i32, end_exclusive: i32) -> i32
+utf8_byte_offset_for_codepoint_column(
+  text: string, start: i32, end_exclusive: i32, column: i32
+) -> i32
+
+# converters — ADD text parameter
+line_index_offset_to_position(
+  line_index: LineIndex, text: string, byte_offset: i32
+) -> TextPosition
+
+line_index_position_to_offset(
+  line_index: LineIndex, text: string, position: TextPosition
+) -> i32
+```
+
+`lead_byte` / `byte_at` values: compare as integer code units (0–255), same as
+existing `byte_at` usage elsewhere.
+
+### Non-goals (Decision)
+
+Grapheme clusters; emoji ZWJ; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
+`compiler/` changes; promoting helpers to stdlib in this track.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
-| 1 | Codepoint helpers + `line_index` unit | unit token |
-| 2 | Wire callers / fix regressions | unit or compile gate |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
+| 1 | Helpers + converter impl + unit (ASCII + multi-byte) | `line_index_unit ok` (extended) |
+| 2 | Update all call sites; other editor units green | `run_editor_line_index_unit.sh` + spot units |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze: codepoint-only v1; name helpers.
-2. List `line_index` functions that must change.
+**STEP=0** — **done**
+1. Freeze codepoint-only + signatures — done.
+2. List functions that must change — done.
 
 **STEP=1**
-1. Implement UTF-8 codepoint advance in `document/line_index.mlc` (or sibling).
-2. Unit: multi-byte chars → column ≠ byte offset.
+1. Implement helpers + change two converters.
+2. Extend `line_index_unit.mlc` (e.g. `"café"` / Cyrillic): column ≠ byte.
 
 **STEP=2**
-1. Fix navigation/hit if they assume byte columns.
-2. Existing editor units still green.
+1. Grep/fix call sites for new `text` arg.
+2. Re-run line_index unit + any broken navigation unit.
 
 **STEP=3** — Critic; `next` = Planner.
 

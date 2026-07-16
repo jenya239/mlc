@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-utf8-columns` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
+| driver_turns_since_plan | 1 |
 | step_last | 0 |
 | active_track | TRACK_EDITOR_UTF8_COLUMNS |
-| test_gate | EDITOR_UTF8_COLUMNS STEP=0 next |
+| test_gate | EDITOR_UTF8_COLUMNS STEP=1 next |
+
+### Turn 2026-07-16 21:50 (Driver TRACK_EDITOR_UTF8_COLUMNS STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_UTF8_COLUMNS |
+| started | 2026-07-16 21:49 |
+| elapsed | ~1 min |
+| done    | Frozen Decision: codepoint columns; converters gain `text:`; helpers named. |
+| verify  | TRACK Decision **frozen**; PLAN §40 STEP=0 done / STEP=1 next. |
+| result  | STEP=0 done. Plain: UTF-8 column Decision frozen. |
+| issues  | Folded leftover PLAN/CONTINUITY sync from open. |
+| next    | ROLE=Driver STEP=1 TRACK_EDITOR_UTF8_COLUMNS |
 
 ### Turn 2026-07-16 21:45 (Planner TRACK_EDITOR_UTF8_COLUMNS pick-next)
 

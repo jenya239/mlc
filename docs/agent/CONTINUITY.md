@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-16-editor-font-config-closed
+INSTRUCTIONS_REV=2026-07-16-editor-utf8-columns
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. **`misc/editor/document/**` line_index/columns — in scope для TRACK_EDITOR_UTF8_COLUMNS**. Не трогать `compiler/` в этом треке. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -69,6 +69,7 @@ INSTRUCTIONS_REV=2026-07-16-editor-font-config-closed
 | **`TRACK_GLFW_CONTENT_SCALE` (PLAN §37)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FOLDER_BROWSER` (PLAN §38)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FONT_CONFIG` (PLAN §39)** | **closed** 2026-07-16 (Critic OK). Archive |
+| **`TRACK_EDITOR_UTF8_COLUMNS` (PLAN §40) — queue head** | UTF-8 codepoint columns in `line_index`. Prefer `misc/editor/document/**`; no grapheme/ICU; no `compiler/` |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
