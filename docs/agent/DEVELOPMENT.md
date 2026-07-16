@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_WORD_WRAP` (§42) closed** (2026-07-16) — Critic OK; archive.
-Queue → Planner `pick-next`. SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated.
+**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0 next** (2026-07-16) — folder nav history; absorb WIP.
+Track: [TRACK_EDITOR_FOLDER_NAV.md](TRACK_EDITOR_FOLDER_NAV.md).
+SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 
 | Good | Bad |

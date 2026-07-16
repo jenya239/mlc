@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Planner STEP=pick-next (after §42)
+done: §43 `TRACK_EDITOR_FOLDER_NAV` — back/forward history; absorb folder_panel WIP
+verify: PLAN §43 + TRACK + queue; EDITOR gap row; foreign dirty left
+next: ROLE=Implementer STEP=0 TRACK_EDITOR_FOLDER_NAV
+
 ### 2026-07-16 — ROLE=Critic STEP=3 TRACK_EDITOR_WORD_WRAP
 done: closed §42; TRACK → archive; PLAN done; REG N/A
 verify: `word_wrap_unit ok`; `demo_live_fs_compile_ok`; foreign dirty left
