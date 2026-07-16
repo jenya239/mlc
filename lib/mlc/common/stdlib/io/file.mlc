@@ -25,6 +25,12 @@ export extern fn exists(path: str) -> bool
 export extern fn remove_file(path: str) -> bool
 export extern fn rename_file(old_path: str, new_path: str) -> bool
 
+// TRACK_STDLIB_IO_FS STEP=1 — mlcc ABI (Ruby may ignore `from`).
+export extern fn is_directory(path: str) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+export extern fn is_regular_file(path: str) -> bool
+  = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
+
 // Helper functions
 
 export fn read_text(path: str) -> str =

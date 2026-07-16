@@ -14,7 +14,12 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=1** — Runtime + ABI: `is_directory` / `is_regular_file` → `fs_stat_ok`.
+**STEP=2** — Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` → `list_dir_ok`.
+
+### STEP=1 done (2026-07-16)
+
+- `is_directory` / `is_regular_file` in `file.hpp` + `*_value` ABI; exports on `file.mlc`.
+- Smoke `fs_stat_ok`.
 
 ### STEP=0 done (2026-07-16)
 
@@ -64,7 +69,7 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Runtime + ABI: `is_directory` / `is_regular_file` | `run_stdlib_fs_stat_smoke.sh` → `fs_stat_ok` |
+| 1 | Runtime + ABI: `is_directory` / `is_regular_file` | **done** (2026-07-16): `fs_stat_ok` |
 | 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | `run_stdlib_list_dir_smoke.sh` → `list_dir_ok` |
 | 3 | `safe_list_dir` + missing-path Err | safe smoke / token |
 | 4 | `create_directories` (+ smoke write then list) | `run_stdlib_mkdir_smoke.sh` → `mkdir_ok` |

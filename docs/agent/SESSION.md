@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=1 fs_stat next |
+| test_gate | IO_FS STEP=2 list_dir next |
+
+### Turn 2026-07-16 14:23 (Driver TRACK_STDLIB_IO_FS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:21 |
+| elapsed | ~2 min |
+| done    | `is_directory`/`is_regular_file` in file.hpp+abi; file.mlc exports; fs_stat smoke. |
+| verify  | `bash scripts/run_stdlib_fs_stat_smoke.sh` → `fs_stat_ok`. |
+| result  | STEP=1 done. Plain: FS type predicates via ABI. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:20 (Driver TRACK_STDLIB_IO_FS STEP=0)
 

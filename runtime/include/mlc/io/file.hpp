@@ -243,6 +243,19 @@ inline bool exists(const mlc::String& path) {
     return file.good();
 }
 
+// TRACK_STDLIB_IO_FS STEP=1 — follows symlinks; false if missing (error_code).
+inline bool is_directory(const mlc::String& path) {
+    std::error_code error_code;
+    return std::filesystem::is_directory(
+        std::filesystem::path(path.as_std_string()), error_code);
+}
+
+inline bool is_regular_file(const mlc::String& path) {
+    std::error_code error_code;
+    return std::filesystem::is_regular_file(
+        std::filesystem::path(path.as_std_string()), error_code);
+}
+
 inline bool remove_file(const mlc::String& path) {
     return std::remove(path.as_std_string().c_str()) == 0;
 }

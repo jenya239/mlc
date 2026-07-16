@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_IO_FS` STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** `is_directory`/`is_regular_file` next.
+**`TRACK_STDLIB_IO_FS` STEP=1 done** (2026-07-16) — `is_directory`/`is_regular_file`; **STEP=2** list_dir next.
 Track: [TRACK_STDLIB_IO_FS.md](TRACK_STDLIB_IO_FS.md).
 ## Step sizing (good vs bad)
 

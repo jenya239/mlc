@@ -1,0 +1,57 @@
+// TRACK_STDLIB_IO_FS STEP=1 — is_directory / is_regular_file smoke.
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn is_regular_file(path: string) -> bool
+  = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
+
+fn main() -> i32 = do
+  const fixture_dir = ".tmp/stdlib_fs_stat_fixture"
+  const fixture_file = ".tmp/stdlib_fs_stat_fixture/sample.txt"
+
+  const wrote = write_string(fixture_file, "fs_stat")
+  if !wrote then
+    println("fs_stat_fail write")
+    return 1
+  end
+
+  if !is_regular_file(fixture_file) then
+    println("fs_stat_fail regular file")
+    return 2
+  end
+  if is_directory(fixture_file) then
+    println("fs_stat_fail file not dir")
+    return 3
+  end
+
+  if !is_directory(fixture_dir) then
+    println("fs_stat_fail fixture dir")
+    return 4
+  end
+  if is_regular_file(fixture_dir) then
+    println("fs_stat_fail dir not file")
+    return 5
+  end
+
+  if !is_directory(".") then
+    println("fs_stat_fail cwd")
+    return 6
+  end
+  if is_regular_file(".") then
+    println("fs_stat_fail cwd file")
+    return 7
+  end
+
+  if is_directory(".tmp/stdlib_fs_stat_missing_xyz") then
+    println("fs_stat_fail missing dir")
+    return 8
+  end
+  if is_regular_file(".tmp/stdlib_fs_stat_missing_xyz") then
+    println("fs_stat_fail missing file")
+    return 9
+  end
+
+  println("fs_stat_ok")
+  0
+end

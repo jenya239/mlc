@@ -24,6 +24,22 @@ inline bool exists_value(String path) {
   return exists(path);
 }
 
+inline bool is_directory_value(String path) {
+  try {
+    return is_directory(path);
+  } catch (...) {
+    return false;
+  }
+}
+
+inline bool is_regular_file_value(String path) {
+  try {
+    return is_regular_file(path);
+  } catch (...) {
+    return false;
+  }
+}
+
 inline bool remove_file_value(String path) {
   return remove_file(path);
 }
