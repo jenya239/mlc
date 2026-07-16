@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 5 |
+| step_last | 6 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=6 demo_live tree next |
+| test_gate | IO_FS STEP=8 Critic next |
+
+### Turn 2026-07-16 14:55 (Driver TRACK_STDLIB_IO_FS STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:42 |
+| elapsed | ~13 min |
+| done    | demo_live root resolve + expand_from_disk; mock `/demo` fallback; compile script. Absorbed foreign mock-tree WIP. |
+| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
+| result  | STEP=6 done. Plain: live tree from disk or mock. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=8 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:45 (Driver TRACK_STDLIB_IO_FS STEP=5)
 

@@ -1,6 +1,7 @@
-// Interactive editor preview — EDITOR_MVP close surface + UX hit helpers.
-// Glyphs are white → dark canvas; Solarized accents for syntax/selection/caret.
+// Interactive editor preview — live polish + real/mock file tree.
+// Tree: [+]/[-] folders; root = MLC_EDITOR_ROOT | argv[0] | "."; mock /demo if missing.
 // Run: MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
 import {
   glfw_gl_context_begin,
   glfw_gl_context_should_close,
@@ -56,7 +57,15 @@ import {
   shell_panels_tree_rect,
   shell_panels_editor_rect
 } from './ui/shell_panels'
-import { DirEntry, dir_entry_new, file_tree_expand } from './workspace/file_tree'
+import {
+  DirEntry,
+  FileTree,
+  dir_entry_new,
+  file_tree_expand,
+  file_tree_expand_from_disk,
+  file_tree_collapse,
+  file_tree_is_expanded
+} from './workspace/file_tree'
 import {
   TabSet,
   tab_set_new,
@@ -195,6 +204,40 @@ extern fn sleep_ms(milliseconds: i32) -> unit
   = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn resolve_editor_root() -> string = do
+  const env_root = get_or("MLC_EDITOR_ROOT", "")
+  if env_root != "" then
+    return env_root
+  end
+  const argv = args()
+  if argv.length() >= 1 && argv[0] != "" then
+    return argv[0]
+  end
+  "."
+end
+
+fn root_display_name(path: string) -> string =
+  if path == "." then "cwd" else path
+
+fn tree_uses_disk(tree: FileTree) -> i32 =
+  if tree.nodes[tree.root_id].path == "/demo" then 0 else 1
+
+fn tree_expand_node(tree: FileTree, node_id: i32) -> FileTree = do
+  if tree_uses_disk(tree) != 0 then
+    const expanded = file_tree_expand_from_disk(tree, node_id)
+    return expanded.tree
+  end
+  const path = tree.nodes[node_id].path
+  const expanded = file_tree_expand(tree, node_id, demo_dir_entries(path))
+  expanded.tree
+end
 
 fn line_height() -> i32 = editor_app_line_height()
 fn char_width() -> i32 = editor_app_char_width()
@@ -226,22 +269,82 @@ fn sample_main_text() -> string =
   "// TRACK_EDITOR_MVP live demo\nfn main() -> i32 = do\n  println(\"hello from mlc-editor\")\n  let mut n = 0\n  while n < 3 do\n    n = n + 1\n  end\n  0\nend\n"
 
 fn sample_readme_text() -> string =
-  "# mlc-editor\n\nType / Enter / Backspace.\nWheel scroll. Click-drag select.\nToolbar: tabs undo clipboard session.\n"
+  "# mlc-editor\n\nType / Enter / Backspace.\nWheel scroll. Click-drag select.\nTree: click folder to expand/collapse; click file to open.\n"
 
 fn sample_notes_text() -> string =
   "notes\nline two\nline three\nline four\nline five\nline six\nline seven\nline eight\nline nine\nline ten\n"
 
+fn sample_lib_text() -> string =
+  "fn add(a: i32, b: i32) -> i32 = a + b\n"
+
+fn sample_util_text() -> string =
+  "fn clamp(value: i32, low: i32, high: i32) -> i32 = do\n  if value < low then\n    return low\n  end\n  if value > high then\n    return high\n  end\n  value\nend\n"
+
+fn sample_guide_text() -> string =
+  "# Guide\n\nExpand `src/` and `docs/` in the tree.\nOpen files by click.\n"
+
+fn sample_changelog_text() -> string =
+  "## Changelog\n\n- live tree expand/collapse\n- scissor / cursor / clipboard\n"
+
+// Mock FS when resolved root is missing / not a directory.
+fn demo_dir_entries(dir_path: string) -> [DirEntry] = do
+  let mut entries: [DirEntry] = []
+  if dir_path == "/demo" then
+    entries.push(dir_entry_new("src", 1))
+    entries.push(dir_entry_new("docs", 1))
+    entries.push(dir_entry_new("main.mlc", 0))
+    entries.push(dir_entry_new("README.md", 0))
+    entries.push(dir_entry_new("notes.txt", 0))
+  else if dir_path == "/demo/src" then
+    entries.push(dir_entry_new("lib.mlc", 0))
+    entries.push(dir_entry_new("util.mlc", 0))
+  else if dir_path == "/demo/docs" then
+    entries.push(dir_entry_new("guide.md", 0))
+    entries.push(dir_entry_new("changelog.md", 0))
+  end
+  entries
+end
+
+fn panels_with_tree(panels: ShellPanels, tree: FileTree) -> ShellPanels =
+  ShellPanels {
+    bounds: panels.bounds,
+    split: panels.split,
+    panes: panels.panes,
+    tree: tree,
+    dragging: panels.dragging,
+    drag_origin_x: panels.drag_origin_x,
+    drag_origin_numerator: panels.drag_origin_numerator
+  }
+
 fn text_for_path(path: string) -> string = do
-  if path == "/demo/main.mlc" || path.ends_with("main.mlc") then
+  if path != "/demo" && !path.starts_with("/demo/") then
+    if file_exists(path) then
+      return file_read_to_string(path)
+    end
+    return "// " + path + "\n"
+  end
+  if path == "/demo/main.mlc" || path.ends_with("/main.mlc") then
     return sample_main_text()
   end
-  if path == "/demo/README.md" || path.ends_with("README.md") then
+  if path == "/demo/README.md" || path.ends_with("/README.md") then
     return sample_readme_text()
   end
-  if path == "/demo/notes.txt" || path.ends_with("notes.txt") then
+  if path == "/demo/notes.txt" || path.ends_with("/notes.txt") then
     return sample_notes_text()
   end
-  ""
+  if path == "/demo/src/lib.mlc" || path.ends_with("/lib.mlc") then
+    return sample_lib_text()
+  end
+  if path == "/demo/src/util.mlc" || path.ends_with("/util.mlc") then
+    return sample_util_text()
+  end
+  if path == "/demo/docs/guide.md" || path.ends_with("/guide.md") then
+    return sample_guide_text()
+  end
+  if path == "/demo/docs/changelog.md" || path.ends_with("/changelog.md") then
+    return sample_changelog_text()
+  end
+  "// " + path + "\n"
 end
 
 fn line_text_at(
@@ -343,34 +446,30 @@ fn main() -> i32 = do
   end
 
   const chrome_top = header_height() + tab_bar_height() + toolbar_height()
+  const resolved_root = resolve_editor_root()
+  let mut tree_root = "/demo"
+  let mut tree_name = "demo"
+  if is_directory(resolved_root) then
+    tree_root = resolved_root
+    tree_name = root_display_name(resolved_root)
+  end
   let mut panels = shell_panels_new(
     rect_new(0, chrome_top, 1100, 760 - chrome_top - status_height()),
     28, 100, 4,
-    "/demo", "demo"
+    tree_root, tree_name
   )
-  let mut entries: [DirEntry] = []
-  entries.push(dir_entry_new("src", 1))
-  entries.push(dir_entry_new("docs", 1))
-  entries.push(dir_entry_new("main.mlc", 0))
-  entries.push(dir_entry_new("README.md", 0))
-  entries.push(dir_entry_new("notes.txt", 0))
-  const expanded = file_tree_expand(panels.tree, panels.tree.root_id, entries)
-  panels = ShellPanels {
-    bounds: panels.bounds,
-    split: panels.split,
-    panes: panels.panes,
-    tree: expanded.tree,
-    dragging: panels.dragging,
-    drag_origin_x: panels.drag_origin_x,
-    drag_origin_numerator: panels.drag_origin_numerator
-  }
+  panels = panels_with_tree(
+    panels, tree_expand_node(panels.tree, panels.tree.root_id)
+  )
 
   let mut tabs = load_demo_session()
   if tab_set_count(tabs) == 0 then
-    tabs = tab_set_open(tabs, "/demo/main.mlc", sample_main_text())
-    tabs = tab_set_open(tabs, "/demo/README.md", sample_readme_text())
-    tabs = tab_set_open(tabs, "/demo/notes.txt", sample_notes_text())
-    tabs = tab_set_set_active(tabs, 0)
+    if tree_uses_disk(panels.tree) == 0 then
+      tabs = tab_set_open(tabs, "/demo/main.mlc", sample_main_text())
+      tabs = tab_set_open(tabs, "/demo/README.md", sample_readme_text())
+      tabs = tab_set_open(tabs, "/demo/notes.txt", sample_notes_text())
+      tabs = tab_set_set_active(tabs, 0)
+    end
   end
 
   let mut app = editor_app_state_new(
@@ -568,7 +667,19 @@ fn main() -> i32 = do
         if row >= 0 then
           editor_focused = 0
           const tree_row = tree_rows[row]
-          if tree_row.is_directory == 0 then
+          if tree_row.is_directory != 0 then
+            if file_tree_is_expanded(panels.tree, tree_row.node_id) != 0 then
+              panels = panels_with_tree(
+                panels, file_tree_collapse(panels.tree, tree_row.node_id)
+              )
+              last_command = "tree_collapse"
+            else
+              panels = panels_with_tree(
+                panels, tree_expand_node(panels.tree, tree_row.node_id)
+              )
+              last_command = "tree_expand"
+            end
+          else
             const open_path = tree_row.path
             tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
             active = tab_set_active(tabs)
@@ -950,10 +1061,19 @@ fn main() -> i32 = do
       tool_index = tool_index + 1
     end
 
+    const draw_tree_rows = file_tree_visible_rows(panels.tree)
     let mut row_index = 0
-    while row_index < tree_rows.length() do
-      const tree_row = tree_rows[row_index]
-      let mut label = tree_row.name
+    while row_index < draw_tree_rows.length() do
+      const tree_row = draw_tree_rows[row_index]
+      let mut marker = "  "
+      if tree_row.is_directory != 0 then
+        if file_tree_is_expanded(panels.tree, tree_row.node_id) != 0 then
+          marker = "[-] "
+        else
+          marker = "[+] "
+        end
+      end
+      let mut label = marker + tree_row.name
       if tree_row.is_directory != 0 then
         label = label + "/"
       end

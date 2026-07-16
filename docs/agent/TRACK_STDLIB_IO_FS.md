@@ -14,7 +14,12 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=6** — `demo_live`: real tree via `list_dir`; mock fallback if root missing.
+**STEP=8** — Critic: gates + REG if required; archive.
+
+### STEP=6 done (2026-07-16)
+
+- `demo_live`: root = `MLC_EDITOR_ROOT` | argv[0] | `.`; disk expand via `file_tree_expand_from_disk`; mock `/demo` if root missing.
+- Compile gate `demo_live_fs_compile_ok`.
 
 ### STEP=5 done (2026-07-16)
 
@@ -94,7 +99,7 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 | 3 | `safe_list_dir` + missing-path Err | **done** (2026-07-16): `list_dir_safe_ok` |
 | 4 | `create_directories` (+ smoke write then list) | **done** (2026-07-16): `mkdir_ok` |
 | 5 | Editor: expand-from-disk helper; unit with temp fixture | **done** (2026-07-16): `file_tree_fs_unit ok` |
-| 6 | `demo_live`: real tree via `list_dir`; mock fallback if root missing | compile smoke |
+| 6 | `demo_live`: real tree via `list_dir`; mock fallback if root missing | **done** (2026-07-16): `demo_live_fs_compile_ok` |
 | 7 | Optional content_scale | **deferred** (STEP=0) |
 | 8 | Critic: gates + REG if required; archive | close |
 
@@ -122,8 +127,8 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 **STEP=5** — **done**
 1. Editor expand-from-disk + unit — done.
 
-**STEP=6**
-1. `demo_live` real tree + mock fallback.
+**STEP=6** — **done**
+1. `demo_live` real tree + mock fallback — done.
 
 **STEP=8** — Critic; `next` = Planner.
 
