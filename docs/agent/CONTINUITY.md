@@ -62,7 +62,8 @@ INSTRUCTIONS_REV=2026-07-15-phase-d-path
 | **`TRACK_EDITOR_MVP` (PLAN §33)** | **closed** 2026-07-14. Не открывать numbered STEPs |
 | **`TRACK_UX_HEADLESS` (PLAN §33a)** | **closed** 2026-07-14. L8 blink residual ок |
 | **`TRACK_EDITOR_LIVE_POLISH` (PLAN §33b)** | **closed** 2026-07-15 (Critic OK). Archive. Не открывать numbered STEPs |
-| **`TRACK_GUI_SCENE_PHASE_D` (PLAN §10c/§29)** | **closed** 2026-07-16 (Critic OK). Archive. Epic A–D done; next = Planner |
+| **`TRACK_GUI_SCENE_PHASE_D` (PLAN §10c/§29)** | **closed** 2026-07-16 (Critic OK). Archive. Epic A–D done |
+| **`TRACK_GUI_SCENE_PATH_MATCH` (PLAN §34)** | **active** queue head. Path(_) in Phase B widget smokes; leave form_live |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
 | **`TRACK_EDITOR_MVP` placement** | Design: `docs/EDITOR.md`, archive. Код → `misc/editor/`. Live polish → archived `TRACK_EDITOR_LIVE_POLISH` |
 

@@ -21,7 +21,8 @@ Phase D: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI
 
 ## Next step
 
-**closed** — epic §10c/§29 foundation delivered (A–D). Queue → Planner.
+**closed** — epic §10c/§29 foundation delivered (A–D). Follow-up §34:
+[TRACK_GUI_SCENE_PATH_MATCH.md](TRACK_GUI_SCENE_PATH_MATCH.md).
 
 ## Ключевая коррекция (2026-07-11)
 

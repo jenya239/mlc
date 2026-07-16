@@ -429,6 +429,7 @@ compiler/
 | **33** | Native code editor MVP + mlc-support preflight; editor-first GUI architecture frozen | **done** (2026-07-14) Critic OK; STEP=pre…29; unit/model MVP | [EDITOR.md](EDITOR.md) + [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) + [TRACK_EDITOR_MVP](archive/tracks/TRACK_EDITOR_MVP.md) **closed**; live UX → §33a |
 | **33a** | Headless UX harness (semantic scenarios ★, inject, probes; pixel MAE rare) | **done** (2026-07-14) Critic OK; STEP=0–15; `a159e85d`…`09e33f3e` | [GUI_UX_TESTING.md](GUI_UX_TESTING.md) + [TRACK_UX_HEADLESS](archive/tracks/TRACK_UX_HEADLESS.md) **closed**; residuals L8 blink + live GLFW/FBO |
 | **33b** | Editor/GUI **live polish** (scissor, cursor, clipboard, command bus, frame split) — model≠product gap | **done** (2026-07-15) Critic OK; STEP=0–10 | [archive/tracks/TRACK_EDITOR_LIVE_POLISH](archive/tracks/TRACK_EDITOR_LIVE_POLISH.md); `011cdbb1`…`f3a8cdbc` |
+| **34** | Phase B widget smokes: non-exhaustive `match` after `Path` (E084) | **active** (2026-07-16) STEP=1 next | [TRACK_GUI_SCENE_PATH_MATCH](agent/TRACK_GUI_SCENE_PATH_MATCH.md) — Critic residual after Phase D |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -635,6 +636,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_LIVE_POLISH.md](archive/tracks/TRACK_EDITOR_LIVE_POLISH.md))**
   → **GUI_CANVAS_GRAPH Phase D (**closed** 2026-07-16: Critic OK; STEP=1–7; `d9cc60de`…`9e3eaebf`;
       → [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](archive/tracks/TRACK_GUI_SCENE_PHASE_D.md))**
+  → **GUI_SCENE_PATH_MATCH (§34, **active**; STEP=1 Path arms in widget smokes;
+      → [agent/TRACK_GUI_SCENE_PATH_MATCH.md](agent/TRACK_GUI_SCENE_PATH_MATCH.md))**
 ```
 
 Качество кода (деструктуризация, HOF, string-match) — до форматтера; форматтер — до LSP; self-host bootstrap — до community demo.

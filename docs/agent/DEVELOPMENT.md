@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_D` closed** (2026-07-16) — Critic OK; epic §10c/§29 done.
-**Next:** Planner — pick next authorized item from `PLAN.md` (not SCRIPT_VM / MIR Epic 5).
-Track archive: [../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md).
+**`TRACK_GUI_SCENE_PATH_MATCH` STEP=1 next** (2026-07-16) — Path(_) arms in Phase B widget smokes (E084 residual).
+Track: [TRACK_GUI_SCENE_PATH_MATCH.md](TRACK_GUI_SCENE_PATH_MATCH.md).
+Not: SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE (parked).
 ## Step sizing (good vs bad)
 
 | Good | Bad |

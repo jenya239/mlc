@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 7 |
-| active_track | — (Phase D closed; Planner next) |
-| test_gate | Planner picks next from PLAN |
+| step_last | 0 |
+| active_track | TRACK_GUI_SCENE_PATH_MATCH |
+| test_gate | PATH_MATCH STEP=1 Path arms next |
+
+### Turn 2026-07-16 13:47 (Planner STEP=pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN → TRACK_GUI_SCENE_PATH_MATCH (§34) |
+| started | 2026-07-16 13:45 |
+| elapsed | ~2 min |
+| done    | Opened §34 `TRACK_GUI_SCENE_PATH_MATCH` (E084 residual); PLAN/CONTINUITY/DEVELOPMENT. |
+| verify  | checkbox smoke EXIT=1 E084 (repro); SCRIPT_VM/MIR5/AUTO_CYCLE not opened. |
+| result  | Queue head = PATH_MATCH STEP=1. Plain: fix Path match in 4 widget smokes. |
+| issues  | Left EDITOR.md + form_live + SCRIPT_VM untouched. LANG_AUTO_CYCLE stays parked. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PATH_MATCH |
 
 ### Turn 2026-07-16 13:42 (Critic TRACK_GUI_SCENE_PHASE_D STEP=7)
 
