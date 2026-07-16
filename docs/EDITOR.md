@@ -64,8 +64,8 @@ Imports: `import { ... } from '../gui/scene'` etc. Stdlib: relative to
 
 | Gap | Where to fix | Blocks |
 |-----|--------------|--------|
-| No `list_dir` / `is_dir` / `is_file` | stdlib `io` + runtime POSIX | File tree |
-| No clipboard | `gl_window` / GLFW clipboard FFI | Cut/copy/paste |
+| No `list_dir` / `is_dir` / `is_file` | stdlib `io` + runtime — **TRACK_STDLIB_IO_FS (§36)** | File tree |
+| Clipboard | **done** (§33b LIVE_POLISH: GLFW get/set + inject) | Cut/copy/paste |
 | No font discovery API | config path + DejaVuMono default first | Theme font |
 | tree-sitter | later package + FFI; v1 = incremental lexer behind interface | Syntax (E6) |
 | Optional: better UTF-8 grapheme/column rules | editor `document/` first; promote to stdlib if shared | Cursor columns |
@@ -79,7 +79,10 @@ hypothetical language features).
 - Clean Architecture without ceremony: layers as **modules + data**, not
   Widget OO trees / CSS / DOM.
 - TDD: pure tests for document/workspace/commands **before** GL window;
-  inject API for integration; optional headless snapshot only if cheap.
+  inject API for integration.
+- **UX gate:** semantic headless scenarios ([GUI_UX_TESTING.md](GUI_UX_TESTING.md),
+  [TRACK_UX_HEADLESS](agent/TRACK_UX_HEADLESS.md)) — primary for interactions;
+  unit-only green ≠ UX done. Pixel/FBO MAE only for text render (rare).
 - Measure: frame/layout/shaping counters behind `MLC_EDITOR_PERF=1`.
 - Vertical slices E1→E6 (see track); after each stage: builds and runs.
 

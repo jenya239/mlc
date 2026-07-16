@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-15-phase-d-path` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-16-stdlib-io-fs` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-15-phase-d-path
+INSTRUCTIONS_REV=2026-07-16-stdlib-io-fs
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, `misc/examples/scene_form_live.mlc`, `.tmp/**` без записи в TRACK) — не удалять, не коммитить чужое, не откатывать; работать поверх, `git add` явным списком. Path WIP (`scene_path*`, tess smoke, related `scene.mlc`/`scene_draw.mlc`) — **in scope** для PHASE_D STEP=3+ когда STEP их касается; иначе не трогать чужое. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM docs, `.tmp/**` без записи в TRACK) — не удалять, не коммитить чужое, не откатывать; `git add` явным списком. **`lib/mlc/common/stdlib/io/**` + `runtime/include/mlc/io/**` + editor tree/demo — in scope для TRACK_STDLIB_IO_FS**. Не трогать `compiler/` в этом треке. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -64,7 +64,8 @@ INSTRUCTIONS_REV=2026-07-15-phase-d-path
 | **`TRACK_EDITOR_LIVE_POLISH` (PLAN §33b)** | **closed** 2026-07-15 (Critic OK). Archive. Не открывать numbered STEPs |
 | **`TRACK_GUI_SCENE_PHASE_D` (PLAN §10c/§29)** | **closed** 2026-07-16 (Critic OK). Archive. Epic A–D done |
 | **`TRACK_GUI_SCENE_PATH_MATCH` (PLAN §34)** | **closed** 2026-07-16 (Critic OK). Archive |
-| **`TRACK_SCENE_FORM_LIVE` (PLAN §35)** | **closed** 2026-07-16 (Critic OK). Archive. Queue → Planner |
+| **`TRACK_SCENE_FORM_LIVE` (PLAN §35)** | **closed** 2026-07-16 (Critic OK). Archive |
+| **`TRACK_STDLIB_IO_FS` (PLAN §36) — PRIORITY OVERRIDE 2026-07-16** | Queue head. `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire. Prefer no `compiler/`. REG before Critic if `lib/mlc/` changed. Clipboard already §33b — do not redo |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
 | **`TRACK_EDITOR_MVP` placement** | Design: `docs/EDITOR.md`, archive. Код → `misc/editor/`. Live polish → archived `TRACK_EDITOR_LIVE_POLISH` |

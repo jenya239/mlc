@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-15-phase-d-path` |
+| instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 2 |
-| active_track | — (FORM_LIVE closed; Planner next) |
-| test_gate | Planner picks next from PLAN |
+| step_last | 0 |
+| active_track | TRACK_STDLIB_IO_FS |
+| test_gate | §36 PRIORITY; STEP=0 Decision next |
+
+### Turn 2026-07-16 14:20 (Planner TRACK_STDLIB_IO_FS priority-override)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_IO_FS (§36) |
+| started | 2026-07-16 14:15 |
+| elapsed | — |
+| done    | Opened `TRACK_STDLIB_IO_FS.md` STEP=0–8; PLAN §36 + chain; CONTINUITY rev `stdlib-io-fs`; mlc-support `steps/stdlib_io_fs_gaps.md`. |
+| verify  | Queue head = §36; FORM_LIVE already closed; clipboard not in scope. |
+| result  | Priority override armed. Plain: real list_dir for editor tree. |
+| issues  | Left demo_live/SCRIPT_VM foreign until STEP=6. |
+| next    | ROLE=Driver STEP=0 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:13 (Critic TRACK_SCENE_FORM_LIVE STEP=2)
 
