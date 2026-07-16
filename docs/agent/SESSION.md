@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_FOLDER_NAV
+done: Absorb `folder_nav_*` + `folder_tree_browser_rows` in `folder_panel.mlc`; `folder_nav_unit.mlc` + `run_editor_folder_nav_unit.sh`
+verify: `bash scripts/run_editor_folder_nav_unit.sh` → `folder_nav_unit ok`; REG N/A
+next: ROLE=Implementer STEP=2 TRACK_EDITOR_FOLDER_NAV
+
 ### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_FOLDER_NAV
 done: Decision — keep in `folder_panel.mlc`; freeze `folder_nav_*` + browser_rows; gates named
 verify: TRACK Decision + PLAN §43 STEP=0; foreign dirty left

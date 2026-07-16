@@ -6,7 +6,8 @@ export type FolderRow = {
   kind: i32,
   node_id: i32,
   path: string,
-  name: string
+  name: string,
+  depth: i32
 }
 
 export type BreadcrumbSegment = {
@@ -20,9 +21,9 @@ export fn folder_row_parent() -> i32 = 0
 export fn folder_row_directory() -> i32 = 1
 export fn folder_row_file() -> i32 = 2
 
-export fn folder_breadcrumb_height() -> i32 = 22
-export fn folder_row_height() -> i32 = 18
-export fn folder_scrollbar_width() -> i32 = 6
+export fn folder_breadcrumb_height() -> i32 = 16
+export fn folder_row_height() -> i32 = 14
+export fn folder_scrollbar_width() -> i32 = 5
 
 export fn path_parent(path: string) -> string = do
   if path == "/" then
@@ -103,7 +104,8 @@ export fn folder_listing_rows(tree: FileTree) -> [FolderRow] = do
     kind: folder_row_parent(),
     node_id: 0 - 1,
     path: path_parent(root.path),
-    name: ".."
+    name: "..",
+    depth: 0
   })
   let mut child_index = 0
   while child_index < root.children.length() do
@@ -117,8 +119,65 @@ export fn folder_listing_rows(tree: FileTree) -> [FolderRow] = do
       kind: kind,
       node_id: node_id,
       path: node.path,
-      name: node.name
+      name: node.name,
+      depth: 0
     })
+    child_index = child_index + 1
+  end
+  rows
+end
+
+fn push_expanded_child_rows(
+  tree: FileTree,
+  node_id: i32,
+  depth: i32,
+  rows: [FolderRow]
+) -> [FolderRow] = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return rows
+  end
+  const node = tree.nodes[node_id]
+  let mut kind = folder_row_file()
+  if node.is_directory != 0 then
+    kind = folder_row_directory()
+  end
+  rows.push(FolderRow {
+    kind: kind,
+    node_id: node_id,
+    path: node.path,
+    name: node.name,
+    depth: depth
+  })
+  if node.is_directory == 0 || node.expanded == 0 then
+    return rows
+  end
+  let mut next_rows = rows
+  let mut child_index = 0
+  while child_index < node.children.length() do
+    next_rows = push_expanded_child_rows(
+      tree, node.children[child_index], depth + 1, next_rows
+    )
+    child_index = child_index + 1
+  end
+  next_rows
+end
+
+// `..` + nested children of current browse root (root itself not listed).
+export fn folder_tree_browser_rows(tree: FileTree) -> [FolderRow] = do
+  let mut rows: [FolderRow] = []
+  const root = tree.nodes[tree.root_id]
+  rows.push(FolderRow {
+    kind: folder_row_parent(),
+    node_id: 0 - 1,
+    path: path_parent(root.path),
+    name: "..",
+    depth: 0
+  })
+  let mut child_index = 0
+  while child_index < root.children.length() do
+    rows = push_expanded_child_rows(
+      tree, root.children[child_index], 0, rows
+    )
     child_index = child_index + 1
   end
   rows
@@ -185,7 +244,7 @@ export fn folder_breadcrumb_segments(
     const segment_path = paths[index]
     let mut label = path_leaf_name(segment_path)
     if index > 0 then
-      const sep = " / "
+      const sep = "/"
       x = x + sep.byte_size() * char_width
     end
     const width = label.byte_size() * char_width
@@ -291,8 +350,8 @@ export fn folder_scrollbar_thumb(
   end
   const track = list_rect.height
   let mut thumb = track * list_rect.height / content
-  if thumb < 16 then
-    thumb = 16
+  if thumb < 12 then
+    thumb = 12
   end
   if thumb > track then
     thumb = track
@@ -307,5 +366,130 @@ export fn folder_scrollbar_thumb(
     thumb_y,
     folder_scrollbar_width(),
     thumb
+  )
+end
+
+// Directory browse history for double-click / breadcrumb / parent navigation.
+export type FolderNavHistory = {
+  paths: [string],
+  index: i32
+}
+
+export fn folder_nav_new(path: string) -> FolderNavHistory = do
+  let mut paths: [string] = []
+  paths.push(path)
+  FolderNavHistory { paths: paths, index: 0 }
+end
+
+export fn folder_nav_current(history: FolderNavHistory) -> string = do
+  if history.paths.length() == 0 then
+    return ""
+  end
+  let mut index = history.index
+  if index < 0 then
+    index = 0
+  end
+  if index >= history.paths.length() then
+    index = history.paths.length() - 1
+  end
+  history.paths[index]
+end
+
+export fn folder_nav_can_back(history: FolderNavHistory) -> i32 = do
+  if history.index > 0 then
+    return 1
+  end
+  0
+end
+
+export fn folder_nav_can_forward(history: FolderNavHistory) -> i32 = do
+  if history.index + 1 < history.paths.length() then
+    return 1
+  end
+  0
+end
+
+export fn folder_nav_push(history: FolderNavHistory, path: string) -> FolderNavHistory = do
+  if path.byte_size() == 0 then
+    return history
+  end
+  if history.paths.length() > 0 then
+    if history.paths[history.index] == path then
+      return history
+    end
+  end
+  let mut paths: [string] = []
+  let mut index = 0
+  while index <= history.index && index < history.paths.length() do
+    paths.push(history.paths[index])
+    index = index + 1
+  end
+  paths.push(path)
+  FolderNavHistory { paths: paths, index: paths.length() - 1 }
+end
+
+export fn folder_nav_back(history: FolderNavHistory) -> FolderNavHistory = do
+  if folder_nav_can_back(history) == 0 then
+    return history
+  end
+  FolderNavHistory { paths: history.paths, index: history.index - 1 }
+end
+
+export fn folder_nav_forward(history: FolderNavHistory) -> FolderNavHistory = do
+  if folder_nav_can_forward(history) == 0 then
+    return history
+  end
+  FolderNavHistory { paths: history.paths, index: history.index + 1 }
+end
+
+export fn folder_nav_button_size() -> i32 = 14
+
+export fn folder_nav_controls_width() -> i32 =
+  folder_nav_button_size() * 2 + 6
+
+export fn folder_nav_back_rect(tree_rect: Rect) -> Rect =
+  rect_new(
+    tree_rect.x + 2,
+    tree_rect.y + 1,
+    folder_nav_button_size(),
+    folder_breadcrumb_height() - 2
+  )
+
+export fn folder_nav_forward_rect(tree_rect: Rect) -> Rect =
+  rect_new(
+    tree_rect.x + 2 + folder_nav_button_size() + 2,
+    tree_rect.y + 1,
+    folder_nav_button_size(),
+    folder_breadcrumb_height() - 2
+  )
+
+export fn folder_nav_crumbs_origin_x(tree_rect: Rect) -> i32 =
+  tree_rect.x + folder_nav_controls_width() + 2
+
+// 0 = none, 1 = back, 2 = forward
+export fn folder_nav_button_hit(
+  tree_rect: Rect,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if point_in_rect(point_new(point_x, point_y), folder_nav_back_rect(tree_rect)) != 0 then
+    return 1
+  end
+  if point_in_rect(point_new(point_x, point_y), folder_nav_forward_rect(tree_rect)) != 0 then
+    return 2
+  end
+  0
+end
+
+export fn folder_row_rect(
+  list_rect: Rect,
+  row_index: i32,
+  scroll_y: i32
+) -> Rect =
+  rect_new(
+    list_rect.x,
+    list_rect.y + row_index * folder_row_height() - scroll_y,
+    list_rect.width,
+    folder_row_height()
   )
 end

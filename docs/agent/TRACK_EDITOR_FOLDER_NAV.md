@@ -5,11 +5,19 @@ Parent: [../PLAN.md](../PLAN.md) §43; polish after
 Uncommitted WIP in `misc/editor/ux/folder_panel.mlc` (`FolderNavHistory`,
 `folder_nav_*`, `folder_tree_browser_rows`) — absorb, do not discard.
 
-## Status: **active** (2026-07-16) — queue head
+## Status: **active** (2026-07-16) — STEP=2 next
 
 ## Next step
 
-**STEP=1** — Absorb nav API + unit.
+**STEP=2** — Wire `demo_live` (+ compile).
+
+### STEP=1 done (2026-07-16)
+
+- Absorbed `folder_nav_*` + `folder_tree_browser_rows` (+ `FolderRow.depth`) in
+  `misc/editor/ux/folder_panel.mlc`.
+- Unit: `misc/editor/tests/folder_nav_unit.mlc` +
+  `scripts/run_editor_folder_nav_unit.sh` → `folder_nav_unit ok`.
+- PLAN §43 → STEP=2.
 
 ### STEP=0 done (2026-07-16)
 
@@ -79,7 +87,7 @@ File watch; recursive glob; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
-| 1 | Absorb nav API + unit | `folder_nav_unit ok` |
+| 1 | Absorb nav API + unit | **done** (2026-07-16) `folder_nav_unit ok` |
 | 2 | Wire `demo_live` (+ compile) | `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
@@ -89,9 +97,9 @@ File watch; recursive glob; tree-sitter; SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5;
 1. Freeze exports + placement — done.
 2. In-scope WIP list — done.
 
-**STEP=1**
-1. Commit nav portion of `folder_panel.mlc` + unit.
-2. Gate: `bash scripts/run_editor_folder_nav_unit.sh`.
+**STEP=1** — **done**
+1. Commit nav portion of `folder_panel.mlc` + unit — done.
+2. Gate: `bash scripts/run_editor_folder_nav_unit.sh` — done.
 
 **STEP=2**
 1. Wire `demo_live` history/back/forward (stash unrelated foreign).

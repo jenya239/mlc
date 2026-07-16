@@ -1,0 +1,123 @@
+# TRACK_EDITOR_FOLDER_NAV STEP=1 — folder_nav unit (no GLFW).
+import { DirEntry, dir_entry_new } from '../workspace/file_tree'
+import { rect_new } from '../../gui/layout'
+import {
+  folder_browser_at,
+  folder_tree_browser_rows,
+  folder_row_parent,
+  folder_row_directory,
+  folder_row_file,
+  folder_nav_new,
+  folder_nav_current,
+  folder_nav_can_back,
+  folder_nav_can_forward,
+  folder_nav_push,
+  folder_nav_back,
+  folder_nav_forward,
+  folder_nav_back_rect,
+  folder_nav_forward_rect,
+  folder_nav_button_hit
+} from '../ux/folder_panel'
+
+fn main() -> i32 = do
+  let mut history = folder_nav_new("/demo")
+  if folder_nav_current(history) != "/demo" then
+    println("[mlc-editor] folder_nav_unit fail new current")
+    return 1
+  end
+  if folder_nav_can_back(history) != 0 || folder_nav_can_forward(history) != 0 then
+    println("[mlc-editor] folder_nav_unit fail new can")
+    return 2
+  end
+
+  history = folder_nav_push(history, "/demo/src")
+  history = folder_nav_push(history, "/demo/src/gui")
+  if folder_nav_current(history) != "/demo/src/gui" then
+    println("[mlc-editor] folder_nav_unit fail push current")
+    return 3
+  end
+  if folder_nav_can_back(history) == 0 || folder_nav_can_forward(history) != 0 then
+    println("[mlc-editor] folder_nav_unit fail push can")
+    return 4
+  end
+
+  const same = folder_nav_push(history, "/demo/src/gui")
+  if folder_nav_current(same) != "/demo/src/gui" || same.paths.length() != history.paths.length() then
+    println("[mlc-editor] folder_nav_unit fail duplicate push")
+    return 5
+  end
+
+  history = folder_nav_back(history)
+  if folder_nav_current(history) != "/demo/src" then
+    println("[mlc-editor] folder_nav_unit fail back")
+    return 6
+  end
+  if folder_nav_can_forward(history) == 0 then
+    println("[mlc-editor] folder_nav_unit fail back can_forward")
+    return 7
+  end
+
+  history = folder_nav_forward(history)
+  if folder_nav_current(history) != "/demo/src/gui" then
+    println("[mlc-editor] folder_nav_unit fail forward")
+    return 8
+  end
+
+  history = folder_nav_back(history)
+  history = folder_nav_push(history, "/demo/docs")
+  if folder_nav_can_forward(history) != 0 then
+    println("[mlc-editor] folder_nav_unit fail truncate")
+    return 9
+  end
+  if folder_nav_current(history) != "/demo/docs" then
+    println("[mlc-editor] folder_nav_unit fail truncate current")
+    return 10
+  end
+
+  const empty_push = folder_nav_push(history, "")
+  if folder_nav_current(empty_push) != "/demo/docs" || empty_push.paths.length() != history.paths.length() then
+    println("[mlc-editor] folder_nav_unit fail empty push")
+    return 11
+  end
+
+  const tree_rect = rect_new(10, 20, 200, 300)
+  const back_rect = folder_nav_back_rect(tree_rect)
+  const forward_rect = folder_nav_forward_rect(tree_rect)
+  if folder_nav_button_hit(tree_rect, back_rect.x + 1, back_rect.y + 1) != 1 then
+    println("[mlc-editor] folder_nav_unit fail hit back")
+    return 12
+  end
+  if folder_nav_button_hit(tree_rect, forward_rect.x + 1, forward_rect.y + 1) != 2 then
+    println("[mlc-editor] folder_nav_unit fail hit forward")
+    return 13
+  end
+  if folder_nav_button_hit(tree_rect, tree_rect.x + 100, tree_rect.y + 100) != 0 then
+    println("[mlc-editor] folder_nav_unit fail hit none")
+    return 14
+  end
+
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("alpha.txt", 0))
+  entries.push(dir_entry_new("mid", 1))
+  const tree = folder_browser_at("/demo", "demo", entries)
+  const rows = folder_tree_browser_rows(tree)
+  if rows.length() != 3 then
+    println("[mlc-editor] folder_nav_unit fail browser_rows")
+    return 15
+  end
+  if rows[0].kind != folder_row_parent() || rows[0].name != ".." then
+    println("[mlc-editor] folder_nav_unit fail browser parent")
+    return 16
+  end
+  if rows[1].kind != folder_row_file() || rows[1].name != "alpha.txt" then
+    println("[mlc-editor] folder_nav_unit fail browser file")
+    return 17
+  end
+  if rows[2].kind != folder_row_directory() || rows[2].name != "mid" then
+    println("[mlc-editor] folder_nav_unit fail browser dir")
+    return 18
+  end
+
+  println("[mlc-editor] folder_nav_unit ok")
+  0
+end
