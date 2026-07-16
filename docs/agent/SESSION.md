@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-glfw-content-scale` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | plan-refresh |
+| step_last | 0 |
 | active_track | TRACK_GLFW_CONTENT_SCALE |
-| test_gate | GLFW_CONTENT_SCALE STEP=0 Decision next |
+| test_gate | GLFW_CONTENT_SCALE STEP=1 runtime ABI next |
+
+### Turn 2026-07-16 17:43 (Driver TRACK_GLFW_CONTENT_SCALE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_GLFW_CONTENT_SCALE |
+| started | 2026-07-16 17:42 |
+| elapsed | ~1 min |
+| done    | Froze Decision: `glfw_gl_window_content_scale_x/y` → f64; missing→1.0; STEP=3 optional. |
+| verify  | Decision table + exact exports in TRACK; PLAN §37 → STEP=1. |
+| result  | STEP=0 done. Plain: content_scale ABI contract ready. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_GLFW_CONTENT_SCALE |
 
 ### Turn 2026-07-16 17:35 (Planner TRACK_GLFW_CONTENT_SCALE pick-next)
 

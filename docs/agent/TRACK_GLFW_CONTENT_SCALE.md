@@ -10,50 +10,65 @@ STEP=7 deferred.
 
 ## Next step
 
-**STEP=0** — Decision freeze: ABI shape + smoke token.
+**STEP=1** — Runtime + ABI + MLC extern.
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
-| Placement | `runtime` `glfw_window_gl` + MLC `gl_window.mlc` exports |
-| API | `glfw_gl_window_content_scale_x/y() -> f64` (or pair record) via `glfwGetWindowContentScale` |
-| Missing window | return `1.0` / `1.0` |
-| Editor wire | optional STEP: scale UI metrics in `demo_live` / app chrome — only if trivial |
-| REG | touch `lib/mlc/` → REG before Critic |
-| Non-goals | Fontconfig; full DPI layout rewrite; SCRIPT_VM; MIR Epic 5 |
+- Decision frozen below; PLAN §37 → STEP=1.
 
-### Exact exports (draft)
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in existing `mlc::gl::glfw_gl_window_width/height` +
+`glfwGetWindowContentScale` (GLFW 3.3+).
+
+| Item | Choice |
+|------|--------|
+| Placement | `runtime` `glfw_window_gl.hpp`/`.cpp` + MLC `lib/mlc/common/stdlib/gl/gl_window.mlc` |
+| API | Two bare exports: `glfw_gl_window_content_scale_x() -> f64`, `glfw_gl_window_content_scale_y() -> f64` (match width/height split; no record) |
+| C++ | `mlc::gl::glfw_gl_window_content_scale_x/y` → `glfwGetWindowContentScale` on current window |
+| Missing / no window | return `1.0` / `1.0` (same for both axes) |
+| Headless smoke | After `glfw_gl_context_begin`: both finite, `> 0.0`; token `content_scale_ok` |
+| Typical values | Often `1.0` on standard DPI; HiDPI may be `2.0` — do not assert exact value |
+| Editor wire (STEP=3) | **optional** — one chrome metric × scale in `demo_live` only if one-liner; else mark N/A at STEP=3 |
+| REG | `lib/mlc/` touch → `scripts/regression_gate.sh` before Critic; **no** `compiler/` |
+| Namespace | C++ `mlc::gl::*`; MLC bare names on `gl_window.mlc` |
+
+### Exact exports
 
 ```text
 glfw_gl_window_content_scale_x() -> f64
 glfw_gl_window_content_scale_y() -> f64
 ```
 
+### Non-goals (Decision)
+
+Fontconfig; full HiDPI layout rewrite; framebuffer-size vs window-size unification;
+SCRIPT_VM; LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` changes.
+
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI + MLC extern | compile smoke |
 | 2 | Headless smoke token (`content_scale_ok`) | `run_glfw_content_scale_smoke.sh` |
-| 3 | Optional: demo_live / editor use scale | compile smoke |
+| 3 | Optional: demo_live / editor use scale | compile smoke or N/A |
 | 4 | Critic: gates + REG if `lib/mlc/`; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze table; name exports exactly.
-2. Non-goals + headless behavior (scale ≥ 1.0 typical).
+**STEP=0** — **done**
+1. Freeze table; name exports exactly — done.
+2. Non-goals + headless behavior — done.
 
 **STEP=1**
 1. C++ wrapper around `glfwGetWindowContentScale`.
 2. MLC extern on `gl_window.mlc`.
 
 **STEP=2**
-1. Smoke: after `glfw_gl_context_begin`, scales are finite and > 0.
+1. Smoke: after `glfw_gl_context_begin`, scales finite and `> 0`.
 
-**STEP=3** (optional / skip if heavy)
+**STEP=3** (optional / N/A if heavy)
 1. Multiply one chrome metric by scale in demo_live — or mark N/A.
 
 **STEP=4** — Critic; `next` = Planner.

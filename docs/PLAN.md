@@ -432,7 +432,7 @@ compiler/
 | **34** | Phase B widget smokes: non-exhaustive `match` after `Path` (E084) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md); `57015273`…`227a82c4` |
 | **35** | Scene Phase B form live demo (Path arms + absorb WIP) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_SCENE_FORM_LIVE](archive/tracks/TRACK_SCENE_FORM_LIVE.md); `7969cd73`…`47839f7f` |
 | **36** | Stdlib IO/FS: `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire | **done** (2026-07-16) Critic OK; STEP=0–6; STEP=7 deferred | [archive/tracks/TRACK_STDLIB_IO_FS](archive/tracks/TRACK_STDLIB_IO_FS.md) |
-| **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **active** (2026-07-16) STEP=0 Decision next | [TRACK_GLFW_CONTENT_SCALE](agent/TRACK_GLFW_CONTENT_SCALE.md) |
+| **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **active** (2026-07-16) STEP=0 **done**; **STEP=1** runtime ABI next | [TRACK_GLFW_CONTENT_SCALE](agent/TRACK_GLFW_CONTENT_SCALE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -646,7 +646,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_SCENE_FORM_LIVE.md](archive/tracks/TRACK_SCENE_FORM_LIVE.md))**
   → **STDLIB_IO_FS (§36, **closed** 2026-07-16: Critic OK; STEP=0–6; STEP=7 deferred; `e05ae187`…`ecf8568f`;
       → [archive/tracks/TRACK_STDLIB_IO_FS.md](archive/tracks/TRACK_STDLIB_IO_FS.md))**
-  → **GLFW_CONTENT_SCALE (§37, **active**; STEP=0 Decision next;
+  → **GLFW_CONTENT_SCALE (§37, **active**; STEP=0 Decision done; **STEP=1** runtime ABI next;
       → [agent/TRACK_GLFW_CONTENT_SCALE.md](agent/TRACK_GLFW_CONTENT_SCALE.md))**
 ```
 
