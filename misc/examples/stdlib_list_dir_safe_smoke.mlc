@@ -1,0 +1,90 @@
+# TRACK_STDLIB_IO_FS STEP=3 — safe_list_dir Result smoke.
+# Expect stdout: list_dir_safe_ok
+
+type Result<T, E> = Ok(T) | Err(E)
+
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn is_regular_file(path: string) -> bool
+  = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_names(path: string) -> [string]
+  = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_is_directory_flags(path: string) -> [i32]
+  = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+type FsDirEntry = {
+  name: string,
+  is_directory: i32
+}
+
+fn list_dir(path: string) -> [FsDirEntry] = do
+  const names = list_dir_names(path)
+  const flags = list_dir_is_directory_flags(path)
+  let mut entries: [FsDirEntry] = []
+  let mut index = 0
+  const count = names.length()
+  if flags.length() != count then
+    return entries
+  end
+  while index < count do
+    entries.push(FsDirEntry {
+      name: names[index],
+      is_directory: flags[index]
+    })
+    index = index + 1
+  end
+  entries
+end
+
+fn safe_list_dir(path: string) -> Result<[FsDirEntry], string> =
+  if is_directory(path)
+    then Ok(list_dir(path))
+    else if is_regular_file(path)
+      then Err("Not a directory: " + path)
+      else Err("Directory not found: " + path)
+
+fn main() -> i32 = do
+  const root = ".tmp/stdlib_list_dir_safe_fixture"
+  const file_path = root + "/marker.txt"
+  if !write_string(file_path, "x") then
+    println("list_dir_safe_fail write")
+    return 1
+  end
+
+  const ok_result = safe_list_dir(root)
+  const ok_count = match ok_result {
+    Ok(entries) => entries.length(),
+    Err(_) => 0 - 1
+  }
+  if ok_count < 1 then
+    println("list_dir_safe_fail ok")
+    return 2
+  end
+
+  const missing = safe_list_dir(".tmp/stdlib_list_dir_safe_missing_xyz")
+  const missing_ok = match missing {
+    Ok(_) => 0,
+    Err(message) =>
+      if message == "Directory not found: .tmp/stdlib_list_dir_safe_missing_xyz" then 1 else 0 end
+  }
+  if missing_ok != 1 then
+    println("list_dir_safe_fail missing")
+    return 3
+  end
+
+  const as_file = safe_list_dir(file_path)
+  const not_dir_ok = match as_file {
+    Ok(_) => 0,
+    Err(message) =>
+      if message == "Not a directory: " + file_path then 1 else 0 end
+  }
+  if not_dir_ok != 1 then
+    println("list_dir_safe_fail not_dir")
+    return 4
+  end
+
+  println("list_dir_safe_ok")
+  0
+end

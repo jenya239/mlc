@@ -14,7 +14,12 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=3** — `safe_list_dir` + missing-path Err.
+**STEP=4** — `create_directories` (+ smoke write then list).
+
+### STEP=3 done (2026-07-16)
+
+- `safe_list_dir` → `Result`; Err missing / not-a-dir.
+- Smoke `list_dir_safe_ok`.
 
 ### STEP=2 done (2026-07-16)
 
@@ -76,7 +81,7 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI: `is_directory` / `is_regular_file` | **done** (2026-07-16): `fs_stat_ok` |
 | 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | **done** (2026-07-16): `list_dir_ok` |
-| 3 | `safe_list_dir` + missing-path Err | safe smoke / token |
+| 3 | `safe_list_dir` + missing-path Err | **done** (2026-07-16): `list_dir_safe_ok` |
 | 4 | `create_directories` (+ smoke write then list) | `run_stdlib_mkdir_smoke.sh` → `mkdir_ok` |
 | 5 | Editor: expand-from-disk helper; unit with temp fixture | `run_editor_file_tree_fs_unit.sh` |
 | 6 | `demo_live`: real tree via `list_dir`; mock fallback if root missing | compile smoke |
@@ -97,9 +102,9 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 1. Parallel ABI `list_dir_names_value` / `list_dir_is_directory_value`; MLC zip to `[FsDirEntry]` — done.
 2. Smoke `list_dir_ok` — done.
 
-**STEP=3**
-1. `safe_list_dir` → Err on missing/not-a-dir.
-2. Smoke token.
+**STEP=3** — **done**
+1. `safe_list_dir` → Err on missing/not-a-dir — done.
+2. Smoke `list_dir_safe_ok` — done.
 
 **STEP=4**
 1. `create_directories` + smoke.

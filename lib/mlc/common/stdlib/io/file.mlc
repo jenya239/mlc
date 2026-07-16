@@ -61,6 +61,13 @@ export fn list_dir(path: str) -> FsDirEntry[] = do
   entries
 end
 
+export fn safe_list_dir(path: str) -> Result<FsDirEntry[], str> =
+  if is_directory(path)
+    then Ok(list_dir(path))
+    else if is_regular_file(path)
+      then Err("Not a directory: " + path)
+      else Err("Directory not found: " + path)
+
 // Helper functions
 
 export fn read_text(path: str) -> str =

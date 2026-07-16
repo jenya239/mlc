@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
 | driver_turns_since_plan | 3 |
-| step_last | 2 |
+| step_last | 3 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | IO_FS STEP=3 safe_list_dir next |
+| test_gate | IO_FS STEP=4 create_directories next |
+
+### Turn 2026-07-16 14:35 (Driver TRACK_STDLIB_IO_FS STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:29 |
+| elapsed | ~6 min |
+| done    | `safe_list_dir` in file.mlc; smoke `stdlib_list_dir_safe_smoke.mlc` + script. |
+| verify  | `bash scripts/run_stdlib_list_dir_safe_smoke.sh` → `list_dir_safe_ok`; list_dir still ok. |
+| result  | STEP=3 done. Plain: Result Err on missing/not-a-dir. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:27 (Driver TRACK_STDLIB_IO_FS STEP=2)
 
