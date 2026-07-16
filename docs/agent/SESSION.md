@@ -4,12 +4,27 @@
 
 | Field | Value |
 |-------|-------|
-| instructions_rev | `2026-07-16-editor-folder-browser` |
+| instructions_rev | `2026-07-16-editor-folder-browser-closed` |
 | agent_token_last | — |
-| driver_turns_since_plan | 5 |
-| step_last | 4 |
-| active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=5 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 5 |
+| active_track | — (EDITOR_FOLDER_BROWSER closed) |
+| test_gate | Planner pick-next |
+
+### Turn 2026-07-16 20:55 (Critic TRACK_EDITOR_FOLDER_BROWSER STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 5 / critique-audit |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:51 |
+| elapsed | ~4 min |
+| done    | Re-ran 4 gates; no lib/mlc → REG skip; archive §38. |
+| verify  | folder/tab/demo_live/env tokens ok; REG N/A. |
+| result  | STEP=5 closed. Plain: folder browser Critic OK. |
+| issues  | Left extern_concurrency_lint untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 20:46 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=4)
 
