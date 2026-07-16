@@ -7,20 +7,22 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
 отдельными системами.
 
-## Status: **active** (2026-07-15) — Phase D queue head
+## Status: **closed** (2026-07-16) — Phase A–D Critic OK
 
 Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
 Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** 2026-07-14, Critic OK).
 Phase C: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** 2026-07-15, Critic OK).
-Active: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
+Phase D: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md)
+(**closed** 2026-07-16, Critic OK).
 §33b LIVE_POLISH: [archive/tracks/TRACK_EDITOR_LIVE_POLISH.md](../archive/tracks/TRACK_EDITOR_LIVE_POLISH.md)
 (**closed** 2026-07-15, Critic OK).
 
 ## Next step
 
-Phase D **STEP=6** blueprint MVP.
+**closed** — epic §10c/§29 foundation delivered (A–D). Queue → Planner.
+
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -90,11 +92,11 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 (порог 64). Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** Critic OK; `d0a3996f`…`64014467`).
 
-## Phase D: camera + vector path + blueprint canvas — **priority / active** (2026-07-15)
+## Phase D: camera + vector path + blueprint canvas — **closed** (2026-07-16)
 
-Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
-fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
-(STEP=6 done; STEP=7 Critic next).
+Camera pan/zoom = `Scene.camera`. Vector-path bezier stroke; node/wire MVP.
+Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md)
+(**closed** Critic OK; `d9cc60de`…`9e3eaebf`).
 
 ## Out of scope
 

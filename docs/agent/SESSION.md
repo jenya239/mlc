@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 4 |
-| step_last | 6 |
-| active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=7 Critic next |
+| driver_turns_since_plan | 0 |
+| step_last | 7 |
+| active_track | — (Phase D closed; Planner next) |
+| test_gate | Planner picks next from PLAN |
+
+### Turn 2026-07-16 13:42 (Critic TRACK_GUI_SCENE_PHASE_D STEP=7)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 7 / critique-audit |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-16 13:40 |
+| elapsed | ~2 min |
+| done    | P0 re-run Phase D + form/spatial; archive Phase D; PLAN §10c/§29 done. |
+| verify  | camera/tess/draw/wire/blueprint/form/spatial → all `*_ok`; no sleep. |
+| result  | STEP=7 closed. Plain: Phase D Critic OK; epic A–D foundation done. |
+| issues  | Residuals: Path fill + precise stroke hit deferred; checkbox/slider/text_field smokes lack `Path(_)` arms. Left EDITOR.md + SCRIPT_VM + form_live untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
 
 ### Turn 2026-07-16 13:38 (Driver TRACK_GUI_SCENE_PHASE_D STEP=6)
 
