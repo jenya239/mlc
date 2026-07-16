@@ -8,48 +8,95 @@ discard).
 
 ## Status: **active** (2026-07-16) — queue head
 
-After §41 caret blink closed. Next editor gap: soft wrap by **codepoint**
-columns (prefer break at space); wire scroll/hit-test/live.
-
 ## Next step
 
-**STEP=0** — Decision freeze: break rules, API surface, absorb WIP path.
+**STEP=1** — Absorb/stabilize `word_wrap.mlc` + unit.
 
-## Decision (STEP=0) — open
+### STEP=0 done (2026-07-16)
 
-| Item | Choice (draft → freeze at STEP=0) |
-|------|----------------------------------|
-| Scope v1 | Soft wrap → `[VisualRow]` per doc line; mono `char_width` columns |
-| Columns | UTF-8 **codepoints** (reuse §40 helpers); grapheme out |
-| Break | Prefer last space before `max_columns`; else hard cut at max |
-| Module | Absorb `misc/editor/layout/word_wrap.mlc` (WIP) |
-| API draft | `wrap_max_columns`, `visual_rows_for_line`, `visual_rows_for_document` (or equiv), `wrap_offset_at_point` |
-| Wire | `demo_live` + scroll/hit already partially in WIP — finish + unit |
-| REG | Prefer no `lib/mlc/`; no `compiler/` |
-| Non-goals | Hyphenation; proportional fonts; IME; tree-sitter; SCRIPT_VM; MIR Epic 5 |
+- Decision frozen below; PLAN §42 → STEP=1.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in uncommitted `misc/editor/layout/word_wrap.mlc` + «no wrap v1»
+notes in ARCHITECTURE / `visible_range.mlc`, and §40 codepoint helpers.
+
+| Item | Choice |
+|------|--------|
+| Module | `misc/editor/layout/word_wrap.mlc` (absorb WIP as-is API) |
+| Columns | UTF-8 **codepoints** via `utf8_count_codepoints` / `utf8_byte_offset_for_codepoint_column` |
+| Break | Prefer last `" "` in the current visual segment before `max_columns`; else hard cut (≥1 codepoint) |
+| Empty line | One `VisualRow` with zero-width span |
+| Viewport cols | `wrap_max_columns(viewport_width, char_width)` — floor division, clamp ≥1 |
+| Wire (STEP=2) | `demo_live` (+ scroll/hit already in WIP); do **not** commit unrelated `runtime/io`, folder_panel, chrome unless required for compile |
+| Unit (STEP=1) | Pure: short line (1 row), long no-space (hard cut), long with spaces (soft break), `wrap_offset_at_point` spot |
+| REG | Prefer **no** `lib/mlc/`; no `compiler/` |
+
+### Exact exports (frozen from WIP)
+
+```text
+type VisualRow = {
+  doc_line: i32,
+  byte_start: i32,
+  byte_end: i32,
+  column_start: i32,
+  column_end: i32,
+  is_wrap_continue: i32
+}
+
+wrap_max_columns(viewport_width: i32, char_width: i32) -> i32
+visual_rows_for_line(text, line_index, doc_line, max_columns) -> [VisualRow]
+document_visual_row_count(text, line_index, max_columns) -> i32
+collect_visible_visual_rows(text, line_index, max_columns, first_visual_row, max_rows) -> [VisualRow]
+visual_row_index_for_caret(text, line_index, max_columns, caret_line, caret_column) -> i32
+wrap_offset_at_point(text, line_index, max_columns, text_origin_x, text_origin_y,
+  scroll_offset_y, line_height, char_width, pixel_x, pixel_y) -> i32
+editor_scrollbar_thumb(track_x, track_y, track_height, thumb_width,
+  content_height, scroll_y) -> Rect
+```
+
+### Gate names
+
+| Step | Script / token |
+|------|----------------|
+| 1 | `scripts/run_editor_word_wrap_unit.sh` → `word_wrap_unit ok` |
+| 2 | `scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+
+### In-scope WIP files (STEP=1–2)
+
+- `misc/editor/layout/word_wrap.mlc` (required STEP=1)
+- `misc/editor/demo_live.mlc` wrap call sites (STEP=2; only wrap-related hunks if possible)
+- `misc/editor/ux/scroll.mlc` only if wrap scroll needs it
+- `misc/editor/tests/word_wrap_unit.mlc` (new)
+
+### Non-goals (Decision)
+
+Hyphenation; proportional fonts; grapheme/IME; tree-sitter; SCRIPT_VM;
+LANG_AUTO_CYCLE; MIR Epic 5; `compiler/` / `lib/mlc/`; committing foreign
+`runtime/include/mlc/io/**` or folder_panel extras without need.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | Decision table frozen |
-| 1 | Absorb/stabilize `word_wrap.mlc` + unit | unit token |
-| 2 | Wire scroll/hit/`demo_live`; compile green | compile (+ spot unit) |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
+| 1 | Absorb/stabilize `word_wrap.mlc` + unit | `word_wrap_unit ok` |
+| 2 | Wire scroll/hit/`demo_live`; compile green | `demo_live_fs_compile_ok` |
 | 3 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze break rules + exact exports from WIP audit.
-2. Note which WIP files are in-scope (do not commit unrelated foreign runtime/IO).
+**STEP=0** — **done**
+1. Freeze break rules + exact exports — done.
+2. In-scope WIP file list — done.
 
 **STEP=1**
-1. Commit `word_wrap.mlc` (+ unit); leave unrelated dirty alone.
-2. Gate: `scripts/run_editor_word_wrap_unit.sh` (name TBD at STEP=0).
+1. Commit `word_wrap.mlc` + `tests/word_wrap_unit.mlc`.
+2. Gate: `bash scripts/run_editor_word_wrap_unit.sh`.
 
 **STEP=2**
-1. Finish `demo_live` / scroll integration from WIP as needed.
-2. `run_editor_demo_live_fs_compile.sh` (stash foreign deps if needed).
+1. Finish `demo_live` wrap wire from WIP (explicit `git add` only wrap-needed files).
+2. `bash scripts/run_editor_demo_live_fs_compile.sh` (stash unrelated foreign if needed).
 
 **STEP=3** — Critic; `next` = Planner.
 
@@ -58,7 +105,7 @@ columns (prefer break at space); wire scroll/hit-test/live.
 - Grapheme / IME / proportional metrics
 - tree-sitter / SCRIPT_VM / LANG_AUTO_CYCLE / MIR Epic 5
 - `compiler/` changes
-- Unrelated foreign WIP (`runtime/io`, folder_panel extras) unless required for compile
+- Unrelated foreign WIP unless required for compile
 
 ## Verify discipline
 

@@ -26,14 +26,14 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-16-editor-caret-blink
+INSTRUCTIONS_REV=2026-07-16-editor-word-wrap
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
 
 Прочитай `next` из последней записи SESSION.md — это ROLE/STEP/TRACK для этого turn.
 
-Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. **`misc/editor/ux/**` + `misc/gui/ux/**` + `demo_live` caret blink — in scope для TRACK_EDITOR_CARET_BLINK**. Не трогать `compiler/` в этом треке. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
+Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не удалять чужое; `git add` явным списком. **`misc/editor/layout/word_wrap*` + demo_live wrap wire — in scope для TRACK_EDITOR_WORD_WRAP** (не коммитить чужой `runtime/io` / folder_panel без нужды). Не трогать `compiler/` в этом треке. Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
 Выполни один проверяемый sub-step. Смена status/STEP TRACK → тем же коммитом `docs/PLAN.md`. Закрытие трека → `next` = Critic на этот трек. `SESSION.md` > ~600 строк → архив. Не `git add -f` бинарники.
 
@@ -71,6 +71,7 @@ INSTRUCTIONS_REV=2026-07-16-editor-caret-blink
 | **`TRACK_EDITOR_FONT_CONFIG` (PLAN §39)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_UTF8_COLUMNS` (PLAN §40)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_CARET_BLINK` (PLAN §41)** | **closed** 2026-07-16 (Critic OK). Archive |
+| **`TRACK_EDITOR_WORD_WRAP` (PLAN §42) — queue head** | Soft wrap by codepoint columns; absorb `word_wrap.mlc` WIP. Prefer `misc/editor/layout/**`; no `compiler/` |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

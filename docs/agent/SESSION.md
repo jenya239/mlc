@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_WORD_WRAP
+done: Decision — absorb WIP API; space-prefer break; codepoint columns; gate names
+verify: TRACK Decision + PLAN §42 STEP=0; foreign dirty left
+next: ROLE=Implementer STEP=1 TRACK_EDITOR_WORD_WRAP
+
 ### 2026-07-16 — ROLE=Planner STEP=pick-next (after §41)
 done: §42 `TRACK_EDITOR_WORD_WRAP` — soft wrap; absorb `word_wrap.mlc` WIP
 verify: PLAN §42 + TRACK + queue; EDITOR gap row; foreign dirty left
