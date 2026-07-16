@@ -649,7 +649,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_STDLIB_IO_FS.md](archive/tracks/TRACK_STDLIB_IO_FS.md))**
   → **GLFW_CONTENT_SCALE (§37, **closed** 2026-07-16: Critic OK; STEP=0–3; `651b6b2b`…`06e84ebe`;
       → [archive/tracks/TRACK_GLFW_CONTENT_SCALE.md](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md))**
-  → **EDITOR_FOLDER_BROWSER (§38, **active**; STEP=2 tab close **done**; STEP=3 next;
+  → **EDITOR_FOLDER_BROWSER (§38, **active**; STEP=3 demo_live **done**; STEP=4 next;
       → [agent/TRACK_EDITOR_FOLDER_BROWSER.md](agent/TRACK_EDITOR_FOLDER_BROWSER.md))**
 ```
 

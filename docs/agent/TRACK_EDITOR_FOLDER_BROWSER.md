@@ -82,7 +82,7 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Land `folder_panel.mlc` (+ minimal unit or compile import) | **done** (2026-07-16) `folder_panel_unit ok` |
 | 2 | Land `tab_strip` close hit helpers | **done** (2026-07-16) `tab_strip_close_unit ok` |
-| 3 | Wire `demo_live` folder browser + disk/mock | `demo_live_fs_compile_ok` |
+| 3 | Wire `demo_live` folder browser + disk/mock | **done** (2026-07-16) `demo_live_fs_compile_ok` |
 | 4 | `run_editor_live_demo.sh` root/mock env | script dry-run / comment gate |
 | 5 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
 
@@ -100,9 +100,9 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 1. Commit tab close rect/hit exports — done.
 2. Gate: `run_editor_tab_strip_close_unit.sh` — done.
 
-**STEP=3**
-1. Absorb `demo_live.mlc` folder wire; keep mock `/demo` path.
-2. `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`.
+**STEP=3** — **done**
+1. Absorb `demo_live.mlc` folder wire — done.
+2. `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` — done.
 
 **STEP=4**
 1. Absorb live demo script env defaults.
