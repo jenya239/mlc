@@ -41,9 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_STDLIB_IO_FS` STEP=0 next** (2026-07-16) — PRIORITY: list_dir / FS predicates + editor tree.
+**`TRACK_STDLIB_IO_FS` STEP=0 done** (2026-07-16) — Decision frozen; **STEP=1** `is_directory`/`is_regular_file` next.
 Track: [TRACK_STDLIB_IO_FS.md](TRACK_STDLIB_IO_FS.md).
-Not: LANG_AUTO_CYCLE (gated) / SCRIPT_VM / MIR Epic 5.
 ## Step sizing (good vs bad)
 
 | Good | Bad |

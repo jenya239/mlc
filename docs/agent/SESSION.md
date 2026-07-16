@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-stdlib-io-fs` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
+| driver_turns_since_plan | 1 |
 | step_last | 0 |
 | active_track | TRACK_STDLIB_IO_FS |
-| test_gate | §36 PRIORITY; STEP=0 Decision next |
+| test_gate | IO_FS STEP=1 fs_stat next |
+
+### Turn 2026-07-16 14:20 (Driver TRACK_STDLIB_IO_FS STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:18 |
+| elapsed | ~2 min |
+| done    | Froze Decision: `FsDirEntry`, lex `list_dir`, parallel ABI arrays, STEP=7 deferred. |
+| verify  | Decision table + exact exports in TRACK; PLAN §36 → STEP=1. |
+| result  | STEP=0 done. Plain: FS API contract ready for runtime ABI. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_IO_FS |
 
 ### Turn 2026-07-16 14:20 (Planner TRACK_STDLIB_IO_FS priority-override)
 

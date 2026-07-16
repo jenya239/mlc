@@ -14,47 +14,78 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 
 ## Next step
 
-**STEP=0** — Freeze Decision (API names, DirEntry shape, ABI) + PLAN sync.
+**STEP=1** — Runtime + ABI: `is_directory` / `is_regular_file` → `fs_stat_ok`.
 
-## Decision (STEP=0) — draft until Driver freezes
+### STEP=0 done (2026-07-16)
 
-| Item | Direction |
-|------|-----------|
-| Placement | `lib/mlc/common/stdlib/io/file.mlc` + `runtime/include/mlc/io/file.hpp` + `file_abi.hpp` by-value helpers (same pattern as `exists_value`) |
-| `DirEntry` | `{ name: string, is_directory: i32 }` — match `misc/editor/workspace/file_tree.mlc` or thin convert |
-| `list_dir` | Non-recursive; skip `.` / `..`; order freeze in STEP=0 |
-| Errors | `list_dir` + `safe_list_dir` → `Result<[DirEntry], string>` |
-| `is_directory` / `is_regular_file` | Separate predicates; `exists` already present |
-| `create_directories` | For `.tmp/` fixtures / session dirs |
-| Editor wire | `file_tree_expand` fed by `list_dir`; `demo_live` real root (argv / `.` / `MLC_EDITOR_ROOT`) |
-| Ignore | Keep `ignore_list.mlc` in editor; stdlib does not hardcode `.git` |
-| REG | Touching `lib/mlc/` → `scripts/regression_gate.sh` before Critic; prefer **no** `compiler/` |
+- Decision frozen below; PLAN §36 → STEP=1 next.
+- STEP=7 content_scale deferred.
+
+## Decision (STEP=0) — **frozen** 2026-07-16
+
+Grounded in existing `mlc::file::{exists,exists_value}` + editor
+`DirEntry { name, is_directory: i32 }` (`misc/editor/workspace/file_tree.mlc`).
+
+| Item | Choice |
+|------|--------|
+| Placement | `runtime/include/mlc/io/file.hpp` + `file_abi.hpp` by-value helpers; MLC `lib/mlc/common/stdlib/io/file.mlc` (+ thin wrappers if needed) |
+| Stdlib type | `FsDirEntry = { name: string, is_directory: i32 }` in stdlib IO — **not** reuse editor type name (avoid clash); editor converts field-wise |
+| `is_directory` | `i32`/`bool` via ABI `is_directory_value(String) -> bool`; **false** if path missing; follows symlinks (`std::filesystem::is_directory`) |
+| `is_regular_file` | same pattern `is_regular_file_value`; false if missing; follows symlinks |
+| `create_directories` | `create_directories_value(String) -> bool` = `std::filesystem::create_directories` (parents ok); true if created or already exists as dir |
+| `list_dir` | Non-recursive; skip `.` and `..`; **lexicographic** by `name` (byte order); follows symlink targets for `is_directory` flag |
+| `list_dir` errors | Bare `list_dir` → empty `[FsDirEntry]` on missing/not-a-dir/IO fail (match bool-style IO); `safe_list_dir` → `Result<[FsDirEntry], string>` with Err message |
+| ABI for list | Parallel arrays (mlcc-friendly): `list_dir_names_value` → `Array<String>`, `list_dir_is_directory_value` → `Array<i32>` same length/order; MLC zips to `[FsDirEntry]` |
+| Symlinks | Follow for type checks; listing shows symlink **name**, flag = target is_directory |
+| Editor wire | STEP=5–6: convert `FsDirEntry` → editor `DirEntry`; `file_tree_expand`; `demo_live` root = argv / `.` / `MLC_EDITOR_ROOT`; mock fallback if root missing |
+| Ignore | Editor `ignore_list` only; stdlib never filters `.git` |
+| STEP=7 | **deferred** — `glfw_gl_window_content_scale` out of MVP (revisit later track) |
+| REG | `lib/mlc/` touch → `scripts/regression_gate.sh` before Critic; **no** `compiler/` |
+| Namespace | C++ `mlc::file::*`; MLC exports bare names on `file.mlc` module |
+
+### Exact exports (STEPs 1–4)
+
+```text
+is_directory(path: string) -> bool          # or i32 0|1 matching project bool style
+is_regular_file(path: string) -> bool
+create_directories(path: string) -> bool
+list_dir(path: string) -> [FsDirEntry]
+safe_list_dir(path: string) -> Result<[FsDirEntry], string>
+```
+
+ABI (file_abi.hpp): `*_value` siblings for the four predicates/mkdir + two list arrays.
+
+### Non-goals (Decision)
+
+Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules into stdlib; Fontconfig; `compiler/` changes.
 
 ## Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze + PLAN/CONTINUITY | doc |
+| 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Runtime + ABI: `is_directory` / `is_regular_file` | `run_stdlib_fs_stat_smoke.sh` → `fs_stat_ok` |
-| 2 | Runtime + ABI + stdlib: `list_dir` → `[DirEntry]` | `run_stdlib_list_dir_smoke.sh` → `list_dir_ok` |
-| 3 | `safe_*` Result wrappers + missing-path Err | `list_dir_ok` / safe smoke |
+| 2 | Runtime + ABI + stdlib: `list_dir` → `[FsDirEntry]` | `run_stdlib_list_dir_smoke.sh` → `list_dir_ok` |
+| 3 | `safe_list_dir` + missing-path Err | safe smoke / token |
 | 4 | `create_directories` (+ smoke write then list) | `run_stdlib_mkdir_smoke.sh` → `mkdir_ok` |
 | 5 | Editor: expand-from-disk helper; unit with temp fixture | `run_editor_file_tree_fs_unit.sh` |
 | 6 | `demo_live`: real tree via `list_dir`; mock fallback if root missing | compile smoke |
-| 7 | Optional: `glfw_gl_window_content_scale` | smoke or **skip** if deferred in STEP=0 |
+| 7 | Optional content_scale | **deferred** (STEP=0) |
 | 8 | Critic: gates + REG if required; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=0**
-1. Freeze table; name exports exactly.
-2. Non-goals: recursive glob, file watch, symlink policy (document: follow or not).
+**STEP=0** — **done**
+1. Freeze table; name exports exactly — done.
+2. Non-goals + symlink + order + STEP=7 deferred — done.
 
-**STEP=1–4** — runtime/stdlib only; explicit `git add`; no editor yet.
+**STEP=1**
+1. `is_directory` / `is_regular_file` in `file.hpp` + `*_value` in `file_abi.hpp`.
+2. MLC extern + smoke `fs_stat_ok`.
 
-**STEP=5–6** — `misc/editor/` + demo; `demo_live` in scope for STEP=6 only.
+**STEP=2–4** — list/safe/mkdir as table.
 
-**STEP=7** — skip if STEP=0 marks optional deferred.
+**STEP=5–6** — editor + demo_live (in scope STEP=6 only).
 
 **STEP=8** — Critic; `next` = Planner.
 
@@ -65,6 +96,7 @@ User 2026-07-16: priority stdlib expansion for real file tree / FS.
 - Promoting editor ignore rules into stdlib
 - `compiler/` changes (escalate only if ABI impossible)
 - LANG_AUTO_CYCLE / SCRIPT_VM / MIR Epic 5
+- GLFW content scale (deferred STEP=7)
 
 ## Verify discipline
 
