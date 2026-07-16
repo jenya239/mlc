@@ -62,11 +62,24 @@ import {
   DirEntry,
   FileTree,
   dir_entry_new,
-  file_tree_expand,
-  file_tree_expand_from_disk,
-  file_tree_collapse,
-  file_tree_is_expanded
+  dir_entries_from_disk
 } from './workspace/file_tree'
+import {
+  folder_browser_at,
+  folder_current_path,
+  folder_listing_rows,
+  folder_breadcrumb_segments,
+  folder_breadcrumb_hit,
+  folder_list_rect,
+  folder_clamp_scroll,
+  folder_hit_row_index,
+  folder_scrollbar_thumb,
+  folder_breadcrumb_height,
+  folder_row_height,
+  folder_row_parent,
+  folder_row_directory,
+  path_leaf_name
+} from './ux/folder_panel'
 import {
   TabSet,
   tab_set_new,
@@ -173,11 +186,12 @@ import {
   gutter_label_pen_x
 } from './layout/gutter'
 import { ux_rect_new } from '../gui/ux/snapshot'
-import { tab_strip_hit_index } from './ux/tab_strip'
 import {
-  file_tree_visible_rows,
-  tree_hit_row_index
-} from './ux/tree_hit'
+  tab_strip_hit_index,
+  tab_strip_hit_close_index,
+  tab_strip_close_rect,
+  tab_strip_title_rect
+} from './ux/tab_strip'
 import { editor_text_metrics_default } from './ux/overflow'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
 import {
@@ -211,6 +225,8 @@ extern fn is_directory(path: string) -> bool
   = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_exists(path: string) -> bool
   = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn is_regular_file(path: string) -> bool
+  = "mlc::file::is_regular_file_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
 
@@ -229,17 +245,26 @@ end
 fn root_display_name(path: string) -> string =
   if path == "." then "cwd" else path
 
-fn tree_uses_disk(tree: FileTree) -> i32 =
-  if tree.nodes[tree.root_id].path == "/demo" then 0 else 1
-
-fn tree_expand_node(tree: FileTree, node_id: i32) -> FileTree = do
-  if tree_uses_disk(tree) != 0 then
-    const expanded = file_tree_expand_from_disk(tree, node_id)
-    return expanded.tree
+fn tree_uses_disk(tree: FileTree) -> i32 = do
+  const path = tree.nodes[tree.root_id].path
+  if path == "/demo" || path.starts_with("/demo/") then
+    return 0
   end
-  const path = tree.nodes[node_id].path
-  const expanded = file_tree_expand(tree, node_id, demo_dir_entries(path))
-  expanded.tree
+  1
+end
+
+fn listing_entries_for(path: string, use_disk: i32) -> [DirEntry] = do
+  if use_disk != 0 then
+    return dir_entries_from_disk(path)
+  end
+  demo_dir_entries(path)
+end
+
+fn browse_panels_to(panels: ShellPanels, path: string) -> ShellPanels = do
+  const use_disk = tree_uses_disk(panels.tree)
+  const name = path_leaf_name(path)
+  const entries = listing_entries_for(path, use_disk)
+  panels_with_tree(panels, folder_browser_at(path, name, entries))
 end
 
 fn line_height() -> i32 = editor_app_line_height()
@@ -424,13 +449,77 @@ fn load_demo_session() -> TabSet = do
   workspace_session_restore_tabs(session)
 end
 
+fn try_open_path(tabs: TabSet, path: string) -> TabSet = do
+  if file_exists(path) && is_regular_file(path) then
+    return tab_set_open(tabs, path, text_for_path(path))
+  end
+  tabs
+end
+
+// Disk root + empty session used to leave zero tabs → first frame break.
+fn open_disk_starter(root: string) -> TabSet = do
+  let mut tabs = tab_set_new()
+  tabs = try_open_path(tabs, root + "/README.md")
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  tabs = try_open_path(tabs, root + "/misc/editor/README.md")
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  tabs = try_open_path(tabs, root + "/misc/editor/demo_live.mlc")
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  tabs = try_open_path(tabs, root + "/docs/agent/CONTINUITY.md")
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  const entries = dir_entries_from_disk(root)
+  let mut index = 0
+  while index < entries.length() do
+    const entry = entries[index]
+    if entry.is_directory == 0 then
+      const path = root + "/" + entry.name
+      tabs = try_open_path(tabs, path)
+      if tab_set_has_active(tabs) then
+        return tabs
+      end
+    end
+    index = index + 1
+  end
+  tab_set_open(
+    tabs,
+    root + "/untitled.md",
+    "# mlc editor\n\nOpen a file from the tree.\n"
+  )
+end
+
+fn open_mock_starter() -> TabSet = do
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/demo/main.mlc", sample_main_text())
+  tabs = tab_set_open(tabs, "/demo/README.md", sample_readme_text())
+  tabs = tab_set_open(tabs, "/demo/notes.txt", sample_notes_text())
+  tab_set_set_active(tabs, 0)
+end
+
+fn ensure_tabs(tabs: TabSet, panels: ShellPanels) -> TabSet = do
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  if tree_uses_disk(panels.tree) != 0 then
+    return open_disk_starter(panels.tree.nodes[panels.tree.root_id].path)
+  end
+  open_mock_starter()
+end
+
 fn main() -> i32 = do
   const begin_status = glfw_gl_context_begin(1100, 760)
   if begin_status != 0 then
     return begin_status
   end
 
-  println("[mlc-editor] live demo MVP-close — SessSave/Load; Esc quit")
+  println("[mlc-editor] live demo — Esc / window close to quit")
 
   const theme = theme_editor_dark()
   const solar = theme_solarized_light()
@@ -452,6 +541,7 @@ fn main() -> i32 = do
 
   const chrome_top = header_height() + tab_bar_height() + toolbar_height()
   const resolved_root = resolve_editor_root()
+  println("[mlc-editor] root=" + resolved_root)
   let mut tree_root = "/demo"
   let mut tree_name = "demo"
   if is_directory(resolved_root) then
@@ -463,18 +553,11 @@ fn main() -> i32 = do
     28, 100, 4,
     tree_root, tree_name
   )
-  panels = panels_with_tree(
-    panels, tree_expand_node(panels.tree, panels.tree.root_id)
-  )
+  panels = browse_panels_to(panels, tree_root)
 
-  let mut tabs = load_demo_session()
-  if tab_set_count(tabs) == 0 then
-    if tree_uses_disk(panels.tree) == 0 then
-      tabs = tab_set_open(tabs, "/demo/main.mlc", sample_main_text())
-      tabs = tab_set_open(tabs, "/demo/README.md", sample_readme_text())
-      tabs = tab_set_open(tabs, "/demo/notes.txt", sample_notes_text())
-      tabs = tab_set_set_active(tabs, 0)
-    end
+  let mut tabs = ensure_tabs(load_demo_session(), panels)
+  if tab_set_has_active(tabs) then
+    println("[mlc-editor] open " + tab_set_active(tabs).path)
   end
 
   let mut app = editor_app_state_new(
@@ -482,6 +565,9 @@ fn main() -> i32 = do
   )
   const metrics = editor_text_metrics_default()
   const command_bindings = command_bus_default_bindings()
+  let mut tree_scroll_y = 0
+  let mut last_tree_click_frame = 0 - 1000
+  let mut last_tree_click_path = ""
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -516,9 +602,7 @@ fn main() -> i32 = do
     const toolbar_y = header_height() + tab_bar_height()
     const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
 
-    if !tab_set_has_active(tabs) then
-      break
-    end
+    tabs = ensure_tabs(tabs, panels)
     let mut active = tab_set_active(tabs)
     let mut document = active.buffer.document
     let mut line_index = line_index_rebuild(document)
@@ -532,10 +616,19 @@ fn main() -> i32 = do
     const panes = gutter_layout(editor_rect, gutter_width)
     const text_rect = panes.text
     const gutter_rect = panes.gutter
-    const tree_bounds = ux_rect_new(
-      tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height
+    const tree_list_rect = folder_list_rect(tree_rect)
+    const folder_rows = folder_listing_rows(panels.tree)
+    const breadcrumb_segments = folder_breadcrumb_segments(
+      folder_current_path(panels.tree), tree_rect.x + 8, 8
     )
-    const tree_rows = file_tree_visible_rows(panels.tree)
+    const breadcrumb_rect = rect_new(
+      tree_rect.x, tree_rect.y, tree_rect.width, folder_breadcrumb_height()
+    )
+    tree_scroll_y = folder_clamp_scroll(
+      tree_scroll_y, folder_rows.length(), tree_list_rect.height
+    )
+    const tree_hovered =
+      point_in_rect(point_new(input.mouse_x, input.mouse_y), tree_rect) != 0
 
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     glfw_gl_cursor_set(
@@ -554,7 +647,13 @@ fn main() -> i32 = do
     )
 
     const scroll_ticks = f64_to_i32(glfw_gl_take_scroll_y() * 3.0)
-    if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
+    if scroll_ticks != 0 && tree_hovered then
+      tree_scroll_y = folder_clamp_scroll(
+        tree_scroll_y - scroll_ticks * folder_row_height(),
+        folder_rows.length(),
+        tree_list_rect.height
+      )
+    else if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
       app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
       scroll_offset_y = app.ux.scroll_offset_y
       visible = visible_line_range(line_count, scroll_offset_y, viewport)
@@ -626,34 +725,37 @@ fn main() -> i32 = do
       end
 
       if handled == 0 then
-        const hit = tab_strip_hit_index(
+        const close_hit = tab_strip_hit_close_index(
           tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
         )
-          if hit >= 0 then
-          // Right edge of equal slot ≈ close.
-          const slot = width / tab_set_count(tabs)
-          const local_x = input.mouse_x - hit * slot
-          if local_x >= slot - 20 then
-            const outcome = tab_set_request_close(tabs, hit)
-            tabs = outcome.tabs
-            overlay = outcome.overlay
-            last_command = "close_tab"
-            if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
-              active = tab_set_active(tabs)
-              document = active.buffer.document
-              line_index = line_index_rebuild(document)
-              selection = selection_collapsed(0)
-              history = history_new()
-            end
-          else
-            tabs = tab_set_set_active(tabs, hit)
+        if close_hit >= 0 then
+          const outcome = tab_set_request_close(tabs, close_hit)
+          tabs = outcome.tabs
+          overlay = outcome.overlay
+          last_command = "close_tab"
+          if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
             active = tab_set_active(tabs)
             document = active.buffer.document
             line_index = line_index_rebuild(document)
             selection = selection_collapsed(0)
             history = history_new()
-            last_command = "activate_tab"
           end
+          handled = 1
+        end
+      end
+
+      if handled == 0 then
+        const hit = tab_strip_hit_index(
+          tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+        )
+        if hit >= 0 then
+          tabs = tab_set_set_active(tabs, hit)
+          active = tab_set_active(tabs)
+          document = active.buffer.document
+          line_index = line_index_rebuild(document)
+          selection = selection_collapsed(0)
+          history = history_new()
+          last_command = "activate_tab"
           handled = 1
         end
       end
@@ -666,32 +768,57 @@ fn main() -> i32 = do
       end
 
       if handled == 0 then
-        const row = tree_hit_row_index(
-          tree_bounds, tree_rows.length(), 18, input.mouse_x, input.mouse_y
+        const crumb_path = folder_breadcrumb_hit(
+          breadcrumb_segments, breadcrumb_rect, input.mouse_x, input.mouse_y
+        )
+        if crumb_path.byte_size() > 0 then
+          editor_focused = 0
+          panels = browse_panels_to(panels, crumb_path)
+          tree_scroll_y = 0
+          last_tree_click_path = ""
+          last_command = "tree_breadcrumb"
+          handled = 1
+        end
+      end
+
+      if handled == 0 then
+        const row = folder_hit_row_index(
+          tree_list_rect, folder_rows.length(), tree_scroll_y,
+          input.mouse_x, input.mouse_y
         )
         if row >= 0 then
           editor_focused = 0
-          const tree_row = tree_rows[row]
-          if tree_row.is_directory != 0 then
-            if file_tree_is_expanded(panels.tree, tree_row.node_id) != 0 then
-              panels = panels_with_tree(
-                panels, file_tree_collapse(panels.tree, tree_row.node_id)
-              )
-              last_command = "tree_collapse"
+          const folder_row = folder_rows[row]
+          if folder_row.kind == folder_row_parent() then
+            panels = browse_panels_to(panels, folder_row.path)
+            tree_scroll_y = 0
+            last_tree_click_path = ""
+            last_command = "tree_parent"
+          else if folder_row.kind == folder_row_directory() then
+            const is_double =
+              folder_row.path == last_tree_click_path &&
+              frame_index - last_tree_click_frame >= 0 &&
+              frame_index - last_tree_click_frame <= 25
+            if is_double then
+              panels = browse_panels_to(panels, folder_row.path)
+              tree_scroll_y = 0
+              last_tree_click_path = ""
+              last_tree_click_frame = 0 - 1000
+              last_command = "tree_enter"
             else
-              panels = panels_with_tree(
-                panels, tree_expand_node(panels.tree, tree_row.node_id)
-              )
-              last_command = "tree_expand"
+              last_tree_click_path = folder_row.path
+              last_tree_click_frame = frame_index
+              last_command = "tree_dir_arm"
             end
           else
-            const open_path = tree_row.path
+            const open_path = folder_row.path
             tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
             active = tab_set_active(tabs)
             document = active.buffer.document
             line_index = line_index_rebuild(document)
             selection = selection_collapsed(0)
             history = history_new()
+            last_tree_click_path = ""
             last_command = "tree_open"
           end
           selecting_text = 0
@@ -855,9 +982,7 @@ fn main() -> i32 = do
       mouse_was_down = input.mouse_down
     end
 
-    if !tab_set_has_active(tabs) then
-      break
-    end
+    tabs = ensure_tabs(tabs, panels)
     active = tab_set_active(tabs)
     document = active.buffer.document
     line_index = line_index_rebuild(document)
@@ -888,6 +1013,30 @@ fn main() -> i32 = do
       tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height,
       theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
     )
+    solid = solid_renderer_rect(
+      solid, width, height,
+      breadcrumb_rect.x, breadcrumb_rect.y, breadcrumb_rect.width, breadcrumb_rect.height,
+      0.10, 0.12, 0.16, 1.0
+    )
+    const draw_folder_rows = folder_listing_rows(panels.tree)
+    const draw_crumbs = folder_breadcrumb_segments(
+      folder_current_path(panels.tree), tree_rect.x + 8, 8
+    )
+    tree_scroll_y = folder_clamp_scroll(
+      tree_scroll_y, draw_folder_rows.length(), tree_list_rect.height
+    )
+    if tree_hovered then
+      const thumb = folder_scrollbar_thumb(
+        tree_list_rect, draw_folder_rows.length(), tree_scroll_y
+      )
+      if thumb.width > 0 then
+        solid = solid_renderer_rect(
+          solid, width, height,
+          thumb.x, thumb.y, thumb.width, thumb.height,
+          0.45, 0.48, 0.55, 1.0
+        )
+      end
+    end
     solid = solid_renderer_rect(
       solid, width, height,
       editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height,
@@ -1045,10 +1194,13 @@ fn main() -> i32 = do
       if tab_index == tabs.active_index then
         title = "[" + title + "]"
       end
-      title = title + " x"
-      const slot = width / tab_set_count(tabs)
+      const title_rect = tab_strip_title_rect(tab_strip, tab_set_count(tabs), tab_index)
+      const close_rect = tab_strip_close_rect(tab_strip, tab_set_count(tabs), tab_index)
       chrome_lines = push_line(
-        chrome_lines, title, 13, tab_index * slot + 8, tab_bar_y + 18
+        chrome_lines, title, 13, title_rect.x + 8, tab_bar_y + 18
+      )
+      chrome_lines = push_line(
+        chrome_lines, "x", 13, close_rect.x + 5, tab_bar_y + 18
       )
       tab_index = tab_index + 1
     end
@@ -1066,32 +1218,39 @@ fn main() -> i32 = do
       tool_index = tool_index + 1
     end
 
-    const draw_tree_rows = file_tree_visible_rows(panels.tree)
+    const draw_tree_rows = draw_folder_rows
+    let mut crumb_text = ""
+    let mut crumb_index = 0
+    while crumb_index < draw_crumbs.length() do
+      if crumb_index > 0 then
+        crumb_text = crumb_text + " / "
+      end
+      crumb_text = crumb_text + draw_crumbs[crumb_index].label
+      crumb_index = crumb_index + 1
+    end
+    chrome_lines = push_line(
+      chrome_lines, crumb_text, 12, tree_rect.x + 8, tree_rect.y + 16
+    )
+
+    let mut tree_lines: [StaticTextLine] = []
     let mut row_index = 0
     while row_index < draw_tree_rows.length() do
-      const tree_row = draw_tree_rows[row_index]
-      let mut marker = "  "
-      if tree_row.is_directory != 0 then
-        if file_tree_is_expanded(panels.tree, tree_row.node_id) != 0 then
-          marker = "[-] "
-        else
-          marker = "[+] "
-        end
-      end
-      let mut label = marker + tree_row.name
-      if tree_row.is_directory != 0 then
+      const folder_row = draw_tree_rows[row_index]
+      let mut label = folder_row.name
+      if folder_row.kind == folder_row_directory() then
         label = label + "/"
       end
-      let mut indent = 0
-      while indent < tree_row.depth do
-        label = "  " + label
-        indent = indent + 1
+      if folder_row.kind == folder_row_parent() then
+        label = ".."
       end
-      chrome_lines = push_line(
-        chrome_lines, label, 13,
-        tree_rect.x + 8,
-        tree_rect.y + 14 + row_index * 18
-      )
+      const pen_y =
+        tree_list_rect.y + 14 + row_index * folder_row_height() - tree_scroll_y
+      if pen_y >= tree_list_rect.y - folder_row_height() &&
+          pen_y <= tree_list_rect.y + tree_list_rect.height + folder_row_height() then
+        tree_lines = push_line(
+          tree_lines, label, 13, tree_list_rect.x + 8, pen_y
+        )
+      end
       row_index = row_index + 1
     end
 
@@ -1123,6 +1282,20 @@ fn main() -> i32 = do
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
       return chrome_drawn.error_code
+    end
+
+    editor_gl_scissor_enable_rect(height, tree_list_rect)
+    const tree_drawn = static_text_draw_lines_colored(
+      text_state, tree_lines, width, height, 0,
+      theme.text_red, theme.text_green, theme.text_blue, 1.0
+    )
+    editor_gl_scissor_disable()
+    text_state = tree_drawn.state
+    if tree_drawn.error_code != 0 then
+      static_text_destroy(text_state)
+      solid_renderer_destroy(solid)
+      glfw_gl_context_end()
+      return tree_drawn.error_code
     end
 
     let mut editor_lines: [StaticTextLine] = []

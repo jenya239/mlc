@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
-| driver_turns_since_plan | 3 |
-| step_last | 2 |
+| driver_turns_since_plan | 4 |
+| step_last | 3 |
 | active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=3 next |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=4 next |
+
+### Turn 2026-07-16 20:40 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:34 |
+| elapsed | ~6 min |
+| done    | Absorbed `demo_live.mlc` folder browser + mock/disk + tab close wire. |
+| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
+| result  | STEP=3 done. Plain: demo_live folder wire compiles. |
+| issues  | Left `run_editor_live_demo.sh` for STEP=4. |
+| next    | ROLE=Driver STEP=4 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 20:30 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=2)
 

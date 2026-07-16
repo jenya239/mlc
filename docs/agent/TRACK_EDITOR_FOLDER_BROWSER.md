@@ -8,7 +8,12 @@ Parent: [../PLAN.md](../PLAN.md) §38; residual polish after
 
 ## Next step
 
-**STEP=3** — Wire `demo_live` folder browser + disk/mock.
+**STEP=4** — `run_editor_live_demo.sh` root/mock env.
+
+### STEP=3 done (2026-07-16)
+
+- Absorbed `demo_live.mlc` folder browser + disk/mock + tab close hit.
+- Gate: `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`.
 
 ### STEP=2 done (2026-07-16)
 
@@ -76,7 +81,7 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 |------|------|------|
 | 0 | Decision freeze + PLAN/CONTINUITY | **done** (2026-07-16) |
 | 1 | Land `folder_panel.mlc` (+ minimal unit or compile import) | **done** (2026-07-16) `folder_panel_unit ok` |
-| 2 | Land `tab_strip` close hit helpers | compile/unit token |
+| 2 | Land `tab_strip` close hit helpers | **done** (2026-07-16) `tab_strip_close_unit ok` |
 | 3 | Wire `demo_live` folder browser + disk/mock | `demo_live_fs_compile_ok` |
 | 4 | `run_editor_live_demo.sh` root/mock env | script dry-run / comment gate |
 | 5 | Critic: gates (+ REG if `lib/mlc/`); archive | close |
@@ -91,9 +96,9 @@ MIR Epic 5; `compiler/` changes; recursive glob / file watch.
 1. Commit `folder_panel.mlc` — done (`end`→`end_index`).
 2. Gate: `run_editor_folder_panel_unit.sh` — done.
 
-**STEP=2**
-1. Commit tab close rect/hit exports.
-2. Gate: compile or unit.
+**STEP=2** — **done**
+1. Commit tab close rect/hit exports — done.
+2. Gate: `run_editor_tab_strip_close_unit.sh` — done.
 
 **STEP=3**
 1. Absorb `demo_live.mlc` folder wire; keep mock `/demo` path.
