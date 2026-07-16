@@ -70,7 +70,7 @@ INSTRUCTIONS_REV=2026-07-16-editor-caret-blink
 | **`TRACK_EDITOR_FOLDER_BROWSER` (PLAN §38)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FONT_CONFIG` (PLAN §39)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_UTF8_COLUMNS` (PLAN §40)** | **closed** 2026-07-16 (Critic OK). Archive |
-| **`TRACK_EDITOR_CARET_BLINK` (PLAN §41) — queue head** | UX L8 `caret_blink_phases` + live helper. Prefer `misc/editor/ux/**` + `misc/gui/ux/**`; no `sleep`; no `compiler/` |
+| **`TRACK_EDITOR_CARET_BLINK` (PLAN §41)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

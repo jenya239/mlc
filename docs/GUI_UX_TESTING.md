@@ -144,7 +144,7 @@ Later: clipboard expects after P2 GLFW clipboard.
 | L5 tabs | `tab_strip_click_activates` — hit on title rect |
 | L6 cursor | `divider_hover_cursor_ew` — probe cursor shape id |
 | L7 clipboard | after P2: `copy_paste_roundtrip` |
-| L8 caret | `caret_blink_phases` with `UxClock` — **§41 active** ([TRACK_EDITOR_CARET_BLINK](agent/TRACK_EDITOR_CARET_BLINK.md)) |
+| L8 caret | `caret_blink_phases` with `UxClock` — **§41 done** ([archive/tracks/TRACK_EDITOR_CARET_BLINK](../archive/tracks/TRACK_EDITOR_CARET_BLINK.md)) |
 | L9 whitespace | `newline_caret_and_spaces` — Enter, trailing space, caret col |
 
 ## CI
