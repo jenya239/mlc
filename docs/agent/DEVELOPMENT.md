@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PATH_MATCH` closed** (2026-07-16) — Critic OK.
-**Next:** Planner — pick next from `PLAN.md` (not SCRIPT_VM / MIR Epic 5).
-Archive: [../archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](../archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md).
+**`TRACK_SCENE_FORM_LIVE` STEP=1 next** (2026-07-16) — absorb form_live + Path(_); compile gate.
+Track: [TRACK_SCENE_FORM_LIVE.md](TRACK_SCENE_FORM_LIVE.md).
+Not: LANG_AUTO_CYCLE (gated) / SCRIPT_VM / MIR Epic 5 / demo_live dirty.
 ## Step sizing (good vs bad)
 
 | Good | Bad |

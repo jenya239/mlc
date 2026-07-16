@@ -7,9 +7,24 @@
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
 | driver_turns_since_plan | 0 |
-| step_last | 2 |
-| active_track | — (PATH_MATCH closed; Planner next) |
-| test_gate | Planner picks next from PLAN |
+| step_last | 0 |
+| active_track | TRACK_SCENE_FORM_LIVE |
+| test_gate | FORM_LIVE STEP=1 next |
+
+### Turn 2026-07-16 13:58 (Planner STEP=pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN → TRACK_SCENE_FORM_LIVE (§35) |
+| started | 2026-07-16 13:57 |
+| elapsed | ~1 min |
+| done    | Opened §35 form_live absorb; reverted §19 (gated). PLAN/CONTINUITY/DEVELOPMENT. |
+| verify  | form_live missing Path; LANG_AUTO_CYCLE PLAN gate 2026-07-11 respected. |
+| result  | Queue head = FORM_LIVE STEP=1. Plain: commit live demo + Path arms + compile gate. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_SCENE_FORM_LIVE |
 
 ### Turn 2026-07-16 13:56 (Critic TRACK_GUI_SCENE_PATH_MATCH STEP=2)
 

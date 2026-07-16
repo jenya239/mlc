@@ -23,7 +23,7 @@ Phase D: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI
 
 **closed** — epic §10c/§29 foundation delivered (A–D). §34 Path-match residual
 [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](../archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md)
-(**closed** Critic OK). Queue → Planner.
+(**closed** Critic OK). Follow-up §35: [TRACK_SCENE_FORM_LIVE.md](TRACK_SCENE_FORM_LIVE.md).
 
 ## Ключевая коррекция (2026-07-11)
 
