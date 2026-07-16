@@ -1,0 +1,49 @@
+# TRACK_EDITOR_CARET_BLINK STEP=1 — caret blink unit (no GLFW).
+import {
+  caret_blink_period_ms,
+  caret_blink_visible
+} from '../ux/caret_blink'
+
+fn main() -> i32 = do
+  const period = caret_blink_period_ms()
+  if period != 1000 then
+    println("[mlc-editor] caret_blink_unit fail period")
+    return 1
+  end
+
+  if !caret_blink_visible(0, period) then
+    println("[mlc-editor] caret_blink_unit fail on0")
+    return 2
+  end
+  if !caret_blink_visible(499, period) then
+    println("[mlc-editor] caret_blink_unit fail on499")
+    return 3
+  end
+  if caret_blink_visible(500, period) then
+    println("[mlc-editor] caret_blink_unit fail off500")
+    return 4
+  end
+  if caret_blink_visible(999, period) then
+    println("[mlc-editor] caret_blink_unit fail off999")
+    return 5
+  end
+  if !caret_blink_visible(1000, period) then
+    println("[mlc-editor] caret_blink_unit fail on1000")
+    return 6
+  end
+  if !caret_blink_visible(0 - 10, period) then
+    println("[mlc-editor] caret_blink_unit fail clamp_neg")
+    return 7
+  end
+  if !caret_blink_visible(0, 0) then
+    println("[mlc-editor] caret_blink_unit fail period0")
+    return 8
+  end
+  if !caret_blink_visible(123, 0 - 1) then
+    println("[mlc-editor] caret_blink_unit fail period_neg")
+    return 9
+  end
+
+  println("[mlc-editor] caret_blink_unit ok")
+  0
+end

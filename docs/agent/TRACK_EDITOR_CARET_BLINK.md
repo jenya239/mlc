@@ -10,7 +10,11 @@ Parent: [../PLAN.md](../PLAN.md) §41; residual from
 
 ## Next step
 
-**STEP=1** — Land helper + unit.
+**STEP=2** — Wire `demo_live` + UX scenario + ux gate.
+
+### STEP=1 done (2026-07-16)
+
+- `misc/editor/ux/caret_blink.mlc` + unit; gate `caret_blink_unit ok`.
 
 ### STEP=0 done (2026-07-16)
 

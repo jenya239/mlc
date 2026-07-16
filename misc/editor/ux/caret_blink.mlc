@@ -1,0 +1,14 @@
+# TRACK_EDITOR_CARET_BLINK — caret blink phases (clock_ms; no sleep).
+
+export fn caret_blink_period_ms() -> i32 = 1000
+
+export fn caret_blink_visible(clock_ms: i32, period_ms: i32) -> bool = do
+  if period_ms <= 0 then
+    return true
+  end
+  let mut clock = clock_ms
+  if clock < 0 then
+    clock = 0
+  end
+  ((clock % period_ms) * 2) < period_ms
+end

@@ -2,6 +2,11 @@
 
 ## Entries
 
+### 2026-07-16 — ROLE=Implementer STEP=1 TRACK_EDITOR_CARET_BLINK
+done: `caret_blink.mlc` + unit; period/phases/clamp
+verify: `bash scripts/run_editor_caret_blink_unit.sh` → `caret_blink_unit ok`
+next: ROLE=Implementer STEP=2 TRACK_EDITOR_CARET_BLINK
+
 ### 2026-07-16 — ROLE=Implementer STEP=0 TRACK_EDITOR_CARET_BLINK
 done: Decision — `caret_blink.mlc`; period 1000ms; `caret_blink_visible`; scenario name L8
 verify: TRACK Decision + PLAN §41 STEP=0; foreign dirty left
