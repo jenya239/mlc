@@ -1,0 +1,139 @@
+// TRACK_GUI_SCENE_PHASE_D STEP=5 — wire rebuild between node anchors.
+import {
+  affine_identity,
+  affine_translation,
+  scene_new,
+  scene_add_container,
+  scene_add_rect_fill,
+  scene_add_path,
+  scene_rect_fill_new,
+  scene_path_new,
+  scene_update_world,
+  scene_set_node_local,
+  scene_wire_rebuild
+} from '../gui/scene'
+
+fn approx_eq(left: f64, right: f64) -> i32 = do
+  const delta = left - right
+  if delta < 0.0 then
+    if 0.0 - delta < 0.0000001 then
+      return 1
+    end
+    return 0
+  end
+  if delta < 0.0000001 then
+    return 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+
+  const left = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(0.0, 0.0),
+    scene_rect_fill_new(40.0, 20.0, 0.2, 0.5, 0.9, 1.0)
+  )
+  scene = left.scene
+  const right = scene_add_rect_fill(
+    scene,
+    root.node_id,
+    affine_translation(200.0, 0.0),
+    scene_rect_fill_new(40.0, 20.0, 0.9, 0.3, 0.2, 1.0)
+  )
+  scene = right.scene
+
+  let mut empty_points: [f64] = []
+  const wire = scene_add_path(
+    scene,
+    root.node_id,
+    affine_identity(),
+    scene_path_new(empty_points, 2.0, 0, 1.0, 1.0, 0.2, 1.0)
+  )
+  scene = wire.scene
+  scene = scene_update_world(scene)
+
+  // Anchors: right-center of left rect, left-center of right rect.
+  scene = scene_wire_rebuild(
+    scene,
+    wire.node_id,
+    left.node_id,
+    right.node_id,
+    40.0,
+    10.0,
+    0.0,
+    10.0
+  )
+
+  const points_before = match scene.nodes[wire.node_id].kind {
+    Path(scene_path) => scene_path.points,
+    Container => empty_points,
+    RectFill(_) => empty_points,
+    Label(_) => empty_points,
+    Checkbox(_) => empty_points,
+    Slider(_) => empty_points,
+    TextField(_) => empty_points
+  }
+  if points_before.length() != 8 then
+    return 1
+  end
+  // Path local == world (identity): p0=(40,10), p1=(200,10).
+  if approx_eq(points_before[0], 40.0) == 0 then
+    return 2
+  end
+  if approx_eq(points_before[1], 10.0) == 0 then
+    return 3
+  end
+  if approx_eq(points_before[6], 200.0) == 0 then
+    return 4
+  end
+  if approx_eq(points_before[7], 10.0) == 0 then
+    return 5
+  end
+  // Horizontal handles: third = (200-40)/3 = 160/3.
+  if approx_eq(points_before[2], 40.0 + 160.0 / 3.0) == 0 then
+    return 6
+  end
+  if approx_eq(points_before[4], 200.0 - 160.0 / 3.0) == 0 then
+    return 7
+  end
+
+  // Move right node; rebuild must update p1.
+  scene = scene_set_node_local(scene, right.node_id, affine_translation(260.0, 30.0))
+  scene = scene_update_world(scene)
+  scene = scene_wire_rebuild(
+    scene,
+    wire.node_id,
+    left.node_id,
+    right.node_id,
+    40.0,
+    10.0,
+    0.0,
+    10.0
+  )
+  const points_after = match scene.nodes[wire.node_id].kind {
+    Path(scene_path) => scene_path.points,
+    Container => empty_points,
+    RectFill(_) => empty_points,
+    Label(_) => empty_points,
+    Checkbox(_) => empty_points,
+    Slider(_) => empty_points,
+    TextField(_) => empty_points
+  }
+  if approx_eq(points_after[6], 260.0) == 0 then
+    return 8
+  end
+  if approx_eq(points_after[7], 40.0) == 0 then
+    return 9
+  end
+  if approx_eq(points_after[0], 40.0) == 0 then
+    return 10
+  end
+
+  println("scene_wire_ok")
+  0
+end

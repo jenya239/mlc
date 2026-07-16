@@ -676,6 +676,65 @@ export fn scene_path_set_points(scene: Scene, node_id: i32, points: [f64]) -> Sc
   )
 end
 
+// Rebuild Path cubic between two node anchors (path-local points).
+// Horizontal handles: c1/c2 offset by (p1.x-p0.x)/3 on x, same y as endpoints.
+export fn scene_wire_rebuild(
+  scene: Scene,
+  path_node_id: i32,
+  from_id: i32,
+  to_id: i32,
+  from_anchor_x: f64,
+  from_anchor_y: f64,
+  to_anchor_x: f64,
+  to_anchor_y: f64
+) -> Scene = do
+  if path_node_id < 0 || from_id < 0 || to_id < 0 then
+    return scene
+  end
+  if path_node_id >= scene.nodes.length() then
+    return scene
+  end
+  if from_id >= scene.nodes.length() then
+    return scene
+  end
+  if to_id >= scene.nodes.length() then
+    return scene
+  end
+  if path_node_id >= scene.world.length() then
+    return scene
+  end
+  if from_id >= scene.world.length() then
+    return scene
+  end
+  if to_id >= scene.world.length() then
+    return scene
+  end
+  const from_world = affine_transform_point(
+    scene.world[from_id], from_anchor_x, from_anchor_y
+  )
+  const to_world = affine_transform_point(
+    scene.world[to_id], to_anchor_x, to_anchor_y
+  )
+  const path_to_local = affine_invert(scene.world[path_node_id])
+  const start_local = affine_transform_point(
+    path_to_local, from_world.x, from_world.y
+  )
+  const end_local = affine_transform_point(
+    path_to_local, to_world.x, to_world.y
+  )
+  const third_x = (end_local.x - start_local.x) / 3.0
+  let mut points: [f64] = []
+  points.push(start_local.x)
+  points.push(start_local.y)
+  points.push(start_local.x + third_x)
+  points.push(start_local.y)
+  points.push(end_local.x - third_x)
+  points.push(end_local.y)
+  points.push(end_local.x)
+  points.push(end_local.y)
+  scene_path_set_points(scene, path_node_id, points)
+end
+
 fn scene_set_node_kind(scene: Scene, node_id: i32, kind: SceneNodeKind) -> Scene = do
   let mut nodes = scene.nodes
   const node = nodes[node_id]

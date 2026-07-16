@@ -20,7 +20,7 @@ Active: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 
 ## Next step
 
-Phase D **STEP=5** wire.
+Phase D **STEP=6** blueprint MVP.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой

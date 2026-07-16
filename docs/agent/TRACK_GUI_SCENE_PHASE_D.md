@@ -17,7 +17,12 @@ tess. Leave any pre-existing Path WIP; do not revert foreign dirty.
 
 ## Next step
 
-**STEP=5** — Wire helper: path between two node anchors.
+**STEP=6** — Blueprint MVP smoke (≥2 nodes + wire + pan/zoom).
+
+### STEP=5 done (2026-07-16)
+
+- `scene_wire_rebuild` (anchor world → path-local cubic, horizontal dx/3 handles).
+- Smoke `scene_wire_ok` (move endpoint updates p1).
 
 ### STEP=4 done (2026-07-16)
 
@@ -106,7 +111,7 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 | 2 | Camera pan/zoom helpers + smoke (screen hit moves with camera) | **done** (2026-07-15): `scene_camera_ok` |
 | 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | **done** (2026-07-15): `scene_path_tess_ok` |
 | 4 | Path draw (+ optional stroke hit) smoke | **done** (2026-07-16): `scene_path_draw_ok` |
-| 5 | Wire helper: path between two node anchors; updates when endpoints move | `scene_wire_smoke` exit 0 |
+| 5 | Wire helper: path between two node anchors; updates when endpoints move | **done** (2026-07-16): `scene_wire_ok` |
 | 6 | Blueprint MVP smoke: ≥2 nodes + wire + pan/zoom; headless token | `scene_blueprint_smoke` exit 0 |
 | 7 | Critic: Decision match; Phase C spatial + Phase B form still green; no sleep | close Phase D |
 

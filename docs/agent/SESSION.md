@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 2 |
-| step_last | 4 |
+| driver_turns_since_plan | 3 |
+| step_last | 5 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | Phase D STEP=5 wire next |
+| test_gate | Phase D STEP=6 blueprint MVP next |
+
+### Turn 2026-07-16 13:35 (Driver TRACK_GUI_SCENE_PHASE_D STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-16 13:29 |
+| elapsed | ~6 min |
+| done    | `scene_wire_rebuild` (path-local cubic + dx/3 handles); wire smoke. |
+| verify  | `bash scripts/run_scene_wire_smoke.sh` → `scene_wire_ok`. |
+| result  | STEP=5 done. Plain: moving endpoint updates wire cubic endpoints. |
+| issues  | Left EDITOR.md + scene_form_live untouched. |
+| next    | ROLE=Driver STEP=6 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-16 13:25 (Driver TRACK_GUI_SCENE_PHASE_D STEP=4)
 
