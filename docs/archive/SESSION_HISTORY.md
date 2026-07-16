@@ -18186,3 +18186,230 @@ Turns from GUI_SCENE Critic and older moved from live SESSION.md.
 | result  | STEP=pre done. Plain: preflight green, buffer=piece table, STEP=0 next. |
 | issues  | — |
 | next    | ROLE=Driver STEP=0 TRACK_EDITOR_MVP |
+
+
+### Turn 2026-07-16 15:45 (Critic TRACK_STDLIB_IO_FS STEP=8)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 8 / critique-audit |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:52 |
+| elapsed | ~53 min |
+| done    | Re-ran FS smokes + demo_live compile; REG 20/0 + sweep 147/0/1; archive §36. |
+| verify  | `fs_stat_ok` `list_dir_ok` `list_dir_safe_ok` `mkdir_ok` `file_tree_fs_unit ok` `demo_live_fs_compile_ok`; REG exit 0. |
+| result  | STEP=8 closed. Plain: IO/FS + editor tree Critic OK. |
+| issues  | Left SCRIPT_VM untouched. STEP=7 deferred. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
+
+### Turn 2026-07-16 14:55 (Driver TRACK_STDLIB_IO_FS STEP=6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:42 |
+| elapsed | ~13 min |
+| done    | demo_live root resolve + expand_from_disk; mock `/demo` fallback; compile script. Absorbed foreign mock-tree WIP. |
+| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`. |
+| result  | STEP=6 done. Plain: live tree from disk or mock. |
+| issues  | Left SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=8 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:45 (Driver TRACK_STDLIB_IO_FS STEP=5)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:39 |
+| elapsed | ~6 min |
+| done    | `dir_entries_from_disk`/`file_tree_expand_from_disk` in file_tree.mlc; fs unit + script. |
+| verify  | `bash scripts/run_editor_file_tree_fs_unit.sh` → `file_tree_fs_unit ok`. |
+| result  | STEP=5 done. Plain: editor tree expands from real list_dir. |
+| issues  | Left demo_live + SCRIPT_VM untouched (STEP=6). |
+| next    | ROLE=Driver STEP=6 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:40 (Driver TRACK_STDLIB_IO_FS STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:36 |
+| elapsed | ~4 min |
+| done    | `create_directories` in file.hpp+abi; file.mlc export; mkdir smoke. |
+| verify  | `bash scripts/run_stdlib_mkdir_smoke.sh` → `mkdir_ok`. |
+| result  | STEP=4 done. Plain: mkdir parents + idempotent. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=5 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:35 (Driver TRACK_STDLIB_IO_FS STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:29 |
+| elapsed | ~6 min |
+| done    | `safe_list_dir` in file.mlc; smoke `stdlib_list_dir_safe_smoke.mlc` + script. |
+| verify  | `bash scripts/run_stdlib_list_dir_safe_smoke.sh` → `list_dir_safe_ok`; list_dir still ok. |
+| result  | STEP=3 done. Plain: Result Err on missing/not-a-dir. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=4 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:27 (Driver TRACK_STDLIB_IO_FS STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:25 |
+| elapsed | ~2 min |
+| done    | `list_dir_fill` + parallel ABI; `FsDirEntry`/`list_dir` in file.mlc; list_dir smoke. |
+| verify  | `bash scripts/run_stdlib_list_dir_smoke.sh` → `list_dir_ok`; fs_stat still ok. |
+| result  | STEP=2 done. Plain: lex list_dir with dir flags. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=3 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:23 (Driver TRACK_STDLIB_IO_FS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:21 |
+| elapsed | ~2 min |
+| done    | `is_directory`/`is_regular_file` in file.hpp+abi; file.mlc exports; fs_stat smoke. |
+| verify  | `bash scripts/run_stdlib_fs_stat_smoke.sh` → `fs_stat_ok`. |
+| result  | STEP=1 done. Plain: FS type predicates via ABI. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=2 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:20 (Driver TRACK_STDLIB_IO_FS STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_STDLIB_IO_FS |
+| started | 2026-07-16 14:18 |
+| elapsed | ~2 min |
+| done    | Froze Decision: `FsDirEntry`, lex `list_dir`, parallel ABI arrays, STEP=7 deferred. |
+| verify  | Decision table + exact exports in TRACK; PLAN §36 → STEP=1. |
+| result  | STEP=0 done. Plain: FS API contract ready for runtime ABI. |
+| issues  | Left demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:20 (Planner TRACK_STDLIB_IO_FS priority-override)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_STDLIB_IO_FS (§36) |
+| started | 2026-07-16 14:15 |
+| elapsed | — |
+| done    | Opened `TRACK_STDLIB_IO_FS.md` STEP=0–8; PLAN §36 + chain; CONTINUITY rev `stdlib-io-fs`; mlc-support `steps/stdlib_io_fs_gaps.md`. |
+| verify  | Queue head = §36; FORM_LIVE already closed; clipboard not in scope. |
+| result  | Priority override armed. Plain: real list_dir for editor tree. |
+| issues  | Left demo_live/SCRIPT_VM foreign until STEP=6. |
+| next    | ROLE=Driver STEP=0 TRACK_STDLIB_IO_FS |
+
+### Turn 2026-07-16 14:13 (Critic TRACK_SCENE_FORM_LIVE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 2 / critique-audit |
+| track   | TRACK_SCENE_FORM_LIVE |
+| started | 2026-07-16 14:12 |
+| elapsed | ~1 min |
+| done    | Re-ran compile+form gates; archive §35; PLAN done. |
+| verify  | `scene_form_live_compile_ok`; `scene_form_ok`; commit `47839f7f`. |
+| result  | STEP=2 closed. Plain: form live absorb Critic OK. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
+
+### Turn 2026-07-16 14:02 (Driver TRACK_SCENE_FORM_LIVE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_SCENE_FORM_LIVE |
+| started | 2026-07-16 14:01 |
+| elapsed | ~2 min |
+| done    | `Path(_)` in form_live; absorb example+runners; compile gate script. |
+| verify  | `run_scene_form_live_compile.sh` → `scene_form_live_compile_ok`; form smoke ok. |
+| result  | STEP=1 done. Plain: live form compiles; Path exhaust fixed. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=2 TRACK_SCENE_FORM_LIVE |
+
+### Turn 2026-07-16 13:58 (Planner STEP=pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN → TRACK_SCENE_FORM_LIVE (§35) |
+| started | 2026-07-16 13:57 |
+| elapsed | ~1 min |
+| done    | Opened §35 form_live absorb; reverted §19 (gated). PLAN/CONTINUITY/DEVELOPMENT. |
+| verify  | form_live missing Path; LANG_AUTO_CYCLE PLAN gate 2026-07-11 respected. |
+| result  | Queue head = FORM_LIVE STEP=1. Plain: commit live demo + Path arms + compile gate. |
+| issues  | Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Driver STEP=1 TRACK_SCENE_FORM_LIVE |
+
+### Turn 2026-07-16 13:56 (Critic TRACK_GUI_SCENE_PATH_MATCH STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 2 / critique-audit |
+| track   | TRACK_GUI_SCENE_PATH_MATCH |
+| started | 2026-07-16 13:55 |
+| elapsed | ~1 min |
+| done    | P0 re-run widget+form/spatial+Phase D smokes; archive §34; PLAN done. |
+| verify  | label/checkbox/slider/text_field/form/spatial/camera/tess/draw/wire/blueprint → all ok; commit `227a82c4`. |
+| result  | STEP=2 closed. Plain: Path match residual Critic OK. |
+| issues  | Residual: form_live still missing Path(_). Left EDITOR.md + demo_live + SCRIPT_VM untouched. |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN |
+
+### Turn 2026-07-16 13:52 (Driver TRACK_GUI_SCENE_PATH_MATCH STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_GUI_SCENE_PATH_MATCH |
+| started | 2026-07-16 13:50 |
+| elapsed | ~2 min |
+| done    | `Path(_)` in label/checkbox/slider/text_field smokes. |
+| verify  | four scripts → `scene_{label,checkbox,slider,text_field}_ok`. |
+| result  | STEP=1 done. Plain: E084 gone on Phase B widget smokes. |
+| issues  | Left EDITOR.md + demo_live + form_live + SCRIPT_VM untouched. |
+| next    | ROLE=Critic STEP=2 TRACK_GUI_SCENE_PATH_MATCH |
+
+### Turn 2026-07-16 13:47 (Planner STEP=pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN → TRACK_GUI_SCENE_PATH_MATCH (§34) |
+| started | 2026-07-16 13:45 |
+| elapsed | ~2 min |
+| done    | Opened §34 `TRACK_GUI_SCENE_PATH_MATCH` (E084 residual); PLAN/CONTINUITY/DEVELOPMENT. |
+| verify  | checkbox smoke EXIT=1 E084 (repro); SCRIPT_VM/MIR5/AUTO_CYCLE not opened. |
+| result  | Queue head = PATH_MATCH STEP=1. Plain: fix Path match in 4 widget smokes. |
+| issues  | Left EDITOR.md + form_live + SCRIPT_VM untouched. LANG_AUTO_CYCLE stays parked. |
+| next    | ROLE=Driver STEP=1 TRACK_GUI_SCENE_PATH_MATCH |
+

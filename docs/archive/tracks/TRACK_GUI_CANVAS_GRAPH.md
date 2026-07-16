@@ -1,7 +1,7 @@
 # Track: Retained scene-graph фундамент (classic UI + game UI + Flash-rich + Figma/blueprint canvas)
 
-Parent: [../GUI.md](../GUI.md), [../archive/tracks/TRACK_GUI_FRAMEWORK.md](../archive/tracks/TRACK_GUI_FRAMEWORK.md),
-[../TEXT_RENDERING.md](../TEXT_RENDERING.md) §5.3.
+Parent: [../../GUI.md](../../GUI.md), [TRACK_GUI_FRAMEWORK.md](TRACK_GUI_FRAMEWORK.md),
+[../../TEXT_RENDERING.md](../../TEXT_RENDERING.md) §5.3.
 Trigger: пользователь 2026-07-11 — хочет ультрабыстрое масштабируемое поле
 со связями (Figma/blueprint), **и** классические интерфейсы, **и**
 игровые, **и** вычурные как во Flash — **одним** фреймворком, не
@@ -9,14 +9,14 @@ Trigger: пользователь 2026-07-11 — хочет ультрабыст
 
 ## Status: **closed** (2026-07-16) — Phase A–D Critic OK
 
-Phase A: [archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md).
-Phase B: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
+Phase A: [TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md).
+Phase B: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** 2026-07-14, Critic OK).
-Phase C: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
+Phase C: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** 2026-07-15, Critic OK).
-Phase D: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md)
+Phase D: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
 (**closed** 2026-07-16, Critic OK).
-§33b LIVE_POLISH: [archive/tracks/TRACK_EDITOR_LIVE_POLISH.md](../archive/tracks/TRACK_EDITOR_LIVE_POLISH.md)
+§33b LIVE_POLISH: [TRACK_EDITOR_LIVE_POLISH.md](TRACK_EDITOR_LIVE_POLISH.md)
 (**closed** 2026-07-15, Critic OK).
 
 ## Next step
@@ -67,7 +67,7 @@ primitive рендерер с самого начала. v0 (`misc/gui/`, screen
 ## Phase A: фундамент (retained tree + affine transform + hit-test + batched draw)
 
 Active work + STEP status:
-[archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)
+[TRACK_GUI_SCENE_PHASE_A.md](TRACK_GUI_SCENE_PHASE_A.md)
 (**closed** 2026-07-13, Critic OK).
 
 | Step | Item | Status |
@@ -83,20 +83,20 @@ Active work + STEP status:
 ## Phase B: виджеты — **closed** (2026-07-14)
 
 Label / checkbox / slider / text-field as `SceneNode` kinds.
-Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_B.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_B.md)
+Track: [TRACK_GUI_SCENE_PHASE_B.md](TRACK_GUI_SCENE_PHASE_B.md)
 (**closed** Critic OK; `c28c620b`…`31d9299a`).
 Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 ## Phase C: dirty-tracking + spatial index — **closed** (2026-07-15)
 
 Пересчёт world-transform только для dirty-узлов; AABB + optional quadtree
-(порог 64). Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_C.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_C.md)
+(порог 64). Track: [TRACK_GUI_SCENE_PHASE_C.md](TRACK_GUI_SCENE_PHASE_C.md)
 (**closed** Critic OK; `d0a3996f`…`64014467`).
 
 ## Phase D: camera + vector path + blueprint canvas — **closed** (2026-07-16)
 
 Camera pan/zoom = `Scene.camera`. Vector-path bezier stroke; node/wire MVP.
-Track: [archive/tracks/TRACK_GUI_SCENE_PHASE_D.md](../archive/tracks/TRACK_GUI_SCENE_PHASE_D.md)
+Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
 (**closed** Critic OK; `d9cc60de`…`9e3eaebf`).
 
 ## Out of scope
