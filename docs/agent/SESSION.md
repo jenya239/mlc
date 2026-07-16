@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-15-phase-d-path` |
 | agent_token_last | — |
-| driver_turns_since_plan | 0 |
-| step_last | 10 |
+| driver_turns_since_plan | 1 |
+| step_last | 3 |
 | active_track | TRACK_GUI_SCENE_PHASE_D |
-| test_gate | §33b Critic OK; Phase D STEP=3 next |
+| test_gate | Phase D STEP=4 Path draw next |
+
+### Turn 2026-07-16 13:20 (Driver TRACK_GUI_SCENE_PHASE_D STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_GUI_SCENE_PHASE_D |
+| started | 2026-07-16 13:16 |
+| elapsed | ~4 min |
+| done    | Anti-false-done: STEP=3 claimed without commit; absorbed Path WIP (`ScenePath`/`Path`, `scene_path.mlc`, tess smoke, draw stubs). |
+| verify  | `bash scripts/run_scene_path_tess_smoke.sh` → `scene_path_tess_ok`; camera smoke ok. |
+| result  | STEP=3 done (committed). Plain: cubic tess → 9 points; Path kind in Scene. |
+| issues  | Left EDITOR.md + scene_form_live untouched; Path draw → STEP=4. |
+| next    | ROLE=Driver STEP=4 TRACK_GUI_SCENE_PHASE_D |
 
 ### Turn 2026-07-15 19:50 (Critic TRACK_EDITOR_LIVE_POLISH STEP=critique-audit)
 

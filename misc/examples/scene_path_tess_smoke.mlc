@@ -1,0 +1,79 @@
+// TRACK_GUI_SCENE_PHASE_D STEP=3 — cubic tessellation unit (no GL).
+import {
+  affine_identity,
+  scene_new,
+  scene_add_container,
+  scene_add_path,
+  scene_path_new
+} from '../gui/scene'
+import {
+  scene_path_cubic_steps,
+  scene_path_polyline,
+  scene_path_polyline_point_count
+} from '../gui/scene_path'
+
+fn approx_eq(left: f64, right: f64) -> i32 = do
+  const delta = left - right
+  if delta < 0.0 then
+    if 0.0 - delta < 0.0000001 then
+      return 1
+    end
+    return 0
+  end
+  if delta < 0.0000001 then
+    return 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  if scene_path_cubic_steps() != 8 then
+    return 1
+  end
+
+  // Straight cubic: (0,0) → (100,0) with collinear controls → samples on x-axis.
+  let mut points: [f64] = []
+  points.push(0.0)
+  points.push(0.0)
+  points.push(33.0)
+  points.push(0.0)
+  points.push(66.0)
+  points.push(0.0)
+  points.push(100.0)
+  points.push(0.0)
+
+  const path = scene_path_new(points, 2.0, 0, 1.0, 1.0, 1.0, 1.0)
+  const point_count = scene_path_polyline_point_count(path)
+  if point_count != 9 then
+    return 2
+  end
+
+  const polyline = scene_path_polyline(path)
+  if polyline.length() != 18 then
+    return 3
+  end
+  if approx_eq(polyline[0], 0.0) == 0 then
+    return 4
+  end
+  if approx_eq(polyline[1], 0.0) == 0 then
+    return 5
+  end
+  if approx_eq(polyline[16], 100.0) == 0 then
+    return 6
+  end
+  if approx_eq(polyline[17], 0.0) == 0 then
+    return 7
+  end
+
+  let mut scene = scene_new()
+  const root = scene_add_container(scene, -1, affine_identity())
+  scene = root.scene
+  const added = scene_add_path(scene, root.node_id, affine_identity(), path)
+  scene = added.scene
+  if added.node_id < 0 then
+    return 8
+  end
+
+  println("scene_path_tess_ok")
+  0
+end

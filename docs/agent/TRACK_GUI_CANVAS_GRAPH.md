@@ -20,7 +20,7 @@ Active: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 
 ## Next step
 
-Phase D **STEP=3** Path tess.
+Phase D **STEP=4** Path draw.
 ## Ключевая коррекция (2026-07-11)
 
 Первая версия этого трека ошибочно называла canvas-со-связями «другой
@@ -94,7 +94,7 @@ Text-input reuses keyboard inject from `TRACK_GUI_INPUT_ROBUSTNESS` (no dup).
 
 Camera pan/zoom = `Scene.camera` (or root). Vector-path bezier
 fill+stroke; node/wire MVP. Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md)
-(STEP=2 done; STEP=3 Path tess next).
+(STEP=3 done; STEP=4 Path draw next).
 
 ## Out of scope
 

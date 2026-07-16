@@ -17,7 +17,13 @@ tess. Leave any pre-existing Path WIP; do not revert foreign dirty.
 
 ## Next step
 
-**STEP=3** — Path kind + cubic tessellation (+ smoke).
+**STEP=4** — Path draw (+ optional stroke hit) smoke.
+
+### STEP=3 done (2026-07-15)
+
+- `ScenePath` + `Path(...)` on `SceneNodeKind`; `scene_add_path` / `scene_path_set_points`.
+- `misc/gui/scene_path.mlc` cubic tess (`SCENE_PATH_CUBIC_STEPS=8`); smoke `scene_path_tess_ok`.
+- `scene_draw` Path arms stubbed (no tris yet — STEP=4).
 
 ### STEP=2 done (2026-07-15)
 
@@ -93,7 +99,7 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 |------|------|------|
 | 1 | Decision: camera + Path + wire + MVP contract (freeze in this file) | **done** (2026-07-15): Decision frozen |
 | 2 | Camera pan/zoom helpers + smoke (screen hit moves with camera) | **done** (2026-07-15): `scene_camera_ok` |
-| 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | `scene_path_tess_smoke` exit 0 |
+| 3 | `Path` kind: add + local cubic tessellation unit (no GL required) | **done** (2026-07-15): `scene_path_tess_ok` |
 | 4 | Path draw (+ optional stroke hit) smoke | `scene_path_draw_smoke` exit 0 |
 | 5 | Wire helper: path between two node anchors; updates when endpoints move | `scene_wire_smoke` exit 0 |
 | 6 | Blueprint MVP smoke: ≥2 nodes + wire + pan/zoom; headless token | `scene_blueprint_smoke` exit 0 |
@@ -110,9 +116,9 @@ changing Phase B widget payloads; reopening Phase C spatial contract.
 1. `scene_camera_pan` / `scene_camera_zoom_at` on `Scene.camera` — done.
 2. Smoke: place rect; after pan, same screen point misses / new point hits — done.
 
-**STEP=3**
-1. `ScenePath` + `Path(...)` on `SceneNodeKind`; `scene_add_path`.
-2. Tessellate one cubic → polyline/tris counts deterministic; token `scene_path_tess_ok`.
+**STEP=3** — **done**
+1. `ScenePath` + `Path(...)` on `SceneNodeKind`; `scene_add_path` — done.
+2. Tessellate one cubic → polyline; token `scene_path_tess_ok` — done.
 
 **STEP=4**
 1. Draw path via batch (tris → solid renderer).

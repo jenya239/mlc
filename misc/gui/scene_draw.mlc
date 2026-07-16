@@ -100,6 +100,8 @@ export fn scene_rect_fill_batch_vertex_count(scene: Scene) -> i32 = do
       TextField(_) => do
         count = count + 6
       end,
+      Path(_) => do
+      end,
       Container => do
       end
     }
@@ -188,6 +190,7 @@ fn scene_draw_one_node(
         affine_multiply(view, scene.world[index]),
         scene_text_field_as_rect_fill(scene_text_field)
       ),
+    Path(_) => batch,
     Container => batch
   }
 end

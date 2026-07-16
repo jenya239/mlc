@@ -65,6 +65,17 @@ export type SceneTextField = {
   alpha: f64
 }
 
+// Phase D: cubic segments as flat points (8 floats each: p0,c1,c2,p1).
+export type ScenePath = {
+  points: [f64],
+  stroke_width: f64,
+  filled: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
 export type SceneNodeKind =
   Container
   | RectFill(SceneRectFill)
@@ -72,6 +83,7 @@ export type SceneNodeKind =
   | Checkbox(SceneCheckbox)
   | Slider(SceneSlider)
   | TextField(SceneTextField)
+  | Path(ScenePath)
 
 export type SceneNode = {
   parent: i32,
@@ -334,6 +346,64 @@ export fn scene_text_field_as_rect_fill(scene_text_field: SceneTextField) -> Sce
     scene_text_field.alpha
   )
 
+export fn scene_path_new(
+  points: [f64],
+  stroke_width: f64,
+  filled: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> ScenePath =
+  ScenePath {
+    points: points,
+    stroke_width: stroke_width,
+    filled: filled,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+fn scene_path_control_extent(path: ScenePath) -> AffinePoint = do
+  if path.points.length() < 2 then
+    return AffinePoint { x: 0.0, y: 0.0 }
+  end
+  let mut min_x = path.points[0]
+  let mut max_x = path.points[0]
+  let mut min_y = path.points[1]
+  let mut max_y = path.points[1]
+  let mut index = 0
+  while index + 1 < path.points.length() do
+    const point_x = path.points[index]
+    const point_y = path.points[index + 1]
+    if point_x < min_x then
+      min_x = point_x
+    end
+    if point_x > max_x then
+      max_x = point_x
+    end
+    if point_y < min_y then
+      min_y = point_y
+    end
+    if point_y > max_y then
+      max_y = point_y
+    end
+    index = index + 2
+  end
+  const pad = path.stroke_width * 0.5
+  AffinePoint {
+    x: max_x - min_x + pad * 2.0,
+    y: max_y - min_y + pad * 2.0
+  }
+end
+
+export fn scene_path_local_width(path: ScenePath) -> f64 =
+  scene_path_control_extent(path).x
+
+export fn scene_path_local_height(path: ScenePath) -> f64 =
+  scene_path_control_extent(path).y
+
 fn scene_text_drop_last_char(text: string) -> string = do
   if text.length() <= 0 then
     return ""
@@ -554,6 +624,58 @@ export fn scene_add_text_field(
 ) -> SceneAddResult =
   scene_push_node(scene, scene_node_new(parent, local, TextField(scene_text_field)))
 
+export fn scene_add_path(
+  scene: Scene,
+  parent: i32,
+  local: Affine2x3,
+  scene_path: ScenePath
+) -> SceneAddResult =
+  scene_push_node(scene, scene_node_new(parent, local, Path(scene_path)))
+
+export fn scene_path_set_points(scene: Scene, node_id: i32, points: [f64]) -> Scene = do
+  if node_id < 0 then
+    return scene
+  end
+  if node_id >= scene.nodes.length() then
+    return scene
+  end
+  let mut nodes = scene.nodes
+  const node = nodes[node_id]
+  const next_kind = match node.kind {
+    Path(scene_path) =>
+      Path(
+        ScenePath {
+          points: points,
+          stroke_width: scene_path.stroke_width,
+          filled: scene_path.filled,
+          red: scene_path.red,
+          green: scene_path.green,
+          blue: scene_path.blue,
+          alpha: scene_path.alpha
+        }
+      ),
+    Container => node.kind,
+    RectFill(_) => node.kind,
+    Label(_) => node.kind,
+    Checkbox(_) => node.kind,
+    Slider(_) => node.kind,
+    TextField(_) => node.kind
+  }
+  nodes.set(
+    node_id,
+    SceneNode {
+      parent: node.parent,
+      local: node.local,
+      kind: next_kind,
+      children: node.children
+    }
+  )
+  scene_mark_dirty(
+    scene_with(nodes, scene.world, scene.camera, scene.dirty, scene.world_bounds),
+    node_id
+  )
+end
+
 fn scene_set_node_kind(scene: Scene, node_id: i32, kind: SceneNodeKind) -> Scene = do
   let mut nodes = scene.nodes
   const node = nodes[node_id]
@@ -603,7 +725,8 @@ export fn scene_checkbox_toggle(scene: Scene, node_id: i32) -> Scene = do
     RectFill(_) => node.kind,
     Label(_) => node.kind,
     Slider(_) => node.kind,
-    TextField(_) => node.kind
+    TextField(_) => node.kind,
+    Path(_) => node.kind
   }
   nodes.set(
     node_id,
@@ -646,7 +769,8 @@ export fn scene_slider_set_value(scene: Scene, node_id: i32, value: f64) -> Scen
     RectFill(_) => node.kind,
     Label(_) => node.kind,
     Checkbox(_) => node.kind,
-    TextField(_) => node.kind
+    TextField(_) => node.kind,
+    Path(_) => node.kind
   }
   nodes.set(
     node_id,
@@ -694,7 +818,8 @@ export fn scene_slider_set_from_screen(
     RectFill(_) => scene,
     Label(_) => scene,
     Checkbox(_) => scene,
-    TextField(_) => scene
+    TextField(_) => scene,
+    Path(_) => scene
   }
 end
 
@@ -737,6 +862,8 @@ export fn scene_text_field_focus(scene: Scene, node_id: i32) -> Scene = do
       Checkbox(_) => do
       end,
       Slider(_) => do
+      end,
+      Path(_) => do
       end
     }
     index = index + 1
@@ -790,7 +917,8 @@ export fn scene_text_field_apply_input(
     RectFill(_) => scene,
     Label(_) => scene,
     Checkbox(_) => scene,
-    Slider(_) => scene
+    Slider(_) => scene,
+    Path(_) => scene
   }
 end
 
@@ -888,7 +1016,8 @@ fn scene_kind_local_width(kind: SceneNodeKind) -> f64 =
     Label(scene_label) => scene_label.width,
     Checkbox(scene_checkbox) => scene_checkbox.width,
     Slider(scene_slider) => scene_slider.width,
-    TextField(scene_text_field) => scene_text_field.width
+    TextField(scene_text_field) => scene_text_field.width,
+    Path(scene_path) => scene_path_local_width(scene_path)
   }
 
 fn scene_kind_local_height(kind: SceneNodeKind) -> f64 =
@@ -898,7 +1027,8 @@ fn scene_kind_local_height(kind: SceneNodeKind) -> f64 =
     Label(scene_label) => scene_label.height,
     Checkbox(scene_checkbox) => scene_checkbox.height,
     Slider(scene_slider) => scene_slider.height,
-    TextField(scene_text_field) => scene_text_field.height
+    TextField(scene_text_field) => scene_text_field.height,
+    Path(scene_path) => scene_path_local_height(scene_path)
   }
 
 fn scene_min_f64(left: f64, right: f64) -> f64 = do
@@ -1059,6 +1189,7 @@ export fn scene_hit_node(scene: Scene, index: i32, scene_x: f64, scene_y: f64) -
         scene_text_field_as_rect_fill(scene_text_field)
       )
     end,
+    Path(_) => 0,
     Container => 0
   }
 end

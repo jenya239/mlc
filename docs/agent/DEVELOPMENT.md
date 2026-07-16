@@ -41,8 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_GUI_SCENE_PHASE_D` active** (2026-07-15) — §33b LIVE_POLISH Critic OK; **STEP=3** Path tess next.
-Leave Path WIP untouched (absorb when STEP needs it).
+**`TRACK_GUI_SCENE_PHASE_D` STEP=3 done** (2026-07-15) — Path tess; **STEP=4** Path draw next.
 Track: [TRACK_GUI_SCENE_PHASE_D.md](TRACK_GUI_SCENE_PHASE_D.md).
 ## Step sizing (good vs bad)
 
