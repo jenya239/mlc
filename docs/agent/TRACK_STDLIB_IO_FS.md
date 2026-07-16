@@ -93,11 +93,16 @@ Recursive glob; file watch; symlink-as-entry type flag; promoting ignore rules i
 1. `is_directory` / `is_regular_file` in `file.hpp` + `*_value` in `file_abi.hpp` — done.
 2. MLC extern + smoke `fs_stat_ok` — done.
 
-**STEP=2**
-1. Parallel ABI `list_dir_names_value` / `list_dir_is_directory_value`; MLC zip to `[FsDirEntry]`.
-2. Smoke `list_dir_ok`.
+**STEP=2** — **done**
+1. Parallel ABI `list_dir_names_value` / `list_dir_is_directory_value`; MLC zip to `[FsDirEntry]` — done.
+2. Smoke `list_dir_ok` — done.
 
-**STEP=5–6** — editor + demo_live (in scope STEP=6 only).
+**STEP=3**
+1. `safe_list_dir` → Err on missing/not-a-dir.
+2. Smoke token.
+
+**STEP=4**
+1. `create_directories` + smoke.
 
 **STEP=8** — Critic; `next` = Planner.
 

@@ -642,7 +642,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md](archive/tracks/TRACK_GUI_SCENE_PATH_MATCH.md))**
   → **SCENE_FORM_LIVE (§35, **closed** 2026-07-16: Critic OK; STEP=1–2; `7969cd73`…`47839f7f`;
       → [archive/tracks/TRACK_SCENE_FORM_LIVE.md](archive/tracks/TRACK_SCENE_FORM_LIVE.md))**
-  → **STDLIB_IO_FS (§36, **active**; STEP=1 fs_stat done; **STEP=2** list_dir next;
+  → **STDLIB_IO_FS (§36, **active**; STEP=2 list_dir done; **STEP=3** safe_list_dir next;
       → [agent/TRACK_STDLIB_IO_FS.md](agent/TRACK_STDLIB_IO_FS.md))**
 ```
 
