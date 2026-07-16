@@ -8,7 +8,12 @@ Parent: [../PLAN.md](../PLAN.md) §38; residual polish after
 
 ## Next step
 
-**STEP=1** — Land `folder_panel.mlc` (+ minimal unit or compile import).
+**STEP=2** — Land `tab_strip` close hit helpers.
+
+### STEP=1 done (2026-07-16)
+
+- Landed `folder_panel.mlc` (fix: rename `end` → `end_index`, keyword truncate).
+- Gate: `bash scripts/run_editor_folder_panel_unit.sh` → `folder_panel_unit ok`.
 
 ### STEP=0 done (2026-07-16)
 

@@ -6,10 +6,25 @@
 |-------|-------|
 | instructions_rev | `2026-07-16-editor-folder-browser` |
 | agent_token_last | — |
-| driver_turns_since_plan | 1 |
-| step_last | 0 |
+| driver_turns_since_plan | 2 |
+| step_last | 1 |
 | active_track | TRACK_EDITOR_FOLDER_BROWSER |
-| test_gate | EDITOR_FOLDER_BROWSER STEP=1 next |
+| test_gate | EDITOR_FOLDER_BROWSER STEP=2 next |
+
+### Turn 2026-07-16 20:15 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FOLDER_BROWSER |
+| started | 2026-07-16 20:11 |
+| elapsed | ~4 min |
+| done    | Landed `folder_panel.mlc` (`end`→`end_index`); unit + `run_editor_folder_panel_unit.sh`. |
+| verify  | `bash scripts/run_editor_folder_panel_unit.sh` → `folder_panel_unit ok`. |
+| result  | STEP=1 done. Plain: folder_panel compiles and unit-passes. |
+| issues  | Left demo_live/tab_strip/live script for later STEPs. |
+| next    | ROLE=Driver STEP=2 TRACK_EDITOR_FOLDER_BROWSER |
 
 ### Turn 2026-07-16 20:08 (Driver TRACK_EDITOR_FOLDER_BROWSER STEP=0)
 

@@ -433,7 +433,7 @@ compiler/
 | **35** | Scene Phase B form live demo (Path arms + absorb WIP) | **done** (2026-07-16) Critic OK; STEP=1–2 | [archive/tracks/TRACK_SCENE_FORM_LIVE](archive/tracks/TRACK_SCENE_FORM_LIVE.md); `7969cd73`…`47839f7f` |
 | **36** | Stdlib IO/FS: `list_dir` / `is_directory` / `is_regular_file` / `create_directories` + editor tree wire | **done** (2026-07-16) Critic OK; STEP=0–6; STEP=7 deferred | [archive/tracks/TRACK_STDLIB_IO_FS](archive/tracks/TRACK_STDLIB_IO_FS.md) |
 | **37** | GLFW `content_scale` (HiDPI) — residual from §36 STEP=7 | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_GLFW_CONTENT_SCALE](archive/tracks/TRACK_GLFW_CONTENT_SCALE.md) |
-| **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **active** (2026-07-16) STEP=0 **done**; STEP=1 next | [TRACK_EDITOR_FOLDER_BROWSER](agent/TRACK_EDITOR_FOLDER_BROWSER.md) |
+| **38** | Editor folder browser (breadcrumbs + listing; absorb WIP) | **active** (2026-07-16) STEP=1 **done**; STEP=2 next | [TRACK_EDITOR_FOLDER_BROWSER](agent/TRACK_EDITOR_FOLDER_BROWSER.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**

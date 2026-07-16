@@ -1,0 +1,74 @@
+# TRACK_EDITOR_FOLDER_BROWSER STEP=1 — folder_panel pure unit (no GLFW / no disk).
+import { DirEntry, dir_entry_new } from '../workspace/file_tree'
+import {
+  path_parent,
+  path_leaf_name,
+  folder_browser_at,
+  folder_current_path,
+  folder_listing_rows,
+  folder_breadcrumb_paths,
+  folder_clamp_scroll,
+  folder_row_parent,
+  folder_row_directory,
+  folder_row_file
+} from '../ux/folder_panel'
+
+fn main() -> i32 = do
+  if path_leaf_name("/demo/src") != "src" then
+    println("[mlc-editor] folder_panel_unit fail leaf")
+    return 1
+  end
+  if path_parent("/demo/src") != "/demo" then
+    println("[mlc-editor] folder_panel_unit fail parent")
+    return 2
+  end
+
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("alpha.txt", 0))
+  entries.push(dir_entry_new("mid", 1))
+  const tree = folder_browser_at("/demo", "demo", entries)
+  if folder_current_path(tree) != "/demo" then
+    println("[mlc-editor] folder_panel_unit fail current")
+    return 3
+  end
+
+  const rows = folder_listing_rows(tree)
+  if rows.length() != 3 then
+    println("[mlc-editor] folder_panel_unit fail rows")
+    return 4
+  end
+  if rows[0].kind != folder_row_parent() || rows[0].name != ".." then
+    println("[mlc-editor] folder_panel_unit fail parent row")
+    return 5
+  end
+  if rows[1].kind != folder_row_file() || rows[1].name != "alpha.txt" then
+    println("[mlc-editor] folder_panel_unit fail file row")
+    return 6
+  end
+  if rows[2].kind != folder_row_directory() || rows[2].name != "mid" then
+    println("[mlc-editor] folder_panel_unit fail dir row")
+    return 7
+  end
+
+  const crumbs = folder_breadcrumb_paths("/demo/src")
+  if crumbs.length() != 3 then
+    println("[mlc-editor] folder_panel_unit fail crumbs")
+    return 8
+  end
+  if crumbs[0] != "/" || crumbs[1] != "/demo" || crumbs[2] != "/demo/src" then
+    println("[mlc-editor] folder_panel_unit fail crumb paths")
+    return 9
+  end
+
+  if folder_clamp_scroll(0 - 5, 10, 40) != 0 then
+    println("[mlc-editor] folder_panel_unit fail clamp low")
+    return 10
+  end
+  if folder_clamp_scroll(999, 2, 40) != 0 then
+    println("[mlc-editor] folder_panel_unit fail clamp high")
+    return 11
+  end
+
+  println("[mlc-editor] folder_panel_unit ok")
+  0
+end

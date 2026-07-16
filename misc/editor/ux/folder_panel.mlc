@@ -1,0 +1,311 @@
+// Folder browser rows / breadcrumbs / scroll helpers for the tree panel.
+import { FileTree, DirEntry, file_tree_new, file_tree_expand } from '../workspace/file_tree'
+import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
+
+export type FolderRow = {
+  kind: i32,
+  node_id: i32,
+  path: string,
+  name: string
+}
+
+export type BreadcrumbSegment = {
+  path: string,
+  label: string,
+  x: i32,
+  width: i32
+}
+
+export fn folder_row_parent() -> i32 = 0
+export fn folder_row_directory() -> i32 = 1
+export fn folder_row_file() -> i32 = 2
+
+export fn folder_breadcrumb_height() -> i32 = 22
+export fn folder_row_height() -> i32 = 18
+export fn folder_scrollbar_width() -> i32 = 6
+
+export fn path_parent(path: string) -> string = do
+  if path == "/" then
+    return "/"
+  end
+  if path == "." then
+    return ".."
+  end
+  if path == "" then
+    return ".."
+  end
+  let mut end_index = path.byte_size()
+  while end_index > 1 && path.byte_at(end_index - 1) == "/" do
+    end_index = end_index - 1
+  end
+  let mut slash = 0 - 1
+  let mut index = 0
+  while index < end_index do
+    if path.byte_at(index) == "/" then
+      slash = index
+    end
+    index = index + 1
+  end
+  if slash < 0 then
+    return "."
+  end
+  if slash == 0 then
+    return "/"
+  end
+  path.byte_substring(0, slash)
+end
+
+export fn path_leaf_name(path: string) -> string = do
+  if path == "/" then
+    return "/"
+  end
+  if path == "." then
+    return "."
+  end
+  if path == ".." then
+    return ".."
+  end
+  let mut end_index = path.byte_size()
+  while end_index > 1 && path.byte_at(end_index - 1) == "/" do
+    end_index = end_index - 1
+  end
+  let mut slash = 0 - 1
+  let mut index = 0
+  while index < end_index do
+    if path.byte_at(index) == "/" then
+      slash = index
+    end
+    index = index + 1
+  end
+  if slash < 0 then
+    return path.byte_substring(0, end_index)
+  end
+  path.byte_substring(slash + 1, end_index - slash - 1)
+end
+
+export fn folder_browser_at(
+  path: string,
+  name: string,
+  entries: [DirEntry]
+) -> FileTree = do
+  let mut tree = file_tree_new(path, name)
+  const expanded = file_tree_expand(tree, 0, entries)
+  expanded.tree
+end
+
+export fn folder_current_path(tree: FileTree) -> string =
+  tree.nodes[tree.root_id].path
+
+export fn folder_listing_rows(tree: FileTree) -> [FolderRow] = do
+  let mut rows: [FolderRow] = []
+  const root = tree.nodes[tree.root_id]
+  rows.push(FolderRow {
+    kind: folder_row_parent(),
+    node_id: 0 - 1,
+    path: path_parent(root.path),
+    name: ".."
+  })
+  let mut child_index = 0
+  while child_index < root.children.length() do
+    const node_id = root.children[child_index]
+    const node = tree.nodes[node_id]
+    let mut kind = folder_row_file()
+    if node.is_directory != 0 then
+      kind = folder_row_directory()
+    end
+    rows.push(FolderRow {
+      kind: kind,
+      node_id: node_id,
+      path: node.path,
+      name: node.name
+    })
+    child_index = child_index + 1
+  end
+  rows
+end
+
+// Cumulative paths for each breadcrumb segment (left → right).
+export fn folder_breadcrumb_paths(path: string) -> [string] = do
+  let mut paths: [string] = []
+  if path == "" then
+    return paths
+  end
+  if path == "/" then
+    paths.push("/")
+    return paths
+  end
+  if path == "." || path == ".." then
+    paths.push(path)
+    return paths
+  end
+  let mut absolute = 0
+  if path.byte_at(0) == "/" then
+    absolute = 1
+  end
+  let mut start = 0
+  if absolute != 0 then
+    start = 1
+  end
+  let mut index = start
+  let mut length = path.byte_size()
+  while length > 1 && path.byte_at(length - 1) == "/" do
+    length = length - 1
+  end
+  if absolute != 0 then
+    paths.push("/")
+  end
+  while index <= length do
+    if index == length || path.byte_at(index) == "/" then
+      if index > start then
+        const piece = path.byte_substring(0, index)
+        if piece.byte_size() > 0 then
+          paths.push(piece)
+        end
+      end
+      start = index + 1
+    end
+    index = index + 1
+  end
+  if paths.length() == 0 then
+    paths.push(path)
+  end
+  paths
+end
+
+export fn folder_breadcrumb_segments(
+  path: string,
+  origin_x: i32,
+  char_width: i32
+) -> [BreadcrumbSegment] = do
+  const paths = folder_breadcrumb_paths(path)
+  let mut segments: [BreadcrumbSegment] = []
+  let mut x = origin_x
+  let mut index = 0
+  while index < paths.length() do
+    const segment_path = paths[index]
+    let mut label = path_leaf_name(segment_path)
+    if index > 0 then
+      const sep = " / "
+      x = x + sep.byte_size() * char_width
+    end
+    const width = label.byte_size() * char_width
+    segments.push(BreadcrumbSegment {
+      path: segment_path,
+      label: label,
+      x: x,
+      width: width
+    })
+    x = x + width
+    index = index + 1
+  end
+  segments
+end
+
+export fn folder_breadcrumb_hit(
+  segments: [BreadcrumbSegment],
+  breadcrumb_rect: Rect,
+  point_x: i32,
+  point_y: i32
+) -> string = do
+  if point_in_rect(point_new(point_x, point_y), breadcrumb_rect) == 0 then
+    return ""
+  end
+  let mut index = segments.length() - 1
+  while index >= 0 do
+    const segment = segments[index]
+    if point_x >= segment.x && point_x < segment.x + segment.width then
+      return segment.path
+    end
+    index = index - 1
+  end
+  ""
+end
+
+export fn folder_list_rect(tree_rect: Rect) -> Rect =
+  rect_new(
+    tree_rect.x,
+    tree_rect.y + folder_breadcrumb_height(),
+    tree_rect.width,
+    tree_rect.height - folder_breadcrumb_height()
+  )
+
+export fn folder_content_height(row_count: i32) -> i32 =
+  row_count * folder_row_height()
+
+export fn folder_max_scroll(row_count: i32, viewport_height: i32) -> i32 = do
+  let mut max_y = folder_content_height(row_count) - viewport_height
+  if max_y < 0 then
+    max_y = 0
+  end
+  max_y
+end
+
+export fn folder_clamp_scroll(
+  scroll_y: i32,
+  row_count: i32,
+  viewport_height: i32
+) -> i32 = do
+  let mut scroll = scroll_y
+  if scroll < 0 then
+    scroll = 0
+  end
+  const max_y = folder_max_scroll(row_count, viewport_height)
+  if scroll > max_y then
+    scroll = max_y
+  end
+  scroll
+end
+
+export fn folder_hit_row_index(
+  list_rect: Rect,
+  row_count: i32,
+  scroll_y: i32,
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  if row_count <= 0 then
+    return 0 - 1
+  end
+  if point_in_rect(point_new(point_x, point_y), list_rect) == 0 then
+    return 0 - 1
+  end
+  const relative_y = point_y - list_rect.y + scroll_y
+  if relative_y < 0 then
+    return 0 - 1
+  end
+  const index = relative_y / folder_row_height()
+  if index < 0 || index >= row_count then
+    return 0 - 1
+  end
+  index
+end
+
+export fn folder_scrollbar_thumb(
+  list_rect: Rect,
+  row_count: i32,
+  scroll_y: i32
+) -> Rect = do
+  const content = folder_content_height(row_count)
+  if content <= list_rect.height || list_rect.height <= 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  const track = list_rect.height
+  let mut thumb = track * list_rect.height / content
+  if thumb < 16 then
+    thumb = 16
+  end
+  if thumb > track then
+    thumb = track
+  end
+  const max_scroll = folder_max_scroll(row_count, list_rect.height)
+  let mut thumb_y = list_rect.y
+  if max_scroll > 0 then
+    thumb_y = list_rect.y + (track - thumb) * scroll_y / max_scroll
+  end
+  rect_new(
+    list_rect.x + list_rect.width - folder_scrollbar_width() - 2,
+    thumb_y,
+    folder_scrollbar_width(),
+    thumb
+  )
+end
