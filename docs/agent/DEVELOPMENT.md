@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_SCENE_FORM_LIVE` closed** (2026-07-16) — Critic OK.
-**Next:** Planner — pick next from `PLAN.md` (not LANG_AUTO_CYCLE / SCRIPT_VM / MIR Epic 5).
-Archive: [../archive/tracks/TRACK_SCENE_FORM_LIVE.md](../archive/tracks/TRACK_SCENE_FORM_LIVE.md).
+**`TRACK_STDLIB_IO_FS` STEP=0 next** (2026-07-16) — PRIORITY: list_dir / FS predicates + editor tree.
+Track: [TRACK_STDLIB_IO_FS.md](TRACK_STDLIB_IO_FS.md).
+Not: LANG_AUTO_CYCLE (gated) / SCRIPT_VM / MIR Epic 5.
 ## Step sizing (good vs bad)
 
 | Good | Bad |
