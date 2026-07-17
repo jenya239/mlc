@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b13 **done**; STEP=8c next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b13/8c **done**; STEP=9 next
 
 ## Why this track exists
 
@@ -135,7 +135,7 @@ reachable again — Meta should split later.
 | 8b11 | Binding helpers: `suffix_semicolon_newline`/`auto_binding_statement` → `stmt_fragments`; export `tuple_destructure_binding` from `let_pat` (exports 10→7) | **done** (2026-07-17) |
 | 8b12 | Move 4 decl helpers `expr.mlc` → `type_gen.mlc` (noexcept/template/concept/vtable); drop `expression_output` from decl/trait_struct/decl_cpp (exports 7→3) | **done** (2026-07-17) |
 | 8b13 | Move remaining helpers: `function_call_parentheses`/`runtime_to_string_call` → `type_gen`; bootstrap golden → local in `test_cpp_printer`; `expr.mlc` stub (0 exports, no importers) | **done** (2026-07-17) |
-| 8c | Delete `expr.mlc` stub + unreachable `print.mlc` mirrors | pending |
+| 8c | Delete `expr.mlc` stub; `print.mlc` `render_*` remain (live printer helpers, not unreachable) | **done** (2026-07-17) |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
 
 ## Non-goals (this track)

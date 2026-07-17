@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 22:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8c — delete expr.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8c |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 22:05 |
+| elapsed | ~15 min (rebuild + Tier B + mlcc2) |
+| done    | Deleted `compiler/codegen/expr/expr.mlc`; `print.mlc` `render_*` kept (still used by printer — not unreachable) |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=9 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 22:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b13 — last expr helpers)
 
 | field   | value |
