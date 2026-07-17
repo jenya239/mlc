@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner → §46 `#2 EDITOR_KEYBOARD_NAV_WIRE`.
+**Queue head:** Driver `TRACK_EDITOR_KEYBOARD_NAV_WIRE` (§46 #2) STEP=1 (L2 scenarios first).
 **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45)** / §43 / §44 archived.
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.

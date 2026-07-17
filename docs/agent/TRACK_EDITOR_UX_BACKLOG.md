@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1+#1b+#1c+#1d done; **#2 `EDITOR_KEYBOARD_NAV_WIRE` next**
+## Status: **active** (2026-07-18) — #1…#1d done; **#2 `EDITOR_KEYBOARD_NAV_WIRE` opened** (STEP=0 done)
 
 ## How to use this backlog
 
@@ -37,7 +37,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 1b | `EDITOR_LIVE_SOLARIZED_TEXT` | Found 2026-07-17 (screenshot audit): live demo used dimmed syntax **background** tint + white glyphs; dark chrome workaround for stale “glyph shader is white” comment. Delivered: per-tag `StaticTextLine` rgba + Solarized Light chrome; L2 `syntax_glyph_color_matches_theme` | `ux_ok syntax_glyph_color_matches_theme` + `demo_live_fs_compile_ok` | M | **done** — [archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT](../archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md) |
 | 1c | `EDITOR_STALE_HELP_TEXT` | Found 2026-07-17: in-app README/guide/changelog described tree expand/collapse; live UI is breadcrumbs + back/forward (§38). Delivered copy-only fix in `demo_live` sample helpers + header | `demo_live_fs_compile_ok` | S | **done** — [archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT](../archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md) |
 | 1d | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` (pulled forward from #22, 2026-07-17 priority rule above) | Remove per-frame full-buffer `document_to_string` in demo — direct frame-latency regression on large files, Sublime-parity blocker. Delivered: `document_frame_snapshot` + demo_live reuse; L2 `large_file_no_full_stringify` | `ux_ok large_file_no_full_stringify` + `demo_live_fs_compile_ok` | M | **done** — [archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md) |
-| 2 | `EDITOR_KEYBOARD_NAV_WIRE` | Wire arrow keys/Home/End/PageUp/PageDown (model exists in `document/navigation.mlc`, not called from demo) | `arrow_keys_move_caret`, `home_end_caret` | M | pending |
+| 2 | `EDITOR_KEYBOARD_NAV_WIRE` | Wire arrow keys/Home/End/PageUp/PageDown (model exists in `document/navigation.mlc`, not called from demo) | `arrow_keys_move_caret`, `home_end_caret` | M | **active** — [TRACK_EDITOR_KEYBOARD_NAV_WIRE](TRACK_EDITOR_KEYBOARD_NAV_WIRE.md) STEP=1 next |
 | 3 | `EDITOR_WORD_BOUNDARIES` | Word-boundary helper in `document/`; Ctrl+Left/Right, Ctrl+Backspace/Delete | `ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word` | M | pending |
 | 4 | `EDITOR_MOUSE_WORD_LINE_SELECT` | Double-click selects word, triple-click selects line, click timing via `UxDriver` | `double_click_selects_word`, `triple_click_selects_line` | M | pending |
 | 5 | `EDITOR_SHIFT_CLICK_EXTEND` | Shift-click extends selection from anchor | `shift_click_extends_selection` | S | pending |
