@@ -7,7 +7,7 @@ import { SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, Semanti
 import { Type, trait_base_name } from '../../checker/registry'
 import { CodegenContext, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
-import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp } from './type_gen'
+import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp, cpp_lvalue_reference_suffix } from './type_gen'
 import * as expression_output from '../expr/expr'
 
 export fn trait_dispatch_name(trait_name: string, method_name: string) -> string =
@@ -36,12 +36,12 @@ fn default_expr_to_cpp(expression: Shared<Expr>) -> string = match expression {
 
 fn generic_parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>, generic_type_name: string) -> string =
   if generic_type_name == 'ref' then type_to_cpp(context, parameter.type_value)
-  else if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+  else if parameter.is_mut then cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
   else type_to_cpp(context, parameter.type_value)
   end
 
 fn non_generic_parameter_type_cpp(context: CodegenContext, parameter: Shared<Param>) -> string =
-  if parameter.is_mut then expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
+  if parameter.is_mut then cpp_lvalue_reference_suffix(type_to_cpp(context, parameter.type_value))
   else type_to_cpp(context, parameter.type_value)
   end
 

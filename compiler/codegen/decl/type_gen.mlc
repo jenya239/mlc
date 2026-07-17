@@ -11,6 +11,36 @@ import { list_contains } from './decl_index'
 import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
 import * as expression_output from '../expr/expr'
 
+export fn cpp_array_type_element(inner_type_cpp: string) -> string =
+  `mlc::Array<${inner_type_cpp}>`
+
+export fn cpp_shared_pointer_type(inner_type_cpp: string) -> string =
+  `std::shared_ptr<${inner_type_cpp}>`
+
+export fn cpp_raw_pointer_type(inner_type_cpp: string) -> string =
+  `${inner_type_cpp}*`
+
+export fn cpp_template_single_type_argument(template_name_cpp: string, type_argument_cpp: string) -> string =
+  `${template_name_cpp}<${type_argument_cpp}>`
+
+export fn cpp_template_two_type_arguments(
+  template_name_cpp: string,
+  first_type_argument_cpp: string,
+  second_type_argument_cpp: string
+) -> string =
+  `${template_name_cpp}<${first_type_argument_cpp}, ${second_type_argument_cpp}>`
+
+export fn cpp_std_function_type(return_type_cpp: string, parameter_types_csv: string) -> string =
+  `std::function<${return_type_cpp}(${parameter_types_csv})>`
+
+// Wrap in type_identity_t so `T name` param syntax is valid C++
+// (`int(*)(int) name` is a parse error; `std::type_identity_t<int(*)(int)> name` is ok).
+export fn cpp_c_function_pointer_type(return_type_cpp: string, parameter_types_csv: string) -> string =
+  `std::type_identity_t<${return_type_cpp}(*)(${parameter_types_csv})>`
+
+export fn cpp_lvalue_reference_suffix(inner_type_cpp: string) -> string =
+  `${inner_type_cpp}&`
+
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   if type_name == 'Map' then 'mlc::HashMap'
   else if type_name == 'Shared' then 'std::shared_ptr'
@@ -39,8 +69,8 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TUsize   => 'size_t',
     TChar    => 'char32_t',
     TUnknown => 'auto',
-    TArray(inner)  => expression_output.cpp_array_type_element(sem_type_to_cpp(context, inner)),
-    TShared(inner) => expression_output.cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
+    TArray(inner)  => cpp_array_type_element(sem_type_to_cpp(context, inner)),
+    TShared(inner) => cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  =>
       if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
       else if type_name.length() >= 10 && type_name.substring(0, 10) == 'RegionTag_' then 'void'
@@ -56,11 +86,11 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       else if type_name == 'RegionHandle' then
         'mlc::memory::RegionHandle'
       else if type_name == 'Region' && type_arguments.length() == 2 then
-        expression_output.cpp_template_single_type_argument(
+        cpp_template_single_type_argument(
           'mlc::memory::RegionPtr',
           sem_type_to_cpp(context, type_arguments[1]))
       else if type_name == 'RawPointer' && type_arguments.length() == 1 then
-        expression_output.cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))
+        cpp_raw_pointer_type(sem_type_to_cpp(context, type_arguments[0]))
       else if type_name == '__ExternFn' && type_arguments.length() >= 1 then do
         const return_type_cpp = sem_type_to_cpp(context, type_arguments[0])
         let mut parameter_types_csv = ''
@@ -70,21 +100,21 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
           parameter_types_csv = parameter_types_csv + sem_type_to_cpp(context, type_arguments[argument_index])
           argument_index = argument_index + 1
         end
-        expression_output.cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
+        cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
       end
       else if type_arguments.length() == 0 then cpp_generic_base_name(context, type_name)
       else if type_arguments.length() == 1 then
-        expression_output.cpp_template_single_type_argument(
+        cpp_template_single_type_argument(
           cpp_generic_base_name(context, type_name),
           sem_type_to_cpp(context, type_arguments[0]))
       else
-        expression_output.cpp_template_two_type_arguments(
+        cpp_template_two_type_arguments(
           cpp_generic_base_name(context, type_name),
           sem_type_to_cpp(context, type_arguments[0]),
           sem_type_to_cpp(context, type_arguments[1]))
       end,
     TFn(param_types, return_type) =>
-      expression_output.cpp_std_function_type(
+      cpp_std_function_type(
         sem_type_to_cpp(context, return_type),
         param_types.map(type_value => sem_type_to_cpp(context, type_value)).join(', ')),
     TAssoc(param, assoc) => `typename ${cpp_safe(param)}::${assoc}`
@@ -141,13 +171,13 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
     TyBool    => 'bool',
     TyUnit    => 'void',
     TyNamed(name)   => type_name_to_cpp(context, name),
-    TyArray(inner)  => expression_output.cpp_array_type_element(type_to_cpp(context, inner)),
-    TyShared(inner) => expression_output.cpp_shared_pointer_type(type_to_cpp(context, inner)),
+    TyArray(inner)  => cpp_array_type_element(type_to_cpp(context, inner)),
+    TyShared(inner) => cpp_shared_pointer_type(type_to_cpp(context, inner)),
     TyGeneric(name, type_arguments) => do
       if name == 'ref' && type_arguments.length() == 1 then
-        expression_output.cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
+        cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
       else if name == 'RawPointer' && type_arguments.length() == 1 then
-        expression_output.cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]))
+        cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]))
       else if name == '__ExternFn' && type_arguments.length() >= 1 then do
         const return_type_cpp = type_to_cpp(context, type_arguments[0])
         let mut parameter_types_csv = ''
@@ -157,15 +187,15 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
           parameter_types_csv = parameter_types_csv + type_to_cpp(context, type_arguments[argument_index])
           argument_index = argument_index + 1
         end
-        expression_output.cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
+        cpp_c_function_pointer_type(return_type_cpp, parameter_types_csv)
       end
       else
         const safe = cpp_generic_base_name(context, name)
         if type_arguments.length() == 0 then safe
         else if type_arguments.length() == 1 then
-          expression_output.cpp_template_single_type_argument(safe, type_to_cpp(context, type_arguments[0]))
+          cpp_template_single_type_argument(safe, type_to_cpp(context, type_arguments[0]))
         else
-          expression_output.cpp_template_two_type_arguments(
+          cpp_template_two_type_arguments(
             safe,
             type_to_cpp(context, type_arguments[0]),
             type_to_cpp(context, type_arguments[1])
@@ -174,7 +204,7 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
       end
     end,
     TyFn(parameter_types, return_type_expression) =>
-      expression_output.cpp_std_function_type(
+      cpp_std_function_type(
         type_to_cpp(context, return_type_expression),
         parameter_types.map(parameter_type => type_to_cpp(context, parameter_type)).join(', ')),
     TyAssoc(param, assoc) => `typename ${cpp_safe(param)}::${assoc}`

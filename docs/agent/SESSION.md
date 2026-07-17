@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 18:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b1 — cpp_* → type_gen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b1 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 18:20 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | Moved 8 `cpp_*` type helpers to `type_gen.mlc`; callers in match_gen/trait_struct/decl_extend; removed from `expr.mlc` (88→80 exports, 321 lines) |
+| result  | `--check-only` OK; self-host identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b2 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 18:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8a — expr.mlc inventory)
 
 | field   | value |

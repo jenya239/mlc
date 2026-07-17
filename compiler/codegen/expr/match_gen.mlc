@@ -12,7 +12,7 @@ import * as expression_output from './expr'
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
 import { type_is_unknown, generic_type_name_from_type, generic_type_arguments_from_type } from '../../checker/semantic_type_structure'
 import { is_result_generic, result_ok_type, result_err_type } from '../../checker/check/method_types/result_option_method_types'
-import { sem_type_to_cpp } from '../decl/type_gen'
+import { sem_type_to_cpp, cpp_template_two_type_arguments } from '../decl/type_gen'
 import { gen_boolean_literal_cpp, gen_integer_literal_cpp, gen_string_literal_cpp } from './literals'
 import {
   CppExpression,
@@ -852,7 +852,7 @@ fn full_result_cpp_template(context: CodegenContext, semantic_type: Shared<Type>
   const ok_cpp = sem_type_to_cpp(context, result_ok_type(semantic_type))
   const err_cpp = sem_type_to_cpp(context, result_err_type(semantic_type))
   if ok_cpp != 'auto' && err_cpp != 'auto' then
-    expression_output.cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
+    cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
   else ''
   end
 end
@@ -964,7 +964,7 @@ fn match_return_cpp_type(
     const ok_cpp = match_ok_cpp_type(context, match_result_type, subject, direct)
     const err_cpp = match_err_cpp_type(context, match_result_type, subject)
     if ok_cpp != 'auto' && err_cpp != 'auto' then
-      expression_output.cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
+      cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
     else if direct_is_incomplete then 'auto'
     else direct
     end
@@ -977,7 +977,7 @@ fn result_template_from_match_type(context: CodegenContext, match_result_type: S
     const ok_cpp = sem_type_to_cpp(context, result_ok_type(match_result_type))
     const err_cpp = sem_type_to_cpp(context, result_err_type(match_result_type))
     if ok_cpp != 'auto' && err_cpp != 'auto' then
-      expression_output.cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
+      cpp_template_two_type_arguments('ast::Result', ok_cpp, err_cpp)
     else ''
     end
   end
@@ -1004,7 +1004,7 @@ export fn match_expression_return_cpp_type(
     else
       const err_cpp = match_err_cpp_type(context, match_result_type, subject)
       if direct != 'ast::Result' && direct != 'void' && direct != 'auto' && direct.length() > 0 && err_cpp != 'auto' then
-        expression_output.cpp_template_two_type_arguments('ast::Result', direct, err_cpp)
+        cpp_template_two_type_arguments('ast::Result', direct, err_cpp)
       else direct
       end
     end
