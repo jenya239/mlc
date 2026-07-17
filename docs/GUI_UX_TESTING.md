@@ -186,16 +186,17 @@ Clean-Architecture debt item (`demo_live.mlc` decomposition).
    claim — Critic must reject it per the anti-false-done rule in
    [agent/CONTINUITY.md](agent/CONTINUITY.md).
 2. **Clean Architecture — no growing god-files.** `misc/editor/demo_live.mlc`
-   is the one sanctioned integration point (live GLFW wiring) but its
-   `main()` must stay an orchestrator that calls named phase functions
-   (`*_input_phase`, `*_layout_phase`, `*_draw_phase`, …), not accumulate
-   inline logic. Budget: no single `fn` body in `misc/editor/**` should
-   exceed ~150 lines; a module file exceeding ~500 lines is a signal to
-   split by concern (mirrors existing `document/`, `layout/`, `ui/`,
-   `workspace/`, `ux/` granularity — each file there is one concern, under
-   10 KB). Exceeding budget is not itself a hard-stop, but the next Planner
-   turn must open/extend a decomposition track rather than let it grow
-   further.
+   is the one sanctioned integration point (live GLFW wiring). Its `main()`
+   must stay a thin orchestrator: `poll → editor_app_*(app, input) → draw(app)`
+   calling existing tested `ux/*` / `app/*` helpers — **not** a second inline
+   copy of edit/scroll/tab/tree-hit logic, and not merely renaming blobs into
+   `*_input_phase` / `*_draw_phase` locals (Opus review 2026-07-17; execution
+   track = PLAN §46 `#1 EDITOR_DEMO_ORCHESTRATOR`). Budget: no single `fn`
+   body in `misc/editor/**` should exceed ~150 lines; a module file exceeding
+   ~500 lines is a signal to split by concern (mirrors existing `document/`,
+   `layout/`, `ui/`, `workspace/`, `ux/` — each one concern, under ~10 KB).
+   Exceeding budget is not itself a hard-stop, but the next Planner turn must
+   open/extend a decomposition track rather than let it grow further.
 3. **Clean Code.** Full-word identifiers (repo-wide rule, `no-abbreviations`)
    applies here as everywhere. One function = one responsibility; extract
    before adding a third concern to an existing function rather than
@@ -204,8 +205,8 @@ Clean-Architecture debt item (`demo_live.mlc` decomposition).
    returns new records, does not mutate in place).
 4. **UX completeness backlog.** "Million small details" (multi-cursor,
    word/line select gestures, drag & drop, IME, find/replace, session
-   restore, crash-safety, encoding, …) are tracked as an explicit backlog,
-   not folklore — see `docs/agent/TRACK_EDITOR_UX_BACKLOG.md` once opened by
-   Planner (source: `mlc-support/responses/editor_tdd_ux_*.md` review) and
-   `PLAN.md` §45+ queue. Do not hand-wave "UX polish" as one track — split
-   into atomic, independently-gated items like §36-43 already do.
+   restore, crash-safety, encoding, …) are tracked as an explicit backlog —
+   [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md)
+   (PLAN §46; source: `mlc-support/responses/editor_tdd_ux_*.md`). Do not
+   hand-wave "UX polish" as one track — split into atomic, independently-gated
+   items like §36-43 already do.

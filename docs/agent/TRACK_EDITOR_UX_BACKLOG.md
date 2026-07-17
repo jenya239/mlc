@@ -1,6 +1,6 @@
 # Track: Editor UX backlog — atomic items from TDD/UX review
 
-Parent: [../PLAN.md](../PLAN.md) §46. Source: [TRACK_EDITOR_CLEAN_ARCHITECTURE](TRACK_EDITOR_CLEAN_ARCHITECTURE.md)
+Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](../archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md)
 (§45) STEP=3. Full detail/evidence per item:
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
