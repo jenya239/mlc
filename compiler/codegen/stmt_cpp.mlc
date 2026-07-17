@@ -20,7 +20,7 @@ import {
 } from '../checker/registry'
 import {
   CppExpression, CppStatement, CppCall,
-  CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl,
+  CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStaticAutoDecl,
   CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor,
   CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective
 } from '../cpp_ir/cpp_ast'
@@ -131,6 +131,7 @@ fn print_cpp_statement_line(statement: Shared<CppStatement>) -> string =
     CppVarDecl(_, _, _) => print_cpp_statement_default_line(statement),
     CppConstDecl(_, _, _) => print_cpp_statement_default_line(statement),
     CppConstexprAutoDecl(_, _) => print_cpp_statement_default_line(statement),
+    CppStaticAutoDecl(_, _) => print_cpp_statement_default_line(statement),
     CppReturn(_) => print_cpp_statement_default_line(statement),
     CppExpressionStatement(_) => print_cpp_statement_default_line(statement),
     CppBlock(_) => print_cpp_statement_default_line(statement),

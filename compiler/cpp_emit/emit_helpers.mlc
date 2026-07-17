@@ -1,6 +1,6 @@
 // Builders for leaf CppExpression / CppStatement nodes (Phase 2). No dependency on codegen/.
 
-import { CppExpression, CppInt, CppStr, CppBool, CppIdent, CppType, CppTypeName, CppStatement, CppAutoDecl, CppVarDecl, CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStatementSequence, CppStatementFragment, CppDeclaration, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
+import { CppExpression, CppInt, CppStr, CppBool, CppIdent, CppType, CppTypeName, CppStatement, CppAutoDecl, CppVarDecl, CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStaticAutoDecl, CppStructuredBinding, CppStatementSequence, CppStatementFragment, CppDeclaration, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
 
 export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpression> =
   Shared.new(CppInt(integer_value))
@@ -16,6 +16,9 @@ export fn make_identifier_cpp_expression(name: string) -> Shared<CppExpression> 
 
 export fn make_constexpr_auto_cpp_statement(name: string, initializer: Shared<CppExpression>) -> Shared<CppStatement> =
   Shared.new(CppConstexprAutoDecl(name, initializer))
+
+export fn make_static_auto_cpp_statement(name: string, initializer: Shared<CppExpression>) -> Shared<CppStatement> =
+  Shared.new(CppStaticAutoDecl(name, initializer))
 
 export fn make_fragment_cpp_statement(code: string) -> Shared<CppStatement> =
   Shared.new(CppStatementFragment(code))

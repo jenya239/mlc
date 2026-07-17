@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 16:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c1 — CppStaticAutoDecl FFI binder)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3c1 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 16:00 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | Added `CppStaticAutoDecl`; `gen_ffi_fn_decl_cpp` binder/return → AST (`CppCast`/`CppCall`/`CppReturn`). Split 7b3c → 7b3c1–7b3c5. Deleter Fragment remains |
+| result  | `--check-only` OK; self-host cpp_ast/print/emit_helpers/decl_cpp/stmt_cpp; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7b3c2 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 15:45 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3b — GenStmtResult.statement)
 
 | field   | value |

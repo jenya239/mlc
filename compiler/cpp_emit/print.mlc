@@ -220,6 +220,9 @@ fn print_line_directive(line_number: i32, file_path: string) -> string =
 fn constexpr_auto_declaration(name: string, initializer_code: string) -> string =
   `constexpr auto ${name} = ${initializer_code};`
 
+fn static_auto_declaration(name: string, initializer_code: string) -> string =
+  `static auto const ${name} = ${initializer_code};`
+
 fn const_declaration(type_code: string, name: string, initializer_code: string) -> string =
   `const ${type_code} ${name} = ${initializer_code};`
 
@@ -508,6 +511,8 @@ fn print_statement_node(statement: Shared<CppStatement>, depth: i32) -> string =
       const_declaration(print_type(type_node), name, print_expr(initializer)),
     CppConstexprAutoDecl(name, initializer) =>
       constexpr_auto_declaration(name, print_expr(initializer)),
+    CppStaticAutoDecl(name, initializer) =>
+      static_auto_declaration(name, print_expr(initializer)),
     CppReturn(expression) => 'return ' + print_expr(expression) + `;`,
     CppExpressionStatement(expression) => print_expr(expression) + `;`,
     CppBlock(statements) => formatted_block(print_statements(statements, depth + 1), depth),

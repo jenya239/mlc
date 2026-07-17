@@ -3,7 +3,7 @@
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord, param_name } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExternType, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, trait_base_name } from '../checker/registry'
-import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppUnary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './context'
@@ -715,14 +715,22 @@ fn gen_ffi_fn_decl_cpp(
     const extern_c_name = semantic_extern_ffi_c_name(body)
     const binder_name = "mlc_ffi_bind_" + cpp_safe(name)
     const signature_params = ffi_parameter_type_items(params, prototype_context).join(', ')
-    const call_arguments = ffi_parameter_name_items(params).join(', ')
-    const binder_statement = emit_helpers.make_fragment_cpp_statement(
-      "static auto const " + binder_name + " = static_cast<" + return_type_cpp + "(*)(" + signature_params + ")>(&::" + extern_c_name + ");")
-    const call_expression =
-      if call_arguments.length() == 0 then binder_name + "()"
-      else binder_name + "(" + call_arguments + ")"
-      end
-    const return_statement = emit_helpers.make_fragment_cpp_statement("return " + call_expression + ";")
+    const call_argument_expressions = ffi_parameter_name_items(params).map(parameter_name =>
+      emit_helpers.make_identifier_cpp_expression(parameter_name))
+    const function_pointer_type = Shared.new(CppTypeName(
+      return_type_cpp + "(*)(" + signature_params + ")"))
+    const binder_statement = emit_helpers.make_static_auto_cpp_statement(
+      binder_name,
+      Shared.new(CppCast(
+        CppCastStatic,
+        function_pointer_type,
+        Shared.new(CppUnary(
+          "&",
+          emit_helpers.make_identifier_cpp_expression("::" + extern_c_name))))))
+    const return_statement = emit_helpers.make_return_cpp_statement(
+      Shared.new(CppCall(
+        emit_helpers.make_identifier_cpp_expression(binder_name),
+        call_argument_expressions)))
     const all_type_params = merged_function_type_parameters_cpp(type_params, escape_info)
     Shared.new(CppFnDef(
       template_prefix(all_type_params) + requires_clause(type_params, type_bounds),

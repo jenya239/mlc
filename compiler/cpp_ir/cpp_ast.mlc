@@ -24,6 +24,7 @@ export type CppStatement =
   | CppVarDecl(string, Shared<CppType>, Shared<CppExpression>)
   | CppConstDecl(string, Shared<CppType>, Shared<CppExpression>)
   | CppConstexprAutoDecl(string, Shared<CppExpression>)
+  | CppStaticAutoDecl(string, Shared<CppExpression>)
   | CppReturn(Shared<CppExpression>)
   | CppExpressionStatement(Shared<CppExpression>)
   | CppBlock([Shared<CppStatement>])

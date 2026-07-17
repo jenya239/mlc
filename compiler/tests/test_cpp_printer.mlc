@@ -7,7 +7,7 @@ import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
-         CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStaticAutoDecl, CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
          CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp_ir/cpp_ast'
@@ -190,6 +190,15 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_statement CppConstexprAutoDecl',
     print_statement(Shared.new(CppConstexprAutoDecl('limit', Shared.new(CppInt(42))))),
     'constexpr auto limit = 42;'))
+
+  results.push(assert_eq_str('print_statement CppStaticAutoDecl',
+    print_statement(Shared.new(CppStaticAutoDecl(
+      'binder',
+      Shared.new(CppCast(
+        CppCastStatic,
+        Shared.new(CppTypeName('int(*)()')),
+        Shared.new(CppUnary('&', Shared.new(CppIdent('::foo'))))))))),
+    'static auto const binder = static_cast<int(*)()>((&::foo));'))
 
   results.push(assert_eq_str('print_statement CppStructuredBinding',
     print_statement(Shared.new(CppStructuredBinding(
