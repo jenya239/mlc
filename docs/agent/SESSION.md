@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 18:55 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b2 — struct/concept → type_gen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b2 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 18:35 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | Moved 9 struct/concept/variant helpers to `type_gen.mlc`; removed `expression_output` import from type_gen; `expr.mlc` 80→71 exports (286 lines) |
+| result  | `--check-only` OK; self-host identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b3 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 18:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b1 — cpp_* → type_gen)
 
 | field   | value |

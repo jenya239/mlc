@@ -9,7 +9,6 @@ import { record_field_default_expression_cpp_initializer } from '../record_field
 import { CodegenContext, CtorTypeInfo, trait_has_associated_types } from '../context'
 import { list_contains } from './decl_index'
 import { cpp_safe, lower_first, template_prefix } from '../cpp_naming'
-import * as expression_output from '../expr/expr'
 
 export fn cpp_array_type_element(inner_type_cpp: string) -> string =
   `mlc::Array<${inner_type_cpp}>`
@@ -40,6 +39,41 @@ export fn cpp_c_function_pointer_type(return_type_cpp: string, parameter_types_c
 
 export fn cpp_lvalue_reference_suffix(inner_type_cpp: string) -> string =
   `${inner_type_cpp}&`
+
+export fn struct_empty_definition(resolved_struct_name: string) -> string =
+  `struct ${resolved_struct_name} {};\n`
+
+export fn struct_with_inline_members_definition(resolved_struct_name: string, member_declarations_concatenated: string) -> string =
+  `struct ${resolved_struct_name} {${member_declarations_concatenated}};\n`
+
+export fn struct_forward_declaration_line(template_prefix_before_keyword: string, resolved_struct_name: string) -> string =
+  `${template_prefix_before_keyword}struct ${resolved_struct_name};\n`
+
+export fn variant_using_alias_definition_line(
+  template_prefix_before_using: string,
+  resolved_alias_name: string,
+  variant_alternatives_csv: string
+) -> string =
+  `${template_prefix_before_using}using ${resolved_alias_name} = std::variant<${variant_alternatives_csv}>;\n`
+
+export fn concept_requires_clause_line(requires_predicates_joined: string) -> string =
+  `requires ${requires_predicates_joined}\n`
+
+export fn concept_trait_constraint_on_type_parameter(trait_name_cpp_safe: string, type_parameter_name: string) -> string =
+  `${trait_name_cpp_safe}<${type_parameter_name}>`
+
+export fn concept_trait_constraint_with_result_and_implementor(
+  trait_name_cpp_safe: string,
+  result_type_parameter_name: string,
+  implementor_type_parameter_name: string
+) -> string =
+  `${trait_name_cpp_safe}<${result_type_parameter_name}, ${implementor_type_parameter_name}>`
+
+export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_text: string) -> string =
+  `${element_type_cpp} field${field_index_text};`
+
+export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_safe: string) -> string =
+  `${field_type_cpp} ${field_name_cpp_safe};`
 
 fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   if type_name == 'Map' then 'mlc::HashMap'
@@ -248,7 +282,7 @@ export fn type_phantom_params_for_variants(type_parameters: [string], variants: 
 end
 
 fn field_def_member_declaration(context: CodegenContext, field_definition: Shared<FieldDef>) -> string = do
-  const base = expression_output.struct_named_field_declaration(
+  const base = struct_named_field_declaration(
     type_to_cpp(context, field_definition.type_value), cpp_safe(field_definition.name))
   if field_definition.has_default_expression &&
      record_field_default_expression_is_static_initializer(field_definition.default_expression) then
@@ -274,7 +308,7 @@ fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [
       TupleStructCodegenFoldState {
         field_slot_index: accumulated_tuple_state.field_slot_index + 1,
         declaration_text_so_far: accumulated_tuple_state.declaration_text_so_far +
-          expression_output.struct_tuple_field_declaration(
+          struct_tuple_field_declaration(
             type_to_cpp(context, field_type_expression_under_tuple),
             accumulated_tuple_state.field_slot_index.to_string())
       }
@@ -282,13 +316,13 @@ fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [
 
 fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
-    VarUnit(name, _) => expression_output.struct_empty_definition(context.resolve(name)),
+    VarUnit(name, _) => struct_empty_definition(context.resolve(name)),
     VarTuple(name, field_types, _) =>
-      expression_output.struct_with_inline_members_definition(
+      struct_with_inline_members_definition(
         context.resolve(name),
         tuple_variant_struct_members_fragment(context, field_types)),
     VarRecord(name, field_defs, _) =>
-      expression_output.struct_with_inline_members_definition(
+      struct_with_inline_members_definition(
         context.resolve(name),
         variant_record_struct_inline_member_declarations(context, field_defs))
   }
@@ -301,20 +335,20 @@ fn struct_extra_using(context: CodegenContext, type_name: string) -> string =
 fn gen_single_variant(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
   match variant {
     VarRecord(_, field_defs, _) =>
-      expression_output.struct_with_inline_members_definition(
+      struct_with_inline_members_definition(
         context.resolve(type_name),
         variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name)),
     VarTuple(_, field_types, _) =>
-      expression_output.struct_with_inline_members_definition(
+      struct_with_inline_members_definition(
         context.resolve(type_name),
         tuple_variant_struct_members_fragment(context, field_types) + struct_extra_using(context, type_name)),
-    VarUnit(_, _) => expression_output.struct_empty_definition(context.resolve(type_name))
+    VarUnit(_, _) => struct_empty_definition(context.resolve(type_name))
   }
 
 fn variant_forward_decl_line(context: CodegenContext, type_parameters: [string], phantom: [string], variant: Shared<TypeVariant>) -> string = do
   const variant_name = context.resolve(variant_ctor_name(variant))
   const used = union_string_lists(variant_used_type_parameters(type_parameters, variant), phantom)
-  expression_output.struct_forward_declaration_line(template_prefix(used), variant_name)
+  struct_forward_declaration_line(template_prefix(used), variant_name)
 end
 
 fn variant_type_argument_suffix(
@@ -337,7 +371,7 @@ export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_parameter
   const alias_parts =
     variants.map(variant => variant_alias_part(context, type_parameters, phantom, variant)).join(', ')
   forward_decls +
-    expression_output.variant_using_alias_definition_line(full_prefix, context.resolve(type_name), alias_parts)
+    variant_using_alias_definition_line(full_prefix, context.resolve(type_name), alias_parts)
 end
 
 fn variant_def_with_prefix(
@@ -631,12 +665,12 @@ export fn gen_type_decl_body_only(context: CodegenContext, type_name: string, ty
 
 fn requires_clause_bound_part(type_parameters: [string], type_parameter_index: i32, bound_trait_name: string) -> string =
   if bound_trait_name == 'ExprVisitor' && type_parameters.length() >= 2 then
-    expression_output.concept_trait_constraint_with_result_and_implementor(
+    concept_trait_constraint_with_result_and_implementor(
       cpp_safe(bound_trait_name),
       type_parameters[0],
       type_parameters[type_parameter_index])
   else
-    expression_output.concept_trait_constraint_on_type_parameter(
+    concept_trait_constraint_on_type_parameter(
       cpp_safe(bound_trait_name),
       type_parameters[type_parameter_index])
   end
@@ -653,5 +687,5 @@ export fn requires_clause(type_parameters: [string], type_bounds: [[string]]) ->
     end
     type_parameter_index = type_parameter_index + 1
   end
-  if parts.length() > 0 then expression_output.concept_requires_clause_line(parts.join(' && ')) else '' end
+  if parts.length() > 0 then concept_requires_clause_line(parts.join(' && ')) else '' end
 end
