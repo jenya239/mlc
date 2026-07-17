@@ -20,9 +20,6 @@ export fn make_constexpr_auto_cpp_statement(name: string, initializer: Shared<Cp
 export fn make_fragment_cpp_statement(code: string) -> Shared<CppStatement> =
   Shared.new(CppStatementFragment(code))
 
-export fn make_invoked_block_body_from_source(source: string) -> [Shared<CppStatement>] =
-  [make_fragment_cpp_statement(source)]
-
 export fn make_auto_cpp_statement(name: string, initializer: Shared<CppExpression>) -> Shared<CppStatement> =
   Shared.new(CppAutoDecl(name, initializer))
 

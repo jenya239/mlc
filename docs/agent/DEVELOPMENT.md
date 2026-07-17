@@ -42,8 +42,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 ## Current priority
 
 **`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0–2 done** (2026-07-16); STEP=3 Critic pending.
-**`TRACK_CODEGEN_CPPAST_ONLY` (§44) queue head** — STEP=1/test-fix/2/3/4/5/6 done;
-`dev_gate_fast` green; **STEP=7** next (remove `CppStatementFragment`/`CppDeclarationFragment` sites).
+**`TRACK_CODEGEN_CPPAST_ONLY` (§44) queue head** — STEP=1/test-fix/2/3/4/5/6/7a done;
+`dev_gate_fast` green; **STEP=7b** next (remaining Fragment construction sites).
 Track: [TRACK_CODEGEN_CPPAST_ONLY.md](TRACK_CODEGEN_CPPAST_ONLY.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

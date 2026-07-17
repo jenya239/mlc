@@ -3,8 +3,7 @@
 
 import { SemanticExpression, SemanticStatement, SemanticFieldVal, SemanticExpressionField, sexpr_span } from '../../ir/semantic_ir'
 import { Type, TUnknown } from '../../checker/registry'
-import { CppExpression, CppAggregateInit, CppInvokedBlock } from '../../cpp_ir/cpp_ast'
-import {print_expr} from '../../cpp_emit/print'
+import { CppExpression, CppStatement, CppAggregateInit, CppInvokedBlock, CppBinary, CppMember } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
@@ -120,13 +119,28 @@ export fn gen_record_update_expr_cpp(
       field_order.map(field_name =>
         eval_field_update_value_cpp(base_expression, field_name, overrides, context, gen_stmts, eval_expr_fn))))
   else do
-    const body_fragment =
-      'auto __upd = ' + print_expr(eval_expr_fn(base_expression, context, gen_stmts)) + ';\n' +
-      overrides.map(override_field =>
-        '__upd.' + cpp_safe(override_field.name) + ' = ' +
-        print_expr(eval_expr_fn(override_field.value, context, gen_stmts)) + ';\n').join('') +
-      'return __upd;\n'
-    Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(body_fragment)))
+    let body_statements: [Shared<CppStatement>] = []
+    body_statements.push(
+      emit_helpers.make_auto_cpp_statement(
+        '__upd',
+        eval_expr_fn(base_expression, context, gen_stmts)))
+    let mut override_index = 0
+    while override_index < overrides.length() do
+      const override_field = overrides[override_index]
+      body_statements.push(
+        emit_helpers.make_expression_cpp_statement(
+          Shared.new(CppBinary(
+            "=",
+            Shared.new(CppMember(
+              emit_helpers.make_identifier_cpp_expression('__upd'),
+              cpp_safe(override_field.name),
+              false)),
+            eval_expr_fn(override_field.value, context, gen_stmts)))))
+      override_index = override_index + 1
+    end
+    body_statements.push(
+      emit_helpers.make_return_cpp_statement(
+        emit_helpers.make_identifier_cpp_expression('__upd')))
+    Shared.new(CppInvokedBlock(body_statements))
   end
-end
 end

@@ -144,7 +144,8 @@ end
 
 fn mir_return_to_cpp_statement(function: MirFunction, operand: MirOperand) -> Shared<CppStatement> =
   match operand {
-    MirOperandUnit => emit_helpers.make_fragment_cpp_statement('return;'),
+    MirOperandUnit => emit_helpers.make_expression_cpp_statement(
+      emit_helpers.make_identifier_cpp_expression('return')),
     _ => emit_helpers.make_return_cpp_statement(mir_operand_to_cpp_expression(function, operand))
   }
 

@@ -416,14 +416,15 @@ fn unit_if_block_trailing(
   result_expression: Shared<SemanticExpression>,
   final_context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
-) -> string =
+) -> [Shared<CppStatement>] =
   match result_expression {
-    SemanticExpressionUnit(_, _) => '',
+    SemanticExpressionUnit(_, _) => [],
     SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
-      print_statement(gen_if_cpp_statement(
-        condition, then_expression, else_expression, semantic_type, final_context, gen_stmts)),
+      [gen_if_cpp_statement(
+        condition, then_expression, else_expression, semantic_type, final_context, gen_stmts)],
     _ =>
-      print_expr(eval_expr_cpp(result_expression, final_context, gen_stmts)) + ';\n'
+      [emit_helpers.make_expression_cpp_statement(
+        eval_expr_cpp(result_expression, final_context, gen_stmts))]
   }
 
 fn unit_if_branch_block(
@@ -439,8 +440,7 @@ fn unit_if_branch_block(
       if trailing.length() == 0 then
         emit_helpers.make_block_cpp_statement(body_statements)
       else
-        emit_helpers.make_block_cpp_statement(
-          body_statements.concat([emit_helpers.make_fragment_cpp_statement(trailing)]))
+        emit_helpers.make_block_cpp_statement(body_statements.concat(trailing))
       end
     end,
     SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
@@ -581,11 +581,11 @@ fn gen_match_default_block_cpp(
     gen_stmts,
     (expression, eval_context, gen_stmts_fn) =>
       print_expr(eval_expr_cpp(expression, eval_context, gen_stmts_fn)))
+  const body_statements = [emit_helpers.make_fragment_cpp_statement(inner_body)]
   if return_cpp.length() > 0 then
-    return Shared.new(CppInvokedBlockWithReturn(
-      return_cpp, emit_helpers.make_invoked_block_body_from_source(inner_body)))
+    return Shared.new(CppInvokedBlockWithReturn(return_cpp, body_statements))
   end
-  Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(inner_body)))
+  Shared.new(CppInvokedBlock(body_statements))
 end
 
 fn record_field_expressions(

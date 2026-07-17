@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 14:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7a — kill invoked-block bridge + easy Fragments)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7a |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 13:50 |
+| elapsed | ~30 min (rebuild + Tier B) |
+| done    | Deleted `make_invoked_block_body_from_source`; match string-lit body AST; record-update lazy AST; unit-if trailing statements; MIR unit `return` via expression stmt. Guarded-match still one Fragment wrapper. Split track STEP=7 → 7a/7b |
+| result  | `--check-only` OK; self-host: emit_helpers/match_gen/record_gen/expr_visitor_cpp/mir_to_cpp (+ incidental lexer/decl_cpp indent from unit-if); `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone. let_pat/GenStmtResult/FFI/derive → 7b |
+| next    | ROLE=Driver STEP=7b TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 13:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=6 — GenModuleOut decl lists)
 
 | field   | value |

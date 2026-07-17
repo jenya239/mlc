@@ -717,10 +717,9 @@ export fn gen_match_string_literal_expression_cpp(
   eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const return_cpp = match_return_cpp_type(context, match_result_type, subject)
-  const inner_body = string_match_statements_to_source(
-    string_match_statements_cpp(subject, expanded_arms, context, gen_stmts, eval_expr_cpp_fn))
   Shared.new(CppInvokedBlockWithReturn(
-    return_cpp, emit_helpers.make_invoked_block_body_from_source(inner_body)))
+    return_cpp,
+    string_match_statements_cpp(subject, expanded_arms, context, gen_stmts, eval_expr_cpp_fn)))
 end
 
 fn full_result_cpp_template(context: CodegenContext, semantic_type: Shared<Type>) -> string = do
@@ -944,14 +943,14 @@ export fn gen_match_guarded_expression_cpp(
     gen_stmts,
     (expression, eval_context, gen_stmts_fn) =>
       print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)))
+  const body_statements = [emit_helpers.make_fragment_cpp_statement(inner_body)]
   // See gen_match_guarded_expression above for why unit results skip the
   // enclosing-function-return-type-derived annotation.
   if match_visit_uses_void_lambdas(match_result_type) then
-    Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(inner_body)))
+    Shared.new(CppInvokedBlock(body_statements))
   else
     const return_cpp = match_return_cpp_type(context, match_result_type, subject)
-    Shared.new(CppInvokedBlockWithReturn(
-      return_cpp, emit_helpers.make_invoked_block_body_from_source(inner_body)))
+    Shared.new(CppInvokedBlockWithReturn(return_cpp, body_statements))
   end
 end
 
