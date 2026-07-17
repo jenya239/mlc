@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-17-codegen-cppast-handoff` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-17-editor-audit-backlog` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
+INSTRUCTIONS_REV=2026-07-17-editor-audit-backlog
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -79,7 +79,7 @@ INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | Folder back/forward history; absorb `folder_panel` WIP. Prefer `misc/editor/ux/folder_panel*`; no `compiler/`. STEP=3 Critic pending, independent of §44 |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b12 **done** (`expr.mlc` 3 exports; decl helpers in `type_gen`). STEP=8b13 next. Touches `compiler/` — Tier B + self-host every numbered STEP |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | STEP=0+3 **done** — TDD-scenario-first standing rule in `GUI_UX_TESTING.md` §"Standing discipline" applies to **every** `misc/editor/**` STEP from now; Opus review ran (`mlc-support/responses/editor_tdd_ux_20260717_114221.md`). No STEP=1/2 code left on this track itself — reframed as `EDITOR_UX_BACKLOG` #1. Only remaining STEP=4 is Critic close |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | 30 ordered atomic items, source-of-truth table in the track file itself (not duplicated in full here). Next pending = **#1 `EDITOR_DEMO_ORCHESTRATOR`** — do not skip order without a logged blocker (same rule as the §21-29 compiler backlog below). Each item opens its own `TRACK_EDITOR_<NAME>.md` + Decision→Driver→Driver→Critic cycle when picked up, gated by the Standing discipline (scenario-first, same commit) |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | 30+2 ordered atomic items, source-of-truth table in the track file itself (not duplicated in full here). 2026-07-17: user live-screenshot audit inserted `#1b EDITOR_LIVE_SOLARIZED_TEXT` + `#1c EDITOR_STALE_HELP_TEXT` right after `#1` (both confirmed **not regressions** — Solarized was always background-tint-only by design, breadcrumb nav is the intentional §38 Decision, not a missing expand/collapse). Next pending = **#1 `EDITOR_DEMO_ORCHESTRATOR`**, then `#1b`, `#1c` — do not skip order without a logged blocker (same rule as the §21-29 compiler backlog below). Each item opens its own `TRACK_EDITOR_<NAME>.md` + Decision→Driver→Driver→Critic cycle when picked up, gated by the Standing discipline (scenario-first, same commit) |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
