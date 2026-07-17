@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 05:15 (Driver TRACK_EDITOR_WORD_BOUNDARIES STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WORD_BOUNDARIES |
+| started | 2026-07-18 05:05 |
+| elapsed | ~10 min |
+| done    | Stub `ux/word_nav.mlc`; L2 red harness `ctrl_arrow_word_jump` + `ctrl_backspace_deletes_word` (+ run scripts); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_ctrl_arrow_word_jump.sh` exit 1 (`ux_fail ctrl right word end`); `run_ux_ctrl_backspace_deletes_word.sh` exit 1 (`ux_fail ctrl backspace text`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenarios red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WORD_BOUNDARIES |
+
 ### Turn 2026-07-18 05:00 (Planner PLAN_QUEUE pick-next → open #3)
 
 | field   | value |

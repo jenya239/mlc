@@ -1,0 +1,36 @@
+// TRACK_EDITOR_WORD_BOUNDARIES STEP=1 — L2: Ctrl+arrows jump word edges.
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import { editor_ux_apply_word_nav_key } from '../ux/word_nav'
+
+fn main() -> i32 = do
+  const index = line_index_from_string("hello world")
+  let mut selection = selection_collapsed(0)
+
+  selection = editor_ux_apply_word_nav_key(index, selection, "right", 0)
+  if selection_caret(selection) != 5 then
+    println("ux_fail ctrl right word end")
+    return 1
+  end
+  selection = editor_ux_apply_word_nav_key(index, selection, "right", 0)
+  if selection_caret(selection) != 11 then
+    println("ux_fail ctrl right next word end")
+    return 2
+  end
+  selection = editor_ux_apply_word_nav_key(index, selection, "left", 0)
+  if selection_caret(selection) != 6 then
+    println("ux_fail ctrl left word start")
+    return 3
+  end
+  selection = editor_ux_apply_word_nav_key(index, selection, "left", 0)
+  if selection_caret(selection) != 0 then
+    println("ux_fail ctrl left prev word start")
+    return 4
+  end
+
+  println("ux_ok ctrl_arrow_word_jump")
+  0
+end

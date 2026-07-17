@@ -1,0 +1,30 @@
+// TRACK_EDITOR_WORD_BOUNDARIES STEP=1 — L2: Ctrl+Backspace deletes prior word.
+import {
+  document_from_string,
+  document_to_string
+} from '../document/piece_table'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import { editor_ux_delete_word_backward } from '../ux/word_nav'
+
+fn main() -> i32 = do
+  let mut document = document_from_string("hello world")
+  let mut selection = selection_collapsed(11)
+  let result = editor_ux_delete_word_backward(document, selection)
+  document = result.document
+  selection = result.selection
+
+  if document_to_string(document) != "hello " then
+    println("ux_fail ctrl backspace text")
+    return 1
+  end
+  if selection_caret(selection) != 6 then
+    println("ux_fail ctrl backspace caret")
+    return 2
+  end
+
+  println("ux_ok ctrl_backspace_deletes_word")
+  0
+end
