@@ -119,7 +119,7 @@ reachable again — Meta should split later.
 | 7b3c1 | FFI binder/return → AST: add `CppStaticAutoDecl`; `gen_ffi_fn_decl_cpp` uses it + `CppReturn`/`CppCall`/`CppCast`; deleter Fragment remains | **done** (2026-07-17) |
 | 7b3c2 | FFI deleter DeclFragment → AST (needs class member fn with body) | **done** (2026-07-17) — `CppClassMemberFunctionDef` + `CppClassDeclaration` + `CppUsing`; nested-if brace indent quirk left (printer) |
 | 7b3c3 | Guarded wild/unit + literal arm builders → `CppIf`/`CppReturn` (leave ctor/record/ident) | **done** (2026-07-17) — `gen_guarded_*_arm_statements`; ctor/record/ident still Fragment via `guarded_arm_source_as_statements` |
-| 7b3c4 | Guarded ctor / record / ident-binding arm builders → AST | pending |
+| 7b3c4 | Guarded ctor / record / ident-binding arm builders → AST | **done** (2026-07-17) — full guarded arm path AST; killed Fragment bridge helpers |
 | 7b3c5 | `derive_methods_cpp` JSON DeclFragments (2) → AST | pending |
 | 8 | Delete `compiler/codegen/expr/expr.mlc` once zero callers remain; delete corresponding `render_*`/mirror functions in `cpp_emit/print.mlc` if now unreachable | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |

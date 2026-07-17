@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 18:00 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c4 — guarded ctor/record/ident AST)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3c4 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 17:40 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | `gen_guarded_{constructor,record,identifier_binding}_arm_statements`; killed Fragment bridge/`guarded_body_fragment`; `CppIf`+`CppConstDecl`+structured binding |
+| result  | `--check-only` OK; self-host before/after identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0; match_gen 1330 lines (allowlisted) |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7b3c5 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 17:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c3 — guarded wild/literal arms AST)
 
 | field   | value |

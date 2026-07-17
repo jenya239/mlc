@@ -7,7 +7,7 @@ import { SemanticExpression, SemanticStatement, SemanticMatchArm, sexpr_type } f
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
-import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain } from './match_analysis'
+import { first_arm_needs_deref, pattern_bind_names, pattern_binding_name_list, should_use_string_match_if_chain } from './match_analysis'
 import * as expression_output from './expr'
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
 import { type_is_unknown, generic_type_name_from_type, generic_type_arguments_from_type } from '../../checker/semantic_type_structure'
@@ -19,6 +19,11 @@ import {
   CppStatement,
   CppBinary,
   CppIdent,
+  CppCall,
+  CppMember,
+  CppConstDecl,
+  CppTypeName,
+  CppTypeRef,
   CppVisitArmWild,
   CppVisitArmBinding,
   CppVisitArmConstructed,
@@ -299,9 +304,6 @@ fn evaluated_expression_as_cpp(
 // value) - and the enclosing IIFE has no explicit return type, so clang requires every
 // `return` in it to deduce the same type. Evaluating the body as a discarded statement
 // before the bare `return;` keeps its side effects while forcing a uniform void shape.
-fn return_or_discard_line(use_void: bool, body_code: string) -> string =
-  if use_void then `${body_code};\nreturn;\n` else expression_output.return_line(body_code) end
-
 fn return_or_discard_statements(use_void: bool, body_expression: Shared<CppExpression>) -> [Shared<CppStatement>] =
   if use_void then
     [
@@ -312,33 +314,31 @@ fn return_or_discard_statements(use_void: bool, body_expression: Shared<CppExpre
     [emit_helpers.make_return_cpp_statement(body_expression)]
   end
 
-// Arm-body fragment guarded by an already-evaluated `when` condition string
-// (empty when the arm has no guard). Pulled out as its own function - assigning
-// an `if has_guard then <multi-statement block> else <expr> end` directly to a
-// local `const` (rather than returning it as the enclosing function's own tail
-// expression) has tripped a Ruby bootstrap backend bug that mis-infers the IIFE
-// return type from the block's nested statements; keeping both branches as
-// single expressions here sidesteps it.
-fn guarded_body_fragment(has_guard: bool, guard_code: string, use_void: bool, body_code: string) -> string =
-  if has_guard then
-    expression_output.if_brace_block(guard_code, return_or_discard_line(use_void, body_code)) + `\n`
-  else
-    return_or_discard_line(use_void, body_code)
+fn append_cpp_statements(
+  output: [Shared<CppStatement>],
+  statements: [Shared<CppStatement>]
+) -> [Shared<CppStatement>] = do
+  let mut index = 0
+  while index < statements.length() do
+    output.push(statements[index])
+    index = index + 1
   end
+  output
+end
 
-fn gen_guarded_wild_or_unit_arm_statements(
+fn guarded_arm_tail_statements(
   arm: Shared<SemanticMatchArm>,
   use_void: bool,
-  context: CodegenContext,
+  arm_context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> [Shared<CppStatement>] = do
-  const body_expression = evaluated_expression_as_cpp(arm.body, context, gen_stmts, eval_expr_fn)
+  const body_expression = evaluated_expression_as_cpp(arm.body, arm_context, gen_stmts, eval_expr_fn)
   const body_statements = return_or_discard_statements(use_void, body_expression)
   if arm.has_guard then
     [
       emit_helpers.make_if_cpp_statement(
-        evaluated_expression_as_cpp(arm.when_condition, context, gen_stmts, eval_expr_fn),
+        evaluated_expression_as_cpp(arm.when_condition, arm_context, gen_stmts, eval_expr_fn),
         emit_helpers.make_block_cpp_statement(body_statements),
         emit_helpers.make_block_cpp_statement([]))
     ]
@@ -346,6 +346,15 @@ fn gen_guarded_wild_or_unit_arm_statements(
     body_statements
   end
 end
+
+fn gen_guarded_wild_or_unit_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] =
+  guarded_arm_tail_statements(arm, use_void, context, gen_stmts, eval_expr_fn)
 
 fn gen_guarded_literal_arm_statements(
   arm: Shared<SemanticMatchArm>,
@@ -377,7 +386,7 @@ fn gen_guarded_literal_arm_statements(
   end
 end
 
-fn gen_guarded_identifier_binding_arm_fragment(
+fn gen_guarded_identifier_binding_arm_statements(
   arm: Shared<SemanticMatchArm>,
   binding_name: string,
   subject_holder_name: string,
@@ -385,19 +394,77 @@ fn gen_guarded_identifier_binding_arm_fragment(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
-) -> string = do
+) -> [Shared<CppStatement>] = do
   const binding_cpp_safe = cpp_safe(binding_name)
   const extended_context = context.add_value(binding_name)
-  const binding_statement = `auto ${binding_cpp_safe} = ${subject_holder_name};\n`
-  const body_code = eval_expr_fn(arm.body, extended_context, gen_stmts)
-  if arm.has_guard then
-    const guard_code = eval_expr_fn(arm.when_condition, extended_context, gen_stmts)
-    '{\n' + binding_statement +
-      expression_output.if_brace_block(guard_code, return_or_discard_line(use_void, body_code)) +
-      '}\n'
-  else
-    '{\n' + binding_statement + return_or_discard_line(use_void, body_code) + '}\n'
+  let mut block_statements: [Shared<CppStatement>] = []
+  block_statements.push(emit_helpers.make_auto_cpp_statement(
+    binding_cpp_safe,
+    emit_helpers.make_identifier_cpp_expression(subject_holder_name)))
+  block_statements = append_cpp_statements(
+    block_statements,
+    guarded_arm_tail_statements(arm, use_void, extended_context, gen_stmts, eval_expr_fn))
+  [emit_helpers.make_block_cpp_statement(block_statements)]
+end
+
+fn variant_holds_alternative_expression(
+  variant_type_name: string,
+  variant_access_expression: string
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent('std::holds_alternative<' + variant_type_name + '>')),
+    [Shared.new(CppIdent(variant_access_expression))]))
+
+fn variant_get_const_ref_statement(
+  variant_type_name: string,
+  binding_name: string,
+  variant_access_expression: string
+) -> Shared<CppStatement> =
+  Shared.new(CppConstDecl(
+    binding_name,
+    Shared.new(CppTypeRef(Shared.new(CppTypeName(variant_type_name)))),
+    Shared.new(CppCall(
+      Shared.new(CppIdent('std::get<' + variant_type_name + '>')),
+      [Shared.new(CppIdent(variant_access_expression))]))))
+
+fn record_field_const_auto_ref_statement(field_cpp_safe: string, variant_lower_name: string) -> Shared<CppStatement> =
+  Shared.new(CppConstDecl(
+    field_cpp_safe,
+    Shared.new(CppTypeRef(Shared.new(CppTypeName('auto')))),
+    Shared.new(CppMember(
+      emit_helpers.make_identifier_cpp_expression(variant_lower_name),
+      field_cpp_safe,
+      false))))
+
+type RecordFieldBindCppResult = RecordFieldBindCppResult {
+  field_binding_statements: [Shared<CppStatement>],
+  arm_context: CodegenContext
+}
+
+fn record_field_binding_cpp_result(
+  field_patterns: [Shared<Pattern>],
+  lower_name: string,
+  start_context: CodegenContext
+) -> RecordFieldBindCppResult = do
+  let mut field_binding_statements: [Shared<CppStatement>] = []
+  let mut arm_context = start_context
+  let mut field_index = 0
+  while field_index < field_patterns.length() do
+    match field_patterns[field_index] {
+      PatternIdent(field_name, _) => do
+        const field_cpp_safe = cpp_safe(field_name)
+        field_binding_statements.push(
+          record_field_const_auto_ref_statement(field_cpp_safe, lower_name))
+        arm_context = arm_context.add_value(field_name)
+      end,
+      _ => do end
+    }
+    field_index = field_index + 1
   end
+  RecordFieldBindCppResult {
+    field_binding_statements: field_binding_statements,
+    arm_context: arm_context
+  }
 end
 
 fn generic_variant_type_argument(context: CodegenContext, constructor_name: string) -> string =
@@ -514,7 +581,7 @@ fn non_result_ctor_type_argument(
   end
 end
 
-fn gen_guarded_constructor_arm_fragment(
+fn gen_guarded_constructor_arm_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
   sub_patterns: [Shared<Pattern>],
@@ -524,29 +591,32 @@ fn gen_guarded_constructor_arm_fragment(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
-) -> string = do
+) -> [Shared<CppStatement>] = do
   const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))
-  const binding_prefix =
-    if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
-    end
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_type_name = qualified_name + type_argument
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
-  const holds_check =
-    `std::holds_alternative<${qualified_name}${type_argument}>(${variant_access_expression})`
-  const open_block =
-    `if (${holds_check}) {\n` +
-    `const ${qualified_name}${type_argument}& ${lower_name} = std::get<${qualified_name}${type_argument}>(` +
-      variant_access_expression + ');\n' +
-    binding_prefix
-  const body_code = eval_expr_fn(arm.body, arm_context, gen_stmts)
-  const guard_code = if arm.has_guard then eval_expr_fn(arm.when_condition, arm_context, gen_stmts) else '' end
-  const inner = guarded_body_fragment(arm.has_guard, guard_code, use_void, body_code)
-  open_block + inner + '}\n'
+  let mut then_statements: [Shared<CppStatement>] = []
+  then_statements.push(
+    variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
+  if sub_patterns.length() > 0 then
+    then_statements.push(emit_helpers.make_structured_binding_cpp_statement(
+      pattern_binding_name_list(sub_patterns),
+      emit_helpers.make_identifier_cpp_expression(lower_name)))
+  end
+  then_statements = append_cpp_statements(
+    then_statements,
+    guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
+  [
+    emit_helpers.make_if_cpp_statement(
+      variant_holds_alternative_expression(variant_type_name, variant_access_expression),
+      emit_helpers.make_block_cpp_statement(then_statements),
+      emit_helpers.make_block_cpp_statement([]))
+  ]
 end
 
-fn gen_guarded_record_arm_fragment(
+fn gen_guarded_record_arm_statements(
   arm: Shared<SemanticMatchArm>,
   record_name: string,
   field_patterns: [Shared<Pattern>],
@@ -555,38 +625,26 @@ fn gen_guarded_record_arm_fragment(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
-) -> string = do
+) -> [Shared<CppStatement>] = do
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const type_argument = if list_contains(context.generic_variants, record_name) then '<auto>' else '' end
-  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
-  const holds_check =
-    `std::holds_alternative<${qualified_name}${type_argument}>(${variant_access_expression})`
-  const open_block =
-    `if (${holds_check}) {\n` +
-    `const ${qualified_name}${type_argument}& ${lower_name} = std::get<${qualified_name}${type_argument}>(` +
-      variant_access_expression + ');\n' +
-    accumulated.field_bindings
-  const body_code = eval_expr_fn(arm.body, accumulated.arm_context, gen_stmts)
-  const guard_code = if arm.has_guard then eval_expr_fn(arm.when_condition, accumulated.arm_context, gen_stmts) else '' end
-  const inner = guarded_body_fragment(arm.has_guard, guard_code, use_void, body_code)
-  open_block + inner + '}\n'
+  const variant_type_name = qualified_name + type_argument
+  const field_bindings = record_field_binding_cpp_result(field_patterns, lower_name, context)
+  let mut then_statements: [Shared<CppStatement>] = []
+  then_statements.push(
+    variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
+  then_statements = append_cpp_statements(then_statements, field_bindings.field_binding_statements)
+  then_statements = append_cpp_statements(
+    then_statements,
+    guarded_arm_tail_statements(arm, use_void, field_bindings.arm_context, gen_stmts, eval_expr_fn))
+  [
+    emit_helpers.make_if_cpp_statement(
+      variant_holds_alternative_expression(variant_type_name, variant_access_expression),
+      emit_helpers.make_block_cpp_statement(then_statements),
+      emit_helpers.make_block_cpp_statement([]))
+  ]
 end
-
-fn strip_trailing_newlines(text: string) -> string = do
-  let mut result = text
-  while result.length() > 0 && result.char_at(result.length() - 1) == "\n" do
-    result = result.substring(0, result.length() - 1)
-  end
-  result
-end
-
-fn guarded_arm_source_as_statements(arm_source: string) -> [Shared<CppStatement>] =
-  if arm_source.length() == 0 then
-    []
-  else
-    [emit_helpers.make_fragment_cpp_statement(strip_trailing_newlines(arm_source))]
-  end
 
 fn gen_guarded_arm_statements(
   arm: Shared<SemanticMatchArm>,
@@ -600,11 +658,9 @@ fn gen_guarded_arm_statements(
 ) -> [Shared<CppStatement>] =
   match arm.pattern {
     PatternCtor(name, sub_patterns, _) =>
-      guarded_arm_source_as_statements(
-        gen_guarded_constructor_arm_fragment(arm, name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)),
+      gen_guarded_constructor_arm_statements(arm, name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn),
     PatternRecord(name, field_patterns, _) =>
-      guarded_arm_source_as_statements(
-        gen_guarded_record_arm_fragment(arm, name, field_patterns, variant_access_expression, use_void, context, gen_stmts, eval_expr_fn)),
+      gen_guarded_record_arm_statements(arm, name, field_patterns, variant_access_expression, use_void, context, gen_stmts, eval_expr_fn),
     PatternWild(_) =>
       gen_guarded_wild_or_unit_arm_statements(arm, use_void, context, gen_stmts, eval_expr_fn),
     PatternUnit(_) =>
@@ -618,8 +674,7 @@ fn gen_guarded_arm_statements(
     PatternStringLit(_, _) =>
       gen_guarded_literal_arm_statements(arm, variant_access_expression, use_void, context, gen_stmts, eval_expr_fn),
     PatternIdent(binding_name, _) =>
-      guarded_arm_source_as_statements(
-        gen_guarded_identifier_binding_arm_fragment(arm, binding_name, subject_holder_name, use_void, context, gen_stmts, eval_expr_fn)),
+      gen_guarded_identifier_binding_arm_statements(arm, binding_name, subject_holder_name, use_void, context, gen_stmts, eval_expr_fn),
     PatternTuple(_, _) =>
       [],
     PatternArray(_, _, _) =>
