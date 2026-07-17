@@ -26,7 +26,7 @@ import {
 } from '../cpp_ir/cpp_ast'
 import {print_statement} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
-import { CodegenContext, GenStmtResult, mutate_context_from_statement } from './context'
+import { CodegenContext, mutate_context_from_statement } from './context'
 import { cpp_safe } from './cpp_naming'
 import { sem_type_to_cpp } from './decl/type_gen'
 import * as semantic_type_structure from '../checker/semantic_type_structure'

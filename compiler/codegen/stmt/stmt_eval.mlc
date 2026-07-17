@@ -20,13 +20,14 @@ import {
   TU8, TUsize, TChar, TShared, TPair, TTuple, TFn, TAssoc, TUnknown
 } from '../../checker/registry'
 import { CodegenContext, GenStmtsResult, GenStmtsWithContext, GenStmtResult,
-         mutate_context_from_statement } from '../context'
+         mutate_context_from_statement, stmt_result, stmt_result_from_source } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { generate_conditional_else_with_empty_array_coercion, question_from_converter_name } from '../expr/expression_support'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as semantic_type_structure from '../../checker/semantic_type_structure'
 import * as expression_output from '../expr/expr'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 
 // --- Try unwrap helper -------------------------------------------------------
 
@@ -574,13 +575,12 @@ fn gen_let_stmt_result_default(
   try_counter: i32,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenStmtResult =
-  GenStmtResult {
-    output: expression_output.auto_binding_statement(
+  stmt_result_from_source(
+    expression_output.auto_binding_statement(
       cpp_safe(name),
       gen_let_value_code(value, value_type, context, gen_expr_fn)),
-    next_try: try_counter,
-    codegen_context: context
-  }
+    try_counter,
+    context)
 
 fn gen_let_stmt_result(
   name: string,
@@ -592,16 +592,15 @@ fn gen_let_stmt_result(
 ) -> GenStmtResult =
   match value {
     SemanticExpressionQuestion(inner_expression, _, _) =>
-      GenStmtResult {
-        output: eval_try_unwrap(
+      stmt_result_from_source(
+        eval_try_unwrap(
           inner_expression,
           context,
           `__try_${try_counter.to_string()}`,
           expression_output.let_from_try_ok_field0(cpp_safe(name), `__try_${try_counter.to_string()}`),
           gen_expr_fn),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
+        try_counter + 1,
+        context),
     SemanticExpressionInt(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
     SemanticExpressionStr(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
     SemanticExpressionFloat(_, _, _) => gen_let_stmt_result_default(name, value, value_type, context, try_counter, gen_expr_fn),
@@ -638,11 +637,10 @@ fn gen_expr_stmt_result_default(
   try_counter: i32,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenStmtResult =
-  GenStmtResult {
-    output: eval_stmt_expr(expression, context, gen_expr_fn),
-    next_try: try_counter,
-    codegen_context: context
-  }
+  stmt_result_from_source(
+    eval_stmt_expr(expression, context, gen_expr_fn),
+    try_counter,
+    context)
 
 fn gen_expr_stmt_result(
   expression: Shared<SemanticExpression>,
@@ -652,16 +650,15 @@ fn gen_expr_stmt_result(
 ) -> GenStmtResult =
   match expression {
     SemanticExpressionQuestion(inner_expression, _, _) =>
-      GenStmtResult {
-        output: eval_try_unwrap(
+      stmt_result_from_source(
+        eval_try_unwrap(
           inner_expression,
           context,
           `__try_${try_counter.to_string()}`,
           expression_output.discard_try_ok_field0_statement(`__try_${try_counter.to_string()}`),
           gen_expr_fn),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
+        try_counter + 1,
+        context),
     SemanticExpressionInt(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
     SemanticExpressionStr(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
     SemanticExpressionFloat(_, _, _) => gen_expr_stmt_result_default(expression, context, try_counter, gen_expr_fn),
@@ -698,11 +695,10 @@ fn gen_return_stmt_result_default(
   try_counter: i32,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenStmtResult =
-  GenStmtResult {
-    output: expression_output.return_line(gen_expr_fn(expression, context)),
-    next_try: try_counter,
-    codegen_context: context
-  }
+  stmt_result_from_source(
+    expression_output.return_line(gen_expr_fn(expression, context)),
+    try_counter,
+    context)
 
 fn gen_return_stmt_result(
   expression: Shared<SemanticExpression>,
@@ -712,16 +708,15 @@ fn gen_return_stmt_result(
 ) -> GenStmtResult =
   match expression {
     SemanticExpressionQuestion(inner_expression, _, _) =>
-      GenStmtResult {
-        output: eval_try_unwrap(
+      stmt_result_from_source(
+        eval_try_unwrap(
           inner_expression,
           context,
           `__try_ret_${try_counter.to_string()}`,
           expression_output.return_try_ok_field0_statement(`__try_ret_${try_counter.to_string()}`),
           gen_expr_fn),
-        next_try: try_counter + 1,
-        codegen_context: context
-      },
+        try_counter + 1,
+        context),
     SemanticExpressionInt(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
     SemanticExpressionStr(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
     SemanticExpressionFloat(_, _, _) => gen_return_stmt_result_default(expression, context, try_counter, gen_expr_fn),
@@ -758,24 +753,24 @@ export fn eval_stmt_with_try(statement: Shared<SemanticStatement>, context: Code
       gen_let_stmt_result(name, value, value_type, context, try_counter, gen_expr_fn),
     SemanticStatementLetPattern(pattern, _, value, value_type, has_else, else_body, _) => do
       const pattern_parsed = gen_let_pattern_statement(pattern, value, value_type, has_else, else_body, context, gen_expr_fn)
-      GenStmtResult {
-        output: pattern_parsed.output,
-        next_try: try_counter,
-        codegen_context: pattern_parsed.codegen_context
-      }
+      stmt_result_from_source(
+        pattern_parsed.output,
+        try_counter,
+        pattern_parsed.codegen_context)
     end,
     SemanticStatementLetConst(name, value, binding_semantic_type, _) =>
-      GenStmtResult {
-        output: expression_output.constexpr_auto_binding_statement(
+      stmt_result_from_source(
+        expression_output.constexpr_auto_binding_statement(
           cpp_safe(name),
           constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)),
-        next_try: try_counter,
-        codegen_context: context
-      },
+        try_counter,
+        context),
     SemanticStatementExpr(expression, _) =>
       gen_expr_stmt_result(expression, context, try_counter, gen_expr_fn),
-    SemanticStatementBreak(_)    => GenStmtResult { output: expression_output.break_line(), next_try: try_counter, codegen_context: context },
-    SemanticStatementContinue(_) => GenStmtResult { output: expression_output.continue_line(), next_try: try_counter, codegen_context: context },
+    SemanticStatementBreak(_) =>
+      stmt_result(emit_helpers.make_break_cpp_statement(), try_counter, context),
+    SemanticStatementContinue(_) =>
+      stmt_result(emit_helpers.make_continue_cpp_statement(), try_counter, context),
     SemanticStatementReturn(expression, _) =>
       gen_return_stmt_result(expression, context, try_counter, gen_expr_fn)
   }

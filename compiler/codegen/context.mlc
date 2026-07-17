@@ -63,7 +63,21 @@ end
 
 export type GenStmtsResult = GenStmtsResult { parts: [Shared<CppStatement>], next_try: i32 }
 export type GenStmtsWithContext = GenStmtsWithContext { statements_parsed: GenStmtsResult, codegen_context: CodegenContext }
-export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32, codegen_context: CodegenContext }
+export type GenStmtResult  = GenStmtResult  { statement: Shared<CppStatement>, next_try: i32, codegen_context: CodegenContext }
+
+export fn stmt_result(
+  statement: Shared<CppStatement>,
+  next_try: i32,
+  codegen_context: CodegenContext
+) -> GenStmtResult =
+  GenStmtResult { statement: statement, next_try: next_try, codegen_context: codegen_context }
+
+export fn stmt_result_from_source(
+  source: string,
+  next_try: i32,
+  codegen_context: CodegenContext
+) -> GenStmtResult =
+  stmt_result(Shared.new(CppStatementFragment(source)), next_try, codegen_context)
 
 fn gen_stmts_part_to_source(statement: Shared<CppStatement>) -> string =
   match statement {
@@ -74,7 +88,7 @@ fn gen_stmts_part_to_source(statement: Shared<CppStatement>) -> string =
 extend GenStmtsResult {
   fn append_stmt(self, statement_parsed: GenStmtResult) -> GenStmtsResult = do
     let parts = self.parts
-    parts.push(Shared.new(CppStatementFragment(statement_parsed.output)))
+    parts.push(statement_parsed.statement)
     GenStmtsResult { parts: parts, next_try: statement_parsed.next_try }
   end
 

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 15:45 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3b — GenStmtResult.statement)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3b |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 15:25 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | `GenStmtResult.statement: Shared<CppStatement>`; `append_stmt` pushes directly (no Fragment wrap); string path wraps Fragment at construction; break/continue native AST; helpers in `context.mlc` |
+| result  | `--check-only` OK; self-host only `context`/`stmt_eval`; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0; stmt_eval 793 lines |
+| issues  | CaptureAnalyzer + out left alone. Legacy string builders still Fragment at site |
+| next    | ROLE=Driver STEP=7b3c TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 15:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3a — CppLineDirective)
 
 | field   | value |
