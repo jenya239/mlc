@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:55 (Critic TRACK_EDITOR_DEMO_ORCHESTRATOR critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_DEMO_ORCHESTRATOR |
+| started | 2026-07-18 01:50 |
+| elapsed | ~10 min |
+| done    | Critic OK: gates newline/tab/tree/wheel/copy_paste + `demo_live_fs_compile_ok`; anti-false-done `0121c330`…`8be56a7c`; mutation clusters via wrappers; archived → `docs/archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md`; PLAN/UX_BACKLOG/#1 done; reopen none (draw residual honest) |
+| result  | Critic OK; track archived |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 01:50 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=4)
 
 | field   | value |
