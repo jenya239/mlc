@@ -23,11 +23,20 @@ review's §4 rationale) — Planner picks the next **pending** item in order,
 does not jump ahead unless the current one is blocked (same rule as the
 compiler backlog).
 
+**Priority rule (2026-07-17, user directive — see `../EDITOR.md` §Product
+target):** feature ceiling is Sublime Text, not VS Code/IDE. Any item that
+trades stability (crash/data-loss safety) or speed (startup, frame latency,
+large-file responsiveness) against feature breadth loses — pull it forward
+out of strict order; log the jump in SESSION `done` same as a blocker-skip.
+`#1d` below is the first such pull-forward (large-file per-frame full
+restringify is a direct speed regression, not a nice-to-have).
+
 | # | Track name | Scope (one line) | Gate scenario | Size | Status |
 |---|-----------|-------------------|----------------|------|--------|
 | 1 | `EDITOR_DEMO_ORCHESTRATOR` | Replace `demo_live.main()` inline command/edit/tree-hit logic with calls to existing tested `ux/edit_apply`/`ux/scroll`/`ux/tab_strip`/`ux/tree_hit` — stop duplicating a second untested implementation | existing gates (`ux_scenarios`+`tests`) + `demo_live_fs_compile` unchanged | L | pending |
 | 1b | `EDITOR_LIVE_SOLARIZED_TEXT` | Found 2026-07-17 (screenshot audit): `demo_live.mlc:552` uses `theme_editor_dark()` for chrome, `theme_solarized_light()` only tints dimmed highlight-background rectangles (`rgb*0.35`, `demo_live.mlc:1220`) — glyphs stay default/white, never colored by tag/theme. The stated reason (`ui/theme.mlc:122` comment: "Dark shell until TextRenderer has a color uniform, glyph shader is white") is **stale** — `static_text_draw_lines_colored` already supports real per-line `red/green/blue/alpha` (fixed same-day, batching bug). Wire real per-tag glyph color through `StaticTextLine` instead of background-tint rectangles; revisit whether chrome should render actual Solarized Light rather than the dark shell | new L2 scenario, e.g. `syntax_glyph_color_matches_theme` (draw report color assert, not just highlight-rect presence) | M | pending |
 | 1c | `EDITOR_STALE_HELP_TEXT` | Found 2026-07-17: `demo_live.mlc` `sample_readme_text()` (shown in-app as `editor_live_README.md` tab) says "Tree: click folder to expand/collapse; click file to open" — but `demo_live` never calls `file_tree_expand`/`file_tree_collapse` (§38 `TRACK_EDITOR_FOLDER_BROWSER` Decision replaced expand-in-tree with breadcrumbs, intentionally, not a bug). Fix the in-app copy to describe actual breadcrumb+back/forward behavior | n/a — copy-only fix, no scenario required unless bundled with behavior change | S | pending |
+| 1d | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` (pulled forward from #22, 2026-07-17 priority rule above) | Remove per-frame full-buffer `document_to_string` in demo — direct frame-latency regression on large files, Sublime-parity blocker | `large_file_no_full_stringify` (L2) | M | pending |
 | 2 | `EDITOR_KEYBOARD_NAV_WIRE` | Wire arrow keys/Home/End/PageUp/PageDown (model exists in `document/navigation.mlc`, not called from demo) | `arrow_keys_move_caret`, `home_end_caret` | M | pending |
 | 3 | `EDITOR_WORD_BOUNDARIES` | Word-boundary helper in `document/`; Ctrl+Left/Right, Ctrl+Backspace/Delete | `ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word` | M | pending |
 | 4 | `EDITOR_MOUSE_WORD_LINE_SELECT` | Double-click selects word, triple-click selects line, click timing via `UxDriver` | `double_click_selects_word`, `triple_click_selects_line` | M | pending |
@@ -48,7 +57,7 @@ compiler backlog).
 | 19 | `EDITOR_COMMENT_TOGGLE` | Ctrl+/ line-comment toggle (by language from status bar) | `toggle_line_comment` | S | pending |
 | 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | pending |
 | 21 | `EDITOR_DIRTY_CLOSE_L1` | L1 scenario for dirty-close overlay discard/cancel click (currently L0-only) | `dirty_close_overlay_click` | S | pending |
-| 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | Remove per-frame full-buffer `document_to_string` in demo | `large_file_no_full_stringify` (L2) | M | pending |
+| 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | **superseded by `#1d` above (2026-07-17 pull-forward)** — do not do twice | — | — | superseded |
 | 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | pending |
 | 24 | `EDITOR_TRAILING_WS_VIZ` | Visualize trailing whitespace | `trailing_ws_visualized` (L2) | S | pending |
 | 25 | `EDITOR_CONTEXT_MENU` | Right-click → cut/copy/paste menu | `context_menu_opens` | M | pending |
@@ -70,8 +79,11 @@ the live app despite the model already supporting it.
 - No second scene/widget framework — chrome stays on `shell_panels`/
   `EditorAppState` (frozen `GUI_ARCHITECTURE.md` §"Live editor chrome vs
   Scene"); do not fold tabs/tree into `SceneNode`.
-- Not chasing 100% VS Code parity — multi-cursor (#23), block-selection,
-  minimap, inline widgets, LSP are a separate later queue, do not block #1-22.
+- Not chasing 100% VS Code parity — ceiling is **Sublime Text** (2026-07-17
+  user directive, `../EDITOR.md` §Product target); multi-cursor (#23),
+  block-selection, minimap, inline widgets, LSP/debugger are a separate
+  later queue, do not block #1-22. Where feature breadth and
+  stability/speed conflict, stability/speed wins (priority rule above).
 - No accessibility tree before a real a11y story exists for GL-rendered
   text (`SemanticNode` stays a stub, frozen non-goal). RTL/bidi: non-goal.
   IME: non-goal v1 (ABI only exposes committed UTF-8, no preedit without a

@@ -14,6 +14,14 @@ general-purpose widget toolkit that later hosts an editor. The **same**
 runtime must be able to ship a file manager, image viewer, or music player
 (domain modules + scene kinds), without a second framework. See
 [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) §Product surfaces.
+
+**Product target (2026-07-17, user directive):** feature set comparable to
+**Sublime Text** (fast open/edit/save/find on large files, tabs, multi-file
+project view, syntax highlight, goto-line, multi-cursor) — **not** VS
+Code/LSP/IDE parity (no debugger, no language server, no extension host).
+When a backlog item trades feature breadth against startup time, frame
+latency, or crash/data-loss safety, **stability and speed win** — see
+[TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) priority rule.
 ## Placement decision (frozen)
 
 **Priority (2026-07-13):** PLAN §33 head of queue — ahead of GUI Phase B–D.
