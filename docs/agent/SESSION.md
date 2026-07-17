@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 17:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c3 — guarded wild/literal arms AST)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3c3 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 17:05 |
+| elapsed | ~30 min (rebuild + Tier B) |
+| done    | `gen_guarded_wild_or_unit_arm_statements` / `gen_guarded_literal_arm_statements` → `CppIf`/`CppReturn`; `gen_guarded_arm_statements`; ctor/record/ident still Fragment bridge |
+| result  | `--check-only` OK; self-host before/after identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0; match_gen 1275 lines (allowlisted) |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7b3c4 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 16:45 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c2 — FFI deleter AST)
 
 | field   | value |
