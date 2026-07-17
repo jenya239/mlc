@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 02:00 (Planner PLAN_QUEUE pick-next → open #1b)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 01:55 |
+| elapsed | ~5 min |
+| done    | Opened §46 #1b: `TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md` STEP=0 Decision frozen (glyph rgba via StaticTextLine; drop syntax bg tint; Solarized Light chrome; L2 scenario gate); UX_BACKLOG #1b → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_LIVE_SOLARIZED_TEXT |
+
 ### Turn 2026-07-18 01:55 (Critic TRACK_EDITOR_DEMO_ORCHESTRATOR critique-audit)
 
 | field   | value |
