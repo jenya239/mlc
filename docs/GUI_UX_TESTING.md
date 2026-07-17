@@ -168,3 +168,44 @@ Later: clipboard expects after P2 GLFW clipboard.
 TRACK_EDITOR_MVP keeps product steps. This track owns **harness + scenarios**.
 Product agents add a scenario when fixing L1–L9 or shipping STEP≥21 UX.
 Do not mark UX «done» on unit-only green.
+
+## Standing discipline (all `misc/editor/**` tracks, since 2026-07-17)
+
+Frozen by user request 2026-07-17 — applies to every future editor TRACK,
+not just this one. See [PLAN.md](PLAN.md) §45 for the first concrete
+Clean-Architecture debt item (`demo_live.mlc` decomposition).
+
+1. **TDD, scenario-first.** A Driver STEP that changes editor behavior
+   visible to the user (not pure refactor) must add or extend one of
+   `tests/*_unit.mlc` (L0) or `ux_scenarios/*.mlc` (L1, prefer this for
+   anything input/behavior — see pyramid above) **in the same commit** as
+   the implementation, and the STEP's `done` in SESSION.md must name the
+   scenario. Prefer writing the scenario/assert first so it fails, then
+   make it pass — same spirit as `run_tests` in `compiler/`. A STEP without
+   a scenario/unit reference in `done` is not verified UX, only a unit/model
+   claim — Critic must reject it per the anti-false-done rule in
+   [agent/CONTINUITY.md](agent/CONTINUITY.md).
+2. **Clean Architecture — no growing god-files.** `misc/editor/demo_live.mlc`
+   is the one sanctioned integration point (live GLFW wiring) but its
+   `main()` must stay an orchestrator that calls named phase functions
+   (`*_input_phase`, `*_layout_phase`, `*_draw_phase`, …), not accumulate
+   inline logic. Budget: no single `fn` body in `misc/editor/**` should
+   exceed ~150 lines; a module file exceeding ~500 lines is a signal to
+   split by concern (mirrors existing `document/`, `layout/`, `ui/`,
+   `workspace/`, `ux/` granularity — each file there is one concern, under
+   10 KB). Exceeding budget is not itself a hard-stop, but the next Planner
+   turn must open/extend a decomposition track rather than let it grow
+   further.
+3. **Clean Code.** Full-word identifiers (repo-wide rule, `no-abbreviations`)
+   applies here as everywhere. One function = one responsibility; extract
+   before adding a third concern to an existing function rather than
+   growing it. Prefer pure functions over `EditorAppState`-mutating helpers
+   where the existing module pattern already does (e.g. `document/*.mlc`
+   returns new records, does not mutate in place).
+4. **UX completeness backlog.** "Million small details" (multi-cursor,
+   word/line select gestures, drag & drop, IME, find/replace, session
+   restore, crash-safety, encoding, …) are tracked as an explicit backlog,
+   not folklore — see `docs/agent/TRACK_EDITOR_UX_BACKLOG.md` once opened by
+   Planner (source: `mlc-support/responses/editor_tdd_ux_*.md` review) and
+   `PLAN.md` §45+ queue. Do not hand-wave "UX polish" as one track — split
+   into atomic, independently-gated items like §36-43 already do.
