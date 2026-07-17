@@ -593,8 +593,9 @@ fn string_match_return_block_string(
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> Shared<CppStatement> =
   emit_helpers.make_block_cpp_statement([
-    emit_helpers.make_fragment_cpp_statement(
-      expression_output.return_line(eval_expr_fn(arm.body, context, gen_stmts)))])
+    emit_helpers.make_return_cpp_statement(
+      emit_helpers.make_identifier_cpp_expression(
+        eval_expr_fn(arm.body, context, gen_stmts)))])
 
 fn string_match_arm_else_branch(
   arms: [Shared<SemanticMatchArm>],
@@ -661,8 +662,10 @@ fn string_match_statements_string(
 ) -> [Shared<CppStatement>] = do
   let statements: [Shared<CppStatement>] = []
   statements.push(
-    emit_helpers.make_fragment_cpp_statement(
-      `auto __match_subject = ${eval_expr_fn(subject, context, gen_stmts)};\n`))
+    emit_helpers.make_auto_cpp_statement(
+      '__match_subject',
+      emit_helpers.make_identifier_cpp_expression(
+        eval_expr_fn(subject, context, gen_stmts))))
   statements.push(
     string_match_arm_else_branch(
       expanded_arms,
@@ -886,6 +889,52 @@ export fn match_expression_return_cpp_type(
   end
 end
 
+fn strip_trailing_newlines(text: string) -> string = do
+  let mut result = text
+  while result.length() > 0 && result.char_at(result.length() - 1) == "\n" do
+    result = result.substring(0, result.length() - 1)
+  end
+  result
+end
+
+fn gen_match_guarded_body_from_subject_expression(
+  subject_expression: Shared<CppExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  match_result_type: Shared<Type>,
+  subject: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const needs_dereference =
+    if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
+  const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
+  const use_void = match_visit_uses_void_lambdas(match_result_type)
+  let statements: [Shared<CppStatement>] = []
+  statements.push(emit_helpers.make_auto_cpp_statement('__match_subject', subject_expression))
+  let mut arm_index = 0
+  while arm_index < expanded_arms.length() do
+    const arm_source = gen_guarded_arm_fragment(
+      expanded_arms[arm_index],
+      variant_access,
+      '__match_subject',
+      subject,
+      use_void,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+    if arm_source.length() > 0 then
+      statements.push(
+        emit_helpers.make_fragment_cpp_statement(strip_trailing_newlines(arm_source)))
+    end
+    arm_index = arm_index + 1
+  end
+  statements.push(
+    emit_helpers.make_expression_cpp_statement(
+      emit_helpers.make_identifier_cpp_expression('std::abort()')))
+  statements
+end
+
 export fn gen_match_guarded_body(
   subject: Shared<SemanticExpression>,
   expanded_arms: [Shared<SemanticMatchArm>],
@@ -893,17 +942,33 @@ export fn gen_match_guarded_body(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
-) -> string = do
-  const subject_code = eval_expr_fn(subject, context, gen_stmts)
-  const needs_dereference =
-    if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
-  const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
-  const use_void = match_visit_uses_void_lambdas(match_result_type)
-  const fragment_lines =
-    expanded_arms.map(arm =>
-      gen_guarded_arm_fragment(arm, variant_access, '__match_subject', subject, use_void, context, gen_stmts, eval_expr_fn))
-  `auto __match_subject = ${subject_code};\n` + fragment_lines.join('') + 'std::abort();\n'
-end
+) -> [Shared<CppStatement>] =
+  gen_match_guarded_body_from_subject_expression(
+    emit_helpers.make_identifier_cpp_expression(eval_expr_fn(subject, context, gen_stmts)),
+    expanded_arms,
+    match_result_type,
+    subject,
+    context,
+    gen_stmts,
+    eval_expr_fn)
+
+export fn gen_match_guarded_body_cpp(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  match_result_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> [Shared<CppStatement>] =
+  gen_match_guarded_body_from_subject_expression(
+    eval_expr_cpp_fn(subject, context, gen_stmts),
+    expanded_arms,
+    match_result_type,
+    subject,
+    context,
+    gen_stmts,
+    (expression, eval_context, gen_stmts_fn) =>
+      print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)))
 
 fn gen_match_guarded_expression(
   subject: Shared<SemanticExpression>,
@@ -913,8 +978,8 @@ fn gen_match_guarded_expression(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
-  const inner_body =
-    gen_match_guarded_body(subject, expanded_arms, match_result_type, context, gen_stmts, eval_expr_fn)
+  const inner_body = string_match_statements_to_source(
+    gen_match_guarded_body(subject, expanded_arms, match_result_type, context, gen_stmts, eval_expr_fn))
   // A match with unit result type is used as a statement (arm values discarded);
   // its own type, not the enclosing function's return type, decides the IIFE
   // return type. Omit the explicit annotation entirely and let the (identical,
@@ -935,15 +1000,13 @@ export fn gen_match_guarded_expression_cpp(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
-  const inner_body = gen_match_guarded_body(
+  const body_statements = gen_match_guarded_body_cpp(
     subject,
     expanded_arms,
     match_result_type,
     context,
     gen_stmts,
-    (expression, eval_context, gen_stmts_fn) =>
-      print_expr(eval_expr_cpp_fn(expression, eval_context, gen_stmts_fn)))
-  const body_statements = [emit_helpers.make_fragment_cpp_statement(inner_body)]
+    eval_expr_cpp_fn)
   // See gen_match_guarded_expression above for why unit results skip the
   // enclosing-function-return-type-derived annotation.
   if match_visit_uses_void_lambdas(match_result_type) then

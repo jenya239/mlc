@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 14:55 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b2 — guarded-match body statements)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b2 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 14:36 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | `gen_match_guarded_body` → `[Shared<CppStatement>]`; `gen_match_guarded_body_cpp`; killed outer Fragment in expression_cpp/default_block; string_match subject/return off Fragment. Per-arm guarded builders still Fragment |
+| result  | `--check-only` OK; self-host emission broad (~101 TUs — match abort/join); `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone. match_gen 1215 lines (allowlisted) |
+| next    | ROLE=Driver STEP=7b3 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 14:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b1 — CppStatementSequence + let_pat)
 
 | field   | value |

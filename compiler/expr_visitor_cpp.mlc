@@ -573,15 +573,13 @@ fn gen_match_default_block_cpp(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const return_cpp = match_return_cpp_type(context, match_semantic_type, subject)
-  const inner_body = match_codegen.gen_match_guarded_body(
+  const body_statements = match_codegen.gen_match_guarded_body_cpp(
     subject,
     expanded_arms,
     match_semantic_type,
     context,
     gen_stmts,
-    (expression, eval_context, gen_stmts_fn) =>
-      print_expr(eval_expr_cpp(expression, eval_context, gen_stmts_fn)))
-  const body_statements = [emit_helpers.make_fragment_cpp_statement(inner_body)]
+    eval_expr_cpp)
   if return_cpp.length() > 0 then
     return Shared.new(CppInvokedBlockWithReturn(return_cpp, body_statements))
   end
