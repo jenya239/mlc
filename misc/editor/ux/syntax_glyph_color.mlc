@@ -1,0 +1,45 @@
+// TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=1 — glyph color contract (stub = white like demo_live push_line).
+// STEP=2 wires theme_rgb_for_tag into rgba; scenario then goes green.
+import { Theme, ThemeRgb, theme_rgb_for_tag } from '../ui/theme'
+import { StaticTextLine } from '../ui/static_text'
+
+// Current live path: glyphs stay white. STEP=2 replaces 1.0 channels with rgb.*.
+export fn editor_ux_syntax_glyph_line(
+  theme: Theme,
+  tag: string,
+  text: string,
+  pixel_size: i32,
+  pen_x: i32,
+  pen_y: i32
+) -> StaticTextLine = do
+  const rgb = theme_rgb_for_tag(theme, tag)
+  // Force-touch so STEP=2 contract type-checks; discard until wiring.
+  if rgb.red < -1.0 then
+    return StaticTextLine {
+      text: text,
+      pixel_size: pixel_size,
+      pen_x: pen_x,
+      pen_y: pen_y,
+      red: rgb.red,
+      green: rgb.green,
+      blue: rgb.blue,
+      alpha: 1.0
+    }
+  end
+  StaticTextLine {
+    text: text,
+    pixel_size: pixel_size,
+    pen_x: pen_x,
+    pen_y: pen_y,
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 0.0
+  }
+end
+
+export fn editor_ux_syntax_glyph_expected_rgb(
+  theme: Theme,
+  tag: string
+) -> ThemeRgb =
+  theme_rgb_for_tag(theme, tag)

@@ -4,13 +4,19 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1b**.
 Found 2026-07-17 screenshot audit (not a regression from #1).
 Evidence note in backlog row + stale comment `ui/theme.mlc:122`.
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L2 scenario `syntax_glyph_color_matches_theme` (draw-report /
-color assert on glyph path, not only highlight-rect presence) — scenario first
-per Standing discipline; same commit as minimal failing harness if needed.
+**STEP=2** — Wire glyph rgba + remove syntax bg tint; Solarized Light chrome;
+fix stale theme comment; green `syntax_glyph_color_matches_theme` +
+`demo_live_fs_compile_ok`.
+
+### STEP=1 done (2026-07-18)
+
+- L2 scenario `syntax_glyph_color_matches_theme` + `scripts/run_ux_syntax_glyph_color.sh`
+- Stub `editor_ux_syntax_glyph_line` (white, like `push_line`) → scenario **red**
+  (`ux_fail glyph red for keyword`) until STEP=2
 
 ### STEP=0 done (2026-07-18)
 
@@ -40,18 +46,18 @@ per Standing discipline; same commit as minimal failing harness if needed.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
-| 1 | L2 scenario first (`syntax_glyph_color_matches_theme`) | scenario fails or harness ready |
+| 1 | L2 scenario first (`syntax_glyph_color_matches_theme`) | **done** (red harness) |
 | 2 | Wire glyph rgba + remove syntax bg tint; fix stale theme comment; Solarized Light chrome | scenario + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
+**STEP=1** — **done**
 1. Add `ux_scenarios/syntax_glyph_color_matches_theme.mlc` + `scripts/run_ux_syntax_glyph_color.sh` asserting draw-report / StaticTextLine colors match theme tags (L2).
 2. Prefer red scenario before STEP=2 wiring.
 
 **STEP=2**
-1. `demo_live` editor draw: set `StaticTextLine` colors from tags/theme; drop syntax bg tint rects.
+1. `editor_ux_syntax_glyph_line` → theme rgba; `demo_live` editor draw: set `StaticTextLine` colors from tags/theme; drop syntax bg tint rects.
 2. `theme = theme_solarized_light()`; scrub stale white-glyph comment.
 3. Gates: scenario ok + `demo_live_fs_compile_ok`.
 

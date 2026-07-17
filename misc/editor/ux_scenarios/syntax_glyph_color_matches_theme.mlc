@@ -1,0 +1,71 @@
+// TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=1 — L2: StaticTextLine glyph rgba must match theme tags.
+import { theme_solarized_light } from '../ui/theme'
+import { highlight_mlc } from '../syntax/highlighter'
+import {
+  editor_ux_syntax_glyph_line,
+  editor_ux_syntax_glyph_expected_rgb
+} from '../ux/syntax_glyph_color'
+
+fn near(actual: f64, expected: f64) -> bool = do
+  const delta = actual - expected
+  if delta < 0.0 then
+    return 0.0 - delta < 0.002
+  end
+  delta < 0.002
+end
+
+fn assert_glyph_matches_tag(
+  tag: string,
+  text: string,
+  theme_tag: string
+) -> i32 = do
+  const theme = theme_solarized_light()
+  const line = editor_ux_syntax_glyph_line(theme, theme_tag, text, 14, 0, 0)
+  const expected = editor_ux_syntax_glyph_expected_rgb(theme, theme_tag)
+  if !near(line.red, expected.red) then
+    println("ux_fail glyph red for " + tag)
+    return 1
+  end
+  if !near(line.green, expected.green) then
+    println("ux_fail glyph green for " + tag)
+    return 2
+  end
+  if !near(line.blue, expected.blue) then
+    println("ux_fail glyph blue for " + tag)
+    return 3
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const source = "fn\n//c\nlet \"x\""
+  const spans = highlight_mlc(source)
+  if spans.length() < 4 then
+    println("ux_fail expected highlight spans")
+    return 10
+  end
+
+  // keyword "fn"
+  let mut status = assert_glyph_matches_tag("keyword", "fn", "keyword")
+  if status != 0 then
+    return status
+  end
+  // comment
+  status = assert_glyph_matches_tag("comment", "//c", "comment")
+  if status != 0 then
+    return status
+  end
+  // string
+  status = assert_glyph_matches_tag("string", "\"x\"", "string")
+  if status != 0 then
+    return status
+  end
+  // plain / unknown tag → theme text
+  status = assert_glyph_matches_tag("ident", "main", "ident")
+  if status != 0 then
+    return status
+  end
+
+  println("ux_ok syntax_glyph_color_matches_theme")
+  0
+end
