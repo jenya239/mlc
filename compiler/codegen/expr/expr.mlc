@@ -118,14 +118,8 @@ export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_nam
 export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
   if needs_dereference then `(*${expression_code})` else expression_code end
 
-export fn make_shared_call(element_type: string, argument_code: string) -> string =
-  `std::make_shared<${element_type}>(${argument_code})`
-
 export fn runtime_to_string_call(expression_code: string) -> string =
   `mlc::to_string(${expression_code})`
-
-export fn empty_map_initializer() -> string =
-  '{}'
 
 export fn append_trailing_expression_statement(statements_code: string, expression_code: string) -> string =
   `${statements_code}${expression_code};\n`
@@ -164,12 +158,6 @@ export fn match_arm_constructed_value_generic_void(
   body_expression_code: string
 ) -> string =
   `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
-
-export fn dot_member_access(receiver_code: string, member_code: string) -> string =
-  `${receiver_code}.${member_code}`
-
-export fn comma_separated_pair(first_code: string, second_code: string) -> string =
-  `${first_code}, ${second_code}`
 
 export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
   if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end

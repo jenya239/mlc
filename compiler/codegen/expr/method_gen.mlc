@@ -25,6 +25,18 @@ import {
   gen_method_weak_upgrade_cpp
 } from './weak_method_gen'
 
+fn make_shared_call(element_type: string, argument_code: string) -> string =
+  `std::make_shared<${element_type}>(${argument_code})`
+
+fn empty_map_initializer() -> string =
+  '{}'
+
+fn dot_member_access(receiver_code: string, member_code: string) -> string =
+  `${receiver_code}.${member_code}`
+
+fn comma_separated_pair(first_code: string, second_code: string) -> string =
+  `${first_code}, ${second_code}`
+
 fn gen_method_file_using_trailing_argument_fragments(
   method_name: string,
   trailing_arguments_joined: string
@@ -61,7 +73,7 @@ fn gen_method_shared_new(
 ) -> string = do
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const type_name = infer_shared_new_type_name(argument, context)
-  expression_output.make_shared_call(type_name, argument_code)
+  make_shared_call(type_name, argument_code)
 end
 
 fn gen_method_arc_new(
@@ -110,7 +122,7 @@ fn gen_method_owner_call_using_fragments(
   else
     expression_output.function_call_parentheses(
       function_name,
-      expression_output.comma_separated_pair(receiver_fragment, trailing_arguments_joined))
+      comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end
 end
 
@@ -119,7 +131,7 @@ fn gen_method_builtin_using_fragments(
   method_name: string,
   trailing_arguments_joined: string
 ) -> string = do
-  const call_base = expression_output.dot_member_access(receiver_fragment, map_method(method_name))
+  const call_base = dot_member_access(receiver_fragment, map_method(method_name))
   if trailing_arguments_joined.length() == 0 then expression_output.function_call_parentheses(call_base, '')
   else expression_output.function_call_parentheses(call_base, trailing_arguments_joined)
   end
@@ -235,7 +247,7 @@ fn gen_method_map_using_fragments(
   argument_count: i32,
   context: CodegenContext
 ) -> string =
-  if method_name == 'new' then expression_output.empty_map_initializer()
+  if method_name == 'new' then empty_map_initializer()
   else gen_method_expr_fallback_using_fragments(
     receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
   end
@@ -340,7 +352,7 @@ fn gen_result_option_combinator_call_using_fragments(
   else
     expression_output.function_call_parentheses(
       callee,
-      expression_output.comma_separated_pair(receiver_fragment, trailing_arguments_joined))
+      comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end
 end
 

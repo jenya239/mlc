@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1/8b2/8b3 **done**; STEP=8b4 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b4 **done**; STEP=8b5 next
 
 ## Why this track exists
 
@@ -125,7 +125,8 @@ reachable again — Meta should split later.
 | 8b1 | Move 8 `cpp_*` type-string helpers `expr.mlc` → `type_gen.mlc`; update match_gen/trait_struct/decl_extend (exports 88→80) | **done** (2026-07-17) |
 | 8b2 | Move 9 struct/concept/variant string helpers `expr.mlc` → `type_gen.mlc`; drop `expression_output` import from type_gen (exports 80→71) | **done** (2026-07-17) |
 | 8b3 | Move 4 record-only helpers `expr.mlc` → local fns in `record_gen.mlc` (exports 71→67); drop `expression_output` import; unblock self-host rebuild (`match_gen`: `">"` not `'>'`; bind array-return after assign) | **done** (2026-07-17) |
-| 8b4 | Continue reducing `expr.mlc` callers (next exclusive clusters: stmt_eval / match_gen / decl_extend / method_gen) | pending |
+| 8b4 | Move 4 method-only helpers `expr.mlc` → local fns in `method_gen.mlc` (exports 67→63); keep `expression_output` for `function_call_parentheses`/`runtime_to_string_call` | **done** (2026-07-17) |
+| 8b5 | Continue reducing `expr.mlc` callers (next exclusive clusters: stmt_eval / match_gen / decl_extend / decl) | pending |
 | 8c | Delete `expr.mlc` + unreachable `print.mlc` mirrors | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
 
