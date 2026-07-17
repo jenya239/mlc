@@ -404,7 +404,8 @@ fn gen_guarded_identifier_binding_arm_statements(
   block_statements = append_cpp_statements(
     block_statements,
     guarded_arm_tail_statements(arm, use_void, extended_context, gen_stmts, eval_expr_fn))
-  [emit_helpers.make_block_cpp_statement(block_statements)]
+  const block_result = [emit_helpers.make_block_cpp_statement(block_statements)]
+  block_result
 end
 
 fn variant_holds_alternative_expression(
@@ -412,7 +413,7 @@ fn variant_holds_alternative_expression(
   variant_access_expression: string
 ) -> Shared<CppExpression> =
   Shared.new(CppCall(
-    Shared.new(CppIdent('std::holds_alternative<' + variant_type_name + '>')),
+    Shared.new(CppIdent('std::holds_alternative<' + variant_type_name + ">")),
     [Shared.new(CppIdent(variant_access_expression))]))
 
 fn variant_get_const_ref_statement(
@@ -424,7 +425,7 @@ fn variant_get_const_ref_statement(
     binding_name,
     Shared.new(CppTypeRef(Shared.new(CppTypeName(variant_type_name)))),
     Shared.new(CppCall(
-      Shared.new(CppIdent('std::get<' + variant_type_name + '>')),
+      Shared.new(CppIdent('std::get<' + variant_type_name + ">")),
       [Shared.new(CppIdent(variant_access_expression))]))))
 
 fn record_field_const_auto_ref_statement(field_cpp_safe: string, variant_lower_name: string) -> Shared<CppStatement> =
@@ -608,12 +609,13 @@ fn gen_guarded_constructor_arm_statements(
   then_statements = append_cpp_statements(
     then_statements,
     guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
-  [
+  const constructor_arm_result = [
     emit_helpers.make_if_cpp_statement(
       variant_holds_alternative_expression(variant_type_name, variant_access_expression),
       emit_helpers.make_block_cpp_statement(then_statements),
       emit_helpers.make_block_cpp_statement([]))
   ]
+  constructor_arm_result
 end
 
 fn gen_guarded_record_arm_statements(
@@ -638,12 +640,13 @@ fn gen_guarded_record_arm_statements(
   then_statements = append_cpp_statements(
     then_statements,
     guarded_arm_tail_statements(arm, use_void, field_bindings.arm_context, gen_stmts, eval_expr_fn))
-  [
+  const record_arm_result = [
     emit_helpers.make_if_cpp_statement(
       variant_holds_alternative_expression(variant_type_name, variant_access_expression),
       emit_helpers.make_block_cpp_statement(then_statements),
       emit_helpers.make_block_cpp_statement([]))
   ]
+  record_arm_result
 end
 
 fn gen_guarded_arm_statements(

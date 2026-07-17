@@ -9,7 +9,18 @@ import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'
 import { cpp_safe } from '../cpp_naming'
-import * as expression_output from './expr'
+
+fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
+  `${type_resolved}{${values_comma_separated}}`
+
+fn record_update_lazy_closure(initializer_and_assignments: string) -> string =
+  `[&]() { ${initializer_and_assignments}return __upd; }()`
+
+fn record_update_base_prefix(expression_code: string) -> string =
+  `auto __upd = ${expression_code}; `
+
+fn mutable_member_assignment(receiver: string, member_cpp_safe: string, value_code: string) -> string =
+  `${receiver}.${member_cpp_safe} = ${value_code}; `
 
 fn eval_field_update_value(
   base_expression: Shared<SemanticExpression>,
@@ -48,11 +59,11 @@ fn gen_record_update_ordered(base_expr: Shared<SemanticExpression>, overrides: [
     .join(', ')
 
 fn gen_record_update_lazy(base_expr: Shared<SemanticExpression>, overrides: [Shared<SemanticFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>], eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string) -> string =
-  expression_output.record_update_lazy_closure(
-    expression_output.record_update_base_prefix(eval_expr_fn(base_expr, context, gen_stmts)) +
+  record_update_lazy_closure(
+    record_update_base_prefix(eval_expr_fn(base_expr, context, gen_stmts)) +
       overrides
         .map(override_field =>
-          expression_output.mutable_member_assignment(
+          mutable_member_assignment(
             '__upd',
             cpp_safe(override_field.name),
             eval_expr_fn(override_field.value, context, gen_stmts)))
@@ -68,13 +79,13 @@ export fn gen_record_expr(type_name: string, field_values: [Shared<SemanticField
                       then gen_record_ordered(field_values, field_order, context, gen_stmts, eval_expr_fn)
                       else gen_record_unordered(field_values, context, gen_stmts, eval_expr_fn)
                       end
-  expression_output.record_initializer(cpp_name, values_code)
+  record_initializer(cpp_name, values_code)
 end
 
 export fn gen_record_update_expr(type_name: string, base_expr: Shared<SemanticExpression>, overrides: [Shared<SemanticFieldVal>], context: CodegenContext, gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>], eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string) -> string = do
   const field_order = lookup_fields_for_context(context, type_name)
   if field_order.length() > 0 then
-    expression_output.record_initializer(
+    record_initializer(
       context.resolve(type_name),
       gen_record_update_ordered(base_expr, overrides, field_order, context, gen_stmts, eval_expr_fn))
   else

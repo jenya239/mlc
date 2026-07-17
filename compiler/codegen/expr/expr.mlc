@@ -43,13 +43,6 @@ export fn match_arm_constructed_value_void(
 ) -> string =
   `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
 
-export fn record_initializer(type_resolved: string, values_comma_separated: string) -> string =
-  `${type_resolved}{${values_comma_separated}}`
-
-// Record-update IIFE: [&] — mutates `__upd` and may touch outer locals; invoked immediately.
-export fn record_update_lazy_closure(initializer_and_assignments: string) -> string =
-  `[&]() { ${initializer_and_assignments}return __upd; }()`
-
 export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
   `${callee_code}(${argument_list})`
 
@@ -121,12 +114,6 @@ export fn tuple_destructure_binding(binding_names_csv: string, source_name: stri
 
 export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
   `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
-
-export fn record_update_base_prefix(expression_code: string) -> string =
-  `auto __upd = ${expression_code}; `
-
-export fn mutable_member_assignment(receiver: string, member_cpp_safe: string, value_code: string) -> string =
-  `${receiver}.${member_cpp_safe} = ${value_code}; `
 
 export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
   if needs_dereference then `(*${expression_code})` else expression_code end

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 19:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b3 — record helpers → record_gen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b3 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 18:55 |
+| elapsed | ~70 min (self-host unblock + rebuild + Tier B) |
+| done    | 4 record-only helpers → local fns in `record_gen.mlc`; `expr.mlc` 71→67 exports; drop `expression_output` import; `match_gen` emit fix (`">"`; bind array-return) so stale mlcc can rebuild |
+| result  | `--check-only` OK; rebuild OK; double-emit identical; stale→fresh emit broad (~99 TUs, catch-up); `record_gen`/`match_gen` differ as expected; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone; prior turns masked rebuild fail via `tee\|tail` pipe exit |
+| next    | ROLE=Driver STEP=8b4 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 18:55 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b2 — struct/concept → type_gen)
 
 | field   | value |
