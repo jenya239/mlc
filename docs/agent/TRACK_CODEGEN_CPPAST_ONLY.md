@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b7 **done**; STEP=8b8 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b8 **done**; STEP=8b9 next
 
 ## Why this track exists
 
@@ -129,7 +129,8 @@ reachable again — Meta should split later.
 | 8b5 | Move 4 decl-only helpers `expr.mlc` → local fns in `decl.mlc` (exports 63→59); keep `noexcept_function_prototype` shared; update `test_decl_gen` expected string | **done** (2026-07-17) |
 | 8b6 | Move 3 exclusive helpers: `parenthesized_*` → `record_field_default_emit.mlc`, `standard_translation_unit_runtime_headers` → `module.mlc` (exports 59→56); drop their `expression_output` imports | **done** (2026-07-17) |
 | 8b7 | Move 9 decl_extend-only helpers `expr.mlc` → `decl_extend.mlc` (exports 56→47); export `static_assert_*` for `test_decl_gen`; keep shared helpers via `expression_output` | **done** (2026-07-17) |
-| 8b8 | Continue reducing `expr.mlc` callers (next exclusive clusters: stmt_eval / match_gen) | pending |
+| 8b8 | Move 12 match-only helpers `expr.mlc` → `match_gen.mlc` (exports 47→35); export 4 for `test_codegen`; keep `tuple_destructure_binding` via `expression_output` | **done** (2026-07-17) |
+| 8b9 | Continue reducing `expr.mlc` callers (next exclusive cluster: stmt_eval) | pending |
 | 8c | Delete `expr.mlc` + unreachable `print.mlc` mirrors | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
 

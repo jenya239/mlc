@@ -9,6 +9,76 @@ import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { first_arm_needs_deref, pattern_bind_names, pattern_binding_name_list, should_use_string_match_if_chain } from './match_analysis'
 import * as expression_output from './expr'
+
+fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
+  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
+
+
+export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
+  `[=](const auto& __v) { return ${return_expression_code}; }`
+
+
+fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
+  `[=](const auto& __v) -> void { ${body_expression_code}; }`
+
+
+export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
+  `[=](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
+
+
+fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
+  `[=](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
+
+
+export fn match_arm_constructed_value(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  `[=](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
+
+
+fn match_arm_constructed_value_void(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
+
+
+fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
+  `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
+
+
+fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
+  if needs_dereference then `(*${expression_code})` else expression_code end
+
+
+fn match_lambda_const_reference_parameter(
+  resolved_type_name: string,
+  generic_angle_bracket_argument: string,
+  binding_name_cpp_safe: string
+) -> string =
+  `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
+
+
+export fn match_arm_constructed_value_generic(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
+
+
+fn match_arm_constructed_value_generic_void(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
+
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
 import { type_is_unknown, generic_type_name_from_type, generic_type_arguments_from_type } from '../../checker/semantic_type_structure'
 import { is_result_generic, result_ok_type, result_err_type } from '../../checker/check/method_types/result_option_method_types'
@@ -51,7 +121,7 @@ fn record_field_bind_step(
     PatternIdent(field_name, _) =>
       RecordFieldBindAccum {
         field_bindings: accumulated.field_bindings +
-          expression_output.record_pattern_field_binding(cpp_safe(field_name), lower_name),
+          record_pattern_field_binding(cpp_safe(field_name), lower_name),
         arm_context: accumulated.arm_context.add_value(field_name)
       },
     _ => accumulated
@@ -102,9 +172,9 @@ fn gen_arm_wild_like_body(
   visit_void: bool
 ) -> string =
   if visit_void then
-    expression_output.match_arm_wild_or_unit_statement(eval_expr_fn(arm_body, context, gen_stmts))
+    match_arm_wild_or_unit_statement(eval_expr_fn(arm_body, context, gen_stmts))
   else
-    expression_output.match_arm_wild_or_unit_return(eval_expr_fn(arm_body, context, gen_stmts))
+    match_arm_wild_or_unit_return(eval_expr_fn(arm_body, context, gen_stmts))
   end
 
 fn gen_arm_ident_body(
@@ -116,11 +186,11 @@ fn gen_arm_ident_body(
   visit_void: bool
 ) -> string =
   if visit_void then
-    expression_output.match_arm_binding_identifier_void(
+    match_arm_binding_identifier_void(
       cpp_safe(binding_name),
       eval_expr_fn(arm_body, context.add_value(binding_name), gen_stmts))
   else
-    expression_output.match_arm_binding_identifier(
+    match_arm_binding_identifier(
       cpp_safe(binding_name),
       eval_expr_fn(arm_body, context.add_value(binding_name), gen_stmts))
   end
@@ -133,9 +203,9 @@ fn gen_arm_ctor_generic_body(
   visit_void: bool
 ) -> string =
   if visit_void then
-    expression_output.match_arm_constructed_value_generic_void(qualified_name, lower_name, binding, body_code)
+    match_arm_constructed_value_generic_void(qualified_name, lower_name, binding, body_code)
   else
-    expression_output.match_arm_constructed_value_generic(qualified_name, lower_name, binding, body_code)
+    match_arm_constructed_value_generic(qualified_name, lower_name, binding, body_code)
   end
 
 fn gen_arm_ctor_record_body(
@@ -145,9 +215,9 @@ fn gen_arm_ctor_record_body(
   visit_void: bool
 ) -> string =
   if visit_void then
-    expression_output.match_arm_constructed_value_void(parameter, binding, body_code)
+    match_arm_constructed_value_void(parameter, binding, body_code)
   else
-    expression_output.match_arm_constructed_value(parameter, binding, body_code)
+    match_arm_constructed_value(parameter, binding, body_code)
   end
 
 fn gen_arm_ctor(
@@ -170,7 +240,7 @@ fn gen_arm_ctor(
     gen_arm_ctor_generic_body(qualified_name, lower_name, binding, body_code, visit_void)
   else
     const parameter =
-      expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+      match_lambda_const_reference_parameter(qualified_name, '', lower_name)
     gen_arm_ctor_record_body(parameter, binding, body_code, visit_void)
   end
 end
@@ -191,7 +261,7 @@ fn gen_arm_record_pattern(
     gen_arm_ctor_generic_body(qualified_name, lower_name, accumulated.field_bindings, body_code, visit_void)
   else
     const parameter =
-      expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+      match_lambda_const_reference_parameter(qualified_name, '', lower_name)
     gen_arm_ctor_record_body(parameter, accumulated.field_bindings, body_code, visit_void)
   end
 end
@@ -1025,7 +1095,7 @@ fn gen_match_guarded_body_from_subject_expression(
 ) -> [Shared<CppStatement>] = do
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
-  const variant_access = expression_output.visit_subject_for_match('__match_subject', needs_dereference)
+  const variant_access = visit_subject_for_match('__match_subject', needs_dereference)
   const use_void = match_visit_uses_void_lambdas(match_result_type)
   let statements: [Shared<CppStatement>] = []
   statements.push(emit_helpers.make_auto_cpp_statement('__match_subject', subject_expression))
@@ -1198,7 +1268,7 @@ fn gen_arm_ctor_cpp(
       qualified_name, lower_name, binding, visit_void, return_cpp, body_expression))
   else do
     const parameter =
-      expression_output.match_lambda_const_reference_parameter(
+      match_lambda_const_reference_parameter(
         qualified_name, effective_type_argument, lower_name)
     Shared.new(CppVisitArmConstructed(parameter, binding, visit_void, return_cpp, body_expression))
   end
@@ -1223,7 +1293,7 @@ fn gen_arm_record_pattern_cpp(
       qualified_name, lower_name, accumulated.field_bindings, visit_void, return_cpp, body_expression))
   else do
     const parameter =
-      expression_output.match_lambda_const_reference_parameter(qualified_name, '', lower_name)
+      match_lambda_const_reference_parameter(qualified_name, '', lower_name)
     Shared.new(CppVisitArmConstructed(parameter, accumulated.field_bindings, visit_void, return_cpp, body_expression))
   end
   end
@@ -1282,9 +1352,9 @@ fn gen_match_std_visit_string(
   const subject_code = eval_expr_fn(subject, context, gen_stmts)
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
-  expression_output.std_visit_match_expression(
+  std_visit_match_expression(
     arm_lines.join(',\n'),
-    expression_output.visit_subject_for_match(subject_code, needs_dereference))
+    visit_subject_for_match(subject_code, needs_dereference))
 end
 
 export fn gen_match_std_visit_cpp(
@@ -1306,8 +1376,8 @@ export fn gen_match_std_visit_cpp(
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
   const subject_code = print_expr(eval_expr_cpp_fn(subject, context, gen_stmts))
-  const visit_subject = expression_output.visit_subject_for_match(subject_code, needs_dereference)
-  Shared.new(CppIdent(expression_output.std_visit_match_expression(
+  const visit_subject = visit_subject_for_match(subject_code, needs_dereference)
+  Shared.new(CppIdent(std_visit_match_expression(
     arm_expressions.map(arm => print_expr(arm)).join(',\n'),
     visit_subject)))
 end

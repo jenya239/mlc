@@ -11,7 +11,7 @@ import {
   match_arm_binding_identifier,
   match_arm_constructed_value,
   match_arm_constructed_value_generic
-} from '../codegen/expr/expr'
+} from '../codegen/expr/match_gen'
 import { create_codegen_context, FieldOrder, map_builtin, map_method } from '../codegen/context'
 import { type_to_cpp, gen_type_decl, sem_type_to_cpp } from '../codegen/decl/type_gen'
 import { gen_program } from './codegen_harness'

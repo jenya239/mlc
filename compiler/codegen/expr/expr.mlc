@@ -8,35 +8,6 @@ export fn ternary_conditional(condition_code: string, then_code: string, else_co
 export fn array_literal(argument_list: string) -> string =
   if argument_list.length() == 0 then '{}' else `mlc::Array{${argument_list}}` end
 
-export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
-  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
-
-export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
-  `[=](const auto& __v) { return ${return_expression_code}; }`
-
-export fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
-  `[=](const auto& __v) -> void { ${body_expression_code}; }`
-
-export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
-  `[=](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
-
-export fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
-  `[=](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
-
-export fn match_arm_constructed_value(
-  const_reference_parameter: string,
-  binding_prefix: string,
-  return_expression_code: string
-) -> string =
-  `[=](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
-
-export fn match_arm_constructed_value_void(
-  const_reference_parameter: string,
-  binding_prefix: string,
-  body_expression_code: string
-) -> string =
-  `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
-
 export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
   `${callee_code}(${argument_list})`
 
@@ -106,12 +77,6 @@ export fn fragment_with_newline(fragment: string) -> string =
 export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
   `auto [${binding_names_csv}] = ${source_name}; `
 
-export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
-  `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
-
-export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
-  if needs_dereference then `(*${expression_code})` else expression_code end
-
 export fn runtime_to_string_call(expression_code: string) -> string =
   `mlc::to_string(${expression_code})`
 
@@ -129,29 +94,6 @@ export fn typed_array_braced_initializer(element_type_cpp: string, comma_separat
 
 export fn array_string_fallback_empty() -> string =
   'mlc::Array<mlc::String>{}'
-
-export fn match_lambda_const_reference_parameter(
-  resolved_type_name: string,
-  generic_angle_bracket_argument: string,
-  binding_name_cpp_safe: string
-) -> string =
-  `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
-
-export fn match_arm_constructed_value_generic(
-  resolved_type_name: string,
-  binding_name_cpp_safe: string,
-  binding_prefix: string,
-  return_expression_code: string
-) -> string =
-  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
-
-export fn match_arm_constructed_value_generic_void(
-  resolved_type_name: string,
-  binding_name_cpp_safe: string,
-  binding_prefix: string,
-  body_expression_code: string
-) -> string =
-  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
 
 export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
   if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end

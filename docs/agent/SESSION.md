@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 20:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b8 — match helpers → match_gen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b8 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 20:06 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | 12 match-only helpers → `match_gen.mlc`; `expr.mlc` 47→35; 4 exported for `test_codegen`; `tuple_destructure_binding` stays shared |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0; match_gen 1403 lines (allowlisted) |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b9 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 20:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b7 — decl_extend helpers)
 
 | field   | value |
