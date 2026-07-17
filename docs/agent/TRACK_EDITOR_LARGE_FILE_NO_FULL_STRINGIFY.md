@@ -3,12 +3,18 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1d**
 (pulled forward from #22 — frame-latency / Sublime-parity).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L2 scenario `large_file_no_full_stringify` first (Standing
-discipline); failing harness if needed.
+**STEP=2** — `document_frame_snapshot` one flatten + wire `demo_live`;
+green `large_file_no_full_stringify` + `demo_live_fs_compile_ok`.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `document/frame_snapshot.mlc` (`flatten_count: 3`, 3× stringify)
+- L2 `ux_scenarios/large_file_no_full_stringify.mlc` + run script → **red**
+  (`ux_fail expected flatten_count=1 got 3`)
 
 ### STEP=0 done (2026-07-18)
 
@@ -39,15 +45,13 @@ discipline); failing harness if needed.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
-| 1 | L2 scenario first (`large_file_no_full_stringify`) | scenario fails or harness ready |
+| 1 | L2 scenario first (`large_file_no_full_stringify`) | **done** (red harness) |
 | 2 | `document_frame_snapshot` + wire `demo_live` ≤1 flatten/frame | scenario + compile |
 | 3 | Critic: gates; grep hot path; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/large_file_no_full_stringify.mlc` + `scripts/run_ux_large_file_no_full_stringify.sh`.
-2. Prefer red before STEP=2 (stub multi-flatten vs expected once).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Implement snapshot API; rebuild line_index from snapshot text.

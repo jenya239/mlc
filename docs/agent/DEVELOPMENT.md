@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` (§46 #1d) STEP=1 (L2 scenario first).
+**Queue head:** Driver `TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` (§46 #1d) STEP=2 (snapshot wire).
 **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45)** / §43 / §44 archived.
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.

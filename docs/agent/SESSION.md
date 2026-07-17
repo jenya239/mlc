@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 03:35 (Driver TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY |
+| started | 2026-07-18 03:30 |
+| elapsed | ~5 min |
+| done    | L2 red harness: `document/frame_snapshot.mlc` stub (`flatten_count: 3`); `ux_scenarios/large_file_no_full_stringify.mlc`; `scripts/run_ux_large_file_no_full_stringify.sh` → `ux_fail expected flatten_count=1 got 3`; `demo_live_fs_compile_ok` |
+| verify  | `bash scripts/run_ux_large_file_no_full_stringify.sh` exit 1 (red); `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-18 03:25 (Planner PLAN_QUEUE pick-next → open #1d)
 
 | field   | value |

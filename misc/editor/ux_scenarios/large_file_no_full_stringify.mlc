@@ -1,0 +1,56 @@
+// TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=1 — L2: ≤1 full flatten per frame snapshot.
+import {
+  document_from_string,
+  document_byte_length
+} from '../document/piece_table'
+import {
+  line_index_line_count,
+  line_index_matches_document
+} from '../document/line_index'
+import { document_frame_snapshot } from '../document/frame_snapshot'
+
+fn build_large_fixture(line_count: i32) -> string = do
+  let mut body = ""
+  let mut line = 0
+  while line < line_count do
+    body = body + "line_" + line.to_string() + " abcdefghijklmnopqrstuvwxyz0123456789\n"
+    line = line + 1
+  end
+  body
+end
+
+fn main() -> i32 = do
+  const fixture = build_large_fixture(400)
+  const document = document_from_string(fixture)
+  const snapshot = document_frame_snapshot(document)
+
+  if snapshot.flatten_count != 1 then
+    println(
+      "ux_fail expected flatten_count=1 got " + snapshot.flatten_count.to_string()
+    )
+    return 1
+  end
+  if snapshot.text.byte_size() != fixture.byte_size() then
+    println("ux_fail snapshot text size")
+    return 2
+  end
+  if snapshot.text != fixture then
+    println("ux_fail snapshot text mismatch")
+    return 3
+  end
+  if document_byte_length(document) != fixture.byte_size() then
+    println("ux_fail document_byte_length")
+    return 4
+  end
+  if !line_index_matches_document(snapshot.line_index, document) then
+    println("ux_fail line_index_matches_document")
+    return 5
+  end
+  if line_index_line_count(snapshot.line_index) != 400 then
+    println("ux_fail line_count")
+    return 6
+  end
+
+  println("ux_ok large_file_no_full_stringify")
+  0
+end
