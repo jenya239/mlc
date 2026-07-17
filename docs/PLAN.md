@@ -440,6 +440,7 @@ compiler/
 | **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **active** (2026-07-16) STEP=0–2 **done**; STEP=3 Critic next | [TRACK_EDITOR_FOLDER_NAV](agent/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1 + test-fix **done** (`dev_gate_fast` green); STEP=2 next | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
+| **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (`main()` ~977 lines, single god-function) | **active** (2026-07-17, user request) STEP=0 done (docs-only, `caf412f4`) | [TRACK_EDITOR_CLEAN_ARCHITECTURE](agent/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -670,6 +671,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1 + test-fix **done**;
       Tier A: no Ruby rebuild — `dev_gate_fast` green; STEP=2 next;
       → [agent/TRACK_CODEGEN_CPPAST_ONLY.md](agent/TRACK_CODEGEN_CPPAST_ONLY.md))**
+  → **EDITOR_CLEAN_ARCHITECTURE (§45, **active**; STEP=0 done, docs-only —
+      TDD-scenario-first rule frozen in `GUI_UX_TESTING.md`; STEP=1
+      (`demo_live.mlc` decomposition) not yet executed;
+      → [agent/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](agent/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
 ```
 
 
