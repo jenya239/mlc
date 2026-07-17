@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 02:35 (Driver TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_LIVE_SOLARIZED_TEXT |
+| started | 2026-07-18 02:20 |
+| elapsed | ~15 min |
+| done    | Wire: `editor_ux_syntax_glyph_line` theme rgba + `editor_ux_append_syntax_colored_row`; `demo_live` Solarized Light chrome, drop syntax bg tint, colored editor glyphs; scrub stale `theme.mlc` comment; `ux_ok syntax_glyph_color_matches_theme`; `demo_live_fs_compile_ok` |
+| verify  | `bash scripts/run_ux_syntax_glyph_color.sh` → `ux_ok syntax_glyph_color_matches_theme`; `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; track ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_LIVE_SOLARIZED_TEXT |
+
 ### Turn 2026-07-18 02:20 (Driver TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=1)
 
 | field   | value |

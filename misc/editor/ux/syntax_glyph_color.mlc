@@ -1,9 +1,8 @@
-// TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=1 — glyph color contract (stub = white like demo_live push_line).
-// STEP=2 wires theme_rgb_for_tag into rgba; scenario then goes green.
+// TRACK_EDITOR_LIVE_SOLARIZED_TEXT STEP=2 — glyph rgba from theme tags.
 import { Theme, ThemeRgb, theme_rgb_for_tag } from '../ui/theme'
 import { StaticTextLine } from '../ui/static_text'
+import { HighlightSpan } from '../syntax/highlighter'
 
-// Current live path: glyphs stay white. STEP=2 replaces 1.0 channels with rgb.*.
 export fn editor_ux_syntax_glyph_line(
   theme: Theme,
   tag: string,
@@ -13,28 +12,15 @@ export fn editor_ux_syntax_glyph_line(
   pen_y: i32
 ) -> StaticTextLine = do
   const rgb = theme_rgb_for_tag(theme, tag)
-  // Force-touch so STEP=2 contract type-checks; discard until wiring.
-  if rgb.red < -1.0 then
-    return StaticTextLine {
-      text: text,
-      pixel_size: pixel_size,
-      pen_x: pen_x,
-      pen_y: pen_y,
-      red: rgb.red,
-      green: rgb.green,
-      blue: rgb.blue,
-      alpha: 1.0
-    }
-  end
   StaticTextLine {
     text: text,
     pixel_size: pixel_size,
     pen_x: pen_x,
     pen_y: pen_y,
-    red: 1.0,
-    green: 1.0,
-    blue: 1.0,
-    alpha: 0.0
+    red: rgb.red,
+    green: rgb.green,
+    blue: rgb.blue,
+    alpha: 1.0
   }
 end
 
@@ -43,3 +29,71 @@ export fn editor_ux_syntax_glyph_expected_rgb(
   tag: string
 ) -> ThemeRgb =
   theme_rgb_for_tag(theme, tag)
+
+// Split [byte_start, byte_end) into StaticTextLine spans colored by highlight tags.
+export fn editor_ux_append_syntax_colored_row(
+  lines: [StaticTextLine],
+  theme: Theme,
+  draw_text: string,
+  spans: [HighlightSpan],
+  byte_start: i32,
+  byte_end: i32,
+  pixel_size: i32,
+  pen_x0: i32,
+  pen_y: i32,
+  column_width: i32
+) -> [StaticTextLine] = do
+  let mut out = lines
+  if byte_end <= byte_start then
+    return out
+  end
+  let mut cursor = byte_start
+  let mut pen_x = pen_x0
+  let mut span_index = 0
+  while span_index < spans.length() && spans[span_index].byte_end <= byte_start do
+    span_index = span_index + 1
+  end
+  while cursor < byte_end do
+    let mut segment_end = byte_end
+    let mut segment_tag = ""
+    let mut search = span_index
+    while search < spans.length() do
+      const span = spans[search]
+      if span.byte_start >= byte_end then
+        break
+      end
+      if span.tag.byte_size() > 0 && span.byte_end > cursor then
+        if span.byte_start > cursor then
+          segment_end = span.byte_start
+          if segment_end > byte_end then
+            segment_end = byte_end
+          end
+          segment_tag = ""
+          break
+        end
+        segment_end = span.byte_end
+        if segment_end > byte_end then
+          segment_end = byte_end
+        end
+        segment_tag = span.tag
+        break
+      end
+      search = search + 1
+    end
+    const length = segment_end - cursor
+    if length > 0 then
+      const piece = draw_text.substring(cursor, length)
+      out.push(
+        editor_ux_syntax_glyph_line(
+          theme, segment_tag, piece, pixel_size, pen_x, pen_y
+        )
+      )
+      pen_x = pen_x + length * column_width
+    end
+    cursor = segment_end
+    while span_index < spans.length() && spans[span_index].byte_end <= cursor do
+      span_index = span_index + 1
+    end
+  end
+  out
+end

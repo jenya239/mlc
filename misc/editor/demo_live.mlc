@@ -28,10 +28,11 @@ import {
   solid_renderer_destroy
 } from '../gui/solid_renderer'
 import {
-  theme_editor_dark,
-  theme_solarized_light,
-  theme_rgb_for_tag
+  theme_solarized_light
 } from './ui/theme'
+import {
+  editor_ux_append_syntax_colored_row
+} from './ux/syntax_glyph_color'
 import {
   StaticTextLine,
   static_text_create,
@@ -180,7 +181,7 @@ import {
   edit_cut,
   edit_paste
 } from './document/clipboard_edit'
-import { highlight_range } from './syntax/highlighter'
+import { HighlightSpan, highlight_range } from './syntax/highlighter'
 import {
   viewport_metrics_new,
   visible_line_range
@@ -547,8 +548,7 @@ fn main() -> i32 = do
 
   println("[mlc-editor] live demo — Esc / window close to quit")
 
-  const theme = theme_editor_dark()
-  const solar = theme_solarized_light()
+  const theme = theme_solarized_light()
   let mut solid = solid_renderer_create()
   if solid.program < 0 then
     const error_code = solid.program
@@ -1124,7 +1124,7 @@ fn main() -> i32 = do
     solid = solid_renderer_rect(
       solid, width, height,
       editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height,
-      0.08, 0.09, 0.12, 1.0
+      theme.background_red, theme.background_green, theme.background_blue, 1.0
     )
     solid = solid_renderer_rect(
       solid, width, height,
@@ -1134,7 +1134,7 @@ fn main() -> i32 = do
     solid = solid_renderer_rect(
       solid, width, height,
       divider.x, divider.y, divider.width, divider.height,
-      solar.accent_red, solar.accent_green, solar.accent_blue, 1.0
+      theme.accent_red, theme.accent_green, theme.accent_blue, 1.0
     )
     solid = solid_renderer_rect(
       solid, width, height, 0, height - status_height(), width, status_height(),
@@ -1154,41 +1154,16 @@ fn main() -> i32 = do
     solid = solid_renderer_begin(solid)
     editor_gl_scissor_enable_rect(height, editor_rect)
 
-    // Syntax highlight backgrounds (Solarized tags on dark canvas).
+    // Glyph colors carry Solarized tags; selection highlight rects stay below.
     const draw_text = document_to_string(document)
+    let mut syntax_spans: [HighlightSpan] = []
     if visible.first_line <= visible.last_line then
       const range_start = line_index_line_start(line_index, visible.first_line)
       let mut range_end = line_index.text_length
       if visible.last_line + 1 < line_index_line_count(line_index) then
         range_end = line_index_line_start(line_index, visible.last_line + 1)
       end
-      const spans = highlight_range(draw_text, range_start, range_end)
-      let mut span_index = 0
-      while span_index < spans.length() do
-        const span = spans[span_index]
-        if span.tag.byte_size() > 0 then
-          const start_position = line_index_offset_to_position(line_index, draw_text, span.byte_start)
-          const end_position = line_index_offset_to_position(line_index, draw_text, span.byte_end)
-          if start_position.line == end_position.line &&
-              start_position.line >= visible.first_line &&
-              start_position.line <= visible.last_line then
-            const row = start_position.line - visible.first_line
-            const rgb = theme_rgb_for_tag(solar, span.tag)
-            const highlight_width =
-              (end_position.column - start_position.column) * char_width()
-            if highlight_width > 0 then
-              solid = solid_renderer_rect(
-                solid, width, height,
-                text_rect.x + 4 + start_position.column * char_width(),
-                text_rect.y + 2 + row * line_height(),
-                highlight_width, line_height(),
-                rgb.red * 0.35, rgb.green * 0.35, rgb.blue * 0.35, 1.0
-              )
-            end
-          end
-        end
-        span_index = span_index + 1
-      end
+      syntax_spans = highlight_range(draw_text, range_start, range_end)
     end
 
     if !selection_is_empty(selection) then
@@ -1245,7 +1220,7 @@ fn main() -> i32 = do
         text_rect.x + 4 + caret_col * char_width(),
         text_rect.y + 2 + caret_row * line_height(),
         1, line_height() - 2,
-        solar.caret_red, solar.caret_green, solar.caret_blue, 1.0
+        theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
       )
     end
 
@@ -1261,7 +1236,7 @@ fn main() -> i32 = do
       )
       solid = solid_renderer_rect(
         solid, width, height, width / 2 + 20, height / 2 + 20, 100, 28,
-        solar.accent_red, solar.accent_green, solar.accent_blue, 1.0
+        theme.accent_red, theme.accent_green, theme.accent_blue, 1.0
       )
     end
 
@@ -1414,14 +1389,17 @@ fn main() -> i32 = do
         editor_lines, gutter_label, 13,
         gutter_label_pen_x(gutter_rect, 8), baseline
       )
-      const row_length = row.byte_end - row.byte_start
-      let mut row_text = ""
-      if row_length > 0 then
-        row_text = draw_text.substring(row.byte_start, row_length)
-      end
-      editor_lines = push_line(
-        editor_lines, row_text, font_size(),
-        text_rect.x + 4, baseline
+      editor_lines = editor_ux_append_syntax_colored_row(
+        editor_lines,
+        theme,
+        draw_text,
+        syntax_spans,
+        row.byte_start,
+        row.byte_end,
+        font_size(),
+        text_rect.x + 4,
+        baseline,
+        char_width()
       )
       draw_row = draw_row + 1
     end

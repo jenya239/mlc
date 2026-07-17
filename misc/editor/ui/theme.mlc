@@ -119,7 +119,7 @@ export fn theme_rgb_for_tag(theme: Theme, tag: string) -> ThemeRgb = do
   theme_rgb(theme.text_red, theme.text_green, theme.text_blue)
 end
 
-// Dark shell until TextRenderer has a color uniform (glyph shader is white).
+// Optional dark chrome (not required for colored glyphs — StaticTextLine rgba works).
 export fn theme_editor_dark() -> Theme =
   Theme {
     background_red: 0.10,
