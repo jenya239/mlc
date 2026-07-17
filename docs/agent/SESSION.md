@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 16:45 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c2 — FFI deleter AST)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3c2 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 16:25 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | Added `CppClassMemberFunctionDef`; printer; `gen_extern_type_decl_cpp` → `CppClassDeclaration` + `CppUsing` (no DeclFragment). Golden in `test_cpp_printer` |
+| result  | `--check-only` OK; self-host before/after identical (no extern-drop TUs in main graph); `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | Nested-if then-brace indent quirk at depth>0 left (valid C++); CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7b3c3 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 16:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c1 — CppStaticAutoDecl FFI binder)
 
 | field   | value |

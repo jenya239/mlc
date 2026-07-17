@@ -117,7 +117,7 @@ reachable again — Meta should split later.
 | 7b3a | Add `CppLineDirective`; convert `line_directive_cpp_statements`; delete dead `cpp_*_from_string_*` | **done** (2026-07-17) |
 | 7b3b | `GenStmtResult` → AST / kill `append_stmt` Fragment bridge (`stmt_eval` string path) | **done** (2026-07-17) — `statement: Shared<CppStatement>`; `append_stmt` pushes directly; string builders wrap Fragment at construction; break/continue native AST |
 | 7b3c1 | FFI binder/return → AST: add `CppStaticAutoDecl`; `gen_ffi_fn_decl_cpp` uses it + `CppReturn`/`CppCall`/`CppCast`; deleter Fragment remains | **done** (2026-07-17) |
-| 7b3c2 | FFI deleter DeclFragment → AST (needs class member fn with body) | pending |
+| 7b3c2 | FFI deleter DeclFragment → AST (needs class member fn with body) | **done** (2026-07-17) — `CppClassMemberFunctionDef` + `CppClassDeclaration` + `CppUsing`; nested-if brace indent quirk left (printer) |
 | 7b3c3 | Guarded wild/unit + literal arm builders → `CppIf`/`CppReturn` (leave ctor/record/ident) | pending |
 | 7b3c4 | Guarded ctor / record / ident-binding arm builders → AST | pending |
 | 7b3c5 | `derive_methods_cpp` JSON DeclFragments (2) → AST | pending |

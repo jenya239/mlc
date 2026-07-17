@@ -3,7 +3,7 @@
 import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord, param_name } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExternType, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, trait_base_name } from '../checker/registry'
-import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppUnary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppTypePtr, CppUnary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppDeclarationSequence, CppDeclarationEmpty, CppClassDeclaration, CppClassDefinition, CppClassMemberFunctionDef, CppFunctionPrototype, CppParam, CppFnModifiers, CppIdent } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './context'
@@ -631,15 +631,51 @@ fn gen_extern_type_decl_cpp(
   let mut declarations: [Shared<CppDeclaration>] = []
   declarations.push(Shared.new(CppUsing(cpp_safe(type_name), "::" + c_type_name)))
   if drop_function_name.length() > 0 then
-    const deleter_name = "mlc_ffi_drop_" + cpp_safe(type_name)
-    const owned_name = "Owned" + cpp_safe(type_name)
-    declarations.push(emit_helpers.make_fragment_cpp_declaration(
-      "struct " + deleter_name + " {\n" +
-      "  void operator()(" + cpp_safe(type_name) + "* pointer) const noexcept {\n" +
-      "    if (pointer) ::" + drop_function_name + "(pointer);\n" +
-      "  }\n" +
-      "};\n" +
-      "using " + owned_name + " = std::unique_ptr<" + cpp_safe(type_name) + ", " + deleter_name + ">;\n"))
+    const safe_type_name = cpp_safe(type_name)
+    const deleter_name = "mlc_ffi_drop_" + safe_type_name
+    const owned_name = "Owned" + safe_type_name
+    const pointer_parameter = Shared.new(CppParam {
+      name: "pointer",
+      parameter_type: Shared.new(CppTypePtr(Shared.new(CppTypeName(safe_type_name)))),
+    })
+    const operator_modifiers = CppFnModifiers {
+      is_const: true,
+      is_virtual: false,
+      is_override: false,
+      is_static: false,
+      is_explicit: false,
+      is_noexcept: true,
+      is_deleted: false,
+      is_defaulted: false,
+      is_pure_virtual: false,
+    }
+    const operator_prototype = Shared.new(CppFunctionPrototype {
+      template_prefix: "",
+      return_type: Shared.new(CppTypeName("void")),
+      name: "operator()",
+      parameters: [pointer_parameter],
+      modifiers: operator_modifiers,
+    })
+    const drop_call = Shared.new(CppCall(
+      Shared.new(CppIdent("::" + drop_function_name)),
+      [Shared.new(CppIdent("pointer"))]
+    ))
+    const drop_if = emit_helpers.make_if_cpp_statement(
+      Shared.new(CppIdent("pointer")),
+      emit_helpers.make_expression_cpp_statement(drop_call),
+      emit_helpers.make_block_cpp_statement([])
+    )
+    declarations.push(Shared.new(CppClassDeclaration(CppClassDefinition {
+      is_struct: true,
+      template_prefix: "",
+      name: deleter_name,
+      base_classes: [],
+      members: [CppClassMemberFunctionDef(operator_prototype, [drop_if])],
+    })))
+    declarations.push(Shared.new(CppUsing(
+      owned_name,
+      "std::unique_ptr<" + safe_type_name + ", " + deleter_name + ">"
+    )))
   end
   cpp_decl_from_native_declarations(declarations)
 end

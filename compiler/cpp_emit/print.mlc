@@ -425,16 +425,27 @@ fn print_function_modifiers_suffix(modifiers: CppFnModifiers) -> string = do
   end
 end
 
-fn print_function_prototype_core(prototype: Shared<CppFunctionPrototype>, indent_depth: i32) -> string = do
+fn print_function_signature_core(prototype: Shared<CppFunctionPrototype>, indent_depth: i32) -> string = do
   const modifiers_prefix = print_function_modifiers_prefix(prototype.modifiers)
   const return_type_code = print_type(prototype.return_type)
   const parameters_code = print_parameter_list(prototype.parameters)
   const modifiers_suffix = print_function_modifiers_suffix(prototype.modifiers)
-  indent_text(indent_depth) + modifiers_prefix + return_type_code + " " + prototype.name + "(" + parameters_code + ")" + modifiers_suffix + " noexcept;"
+  indent_text(indent_depth) + modifiers_prefix + return_type_code + " " + prototype.name + "(" + parameters_code + ")" + modifiers_suffix + " noexcept"
 end
+
+fn print_function_prototype_core(prototype: Shared<CppFunctionPrototype>, indent_depth: i32) -> string =
+  print_function_signature_core(prototype, indent_depth) + ";"
 
 fn print_function_prototype_line(prototype: Shared<CppFunctionPrototype>) -> string =
   prototype.template_prefix + print_function_prototype_core(prototype, 0) + "\n"
+
+fn print_class_member_function_definition(
+  prototype: Shared<CppFunctionPrototype>,
+  body: [Shared<CppStatement>]
+) -> string =
+  print_function_signature_core(prototype, 1) + " {\n" +
+    print_statements(body, 2) + "\n" +
+    indent_text(1) + "}"
 
 fn print_member_field_line(field_type: Shared<CppType>, field_name: string, default_value: string) -> string =
   if default_value != "" then
@@ -449,6 +460,7 @@ fn print_class_member_line(member: CppClassMember) -> string =
     CppClassMemberField(field_type, field_name, default_value) => print_member_field_line(field_type, field_name, default_value),
     CppClassMemberTypeAlias(alias, type_node) => indent_text(1) + "using " + alias + " = " + print_type(type_node) + ";",
     CppClassMemberFunction(prototype) => print_function_prototype_core(prototype, 1),
+    CppClassMemberFunctionDef(prototype, body) => print_class_member_function_definition(prototype, body),
   }
 
 fn print_class_body_members(members: [CppClassMember]) -> string =

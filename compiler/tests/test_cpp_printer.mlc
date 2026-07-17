@@ -10,7 +10,7 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
          CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStaticAutoDecl, CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
-         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp_ir/cpp_ast'
+         CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassMemberFunctionDef, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp_ir/cpp_ast'
 
 fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')
@@ -360,6 +360,46 @@ export fn cpp_printer_tests() -> [TestResult] = do
       ],
     }))),
     "class Foo : public Bar {\n  public:\n  int value = 100;\n  virtual int method(const std::string& argument) const noexcept;\n  private:\n  int value_;\n};\n"))
+
+  const deleter_modifiers = CppFnModifiers {
+    is_const: true,
+    is_virtual: false,
+    is_override: false,
+    is_static: false,
+    is_explicit: false,
+    is_noexcept: true,
+    is_deleted: false,
+    is_defaulted: false,
+    is_pure_virtual: false,
+  }
+  const deleter_prototype = Shared.new(CppFunctionPrototype {
+    template_prefix: "",
+    return_type: Shared.new(CppTypeName("void")),
+    name: "operator()",
+    parameters: [Shared.new(CppParam {
+      name: "pointer",
+      parameter_type: Shared.new(CppTypePtr(Shared.new(CppTypeName("Handle")))),
+    })],
+    modifiers: deleter_modifiers,
+  })
+  results.push(assert_eq_str('print_decl CppClassMemberFunctionDef',
+    print_decl(Shared.new(CppClassDeclaration(CppClassDefinition {
+      is_struct: true,
+      template_prefix: "",
+      name: "mlc_ffi_drop_Handle",
+      base_classes: [],
+      members: [CppClassMemberFunctionDef(deleter_prototype, [
+        Shared.new(CppIf(
+          Shared.new(CppIdent("pointer")),
+          Shared.new(CppExpressionStatement(Shared.new(CppCall(
+            Shared.new(CppIdent("::drop_handle")),
+            [Shared.new(CppIdent("pointer"))]
+          )))),
+          Shared.new(CppBlock([]))
+        ))
+      ])],
+    }))),
+    "struct mlc_ffi_drop_Handle {\n  void operator()(Handle* pointer) const noexcept {\n    if (pointer)     {\n      ::drop_handle(pointer);\n    }\n  }\n};\n"))
 
   results.push(assert_eq_str('print_decl CppFnDef',
     print_decl(Shared.new(CppFnDef('', 'int', 'answer', [], [Shared.new(CppReturn(Shared.new(CppInt(42))))], 1))),

@@ -115,6 +115,7 @@ export type CppFunctionPrototype = CppFunctionPrototype {
 export type CppClassMember =
   | CppClassMemberField(Shared<CppType>, string, string)
   | CppClassMemberFunction(Shared<CppFunctionPrototype>)
+  | CppClassMemberFunctionDef(Shared<CppFunctionPrototype>, [Shared<CppStatement>])
   | CppClassMemberAccess(CppAccessLevel)
   | CppClassMemberTypeAlias(string, Shared<CppType>)
 
