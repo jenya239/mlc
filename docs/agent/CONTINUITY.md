@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
 
 Перед работой: `git status` + `git log --oneline -15`. Если есть uncommitted diff от интерактивной сессии 2026-07-17 (см. SESSION.md запись "interactive session — uncommitted handoff") — это **твой** diff, не чужой: закоммитить explicit `git add` списком (проверь STEP=1 уже верифицирован — не переделывать) первым делом, отдельным коммитом от hygiene-части, **до** любого нового STEP. Другой чужой uncommitted diff (`compiler/out/mlcc`, SCRIPT_VM design-only, `.tmp/**`, `compiler/out/extern_concurrency_lint.*`) — не трогать.
 
-**`test_gate=fail` (`dev_gate_fast.sh` red, пре-существующий) → `ROLE=Driver STEP=test-fix` раньше STEP=2 TRACK_CODEGEN_CPPAST_ONLY**, раньше любого нового кода — правило ротации, не только для этого трека. `TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic остаётся отдельно pending, не блокируется этим diff.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). As of 2026-07-17 test-fix Decision: Tier A no longer Ruby-rebuilds — `dev_gate_fast` green; proceed to STEP=2. `TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic remains separately pending.
 
 **`TRACK_CODEGEN_CPPAST_ONLY` (§44) трогает `compiler/`** — на каждом STEP обязателен self-host diff (`mlcc --check-only` + build before/after, только затронутые модули отличаются) и Tier B (`compiler/tests/build_tests.sh`), не только `--check-only`; один STEP из таблицы трека за turn, не несколько сразу (mutual recursion `gen_expr`⇄`gen_stmts_str` — риск описан в треке). Анти-false-done / анти-stale-docs — как в CONTINUITY.md. После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close.
 
@@ -77,7 +77,7 @@ INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
 | **`TRACK_EDITOR_CARET_BLINK` (PLAN §41)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_WORD_WRAP` (PLAN §42)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | Folder back/forward history; absorb `folder_panel` WIP. Prefer `misc/editor/ux/folder_panel*`; no `compiler/`. STEP=3 Critic pending, independent of §44 |
-| **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1 done (`5c20ffa9`). `STEP=test-fix` in progress: past MATCH/`let mut`/`record`/string+char; `dev_gate_fast` still red on Ruby→C++ namespace errors linking `run_tests`. STEP=2 blocked until Tier A green |
+| **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1 + test-fix **done**: Tier A no longer Ruby-rebuilds `run_tests` (`build_tests_fast.sh`); `dev_gate_fast` green. STEP=2 next. Touches `compiler/` — Tier B + self-host every numbered STEP |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

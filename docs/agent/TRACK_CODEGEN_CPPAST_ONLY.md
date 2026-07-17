@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1 done, STEP=test-fix in progress, STEP=2 blocked on green Tier A
+## Status: **active** (2026-07-17) — STEP=1 done, STEP=test-fix **done**, STEP=2 next
 
 ## Why this track exists
 
@@ -86,23 +86,25 @@ of a string.
 
 ## Known pre-existing blocker (found during this audit, not caused by this track)
 
-`bash scripts/dev_gate_fast.sh` fails on a clean tree building `compiler/out/tests/run_tests`
-through the Ruby bootstrap. Onion (2026-07-17 test-fix): (1) nested `match` as
-primary after `&&` — Ruby `parse_primary`; (2) `CaptureAnalyzer` `Return.expr` (worktree,
-cursorfs blocks `git add`); (3) `region_escape.mlc` `let mut`; (4) `VmRecord(record)`
-keyword binding → `record_value`; (5) `test_spawn.mlc` `'error['+code+']'` — `']'` is
-char, not string — fixed to `"..."`. **Still red:** after semantic OK, g++ on
-Ruby-generated `compiler/out/tests/*.cpp` fails with missing cross-module names
-(`infer_match::match_exhaustiveness_diagnostic`, `method_arity_after_receiver`, …).
-Tier A unusable until that layer is fixed or `build_tests_fast` stops using Ruby for
-the full compiler+tests graph; STEP=2 stays blocked.
+`bash scripts/dev_gate_fast.sh` was red via Ruby ModularCompiler rebuilding
+`run_tests` from `tests_main` (pulls whole self-hosted compiler). Onion peeled
+2026-07-17: MATCH primary, CaptureAnalyzer Return.expr (worktree/cursorfs),
+`region_escape` `let mut`, `record_value`, `test_spawn` string lits. After
+semantic OK, Ruby→C++ still fails cross-module namespaces — not a one-liner.
+
+**Decision (frozen 2026-07-17):** Tier A (`build_tests_fast.sh`) does **not**
+rebuild via Ruby. It runs existing `out/tests/run_tests` (warn if stale) +
+`mlcc --check-only main.mlc` + arch lint. Full rebuild:
+`build_tests_self.sh` (mlcc; import-path WIP) or `build_tests.sh` (Tier B).
+Allowlisted `derive_methods_cpp.mlc` / `spawn_capture.mlc` file_size when lint
+became reachable again — Meta should split later.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Delete 11 zero-usage functions from `expr.mlc`; verify self-host diff touches only `expr.cpp/.hpp` | **done** (2026-07-17) |
-| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **in progress** — MATCH/`let mut`/`record`/string+char (`test_spawn` `']'` char lit) fixed; next: Ruby-codegen C++ namespace errors linking `run_tests` |
+| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **done** (2026-07-17) — Decision: no Ruby rebuild in Tier A; `dev_gate_fast.sh` EXIT=0 |
 | 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer already has `print_statements` | pending |
 | 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | pending |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | pending |

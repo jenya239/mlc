@@ -13,6 +13,9 @@ file_size:mir/lower_fn.mlc
 file_size:cpp_ir/cpp_ast.mlc
 file_size:cpp_emit/print.mlc
 file_size:expr_visitor_cpp.mlc
+# surfaced 2026-07-17 when Tier A reached arch lint again (Ruby rebuild disabled)
+file_size:codegen/decl/derive_methods_cpp.mlc
+file_size:checker/spawn_capture.mlc
 
 # test files exempt from file_size hard limit
 file_size:tests/test_checker.mlc

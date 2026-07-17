@@ -41,9 +41,10 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0–2 done** (2026-07-16) — nav API +
-`demo_live` wire; **STEP=3 Critic** next.
-Track: [TRACK_EDITOR_FOLDER_NAV.md](TRACK_EDITOR_FOLDER_NAV.md).
+**`TRACK_EDITOR_FOLDER_NAV` (§43) STEP=0–2 done** (2026-07-16); STEP=3 Critic pending.
+**`TRACK_CODEGEN_CPPAST_ONLY` (§44) queue head** — STEP=1 + test-fix done;
+`dev_gate_fast` green; **STEP=2** next (`CppInvokedBlock` body → statements).
+Track: [TRACK_CODEGEN_CPPAST_ONLY.md](TRACK_CODEGEN_CPPAST_ONLY.md).
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
 

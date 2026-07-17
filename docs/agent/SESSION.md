@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 11:37 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — Tier A no Ruby rebuild)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | test-fix |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 11:37 |
+| elapsed | ~15 min |
+| done    | Decision: do not fix Ruby cross-module qualify in this turn. `build_tests_fast.sh` no longer calls Ruby ModularCompiler — runs existing `out/tests/run_tests` (warn if stale) + `mlcc --check-only` + arch lint. Allowlisted `derive_methods_cpp.mlc` + `spawn_capture.mlc` file_size. TRACK Decision frozen; PLAN/CONTINUITY updated. |
+| result  | `bash scripts/dev_gate_fast.sh` EXIT=0 (1471 passed; arch lint failures=0); test_gate=ok |
+| issues  | Stale run_tests (tests .mlc newer) — warned. mlcc still cannot compile tests_main (import path). CaptureAnalyzer + foreign `TRACK_EDITOR_CLEAN_ARCHITECTURE.md` left uncommitted |
+| next    | ROLE=Driver STEP=2 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 11:20 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — string+char)
 
 | field   | value |
