@@ -6,7 +6,8 @@ import {
 import {
   editor_ux_wheel_scroll,
   editor_ux_wheel_scroll_hover,
-  editor_ux_ensure_caret_visible
+  editor_ux_ensure_caret_visible,
+  editor_ux_clamp_scroll_offset
 } from '../ux/scroll'
 import {
   editor_ux_insert_text,
@@ -213,6 +214,17 @@ export fn editor_app_set_scroll_y(
     selecting_text: app.selecting_text,
     frame_index: app.frame_index
   }
+
+// Wrap-aware / custom content height clamp (live soft-wrap max scroll).
+export fn editor_app_clamp_scroll_to_content(
+  app: EditorAppState,
+  content_height: i32,
+  viewport_height: i32
+) -> EditorAppState =
+  editor_app_set_scroll_y(
+    app,
+    editor_ux_clamp_scroll_offset(app.ux.scroll_offset_y, content_height, viewport_height)
+  )
 
 export fn editor_app_wheel_scroll_hover(
   app: EditorAppState,

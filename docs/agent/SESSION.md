@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:50 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_EDITOR_DEMO_ORCHESTRATOR |
+| started | 2026-07-18 01:40 |
+| elapsed | ~12 min |
+| done    | `editor_ux_clamp_scroll_offset`/`max_scroll_offset` + `editor_app_clamp_scroll_to_content`; `demo_live` wrap clamps via helpers. Gates: `ux_ok wheel_scroll_keeps_caret_visible`, `demo_live_fs_compile_ok`. Shape note: mutation clusters 1–4 retired; `main` ~900 lines remain (draw) |
+| result  | STEP=4 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_DEMO_ORCHESTRATOR |
+
 ### Turn 2026-07-18 01:40 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=3)
 
 | field   | value |

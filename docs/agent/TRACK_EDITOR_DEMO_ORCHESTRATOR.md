@@ -4,11 +4,21 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1**;
 origin [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](../archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md).
 Evidence: [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md) §2.2.
 
-## Status: **active** (2026-07-18) — STEP=0–3 done; STEP=4 next
+## Status: **active** (2026-07-18) — STEP=0–4 done; STEP=5 Critic next
 
 ## Next step
 
-**STEP=4** — Scroll/wheel → `scroll` helpers; thin `main` shape check.
+**STEP=5** — Critic: gates green; no duplicate clusters left for scope; archive.
+
+### STEP=4 done (2026-07-18)
+
+- `editor_ux_clamp_scroll_offset` / `editor_ux_max_scroll_offset` in `ux/scroll.mlc`;
+  `editor_app_clamp_scroll_to_content` (wrap-aware max).
+- `demo_live` frame/wheel/post-caret clamps → helpers; wheel still
+  `editor_app_wheel_scroll` + wrap clamp.
+- Shape: edit/tab/folder/scroll mutation clusters retired; `main` still large
+  (~900 lines) due to draw/command (out of #1 scope).
+- Gates: `ux_ok wheel_scroll_keeps_caret_visible`, `demo_live_fs_compile_ok`.
 
 ### STEP=3 done (2026-07-18)
 
@@ -76,7 +86,7 @@ Do **not** invent a new scenario for this track unless a cluster has **no** exis
 | 1 | Edit path → `edit_apply` (+ related) | **done** (2026-07-18) compile + newline/edit/copy_paste |
 | 2 | Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip` | **done** (2026-07-18) compile + `tab_strip_click_activates` |
 | 3 | Tree/breadcrumb hits → `tree_hit` / folder helpers | **done** (2026-07-18) compile + `tree_click_opens_tab` + folder units |
-| 4 | Scroll/wheel → `scroll` helpers; thin `main` shape check | compile + `wheel_scroll_keeps_caret_visible` |
+| 4 | Scroll/wheel → `scroll` helpers; thin `main` shape check | **done** (2026-07-18) compile + `wheel_scroll_keeps_caret_visible` |
 | 5 | Critic: gates green; no duplicate clusters left for scope; archive | close |
 
 ### Sub-steps (Driver)

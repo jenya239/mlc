@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1 `EDITOR_DEMO_ORCHESTRATOR` STEP=0–3 done; STEP=4 next
+## Status: **active** (2026-07-18) — #1 `EDITOR_DEMO_ORCHESTRATOR` STEP=0–4 done; STEP=5 Critic next
 
 ## How to use this backlog
 
@@ -33,7 +33,7 @@ restringify is a direct speed regression, not a nice-to-have).
 
 | # | Track name | Scope (one line) | Gate scenario | Size | Status |
 |---|-----------|-------------------|----------------|------|--------|
-| 1 | `EDITOR_DEMO_ORCHESTRATOR` | Replace `demo_live.main()` inline command/edit/tree-hit logic with calls to existing tested `ux/edit_apply`/`ux/scroll`/`ux/tab_strip`/`ux/tree_hit` — stop duplicating a second untested implementation | existing gates (`ux_scenarios`+`tests`) + `demo_live_fs_compile` unchanged | L | **active** — [TRACK_EDITOR_DEMO_ORCHESTRATOR](TRACK_EDITOR_DEMO_ORCHESTRATOR.md) STEP=4 next |
+| 1 | `EDITOR_DEMO_ORCHESTRATOR` | Replace `demo_live.main()` inline command/edit/tree-hit logic with calls to existing tested `ux/edit_apply`/`ux/scroll`/`ux/tab_strip`/`ux/tree_hit` — stop duplicating a second untested implementation | existing gates (`ux_scenarios`+`tests`) + `demo_live_fs_compile` unchanged | L | **active** — [TRACK_EDITOR_DEMO_ORCHESTRATOR](TRACK_EDITOR_DEMO_ORCHESTRATOR.md) STEP=5 Critic next |
 | 1b | `EDITOR_LIVE_SOLARIZED_TEXT` | Found 2026-07-17 (screenshot audit): `demo_live.mlc:552` uses `theme_editor_dark()` for chrome, `theme_solarized_light()` only tints dimmed highlight-background rectangles (`rgb*0.35`, `demo_live.mlc:1220`) — glyphs stay default/white, never colored by tag/theme. The stated reason (`ui/theme.mlc:122` comment: "Dark shell until TextRenderer has a color uniform, glyph shader is white") is **stale** — `static_text_draw_lines_colored` already supports real per-line `red/green/blue/alpha` (fixed same-day, batching bug). Wire real per-tag glyph color through `StaticTextLine` instead of background-tint rectangles; revisit whether chrome should render actual Solarized Light rather than the dark shell | new L2 scenario, e.g. `syntax_glyph_color_matches_theme` (draw report color assert, not just highlight-rect presence) | M | pending |
 | 1c | `EDITOR_STALE_HELP_TEXT` | Found 2026-07-17: `demo_live.mlc` `sample_readme_text()` (shown in-app as `editor_live_README.md` tab) says "Tree: click folder to expand/collapse; click file to open" — but `demo_live` never calls `file_tree_expand`/`file_tree_collapse` (§38 `TRACK_EDITOR_FOLDER_BROWSER` Decision replaced expand-in-tree with breadcrumbs, intentionally, not a bug). Fix the in-app copy to describe actual breadcrumb+back/forward behavior | n/a — copy-only fix, no scenario required unless bundled with behavior change | S | pending |
 | 1d | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` (pulled forward from #22, 2026-07-17 priority rule above) | Remove per-frame full-buffer `document_to_string` in demo — direct frame-latency regression on large files, Sublime-parity blocker | `large_file_no_full_stringify` (L2) | M | pending |

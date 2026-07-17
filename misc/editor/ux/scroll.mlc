@@ -55,20 +55,32 @@ fn line_height_or_one(metrics: EditorTextMetrics) -> i32 = do
   metrics.line_height
 end
 
-fn max_scroll_y(state: EditorUxState, metrics: EditorTextMetrics) -> i32 = do
-  if !tab_set_has_active(state.tabs) then
-    return 0
-  end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
-  const line_count = line_index_line_count(line_index)
-  const content_height = document_content_height(line_count, line_height_or_one(metrics))
-  const viewport = text_viewport_rect(state)
-  let mut max_y = content_height - viewport.height
+export fn editor_ux_max_scroll_offset(
+  content_height: i32,
+  viewport_height: i32
+) -> i32 = do
+  let mut max_y = content_height - viewport_height
   if max_y < 0 then
     max_y = 0
   end
   max_y
+end
+
+// Clamp scroll to [0, max(0, content_height - viewport_height)].
+export fn editor_ux_clamp_scroll_offset(
+  scroll_offset_y: i32,
+  content_height: i32,
+  viewport_height: i32
+) -> i32 = do
+  let mut scroll_y = scroll_offset_y
+  if scroll_y < 0 then
+    scroll_y = 0
+  end
+  const max_y = editor_ux_max_scroll_offset(content_height, viewport_height)
+  if scroll_y > max_y then
+    scroll_y = max_y
+  end
+  scroll_y
 end
 
 export fn editor_ux_clamp_scroll_y(
@@ -76,15 +88,15 @@ export fn editor_ux_clamp_scroll_y(
   metrics: EditorTextMetrics,
   scroll_offset_y: i32
 ) -> i32 = do
-  let mut scroll_y = scroll_offset_y
-  if scroll_y < 0 then
-    scroll_y = 0
+  if !tab_set_has_active(state.tabs) then
+    return editor_ux_clamp_scroll_offset(scroll_offset_y, 0, 0)
   end
-  const max_y = max_scroll_y(state, metrics)
-  if scroll_y > max_y then
-    scroll_y = max_y
-  end
-  scroll_y
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const line_count = line_index_line_count(line_index)
+  const content_height = document_content_height(line_count, line_height_or_one(metrics))
+  const viewport = text_viewport_rect(state)
+  editor_ux_clamp_scroll_offset(scroll_offset_y, content_height, viewport.height)
 end
 
 // 1 if caret row intersects the text viewport.

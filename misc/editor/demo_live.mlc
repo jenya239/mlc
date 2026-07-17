@@ -229,6 +229,7 @@ import {
   editor_app_commit_session,
   editor_app_wheel_scroll,
   editor_app_ensure_caret_visible,
+  editor_app_clamp_scroll_to_content,
   editor_app_insert_text,
   editor_app_insert_newline,
   editor_app_backspace,
@@ -651,16 +652,11 @@ fn main() -> i32 = do
     if wrapped_content_height < 0 then
       wrapped_content_height = 0
     end
-    let mut max_editor_scroll = wrapped_content_height - text_rect.height
-    if max_editor_scroll < 0 then
-      max_editor_scroll = 0
-    end
-    if scroll_offset_y > max_editor_scroll then
-      scroll_offset_y = max_editor_scroll
-    end
-    if scroll_offset_y < 0 then
-      scroll_offset_y = 0
-    end
+    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_clamp_scroll_to_content(
+      app, wrapped_content_height, text_rect.height
+    )
+    scroll_offset_y = app.ux.scroll_offset_y
     const first_visual_row = scroll_offset_y / line_height()
     let mut visible_row_budget = text_rect.height / line_height() + 3
     if visible_row_budget < 1 then
@@ -711,13 +707,10 @@ fn main() -> i32 = do
       )
     else if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
       app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
+      app = editor_app_clamp_scroll_to_content(
+        app, wrapped_content_height, text_rect.height
+      )
       scroll_offset_y = app.ux.scroll_offset_y
-      if scroll_offset_y > max_editor_scroll then
-        scroll_offset_y = max_editor_scroll
-      end
-      if scroll_offset_y < 0 then
-        scroll_offset_y = 0
-      end
       visible = visible_line_range(line_count, scroll_offset_y, viewport)
       view_metrics = editor_view_metrics_new(
         line_height(), char_width(),
@@ -1049,23 +1042,20 @@ fn main() -> i32 = do
     line_index = line_index_rebuild(document)
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_ensure_caret_visible(app, metrics)
-    scroll_offset_y = app.ux.scroll_offset_y
-    visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
     const draw_text_pre = document_to_string(document)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, char_width())
     const visual_row_count_now = document_visual_row_count(
       draw_text_pre, line_index, wrap_columns_now
     )
-    let mut max_scroll_now = visual_row_count_now * line_height() - text_rect.height
-    if max_scroll_now < 0 then
-      max_scroll_now = 0
+    let mut wrapped_content_height_now = visual_row_count_now * line_height()
+    if wrapped_content_height_now < 0 then
+      wrapped_content_height_now = 0
     end
-    if scroll_offset_y > max_scroll_now then
-      scroll_offset_y = max_scroll_now
-    end
-    if scroll_offset_y < 0 then
-      scroll_offset_y = 0
-    end
+    app = editor_app_clamp_scroll_to_content(
+      app, wrapped_content_height_now, text_rect.height
+    )
+    scroll_offset_y = app.ux.scroll_offset_y
+    visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
     visual_rows = collect_visible_visual_rows(
       draw_text_pre, line_index, wrap_columns_now,
       scroll_offset_y / line_height(), visible_row_budget
