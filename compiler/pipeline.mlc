@@ -9,6 +9,7 @@ import { transform_load_items } from './checker/transform/transform_decl'
 import { SemanticLoadItem } from './ir/semantic_ir'
 import { LoadItem } from './ir/load_item'
 import { PrecomputedCtx, precompute, gen_module } from './codegen/module'
+import { print_cpp_declarations } from './codegen/decl_cpp'
 import { path_to_module_base } from './codegen/cpp_naming'
 import { profile_maybe_begin, profile_maybe_end, profile_reset_if_enabled, profile_finish } from './profile'
 import { write_compile_commands_file } from './compile_commands'
@@ -187,8 +188,8 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
       else ""
     const header_path = output_directory_prefix + module_base + ".hpp"
     const implementation_path = output_directory_prefix + module_base + ".cpp"
-    write_text_if_changed(header_path, generated_output.header)
-    write_text_if_changed(implementation_path, generated_output.source)
+    write_text_if_changed(header_path, print_cpp_declarations(generated_output.header))
+    write_text_if_changed(implementation_path, print_cpp_declarations(generated_output.source))
     implementation_paths.push(implementation_path)
     let mut library_index = 0
     while library_index < generated_output.link_libraries.length() do

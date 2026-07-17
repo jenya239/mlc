@@ -4,7 +4,7 @@ import { Program, Pattern, TypeExpr } from '../frontend/ast'
 import { build_registry } from '../checker/registry'
 import { SemanticStatement } from '../ir/semantic_ir'
 import { Type, TShared, TArray, TUnknown, trait_base_name } from '../checker/registry'
-import { CppStatement, CppStatementFragment } from '../cpp_ir/cpp_ast'
+import { CppStatement, CppStatementFragment, CppDeclaration } from '../cpp_ir/cpp_ast'
 import { print_statement } from '../cpp_emit/print'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
@@ -82,7 +82,11 @@ extend GenStmtsResult {
     self.parts.map(statement => gen_stmts_part_to_source(statement)).join('')
 }
 
-export type GenModuleOut   = GenModuleOut   { header: string, source: string, link_libraries: [string] }
+export type GenModuleOut   = GenModuleOut   {
+  header: [Shared<CppDeclaration>],
+  source: [Shared<CppDeclaration>],
+  link_libraries: [string]
+}
 export type PrecomputedCtx = PrecomputedCtx {
   field_orders: [Shared<FieldOrder>],
   variant_types: Map<string, string>,

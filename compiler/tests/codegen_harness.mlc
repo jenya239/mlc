@@ -3,6 +3,7 @@
 import { Program } from '../frontend/ast'
 import { LoadItem } from '../ir/load_item'
 import { gen_module, precompute } from '../codegen/module'
+import { print_cpp_declarations } from '../codegen/decl_cpp'
 import { program_to_semantic_load_item } from '../checker/transform/program_to_semantic'
 
 export fn gen_program(program: Program) -> string = do
@@ -13,7 +14,7 @@ export fn gen_program(program: Program) -> string = do
       const all_items: [LoadItem] = []
       const precomputed_context = precompute(program, all_items)
       const module_parsed = gen_module(semantic_load_item, all_items, program, precomputed_context)
-      module_parsed.header + module_parsed.source
+      print_cpp_declarations(module_parsed.header) + print_cpp_declarations(module_parsed.source)
     end
   }
 end

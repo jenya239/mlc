@@ -16,10 +16,11 @@ import { SemanticDeclaration } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
 import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
-import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, print_cpp_declarations, collect_ffi_include_lines } from './decl_cpp'
+import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, collect_ffi_include_lines } from './decl_cpp'
 import { CppDeclaration, CppFile } from '../cpp_ir/cpp_ast'
 import * as cpp_ir from '../cpp_ir/cpp_ast'
 import * as module_tu_helpers from '../cpp_emit/module_tu_helpers'
+import {print_file} from '../cpp_emit/print'
 import * as expression_output from './expr/expr'
 
 type ModuleGenerationContext = ModuleGenerationContext {
@@ -255,11 +256,14 @@ fn gen_module_cpp_file(parts: ModuleGenerationContext) -> Shared<CppFile> =
 fn gen_module_output(parts: ModuleGenerationContext) -> GenModuleOut = do
   const file = gen_module_cpp_file(parts)
   GenModuleOut {
-    header: print_cpp_declarations(cpp_ir.cpp_file_header(file)),
-    source: print_cpp_declarations(cpp_ir.cpp_file_source(file)),
+    header: cpp_ir.cpp_file_header(file),
+    source: cpp_ir.cpp_file_source(file),
     link_libraries: []
   }
 end
+
+export fn print_module_out(output: GenModuleOut) -> string =
+  print_file(Shared.new(CppFile { header: output.header, source: output.source }))
 
 fn collect_extern_lib_names_from_declaration(declaration: Shared<SemanticDeclaration>) -> [string] =
   match declaration {

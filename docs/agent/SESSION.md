@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 13:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=6 — GenModuleOut decl lists)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 13:18 |
+| elapsed | ~30 min (rebuild + Tier B) |
+| done    | `GenModuleOut.header/source` → `[Shared<CppDeclaration>]`; `print_module_out` via `print_file`; pipeline/harness print at write edge with `print_cpp_declarations` |
+| result  | `--check-only` OK; self-host only `context`/`module`/`pipeline`; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 13:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=5 — gen_expr/gen_stmts_str return AST)
 
 | field   | value |

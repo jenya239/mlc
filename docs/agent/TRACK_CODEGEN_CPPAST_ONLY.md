@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5 **done**, STEP=6 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6 **done**, STEP=7 next
 
 ## Why this track exists
 
@@ -110,7 +110,7 @@ reachable again — Meta should split later.
 | 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | **done** (2026-07-17) |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | **done** (2026-07-17) — `append_stmt` wraps `CppStatementFragment`; `joined_code` prints; string `GenStmtResult.output` bridge remains until STEP=5; `stmt_cpp` already on parallel `[Shared<CppStatement>]` path (no change) |
 | 5 | `gen_stmts_str`/`gen_expr` in `eval.mlc` stop calling `print_expr`/`print_cpp_statements` internally; return AST nodes; update the ~40 call sites that currently consume the string result | **done** (2026-07-17) — `gen_expr` → `Shared<CppExpression>`; `gen_stmts_str` → `[Shared<CppStatement>]`; `eval_expr_cpp` `gen_stmts` callback AST; while/for/with/block use statement lists directly; string consumers wrap `print_expr`/`print_cpp_statements`; `stmt_eval` still gets printed via `gen_expr_as_source` |
-| 6 | `GenModuleOut.header/source` → `[Shared<CppDeclaration>]`; single `print_file` call in `codegen/module.mlc` | pending |
+| 6 | `GenModuleOut.header/source` → `[Shared<CppDeclaration>]`; single `print_file` call in `codegen/module.mlc` | **done** (2026-07-17) — AST in `GenModuleOut`; `print_module_out` = `print_file`; pipeline/harness print via `print_cpp_declarations` at write edge |
 | 7 | Remove `CppStatementFragment`/`CppDeclarationFragment` construction sites once callers pass real AST (11 sites, see inventory) | pending |
 | 8 | Delete `compiler/codegen/expr/expr.mlc` once zero callers remain; delete corresponding `render_*`/mirror functions in `cpp_emit/print.mlc` if now unreachable | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
