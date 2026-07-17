@@ -13,7 +13,7 @@
 | elapsed | ~70 min |
 | done    | Handoff already committed (`99267992`/`5c20ffa9`). Fixed onion layers blocking Ruby `tests_main` compile: (1) `expression_parser.rb` `parse_primary` accepts MATCH/DO/IF; (2) `capture_analyzer.rb` `Return.expr`; (3) `region_escape.mlc` `let mut` for reassigned bindings; (4) `vm/value.mlc`+`native.mlc` rename pattern `record`→`record_value`. Regression `test_match_as_primary_inside_and_expression`. TRACK/PLAN/CONTINUITY updated. |
 | result  | `test_parser`/`test_mir_interpreter` Ruby-parse OK; mlcc `--check-only main` OK; self-host diff only `value.cpp`/`native.cpp`; pattern_matching unit OK; `dev_gate_fast.sh` still EXIT=1 — `Cannot add string and char` (BinaryRule) |
-| issues  | Pause per 3+ verify fails; remaining Tier A blocker is string+char BinaryRule while compiling tests graph (not MATCH). `TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic still pending separately |
+| issues  | Pause per 3+ verify fails; remaining Tier A blocker is string+char BinaryRule while compiling tests graph (not MATCH). CaptureAnalyzer Return.expr patched in worktree but `git add` blocked by cursorfs (path invisible to shell/`git add` pathspec) — re-apply+commit next turn. `TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic still pending separately |
 | next    | ROLE=Driver STEP=test-fix TRACK_CODEGEN_CPPAST_ONLY (bisect BinaryRule `Cannot add string and char`) |
 
 ### 2026-07-17 — ROLE=Driver STEP=hygiene+1 TRACK_CODEGEN_CPPAST_ONLY (interactive session — uncommitted handoff)
