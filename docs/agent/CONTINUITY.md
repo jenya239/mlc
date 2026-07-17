@@ -78,6 +78,7 @@ INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
 | **`TRACK_EDITOR_WORD_WRAP` (PLAN §42)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | Folder back/forward history; absorb `folder_panel` WIP. Prefer `misc/editor/ux/folder_panel*`; no `compiler/`. STEP=3 Critic pending, independent of §44 |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1 + test-fix **done**: Tier A no longer Ruby-rebuilds `run_tests` (`build_tests_fast.sh`); `dev_gate_fast` green. STEP=2 next. Touches `compiler/` — Tier B + self-host every numbered STEP |
+| **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | STEP=0 done docs-only (TDD-scenario-first standing rule now in `GUI_UX_TESTING.md` §"Standing discipline" — applies to **every** `misc/editor/**` STEP from now, check before marking any editor STEP `done`). STEP=1 (`demo_live.mlc` `main()` decomposition, ~977 lines) not yet executed — do not skip to STEP=3 (UX backlog) first. STEP=3 needs `mlc-support/responses/editor_tdd_ux_*.md` to exist (external review) — check `mlc-support/responses/` before assuming it's there |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
