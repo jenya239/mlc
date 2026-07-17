@@ -199,7 +199,7 @@ fn walk_region_expression(
 ) -> [Diagnostic] =
   match expression {
     ExprLambda(parameter_names, body, source_span) => do
-      let diagnostics = empty_diagnostics()
+      let mut diagnostics = empty_diagnostics()
       if lambda_captures_region_value(parameter_names, body, region_values) then
         diagnostics = diagnostics.concat([region_escape_closure_diagnostic(source_span)])
       end
@@ -208,7 +208,7 @@ fn walk_region_expression(
         walk_region_expression(body, region_binder, region_values, region_locals, outer_bound))
     end,
     ExprBin(operation, left, right, source_span) => do
-      let diagnostics = empty_diagnostics()
+      let mut diagnostics = empty_diagnostics()
       if operation == "=" then
         match left {
           ExprIdent(target_name, _) =>
@@ -373,7 +373,7 @@ fn walk_region_statement(
         state.diagnostics,
         walk_region_expression(
           value, region_binder, state.region_values, state.region_locals, outer_bound))
-      let region_values = state.region_values
+      let mut region_values = state.region_values
       if expression_is_region_alloc(value, region_binder) ||
          expression_mentions_region_value(value, state.region_values, region_binder) then
         region_values = names_add(region_values, name)
@@ -389,7 +389,7 @@ fn walk_region_statement(
         state.diagnostics,
         walk_region_expression(
           value, region_binder, state.region_values, state.region_locals, outer_bound))
-      let region_values = state.region_values
+      let mut region_values = state.region_values
       if expression_is_region_alloc(value, region_binder) ||
          expression_mentions_region_value(value, state.region_values, region_binder) then
         region_values = names_add(region_values, name)
@@ -409,7 +409,7 @@ fn walk_region_statement(
             value, region_binder, state.region_values, state.region_locals, outer_bound),
           walk_region_expression(
             else_body, region_binder, state.region_values, state.region_locals, outer_bound)))
-      let region_values = state.region_values
+      let mut region_values = state.region_values
       if expression_is_region_alloc(value, region_binder) ||
          expression_mentions_region_value(value, state.region_values, region_binder) then
         region_values = names_add_all(region_values, binding_names)
@@ -430,7 +430,7 @@ fn walk_region_statement(
         region_locals: state.region_locals
       },
     StmtReturn(expression, source_span) => do
-      let diagnostics = state.diagnostics
+      let mut diagnostics = state.diagnostics
       if expression_mentions_region_value(expression, state.region_values, region_binder) then
         diagnostics = diagnostics.concat([region_escape_return_diagnostic(source_span)])
       end

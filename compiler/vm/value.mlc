@@ -69,7 +69,7 @@ export fn vm_field_slot_from_value(value: VmValue) -> Result<VmFieldSlot, [strin
     VmBool(flag) => Ok(VmFieldBool(flag)),
     VmString(text) => Ok(VmFieldString(text)),
     VmVariant(variant) => Ok(VmFieldVariant(Shared.new(variant))),
-    VmRecord(record) => Ok(VmFieldRecord(Shared.new(record))),
+    VmRecord(record_value) => Ok(VmFieldRecord(Shared.new(record_value))),
     VmArray(array) => Ok(VmFieldArray(Shared.new(array))),
     VmMap(map) => Ok(VmFieldMap(Shared.new(map))),
     VmUnit => Err(['vm: cannot store unit in field slot'])
