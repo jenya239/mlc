@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 00:40 (Critic TRACK_CODEGEN_CPPAST_ONLY critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-18 00:37 |
+| elapsed | ~10 min |
+| done    | Critic OK: verified `expr.mlc` gone, GenStmts/ModuleOut AST, `gen_expr`→CppExpression; Tier A EXIT=0; fixed stale PLAN residual (`GenModuleOut` was already AST); archived → `docs/archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md`; reopen none |
+| result  | Critic OK; track archived |
+| issues  | 0% bridges not met (honest); Color example allowlists pre-existing |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-17 23:30 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=9 — close)
 
 | field   | value |

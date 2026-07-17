@@ -1,21 +1,28 @@
 # Track: Eliminate string-concatenation codegen — CppAST only
 
-Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CPPEXPR.md](../archive/tracks/TRACK_CPPEXPR.md),
-[archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
+Parent: [../../PLAN.md](../../PLAN.md) §2/§2.6. Prior work: [TRACK_CPPEXPR.md](TRACK_CPPEXPR.md),
+[TRACK_CPPGEN.md](TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **closed** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b13/8c/9 **done**; Critic next
+## Status: **closed** (2026-07-17) — Critic OK
+
+**Critic 2026-07-18 (critique-audit):** Re-checked close claims vs tree + git.
+`expr.mlc` absent; `GenStmtsResult.parts` / `GenModuleOut.header|source` are
+AST lists; `gen_expr` returns `Shared<CppExpression>`. Tier A EXIT=0.
+Anti-false-done: target **0% string bridges not met** — residual
+`CppStatementFragment` / `stmt_result_from_source` / `joined_code` /
+`gen_expr_as_source` / type_gen+stmt_fragments string helpers. PLAN residual
+wording corrected (was wrongly blaming `GenModuleOut` as string). **reopen: none**.
 
 ## Why this track exists
 
-`docs/PLAN.md` §1/§7 claims "CppAST default; string bridges for edge cases" /
-target "0% string bridges". Audit 2026-07-17 found this is **not** accurate:
-string concatenation is not an edge case, it is the primary mechanism by
-which statement bodies, function bodies, and control-flow-as-expression are
-assembled. `GenStmtsResult { parts: [Shared<CppStatement>], next_try: i32 }` (STEP=4) and
-`GenModuleOut { header: string, source: string }` (`compiler/codegen/context.mlc:62-63,77`)
-are `string`-typed by design — every statement generator returns joined text,
-not `[Shared<CppStatement>]`.
+`docs/PLAN.md` §1/§7 claimed "CppAST default; string bridges for edge cases" /
+target "0% string bridges". Audit 2026-07-17 found that inaccurate at open.
+**At close:** `expr.mlc` deleted; `GenStmtsResult.parts` and `GenModuleOut`
+header/source are AST-typed; DeclFragments largely gone. Residual string
+bridges remain via `CppStatementFragment`, `stmt_result_from_source`,
+`joined_code`/`gen_expr_as_source`, and pre-rendered helpers in `type_gen` /
+`stmt_fragments` — **not** 0% bridges.
 
 ## Ground truth (exact inventory, 2026-07-17)
 
@@ -49,20 +56,13 @@ parsed-then-reprinted `#define`/typedef fragment is not "our" codegen).
 
 ### 3. Root cause — `CodegenContext` types are string-typed
 
-`compiler/codegen/context.mlc`:
-- `GenStmtsResult { parts: [Shared<CppStatement>], next_try: i32 }` (STEP=4; was `[string]`)
-- `GenStmtsWithContext { statements_parsed: GenStmtsResult, codegen_context: CodegenContext }` (line 63)
-- `GenStmtResult { output: string, next_try: i32, codegen_context: CodegenContext }` (line 64)
-- `GenModuleOut { header: string, source: string, link_libraries: [string] }` (line 77)
+`compiler/codegen/context.mlc` (at close):
+- `GenStmtsResult { parts: [Shared<CppStatement>], next_try: i32 }`
+- `GenStmtResult { statement: Shared<CppStatement>, ... }` — string path via `stmt_result_from_source` → `CppStatementFragment`
+- `GenModuleOut { header: [Shared<CppDeclaration>], source: [Shared<CppDeclaration>], link_libraries: [string] }`
 
-`compiler/codegen/eval.mlc` — `gen_expr` **already** builds a real
-`Shared<CppExpression>` via `expr_visitor_cpp.eval_expr_cpp`, then immediately
-calls `print_expr` and returns `string` (line 21-22). Every caller receives
-already-printed text and string-concatenates it further. This is the actual
-bridge point: fixing it means `gen_expr`/`gen_stmts_str` must return AST nodes,
-not call the printer internally — and every one of their ~40+ call sites
-across `decl/*.mlc`, `stmt/*.mlc`, `expr/*.mlc` must accept an AST node instead
-of a string.
+`compiler/codegen/eval.mlc` — `gen_expr` returns `Shared<CppExpression>`; many
+call sites still consume via `gen_expr_as_source` / `print_expr` (string bridge).
 
 ## Decision (frozen 2026-07-17)
 
