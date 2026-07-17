@@ -4,8 +4,7 @@ import { Type, TGeneric, TUnknown } from '../../checker/registry'
 import { CppExpression, CppCall, CppMember } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
-import * as expression_output from './expr'
-import { sem_type_to_cpp } from '../decl/type_gen'
+import { sem_type_to_cpp, function_call_parentheses } from '../decl/type_gen'
 import { type_is_shared_pointer, shared_pointer_inner_type } from '../../checker/semantic_type_structure'
 
 export fn type_is_weak_pointer(type_value: Shared<Type>) -> bool =
@@ -26,11 +25,11 @@ export fn gen_method_shared_weak_using_fragments(
   context: CodegenContext
 ) -> string = do
   const inner_type_cpp = sem_type_to_cpp(context, shared_pointer_inner_type(receiver_type))
-  expression_output.function_call_parentheses(`std::weak_ptr<${inner_type_cpp}>`, receiver_fragment)
+  function_call_parentheses(`std::weak_ptr<${inner_type_cpp}>`, receiver_fragment)
 end
 
 export fn gen_method_weak_upgrade_using_fragments(receiver_fragment: string) -> string =
-  expression_output.function_call_parentheses(
+  function_call_parentheses(
     'mlc::option::from_nullable',
     `${receiver_fragment}.lock()`)
 

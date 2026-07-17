@@ -3,7 +3,6 @@
 import { TestResult, assert_eq_str } from './test_runner'
 import {print_expr, print_statement, print_decl, print_file} from '../cpp_emit/print'
 import * as module_tu_helpers from '../cpp_emit/module_tu_helpers'
-import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
@@ -14,6 +13,9 @@ import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBin
 
 fn print_declarations(declarations: [Shared<CppDeclaration>]) -> string =
   declarations.map(declaration => print_decl(declaration)).join('')
+
+fn expected_host_entry_main(qualified_namespace: string) -> string =
+  `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
 
 fn integer_type() -> Shared<CppType> =
   Shared.new(CppTypeName('int'))
@@ -457,7 +459,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('print_decl CppHostEntryMain',
     print_decl(Shared.new(CppHostEntryMain('mlc_main'))),
-    expression_output.bootstrap_host_main_calling_namespaced_user_main('mlc_main')))
+    expected_host_entry_main('mlc_main')))
 
   results.push(assert_eq_str('print_decl CppStdHashSpecialization',
     print_decl(Shared.new(CppStdHashSpecialization('Item', [Shared.new(CppReturn(Shared.new(CppInt(0))))]))),

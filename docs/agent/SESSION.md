@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 22:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b13 — last expr helpers)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b13 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 21:40 |
+| elapsed | ~25 min (rebuild + Tier B + mlcc2) |
+| done    | `function_call_parentheses`/`runtime_to_string_call` → `type_gen`; bootstrap golden → `expected_host_entry_main` in `test_cpp_printer`; emptied `expr.mlc` stub (0 exports, no importers) |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone; CONTINUITY rev already `editor-audit-backlog` |
+| next    | ROLE=Driver STEP=8c TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 21:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b12 — decl helpers → type_gen)
 
 | field   | value |

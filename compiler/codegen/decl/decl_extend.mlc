@@ -9,8 +9,8 @@ import { CodegenContext, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp, cpp_lvalue_reference_suffix,
          noexcept_function_prototype, cpp_template_typename_header_line,
-         concept_requires_expression_method_returns_convertible, trait_vtable_struct_cpp_name } from './type_gen'
-import * as expression_output from '../expr/expr'
+         concept_requires_expression_method_returns_convertible, trait_vtable_struct_cpp_name,
+         runtime_to_string_call } from './type_gen'
 
 fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
   `${type_expression_cpp} ${binding_name_cpp}`
@@ -404,7 +404,7 @@ export fn gen_extend_extern_method(mangled: string, type_name: string, parameter
         return_type_cpp,
         context_resolve_fn(context, mangled),
         parameters_string,
-        expression_output.runtime_to_string_call(cpp_safe(parameters[0].name)))
+        runtime_to_string_call(cpp_safe(parameters[0].name)))
     end
   else ''
   end

@@ -12,8 +12,7 @@ import { infer_shared_new_type_name,
          cpp_function_name_for_file_method,
          cpp_function_name_for_profile_method } from './expression_support'
 import * as mut_actual_argument from './mut_actual_argument'
-import * as expression_output from './expr'
-import { sem_type_to_cpp } from '../decl/type_gen'
+import { sem_type_to_cpp, function_call_parentheses, runtime_to_string_call } from '../decl/type_gen'
 import { type_is_mutex, mutex_inner_type_from_mutex_type, type_is_shared_pointer } from '../../checker/semantic_type_structure'
 import {
   type_is_weak_pointer,
@@ -42,11 +41,11 @@ fn gen_method_file_using_trailing_argument_fragments(
   trailing_arguments_joined: string
 ) -> string =
   if trailing_arguments_joined.length() == 0 then
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       cpp_function_name_for_file_method(method_name),
       '')
   else
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       cpp_function_name_for_file_method(method_name),
       trailing_arguments_joined)
   end
@@ -56,11 +55,11 @@ fn gen_method_profile_using_trailing_argument_fragments(
   trailing_arguments_joined: string
 ) -> string =
   if trailing_arguments_joined.length() == 0 then
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       cpp_function_name_for_profile_method(method_name),
       '')
   else
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       cpp_function_name_for_profile_method(method_name),
       trailing_arguments_joined)
   end
@@ -118,9 +117,9 @@ fn gen_method_owner_call_using_fragments(
   const mangled_name = resolve_method_owner_mangled(method_name, type_name, context)
   const function_name = context.resolve(mangled_name)
   if trailing_arguments_joined.length() == 0 then
-    expression_output.function_call_parentheses(function_name, receiver_fragment)
+    function_call_parentheses(function_name, receiver_fragment)
   else
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       function_name,
       comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end
@@ -132,8 +131,8 @@ fn gen_method_builtin_using_fragments(
   trailing_arguments_joined: string
 ) -> string = do
   const call_base = dot_member_access(receiver_fragment, map_method(method_name))
-  if trailing_arguments_joined.length() == 0 then expression_output.function_call_parentheses(call_base, '')
-  else expression_output.function_call_parentheses(call_base, trailing_arguments_joined)
+  if trailing_arguments_joined.length() == 0 then function_call_parentheses(call_base, '')
+  else function_call_parentheses(call_base, trailing_arguments_joined)
   end
 end
 
@@ -143,8 +142,8 @@ fn gen_method_namespace_alias_using_fragments(
   trailing_arguments_joined: string
 ) -> string = do
   const call_base = `${static_prefix}${map_method(method_name)}`
-  if trailing_arguments_joined.length() == 0 then expression_output.function_call_parentheses(call_base, '')
-  else expression_output.function_call_parentheses(call_base, trailing_arguments_joined)
+  if trailing_arguments_joined.length() == 0 then function_call_parentheses(call_base, '')
+  else function_call_parentheses(call_base, trailing_arguments_joined)
   end
 end
 
@@ -218,7 +217,7 @@ fn gen_method_expr_fallback_using_fragments(
   if is_user_defined_method_for_type(method_name, object_type_name, context) then
     gen_method_owner_call_using_fragments(receiver_fragment, object_type_name, method_name, trailing_arguments_joined, context)
   else if method_name == 'to_string' && argument_count == 0 then
-    expression_output.runtime_to_string_call(receiver_fragment)
+    runtime_to_string_call(receiver_fragment)
   else
     gen_method_builtin_using_fragments(receiver_fragment, method_name, trailing_arguments_joined)
   end
@@ -348,9 +347,9 @@ fn gen_result_option_combinator_call_using_fragments(
   const cpp_name = result_option_method_cpp_name(is_option, method_name)
   const callee = `${base}${cpp_name}`
   if trailing_arguments_joined.length() == 0 then
-    expression_output.function_call_parentheses(callee, receiver_fragment)
+    function_call_parentheses(callee, receiver_fragment)
   else
-    expression_output.function_call_parentheses(
+    function_call_parentheses(
       callee,
       comma_separated_pair(receiver_fragment, trailing_arguments_joined))
   end

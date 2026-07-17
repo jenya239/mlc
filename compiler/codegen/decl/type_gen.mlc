@@ -89,6 +89,12 @@ export fn concept_requires_expression_method_returns_convertible(
 export fn trait_vtable_struct_cpp_name(trait_cpp_safe: string) -> string =
   `${trait_cpp_safe}_vtable`
 
+export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
+  `${callee_code}(${argument_list})`
+
+export fn runtime_to_string_call(expression_code: string) -> string =
+  `mlc::to_string(${expression_code})`
+
 export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_text: string) -> string =
   `${element_type_cpp} field${field_index_text};`
 

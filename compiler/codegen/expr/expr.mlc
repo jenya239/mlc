@@ -1,15 +1,2 @@
-// Pre-rendered C++ substrings for expressions and related statement fragments.
-// Mutual recursion (gen_expr <-> gen_stmts_str) stays in eval.mlc; this module has no SemanticExpression traversal.
-// Export names must not collide with other compiler modules (single global symbol namespace).
-
-export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
-  `${callee_code}(${argument_list})`
-
-export fn runtime_to_string_call(expression_code: string) -> string =
-  `mlc::to_string(${expression_code})`
-
-// --- Header / module shell (no traversal)
-
-export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
-  `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
-
+// Placeholder: string helpers moved out (TRACK_CODEGEN_CPPAST_ONLY STEP=8b).
+// Delete in STEP=8c once no importers remain.
