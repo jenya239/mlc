@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 03:25 (Planner PLAN_QUEUE pick-next → open #1d)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 03:20 |
+| elapsed | ~5 min |
+| done    | Opened §46 #1d: `TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md` STEP=0 Decision frozen (≤1 `document_to_string`/frame via `document_frame_snapshot` + line_index from same string; demo_live wire; L2 `large_file_no_full_stringify`; save stringify OK; zero-flatten deferred); UX_BACKLOG #1d → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone; evidence: demo_live 3× stringify + line_index_rebuild |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-18 03:15 (Critic TRACK_EDITOR_STALE_HELP_TEXT critique-audit)
 
 | field   | value |
