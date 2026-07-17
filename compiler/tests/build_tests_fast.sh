@@ -3,7 +3,8 @@
 # Do NOT rebuild run_tests via Ruby ModularCompiler here: the tests_main graph
 # pulls in the whole self-hosted compiler, and Ruby→C++ emission currently
 # fails cross-module namespaces (see TRACK_CODEGEN_CPPAST_ONLY test-fix).
-# Full rebuild: compiler/tests/build_tests_self.sh (mlcc) or build_tests.sh (Tier B).
+# Full rebuild: compiler/tests/build_tests_self.sh (mlcc). Tier B
+# (`build_tests.sh`) also skips Ruby phase 1 under the same Decision.
 set -e
 
 COMPILER_DIR="$(cd "$(dirname "$0")/.." && pwd)"

@@ -5,6 +5,7 @@ import { SemanticExpression, SemanticStatement, SemanticFieldVal, SemanticExpres
 import { Type, TUnknown } from '../../checker/registry'
 import { CppExpression, CppAggregateInit, CppInvokedBlock } from '../../cpp_ir/cpp_ast'
 import {print_expr} from '../../cpp_emit/print'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext, lookup_fields_for_context } from '../context'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { find_field_value } from './expression_support'
@@ -125,7 +126,7 @@ export fn gen_record_update_expr_cpp(
         '__upd.' + cpp_safe(override_field.name) + ' = ' +
         print_expr(eval_expr_fn(override_field.value, context, gen_stmts)) + ';\n').join('') +
       'return __upd;\n'
-    Shared.new(CppInvokedBlock(body_fragment))
+    Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(body_fragment)))
   end
 end
 end

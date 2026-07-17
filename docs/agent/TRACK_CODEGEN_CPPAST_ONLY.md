@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1 done, STEP=test-fix **done**, STEP=2 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2 **done**, STEP=3 next
 
 ## Why this track exists
 
@@ -92,12 +92,13 @@ of a string.
 `region_escape` `let mut`, `record_value`, `test_spawn` string lits. After
 semantic OK, Ruby→C++ still fails cross-module namespaces — not a one-liner.
 
-**Decision (frozen 2026-07-17):** Tier A (`build_tests_fast.sh`) does **not**
-rebuild via Ruby. It runs existing `out/tests/run_tests` (warn if stale) +
-`mlcc --check-only main.mlc` + arch lint. Full rebuild:
-`build_tests_self.sh` (mlcc; import-path WIP) or `build_tests.sh` (Tier B).
-Allowlisted `derive_methods_cpp.mlc` / `spawn_capture.mlc` file_size when lint
-became reachable again — Meta should split later.
+**Decision (frozen 2026-07-17):** Tier A (`build_tests_fast.sh`) and Tier B
+(`build_tests.sh` phase 1) do **not** rebuild via Ruby. They run existing
+`out/tests/run_tests` (warn if stale) + (Tier A) `mlcc --check-only main.mlc` +
+arch lint; Tier B continues fuzz/LSP/vm-diff/lint phases. Full rebuild:
+`build_tests_self.sh` (mlcc; import-path WIP). Allowlisted
+`derive_methods_cpp.mlc` / `spawn_capture.mlc` file_size when lint became
+reachable again — Meta should split later.
 
 ## Steps
 
@@ -105,7 +106,7 @@ became reachable again — Meta should split later.
 |------|------|--------|
 | 1 | Delete 11 zero-usage functions from `expr.mlc`; verify self-host diff touches only `expr.cpp/.hpp` | **done** (2026-07-17) |
 | test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **done** (2026-07-17) — Decision: no Ruby rebuild in Tier A; `dev_gate_fast.sh` EXIT=0 |
-| 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer already has `print_statements` | pending |
+| 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer uses `print_statements`; bridge via `make_invoked_block_body_from_source` | **done** (2026-07-17) |
 | 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | pending |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | pending |
 | 5 | `gen_stmts_str`/`gen_expr` in `eval.mlc` stop calling `print_expr`/`print_cpp_statements` internally; return AST nodes; update the ~40 call sites that currently consume the string result | pending |

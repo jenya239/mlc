@@ -119,11 +119,11 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '[&]() {\nfor (auto item : items) {\nstep();\n}\n}()'))
 
   results.push(assert_eq_str('print_expr CppInvokedBlock',
-    print_expr(Shared.new(CppInvokedBlock('auto x = 1;\nreturn x;\n'))),
+    print_expr(Shared.new(CppInvokedBlock([Shared.new(CppStatementFragment('auto x = 1;\nreturn x;\n'))]))),
     '[&]() {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('print_expr CppInvokedBlockWithReturn',
-    print_expr(Shared.new(CppInvokedBlockWithReturn('int', 'auto x = 1;\nreturn x;\n'))),
+    print_expr(Shared.new(CppInvokedBlockWithReturn('int', [Shared.new(CppStatementFragment('auto x = 1;\nreturn x;\n'))]))),
     '[&]() -> int {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('print_expr CppQuestionTry',

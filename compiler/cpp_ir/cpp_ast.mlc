@@ -58,8 +58,8 @@ export type CppExpression =
   | CppCast(CppCastKind, Shared<CppType>, Shared<CppExpression>)
   | CppInvokedWhile(Shared<CppExpression>, string)
   | CppInvokedFor(string, Shared<CppExpression>, string)
-  | CppInvokedBlock(string)
-  | CppInvokedBlockWithReturn(string, string)
+  | CppInvokedBlock([Shared<CppStatement>])
+  | CppInvokedBlockWithReturn(string, [Shared<CppStatement>])
   | CppQuestionTry(Shared<CppExpression>, string)
   | CppWithBlock(Shared<CppExpression>, string, string)
 

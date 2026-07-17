@@ -525,7 +525,7 @@ export fn gen_block_via_cpp_visitor(
     const body_fragment =
       gen_stmts(statements, context) +
       'return ' + print_expr(eval_expr_cpp(result_expression, final_context, gen_stmts)) + ';\n'
-    Shared.new(CppInvokedBlock(body_fragment))
+    Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(body_fragment)))
   end
 
 export fn gen_match_via_cpp_visitor(
@@ -578,9 +578,10 @@ fn gen_match_default_block_cpp(
     (expression, eval_context, gen_stmts_fn) =>
       print_expr(eval_expr_cpp(expression, eval_context, gen_stmts_fn)))
   if return_cpp.length() > 0 then
-    return Shared.new(CppInvokedBlockWithReturn(return_cpp, inner_body))
+    return Shared.new(CppInvokedBlockWithReturn(
+      return_cpp, emit_helpers.make_invoked_block_body_from_source(inner_body)))
   end
-  Shared.new(CppInvokedBlock(inner_body))
+  Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(inner_body)))
 end
 
 fn record_field_expressions(

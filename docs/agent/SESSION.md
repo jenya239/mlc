@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 12:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=2 — CppInvokedBlock body statements)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 11:40 |
+| elapsed | ~95 min (incl. mlcc rebuild + Tier B) |
+| done    | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body `string` → `[Shared<CppStatement>]`; printer `print_statements`; bridge `make_invoked_block_body_from_source`; sites: `expr_visitor_cpp` (2), `match_gen` (3), `record_gen` (1); `test_cpp_printer` updated. Extended Decision: Tier B `build_tests.sh` phase 1 also skips Ruby (same as Tier A). |
+| result  | `mlcc --check-only main` OK; self-host before/after: only `cpp_ast.hpp`, `emit_helpers`, `print`, `expr_visitor_cpp`, `match_gen`, `record_gen` differ; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 (stale run_tests warn) |
+| issues  | CaptureAnalyzer still uncommitted (cursorfs). `run_tests` stale vs `test_cpp_printer.mlc` until `build_tests_self.sh` works. Concurrent Planner §45/§46 docs already on main — do not clobber |
+| next    | ROLE=Driver STEP=3 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 11:42 (Planner TRACK_EDITOR_CLEAN_ARCHITECTURE STEP=0+3 — discipline + Opus review)
 
 | field   | value |

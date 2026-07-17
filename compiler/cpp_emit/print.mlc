@@ -590,11 +590,11 @@ fn invoked_while_expression(condition: Shared<CppExpression>, body_statements: s
 fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpression>, body_statements: string) -> string =
   `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${body_statements}}\n}()`
 
-fn invoked_block_expression(body_statements: string) -> string =
-  `[&]() {\n${body_statements}}()`
+fn invoked_block_expression(body_statements: [Shared<CppStatement>]) -> string =
+  `[&]() {\n${print_statements(body_statements, 0)}}()`
 
-fn invoked_block_with_return_expression(return_type: string, body_statements: string) -> string =
-  `[&]() -> ${return_type} {\n${body_statements}}()`
+fn invoked_block_with_return_expression(return_type: string, body_statements: [Shared<CppStatement>]) -> string =
+  `[&]() -> ${return_type} {\n${print_statements(body_statements, 0)}}()`
 
 fn question_try_expression(inner: Shared<CppExpression>, from_converter_name: string) -> string =
   if from_converter_name.length() > 0 then
