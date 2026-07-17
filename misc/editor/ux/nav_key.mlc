@@ -1,23 +1,19 @@
-// TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=1 — stub: ignore nav keys (demo_live-shaped).
-// STEP=2 wires nav_* + Shift→Extend.
+// TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=2 — map binding key → nav_* (Shift→Extend).
 import { LineIndex } from '../document/line_index'
 import { EditorSelection } from '../document/selection'
-import { EditorViewMetrics } from '../document/navigation'
-
-// Returns selection unchanged until STEP=2.
-export fn editor_ux_apply_nav_key(
-  line_index: LineIndex,
-  selection: EditorSelection,
-  metrics: EditorViewMetrics,
-  key: string,
-  shift_down: i32
-) -> EditorSelection = do
-  let _unused_index = line_index.text_length
-  let _unused_metrics = metrics.page_rows
-  let _unused_key = key.byte_size()
-  let _unused_shift = shift_down
-  selection
-end
+import {
+  Collapse,
+  Extend,
+  EditorViewMetrics,
+  nav_move_left,
+  nav_move_right,
+  nav_move_up,
+  nav_move_down,
+  nav_line_home,
+  nav_line_end,
+  nav_page_up,
+  nav_page_down
+} from '../document/navigation'
 
 export fn editor_ux_is_nav_key(key: string) -> bool = do
   if key == "left" then
@@ -45,4 +41,65 @@ export fn editor_ux_is_nav_key(key: string) -> bool = do
     return true
   end
   false
+end
+
+export fn editor_ux_apply_nav_key(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  metrics: EditorViewMetrics,
+  key: string,
+  shift_down: i32
+) -> EditorSelection = do
+  if shift_down != 0 then
+    if key == "left" then
+      return nav_move_left(line_index, selection, Extend)
+    end
+    if key == "right" then
+      return nav_move_right(line_index, selection, Extend)
+    end
+    if key == "up" then
+      return nav_move_up(line_index, selection, Extend)
+    end
+    if key == "down" then
+      return nav_move_down(line_index, selection, Extend)
+    end
+    if key == "home" then
+      return nav_line_home(line_index, selection, Extend)
+    end
+    if key == "end" then
+      return nav_line_end(line_index, selection, Extend)
+    end
+    if key == "page_up" then
+      return nav_page_up(line_index, selection, metrics, Extend)
+    end
+    if key == "page_down" then
+      return nav_page_down(line_index, selection, metrics, Extend)
+    end
+    return selection
+  end
+  if key == "left" then
+    return nav_move_left(line_index, selection, Collapse)
+  end
+  if key == "right" then
+    return nav_move_right(line_index, selection, Collapse)
+  end
+  if key == "up" then
+    return nav_move_up(line_index, selection, Collapse)
+  end
+  if key == "down" then
+    return nav_move_down(line_index, selection, Collapse)
+  end
+  if key == "home" then
+    return nav_line_home(line_index, selection, Collapse)
+  end
+  if key == "end" then
+    return nav_line_end(line_index, selection, Collapse)
+  end
+  if key == "page_up" then
+    return nav_page_up(line_index, selection, metrics, Collapse)
+  end
+  if key == "page_down" then
+    return nav_page_down(line_index, selection, metrics, Collapse)
+  end
+  selection
 end

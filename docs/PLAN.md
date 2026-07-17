@@ -441,7 +441,7 @@ compiler/
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
-| **46** | Editor UX backlog — #1…#1d done; **#2 `EDITOR_KEYBOARD_NAV_WIRE` active** (STEP=1 red harness done 2026-07-18; STEP=2 next) | **active** (2026-07-18) #2 STEP=2 | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_KEYBOARD_NAV_WIRE](agent/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md) |
+| **46** | Editor UX backlog — #1…#1d done; **#2 `EDITOR_KEYBOARD_NAV_WIRE` active** (STEP=2 done 2026-07-18; STEP=3 Critic next) | **active** (2026-07-18) #2 STEP=3 Critic | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_KEYBOARD_NAV_WIRE](agent/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -676,7 +676,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
   → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d closed; #2 `EDITOR_KEYBOARD_NAV_WIRE`
-      opened 2026-07-18 — STEP=1 red harness done, STEP=2 next;
+      opened 2026-07-18 — STEP=2 done, STEP=3 Critic next;
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
         [agent/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md](agent/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md) ·
         [archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md) ·

@@ -102,6 +102,14 @@ struct BindingKeyEdges {
   int32_t key_a = 0;
   int32_t key_w = 0;
   int32_t key_tab = 0;
+  int32_t key_left = 0;
+  int32_t key_right = 0;
+  int32_t key_up = 0;
+  int32_t key_down = 0;
+  int32_t key_home = 0;
+  int32_t key_end = 0;
+  int32_t key_page_up = 0;
+  int32_t key_page_down = 0;
 };
 
 BindingKeyEdges& binding_key_edges() {
@@ -607,6 +615,30 @@ String glfw_gl_take_binding_key() {
   }
   if (edge_key_down(GLFW_KEY_TAB, edges.key_tab) != 0) {
     return String("tab");
+  }
+  if (edge_key_down(GLFW_KEY_LEFT, edges.key_left) != 0) {
+    return String("left");
+  }
+  if (edge_key_down(GLFW_KEY_RIGHT, edges.key_right) != 0) {
+    return String("right");
+  }
+  if (edge_key_down(GLFW_KEY_UP, edges.key_up) != 0) {
+    return String("up");
+  }
+  if (edge_key_down(GLFW_KEY_DOWN, edges.key_down) != 0) {
+    return String("down");
+  }
+  if (edge_key_down(GLFW_KEY_HOME, edges.key_home) != 0) {
+    return String("home");
+  }
+  if (edge_key_down(GLFW_KEY_END, edges.key_end) != 0) {
+    return String("end");
+  }
+  if (edge_key_down(GLFW_KEY_PAGE_UP, edges.key_page_up) != 0) {
+    return String("page_up");
+  }
+  if (edge_key_down(GLFW_KEY_PAGE_DOWN, edges.key_page_down) != 0) {
+    return String("page_down");
   }
   return String();
 }

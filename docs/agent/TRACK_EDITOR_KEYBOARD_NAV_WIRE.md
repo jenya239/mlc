@@ -5,22 +5,26 @@ Model already in `document/navigation.mlc` (`nav_move_*`, `nav_line_*`,
 `nav_page_*`); not called from `demo_live`. GLFW binding keys today omit
 arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — GLFW nav keys + wire `editor_ux_apply_nav_key`; green scenarios +
-`demo_live_fs_compile_ok`.
+**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #3).
+
+### STEP=2 done (2026-07-18)
+
+- GLFW: `left`/`right`/`up`/`down`/`home`/`end`/`page_up`/`page_down` edges
+- `editor_ux_apply_nav_key` → `nav_*` (Shift→Extend)
+- `demo_live`: editor-focused nav before command bus
+- Gates: both scenarios ok + `demo_live_fs_compile_ok`
 
 ### STEP=1 done (2026-07-18)
 
-- Stub `ux/nav_key.mlc` (`editor_ux_apply_nav_key` no-op)
-- L2 red: `arrow_keys_move_caret`, `home_end_caret` + run scripts
+- Stub `ux/nav_key.mlc` + L2 red harness
 
 ### STEP=0 done (2026-07-18)
 
 - Decision frozen below; PLAN §46 + UX_BACKLOG #2 → active.
-- SESSION trim: older turns → `docs/archive/SESSION_HISTORY.md`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -49,17 +53,14 @@ arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog / SESSION trim | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`arrow_keys_move_caret`, `home_end_caret`) | **done** (red harness) |
-| 2 | GLFW nav keys + ux/app apply + `demo_live` wire | scenarios + compile |
+| 2 | GLFW nav keys + ux/app apply + `demo_live` wire | **done** |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. Extend `glfw_gl_take_binding_key` edges for nav keys.
-2. Implement apply helper; wire `demo_live` when editor focused.
-3. Gates: both scenarios ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #3).
 

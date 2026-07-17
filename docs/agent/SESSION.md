@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 04:35 (Driver TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+| started | 2026-07-18 04:25 |
+| elapsed | ~10 min |
+| done    | GLFW binding edges for nav keys; `editor_ux_apply_nav_key` → `nav_*` (Shift→Extend); `demo_live` wire when editor focused; `ux_ok arrow_keys_move_caret`; `ux_ok home_end_caret`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_arrow_keys_move_caret.sh` → `ux_ok`; `run_ux_home_end_caret.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+
 ### Turn 2026-07-18 04:20 (Driver TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=1)
 
 | field   | value |
