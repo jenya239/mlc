@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 18:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8a — expr.mlc inventory)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8a |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 18:05 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | Split STEP=8→8a/8b/8c; inventory 90→88 exports (cannot delete file); removed dead `break_line`/`continue_line`; `print.mlc` render_* still live |
+| result  | `--check-only` OK; self-host identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 18:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c5 — JSON DeclFragments → CppFnDef)
 
 | field   | value |

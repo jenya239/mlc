@@ -439,7 +439,7 @@ compiler/
 | **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CARET_BLINK](archive/tracks/TRACK_EDITOR_CARET_BLINK.md) |
 | **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **active** (2026-07-16) STEP=0–2 **done**; STEP=3 Critic next | [TRACK_EDITOR_FOLDER_NAV](agent/TRACK_EDITOR_FOLDER_NAV.md) |
-| **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1/test-fix/2/3/4/5/6/7a/7b1/7b2/7b3a/7b3b/7b3c1–7b3c5 **done**; STEP=8 next | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
+| **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a **done**; STEP=8b next | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **active** (2026-07-17) STEP=0+3 done (Opus review ran, $2.24); STEP=4 Critic close next | [TRACK_EDITOR_CLEAN_ARCHITECTURE](agent/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
 | **46** | Editor UX backlog — 30 atomic items from Opus review (2026-07-17): `EDITOR_DEMO_ORCHESTRATOR`/`EDITOR_KEYBOARD_NAV_WIRE` first, word-select/undo-coalesce/find/CRLF/encoding-guard/… down to multi-cursor/context-menu/`LANG_RECORD_UPDATE` | **active** (2026-07-17) backlog opened, no item started | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
@@ -669,8 +669,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_WORD_WRAP.md](archive/tracks/TRACK_EDITOR_WORD_WRAP.md))**
   → **EDITOR_FOLDER_NAV (§43, **active**; STEP=0–2 **done**; STEP=3 Critic next;
       → [agent/TRACK_EDITOR_FOLDER_NAV.md](agent/TRACK_EDITOR_FOLDER_NAV.md))**
-  → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1/test-fix/2/3/4/5/6/7a/7b1/7b2/7b3a/7b3b/7b3c1–7b3c5 **done**;
-      Tier A/B: no Ruby rebuild — `dev_gate_fast` green; STEP=8 next;
+  → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a **done**;
+      Tier A/B: no Ruby rebuild — `dev_gate_fast` green; STEP=8b next;
       → [agent/TRACK_CODEGEN_CPPAST_ONLY.md](agent/TRACK_CODEGEN_CPPAST_ONLY.md))**
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **active**; STEP=0+3 done — TDD rule
       frozen + Opus review ran; STEP=4 Critic close next, no code STEP left
@@ -829,7 +829,7 @@ fn area(shape: Shape) -> f64 = match shape {
 | Crashes на валидном вводе | ? | 0 |
 | Crashes на невалидном вводе | ? | 0 (panic с сообщением) |
 | Диагностики со span | частично | 100% |
-| Codegen: строки vs CppAST | Decl-level Fragments gone (guarded/FFI/`#line`/JSON wrappers); JSON bodies + `expr.mlc` survivors → STEP=8+. См. [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) | 0% string bridges |
+| Codegen: строки vs CppAST | Decl Fragments gone; `expr.mlc` still 88 live string helpers (file not deletable) → 8b/8c. См. [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) | 0% string bridges |
 | mlcc компилирует себя | да | да + детерминировано |
 | Время компиляции mlcc собой | ? измерить | < 1 с |
 

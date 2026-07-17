@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6 **done**, STEP=7 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a **done**; STEP=8b next
 
 ## Why this track exists
 
@@ -121,7 +121,9 @@ reachable again — Meta should split later.
 | 7b3c3 | Guarded wild/unit + literal arm builders → `CppIf`/`CppReturn` (leave ctor/record/ident) | **done** (2026-07-17) — `gen_guarded_*_arm_statements`; ctor/record/ident still Fragment via `guarded_arm_source_as_statements` |
 | 7b3c4 | Guarded ctor / record / ident-binding arm builders → AST | **done** (2026-07-17) — full guarded arm path AST; killed Fragment bridge helpers |
 | 7b3c5 | `derive_methods_cpp` JSON DeclFragments (2) → AST | **done** (2026-07-17) — `CppFnDef`+`CppDeclarationSequence`; bodies still StatementFragment (JSON string builders) |
-| 8 | Delete `compiler/codegen/expr/expr.mlc` once zero callers remain; delete corresponding `render_*`/mirror functions in `cpp_emit/print.mlc` if now unreachable | pending |
+| 8a | Inventory + dead exports: cannot delete `expr.mlc` yet (88 live exports); remove `break_line`/`continue_line`; `print.mlc` `render_*` still used by printer | **done** (2026-07-17) |
+| 8b | Reduce `expr.mlc` callers (migrate string helpers) until file deletable | pending |
+| 8c | Delete `expr.mlc` + unreachable `print.mlc` mirrors | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
 
 ## Non-goals (this track)

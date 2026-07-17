@@ -101,12 +101,6 @@ export fn while_loop_statement(condition_code: string, body_statements: string) 
 export fn for_loop_statement(variable_cpp_safe: string, iterator_code: string, body_statements: string) -> string =
   `for (auto ${variable_cpp_safe} : ${iterator_code}) {\n${body_statements}}\n`
 
-export fn break_line() -> string =
-  'break;\n'
-
-export fn continue_line() -> string =
-  'continue;\n'
-
 export fn let_from_try_ok_field0(binding_cpp_safe: string, try_variable: string) -> string =
   `auto ${binding_cpp_safe} = std::get<0>(${try_variable}).field0;\n`
 
