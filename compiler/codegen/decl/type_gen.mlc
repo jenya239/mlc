@@ -69,6 +69,26 @@ export fn concept_trait_constraint_with_result_and_implementor(
 ) -> string =
   `${trait_name_cpp_safe}<${result_type_parameter_name}, ${implementor_type_parameter_name}>`
 
+export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
+  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`
+
+export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
+  `template<typename ${template_parameter_list}>\n`
+
+export fn concept_requires_expression_method_returns_convertible(
+  callee_name: string,
+  declval_arguments_csv: string,
+  destination_type_cpp: string
+) -> string =
+  if declval_arguments_csv.length() > 0 then
+    `{ ${callee_name}(self, ${declval_arguments_csv}) } -> std::convertible_to<${destination_type_cpp}>`
+  else
+    `{ ${callee_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
+  end
+
+export fn trait_vtable_struct_cpp_name(trait_cpp_safe: string) -> string =
+  `${trait_cpp_safe}_vtable`
+
 export fn struct_tuple_field_declaration(element_type_cpp: string, field_index_text: string) -> string =
   `${element_type_cpp} field${field_index_text};`
 

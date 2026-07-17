@@ -4,11 +4,11 @@ import { Param } from '../../frontend/ast'
 import { SemanticDeclaration, SemanticDeclarationFn } from '../../ir/semantic_ir'
 import { Type } from '../../checker/registry'
 import { CodegenContext } from '../context'
-import { sem_type_to_cpp, type_to_cpp, cpp_std_function_type } from './type_gen'
+import { sem_type_to_cpp, type_to_cpp, cpp_std_function_type,
+         cpp_template_typename_header_line, trait_vtable_struct_cpp_name } from './type_gen'
 import { extract_method_name, non_self_parameter_types_cpp } from './decl_extend'
 import { cpp_safe } from '../cpp_naming'
 import { CppDeclaration, CppField, CppStruct } from '../../cpp_ir/cpp_ast'
-import * as expression_output from '../expr/expr'
 
 export fn trait_method_field_cpp(
   context: CodegenContext,
@@ -25,7 +25,7 @@ export fn trait_method_field_cpp(
 
 fn trait_struct_template_prefix(type_parameters: [string]) -> string =
   if type_parameters.length() > 0 then
-    expression_output.cpp_template_typename_header_line(type_parameters.join(', '))
+    cpp_template_typename_header_line(type_parameters.join(', '))
   else
     ''
   end
@@ -60,6 +60,6 @@ export fn gen_trait_struct_cpp(
 ) -> Shared<CppDeclaration> =
   Shared.new(CppStruct(
     trait_struct_template_prefix(type_parameters),
-    expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
+    trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
     trait_struct_fields_cpp(context.for_type_body(trait_name), trait_name, methods),
     false))

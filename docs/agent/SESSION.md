@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 21:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b12 — decl helpers → type_gen)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b12 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 21:05 |
+| elapsed | ~20 min (rebuild + Tier B + mlcc2) |
+| done    | 4 decl helpers → `type_gen`; callers decl/decl_extend/trait_struct/decl_cpp; dropped their `expression_output` where unused; `expr.mlc` 7→3; TRACK split 8b13 |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b13 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 21:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b11 — binding helpers)
 
 | field   | value |

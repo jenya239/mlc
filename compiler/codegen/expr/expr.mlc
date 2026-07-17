@@ -8,28 +8,8 @@ export fn function_call_parentheses(callee_code: string, argument_list: string) 
 export fn runtime_to_string_call(expression_code: string) -> string =
   `mlc::to_string(${expression_code})`
 
-export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
-  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`
-
 // --- Header / module shell (no traversal)
 
 export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
   `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
-
-export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
-  `template<typename ${template_parameter_list}>\n`
-
-export fn concept_requires_expression_method_returns_convertible(
-  callee_name: string,
-  declval_arguments_csv: string,
-  destination_type_cpp: string
-) -> string =
-  if declval_arguments_csv.length() > 0 then
-    `{ ${callee_name}(self, ${declval_arguments_csv}) } -> std::convertible_to<${destination_type_cpp}>`
-  else
-    `{ ${callee_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
-  end
-
-export fn trait_vtable_struct_cpp_name(trait_cpp_safe: string) -> string =
-  `${trait_cpp_safe}_vtable`
 

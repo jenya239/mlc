@@ -9,9 +9,8 @@ import { CodegenContext,
          collect_shared_map_params, collect_value_params, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
 import { type_to_cpp, sem_type_to_cpp, type_name_to_cpp, gen_type_decl, gen_type_decl_fwd_only, gen_type_decl_body_only,
-         template_prefix, requires_clause, gen_derive_methods } from './type_gen'
+         template_prefix, requires_clause, gen_derive_methods, noexcept_function_prototype } from './type_gen'
 import { gen_fn_body } from '../stmt/return_body'
-import * as expression_output from '../expr/expr'
 import { gen_params_proto, gen_params_def, gen_trait_decl, gen_trait_decl_with_dispatch_forward_protos, gen_trait_struct, gen_extend_wrapper_protos, gen_decl_extend, gen_decl_extend_methods_only, gen_decl_extend_trait_suffix } from './decl_extend'
 import { list_contains } from './decl_index'
 
@@ -84,12 +83,12 @@ export fn gen_fn_proto_with_escape(
   const safe_name = escape_context.resolve(name)
   const prototype_context = prototype_context_for_function(escape_context, parameters)
   if name == 'main' && parameters.length() == 0 then
-    prefix + expression_output.noexcept_function_prototype(
+    prefix + noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
       main_program_parameter_list())
   else
-    prefix + expression_output.noexcept_function_prototype(
+    prefix + noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
       gen_params_proto(prototype_context, parameters))

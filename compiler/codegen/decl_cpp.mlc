@@ -10,8 +10,7 @@ import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './
 import { compute_fn_body_context, exported_type_names_from_decls, prototype_context_for_function } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, trait_dispatch_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
-import * as expression_output from './expr/expr'
-import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp } from './decl/type_gen'
+import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp, concept_requires_expression_method_returns_convertible } from './decl/type_gen'
 import { gen_derive_methods_cpp } from './decl/derive_methods_cpp'
 import { gen_trait_struct_cpp } from './decl/trait_struct_cpp'
 import { gen_return_body_cpp } from './stmt/return_body'
@@ -250,7 +249,7 @@ fn trait_requires_expression_for_method(
 ) -> string =
   match method {
     SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _, _) =>
-      expression_output.concept_requires_expression_method_returns_convertible(
+      concept_requires_expression_method_returns_convertible(
         cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
         concept_declval_arguments_for_params(trait_context, params),
         sem_type_to_cpp(trait_context, return_type)),

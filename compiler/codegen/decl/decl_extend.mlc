@@ -7,7 +7,9 @@ import { SemanticDeclaration, SemanticDeclarationFn, SemanticExpression, Semanti
 import { Type, trait_base_name } from '../../checker/registry'
 import { CodegenContext, trait_has_associated_types } from '../context'
 import { cpp_safe } from '../cpp_naming'
-import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp, cpp_lvalue_reference_suffix } from './type_gen'
+import { sem_type_to_cpp, type_to_cpp, type_name_to_cpp, cpp_lvalue_reference_suffix,
+         noexcept_function_prototype, cpp_template_typename_header_line,
+         concept_requires_expression_method_returns_convertible, trait_vtable_struct_cpp_name } from './type_gen'
 import * as expression_output from '../expr/expr'
 
 fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
@@ -201,7 +203,7 @@ fn trait_requires_requirement_parts(trait_context: CodegenContext, method: Share
   match method {
     SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
       do const requirement_parts: [string] = []
-      requirement_parts.push(expression_output.concept_requires_expression_method_returns_convertible(
+      requirement_parts.push(concept_requires_expression_method_returns_convertible(
         cpp_safe(trait_dispatch_name(
           trait_context.self_type,
           extract_method_name(mangled, trait_context.self_type))),
@@ -216,7 +218,7 @@ fn extend_wrapper_proto_line(type_name: string, context: CodegenContext, method:
   match method {
     SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
       do const wrapper_context = context.for_type_body(type_name)
-      expression_output.noexcept_function_prototype(
+      noexcept_function_prototype(
         sem_type_to_cpp(wrapper_context, return_type),
         cpp_safe(extract_method_name(mangled, type_name)),
         gen_params_proto(wrapper_context, parameters))
@@ -289,7 +291,7 @@ export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_par
   else do
   const trait_context = context.for_type_body(trait_name)
   const template_header = if type_parameters.length() > 0 then
-    expression_output.cpp_template_typename_header_line(type_parameters.join(', '))
+    cpp_template_typename_header_line(type_parameters.join(', '))
   else
     ''
   end
@@ -298,7 +300,7 @@ export fn gen_trait_struct(context: CodegenContext, trait_name: string, type_par
     .filter(line => line.length() > 0)
   trait_struct_definition_lines(
     template_header,
-    expression_output.trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
+    trait_vtable_struct_cpp_name(cpp_safe(trait_name)),
     field_lines.join(''))
   end
 
