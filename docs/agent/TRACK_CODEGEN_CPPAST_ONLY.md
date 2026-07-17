@@ -113,8 +113,10 @@ reachable again — Meta should split later.
 | 6 | `GenModuleOut.header/source` → `[Shared<CppDeclaration>]`; single `print_file` call in `codegen/module.mlc` | **done** (2026-07-17) — AST in `GenModuleOut`; `print_module_out` = `print_file`; pipeline/harness print via `print_cpp_declarations` at write edge |
 | 7a | Kill `make_invoked_block_body_from_source`; convert easy Fragment sites: match string-lit body, record-update lazy, unit-if trailing, MIR unit `return` | **done** (2026-07-17) — guarded-match body still one Fragment wrapper; left for 7b2 |
 | 7b1 | Add `CppStatementSequence` (flat, no braces); convert `let_pat_cpp` off Fragment; printer + tests | **done** (2026-07-17) |
-| 7b2 | Convert `gen_match_guarded_body` → `[Shared<CppStatement>]`; kill Fragment wrappers in guarded-match / `gen_match_default_block_cpp`; string_match string-path Fragments | **done** (2026-07-17) — AutoDecl subject + abort AST; per-arm Fragment remains until arm builders AST (7b3/follow-up) |
-| 7b3 | Remaining: `#line` / FFI binder+deleter / `GenStmtResult` string bridge / `derive_methods_cpp` JSON Fragments / per-arm guarded Fragment builders; delete unused `cpp_*_from_string_output` | pending |
+| 7b2 | Convert `gen_match_guarded_body` → `[Shared<CppStatement>]`; kill Fragment wrappers in guarded-match / `gen_match_default_block_cpp`; string_match string-path Fragments | **done** (2026-07-17) — AutoDecl subject + abort AST; per-arm Fragment remains until arm builders AST (7b3c) |
+| 7b3a | Add `CppLineDirective`; convert `line_directive_cpp_statements`; delete dead `cpp_*_from_string_*` | **done** (2026-07-17) |
+| 7b3b | `GenStmtResult` → AST / kill `append_stmt` Fragment bridge (`stmt_eval` string path) | pending |
+| 7b3c | Per-arm guarded Fragment builders → AST; FFI binder/deleter (needs new AST nodes); `derive_methods_cpp` JSON Fragments | pending |
 | 8 | Delete `compiler/codegen/expr/expr.mlc` once zero callers remain; delete corresponding `render_*`/mirror functions in `cpp_emit/print.mlc` if now unreachable | pending |
 | 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
 

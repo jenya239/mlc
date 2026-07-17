@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 15:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3a — CppLineDirective)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3a |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 14:55 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | Added `CppLineDirective`; `line_directive_cpp_statements` uses it; deleted dead `cpp_stmt_from_string_*` / `cpp_decl_from_string_*`. Split 7b3 → 7b3a/7b3b/7b3c |
+| result  | `--check-only` OK; self-host only cpp_ast/print/stmt_cpp/decl_cpp; `#line` still emitted; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=7b3b TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 14:55 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b2 — guarded-match body statements)
 
 | field   | value |

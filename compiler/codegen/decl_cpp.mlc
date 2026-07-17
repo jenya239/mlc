@@ -24,14 +24,8 @@ export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   fn_defs: [Shared<CppDeclaration>]
 }
 
-export fn cpp_decl_from_string_output(output: string) -> Shared<CppDeclaration> =
-  emit_helpers.make_fragment_cpp_declaration(output)
-
 fn empty_cpp_declaration() -> Shared<CppDeclaration> =
   Shared.new(CppDeclarationEmpty)
-
-export fn cpp_decls_from_string_parts(parts: [string]) -> [Shared<CppDeclaration>] =
-  parts.map(part => cpp_decl_from_string_output(part))
 
 export fn print_cpp_declaration(declaration: Shared<CppDeclaration>) -> string =
   print_decl(declaration)

@@ -32,6 +32,7 @@ export type CppStatement =
   | CppFor(string, Shared<CppExpression>, [Shared<CppStatement>])
   | CppStructuredBinding([string], Shared<CppExpression>)
   | CppStatementSequence([Shared<CppStatement>])
+  | CppLineDirective(i32, string)
   | CppStatementFragment(string)
 
 export type CppExpression =

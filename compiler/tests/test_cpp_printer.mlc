@@ -7,7 +7,7 @@ import * as expression_output from '../codegen/expr/expr'
 import { CppInt, CppStr, CppBool, CppIdent, CppCall, CppMember, CppIndex, CppBinary, CppUnary,
          CppTernary, CppInitList, CppAggregateInit, CppStdVisit, CppVisitArmWild, CppVisitArmBinding,
          CppVisitArmConstructed, CppVisitArmConstructedGeneric, CppCast, CppCastStatic, CppLambda, CppMutableLambda,
-         CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppBlock, CppIf, CppWhile, CppFor,
+         CppReturn, CppExpressionStatement, CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective, CppBlock, CppIf, CppWhile, CppFor,
          CppInvokedWhile, CppInvokedFor, CppInvokedBlock, CppInvokedBlockWithReturn, CppQuestionTry, CppWithBlock,
          CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppUsing, CppUsingNamespace, CppHostEntryMain, CppStruct, CppForwardDecl, CppField, CppFnProto, CppFnDef, CppNamespace, CppVariant, CppVariantArm, CppStaticAssert, CppStdHashSpecialization, CppDeclarationSequence, CppDeclarationEmpty, CppBlankLine,
          CppFile, CppType, CppTypeName, CppTypeConst, CppTypePtr, CppTypeRef, CppCapture, CppParam, CppFnModifiers, cpp_fn_modifiers_none, CppPublic, CppPrivate, CppBaseClass, CppFunctionPrototype, CppClassMemberAccess, CppClassMemberField, CppClassMemberFunction, CppClassDefinition, CppClassDeclaration, CppTypedefDeclaration, CppTemplateDeclaration, CppFunctionPrototypeDecl } from '../cpp_ir/cpp_ast'
@@ -200,6 +200,10 @@ export fn cpp_printer_tests() -> [TestResult] = do
   results.push(assert_eq_str('print_statement CppStatementFragment',
     print_statement(Shared.new(CppStatementFragment('if (ready) { step(); }'))),
     'if (ready) { step(); }'))
+
+  results.push(assert_eq_str('print_statement CppLineDirective',
+    print_statement(Shared.new(CppLineDirective(42, 'compiler/foo.mlc'))),
+    '#line 42 "compiler/foo.mlc"'))
 
   results.push(assert_eq_str('print_statement CppStatementSequence',
     print_statement(Shared.new(CppStatementSequence([

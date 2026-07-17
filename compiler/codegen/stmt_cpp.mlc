@@ -22,7 +22,7 @@ import {
   CppExpression, CppStatement, CppCall,
   CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl,
   CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor,
-  CppStructuredBinding, CppStatementFragment, CppStatementSequence
+  CppStructuredBinding, CppStatementFragment, CppStatementSequence, CppLineDirective
 } from '../cpp_ir/cpp_ast'
 import {print_statement} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
@@ -77,17 +77,6 @@ export fn gen_stmts_cpp_with_context(
   }
 end
 
-export fn cpp_stmt_from_string_output(output: string) -> Shared<CppStatement> =
-  cpp_stmt_fragment_from_string_output(output)
-
-export fn cpp_stmts_from_string_output(output: string) -> [Shared<CppStatement>] =
-  if output.length() == 0 then []
-  else do
-    let statements: [Shared<CppStatement>] = []
-    statements.push(cpp_stmt_from_string_output(output))
-    statements
-  end
-
 export fn print_cpp_statements(statements: [Shared<CppStatement>]) -> string =
   statements.map(statement => print_cpp_statement_line(statement)).join('')
 
@@ -113,8 +102,7 @@ export fn line_directive_cpp_statements(span: Span) -> [Shared<CppStatement>] = 
   if span.line <= 0 || span.file.length() == 0 then
     return statements
   end
-  statements.push(Shared.new(CppStatementFragment(
-    "#line " + span.line.to_string() + " \"" + escape_line_directive_path(span.file) + "\"")))
+  statements.push(Shared.new(CppLineDirective(span.line, escape_line_directive_path(span.file))))
   statements
 end
 
@@ -150,17 +138,9 @@ fn print_cpp_statement_line(statement: Shared<CppStatement>) -> string =
     CppWhile(_, _) => print_cpp_statement_default_line(statement),
     CppFor(_, _, _) => print_cpp_statement_default_line(statement),
     CppStructuredBinding(_, _) => print_cpp_statement_default_line(statement),
-    CppStatementSequence(_) => print_cpp_statement_default_line(statement)
+    CppStatementSequence(_) => print_cpp_statement_default_line(statement),
+    CppLineDirective(_, _) => print_cpp_statement_default_line(statement)
   }
-
-fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStatement> =
-  emit_helpers.make_fragment_cpp_statement(strip_trailing_newline(output))
-
-fn strip_trailing_newline(text: string) -> string =
-  if text.length() >= 1 && text.char_at(text.length() - 1) == "\n" then
-    text.substring(0, text.length() - 1)
-  else text
-  end
 
 fn gen_typed_hash_map_empty_cpp(key_type_cpp: string, value_type_cpp: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
