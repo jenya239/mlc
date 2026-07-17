@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head after §44 archive: **`TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic**, then §45 STEP=4 Critic, then §46 #1 Decision — do not open UX backlog Driver before draining those Critics.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_CLEAN_ARCHITECTURE` STEP=4 Critic**, then §46 #1 Decision — do not open UX backlog Driver before that Critic.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -76,10 +76,10 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_UTF8_COLUMNS` (PLAN §40)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_CARET_BLINK` (PLAN §41)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_WORD_WRAP` (PLAN §42)** | **closed** 2026-07-16 (Critic OK). Archive |
-| **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **queue head** — STEP=0–2 done; **STEP=3 Critic next** (Planner pick 2026-07-18 after §44 archive). Prefer `misc/editor/ux/folder_panel*`; no `compiler/` |
+| **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | After §43 Critic: STEP=4 Critic close. STEP=0+3 **done**; no code STEP left — reframed as `EDITOR_UX_BACKLOG` #1. Standing discipline in `GUI_UX_TESTING.md` applies to every `misc/editor/**` STEP |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Do not open Driver until §43+§45 Critics drain. Then next pending = **#1 `EDITOR_DEMO_ORCHESTRATOR`**, then `#1b`→`#1c`→`#1d`→`#2`. Product ceiling: **Sublime Text**; stability/speed over feature breadth. Each item opens its own `TRACK_EDITOR_<NAME>.md` + Decision→Driver→Critic when picked up |
+| **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **queue head** — STEP=4 Critic close. STEP=0+3 **done**; no code STEP left — reframed as `EDITOR_UX_BACKLOG` #1. Standing discipline in `GUI_UX_TESTING.md` applies to every `misc/editor/**` STEP |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Do not open Driver until §45 Critic drains. Then next pending = **#1 `EDITOR_DEMO_ORCHESTRATOR`**, then `#1b`→`#1c`→`#1d`→`#2`. Product ceiling: **Sublime Text**; stability/speed over feature breadth. Each item opens its own `TRACK_EDITOR_<NAME>.md` + Decision→Driver→Critic when picked up |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

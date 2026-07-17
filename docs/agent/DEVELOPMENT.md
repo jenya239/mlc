@@ -41,8 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head (Planner 2026-07-18):** Critic `TRACK_EDITOR_FOLDER_NAV` (§43) STEP=3.
-Then Critic `TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45) STEP=4; then open §46 #1 `EDITOR_DEMO_ORCHESTRATOR` (Decision).
+**Queue head:** Critic `TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45) STEP=4.
+Then open §46 #1 `EDITOR_DEMO_ORCHESTRATOR` (Decision).
+**`TRACK_EDITOR_FOLDER_NAV` (§43)** closed 2026-07-18 (Critic OK); archived.
 **`TRACK_CODEGEN_CPPAST_ONLY` (§44)** closed 2026-07-17; archived.
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 00:55 (Critic TRACK_EDITOR_FOLDER_NAV critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_FOLDER_NAV |
+| started | 2026-07-18 00:50 |
+| elapsed | ~15 min |
+| done    | Critic OK: gates `folder_nav_unit ok` + `demo_live_fs_compile_ok`; anti-false-done `d082a24e`…`b0a7afbf`; no lib/mlc → REG skip; archived → `docs/archive/tracks/TRACK_EDITOR_FOLDER_NAV.md`; PLAN §43/EDITOR/CONTINUITY/DEVELOPMENT synced; reopen none (L1 → §46 #30) |
+| result  | Critic OK; track archived |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 00:50 (Planner PLAN_QUEUE pick-next)
 
 | field   | value |

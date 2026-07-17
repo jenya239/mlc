@@ -438,7 +438,7 @@ compiler/
 | **40** | Editor UTF-8 codepoint columns (`line_index`; grapheme deferred) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_UTF8_COLUMNS](archive/tracks/TRACK_EDITOR_UTF8_COLUMNS.md) |
 | **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CARET_BLINK](archive/tracks/TRACK_EDITOR_CARET_BLINK.md) |
 | **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
-| **43** | Editor folder nav history (back/forward; absorb WIP) | **active** (2026-07-16) STEP=0–2 **done**; STEP=3 Critic next | [TRACK_EDITOR_FOLDER_NAV](agent/TRACK_EDITOR_FOLDER_NAV.md) |
+| **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **active** (2026-07-17) STEP=0+3 done (Opus review ran, $2.24); STEP=4 Critic close next | [TRACK_EDITOR_CLEAN_ARCHITECTURE](agent/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
 | **46** | Editor UX backlog — 30 atomic items from Opus review (2026-07-17): `EDITOR_DEMO_ORCHESTRATOR`/`EDITOR_KEYBOARD_NAV_WIRE` first, word-select/undo-coalesce/find/CRLF/encoding-guard/… down to multi-cursor/context-menu/`LANG_RECORD_UPDATE` | **active** (2026-07-17) backlog opened, no item started | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) |
@@ -667,8 +667,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_CARET_BLINK.md](archive/tracks/TRACK_EDITOR_CARET_BLINK.md))**
   → **EDITOR_WORD_WRAP (§42, **closed** 2026-07-16: Critic OK; STEP=0–3; `a67cf4d1`…`65d77eec`;
       → [archive/tracks/TRACK_EDITOR_WORD_WRAP.md](archive/tracks/TRACK_EDITOR_WORD_WRAP.md))**
-  → **EDITOR_FOLDER_NAV (§43, **active**; STEP=0–2 **done**; STEP=3 Critic next;
-      → [agent/TRACK_EDITOR_FOLDER_NAV.md](agent/TRACK_EDITOR_FOLDER_NAV.md))**
+  → **EDITOR_FOLDER_NAV (§43, **closed** 2026-07-18: Critic OK; STEP=0–3; `d082a24e`…`b0a7afbf`;
+      → [archive/tracks/TRACK_EDITOR_FOLDER_NAV.md](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md))**
   → **CODEGEN_CPPAST_ONLY (§44, **closed** 2026-07-17: Critic OK; STEP=1…9; `expr.mlc` deleted;
       residual Fragment/print bridges — not 0%; archive;
       → [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md))**
