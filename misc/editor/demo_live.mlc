@@ -315,7 +315,11 @@ fn push_line(
     text: text,
     pixel_size: pixel_size,
     pen_x: pen_x,
-    pen_y: pen_y
+    pen_y: pen_y,
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 0.0
   })
   out
 end

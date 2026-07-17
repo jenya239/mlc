@@ -61,7 +61,11 @@ fn main() -> i32 = do
       text: labels[row],
       pixel_size: 16,
       pen_x: pen_x,
-      pen_y: gutter_baseline_y(panes.gutter.y, line_height, row, 14)
+      pen_y: gutter_baseline_y(panes.gutter.y, line_height, row, 14),
+      red: 1.0,
+      green: 1.0,
+      blue: 1.0,
+      alpha: 0.0
     })
     row = row + 1
   end

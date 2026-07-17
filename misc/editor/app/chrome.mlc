@@ -15,16 +15,16 @@ import {
   CmdSave
 } from '../commands/bus'
 
-export fn editor_app_line_height() -> i32 = 18
-export fn editor_app_char_width() -> i32 = 9
-export fn editor_app_font_size() -> i32 = 15
-export fn editor_app_header_height() -> i32 = 32
-export fn editor_app_tab_bar_height() -> i32 = 28
-export fn editor_app_toolbar_height() -> i32 = 26
-export fn editor_app_status_height() -> i32 = 24
+export fn editor_app_line_height() -> i32 = 14
+export fn editor_app_char_width() -> i32 = 7
+export fn editor_app_font_size() -> i32 = 11
+export fn editor_app_header_height() -> i32 = 18
+export fn editor_app_tab_bar_height() -> i32 = 18
+export fn editor_app_toolbar_height() -> i32 = 18
+export fn editor_app_status_height() -> i32 = 16
 
 export fn editor_app_toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
-  rect_new(8 + index * 72, bar_y + 2, 68, editor_app_toolbar_height() - 4)
+  rect_new(4 + index * 52, bar_y + 1, 50, editor_app_toolbar_height() - 2)
 
 export fn editor_app_toolbar_command_at(tool: i32) -> CommandId = do
   if tool == 0 then

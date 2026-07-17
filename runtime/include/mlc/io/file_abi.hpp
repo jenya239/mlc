@@ -40,6 +40,14 @@ inline bool is_regular_file_value(String path) {
   }
 }
 
+inline String absolute_path_value(String path) {
+  try {
+    return absolute_path(path);
+  } catch (...) {
+    return path;
+  }
+}
+
 inline bool create_directories_value(String path) {
   try {
     return create_directories(path);

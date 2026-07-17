@@ -259,6 +259,23 @@ inline bool is_regular_file(const mlc::String& path) {
         std::filesystem::path(path.as_std_string()), error_code);
 }
 
+// Absolute lexically-normalized path (missing path ok; uses cwd for relative).
+inline mlc::String absolute_path(const mlc::String& path) {
+    std::error_code error_code;
+    std::filesystem::path resolved =
+        std::filesystem::absolute(
+            std::filesystem::path(path.as_std_string()), error_code)
+            .lexically_normal();
+    if (error_code) {
+        return path;
+    }
+    std::string text = resolved.string();
+    if (text.size() > 1 && text.back() == '/') {
+        text.pop_back();
+    }
+    return mlc::String(text);
+}
+
 // TRACK_STDLIB_IO_FS STEP=4 — parents ok; true if created or already a directory.
 inline bool create_directories(const mlc::String& path) {
     std::error_code error_code;

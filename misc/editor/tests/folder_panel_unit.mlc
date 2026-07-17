@@ -10,7 +10,13 @@ import {
   folder_clamp_scroll,
   folder_row_parent,
   folder_row_directory,
-  folder_row_file
+  folder_row_file,
+  folder_nav_new,
+  folder_nav_push,
+  folder_nav_back,
+  folder_nav_forward,
+  folder_nav_can_forward,
+  folder_nav_current
 } from '../ux/folder_panel'
 
 fn main() -> i32 = do
@@ -67,6 +73,34 @@ fn main() -> i32 = do
   if folder_clamp_scroll(999, 2, 40) != 0 then
     println("[mlc-editor] folder_panel_unit fail clamp high")
     return 11
+  end
+
+  let mut nav = folder_nav_new("/demo")
+  nav = folder_nav_push(nav, "/demo/src")
+  nav = folder_nav_push(nav, "/demo/src/gui")
+  if folder_nav_current(nav) != "/demo/src/gui" then
+    println("[mlc-editor] folder_panel_unit fail nav current")
+    return 12
+  end
+  nav = folder_nav_back(nav)
+  if folder_nav_current(nav) != "/demo/src" || folder_nav_can_forward(nav) == 0 then
+    println("[mlc-editor] folder_panel_unit fail nav back")
+    return 13
+  end
+  nav = folder_nav_forward(nav)
+  if folder_nav_current(nav) != "/demo/src/gui" then
+    println("[mlc-editor] folder_panel_unit fail nav forward")
+    return 14
+  end
+  nav = folder_nav_back(nav)
+  nav = folder_nav_push(nav, "/demo/docs")
+  if folder_nav_can_forward(nav) != 0 then
+    println("[mlc-editor] folder_panel_unit fail nav truncate")
+    return 15
+  end
+  if folder_nav_current(nav) != "/demo/docs" then
+    println("[mlc-editor] folder_panel_unit fail nav push truncate")
+    return 16
   end
 
   println("[mlc-editor] folder_panel_unit ok")

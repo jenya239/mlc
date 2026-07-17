@@ -157,3 +157,15 @@ export fn editor_ux_wheel_scroll(
   // L2 product: wheel must keep caret visible.
   editor_ux_ensure_caret_visible(next_state, metrics)
 end
+
+// Hover wheel: clamp only — do not snap caret (works without focus).
+export fn editor_ux_wheel_scroll_hover(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  wheel_ticks: i32
+) -> EditorUxState = do
+  const line_height = line_height_or_one(metrics)
+  let mut scroll_y = state.scroll_offset_y - wheel_ticks * line_height
+  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
+  state_with_scroll_y(state, scroll_y)
+end

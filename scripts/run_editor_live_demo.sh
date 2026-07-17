@@ -29,7 +29,8 @@ export MLC_GLFW_VISIBLE="${MLC_GLFW_VISIBLE:-1}"
 if [ "${MLC_EDITOR_MOCK:-0}" = "1" ]; then
   unset MLC_EDITOR_ROOT || true
 else
-  export MLC_EDITOR_ROOT="${MLC_EDITOR_ROOT:-$ROOT_DIR}"
+  # Absolute path so breadcrumbs start at /
+  export MLC_EDITOR_ROOT="$(cd "${MLC_EDITOR_ROOT:-$ROOT_DIR}" && pwd)"
 fi
 
 rm -rf "$OUT_DIR"

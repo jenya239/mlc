@@ -43,7 +43,11 @@ export type StaticTextLine = {
   text: string,
   pixel_size: i32,
   pen_x: i32,
-  pen_y: i32
+  pen_y: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
 }
 
 export type StaticTextState = {
@@ -229,34 +233,93 @@ export fn static_text_draw_lines_colored(
   blue: f64,
   alpha: f64
 ) -> StaticTextDrawResult = do
-  text_scratch_f32_clear()
+  if lines.length() == 0 then
+    return StaticTextDrawResult {
+      state: state,
+      vertex_count: 0,
+      error_code: 0
+    }
+  end
   let mut working = state
-  let mut total_vertices = 0
-  let mut index = 0
-  while index < lines.length() do
-    const drawn = append_static_line(working, lines[index], window_width, window_height)
-    if drawn.error_code != 0 then
-      return drawn
+  let mut batch_start = 0
+  let mut first_clear = clear_framebuffer
+  let mut grand_total_vertices = 0
+  while batch_start < lines.length() do
+    const head = lines[batch_start]
+    let mut line_red = head.red
+    let mut line_green = head.green
+    let mut line_blue = head.blue
+    let mut line_alpha = head.alpha
+    if line_alpha <= 0.0 then
+      line_red = red
+      line_green = green
+      line_blue = blue
+      line_alpha = alpha
     end
-    working = drawn.state
-    total_vertices = total_vertices + drawn.vertex_count
-    index = index + 1
-  end
-  text_bind_array_buffer(working.renderer.vertex_buffer)
-  text_upload_dynamic_scratch()
-  const batched = text_renderer_set_batch(working.renderer, total_vertices)
-  let mut draw_status = 0
-  if clear_framebuffer != 0 then
-    draw_status = text_renderer_draw_colored(
-      batched, window_width, window_height, red, green, blue, alpha
-    )
-  else
-    draw_status = text_renderer_draw_over_colored(
-      batched, window_width, window_height, red, green, blue, alpha
-    )
-  end
-  StaticTextDrawResult {
-    state: StaticTextState {
+    let mut batch_end = batch_start + 1
+    while batch_end < lines.length() do
+      const next_line = lines[batch_end]
+      let mut next_red = next_line.red
+      let mut next_green = next_line.green
+      let mut next_blue = next_line.blue
+      let mut next_alpha = next_line.alpha
+      if next_alpha <= 0.0 then
+        next_red = red
+        next_green = green
+        next_blue = blue
+        next_alpha = alpha
+      end
+      if next_red != line_red || next_green != line_green ||
+          next_blue != line_blue || next_alpha != line_alpha then
+        break
+      end
+      batch_end = batch_end + 1
+    end
+    text_scratch_f32_clear()
+    let mut total_vertices = 0
+    let mut index = batch_start
+    while index < batch_end do
+      const drawn = append_static_line(working, lines[index], window_width, window_height)
+      if drawn.error_code != 0 then
+        return drawn
+      end
+      working = drawn.state
+      total_vertices = total_vertices + drawn.vertex_count
+      index = index + 1
+    end
+    text_bind_array_buffer(working.renderer.vertex_buffer)
+    text_upload_dynamic_scratch()
+    const batched = text_renderer_set_batch(working.renderer, total_vertices)
+    let mut draw_status = 0
+    if first_clear != 0 then
+      draw_status = text_renderer_draw_colored(
+        batched, window_width, window_height,
+        line_red, line_green, line_blue, line_alpha
+      )
+      first_clear = 0
+    else
+      draw_status = text_renderer_draw_over_colored(
+        batched, window_width, window_height,
+        line_red, line_green, line_blue, line_alpha
+      )
+    end
+    grand_total_vertices = grand_total_vertices + total_vertices
+    if draw_status != 0 then
+      return StaticTextDrawResult {
+        state: StaticTextState {
+          renderer: batched,
+          atlas: working.atlas,
+          cache: working.cache,
+          shaping: working.shaping,
+          atlas_size: working.atlas_size,
+          font_path: working.font_path,
+          font_id: working.font_id
+        },
+        vertex_count: grand_total_vertices,
+        error_code: draw_status
+      }
+    end
+    working = StaticTextState {
       renderer: batched,
       atlas: working.atlas,
       cache: working.cache,
@@ -264,9 +327,13 @@ export fn static_text_draw_lines_colored(
       atlas_size: working.atlas_size,
       font_path: working.font_path,
       font_id: working.font_id
-    },
-    vertex_count: total_vertices,
-    error_code: draw_status
+    }
+    batch_start = batch_end
+  end
+  StaticTextDrawResult {
+    state: working,
+    vertex_count: grand_total_vertices,
+    error_code: 0
   }
 end
 

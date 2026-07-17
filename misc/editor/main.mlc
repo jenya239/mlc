@@ -43,7 +43,11 @@ fn main() -> i32 = do
     text: "mlc-editor",
     pixel_size: 28,
     pen_x: 56,
-    pen_y: 92
+    pen_y: 92,
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 0.0
   }
 
   let mut frame_index = 0

@@ -9,6 +9,9 @@ compile_commands_probe.cpp
 compile_commands_probe.hpp
 compile_demo.rb
 .tmp_*
+.tmp/
+compiler/out/extern_concurrency_lint.cpp
+compiler/out/extern_concurrency_lint.hpp
 .ccache/
 coverage/
 *.gch

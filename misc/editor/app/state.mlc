@@ -5,6 +5,7 @@ import {
 } from '../ux/probe'
 import {
   editor_ux_wheel_scroll,
+  editor_ux_wheel_scroll_hover,
   editor_ux_ensure_caret_visible
 } from '../ux/scroll'
 import { EditorTextMetrics } from '../ux/overflow'
@@ -138,6 +139,56 @@ export fn editor_app_wheel_scroll(
 ) -> EditorAppState =
   EditorAppState {
     ux: editor_ux_wheel_scroll(app.ux, metrics, wheel_ticks),
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_set_scroll_y(
+  app: EditorAppState,
+  scroll_offset_y: i32
+) -> EditorAppState =
+  EditorAppState {
+    ux: EditorUxState {
+      window_width: app.ux.window_width,
+      window_height: app.ux.window_height,
+      focus: app.ux.focus,
+      panels: app.ux.panels,
+      tabs: app.ux.tabs,
+      selection: app.ux.selection,
+      scroll_offset_x: app.ux.scroll_offset_x,
+      scroll_offset_y: scroll_offset_y,
+      cursor_shape: app.ux.cursor_shape,
+      clock_ms: app.ux.clock_ms,
+      tab_strip_height: app.ux.tab_strip_height,
+      overflows: app.ux.overflows
+    },
+    history: app.history,
+    clipboard: app.clipboard,
+    overlay: app.overlay,
+    editor_focused: app.editor_focused,
+    last_command: app.last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+export fn editor_app_wheel_scroll_hover(
+  app: EditorAppState,
+  metrics: EditorTextMetrics,
+  wheel_ticks: i32
+) -> EditorAppState =
+  EditorAppState {
+    ux: editor_ux_wheel_scroll_hover(app.ux, metrics, wheel_ticks),
     history: app.history,
     clipboard: app.clipboard,
     overlay: app.overlay,

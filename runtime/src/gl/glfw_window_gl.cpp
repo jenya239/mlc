@@ -123,6 +123,7 @@ struct StandardCursors {
   GLFWcursor* arrow = nullptr;
   GLFWcursor* ew_resize = nullptr;
   GLFWcursor* ibeam = nullptr;
+  GLFWcursor* hand = nullptr;
   int32_t last_shape = 0;
 };
 
@@ -145,6 +146,10 @@ void destroy_standard_cursors() {
     glfwDestroyCursor(cursors.ibeam);
     cursors.ibeam = nullptr;
   }
+  if (cursors.hand != nullptr) {
+    glfwDestroyCursor(cursors.hand);
+    cursors.hand = nullptr;
+  }
   cursors.last_shape = 0;
 }
 
@@ -158,6 +163,9 @@ void ensure_standard_cursors() {
   }
   if (cursors.ibeam == nullptr) {
     cursors.ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+  }
+  if (cursors.hand == nullptr) {
+    cursors.hand = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
   }
 }
 
@@ -458,6 +466,9 @@ void glfw_gl_cursor_set(int32_t shape) {
   } else if (shape == 2) {
     cursor = cursors.ibeam;
     resolved = 2;
+  } else if (shape == 3) {
+    cursor = cursors.hand;
+    resolved = 3;
   }
   if (cursor != nullptr) {
     glfwSetCursor(window, cursor);

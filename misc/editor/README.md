@@ -98,7 +98,37 @@ scripts/run_editor_perf_report.sh
 
 # Interactive live preview (keeps window open; Esc to quit)
 MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
+# MLC_EDITOR_ROOT=<dir> to open a real directory (default: repo root); Ctrl+O
+# opens the folder browser (breadcrumbs + back/forward), MLC_EDITOR_MOCK=1
+# forces the built-in mock tree.
 ```
+
+## Post-MVP (§33b–§43)
+
+Landed after `TRACK_EDITOR_MVP` closed, live-wired into `demo_live.mlc`
+(not just unit/model gates — see `docs/agent/DEVELOPMENT.md` for gate names):
+
+- **Live polish (P0 reality, §33b)** — real `gl_scissor` clip, GLFW cursor
+  shapes, OS clipboard (`glfwGetClipboardString`/`SetClipboardString`),
+  `command_bus_resolve` wired for mouse + keyboard, `app/` frame split
+  (`EditorAppState`), per-batch glyph tint (`u_color`).
+- **Folder browser + nav (§38, §43)** — `Ctrl+O`, breadcrumbs, listing via
+  `list_dir`/`is_directory`, back/forward history (`folder_nav_*`).
+- **Font config (§39)** — `MLC_EDITOR_FONT` env override, DejaVuMono default,
+  no Fontconfig dependency.
+- **UTF-8 codepoint columns (§40)** — `line_index` operates on codepoints,
+  not bytes (grapheme clusters deferred).
+- **Caret blink (§41)** — `caret_blink.mlc`, 1000ms period, wired into the
+  live loop.
+- **Soft word-wrap (§42)** — `layout/word_wrap.mlc`; long lines wrap at
+  viewport width.
+- **HiDPI (§37)** — `glfwGetWindowContentScale`; chrome metrics scale with
+  content scale.
+
+Known gaps (not yet addressed): tree-sitter/incremental highlighting
+(stub lexer only), grapheme-cluster cursor columns, `SemanticNode` a11y
+stub, honest large-file (100k line) live perf harness (current
+`perf_report_unit.mlc` measures a synthetic fixture, not a live GL frame).
 
 Expect stdout containing `[mlc-editor] open` and exit 0.
 Text smoke also requires `[mlc-editor] glyphs=N` with N>0.
