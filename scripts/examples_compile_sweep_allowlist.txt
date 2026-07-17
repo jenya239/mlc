@@ -4,3 +4,7 @@
 # dynrecord_demo.mlc — mlcc segfaults compiling dynrecord.mlc graph (Option/
 # Map extern); import paths fixed, body deferred (TRACK_EXAMPLES_CI STEP=7).
 dynrecord_demo.mlc
+# StaticTextLine now requires Color rgba fields (editor solarized/text work);
+# examples not updated yet. Pre-existing vs CODEGEN STEP=9 close.
+scene_form_live.mlc
+text_glyph_color_smoke.mlc

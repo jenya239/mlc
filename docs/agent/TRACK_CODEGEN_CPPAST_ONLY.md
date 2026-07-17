@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b13/8c **done**; STEP=9 next
+## Status: **closed** (2026-07-17) — STEP=1/test-fix/2/3/4/5/6/7a–7b3c5/8a/8b1–8b13/8c/9 **done**; Critic next
 
 ## Why this track exists
 
@@ -19,17 +19,10 @@ not `[Shared<CppStatement>]`.
 
 ## Ground truth (exact inventory, 2026-07-17)
 
-### 1. `compiler/codegen/expr/expr.mlc` — string-template module
+### 1. `compiler/codegen/expr/expr.mlc` — string-template module (**deleted** STEP=8c)
 
-390 → ~330 lines after STEP=1 dead-code removal. Every export takes/returns
-`string` and does `${...}` interpolation — this **is** the string-concat
-codegen path, not a helper around it.
-
-Usage count per exported function (`grep -c` across `compiler/**/*.mlc`,
-excluding self): 11 functions had **0** call sites (removed STEP=1); ~50 have
-exactly 1; a handful (`suffix_semicolon_newline`: 31, `function_call_parentheses`:
-14, `if_brace_block`: 8) are on the hot path for nearly every statement/call
-in the compiler.
+Helpers relocated to `type_gen` / `stmt_fragments` / domain modules. Residual
+string templates remain there; the dedicated module is gone.
 
 ### 2. `CppAST` string-typed escape hatches (`compiler/cpp_ir/cpp_ast.mlc`)
 
@@ -136,7 +129,7 @@ reachable again — Meta should split later.
 | 8b12 | Move 4 decl helpers `expr.mlc` → `type_gen.mlc` (noexcept/template/concept/vtable); drop `expression_output` from decl/trait_struct/decl_cpp (exports 7→3) | **done** (2026-07-17) |
 | 8b13 | Move remaining helpers: `function_call_parentheses`/`runtime_to_string_call` → `type_gen`; bootstrap golden → local in `test_cpp_printer`; `expr.mlc` stub (0 exports, no importers) | **done** (2026-07-17) |
 | 8c | Delete `expr.mlc` stub; `print.mlc` `render_*` remain (live printer helpers, not unreachable) | **done** (2026-07-17) |
-| 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | pending, closes track |
+| 9 | `scripts/regression_gate.sh` + Tier B (`compiler/tests/build_tests.sh`) + self-host `mlcc`→`mlcc2` diff identical; update `docs/PLAN.md` §1/§7 metric row | **done** (2026-07-17) — closes track; allowlisted pre-existing Color-broken examples (`scene_form_live`, `text_glyph_color_smoke`) |
 
 ## Non-goals (this track)
 

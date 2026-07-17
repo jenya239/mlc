@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 23:30 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=9 — close)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 9 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 22:20 |
+| elapsed | ~70 min (self-host + Tier B + regression; allowlist Color-broken examples) |
+| done    | Closed track: `regression_gate` 20/0 + examples ok=146 skip=3; Tier B EXIT=0; mlcc→mlcc2 double-emit identical; PLAN §1/§7 honest residual (not 0% bridges); allowlisted `scene_form_live`/`text_glyph_color_smoke` |
+| result  | TRACK **closed**; gates green |
+| issues  | CaptureAnalyzer + out left alone; Color examples pre-existing vs editor solarized |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 22:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8c — delete expr.mlc)
 
 | field   | value |
