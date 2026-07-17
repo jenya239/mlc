@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 11:42 (Planner TRACK_EDITOR_CLEAN_ARCHITECTURE STEP=0+3 — discipline + Opus review)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0+3 |
+| track   | TRACK_EDITOR_CLEAN_ARCHITECTURE (§45) + TRACK_EDITOR_UX_BACKLOG (§46, opened) |
+| started | 2026-07-17 11:26 |
+| elapsed | ~20 min (incl. Opus API wait) |
+| done    | Froze Standing discipline (TDD-scenario-first, god-file budget) in `docs/GUI_UX_TESTING.md`; opened `TRACK_EDITOR_CLEAN_ARCHITECTURE.md` (§45); ran real Opus review (`mlc-support/review_editor_tdd_ux.rb`, model `claude-opus-4-8`, $2.24) → `mlc-support/responses/editor_tdd_ux_20260717_114221.md`; review refined the `demo_live.mlc` fix (replace inline duplicated logic with existing tested `ux/*` calls, not "split main() into phases") and flagged record-copy boilerplate as a `LANG_RECORD_UPDATE` compiler-track candidate; opened `TRACK_EDITOR_UX_BACKLOG.md` (§46) with 30 ordered atomic items from the review |
+| result  | Docs-only, no code/tests touched, no gate run needed. Note: two earlier edit attempts to `GUI_UX_TESTING.md`/`PLAN.md`/`CONTINUITY.md` were silently lost mid-turn — a concurrent Driver turn on TRACK_CODEGEN_CPPAST_ONLY was writing the same files at the same time and one side's write clobbered the other's uncommitted edit before either committed. Redone and committed immediately (small commits) to close the race window; no data loss in the final state, but future concurrent turns on `PLAN.md`/`CONTINUITY.md` should commit each hunk immediately rather than batching edits |
+| issues  | See `result` — lost-edit race, recovered. Not a track content problem, a same-turn/cross-turn concurrency hazard on shared docs files worth a `CONTINUITY.md` rule if it recurs |
+| next    | ROLE=Critic STEP=critique-audit TRACK_EDITOR_CLEAN_ARCHITECTURE (confirm §45 discipline/review, close track), then ROLE=Driver on TRACK_EDITOR_UX_BACKLOG item #1 EDITOR_DEMO_ORCHESTRATOR — but only after TRACK_CODEGEN_CPPAST_ONLY's own `next` (STEP=2 or its Critic) is honored per "continue current track" rule; do not let this Planner turn jump the rotation |
+
 ### Turn 2026-07-17 11:37 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — Tier A no Ruby rebuild)
 
 | field   | value |
