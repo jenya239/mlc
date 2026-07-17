@@ -1239,6 +1239,14 @@ module MLC
             parse_for_loop
           when :WHILE
             parse_while_loop
+          when :MATCH
+            # match as primary (e.g. `a && match x { ... }` inside another arm)
+            parse_match_expression
+          when :DO
+            parse_do_expression
+          when :IF, :UNLESS
+            ir, _end_consumed = parse_if_or_unless_expression(inside_block: false)
+            ir
           when :INT_LITERAL
             token = consume(:INT_LITERAL)
             value = token.value

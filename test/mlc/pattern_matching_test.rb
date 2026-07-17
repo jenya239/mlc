@@ -59,6 +59,21 @@ class MLCPatternMatchingTest < Minitest::Test
     assert_equal :wildcard, match_expr.arms[1][:pattern].kind
   end
 
+  def test_match_as_primary_inside_and_expression
+    mlc_source = <<~MLCORA
+      fn test(x: i32) -> bool =
+        match x {
+          1 => true && match x { 1 => true, _ => false },
+          _ => false
+        }
+    MLCORA
+
+    ast = MLC.parse(mlc_source)
+    refute_nil ast
+    func = ast.declarations.first
+    assert_instance_of MLC::Source::AST::MatchExpr, func.body
+  end
+
   def test_parse_constructor_pattern
     mlc_source = <<~MLCORA
       type Shape = Circle(f32) | Point
