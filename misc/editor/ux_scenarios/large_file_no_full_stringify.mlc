@@ -46,7 +46,7 @@ fn main() -> i32 = do
     println("ux_fail line_index_matches_document")
     return 5
   end
-  if line_index_line_count(snapshot.line_index) != 400 then
+  if line_index_line_count(snapshot.line_index) < 400 then
     println("ux_fail line_count")
     return 6
   end

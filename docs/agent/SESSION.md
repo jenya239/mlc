@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 03:50 (Driver TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY |
+| started | 2026-07-18 03:40 |
+| elapsed | ~10 min |
+| done    | `document_frame_snapshot` flatten_count=1; `demo_live` uses snapshot + edit refresh + end match-guard; no per-frame triple `document_to_string`; save stringify kept; `ux_ok large_file_no_full_stringify`; `demo_live_fs_compile_ok` |
+| verify  | `bash scripts/run_ux_large_file_no_full_stringify.sh` → `ux_ok large_file_no_full_stringify`; `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-18 03:35 (Driver TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |

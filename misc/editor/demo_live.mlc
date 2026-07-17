@@ -145,11 +145,15 @@ import {
   document_to_string
 } from './document/piece_table'
 import {
+  DocumentFrameSnapshot,
+  document_frame_snapshot
+} from './document/frame_snapshot'
+import {
   LineIndex,
-  line_index_rebuild,
   line_index_line_count,
   line_index_line_start,
-  line_index_offset_to_position
+  line_index_offset_to_position,
+  line_index_matches_document
 } from './document/line_index'
 import {
   selection_collapsed,
@@ -632,7 +636,9 @@ fn main() -> i32 = do
     tabs = ensure_tabs(tabs, panels)
     let mut active = tab_set_active(tabs)
     let mut document = active.buffer.document
-    let mut line_index = line_index_rebuild(document)
+    let mut frame = document_frame_snapshot(document)
+    let mut line_index = frame.line_index
+    let mut draw_text = frame.text
 
     const tree_rect = shell_panels_tree_rect(panels)
     const editor_rect = shell_panels_editor_rect(panels)
@@ -643,10 +649,9 @@ fn main() -> i32 = do
     const panes = gutter_layout(editor_rect, gutter_width)
     const text_rect = panes.text
     const gutter_rect = panes.gutter
-    const draw_text_early = document_to_string(document)
     const wrap_columns = wrap_max_columns(text_rect.width - 8, char_width())
     const visual_row_count = document_visual_row_count(
-      draw_text_early, line_index, wrap_columns
+      draw_text, line_index, wrap_columns
     )
     let mut wrapped_content_height = visual_row_count * line_height()
     if wrapped_content_height < 0 then
@@ -663,7 +668,7 @@ fn main() -> i32 = do
       visible_row_budget = 1
     end
     let mut visual_rows = collect_visible_visual_rows(
-      draw_text_early, line_index, wrap_columns, first_visual_row, visible_row_budget
+      draw_text, line_index, wrap_columns, first_visual_row, visible_row_budget
     )
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_listing_rows(panels.tree)
@@ -719,7 +724,7 @@ fn main() -> i32 = do
         text_rect.height / line_height()
       )
       visual_rows = collect_visible_visual_rows(
-        draw_text_early, line_index, wrap_columns,
+        draw_text, line_index, wrap_columns,
         scroll_offset_y / line_height(), visible_row_budget
       )
     end
@@ -735,7 +740,9 @@ fn main() -> i32 = do
           if tab_set_has_active(tabs) then
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = selection_collapsed(0)
             history = history_new()
           end
@@ -767,7 +774,9 @@ fn main() -> i32 = do
           tabs = loaded
           active = tab_set_active(tabs)
           document = active.buffer.document
-          line_index = line_index_rebuild(document)
+          frame = document_frame_snapshot(document)
+          line_index = frame.line_index
+          draw_text = frame.text
           selection = selection_collapsed(0)
           history = history_new()
           last_command = "session_load"
@@ -803,7 +812,9 @@ fn main() -> i32 = do
           if tab_set_has_active(tabs) then
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
           end
           handled = 1
         end
@@ -812,7 +823,7 @@ fn main() -> i32 = do
       if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
         editor_focused = 1
         const click_offset = wrap_offset_at_point(
-          draw_text_early, line_index, wrap_columns,
+          draw_text, line_index, wrap_columns,
           text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
           line_height(), char_width(),
           input.mouse_x, input.mouse_y
@@ -860,7 +871,9 @@ fn main() -> i32 = do
             tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = selection_collapsed(0)
             history = history_new()
           end
@@ -891,7 +904,9 @@ fn main() -> i32 = do
             tabs = tab_set_activate_prev(tabs)
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = selection_collapsed(0)
             history = history_new()
           end
@@ -899,7 +914,9 @@ fn main() -> i32 = do
             tabs = tab_set_activate_next(tabs)
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = selection_collapsed(0)
             history = history_new()
           end
@@ -910,7 +927,9 @@ fn main() -> i32 = do
             if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
               active = tab_set_active(tabs)
               document = active.buffer.document
-              line_index = line_index_rebuild(document)
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
               selection = selection_collapsed(0)
               history = history_new()
             end
@@ -922,7 +941,9 @@ fn main() -> i32 = do
               tabs = apply_edit(tabs, undo_result.document)
               active = tab_set_active(tabs)
               document = active.buffer.document
-              line_index = line_index_rebuild(document)
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
               selection = undo_result.selection
             end
           end
@@ -933,7 +954,9 @@ fn main() -> i32 = do
               tabs = apply_edit(tabs, redo_result.document)
               active = tab_set_active(tabs)
               document = active.buffer.document
-              line_index = line_index_rebuild(document)
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
               selection = redo_result.selection
             end
           end
@@ -950,7 +973,9 @@ fn main() -> i32 = do
             tabs = apply_edit(tabs, cut_result.document)
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = cut_result.selection
             clipboard = cut_result.clipboard
             clipboard_push_to_os(clipboard)
@@ -962,7 +987,9 @@ fn main() -> i32 = do
             tabs = apply_edit(tabs, paste_result.document)
             active = tab_set_active(tabs)
             document = active.buffer.document
-            line_index = line_index_rebuild(document)
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
             selection = paste_result.selection
           end
         | CmdSave => do
@@ -985,7 +1012,7 @@ fn main() -> i32 = do
       end
       if input.mouse_down != 0 && selecting_text != 0 && panels.dragging == 0 then
         const drag_offset = wrap_offset_at_point(
-          draw_text_early, line_index, wrap_columns,
+          draw_text, line_index, wrap_columns,
           text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
           line_height(), char_width(),
           input.mouse_x, input.mouse_y
@@ -1008,7 +1035,9 @@ fn main() -> i32 = do
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
-        line_index = line_index_rebuild(document)
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
       end
       if input.enter != 0 && enter_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
@@ -1018,7 +1047,9 @@ fn main() -> i32 = do
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
-        line_index = line_index_rebuild(document)
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
       end
       if input.backspace != 0 && backspace_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
@@ -1028,7 +1059,9 @@ fn main() -> i32 = do
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
-        line_index = line_index_rebuild(document)
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
       end
       enter_was_down = input.enter
       backspace_was_down = input.backspace
@@ -1039,13 +1072,16 @@ fn main() -> i32 = do
     tabs = ensure_tabs(tabs, panels)
     active = tab_set_active(tabs)
     document = active.buffer.document
-    line_index = line_index_rebuild(document)
+    if !line_index_matches_document(frame.line_index, document) then
+      frame = document_frame_snapshot(document)
+    end
+      line_index = frame.line_index
+    draw_text = frame.text
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_ensure_caret_visible(app, metrics)
-    const draw_text_pre = document_to_string(document)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, char_width())
     const visual_row_count_now = document_visual_row_count(
-      draw_text_pre, line_index, wrap_columns_now
+      draw_text, line_index, wrap_columns_now
     )
     let mut wrapped_content_height_now = visual_row_count_now * line_height()
     if wrapped_content_height_now < 0 then
@@ -1057,7 +1093,7 @@ fn main() -> i32 = do
     scroll_offset_y = app.ux.scroll_offset_y
     visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
     visual_rows = collect_visible_visual_rows(
-      draw_text_pre, line_index, wrap_columns_now,
+      draw_text, line_index, wrap_columns_now,
       scroll_offset_y / line_height(), visible_row_budget
     )
 
@@ -1155,7 +1191,6 @@ fn main() -> i32 = do
     editor_gl_scissor_enable_rect(height, editor_rect)
 
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
-    const draw_text = document_to_string(document)
     let mut syntax_spans: [HighlightSpan] = []
     if visible.first_line <= visible.last_line then
       const range_start = line_index_line_start(line_index, visible.first_line)

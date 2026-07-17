@@ -1,5 +1,4 @@
-// TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=1 — stub multi-flatten (demo_live-shaped).
-// STEP=2: one document_to_string + line_index_from_string; flatten_count = 1.
+// TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=2 — one flatten per snapshot.
 import {
   TextDocument,
   document_to_string
@@ -15,16 +14,11 @@ export type DocumentFrameSnapshot = {
   flatten_count: i32
 }
 
-// Current live path: 3× stringify. STEP=2 collapses to one flatten.
 export fn document_frame_snapshot(document: TextDocument) -> DocumentFrameSnapshot = do
-  const early = document_to_string(document)
-  const pre = document_to_string(document)
-  const draw = document_to_string(document)
-  let mut _touch = early.byte_size() + pre.byte_size()
-  _touch = _touch + 0
+  const text = document_to_string(document)
   DocumentFrameSnapshot {
-    text: draw,
-    line_index: line_index_from_string(draw),
-    flatten_count: 3
+    text: text,
+    line_index: line_index_from_string(text),
+    flatten_count: 1
   }
 end

@@ -3,18 +3,22 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1d**
 (pulled forward from #22 — frame-latency / Sublime-parity).
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — `document_frame_snapshot` one flatten + wire `demo_live`;
-green `large_file_no_full_stringify` + `demo_live_fs_compile_ok`.
+**STEP=3** — Critic: gates; grep hot path ≤1 flatten pattern; archive.
+
+### STEP=2 done (2026-07-18)
+
+- `document_frame_snapshot` → one `document_to_string` + `line_index_from_string`
+- `demo_live`: frame snapshot; refresh on edit; end resnapshot only if
+  `!line_index_matches_document`; draw reuses `frame.text`
+- Save-path stringify kept; gates green
 
 ### STEP=1 done (2026-07-18)
 
-- Stub `document/frame_snapshot.mlc` (`flatten_count: 3`, 3× stringify)
-- L2 `ux_scenarios/large_file_no_full_stringify.mlc` + run script → **red**
-  (`ux_fail expected flatten_count=1 got 3`)
+- Stub multi-flatten + red L2 harness
 
 ### STEP=0 done (2026-07-18)
 
@@ -46,17 +50,14 @@ green `large_file_no_full_stringify` + `demo_live_fs_compile_ok`.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
 | 1 | L2 scenario first (`large_file_no_full_stringify`) | **done** (red harness) |
-| 2 | `document_frame_snapshot` + wire `demo_live` ≤1 flatten/frame | scenario + compile |
+| 2 | `document_frame_snapshot` + wire `demo_live` ≤1 flatten/frame | **done** |
 | 3 | Critic: gates; grep hot path; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. Implement snapshot API; rebuild line_index from snapshot text.
-2. Wire `demo_live` early/pre/draw to one snapshot.
-3. Gates: scenario ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #2).
 
