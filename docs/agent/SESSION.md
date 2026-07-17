@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 03:15 (Critic TRACK_EDITOR_STALE_HELP_TEXT critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_STALE_HELP_TEXT |
+| started | 2026-07-18 03:10 |
+| elapsed | ~5 min |
+| done    | Re-ran compile; anti-false-done `c034c66f`…`3bb3707d`; no expand/collapse left; archive → `docs/archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md`; PLAN/UX_BACKLOG #1c → done |
+| verify  | `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; reopen: none |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 03:05 (Driver TRACK_EDITOR_STALE_HELP_TEXT STEP=1)
 
 | field   | value |
