@@ -5,15 +5,6 @@
 export fn function_call_parentheses(callee_code: string, argument_list: string) -> string =
   `${callee_code}(${argument_list})`
 
-export fn suffix_semicolon_newline(expression_code: string) -> string =
-  `${expression_code};\n`
-
-export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
-  `auto ${binding_cpp_safe} = ${value_code};\n`
-
-export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
-  `auto [${binding_names_csv}] = ${source_name}; `
-
 export fn runtime_to_string_call(expression_code: string) -> string =
   `mlc::to_string(${expression_code})`
 

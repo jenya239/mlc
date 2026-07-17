@@ -12,7 +12,10 @@ import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pattern_bind_names } from './match_analysis'
-import * as expression_output from './expr'
+import * as statement_fragments from '../stmt/stmt_fragments'
+
+export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
+  `auto [${binding_names_csv}] = ${source_name}; `
 
 export type GenLetPatternResult = GenLetPatternResult { output: string, codegen_context: CodegenContext }
 
@@ -25,7 +28,7 @@ fn primitive_tuple_pattern_output(
   value_code: string
 ) -> string = do
   const primitive_tuple_binding_names = pattern_bind_names(sub_patterns)
-  'auto ' + temp_name + ' = ' + value_code + ';\n' + expression_output.tuple_destructure_binding(primitive_tuple_binding_names, temp_name) + `\n`
+  'auto ' + temp_name + ' = ' + value_code + ';\n' + tuple_destructure_binding(primitive_tuple_binding_names, temp_name) + `\n`
 end
 
 fn record_codegen_name_from_value_type(value_type: Shared<Type>) -> string =
@@ -61,7 +64,7 @@ fn append_tuple_member_ident_binding(
 ) -> string =
   match sub_pattern {
     PatternIdent(binding_member_name, _) =>
-      fragment + expression_output.auto_binding_statement(
+      fragment + statement_fragments.auto_binding_statement(
         cpp_safe(binding_member_name),
         `${temp_name}.${cpp_safe(member_label)}`),
     PatternWild(_) => fragment,
@@ -163,7 +166,7 @@ fn append_record_field_ident_binding(
 ) -> string =
   match field_pattern {
     PatternIdent(field_name, _) =>
-      fragment + expression_output.auto_binding_statement(cpp_safe(field_name), `${temp_name}.${cpp_safe(field_name)}`),
+      fragment + statement_fragments.auto_binding_statement(cpp_safe(field_name), `${temp_name}.${cpp_safe(field_name)}`),
     PatternWild(_) => fragment,
     PatternInt(_, _) => fragment,
     PatternStr(_, _) => fragment,
@@ -213,7 +216,7 @@ fn array_pattern_output(
 end
 
 fn wild_pattern_output(value_code: string) -> string =
-  expression_output.suffix_semicolon_newline(value_code)
+  statement_fragments.suffix_semicolon_newline(value_code)
 
 fn ctor_pattern_gen_result(
   constructor_name: string,
@@ -231,7 +234,7 @@ fn ctor_pattern_gen_result(
   let mut updated_codegen_context = second_temp.codegen_context
   const bind =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), variant_binding_name)
+    else tuple_destructure_binding(pattern_bind_names(sub_patterns), variant_binding_name)
     end
   const is_generic = list_contains(updated_codegen_context.generic_variants, constructor_name)
   const type_arguments = if is_generic then '<auto>' else '' end
@@ -260,7 +263,7 @@ export fn gen_let_pattern_statement(
   let mut codegen_context = first_temp.codegen_context
   match pattern {
     PatternIdent(binding_name, _) => GenLetPatternResult {
-      output: expression_output.auto_binding_statement(cpp_safe(binding_name), value_code),
+      output: statement_fragments.auto_binding_statement(cpp_safe(binding_name), value_code),
       codegen_context: codegen_context
     },
     PatternTuple(sub_patterns, _) => GenLetPatternResult {

@@ -26,7 +26,6 @@ import { generate_conditional_else_with_empty_array_coercion, question_from_conv
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as semantic_type_structure from '../../checker/semantic_type_structure'
-import * as expression_output from '../expr/expr'
 import * as statement_fragments from './stmt_fragments'
 
 fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
@@ -345,7 +344,7 @@ fn eval_block_body(expression: Shared<SemanticExpression>, context: CodegenConte
   else if semantic_expression_is_if(expression) then
     eval_stmt_if_nested(expression, context, gen_expr_fn)
   else
-    expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+    statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context))
   end
 
 fn eval_semantic_block_body(
@@ -360,34 +359,34 @@ fn eval_semantic_block_body(
       const final_context = statements_with_context.codegen_context
       block_result_trailing_code(statements_code, result_expression, final_context, gen_expr_fn)
     end,
-    SemanticExpressionInt(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionStr(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionFloat(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionI64(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionU8(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionUsize(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionChar(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionBool(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionUnit(_, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionExtern(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionIdent(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionBin(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionUn(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionCall(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionMethod(_, _, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionField(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionIndex(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionIf(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionWhile(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionFor(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionMatch(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionRecord(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionRecordUpdate(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionArray(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionTuple(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionQuestion(_, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionLambda(_, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context)),
-    SemanticExpressionWith(_, _, _, _, _) => expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+    SemanticExpressionInt(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionStr(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionFloat(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionI64(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionU8(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUsize(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionChar(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionBool(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUnit(_, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionExtern(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIdent(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionBin(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionUn(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionCall(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionMethod(_, _, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionField(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIndex(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionIf(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionWhile(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionFor(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionMatch(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionRecord(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionArray(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionTuple(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionQuestion(_, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionLambda(_, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context)),
+    SemanticExpressionWith(_, _, _, _, _) => statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context))
   }
 
 fn eval_stmt_expr_default_suffix(
@@ -395,7 +394,7 @@ fn eval_stmt_expr_default_suffix(
   context: CodegenContext,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> string =
-  expression_output.suffix_semicolon_newline(gen_expr_fn(expression, context))
+  statement_fragments.suffix_semicolon_newline(gen_expr_fn(expression, context))
 
 fn eval_stmt_expr_block(
   statements: [Shared<SemanticStatement>],
@@ -653,7 +652,7 @@ fn gen_let_stmt_result_default(
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenStmtResult =
   stmt_result_from_source(
-    expression_output.auto_binding_statement(
+    statement_fragments.auto_binding_statement(
       cpp_safe(name),
       gen_let_value_code(value, value_type, context, gen_expr_fn)),
     try_counter,

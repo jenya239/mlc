@@ -8,7 +8,7 @@ import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from 
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { first_arm_needs_deref, pattern_bind_names, pattern_binding_name_list, should_use_string_match_if_chain } from './match_analysis'
-import * as expression_output from './expr'
+import { tuple_destructure_binding } from './let_pat'
 
 fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
@@ -231,7 +231,7 @@ fn gen_arm_ctor(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
+    else tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
   const is_generic = list_contains(context.generic_variants, constructor_name)
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
@@ -1242,7 +1242,7 @@ fn gen_arm_ctor_cpp(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else expression_output.tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
+    else tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
     end
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
   const variant_used_type_parameter_names =

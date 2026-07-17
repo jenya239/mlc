@@ -1,4 +1,4 @@
-// Shared pre-rendered C++ statement-fragment helpers for stmt_eval / return_body.
+// Shared pre-rendered C++ statement-fragment helpers for stmt_eval / return_body / let_pat.
 // No SemanticExpression traversal; string templates only.
 
 export fn return_line(expression_code: string) -> string =
@@ -24,3 +24,9 @@ export fn fragment_with_newline(fragment: string) -> string =
 
 export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
   if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end
+
+export fn suffix_semicolon_newline(expression_code: string) -> string =
+  `${expression_code};\n`
+
+export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
+  `auto ${binding_cpp_safe} = ${value_code};\n`
