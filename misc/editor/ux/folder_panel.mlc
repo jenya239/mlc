@@ -493,3 +493,134 @@ export fn folder_row_rect(
     folder_row_height()
   )
 end
+
+// Live folder chrome click resolve (nav / crumb / listing). Apply browse/open in caller.
+export fn folder_click_none() -> i32 = 0
+export fn folder_click_nav_back() -> i32 = 1
+export fn folder_click_nav_forward() -> i32 = 2
+export fn folder_click_nav_swallow() -> i32 = 3
+export fn folder_click_breadcrumb() -> i32 = 4
+export fn folder_click_parent() -> i32 = 5
+export fn folder_click_enter_dir() -> i32 = 6
+export fn folder_click_arm_dir() -> i32 = 7
+export fn folder_click_open_file() -> i32 = 8
+
+export type FolderBrowserClickResult = {
+  handled: i32,
+  action: i32,
+  path: string,
+  folder_nav: FolderNavHistory,
+  tree_scroll_y: i32,
+  last_tree_click_path: string,
+  last_tree_click_frame: i32,
+  last_command: string
+}
+
+fn folder_browser_click_result(
+  handled: i32,
+  action: i32,
+  path: string,
+  folder_nav: FolderNavHistory,
+  tree_scroll_y: i32,
+  last_tree_click_path: string,
+  last_tree_click_frame: i32,
+  last_command: string
+) -> FolderBrowserClickResult =
+  FolderBrowserClickResult {
+    handled: handled,
+    action: action,
+    path: path,
+    folder_nav: folder_nav,
+    tree_scroll_y: tree_scroll_y,
+    last_tree_click_path: last_tree_click_path,
+    last_tree_click_frame: last_tree_click_frame,
+    last_command: last_command
+  }
+
+export fn folder_browser_resolve_click(
+  tree_rect: Rect,
+  breadcrumb_segments: [BreadcrumbSegment],
+  breadcrumb_rect: Rect,
+  folder_rows: [FolderRow],
+  tree_list_rect: Rect,
+  tree_scroll_y: i32,
+  folder_nav: FolderNavHistory,
+  last_tree_click_path: string,
+  last_tree_click_frame: i32,
+  frame_index: i32,
+  point_x: i32,
+  point_y: i32
+) -> FolderBrowserClickResult = do
+  const nav_hit = folder_nav_button_hit(tree_rect, point_x, point_y)
+  if nav_hit == 1 && folder_nav_can_back(folder_nav) != 0 then
+    const next_nav = folder_nav_back(folder_nav)
+    return folder_browser_click_result(
+      1, folder_click_nav_back(), folder_nav_current(next_nav),
+      next_nav, 0, "", last_tree_click_frame, "tree_nav_back"
+    )
+  end
+  if nav_hit == 2 && folder_nav_can_forward(folder_nav) != 0 then
+    const next_nav = folder_nav_forward(folder_nav)
+    return folder_browser_click_result(
+      1, folder_click_nav_forward(), folder_nav_current(next_nav),
+      next_nav, 0, "", last_tree_click_frame, "tree_nav_forward"
+    )
+  end
+  if nav_hit != 0 then
+    return folder_browser_click_result(
+      1, folder_click_nav_swallow(), "", folder_nav, tree_scroll_y,
+      last_tree_click_path, last_tree_click_frame, ""
+    )
+  end
+
+  const crumb_path = folder_breadcrumb_hit(
+    breadcrumb_segments, breadcrumb_rect, point_x, point_y
+  )
+  if crumb_path.byte_size() > 0 then
+    const next_nav = folder_nav_push(folder_nav, crumb_path)
+    return folder_browser_click_result(
+      1, folder_click_breadcrumb(), crumb_path, next_nav, 0, "",
+      last_tree_click_frame, "tree_breadcrumb"
+    )
+  end
+
+  const row = folder_hit_row_index(
+    tree_list_rect, folder_rows.length(), tree_scroll_y, point_x, point_y
+  )
+  if row < 0 then
+    return folder_browser_click_result(
+      0, folder_click_none(), "", folder_nav, tree_scroll_y,
+      last_tree_click_path, last_tree_click_frame, ""
+    )
+  end
+
+  const folder_row = folder_rows[row]
+  if folder_row.kind == folder_row_parent() then
+    const next_nav = folder_nav_push(folder_nav, folder_row.path)
+    return folder_browser_click_result(
+      1, folder_click_parent(), folder_row.path, next_nav, 0, "",
+      last_tree_click_frame, "tree_parent"
+    )
+  end
+  if folder_row.kind == folder_row_directory() then
+    const is_double =
+      folder_row.path == last_tree_click_path &&
+      frame_index - last_tree_click_frame >= 0 &&
+      frame_index - last_tree_click_frame <= 25
+    if is_double then
+      const next_nav = folder_nav_push(folder_nav, folder_row.path)
+      return folder_browser_click_result(
+        1, folder_click_enter_dir(), folder_row.path, next_nav, 0, "",
+        0 - 1000, "tree_enter"
+      )
+    end
+    return folder_browser_click_result(
+      1, folder_click_arm_dir(), folder_row.path, folder_nav, tree_scroll_y,
+      folder_row.path, frame_index, "tree_dir_arm"
+    )
+  end
+  folder_browser_click_result(
+    1, folder_click_open_file(), folder_row.path, folder_nav, tree_scroll_y,
+    "", last_tree_click_frame, "tree_open"
+  )
+end

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:40 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_DEMO_ORCHESTRATOR |
+| started | 2026-07-18 01:30 |
+| elapsed | ~15 min |
+| done    | `folder_browser_resolve_click` (+ action kinds); `demo_live` nav/crumb/listing via resolve+apply. Live folder chrome ≠ `editor_ux_click_tree` (kept for L4 scenario). Gates: `ux_ok tree_click_opens_tab`, `folder_nav_unit ok`, folder_panel unit, `demo_live_fs_compile_ok` |
+| result  | STEP=3 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=4 TRACK=TRACK_EDITOR_DEMO_ORCHESTRATOR |
+
 ### Turn 2026-07-18 01:30 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=2)
 
 | field   | value |

@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1) STEP=3 (tree/breadcrumb → `ux/tree_hit`).
+**Queue head:** Driver `TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1) STEP=4 (scroll/wheel → `ux/scroll`).
 **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45)** / §43 / §44 archived.
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
 ## Step sizing (good vs bad)
