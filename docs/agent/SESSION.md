@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 02:55 (Planner PLAN_QUEUE pick-next → open #1c)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 02:50 |
+| elapsed | ~5 min |
+| done    | Opened §46 #1c: `TRACK_EDITOR_STALE_HELP_TEXT.md` STEP=0 Decision frozen (copy-only: sample_readme/guide/changelog + header; breadcrumb+back/forward; gate `demo_live_fs_compile_ok`; no L2); UX_BACKLOG #1c → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_STALE_HELP_TEXT |
+
 ### Turn 2026-07-18 02:45 (Critic TRACK_EDITOR_LIVE_SOLARIZED_TEXT critique-audit)
 
 | field   | value |

@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner → §46 `#1c EDITOR_STALE_HELP_TEXT`.
+**Queue head:** Driver `TRACK_EDITOR_STALE_HELP_TEXT` (§46 #1c) STEP=1 (stale sample copy).
 **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45)** / §43 / §44 archived.
 SCRIPT_VM / AUTO_CYCLE / MIR Epic 5 — gated; do not open.
