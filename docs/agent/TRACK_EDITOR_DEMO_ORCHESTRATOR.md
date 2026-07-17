@@ -4,13 +4,19 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1**;
 origin [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](../archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md).
 Evidence: [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md) §2.2.
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=0–1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — Replace inline text/enter/backspace edit path in `demo_live.mlc`
-with `editor_ux_insert_text` / `editor_ux_insert_newline` (and existing
-selection/clipboard helpers if already used elsewhere). Behavior-preserving.
+**STEP=2** — Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip`.
+
+### STEP=1 done (2026-07-18)
+
+- `editor_ux_backspace` in `ux/edit_apply.mlc`; `editor_app_insert_text` /
+  `insert_newline` / `backspace` in `app/state.mlc` (history + ux).
+- `demo_live` text/enter/backspace → those wrappers (no inline `edit_*`).
+- Gates: `newline_caret_and_spaces`, `edit_unit`, `copy_paste_roundtrip`,
+  `demo_live_fs_compile_ok`.
 
 ### STEP=0 done (2026-07-18)
 
@@ -52,7 +58,7 @@ Do **not** invent a new scenario for this track unless a cluster has **no** exis
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
-| 1 | Edit path → `edit_apply` (+ related) | compile + edit-related scenarios |
+| 1 | Edit path → `edit_apply` (+ related) | **done** (2026-07-18) compile + newline/edit/copy_paste |
 | 2 | Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip` | compile + `tab_strip_click_activates` |
 | 3 | Tree/breadcrumb hits → `tree_hit` / folder helpers | compile + `tree_click_opens_tab` |
 | 4 | Scroll/wheel → `scroll` helpers; thin `main` shape check | compile + `wheel_scroll_keeps_caret_visible` |

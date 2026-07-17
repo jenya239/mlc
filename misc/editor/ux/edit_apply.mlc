@@ -1,7 +1,7 @@
 // TRACK_UX_HEADLESS STEP=5 — apply insert/newline to EditorUxState (L9 model).
 import {
   edit_insert_text,
-  edit_insert_newline
+  edit_backspace
 } from '../document/edit'
 import {
   tab_set_has_active,
@@ -43,3 +43,26 @@ end
 
 export fn editor_ux_insert_newline(state: EditorUxState) -> EditorUxState =
   editor_ux_insert_text(state, "\n")
+
+export fn editor_ux_backspace(state: EditorUxState) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_backspace(active.buffer.document, state.selection)
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: edited.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end

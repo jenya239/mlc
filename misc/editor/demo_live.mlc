@@ -161,11 +161,6 @@ import {
   selection_set_focus
 } from './document/selection'
 import {
-  edit_insert_text,
-  edit_insert_newline,
-  edit_backspace
-} from './document/edit'
-import {
   editor_view_metrics_new,
   nav_click,
   nav_drag
@@ -237,6 +232,9 @@ import {
   editor_app_commit_session,
   editor_app_wheel_scroll,
   editor_app_ensure_caret_visible,
+  editor_app_insert_text,
+  editor_app_insert_newline,
+  editor_app_backspace,
   editor_app_bump_frame
 } from './app/state'
 
@@ -1064,31 +1062,34 @@ fn main() -> i32 = do
       mouse_was_down = input.mouse_down
 
       if input.text_buffer.length() > 0 then
-        history = history_push_before_edit(history, document, selection)
-        const edited = edit_insert_text(document, selection, input.text_buffer)
-        tabs = apply_edit(tabs, edited.document)
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_insert_text(app, input.text_buffer)
+        tabs = app.ux.tabs
+        selection = app.ux.selection
+        history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
         line_index = line_index_rebuild(document)
-        selection = edited.selection
       end
       if input.enter != 0 && enter_was_down == 0 then
-        history = history_push_before_edit(history, document, selection)
-        const edited = edit_insert_newline(document, selection)
-        tabs = apply_edit(tabs, edited.document)
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_insert_newline(app)
+        tabs = app.ux.tabs
+        selection = app.ux.selection
+        history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
         line_index = line_index_rebuild(document)
-        selection = edited.selection
       end
       if input.backspace != 0 && backspace_was_down == 0 then
-        history = history_push_before_edit(history, document, selection)
-        const edited = edit_backspace(document, selection)
-        tabs = apply_edit(tabs, edited.document)
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_backspace(app)
+        tabs = app.ux.tabs
+        selection = app.ux.selection
+        history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
         line_index = line_index_rebuild(document)
-        selection = edited.selection
       end
       enter_was_down = input.enter
       backspace_was_down = input.backspace

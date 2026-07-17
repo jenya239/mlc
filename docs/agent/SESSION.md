@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:20 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DEMO_ORCHESTRATOR |
+| started | 2026-07-18 01:10 |
+| elapsed | ~25 min |
+| done    | `editor_ux_backspace` + `editor_app_insert_text`/`insert_newline`/`backspace`; `demo_live` text/enter/backspace via wrappers. Gates: `ux_ok newline_caret_and_spaces`, `edit_unit ok`, `ux_ok copy_paste_roundtrip`, `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DEMO_ORCHESTRATOR |
+
 ### Turn 2026-07-18 01:10 (Planner PLAN_QUEUE pick-next → open #1)
 
 | field   | value |
