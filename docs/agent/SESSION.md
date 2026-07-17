@@ -2,6 +2,12 @@
 
 ## Entries
 
+### 2026-07-17 — ROLE=Driver STEP=hygiene+1 TRACK_CODEGEN_CPPAST_ONLY (interactive session — uncommitted handoff)
+done: (1) hygiene: `.gitignore` (+`.tmp/`, `extern_concurrency_lint.*`), triaged foreign-dirty editor/runtime WIP (fixed real regression — `vertex_count` not accumulated across batches in `static_text_draw_lines_colored`), `misc/editor/README.md` refreshed for §36-42 features; (2) opened `TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — full inventory of string-concat codegen (`expr.mlc`, `CppAST` string-typed fragments/invoked-blocks, `GenStmtsResult`/`GenModuleOut` in `context.mlc`), STEP=1 done (removed 11 zero-usage functions from `compiler/codegen/expr/expr.mlc`); (3) found pre-existing blocker: `dev_gate_fast.sh` red on clean `main` (Ruby bootstrap `Unexpected token: MATCH` building `compiler/tests/` — self-hosted-only syntax), logged as `STEP=test-fix`, takes priority per rotation table (`test_gate=fail` row)
+verify: STEP=1 self-host diff checked (`git stash`-based before/after) — only `expr.cpp`/`expr.hpp` differ; NOT run through Tier B/regression_gate yet; `test_gate=fail` (dev_gate_fast, unrelated to this diff)
+issues: **18 files uncommitted at handoff** (commits require explicit user command in this chat, not given) — next turn must `git add` this explicit list and commit as `step 1: remove 11 unused expr.mlc functions` (+ separate hygiene commit) **before** treating STEP=1 as done per "never mark done without commit" rule; do not redo the removal, just verify+commit it as-is
+next: ROLE=Driver STEP=test-fix TRACK_CODEGEN_CPPAST_ONLY (commit handoff diff first, then bisect `dev_gate_fast.sh` MATCH parse failure; TRACK_EDITOR_FOLDER_NAV STEP=3 Critic still separately pending, unaffected by this diff)
+
 ### 2026-07-16 — ROLE=Implementer STEP=2 TRACK_EDITOR_FOLDER_NAV
 done: Wire `folder_nav_*` in `demo_live.mlc` (push/back/forward hit+draw); foreign dirty stashed during gate
 verify: `bash scripts/run_editor_demo_live_fs_compile.sh` → binary + `demo_live_fs_compile_ok`; REG N/A
