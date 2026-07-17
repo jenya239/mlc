@@ -159,26 +159,6 @@ export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -
 export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
   `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`
 
-export fn inline_noexcept_forwarding_call(
-  return_type_cpp: string,
-  method_name_cpp: string,
-  parameter_list: string,
-  callee_code: string,
-  call_argument_list: string
-) -> string =
-  `inline ${return_type_cpp} ${method_name_cpp}(${parameter_list}) noexcept { return ${callee_code}(${call_argument_list}); }\n`
-
-export fn noexcept_one_line_returning_function(
-  return_type_cpp: string,
-  name_cpp: string,
-  parameter_list: string,
-  return_expression_code: string
-) -> string =
-  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept { return ${return_expression_code}; }\n`
-
-export fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
-  `${type_expression_cpp} ${binding_name_cpp}`
-
 // --- Header / module shell (no traversal)
 
 export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
@@ -186,9 +166,6 @@ export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: 
 
 export fn cpp_template_typename_header_line(template_parameter_list: string) -> string =
   `template<typename ${template_parameter_list}>\n`
-
-export fn std_declval_expression(type_cpp: string) -> string =
-  `std::declval<${type_cpp}>()`
 
 export fn concept_requires_expression_method_returns_convertible(
   callee_name: string,
@@ -201,41 +178,8 @@ export fn concept_requires_expression_method_returns_convertible(
     `{ ${callee_name}(self) } -> std::convertible_to<${destination_type_cpp}>`
   end
 
-export fn trait_concept_requires_definition_line(
-  template_header: string,
-  trait_cpp_safe: string,
-  self_parameter_name: string,
-  requires_expressions_semicolon_separated: string
-) -> string =
-  `${template_header}concept ${trait_cpp_safe} = requires(const ${self_parameter_name}& self) { ${requires_expressions_semicolon_separated}; };\n`
-
-export fn std_function_field_line(return_type_cpp: string, parameter_types_csv: string, method_name_cpp_safe: string) -> string =
-  `  std::function<${return_type_cpp}(${parameter_types_csv})> ${method_name_cpp_safe};\n`
-
 export fn trait_vtable_struct_cpp_name(trait_cpp_safe: string) -> string =
   `${trait_cpp_safe}_vtable`
-
-export fn trait_struct_definition_lines(
-  template_header: string,
-  vtable_struct_cpp_name: string,
-  field_lines: string
-) -> string =
-  `${template_header}struct ${vtable_struct_cpp_name} {\n${field_lines}};\n`
-
-export fn static_assert_concept_for_type_line(
-  concept_cpp_safe: string,
-  type_cpp: string,
-  diagnostic_message_inside_cpp_string_literal: string
-) -> string =
-  `static_assert(${concept_cpp_safe}<${type_cpp}>, ` + `"` + diagnostic_message_inside_cpp_string_literal + `"` + `);\n`
-
-export fn static_assert_concept_for_result_and_implementor_line(
-  concept_cpp_safe: string,
-  result_type_cpp: string,
-  implementor_type_cpp: string,
-  diagnostic_message_inside_cpp_string_literal: string
-) -> string =
-  `static_assert(${concept_cpp_safe}<${result_type_cpp}, ${implementor_type_cpp}>, ` + `"` + diagnostic_message_inside_cpp_string_literal + `"` + `);\n`
 
 export fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
   `{\nauto ${binder} = (${resource_code});\n${body_statements}${binder}.drop();\n}\n`

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 20:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b7 — decl_extend helpers)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b7 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 19:51 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | 9 decl_extend-only helpers → `decl_extend.mlc`; `expr.mlc` 56→47; `static_assert_*` exported for `test_decl_gen` |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b8 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 19:50 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b6 — paren/headers → record_emit/module)
 
 | field   | value |
