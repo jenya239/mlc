@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 05:00 (Planner PLAN_QUEUE pick-next → open #3)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 04:55 |
+| elapsed | ~5 min |
+| done    | Opened §46 #3: `TRACK_EDITOR_WORD_BOUNDARIES.md` STEP=0 Decision frozen (ASCII word class; `word_boundary_*`; `nav_word_*`/`edit_delete_word_*`; Ctrl+left/right via existing binding keys + ctrl mod; Ctrl+Backspace/Delete; L2 `ctrl_arrow_word_jump`/`ctrl_backspace_deletes_word`); UX_BACKLOG #3 → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WORD_BOUNDARIES |
+
 ### Turn 2026-07-18 04:50 (Critic TRACK_EDITOR_KEYBOARD_NAV_WIRE critique-audit)
 
 | field   | value |
