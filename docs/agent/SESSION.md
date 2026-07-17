@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 12:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=4 — GenStmtsResult.parts statements)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 12:32 |
+| elapsed | ~22 min (rebuild + Tier B; first fuzz flaky hang then ok) |
+| done    | `GenStmtsResult.parts: [Shared<CppStatement>]`; `append_stmt` → `CppStatementFragment`; `joined_code` prints (string `"\n"` not char). Callers unchanged API; `stmt_cpp` already parallel AST path |
+| result  | `mlcc --check-only` OK; self-host only `context.cpp/.hpp`; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 (pipefail) |
+| issues  | CaptureAnalyzer + `compiler/out/**` left alone. First rebuild failed on `'\n'` char (fixed). One fuzz timeout flake then clean Tier B |
+| next    | ROLE=Driver STEP=5 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 12:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=3 — While/For/WithBlock body statements)
 
 | field   | value |

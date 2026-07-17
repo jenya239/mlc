@@ -4,6 +4,8 @@ import { Program, Pattern, TypeExpr } from '../frontend/ast'
 import { build_registry } from '../checker/registry'
 import { SemanticStatement } from '../ir/semantic_ir'
 import { Type, TShared, TArray, TUnknown, trait_base_name } from '../checker/registry'
+import { CppStatement, CppStatementFragment } from '../cpp_ir/cpp_ast'
+import { print_statement } from '../cpp_emit/print'
 import { cpp_safe } from './cpp_naming'
 import * as decl_index from './decl/decl_index'
 import { FieldOrder } from './decl/decl_index'
@@ -59,18 +61,25 @@ export fn take_temp_name(context: CodegenContext) -> TempNameResult = do
   }
 end
 
-export type GenStmtsResult = GenStmtsResult { parts: [string], next_try: i32 }
+export type GenStmtsResult = GenStmtsResult { parts: [Shared<CppStatement>], next_try: i32 }
 export type GenStmtsWithContext = GenStmtsWithContext { statements_parsed: GenStmtsResult, codegen_context: CodegenContext }
 export type GenStmtResult  = GenStmtResult  { output: string, next_try: i32, codegen_context: CodegenContext }
+
+fn gen_stmts_part_to_source(statement: Shared<CppStatement>) -> string =
+  match statement {
+    CppStatementFragment(fragment) => fragment,
+    _ => print_statement(statement) + "\n"
+  }
 
 extend GenStmtsResult {
   fn append_stmt(self, statement_parsed: GenStmtResult) -> GenStmtsResult = do
     let parts = self.parts
-    parts.push(statement_parsed.output)
+    parts.push(Shared.new(CppStatementFragment(statement_parsed.output)))
     GenStmtsResult { parts: parts, next_try: statement_parsed.next_try }
   end
 
-  fn joined_code(self) -> string = self.parts.join('')
+  fn joined_code(self) -> string =
+    self.parts.map(statement => gen_stmts_part_to_source(statement)).join('')
 }
 
 export type GenModuleOut   = GenModuleOut   { header: string, source: string, link_libraries: [string] }
