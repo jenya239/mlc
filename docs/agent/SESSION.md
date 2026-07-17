@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:30 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DEMO_ORCHESTRATOR |
+| started | 2026-07-18 01:20 |
+| elapsed | ~15 min |
+| done    | `editor_ux_click_tab_strip_at` + `editor_app_click_tab_strip` (close/activate); `demo_live` tab clicks via wrapper. Gates: `ux_ok tab_strip_click_activates`, `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_DEMO_ORCHESTRATOR |
+
 ### Turn 2026-07-18 01:20 (Driver TRACK_EDITOR_DEMO_ORCHESTRATOR STEP=1)
 
 | field   | value |

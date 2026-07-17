@@ -4,11 +4,18 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1**;
 origin [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](../archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md).
 Evidence: [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md) §2.2.
 
-## Status: **active** (2026-07-18) — STEP=0–1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=0–2 done; STEP=3 next
 
 ## Next step
 
-**STEP=2** — Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip`.
+**STEP=3** — Tree/breadcrumb hits → `tree_hit` / folder helpers.
+
+### STEP=2 done (2026-07-18)
+
+- `editor_ux_click_tab_strip_at` (explicit strip rect); `editor_app_click_tab_strip`
+  (close + activate, live chrome geometry).
+- `demo_live` tab close/activate → wrapper; hit helpers only used for draw.
+- Gates: `ux_ok tab_strip_click_activates`, `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-18)
 
@@ -59,7 +66,7 @@ Do **not** invent a new scenario for this track unless a cluster has **no** exis
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
 | 1 | Edit path → `edit_apply` (+ related) | **done** (2026-07-18) compile + newline/edit/copy_paste |
-| 2 | Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip` | compile + `tab_strip_click_activates` |
+| 2 | Tab strip clicks → `tab_strip` / `editor_ux_click_tab_strip` | **done** (2026-07-18) compile + `tab_strip_click_activates` |
 | 3 | Tree/breadcrumb hits → `tree_hit` / folder helpers | compile + `tree_click_opens_tab` |
 | 4 | Scroll/wheel → `scroll` helpers; thin `main` shape check | compile + `wheel_scroll_keeps_caret_visible` |
 | 5 | Critic: gates green; no duplicate clusters left for scope; archive | close |

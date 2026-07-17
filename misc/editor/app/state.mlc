@@ -18,9 +18,13 @@ import { ShellPanels } from '../ui/shell_panels'
 import {
   TabSet,
   tab_set_has_active,
-  tab_set_active
+  tab_set_active,
+  tab_set_count
 } from '../workspace/tabs'
-import { EditorSelection } from '../document/selection'
+import {
+  EditorSelection,
+  selection_collapsed
+} from '../document/selection'
 import {
   EditorHistory,
   history_new,
@@ -29,8 +33,18 @@ import {
 import { Clipboard, clipboard_new } from '../clipboard'
 import {
   DirtyCloseOverlay,
-  dirty_close_overlay_hidden
+  dirty_close_overlay_hidden,
+  dirty_close_overlay_is_visible,
+  tab_set_request_close
 } from '../workspace/tab_close'
+import {
+  UxRect
+} from '../../gui/ux/snapshot'
+import {
+  tab_strip_hit_index,
+  tab_strip_hit_close_index,
+  editor_ux_click_tab_strip_at
+} from '../ux/tab_strip'
 
 export type EditorAppState = {
   ux: EditorUxState,
@@ -44,6 +58,11 @@ export type EditorAppState = {
   enter_was_down: i32,
   selecting_text: i32,
   frame_index: i32
+}
+
+export type EditorAppTabClickResult = {
+  app: EditorAppState,
+  handled: i32
 }
 
 export fn editor_app_state_new(
@@ -285,6 +304,91 @@ export fn editor_app_backspace(app: EditorAppState) -> EditorAppState = do
     app.history, active.buffer.document, app.ux.selection
   )
   editor_app_with_ux_and_history(app, editor_ux_backspace(app.ux), history)
+end
+
+fn editor_app_replace_session(
+  app: EditorAppState,
+  ux: EditorUxState,
+  history: EditorHistory,
+  overlay: DirtyCloseOverlay,
+  last_command: string
+) -> EditorAppState =
+  EditorAppState {
+    ux: ux,
+    history: history,
+    clipboard: app.clipboard,
+    overlay: overlay,
+    editor_focused: app.editor_focused,
+    last_command: last_command,
+    mouse_was_down: app.mouse_was_down,
+    backspace_was_down: app.backspace_was_down,
+    enter_was_down: app.enter_was_down,
+    selecting_text: app.selecting_text,
+    frame_index: app.frame_index
+  }
+
+fn editor_ux_with_tabs_and_selection(
+  state: EditorUxState,
+  tabs: TabSet,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tabs,
+    selection: selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+// Live chrome tab strip (explicit rect). Close hit first, then activate.
+export fn editor_app_click_tab_strip(
+  app: EditorAppState,
+  strip: UxRect,
+  point_x: i32,
+  point_y: i32
+) -> EditorAppTabClickResult = do
+  const tab_count = tab_set_count(app.ux.tabs)
+  const close_hit = tab_strip_hit_close_index(strip, tab_count, point_x, point_y)
+  if close_hit >= 0 then
+    const outcome = tab_set_request_close(app.ux.tabs, close_hit)
+    let mut next_ux = editor_ux_with_tabs_and_selection(
+      app.ux, outcome.tabs, app.ux.selection
+    )
+    let mut next_history = app.history
+    if !dirty_close_overlay_is_visible(outcome.overlay) && tab_set_has_active(outcome.tabs) then
+      next_ux = editor_ux_with_tabs_and_selection(
+        next_ux, outcome.tabs, selection_collapsed(0)
+      )
+      next_history = history_new()
+    end
+    return EditorAppTabClickResult {
+      app: editor_app_replace_session(
+        app, next_ux, next_history, outcome.overlay, "close_tab"
+      ),
+      handled: 1
+    }
+  end
+  const hit = tab_strip_hit_index(strip, tab_count, point_x, point_y)
+  if hit >= 0 then
+    const activated = editor_ux_click_tab_strip_at(app.ux, strip, point_x, point_y)
+    const next_ux = editor_ux_with_tabs_and_selection(
+      activated, activated.tabs, selection_collapsed(0)
+    )
+    return EditorAppTabClickResult {
+      app: editor_app_replace_session(
+        app, next_ux, history_new(), app.overlay, "activate_tab"
+      ),
+      handled: 1
+    }
+  end
+  EditorAppTabClickResult { app: app, handled: 0 }
 end
 
 export fn editor_app_bump_frame(app: EditorAppState) -> EditorAppState =

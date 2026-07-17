@@ -203,8 +203,6 @@ import {
 } from './layout/word_wrap'
 import { ux_rect_new } from '../gui/ux/snapshot'
 import {
-  tab_strip_hit_index,
-  tab_strip_hit_close_index,
   tab_strip_close_rect,
   tab_strip_title_rect
 } from './ux/tab_strip'
@@ -235,6 +233,7 @@ import {
   editor_app_insert_text,
   editor_app_insert_newline,
   editor_app_backspace,
+  editor_app_click_tab_strip,
   editor_app_bump_frame
 } from './app/state'
 
@@ -793,37 +792,27 @@ fn main() -> i32 = do
       end
 
       if handled == 0 then
-        const close_hit = tab_strip_hit_close_index(
-          tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_commit_session(
+          app, history, clipboard, overlay, editor_focused, last_command,
+          mouse_was_down, backspace_was_down, enter_was_down, selecting_text
         )
-        if close_hit >= 0 then
-          const outcome = tab_set_request_close(tabs, close_hit)
-          tabs = outcome.tabs
-          overlay = outcome.overlay
-          last_command = "close_tab"
-          if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
+        const tab_click = editor_app_click_tab_strip(
+          app, tab_strip, input.mouse_x, input.mouse_y
+        )
+        if tab_click.handled != 0 then
+          app = tab_click.app
+          tabs = app.ux.tabs
+          selection = app.ux.selection
+          history = app.history
+          clipboard = app.clipboard
+          overlay = app.overlay
+          last_command = app.last_command
+          if tab_set_has_active(tabs) then
             active = tab_set_active(tabs)
             document = active.buffer.document
             line_index = line_index_rebuild(document)
-            selection = selection_collapsed(0)
-            history = history_new()
           end
-          handled = 1
-        end
-      end
-
-      if handled == 0 then
-        const hit = tab_strip_hit_index(
-          tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
-        )
-        if hit >= 0 then
-          tabs = tab_set_set_active(tabs, hit)
-          active = tab_set_active(tabs)
-          document = active.buffer.document
-          line_index = line_index_rebuild(document)
-          selection = selection_collapsed(0)
-          history = history_new()
-          last_command = "activate_tab"
           handled = 1
         end
       end

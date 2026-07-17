@@ -114,12 +114,12 @@ fn tab_strip_rect_from_state(state: EditorUxState) -> UxRect = do
 end
 
 // Click on tab strip: activate hit tab; miss → unchanged.
-export fn editor_ux_click_tab_strip(
+export fn editor_ux_click_tab_strip_at(
   state: EditorUxState,
+  strip: UxRect,
   point_x: i32,
   point_y: i32
 ) -> EditorUxState = do
-  const strip = tab_strip_rect_from_state(state)
   const hit = tab_strip_hit_index(
     strip,
     tab_set_count(state.tabs),
@@ -144,3 +144,12 @@ export fn editor_ux_click_tab_strip(
     overflows: state.overflows
   }
 end
+
+export fn editor_ux_click_tab_strip(
+  state: EditorUxState,
+  point_x: i32,
+  point_y: i32
+) -> EditorUxState =
+  editor_ux_click_tab_strip_at(
+    state, tab_strip_rect_from_state(state), point_x, point_y
+  )
