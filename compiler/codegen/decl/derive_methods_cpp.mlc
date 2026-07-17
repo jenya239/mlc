@@ -1,7 +1,7 @@
 // Native C++ AST codegen for derive traits (Display, Eq, …).
 
 import { TypeVariant, FieldDef, TypeExpr, TyString, TyI32, TyBool, TyUnit, TyNamed, TyArray, TyShared, TyGeneric, TyFn, TyAssoc, VarUnit, VarTuple, VarRecord } from '../../frontend/ast'
-import { CppDeclaration, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp_ir/cpp_ast'
+import { CppDeclaration, CppFnDef, CppDeclarationSequence, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import * as hash_stmt_helpers from '../../cpp_emit/hash_stmt_helpers'
 
@@ -699,15 +699,41 @@ fn derive_json_record_from_json_body(type_name: string, field_definitions: [Shar
   lines + '  return mlc::result::Ok<' + type_name + '>(' + type_name + "{" + inits + '});\n'
 end
 
+fn strip_trailing_newlines(text: string) -> string = do
+  let mut result = text
+  while result.length() > 0 && result.char_at(result.length() - 1) == "\n" do
+    result = result.substring(0, result.length() - 1)
+  end
+  result
+end
+
+fn json_function_definition(
+  return_type: string,
+  function_name: string,
+  parameters: [string],
+  body_source: string
+) -> Shared<CppDeclaration> =
+  Shared.new(CppFnDef(
+    '',
+    return_type,
+    function_name,
+    parameters,
+    [emit_helpers.make_fragment_cpp_statement(strip_trailing_newlines(body_source))],
+    1))
+
 fn derive_json_record_cpp(type_name: string, field_definitions: [Shared<FieldDef>]) -> Shared<CppDeclaration> =
-  emit_helpers.make_fragment_cpp_declaration(
-    'mlc::json::JsonValue ' + type_name + '_to_json(const ' + type_name + '& self) noexcept {\n' +
-    derive_json_record_to_json_body(field_definitions) +
-    '}\n' +
-    'mlc::result::Result<' + type_name + ', mlc::json::JsonError> ' + type_name +
-    '_from_json(const mlc::json::JsonValue& value) noexcept {\n' +
-    derive_json_record_from_json_body(type_name, field_definitions) +
-    '}\n')
+  Shared.new(CppDeclarationSequence([
+    json_function_definition(
+      'mlc::json::JsonValue',
+      type_name + '_to_json',
+      ['const ' + type_name + '& self'],
+      derive_json_record_to_json_body(field_definitions)),
+    json_function_definition(
+      'mlc::result::Result<' + type_name + ', mlc::json::JsonError>',
+      type_name + '_from_json',
+      ['const mlc::json::JsonValue& value'],
+      derive_json_record_from_json_body(type_name, field_definitions))
+  ]))
 
 fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
   match variant {
@@ -904,29 +930,33 @@ fn derive_json_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Sh
     unit_string_body = unit_string_body + derive_json_sum_unit_string_variant(type_name, variants[index])
     index = index + 1
   end
-  emit_helpers.make_fragment_cpp_declaration(
-    'mlc::json::JsonValue ' + type_name + '_to_json(const ' + type_name + '& self) noexcept {\n' +
-    to_json_body +
-    '  return mlc::json::json_null();\n' +
-    '}\n' +
-    'mlc::result::Result<' + type_name + ', mlc::json::JsonError> ' + type_name +
-    '_from_json(const mlc::json::JsonValue& value) noexcept {\n' +
-    '  if (value.is_string()) {\n' +
-    '    mlc::String tag = *value.as_string();\n' +
-    unit_string_body +
-    '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("tag"), mlc::String("known unit variant")));\n' +
-    '  }\n' +
-    '  if (!value.is_object()) {\n' +
-    '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(""), mlc::String("object or string")));\n' +
-    '  }\n' +
-    '  auto __opt_tag = mlc::json::json_get(value, mlc::String("tag"));\n' +
-    '  if (!__opt_tag.has_value() || !__opt_tag->is_string()) {\n' +
-    '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("tag")));\n' +
-    '  }\n' +
-    '  mlc::String tag = *__opt_tag->as_string();\n' +
-    from_json_object_body +
-    '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("tag"), mlc::String("known variant")));\n' +
-    '}\n')
+  Shared.new(CppDeclarationSequence([
+    json_function_definition(
+      'mlc::json::JsonValue',
+      type_name + '_to_json',
+      ['const ' + type_name + '& self'],
+      to_json_body +
+      '  return mlc::json::json_null();\n'),
+    json_function_definition(
+      'mlc::result::Result<' + type_name + ', mlc::json::JsonError>',
+      type_name + '_from_json',
+      ['const mlc::json::JsonValue& value'],
+      '  if (value.is_string()) {\n' +
+      '    mlc::String tag = *value.as_string();\n' +
+      unit_string_body +
+      '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("tag"), mlc::String("known unit variant")));\n' +
+      '  }\n' +
+      '  if (!value.is_object()) {\n' +
+      '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(""), mlc::String("object or string")));\n' +
+      '  }\n' +
+      '  auto __opt_tag = mlc::json::json_get(value, mlc::String("tag"));\n' +
+      '  if (!__opt_tag.has_value() || !__opt_tag->is_string()) {\n' +
+      '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("tag")));\n' +
+      '  }\n' +
+      '  mlc::String tag = *__opt_tag->as_string();\n' +
+      from_json_object_body +
+      '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("tag"), mlc::String("known variant")));\n')
+  ]))
 end
 
 export fn gen_derive_json_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 18:15 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c5 — JSON DeclFragments → CppFnDef)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b3c5 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 17:55 |
+| elapsed | ~20 min (rebuild + Tier B) |
+| done    | `derive_json_{record,sum}_cpp` → `CppDeclarationSequence` of `CppFnDef`; body via StatementFragment; killed both DeclFragments |
+| result  | `--check-only` OK; self-host before/after identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0; derive_methods_cpp 998 lines (allowlisted) |
+| issues  | JSON body string builders remain; CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 18:00 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b3c4 — guarded ctor/record/ident AST)
 
 | field   | value |
