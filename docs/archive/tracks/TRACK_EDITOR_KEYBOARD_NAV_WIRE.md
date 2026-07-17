@@ -1,30 +1,40 @@
 # Track: Editor keyboard nav wire (arrows / Home / End / Page)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#2**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#2**.
 Model already in `document/navigation.mlc` (`nav_move_*`, `nav_line_*`,
 `nav_page_*`); not called from `demo_live`. GLFW binding keys today omit
 arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L2 + compile. Anti-false-done:
+`79472401`…`925e1420` (STEP=0–2). Wire present: GLFW edges
+`left`/`right`/`up`/`down`/`home`/`end`/`page_up`/`page_down` via
+`glfw_gl_take_binding_key`; `editor_ux_apply_nav_key` → `nav_*`
+(Shift→Extend); `demo_live` applies when editor focused before command bus.
+**reopen: none**.
+
+Honest residual: no dedicated L2 for PageUp/Down (Decision: unit/cheap
+coverage OK); Ctrl+arrows/word nav → §46 `#3`.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_arrow_keys_move_caret.sh` | `ux_ok arrow_keys_move_caret` EXIT=0 |
+| `run_ux_home_end_caret.sh` | `ux_ok home_end_caret` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #3).
+**closed** — Critic OK. Queue → Planner (§46 `#3 EDITOR_WORD_BOUNDARIES`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- GLFW: `left`/`right`/`up`/`down`/`home`/`end`/`page_up`/`page_down` edges
-- `editor_ux_apply_nav_key` → `nav_*` (Shift→Extend)
-- `demo_live`: editor-focused nav before command bus
-- Gates: both scenarios ok + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/nav_key.mlc` + L2 red harness
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #2 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `79472401` | Decision freeze + open |
+| 1 | `68857747` | L2 red harness |
+| 2 | `925e1420` | GLFW + apply + demo_live wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -54,15 +64,7 @@ arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 | 0 | Decision freeze + open track / PLAN / backlog / SESSION trim | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`arrow_keys_move_caret`, `home_end_caret`) | **done** (red harness) |
 | 2 | GLFW nav keys + ux/app apply + `demo_live` wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #3).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

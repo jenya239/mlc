@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 04:50 (Critic TRACK_EDITOR_KEYBOARD_NAV_WIRE critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+| started | 2026-07-18 04:45 |
+| elapsed | ~5 min |
+| done    | Re-ran gates; anti-false-done `79472401`…`925e1420`; wire: GLFW nav edges + `editor_ux_apply_nav_key` + demo_live focus path; archive → `docs/archive/tracks/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md`; PLAN/UX_BACKLOG #2 → done |
+| verify  | `run_ux_arrow_keys_move_caret.sh` → `ux_ok`; `run_ux_home_end_caret.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; reopen: none; residual: PageUp/Down L2 optional; Ctrl+nav → #3 |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 04:35 (Driver TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=2)
 
 | field   | value |
