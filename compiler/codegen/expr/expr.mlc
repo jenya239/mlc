@@ -11,35 +11,11 @@ export fn suffix_semicolon_newline(expression_code: string) -> string =
 export fn auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
   `auto ${binding_cpp_safe} = ${value_code};\n`
 
-export fn return_line(expression_code: string) -> string =
-  `return ${expression_code};\n`
-
-export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
-  `if (${condition_code}) {\n${inner_statements}}`
-
-export fn else_brace_block(inner_statements: string) -> string =
-  ` else {\n${inner_statements}}`
-
-export fn else_fragment_raw(raw_else_suffix: string) -> string =
-  ` else ${raw_else_suffix}`
-
-export fn return_try_ok_field0_statement(try_variable: string) -> string =
-  `return std::get<0>(${try_variable}).field0;\n`
-
-export fn if_always_true_block(inner_statements: string) -> string =
-  `if (true) {\n${inner_statements}}\n`
-
-export fn fragment_with_newline(fragment: string) -> string =
-  `${fragment}\n`
-
 export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
   `auto [${binding_names_csv}] = ${source_name}; `
 
 export fn runtime_to_string_call(expression_code: string) -> string =
   `mlc::to_string(${expression_code})`
-
-export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
-  if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end
 
 export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
   `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`

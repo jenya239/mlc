@@ -1,0 +1,26 @@
+// Shared pre-rendered C++ statement-fragment helpers for stmt_eval / return_body.
+// No SemanticExpression traversal; string templates only.
+
+export fn return_line(expression_code: string) -> string =
+  `return ${expression_code};\n`
+
+export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
+  `if (${condition_code}) {\n${inner_statements}}`
+
+export fn else_brace_block(inner_statements: string) -> string =
+  ` else {\n${inner_statements}}`
+
+export fn else_fragment_raw(raw_else_suffix: string) -> string =
+  ` else ${raw_else_suffix}`
+
+export fn return_try_ok_field0_statement(try_variable: string) -> string =
+  `return std::get<0>(${try_variable}).field0;\n`
+
+export fn if_always_true_block(inner_statements: string) -> string =
+  `if (true) {\n${inner_statements}}\n`
+
+export fn fragment_with_newline(fragment: string) -> string =
+  `${fragment}\n`
+
+export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
+  if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end

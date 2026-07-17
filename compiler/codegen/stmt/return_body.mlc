@@ -6,7 +6,7 @@ import { SemanticExpression, SemanticStatement, SemanticExpressionUnit, Semantic
 import { CppExpression, CppStatement, CppCall, CppIdent, CppUnary, CppMember } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
-import * as expression_output from '../expr/expr'
+import * as statement_fragments from './stmt_fragments'
 import { question_from_converter_name } from '../expr/expression_support'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
 import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements, line_directive_cpp_statements } from '../stmt_cpp'
@@ -16,17 +16,17 @@ import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 fn gen_return_if_stmt(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
   match expression {
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
-      let mut output = expression_output.if_brace_block(
+      let mut output = statement_fragments.if_brace_block(
         print_expr(gen_expr(condition, context)),
         gen_return_body(then_expression, context))
       const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
-        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expression, context))
+        SemanticExpressionIf(_, _, _, _, _) => statement_fragments.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
+        _                      => statement_fragments.else_brace_block(gen_return_body(else_expression, context))
       }
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
+      statement_fragments.fragment_with_newline(statement_fragments.prefix_with_optional_suffix(output, else_string))
     end,
-    _ => expression_output.if_always_true_block(gen_return_body(expression, context))
+    _ => statement_fragments.if_always_true_block(gen_return_body(expression, context))
   }
 
 export fn gen_return_body(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
@@ -42,26 +42,26 @@ export fn gen_return_body(expression: Shared<SemanticExpression>, context: Codeg
             inner_expression,
             final_context,
             try_identifier,
-            expression_output.return_try_ok_field0_statement(try_identifier))
+            statement_fragments.return_try_ok_field0_statement(try_identifier))
         end,
         SemanticExpressionUnit(_, _)        => statements_code,
         SemanticExpressionIf(_, _, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         SemanticExpressionMatch(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         SemanticExpressionBlock(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         _ =>
-          statements_code + expression_output.return_line(print_expr(gen_expr(result_expression, final_context)))
+          statements_code + statement_fragments.return_line(print_expr(gen_expr(result_expression, final_context)))
       }
     end,
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
-      let mut output = expression_output.if_brace_block(
+      let mut output = statement_fragments.if_brace_block(
         print_expr(gen_expr(condition, context)),
         gen_return_body(then_expression, context))
       const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
-        SemanticExpressionIf(_, _, _, _, _) => expression_output.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
-        _                      => expression_output.else_brace_block(gen_return_body(else_expression, context))
+        SemanticExpressionIf(_, _, _, _, _) => statement_fragments.else_fragment_raw(gen_return_if_stmt(else_expression, context)),
+        _                      => statement_fragments.else_brace_block(gen_return_body(else_expression, context))
       }
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(output, else_string))
+      statement_fragments.fragment_with_newline(statement_fragments.prefix_with_optional_suffix(output, else_string))
     end,
     SemanticExpressionUnit(_, _) => '',
     SemanticExpressionQuestion(inner_expression, _, _) => do
@@ -70,9 +70,9 @@ export fn gen_return_body(expression: Shared<SemanticExpression>, context: Codeg
         inner_expression,
         context,
         try_identifier,
-        expression_output.return_try_ok_field0_statement(try_identifier))
+        statement_fragments.return_try_ok_field0_statement(try_identifier))
     end,
-    _ => expression_output.return_line(print_expr(gen_expr(expression, context)))
+    _ => statement_fragments.return_line(print_expr(gen_expr(expression, context)))
   }
 
 export fn gen_fn_body(body_expression: Shared<SemanticExpression>, context: CodegenContext) -> string =

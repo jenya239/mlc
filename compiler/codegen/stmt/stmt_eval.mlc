@@ -27,6 +27,7 @@ import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as semantic_type_structure from '../../checker/semantic_type_structure'
 import * as expression_output from '../expr/expr'
+import * as statement_fragments from './stmt_fragments'
 
 fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
   `(${condition_code} ? (${then_code}) : (${else_code}))`
@@ -322,20 +323,20 @@ end
 fn eval_stmt_if_nested(if_expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
   match if_expression {
     SemanticExpressionIf(condition_expression, then_expression, else_expression, _, _) => do
-      const opening = expression_output.if_brace_block(
+      const opening = statement_fragments.if_brace_block(
         gen_expr_fn(condition_expression, context),
         eval_block_body(then_expression, context, gen_expr_fn))
       const else_suffix =
         if semantic_expression_is_unit(else_expression) then ''
         else if semantic_expression_is_if(else_expression) then
-          expression_output.else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn))
+          statement_fragments.else_fragment_raw(eval_stmt_if_nested(else_expression, context, gen_expr_fn))
         else if semantic_expression_is_block(else_expression) && empty_unit_block_expression(else_expression) then ''
         else
-          expression_output.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
+          statement_fragments.else_brace_block(eval_block_body(else_expression, context, gen_expr_fn))
         end
-      expression_output.fragment_with_newline(expression_output.prefix_with_optional_suffix(opening, else_suffix))
+      statement_fragments.fragment_with_newline(statement_fragments.prefix_with_optional_suffix(opening, else_suffix))
     end,
-    _ => expression_output.if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn))
+    _ => statement_fragments.if_always_true_block(eval_block_body(if_expression, context, gen_expr_fn))
   }
 
 fn eval_block_body(expression: Shared<SemanticExpression>, context: CodegenContext, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string =
@@ -772,7 +773,7 @@ fn gen_return_stmt_result_default(
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> GenStmtResult =
   stmt_result_from_source(
-    expression_output.return_line(gen_expr_fn(expression, context)),
+    statement_fragments.return_line(gen_expr_fn(expression, context)),
     try_counter,
     context)
 
@@ -789,7 +790,7 @@ fn gen_return_stmt_result(
           inner_expression,
           context,
           `__try_ret_${try_counter.to_string()}`,
-          expression_output.return_try_ok_field0_statement(`__try_ret_${try_counter.to_string()}`),
+          statement_fragments.return_try_ok_field0_statement(`__try_ret_${try_counter.to_string()}`),
           gen_expr_fn),
         try_counter + 1,
         context),
