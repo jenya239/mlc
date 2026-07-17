@@ -27,6 +27,82 @@ import { sem_type_to_cpp } from '../decl/type_gen'
 import { gen_unit_literal } from '../expr/literals'
 import * as semantic_type_structure from '../../checker/semantic_type_structure'
 import * as expression_output from '../expr/expr'
+
+fn ternary_conditional(condition_code: string, then_code: string, else_code: string) -> string =
+  `(${condition_code} ? (${then_code}) : (${else_code}))`
+
+
+fn array_literal(argument_list: string) -> string =
+  if argument_list.length() == 0 then '{}' else `mlc::Array{${argument_list}}` end
+
+
+fn constructor_call_braces(constructor_code: string, argument_list: string) -> string =
+  `${constructor_code}{${argument_list}}`
+
+
+fn assignment_statement(left_code: string, right_code: string) -> string =
+  `${left_code} = ${right_code};\n`
+
+
+fn expression_operation_statement(operation: string, left_code: string, right_code: string) -> string =
+  `(${left_code} ${operation} ${right_code});\n`
+
+
+fn try_unwrap_result_block(
+  result_variable: string,
+  inner_code: string,
+  success_line: string,
+  from_converter_name: string
+) -> string =
+  if from_converter_name.length() > 0 then
+    `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return ${from_converter_name}(*std::get_if<1>(&${result_variable}));\n${success_line}`
+  else
+    `auto ${result_variable} = ${inner_code};\nif (std::get_if<1>(&${result_variable})) return *std::get_if<1>(&${result_variable});\n${success_line}`
+  end
+
+
+fn constexpr_auto_binding_statement(binding_cpp_safe: string, value_code: string) -> string =
+  `constexpr auto ${binding_cpp_safe} = ${value_code};\n`
+
+
+fn while_loop_statement(condition_code: string, body_statements: string) -> string =
+  `while (${condition_code}) {\n${body_statements}}\n`
+
+
+fn for_loop_statement(variable_cpp_safe: string, iterator_code: string, body_statements: string) -> string =
+  `for (auto ${variable_cpp_safe} : ${iterator_code}) {\n${body_statements}}\n`
+
+
+fn let_from_try_ok_field0(binding_cpp_safe: string, try_variable: string) -> string =
+  `auto ${binding_cpp_safe} = std::get<0>(${try_variable}).field0;\n`
+
+
+fn discard_try_ok_field0_statement(try_variable: string) -> string =
+  `/* discard */ (void)std::get<0>(${try_variable}).field0;\n`
+
+
+fn append_trailing_expression_statement(statements_code: string, expression_code: string) -> string =
+  `${statements_code}${expression_code};\n`
+
+
+fn hash_map_empty_instantiation(key_type_cpp: string, value_type_cpp: string) -> string =
+  `mlc::HashMap<${key_type_cpp}, ${value_type_cpp}>()`
+
+
+fn typed_array_empty_or_untyped_empty(element_type_cpp: string) -> string =
+  if element_type_cpp == 'auto' then '{}' else `mlc::Array<${element_type_cpp}>{}` end
+
+
+fn typed_array_braced_initializer(element_type_cpp: string, comma_separated_elements: string) -> string =
+  `mlc::Array<${element_type_cpp}>{${comma_separated_elements}}`
+
+
+fn array_string_fallback_empty() -> string =
+  'mlc::Array<mlc::String>{}'
+
+
+fn with_block_statement(resource_code: string, binder: string, body_statements: string) -> string =
+  `{\nauto ${binder} = (${resource_code});\n${body_statements}${binder}.drop();\n}\n`
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 
 // --- Try unwrap helper -------------------------------------------------------
@@ -69,7 +145,7 @@ fn constexpr_if_binding_value_code(
       if named_type_cpp != '' && named_type_cpp != 'auto' then
         `[&]() -> ${named_type_cpp} {\nif (${cond_code}) {\nreturn ${then_code};\n} else {\nreturn ${else_code};\n}\n}()`
       else
-        expression_output.ternary_conditional(cond_code, then_code, else_code)
+        ternary_conditional(cond_code, then_code, else_code)
       end
     end,
     _ => constexpr_binding_default_code(if_value, context, gen_expr_fn)
@@ -175,7 +251,7 @@ fn constexpr_binding_value_code(
 
 export fn eval_try_unwrap(inner_expression: Shared<SemanticExpression>, context: CodegenContext, try_identifier: string, success_line: string, gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string) -> string = do
   const inner_code = gen_expr_fn(inner_expression, context)
-  expression_output.try_unwrap_result_block(
+  try_unwrap_result_block(
     try_identifier,
     inner_code,
     success_line,
@@ -239,7 +315,7 @@ fn block_result_expression_trailing_code(
 ) -> string = do
   const result_code = gen_expr_fn(result_expression, final_context)
   if result_code == gen_unit_literal() then statements_code
-  else expression_output.append_trailing_expression_statement(statements_code, result_code)
+  else append_trailing_expression_statement(statements_code, result_code)
   end
 end
 
@@ -330,7 +406,7 @@ fn eval_stmt_expr_block(
   const statements_code = statements_with_context.statements_parsed.joined_code()
   const result_code = gen_expr_fn(result_expression, statements_with_context.codegen_context)
   if result_code == gen_unit_literal() then statements_code
-  else expression_output.append_trailing_expression_statement(statements_code, result_code)
+  else append_trailing_expression_statement(statements_code, result_code)
   end
 end
 
@@ -338,9 +414,9 @@ fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContex
   match expression {
     SemanticExpressionBin(operation, left_expression, right_expression, _, _) =>
       if operation == "=" then
-        expression_output.assignment_statement(gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context))
+        assignment_statement(gen_expr_fn(left_expression, context), gen_expr_fn(right_expression, context))
       else
-        expression_output.expression_operation_statement(
+        expression_operation_statement(
           operation,
           gen_expr_fn(left_expression, context),
           gen_expr_fn(right_expression, context))
@@ -348,16 +424,16 @@ fn eval_stmt_expr(expression: Shared<SemanticExpression>, context: CodegenContex
     SemanticExpressionIf(_, _, _, _, _) =>
       eval_stmt_if_nested(expression, context, gen_expr_fn),
     SemanticExpressionWhile(condition, statements, _, _) =>
-      expression_output.while_loop_statement(
+      while_loop_statement(
         gen_expr_fn(condition, context),
         eval_stmts_str(statements, context, gen_expr_fn)),
     SemanticExpressionFor(variable, iterator, statements, _, _) =>
-      expression_output.for_loop_statement(
+      for_loop_statement(
         cpp_safe(variable),
         gen_expr_fn(iterator, context),
         eval_stmts_str(statements, context, gen_expr_fn)),
     SemanticExpressionWith(resource, binder, with_statements, _, _) =>
-      expression_output.with_block_statement(
+      with_block_statement(
         gen_expr_fn(resource, context),
         cpp_safe(binder),
         eval_stmts_str(with_statements, context, gen_expr_fn)),
@@ -399,11 +475,11 @@ fn gen_let_array_value_from_tarray(
 ) -> string = do
   const element_cpp = sem_type_to_cpp(context, inner_type)
   if elements.length() == 0 then
-    expression_output.typed_array_empty_or_untyped_empty(element_cpp)
+    typed_array_empty_or_untyped_empty(element_cpp)
   else if element_cpp == 'auto' then
-    expression_output.array_literal(eval_elements_code(elements, context, gen_expr_fn))
+    array_literal(eval_elements_code(elements, context, gen_expr_fn))
   else
-    expression_output.typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
+    typed_array_braced_initializer(element_cpp, eval_elements_code(elements, context, gen_expr_fn))
   end
 end
 
@@ -412,8 +488,8 @@ fn gen_let_array_value_fallback(
   context: CodegenContext,
   gen_expr_fn: (Shared<SemanticExpression>, CodegenContext) -> string
 ) -> string =
-  if elements.length() == 0 then expression_output.array_string_fallback_empty()
-  else expression_output.constructor_call_braces('mlc::Array', eval_elements_code(elements, context, gen_expr_fn))
+  if elements.length() == 0 then array_string_fallback_empty()
+  else constructor_call_braces('mlc::Array', eval_elements_code(elements, context, gen_expr_fn))
   end
 
 fn gen_let_array_value_code(
@@ -440,7 +516,7 @@ fn gen_let_map_new_value_code(
 ) -> string = do
   const type_arguments = map_generic_type_arguments(value_type)
   if semantic_type_structure.receiver_type_is_map(value_type) && type_arguments.length() == 2 then
-    expression_output.hash_map_empty_instantiation(
+    hash_map_empty_instantiation(
       sem_type_to_cpp(context, type_arguments[0]),
       sem_type_to_cpp(context, type_arguments[1]))
   else
@@ -597,7 +673,7 @@ fn gen_let_stmt_result(
           inner_expression,
           context,
           `__try_${try_counter.to_string()}`,
-          expression_output.let_from_try_ok_field0(cpp_safe(name), `__try_${try_counter.to_string()}`),
+          let_from_try_ok_field0(cpp_safe(name), `__try_${try_counter.to_string()}`),
           gen_expr_fn),
         try_counter + 1,
         context),
@@ -655,7 +731,7 @@ fn gen_expr_stmt_result(
           inner_expression,
           context,
           `__try_${try_counter.to_string()}`,
-          expression_output.discard_try_ok_field0_statement(`__try_${try_counter.to_string()}`),
+          discard_try_ok_field0_statement(`__try_${try_counter.to_string()}`),
           gen_expr_fn),
         try_counter + 1,
         context),
@@ -760,7 +836,7 @@ export fn eval_stmt_with_try(statement: Shared<SemanticStatement>, context: Code
     end,
     SemanticStatementLetConst(name, value, binding_semantic_type, _) =>
       stmt_result_from_source(
-        expression_output.constexpr_auto_binding_statement(
+        constexpr_auto_binding_statement(
           cpp_safe(name),
           constexpr_binding_value_code(value, binding_semantic_type, context, gen_expr_fn)),
         try_counter,

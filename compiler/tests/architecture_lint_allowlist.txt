@@ -21,3 +21,6 @@ file_size:checker/spawn_capture.mlc
 file_size:tests/test_checker.mlc
 file_size:tests/test_decl_gen.mlc
 file_size:tests/test_codegen.mlc
+
+# STEP=8b9: helpers moved from expr.mlc into stmt_eval
+file_size:codegen/stmt/stmt_eval.mlc

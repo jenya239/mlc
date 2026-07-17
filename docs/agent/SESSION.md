@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 20:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b9 — stmt_eval helpers)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b9 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 20:22 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | 17 stmt_eval-only helpers → local fns in `stmt_eval.mlc`; `expr.mlc` 35→18; allowlisted `stmt_eval` (869 lines) |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b10 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 20:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b8 — match helpers → match_gen)
 
 | field   | value |
