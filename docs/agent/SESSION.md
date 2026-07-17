@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:00 (Planner PLAN_QUEUE pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 00:55 |
+| elapsed | ~2 min |
+| done    | After §43 Critic archive: queue head = §45 CLEAN_ARCHITECTURE STEP=4 Critic (before §46 #1 Decision). PLAN already STEP=4 Critic next; no status rewrite |
+| result  | pick: Critic TRACK_EDITOR_CLEAN_ARCHITECTURE STEP=4 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CLEAN_ARCHITECTURE |
+
 ### Turn 2026-07-18 00:55 (Critic TRACK_EDITOR_FOLDER_NAV critique-audit)
 
 | field   | value |

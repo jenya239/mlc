@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45) STEP=4.
+**Queue head (Planner 2026-07-18):** Critic `TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45) STEP=4.
 Then open §46 #1 `EDITOR_DEMO_ORCHESTRATOR` (Decision).
 **`TRACK_EDITOR_FOLDER_NAV` (§43)** closed 2026-07-18 (Critic OK); archived.
 **`TRACK_CODEGEN_CPPAST_ONLY` (§44)** closed 2026-07-17; archived.
