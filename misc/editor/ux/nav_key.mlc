@@ -1,0 +1,48 @@
+// TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=1 — stub: ignore nav keys (demo_live-shaped).
+// STEP=2 wires nav_* + Shift→Extend.
+import { LineIndex } from '../document/line_index'
+import { EditorSelection } from '../document/selection'
+import { EditorViewMetrics } from '../document/navigation'
+
+// Returns selection unchanged until STEP=2.
+export fn editor_ux_apply_nav_key(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  metrics: EditorViewMetrics,
+  key: string,
+  shift_down: i32
+) -> EditorSelection = do
+  let _unused_index = line_index.text_length
+  let _unused_metrics = metrics.page_rows
+  let _unused_key = key.byte_size()
+  let _unused_shift = shift_down
+  selection
+end
+
+export fn editor_ux_is_nav_key(key: string) -> bool = do
+  if key == "left" then
+    return true
+  end
+  if key == "right" then
+    return true
+  end
+  if key == "up" then
+    return true
+  end
+  if key == "down" then
+    return true
+  end
+  if key == "home" then
+    return true
+  end
+  if key == "end" then
+    return true
+  end
+  if key == "page_up" then
+    return true
+  end
+  if key == "page_down" then
+    return true
+  end
+  false
+end

@@ -5,12 +5,17 @@ Model already in `document/navigation.mlc` (`nav_move_*`, `nav_line_*`,
 `nav_page_*`); not called from `demo_live`. GLFW binding keys today omit
 arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L2 scenarios first: `arrow_keys_move_caret` + `home_end_caret`
-(Standing discipline); red harness if needed.
+**STEP=2** — GLFW nav keys + wire `editor_ux_apply_nav_key`; green scenarios +
+`demo_live_fs_compile_ok`.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `ux/nav_key.mlc` (`editor_ux_apply_nav_key` no-op)
+- L2 red: `arrow_keys_move_caret`, `home_end_caret` + run scripts
 
 ### STEP=0 done (2026-07-18)
 
@@ -43,15 +48,13 @@ arrows/Home/End/Page (`glfw_gl_take_binding_key` only letters/tab).
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog / SESSION trim | **done** (2026-07-18) |
-| 1 | L2 scenarios first (`arrow_keys_move_caret`, `home_end_caret`) | scenario fails or harness ready |
+| 1 | L2 scenarios first (`arrow_keys_move_caret`, `home_end_caret`) | **done** (red harness) |
 | 2 | GLFW nav keys + ux/app apply + `demo_live` wire | scenarios + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/arrow_keys_move_caret.mlc` + `home_end_caret.mlc` (+ run scripts).
-2. Prefer red before STEP=2 wiring (stub apply returns unchanged selection).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Extend `glfw_gl_take_binding_key` edges for nav keys.

@@ -1,0 +1,38 @@
+// TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=1 — L2: arrows move caret via editor_ux_apply_nav_key.
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import { editor_view_metrics_new } from '../document/navigation'
+import { editor_ux_apply_nav_key } from '../ux/nav_key'
+
+fn main() -> i32 = do
+  const index = line_index_from_string("ab\ncd\nef\n")
+  const metrics = editor_view_metrics_new(16, 8, 0, 0, 0, 0, 3)
+  let mut selection = selection_collapsed(1)
+
+  selection = editor_ux_apply_nav_key(index, selection, metrics, "right", 0)
+  if selection_caret(selection) != 2 then
+    println("ux_fail arrow right caret")
+    return 1
+  end
+  selection = editor_ux_apply_nav_key(index, selection, metrics, "left", 0)
+  if selection_caret(selection) != 1 then
+    println("ux_fail arrow left caret")
+    return 2
+  end
+  selection = editor_ux_apply_nav_key(index, selection, metrics, "down", 0)
+  if selection_caret(selection) != 4 then
+    println("ux_fail arrow down caret")
+    return 3
+  end
+  selection = editor_ux_apply_nav_key(index, selection, metrics, "up", 0)
+  if selection_caret(selection) != 1 then
+    println("ux_fail arrow up caret")
+    return 4
+  end
+
+  println("ux_ok arrow_keys_move_caret")
+  0
+end

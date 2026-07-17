@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 04:20 (Driver TRACK_EDITOR_KEYBOARD_NAV_WIRE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+| started | 2026-07-18 04:15 |
+| elapsed | ~5 min |
+| done    | L2 red harness: stub `ux/nav_key.mlc` `editor_ux_apply_nav_key` (no-op); `arrow_keys_move_caret` + `home_end_caret` scenarios + run scripts → fail until STEP=2; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_arrow_keys_move_caret.sh` exit 1 (`ux_fail arrow right caret`); `run_ux_home_end_caret.sh` exit 1 (`ux_fail home caret`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenarios red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+
 ### Turn 2026-07-18 04:10 (Planner PLAN_QUEUE pick-next → open #2)
 
 | field   | value |
