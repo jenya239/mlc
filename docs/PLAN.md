@@ -439,6 +439,7 @@ compiler/
 | **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CARET_BLINK](archive/tracks/TRACK_EDITOR_CARET_BLINK.md) |
 | **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **active** (2026-07-16) STEP=0–2 **done**; STEP=3 Critic next | [TRACK_EDITOR_FOLDER_NAV](agent/TRACK_EDITOR_FOLDER_NAV.md) |
+| **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1 done (dead code, 11 fns); blocker found: `dev_gate_fast.sh` pre-existing red (Ruby bootstrap `Unexpected token: MATCH`), STEP=test-fix first per CONTINUITY hard-limit | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -666,6 +667,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_WORD_WRAP.md](archive/tracks/TRACK_EDITOR_WORD_WRAP.md))**
   → **EDITOR_FOLDER_NAV (§43, **active**; STEP=0–2 **done**; STEP=3 Critic next;
       → [agent/TRACK_EDITOR_FOLDER_NAV.md](agent/TRACK_EDITOR_FOLDER_NAV.md))**
+  → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1 done (uncommitted at handoff,
+      2026-07-17 interactive session — first Driver turn commits before continuing);
+      STEP=test-fix (`dev_gate_fast.sh` red, pre-existing) first, then STEP=2;
+      → [agent/TRACK_CODEGEN_CPPAST_ONLY.md](agent/TRACK_CODEGEN_CPPAST_ONLY.md))**
 ```
 
 
@@ -815,7 +820,7 @@ fn area(shape: Shape) -> f64 = match shape {
 | Crashes на валидном вводе | ? | 0 |
 | Crashes на невалидном вводе | ? | 0 (panic с сообщением) |
 | Диагностики со span | частично | 100% |
-| Codegen: строки vs CppAST | CppAST default; string bridges for edge cases | 0% string bridges |
+| Codegen: строки vs CppAST | Аудит 2026-07-17: CppAST — только листовые expressions; `GenStmtsResult`/`GenModuleOut` (`codegen/context.mlc`) string-типизированы по конструкции, `gen_expr`/`gen_stmts_str` печатают внутри и возвращают string — это не edge case, это основной механизм сборки statement/module тел. См. [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) (STEP=1 done: удалены 11 мёртвых функций `expr.mlc`) | 0% string bridges |
 | mlcc компилирует себя | да | да + детерминировано |
 | Время компиляции mlcc собой | ? измерить | < 1 с |
 

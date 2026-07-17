@@ -14,10 +14,6 @@ export fn ternary_conditional(condition_code: string, then_code: string, else_co
 export fn array_literal(argument_list: string) -> string =
   if argument_list.length() == 0 then '{}' else `mlc::Array{${argument_list}}` end
 
-// IIFE (ExprBlock, while/for): [&] — body may mutate outer `let mut`; invoked immediately, not stored.
-export fn block_as_immediate_invoked_function_expression(body_statements_and_return: string) -> string =
-  `[&]() {\n${body_statements_and_return}}()`
-
 export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
   `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
 
@@ -60,9 +56,6 @@ export fn function_call_parentheses(callee_code: string, argument_list: string) 
 export fn constructor_call_braces(constructor_code: string, argument_list: string) -> string =
   `${constructor_code}{${argument_list}}`
 
-export fn lambda_with_return(header_code: string, return_expression_code: string) -> string =
-  `${header_code} { return ${return_expression_code}; }`
-
 export fn assignment_statement(left_code: string, right_code: string) -> string =
   `${left_code} = ${right_code};\n`
 
@@ -95,9 +88,6 @@ export fn return_line(expression_code: string) -> string =
 
 export fn if_brace_block(condition_code: string, inner_statements: string) -> string =
   `if (${condition_code}) {\n${inner_statements}}`
-
-export fn else_if_brace_block(condition_code: string, inner_statements: string) -> string =
-  ` else if (${condition_code}) {\n${inner_statements}}`
 
 export fn else_brace_block(inner_statements: string) -> string =
   ` else {\n${inner_statements}}`
@@ -155,9 +145,6 @@ export fn runtime_to_string_call(expression_code: string) -> string =
 
 export fn empty_map_initializer() -> string =
   '{}'
-
-export fn block_immediate_function_return_fragment(return_expression_code: string) -> string =
-  `return ${return_expression_code};\n`
 
 export fn append_trailing_expression_statement(statements_code: string, expression_code: string) -> string =
   `${statements_code}${expression_code};\n`
@@ -302,27 +289,6 @@ export fn struct_named_field_declaration(field_type_cpp: string, field_name_cpp_
 
 export fn standard_translation_unit_runtime_headers() -> string =
   '#include "mlc.hpp"\n#include <variant>\n\n'
-
-export fn include_guard_ifndef_line(guard_macro: string) -> string =
-  `#ifndef ${guard_macro}\n`
-
-export fn include_guard_define_line(guard_macro: string) -> string =
-  `#define ${guard_macro}\n`
-
-export fn include_guard_endif_comment_line(guard_macro: string) -> string =
-  `#endif // ${guard_macro}\n`
-
-export fn namespace_open_line(namespace_identifier: string) -> string =
-  `namespace ${namespace_identifier} {\n`
-
-export fn namespace_close_comment_line(namespace_identifier: string) -> string =
-  `} // namespace ${namespace_identifier}\n`
-
-export fn implementation_define_main_as_user_main_line() -> string =
-  '#define main mlc_user_main\n'
-
-export fn implementation_include_quotefile_line(header_filename: string) -> string =
-  `#include ` + `"` + header_filename + `"` + `\n`
 
 export fn bootstrap_host_main_calling_namespaced_user_main(qualified_namespace: string) -> string =
   `\n#undef main\n\nstatic void mlc_cli_set_args(int argc, char** argv) {\n  std::vector<mlc::String> arguments;\n  arguments.reserve(argc > 0 ? argc - 1 : 0);\n  for (int i = 1; i < argc; ++i) { arguments.emplace_back(argv[i]); }\n  mlc::io::set_args(std::move(arguments));\n}\n\nint main(int argc, char** argv) {\n  mlc_cli_set_args(argc, argv);\n  return ::${qualified_namespace}::mlc_user_main(argc, argv);\n}\n`
