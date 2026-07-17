@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 03:05 (Driver TRACK_EDITOR_STALE_HELP_TEXT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_STALE_HELP_TEXT |
+| started | 2026-07-18 03:00 |
+| elapsed | ~5 min |
+| done    | Copy-only: `sample_readme_text` / `sample_guide_text` / `sample_changelog_text` + file header → breadcrumbs/back/forward/open-file; no expand/collapse left; `demo_live_fs_compile_ok` |
+| verify  | `bash scripts/run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_STALE_HELP_TEXT |
+
 ### Turn 2026-07-18 02:55 (Planner PLAN_QUEUE pick-next → open #1c)
 
 | field   | value |

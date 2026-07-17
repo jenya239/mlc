@@ -4,12 +4,17 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#1c**.
 Found 2026-07-17: in-app README/guide/changelog still describe tree
 expand/collapse; live UI is breadcrumb + back/forward (§38).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 Critic next
 
 ## Next step
 
-**STEP=1** — Rewrite stale sample strings in `demo_live.mlc` to match
-breadcrumb / back-forward / open-file behavior; `demo_live_fs_compile_ok`.
+**STEP=2** — Critic: gates; archive; `next` = Planner (§46 #1d).
+
+### STEP=1 done (2026-07-18)
+
+- Rewrote `sample_readme_text` / `sample_guide_text` / `sample_changelog_text`
+  + file header: breadcrumbs / back/forward / open file
+- Gate: `demo_live_fs_compile_ok`
 
 ### STEP=0 done (2026-07-18)
 
@@ -37,15 +42,12 @@ breadcrumb / back-forward / open-file behavior; `demo_live_fs_compile_ok`.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog row | **done** (2026-07-18) |
-| 1 | Fix stale sample_* / header copy in `demo_live.mlc` | compile |
+| 1 | Fix stale sample_* / header copy in `demo_live.mlc` | **done** |
 | 2 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Replace expand/collapse wording in `sample_readme_text`, `sample_guide_text`, `sample_changelog_text` with breadcrumb + back/forward + open-file copy.
-2. Align top-of-file tree comment if it still documents `[+]/[-]` expand.
-3. Gate: `demo_live_fs_compile_ok`.
+**STEP=1** — **done**
 
 **STEP=2** — Critic; `next` = Planner (§46 #1d).
 

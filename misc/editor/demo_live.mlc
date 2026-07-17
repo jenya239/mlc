@@ -1,5 +1,5 @@
 // Interactive editor preview — live polish + real/mock file tree.
-// Tree: [+]/[-] folders; root = MLC_EDITOR_ROOT | argv[0] | "."; mock /demo if missing.
+// Folder panel: breadcrumbs + back/forward; root = MLC_EDITOR_ROOT | argv[0] | "."; mock /demo if missing.
 // Run: MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
 import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
 import {
@@ -326,7 +326,7 @@ fn sample_main_text() -> string =
   "// TRACK_EDITOR_MVP live demo\nfn main() -> i32 = do\n  println(\"hello from mlc-editor\")\n  let mut n = 0\n  while n < 3 do\n    n = n + 1\n  end\n  0\nend\n"
 
 fn sample_readme_text() -> string =
-  "# mlc-editor\n\nType / Enter / Backspace.\nWheel scroll. Click-drag select.\nTree: click folder to expand/collapse; click file to open.\n"
+  "# mlc-editor\n\nType / Enter / Backspace.\nWheel scroll. Click-drag select.\nFolders: breadcrumbs and back/forward; click a file to open.\n"
 
 fn sample_notes_text() -> string =
   "notes\nline two\nline three\nline four\nline five\nline six\nline seven\nline eight\nline nine\nline ten\n"
@@ -338,10 +338,10 @@ fn sample_util_text() -> string =
   "fn clamp(value: i32, low: i32, high: i32) -> i32 = do\n  if value < low then\n    return low\n  end\n  if value > high then\n    return high\n  end\n  value\nend\n"
 
 fn sample_guide_text() -> string =
-  "# Guide\n\nExpand `src/` and `docs/` in the tree.\nOpen files by click.\n"
+  "# Guide\n\nOpen `src/` or `docs/` via the folder list (or `..`).\nUse breadcrumbs / back / forward to navigate.\nClick a file to open.\n"
 
 fn sample_changelog_text() -> string =
-  "## Changelog\n\n- live tree expand/collapse\n- scissor / cursor / clipboard\n"
+  "## Changelog\n\n- folder breadcrumbs + back/forward\n- scissor / cursor / clipboard\n"
 
 // Mock FS when resolved root is missing / not a directory.
 fn demo_dir_entries(dir_path: string) -> [DirEntry] = do
