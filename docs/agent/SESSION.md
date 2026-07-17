@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 19:50 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b6 — paren/headers → record_emit/module)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b6 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 19:37 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | `parenthesized_*` → `record_field_default_emit.mlc`; `standard_translation_unit_runtime_headers` → `module.mlc`; `expr.mlc` 59→56; dropped both `expression_output` imports |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b7 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 19:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b5 — decl helpers → decl.mlc)
 
 | field   | value |

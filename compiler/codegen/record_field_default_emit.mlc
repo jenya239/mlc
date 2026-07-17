@@ -17,8 +17,13 @@ import {
 } from '../frontend/ast'
 import { CodegenContext } from './context'
 import * as literals from './expr/literals'
-import * as expression_output from './expr/expr'
 import { map_builtin_identifier_reference } from './cpp_naming'
+
+fn parenthesized_binary(left_code: string, operation: string, right_code: string) -> string =
+  `(${left_code} ${operation} ${right_code})`
+
+fn parenthesized_unary(operation: string, inner_code: string) -> string =
+  `(${operation}${inner_code})`
 
 fn record_field_default_identifier_cpp(name: string, context: CodegenContext) -> string =
   context.resolve(map_builtin_identifier_reference(name))
@@ -36,12 +41,12 @@ export fn record_field_default_expression_cpp_initializer(expression: Shared<Exp
     ExprChar(raw, _) => literals.gen_char_literal(raw),
     ExprIdent(name, _) => record_field_default_identifier_cpp(name, context),
     ExprBin(operation, left_expression, right_expression, _) =>
-      expression_output.parenthesized_binary(
+      parenthesized_binary(
         record_field_default_expression_cpp_initializer(left_expression, context),
         operation,
         record_field_default_expression_cpp_initializer(right_expression, context)),
     ExprUn(operation, inner_expression, _) =>
-      expression_output.parenthesized_unary(
+      parenthesized_unary(
         operation,
         record_field_default_expression_cpp_initializer(inner_expression, context)),
     _ => 0.to_string()
