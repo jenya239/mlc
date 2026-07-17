@@ -439,7 +439,7 @@ compiler/
 | **41** | Editor caret blink (UX L8 `caret_blink_phases` + live helper) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CARET_BLINK](archive/tracks/TRACK_EDITOR_CARET_BLINK.md) |
 | **42** | Editor soft word-wrap (`layout/word_wrap`; absorb WIP) | **done** (2026-07-16) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_WRAP](archive/tracks/TRACK_EDITOR_WORD_WRAP.md) |
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **active** (2026-07-16) STEP=0–2 **done**; STEP=3 Critic next | [TRACK_EDITOR_FOLDER_NAV](agent/TRACK_EDITOR_FOLDER_NAV.md) |
-| **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1 done (dead code, 11 fns); blocker found: `dev_gate_fast.sh` pre-existing red (Ruby bootstrap `Unexpected token: MATCH`), STEP=test-fix first per CONTINUITY hard-limit | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
+| **44** | Codegen: eliminate string-concatenation, CppAST only (audit 2026-07-17 — §1/§7 "0% string bridges" not reached; `GenStmtsResult`/`GenModuleOut` string-typed by design, not edge cases) | **active** (2026-07-17) STEP=1 done; STEP=test-fix in progress (MATCH/`let mut`/`record` fixed; still red: `Cannot add string and char`) | [TRACK_CODEGEN_CPPAST_ONLY](agent/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -667,9 +667,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [archive/tracks/TRACK_EDITOR_WORD_WRAP.md](archive/tracks/TRACK_EDITOR_WORD_WRAP.md))**
   → **EDITOR_FOLDER_NAV (§43, **active**; STEP=0–2 **done**; STEP=3 Critic next;
       → [agent/TRACK_EDITOR_FOLDER_NAV.md](agent/TRACK_EDITOR_FOLDER_NAV.md))**
-  → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1 done (uncommitted at handoff,
-      2026-07-17 interactive session — first Driver turn commits before continuing);
-      STEP=test-fix (`dev_gate_fast.sh` red, pre-existing) first, then STEP=2;
+  → **CODEGEN_CPPAST_ONLY (§44, **active**; STEP=1 done (`5c20ffa9`);
+      STEP=test-fix in progress — MATCH/`let mut`/`record` fixed, still red
+      (`Cannot add string and char`); then STEP=2;
       → [agent/TRACK_CODEGEN_CPPAST_ONLY.md](agent/TRACK_CODEGEN_CPPAST_ONLY.md))**
 ```
 

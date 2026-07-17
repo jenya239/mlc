@@ -77,7 +77,7 @@ INSTRUCTIONS_REV=2026-07-17-codegen-cppast-handoff
 | **`TRACK_EDITOR_CARET_BLINK` (PLAN §41)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_WORD_WRAP` (PLAN §42)** | **closed** 2026-07-16 (Critic OK). Archive |
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | Folder back/forward history; absorb `folder_panel` WIP. Prefer `misc/editor/ux/folder_panel*`; no `compiler/`. STEP=3 Critic pending, independent of §44 |
-| **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1 done **uncommitted at 2026-07-17 handoff** — commit first (see SESSION.md entry), then `STEP=test-fix` (`dev_gate_fast.sh` MATCH parse red, pre-existing) before STEP=2. Touches `compiler/` — Tier B + self-host diff every STEP, one STEP per turn (see track file "Non-goals"/risk note) |
+| **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — queue head** | Eliminate string-concat codegen, CppAST only. STEP=1 done (`5c20ffa9`). `STEP=test-fix` in progress: MATCH primary / CaptureAnalyzer Return.expr / region_escape `let mut` / `record` pattern binding fixed; `dev_gate_fast.sh` still red on `Cannot add string and char`. STEP=2 blocked until Tier A green. Touches `compiler/` — Tier B + self-host every STEP |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

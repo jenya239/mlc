@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 11:05 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — peel Ruby bootstrap reds)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | test-fix |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 11:05 |
+| elapsed | ~70 min |
+| done    | Handoff already committed (`99267992`/`5c20ffa9`). Fixed onion layers blocking Ruby `tests_main` compile: (1) `expression_parser.rb` `parse_primary` accepts MATCH/DO/IF; (2) `capture_analyzer.rb` `Return.expr`; (3) `region_escape.mlc` `let mut` for reassigned bindings; (4) `vm/value.mlc`+`native.mlc` rename pattern `record`→`record_value`. Regression `test_match_as_primary_inside_and_expression`. TRACK/PLAN/CONTINUITY updated. |
+| result  | `test_parser`/`test_mir_interpreter` Ruby-parse OK; mlcc `--check-only main` OK; self-host diff only `value.cpp`/`native.cpp`; pattern_matching unit OK; `dev_gate_fast.sh` still EXIT=1 — `Cannot add string and char` (BinaryRule) |
+| issues  | Pause per 3+ verify fails; remaining Tier A blocker is string+char BinaryRule while compiling tests graph (not MATCH). `TRACK_EDITOR_FOLDER_NAV` STEP=3 Critic still pending separately |
+| next    | ROLE=Driver STEP=test-fix TRACK_CODEGEN_CPPAST_ONLY (bisect BinaryRule `Cannot add string and char`) |
+
 ### 2026-07-17 — ROLE=Driver STEP=hygiene+1 TRACK_CODEGEN_CPPAST_ONLY (interactive session — uncommitted handoff)
 done: (1) hygiene: `.gitignore` (+`.tmp/`, `extern_concurrency_lint.*`), triaged foreign-dirty editor/runtime WIP (fixed real regression — `vertex_count` not accumulated across batches in `static_text_draw_lines_colored`), `misc/editor/README.md` refreshed for §36-42 features; (2) opened `TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44) — full inventory of string-concat codegen (`expr.mlc`, `CppAST` string-typed fragments/invoked-blocks, `GenStmtsResult`/`GenModuleOut` in `context.mlc`), STEP=1 done (removed 11 zero-usage functions from `compiler/codegen/expr/expr.mlc`); (3) found pre-existing blocker: `dev_gate_fast.sh` red on clean `main` (Ruby bootstrap `Unexpected token: MATCH` building `compiler/tests/` — self-hosted-only syntax), logged as `STEP=test-fix`, takes priority per rotation table (`test_gate=fail` row)
 verify: STEP=1 self-host diff checked (`git stash`-based before/after) — only `expr.cpp`/`expr.hpp` differ; NOT run through Tier B/regression_gate yet; `test_gate=fail` (dev_gate_fast, unrelated to this diff)

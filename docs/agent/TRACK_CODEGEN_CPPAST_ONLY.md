@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1 done, STEP=2 next
+## Status: **active** (2026-07-17) — STEP=1 done, STEP=test-fix in progress, STEP=2 blocked on green Tier A
 
 ## Why this track exists
 
@@ -86,23 +86,20 @@ of a string.
 
 ## Known pre-existing blocker (found during this audit, not caused by this track)
 
-`bash scripts/dev_gate_fast.sh` fails on a clean tree (verified via `git stash`)
-building `compiler/out/tests/run_tests` through the Ruby bootstrap compiler:
-`Unexpected token: MATCH` somewhere in the `tests_main.mlc` module graph. This
-means Tier A verification (`dev_gate_fast.sh`) is currently unusable, and per
-CONTINUITY.md hard-limit ("`test_gate=fail` → `Driver STEP=test-fix` before
-any new feature") **this should be the actual next Driver priority** ahead of
-STEP=2 below. Recorded here since it was found while investigating this
-track's verification path, not triaged/fixed (out of scope for a codegen
-string-elimination step; needs its own `STEP=test-fix` turn to bisect which
-`.mlc` file under `compiler/tests/` uses syntax the Ruby parser rejects).
+`bash scripts/dev_gate_fast.sh` fails on a clean tree building `compiler/out/tests/run_tests`
+through the Ruby bootstrap. Onion (2026-07-17 test-fix turn): (1) nested `match` as
+primary after `&&` inside another arm — fixed in Ruby `parse_primary`; (2) `CaptureAnalyzer`
+`Return.value` → `Return.expr`; (3) `let` reassignment in `region_escape.mlc` → `let mut`;
+(4) pattern binding named `record` (keyword) in `vm/value.mlc`/`native.mlc` → `record_value`.
+**Still red:** `Cannot add string and char` in `BinaryRule` while lowering the tests module
+graph. Tier A remains unusable until that layer is fixed; STEP=2 stays blocked.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Delete 11 zero-usage functions from `expr.mlc`; verify self-host diff touches only `expr.cpp/.hpp` | **done** (2026-07-17) |
-| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build `Unexpected token: MATCH` failure (pre-existing, blocks Tier A) | **open, unblocked, do first** |
+| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **in progress** — MATCH/`let mut`/`record` keyword fixed; next: `Cannot add string and char` (BinaryRule) while compiling tests graph |
 | 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer already has `print_statements` | pending |
 | 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | pending |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | pending |
