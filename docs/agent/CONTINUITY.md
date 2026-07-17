@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head after §45 archive: **§46 `#1 EDITOR_DEMO_ORCHESTRATOR` Decision** (open own TRACK) — Standing discipline applies.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_DEMO_ORCHESTRATOR` STEP=1** (§46 #1; Standing discipline; no `compiler/`).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,7 +79,8 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | **queue head** — next pending = **#1 `EDITOR_DEMO_ORCHESTRATOR`** (Decision→Driver→Critic; create `TRACK_EDITOR_DEMO_ORCHESTRATOR.md` when opened), then `#1b`→`#1c`→`#1d`→`#2`. Product ceiling: **Sublime Text**; stability/speed over feature breadth |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. **#1 active:** [TRACK_EDITOR_DEMO_ORCHESTRATOR](TRACK_EDITOR_DEMO_ORCHESTRATOR.md) STEP=1 next. Then `#1b`→`#1c`→`#1d`→`#2`. Product ceiling: **Sublime Text**; stability/speed over feature breadth |
+| **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** | **queue head** — STEP=0 Decision done 2026-07-18; STEP=1 edit path → `ux/edit_apply`. Behavior-preserving; existing UX gates + `demo_live_fs_compile`. No `compiler/` |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

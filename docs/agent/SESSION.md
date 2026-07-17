@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 01:10 (Planner PLAN_QUEUE pick-next → open #1)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 01:05 |
+| elapsed | ~5 min |
+| done    | Opened §46 #1: `TRACK_EDITOR_DEMO_ORCHESTRATOR.md` STEP=0 Decision frozen (thin `main` → `ux/*` calls; STEPs 1–5); UX_BACKLOG #1 → active; PLAN §46 + CONTINUITY/DEVELOPMENT queue head synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DEMO_ORCHESTRATOR |
+
 ### Turn 2026-07-18 01:05 (Critic TRACK_EDITOR_CLEAN_ARCHITECTURE critique-audit)
 
 | field   | value |
