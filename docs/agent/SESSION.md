@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 19:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b5 — decl helpers → decl.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8b5 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 19:25 |
+| elapsed | ~15 min (rebuild + Tier B) |
+| done    | 4 decl-only helpers → local fns in `decl.mlc`; `expr.mlc` 63→59; `test_decl_gen` uses literal argc/argv string |
+| result  | `--check-only` OK; self-host identical; double-emit identical; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone |
+| next    | ROLE=Driver STEP=8b6 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 19:25 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=8b4 — method helpers → method_gen)
 
 | field   | value |

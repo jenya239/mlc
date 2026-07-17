@@ -162,14 +162,8 @@ export fn match_arm_constructed_value_generic_void(
 export fn prefix_with_optional_suffix(prefix: string, optional_suffix: string) -> string =
   if optional_suffix.length() > 0 then prefix + optional_suffix else prefix end
 
-export fn main_program_parameter_list() -> string =
-  'int argc, char** argv'
-
 export fn noexcept_function_prototype(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
   `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept;\n`
-
-export fn noexcept_function_body_open(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
-  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept{\n`
 
 export fn inline_noexcept_forwarding_call(
   return_type_cpp: string,
@@ -190,9 +184,6 @@ export fn noexcept_one_line_returning_function(
 
 export fn parameter_declaration_item(type_expression_cpp: string, binding_name_cpp: string) -> string =
   `${type_expression_cpp} ${binding_name_cpp}`
-
-export fn block_close_newline() -> string =
-  '}\n'
 
 // --- Header / module shell (no traversal)
 
@@ -239,9 +230,6 @@ export fn trait_struct_definition_lines(
   field_lines: string
 ) -> string =
   `${template_header}struct ${vtable_struct_cpp_name} {\n${field_lines}};\n`
-
-export fn user_main_arguments_copy_into_runtime_statement() -> string =
-  'mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n'
 
 export fn static_assert_concept_for_type_line(
   concept_cpp_safe: string,

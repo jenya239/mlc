@@ -15,7 +15,7 @@ import { trait_method_field_cpp, gen_trait_struct_cpp } from '../codegen/decl/tr
 import { CppDeclaration, CppStruct, CppDeclarationSequence, CppDeclarationEmpty, CppUsing, CppStdHashSpecialization, CppDeclarationFragment, CppStatement, CppStatementFragment, CppStatementSequence, CppBlock, CppIf, CppWhile, CppFor } from '../cpp_ir/cpp_ast'
 import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, extend_helper_protos_for_exported_types_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp, decl_segment_cpp, gen_decl_extend_cpp, gen_decl_extend_trait_suffix_cpp, gen_extend_extern_method_cpp } from '../codegen/decl_cpp'
 import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
-import { main_program_parameter_list, static_assert_concept_for_type_line, static_assert_concept_for_result_and_implementor_line } from '../codegen/expr/expr'
+import { static_assert_concept_for_type_line, static_assert_concept_for_result_and_implementor_line } from '../codegen/expr/expr'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, assert_code_not_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span, empty_fn_escape_info } from '../ir/semantic_ir'
@@ -740,7 +740,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('main_program_parameter_items_cpp matches string',
     main_program_parameter_items_cpp().join(', '),
-    main_program_parameter_list()))
+    'int argc, char** argv'))
 
   results.push(assert_eq_str('main_set_args_preamble_cpp native prelude',
     print_cpp_statements(main_set_args_preamble_cpp()),

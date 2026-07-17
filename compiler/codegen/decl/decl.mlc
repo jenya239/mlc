@@ -15,6 +15,18 @@ import * as expression_output from '../expr/expr'
 import { gen_params_proto, gen_params_def, gen_trait_decl, gen_trait_decl_with_dispatch_forward_protos, gen_trait_struct, gen_extend_wrapper_protos, gen_decl_extend, gen_decl_extend_methods_only, gen_decl_extend_trait_suffix } from './decl_extend'
 import { list_contains } from './decl_index'
 
+fn main_program_parameter_list() -> string =
+  'int argc, char** argv'
+
+fn noexcept_function_body_open(return_type_cpp: string, name_cpp: string, parameter_list: string) -> string =
+  `${return_type_cpp} ${name_cpp}(${parameter_list}) noexcept{\n`
+
+fn block_close_newline() -> string =
+  '}\n'
+
+fn user_main_arguments_copy_into_runtime_statement() -> string =
+  'mlc::io::set_args(std::vector<mlc::String>(argv + 1, argv + argc));\n'
+
 fn resolved_self_type_name(type_name: string, context: CodegenContext) -> string =
   if type_name == 'Self' || type_name == 'self' then context.self_type else type_name end
 
@@ -75,7 +87,7 @@ export fn gen_fn_proto_with_escape(
     prefix + expression_output.noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      expression_output.main_program_parameter_list())
+      main_program_parameter_list())
   else
     prefix + expression_output.noexcept_function_prototype(
       sem_type_to_cpp(prototype_context, return_type),
@@ -133,18 +145,18 @@ export fn gen_fn_decl_with_escape(
     .with_enclosing_function_return_type(return_type)
   const prototype_context = decl_prototype_context_for_body(parameters, body_context, escape_context)
   if name == 'main' && parameters.length() == 0 then
-    const preamble = expression_output.user_main_arguments_copy_into_runtime_statement()
-    prefix + expression_output.noexcept_function_body_open(
+    const preamble = user_main_arguments_copy_into_runtime_statement()
+    prefix + noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
-      expression_output.main_program_parameter_list()) +
-    preamble + gen_fn_body(body, body_context) + expression_output.block_close_newline()
+      main_program_parameter_list()) +
+    preamble + gen_fn_body(body, body_context) + block_close_newline()
   else
-    prefix + expression_output.noexcept_function_body_open(
+    prefix + noexcept_function_body_open(
       sem_type_to_cpp(prototype_context, return_type),
       safe_name,
       gen_params_def(prototype_context, parameters)) +
-    gen_fn_body(body, body_context) + expression_output.block_close_newline()
+    gen_fn_body(body, body_context) + block_close_newline()
   end
 end
 
