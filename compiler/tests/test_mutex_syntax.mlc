@@ -4,6 +4,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
 import { create_codegen_context } from '../codegen/context'
 import { empty_program } from './ast_builders'
 import {
@@ -46,7 +47,7 @@ export fn mutex_syntax_tests() -> [TestResult] = do
   const lock_call = Shared.new(SemanticExpressionMethod(
     mutex_receiver, 'lock', [lambda], [0], integer_type(), span_unknown()))
   const context = create_codegen_context(empty_program())
-  const generated = gen_expr(lock_call, context)
+  const generated = print_expr(gen_expr(lock_call, context))
   results.push(assert_code_contains('mutex.lock in cpp', generated.to_string(), '.lock('))
   results.push(assert_code_contains('mutex lock ref param', generated.to_string(), "&"))
   results.push(assert_type_generates(

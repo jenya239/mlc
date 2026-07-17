@@ -95,7 +95,7 @@ export fn visitor_pass_parity_tests() -> [TestResult] = do
   const semantic_integer = Shared.new(SemanticExpressionInt(42, registry_integer_type, span_unknown()))
   results.push(assert_eq_str(
     'codegen parity: integer literal',
-    gen_expr(semantic_integer, codegen_context),
+    print_expr(gen_expr(semantic_integer, codegen_context)),
     codegen_visitor_parity_string(semantic_integer, codegen_context)))
 
   const semantic_binary = Shared.new(SemanticExpressionBin(
@@ -106,13 +106,13 @@ export fn visitor_pass_parity_tests() -> [TestResult] = do
     span_unknown()))
   results.push(assert_eq_str(
     'codegen parity: binary +',
-    gen_expr(semantic_binary, codegen_context),
+    print_expr(gen_expr(semantic_binary, codegen_context)),
     codegen_visitor_parity_string(semantic_binary, codegen_context)))
 
   const semantic_ident = Shared.new(SemanticExpressionIdent("value_name", registry_unknown_type, span_unknown()))
   results.push(assert_eq_str(
     'codegen parity: ident',
-    gen_expr(semantic_ident, codegen_context),
+    print_expr(gen_expr(semantic_ident, codegen_context)),
     codegen_visitor_parity_string(semantic_ident, codegen_context)))
 
   results

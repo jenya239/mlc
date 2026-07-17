@@ -4,6 +4,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
 import { create_codegen_context } from '../codegen/context'
 import { empty_program } from './ast_builders'
 import { SemanticExpressionMethod, SemanticExpressionIdent, SemanticExpressionInt } from '../ir/semantic_ir'
@@ -37,7 +38,7 @@ export fn arc_syntax_tests() -> [TestResult] = do
     arc_type(),
     span_unknown()))
   const context = create_codegen_context(empty_program())
-  const generated = gen_expr(arc_new_call, context)
+  const generated = print_expr(gen_expr(arc_new_call, context))
   results.push(assert_code_contains('Arc.new in cpp', generated.to_string(), 'mlc::concurrency::Arc'))
   results.push(assert_type_generates(
     'Arc type in cpp', context,

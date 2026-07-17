@@ -34,8 +34,8 @@ import * as let_pat_cpp from './stmt/let_pat_cpp'
 import { stmts_final_ctx } from './stmt/statement_context'
 import * as expr_visitor_cpp from '../expr_visitor_cpp'
 
-fn gen_stmts_for_cpp_codegen(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
-  print_cpp_statements(gen_stmts_cpp(statements, context))
+fn gen_stmts_for_cpp_codegen(statements: [Shared<SemanticStatement>], context: CodegenContext) -> [Shared<CppStatement>] =
+  gen_stmts_cpp(statements, context)
 
 fn gen_expr_cpp_for_stmt_codegen(expression: Shared<SemanticExpression>, context: CodegenContext) -> Shared<CppExpression> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_cpp_codegen)

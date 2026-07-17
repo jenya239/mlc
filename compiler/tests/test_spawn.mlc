@@ -4,6 +4,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
 import { create_codegen_context } from '../codegen/context'
 import { empty_program } from './ast_builders'
 import {
@@ -174,7 +175,7 @@ export fn spawn_tests() -> [TestResult] = do
     Shared.new(TGeneric('Task', [integer_type()])),
     span_unknown()))
   const context = create_codegen_context(empty_program())
-  const generated = gen_expr(spawn_call, context)
+  const generated = print_expr(gen_expr(spawn_call, context))
   results.push(assert_code_contains('spawn_task in cpp', generated.to_string(), 'spawn_task'))
   results.push(assert_type_generates(
     'Task type in cpp', context,
@@ -187,7 +188,7 @@ export fn spawn_tests() -> [TestResult] = do
     [0],
     integer_type(),
     span_unknown()))
-  const block_on_generated = gen_expr(block_on_call, context)
+  const block_on_generated = print_expr(gen_expr(block_on_call, context))
   results.push(assert_code_contains('block_on in cpp', block_on_generated.to_string(), 'block_on'))
 
   results

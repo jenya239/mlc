@@ -23,15 +23,15 @@ import { stmts_final_ctx } from './codegen/stmt/statement_context'
 
 type CodegenPass = CodegenPass {
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>,
   seed: i32,
 }
 
 fn codegen_pass_new(
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> CodegenPass =
   CodegenPass {
     context: context,
@@ -46,23 +46,23 @@ fn unsupported_cpp_expression() -> Shared<CppExpression> =
 fn evaluate_via_cpp_visitor(
   expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  _gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  _gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   gen_expr_via_cpp_visitor(expression, context)
 
-fn ignored_gen_stmts(_statements: [Shared<SemanticStatement>], _context: CodegenContext) -> string = ''
+fn ignored_gen_stmts(_statements: [Shared<SemanticStatement>], _context: CodegenContext) -> [Shared<CppStatement>] = []
 
 export fn eval_expr_cpp(
   expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   eval_expr_with_cpp_visitor(expression, context, gen_stmts, eval_expr_cpp)
 
 fn gen_call_function_cpp_expression(
   function_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
@@ -196,7 +196,7 @@ fn gen_constructor_call_cpp_expression(
   argument_expressions: [Shared<CppExpression>],
   call_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
@@ -218,7 +218,7 @@ export fn gen_call_via_cpp_visitor(
   call_parameter_mutability_flags: [i32],
   call_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const materialization_outcome =
     mut_actual_argument.materialize_positional_actual_arguments_cpp(
@@ -251,7 +251,7 @@ export fn gen_method_via_cpp_visitor(
   arguments: [Shared<SemanticExpression>],
   receiver_and_parameter_mutability_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   method_gen.gen_method_expr_cpp(
     object,
@@ -281,7 +281,7 @@ fn invoke_immediate_lambda_cpp(return_type: Shared<CppType>, body_statements: [S
 fn gen_if_else_default_cpp(
   else_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   eval_expr_cpp(else_expression, context, gen_stmts)
 
@@ -302,7 +302,7 @@ fn gen_if_else_for_array_else(
   if_semantic_type: Shared<Type>,
   then_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   if elements.length() > 0 then return eval_expr_cpp(else_expression, context, gen_stmts) end
   const inner_for_empty_array = empty_array_inner_type_for_if_else(if_semantic_type, then_expression)
@@ -320,7 +320,7 @@ fn gen_if_else_cpp_expression(
   if_semantic_type: Shared<Type>,
   then_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   match else_expression {
     SemanticExpressionArray(elements, _, array_span) =>
@@ -415,7 +415,7 @@ end
 fn unit_if_block_trailing(
   result_expression: Shared<SemanticExpression>,
   final_context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> string =
   match result_expression {
     SemanticExpressionUnit(_, _) => '',
@@ -429,15 +429,19 @@ fn unit_if_block_trailing(
 fn unit_if_branch_block(
   branch_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppStatement> =
   match branch_expression {
     SemanticExpressionBlock(statements, result_expression, _, _) => do
-      const body_fragment = gen_stmts(statements, context)
+      const body_statements = gen_stmts(statements, context)
       const final_context = stmts_final_ctx(statements, context)
       const trailing = unit_if_block_trailing(result_expression, final_context, gen_stmts)
-      emit_helpers.make_block_cpp_statement([
-        emit_helpers.make_fragment_cpp_statement(body_fragment + trailing)])
+      if trailing.length() == 0 then
+        emit_helpers.make_block_cpp_statement(body_statements)
+      else
+        emit_helpers.make_block_cpp_statement(
+          body_statements.concat([emit_helpers.make_fragment_cpp_statement(trailing)]))
+      end
     end,
     SemanticExpressionIf(condition, then_expression, else_expression, semantic_type, _) =>
       emit_helpers.make_block_cpp_statement([
@@ -452,7 +456,7 @@ fn unit_if_branch_block(
 fn unit_if_else_branch(
   else_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppStatement> =
   match else_expression {
     SemanticExpressionUnit(_, _) => emit_helpers.make_block_cpp_statement([]),
@@ -468,7 +472,7 @@ fn gen_if_cpp_statement(
   else_expression: Shared<SemanticExpression>,
   if_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppStatement> =
   emit_helpers.make_if_cpp_statement(
     eval_expr_cpp(condition, context, gen_stmts),
@@ -481,7 +485,7 @@ fn gen_if_unit_via_cpp_visitor(
   else_expression: Shared<SemanticExpression>,
   if_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   invoke_immediate_lambda_cpp(
     Shared.new(CppTypeName('void')),
@@ -494,7 +498,7 @@ export fn gen_if_via_cpp_visitor(
   else_expression: Shared<SemanticExpression>,
   if_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const condition_expression = eval_expr_cpp(condition, context, gen_stmts)
   const then_expression_cpp = eval_expr_cpp(then_expression, context, gen_stmts)
@@ -517,15 +521,15 @@ export fn gen_block_via_cpp_visitor(
   statements: [Shared<SemanticStatement>],
   result_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   if statements.length() == 0 then eval_expr_cpp(result_expression, context, gen_stmts)
   else do
     const final_context = stmts_final_ctx(statements, context)
-    const body_fragment =
-      gen_stmts(statements, context) +
-      'return ' + print_expr(eval_expr_cpp(result_expression, final_context, gen_stmts)) + ';\n'
-    Shared.new(CppInvokedBlock(emit_helpers.make_invoked_block_body_from_source(body_fragment)))
+    const body_statements = gen_stmts(statements, context).concat([
+      emit_helpers.make_return_cpp_statement(
+        eval_expr_cpp(result_expression, final_context, gen_stmts))])
+    Shared.new(CppInvokedBlock(body_statements))
   end
 
 export fn gen_match_via_cpp_visitor(
@@ -533,7 +537,7 @@ export fn gen_match_via_cpp_visitor(
   arms: [Shared<SemanticMatchArm>],
   match_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const expanded_arms = match_codegen.expand_or_arms(arms)
   if match_codegen.expanded_any_guard(expanded_arms) then
@@ -566,7 +570,7 @@ fn gen_match_default_block_cpp(
   expanded_arms: [Shared<SemanticMatchArm>],
   match_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const return_cpp = match_return_cpp_type(context, match_semantic_type, subject)
   const inner_body = match_codegen.gen_match_guarded_body(
@@ -588,7 +592,7 @@ fn record_field_expressions(
   field_values: [Shared<SemanticFieldVal>],
   type_name: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> [Shared<CppExpression>] = do
   const field_order = lookup_fields_for_context(context, type_name)
   if field_order.length() > 0 then
@@ -613,7 +617,7 @@ export fn gen_record_via_cpp_visitor(
   field_values: [Shared<SemanticFieldVal>],
   expression_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppAggregateInit(
     record_cpp_name_from_type(type_name, expression_type, context),
@@ -663,7 +667,7 @@ export fn gen_array_via_cpp_visitor(
   elements: [Shared<SemanticExpression>],
   element_container_semantic_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
   const element_expressions = elements.map(element => eval_expr_cpp(element, context, gen_stmts))
   gen_array_for_container_type(element_container_semantic_type, elements, element_expressions, context)
@@ -718,7 +722,7 @@ export fn gen_lambda_via_cpp_visitor(
   body_expression_under_lambda: Shared<SemanticExpression>,
   semantic_function_type_for_lambda_expression: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppMutableLambda(
     lambda_capture_list(parameter_binding_names),
@@ -729,7 +733,7 @@ export fn gen_field_via_cpp_visitor(
   object: Shared<SemanticExpression>,
   field_name: string,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppMember(
     eval_expr_cpp(object, context, gen_stmts),
@@ -740,7 +744,7 @@ export fn gen_index_via_cpp_visitor(
   object: Shared<SemanticExpression>,
   index_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppIndex(
     eval_expr_cpp(object, context, gen_stmts),
@@ -750,30 +754,30 @@ export fn gen_while_via_cpp_visitor(
   condition: Shared<SemanticExpression>,
   statements: [Shared<SemanticStatement>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppInvokedWhile(
     eval_expr_cpp(condition, context, gen_stmts),
-    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
+    gen_stmts(statements, context)))
 
 export fn gen_for_via_cpp_visitor(
   variable: string,
   iterator: Shared<SemanticExpression>,
   statements: [Shared<SemanticStatement>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppInvokedFor(
     cpp_safe(variable),
     eval_expr_cpp(iterator, context, gen_stmts),
-    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
+    gen_stmts(statements, context)))
 
 export fn gen_record_update_via_cpp_visitor(
   type_name: string,
   base_expression: Shared<SemanticExpression>,
   overrides: [Shared<SemanticFieldVal>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   record_gen.gen_record_update_expr_cpp(
     type_name, base_expression, overrides, context, gen_stmts, eval_expr_cpp)
@@ -781,7 +785,7 @@ export fn gen_record_update_via_cpp_visitor(
 export fn gen_tuple_via_cpp_visitor(
   elements: [Shared<SemanticExpression>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppCall(
     emit_helpers.make_identifier_cpp_expression('std::make_tuple'),
@@ -790,7 +794,7 @@ export fn gen_tuple_via_cpp_visitor(
 export fn gen_question_via_cpp_visitor(
   inner_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppQuestionTry(
     eval_expr_cpp(inner_expression, context, gen_stmts),
@@ -802,12 +806,12 @@ export fn gen_with_via_cpp_visitor(
   binder: string,
   statements: [Shared<SemanticStatement>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
   Shared.new(CppWithBlock(
     eval_expr_cpp(resource, context, gen_stmts),
     binder,
-    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
+    gen_stmts(statements, context)))
 
 fn named_type_name_from_semantic_type(semantic_type: Shared<Type>) -> string =
   match semantic_type { TNamed(name) => name, _ => '' }
@@ -817,8 +821,8 @@ export fn gen_binary_via_cpp_visitor(
   left_expression: Shared<SemanticExpression>,
   right_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const method = operator_method_for(operation)
   const type_name = named_type_name_from_semantic_type(sexpr_type(left_expression))
@@ -849,8 +853,8 @@ export fn gen_unary_via_cpp_visitor(
   operation: string,
   inner_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   if operation == "move" then
     Shared.new(CppCall(
@@ -989,8 +993,8 @@ fn dispatch_codegen_pass(codegen_pass: CodegenPass, expression: Shared<SemanticE
 export fn eval_expr_with_cpp_visitor(
   expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   dispatch_codegen_pass(codegen_pass_new(context, gen_stmts, evaluate_expression), expression)
 

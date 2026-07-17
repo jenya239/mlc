@@ -55,8 +55,8 @@ export fn materialize_positional_actual_arguments_maybe_holding_mut_references(
   positional_argument_expressions: [Shared<SemanticExpression>],
   mut_parameter_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> MutActualArgumentMaterializationOutcome =
   if mut_parameter_flags.length() != positional_argument_expressions.length() then
     MutActualArgumentMaterializationOutcome {
@@ -95,8 +95,8 @@ export fn materialize_positional_actual_arguments_cpp(
   positional_argument_expressions: [Shared<SemanticExpression>],
   mut_parameter_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> MutActualArgumentMaterializationOutcomeCpp =
   if mut_parameter_flags.length() != positional_argument_expressions.length() then
     MutActualArgumentMaterializationOutcomeCpp {

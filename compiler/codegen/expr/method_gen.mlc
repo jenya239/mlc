@@ -56,8 +56,8 @@ fn gen_method_profile_using_trailing_argument_fragments(
 fn gen_method_shared_new(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const type_name = infer_shared_new_type_name(argument, context)
@@ -67,8 +67,8 @@ end
 fn gen_method_arc_new(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
@@ -78,8 +78,8 @@ end
 fn gen_method_mutex_new(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
   const argument_code = eval_expr_fn(argument, context, gen_stmts)
   const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
@@ -248,8 +248,8 @@ fn gen_method_shared_using_fragments(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string =
   if method_name == 'new' && argument_count == 1 then
     gen_method_shared_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
@@ -266,8 +266,8 @@ fn gen_method_arc_using_fragments(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string =
   if method_name == 'new' && argument_count == 1 then
     gen_method_arc_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
@@ -284,8 +284,8 @@ fn gen_method_mutex_using_fragments(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string =
   if method_name == 'new' && argument_count == 1 then
     gen_method_mutex_new(original_trailing_arguments[0], context, gen_stmts, eval_expr_fn)
@@ -303,8 +303,8 @@ fn gen_method_expr_after_object_using_fragments(
   context: CodegenContext,
   original_object_expression: Shared<SemanticExpression>,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
   const ident_name = static_receiver_name_from_object_expression(original_object_expression)
   const static_receiver_name = if ident_name != '' then ident_name else receiver_fragment end
@@ -361,8 +361,8 @@ export fn gen_method_expr(
   arguments: [Shared<SemanticExpression>],
   receiver_and_method_parameter_mutability_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> string
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> string = do
   const object_type = sexpr_type(object)
   const object_type_name = object_type_name_for_dispatch(object_type)
@@ -470,8 +470,8 @@ fn gen_method_profile_cpp(method_name: string, trailing_arguments: [Shared<CppEx
 fn gen_method_shared_new_cpp(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const argument_expression = evaluate_expression(argument, context, gen_stmts)
   const element_type = infer_shared_new_type_name(argument, context)
@@ -481,8 +481,8 @@ end
 fn gen_method_arc_new_cpp(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const argument_expression = evaluate_expression(argument, context, gen_stmts)
   const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
@@ -492,8 +492,8 @@ end
 fn gen_method_mutex_new_cpp(
   argument: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const argument_expression = evaluate_expression(argument, context, gen_stmts)
   const element_type = semantic_type_to_cpp_type_name(sexpr_type(argument), context)
@@ -505,8 +505,8 @@ fn gen_method_mutex_lock_cpp(
   callback_argument: Shared<SemanticExpression>,
   mutex_type: Shared<Type>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const inner_type = mutex_inner_type_from_mutex_type(mutex_type)
   const inner_type_cpp = sem_type_to_cpp(context, inner_type)
@@ -587,8 +587,8 @@ fn gen_method_shared_cpp(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   if method_name == 'new' && argument_count == 1 then
     gen_method_shared_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
@@ -605,8 +605,8 @@ fn gen_method_arc_cpp(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   if method_name == 'new' && argument_count == 1 then
     gen_method_arc_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
@@ -623,8 +623,8 @@ fn gen_method_mutex_cpp(
   argument_count: i32,
   context: CodegenContext,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   if method_name == 'new' && argument_count == 1 then
     gen_method_mutex_new_cpp(original_trailing_arguments[0], context, gen_stmts, evaluate_expression)
@@ -642,8 +642,8 @@ fn gen_method_expr_after_object_cpp(
   context: CodegenContext,
   original_object_expression: Shared<SemanticExpression>,
   original_trailing_arguments: [Shared<SemanticExpression>],
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const static_receiver_name = static_receiver_name_from_object_expression(original_object_expression)
   if static_receiver_name == 'File' then gen_method_file_cpp(method_name, trailing_arguments)
@@ -685,8 +685,8 @@ fn gen_method_dispatch_cpp(
   trailing_argument_expressions: [Shared<CppExpression>],
   arguments: [Shared<SemanticExpression>],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> =
   match object {
     SemanticExpressionIdent(namespace_object_name, _, _) =>
@@ -728,8 +728,8 @@ export fn gen_method_expr_cpp(
   arguments: [Shared<SemanticExpression>],
   receiver_and_method_parameter_mutability_flags: [i32],
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> string,
-  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> string) -> Shared<CppExpression>
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
   const object_type = sexpr_type(object)
   const object_type_name = object_type_name_for_dispatch(object_type)

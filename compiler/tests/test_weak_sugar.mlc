@@ -4,6 +4,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
 import { create_codegen_context } from '../codegen/context'
 import { type_to_cpp } from '../codegen/decl/type_gen'
 import { empty_program } from './ast_builders'
@@ -39,7 +40,7 @@ export fn weak_sugar_tests() -> [TestResult] = do
   const weak_call = Shared.new(SemanticExpressionMethod(
     shared_receiver, 'weak', [], [0], weak_node_type(), span_unknown()))
   const context = create_codegen_context(empty_program())
-  const weak_generated = gen_expr(weak_call, context)
+  const weak_generated = print_expr(gen_expr(weak_call, context))
   results.push(assert_code_contains('Shared.weak in cpp', weak_generated.to_string(), 'std::weak_ptr'))
 
   const weak_receiver = Shared.new(SemanticExpressionIdent('weak_ref', weak_node_type(), span_unknown()))
@@ -47,7 +48,7 @@ export fn weak_sugar_tests() -> [TestResult] = do
     weak_receiver, 'upgrade', [], [0],
     Shared.new(TGeneric('Option', [shared_node_type()])),
     span_unknown()))
-  const upgrade_generated = gen_expr(upgrade_call, context)
+  const upgrade_generated = print_expr(gen_expr(upgrade_call, context))
   results.push(assert_code_contains('Weak.upgrade in cpp', upgrade_generated.to_string(), 'from_nullable'))
 
   results.push(assert_code_contains(

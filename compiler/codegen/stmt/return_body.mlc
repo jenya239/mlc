@@ -10,13 +10,14 @@ import * as expression_output from '../expr/expr'
 import { question_from_converter_name } from '../expr/expression_support'
 import { gen_expr, gen_stmts_str, gen_stmts_str_with_try, gen_try_unwrap } from '../eval'
 import { gen_stmts_cpp_with_context, gen_stmts_cpp, print_cpp_statements, line_directive_cpp_statements } from '../stmt_cpp'
+import {print_expr} from '../../cpp_emit/print'
 import * as expr_visitor_cpp from '../../expr_visitor_cpp'
 
 fn gen_return_if_stmt(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
   match expression {
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
       let mut output = expression_output.if_brace_block(
-        gen_expr(condition, context),
+        print_expr(gen_expr(condition, context)),
         gen_return_body(then_expression, context))
       const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
@@ -48,12 +49,12 @@ export fn gen_return_body(expression: Shared<SemanticExpression>, context: Codeg
         SemanticExpressionMatch(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         SemanticExpressionBlock(_, _, _, _) => statements_code + gen_return_body(result_expression, final_context),
         _ =>
-          statements_code + expression_output.return_line(gen_expr(result_expression, final_context))
+          statements_code + expression_output.return_line(print_expr(gen_expr(result_expression, final_context)))
       }
     end,
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) => do
       let mut output = expression_output.if_brace_block(
-        gen_expr(condition, context),
+        print_expr(gen_expr(condition, context)),
         gen_return_body(then_expression, context))
       const else_string = match else_expression {
         SemanticExpressionUnit(_, _)        => '',
@@ -71,14 +72,14 @@ export fn gen_return_body(expression: Shared<SemanticExpression>, context: Codeg
         try_identifier,
         expression_output.return_try_ok_field0_statement(try_identifier))
     end,
-    _ => expression_output.return_line(gen_expr(expression, context))
+    _ => expression_output.return_line(print_expr(gen_expr(expression, context)))
   }
 
 export fn gen_fn_body(body_expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
   gen_return_body(body_expression, context)
 
-fn gen_stmts_for_return_body_cpp(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
-  print_cpp_statements(gen_stmts_cpp(statements, context))
+fn gen_stmts_for_return_body_cpp(statements: [Shared<SemanticStatement>], context: CodegenContext) -> [Shared<CppStatement>] =
+  gen_stmts_cpp(statements, context)
 
 fn gen_expr_for_return_body_cpp(expression: Shared<SemanticExpression>, context: CodegenContext) -> Shared<CppExpression> =
   expr_visitor_cpp.eval_expr_cpp(expression, context, gen_stmts_for_return_body_cpp)

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 13:05 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=5 — gen_expr/gen_stmts_str return AST)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 5 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 12:54 |
+| elapsed | ~23 min (rebuild + Tier B) |
+| done    | `gen_expr`→`Shared<CppExpression>`; `gen_stmts_str`→`[Shared<CppStatement>]`; `eval_expr_cpp` gen_stmts callback AST; while/for/with/block take lists directly; callers wrap printers; `stmt_eval` via `gen_expr_as_source` |
+| result  | `--check-only` OK; mlcc rebuild OK; `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 (pipefail); self-host diff broad (~84 TUs — block/loop emission) |
+| issues  | CaptureAnalyzer + out left alone. `gen_stmts_str` name still says str while returning AST |
+| next    | ROLE=Driver STEP=6 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 12:40 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=4 — GenStmtsResult.parts statements)
 
 | field   | value |

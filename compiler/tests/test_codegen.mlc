@@ -3,6 +3,8 @@
 import { TestResult, assert_eq_str, assert_eq_int, assert_true } from './test_runner'
 import { assert_code_contains, assert_code_not_contains } from './codegen_test_helpers'
 import { gen_expr, gen_argument_list, gen_stmts_str } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
+import { print_cpp_statements } from '../codegen/stmt_cpp'
 import { cpp_lambda_header_prefix } from '../codegen/expr/expression_support'
 import {
   match_arm_wild_or_unit_return,
@@ -67,7 +69,7 @@ export fn codegen_tests() -> [TestResult] = do
   const empty_program = Program { decls: [] }
   const context = create_codegen_context(empty_program)
   results.push(assert_eq_str('create_codegen_context: gen_expr with ctx',
-    gen_expr(si(42), context), '42'))
+    print_expr(gen_expr(si(42), context)), '42'))
 
   results.push(assert_eq_str('TyI32 - \'int\'',
     type_to_cpp(context, Shared.new(TyI32)), 'int'))
@@ -100,58 +102,58 @@ export fn codegen_tests() -> [TestResult] = do
     'std::optional<int>'))
 
   results.push(assert_eq_str('ExprInt(42) - \'42\'',
-    gen_expr(si(42), context), '42'))
+    print_expr(gen_expr(si(42), context)), '42'))
 
   results.push(assert_eq_str('ExprQuestion: gen_expr index-based unwrap',
-    gen_expr(Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())), context)),
     '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })'))
 
   results.push(assert_eq_str('ExprBool(true) - \'true\'',
-    gen_expr(sb(true), context), 'true'))
+    print_expr(gen_expr(sb(true), context)), 'true'))
 
   results.push(assert_eq_str('ExprStr(\'hi\') - \'mlc::String("hi", 2)\'',
-    gen_expr(ss('hi'), context), 'mlc::String("hi", 2)'))
+    print_expr(gen_expr(ss('hi'), context)), 'mlc::String("hi", 2)'))
 
   results.push(assert_eq_str('ExprUnit - \'std::make_tuple()\'',
-    gen_expr(su(), context), 'std::make_tuple()'))
+    print_expr(gen_expr(su(), context)), 'std::make_tuple()'))
 
   results.push(assert_eq_str('ExprIdent(\'x\') - \'x\'',
-    gen_expr(sid("x"), context), "x"))
+    print_expr(gen_expr(sid("x"), context)), "x"))
 
   results.push(assert_eq_str('ExprIdent(\'print\') - \'mlc::io::print\'',
-    gen_expr(sid('print'), context), 'mlc::io::print'))
+    print_expr(gen_expr(sid('print'), context)), 'mlc::io::print'))
 
   results.push(assert_eq_str('ExprIdent(\'println\') - \'mlc::io::println\'',
-    gen_expr(sid('println'), context), 'mlc::io::println'))
+    print_expr(gen_expr(sid('println'), context)), 'mlc::io::println'))
 
 
   results.push(assert_eq_str('ExprBin add - checked_add',
-    gen_expr(Shared.new(SemanticExpressionBin("+", si(1), si(2), i32_t(), span_unknown())), context), 'mlc::arith::checked_add(1, 2)'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionBin("+", si(1), si(2), i32_t(), span_unknown())), context)), 'mlc::arith::checked_add(1, 2)'))
 
   results.push(assert_eq_str('ExprUn neg - \'(-42)\'',
-    gen_expr(Shared.new(SemanticExpressionUn("-", si(42), i32_t(), span_unknown())), context), '(-42)'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionUn("-", si(42), i32_t(), span_unknown())), context)), '(-42)'))
 
   results.push(assert_eq_str('map_builtin passthrough - \'foo\'',
     map_builtin('foo'), 'foo'))
 
   const single_params: [string] = ["x"]
   results.push(assert_eq_str('ExprLambda single param - \'[=](auto x) mutable { return ... }\'',
-    gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown())), context)),
     '[=](auto x) mutable { return mlc::arith::checked_add(x, 1); }'))
 
   const lambda_typed_with_single_i32_parameter = Shared.new(TFn([Shared.new(TI32)], Shared.new(TI32)))
   results.push(assert_eq_str('ExprLambda annotated TFn([i32], i32) uses explicit int parameter',
-    gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), lambda_typed_with_single_i32_parameter, span_unknown())), context)),
     '[=](int x) mutable { return mlc::arith::checked_add(x, 1); }'))
 
   const two_params: [string] = ["a", "b"]
   results.push(assert_eq_str('ExprLambda two params - \'[=](auto a, auto b) mutable { return ... }\'',
-    gen_expr(Shared.new(SemanticExpressionLambda(two_params, Shared.new(SemanticExpressionBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionLambda(two_params, Shared.new(SemanticExpressionBin("+", sid("a"), sid("b"), i32_t(), span_unknown())), unk_t(), span_unknown())), context)),
     '[=](auto a, auto b) mutable { return mlc::arith::checked_add(a, b); }'))
 
   const zero_params: [string] = []
   results.push(assert_eq_str('ExprLambda zero params - \'[]() mutable { return ... }\'',
-    gen_expr(Shared.new(SemanticExpressionLambda(zero_params, si(42), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionLambda(zero_params, si(42), unk_t(), span_unknown())), context)),
     '[]() mutable { return 42; }'))
 
   const stored_lambda_program =
@@ -206,17 +208,17 @@ export fn codegen_tests() -> [TestResult] = do
 
   const call_lambda_args: [Shared<SemanticExpression>] = [si(5), Shared.new(SemanticExpressionLambda(single_params, Shared.new(SemanticExpressionBin("+", sid("x"), si(1), i32_t(), span_unknown())), unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprCall with lambda arg',
-    gen_expr(Shared.new(SemanticExpressionCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionCall(sid('apply'), call_lambda_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context)),
     'apply(5, [=](auto x) mutable { return mlc::arith::checked_add(x, 1); })'))
 
   const ok_args: [Shared<SemanticExpression>] = [si(42)]
   results.push(assert_eq_str('ExprCall ctor Ok(42) uses brace init',
-    gen_expr(Shared.new(SemanticExpressionCall(sid('Ok'), ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionCall(sid('Ok'), ok_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context)),
     'Ok{42}'))
 
   const err_args: [Shared<SemanticExpression>] = [ss('oops')]
   results.push(assert_eq_str('ExprCall ctor Err(str) uses brace init',
-    gen_expr(Shared.new(SemanticExpressionCall(sid('Err'), err_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionCall(sid('Err'), err_args, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context)),
     'Err{mlc::String("oops", 4)}'))
 
   const empty_arr: [Shared<SemanticExpression>] = []
@@ -234,76 +236,76 @@ export fn codegen_tests() -> [TestResult] = do
       span_unknown()))
   results.push(assert_code_contains(
     'mutable first positional actual argument lowers with holder IIFE',
-    gen_expr(outer_under_mut_actual_test_expression, context),
+    print_expr(gen_expr(outer_under_mut_actual_test_expression, context)),
     '__mut_actual_argument_holder_0'))
   results.push(assert_code_contains(
     'mutable first positional actual argument lowers with return prelude',
-    gen_expr(outer_under_mut_actual_test_expression, context),
+    print_expr(gen_expr(outer_under_mut_actual_test_expression, context)),
     '[&]()'))
   results.push(assert_code_contains(
     'mutable first positional actual argument holder auto decl',
-    gen_expr(outer_under_mut_actual_test_expression, context),
+    print_expr(gen_expr(outer_under_mut_actual_test_expression, context)),
     'auto __mut_actual_argument_holder_0'))
 
   // --- ExprIf -------------------------------------------------------------------
 
   results.push(assert_eq_str('ExprIf',
-    gen_expr(Shared.new(SemanticExpressionIf(sb(true), si(1), si(2), i32_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionIf(sb(true), si(1), si(2), i32_t(), span_unknown())), context)),
     '(true ? (1) : (2))'))
 
   // --- ExprArray ----------------------------------------------------------------
 
   const arr_elems: [Shared<SemanticExpression>] = [si(1), si(2), si(3)]
   results.push(assert_eq_str('ExprArray',
-    gen_expr(Shared.new(SemanticExpressionArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionArray(arr_elems, Shared.new(TArray(i32_t())), span_unknown())), context)),
     'mlc::Array<int>{1, 2, 3}'))
 
   results.push(assert_eq_str('ExprArray empty',
-    gen_expr(Shared.new(SemanticExpressionArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionArray(empty_arr, Shared.new(TArray(i32_t())), span_unknown())), context)),
     'mlc::Array<int>{}'))
 
   // --- ExprTuple ----------------------------------------------------------------
 
   const tuple_elements: [Shared<SemanticExpression>] = [si(1), si(2)]
   results.push(assert_eq_str('ExprTuple - std::make_tuple(1, 2)',
-    gen_expr(Shared.new(SemanticExpressionTuple(tuple_elements, Shared.new(TTuple([Shared.new(TI32), Shared.new(TI32)])), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionTuple(tuple_elements, Shared.new(TTuple([Shared.new(TI32), Shared.new(TI32)])), span_unknown())), context)),
     'std::make_tuple(1, 2)'))
 
   // --- ExprIndex ----------------------------------------------------------------
 
   results.push(assert_eq_str('ExprIndex',
-    gen_expr(Shared.new(SemanticExpressionIndex(sid('arr'), si(0), i32_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionIndex(sid('arr'), si(0), i32_t(), span_unknown())), context)),
     'arr[0]'))
 
   // --- ExprField ----------------------------------------------------------------
 
   results.push(assert_eq_str('ExprField on ident',
-    gen_expr(Shared.new(SemanticExpressionField(sid('point'), "x", unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionField(sid('point'), "x", unk_t(), span_unknown())), context)),
     'point.x'))
 
   // --- ExprMethod ---------------------------------------------------------------
 
   const method_args: [Shared<SemanticExpression>] = [si(1)]
   results.push(assert_eq_str('ExprMethod push',
-    gen_expr(Shared.new(SemanticExpressionMethod(sid('arr'), 'push', method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionMethod(sid('arr'), 'push', method_args, empty_parameter_mutability_pattern(), unit_t(), span_unknown())), context)),
     'arr.push_back(1)'))
 
   results.push(assert_eq_str('ExprMethod length',
-    gen_expr(Shared.new(SemanticExpressionMethod(sid('arr'), 'length', empty_arr, empty_parameter_mutability_pattern(), i32_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionMethod(sid('arr'), 'length', empty_arr, empty_parameter_mutability_pattern(), i32_t(), span_unknown())), context)),
     'arr.length()'))
 
   const result_r_t = Shared.new(TGeneric('Result', [i32_t(), str_t()]))
   const s_result = Shared.new(SemanticExpressionIdent("r", result_r_t, span_unknown()))
   const map_one: [Shared<SemanticExpression>] = [Shared.new(SemanticExpressionIdent("f", unk_t(), span_unknown()))]
   results.push(assert_eq_str('ExprMethod Result map',
-    gen_expr(Shared.new(SemanticExpressionMethod(s_result, 'map', map_one, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionMethod(s_result, 'map', map_one, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context)),
     'mlc::result::map(r, f)'))
 
   let namespace_alias_prefixes: Map<string, string> = Map.new()
   namespace_alias_prefixes.set('helpers', 'infer_literals::')
   const context_with_aliases = context.with_namespace_alias_prefixes(namespace_alias_prefixes)
   results.push(assert_eq_str('ExprMethod on import-as alias emits namespace::fn()',
-    gen_expr(Shared.new(SemanticExpressionMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context_with_aliases),
+    print_expr(gen_expr(Shared.new(SemanticExpressionMethod(sid('helpers'), 'infer_expr_integer_literal', empty_arr, empty_parameter_mutability_pattern(), unk_t(), span_unknown())), context_with_aliases)),
     'infer_literals::infer_expr_integer_literal()'))
 
   // --- ExprMatch ----------------------------------------------------------------
@@ -312,7 +314,7 @@ export fn codegen_tests() -> [TestResult] = do
     smatch_arm(Shared.new(PatternInt(1, span_unknown())), ss('one')),
     smatch_arm(Shared.new(PatternWild(span_unknown())), ss('other'))
   ]
-  const match_out = gen_expr(Shared.new(SemanticExpressionMatch(sid("n"), pattern_arms, str_t(), span_unknown())), context)
+  const match_out = print_expr(gen_expr(Shared.new(SemanticExpressionMatch(sid("n"), pattern_arms, str_t(), span_unknown())), context))
   results.push(assert_eq_str('ExprMatch wildcard avoids std::visit',
     if match_out.contains('std::visit') then 'visit' else 'guarded' end, 'guarded'))
   results.push(assert_eq_str('ExprMatch contains one',
@@ -338,7 +340,7 @@ export fn codegen_tests() -> [TestResult] = do
   ]
   const word_subject = Shared.new(SemanticExpressionIdent('word', str_t(), span_unknown()))
   const string_match_out =
-    gen_expr(Shared.new(SemanticExpressionMatch(word_subject, string_match_arms, i32_t(), span_unknown())), context)
+    print_expr(gen_expr(Shared.new(SemanticExpressionMatch(word_subject, string_match_arms, i32_t(), span_unknown())), context))
   results.push(assert_eq_str('string match avoids std::visit',
     if string_match_out.contains('std::visit') then 'has_visit' else 'no_visit' end, 'no_visit'))
   results.push(assert_code_contains('string match emits if/else if chain', string_match_out, 'else if'))
@@ -357,7 +359,7 @@ export fn codegen_tests() -> [TestResult] = do
       Shared.new(PatternOr([Shared.new(PatternCtor('Circle', [Shared.new(PatternWild(span_unknown()))], span_unknown())), Shared.new(PatternCtor('Square', [Shared.new(PatternWild(span_unknown()))], span_unknown()))], span_unknown())),
       ss("r"))
   ]
-  const or_match_out = gen_expr(Shared.new(SemanticExpressionMatch(sid("s"), or_match_arms, str_t(), span_unknown())), context)
+  const or_match_out = print_expr(gen_expr(Shared.new(SemanticExpressionMatch(sid("s"), or_match_arms, str_t(), span_unknown())), context))
   results.push(assert_eq_str('PatternOr expanded: Circle lambda present',
     if or_match_out.contains('Circle') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('PatternOr expanded: Square lambda present',
@@ -387,7 +389,7 @@ export fn codegen_tests() -> [TestResult] = do
   // --- ExprWhile ----------------------------------------------------------------
 
   const while_body: [Shared<SemanticStatement>] = [Shared.new(SemanticStatementExpr(si(0), span_unknown()))]
-  const while_out = gen_expr(Shared.new(SemanticExpressionWhile(sb(true), while_body, unit_t(), span_unknown())), context)
+  const while_out = print_expr(gen_expr(Shared.new(SemanticExpressionWhile(sb(true), while_body, unit_t(), span_unknown())), context))
   results.push(assert_eq_str('ExprWhile contains while (true)',
     if while_out.contains('while (true)') then 'yes' else 'no' end, 'yes'))
 
@@ -395,23 +397,23 @@ export fn codegen_tests() -> [TestResult] = do
 
   const block_statements: [Shared<SemanticStatement>] = [Shared.new(SemanticStatementLet("x", false, si(1), i32_t(), span_unknown()))]
   results.push(assert_eq_str('ExprBlock',
-    gen_expr(Shared.new(SemanticExpressionBlock(block_statements, sid("x"), i32_t(), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionBlock(block_statements, sid("x"), i32_t(), span_unknown())), context)),
     '[&]() {\nauto x = 1;\nreturn x;\n}()'))
 
   results.push(assert_eq_str('gen_stmts_str: let const emits constexpr',
-    gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context)),
     'constexpr auto limit = 42;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: break',
-    gen_stmts_str([Shared.new(SemanticStatementBreak(span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementBreak(span_unknown()))], context)),
     'break;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: continue',
-    gen_stmts_str([Shared.new(SemanticStatementContinue(span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementContinue(span_unknown()))], context)),
     'continue;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let',
-    gen_stmts_str([Shared.new(SemanticStatementLet('counter', false, si(1), i32_t(), span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementLet('counter', false, si(1), i32_t(), span_unknown()))], context)),
     'auto counter = 1;\n'))
 
   const map_new_value = Shared.new(SemanticExpressionMethod(
@@ -423,17 +425,17 @@ export fn codegen_tests() -> [TestResult] = do
     span_unknown()))
   const map_new_type = Shared.new(TGeneric('Map', [Shared.new(TString), Shared.new(TString)]))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let Map.new typed',
-    gen_stmts_str([Shared.new(SemanticStatementLet('table', false, map_new_value, map_new_type, span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementLet('table', false, map_new_value, map_new_type, span_unknown()))], context)),
     'auto table = mlc::HashMap<mlc::String, mlc::String>();\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let question',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementLet(
         'value',
         false,
         Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())),
         unk_t(),
-        span_unknown()))], context),
+        span_unknown()))], context)),
     'auto value = ({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
 
   const parse_error_type = Shared.new(TNamed('ParseError'))
@@ -444,42 +446,42 @@ export fn codegen_tests() -> [TestResult] = do
   const typed_inner = Shared.new(SemanticExpressionInt(7, inner_result_type, span_unknown()))
   results.push(assert_code_contains(
     'gen_stmts: ? Err mismatch emits AppError_from',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementLet(
         'value',
         false,
         Shared.new(SemanticExpressionQuestion(typed_inner, i32_t(), span_unknown())),
         i32_t(),
-        span_unknown()))], from_context),
+        span_unknown()))], from_context)),
     'AppError_from'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const if',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementLetConst(
         'picked',
         Shared.new(SemanticExpressionIf(sb(true), si(1), si(2), i32_t(), span_unknown())),
         i32_t(),
-        span_unknown()))], context),
+        span_unknown()))], context)),
     'constexpr auto picked = (true ? (1) : (2));\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const block',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementLetConst(
         'limit',
         Shared.new(SemanticExpressionBlock([], si(42), i32_t(), span_unknown())),
         i32_t(),
-        span_unknown()))], context),
+        span_unknown()))], context)),
     'constexpr auto limit = 42;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: return',
-    gen_stmts_str([Shared.new(SemanticStatementReturn(si(0), span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementReturn(si(0), span_unknown()))], context)),
     'return 0;\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: return question',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementReturn(
         Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())),
-        span_unknown()))], context),
+        span_unknown()))], context)),
     'return ({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
 
   const assign_expr = Shared.new(SemanticExpressionBin(
@@ -489,31 +491,31 @@ export fn codegen_tests() -> [TestResult] = do
     i32_t(),
     span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: expr assign',
-    gen_stmts_str([Shared.new(SemanticStatementExpr(assign_expr, span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementExpr(assign_expr, span_unknown()))], context)),
     '(counter = (counter + 1));\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: expr question',
-    gen_stmts_str([
-      Shared.new(SemanticStatementExpr(Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())), span_unknown()))], context),
+    print_cpp_statements(gen_stmts_str([
+      Shared.new(SemanticStatementExpr(Shared.new(SemanticExpressionQuestion(si(7), unk_t(), span_unknown())), span_unknown()))], context)),
     '({ auto __q = 7; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; });\n'))
 
   const if_stmt_body: [Shared<SemanticStatement>] = [Shared.new(SemanticStatementExpr(si(0), span_unknown()))]
   results.push(assert_eq_str('gen_stmts_cpp_as_string: expr while',
-    gen_stmts_str([
+    print_cpp_statements(gen_stmts_str([
       Shared.new(SemanticStatementExpr(
         Shared.new(SemanticExpressionWhile(sb(true), if_stmt_body, unit_t(), span_unknown())),
-        span_unknown()))], context),
+        span_unknown()))], context)),
     'while (true) {\n  0;\n}\n'))
 
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let const matches string',
-    gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context),
-    gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context)))
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context)),
+    print_cpp_statements(gen_stmts_str([Shared.new(SemanticStatementLetConst('limit', si(42), i32_t(), span_unknown()))], context))))
 
   // --- ExprRecord ---------------------------------------------------------------
 
   const fv_a: [Shared<SemanticFieldVal>] = [Shared.new(SemanticFieldVal { name: "a", value: si(1) }), Shared.new(SemanticFieldVal { name: "b", value: si(2) })]
   results.push(assert_eq_str('ExprRecord positional',
-    gen_expr(Shared.new(SemanticExpressionRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), context),
+    print_expr(gen_expr(Shared.new(SemanticExpressionRecord('Point', fv_a, Shared.new(TNamed('Point')), span_unknown())), context)),
     'Point{1, 2}'))
 
   // --- DeclFn via gen_program ---------------------------------------------------
@@ -589,26 +591,26 @@ export fn codegen_tests() -> [TestResult] = do
   // -- Multiline string literal codegen ------------------------------------
 
   results.push(assert_eq_str('string literal with embedded newline - escapes to \\n in C++',
-    gen_expr(ss('hello\nworld'), context),
+    print_expr(gen_expr(ss('hello\nworld'), context)),
     'mlc::String("hello\\nworld", 11)'))
 
   results.push(assert_eq_str('string literal with tab - escapes to \\t',
-    gen_expr(ss('a\tb'), context),
+    print_expr(gen_expr(ss('a\tb'), context)),
     'mlc::String("a\\tb", 3)'))
 
   results.push(assert_eq_str('string literal with backslash - escapes to \\\\',
-    gen_expr(ss('a\\b'), context),
+    print_expr(gen_expr(ss('a\\b'), context)),
     'mlc::String("a\\\\b", 3)'))
 
   results.push(assert_eq_str('string literal with double quote - escapes to \\"',
-    gen_expr(ss('say "hi"'), context),
+    print_expr(gen_expr(ss('say "hi"'), context)),
     'mlc::String("say \\"hi\\"", 8)'))
 
   const letpat_else_body = Shared.new(SemanticExpressionInt(0, i32_t(), span_unknown()))
   const letpat_ident = Shared.new(SemanticStatementLetPattern(
     Shared.new(PatternIdent('value', span_unknown())), false, si(7), i32_t(), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let pat ident',
-    gen_stmts_str([letpat_ident], context), 'auto value = 7;\n'))
+    print_cpp_statements(gen_stmts_str([letpat_ident], context)), 'auto value = 7;\n'))
 
   const tuple_pat = Shared.new(PatternTuple(
     [Shared.new(PatternIdent('left', span_unknown())), Shared.new(PatternIdent('right', span_unknown()))],
@@ -617,10 +619,10 @@ export fn codegen_tests() -> [TestResult] = do
   const let_tuple_pair = Shared.new(SemanticStatementLetPattern(
     tuple_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp_as_string: let tuple pair native std::get',
-    gen_stmts_str([let_tuple_pair], context),
+    print_cpp_statements(gen_stmts_str([let_tuple_pair], context)),
     'auto __tmp_0 = pair;\nauto left = std::get<0>(__tmp_0);\nauto right = std::get<1>(__tmp_0);\n'))
   results.push(assert_code_not_contains('gen_stmts_cpp_as_string: let tuple pair no structured binding fragment',
-    gen_stmts_str([let_tuple_pair], context), 'auto ['))
+    print_cpp_statements(gen_stmts_str([let_tuple_pair], context)), 'auto ['))
 
   const tuple_wild_pat = Shared.new(PatternTuple(
     [Shared.new(PatternIdent('left', span_unknown())), Shared.new(PatternWild(span_unknown()))],
@@ -628,7 +630,7 @@ export fn codegen_tests() -> [TestResult] = do
   const let_tuple_wild = Shared.new(SemanticStatementLetPattern(
     tuple_wild_pat, false, sid('pair'), pair_type, false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let tuple pair wild native structured binding',
-    gen_stmts_str([let_tuple_wild], context),
+    print_cpp_statements(gen_stmts_str([let_tuple_wild], context)),
     'auto __tmp_0 = pair;\nauto [left, __1] = __tmp_0;\n'))
 
   const record_tuple_pat = Shared.new(PatternTuple(
@@ -637,7 +639,7 @@ export fn codegen_tests() -> [TestResult] = do
   const let_record_tuple_fallback = Shared.new(SemanticStatementLetPattern(
     record_tuple_pat, false, sid('point'), Shared.new(TNamed('Point')), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let record tuple fallback native structured binding',
-    gen_stmts_str([let_record_tuple_fallback], context),
+    print_cpp_statements(gen_stmts_str([let_record_tuple_fallback], context)),
     'auto __tmp_0 = point;\nauto [first, second] = __tmp_0;\n'))
 
   const unknown_tuple_pat = Shared.new(PatternTuple(
@@ -646,14 +648,14 @@ export fn codegen_tests() -> [TestResult] = do
   const let_unknown_tuple_fallback = Shared.new(SemanticStatementLetPattern(
     unknown_tuple_pat, false, sid('value'), unk_t(), false, letpat_else_body, span_unknown()))
   results.push(assert_eq_str('gen_stmts_cpp: let unknown type tuple fallback native structured binding',
-    gen_stmts_str([let_unknown_tuple_fallback], context),
+    print_cpp_statements(gen_stmts_str([let_unknown_tuple_fallback], context)),
     'auto __tmp_0 = value;\nauto [alpha, __1] = __tmp_0;\n'))
 
   const letpat_ctor_pat = Shared.new(PatternCtor('Some', [Shared.new(PatternIdent("v", span_unknown()))], span_unknown()))
   const letpat_with_else = Shared.new(SemanticStatementLetPattern(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), true, letpat_else_body, span_unknown()))
   const letpat_no_else = Shared.new(SemanticStatementLetPattern(letpat_ctor_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))
-  const letpat_with_else_out = gen_stmts_str([letpat_with_else], context)
-  const letpat_no_else_out = gen_stmts_str([letpat_no_else], context)
+  const letpat_with_else_out = print_cpp_statements(gen_stmts_str([letpat_with_else], context))
+  const letpat_no_else_out = print_cpp_statements(gen_stmts_str([letpat_no_else], context))
   results.push(assert_eq_str('let-else: with else no abort',
     if letpat_with_else_out.contains('abort') then 'abort' else 'no-abort' end, 'no-abort'))
   results.push(assert_eq_str('let-else: without else uses abort',
@@ -670,7 +672,7 @@ export fn codegen_tests() -> [TestResult] = do
   const letpat_ctor_wild = Shared.new(SemanticStatementLetPattern(
     letpat_ctor_wild_pat, false, sid('opt'), Shared.new(TNamed('Opt')), false, letpat_else_body, span_unknown()))
   results.push(assert_code_contains('gen_stmts_cpp: let ctor wild native structured binding',
-    gen_stmts_str([letpat_ctor_wild], context), 'auto [head, __1] = __tmp_1'))
+    print_cpp_statements(gen_stmts_str([letpat_ctor_wild], context)), 'auto [head, __1] = __tmp_1'))
 
   const array_pat = Shared.new(PatternArray(
     [Shared.new(PatternIdent('head', span_unknown()))],
@@ -678,7 +680,7 @@ export fn codegen_tests() -> [TestResult] = do
     span_unknown()))
   const let_array_rest = Shared.new(SemanticStatementLetPattern(
     array_pat, false, sid('items'), Shared.new(TArray(Shared.new(TI32))), false, letpat_else_body, span_unknown()))
-  const let_array_out = gen_stmts_str([let_array_rest], context)
+  const let_array_out = print_cpp_statements(gen_stmts_str([let_array_rest], context))
   results.push(assert_code_contains('gen_stmts_cpp: let array rest native slice',
     let_array_out, 'mlc::Array<int>'))
   results.push(assert_code_contains('gen_stmts_cpp: let array rest cbegin offset',
@@ -688,7 +690,7 @@ export fn codegen_tests() -> [TestResult] = do
   const let_record = Shared.new(SemanticStatementLetPattern(
     record_pat, false, sid('point'), Shared.new(TNamed('Point')), false, letpat_else_body, span_unknown()))
   results.push(assert_code_contains('gen_stmts_cpp: let record field native',
-    gen_stmts_str([let_record], context), '__tmp_0.value'))
+    print_cpp_statements(gen_stmts_str([let_record], context)), '__tmp_0.value'))
 
   // --- Phantom type codegen ---------------------------------------------------
 
@@ -717,7 +719,7 @@ export fn codegen_tests() -> [TestResult] = do
   const phantom_rec_fvals: [Shared<SemanticFieldVal>] = []
   const phantom_rec_expr = Shared.new(SemanticExpressionRecord('Ast', phantom_rec_fvals, phantom_rec_type, span_unknown()))
   results.push(assert_eq_str('phantom record expr: Ast<Unvalidated>{}',
-    gen_expr(phantom_rec_expr, context), 'Ast<Unvalidated>{}'))
+    print_expr(gen_expr(phantom_rec_expr, context)), 'Ast<Unvalidated>{}'))
 
   const h11_program_source = "type Opt<T> = Some(T) | None\nfn f() -> Opt<i64> = Some(42)\n"
   const h11_program = parse_program(tokenize(h11_program_source).tokens)
@@ -735,7 +737,7 @@ export fn codegen_tests() -> [TestResult] = do
     Shared.new(TGeneric("Opt", [Shared.new(TI64)])),
     span_unknown()))
   results.push(assert_eq_str('generic sum ctor: parsed Opt decl emits Some<int64_t>',
-    gen_expr(h11_some_call, h11_context), 'Some<int64_t>{42}'))
+    print_expr(gen_expr(h11_some_call, h11_context)), 'Some<int64_t>{42}'))
 
   results.push(assert_code_contains('generic sum ctor: f() emits Some<int64_t> via pipeline',
     gen_program(h11_program), 'Some<int64_t>{42}'))
@@ -754,19 +756,19 @@ export fn codegen_tests() -> [TestResult] = do
   const char_t = Shared.new(TChar)
 
   results.push(assert_eq_str('c4: f64 literal codegen',
-    gen_expr(Shared.new(SemanticExpressionFloat('3.14', f64_t, span_unknown())), context), '3.14'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionFloat('3.14', f64_t, span_unknown())), context)), '3.14'))
 
   results.push(assert_eq_str('c4: i64 literal codegen',
-    gen_expr(Shared.new(SemanticExpressionI64('42', i64_t, span_unknown())), context), '42'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionI64('42', i64_t, span_unknown())), context)), '42'))
 
   results.push(assert_eq_str('c4: u8 literal codegen',
-    gen_expr(Shared.new(SemanticExpressionU8('255', u8_t, span_unknown())), context), 'static_cast<uint8_t>(255)'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionU8('255', u8_t, span_unknown())), context)), 'static_cast<uint8_t>(255)'))
 
   results.push(assert_eq_str('c4: usize literal codegen',
-    gen_expr(Shared.new(SemanticExpressionUsize('100', usize_t, span_unknown())), context), 'static_cast<size_t>(100)'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionUsize('100', usize_t, span_unknown())), context)), 'static_cast<size_t>(100)'))
 
   results.push(assert_eq_str('c4: char literal codegen',
-    gen_expr(Shared.new(SemanticExpressionChar("a", char_t, span_unknown())), context), 'static_cast<char32_t>(97)'))
+    print_expr(gen_expr(Shared.new(SemanticExpressionChar("a", char_t, span_unknown())), context)), 'static_cast<char32_t>(97)'))
 
   results.push(assert_eq_str('c4: sem_type_to_cpp TI64',
     sem_type_to_cpp(context, i64_t), 'int64_t'))
@@ -784,7 +786,7 @@ export fn codegen_tests() -> [TestResult] = do
     sem_type_to_cpp(context, char_t), 'char32_t'))
 
   const with_body: [Shared<SemanticStatement>] = [Shared.new(SemanticStatementExpr(si(0), span_unknown()))]
-  const with_out = gen_expr(Shared.new(SemanticExpressionWith(si(1), 'res', with_body, unit_t(), span_unknown())), context)
+  const with_out = print_expr(gen_expr(Shared.new(SemanticExpressionWith(si(1), 'res', with_body, unit_t(), span_unknown())), context))
   results.push(assert_eq_str('c5: SemanticExpressionWith contains auto res =',
     if with_out.contains('auto res =') then 'yes' else 'no' end, 'yes'))
   results.push(assert_eq_str('c5: SemanticExpressionWith contains res.drop()',

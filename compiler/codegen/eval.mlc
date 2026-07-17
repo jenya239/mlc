@@ -1,7 +1,8 @@
-// Binding layer: threads gen_expr <-> gen_stmts_str via closures.
+// Binding layer: threads gen_expr <-> gen_stmts via closures.
 // CodegenPass : ExprVisitor<Shared<CppExpression>> lives in expr_visitor_cpp.mlc.
 
 import { SemanticExpression, SemanticStatement } from '../ir/semantic_ir'
+import { CppExpression, CppStatement } from '../cpp_ir/cpp_ast'
 import { CodegenContext, GenStmtsWithContext, GenStmtResult } from './context'
 import {print_expr} from '../cpp_emit/print'
 import * as stmt_eval from './stmt/stmt_eval'
@@ -11,18 +12,21 @@ import { gen_stmts_cpp, print_cpp_statements } from './stmt_cpp'
 fn eval_expr_gen_stmts_callback(
   statements: [Shared<SemanticStatement>],
   codegen_context: CodegenContext
-) -> string =
-  gen_stmts_str(statements, codegen_context)
+) -> [Shared<CppStatement>] =
+  gen_stmts_cpp(statements, codegen_context)
+
+fn gen_expr_as_source(expression: Shared<SemanticExpression>, codegen_context: CodegenContext) -> string =
+  print_expr(gen_expr(expression, codegen_context))
 
 extend CodegenContext {
-  fn gen_stmts_str(self: CodegenContext, statements: [Shared<SemanticStatement>]) -> string =
-    print_cpp_statements(gen_stmts_cpp(statements, self))
+  fn gen_stmts_str(self: CodegenContext, statements: [Shared<SemanticStatement>]) -> [Shared<CppStatement>] =
+    gen_stmts_cpp(statements, self)
 
-  fn gen_expr(self: CodegenContext, expression: Shared<SemanticExpression>) -> string =
-    print_expr(expr_visitor_cpp.eval_expr_cpp(expression, self, eval_expr_gen_stmts_callback))
+  fn gen_expr(self: CodegenContext, expression: Shared<SemanticExpression>) -> Shared<CppExpression> =
+    expr_visitor_cpp.eval_expr_cpp(expression, self, eval_expr_gen_stmts_callback)
 
   fn gen_argument_list(self: CodegenContext, expressions: [Shared<SemanticExpression>]) -> string =
-    expressions.map(expression => gen_expr(expression, self)).join(', ')
+    expressions.map(expression => print_expr(gen_expr(expression, self))).join(', ')
 
   fn gen_try_unwrap(
     self: CodegenContext,
@@ -35,8 +39,7 @@ extend CodegenContext {
       self,
       try_identifier,
       success_line,
-      (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
-        gen_expr(expression, codegen_context))
+      gen_expr_as_source)
 
   fn gen_stmt_with_try(
     self: CodegenContext,
@@ -47,8 +50,7 @@ extend CodegenContext {
       statement,
       self,
       try_counter,
-      (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
-        gen_expr(expression, codegen_context))
+      gen_expr_as_source)
 
   fn gen_stmts_str_with_try(
     self: CodegenContext,
@@ -59,14 +61,13 @@ extend CodegenContext {
       statements,
       self,
       try_counter,
-      (expression: Shared<SemanticExpression>, codegen_context: CodegenContext) =>
-        gen_expr(expression, codegen_context))
+      gen_expr_as_source)
 }
 
-export fn gen_expr(expression: Shared<SemanticExpression>, context: CodegenContext) -> string =
+export fn gen_expr(expression: Shared<SemanticExpression>, context: CodegenContext) -> Shared<CppExpression> =
   context.gen_expr(expression)
 
-export fn gen_stmts_str(statements: [Shared<SemanticStatement>], context: CodegenContext) -> string =
+export fn gen_stmts_str(statements: [Shared<SemanticStatement>], context: CodegenContext) -> [Shared<CppStatement>] =
   context.gen_stmts_str(statements)
 
 export fn gen_argument_list(expressions: [Shared<SemanticExpression>], context: CodegenContext) -> string =

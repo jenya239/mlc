@@ -4,6 +4,7 @@ import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
 import { gen_expr } from '../codegen/eval'
+import {print_expr} from '../cpp_emit/print'
 import { create_codegen_context } from '../codegen/context'
 import { empty_program } from './ast_builders'
 import {
@@ -35,11 +36,11 @@ export fn channel_syntax_tests() -> [TestResult] = do
     channel_receiver, 'send', [Shared.new(SemanticExpressionInt(7, integer_type(), span_unknown()))],
     [0, 0], Shared.new(TBool), span_unknown()))
   const context = create_codegen_context(empty_program())
-  results.push(assert_code_contains('channel send in cpp', gen_expr(send_call, context).to_string(), '.send('))
+  results.push(assert_code_contains('channel send in cpp', print_expr(gen_expr(send_call, context)), '.send('))
 
   const receive_call = Shared.new(SemanticExpressionMethod(
     channel_receiver, 'recv', [], [0], Shared.new(TGeneric('Option', [integer_type()])), span_unknown()))
-  results.push(assert_code_contains('channel recv in cpp', gen_expr(receive_call, context).to_string(), '.receive('))
+  results.push(assert_code_contains('channel recv in cpp', print_expr(gen_expr(receive_call, context)), '.receive('))
 
   results.push(assert_type_generates(
     'Channel type in cpp', context,
