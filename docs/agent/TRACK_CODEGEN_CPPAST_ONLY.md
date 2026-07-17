@@ -87,19 +87,22 @@ of a string.
 ## Known pre-existing blocker (found during this audit, not caused by this track)
 
 `bash scripts/dev_gate_fast.sh` fails on a clean tree building `compiler/out/tests/run_tests`
-through the Ruby bootstrap. Onion (2026-07-17 test-fix turn): (1) nested `match` as
-primary after `&&` inside another arm — fixed in Ruby `parse_primary`; (2) `CaptureAnalyzer`
-`Return.value` → `Return.expr`; (3) `let` reassignment in `region_escape.mlc` → `let mut`;
-(4) pattern binding named `record` (keyword) in `vm/value.mlc`/`native.mlc` → `record_value`.
-**Still red:** `Cannot add string and char` in `BinaryRule` while lowering the tests module
-graph. Tier A remains unusable until that layer is fixed; STEP=2 stays blocked.
+through the Ruby bootstrap. Onion (2026-07-17 test-fix): (1) nested `match` as
+primary after `&&` — Ruby `parse_primary`; (2) `CaptureAnalyzer` `Return.expr` (worktree,
+cursorfs blocks `git add`); (3) `region_escape.mlc` `let mut`; (4) `VmRecord(record)`
+keyword binding → `record_value`; (5) `test_spawn.mlc` `'error['+code+']'` — `']'` is
+char, not string — fixed to `"..."`. **Still red:** after semantic OK, g++ on
+Ruby-generated `compiler/out/tests/*.cpp` fails with missing cross-module names
+(`infer_match::match_exhaustiveness_diagnostic`, `method_arity_after_receiver`, …).
+Tier A unusable until that layer is fixed or `build_tests_fast` stops using Ruby for
+the full compiler+tests graph; STEP=2 stays blocked.
 
 ## Steps
 
 | Step | Item | Status |
 |------|------|--------|
 | 1 | Delete 11 zero-usage functions from `expr.mlc`; verify self-host diff touches only `expr.cpp/.hpp` | **done** (2026-07-17) |
-| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **in progress** — MATCH/`let mut`/`record` keyword fixed; next: `Cannot add string and char` (BinaryRule) while compiling tests graph |
+| test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **in progress** — MATCH/`let mut`/`record`/string+char (`test_spawn` `']'` char lit) fixed; next: Ruby-codegen C++ namespace errors linking `run_tests` |
 | 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer already has `print_statements` | pending |
 | 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | pending |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | pending |

@@ -98,7 +98,7 @@ export fn spawn_tests() -> [TestResult] = do
   results.push(assert_eq_int('spawn mutable capture diagnostic code',
     if first_error_line(
       'fn main() -> Task<i32> = do\n  let mut x = 7\n  spawn do return x end\nend'
-    ).contains('error[' + diagnostic_code_e087() + ']') then 1 else 0 end,
+    ).contains("error[" + diagnostic_code_e087() + "]") then 1 else 0 end,
     1))
 
   results.push(assert_eq_int('spawn local mut inside body ok',
@@ -134,7 +134,7 @@ export fn spawn_tests() -> [TestResult] = do
   results.push(assert_eq_int('bare spawn diagnostic code',
     if first_error_line(
       'fn main() -> i32 = do\n  spawn do 7 end\n  0\nend'
-    ).contains('error[' + diagnostic_code_e089() + ']') then 1 else 0 end,
+    ).contains("error[" + diagnostic_code_e089() + "]") then 1 else 0 end,
     1))
 
   results.push(assert_eq_int('while bare spawn E089',
@@ -155,7 +155,7 @@ export fn spawn_tests() -> [TestResult] = do
   results.push(assert_eq_int('use after move diagnostic code',
     if first_error_line(
       'fn main() -> i32 = do\n  let x = 7\n  let y = move x\n  x\nend'
-    ).contains('error[' + diagnostic_code_e088() + ']') then 1 else 0 end,
+    ).contains("error[" + diagnostic_code_e088() + "]") then 1 else 0 end,
     1))
 
   results.push(assert_eq_int('use after move into spawn E088',

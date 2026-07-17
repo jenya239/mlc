@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 11:20 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — string+char)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | test-fix |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 11:20 |
+| elapsed | ~25 min |
+| done    | Bisected BinaryRule `Cannot add string and char` → `compiler/tests/test_spawn.mlc` lines 101/137/158: `'error['+code+']'` — `']'` lexes as char. Changed three sites to `"error["+…+"]"`. Verified: module-graph semantic transform through `test_spawn` OK. |
+| result  | string+char layer cleared; `dev_gate_fast` then reaches g++ on Ruby-generated `out/tests/*.cpp` and fails namespaces (`infer_match::…`, etc.) — gate killed after ~9 min of g++ noise. test_gate still fail |
+| issues  | CaptureAnalyzer still uncommitted (cursorfs). Foreign untracked `TRACK_EDITOR_CLEAN_ARCHITECTURE.md` left alone. Next layer is structural Ruby codegen of compiler-as-lib, not a one-liner |
+| next    | ROLE=Driver STEP=test-fix TRACK_CODEGEN_CPPAST_ONLY (decide: fix Ruby cross-module qualify OR switch `build_tests_fast.sh` off full Ruby compile of compiler graph) |
+
 ### Turn 2026-07-17 11:05 (Driver TRACK_CODEGEN_CPPAST_ONLY test-fix — peel Ruby bootstrap reds)
 
 | field   | value |
