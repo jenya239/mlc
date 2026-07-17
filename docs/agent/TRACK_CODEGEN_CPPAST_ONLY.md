@@ -4,7 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §2/§2.6. Prior work: [archive/tracks/TRACK_CP
 [archive/tracks/TRACK_CPPGEN.md](../archive/tracks/TRACK_CPPGEN.md) (closed 2026-05, established the
 CppAST layer for leaf expressions — did **not** remove the string glue between them).
 
-## Status: **active** (2026-07-17) — STEP=1/test-fix/2 **done**, STEP=3 next
+## Status: **active** (2026-07-17) — STEP=1/test-fix/2/3 **done**, STEP=4 next
 
 ## Why this track exists
 
@@ -107,7 +107,7 @@ reachable again — Meta should split later.
 | 1 | Delete 11 zero-usage functions from `expr.mlc`; verify self-host diff touches only `expr.cpp/.hpp` | **done** (2026-07-17) |
 | test-fix | Bisect `dev_gate_fast.sh` / Ruby `run_tests` build failure (pre-existing, blocks Tier A) | **done** (2026-07-17) — Decision: no Ruby rebuild in Tier A; `dev_gate_fast.sh` EXIT=0 |
 | 2 | `CppInvokedBlock`/`CppInvokedBlockWithReturn` body: `string` → `[Shared<CppStatement>]`; convert `expr_visitor_cpp.mlc` (2 sites) + `match_gen.mlc` (3) + `record_gen.mlc` (1) construction; printer uses `print_statements`; bridge via `make_invoked_block_body_from_source` | **done** (2026-07-17) |
-| 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | pending |
+| 3 | `CppInvokedWhile`/`CppInvokedFor`/`CppWithBlock` body: same treatment (`expr_visitor_cpp.mlc`, 3 sites) | **done** (2026-07-17) |
 | 4 | `GenStmtsResult.parts` → `[Shared<CppStatement>]` in `context.mlc`; update `append_stmt`/`joined_code` callers across `stmt/stmt_eval.mlc`, `stmt_cpp.mlc` | pending |
 | 5 | `gen_stmts_str`/`gen_expr` in `eval.mlc` stop calling `print_expr`/`print_cpp_statements` internally; return AST nodes; update the ~40 call sites that currently consume the string result | pending |
 | 6 | `GenModuleOut.header/source` → `[Shared<CppDeclaration>]`; single `print_file` call in `codegen/module.mlc` | pending |

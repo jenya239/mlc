@@ -754,7 +754,7 @@ export fn gen_while_via_cpp_visitor(
 ) -> Shared<CppExpression> =
   Shared.new(CppInvokedWhile(
     eval_expr_cpp(condition, context, gen_stmts),
-    gen_stmts(statements, context)))
+    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
 
 export fn gen_for_via_cpp_visitor(
   variable: string,
@@ -766,7 +766,7 @@ export fn gen_for_via_cpp_visitor(
   Shared.new(CppInvokedFor(
     cpp_safe(variable),
     eval_expr_cpp(iterator, context, gen_stmts),
-    gen_stmts(statements, context)))
+    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
 
 export fn gen_record_update_via_cpp_visitor(
   type_name: string,
@@ -807,7 +807,7 @@ export fn gen_with_via_cpp_visitor(
   Shared.new(CppWithBlock(
     eval_expr_cpp(resource, context, gen_stmts),
     binder,
-    gen_stmts(statements, context)))
+    emit_helpers.make_invoked_block_body_from_source(gen_stmts(statements, context))))
 
 fn named_type_name_from_semantic_type(semantic_type: Shared<Type>) -> string =
   match semantic_type { TNamed(name) => name, _ => '' }

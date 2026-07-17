@@ -109,7 +109,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
       mutable_lambda_body))),
     '[&](int value) mutable { return (value + 1); }'))
 
-  const loop_body = 'step();\n'
+  const loop_body = [Shared.new(CppStatementFragment('step();\n'))]
   results.push(assert_eq_str('print_expr CppInvokedWhile',
     print_expr(Shared.new(CppInvokedWhile(Shared.new(CppBool(true)), loop_body))),
     '[&]() {\nwhile (true) {\nstep();\n}\n}()'))
@@ -135,7 +135,10 @@ export fn cpp_printer_tests() -> [TestResult] = do
     '({ auto __q = 7; if (std::get_if<1>(&__q)) return AppError_from(*std::get_if<1>(&__q)); std::get<0>(__q).field0; })'))
 
   results.push(assert_eq_str('print_expr CppWithBlock',
-    print_expr(Shared.new(CppWithBlock(Shared.new(CppIdent('resource')), 'handle', 'handle.use();\n'))),
+    print_expr(Shared.new(CppWithBlock(
+      Shared.new(CppIdent('resource')),
+      'handle',
+      [Shared.new(CppStatementFragment('handle.use();\n'))]))),
     '{\nauto handle = (resource);\nhandle.use();\nhandle.drop();\n}\n'))
 
   results.push(assert_eq_str('print_statement CppReturn',

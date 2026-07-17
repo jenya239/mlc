@@ -584,11 +584,11 @@ fn print_file_node(file: Shared<CppFile>) -> string = do
   end
 end
 
-fn invoked_while_expression(condition: Shared<CppExpression>, body_statements: string) -> string =
-  `[&]() {\nwhile (${print_expr(condition)}) {\n${body_statements}}\n}()`
+fn invoked_while_expression(condition: Shared<CppExpression>, body_statements: [Shared<CppStatement>]) -> string =
+  `[&]() {\nwhile (${print_expr(condition)}) {\n${print_statements(body_statements, 0)}}\n}()`
 
-fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpression>, body_statements: string) -> string =
-  `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${body_statements}}\n}()`
+fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpression>, body_statements: [Shared<CppStatement>]) -> string =
+  `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${print_statements(body_statements, 0)}}\n}()`
 
 fn invoked_block_expression(body_statements: [Shared<CppStatement>]) -> string =
   `[&]() {\n${print_statements(body_statements, 0)}}()`
@@ -603,8 +603,8 @@ fn question_try_expression(inner: Shared<CppExpression>, from_converter_name: st
     `({ auto __q = ${print_expr(inner)}; if (std::get_if<1>(&__q)) return *std::get_if<1>(&__q); std::get<0>(__q).field0; })`
   end
 
-fn with_block_expression(resource: Shared<CppExpression>, binder: string, body_statements: string) -> string =
-  `{\nauto ${binder} = (${print_expr(resource)});\n${body_statements}${binder}.drop();\n}\n`
+fn with_block_expression(resource: Shared<CppExpression>, binder: string, body_statements: [Shared<CppStatement>]) -> string =
+  `{\nauto ${binder} = (${print_expr(resource)});\n${print_statements(body_statements, 0)}${binder}.drop();\n}\n`
 
 fn lambda_expression(capture_prefix: string, parameters_code: string, return_type_code: string, body_code: string) -> string =
   `${capture_prefix}(${parameters_code}) -> ${return_type_code} {\n${body_code}\n}`
