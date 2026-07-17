@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 00:50 (Planner PLAN_QUEUE pick-next)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 00:45 |
+| elapsed | ~5 min |
+| done    | After §44 Critic archive: queue head = §43 FOLDER_NAV STEP=3 Critic (before §45 STEP=4 Critic, before §46 #1 Decision). Bumped CONTINUITY rev `editor-sublime-target`→`folder-nav-critic`; synced DEVELOPMENT Current priority + CONTINUITY agent-track rows; no PLAN status change (already STEP=3 Critic next) |
+| result  | pick: Critic TRACK_EDITOR_FOLDER_NAV STEP=3 |
+| issues  | foreign dirty `compiler/out/**` + CaptureAnalyzer left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_FOLDER_NAV |
+
 ### Turn 2026-07-18 00:40 (Critic TRACK_CODEGEN_CPPAST_ONLY critique-audit)
 
 | field   | value |
