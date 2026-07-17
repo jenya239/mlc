@@ -22,7 +22,7 @@ import {
   CppExpression, CppStatement, CppCall,
   CppAutoDecl, CppVarDecl, CppConstDecl, CppConstexprAutoDecl,
   CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor,
-  CppStructuredBinding, CppStatementFragment
+  CppStructuredBinding, CppStatementFragment, CppStatementSequence
 } from '../cpp_ir/cpp_ast'
 import {print_statement} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
@@ -149,7 +149,8 @@ fn print_cpp_statement_line(statement: Shared<CppStatement>) -> string =
     CppIf(_, _, _) => print_cpp_statement_default_line(statement),
     CppWhile(_, _) => print_cpp_statement_default_line(statement),
     CppFor(_, _, _) => print_cpp_statement_default_line(statement),
-    CppStructuredBinding(_, _) => print_cpp_statement_default_line(statement)
+    CppStructuredBinding(_, _) => print_cpp_statement_default_line(statement),
+    CppStatementSequence(_) => print_cpp_statement_default_line(statement)
   }
 
 fn cpp_stmt_fragment_from_string_output(output: string) -> Shared<CppStatement> =

@@ -17,12 +17,8 @@ import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
 import { pattern_binding_name_list } from '../expr/match_analysis'
-import {print_statement} from '../../cpp_emit/print'
 
 export type GenLetPatternCppResult = GenLetPatternCppResult { statement: Shared<CppStatement>, codegen_context: CodegenContext }
-
-fn print_statements_as_fragment(statements: [Shared<CppStatement>]) -> string =
-  statements.map(statement => print_statement(statement) + `\n`).join('')
 
 fn member_access(object_name: string, field_name: string) -> Shared<CppExpression> =
   Shared.new(CppMember(emit_helpers.make_identifier_cpp_expression(object_name), field_name, false))
@@ -163,7 +159,7 @@ fn let_pattern_block(statements: [Shared<CppStatement>], value_expression: Share
     block_statements.push(statements[index])
     index = index + 1
   end
-  emit_helpers.make_fragment_cpp_statement(print_statements_as_fragment(block_statements))
+  emit_helpers.make_sequence_cpp_statement(block_statements)
 end
 
 fn record_codegen_name_from_value_type(value_type: Shared<Type>) -> string =
@@ -405,7 +401,7 @@ fn ctor_pattern_cpp_result(
     end
   end
   GenLetPatternCppResult {
-    statement: emit_helpers.make_fragment_cpp_statement(print_statements_as_fragment(constructor_statements)),
+    statement: emit_helpers.make_sequence_cpp_statement(constructor_statements),
     codegen_context: updated_codegen_context
   }
 end

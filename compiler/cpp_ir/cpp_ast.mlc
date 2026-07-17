@@ -31,6 +31,7 @@ export type CppStatement =
   | CppWhile(Shared<CppExpression>, Shared<CppStatement>)
   | CppFor(string, Shared<CppExpression>, [Shared<CppStatement>])
   | CppStructuredBinding([string], Shared<CppExpression>)
+  | CppStatementSequence([Shared<CppStatement>])
   | CppStatementFragment(string)
 
 export type CppExpression =

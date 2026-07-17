@@ -182,12 +182,15 @@ fn print_statements(statements: [Shared<CppStatement>], depth: i32) -> string =
 fn print_statement_at_depth(statement: Shared<CppStatement>, depth: i32) -> string =
   match statement {
     CppStatementFragment(fragment) => fragment,
+    CppStatementSequence(statements) => print_statements(statements, depth),
     _ => indent_text(depth) + print_statement_node(statement, depth)
   }
 
 fn print_statement_body(statement: Shared<CppStatement>, depth: i32) -> string =
   match statement {
     CppBlock(statements) =>
+      formatted_block(print_statements(statements, depth + 1), depth),
+    CppStatementSequence(statements) =>
       formatted_block(print_statements(statements, depth + 1), depth),
     CppIf(_, _, _) =>
       print_statement_node(statement, depth),
@@ -520,6 +523,7 @@ fn print_statement_node(statement: Shared<CppStatement>, depth: i32) -> string =
       ),
     CppStructuredBinding(binding_names, initializer) =>
       structured_binding_declaration(binding_names, print_expr(initializer)),
+    CppStatementSequence(statements) => print_statements(statements, depth),
     CppStatementFragment(fragment) => fragment
   }
 

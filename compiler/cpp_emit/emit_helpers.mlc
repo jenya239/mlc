@@ -1,6 +1,6 @@
 // Builders for leaf CppExpression / CppStatement nodes (Phase 2). No dependency on codegen/.
 
-import { CppExpression, CppInt, CppStr, CppBool, CppIdent, CppType, CppTypeName, CppStatement, CppAutoDecl, CppVarDecl, CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStatementFragment, CppDeclaration, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
+import { CppExpression, CppInt, CppStr, CppBool, CppIdent, CppType, CppTypeName, CppStatement, CppAutoDecl, CppVarDecl, CppReturn, CppExpressionStatement, CppBlock, CppIf, CppWhile, CppFor, CppConstexprAutoDecl, CppStructuredBinding, CppStatementSequence, CppStatementFragment, CppDeclaration, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
 
 export fn make_integer_cpp_expression(integer_value: i32) -> Shared<CppExpression> =
   Shared.new(CppInt(integer_value))
@@ -47,6 +47,9 @@ export fn make_continue_cpp_statement() -> Shared<CppStatement> =
 
 export fn make_block_cpp_statement(statements: [Shared<CppStatement>]) -> Shared<CppStatement> =
   Shared.new(CppBlock(statements))
+
+export fn make_sequence_cpp_statement(statements: [Shared<CppStatement>]) -> Shared<CppStatement> =
+  Shared.new(CppStatementSequence(statements))
 
 export fn make_if_cpp_statement(
   condition: Shared<CppExpression>,

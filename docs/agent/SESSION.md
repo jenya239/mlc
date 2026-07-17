@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-17 14:35 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7b1 — CppStatementSequence + let_pat)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 7b1 |
+| track   | TRACK_CODEGEN_CPPAST_ONLY |
+| started | 2026-07-17 14:18 |
+| elapsed | ~17 min (rebuild + Tier B) |
+| done    | Added `CppStatementSequence` (flat print); `let_pat_cpp` uses Sequence not Fragment; printer/tests updated. Split 7b → 7b1/7b2/7b3 |
+| result  | `--check-only` OK; self-host: cpp_ast/print/emit_helpers/let_pat_cpp/stmt_cpp (+ lexer emission indent from Sequence); `dev_gate_fast` EXIT=0; `build_tests.sh` EXIT=0 |
+| issues  | CaptureAnalyzer + out left alone. Guarded-match/FFI/GenStmtResult/JSON → 7b2–7b3 |
+| next    | ROLE=Driver STEP=7b2 TRACK_CODEGEN_CPPAST_ONLY |
+
 ### Turn 2026-07-17 14:20 (Driver TRACK_CODEGEN_CPPAST_ONLY STEP=7a — kill invoked-block bridge + easy Fragments)
 
 | field   | value |
