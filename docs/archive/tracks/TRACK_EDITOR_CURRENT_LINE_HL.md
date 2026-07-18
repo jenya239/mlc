@@ -1,14 +1,38 @@
 # Track: Editor current-line highlight (draw report)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#11**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#11**.
 Caret line has no background band in the draw path — only selection/find
 rects exist. Review gate: `current_line_highlight_draws` (L2). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L2 + compile. Anti-false-done:
+`820c6549`…`c1adb524` (STEP=0–2). Wire present:
+`editor_ux_current_line_draw_report` (caret line, full text-viewport width,
+scroll-aware, visible-only); `demo_live` panel tint 0.55 under find/selection.
+**reopen: none**.
+
+Honest residual: no Theme `current_line_*` fields; wrap visual-row band out of
+scope (non-wrap logical line); L2 geometry only (not RGB); band may misalign
+slightly vs wrap rows in live demo.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_current_line_highlight_draws.sh` | `ux_ok current_line_highlight_draws` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#12 EDITOR_CRLF_PRESERVE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `820c6549` | Decision freeze + open |
+| 1 | `d7a12750` | L2 red harness |
+| 2 | `c1adb524` | draw report + demo_live panel tint |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -40,7 +64,7 @@ rects exist. Review gate: `current_line_highlight_draws` (L2). Size **S**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenario first (`current_line_highlight_draws`) | **done** (red: `ux_fail current_line highlights count got 0`) |
 | 2 | draw report + demo_live wire (panel tint) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

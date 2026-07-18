@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10 done; `#11 EDITOR_CURRENT_LINE_HL` active
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11 done; next `#12 EDITOR_CRLF_PRESERVE`
 
 ## How to use this backlog
 
@@ -46,7 +46,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | **done** — [archive/tracks/TRACK_EDITOR_GOTO_LINE](../archive/tracks/TRACK_EDITOR_GOTO_LINE.md) |
 | 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | **done** — [archive/tracks/TRACK_EDITOR_DRAG_AUTOSCROLL](../archive/tracks/TRACK_EDITOR_DRAG_AUTOSCROLL.md) |
 | 10 | `EDITOR_AUTO_INDENT` | Enter preserves leading indent of current line | `enter_keeps_indent` | S | **done** — [archive/tracks/TRACK_EDITOR_AUTO_INDENT](../archive/tracks/TRACK_EDITOR_AUTO_INDENT.md) |
-| 11 | `EDITOR_CURRENT_LINE_HL` | Highlight current line in draw report | `current_line_highlight_draws` (L2) | S | **active** — [TRACK_EDITOR_CURRENT_LINE_HL](TRACK_EDITOR_CURRENT_LINE_HL.md) |
+| 11 | `EDITOR_CURRENT_LINE_HL` | Highlight current line in draw report | `current_line_highlight_draws` (L2) | S | **done** — [archive/tracks/TRACK_EDITOR_CURRENT_LINE_HL](../archive/tracks/TRACK_EDITOR_CURRENT_LINE_HL.md) |
 | 12 | `EDITOR_CRLF_PRESERVE` | Detect CRLF/LF on open, preserve style on save | `crlf_preserved_on_save` (L0) | M | pending |
 | 13 | `EDITOR_ENCODING_GUARD` | BOM detect + UTF-8 validity + refuse binary files | `binary_file_refused`, `utf8_bom_detected` | M | pending |
 | 14 | `EDITOR_REPLACE` | Replace-one / replace-all on top of Find | `replace_one_and_all` | M | pending |
