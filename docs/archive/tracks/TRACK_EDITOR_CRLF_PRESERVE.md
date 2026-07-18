@@ -1,15 +1,39 @@
 # Track: Editor CRLF/LF preserve on open+save
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#12**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#12**.
 Open loads raw bytes; edits insert `"\n"`; save writes `document_to_string`
 as-is — CRLF files can become LF/mixed. Review gate: `crlf_preserved_on_save`
 (L0). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L0 + save_unit + compile. Anti-false-done:
+`84e3ab53`…`2c786f3a` (STEP=0–2). Wire present: `detect_line_ending` +
+`normalize_newlines_to_lf` on `open_buffer_from_path`; `OpenBuffer.line_ending`;
+`encode_for_save` CRLF on save. **reopen: none**.
+
+Honest residual: no UI line-ending picker; `open_buffer_from_text` stays LF
+default (no detect); mixed per-line not preserved (whole-file mode); encoding/BOM
+→ #13.
+
+| Gate | Result |
+|------|--------|
+| `run_editor_crlf_preserved_on_save.sh` | `[mlc-editor] crlf_preserved_on_save ok` EXIT=0 |
+| `run_editor_save_unit.sh` | `[mlc-editor] save_unit ok` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#13 EDITOR_ENCODING_GUARD`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `84e3ab53` | Decision freeze + open |
+| 1 | `8709d489` | L0 red harness |
+| 2 | `2c786f3a` | detect/normalize + save convert |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -41,7 +65,7 @@ as-is — CRLF files can become LF/mixed. Review gate: `crlf_preserved_on_save`
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L0 scenario first (`crlf_preserved_on_save`) | **done** (red: `crlf_fail not normalized to LF`) |
 | 2 | detect + normalize + OpenBuffer.line_ending + save convert | **done** (`crlf_preserved_on_save ok`; save_unit; demo compile) |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_CRLF_PRESERVE` (§46 `#12`).
-**`TRACK_EDITOR_CRLF_PRESERVE` (§46 #12)** STEP=2 done; awaiting Critic.
+**Queue head:** Planner pick-next (§46 `#13 EDITOR_ENCODING_GUARD`).
+**`TRACK_EDITOR_CRLF_PRESERVE` (§46 #12)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_CURRENT_LINE_HL` (§46 #11)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_AUTO_INDENT` (§46 #10)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_DRAG_AUTOSCROLL` (§46 #9)** closed 2026-07-18; archived.
