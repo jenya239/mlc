@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 01:35 (Planner TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_BRACKET_AUTOCLOSE |
+| started | 2026-07-19 01:30 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_BRACKET_AUTOCLOSE.md`; Decision: pairs `()[]{}""`; open→pair+caret between; skip-over closer; selection wrap on opener; L1 `typing_paren_autocloses`; PLAN/UX_BACKLOG #18 → active |
+| verify  | track file + PLAN §46 + backlog #18 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_BRACKET_AUTOCLOSE |
+
 ### Turn 2026-07-19 01:25 (Critic TRACK_EDITOR_HORIZONTAL_SCROLL critique-audit)
 
 | field   | value |
