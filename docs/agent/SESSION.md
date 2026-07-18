@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 05:15 (Driver TRACK_EDITOR_SESSION_CARET_RESTORE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SESSION_CARET_RESTORE |
+| started | 2026-07-19 05:05 |
+| elapsed | ~10 min |
+| done    | View arrays on `WorkspaceSession` + `set_active_view`/`active_view`; encode omits `view=` (stub); L1 `session_restore_caret` + `run_ux_session_restore_caret.sh` → red `ux_fail session_restore_caret caret` |
+| verify  | session script exit 1 red; `ux_ok toggle_line_comment`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SESSION_CARET_RESTORE |
+
 ### Turn 2026-07-19 05:00 (Planner TRACK_EDITOR_SESSION_CARET_RESTORE STEP=0)
 
 | field   | value |

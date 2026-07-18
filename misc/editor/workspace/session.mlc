@@ -23,11 +23,37 @@ extern fn file_exists(path: string) -> bool
 export type WorkspaceSession = {
   root: string,
   paths: [string],
-  active_index: i32
+  active_index: i32,
+  carets: [i32],
+  scroll_ys: [i32],
+  scroll_xs: [i32]
 }
 
+export type SessionActiveView = {
+  caret: i32,
+  scroll_offset_y: i32,
+  scroll_offset_x: i32
+}
+
+fn zero_views(count: i32) -> [i32] = do
+  let mut values: [i32] = []
+  let mut index = 0
+  while index < count do
+    values.push(0)
+    index = index + 1
+  end
+  values
+end
+
 export fn workspace_session_new(root: string) -> WorkspaceSession =
-  WorkspaceSession { root: root, paths: [], active_index: 0 - 1 }
+  WorkspaceSession {
+    root: root,
+    paths: [],
+    active_index: 0 - 1,
+    carets: [],
+    scroll_ys: [],
+    scroll_xs: []
+  }
 
 export fn workspace_session_from_tabs(
   root: string,
@@ -39,10 +65,81 @@ export fn workspace_session_from_tabs(
     paths.push(tabs.tabs[index].path)
     index = index + 1
   end
+  const count = paths.length()
   WorkspaceSession {
     root: root,
     paths: paths,
-    active_index: tabs.active_index
+    active_index: tabs.active_index,
+    carets: zero_views(count),
+    scroll_ys: zero_views(count),
+    scroll_xs: zero_views(count)
+  }
+end
+
+// STEP=1 stub: stores in-memory views; encode below still omits view= lines (red until STEP=2).
+export fn workspace_session_set_active_view(
+  session: WorkspaceSession,
+  caret: i32,
+  scroll_offset_y: i32,
+  scroll_offset_x: i32
+) -> WorkspaceSession = do
+  const index = session.active_index
+  if index < 0 || index >= session.paths.length() then
+    return session
+  end
+  let mut carets: [i32] = []
+  let mut scroll_ys: [i32] = []
+  let mut scroll_xs: [i32] = []
+  let mut cursor = 0
+  while cursor < session.paths.length() do
+    if cursor == index then
+      carets.push(caret)
+      scroll_ys.push(scroll_offset_y)
+      scroll_xs.push(scroll_offset_x)
+    else
+      let mut previous_caret = 0
+      let mut previous_scroll_y = 0
+      let mut previous_scroll_x = 0
+      if cursor < session.carets.length() then
+        previous_caret = session.carets[cursor]
+      end
+      if cursor < session.scroll_ys.length() then
+        previous_scroll_y = session.scroll_ys[cursor]
+      end
+      if cursor < session.scroll_xs.length() then
+        previous_scroll_x = session.scroll_xs[cursor]
+      end
+      carets.push(previous_caret)
+      scroll_ys.push(previous_scroll_y)
+      scroll_xs.push(previous_scroll_x)
+    end
+    cursor = cursor + 1
+  end
+  WorkspaceSession {
+    root: session.root,
+    paths: session.paths,
+    active_index: session.active_index,
+    carets: carets,
+    scroll_ys: scroll_ys,
+    scroll_xs: scroll_xs
+  }
+end
+
+export fn workspace_session_active_view(
+  session: WorkspaceSession
+) -> SessionActiveView = do
+  const index = session.active_index
+  if index < 0 || index >= session.carets.length() then
+    return SessionActiveView {
+      caret: 0,
+      scroll_offset_y: 0,
+      scroll_offset_x: 0
+    }
+  end
+  SessionActiveView {
+    caret: session.carets[index],
+    scroll_offset_y: session.scroll_ys[index],
+    scroll_offset_x: session.scroll_xs[index]
   }
 end
 
@@ -52,6 +149,7 @@ export fn workspace_session_encode(session: WorkspaceSession) -> string = do
   let mut index = 0
   while index < session.paths.length() do
     text = text + "file=" + session.paths[index] + "\n"
+    // STEP=1: intentionally omit view= lines (persist in STEP=2).
     index = index + 1
   end
   text
@@ -131,7 +229,15 @@ export fn workspace_session_decode(text: string) -> WorkspaceSession = do
     end
     index = index + 1
   end
-  WorkspaceSession { root: root, paths: paths, active_index: active_index }
+  const count = paths.length()
+  WorkspaceSession {
+    root: root,
+    paths: paths,
+    active_index: active_index,
+    carets: zero_views(count),
+    scroll_ys: zero_views(count),
+    scroll_xs: zero_views(count)
+  }
 end
 
 export fn workspace_session_save(

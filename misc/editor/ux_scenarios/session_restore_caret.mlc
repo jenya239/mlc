@@ -1,0 +1,36 @@
+// TRACK_EDITOR_SESSION_CARET_RESTORE STEP=1 — L1: session_restore_caret (red until STEP=2).
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import {
+  workspace_session_from_tabs,
+  workspace_session_set_active_view,
+  workspace_session_encode,
+  workspace_session_decode,
+  workspace_session_active_view
+} from '../workspace/session'
+
+fn main() -> i32 = do
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "hello world")
+
+  let mut session = workspace_session_from_tabs("/proj", tabs)
+  session = workspace_session_set_active_view(session, 5, 40, 0)
+
+  const encoded = workspace_session_encode(session)
+  const decoded = workspace_session_decode(encoded)
+  const view = workspace_session_active_view(decoded)
+
+  if view.caret != 5 then
+    println("ux_fail session_restore_caret caret")
+    return 1
+  end
+  if view.scroll_offset_y != 40 then
+    println("ux_fail session_restore_caret scroll_y")
+    return 2
+  end
+
+  println("ux_ok session_restore_caret")
+  0
+end
