@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#24**.
 Trailing spaces/tabs at EOL are invisible in the live draw path. Review
 gate: `trailing_ws_visualized` (L2). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L2 scenario first (`trailing_ws_visualized`) red against stub.
+**STEP=2** — draw report + demo_live wire
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -39,7 +39,7 @@ gate: `trailing_ws_visualized` (L2). Size **S**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L2 scenario first (`trailing_ws_visualized`) | pending |
+| 1 | L2 scenario first (`trailing_ws_visualized`) | **done** (2026-07-19) — stub red: `ux_fail trailing_ws_visualized count got 0` |
 | <!-- sub-steps: 1) scenario + run script; 2) stub draw report → red; 3) demo_live_fs_compile + current_line regression green --> |
 | 2 | draw report + demo_live wire | pending |
 | <!-- sub-steps: 1) trailing run detect + visible geometry; 2) demo_live solid rects; 3) L2 green --> |

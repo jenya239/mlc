@@ -1,0 +1,87 @@
+// TRACK_EDITOR_TRAILING_WS_VIZ STEP=1 — L2: trailing whitespace draw report geometry.
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import { editor_ux_trailing_ws_draw_report } from '../ux/trailing_ws'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  // Line 0 trailing spaces; line 1 clean; line 2 trailing space at EOF.
+  state = editor_ux_insert_text(state, "aaa  \nbbb\nccc ")
+
+  const report = editor_ux_trailing_ws_draw_report(state, metrics)
+  if report.highlights.length() != 2 then
+    println(
+      "ux_fail trailing_ws_visualized count got " +
+        report.highlights.length().to_string()
+    )
+    return 1
+  end
+  const first = report.highlights[0]
+  if first.line != 0 then
+    println("ux_fail trailing_ws_visualized first line")
+    return 2
+  end
+  if first.height != metrics.line_height then
+    println("ux_fail trailing_ws_visualized first height")
+    return 3
+  end
+  if first.width <= 0 then
+    println("ux_fail trailing_ws_visualized first width")
+    return 4
+  end
+  const second = report.highlights[1]
+  if second.line != 2 then
+    println("ux_fail trailing_ws_visualized second line")
+    return 5
+  end
+  if second.height != metrics.line_height then
+    println("ux_fail trailing_ws_visualized second height")
+    return 6
+  end
+  if second.width <= 0 then
+    println("ux_fail trailing_ws_visualized second width")
+    return 7
+  end
+
+  println("ux_ok trailing_ws_visualized")
+  0
+end

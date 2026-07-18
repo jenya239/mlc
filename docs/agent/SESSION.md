@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 08:30 (Driver TRACK_EDITOR_TRAILING_WS_VIZ STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TRAILING_WS_VIZ |
+| started | 2026-07-19 08:20 |
+| elapsed | ~10 min |
+| done    | Stub `ux/trailing_ws.mlc` (empty report); L2 `trailing_ws_visualized` + `run_ux_trailing_ws_visualized.sh` → red `ux_fail trailing_ws_visualized count got 0` |
+| verify  | trailing script exit 1 red; `ux_ok current_line_highlight_draws`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TRAILING_WS_VIZ |
+
 ### Turn 2026-07-19 08:15 (Planner TRACK_EDITOR_TRAILING_WS_VIZ STEP=0)
 
 | field   | value |

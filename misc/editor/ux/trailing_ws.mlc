@@ -1,0 +1,26 @@
+// TRACK_EDITOR_TRAILING_WS_VIZ STEP=1 — stub trailing-ws draw report (red until STEP=2).
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+
+export type TrailingWsHighlight = {
+  line: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type TrailingWsDrawReport = {
+  highlights: [TrailingWsHighlight]
+}
+
+// Stub: empty report until STEP=2 implements trailing-run geometry.
+export fn editor_ux_trailing_ws_draw_report(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> TrailingWsDrawReport = do
+  let _unused_width = state.window_width
+  let _unused_line_height = metrics.line_height
+  let mut highlights: [TrailingWsHighlight] = []
+  TrailingWsDrawReport { highlights: highlights }
+end
