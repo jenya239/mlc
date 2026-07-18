@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:00 (Planner TRACK_EDITOR_CURRENT_LINE_HL STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_CURRENT_LINE_HL |
+| started | 2026-07-18 14:55 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_CURRENT_LINE_HL.md`; Decision: caret-line full-viewport draw report (`editor_ux_current_line_draw_report`); live panel tint; L2 `current_line_highlight_draws`; PLAN/UX_BACKLOG #11 → active |
+| verify  | track file + PLAN §46 + backlog #11 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CURRENT_LINE_HL |
+
 ### Turn 2026-07-18 14:50 (Critic TRACK_EDITOR_AUTO_INDENT critique-audit)
 
 | field   | value |
