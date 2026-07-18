@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 02:30 (Planner TRACK_EDITOR_COMMENT_TOGGLE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE |
+| started | 2026-07-19 02:25 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_COMMENT_TOGGLE.md`; Decision: prefix by language (`mlc`/`cpp`→`//`, `ruby`→`#`); Sublime all-lines toggle; `CmdToggleLineComment` Ctrl+/; L1 `toggle_line_comment`; PLAN/UX_BACKLOG #19 → active |
+| verify  | track file + PLAN §46 + backlog #19 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_COMMENT_TOGGLE |
+
 ### Turn 2026-07-19 02:20 (Critic TRACK_EDITOR_BRACKET_AUTOCLOSE critique-audit)
 
 | field   | value |
