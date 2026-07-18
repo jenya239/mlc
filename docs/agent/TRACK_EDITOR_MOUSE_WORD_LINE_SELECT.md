@@ -5,12 +5,18 @@ Single-click caret via `nav_click` / `editor_ux_click_text` exists; no
 click-count / timing; double/triple do not select word/line. Word edges
 already in `document/word_boundary.mlc` (#3).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L2 scenarios first: `double_click_selects_word` +
-`triple_click_selects_line` (Standing discipline); red harness if needed.
+**STEP=2** — multi-click detector + word/line select + `demo_live` wire;
+both L2 scenarios green + compile.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `ux/multi_click.mlc` (`editor_ux_apply_multi_click` → always caret)
+- L2 red: `double_click_selects_word`, `triple_click_selects_line` (+ run scripts)
+- `demo_live_fs_compile_ok`
 
 ### STEP=0 done (2026-07-18)
 
@@ -43,15 +49,13 @@ already in `document/word_boundary.mlc` (#3).
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L2 scenarios first (`double_click_selects_word`, `triple_click_selects_line`) | scenario fails or harness ready |
+| 1 | L2 scenarios first (`double_click_selects_word`, `triple_click_selects_line`) | **done** (red harness) |
 | 2 | multi-click detector + word/line select + `demo_live` wire | scenarios + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/double_click_selects_word.mlc` + `triple_click_selects_line.mlc` (+ run scripts).
-2. Prefer red before STEP=2 (stub counted-click returns single-click caret).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Multi-click state + word/line selection helpers; unit if cheap.

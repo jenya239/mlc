@@ -1,0 +1,43 @@
+// TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=1 — stub multi-click (red until STEP=2).
+import { LineIndex } from '../document/line_index'
+import {
+  EditorSelection,
+  selection_collapsed
+} from '../document/selection'
+
+export type MultiClickState = {
+  last_click_ms: i32,
+  last_click_offset: i32,
+  click_count: i32
+}
+
+export type MultiClickResult = {
+  state: MultiClickState,
+  selection: EditorSelection
+}
+
+export fn editor_ux_multi_click_new() -> MultiClickState =
+  MultiClickState {
+    last_click_ms: 0 - 1,
+    last_click_offset: 0 - 1,
+    click_count: 0
+  }
+
+// Stub: always single-click caret (ignore count/timing until STEP=2).
+export fn editor_ux_apply_multi_click(
+  line_index: LineIndex,
+  multi: MultiClickState,
+  click_offset: i32,
+  clock_ms: i32
+) -> MultiClickResult = do
+  let _unused_index = line_index.text_length
+  let _unused_multi = multi.click_count
+  MultiClickResult {
+    state: MultiClickState {
+      last_click_ms: clock_ms,
+      last_click_offset: click_offset,
+      click_count: 1
+    },
+    selection: selection_collapsed(click_offset)
+  }
+end

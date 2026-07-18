@@ -1,0 +1,35 @@
+// TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=1 — L2: double-click selects word.
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_start,
+  selection_end,
+  selection_is_empty
+} from '../document/selection'
+import {
+  editor_ux_multi_click_new,
+  editor_ux_apply_multi_click
+} from '../ux/multi_click'
+
+fn main() -> i32 = do
+  const index = line_index_from_string("hello world")
+  let mut multi = editor_ux_multi_click_new()
+  // Click inside "hello" (offset 2).
+  let mut result = editor_ux_apply_multi_click(index, multi, 2, 0)
+  multi = result.state
+  result = editor_ux_apply_multi_click(index, multi, 2, 100)
+  if selection_is_empty(result.selection) then
+    println("ux_fail double_click empty")
+    return 1
+  end
+  if selection_start(result.selection) != 0 then
+    println("ux_fail double_click word start")
+    return 2
+  end
+  if selection_end(result.selection) != 5 then
+    println("ux_fail double_click word end")
+    return 3
+  end
+
+  println("ux_ok double_click_selects_word")
+  0
+end

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:15 (Driver TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+| started | 2026-07-18 16:10 |
+| elapsed | ~5 min |
+| done    | Stub `ux/multi_click.mlc`; L2 red harness `double_click_selects_word` + `triple_click_selects_line` (+ run scripts); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_double_click_selects_word.sh` exit 1 (`ux_fail double_click empty`); `run_ux_triple_click_selects_line.sh` exit 1 (`ux_fail triple_click empty`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenarios red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+
 ### Turn 2026-07-18 16:05 (Planner PLAN_QUEUE pick-next → open #4)
 
 | field   | value |
