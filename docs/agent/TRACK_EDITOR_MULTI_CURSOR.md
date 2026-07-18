@@ -5,11 +5,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#23**
 extra carets; typing cannot fan out. Review gates: `multi_cursor_model`
 (+ L1 insert). Size **L**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=3 done; next Critic
 
 ## Next step
 
-**STEP=3** — ux/demo_live Ctrl+click add + typing path when multi.
+**STEP=4** — Critic: gates; archive
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -45,7 +45,7 @@ extra carets; typing cannot fan out. Review gates: `multi_cursor_model`
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`multi_cursor_model`) | **done** (2026-07-19) — stub red: `ux_fail multi_cursor_model count` |
 | 2 | `EditorMultiSelection` + add/clear/primary + insert-multi (collapsed) | **done** (2026-07-19) — L1 green `ux_ok multi_cursor_model` |
-| 3 | ux/demo_live Ctrl+click add + typing path when multi | pending |
+| 3 | ux/demo_live Ctrl+click add + typing path when multi | **done** (2026-07-19) — `editor_ux_add_cursor` + `editor_app_insert_text_with_multi`; demo_live Ctrl+click / typing wire |
 | <!-- sub-steps: 1) editor_ux_add_cursor / insert wire; 2) demo_live Ctrl+click; 3) gates green --> |
 | 4 | Critic: gates; archive | pending |
 

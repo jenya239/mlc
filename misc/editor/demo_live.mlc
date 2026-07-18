@@ -177,6 +177,15 @@ import {
   selection_set_focus
 } from './document/selection'
 import {
+  multi_selection_from_single,
+  multi_selection_primary,
+  multi_selection_count,
+  EditorMultiSelection
+} from './document/multi_selection'
+import {
+  editor_ux_add_cursor
+} from './ux/multi_cursor'
+import {
   editor_view_metrics_new,
   nav_click,
   nav_drag
@@ -282,6 +291,7 @@ import {
   editor_app_set_scroll_y,
   editor_app_set_scroll_x,
   editor_app_insert_text,
+  editor_app_insert_text_with_multi,
   editor_app_toggle_line_comment,
   editor_app_insert_newline,
   editor_app_backspace,
@@ -661,6 +671,7 @@ fn main() -> i32 = do
   let mut last_tree_click_frame = 0 - 1000
   let mut last_tree_click_path = ""
   let mut multi_click = editor_ux_multi_click_new()
+  let mut multi = multi_selection_from_single(app.ux.selection)
   let mut find_session = find_session_new()
   let mut dragging_tab_index = 0 - 1
 
@@ -944,6 +955,10 @@ fn main() -> i32 = do
             selection = editor_ux_shift_click_extend(
               line_index, selection, click_offset, 1
             )
+            multi = multi_selection_from_single(selection)
+          else if glfw_gl_mod_ctrl_down() != 0 then
+            multi = editor_ux_add_cursor(multi, click_offset)
+            selection = multi_selection_primary(multi)
           else
             const click_clock_ms = frame_index * 16
             const multi_result = editor_ux_apply_multi_click(
@@ -953,6 +968,7 @@ fn main() -> i32 = do
             selection = selection_clamp(
               multi_result.selection, line_index.text_length
             )
+            multi = multi_selection_from_single(selection)
           end
           selecting_text = 1
           handled = 1
@@ -1032,6 +1048,7 @@ fn main() -> i32 = do
           )
           last_command = "nav_" + binding_key
         end
+        multi = multi_selection_from_single(selection)
         binding_key = ""
       end
       if editor_focused != 0 && binding_key == "delete" &&
@@ -1040,6 +1057,7 @@ fn main() -> i32 = do
         app = editor_app_delete_word_forward(app)
         tabs = app.ux.tabs
         selection = app.ux.selection
+        multi = multi_selection_from_single(selection)
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
@@ -1201,6 +1219,7 @@ fn main() -> i32 = do
             app = editor_app_toggle_line_comment(app, comment_language)
             tabs = app.ux.tabs
             selection = app.ux.selection
+            multi = multi_selection_from_single(selection)
             history = app.history
             active = tab_set_active(tabs)
             document = active.buffer.document
@@ -1296,7 +1315,16 @@ fn main() -> i32 = do
 
       if input.text_buffer.length() > 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
-        app = editor_app_insert_text(app, input.text_buffer)
+        if multi_selection_count(multi) > 1 then
+          const multi_insert = editor_app_insert_text_with_multi(
+            app, multi, input.text_buffer
+          )
+          app = multi_insert.app
+          multi = multi_insert.multi
+        else
+          app = editor_app_insert_text(app, input.text_buffer)
+          multi = multi_selection_from_single(app.ux.selection)
+        end
         tabs = app.ux.tabs
         selection = app.ux.selection
         history = app.history
@@ -1311,6 +1339,7 @@ fn main() -> i32 = do
         app = editor_app_insert_newline(app)
         tabs = app.ux.tabs
         selection = app.ux.selection
+        multi = multi_selection_from_single(selection)
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document
@@ -1328,6 +1357,7 @@ fn main() -> i32 = do
         end
         tabs = app.ux.tabs
         selection = app.ux.selection
+        multi = multi_selection_from_single(selection)
         history = app.history
         active = tab_set_active(tabs)
         document = active.buffer.document

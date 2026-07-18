@@ -58,7 +58,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | **done** — [archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE](../archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE.md) |
 | 21 | `EDITOR_DIRTY_CLOSE_L1` | L1 scenario for dirty-close overlay discard/cancel click (currently L0-only) | `dirty_close_overlay_click` | S | **done** — [archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_L1](../archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_L1.md) |
 | 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | **superseded by `#1d` above (2026-07-17 pull-forward)** — do not do twice | — | — | superseded |
-| 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | **active** STEP=2 done → STEP=3 — [TRACK_EDITOR_MULTI_CURSOR](TRACK_EDITOR_MULTI_CURSOR.md) |
+| 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | **active** STEP=3 done → Critic — [TRACK_EDITOR_MULTI_CURSOR](TRACK_EDITOR_MULTI_CURSOR.md) |
 | 24 | `EDITOR_TRAILING_WS_VIZ` | Visualize trailing whitespace | `trailing_ws_visualized` (L2) | S | pending |
 | 25 | `EDITOR_CONTEXT_MENU` | Right-click → cut/copy/paste menu | `context_menu_opens` | M | pending |
 | 26 | `EDITOR_INDENT_MODEL` | Tabs-vs-spaces, indent width, Tab/Shift-Tab | `indent_width_config` (L0) + L1 | M | pending |

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 07:45 (Driver TRACK_EDITOR_MULTI_CURSOR STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_MULTI_CURSOR |
+| started | 2026-07-19 07:30 |
+| elapsed | ~15 min |
+| done    | `ux/multi_cursor.mlc` (`editor_ux_add_cursor`, `editor_ux_insert_text_with_multi`); `editor_app_insert_text_with_multi`; demo_live Ctrl+click add + typing multi-insert; plain/shift click clears multi |
+| verify  | `ux_ok multi_cursor_model`; `ux_ok dirty_close_overlay_click`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_MULTI_CURSOR |
+
 ### Turn 2026-07-19 07:30 (Driver TRACK_EDITOR_MULTI_CURSOR STEP=2)
 
 | field   | value |

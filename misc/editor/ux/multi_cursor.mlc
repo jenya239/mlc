@@ -1,0 +1,67 @@
+// TRACK_EDITOR_MULTI_CURSOR STEP=3 — Ctrl+click add + multi insert wire.
+import {
+  EditorMultiSelection,
+  multi_selection_add_collapsed,
+  multi_selection_from_single,
+  multi_selection_primary,
+  multi_selection_count,
+  multi_selection_all_collapsed,
+  edit_insert_text_multi
+} from '../document/multi_selection'
+import {
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import { open_buffer_set_document } from '../document/save'
+import { EditorUxState } from './probe'
+import { editor_ux_insert_text_autoclose } from './bracket_autoclose'
+
+export fn editor_ux_add_cursor(
+  multi: EditorMultiSelection,
+  byte_offset: i32
+) -> EditorMultiSelection =
+  multi_selection_add_collapsed(multi, byte_offset)
+
+export type EditorUxMultiInsertResult = {
+  state: EditorUxState,
+  multi: EditorMultiSelection
+}
+
+export fn editor_ux_insert_text_with_multi(
+  state: EditorUxState,
+  multi: EditorMultiSelection,
+  text: string
+) -> EditorUxMultiInsertResult = do
+  if !tab_set_has_active(state.tabs) then
+    return EditorUxMultiInsertResult { state: state, multi: multi }
+  end
+  if multi_selection_count(multi) <= 1 || !multi_selection_all_collapsed(multi) then
+    const next_state = editor_ux_insert_text_autoclose(state, text)
+    return EditorUxMultiInsertResult {
+      state: next_state,
+      multi: multi_selection_from_single(next_state.selection)
+    }
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_insert_text_multi(active.buffer.document, multi, text)
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  const next_state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: multi_selection_primary(edited.multi),
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+  EditorUxMultiInsertResult {
+    state: next_state,
+    multi: edited.multi
+  }
+end

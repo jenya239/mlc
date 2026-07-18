@@ -78,7 +78,7 @@ export fn multi_selection_clear_to(
 ) -> EditorMultiSelection =
   multi_selection_from_single(selection_collapsed(byte_offset))
 
-fn multi_all_collapsed(multi: EditorMultiSelection) -> bool = do
+export fn multi_selection_all_collapsed(multi: EditorMultiSelection) -> bool = do
   let mut index = 0
   while index < multi.selections.length() do
     if !selection_is_empty(multi.selections[index]) then
@@ -156,7 +156,7 @@ export fn edit_insert_text_multi(
       multi: multi
     }
   end
-  if !multi_all_collapsed(multi) then
+  if !multi_selection_all_collapsed(multi) then
     const primary = multi_selection_primary(multi)
     const edited = edit_insert_text(document, primary, text)
     return MultiEditResult {
