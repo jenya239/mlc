@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19 done; `#20` active
+## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20 done; next `#21`
 
 ## How to use this backlog
 
@@ -55,7 +55,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 17 | `EDITOR_HORIZONTAL_SCROLL` | Shift+wheel scrolls `scroll_offset_x`, hit-test accounts for it | `shift_wheel_scrolls_horizontal` | S | **done** — [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLL](../archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLL.md) |
 | 18 | `EDITOR_BRACKET_AUTOCLOSE` | Auto-close `()[]{}""`, skip-over closing char | `typing_paren_autocloses` | M | **done** — [archive/tracks/TRACK_EDITOR_BRACKET_AUTOCLOSE](../archive/tracks/TRACK_EDITOR_BRACKET_AUTOCLOSE.md) |
 | 19 | `EDITOR_COMMENT_TOGGLE` | Ctrl+/ line-comment toggle (by language from status bar) | `toggle_line_comment` | S | **done** — [archive/tracks/TRACK_EDITOR_COMMENT_TOGGLE](../archive/tracks/TRACK_EDITOR_COMMENT_TOGGLE.md) |
-| 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | **active** STEP=2 done → Critic — [TRACK_EDITOR_SESSION_CARET_RESTORE](TRACK_EDITOR_SESSION_CARET_RESTORE.md) |
+| 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | **done** — [archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE](../archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE.md) |
 | 21 | `EDITOR_DIRTY_CLOSE_L1` | L1 scenario for dirty-close overlay discard/cancel click (currently L0-only) | `dirty_close_overlay_click` | S | pending |
 | 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | **superseded by `#1d` above (2026-07-17 pull-forward)** — do not do twice | — | — | superseded |
 | 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | pending |
