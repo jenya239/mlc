@@ -1,15 +1,43 @@
 # Track: Editor Horizontal Scroll (Shift+wheel)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#17**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#17**.
 Shift+wheel scrolls vertically like plain wheel; `scroll_offset_x` stays 0 on
 the wheel path; live `view_metrics` hardcodes horizontal offset 0.
 Review gate: `shift_wheel_scrolls_horizontal` (L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=3):** Re-ran L1 + wheel/font regressions + demo compile.
+Anti-false-done: `e17a2f93`…`1396621f` (STEP=0–2). Wire present:
+`editor_ux_wheel_scroll_horizontal` (−ticks×char_width + clamp);
+`editor_app_wheel_scroll_horizontal`; demo_live Shift+editor-hover wheel
+(Ctrl checked first) updates `scroll_offset_x`; `view_metrics` passes
+`app.ux.scroll_offset_x` (no longer hardcoded 0); plain/Ctrl wheel unchanged.
+**reopen: none**.
+
+Honest residual: live wrap click (`wrap_offset_at_point`) ignores scroll_x;
+glyph draw under wrap may not shift with scroll_x; no scrollbar UI;
+horizontal drag autoscroll out of scope; L1 uses negative ticks (formula −ticks×char_width).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_shift_wheel_scrolls_horizontal.sh` | `ux_ok shift_wheel_scrolls_horizontal` EXIT=0 |
+| `run_ux_wheel_scroll.sh` | `ux_ok wheel_scroll_keeps_caret_visible` EXIT=0 |
+| `run_ux_ctrl_wheel_font_zoom.sh` | `ux_ok ctrl_wheel_font_zoom` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#18 EDITOR_BRACKET_AUTOCLOSE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `e17a2f93` | Decision freeze + open |
+| 1 | `ca2f1b0e` | L1 red harness + stubs |
+| 2 | `1396621f` | horizontal API + demo_live Shift+wheel |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -44,7 +72,7 @@ Review gate: `shift_wheel_scrolls_horizontal` (L1). Size **S**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`shift_wheel_scrolls_horizontal`) | **done** (2026-07-19) — stub red: `ux_fail shift_wheel scroll_offset_x not increased` |
 | 2 | horizontal wheel API + demo_live Shift+wheel wire | **done** (2026-07-19) — `ux_ok shift_wheel_scrolls_horizontal` |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

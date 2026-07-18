@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16 done; `#17` active
+## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17 done; next `#18`
 
 ## How to use this backlog
 
@@ -52,7 +52,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 14 | `EDITOR_REPLACE` | Replace-one / replace-all on top of Find | `replace_one_and_all` | M | **done** — [archive/tracks/TRACK_EDITOR_REPLACE](../archive/tracks/TRACK_EDITOR_REPLACE.md) |
 | 15 | `EDITOR_TAB_REORDER` | Drag-to-reorder tabs in strip | `drag_reorder_tabs` | M | **done** — [archive/tracks/TRACK_EDITOR_TAB_REORDER](../archive/tracks/TRACK_EDITOR_TAB_REORDER.md) |
 | 16 | `EDITOR_FONT_ZOOM` | Ctrl+wheel changes font size (+state), reflows wrap | `ctrl_wheel_font_zoom` | S | **done** — [archive/tracks/TRACK_EDITOR_FONT_ZOOM](../archive/tracks/TRACK_EDITOR_FONT_ZOOM.md) |
-| 17 | `EDITOR_HORIZONTAL_SCROLL` | Shift+wheel scrolls `scroll_offset_x`, hit-test accounts for it | `shift_wheel_scrolls_horizontal` | S | **active** — [TRACK_EDITOR_HORIZONTAL_SCROLL](TRACK_EDITOR_HORIZONTAL_SCROLL.md) |
+| 17 | `EDITOR_HORIZONTAL_SCROLL` | Shift+wheel scrolls `scroll_offset_x`, hit-test accounts for it | `shift_wheel_scrolls_horizontal` | S | **done** — [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLL](../archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLL.md) |
 | 18 | `EDITOR_BRACKET_AUTOCLOSE` | Auto-close `()[]{}""`, skip-over closing char | `typing_paren_autocloses` | M | pending |
 | 19 | `EDITOR_COMMENT_TOGGLE` | Ctrl+/ line-comment toggle (by language from status bar) | `toggle_line_comment` | S | pending |
 | 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | pending |
