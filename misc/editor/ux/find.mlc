@@ -1,0 +1,83 @@
+// TRACK_EDITOR_FIND STEP=1 — stub Find (red until STEP=2).
+import { LineIndex } from '../document/line_index'
+import { EditorSelection } from '../document/selection'
+
+export type FindMatch = {
+  start: i32,
+  finish: i32
+}
+
+export type FindSession = {
+  query: string,
+  matches: [FindMatch],
+  active_index: i32
+}
+
+export type FindHighlight = {
+  line: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  is_active: i32
+}
+
+export type FindDrawReport = {
+  highlights: [FindHighlight]
+}
+
+export type FindApplyResult = {
+  session: FindSession,
+  selection: EditorSelection
+}
+
+export fn find_session_new() -> FindSession =
+  FindSession { query: "", matches: [], active_index: -1 }
+
+// Stub: ignore text — empty matches until STEP=2.
+export fn find_session_set_query(
+  session: FindSession,
+  text: string,
+  query: string
+) -> FindSession = do
+  let _unused_session = session.query
+  let _unused_text = text
+  FindSession { query: query, matches: [], active_index: -1 }
+end
+
+// Stub: no navigation until STEP=2.
+export fn find_session_next(
+  session: FindSession,
+  selection: EditorSelection
+) -> FindApplyResult =
+  FindApplyResult { session: session, selection: selection }
+
+export fn find_session_prev(
+  session: FindSession,
+  selection: EditorSelection
+) -> FindApplyResult =
+  FindApplyResult { session: session, selection: selection }
+
+// Stub: no visible highlights until STEP=2.
+export fn find_visible_highlights(
+  session: FindSession,
+  line_index: LineIndex,
+  visible_first_line: i32,
+  visible_last_line: i32,
+  text_x: i32,
+  text_y: i32,
+  scroll_offset_y: i32,
+  line_height: i32,
+  char_width: i32
+) -> FindDrawReport = do
+  let _unused_session = session.query
+  let _unused_index = line_index.text_length
+  let _unused_first = visible_first_line
+  let _unused_last = visible_last_line
+  let _unused_x = text_x
+  let _unused_y = text_y
+  let _unused_scroll = scroll_offset_y
+  let _unused_line = line_height
+  let _unused_char = char_width
+  FindDrawReport { highlights: [] }
+end

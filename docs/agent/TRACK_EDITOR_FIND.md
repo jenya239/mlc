@@ -4,12 +4,16 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#7**.
 No find session, next/prev, or match highlights — only selection highlight and
 syntax spans. Review gate: `find_highlights_matches` (L1).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L1 scenario first: `find_highlights_matches` (Standing discipline);
-red harness if needed.
+**STEP=2** — Implement find scan + next/prev + highlights; wire commands/demo.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `ux/find.mlc` (empty matches); L1 red harness `find_highlights_matches`
+  (+ run script). Note: match field `finish` (not `end` — codegen)
 
 ### STEP=0 done (2026-07-18)
 
@@ -22,7 +26,7 @@ red harness if needed.
 | Problem | No Find: cannot jump between occurrences or see all matches in the viewport |
 | Match | Literal **case-sensitive** byte substring over document text. Empty query → zero matches. No regex; no whole-word (defer) |
 | Query entry | **Seed from non-empty selection** on Find (Ctrl+F / `CmdFind`). Persist `FindSession.query`. Full find-panel chrome / status typing UI **out of scope** this track (keeps M); Replace is `#14` |
-| Session | `FindSession { query, matches: [{start,end}], active_index }` (+ rebuild matches when query/doc changes). Active match drives selection |
+| Session | `FindSession { query, matches: [{start,finish}], active_index }` (+ rebuild matches when query/doc changes). Active match drives selection |
 | Navigation | `find_next` / `find_prev` wrap around; set selection to match range; `editor_ux_ensure_caret_visible` (existing) |
 | Highlight | Matches intersecting **visible** byte/line range → draw report rects (reuse selection-highlight shape); active match may use distinct color token. Scenario asserts highlight list, not pixels |
 | Commands | `CmdFind` (seed query from selection if non-empty, rebuild, jump to first/next), `CmdFindNext` (F3), `CmdFindPrev` (Shift+F3). Wire in command bus + `demo_live` |
@@ -43,15 +47,13 @@ red harness if needed.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L1 scenario first (`find_highlights_matches`) | scenario fails or harness ready |
+| 1 | L1 scenario first (`find_highlights_matches`) | **done** (red harness) |
 | 2 | Find session + next/prev + visible highlights + demo/commands wire | scenario + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/find_highlights_matches.mlc` (+ run script).
-2. Prefer red before STEP=2 (stub find returns empty matches / no highlights).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Implement find match scan + session + highlight report; wire CmdFind/Next/Prev + `demo_live`.

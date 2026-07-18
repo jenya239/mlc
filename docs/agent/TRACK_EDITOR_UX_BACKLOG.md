@@ -42,7 +42,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 4 | `EDITOR_MOUSE_WORD_LINE_SELECT` | Double-click selects word, triple-click selects line, click timing via `UxDriver` | `double_click_selects_word`, `triple_click_selects_line` | M | **done** — [archive/tracks/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT](../archive/tracks/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md) |
 | 5 | `EDITOR_SHIFT_CLICK_EXTEND` | Shift-click extends selection from anchor | `shift_click_extends_selection` | S | **done** — [archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND](../archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND.md) |
 | 6 | `EDITOR_UNDO_COALESCE` | Group consecutive typing into one undo step (currently every keystroke = separate undo) | `typing_coalesces_into_one_undo` (L1.5) | M | **done** — [archive/tracks/TRACK_EDITOR_UNDO_COALESCE](../archive/tracks/TRACK_EDITOR_UNDO_COALESCE.md) |
-| 7 | `EDITOR_FIND` | Find + next/prev, highlight matches in visible range | `find_highlights_matches` | M | **active** — [TRACK_EDITOR_FIND](TRACK_EDITOR_FIND.md) STEP=1 next (STEP=0 done) |
+| 7 | `EDITOR_FIND` | Find + next/prev, highlight matches in visible range | `find_highlights_matches` | M | **active** — [TRACK_EDITOR_FIND](TRACK_EDITOR_FIND.md) STEP=2 next (STEP=1 done) |
 | 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | pending |
 | 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | pending |
 | 10 | `EDITOR_AUTO_INDENT` | Enter preserves leading indent of current line | `enter_keeps_indent` | S | pending |

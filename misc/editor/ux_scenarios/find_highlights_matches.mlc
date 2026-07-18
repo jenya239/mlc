@@ -1,0 +1,56 @@
+// TRACK_EDITOR_FIND STEP=1 — L1: find matches + visible highlights + next.
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_new,
+  selection_start,
+  selection_end
+} from '../document/selection'
+import {
+  find_session_new,
+  find_session_set_query,
+  find_session_next,
+  find_visible_highlights
+} from '../ux/find'
+
+fn main() -> i32 = do
+  const text = "foo bar foo"
+  const index = line_index_from_string(text)
+  let mut session = find_session_set_query(find_session_new(), text, "foo")
+
+  if session.matches.length() != 2 then
+    println("ux_fail find match count")
+    return 1
+  end
+  if session.matches[0].start != 0 || session.matches[0].finish != 3 then
+    println("ux_fail find first match")
+    return 2
+  end
+  if session.matches[1].start != 8 || session.matches[1].finish != 11 then
+    println("ux_fail find second match")
+    return 3
+  end
+
+  const report = find_visible_highlights(
+    session, index, 0, 0, 0, 0, 0, 14, 7
+  )
+  if report.highlights.length() != 2 then
+    println("ux_fail find highlights count")
+    return 4
+  end
+
+  // After set_query, active is first match; next → second.
+  let mut selection = selection_new(
+    session.matches[0].start,
+    session.matches[0].finish
+  )
+  const applied = find_session_next(session, selection)
+  session = applied.session
+  selection = applied.selection
+  if selection_start(selection) != 8 || selection_end(selection) != 11 then
+    println("ux_fail find next selection")
+    return 5
+  end
+
+  println("ux_ok find_highlights_matches")
+  0
+end

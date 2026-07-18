@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:40 (Driver TRACK_EDITOR_FIND STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:35 |
+| elapsed | ~5 min |
+| done    | Stub `ux/find.mlc` (empty matches; field `finish` not `end`); L1 red harness `find_highlights_matches` (+ run script); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_find_highlights_matches.sh` exit 1 (`ux_fail find match count`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FIND |
+
 ### Turn 2026-07-18 12:35 (Planner TRACK_EDITOR_FIND STEP=0)
 
 | field   | value |
