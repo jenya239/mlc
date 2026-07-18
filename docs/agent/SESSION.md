@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 07:30 (Driver TRACK_EDITOR_MULTI_CURSOR STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MULTI_CURSOR |
+| started | 2026-07-19 07:20 |
+| elapsed | ~10 min |
+| done    | Real `multi_selection_add_collapsed` + `edit_insert_text_multi` (collapsed, descending offsets); L1 green |
+| verify  | `ux_ok multi_cursor_model`; `ux_ok dirty_close_overlay_click`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_MULTI_CURSOR |
+
 ### Turn 2026-07-19 07:15 (Driver TRACK_EDITOR_MULTI_CURSOR STEP=1)
 
 | field   | value |

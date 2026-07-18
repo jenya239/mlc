@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `STEP=2` `TRACK_EDITOR_MULTI_CURSOR` (§46 `#23`).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `STEP=3` `TRACK_EDITOR_MULTI_CURSOR` (§46 `#23`).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -80,7 +80,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21 done. `#23` active (#22 superseded). Product ceiling: **Sublime Text** |
-| **`TRACK_EDITOR_MULTI_CURSOR` (§46 #23)** | **active** 2026-07-19. STEP=0 Decision frozen. Next STEP=1 L1 red. Do not skip Decision |
+| **`TRACK_EDITOR_MULTI_CURSOR` (§46 #23)** | **active** 2026-07-19. STEP=1 done (L1 red). Next STEP=2 model + insert-multi. Do not skip Decision |
 | **`TRACK_EDITOR_DIRTY_CLOSE_L1` (§46 #21)** | **closed** 2026-07-19 (Critic OK). Archived. Overlay discard/cancel L1 click. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SESSION_CARET_RESTORE` (§46 #20)** | **closed** 2026-07-19 (Critic OK). Archived. Session caret+scroll restore. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** | **closed** 2026-07-19 (Critic OK). Archived. Ctrl+/ line-comment toggle. Do not reopen numbered STEPs |

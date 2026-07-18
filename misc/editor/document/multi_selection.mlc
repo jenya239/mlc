@@ -1,7 +1,9 @@
-// TRACK_EDITOR_MULTI_CURSOR STEP=1 — multi-selection model (stub until STEP=2).
+// TRACK_EDITOR_MULTI_CURSOR STEP=2 — multi-selection model + collapsed insert fan-out.
 import {
   EditorSelection,
-  selection_collapsed
+  selection_collapsed,
+  selection_caret,
+  selection_is_empty
 } from './selection'
 import {
   TextDocument
@@ -37,12 +39,38 @@ export fn multi_selection_primary(
 export fn multi_selection_count(multi: EditorMultiSelection) -> i32 =
   multi.selections.length()
 
-// STEP=1 stub: ignore add (always return unchanged). Real add in STEP=2.
+fn multi_selection_has_caret_at(
+  multi: EditorMultiSelection,
+  byte_offset: i32
+) -> bool = do
+  let mut index = 0
+  while index < multi.selections.length() do
+    if selection_caret(multi.selections[index]) == byte_offset then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
 export fn multi_selection_add_collapsed(
   multi: EditorMultiSelection,
   byte_offset: i32
-) -> EditorMultiSelection =
-  multi
+) -> EditorMultiSelection = do
+  let mut offset = byte_offset
+  if offset < 0 then
+    offset = 0
+  end
+  if multi_selection_has_caret_at(multi, offset) then
+    return multi
+  end
+  let mut selections = multi.selections
+  selections.push(selection_collapsed(offset))
+  EditorMultiSelection {
+    selections: selections,
+    primary_index: multi.primary_index
+  }
+end
 
 export fn multi_selection_clear_to(
   multi: EditorMultiSelection,
@@ -50,16 +78,136 @@ export fn multi_selection_clear_to(
 ) -> EditorMultiSelection =
   multi_selection_from_single(selection_collapsed(byte_offset))
 
-// STEP=1 stub: insert at primary only (no fan-out).
+fn multi_all_collapsed(multi: EditorMultiSelection) -> bool = do
+  let mut index = 0
+  while index < multi.selections.length() do
+    if !selection_is_empty(multi.selections[index]) then
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn sort_indices_by_caret_descending(
+  carets: [i32]
+) -> [i32] = do
+  let mut indices: [i32] = []
+  let mut index = 0
+  while index < carets.length() do
+    indices.push(index)
+    index = index + 1
+  end
+  let mut sorted = 0
+  while sorted == 0 do
+    sorted = 1
+    let mut cursor = 0
+    while cursor + 1 < indices.length() do
+      const left = indices[cursor]
+      const right = indices[cursor + 1]
+      if carets[left] < carets[right] then
+        indices = array_swap_i32(indices, cursor, cursor + 1)
+        sorted = 0
+      end
+      cursor = cursor + 1
+    end
+  end
+  indices
+end
+
+fn array_swap_i32(values: [i32], left: i32, right: i32) -> [i32] = do
+  let mut next: [i32] = []
+  let mut index = 0
+  while index < values.length() do
+    if index == left then
+      next.push(values[right])
+    else if index == right then
+      next.push(values[left])
+    else
+      next.push(values[index])
+    end
+    index = index + 1
+  end
+  next
+end
+
+fn array_set_i32(values: [i32], target: i32, value: i32) -> [i32] = do
+  let mut next: [i32] = []
+  let mut index = 0
+  while index < values.length() do
+    if index == target then
+      next.push(value)
+    else
+      next.push(values[index])
+    end
+    index = index + 1
+  end
+  next
+end
+
 export fn edit_insert_text_multi(
   document: TextDocument,
   multi: EditorMultiSelection,
   text: string
 ) -> MultiEditResult = do
-  const primary = multi_selection_primary(multi)
-  const edited = edit_insert_text(document, primary, text)
+  if multi.selections.length() == 0 then
+    return MultiEditResult {
+      document: document,
+      multi: multi
+    }
+  end
+  if !multi_all_collapsed(multi) then
+    const primary = multi_selection_primary(multi)
+    const edited = edit_insert_text(document, primary, text)
+    return MultiEditResult {
+      document: edited.document,
+      multi: multi_selection_from_single(edited.selection)
+    }
+  end
+
+  let mut carets: [i32] = []
+  let mut index = 0
+  while index < multi.selections.length() do
+    carets.push(selection_caret(multi.selections[index]))
+    index = index + 1
+  end
+
+  const order = sort_indices_by_caret_descending(carets)
+  let mut working = document
+  let mut order_index = 0
+  while order_index < order.length() do
+    const caret_index = order[order_index]
+    const insert_at = carets[caret_index]
+    const edited = edit_insert_text(
+      working, selection_collapsed(insert_at), text
+    )
+    working = edited.document
+    const delta = text.length()
+    let mut caret_cursor = 0
+    while caret_cursor < carets.length() do
+      if carets[caret_cursor] > insert_at then
+        carets = array_set_i32(
+          carets, caret_cursor, carets[caret_cursor] + delta
+        )
+      else if carets[caret_cursor] == insert_at then
+        carets = array_set_i32(carets, caret_cursor, insert_at + delta)
+      end
+      caret_cursor = caret_cursor + 1
+    end
+    order_index = order_index + 1
+  end
+
+  let mut selections: [EditorSelection] = []
+  index = 0
+  while index < carets.length() do
+    selections.push(selection_collapsed(carets[index]))
+    index = index + 1
+  end
   MultiEditResult {
-    document: edited.document,
-    multi: multi_selection_from_single(edited.selection)
+    document: working,
+    multi: EditorMultiSelection {
+      selections: selections,
+      primary_index: multi.primary_index
+    }
   }
 end
