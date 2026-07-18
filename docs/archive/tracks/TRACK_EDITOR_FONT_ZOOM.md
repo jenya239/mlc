@@ -1,14 +1,39 @@
 # Track: Editor Font Zoom (Ctrl+wheel)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#16**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#16**.
 Wheel always scrolls; Ctrl+wheel does not change font size / wrap metrics.
 Review gate: `ctrl_wheel_font_zoom` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=0–2 done; next Critic
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1 + wheel regression + demo compile.
+Anti-false-done: `2b0d3523`…`897c5cc9` (STEP=0–2). Wire present:
+`editor_ux_font_zoom` (±1, clamp 8..48) + chrome-ratio metrics; demo_live
+mutable `zoom_font_size`/`metrics`; Ctrl+editor-hover wheel zooms without
+scroll; plain wheel unchanged. **reopen: none**.
+
+Honest residual: `char_width` integer steps flat for some sizes (L1 loops);
+zoom not persisted in session; Shift+wheel out of scope (#17); one-frame wrap
+lag after zoom (wrap computed earlier in frame).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_ctrl_wheel_font_zoom.sh` | `ux_ok ctrl_wheel_font_zoom` EXIT=0 |
+| `run_ux_wheel_scroll.sh` | `ux_ok wheel_scroll_keeps_caret_visible` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#17 EDITOR_HORIZONTAL_SCROLL`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `2b0d3523` | Decision freeze + open |
+| 1 | `33682bc7` | L1 red harness + stubs |
+| 2 | `897c5cc9` | zoom API + demo_live Ctrl+wheel |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -43,7 +68,7 @@ Review gate: `ctrl_wheel_font_zoom` (L1). Size **S**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`ctrl_wheel_font_zoom`) | **done** (2026-07-18) — stub red: `ux_fail font_zoom size not increased` |
 | 2 | font-zoom API + demo_live Ctrl+wheel wire | **done** (2026-07-18) — `ux_ok ctrl_wheel_font_zoom` |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
