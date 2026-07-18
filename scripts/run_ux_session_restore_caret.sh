@@ -29,7 +29,7 @@ status=$?
 set -e
 printf '%s\n' "$output"
 if [ "$status" -ne 0 ]; then
-  echo "[ux session_restore_caret] FAIL binary exit=$status (expected red until STEP=2)" >&2
+  echo "[ux session_restore_caret] FAIL binary exit=$status" >&2
   exit 1
 fi
 if ! printf '%s\n' "$output" | grep -q 'ux_ok session_restore_caret'; then

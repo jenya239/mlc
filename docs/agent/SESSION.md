@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 05:30 (Driver TRACK_EDITOR_SESSION_CARET_RESTORE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SESSION_CARET_RESTORE |
+| started | 2026-07-19 05:20 |
+| elapsed | ~10 min |
+| done    | Encode/decode `view=`; `workspace_session_clamped_active_view`; demo save/load applies active caret+scroll; `editor_app_set_scroll_x` |
+| verify  | `ux_ok session_restore_caret`; `ux_ok toggle_line_comment`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_SESSION_CARET_RESTORE |
+
 ### Turn 2026-07-19 05:15 (Driver TRACK_EDITOR_SESSION_CARET_RESTORE STEP=1)
 
 | field   | value |

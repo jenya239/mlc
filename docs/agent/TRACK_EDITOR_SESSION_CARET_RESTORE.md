@@ -5,11 +5,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#20**.
 puts caret at 0 and scroll at 0. Review gate: `session_restore_caret`
 (L0+L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=2 done; next Critic
 
 ## Next step
 
-**STEP=2** — session view encode/decode + restore + demo_live wire.
+**STEP=3** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -43,8 +43,7 @@ puts caret at 0 and scroll at 0. Review gate: `session_restore_caret`
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`session_restore_caret`) | **done** (2026-07-19) — stub red: `ux_fail session_restore_caret caret` |
-| 2 | session view arrays + encode/decode/restore + demo_live wire | pending |
-| <!-- sub-steps: 1) extend `WorkspaceSession` + encode/decode; 2) restore applies active caret/scroll; 3) demo save/load; 4) L1 green + session_unit compat --> |
+| 2 | session view arrays + encode/decode/restore + demo_live wire | **done** (2026-07-19) — L1 green `ux_ok session_restore_caret` |
 | 3 | Critic: gates; archive | pending |
 
 ## Out of scope
