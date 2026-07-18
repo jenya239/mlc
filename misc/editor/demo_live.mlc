@@ -133,6 +133,7 @@ import {
   CmdFind,
   CmdFindNext,
   CmdFindPrev,
+  CmdGotoLine,
   CmdNone,
   CmdSave,
   command_id_tag,
@@ -254,6 +255,7 @@ import {
   editor_app_commit_session,
   editor_app_wheel_scroll,
   editor_app_ensure_caret_visible,
+  editor_app_goto_line_from_selection,
   editor_app_clamp_scroll_to_content,
   editor_app_insert_text,
   editor_app_insert_newline,
@@ -1051,6 +1053,12 @@ fn main() -> i32 = do
             const find_prev_applied = find_session_prev(find_session, selection)
             find_session = find_prev_applied.session
             selection = find_prev_applied.selection
+          end
+        | CmdGotoLine => do
+            app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+            app = editor_app_goto_line_from_selection(app, metrics)
+            selection = app.ux.selection
+            scroll_offset_y = app.ux.scroll_offset_y
           end
         | CmdCopy => do
             clipboard = edit_copy(document, selection, clipboard)

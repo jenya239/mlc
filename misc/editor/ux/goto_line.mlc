@@ -1,15 +1,134 @@
-// TRACK_EDITOR_GOTO_LINE STEP=1 — stub goto (red until STEP=2).
+// TRACK_EDITOR_GOTO_LINE STEP=2 — 1-based goto + scroll into view.
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  line_index_from_document,
+  line_index_line_count,
+  line_index_line_start
+} from '../document/line_index'
+import {
+  EditorSelection,
+  selection_collapsed,
+  selection_is_empty,
+  selection_start,
+  selection_end
+} from '../document/selection'
+import { editor_ux_ensure_caret_visible } from './scroll'
 
-// Stub: ignore target line — leave state unchanged until STEP=2.
+fn state_with_selection(
+  state: EditorUxState,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+fn digit_value(character: string) -> i32 = do
+  if character == "0" then
+    return 0
+  else if character == "1" then
+    return 1
+  else if character == "2" then
+    return 2
+  else if character == "3" then
+    return 3
+  else if character == "4" then
+    return 4
+  else if character == "5" then
+    return 5
+  else if character == "6" then
+    return 6
+  else if character == "7" then
+    return 7
+  else if character == "8" then
+    return 8
+  else if character == "9" then
+    return 9
+  end
+  0 - 1
+end
+
+// ASCII digits only; empty / non-digit → -1.
+fn parse_decimal_digits(text: string) -> i32 = do
+  const length = text.byte_size()
+  if length == 0 then
+    return 0 - 1
+  end
+  let mut value = 0
+  let mut index = 0
+  while index < length do
+    const digit = digit_value(text.byte_at(index))
+    if digit < 0 then
+      return 0 - 1
+    end
+    value = value * 10 + digit
+    index = index + 1
+  end
+  value
+end
+
 export fn editor_ux_goto_line(
   state: EditorUxState,
   metrics: EditorTextMetrics,
   line_number_1based: i32
 ) -> EditorUxState = do
-  let _unused_metrics = metrics.line_height
-  let _unused_line = line_number_1based
-  let _unused_width = state.window_width
-  state
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const line_count = line_index_line_count(line_index)
+  if line_count <= 0 then
+    return state
+  end
+  let mut target = line_number_1based
+  if target < 1 then
+    target = 1
+  end
+  if target > line_count then
+    target = line_count
+  end
+  const offset = line_index_line_start(line_index, target - 1)
+  const next_state = state_with_selection(state, selection_collapsed(offset))
+  editor_ux_ensure_caret_visible(next_state, metrics)
+end
+
+// Seed line from non-empty digit selection; invalid/empty → no-op.
+export fn editor_ux_goto_line_from_selection(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  if selection_is_empty(state.selection) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const range_start = selection_start(state.selection)
+  const range_finish = selection_end(state.selection)
+  const selected = line_index.text.byte_substring(
+    range_start, range_finish - range_start
+  )
+  const line_number = parse_decimal_digits(selected)
+  if line_number < 0 then
+    return state
+  end
+  editor_ux_goto_line(state, metrics, line_number)
 end

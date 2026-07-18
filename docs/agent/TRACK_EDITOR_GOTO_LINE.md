@@ -4,12 +4,16 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#8**.
 No go-to-line: cannot jump caret to a numeric line and scroll it into view.
 Review gate: `goto_line_scrolls_caret` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; Critic next
 
 ## Next step
 
-**STEP=2** — implement `editor_ux_goto_line` + CmdGotoLine + demo_live wire;
-gates green.
+**STEP=3** — Critic: re-run gates; archive.
+
+### STEP=2 done (2026-07-18)
+
+- `editor_ux_goto_line` + seed-from-selection; CmdGotoLine Ctrl+G; demo_live;
+  GLFW `g`; `ux_ok goto_line_scrolls_caret`; `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-18)
 
@@ -47,7 +51,7 @@ gates green.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`goto_line_scrolls_caret`) | **done** (red: `ux_fail goto caret line`) |
-| 2 | goto helper + CmdGotoLine + demo wire (+ ensure visible) | scenario + compile |
+| 2 | goto helper + CmdGotoLine + demo wire (+ ensure visible) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)

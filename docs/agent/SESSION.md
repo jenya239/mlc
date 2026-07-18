@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 13:20 (Driver TRACK_EDITOR_GOTO_LINE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_GOTO_LINE |
+| started | 2026-07-18 13:05 |
+| elapsed | ~15 min |
+| done    | `editor_ux_goto_line` + seed-from-selection; CmdGotoLine Ctrl+G; demo_live; GLFW `g`; `ux_ok goto_line_scrolls_caret`; `demo_live_fs_compile_ok`; `command_bus_unit` ok |
+| verify  | `run_ux_goto_line_scrolls_caret.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; `command_bus_unit` ok |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_GOTO_LINE |
+
 ### Turn 2026-07-18 13:05 (Driver TRACK_EDITOR_GOTO_LINE STEP=1)
 
 | field   | value |
