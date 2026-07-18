@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `STEP=critique-audit` `TRACK_EDITOR_DIRTY_CLOSE_L1` (§46 `#21`).
-**`TRACK_EDITOR_DIRTY_CLOSE_L1` (§46 #21)** active; STEP=2 done; Decision frozen.
+**Queue head:** Planner `STEP=pick-next` `TRACK=PLAN_QUEUE` (§46 `#23 EDITOR_MULTI_CURSOR`; `#22` superseded).
+**`TRACK_EDITOR_DIRTY_CLOSE_L1` (§46 #21)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_SESSION_CARET_RESTORE` (§46 #20)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_BRACKET_AUTOCLOSE` (§46 #18)** closed 2026-07-19; archived.
