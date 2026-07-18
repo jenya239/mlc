@@ -226,13 +226,14 @@ import {
   tab_strip_close_rect,
   tab_strip_title_rect
 } from './ux/tab_strip'
-import { editor_text_metrics_default } from './ux/overflow'
+import { editor_text_metrics_default, EditorTextMetrics } from './ux/overflow'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
 import {
   editor_ux_apply_nav_key,
   editor_ux_is_nav_key
 } from './ux/nav_key'
 import { editor_ux_apply_word_nav_key } from './ux/word_nav'
+import { editor_ux_current_line_draw_report } from './ux/current_line_hl'
 import {
   caret_blink_period_ms,
   caret_blink_visible
@@ -1301,6 +1302,28 @@ fn main() -> i32 = do
         range_end = line_index_line_start(line_index, visible.last_line + 1)
       end
       syntax_spans = highlight_range(draw_text, range_start, range_end)
+    end
+
+    // Current-line band under find/selection (Decision: panel tint ~0.55).
+    const current_line_metrics = EditorTextMetrics {
+      line_height: line_height(),
+      char_width: char_width()
+    }
+    const current_line_report = editor_ux_current_line_draw_report(
+      app.ux, current_line_metrics
+    )
+    let mut current_line_index = 0
+    while current_line_index < current_line_report.highlights.length() do
+      const current_line_highlight = current_line_report.highlights[current_line_index]
+      if current_line_highlight.width > 0 then
+        solid = solid_renderer_rect(
+          solid, width, height,
+          current_line_highlight.x, current_line_highlight.y,
+          current_line_highlight.width, current_line_highlight.height,
+          theme.panel_red, theme.panel_green, theme.panel_blue, 0.55
+        )
+      end
+      current_line_index = current_line_index + 1
     end
 
     if find_session.matches.length() > 0 then

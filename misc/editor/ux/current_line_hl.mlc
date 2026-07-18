@@ -1,4 +1,15 @@
-// TRACK_EDITOR_CURRENT_LINE_HL STEP=1 — stub current-line draw report (red until STEP=2).
+// TRACK_EDITOR_CURRENT_LINE_HL STEP=2 — caret-line full-viewport draw report.
+import { Rect, rect_new } from '../../gui/layout'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import { selection_caret } from '../document/selection'
+import {
+  line_index_from_document,
+  line_index_offset_to_position
+} from '../document/line_index'
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 
@@ -14,13 +25,57 @@ export type CurrentLineDrawReport = {
   highlights: [CurrentLineHighlight]
 }
 
-// Stub: empty report until STEP=2 implements caret-line geometry.
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
 export fn editor_ux_current_line_draw_report(
   state: EditorUxState,
   metrics: EditorTextMetrics
 ) -> CurrentLineDrawReport = do
-  let _unused_width = state.window_width
-  let _unused_line_height = metrics.line_height
   let mut highlights: [CurrentLineHighlight] = []
+  if !tab_set_has_active(state.tabs) then
+    return CurrentLineDrawReport { highlights: highlights }
+  end
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const caret_pos = line_index_offset_to_position(
+    line_index,
+    line_index.text,
+    selection_caret(state.selection)
+  )
+  const viewport = text_viewport_rect(state)
+  const top = viewport.y + caret_pos.line * line_height - state.scroll_offset_y
+  const bottom = top + line_height
+  if bottom <= viewport.y || top >= viewport.y + viewport.height then
+    return CurrentLineDrawReport { highlights: highlights }
+  end
+  if viewport.width <= 0 then
+    return CurrentLineDrawReport { highlights: highlights }
+  end
+  highlights.push(CurrentLineHighlight {
+    line: caret_pos.line,
+    x: viewport.x,
+    y: top,
+    width: viewport.width,
+    height: line_height
+  })
   CurrentLineDrawReport { highlights: highlights }
 end

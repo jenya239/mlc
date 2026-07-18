@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:20 (Driver TRACK_EDITOR_CURRENT_LINE_HL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CURRENT_LINE_HL |
+| started | 2026-07-18 15:10 |
+| elapsed | ~10 min |
+| done    | `editor_ux_current_line_draw_report` caret-line full viewport; `demo_live` panel tint 0.55 under find/selection; `ux_ok current_line_highlight_draws`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_current_line_highlight_draws.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CURRENT_LINE_HL |
+
 ### Turn 2026-07-18 15:10 (Driver TRACK_EDITOR_CURRENT_LINE_HL STEP=1)
 
 | field   | value |

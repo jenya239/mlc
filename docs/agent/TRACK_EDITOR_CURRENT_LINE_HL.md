@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#11**.
 Caret line has no background band in the draw path — only selection/find
 rects exist. Review gate: `current_line_highlight_draws` (L2). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-18) — STEP=2 done; next Critic
 
 ## Next step
 
-**STEP=2** — implement `editor_ux_current_line_draw_report` + `demo_live` panel tint.
+**STEP=3** — Critic: re-run gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -39,7 +39,7 @@ rects exist. Review gate: `current_line_highlight_draws` (L2). Size **S**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenario first (`current_line_highlight_draws`) | **done** (red: `ux_fail current_line highlights count got 0`) |
-| 2 | draw report + demo_live wire (panel tint) | pending |
+| 2 | draw report + demo_live wire (panel tint) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
 | 3 | Critic: gates; archive | pending |
 
 ## Out of scope
