@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:05 (Planner PLAN_QUEUE pick-next → open #4)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 16:00 |
+| elapsed | ~5 min |
+| done    | Opened §46 #4: `TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md` STEP=0 Decision frozen (multi-click detector 500ms + same-point; word via `#3` boundaries; line via `line_content_end`; UxDriver `SetClock`; L2 `double_click_selects_word`/`triple_click_selects_line`; demo_live counted click path); UX_BACKLOG #4 → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+
 ### Turn 2026-07-18 15:55 (Critic TRACK_EDITOR_WORD_BOUNDARIES critique-audit)
 
 | field   | value |

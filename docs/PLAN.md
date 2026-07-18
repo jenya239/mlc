@@ -441,7 +441,7 @@ compiler/
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
-| **46** | Editor UX backlog — #1…#1d+#2+#3 done; next **#4 `EDITOR_MOUSE_WORD_LINE_SELECT`** (Planner pick-next) | **active** (2026-07-18) #3 closed; #4 pending | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES](archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES.md) |
+| **46** | Editor UX backlog — #1…#1d+#2+#3 done; **#4 `EDITOR_MOUSE_WORD_LINE_SELECT` active** (STEP=0 done 2026-07-18; STEP=1 next) | **active** (2026-07-18) #4 STEP=1 | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_MOUSE_WORD_LINE_SELECT](agent/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -675,8 +675,10 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **closed** 2026-07-18: Critic OK; STEP=0+3+4;
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
-  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3 closed; next #4 `EDITOR_MOUSE_WORD_LINE_SELECT`;
+  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3 closed; #4 `EDITOR_MOUSE_WORD_LINE_SELECT`
+      opened 2026-07-18 — STEP=0 done, STEP=1 next;
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
+        [agent/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md](agent/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md) ·
         [archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES.md](archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES.md) ·
         [archive/tracks/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md](archive/tracks/TRACK_EDITOR_KEYBOARD_NAV_WIRE.md) ·
         [archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md) ·
