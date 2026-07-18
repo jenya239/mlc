@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:45 (Planner PLAN_QUEUE pick-next → open #5)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | pick-next |
+| track   | PLAN_QUEUE |
+| started | 2026-07-18 16:40 |
+| elapsed | ~5 min |
+| done    | Opened §46 #5: `TRACK_EDITOR_SHIFT_CLICK_EXTEND.md` STEP=0 Decision frozen (Shift+click → `selection_set_focus` keep anchor; Shift skips #4 multi-click; `glfw_gl_mod_shift_down`; L2 `shift_click_extends_selection`; demo_live branch before multi_click); UX_BACKLOG #5 → active; PLAN/CONTINUITY/DEVELOPMENT synced |
+| result  | STEP=0 done; track open |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SHIFT_CLICK_EXTEND |
+
 ### Turn 2026-07-18 16:35 (Critic TRACK_EDITOR_MOUSE_WORD_LINE_SELECT critique-audit)
 
 | field   | value |
