@@ -110,3 +110,19 @@ export fn dirty_close_cancel(
     overlay: dirty_close_overlay_hidden()
   }
 end
+
+// STEP=1 stub: always miss (ignore hit geometry). Real hit-test in STEP=2.
+export fn dirty_close_overlay_click(
+  tabs: TabSet,
+  overlay: DirtyCloseOverlay,
+  mouse_x: i32,
+  mouse_y: i32,
+  window_width: i32,
+  window_height: i32
+) -> CloseOutcome =
+  CloseOutcome {
+    needs_confirm: 0,
+    tabs: tabs,
+    overlay: overlay
+  }
+end

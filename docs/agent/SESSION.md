@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 06:15 (Driver TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_L1 |
+| started | 2026-07-19 06:05 |
+| elapsed | ~10 min |
+| done    | Stub `dirty_close_overlay_click` (always miss); L1 `dirty_close_overlay_click` + `run_ux_dirty_close_overlay_click.sh` → red `ux_fail dirty_close_overlay_click discard_visible` |
+| verify  | dirty script exit 1 red; `ux_ok session_restore_caret`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DIRTY_CLOSE_L1 |
+
 ### Turn 2026-07-19 06:00 (Planner TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=0)
 
 | field   | value |

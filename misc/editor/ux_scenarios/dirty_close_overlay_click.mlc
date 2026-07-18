@@ -1,0 +1,77 @@
+// TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=1 — L1: dirty_close_overlay_click (red until STEP=2).
+import { open_buffer_set_document } from '../document/save'
+import { document_from_string } from '../document/piece_table'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_count,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  dirty_close_overlay_is_visible,
+  tab_set_request_close_active,
+  dirty_close_overlay_click
+} from '../workspace/tab_close'
+
+fn main() -> i32 = do
+  const window_width = 800
+  const window_height = 600
+  // Discard rect: (w/2-120, h/2+20, 100, 28) → center (w/2-70, h/2+34)
+  const discard_x = window_width / 2 - 70
+  const discard_y = window_height / 2 + 34
+  // Cancel rect: (w/2+20, h/2+20, 100, 28) → center (w/2+70, h/2+34)
+  const cancel_x = window_width / 2 + 70
+  const cancel_y = window_height / 2 + 34
+
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/dirty.mlc", "x")
+  const dirty_buffer = open_buffer_set_document(
+    tab_set_active(tabs).buffer,
+    document_from_string("xx")
+  )
+  tabs = tab_set_update_active_buffer(tabs, dirty_buffer)
+
+  let mut outcome = tab_set_request_close_active(tabs)
+  if !dirty_close_overlay_is_visible(outcome.overlay) then
+    println("ux_fail dirty_close_overlay_click no_overlay")
+    return 1
+  end
+
+  outcome = dirty_close_overlay_click(
+    outcome.tabs, outcome.overlay,
+    discard_x, discard_y, window_width, window_height
+  )
+  if dirty_close_overlay_is_visible(outcome.overlay) then
+    println("ux_fail dirty_close_overlay_click discard_visible")
+    return 2
+  end
+  if tab_set_count(outcome.tabs) != 0 then
+    println("ux_fail dirty_close_overlay_click discard_count")
+    return 3
+  end
+
+  tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/dirty2.mlc", "y")
+  const dirty_buffer_two = open_buffer_set_document(
+    tab_set_active(tabs).buffer,
+    document_from_string("yy")
+  )
+  tabs = tab_set_update_active_buffer(tabs, dirty_buffer_two)
+  outcome = tab_set_request_close_active(tabs)
+  outcome = dirty_close_overlay_click(
+    outcome.tabs, outcome.overlay,
+    cancel_x, cancel_y, window_width, window_height
+  )
+  if dirty_close_overlay_is_visible(outcome.overlay) then
+    println("ux_fail dirty_close_overlay_click cancel_visible")
+    return 4
+  end
+  if tab_set_count(outcome.tabs) != 1 then
+    println("ux_fail dirty_close_overlay_click cancel_count")
+    return 5
+  end
+
+  println("ux_ok dirty_close_overlay_click")
+  0
+end
